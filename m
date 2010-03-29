@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab0C2TrT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 15:47:19 -0400
-Received: from isilmar.linta.de ([213.133.102.198]:34926 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753105Ab0C2TrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 15:47:16 -0400
-Date: Mon, 29 Mar 2010 21:32:03 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: Tejun Heo <tj@kernel.org>
-Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 09/17] pcmcia: update gfp/slab.h includes
-Message-ID: <20100329193203.GA8450@comet.dominikbrodowski.net>
-Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	Tejun Heo <tj@kernel.org>, sfr@canb.auug.org.au,
-	linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-	netdev@vger.kernel.org
-References: <1269885165-18617-1-git-send-email-tj@kernel.org>
- <1269885165-18617-10-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269885165-18617-10-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753411Ab0C2Ttl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 15:49:41 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:30908 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752742Ab0C2Ttk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 15:49:40 -0400
+Date: Mon, 29 Mar 2010 12:47:08 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Joe Perches <joe@perches.com>
+Cc: Jiri Kosina <trivial@kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] treewide: Add and use ADD_MOD macro
+Message-Id: <20100329124708.898b617c.randy.dunlap@oracle.com>
+In-Reply-To: <1269813447.1500.69.camel@Joe-Laptop.home>
+References: <1269813447.1500.69.camel@Joe-Laptop.home>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4BB10404.0058:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 02:52:37AM +0900, Tejun Heo wrote:
-> Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
-> gfp.h or slab.h is included as necessary.
+On Sun, 28 Mar 2010 14:57:27 -0700 Joe Perches wrote:
+
+> Add a macro for the somewhat common use of
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> Cc: Dominik Brodowski <linux@dominikbrodowski.net>
-Acked-by: Dominik Brodowski <linux@dominikbrodowski.net>
-
-
+> 	(something + value) % value
+> 
+> drivers/net/sundance.c includes a change from
+> a for(;test;add) loop to while (test) {... add};
+> because the test uses ADD_MOD
+> 
+> Compile tested only
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 > ---
->  drivers/isdn/hardware/avm/avm_cs.c |    1 -
->  drivers/pcmcia/pcmcia_cis.c        |    1 +
->  drivers/pcmcia/rsrc_iodyn.c        |    1 +
->  3 files changed, 2 insertions(+), 1 deletions(-)
+>  include/linux/kernel.h                  |    1 +
+>  drivers/ata/libata-eh.c                 |    2 +-
+>  drivers/media/video/ov511.c             |    2 +-
+>  drivers/media/video/usbvideo/usbvideo.c |    2 +-
+>  drivers/net/dl2k.c                      |    8 ++++----
+>  drivers/net/sundance.c                  |    4 ++--
+>  drivers/pci/dmar.c                      |    6 +++---
+>  drivers/scsi/3w-9xxx.c                  |    2 +-
+>  drivers/staging/wavelan/wavelan_cs.c    |   10 +++++-----
+>  drivers/usb/misc/sisusbvga/sisusb_con.c |    4 ++--
+>  drivers/video/console/vgacon.c          |    4 ++--
+>  sound/oss/vwsnd.c                       |    6 +++---
+>  12 files changed, 26 insertions(+), 25 deletions(-)
 > 
-> diff --git a/drivers/isdn/hardware/avm/avm_cs.c b/drivers/isdn/hardware/avm/avm_cs.c
-> index 8bbc452..f410d0e 100644
-> --- a/drivers/isdn/hardware/avm/avm_cs.c
-> +++ b/drivers/isdn/hardware/avm/avm_cs.c
-> @@ -13,7 +13,6 @@
->  #include <linux/kernel.h>
->  #include <linux/init.h>
->  #include <linux/ptrace.h>
-> -#include <linux/slab.h>
->  #include <linux/string.h>
->  #include <linux/tty.h>
->  #include <linux/serial.h>
-> diff --git a/drivers/pcmcia/pcmcia_cis.c b/drivers/pcmcia/pcmcia_cis.c
-> index 7406387..4a65eaf 100644
-> --- a/drivers/pcmcia/pcmcia_cis.c
-> +++ b/drivers/pcmcia/pcmcia_cis.c
-> @@ -14,6 +14,7 @@
->   *
->   */
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 7f07074..c96b1ac 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -63,6 +63,7 @@ extern const char linux_proc_banner[];
+>  	(((x) + ((__divisor) / 2)) / (__divisor));	\
+>  }							\
+>  )
+> +#define ADD_MOD(x, y) (((x) + (y)) % (y))
 >  
-> +#include <linux/slab.h>
->  #include <linux/module.h>
->  #include <linux/kernel.h>
->  #include <linux/netdevice.h>
-> diff --git a/drivers/pcmcia/rsrc_iodyn.c b/drivers/pcmcia/rsrc_iodyn.c
-> index 7791375..d0bf350 100644
-> --- a/drivers/pcmcia/rsrc_iodyn.c
-> +++ b/drivers/pcmcia/rsrc_iodyn.c
-> @@ -12,6 +12,7 @@
->   * (C) 1999		David A. Hinds
->   */
->  
-> +#include <linux/slab.h>
->  #include <linux/module.h>
->  #include <linux/kernel.h>
->  
-> -- 
-> 1.6.4.2
-> 
+>  #define _RET_IP_		(unsigned long)__builtin_return_address(0)
+>  #define _THIS_IP_  ({ __label__ __here; __here: (unsigned long)&&__here; })
+
+
+It would be better not to evaluate y more than one time.
+
+Also it's not safe for 64-bit 'y' on i386, right?
+Looks like it would cause missing reference to __imoddi3 or whatever it is called.
+
+so it can easily be misused IMO.
+
+---
+~Randy
