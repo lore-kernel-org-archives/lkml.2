@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704Ab0C2XVE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 19:21:04 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:54170 "EHLO
+	id S1754961Ab0C2XU6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 19:20:58 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:54144 "EHLO
 	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754220Ab0C2XUu (ORCPT
+	with ESMTP id S1754101Ab0C2XUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 19:20:50 -0400
+	Mon, 29 Mar 2010 19:20:49 -0400
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
@@ -19,9 +19,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
        Gary Hade <garyhade@us.ibm.com>,
        Natalie Protasevich <protasnb@gmail.com>,
        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 07/14] x86 ioapic: Fix the types of gsi values
-Date: Mon, 29 Mar 2010 16:20:18 -0700
-Message-Id: <1269904825-27462-7-git-send-email-ebiederm@xmission.com>
+Subject: [PATCH 01/14] x86 acpi/irq: Introduce apci_isa_irq_to_gsi
+Date: Mon, 29 Mar 2010 16:20:12 -0700
+Message-Id: <1269904825-27462-1-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.6.5.2.143.g8cc62
 In-Reply-To: <m1r5n2wwah.fsf_-_@fess.ebiederm.org>
 References: <m1r5n2wwah.fsf_-_@fess.ebiederm.org>
@@ -36,70 +36,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric W. Biederman <ebiederm@xmission.com>
 
-This patches fixes the types of gsi_base and gsi_end values in
-struct mp_ioapic_gsi, and the gsi parameter of mp_find_ioapic
-and mp_find_ioapic_pin
+There are a number of cases where the current code makes the assumption
+that isa irqs identity map to the first 16 acpi global system intereupts.
+In most instances that assumption is correct as that is the required
+behaviour in dual i8259 mode and the default behavior in ioapic mode.
 
-A gsi is cannonically a u32, not an int.
+However there are some systems out there that take advantage of acpis
+interrupt remapping  for the isa irqs to have a completely different
+mapping of isa_irq to gsi.
+
+Introduce acpi_isa_irq_to_gsi to perform this mapping explicitly in the
+code that needs it.  Initially this will be just the current assumed
+identity mapping to ensure it's introduction does not cause regressions.
 
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- arch/x86/include/asm/io_apic.h |   10 +++++-----
- arch/x86/kernel/apic/io_apic.c |    4 ++--
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ arch/ia64/kernel/acpi.c     |    8 ++++++++
+ arch/x86/kernel/acpi/boot.c |    8 ++++++++
+ include/linux/acpi.h        |    1 +
+ 3 files changed, 17 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 35832a0..feeaf0d 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -180,12 +180,12 @@ extern void ioapic_write_entry(int apic, int pin,
- extern void setup_ioapic_ids_from_mpc(void);
- 
- struct mp_ioapic_gsi{
--	int gsi_base;
--	int gsi_end;
-+	u32 gsi_base;
-+	u32 gsi_end;
- };
- extern struct mp_ioapic_gsi  mp_gsi_routing[];
--int mp_find_ioapic(int gsi);
--int mp_find_ioapic_pin(int ioapic, int gsi);
-+int mp_find_ioapic(u32 gsi);
-+int mp_find_ioapic_pin(int ioapic, u32 gsi);
- void __init mp_register_ioapic(int id, u32 address, u32 gsi_base);
- extern void __init pre_init_apic_IRQ0(void);
- 
-@@ -197,7 +197,7 @@ static const int timer_through_8259 = 0;
- static inline void ioapic_init_mappings(void)	{ }
- static inline void ioapic_insert_resources(void) { }
- static inline void probe_nr_irqs_gsi(void)	{ }
--static inline int mp_find_ioapic(int gsi) { return 0; }
-+static inline int mp_find_ioapic(u32 gsi) { return 0; }
- 
- struct io_apic_irq_attr;
- static inline int io_apic_set_pci_routing(struct device *dev, int irq,
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 54ba1f7..32cea57 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -4234,7 +4234,7 @@ void __init ioapic_insert_resources(void)
- 	}
+diff --git a/arch/ia64/kernel/acpi.c b/arch/ia64/kernel/acpi.c
+index f1c9f70..16921bd 100644
+--- a/arch/ia64/kernel/acpi.c
++++ b/arch/ia64/kernel/acpi.c
+@@ -784,6 +784,14 @@ int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
+ 	return 0;
  }
  
--int mp_find_ioapic(int gsi)
-+int mp_find_ioapic(u32 gsi)
- {
- 	int i = 0;
- 
-@@ -4249,7 +4249,7 @@ int mp_find_ioapic(int gsi)
- 	return -1;
++int acpi_isa_irq_to_gsi(unsigned isa_irq, u32 *gsi)
++{
++	if (isa_irq >= 16)
++		return -1;
++	*gsi = isa_irq;
++	return 0;
++}
++
+ /*
+  *  ACPI based hotplug CPU support
+  */
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 0061ea2..f96060d 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -457,6 +457,14 @@ int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
+ 	return 0;
  }
  
--int mp_find_ioapic_pin(int ioapic, int gsi)
-+int mp_find_ioapic_pin(int ioapic, u32 gsi)
- {
- 	if (WARN_ON(ioapic == -1))
- 		return -1;
++int acpi_isa_irq_to_gsi(unsigned isa_irq, u32 *gsi)
++{
++	if (isa_irq >= 16)
++		return -1;
++	*gsi = isa_irq;
++	return 0;
++}
++
+ /*
+  * success: return IRQ number (>=0)
+  * failure: return < 0
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index b926afe..7a937da 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -116,6 +116,7 @@ extern unsigned long acpi_realmode_flags;
+ 
+ int acpi_register_gsi (struct device *dev, u32 gsi, int triggering, int polarity);
+ int acpi_gsi_to_irq (u32 gsi, unsigned int *irq);
++int acpi_isa_irq_to_gsi (unsigned isa_irq, u32 *gsi);
+ 
+ #ifdef CONFIG_X86_IO_APIC
+ extern int acpi_get_override_irq(int bus_irq, int *trigger, int *polarity);
 -- 
 1.6.5.2.143.g8cc62
 
