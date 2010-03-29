@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246Ab0C2Ru2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 13:50:28 -0400
-Received: from zrtps0kp.nortel.com ([47.140.192.56]:45853 "EHLO
-	zrtps0kp.nortel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754814Ab0C2Ru1 (ORCPT
+	id S1755294Ab0C2Rvb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 13:51:31 -0400
+Received: from mail-gx0-f217.google.com ([209.85.217.217]:39538 "EHLO
+	mail-gx0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754832Ab0C2Rva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 13:50:27 -0400
-Message-ID: <4BB0E7E6.6030304@nortel.com>
-Date: Mon, 29 Mar 2010 11:48:22 -0600
-From: "Chris Friesen" <cfriesen@nortel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
+	Mon, 29 Mar 2010 13:51:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=XlHHKSB9QuMHdl9SnPB2EIPJgRIw9uIFDobanKHXMvjbG75F4ZvlRsOvWb2xxN7A9i
+         ffBs6DmyxjfQUK0jZyHns8uFB13Jce+DINpQseeD8+vxrUlS1APUA3CRfNp5nBYKJDgC
+         NMJsm9k39d7jb55TaYbeByZpsOkn2ZlIYXSQ0=
+Date: Mon, 29 Mar 2010 19:51:26 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>, David Miller <davem@davemloft.net>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 1/2] perf: Correctly align perf event tracing buffer
+Message-ID: <20100329175124.GC5101@nowhere>
+References: <1269753066-17246-1-git-send-regression-fweisbec@gmail.com> <1269753066-17246-2-git-send-regression-fweisbec@gmail.com> <1269852691.12097.162.camel@laptop> <20100329171615.GA5101@nowhere> <1269883209.12097.366.camel@laptop>
 MIME-Version: 1.0
-To: Brandon Black <blblack@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org
-Subject: Re: behavior of recvmmsg() on blocking sockets
-References: <84621a61003240915p2a4ce6bbjd0c6bfb02ab05ba8@mail.gmail.com>	 <4BAA4EE4.3090900@nortel.com>	 <84621a61003241128x3afbcea1w387aeaa68c887320@mail.gmail.com>	 <4BAA69BF.3080600@nortel.com>	 <84621a61003241255i74282f53v3bb0111808895401@mail.gmail.com>	 <84621a61003270619p6b4fe81bi24bb1961aba77ffb@mail.gmail.com>	 <4BB0D2CF.9040903@nortel.com> <84621a61003291024r38121763o546e0f09e2d63bc3@mail.gmail.com>
-In-Reply-To: <84621a61003291024r38121763o546e0f09e2d63bc3@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Mar 2010 17:50:23.0143 (UTC) FILETIME=[4E582B70:01CACF68]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269883209.12097.366.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2010 11:24 AM, Brandon Black wrote:
-> On Mon, Mar 29, 2010 at 11:18 AM, Chris Friesen <cfriesen@nortel.com> wrote:
->>
->> prev = current time
->> loop forever
->>        cur = current time
->>        timeout = max_latency - (cur - prev)
->>        recvmmsg(timeout)
->>        process all received messages
->>        prev = cur
->>
->>
->> Basically you determine the max latency you're willing to wait for a
->> packet to be handled, then subtract the amount of time you spent
->> processing messages from that and pass it into the recvmmsg() call as
->> the timeout.  That way no messages will be delayed for longer than the
->> max latency. (Not considering scheduling delays.)
+On Mon, Mar 29, 2010 at 07:20:09PM +0200, Peter Zijlstra wrote:
+> On Mon, 2010-03-29 at 19:16 +0200, Frederic Weisbecker wrote:
+> > On Mon, Mar 29, 2010 at 10:51:31AM +0200, Peter Zijlstra wrote:
+> > > On Sun, 2010-03-28 at 07:11 +0200, Frederic Weisbecker wrote:
+> > > >  kernel/trace/trace_event_perf.c |   11 +++++++++--
+> > > >  1 files changed, 9 insertions(+), 2 deletions(-)
+> > > > 
+> > > > diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+> > > > index 0709e4f..69941f3 100644
+> > > > --- a/kernel/trace/trace_event_perf.c
+> > > > +++ b/kernel/trace/trace_event_perf.c
+> > > > @@ -15,7 +15,12 @@ EXPORT_PER_CPU_SYMBOL_GPL(perf_trace_regs);
+> > > >  static char *perf_trace_buf;
+> > > >  static char *perf_trace_buf_nmi;
+> > > >  
+> > > > -typedef typeof(char [PERF_MAX_TRACE_SIZE]) perf_trace_t ;
+> > > > +/*
+> > > > + * Force it to be aligned to unsigned long to avoid misaligned accesses
+> > > > + * suprises
+> > > > + */
+> > > > +typedef typeof(unsigned long [PERF_MAX_TRACE_SIZE / sizeof(unsigned long)])
+> > > > +	perf_trace_t;
+> > > >  
+> > > 
+> > > wouldn't __aligned(8) be simpler?
+> > 
+> > 
+> > David and Tejun seemed to prefer to create the alignment on the
+> > type level rather than using an align.
+> > 
+> > I'm personally fine either way.
 > 
-> With a blocking socket, you'd also need to set SO_RCVTIMEO on the
-> underlying socket to some value that makes sense and is below your max
-> latency, because recvmmsg()'s timeout argument only applies in-between
-> underlying recvmsg() calls, not during them.
+> Also, if you need u64 alignment, shouldn't you use u64 instead of
+> unsigned long, the alignment requirement on those two might differ on
+> 32bit machines.
 
-Hmm...that's a good point.  For some reason I had been under the
-impression that the timeout affected the underlying recvmsg() calls as
-well.  It think it would make more sense for the kernel to abort a
-blocking recvmsg() call once the timeout expires.
 
-As for spending a lot of time spinning if there are gaps in the input
-stream...in the cases where the time-based usage makes sense the normal
-situation is that there are a lot of packets coming in.  A 10gig
-ethernet pipe can theoretically receive something like 19 packets per
-usec.  Doesn't take much of a delay before you probably have packets
-waiting.
+Yeah but we need the u64 alignment only on 64 bits machines.
 
-Chris
