@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755613Ab0C2R5V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 13:57:21 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:41074 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755264Ab0C2R5R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 13:57:17 -0400
-X-Sasl-enc: Tudj637ujeJc8B+sk9oXHTiaBTjcWlOV/E4KKVbN00hK 1269885435
-Message-ID: <4BB0E937.7070200@imap.cc>
-Date: Mon, 29 Mar 2010 19:53:59 +0200
-From: Tilman Schmidt <tilman@imap.cc>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S1755416Ab0C2R5P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 13:57:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38192 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755264Ab0C2R5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 13:57:13 -0400
+Message-ID: <4BB0E73F.2080104@zytor.com>
+Date: Mon, 29 Mar 2010 10:45:35 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Thunderbird/3.0.1
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org
-Subject: Re: CONFIG_PROVE_RCU breaks proprietary modules (rcu_lock_map)
-References: <4BA689EA.4050102@imap.cc> <20100329150946.GB2569@linux.vnet.ibm.com>
-In-Reply-To: <20100329150946.GB2569@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig4C735A898F90C2AC33AE0A2D"
+To: Giel van Schijndel <me@mortis.eu>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Hans de Goede <hdegoede@redhat.com>, Jean Delvare <khali@linux-fr.org>,
+       Jonathan Cameron <jic23@cam.ac.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Dominik Brodowski <linux@dominikbrodowski.net>,
+       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] resource: shared I/O region support
+References: <20100325125005.6d58cfaf@lxorguk.ukuu.org.uk> <1269523063-30346-1-git-send-email-me@mortis.eu> <20100325155705.1ec79dbc@lxorguk.ukuu.org.uk> <20100325180347.GA2761@salidar.me.mortis.eu> <20100325181633.0313b8a5@lxorguk.ukuu.org.uk> <20100329081834.GB27956@salidar.me.mortis.eu> <20100329090713.1317942b@jbarnes-piketon> <20100329173800.GA3583@salidar.me.mortis.eu>
+In-Reply-To: <20100329173800.GA3583@salidar.me.mortis.eu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig4C735A898F90C2AC33AE0A2D
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 03/29/2010 10:38 AM, Giel van Schijndel wrote:
+> 
+> Patch after this line:
+> ========================================================================
+> resource: shared I/O region support
+> 
+> SuperIO devices share regions and use lock/unlock operations to chip
+> select.  We therefore need to be able to request a resource and wait for
+> it to be freed by whichever other SuperIO device currently hogs it.
+> Right now you have to poll which is horrible.
+> 
+> Add a MUXED field to IO port resources. If the MUXED field is set on the
+> resource and on the request (via request_muxed_region) then we block
+> until the previous owner of the muxed resource releases their region.
+> 
+> This allows us to implement proper resource sharing and locking for
+> superio chips using code of the form
+> 
+> enable_my_superio_dev() {
+> 	request_muxed_region(0x44, 0x02, "superio:watchdog");
+> 	outb() ..sequence to enable chip
+> }
+> 
+> disable_my_superio_dev() {
+> 	outb() .. sequence of disable chip
+> 	release_region(0x44, 0x02);
+> }
+> 
+> Signed-off-by: Giel van Schijndel <me@mortis.eu>
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
 
-Am 29.03.2010 17:09 schrieb Paul E. McKenney:
-> On Sun, Mar 21, 2010 at 10:04:42PM +0100, Tilman Schmidt wrote:
-[...]
->> So if building a proprietary module fails with the message:
->>
->> FATAL: modpost: GPL-incompatible module <module> uses GPL-only symbol
->> 'rcu_lock_map'
->>
->> try rebuilding your kernel with the PROVE_RCU option disabled.
->>
->> Hope it helps someone.
->=20
-> I am comfortable with PROVE_RCU being incompatible with non-GPL modules=
-=2E
-> After all, it is only a debugging option, not intended for production u=
-se.
+I have to question this approach a bit.
 
-I agree completely. I just wanted to publish that fact because it seems
-to be little known and can be quite a puzzler.
+I would much rather see this as a two-step process, where multiple
+devices request the same region with a "sharable" flag, and then have a
+mutex associated with the struct resource (perhaps we need an outer
+container called "struct muxed_resource" or some such.)
 
-Thanks,
-Tilman
+What I *really* object to with this patch is that it inherently assumes
+that there is only one multiplexed resource in the entire system... but
+of course nowhere enforces that.
 
---=20
-Tilman Schmidt                    E-Mail: tilman@imap.cc
-Bonn, Germany
-Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
-Unge=F6ffnet mindestens haltbar bis: (siehe R=FCckseite)
-
-
---------------enig4C735A898F90C2AC33AE0A2D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.12 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAkuw6UIACgkQQ3+did9BuFvuSwCePYphSQsEmtHdCGTF9NeZX3BI
-IugAn1wCJ3Gz7Ni7PfifIQt9vP7nMKNN
-=5yw2
------END PGP SIGNATURE-----
-
---------------enig4C735A898F90C2AC33AE0A2D--
+	-hpa
