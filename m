@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488Ab0C2MJQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 08:09:16 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45018 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254Ab0C2MJK (ORCPT
+	id S1752087Ab0C2MQm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 08:16:42 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:62781 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728Ab0C2MQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 08:09:10 -0400
+	Mon, 29 Mar 2010 08:16:40 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=YWWEjz4P/Af5O43FgExOWt3pAHB+mbU41TkAO5iyJsr0TZTAYzUbDJsLh/d8CJMiPU
-         5ryG2EeGBG1kE4tef4raGSKRT3oor4D9/2pqGwCh54mWDw6NzxMOQbcC31wk5VUv7Xl8
-         PmcAthV2x4nlPQ+Sbaq2c1b/xv6tF7PaOqTzI=
-Date: Mon, 29 Mar 2010 20:09:04 +0800
-From: anfei <anfei.zhou@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, rientjes@google.com,
-       kosaki.motohiro@jp.fujitsu.com, nishimura@mxp.nes.nec.co.jp,
-       kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] oom killer: break from infinite loop
-Message-ID: <20100329120904.GB11838@desktop>
-References: <1269447905-5939-1-git-send-email-anfei.zhou@gmail.com>
- <20100326150805.f5853d1c.akpm@linux-foundation.org>
- <20100326223356.GA20833@redhat.com>
- <20100328145528.GA14622@desktop>
- <20100328162821.GA16765@redhat.com>
- <20100329113113.GA11838@desktop>
- <20100329114630.GA19277@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100329114630.GA19277@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=MoTeagcUxI6tAM4S6ZXVn6M9MyTayIkYIyCj0o269ft40nsOQarWInY+QfJsH6y9sU
+         y/YA7dp4sBlOwXNXKhX5Onmq/mhntRGaaGBStsQLAsKpKhs6BHF7o2J43VkEoqZ2gM4a
+         2YkPL1jkMf4ea+odpW+6iwUD2HW6724ir4Uzo=
+Subject: Re: Network performance - iperf
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: michal.simek@petalogix.com
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       John Williams <john.williams@petalogix.com>, netdev@vger.kernel.org,
+       Grant Likely <grant.likely@secretlab.ca>,
+       John Linn <John.Linn@xilinx.com>,
+       "Steven J. Magnani" <steve@digidescorp.com>,
+       Arnd Bergmann <arnd@arndb.de>, akpm@linux-foundation.org
+In-Reply-To: <4BB09021.6020202@petalogix.com>
+References: <4BB09021.6020202@petalogix.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Mar 2010 14:16:34 +0200
+Message-ID: <1269864994.2164.21.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 01:46:30PM +0200, Oleg Nesterov wrote:
-> On 03/29, anfei wrote:
-> >
-> > On Sun, Mar 28, 2010 at 06:28:21PM +0200, Oleg Nesterov wrote:
-> > > On 03/28, anfei wrote:
-> > > >
-> > > > Assume thread A and B are in the same group.  If A runs into the oom,
-> > > > and selects B as the victim, B won't exit because at least in exit_mm(),
-> > > > it can not get the mm->mmap_sem semaphore which A has already got.
-> > >
-> > > I see. But still I can't understand. To me, the problem is not that
-> > > B can't exit, the problem is that A doesn't know it should exit. All
-> >
-> > If B can exit, its memory will be freed,
-> 
-> Which memory? I thought, we are talking about the memory used by ->mm ?
-> 
-There is also a little kernel struct related to the task can be freed,
-but I think you are correct, the memory used by ->mm takes more effect,
-and it won't be freed even B exits. So I agree you on:
-"
-the problem is not that B can't exit, the problem is that A doesn't know
-it should exit. All threads should exit and free ->mm. Even if B could
-exit, this is not enough. And, to some extent, it doesn't matter if it
-holds mmap_sem or not.
-"
+Le lundi 29 mars 2010 à 13:33 +0200, Michal Simek a écrit :
 
-Thanks,
-Anfei.
+> Do you have any idea howto improve TCP/UDP performance in general?
+> Or tests which can point me on weak places.
 
-> Oleg.
-> 
+Could you post "netstat -s" on your receiver, after fresh boot and your
+iperf session, for 32 MB and 256 MB ram case ?
+
+
