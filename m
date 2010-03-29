@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab0C2XdQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 19:33:16 -0400
-Received: from gate.crashing.org ([63.228.1.57]:45377 "EHLO gate.crashing.org"
+	id S1754692Ab0C2Xdr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 19:33:47 -0400
+Received: from mail.perches.com ([173.55.12.10]:1244 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752971Ab0C2XdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 19:33:14 -0400
-Subject: Re: [PATCH 07/31] lmb: Add reserve_lmb/free_lmb
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: michael@ellerman.id.au
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-In-Reply-To: <1269901252.2286.11.camel@concordia>
-References: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
-	 <1269830604-26214-8-git-send-email-yinghai@kernel.org>
-	 <1269865322.24620.42.camel@concordia>  <4BB0D92C.3010103@kernel.org>
-	 <1269901252.2286.11.camel@concordia>
+	id S1752751Ab0C2Xdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 19:33:46 -0400
+Subject: Re: [PATCH 2/2] ath: fix macros coding style issue in regd.c
+From: Joe Perches <joe@perches.com>
+To: Luis de Bethencourt <luisbg@ubuntu.com>
+Cc: linville@tuxdriver.com, lrodriguez@atheros.com,
+       linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <1269904339-15599-1-git-send-email-luisbg@ubuntu.com>
+References: <regd.c>  <1269904339-15599-1-git-send-email-luisbg@ubuntu.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 30 Mar 2010 10:31:31 +1100
-Message-ID: <1269905491.7101.40.camel@pasglop>
+Date: Mon, 29 Mar 2010 16:33:44 -0700
+Message-ID: <1269905624.4558.56.camel@Joe-Laptop.home>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-30 at 09:20 +1100, Michael Ellerman wrote:
-> 
-> But that's my point. You shouldn't need to touch the existing API, and
-> you shouldn't need to add a new parallel API. You should just be able to
-> add the logic for doubling the array in the lmb core, and then everyone
-> gets dynamically expandable lmb. I don't see any reason why we want to
-> have two APIs.
+On Tue, 2010-03-30 at 00:12 +0100, Luis de Bethencourt wrote:
+> This is a patch to the ath/regd.c file that fixes up three warnings
+> about macros found by the checkpatch.pl tool, these said that
+> complex values should be enclosed in parenthesis.
 
-Ack.
+Hi Luis.
 
-> > > It seems to me that rather than adding these "special" routines that
-> > > check for enough space on the way in, instead you should be checking in
-> > > lmb_add_region() - which is where AFAICS all allocs/frees/reserves
-> > > eventually end up if they need to insert a new region.
-> > 
-> > later i prefer to replace lmb_alloc with find_lmb_area + reserve_lmb.
-> 
-> Why? The existing code has been working for years and is well tested? 
+Checkpatch isn't always correct.
 
-I still don't totally understand why he needs a find_lmb_area()
-anyways. 
+Please make sure to compile test your changes
+before submitting them.
 
-It might be justified ... or not. I just want it to be better
-documented.
+These macros are used as initializers and
+can not be surrounded by parentheses.
 
-Cheers,
-Ben.
+	.reg_rules = {
+		ATH9K_2GHZ_ALL,
 
+cheers, Joe
 
