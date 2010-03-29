@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770Ab0C2GnH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 02:43:07 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59724 "EHLO smtps.tip.net.au"
+	id S1753727Ab0C2Gqq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 02:46:46 -0400
+Received: from ozlabs.org ([203.10.76.45]:35388 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752086Ab0C2GnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 02:43:03 -0400
-Date: Mon, 29 Mar 2010 17:43:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Tom Herbert <therbert@google.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>
-Subject: linux-next: build failure after merge of the final tree (net tree
- related)
-Message-Id: <20100329174300.512d83a8.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752742Ab0C2Gqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 02:46:45 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCHSET] cpuhog: implement and use cpuhog
+Date: Mon, 29 Mar 2010 17:16:42 +1030
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; i686; ; )
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+       sivanich@sgi.com, heiko.carstens@de.ibm.com,
+       torvalds@linux-foundation.org, mingo@elte.hu, dipankar@in.ibm.com,
+       josh@freedesktop.org, paulmck@linux.vnet.ibm.com, oleg@redhat.com,
+       akpm@linux-foundation.org
+References: <1268063603-7425-1-git-send-email-tj@kernel.org> <1268249155.5279.128.camel@twins> <4B99B15B.8060002@kernel.org>
+In-Reply-To: <4B99B15B.8060002@kernel.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201003291716.42504.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On Fri, 12 Mar 2010 01:43:31 pm Tejun Heo wrote:
+> Hello, Peter.
+> 
+> On 03/11/2010 04:25 AM, Peter Zijlstra wrote:
+> > cpuhog as a name doesn't work for me, stop-machine had a name that
+> > described its severity and impact, cpuhog makes me think of while(1);.
+> >
+> > Can't we keep the stop_machine name and make that a workqueue interface
+> > like you propose?
+> >
+> > That way we'd end up with something like:
+> > 
+> > kernel/stop_machine.c
+> >   int stop_cpu(int cpu, stop_fn_t fn, void *arg)
+> >   int stop_machine(struct cpumask *mask, stop_fn_t fn, void *arg)
+> 
+> The distinction would be diabling of IRQ on each CPU.
+> hog_[one_]cpu[s]() schedule highest priority task to, well, hog the
+> cpu but doesn't affect contextless part of the cpu (irq, bh, whatnot).
 
-After merging the final tree, today's linux-next build (powerpc
-ppc44x_defconfig) failed like this:
+I rather like the name.  And the stop_machine name is still there; it's just
+using cpuhog rather than workqueues.
 
-net/core/net-sysfs.c:476: warning: 'struct netdev_rx_queue' declared inside parameter list
-net/core/net-sysfs.c:476: warning: its scope is only this definition or declaration, which is probably not what you want
-net/core/net-sysfs.c:478: warning: 'struct netdev_rx_queue' declared inside parameter list
-net/core/net-sysfs.c: In function 'rx_queue_attr_show':
-net/core/net-sysfs.c:489: error: dereferencing pointer to incomplete type
-net/core/net-sysfs.c:489: warning: type defaults to 'int' in declaration of '__mptr'
-net/core/net-sysfs.c:489: warning: initialization from incompatible pointer type
-net/core/net-sysfs.c:489: error: invalid use of undefined type 'struct netdev_rx_queue'
-net/core/net-sysfs.c:494: warning: passing argument 1 of 'attribute->show' from incompatible pointer type
-net/core/net-sysfs.c:494: note: expected 'struct netdev_rx_queue *' but argument is of type 'struct netdev_rx_queue *'
+Ugly things should have ugly names.
 
-(and many more)
+For Patch 2/4 at least:
 
-Caused by commit 0a9627f2649a02bea165cfd529d7bcb625c2fcad ("rps: Receive
-Packet Steering") from the net tree.  struct netdev_rx_queue is protected by
-CONFIG_RPS in netdevice.h, but uses are not so protected in net-sysfs.c.
+	Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 
-I applied the following patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 29 Mar 2010 17:27:55 +1100
-Subject: [PATCH] rps: fix net-sysfs build for !CONFIG_RPS
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- net/core/net-sysfs.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
-
-diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
-index c810042..95af841 100644
---- a/net/core/net-sysfs.c
-+++ b/net/core/net-sysfs.c
-@@ -467,6 +467,7 @@ static struct attribute_group wireless_group = {
- };
- #endif
- 
-+#ifdef CONFIG_RPS
- /*
-  * RX queue sysfs structures and functions.
-  */
-@@ -677,6 +678,12 @@ static void rx_queue_remove_kobjects(struct net_device *net)
- 	kset_unregister(net->queues_kset);
- }
- 
-+#else /* CONFIG_RPS */
-+
-+static int rx_queue_register_kobjects(struct net_device *net) { return 0; }
-+static void rx_queue_remove_kobjects(struct net_device *net) { }
-+
-+#endif /* CONFIG_RPS */
- #endif /* CONFIG_SYSFS */
- 
- #ifdef CONFIG_HOTPLUG
--- 
-1.7.0.3
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Great work Tejun!
+Rusty.
