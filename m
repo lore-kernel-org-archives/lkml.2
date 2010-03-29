@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184Ab0C2N7r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 09:59:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64544 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156Ab0C2N7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 09:59:46 -0400
-Date: Mon, 29 Mar 2010 15:57:00 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, sivanich@sgi.com,
-       heiko.carstens@de.ibm.com, torvalds@linux-foundation.org, mingo@elte.hu,
-       dipankar@in.ibm.com, josh@freedesktop.org, paulmck@linux.vnet.ibm.com,
-       akpm@linux-foundation.org, peterz@infradead.org, arjan@infradead.org
-Subject: Re: [PATCH 3/4] scheduler: replace migration_thread with cpuhog
-Message-ID: <20100329135700.GA25423@redhat.com>
-References: <1268815251-31407-1-git-send-email-tj@kernel.org> <1268815251-31407-4-git-send-email-tj@kernel.org>
+	id S1752272Ab0C2OCY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 10:02:24 -0400
+Received: from mail.windriver.com ([147.11.1.11]:56653 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213Ab0C2OCX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 10:02:23 -0400
+Message-ID: <4BB0B2AB.2060207@windriver.com>
+Date: Mon, 29 Mar 2010 09:01:15 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1268815251-31407-4-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] kgdb fixes for 2.6.34-rc2
+References: <1269285449-1424-1-git-send-email-jason.wessel@windriver.com>
+In-Reply-To: <1269285449-1424-1-git-send-email-jason.wessel@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Mar 2010 14:01:15.0706 (UTC) FILETIME=[4C3BC1A0:01CACF48]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As I said, personally I like these changes very much. Even if I can't ack them
-I'd like to add my vote.
-
-On 03/17, Tejun Heo wrote:
+On 03/22/2010 02:17 PM, Jason Wessel wrote:
+> Linus, please pull the kgdb-fixes for 2.6.34.  
 >
->  int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
->  {
-> ...
-> +	if (migrate_task(p, dest_cpu)) {
-> +		struct migration_arg arg = { p, dest_cpu };
->  		/* Need help from migration thread: drop lock and wait. */
-> -		struct task_struct *mt = rq->migration_thread;
-> -
-> -		get_task_struct(mt);
->  		task_rq_unlock(rq, &flags);
-> -		wake_up_process(rq->migration_thread);
-> -		put_task_struct(mt);
-> -		wait_for_completion(&req.done);
-> +		hog_one_cpu(cpu_of(rq), migration_hog, &arg);
+> git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb.git kgdb-fixes
+>
+> Summary:
+>   * The first 2 patches are the gdbstub and debug core split from the kdb tree
+>   * The rest are the fixes cherry picked from the kdb pull request
+>
+> The previous kdb pull will require a rebase if you accept the kgdb
+> fixes because there were patch splits that occurred to make this patch
+> set.
+>
+>   
 
-Afaics, this is the only change which can make a difference. If we race with
-cpu_down(), set_cpus_allowed_ptr() can return before the task was actually
-moved to another CPU. But this seems harmless to me.
+Ping.
 
-Oleg.
+Linus, please help me understand how we can continue to move forward on
+the kernel debugger pull requests.  There have been numerous requests
+that have not been pulled and have no response as to what needs to be
+acted on to resolve any outstanding issues.
+
+Thanks,
+Jason.
+
 
