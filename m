@@ -1,73 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab0C2Wxz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 18:53:55 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:38487 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab0C2Wxy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 18:53:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=CxpnfrzHHGoJrasEkJBl8sgPWKW6ETUdV6Z52sAOmwLTH0RHViuzSe65qhphllivu7
-         VOlISlEGvqTMPIWW31FK919Nw0y9FgAsDcV/PheckjFpCZifHZPxndQK7F8lTw+2esbo
-         wJpBrOJ0RBgSIJIcz5tI4UiWvj/5wWisnxADU=
-Date: Tue, 30 Mar 2010 00:53:56 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>, David Miller <davem@davemloft.net>
-Subject: Re: [PATCH 2/2] perf: Use hot regs with software sched
-	switch/migrate events
-Message-ID: <20100329225354.GD12254@nowhere>
-References: <1269753066-17246-1-git-send-regression-fweisbec@gmail.com> <1269753066-17246-3-git-send-regression-fweisbec@gmail.com> <1269852599.12097.159.camel@laptop> <20100329174723.GB5101@nowhere> <1269885938.12097.367.camel@laptop> <20100329224352.GC12254@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100329224352.GC12254@nowhere>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754582Ab0C2W7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 18:59:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40288 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754278Ab0C2W7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 18:59:19 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100329223609.GR2569@linux.vnet.ibm.com>
+References: <20100329223609.GR2569@linux.vnet.ibm.com> <20100329210520.GN2569@linux.vnet.ibm.com> <20100329192159.GM2569@linux.vnet.ibm.com> <20100319022527.GC2894@linux.vnet.ibm.com> <20100318133302.29754.1584.stgit@warthog.procyon.org.uk> <19192.1269889348@redhat.com> <23274.1269893706@redhat.com> <25276.1269901350@redhat.com> 
+To: paulmck@linux.vnet.ibm.com
+Cc: dhowells@redhat.com, Eric Dumazet <eric.dumazet@gmail.com>,
+       Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFS: Fix RCU warnings in nfs_inode_return_delegation_noreclaim() [ver #2]
+Date: Mon, 29 Mar 2010 23:59:03 +0100
+Message-ID: <26760.1269903543@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 12:43:54AM +0200, Frederic Weisbecker wrote:
-> On Mon, Mar 29, 2010 at 08:05:38PM +0200, Peter Zijlstra wrote:
-> > On Mon, 2010-03-29 at 19:47 +0200, Frederic Weisbecker wrote:
-> > > 
-> > > 
-> > > I'm going to make a quick fix for perf_fetch_caller_regs() that
-> > > passes task_pt_regs if exclude_kernel for perf/urgent,
-> > > and I'll do the above cleanups/invasive fixes on perf/core.
-> > > 
-> > > 
-> > ok, sounds sensible, thanks!
-> 
-> 
-> Actually I have doubts about what should be the strict sense
-> of exclude_kernel.
-> 
-> Does that mean we exclude any event that happened in the kernel?
-> Or does that mean we exclude the part that happened in the kernel?
-> 
-> Depending on the case, we do either.
-> 
-> In perf_swevent_hrtimer(), we simply go back to task_pt_regs()
-> if exclude_kernel.
-> 
-> But in other software events, we don't such fix, we actually
-> filter out the event if it is not user_mode().
-> 
-> So, I'm a bit confused on what to do.
-> I'm tempted to adopt the meaning from perf_swevent_hrtimer()
-> for software events too, I'm not sure...
+Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
+> Only on Alpha.  Otherwise only a volatile access.
 
-I think this is the right thing to do: jump back to user context
-instead of filtering out (unless kernel thread).
+Whilst that is true, it's the principle of the thing.  The extra barrier
+shouldn't be emitted on Alpha.  If Alpha's no longer important, then can we
+scrap smp_read_barrier_depends()?
 
-Otherwise every software events, trace events included, are totally
-pointless with exclude_kernel.
+My point is that some of these rcu_dereference*()'s are unnecessary.  If
+there're required for correctness tracking purposes, fine; but can we have a
+macro that is just a dummy for the purpose of stripping the pointer Sparse
+annotation?  One that doesn't invoke rcu_dereference_raw() and interpolate a
+barrier, pretend or otherwise, when there's no second reference to order
+against.
 
+David
