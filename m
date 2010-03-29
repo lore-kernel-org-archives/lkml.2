@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751727Ab0C2NMx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 09:12:53 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:41635 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751213Ab0C2NMv (ORCPT
+	id S1751434Ab0C2NQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 09:16:29 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:19207 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957Ab0C2NQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 09:12:51 -0400
-Date: Mon, 29 Mar 2010 15:12:40 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Hemanth V <hemanthv@ti.com>, kernel list <linux-kernel@vger.kernel.org>
-Cc: linux-input@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: Merge plans for Staging  Synaptics Touchscreen Driver
-Message-ID: <20100329131136.GA26586@ucw.cz>
-References: <19039.10.24.255.18.1269336516.squirrel@dbdmail.itg.ti.com> <20100326144415.GA1591@ucw.cz> <33474.10.24.255.18.1269863733.squirrel@dbdmail.itg.ti.com> <49670.10.24.255.17.1269864940.squirrel@dbdmail.itg.ti.com>
+	Mon, 29 Mar 2010 09:16:27 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=MQWMzEChuhTZLgiv3hGnXvuKQseLeNUC5jQcvq8WLT5nQRqF4HDe01QiVZ3WPE8L9
+	WDEuQdVhBMthIQMSQLyMg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <49670.10.24.255.17.1269864940.squirrel@dbdmail.itg.ti.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <87bpe7qnrg.fsf@basil.nowhere.org>
+References: <20100329122021.765109681@chello.nl>
+	 <87bpe7qnrg.fsf@basil.nowhere.org>
+Date: Mon, 29 Mar 2010 14:16:23 +0100
+Message-ID: <bd4cb8901003290616s67aac7d3jb4bec31e2c0a73d4@mail.gmail.com>
+Subject: Re: [PATCH 0/2] perf: Use LBR for machine/oops debugging
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu,
+       Linus Torvalds <torvalds@osdl.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Mon, Mar 29, 2010 at 2:08 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> Peter Zijlstra <a.p.zijlstra@chello.nl> writes:
+>
+>> The LBRs are relatively cheap to keep enabled and provide some history
+>> to OOPSen, also some CPUs are reported to keep them over soft-reset,
+>> which allows us to use them to debug things like tripple faults.
+>>
+>> Therefore introduce a boot option: lbr_debug=on, which always enable
+>> the LBRs and will print the LBRs on CPU init and die().
+>
+>
+> die is too late. they will only contain the oops code then.
+>
+Most likely yes,  especially with small LBR, such as on Intel Core.
 
-> >>> Pl add (if required) below tested by for the staging driver.
-> >
-> >>
-> >> 1) are you able to use driver in staging?
-> >
-> > Yes I am able to use staging driver for single
-> > touch events.
 
-Good.
-
-> >> at minimum, non-standard multitouch support needs to be removed before
-> >> merging to input. Do you have time to help?
-> >
-> > Could you review the below patch.
-> 
-> Forgot to remove unused variables in earlier patch, here's
-> the updated one.
-
-Thanks, seems ok.
-
-> Remove non-standard multi touch support.
-> 
-> Signed-off-by: Hemanth V <hemanthv@ti.com>
-
-ACK.
-
-Now... you probably want to send the patch to Greg. And then, I guess
-you could take the patch from staging, and ask for another round of
-review on linux-input.
-
-If you could figure out if threaded interrupts can be used for this
-driver, that would be welcome bonus.
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> -Andi
+>
+> --
+> ak@linux.intel.com -- Speaking for myself only.
+>
