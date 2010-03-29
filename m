@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194Ab0C2Vnv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 17:43:51 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:55703 "EHLO e6.ny.us.ibm.com"
+	id S1753952Ab0C2VrO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 17:47:14 -0400
+Received: from gate.crashing.org ([63.228.1.57]:33169 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753648Ab0C2Vnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 17:43:49 -0400
-Subject: Re: [PATCH] hangcheck-timer is broken on x86
-From: john stultz <johnstul@us.ibm.com>
-To: Yury Polyanskiy <ypolyans@princeton.edu>
-Cc: Joel Becker <Joel.Becker@oracle.com>, linux-kernel@vger.kernel.org,
-       Andrew Morton <akpm@osdl.org>, Jan Glauber <jan.glauber@de.ibm.com>
-In-Reply-To: <ea182b21003291408t5a4fe8a8l47c0041df043a3a9@mail.gmail.com>
-References: <20100323233611.6dcbe4f4@penta.localdomain>
-	 <20100326214648.GF9984@mail.oracle.com>	 <1269824436.1880.2.camel@work-vm>
-	 <20100329101106.3678a312@penta.localdomain>
-	 <1269881007.1857.18.camel@work-vm>
-	 <20100329130418.2b5c068c@penta.localdomain>
-	 <1269888291.3968.5.camel@localhost.localdomain>
-	 <ea182b21003291408t5a4fe8a8l47c0041df043a3a9@mail.gmail.com>
+	id S1752727Ab0C2VrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 17:47:12 -0400
+Subject: Re: [PATCH 20/31] lmb: Add __NOT_KEEP_LMB to put lmb code to .init
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: David Miller <davem@davemloft.net>
+Cc: yinghai@kernel.org, michael@ellerman.id.au, mingo@elte.hu,
+       tglx@linutronix.de, hpa@zytor.com, akpm@linux-foundation.org,
+       torvalds@linux-foundation.org, hannes@cmpxchg.org,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+In-Reply-To: <20100329.121139.233095272.davem@davemloft.net>
+References: <4BB0D34C.7060509@kernel.org>
+	 <20100329.113449.174804111.davem@davemloft.net>
+	 <4BB0F3F8.3090304@kernel.org>
+	 <20100329.121139.233095272.davem@davemloft.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Mar 2010 14:43:44 -0700
-Message-ID: <1269899024.3968.27.camel@localhost.localdomain>
+Date: Tue, 30 Mar 2010 08:44:57 +1100
+Message-ID: <1269899097.7101.29.camel@pasglop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
@@ -29,72 +28,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-29 at 17:08 -0400, Yury Polyanskiy wrote:
-> >> > What I'm saying is that if you're using getrawmonotonic() to detect
-> >> > hangs, you might miss them, as getrawmonotonic may wrap (and thus stop
-> >> > continually increasing) if the timer interrupt is delayed. This does not
-> >> > apply to systems using the TSC clocksource, but does apply to systems
-> >> > using the acpi_pm.
-> >>
-> >> But if timer interrupt is delayed by more than acpi_pm wrap-around
-> >> time, then the update_wall_time() is also screwed. Since it is not, we
-> >> can rely on getrawmonotonic().
-> >
-> > Right, if the box hangs for longer then the clocksource can count for,
-> > the timekeeping subsystem will be off by some multiple of that length.
-> >
+On Mon, 2010-03-29 at 12:11 -0700, David Miller wrote:
+> From: Yinghai Lu <yinghai@kernel.org>
+> Date: Mon, 29 Mar 2010 11:39:52 -0700
 > 
-> Oh, I see. You mean that getrawmonotonic() wouldn't work under
-> abnormal conditions. I understand now, sorry for the confusion. You
-> are correct, of course.
+> > On 03/29/2010 11:34 AM, David Miller wrote:
+> >> From: Yinghai Lu <yinghai@kernel.org>
+> >> Date: Mon, 29 Mar 2010 09:20:28 -0700
+> >> 
+> >>> BTW, it seems only PowerPC need to keep lmb after init stage, right ?
+> >> 
+> >> For now.  Sparc64 will need it at some point in the future.
+> > 
+> > for memory hotplug support?
+> 
+> Yes.
 
-And something else I thought of, while the TSC won't wrap, the
-multiplication done to convert to nanoseconds will overflow when you hit
-a large enough cycle delta. So even TSC systems are not guaranteed to
-have timekeeping (and thus getrawmonotonic) work over infinite time
-without accumulation.
+We also can use it to implement page_is_ram() which might help
+get /dev/mem cachability setting right by default one day :-)
 
-We try to establish this length via timekeeping_max_deferment(), so that
-we make sure we don't go into tickless mode for longer then the
-clocksource can handle.
+However, we only need to keep the memory list, not the reserve list.
 
+Cheers,
+Ben.
 
-> I personally don't like the idea of relying on read_persistent_clock()
-> not only because of hwclock and ntp. In fact, my core interest in
-> hangcheck-timer is to set a very low margin (1 to 3 jiffies for
-> example) so that I would get a log message upon any kernel slow down
-> or a tick-miss (as a hardware integrity check). I don't think
-> read_persistent_clock() is precise enough for this purpose, is it?
-
-read_persistent_clock is a bit coarse, so for small intervals it would
-not do. However, the current timeout range for the hangcheck timer is in
-seconds, which should be fine for read_persistent_clock().
-
-You might also have some trouble with small intervals. Since things like
-tickless systems or other advanced power-savings systems might try to
-collate or push timers together to save battery. So ticks may be delayed
-a small amount (timers are only guaranteed to fire AFTER the time
-specified, there really is no promised bound on how late they may be).
-
-Additionally, on -rt systems, you might have higher priority FIFO tasks
-blocking the hangcheck timer from executing for a smallish amount of
-time.
-
-
-> Also, hooking to ntp update code complicates an otherwise simple
-> driver. I propose to simply check on non-S390 if the clock source
-> resolves to something other than TSC and dump a warning message on
-> driver load (something like "Hangcheck: kernel using clocksource %s,
-> which is not reliable for hang detection").
-
-That requires the hangcheck code to parse the current clocksource, which
-might change as the system runs, so it also has to track the clocksource
-over time. So I'm not sure its that much easier of a solution.
-
-Something to also consider might also be to look at the softlockup
-watchdog, which is fairly similar but somewhat more deeply integrated
-into the kernel. Maybe some of this could be merged?
-
-thanks
--john
 
