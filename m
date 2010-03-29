@@ -1,232 +1,791 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750Ab0C2UbY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 16:31:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38291 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753671Ab0C2UbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 16:31:19 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-Subject: [PATCH -tip 5/7] perf probe: Query basic types from debuginfo
-To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
-Cc: systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Date: Mon, 29 Mar 2010 16:38:29 -0400
-Message-ID: <20100329203829.2577.44718.stgit@localhost6.localdomain6>
-In-Reply-To: <20100329203736.2577.56018.stgit@localhost6.localdomain6>
-References: <20100329203736.2577.56018.stgit@localhost6.localdomain6>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1753648Ab0C2UbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 16:31:11 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:45306 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753592Ab0C2UbF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 16:31:05 -0400
+Date: Mon, 29 Mar 2010 22:30:53 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
+       linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>,
+       Nicu Pavel <npavel@ituner.com>, Oliver Neukum <oliver@neukum.org>,
+       Jaya Kumar <jayakumar.lkml@gmail.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH v5 2/6] hid: add framebuffer support to PicoLCD device
+Message-ID: <20100329223053.4faca188@neptune.home>
+In-Reply-To: <20100327012249.29b11ad7@neptune.home>
+References: <20100324233707.7243b04d@neptune.home>
+	<20100324234945.6b7d1f37@neptune.home>
+	<20100327012249.29b11ad7@neptune.home>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Query the basic type information (byte-size and signed-flag) from
-debuginfo and pass that to kprobe-tracer. This is especially useful
-for tracing the members of data structure, because each member has
-different byte-size on the memory.
+Add framebuffer support to PicoLCD device with use of deferred-io.
 
-Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Only changed areas of framebuffer get sent to device in order to
+save USB bandwidth and especially resources on PicoLCD device or
+allow higher refresh rate for a small area. Changed tiles are
+determined while updating shadow framebuffer.
+
+Changes since v4:
+ - make backbuffer inconsistent with framebuffer to force refresh
+   in picolcd_fb_reset (e.g. for reset_resume)
+ - force picolcd_fb_update() to wait for urbs to get out of the queue
+   when it sends more than 1/2 queue worth as a full display refresh
+   fills the whole queue eventually causing queue overrun (and lost
+   report) on a quick system
+Changes since v3:
+ - document fb_update_rate sysfs attribute
+ - change fb_update_rate read behavior to match enum with selected
+   in brackets presentation
+Changes since v2:
+ - add 8bit grayscale depth as near to no userspace app handles 1bit
+ - properly send whole framebuffer on reset/init
+ - drop inline keywords from non-stub functions
+ - use device_{create,remove}_file instead of sysfs_{create,remove}_file
+
+Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
 ---
 
- tools/perf/util/probe-event.c  |    9 +++++
- tools/perf/util/probe-event.h  |    1 +
- tools/perf/util/probe-finder.c |   78 ++++++++++++++++++++++++++++++++++++----
- 3 files changed, 80 insertions(+), 8 deletions(-)
+Because on a quick system I get "output queue full" messages (and
+incomplete update of device's display) when a full framebuffer has to
+be transmitted back to PicoLCD device I have to wait on the queue to
+get a few reports out.
+Instead of duplicating "usbhid_wait_io()" I marked it with EXPORT_SYMBOL_GPL
+so I can still build hid-picolcd as a module.
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 19de8b7..05ca4a9 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -740,6 +740,13 @@ static int synthesize_kprobe_trace_arg(struct kprobe_trace_arg *arg,
- 		buf += ret;
- 		buflen -= ret;
- 	}
-+	/* Print argument type */
-+	if (arg->type) {
-+		ret = e_snprintf(buf, buflen, ":%s", arg->type);
-+		if (ret <= 0)
-+			return ret;
-+		buf += ret;
-+	}
+
+
+ Documentation/ABI/testing/sysfs-driver-hid-picolcd |   17 +
+ drivers/hid/Kconfig                                |    7 +-
+ drivers/hid/hid-picolcd.c                          |  570 +++++++++++++++++++-
+ drivers/hid/usbhid/hid-core.c                      |    1 +
+ 4 files changed, 593 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/ABI/testing/sysfs-driver-hid-picolcd b/Documentation/ABI/testing/sysfs-driver-hid-picolcd
+index 6fb4f21..14f52d7 100644
+--- a/Documentation/ABI/testing/sysfs-driver-hid-picolcd
++++ b/Documentation/ABI/testing/sysfs-driver-hid-picolcd
+@@ -15,3 +15,20 @@ Description:	Make it possible to switch the PicoLCD device between LCD
+ 		disconnected and reconnects after above delay (default value
+ 		is 5 seconds though this default should not be relied on).
  
- 	return buf - tmp;
- }
-@@ -848,6 +855,8 @@ void clear_kprobe_trace_event(struct kprobe_trace_event *tev)
- 			free(tev->args[i].name);
- 		if (tev->args[i].value)
- 			free(tev->args[i].value);
-+		if (tev->args[i].type)
-+			free(tev->args[i].type);
- 		ref = tev->args[i].ref;
- 		while (ref) {
- 			next = ref->next;
-diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index a73ede6..0759db6 100644
---- a/tools/perf/util/probe-event.h
-+++ b/tools/perf/util/probe-event.h
-@@ -23,6 +23,7 @@ struct kprobe_trace_arg_ref {
- struct kprobe_trace_arg {
- 	char				*name;	/* Argument name */
- 	char				*value;	/* Base value */
-+	char				*type;	/* Type name */
- 	struct kprobe_trace_arg_ref	*ref;	/* Referencing offset */
++
++What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/fb_update_rate
++Date:		March 2010
++Contact:	Bruno Prémont <bonbons@linux-vserver.org>
++Description:	Make it possible to adjust defio refresh rate.
++
++		Reading: returns list of available refresh rates (expressed in Hz),
++		the active refresh rate being enclosed in brackets ('[' and ']')
++
++		Writing: accepts new refresh rate expressed in integer Hz
++		within permitted rates.
++
++		Note: As device can barely do 2 complete refreshes a second
++		it only makes sense to adjust this value if only one or two
++		tiles get changed and it's not appropriate to expect the application
++		to flush it's tiny changes explicitely at higher than default rate.
++
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 138ba6a..a813ea9 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -265,6 +265,11 @@ config HID_PETALYNX
+ config HID_PICOLCD
+ 	tristate "PicoLCD (graphic version)"
+ 	depends on USB_HID
++	select FB_DEFERRED_IO if FB
++	select FB_SYS_FILLRECT if FB
++	select FB_SYS_COPYAREA if FB
++	select FB_SYS_IMAGEBLIT if FB
++	select FB_SYS_FOPS if FB
+ 	---help---
+ 	  This provides support for Minibox PicoLCD devices, currently
+ 	  only the graphical ones are supported.
+@@ -272,8 +277,8 @@ config HID_PICOLCD
+ 	  This includes support for the following device features:
+ 	  - Keypad
+ 	  - Switching between Firmware and Flash mode
+-	  Features that are not (yet) supported:
+ 	  - Framebuffer for monochrome 256x64 display
++	  Features that are not (yet) supported:
+ 	  - Backlight control
+ 	  - Contrast control
+ 	  - IR
+diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
+index 28f8ea0..efc4bc8 100644
+--- a/drivers/hid/hid-picolcd.c
++++ b/drivers/hid/hid-picolcd.c
+@@ -24,6 +24,9 @@
+ #include "usbhid/usbhid.h"
+ #include <linux/usb.h>
+ 
++#include <linux/fb.h>
++#include <linux/vmalloc.h>
++
+ #include <linux/seq_file.h>
+ #include <linux/debugfs.h>
+ 
+@@ -69,6 +72,59 @@
+ #define REPORT_HOOK_VERSION    0xf7 /* LCD: IN[2], OUT[1]   */
+ #define REPORT_EXIT_FLASHER    0xff /*                      Bootloader: OUT[2]         */
+ 
++#if defined(CONFIG_FB) || defined(CONFIG_FB_MODULE)
++/* Framebuffer
++ *
++ * The PicoLCD use a Topway LCD module of 256x64 pixel
++ * This display area is tiled over 4 controllers with 8 tiles
++ * each. Each tile has 8x64 pixel, each data byte representing
++ * a 1-bit wide vertical line of the tile.
++ *
++ * The display can be updated at a tile granularity.
++ *
++ *       Chip 1           Chip 2           Chip 3           Chip 4
++ * +----------------+----------------+----------------+----------------+
++ * |     Tile 1     |     Tile 1     |     Tile 1     |     Tile 1     |
++ * +----------------+----------------+----------------+----------------+
++ * |     Tile 2     |     Tile 2     |     Tile 2     |     Tile 2     |
++ * +----------------+----------------+----------------+----------------+
++ *                                  ...
++ * +----------------+----------------+----------------+----------------+
++ * |     Tile 8     |     Tile 8     |     Tile 8     |     Tile 8     |
++ * +----------------+----------------+----------------+----------------+
++ */
++#define PICOLCDFB_NAME "picolcdfb"
++#define PICOLCDFB_WIDTH (256)
++#define PICOLCDFB_HEIGHT (64)
++#define PICOLCDFB_SIZE (PICOLCDFB_WIDTH * PICOLCDFB_HEIGHT / 8)
++
++#define PICOLCDFB_UPDATE_RATE_LIMIT   10
++#define PICOLCDFB_UPDATE_RATE_DEFAULT  2
++
++/* Framebuffer visual structures */
++static const struct fb_fix_screeninfo picolcdfb_fix = {
++	.id          = PICOLCDFB_NAME,
++	.type        = FB_TYPE_PACKED_PIXELS,
++	.visual      = FB_VISUAL_MONO01,
++	.xpanstep    = 0,
++	.ypanstep    = 0,
++	.ywrapstep   = 0,
++	.line_length = PICOLCDFB_WIDTH / 8,
++	.accel       = FB_ACCEL_NONE,
++};
++
++static const struct fb_var_screeninfo picolcdfb_var = {
++	.xres           = PICOLCDFB_WIDTH,
++	.yres           = PICOLCDFB_HEIGHT,
++	.xres_virtual   = PICOLCDFB_WIDTH,
++	.yres_virtual   = PICOLCDFB_HEIGHT,
++	.width          = 103,
++	.height         = 26,
++	.bits_per_pixel = 1,
++	.grayscale      = 1,
++};
++#endif /* CONFIG_FB */
++
+ /* Input device
+  *
+  * The PicoLCD has an IR receiver header, a built-in keypad with 5 keys
+@@ -118,6 +174,16 @@ struct picolcd_data {
+ 	struct input_dev *input_cir;
+ 	unsigned short keycode[PICOLCD_KEYS];
+ 
++#if defined(CONFIG_FB) || defined(CONFIG_FB_MODULE)
++	/* Framebuffer stuff */
++	u8 fb_update_rate;
++	u8 fb_bpp;
++	u8 *fb_vbitmap;		/* local copy of what was sent to PicoLCD */
++	u8 *fb_bitmap;		/* framebuffer */
++	struct fb_info *fb_info;
++	struct fb_deferred_io fb_defio;
++#endif /* CONFIG_FB */
++
+ 	/* Housekeeping stuff */
+ 	spinlock_t lock;
+ 	struct mutex mutex;
+@@ -125,6 +191,7 @@ struct picolcd_data {
+ 	int status;
+ #define PICOLCD_BOOTLOADER 1
+ #define PICOLCD_FAILED 2
++#define PICOLCD_READY_FB 4
  };
  
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 043140f..f3c2706 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -84,6 +84,9 @@ const char *x86_64_regs_table[X86_64_MAX_REGS] = {
- #define arch_regs_table x86_32_regs_table
- #endif
  
-+/* Kprobe tracer basic type is up to u64 */
-+#define MAX_BASIC_TYPE_BITS	64
-+
- /* Return architecture dependent register string (for kprobe-tracer) */
- static const char *get_arch_regstr(unsigned int n)
- {
-@@ -228,6 +231,31 @@ static Dwarf_Die *die_get_real_type(Dwarf_Die *vr_die, Dwarf_Die *die_mem)
- 	return die_mem;
+@@ -197,6 +264,486 @@ static struct picolcd_pending *picolcd_send_and_wait(struct hid_device *hdev,
+ 	return work;
  }
  
-+static bool die_is_signed_type(Dwarf_Die *tp_die)
++#if defined(CONFIG_FB) || defined(CONFIG_FB_MODULE)
++/* Send a given tile to PicoLCD */
++static int picolcd_fb_send_tile(struct hid_device *hdev, int chip, int tile)
 +{
-+	Dwarf_Attribute attr;
-+	Dwarf_Word ret;
++	struct picolcd_data *data = hid_get_drvdata(hdev);
++	struct hid_report *report1 = picolcd_out_report(REPORT_LCD_CMD_DATA, hdev);
++	struct hid_report *report2 = picolcd_out_report(REPORT_LCD_DATA, hdev);
++	unsigned long flags;
++	u8 *tdata;
++	int i;
 +
-+	if (dwarf_attr(tp_die, DW_AT_encoding, &attr) == NULL ||
-+	    dwarf_formudata(&attr, &ret) != 0)
-+		return false;
++	if (!report1 || report1->maxfield != 1 || !report2 || report2->maxfield != 1)
++		return -ENODEV;
 +
-+	return (ret == DW_ATE_signed_char || ret == DW_ATE_signed ||
-+		ret == DW_ATE_signed_fixed);
++	spin_lock_irqsave(&data->lock, flags);
++	hid_set_field(report1->field[0],  0, chip << 2);
++	hid_set_field(report1->field[0],  1, 0x02);
++	hid_set_field(report1->field[0],  2, 0x00);
++	hid_set_field(report1->field[0],  3, 0x00);
++	hid_set_field(report1->field[0],  4, 0xb8 | tile);
++	hid_set_field(report1->field[0],  5, 0x00);
++	hid_set_field(report1->field[0],  6, 0x00);
++	hid_set_field(report1->field[0],  7, 0x40);
++	hid_set_field(report1->field[0],  8, 0x00);
++	hid_set_field(report1->field[0],  9, 0x00);
++	hid_set_field(report1->field[0], 10,   32);
++
++	hid_set_field(report2->field[0],  0, (chip << 2) | 0x01);
++	hid_set_field(report2->field[0],  1, 0x00);
++	hid_set_field(report2->field[0],  2, 0x00);
++	hid_set_field(report2->field[0],  3,   32);
++
++	tdata = data->fb_vbitmap + (tile * 4 + chip) * 64;
++	for (i = 0; i < 64; i++)
++		if (i < 32)
++			hid_set_field(report1->field[0], 11 + i, tdata[i]);
++		else
++			hid_set_field(report2->field[0], 4 + i - 32, tdata[i]);
++
++	usbhid_submit_report(data->hdev, report1, USB_DIR_OUT);
++	usbhid_submit_report(data->hdev, report2, USB_DIR_OUT);
++	spin_unlock_irqrestore(&data->lock, flags);
++	return 0;
 +}
 +
-+static int die_get_byte_size(Dwarf_Die *tp_die)
++/* Translate a single tile*/
++static int picolcd_fb_update_tile(u8 *vbitmap, const u8 *bitmap, int bpp,
++		int chip, int tile)
 +{
-+	Dwarf_Attribute attr;
-+	Dwarf_Word ret;
++	int i, b, changed = 0;
++	u8 tdata[64];
++	u8 *vdata = vbitmap + (tile * 4 + chip) * 64;
 +
-+	if (dwarf_attr(tp_die, DW_AT_byte_size, &attr) == NULL ||
-+	    dwarf_formudata(&attr, &ret) != 0)
-+		return 0;
-+
-+	return (int)ret;
-+}
-+
- /* Return values for die_find callbacks */
- enum {
- 	DIE_FIND_CB_FOUND = 0,		/* End of Search */
-@@ -404,13 +432,42 @@ static void convert_location(Dwarf_Op *op, struct probe_finder *pf)
- 	}
- }
- 
-+static void convert_variable_type(Dwarf_Die *vr_die,
-+				  struct kprobe_trace_arg *targ)
-+{
-+	Dwarf_Die type;
-+	char buf[16];
-+	int ret;
-+
-+	if (die_get_real_type(vr_die, &type) == NULL)
-+		die("Failed to get a type information of %s.",
-+		    dwarf_diename(vr_die));
-+
-+	ret = die_get_byte_size(&type) * 8;
-+	if (ret) {
-+		/* Check the bitwidth */
-+		if (ret > MAX_BASIC_TYPE_BITS) {
-+			pr_warning("  Warning: %s exceeds max-bitwidth."
-+				   " Cut down to %d bits.\n",
-+				   dwarf_diename(&type), MAX_BASIC_TYPE_BITS);
-+			ret = MAX_BASIC_TYPE_BITS;
++	if (bpp == 1) {
++		for (b = 7; b >= 0; b--) {
++			const u8 *bdata = bitmap + tile * 256 + chip * 8 + b * 32;
++			for (i = 0; i < 64; i++) {
++				tdata[i] <<= 1;
++				tdata[i] |= (bdata[i/8] >> (7 - i % 8)) & 0x01;
++			}
 +		}
-+
-+		ret = snprintf(buf, 16, "%c%d",
-+			       die_is_signed_type(&type) ? 's' : 'u', ret);
-+		if (ret < 0 || ret >= 16)
-+			die("Failed to convert variable type.");
-+		targ->type = xstrdup(buf);
++	} else if (bpp == 8) {
++		for (b = 7; b >= 0; b--) {
++			const u8 *bdata = bitmap + (tile * 256 + chip * 8 + b * 32) * 8;
++			for (i = 0; i < 64; i++) {
++				tdata[i] <<= 1;
++				tdata[i] |= (bdata[i] & 0x80) ? 0x01 : 0x00;
++			}
++		}
++	} else {
++		/* Oops, we should never get here! */
++		WARN_ON(1);
++		return 0;
 +	}
++
++	for (i = 0; i < 64; i++)
++		if (tdata[i] != vdata[i]) {
++			changed = 1;
++			vdata[i] = tdata[i];
++		}
++	return changed;
 +}
 +
- static void convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
- 				    struct perf_probe_arg_field *field,
--				    struct kprobe_trace_arg_ref **ref_ptr)
-+				    struct kprobe_trace_arg_ref **ref_ptr,
-+				    Dwarf_Die *die_mem)
- {
- 	struct kprobe_trace_arg_ref *ref = *ref_ptr;
- 	Dwarf_Attribute attr;
--	Dwarf_Die member;
- 	Dwarf_Die type;
- 	Dwarf_Word offs;
++/* Reconfigure LCD display */
++static int picolcd_fb_reset(struct picolcd_data *data, int clear)
++{
++	struct hid_report *report = picolcd_out_report(REPORT_LCD_CMD, data->hdev);
++	int i, j;
++	unsigned long flags;
++	static const u8 mapcmd[8] = { 0x00, 0x02, 0x00, 0x64, 0x3f, 0x00, 0x64, 0xc0 };
++
++	if (!report || report->maxfield != 1)
++		return -ENODEV;
++
++	spin_lock_irqsave(&data->lock, flags);
++	for (i = 0; i < 4; i++) {
++		for (j = 0; j < report->field[0]->maxusage; j++)
++			if (j == 0)
++				hid_set_field(report->field[0], j, i << 2);
++			else if (j < sizeof(mapcmd))
++				hid_set_field(report->field[0], j, mapcmd[j]);
++			else
++				hid_set_field(report->field[0], j, 0);
++		usbhid_submit_report(data->hdev, report, USB_DIR_OUT);
++	}
++
++	data->status |= PICOLCD_READY_FB;
++	spin_unlock_irqrestore(&data->lock, flags);
++
++	if (data->fb_bitmap) {
++		if (clear) {
++			memset(data->fb_vbitmap, 0xff, PICOLCDFB_SIZE);
++			memset(data->fb_bitmap, 0, PICOLCDFB_SIZE*data->fb_bpp);
++		} else {
++			/* invert 1 byte in each tile to force resend */
++			for (i = 0; i < PICOLCDFB_SIZE; i+=64)
++				data->fb_vbitmap[i] = ~data->fb_vbitmap[i];
++		}
++	}
++
++	/* schedule first output of framebuffer */
++	if (data->fb_info)
++		schedule_delayed_work(&data->fb_info->deferred_work, 0);
++
++	return 0;
++}
++
++/* Update fb_vbitmap from the screen_base and send changed tiles to device */
++static void picolcd_fb_update(struct picolcd_data *data)
++{
++	int chip, tile, n;
++	unsigned long flags;
++
++	spin_lock_irqsave(&data->lock, flags);
++	if (!(data->status & PICOLCD_READY_FB)) {
++		spin_unlock_irqrestore(&data->lock, flags);
++		picolcd_fb_reset(data, 0);
++	} else {
++		spin_unlock_irqrestore(&data->lock, flags);
++	}
++
++	/*
++	 * Translate the framebuffer into the format needed by the PicoLCD.
++	 * See display layout above.
++	 * Do this one tile after the other and push those tiles that changed.
++	 *
++	 * Wait for our IO to complete as otherwise we might flood the queue!
++	 */
++	n = 0;
++	for (chip = 0; chip < 4; chip++)
++		for (tile = 0; tile < 8; tile++)
++			if (picolcd_fb_update_tile(data->fb_vbitmap,
++					data->fb_bitmap, data->fb_bpp, chip, tile)) {
++				n += 2;
++				if (n >= HID_OUTPUT_FIFO_SIZE / 2) {
++					usbhid_wait_io(data->hdev);
++					n = 0;
++				}
++				picolcd_fb_send_tile(data->hdev, chip, tile);
++			}
++	if (n)
++		usbhid_wait_io(data->hdev);
++}
++
++/* Stub to call the system default and update the image on the picoLCD */
++static void picolcd_fb_fillrect(struct fb_info *info,
++		const struct fb_fillrect *rect)
++{
++	if (!info->par)
++		return;
++	sys_fillrect(info, rect);
++
++	schedule_delayed_work(&info->deferred_work, 0);
++}
++
++/* Stub to call the system default and update the image on the picoLCD */
++static void picolcd_fb_copyarea(struct fb_info *info,
++		const struct fb_copyarea *area)
++{
++	if (!info->par)
++		return;
++	sys_copyarea(info, area);
++
++	schedule_delayed_work(&info->deferred_work, 0);
++}
++
++/* Stub to call the system default and update the image on the picoLCD */
++static void picolcd_fb_imageblit(struct fb_info *info, const struct fb_image *image)
++{
++	if (!info->par)
++		return;
++	sys_imageblit(info, image);
++
++	schedule_delayed_work(&info->deferred_work, 0);
++}
++
++/*
++ * this is the slow path from userspace. they can seek and write to
++ * the fb. it's inefficient to do anything less than a full screen draw
++ */
++static ssize_t picolcd_fb_write(struct fb_info *info, const char __user *buf,
++		size_t count, loff_t *ppos)
++{
++	ssize_t ret;
++	if (!info->par)
++		return -ENODEV;
++	ret = fb_sys_write(info, buf, count, ppos);
++	if (ret >= 0)
++		schedule_delayed_work(&info->deferred_work, 0);
++	return ret;
++}
++
++static int picolcd_fb_blank(int blank, struct fb_info *info)
++{
++	if (!info->par)
++		return -ENODEV;
++	/* We let fb notification do this for us via lcd/backlight device */
++	return 0;
++}
++
++static void picolcd_fb_destroy(struct fb_info *info)
++{
++	struct picolcd_data *data = info->par;
++	info->par = NULL;
++	if (data)
++		data->fb_info = NULL;
++	fb_deferred_io_cleanup(info);
++	framebuffer_release(info);
++}
++
++static int picolcd_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
++{
++	__u32 bpp      = var->bits_per_pixel;
++	__u32 activate = var->activate;
++
++	/* only allow 1/8 bit depth (8-bit is grayscale) */
++	*var = picolcdfb_var;
++	var->activate = activate;
++	if (bpp >= 8)
++		var->bits_per_pixel = 8;
++	else
++		var->bits_per_pixel = 1;
++	return 0;
++}
++
++static int picolcd_set_par(struct fb_info *info)
++{
++	struct picolcd_data *data = info->par;
++	u8 *o_fb, *n_fb;
++	if (info->var.bits_per_pixel == data->fb_bpp)
++		return 0;
++	/* switch between 1/8 bit depths */
++	if (info->var.bits_per_pixel != 1 && info->var.bits_per_pixel != 8)
++		return -EINVAL;
++
++	o_fb = data->fb_bitmap;
++	n_fb = vmalloc(PICOLCDFB_SIZE*info->var.bits_per_pixel);
++	if (!n_fb)
++		return -ENOMEM;
++
++	fb_deferred_io_cleanup(info);
++	/* translate FB content to new bits-per-pixel */
++	if (info->var.bits_per_pixel == 1) {
++		int i, b;
++		for (i = 0; i < PICOLCDFB_SIZE; i++) {
++			u8 p = 0;
++			for (b = 0; b < 8; b++) {
++				p <<= 1;
++				p |= o_fb[i*8+b] ? 0x01 : 0x00;
++			}
++		}
++		info->fix.visual = FB_VISUAL_MONO01;
++		info->fix.line_length = PICOLCDFB_WIDTH / 8;
++	} else {
++		int i;
++		for (i = 0; i < PICOLCDFB_SIZE * 8; i++)
++			n_fb[i] = o_fb[i/8] & (0x01 << (7 - i % 8)) ? 0xff : 0x00;
++		info->fix.visual = FB_VISUAL_TRUECOLOR;
++		info->fix.line_length = PICOLCDFB_WIDTH;
++	}
++
++	data->fb_bitmap   = n_fb;
++	data->fb_bpp      = info->var.bits_per_pixel;
++	info->screen_base = (char __force __iomem *)n_fb;
++	info->fix.smem_start = (unsigned long)n_fb;
++	info->fix.smem_len   = PICOLCDFB_SIZE*data->fb_bpp;
++	fb_deferred_io_init(info);
++	vfree(o_fb);
++	return 0;
++}
++
++/* Note this can't be const because of struct fb_info definition */
++static struct fb_ops picolcdfb_ops = {
++	.owner        = THIS_MODULE,
++	.fb_destroy   = picolcd_fb_destroy,
++	.fb_read      = fb_sys_read,
++	.fb_write     = picolcd_fb_write,
++	.fb_blank     = picolcd_fb_blank,
++	.fb_fillrect  = picolcd_fb_fillrect,
++	.fb_copyarea  = picolcd_fb_copyarea,
++	.fb_imageblit = picolcd_fb_imageblit,
++	.fb_check_var = picolcd_fb_check_var,
++	.fb_set_par   = picolcd_set_par,
++};
++
++
++/* Callback from deferred IO workqueue */
++static void picolcd_fb_deferred_io(struct fb_info *info, struct list_head *pagelist)
++{
++	picolcd_fb_update(info->par);
++}
++
++static const struct fb_deferred_io picolcd_fb_defio = {
++	.delay = HZ / PICOLCDFB_UPDATE_RATE_DEFAULT,
++	.deferred_io = picolcd_fb_deferred_io,
++};
++
++
++/*
++ * The "fb_update_rate" sysfs attribute
++ */
++static ssize_t picolcd_fb_update_rate_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct picolcd_data *data = dev_get_drvdata(dev);
++	unsigned i, fb_update_rate = data->fb_update_rate;
++	size_t ret = 0;
++
++	for (i = 1; i <= PICOLCDFB_UPDATE_RATE_LIMIT; i++)
++		if (ret >= PAGE_SIZE)
++			break;
++		else if (i == fb_update_rate)
++			ret += snprintf(buf+ret, PAGE_SIZE-ret, "[%u] ", i);
++		else
++			ret += snprintf(buf+ret, PAGE_SIZE-ret, "%u ", i);
++	if (ret > 0)
++		buf[min(ret, (size_t)PAGE_SIZE)-1] = '\n';
++	return ret;
++}
++
++static ssize_t picolcd_fb_update_rate_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct picolcd_data *data = dev_get_drvdata(dev);
++	int i;
++	unsigned u;
++
++	if (count < 1 || count > 10)
++		return -EINVAL;
++
++	i = sscanf(buf, "%u", &u);
++	if (i != 1)
++		return -EINVAL;
++
++	if (u > PICOLCDFB_UPDATE_RATE_LIMIT)
++		return -ERANGE;
++	else if (u == 0)
++		u = PICOLCDFB_UPDATE_RATE_DEFAULT;
++
++	data->fb_update_rate = u;
++	data->fb_defio.delay = HZ / data->fb_update_rate;
++	return count;
++}
++
++static DEVICE_ATTR(fb_update_rate, 0666, picolcd_fb_update_rate_show,
++		picolcd_fb_update_rate_store);
++
++/* initialize Framebuffer device */
++static int picolcd_init_framebuffer(struct picolcd_data *data)
++{
++	struct device *dev = &data->hdev->dev;
++	struct fb_info *info = NULL;
++	int error = -ENOMEM;
++	u8 *fb_vbitmap = NULL;
++	u8 *fb_bitmap  = NULL;
++
++	fb_bitmap = vmalloc(PICOLCDFB_SIZE*picolcdfb_var.bits_per_pixel);
++	if (fb_bitmap == NULL) {
++		dev_err(dev, "can't get a free page for framebuffer\n");
++		goto err_nomem;
++	}
++
++	fb_vbitmap = kmalloc(PICOLCDFB_SIZE, GFP_KERNEL);
++	if (fb_vbitmap == NULL) {
++		dev_err(dev, "can't alloc vbitmap image buffer\n");
++		goto err_nomem;
++	}
++
++	data->fb_update_rate = PICOLCDFB_UPDATE_RATE_DEFAULT;
++	data->fb_defio = picolcd_fb_defio;
++	info = framebuffer_alloc(0, dev);
++	if (info == NULL) {
++		dev_err(dev, "failed to allocate a framebuffer\n");
++		goto err_nomem;
++	}
++
++	info->fbdefio = &data->fb_defio;
++	info->screen_base = (char __force __iomem *)fb_bitmap;
++	info->fbops = &picolcdfb_ops;
++	info->var = picolcdfb_var;
++	info->fix = picolcdfb_fix;
++	info->fix.smem_len   = PICOLCDFB_SIZE;
++	info->fix.smem_start = (unsigned long)fb_bitmap;
++	info->par = data;
++	info->flags = FBINFO_FLAG_DEFAULT;
++
++	data->fb_vbitmap = fb_vbitmap;
++	data->fb_bitmap  = fb_bitmap;
++	data->fb_bpp     = picolcdfb_var.bits_per_pixel;
++	error = picolcd_fb_reset(data, 1);
++	if (error) {
++		dev_err(dev, "failed to configure display\n");
++		goto err_cleanup;
++	}
++	error = device_create_file(dev, &dev_attr_fb_update_rate);
++	if (error) {
++		dev_err(dev, "failed to create sysfs attributes\n");
++		goto err_cleanup;
++	}
++	data->fb_info    = info;
++	error = register_framebuffer(info);
++	if (error) {
++		dev_err(dev, "failed to register framebuffer\n");
++		goto err_sysfs;
++	}
++	fb_deferred_io_init(info);
++	/* schedule first output of framebuffer */
++	schedule_delayed_work(&info->deferred_work, 0);
++	return 0;
++
++err_sysfs:
++	device_remove_file(dev, &dev_attr_fb_update_rate);
++err_cleanup:
++	data->fb_vbitmap = NULL;
++	data->fb_bitmap  = NULL;
++	data->fb_bpp     = 0;
++	data->fb_info    = NULL;
++
++err_nomem:
++	framebuffer_release(info);
++	vfree(fb_bitmap);
++	kfree(fb_vbitmap);
++	return error;
++}
++
++static void picolcd_exit_framebuffer(struct picolcd_data *data)
++{
++	struct fb_info *info = data->fb_info;
++	u8 *fb_vbitmap = data->fb_vbitmap;
++	u8 *fb_bitmap  = data->fb_bitmap;
++
++	if (!info)
++		return;
++
++	data->fb_vbitmap = NULL;
++	data->fb_bitmap  = NULL;
++	data->fb_bpp     = 0;
++	data->fb_info    = NULL;
++	device_remove_file(&data->hdev->dev, &dev_attr_fb_update_rate);
++	fb_deferred_io_cleanup(info);
++	unregister_framebuffer(info);
++	vfree(fb_bitmap);
++	kfree(fb_vbitmap);
++}
++
++
++#else
++static inline int picolcd_fb_reset(struct picolcd_data *data, int clear)
++{
++	return 0;
++}
++static inline int picolcd_init_framebuffer(struct picolcd_data *data)
++{
++	return 0;
++}
++static void picolcd_exit_framebuffer(struct picolcd_data *data)
++{
++}
++#endif /* CONFIG_FB */
++
+ /*
+  * input class device
+  */
+@@ -314,6 +861,7 @@ static int picolcd_reset(struct hid_device *hdev)
+ 	struct picolcd_data *data = hid_get_drvdata(hdev);
+ 	struct hid_report *report = picolcd_out_report(REPORT_RESET, hdev);
+ 	unsigned long flags;
++	int error;
  
-@@ -444,26 +501,27 @@ static void convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
- 	if (dwarf_tag(&type) != DW_TAG_structure_type)
- 		die("%s is not a data structure.", varname);
+ 	if (!data || !report || report->maxfield != 1)
+ 		return -ENODEV;
+@@ -327,7 +875,16 @@ static int picolcd_reset(struct hid_device *hdev)
+ 	usbhid_submit_report(hdev, report, USB_DIR_OUT);
+ 	spin_unlock_irqrestore(&data->lock, flags);
  
--	if (die_find_member(&type, field->name, &member) == NULL)
-+	if (die_find_member(&type, field->name, die_mem) == NULL)
- 		die("%s(tyep:%s) has no member %s.", varname,
- 		    dwarf_diename(&type), field->name);
- 
- 	/* Get the offset of the field */
--	if (dwarf_attr(&member, DW_AT_data_member_location, &attr) == NULL ||
-+	if (dwarf_attr(die_mem, DW_AT_data_member_location, &attr) == NULL ||
- 	    dwarf_formudata(&attr, &offs) != 0)
- 		die("Failed to get the offset of %s.", field->name);
- 	ref->offset += (long)offs;
- 
- 	/* Converting next field */
- 	if (field->next)
--		convert_variable_fields(&member, field->name, field->next,
--					&ref);
-+		convert_variable_fields(die_mem, field->name, field->next,
-+					&ref, die_mem);
+-	return picolcd_check_version(hdev);
++	error = picolcd_check_version(hdev);
++	if (error)
++		return error;
++
++#if defined(CONFIG_FB) || defined(CONFIG_FB_MODULE)
++	if (data->fb_info)
++		schedule_delayed_work(&data->fb_info->deferred_work, 0);
++#endif /* CONFIG_FB */
++
++	return 0;
  }
  
- /* Show a variables in kprobe event format */
- static void convert_variable(Dwarf_Die *vr_die, struct probe_finder *pf)
+ /*
+@@ -931,6 +1488,9 @@ static int picolcd_reset_resume(struct hid_device *hdev)
+ 	ret = picolcd_reset(hdev);
+ 	if (ret)
+ 		dbg_hid(PICOLCD_NAME " resetting our device failed: %d\n", ret);
++	ret = picolcd_fb_reset(hid_get_drvdata(hdev), 0);
++	if (ret)
++		dbg_hid(PICOLCD_NAME " restoring framebuffer content failed: %d\n", ret);
+ 	return 0;
+ }
+ #endif
+@@ -1027,6 +1587,11 @@ static int picolcd_probe_lcd(struct hid_device *hdev, struct picolcd_data *data)
+ 	if (error)
+ 		goto err;
+ 
++	/* Set up the framebuffer device */
++	error = picolcd_init_framebuffer(data);
++	if (error)
++		goto err;
++
+ #ifdef CONFIG_DEBUG_FS
+ 	report = picolcd_out_report(REPORT_READ_MEMORY, hdev);
+ 	if (report && report->maxfield == 1 && report->field[0]->report_size == 8)
+@@ -1036,6 +1601,7 @@ static int picolcd_probe_lcd(struct hid_device *hdev, struct picolcd_data *data)
+ #endif
+ 	return 0;
+ err:
++	picolcd_exit_framebuffer(data);
+ 	picolcd_exit_cir(data);
+ 	picolcd_exit_keys(data);
+ 	return error;
+@@ -1165,6 +1731,8 @@ static void picolcd_remove(struct hid_device *hdev)
+ 		complete(&data->pending->ready);
+ 	spin_unlock_irqrestore(&data->lock, flags);
+ 
++	/* Clean up the framebuffer */
++	picolcd_exit_framebuffer(data);
+ 	/* Cleanup input */
+ 	picolcd_exit_cir(data);
+ 	picolcd_exit_keys(data);
+diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+index 39fe2e8..9acf573 100644
+--- a/drivers/hid/usbhid/hid-core.c
++++ b/drivers/hid/usbhid/hid-core.c
+@@ -623,6 +623,7 @@ int usbhid_wait_io(struct hid_device *hid)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(usbhid_wait_io);
+ 
+ static int hid_set_idle(struct usb_device *dev, int ifnum, int report, int idle)
  {
- 	Dwarf_Attribute attr;
-+	Dwarf_Die die_mem;
- 	Dwarf_Op *expr;
- 	size_t nexpr;
- 	int ret;
-@@ -477,9 +535,13 @@ static void convert_variable(Dwarf_Die *vr_die, struct probe_finder *pf)
- 
- 	convert_location(expr, pf);
- 
--	if (pf->pvar->field)
-+	if (pf->pvar->field) {
- 		convert_variable_fields(vr_die, pf->pvar->var,
--					pf->pvar->field, &pf->tvar->ref);
-+					pf->pvar->field, &pf->tvar->ref,
-+					&die_mem);
-+		vr_die = &die_mem;
-+	}
-+	convert_variable_type(vr_die, pf->tvar);
- 	/* *expr will be cached in libdw. Don't free it. */
- 	return ;
- error:
-
-
 -- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+1.6.4.4
+
