@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab0C2XjX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 19:39:23 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:53172 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312Ab0C2XjV convert rfc822-to-8bit (ORCPT
+	id S1753648Ab0C2XpI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 19:45:08 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:33082 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752272Ab0C2XpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 19:39:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=B50pRfZO8KJ+rM48+AUj+aGG+OaokmBuFX9rNbQm8eenJ1gk3I2luzcWXH1V8MueYa
-         plDceWM/2sUF28vxCckxygOmD/CD6JKblsqx5H1K4e/J8Eabt/e4I0rc4Ej2zq4iqo50
-         eXXiFHseOtDXYPKsx4cGlS6p+gY6XW2wLLvcc=
+	Mon, 29 Mar 2010 19:45:06 -0400
+Date: Mon, 29 Mar 2010 19:44:56 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org, michael.s.gilbert@gmail.com,
+       davem@davemeloft.net, romieu@fr.zoreil.com, eric.dumazet@gmail.com
+Subject: Re: [PATCH] r8169: offical fix for CVE-2009-4537 (overlength frame
+ DMAs)
+Message-ID: <20100329234456.GA2070@localhost.localdomain>
+References: <20100329160356.GC22733@hmsreliant.think-freely.org>
+ <1269900105.8653.389.camel@localhost>
+ <20100329.150924.144366212.davem@davemloft.net>
+ <1269901265.8653.408.camel@localhost>
 MIME-Version: 1.0
-In-Reply-To: <1269905624.4558.56.camel@Joe-Laptop.home>
-References: <1269904339-15599-1-git-send-email-luisbg@ubuntu.com>
-	 <1269905624.4558.56.camel@Joe-Laptop.home>
-Date: Tue, 30 Mar 2010 00:39:18 +0100
-X-Google-Sender-Auth: c1435f89e48ab22d
-Message-ID: <506b70dc1003291639j4a620ef0ve551d97bea26fa2e@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ath: fix macros coding style issue in regd.c
-From: Luis de Bethencourt <luisbg@ubuntu.com>
-To: Joe Perches <joe@perches.com>
-Cc: linville@tuxdriver.com, lrodriguez@atheros.com,
-       linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269901265.8653.408.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Spam-Score: -4.2 (----)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 12:33 AM, Joe Perches <joe@perches.com> wrote:
-> On Tue, 2010-03-30 at 00:12 +0100, Luis de Bethencourt wrote:
->> This is a patch to the ath/regd.c file that fixes up three warnings
->> about macros found by the checkpatch.pl tool, these said that
->> complex values should be enclosed in parenthesis.
->
-> Hi Luis.
->
-> Checkpatch isn't always correct.
->
-> Please make sure to compile test your changes
-> before submitting them.
->
-> These macros are used as initializers and
-> can not be surrounded by parentheses.
->
->        .reg_rules = {
->                ATH9K_2GHZ_ALL,
->
-> cheers, Joe
->
->
+On Mon, Mar 29, 2010 at 11:21:05PM +0100, Ben Hutchings wrote:
+> On Mon, 2010-03-29 at 15:09 -0700, David Miller wrote:
+> > From: Ben Hutchings <ben@decadent.org.uk>
+> > Date: Mon, 29 Mar 2010 23:01:45 +0100
+> > 
+> > > It also sucks that the secure but low-performance behaviour is enabled
+> > > for all variants, while AIUI only some suffer from the bug.  I realise
+> > > you probably don't have access to every variant (and neither does
+> > > Francois) but perhaps you could come up with a test case that could be
+> > > used to start whitelisting common variants that don't have the bug?
+> > 
+> > As far as we know all chip variants seem to have the problem.
+> 
+> That's not what I understood from the discussion of the early
+> back-and-forth changes to receive buffer size.
+> 
+As dave mentioned, we have no conclusive evidence that only certain chip
+variants show the behavior.  realtek hasn't said anything about it one way or
+the other.  AFAIK, all you need to do to test given chip is try to receive a
+frame thats longer than configured receive filter.  I only had one NIC variant
+to test, and it failed that test.
 
-Hi Joe,
+> > Furthermore, this issue has been known about and investigated for
+> > about 3 months.  In that time no better options for handling this
+> > issue reliably have been discovered and implemented.
+> >
+> > Feel free to code up (and test) something better yourself if you don't
+> > like the fix as it exists currently. :-)
+> 
+> I would have had a go already, if I actually had some of this hardware
+> to hand.  Luckily I have managed to avoid buying any so far.  But if
+> anyone is prepared to loan me a NIC then I promise to have a go at it.
+> 
+I only had the one variant that failed.  My hope was to make them all safe, and,
+should any variants be found in the field that didn't exhibit the behavior, we
+could whitelist them as they got reported.
 
-Sorry about this. I compiled test the changes but make didn't complain.
+Regards
+Neil
 
-My bad, will try to avoid this better in the future.
+> Ben.
+> 
+> -- 
+> Ben Hutchings
+> Once a job is fouled up, anything done to improve it makes it worse.
 
-Luis
+
