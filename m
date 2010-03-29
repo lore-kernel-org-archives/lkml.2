@@ -1,139 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab0C2Vtz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 17:49:55 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:60603 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014Ab0C2Vty (ORCPT
+	id S1754045Ab0C2VuV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 17:50:21 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:40614 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752727Ab0C2VuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 17:49:54 -0400
-Date: Mon, 29 Mar 2010 14:49:24 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel.h: Convert rounding macros to statement
- expressions, add ADD_MOD
-Message-Id: <20100329144924.d00f0680.randy.dunlap@oracle.com>
-In-Reply-To: <1269896989.4558.18.camel@Joe-Laptop.home>
-References: <1269813447.1500.69.camel@Joe-Laptop.home>
-	<20100329124708.898b617c.randy.dunlap@oracle.com>
-	<1269892842.4558.7.camel@Joe-Laptop.home>
-	<1269896989.4558.18.camel@Joe-Laptop.home>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4BB12073.007A:SCFMA4539814,ss=1,fgs=0
+	Mon, 29 Mar 2010 17:50:19 -0400
+Date: Mon, 29 Mar 2010 18:50:10 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+       systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH -tip 5/7] perf probe: Query basic types from debuginfo
+Message-ID: <20100329215009.GA2851@ghostprotocols.net>
+References: <20100329203736.2577.56018.stgit@localhost6.localdomain6>
+ <20100329203829.2577.44718.stgit@localhost6.localdomain6>
+ <20100329205143.GQ3625@ghostprotocols.net>
+ <4BB119F8.7020206@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BB119F8.7020206@redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Mar 2010 14:09:49 -0700 Joe Perches wrote:
+Em Mon, Mar 29, 2010 at 05:22:00PM -0400, Masami Hiramatsu escreveu:
+> Arnaldo Carvalho de Melo wrote:
+> > Em Mon, Mar 29, 2010 at 04:38:29PM -0400, Masami Hiramatsu escreveu:
+> > Question, should we use the equivalent to panic'ing the kernel in the
+> > userspace bits in tools/?
 
-> Do you prefer something like this?
-
-Yes, thanks.
-
-> Convert rounding macros to statement expressions
-> so arguments are only evaluated once.
-> Add kernel-doc to rounding macros
-> Add ADD_MOD statement expression for "(x + y) % y"
+> > I tend to see all code there as potentially part of a library, i.e. to
+> > be callable by some unantecipated new tool or library that would rather
+> > receive a return value telling it that the operation can't be performed
+> > for some reason so that it can inform the user instead of having the
+> > whole tool exit to the command line.
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  include/linux/kernel.h |   65 +++++++++++++++++++++++++++++++++++++++++------
->  1 files changed, 56 insertions(+), 9 deletions(-)
+> OK, so that you want to see 
 > 
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index c96b1ac..6b92b20 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -55,15 +55,62 @@ extern const char linux_proc_banner[];
->  #define round_down(x, y) ((x) & ~__round_mask(x, y))
->  
->  #define FIELD_SIZEOF(t, f) (sizeof(((t*)0)->f))
-> -#define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
-> -#define roundup(x, y) ((((x) + ((y) - 1)) / (y)) * (y))
-> -#define DIV_ROUND_CLOSEST(x, divisor)(			\
-> -{							\
-> -	typeof(divisor) __divisor = divisor;		\
-> -	(((x) + ((__divisor) / 2)) / (__divisor));	\
-> -}							\
-> -)
-> -#define ADD_MOD(x, y) (((x) + (y)) % (y))
-> +
-> +/**
-> + * roundup() - Returns x rounded up to the next whole multiple of y
-> + * @x:	dividend
-> + * @y:	divisor
-> + *
-> + * ie: roundup(4, 2) is 4, roundup(5, 2) is 6
-> + * c type conversion rules apply when x and y types differ
-> + */
-> +#define roundup(x, y)				\
-> +({						\
-> +	typeof(y) _y = y;			\
-> +	((x) + (_y - 1) / _y) * _y;		\
+> ret = library_func();
+> if (ret < 0)	/* Something wrong happened */
+> 	return ret;
+> 
+> instead of 
+> 
+> library_func();
+> hopefully_executed_next_func();
 
-Above needs an extra set of parens:
+Exactly. That was my _suggestion_ :-)
+ 
+> > It may well be that some specific operation needs lots of resources but
+> > many other don't, panic'c because the one that requires lots of
+> > resources can't be performed, bringing down a gui/tui is really nasty.
+> 
+> Hmm, agreed. But I'd like to have some API for storing dying^H^H^H^H^Herror
+> message. (maybe can we use setjump/longjump approach - like try/cache - for die()?)
 
-	(((x) + (_y - 1)) / _y) * _y;		\
+Can't we do just as we do in the kernel and propagate the error back to
+callers? All the way to userspace, that in this case would be the user
+instead of an app started by a user?  :-)
 
+Wrt api for storing messages, we have pr_{warning,error,debug}, etc, in
+the TUI mode it is even redirected to the bottom line and I plan to have
+them get into something browseable if the user wants to see the last pr_
+messages.
 
-> +})
-> +
-> +/**
-> + * DIV_ROUND_UP() - Returns x/y rounded up to the next whole number
-> + * @x:	dividend
-> + * @y:	divisor
-> + *
-> + * ie: DIV_ROUND_UP(4, 2) is 2, DIV_ROUND_UP(5, 2) is 3
-> + * c type conversion rules apply when x and y types differ
-> + */
-> +#define DIV_ROUND_UP(x, y)			\
-> +({						\
-> +	typeof(y) _y = y;			\
-> +	((x) + _y - 1) / _y;			\
-> +})
-> +
-> +/**
-> + * DIV_ROUND_CLOSEST() - Returns x/y rounded to the nearest whole number
-> + * @x:	dividend
-> + * @y:	divisor
-> + *
-> + * ie: DIV_ROUND_CLOSEST(4, 3) is 1, DIV_ROUND_CLOSEST(5, 3) is 2
-> + * c type conversion rules apply when x and y types differ
-> + */
-> +#define DIV_ROUND_CLOSEST(x, y)			\
-> +({						\
-> +	typeof(y) _y = y;			\
-> +	((x) + (_y / 2)) / _y;			\
-> +})
-> +
-> +/**
-> + * ADD_MOD() - Returns (x + y) % y
-> + * @x:	initial value
-> + * @y:	value added to x then used as modulo
-> + *
-> + * ie: ADD_MOD(4, 2) is 0, ADD_MOD(5, 2) is 1
-> + * c type conversion rules apply when x and y types differ
-> + */
-> +#define ADD_MOD(x, y)				\
-> +({						\
-> +	typeof(y) _y = y;			\
-> +	((x) + _y) % _y;			\
-> +})
->  
->  #define _RET_IP_		(unsigned long)__builtin_return_address(0)
->  #define _THIS_IP_  ({ __label__ __here; __here: (unsigned long)&&__here; })
+IOW, just act like you're writing kernel code, that will make it more
+likely that people that are used to writing code like that will feel at
+ease while hacking tools/.
 
-
-Reviewed-by: Randy Dunlap <randy.dunlap@oracle.com>
-
----
-~Randy
+- Arnaldo
