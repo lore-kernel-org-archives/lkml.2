@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535Ab0C2BAw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 21:00:52 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41229 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755502Ab0C2BAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 21:00:51 -0400
-Message-ID: <4BAFFBBC.5040402@kernel.org>
-Date: Mon, 29 Mar 2010 10:00:44 +0900
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL linux-next] break implicit percpu.h -> slab.h dependency
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755544Ab0C2BBT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 21:01:19 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:56794 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755521Ab0C2BBR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 21:01:17 -0400
+Subject: Re: [PATCH] hangcheck-timer is broken on x86
+From: john stultz <johnstul@us.ibm.com>
+To: Joel Becker <Joel.Becker@oracle.com>
+Cc: Yury Polyanskiy <ypolyans@princeton.edu>, linux-kernel@vger.kernel.org,
+       Andrew Morton <akpm@osdl.org>, Jan Glauber <jan.glauber@de.ibm.com>
+In-Reply-To: <20100326214648.GF9984@mail.oracle.com>
+References: <20100323233611.6dcbe4f4@penta.localdomain>
+	 <20100326214648.GF9984@mail.oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 28 Mar 2010 18:00:36 -0700
+Message-ID: <1269824436.1880.2.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 29 Mar 2010 01:00:46 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Stephen.
+On Fri, 2010-03-26 at 14:46 -0700, Joel Becker wrote:
+> On Tue, Mar 23, 2010 at 11:36:11PM -0400, Yury Polyanskiy wrote:
+> > Second, and more importantly, loops_per_jiffy has little to do with the conversion from the
+> > the time scale of get_cycles() (aka rdtsc) to the time scale of jiffies.
+> 
+> 	It used to!  Fundamentally, of course, we didn't have a
+> monotonic clock everywhere that satisfied hangcheck-timer's needs.  So
+> we had to use different approaches on different architectures.
+> 
+> > @@ -130,7 +129,9 @@ extern unsigned long long monotonic_clock(void);
+> >  #else
+> >  static inline unsigned long long monotonic_clock(void)
+> >  {
+> > -	return get_cycles();
+> > +	struct timespec ts;
+> > +	getrawmonotonic(&ts);
+> > +	return timespec_to_ns(&ts);
+> >  }
+> >  #endif  /* HAVE_MONOTONIC */
+> 
+> 	I have two questions:
+> 
+> 1) Does getrawmonotonic() satisfy hangcheck-timer?  What I mean is, will
+> it always return the wallclock nanoseconds even in the face of CPU speed
+> changes, suspend, udelay, or any other suspension of kernel operation?
+> Yes, I know this is a tougher standard than rdtsc(), but this is what
+> hangcheck-timer wants.  rdtsc() at least satisfied udelay and PCI hangs.
 
-Can you please pull the following into linux-next?
+getrawmonotonic() can be stalled and will wrap on some hardware (acpi pm
+timer wraps every 5 seconds).
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git slabh
+I think the read_persistent_clock() is really what you want to use here.
+On arches that do not support it, it returns 0 every time. 
 
-The tree breaks implicit slab.h inclusion from percpu.h.  It turned
-out that a lot of .c files assumed slab/gfp availability w/o actually
-including the respective header, so the conversion ended up modifying
-includes on over 4000 files.
+thanks
+-john
 
-I don't expect there to be a lot of conflicts and the ones which
-happen should be straight forward to resolve.  Albeit large in volume,
-the changes being mostly trivial, I'm hoping to push this into Linus
-tree soonish (ie. during this devel cycle), so the tree hopefully will
-go away soon.
 
-Please read the following thread for details.
 
- http://thread.gmane.org/gmane.linux.kernel/965549
-
-Thank you.
-
--- 
-tejun
