@@ -1,78 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682Ab0C2WX0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 18:23:26 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:35218 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751312Ab0C2WXY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 18:23:24 -0400
-Date: Tue, 30 Mar 2010 09:23:15 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Rik van Riel <riel@redhat.com>,
-       Kent Overstreet <kent.overstreet@gmail.com>,
-       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
-Subject: Re: KVM bug, git bisected
-Message-ID: <20100329222315.GQ3335@dastard>
-References: <4BADFD74.8060904@gmail.com>
- <4BB0D11A.607@redhat.com>
- <1269880140.12097.356.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269880140.12097.356.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754205Ab0C2WX6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 18:23:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39783 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752985Ab0C2WX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 18:23:56 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100329210520.GN2569@linux.vnet.ibm.com>
+References: <20100329210520.GN2569@linux.vnet.ibm.com> <20100329192159.GM2569@linux.vnet.ibm.com> <20100319022527.GC2894@linux.vnet.ibm.com> <20100318133302.29754.1584.stgit@warthog.procyon.org.uk> <19192.1269889348@redhat.com> <23274.1269893706@redhat.com>
+To: paulmck@linux.vnet.ibm.com, Eric Dumazet <eric.dumazet@gmail.com>
+Cc: dhowells@redhat.com, Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFS: Fix RCU warnings in nfs_inode_return_delegation_noreclaim() [ver #2]
+Date: Mon, 29 Mar 2010 23:22:30 +0100
+Message-ID: <25276.1269901350@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 06:29:00PM +0200, Peter Zijlstra wrote:
-> On Mon, 2010-03-29 at 12:11 -0400, Rik van Riel wrote:
-> > On 03/27/2010 08:43 AM, Kent Overstreet wrote:
-> > > commit 5beb49305251e5669852ed541e8e2f2f7696c53e
-> > > Author: Rik van Riel <riel@redhat.com>
-> > > Date: Fri Mar 5 13:42:07 2010 -0800
-> > >
-> > > mm: change anon_vma linking to fix multi-process server scalability issue
-> > >
-> > > I get this when starting kvm. The warning hasn't caused me problems, but
-> > > I've also been getting a scheduling while atomic panic when I start kvm
-> > > that I can only reproduce when I don't want to. It's definitely config
-> > > dependent, I'd guess preempt might have something to do with it.
-> > 
-> >  From your trace, it looks like mm_take_all_locks is taking close
-> > to 256 locks, which is where the preempt_count could overflow into
-> > the softirq count.
-> > 
-> > Since kvm-qemu is exec'd, I am guessing you have a very large
-> > number of VMAs in your qemu process.  Is that correct?
-> > 
-> > Peter, would it be safe to increase PREEMPT_BITS to eg. 10?
-> 
-> Possibly, but who's to say the thing won't bloat to 65k at which it'll
-> hit the vma limit, but even that can be grown beyond that.
+Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-This issue came up a few years ago w.r.t. the per-cpu
-superblock counters in XFS which used one spinlock per CPU to be held at
-synchronisation/rebalance time. A 256p machine would fall over doing
-this, and there was great resistance to increasing the preempt count
-field size.
+> And rcu_dereference_raw() is the same as the old rcu_dereference().
 
-Instead, I changed the spinlocks to use a bit in a flag word in the
-per-cpu structure and used a test_and_set_bit() loop to emulate a
-spinlock. Then by adding an external preempt_disable()/enable() for
-the fast and slow paths, they ultimately behave like spinlocks but
-without causing preempt count windup.
+Exactly.  That's the other half of the issue - that interpolates a redundant
+memory barrier.
 
-I'm not suggesting that this is the solution to the current problem
-case, just indicating that we've been here before and that there are
-ways of avoiding preempt count windup in the cases where lots of
-critical areas need to be locked out simultaneously....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+David
