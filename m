@@ -1,137 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab0C2MCM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 08:02:12 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:17562 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646Ab0C2MCK (ORCPT
+	id S1752094Ab0C2MEh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 08:04:37 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:55663 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab0C2MEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 08:02:10 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Mon, 29 Mar 2010 14:01:32 +0200
-From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv2] USB: gadget: f_mass_storage: per function
-In-reply-to: <20100329105204.GG29222@cmpxchg.org>
-To: Johannes Weiner <hannes@cmpxchg.org>,
-       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-       David Brownell <dbrownell@users.sourceforge.net>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-       Peter Korsgaard <jacmet@sunsite.dk>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Michal Nazarewicz <m.nazarewicz@samsung.com>
-Message-id: <7d23e1b58c7263c7b2479a409f9bf9d7922df3ab.1269863632.git.mina86@mina86.com>
-X-Mailer: git-send-email 1.7.0
-References: <20100329105204.GG29222@cmpxchg.org>
- <01616584180153ae03d983b6971f5a1b8097419e.1269631274.git.mina86@mina86.com>
+	Mon, 29 Mar 2010 08:04:35 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4BB09736.5010009@jp.fujitsu.com>
+Date: Mon, 29 Mar 2010 21:04:06 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Mike Galbraith <efault@gmx.de>
+CC: =?UTF-8?B?VMO2csO2ayBFZHdpbg==?= <edwintorok@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: scheduler bug: process running since 5124095h
+References: <4BADD408.8080609@gmail.com>  <4BAF1802.8070002@gmail.com> <1269859960.6844.4.camel@marge.simson.net>
+In-Reply-To: <1269859960.6844.4.camel@marge.simson.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mass Storage Function (MSF) used the same descriptors for each
-usb_function instance (meaning usb_function::descriptors of different
-functions pointed to the same static area (the same was true for
-usb_function::hs_descriptors)).
+(2010/03/29 19:52), Mike Galbraith wrote:
+> On Sun, 2010-03-28 at 11:49 +0300, Török Edwin wrote:
+>> On 03/27/2010 11:46 AM, Török Edwin wrote:
+>>> Hi Ingo, Peter,
+>>>
+>>> top has just shown me this:
+>>> PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+>>>
+>>>                                                                  6524
+>>> edwin     20   0  228m  10m 8116 R    2  0.3  5124095h gkrellm
+>>>
+>>> Now obviously that process is not running since 5124095h!
+>>> It looks like some overflow to me, the time in nanoseconds would be
+>>> approx 0xFFFFFE1D2D476000, which is approx. minus 34 minutes.
+>>> Thats about consistent with the uptime, but I don't know why it became
+>>> negative:
+>>>  11:45:48 up 42 min,  9 users,  load average: 0.56, 0.25, 0.19
+>>>
+>>> I've attached the cfs-debug-info.sh output.
+>>>
+>>> This happens when using Linux 2.6.33 (actually glisse's drm-radeon tree
+>>> which is based on 2.6.33), its the first time I noticed this.
+>>>
+>>> I don't know what caused it, the last things I did was:
+>>
+>> I have a simple way to reproduce this:
+>> 1. Boot the system, run top, confirm everything is normal
+>> 2. Run latencytop, and quit (I used version 0.5)
+>> 3. Run top, see 5124095h in the TIME column
+> 
+> Indeed, and I don't even have CONFIG_LATENCYTOP set.  It bisected to...
+> 
+> 761b1d26df542fd5eb348837351e4d2f3bc7bffe is the first bad commit
+> commit 761b1d26df542fd5eb348837351e4d2f3bc7bffe
+> Author: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+> Date:   Thu Nov 12 13:33:45 2009 +0900
 
-This would leads to problems if MSF were used in several USB
-configurations with different interface and/or endpoint numbers.
-Descriptors for all configurations would have interface/endpoint
-numbers overwritten by the values valid for the last configuration.
+Wow, it's easy to reproduce. I'll check it later... 
 
-This patch adds code that copies the descriptors each time MSF is
-added to USB configuration (that is for each usb_function).
 
-Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
----
-> On Mon, Mar 29, 2010 at 12:18:43PM +0200, Michal Nazarewicz wrote:
->> @@ -2946,7 +2948,13 @@ static int __init fsg_bind(struct usb_configuration *c, struct usb_function *f)
->>  			fsg_fs_bulk_in_desc.bEndpointAddress;
->>  		fsg_hs_bulk_out_desc.bEndpointAddress =
->>  			fsg_fs_bulk_out_desc.bEndpointAddress;
->> -		f->hs_descriptors = fsg_hs_function;
->> +		f->hs_descriptors = usb_copy_descriptors(fsg_hs_function);
->> +		/* We don't care if we could not copy the high speed
->> +		 * descriptor.  If we are out of memory we'll stick to
->> +		 * full speed only.  Ie. it is an error that we cannot
->> +		 * copy hs descriptors but not a fatal one. */
->> +		/* if (unlikely(!f->hs_descriptors))
->> +			return -ENOMEM; */
-
-On Mon, 29 Mar 2010 12:52:04 +0200, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> I would much prefer to fail here and handle reloading a module in userspace
-> over having a gadget operate on varying speeds, depending on a transient
-> situation at module loading time that is not transparent to the user of an
-> embedded device in the field for example.
-
-As you wish.  Modified patch included.
-
- drivers/usb/gadget/f_mass_storage.c |   28 ++++++++++++++++++++++------
- 1 files changed, 22 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index f4911c0..1f7ca59 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -2906,6 +2906,8 @@ static void fsg_unbind(struct usb_configuration *c, struct usb_function *f)
- 
- 	DBG(fsg, "unbind\n");
- 	fsg_common_put(fsg->common);
-+	usb_free_descriptors(fsg->function.descriptors);
-+	usb_free_descriptors(fsg->function.hs_descriptors);
- 	kfree(fsg);
- }
- 
-@@ -2946,7 +2948,9 @@ static int __init fsg_bind(struct usb_configuration *c, struct usb_function *f)
- 			fsg_fs_bulk_in_desc.bEndpointAddress;
- 		fsg_hs_bulk_out_desc.bEndpointAddress =
- 			fsg_fs_bulk_out_desc.bEndpointAddress;
--		f->hs_descriptors = fsg_hs_function;
-+		f->hs_descriptors = usb_copy_descriptors(fsg_hs_function);
-+		if (unlikely(!f->hs_descriptors))
-+			return -ENOMEM;
- 	}
- 
- 	return 0;
-@@ -2978,7 +2982,11 @@ static int fsg_add(struct usb_composite_dev *cdev,
- 
- 	fsg->function.name        = FSG_DRIVER_DESC;
- 	fsg->function.strings     = fsg_strings_array;
--	fsg->function.descriptors = fsg_fs_function;
-+	fsg->function.descriptors = usb_copy_descriptors(fsg_fs_function);
-+	if (unlikely(!fsg->function.descriptors)) {
-+		rc = -ENOMEM;
-+		goto error_free_fsg;
-+	}
- 	fsg->function.bind        = fsg_bind;
- 	fsg->function.unbind      = fsg_unbind;
- 	fsg->function.setup       = fsg_setup;
-@@ -2993,11 +3001,19 @@ static int fsg_add(struct usb_composite_dev *cdev,
- 	 * call to usb_add_function() was successful. */
- 
- 	rc = usb_add_function(c, &fsg->function);
-+	if (unlikely(rc))
-+		goto error_free_all;
- 
--	if (likely(rc == 0))
--		fsg_common_get(fsg->common);
--	else
--		kfree(fsg);
-+	fsg_common_get(fsg->common);
-+	return 0;
-+
-+error_free_all:
-+	usb_free_descriptors(fsg->function.descriptors);
-+	/* fsg_bind() might have copied those; or maybe not? who cares
-+	 * -- free it just in case. */
-+	usb_free_descriptors(fsg->function.hs_descriptors);
-+error_free_fsg:
-+	kfree(fsg);
- 
- 	return rc;
- }
--- 
-1.7.0
+Thanks,
+H.Seto
 
