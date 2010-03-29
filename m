@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755686Ab0C2CEZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 22:04:25 -0400
-Received: from sh.osrg.net ([192.16.179.4]:47319 "EHLO sh.osrg.net"
+	id S1755667Ab0C2CPs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 22:15:48 -0400
+Received: from mail.perches.com ([173.55.12.10]:1194 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755609Ab0C2CEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 22:04:24 -0400
-Date: Mon, 29 Mar 2010 11:04:04 +0900
-To: ben@decadent.org.uk
-Cc: fujita.tomonori@lab.ntt.co.jp, bzolnier@gmail.com, gregkh@suse.de,
-       linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rt28xx: Make PCI_{MAP,UNMAP}_SINGLE type-safe
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1269827928.8653.307.camel@localhost>
-References: <1269822285.8653.251.camel@localhost>
-	<20100329105129Y.fujita.tomonori@lab.ntt.co.jp>
-	<1269827928.8653.307.camel@localhost>
+	id S1753827Ab0C2CPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 22:15:46 -0400
+Subject: Re: linux-next: build warning after merge of the tree
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kyle@mcmartin.ca
+In-Reply-To: <20100328.185707.161194820.davem@davemloft.net>
+References: <20100329103139.1a735227.sfr@canb.auug.org.au>
+	 <20100328.185707.161194820.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 28 Mar 2010 19:15:44 -0700
+Message-ID: <1269828944.1500.105.camel@Joe-Laptop.home>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100329110339P.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 29 Mar 2010 11:04:06 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Mar 2010 02:58:48 +0100
-Ben Hutchings <ben@decadent.org.uk> wrote:
+On Sun, 2010-03-28 at 18:57 -0700, David Miller wrote:
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> > After merging the  tree, today's linux-next build (x86_64 allmodconfig)
+> > produced this warning:
+> > drivers/net/tulip/uli526x.c: In function 'uli526x_rx_packet':
+> > drivers/net/tulip/uli526x.c:861: warning: assignment makes pointer from integer without a cast
+> I just committed the following, let me know if it fixes
+> this.
+> -				    ((new_skb = dev_alloc_skb(rxlen + 2) != NULL))) {
+> +				    (((new_skb = dev_alloc_skb(rxlen + 2)) != NULL))) {
 
-> On Mon, 2010-03-29 at 10:52 +0900, FUJITA Tomonori wrote:
-> > On Mon, 29 Mar 2010 01:24:45 +0100
-> > Ben Hutchings <ben@decadent.org.uk> wrote:
-> > 
-> > > To avoid recurrence of bugs such as <http://bugs.debian.org/575726>,
-> > > change the type of the first parameter to linux_pci_{map,unmap}_single()
-> > > from void * to struct rt_rtmp_adapter *.  Also do not define the macros
-> > > PCI_{MAP,UNMAP}_SINGLE() when building the rt2870sta driver; they are
-> > > not used and if they were that would be a bug.
-> > > 
-> > > Signed-off-by: Ben Hutchings <ben@decadent.org.uk> 
-> > > ---
-> > >  drivers/staging/rt2860/rt_linux.h    |   14 +++++---------
-> > >  drivers/staging/rt2860/rt_pci_rbus.c |   12 ++++--------
-> > >  2 files changed, 9 insertions(+), 17 deletions(-)
-> > 
-> > I think using dma_map_single directly instead of inventing a wrapper
-> > function make the code more readable.
-> 
-> These functions are not quite simple wrappers, unfortunately.  So while
-> I think that is worth doing it is a separate change.
+You've an extra () there.
 
-Well, the current wrapper functions looks terrible. Needs to fix them
-before moving the driver out of the staging anyway, I think.
+A close paren could have been moved from after
+the NULL to after the "+ 2"
+
+I think it's more readable as:
+				      (new_skb = dev_alloc_skb(rxlen + 2))) {
+
+cheers, Joe
+
