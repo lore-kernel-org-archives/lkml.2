@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751156Ab0C2LbV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 07:31:21 -0400
-Received: from mail-iw0-f182.google.com ([209.85.223.182]:61196 "EHLO
-	mail-iw0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab0C2LbU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 07:31:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=tQhR3usDUqV44jl4DzVG9SJY8oKx7vuLqJlC2XIe1a3mR96TZjU8RF9dfJItKiW2my
-         oTQJIzwo+IHupvcpO6KKf+3eeTqeZoq1jJjge0DmjUHl3iqYSm6DhqTjBfBaafjifTV5
-         6YrDV6aVfQjeLCeEchLhq5o/UX5G8fXBquYwU=
-Date: Mon, 29 Mar 2010 19:31:13 +0800
-From: anfei <anfei.zhou@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, rientjes@google.com,
-       kosaki.motohiro@jp.fujitsu.com, nishimura@mxp.nes.nec.co.jp,
-       kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] oom killer: break from infinite loop
-Message-ID: <20100329113113.GA11838@desktop>
-References: <1269447905-5939-1-git-send-email-anfei.zhou@gmail.com>
- <20100326150805.f5853d1c.akpm@linux-foundation.org>
- <20100326223356.GA20833@redhat.com>
- <20100328145528.GA14622@desktop>
- <20100328162821.GA16765@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100328162821.GA16765@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751240Ab0C2LdV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 07:33:21 -0400
+Received: from mail.gmx.net ([213.165.64.20]:59010 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751045Ab0C2LdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 07:33:20 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+ehwIodX6eI7nXa/ls0lBQ2uLQuAPoSNG8e9ezQ3
+	elM4obpKhnUoPN
+Subject: Re: scheduler bug: process running since 5124095h
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: =?ISO-8859-1?Q?T=F6r=F6k?= Edwin <edwintorok@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>,
+       Linux Kernel <linux-kernel@vger.kernel.org>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+In-Reply-To: <1269860091.12097.303.camel@laptop>
+References: <4BADD408.8080609@gmail.com>  <4BAF1802.8070002@gmail.com>
+	 <1269859960.6844.4.camel@marge.simson.net>
+	 <1269860091.12097.303.camel@laptop>
+Content-Type: text/plain
+Date: Mon, 29 Mar 2010 13:33:16 +0200
+Message-Id: <1269862396.24507.1.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.53000000000000003
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 28, 2010 at 06:28:21PM +0200, Oleg Nesterov wrote:
-> On 03/28, anfei wrote:
-> >
-> > On Fri, Mar 26, 2010 at 11:33:56PM +0100, Oleg Nesterov wrote:
-> >
-> > > Off-topic, but we shouldn't use force_sig(), SIGKILL doesn't
-> > > need "force" semantics.
-> > >
-> > This may need a dedicated patch, there are some other places to
-> > force_sig(SIGKILL, ...) too.
+On Mon, 2010-03-29 at 12:54 +0200, Peter Zijlstra wrote:
+> On Mon, 2010-03-29 at 12:52 +0200, Mike Galbraith wrote:
+> > > I have a simple way to reproduce this:
+> > > 1. Boot the system, run top, confirm everything is normal
+> > > 2. Run latencytop, and quit (I used version 0.5)
+> > > 3. Run top, see 5124095h in the TIME column
+> > 
+> > Indeed, and I don't even have CONFIG_LATENCYTOP set.  It bisected
+> > to...
+> > 
+> > 761b1d26df542fd5eb348837351e4d2f3bc7bffe is the first bad commit
+> > commit 761b1d26df542fd5eb348837351e4d2f3bc7bffe
+> > Author: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+> > Date:   Thu Nov 12 13:33:45 2009 +0900
 > 
-> Yes, yes, sure.
 > 
-> > > I'd wish I could understand the changelog ;)
-> > >
-> > Assume thread A and B are in the same group.  If A runs into the oom,
-> > and selects B as the victim, B won't exit because at least in exit_mm(),
-> > it can not get the mm->mmap_sem semaphore which A has already got.
-> 
-> I see. But still I can't understand. To me, the problem is not that
-> B can't exit, the problem is that A doesn't know it should exit. All
+> Oh lovely, and reverting that cures the issue?
 
-If B can exit, its memory will be freed, and A will be able to allocate
-the memory, so A won't loop here.
+Haven't done so yet, will do later this afternoon.
 
-Regards,
-Anfei.
+	-Mike
 
-> threads should exit and free ->mm. Even if B could exit, this is not
-> enough. And, to some extent, it doesn't matter if it holds mmap_sem
-> or not.
-> 
-> Don't get me wrong. Even if I don't understand oom_kill.c the patch
-> looks obviously good to me, even from "common sense" pov. I am just
-> curious.
-> 
-> So, my understanding is: we are going to kill the whole thread group
-> but TIF_MEMDIE is per-thread. Mark the whole thread group as TIF_MEMDIE
-> so that any thread can notice this flag and (say, __alloc_pages_slowpath)
-> fail asap.
-> 
-> Is my understanding correct?
-> 
-> Oleg.
-> 
