@@ -1,33 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab0C2T4t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 15:56:49 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37267
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751631Ab0C2T4s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 15:56:48 -0400
-Date: Mon, 29 Mar 2010 12:56:49 -0700 (PDT)
-Message-Id: <20100329.125649.228306906.davem@davemloft.net>
-To: fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [BUG] fault while using perf callchains in sparc64
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100328043446.GA11748@nowhere>
-References: <20100328043446.GA11748@nowhere>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1753175Ab0C2UAp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 16:00:45 -0400
+Received: from mail.perches.com ([173.55.12.10]:1232 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752562Ab0C2UAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 16:00:44 -0400
+Subject: Re: [PATCH] treewide: Add and use ADD_MOD macro
+From: Joe Perches <joe@perches.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Jiri Kosina <trivial@kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100329124708.898b617c.randy.dunlap@oracle.com>
+References: <1269813447.1500.69.camel@Joe-Laptop.home>
+	 <20100329124708.898b617c.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Mar 2010 13:00:42 -0700
+Message-ID: <1269892842.4558.7.camel@Joe-Laptop.home>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
-Date: Sun, 28 Mar 2010 06:34:49 +0200
+On Mon, 2010-03-29 at 12:47 -0700, Randy Dunlap wrote:
+> On Sun, 28 Mar 2010 14:57:27 -0700 Joe Perches wrote:
+> > Add a macro for the somewhat common use of
+> > 	(something + value) % value
+> > because the test uses ADD_MOD
+> > --- a/include/linux/kernel.h
+> > +++ b/include/linux/kernel.h
+> > +#define ADD_MOD(x, y) (((x) + (y)) % (y))
+> It would be better not to evaluate y more than one time.
 
-> It triggers with a simple:
-> 
-> 	perf record -a -f -g sleep 1
+That could be said for nearly all the convenience
+macros in kernel.h
 
-I can reproduce, thanks for the report, I fix this now.
+> Also it's not safe for 64-bit 'y' on i386, right?
+> Looks like it would cause missing reference to __imoddi3
+> or whatever it is called.
+
+Which is also true for nearly all the convenience
+macros in kernel.h
+
+> so it can easily be misused IMO.
+
+etc.
+
