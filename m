@@ -1,48 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589Ab0C2QWv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 12:22:51 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52141 "EHLO hera.kernel.org"
+	id S1754614Ab0C2QXh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 12:23:37 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:33825 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753498Ab0C2QWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 12:22:48 -0400
-Message-ID: <4BB0D34C.7060509@kernel.org>
-Date: Mon, 29 Mar 2010 09:20:28 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S1754296Ab0C2QXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 12:23:35 -0400
+Date: Mon, 29 Mar 2010 18:23:30 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 4/12] drivers/gpio: Add missing unlock
+In-Reply-To: <Pine.LNX.4.64.1003291734110.21896@ask.diku.dk>
+Message-ID: <Pine.LNX.4.64.1003291822470.21896@ask.diku.dk>
+References: <Pine.LNX.4.64.1003291734110.21896@ask.diku.dk>
 MIME-Version: 1.0
-To: michael@ellerman.id.au
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 20/31] lmb: Add __NOT_KEEP_LMB to put lmb code to .init
-References: <1269830604-26214-1-git-send-email-yinghai@kernel.org>	 <1269830604-26214-21-git-send-email-yinghai@kernel.org> <1269864470.24620.15.camel@concordia>
-In-Reply-To: <1269864470.24620.15.camel@concordia>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2010 05:07 AM, Michael Ellerman wrote:
-> On Sun, 2010-03-28 at 19:43 -0700, Yinghai Lu wrote:
->> So those lmb bits could released after kernel is booted up.
->>
->> Arch code could define __NOT_KEEP_LMB in asm/lmb.h, __init_lmb will become __init
-> 
-> ARCH_KEEP_LMB or ARCH_DISCARD_LMB, or something like that, would be more
-> in keeping with existing flags like this.
-> 
+From: Julia Lawall <julia@diku.dk>
 
-ok, will use ARCH_DISCARD_LMB.
+In an error handling case the lock is not unlocked.  The return is
+converted to a goto, to share the unlock at the end of the function.
 
-BTW, it seems only PowerPC need to keep lmb after init stage, right ?
+A simplified version of the semantic patch that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-Thanks
+// <smpl>
+@r exists@
+expression E1;
+identifier f;
+@@
 
-Yinghai
+f (...) { <+...
+* spin_lock_irqsave (E1,...);
+... when != E1
+* return ...;
+...+> }
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+Corrected patch.  Adjusted the return value.
+
+ drivers/gpio/timbgpio.c             |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpio/timbgpio.c b/drivers/gpio/timbgpio.c
+index d4295fa..871608b 100644
+--- a/drivers/gpio/timbgpio.c
++++ b/drivers/gpio/timbgpio.c
+@@ -130,6 +130,7 @@ static int timbgpio_irq_type(unsigned irq, unsigned trigger)
+ 	unsigned long flags;
+ 	u32 lvr, flr, bflr = 0;
+ 	u32 ver;
++	int ret = 0;
+ 
+ 	if (offset < 0 || offset > tgpio->gpio.ngpio)
+ 		return -EINVAL;
+@@ -153,8 +154,10 @@ static int timbgpio_irq_type(unsigned irq, unsigned trigger)
+ 	}
+ 
+ 	if ((trigger & IRQ_TYPE_EDGE_BOTH) == IRQ_TYPE_EDGE_BOTH) {
+-		if (ver < 3)
+-			return -EINVAL;
++		if (ver < 3) {
++			ret = -EINVAL;
++			goto out;
++		}
+ 		else {
+ 			flr |= 1 << offset;
+ 			bflr |= 1 << offset;
+@@ -174,9 +177,10 @@ static int timbgpio_irq_type(unsigned irq, unsigned trigger)
+ 		iowrite32(bflr, tgpio->membase + TGPIO_BFLR);
+ 
+ 	iowrite32(1 << offset, tgpio->membase + TGPIO_ICR);
+-	spin_unlock_irqrestore(&tgpio->lock, flags);
+ 
+-	return 0;
++out:
++	spin_unlock_irqrestore(&tgpio->lock, flags);
++	return ret;
+ }
+ 
+ static void timbgpio_irq(unsigned int irq, struct irq_desc *desc)
