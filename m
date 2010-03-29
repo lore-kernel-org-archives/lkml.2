@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752418Ab0C2OLd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 10:11:33 -0400
-Received: from ppa04.Princeton.EDU ([128.112.128.215]:37070 "EHLO
-	ppa04.Princeton.EDU" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156Ab0C2OLb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 10:11:31 -0400
-Date: Mon, 29 Mar 2010 10:11:06 -0400
-From: Yury Polyanskiy <ypolyans@princeton.edu>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Joel Becker <Joel.Becker@oracle.com>, linux-kernel@vger.kernel.org,
-       Andrew Morton <akpm@osdl.org>, Jan Glauber <jan.glauber@de.ibm.com>
-Subject: Re: [PATCH] hangcheck-timer is broken on x86
-Message-ID: <20100329101106.3678a312@penta.localdomain>
-In-Reply-To: <1269824436.1880.2.camel@work-vm>
-References: <20100323233611.6dcbe4f4@penta.localdomain>
-	<20100326214648.GF9984@mail.oracle.com>
-	<1269824436.1880.2.camel@work-vm>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i486-pc-linux-gnu)
+	id S1752688Ab0C2OMM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 10:12:12 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41447 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751156Ab0C2OMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 10:12:10 -0400
+Date: Tue, 30 Mar 2010 01:12:03 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: linux-next: build warning after merge of the i2c tree
+Message-Id: <20100330011203.b2246ead.sfr@canb.auug.org.au>
+In-Reply-To: <20100329152155.056741d2@hyperion.delvare>
+References: <20100329105439.1e474095.sfr@canb.auug.org.au>
+	<20100329152155.056741d2@hyperion.delvare>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_//xQurcI4HTn3R_LdzFsLUTm"; protocol="application/pgp-signature"
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__30_Mar_2010_01_12_03_+1100_Fv/DmUZzl8ZLJGNr"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_//xQurcI4HTn3R_LdzFsLUTm
+--Signature=_Tue__30_Mar_2010_01_12_03_+1100_Fv/DmUZzl8ZLJGNr
 Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Sun, 28 Mar 2010 18:00:36 -0700
-john stultz <johnstul@us.ibm.com> wrote:
+Hi Jean,
 
-> > 1) Does getrawmonotonic() satisfy hangcheck-timer?  What I mean is, will
-> > it always return the wallclock nanoseconds even in the face of CPU speed
-> > changes, suspend, udelay, or any other suspension of kernel operation?
-> > Yes, I know this is a tougher standard than rdtsc(), but this is what
-> > hangcheck-timer wants.  rdtsc() at least satisfied udelay and PCI hangs.
->=20
-> getrawmonotonic() can be stalled and will wrap on some hardware (acpi pm
-> timer wraps every 5 seconds).
->=20
+On Mon, 29 Mar 2010 15:21:55 +0200 Jean Delvare <khali@linux-fr.org> wrote:
+>
+> Err, sorry. I noticed the problem and fixed it some days ago, but
+> forgot to refresh the patch before pushing it to you. This is fixed
+> now, thanks for the notice.
 
-I am not sure which archs do you mean. But in any case,
-getrawmonotonic() is not just a wrap around a call to rdtsc() (or acpi
-pm timer read). It is based on the clock->raw_time, which is updated
-every timer interrupt by the update_wall_time(). So even if underlying
-timer wraps, it doesn't lead to getrawmonotonic() returning 0 sec.
+Thanks. 2 less warnings ...
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Y
-
---Sig_//xQurcI4HTn3R_LdzFsLUTm
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+--Signature=_Tue__30_Mar_2010_01_12_03_+1100_Fv/DmUZzl8ZLJGNr
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEARECAAYFAkuwtPoACgkQemuRe3zuqOTSfACcCKDLFECg2YSWQe2J18kJZ7pe
-OSMAnibaIvJLh7vfVqlOHJUQq4yIKf+c
-=Myw7
+iEYEARECAAYFAkuwtTMACgkQjjKRsyhoI8yRpQCfQiZcC1cxR/feB/U3ArbuGXM5
+h5AAnj1ZMzZxOAtzZrMQTeeLR7v2w+H7
+=03s5
 -----END PGP SIGNATURE-----
 
---Sig_//xQurcI4HTn3R_LdzFsLUTm--
+--Signature=_Tue__30_Mar_2010_01_12_03_+1100_Fv/DmUZzl8ZLJGNr--
