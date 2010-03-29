@@ -1,97 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab0C2TMQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 15:12:16 -0400
-Received: from vps.mortis.eu ([79.99.135.181]:35097 "EHLO vps.mortis.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752017Ab0C2TMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 15:12:14 -0400
-Date: Mon, 29 Mar 2010 21:12:09 +0200
-From: Giel van Schijndel <me@mortis.eu>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] doc: watchdog simple example: don't fail on fsync()
-Message-ID: <20100329191209.GA4777@salidar.me.mortis.eu>
-References: <1269260557-18150-1-git-send-email-me@mortis.eu>
- <20100329184041.GU3823@infomag.iguana.be>
+	id S1752918Ab0C2TVB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 15:21:01 -0400
+Received: from mail-yw0-f172.google.com ([209.85.211.172]:41829 "EHLO
+	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab0C2TU7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 15:20:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=oebbk0vLAVkG7yrRAyrBWwJY4qzkXdeOq1HGJcLep4YXBjQnwFJLb+CXcft5dZYfTm
+         p5lRkJHVTOXQtAucq8nYzWMyHk0hbZEzw74+3O1WPa3VDQqkHCkbmBxqL3t5WEX0F7Kv
+         iv8erMVrP8eG8gxCTnrTeB9DWsdeisVmeunfs=
+Message-ID: <4BB0FD96.5020402@lwfinger.net>
+Date: Mon, 29 Mar 2010 14:20:54 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pf9I7BMVVzbSWLtt"
-Content-Disposition: inline
-In-Reply-To: <20100329184041.GU3823@infomag.iguana.be>
-OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: =?ISO-8859-1?Q?Ren=E9=5FBolldorf?= <xsecute@googlemail.com>
+CC: John Linville <linville@tuxdriver.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       wireless <linux-wireless@vger.kernel.org>
+Subject: Re: [BUG] No SPROM available!
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+René,
 
---pf9I7BMVVzbSWLtt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+When you have a wireless problem, please post it to
+linux-wireless@vger.kernel.org. The Linux Kernel Mailing List may or may not be
+appropriate.
 
-On Mon, Mar 29, 2010 at 08:40:41PM +0200, Wim Van Sebroeck wrote:
->> Don't terminate the watchdog daemon when fsync() fails because no
->> watchdog driver actually implements the fsync() syscall.
->=20
-> Wouldn't it be simpler then to just do an fsync without checking the erro=
-r-result?
+To help in diagnosing your problem, please apply this patch and post the output
+line that it produces. On my system, it shows
 
-Yes, it definitly would be. Though I think it would be even simpler to
-simply ditch the fsync() call. Considering that none of the watchdog
-drivers implements it, nor can I think of a usecase where it would make
-sense to implement (as more than a NOP).
+ssb: chip_id 0x4312, status 0x10
 
-So instead I suggest the patch following this line:
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-doc: watchdog simple example: don't fail on fsync()
+Please also post the output of 'lspci -nnv | grep 14e4'.
 
-Don't terminate the watchdog daemon when fsync() fails because no
-watchdog driver actually implements the fsync() syscall.
+Index: wireless-testing/drivers/ssb/sprom.c
+===================================================================
+--- wireless-testing.orig/drivers/ssb/sprom.c
++++ wireless-testing/drivers/ssb/sprom.c
+@@ -182,6 +182,8 @@ bool ssb_is_sprom_available(struct ssb_b
+ 	if (bus->chipco.dev->id.revision < 11)
+ 		return true;
 
-Signed-off-by: Giel van Schijndel <me@mortis.eu>
----
- Documentation/watchdog/src/watchdog-simple.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
++	printk(KERN_INFO "ssb: chip_id 0x%x, status 0x%x\n", bus->chip_id,
++			  bus->chipco.status);
+ 	switch (bus->chip_id) {
+ 	case 0x4312:
+ 		return SSB_CHIPCO_CHST_4312_SPROM_PRESENT(bus->chipco.status);
 
-diff --git a/Documentation/watchdog/src/watchdog-simple.c b/Documentation/w=
-atchdog/src/watchdog-simple.c
-index 4cf72f3..ba45803 100644
---- a/Documentation/watchdog/src/watchdog-simple.c
-+++ b/Documentation/watchdog/src/watchdog-simple.c
-@@ -17,9 +17,6 @@ int main(void)
- 			ret =3D -1;
- 			break;
- 		}
--		ret =3D fsync(fd);
--		if (ret)
--			break;
- 		sleep(10);
- 	}
- 	close(fd);
---=20
-1.6.4.4
 
---=20
-Met vriendelijke groet,
-With kind regards,
-Giel van Schijndel
+Larry
 
---pf9I7BMVVzbSWLtt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkuw+4kACgkQZBYm/87l50IOrwCgjlwesy3y/QQveLBMeMWO/gVC
-PFYAoJu65ldEbkh908S6rZk2ZHCsJcFH
-=98Al
------END PGP SIGNATURE-----
-
---pf9I7BMVVzbSWLtt--
