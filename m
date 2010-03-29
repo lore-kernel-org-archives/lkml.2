@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab0C2WBo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 18:01:44 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:26871 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752560Ab0C2WBn (ORCPT
+	id S1754798Ab0C2WCx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 18:02:53 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48883
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752560Ab0C2WCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 18:01:43 -0400
-Subject: Re: lots of "bridge window ... (disabled)" messages
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <4bb0dbec213331313b@agluck-desktop.sc.intel.com>
-References: <4bb0dbec213331313b@agluck-desktop.sc.intel.com>
-Content-Type: text/plain
-Date: Mon, 29 Mar 2010 16:01:51 -0600
-Message-Id: <1269900111.10752.37.camel@dc7800.home>
+	Mon, 29 Mar 2010 18:02:52 -0400
+Date: Mon, 29 Mar 2010 15:02:53 -0700 (PDT)
+Message-Id: <20100329.150253.11262563.davem@davemloft.net>
+To: fweisbec@gmail.com
+Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [BUG] fault while using perf callchains in sparc64
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100329212839.GA12254@nowhere>
+References: <20100329211149.GK5101@nowhere>
+	<20100329.141920.243015356.davem@davemloft.net>
+	<20100329212839.GA12254@nowhere>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-29 at 09:57 -0700, Luck, Tony wrote:
-> Hi Bjorn,
-> 
-> I just booted Linus latest git tree on my Tukwila system. I'm
-> seeing a lot of bridge windows marked as disabled. Here's the
-> start of a diff of dmesg output comparing a kernel from last
-> week to today's kernel (git 01e7770 vs. b72c409):
-> 
-> < pci 0000:00:01.0:   bridge window [mem 0xfff00000 - 000fffff pref] reg reading
-> ---
-> > pci 0000:00:01.0:   bridge window [mem 0xfff00000-0x000fffff pref] (disabled)
+From: Frederic Weisbecker <fweisbec@gmail.com>
+Date: Mon, 29 Mar 2010 23:28:42 +0200
 
-Nothing changed here except the message.  The bridge windows are
-disabled in both cases (same values in base & limit, with base > limit);
-I just changed the message from "reg reading" to "(disabled)" because I
-thought that would be easier to interpret.
+> It's a Niagara 2 based one.
 
-Bjorn
+Strange, that's what I do all of my main sparc64 kernel
+work on too.  I've never seen these spurious 'as' crashes.
 
+Hmmmm, what does "ldd /usr/bin/as" give you?
 
+Thanks.
