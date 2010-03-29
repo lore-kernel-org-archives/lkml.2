@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276Ab0C2XWe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 19:22:34 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:44000 "EHLO
+	id S1755237Ab0C2XWa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 19:22:30 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:44001 "EHLO
 	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753252Ab0C2XUw (ORCPT
+	with ESMTP id S1754662Ab0C2XUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Mar 2010 19:20:52 -0400
 From: "Eric W. Biederman" <ebiederm@xmission.com>
@@ -19,9 +19,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
        Gary Hade <garyhade@us.ibm.com>,
        Natalie Protasevich <protasnb@gmail.com>,
        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 11/14] x86 ioapic: Optimize pin_2_irq
-Date: Mon, 29 Mar 2010 16:20:22 -0700
-Message-Id: <1269904825-27462-11-git-send-email-ebiederm@xmission.com>
+Subject: [PATCH 09/14] x86 ioapic: In mpparse use mp_register_ioapic
+Date: Mon, 29 Mar 2010 16:20:20 -0700
+Message-Id: <1269904825-27462-9-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.6.5.2.143.g8cc62
 In-Reply-To: <m1r5n2wwah.fsf_-_@fess.ebiederm.org>
 References: <m1r5n2wwah.fsf_-_@fess.ebiederm.org>
@@ -36,51 +36,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric W. Biederman <ebiederm@xmission.com>
 
-Now that all ioapics have valid gsi_base values use this to
-accellerate pin_2_irq.  In the case of acpi this also ensures
-that pin_2_irq will compute the same irq value for an ioapic
-pin as acpi will.
+Long ago MP_ioapic_info was the primary way of setting up our
+ioapic data structures and mp_register_ioapic was a compatibility
+shim for acpi code.  Now the situation is reversed and
+and mp_register_ioapic is the primary way of setting up our
+ioapic data structures.
+
+Keep the setting up of ioapic data structures uniform by
+having mp_register_ioapic call mp_register_ioapic.
+
+This changes a few fields:
+
+- type: is now hardset to MP_IOAPIC but type had to
+  bey MP_IOAPIC or MP_ioapic_info would not have been called.
+
+- flags: is now hard coded to MPC_APIC_USABLE.
+  We require flags to contain at least MPC_APIC_USEBLE in
+  MP_ioapic_info and we don't ever examine flags so dropping
+  a few flags that might possibly exist that we have never
+  used is harmless.
+
+- apicaddr: Unchanged
+
+- apicver: Read from the ioapic instead of using the cached
+  hardware value in the MP table.  The real hardware value
+  will be more accurate.
+
+- apicid: Now verified to be unique and changed if it is not.
+  If the BIOS got this right this is a noop.  If the BIOS did
+  not fixing things appears to be the better solution.
+
+This adds gsi_base and gsi_end values to our ioapics defined with
+the mpatable, which will make our lives simpler later since
+we can always assume gsi_base and gsi_end are valid.
 
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- arch/x86/kernel/apic/io_apic.c |   13 ++++---------
- 1 files changed, 4 insertions(+), 9 deletions(-)
+ arch/x86/kernel/mpparse.c |   25 +------------------------
+ 1 files changed, 1 insertions(+), 24 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 0515f26..996cf8f 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1018,7 +1018,7 @@ static inline int irq_trigger(int idx)
- int (*ioapic_renumber_irq)(int ioapic, int irq);
- static int pin_2_irq(int idx, int apic, int pin)
+diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+index a2c1edd..c0de938 100644
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -115,21 +115,6 @@ static void __init MP_bus_info(struct mpc_bus *m)
+ 		printk(KERN_WARNING "Unknown bustype %s - ignoring\n", str);
+ }
+ 
+-static int bad_ioapic(unsigned long address)
+-{
+-	if (nr_ioapics >= MAX_IO_APICS) {
+-		printk(KERN_ERR "ERROR: Max # of I/O APICs (%d) exceeded "
+-		       "(found %d)\n", MAX_IO_APICS, nr_ioapics);
+-		panic("Recompile kernel with bigger MAX_IO_APICS!\n");
+-	}
+-	if (!address) {
+-		printk(KERN_ERR "WARNING: Bogus (zero) I/O APIC address"
+-		       " found in table, skipping!\n");
+-		return 1;
+-	}
+-	return 0;
+-}
+-
+ static void __init MP_ioapic_info(struct mpc_ioapic *m)
  {
--	int irq, i;
-+	int irq;
- 	int bus = mp_irqs[idx].srcbus;
+ 	if (!(m->flags & MPC_APIC_USABLE))
+@@ -138,15 +123,7 @@ static void __init MP_ioapic_info(struct mpc_ioapic *m)
+ 	printk(KERN_INFO "I/O APIC #%d Version %d at 0x%X.\n",
+ 	       m->apicid, m->apicver, m->apicaddr);
  
- 	/*
-@@ -1030,18 +1030,13 @@ static int pin_2_irq(int idx, int apic, int pin)
- 	if (test_bit(bus, mp_bus_not_pci)) {
- 		irq = mp_irqs[idx].srcbusirq;
- 	} else {
--		/*
--		 * PCI IRQs are mapped in order
--		 */
--		i = irq = 0;
--		while (i < apic)
--			irq += nr_ioapic_registers[i++];
--		irq += pin;
-+		u32 gsi = mp_gsi_routing[apic].gsi_base + pin;
- 		/*
-                  * For MPS mode, so far only needed by ES7000 platform
-                  */
- 		if (ioapic_renumber_irq)
--			irq = ioapic_renumber_irq(apic, irq);
-+			gsi = ioapic_renumber_irq(apic, gsi);
-+		irq = gsi;
- 	}
+-	if (bad_ioapic(m->apicaddr))
+-		return;
+-
+-	mp_ioapics[nr_ioapics].apicaddr = m->apicaddr;
+-	mp_ioapics[nr_ioapics].apicid = m->apicid;
+-	mp_ioapics[nr_ioapics].type = m->type;
+-	mp_ioapics[nr_ioapics].apicver = m->apicver;
+-	mp_ioapics[nr_ioapics].flags = m->flags;
+-	nr_ioapics++;
++	mp_register_ioapic(m->apicid, m->apicaddr, gsi_end);
+ }
  
- #ifdef CONFIG_X86_32
+ static void print_MP_intsrc_info(struct mpc_intsrc *m)
 -- 
 1.6.5.2.143.g8cc62
 
