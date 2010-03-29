@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab0C2Joi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 05:44:38 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56422 "EHLO mx1.suse.de"
+	id S1754769Ab0C2Jrf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 05:47:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50835 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753897Ab0C2Jo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 05:44:27 -0400
-Date: Mon, 29 Mar 2010 11:44:23 +0200 (CEST)
+	id S1753818Ab0C2Jrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 05:47:33 -0400
+Date: Mon, 29 Mar 2010 11:47:27 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
 To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-       linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+       linux-usb@vger.kernel.org, linux-fbdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
        "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>,
        Nicu Pavel <npavel@ituner.com>, Oliver Neukum <oliver@neukum.org>,
-       Jaya Kumar <jayakumar.lkml@gmail.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH v3 6/6] hid: add experimental access to PicoLCD device's
- EEPROM and FLASH
-In-Reply-To: <20100324235835.0e7e1bcb@neptune.home>
-Message-ID: <alpine.LNX.2.00.1003291142400.24576@pobox.suse.cz>
-References: <20100324233707.7243b04d@neptune.home> <20100324235835.0e7e1bcb@neptune.home>
+       Jaya Kumar <jayakumar.lkml@gmail.com>
+Subject: Re: [PATCH v4 1/6] hid: new driver for PicoLCD device
+In-Reply-To: <20100327012245.0ace6a09@neptune.home>
+Message-ID: <alpine.LNX.2.00.1003291144350.24576@pobox.suse.cz>
+References: <20100324233707.7243b04d@neptune.home> <20100324234022.0361bd80@neptune.home> <20100326065656.GC26602@core.coreip.homeip.net> <20100326102951.3b9ecda1@neptune.home> <alpine.LNX.2.00.1003262156280.24576@pobox.suse.cz>
+ <20100327012245.0ace6a09@neptune.home>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=UTF-8
@@ -28,16 +28,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Mar 2010, Bruno Prémont wrote:
+On Sat, 27 Mar 2010, Bruno Prémont wrote:
 
-> +static ssize_t picolcd_debug_reset_open(struct inode *inode, struct file *f)
+> +#ifdef CONFIG_PM
+> +static int picolcd_suspend(struct hid_device *hdev)
 > +{
-> +	return single_open(f, picolcd_debug_reset_show, inode->i_private);
+> +	dbg_hid(PICOLCD_NAME " device ready for suspend\n");
+> +	return 0;
 > +}
 > +
+> +static int picolcd_resume(struct hid_device *hdev)
+> +{
+> +	return 0;
+> +}
+> +
+> +static int picolcd_reset_resume(struct hid_device *hdev)
+> +{
+> +	int ret;
+> +	ret = picolcd_reset(hdev);
+> +	if (ret)
+> +		dbg_hid(PICOLCD_NAME " resetting our device failed: %d\n", ret);
+> +	return 0;
+> +}
+> +#endif
+[ ... ]
+> +static struct hid_driver picolcd_driver = {
+> +	.name =          "hid-picolcd",
+> +	.id_table =      picolcd_devices,
+> +	.probe =         picolcd_probe,
+> +	.remove =        picolcd_remove,
+> +	.raw_event =     picolcd_raw_event,
+> +#ifdef CONFIG_PM
+> +	.suspend =       picolcd_suspend,
+> +	.resume =        picolcd_resume,
+> +	.reset_resume =  picolcd_reset_resume,
+> +#endif
+> +};
 
-struct file_operations->open is supposed to return int (filedescriptor), 
-not ssize_t.
+struct hid_driver doesn't provide power-management related callbacks. So I 
+guess that you have either not tested this feature at all, or you have 
+some extra patch somewhere which adds such callbacks to HID core, but you 
+haven't sent it out for review?
+
+In any cases, this will very likely cause compilation failure with 
+CONFIG_PM turned on.
+
+Thanks,
 
 -- 
 Jiri Kosina
