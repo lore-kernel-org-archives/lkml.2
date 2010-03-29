@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648Ab0C2XpI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 19:45:08 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:33082 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752272Ab0C2XpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 19:45:06 -0400
-Date: Mon, 29 Mar 2010 19:44:56 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org, michael.s.gilbert@gmail.com,
-       davem@davemeloft.net, romieu@fr.zoreil.com, eric.dumazet@gmail.com
-Subject: Re: [PATCH] r8169: offical fix for CVE-2009-4537 (overlength frame
- DMAs)
-Message-ID: <20100329234456.GA2070@localhost.localdomain>
-References: <20100329160356.GC22733@hmsreliant.think-freely.org>
- <1269900105.8653.389.camel@localhost>
- <20100329.150924.144366212.davem@davemloft.net>
- <1269901265.8653.408.camel@localhost>
+	id S1754284Ab0C2Xsp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 19:48:45 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45042 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752252Ab0C2Xsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 19:48:43 -0400
+Message-ID: <4BB13BF4.3030906@kernel.org>
+Date: Mon, 29 Mar 2010 16:47:00 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269901265.8653.408.camel@localhost>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-Spam-Score: -4.2 (----)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: michael@ellerman.id.au, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH -v9 00/31] use lmb with x86
+References: <1269830604-26214-1-git-send-email-yinghai@kernel.org>	 <1269865331.24620.44.camel@concordia>  <4BB0DAC2.3000805@kernel.org>	 <1269900605.2286.2.camel@concordia>  <4BB126F6.8020805@kernel.org> <1269905393.7101.39.camel@pasglop>
+In-Reply-To: <1269905393.7101.39.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 11:21:05PM +0100, Ben Hutchings wrote:
-> On Mon, 2010-03-29 at 15:09 -0700, David Miller wrote:
-> > From: Ben Hutchings <ben@decadent.org.uk>
-> > Date: Mon, 29 Mar 2010 23:01:45 +0100
-> > 
-> > > It also sucks that the secure but low-performance behaviour is enabled
-> > > for all variants, while AIUI only some suffer from the bug.  I realise
-> > > you probably don't have access to every variant (and neither does
-> > > Francois) but perhaps you could come up with a test case that could be
-> > > used to start whitelisting common variants that don't have the bug?
-> > 
-> > As far as we know all chip variants seem to have the problem.
+On 03/29/2010 04:29 PM, Benjamin Herrenschmidt wrote:
+> On Mon, 2010-03-29 at 15:17 -0700, Yinghai Lu wrote:
+>>> That was the point of my other mail. We now have two lmb APIs, one
+>> which
+>>> checks if the array will overflow and one which doesn't. That seems
+>> like
+>>> a bad idea. Having one called lmb_free() and one called free_lmb()
+>> is
+>>> definitely a bad idea, because it's completely non obvious which one
+>>> caters for overflow.
+>>
+>> I want to keep the affects to other lmb users to minium at first.
+>>
+>> and we can merge those functions later.
+>>
+>> or you insist on merging them in this patchset?
 > 
-> That's not what I understood from the discussion of the early
-> back-and-forth changes to receive buffer size.
+> As a separate patch sure, but you should really separate the patch
+> series that changes LMB from the one that moves x86 to it imho. It would
+> make things much clearer.
+
+Those patches should go through tip/x86 ?
+
+Please check the patches only have "lmb:" in the subject.
+
 > 
-As dave mentioned, we have no conclusive evidence that only certain chip
-variants show the behavior.  realtek hasn't said anything about it one way or
-the other.  AFAIK, all you need to do to test given chip is try to receive a
-frame thats longer than configured receive filter.  I only had one NIC variant
-to test, and it failed that test.
+> It would also allow you to spend some time properly -documenting- why
+> you need to change LMB the way you do, since it's non obvious for those
+> not familiar with x86 needs. I'm not objecting to the changes, I'm just
+> asking for much better documentation as to why they are needed and what
+> function they provide.
 
-> > Furthermore, this issue has been known about and investigated for
-> > about 3 months.  In that time no better options for handling this
-> > issue reliably have been discovered and implemented.
-> >
-> > Feel free to code up (and test) something better yourself if you don't
-> > like the fix as it exists currently. :-)
-> 
-> I would have had a go already, if I actually had some of this hardware
-> to hand.  Luckily I have managed to avoid buying any so far.  But if
-> anyone is prepared to loan me a NIC then I promise to have a go at it.
-> 
-I only had the one variant that failed.  My hope was to make them all safe, and,
-should any variants be found in the field that didn't exhibit the behavior, we
-could whitelist them as they got reported.
+Thanks, will try to write more changelog for next reversion.
 
-Regards
-Neil
-
-> Ben.
-> 
-> -- 
-> Ben Hutchings
-> Once a job is fouled up, anything done to improve it makes it worse.
-
-
+Yinghai
