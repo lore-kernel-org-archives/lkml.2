@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab0C2G2M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 02:28:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45119 "EHLO mx2.suse.de"
+	id S1753897Ab0C2Gb0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 02:31:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45236 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752746Ab0C2G2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 02:28:11 -0400
-Date: Mon, 29 Mar 2010 08:28:09 +0200
-Message-ID: <s5hy6hb4p6u.wl%tiwai@suse.de>
+	id S1753032Ab0C2GbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 02:31:25 -0400
+Date: Mon, 29 Mar 2010 08:31:23 +0200
+Message-ID: <s5hwrwv4p1g.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Stephen Rothwell <sfr@canb.auug.org.au>
 Cc: Tejun Heo <tj@kernel.org>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Daniel Mack <daniel@caiaq.de>
-Subject: Re: linux-next: build failure after merge of the slabh tree
-In-Reply-To: <20100329160250.1515a2ca.sfr@canb.auug.org.au>
-References: <20100329160250.1515a2ca.sfr@canb.auug.org.au>
+       linux-kernel@vger.kernel.org, Barry Song <21cnbao@gmail.com>,
+       Yi Li <yi.li@analog.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: linux-next: manual merge of the slabh tree with the sound tree
+In-Reply-To: <20100329153218.155d1b39.sfr@canb.auug.org.au>
+References: <20100329153218.155d1b39.sfr@canb.auug.org.au>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,54 +26,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Mon, 29 Mar 2010 16:02:50 +1100,
+At Mon, 29 Mar 2010 15:32:18 +1100,
 Stephen Rothwell wrote:
 > 
 > Hi Tejun,
 > 
-> After merging the slabh tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
+> Today's linux-next merge of the slabh tree got a conflict in  between
+> commit a1533d94c6b930ef4263941adfd1e1132ca95627 ("ASoC: rename ad1938 to
+> ad193x and add support for ad1936/7/8/9") from the sound tree and commit
+> 869d4cce05404996cc7969a9ffd1da27e65e6630 ("include cleanup: Update gfp.h
+> and slab.h includes to prepare for breaking implicit slab.h inclusion
+> from percpu.h") from the slabh tree.
 > 
-> sound/usb/mixer_quirks.c: In function 'snd_usb_soundblaster_remote_init':
-> sound/usb/mixer_quirks.c:144: error: implicit declaration of function 'kmalloc'
-> sound/usb/mixer_quirks.c:144: warning: assignment makes pointer from integer without a cast
-> 
-> Caused by commit d103d3b3e8512312b5254950035366d4422a479a ("percpu: don't
-> implicitly include slab.h from percpu.h") from the slabh tree interacting
-> with commit 7b1eda223debcba706ab989a09c4eecb327aebdf ("ALSA: usb-mixer:
-> factor out quirks") from the sound tree.
-> 
-> I applied the following merge fixup patch which should be applied to the
-> sound tree (see Documentation/SubmitChecklist Rule #1 :-)).
+> The former renamed a file modified by the latter.  I applied the
+> following merge fixup patch.  This patch could, I assume, be applied to
+> the sound tree now, right Tejun?
 
-Thanks, I applied all these oneliners to sound/usb/* as a single
-patch now.
+I applied Stephen's patch now to topic/asoc branch on sound git tree.
+Please let me know if anything else is needed.
 
+
+thanks,
 
 Takashi
 
-
 > From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 29 Mar 2010 15:59:58 +1100
-> Subject: [PATCH] sound: use of kmalloc requires the include of slab.h
+> Date: Mon, 29 Mar 2010 15:23:06 +1100
+> Subject: [PATCH] sound: update for removeal of slab.h from percpu.h
 > 
 > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 > ---
->  sound/usb/mixer_quirks.c |    1 +
+>  sound/soc/codecs/ad193x.c |    1 +
 >  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> diff --git a/sound/usb/mixer_quirks.c b/sound/usb/mixer_quirks.c
-> index 56b6659..e7df1e5 100644
-> --- a/sound/usb/mixer_quirks.c
-> +++ b/sound/usb/mixer_quirks.c
-> @@ -26,6 +26,7 @@
->   */
->  
->  #include <linux/init.h>
+> diff --git a/sound/soc/codecs/ad193x.c b/sound/soc/codecs/ad193x.c
+> index d034464..e108206 100644
+> --- a/sound/soc/codecs/ad193x.c
+> +++ b/sound/soc/codecs/ad193x.c
+> @@ -12,6 +12,7 @@
+>  #include <linux/device.h>
+>  #include <linux/i2c.h>
+>  #include <linux/spi/spi.h>
 > +#include <linux/slab.h>
->  #include <linux/usb.h>
->  #include <linux/usb/audio.h>
->  
+>  #include <sound/core.h>
+>  #include <sound/pcm.h>
+>  #include <sound/pcm_params.h>
 > -- 
 > 1.7.0.3
 > 
