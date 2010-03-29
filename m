@@ -1,93 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328Ab0C2WVQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 18:21:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47697 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752422Ab0C2WVN (ORCPT
+	id S1754833Ab0C2WVd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 18:21:33 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:55881 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753881Ab0C2WVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 18:21:13 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
+	Mon, 29 Mar 2010 18:21:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=u2JwZ0Q4s2OW+l/a/Dz9xwyYsmzvNM5GdvRh8IWJpPcHhVG2wriL1VktHWMmhGLH3F
+         EyAMVJfJTPRMrp3JKS/0I4/79AI4L664O4Me9lHcFPdck1txCVclArbSGdM9/AGtQXSM
+         4lGPlxkf+VlP8jw4qj8R26qJq0D8sj10SUNcU=
+Date: Tue, 30 Mar 2010 00:21:34 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
 To: David Miller <davem@davemloft.net>
-Cc: nhorman@tuxdriver.com, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org, michael.s.gilbert@gmail.com,
-       davem@davemeloft.net, romieu@fr.zoreil.com, eric.dumazet@gmail.com
-In-Reply-To: <20100329.150924.144366212.davem@davemloft.net>
-References: <20100329160356.GC22733@hmsreliant.think-freely.org>
-	 <1269900105.8653.389.camel@localhost>
-	 <20100329.150924.144366212.davem@davemloft.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-rxVSKLRveN/TUP0Q7fdc"
-Date: Mon, 29 Mar 2010 23:21:05 +0100
-Message-ID: <1269901265.8653.408.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [PATCH] r8169: offical fix for CVE-2009-4537 (overlength frame
- DMAs)
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [BUG] fault while using perf callchains in sparc64
+Message-ID: <20100329222132.GB12254@nowhere>
+References: <20100329211149.GK5101@nowhere> <20100329.141920.243015356.davem@davemloft.net> <20100329212839.GA12254@nowhere> <20100329.150253.11262563.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100329.150253.11262563.davem@davemloft.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 29, 2010 at 03:02:53PM -0700, David Miller wrote:
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Date: Mon, 29 Mar 2010 23:28:42 +0200
+> 
+> > It's a Niagara 2 based one.
+> 
+> Strange, that's what I do all of my main sparc64 kernel
+> work on too.  I've never seen these spurious 'as' crashes.
+> 
+> Hmmmm, what does "ldd /usr/bin/as" give you?
+> 
+> Thanks.
 
---=-rxVSKLRveN/TUP0Q7fdc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
 
-On Mon, 2010-03-29 at 15:09 -0700, David Miller wrote:
-> From: Ben Hutchings <ben@decadent.org.uk>
-> Date: Mon, 29 Mar 2010 23:01:45 +0100
->=20
-> > It also sucks that the secure but low-performance behaviour is enabled
-> > for all variants, while AIUI only some suffer from the bug.  I realise
-> > you probably don't have access to every variant (and neither does
-> > Francois) but perhaps you could come up with a test case that could be
-> > used to start whitelisting common variants that don't have the bug?
->=20
-> As far as we know all chip variants seem to have the problem.
+$ ldd /usr/bin/as
+	libopcodes-2.18.0.20080103.so => /usr/lib/libopcodes-2.18.0.20080103.so (0xf7ec4000)
+	libbfd-2.18.0.20080103.so => /usr/lib/libbfd-2.18.0.20080103.so (0xf7e14000)
+	libc.so.6 => /lib/libc.so.6 (0xf7ca0000)
+	/lib/ld-linux.so.2 (0xf7efc000)
 
-That's not what I understood from the discussion of the early
-back-and-forth changes to receive buffer size.
+The last kernel I know that don't have such problems is 2.6.31-rc6
+May be I should bisect?
 
-> Furthermore, this issue has been known about and investigated for
-> about 3 months.  In that time no better options for handling this
-> issue reliably have been discovered and implemented.
->
-> Feel free to code up (and test) something better yourself if you don't
-> like the fix as it exists currently. :-)
-
-I would have had a go already, if I actually had some of this hardware
-to hand.  Luckily I have managed to avoid buying any so far.  But if
-anyone is prepared to loan me a NIC then I promise to have a go at it.
-
-Ben.
-
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
-
---=-rxVSKLRveN/TUP0Q7fdc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIVAwUAS7En0Oe/yOyVhhEJAQL+KQ/+IxUvQw46iljAZkUdX0gCk/LcOFBzmOj/
-yscVtKrbZoqZljXH9Np2kbdBkjKoNatt97sbyKhg5hdhgD9EGqp07yRiS8oCoFMB
-BCgf4cWriO8sE6wGU3tDLvBVLfIKFXfe9R+K2FOc6rOgacBcOf9CGaKrXjHMDVi5
-FE9sn4aqBxYVJ44iJ46McDVe5S10aWk0pWGXoSPkv7mQgNt5ykdgKGZBUA2/6N7r
-RsFuNzFNU0mq9jCBiITZBAyHLVsWniI+AO8VqLvE2Bar8Lu58kUG0rHPuwgtMI/C
-RKgt7So5hYN0+IU4EYNEoWbSqgkNuCaqVUV+v5KWuSabL6GKSgI2r4IRucMStrCX
-1MmLO6K4WrIZfMlMAjj/IPYgxEScvETD9AE5Q7mziYW3R0JPB8K9zfNsiDQAHHoO
-j3/S3YksE+PsHjZ1G5UkTmrRzBgPt5/F7lmHB9WvMlhnqoEc0loBU+smeotHQoB2
-905T01qwQS/+5s6C3FnZ3cTqQQYtmb2eK53Ml1xSqCAkJrFiK8qh72Jnqyb/tJ85
-bLdnWjVNlZSBAu7LyOyDVUDd83xUuxCpYp/b+VoW/95SWSVbbnMEtU9iW4Hi9WDW
-d5zs8pWlO9enuIiBpsZJoT2ZcDvpN6MBOF1Ku6k8oI0SVRnm6LXqhSmRdNoNVlDf
-3g8tBs80h20=
-=xyfb
------END PGP SIGNATURE-----
-
---=-rxVSKLRveN/TUP0Q7fdc--
