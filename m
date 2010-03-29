@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab0C2GjA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 02:39:00 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59611 "EHLO smtps.tip.net.au"
+	id S1753770Ab0C2GnH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 02:43:07 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:59724 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752633Ab0C2Gi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 02:38:58 -0400
-Date: Mon, 29 Mar 2010 17:38:52 +1100
+	id S1752086Ab0C2GnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 02:43:03 -0400
+Date: Mon, 29 Mar 2010 17:43:00 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Tejun Heo <tj@kernel.org>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Daniel Mack <daniel@caiaq.de>
-Subject: Re: linux-next: build failure after merge of the slabh tree
-Message-Id: <20100329173852.3550bbea.sfr@canb.auug.org.au>
-In-Reply-To: <s5hy6hb4p6u.wl%tiwai@suse.de>
-References: <20100329160250.1515a2ca.sfr@canb.auug.org.au>
-	<s5hy6hb4p6u.wl%tiwai@suse.de>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Tom Herbert <therbert@google.com>,
+       Eric Dumazet <eric.dumazet@gmail.com>
+Subject: linux-next: build failure after merge of the final tree (net tree
+ related)
+Message-Id: <20100329174300.512d83a8.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__29_Mar_2010_17_38_52_+1100_GQUiXmKBnv9tGrq1"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__29_Mar_2010_17_38_52_+1100_GQUiXmKBnv9tGrq1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Dave,
 
-Hi Takashi,
+After merging the final tree, today's linux-next build (powerpc
+ppc44x_defconfig) failed like this:
 
-On Mon, 29 Mar 2010 08:28:09 +0200 Takashi Iwai <tiwai@suse.de> wrote:
->
-> Thanks, I applied all these oneliners to sound/usb/* as a single
-> patch now.
+net/core/net-sysfs.c:476: warning: 'struct netdev_rx_queue' declared inside parameter list
+net/core/net-sysfs.c:476: warning: its scope is only this definition or declaration, which is probably not what you want
+net/core/net-sysfs.c:478: warning: 'struct netdev_rx_queue' declared inside parameter list
+net/core/net-sysfs.c: In function 'rx_queue_attr_show':
+net/core/net-sysfs.c:489: error: dereferencing pointer to incomplete type
+net/core/net-sysfs.c:489: warning: type defaults to 'int' in declaration of '__mptr'
+net/core/net-sysfs.c:489: warning: initialization from incompatible pointer type
+net/core/net-sysfs.c:489: error: invalid use of undefined type 'struct netdev_rx_queue'
+net/core/net-sysfs.c:494: warning: passing argument 1 of 'attribute->show' from incompatible pointer type
+net/core/net-sysfs.c:494: note: expected 'struct netdev_rx_queue *' but argument is of type 'struct netdev_rx_queue *'
 
-Again, thanks.  They were just one liner because I found them one at a
-time :-(
+(and many more)
 
---=20
+Caused by commit 0a9627f2649a02bea165cfd529d7bcb625c2fcad ("rps: Receive
+Packet Steering") from the net tree.  struct netdev_rx_queue is protected by
+CONFIG_RPS in netdevice.h, but uses are not so protected in net-sysfs.c.
+
+I applied the following patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 29 Mar 2010 17:27:55 +1100
+Subject: [PATCH] rps: fix net-sysfs build for !CONFIG_RPS
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ net/core/net-sysfs.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
+index c810042..95af841 100644
+--- a/net/core/net-sysfs.c
++++ b/net/core/net-sysfs.c
+@@ -467,6 +467,7 @@ static struct attribute_group wireless_group = {
+ };
+ #endif
+ 
++#ifdef CONFIG_RPS
+ /*
+  * RX queue sysfs structures and functions.
+  */
+@@ -677,6 +678,12 @@ static void rx_queue_remove_kobjects(struct net_device *net)
+ 	kset_unregister(net->queues_kset);
+ }
+ 
++#else /* CONFIG_RPS */
++
++static int rx_queue_register_kobjects(struct net_device *net) { return 0; }
++static void rx_queue_remove_kobjects(struct net_device *net) { }
++
++#endif /* CONFIG_RPS */
+ #endif /* CONFIG_SYSFS */
+ 
+ #ifdef CONFIG_HOTPLUG
+-- 
+1.7.0.3
+
+-- 
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__29_Mar_2010_17_38_52_+1100_GQUiXmKBnv9tGrq1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkuwSv0ACgkQjjKRsyhoI8yADACgsT/3bokbaYqcDPyZ0d/gyCBt
-rJUAnjC/3uEAllmgvGCwUqOoMguY/My+
-=5iXv
------END PGP SIGNATURE-----
-
---Signature=_Mon__29_Mar_2010_17_38_52_+1100_GQUiXmKBnv9tGrq1--
