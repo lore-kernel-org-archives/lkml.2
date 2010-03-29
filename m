@@ -1,108 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017Ab0C2VWy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 17:22:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37913 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753250Ab0C2VWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 17:22:52 -0400
-Message-ID: <4BB119F8.7020206@redhat.com>
-Date: Mon, 29 Mar 2010 17:22:00 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>,
-       Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH -tip 5/7] perf probe: Query basic types from debuginfo
-References: <20100329203736.2577.56018.stgit@localhost6.localdomain6> <20100329203829.2577.44718.stgit@localhost6.localdomain6> <20100329205143.GQ3625@ghostprotocols.net>
-In-Reply-To: <20100329205143.GQ3625@ghostprotocols.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753917Ab0C2V0L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 17:26:11 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58775 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752872Ab0C2V0K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 17:26:10 -0400
+Subject: Re: [PATCH tip/core/urgent] rcu: protect fork-time cgroup access
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       abogani@texware.it
+In-Reply-To: <1269897564.12097.372.camel@laptop>
+References: <20100329211525.GA17703@linux.vnet.ibm.com>
+	 <1269897564.12097.372.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Mar 2010 23:26:04 +0200
+Message-ID: <1269897964.12097.375.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo Carvalho de Melo wrote:
-> Em Mon, Mar 29, 2010 at 04:38:29PM -0400, Masami Hiramatsu escreveu:
->> +static void convert_variable_type(Dwarf_Die *vr_die,
->> +				  struct kprobe_trace_arg *targ)
->> +{
->> +	Dwarf_Die type;
->> +	char buf[16];
->> +	int ret;
->> +
->> +	if (die_get_real_type(vr_die, &type) == NULL)
->> +		die("Failed to get a type information of %s.",
->> +		    dwarf_diename(vr_die));
->> +
->> +	ret = die_get_byte_size(&type) * 8;
->> +	if (ret) {
->> +		/* Check the bitwidth */
->> +		if (ret > MAX_BASIC_TYPE_BITS) {
->> +			pr_warning("  Warning: %s exceeds max-bitwidth."
->> +				   " Cut down to %d bits.\n",
->> +				   dwarf_diename(&type), MAX_BASIC_TYPE_BITS);
->> +			ret = MAX_BASIC_TYPE_BITS;
->> +		}
->> +
->> +		ret = snprintf(buf, 16, "%c%d",
->> +			       die_is_signed_type(&type) ? 's' : 'u', ret);
->> +		if (ret < 0 || ret >= 16)
->> +			die("Failed to convert variable type.");
->> +		targ->type = xstrdup(buf);
+On Mon, 2010-03-29 at 23:19 +0200, Peter Zijlstra wrote:
+> On Mon, 2010-03-29 at 14:15 -0700, Paul E. McKenney wrote:
+> > Add an rcu_read_lock() / rcu_read_unlock() pair to protect a fork-time
+> > cgroup access.  This seems likely to be a false positive.
+> > 
+> > Located by: Alessio Igor Bogani <abogani@texware.it>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> > 
+> >  sched.c |    2 ++
+> >  1 file changed, 2 insertions(+)
+> > 
+> > diff --git a/kernel/sched.c b/kernel/sched.c
+> > index 9ab3cd7..d4bb5e0 100644
+> > --- a/kernel/sched.c
+> > +++ b/kernel/sched.c
+> > @@ -2621,7 +2621,9 @@ void sched_fork(struct task_struct *p, int clone_flags)
+> >  	if (p->sched_class->task_fork)
+> >  		p->sched_class->task_fork(p);
+> >  
+> > +	rcu_read_lock();
+> >  	set_task_cpu(p, cpu);
+> > +	rcu_read_unlock();
+> >  
+> >  #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
+> >  	if (likely(sched_info_on()))
 > 
-> Question, should we use the equivalent to panic'ing the kernel in the
-> userspace bits in tools/?
-> 
-> I tend to see all code there as potentially part of a library, i.e. to
-> be callable by some unantecipated new tool or library that would rather
-> receive a return value telling it that the operation can't be performed
-> for some reason so that it can inform the user instead of having the
-> whole tool exit to the command line.
+> What got accessed? This patch just looks wrong.
 
-OK, so that you want to see 
+So the only cgroup thing I can find is set_task_rq()'s task_group()
+usage, which does indeed look like it wants RCU, but then, why would
+only the sched_fork() usage of set_task_cpu() need this.
 
-ret = library_func();
-if (ret < 0)	/* Something wrong happened */
-	return ret;
+If it's needed (possible) then set_task_rq() needs it unconditionally.
 
-instead of 
+That said, the whole task_group stuff is tied to the cgroup muck, so it
+shouldn't be possible for the task_group to disappear on us, but then, I
+always sorta glaze over when I get near the cgroup core.
 
-library_func();
-hopefully_executed_next_func();
-
-
-
-> It may well be that some specific operation needs lots of resources but
-> many other don't, panic'c because the one that requires lots of
-> resources can't be performed, bringing down a gui/tui is really nasty.
-
-Hmm, agreed. But I'd like to have some API for storing dying^H^H^H^H^Herror
-message. (maybe can we use setjump/longjump approach - like try/cache - for die()?)
-
-Thank you,
-
-> 
-> Perhaps the answer will be the same as for when people added panic calls
-> in the kernel in the past, "you're screwed up anyway if that happens",
-> but it just feels wrong :-\
-> 
-> In the DWARF bits it has even the added twist namespace collapse with
-> DIE 8-)
-> 
-> - Arnaldo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
