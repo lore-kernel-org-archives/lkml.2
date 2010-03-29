@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab0C2QVd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 12:21:33 -0400
-Received: from exhub016-3.exch016.msoutlookonline.net ([207.5.72.226]:53417
-	"EHLO EXHUB016-3.exch016.msoutlookonline.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754544Ab0C2QVa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 12:21:30 -0400
-X-Greylist: delayed 605 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Mar 2010 12:21:30 EDT
-Message-ID: <4BB0D12B.6060701@cfl.rr.com>
-Date: Mon, 29 Mar 2010 12:11:23 -0400
-From: Phillip Susi <psusi@cfl.rr.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1754589Ab0C2QWv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 12:22:51 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52141 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753498Ab0C2QWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 12:22:48 -0400
+Message-ID: <4BB0D34C.7060509@kernel.org>
+Date: Mon, 29 Mar 2010 09:20:28 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Extended partition mapping wrong size
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset="ISO-8859-1"
+To: michael@ellerman.id.au
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 20/31] lmb: Add __NOT_KEEP_LMB to put lmb code to .init
+References: <1269830604-26214-1-git-send-email-yinghai@kernel.org>	 <1269830604-26214-21-git-send-email-yinghai@kernel.org> <1269864470.24620.15.camel@concordia>
+In-Reply-To: <1269864470.24620.15.camel@concordia>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've been investigating a problem I ran into trying to create partitions
-in sector mode and found that the first logical partition can not begin
-on the very first sector of the extended partition, immediately
-following the EBR.  This apparently is because the kernel creates a dev
-node to represent the extended partition and sizes it to two sectors.  I
-could have sworn that the kernel did not used to create a device for the
-extended partition itself, but I wondered why it was 2 sectors long.  I
-found this:
+On 03/29/2010 05:07 AM, Michael Ellerman wrote:
+> On Sun, 2010-03-28 at 19:43 -0700, Yinghai Lu wrote:
+>> So those lmb bits could released after kernel is booted up.
+>>
+>> Arch code could define __NOT_KEEP_LMB in asm/lmb.h, __init_lmb will become __init
+> 
+> ARCH_KEEP_LMB or ARCH_DISCARD_LMB, or something like that, would be more
+> in keeping with existing flags like this.
+> 
 
-from fs/partitions/msdos.c:
+ok, will use ARCH_DISCARD_LMB.
 
-            /* prevent someone doing mkfs or mkswap on an
-               extended partition, but leave room for LILO */
-            put_partition(state, slot, start, size == 1 ? 1 : 2);
+BTW, it seems only PowerPC need to keep lmb after init stage, right ?
 
-This appears to set the size of the device to 2 sectors, unless the
-extended partition is only 1 sector long.  Shouldn't the size be
-whatever length there is between the start of the extended partition,
-and the first logical partition it contains?  So if there are 63 sectors
-there, as is the usual case when using cylinder alignment, then the
-device node would expose all of those, but if there is no space, then
-the device node should only be 1 sector for the EBR, otherwise it
-overlays the first sector of the logical partition.
+Thanks
+
+Yinghai
