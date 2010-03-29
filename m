@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079Ab0C2VnH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 17:43:07 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:34917 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752272Ab0C2VnE (ORCPT
+	id S1754154Ab0C2Vn2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 17:43:28 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:58308 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754101Ab0C2Vn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 17:43:04 -0400
-Subject: Re: [PATCH tip/core/urgent] rcu: protect fork-time cgroup access
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       abogani@texware.it
-In-Reply-To: <20100329213405.GA18143@linux.vnet.ibm.com>
-References: <20100329211525.GA17703@linux.vnet.ibm.com>
-	 <1269897564.12097.372.camel@laptop>
-	 <20100329212932.GO2569@linux.vnet.ibm.com>
-	 <20100329213405.GA18143@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Mar 2010 23:42:55 +0200
-Message-ID: <1269898975.12097.380.camel@laptop>
+	Mon, 29 Mar 2010 17:43:26 -0400
+Date: Mon, 29 Mar 2010 23:43:21 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, David Miller <davem@davemloft.net>,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Add PGM protocol support to the IP stack
+Message-ID: <20100329214321.GI20695@one.firstfloor.org>
+References: <87tysccjrn.fsf@basil.nowhere.org> <alpine.DEB.2.00.1003220916170.15360@router.home> <20100322163609.GZ20695@one.firstfloor.org> <alpine.DEB.2.00.1003221146260.17230@router.home> <877hp4i76d.fsf@basil.nowhere.org> <alpine.DEB.2.00.1003221300180.17230@router.home> <20100322185310.GA20695@one.firstfloor.org> <alpine.DEB.2.00.1003261231410.30253@router.home> <20100327131138.GD20695@one.firstfloor.org> <alpine.DEB.2.00.1003290952410.14606@router.home>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1003290952410.14606@router.home>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-29 at 14:34 -0700, Paul E. McKenney wrote:
-
-> And it appears that my patch is at best insufficient:
-> http://paste.ubuntu.com/406189/
+On Mon, Mar 29, 2010 at 10:00:57AM -0500, Christoph Lameter wrote:
+> On Sat, 27 Mar 2010, Andi Kleen wrote:
 > 
-> Left to myself, I would wrap copy_process() with rcu_read_lock(),
-> but I would rather hear your thoughts before doing too much more
-> semi-random hacking.  ;-)
+> > On Fri, Mar 26, 2010 at 12:33:07PM -0500, Christoph Lameter wrote:
+> > > Here is a pgm.7 manpage describing how the socket API could look like for
+> > > a PGM implementation.
+> > >
+> > > I dumped the RM_* based socket options from the other OS since most of the
+> > > options were unusable.
+> >
+> > I did a quick read and the manpage/interface seem reasonable to me.
+> 
+> Thanks. I will then proceed to get a patch out that implements the
+> network environment. Then we can plug the openpgm logic in there.
 
-Well, I don't think you can get away with that, copy_process() wants to
-sleep on quite a few places ;-) Also, locks should be taken at the
-smallest possible scope, unless we want to go back to BKL style
-locking :-)
+You might still need some reviewing from network maintainers.
 
-As to that freezer splat, you'd have to chase down the cgroup folks, I'm
-fully ignorant on that.
+> 
+> > You changed the parameter struct fields to lower case. While
+> > that looks definitely more Linuxy than before does it mean programs
+> > have to #ifdef this? It might be good idea to have at least some
+> > optional compat header that #defines.
+> 
+> The socket API will be completely different. The basic handling of the
+> sockets is the same (binding, listening, connecting). There is no way of
+> mapping M$ socket options to Linux socket options with the approach that
+> I proposed in the manpage. The stats structure is different too since some
+> key elements were missing.
 
-For the set_task_rq() one, I'm afraid someone (which again I'm afraid
-will be me) will have to look into how the task_group muck ties into the
-cgroup muck as I think the original authors of that ran off :/
+Ok.
 
+> 
+> What users are there of the M$ api? I have seen vendors supplying their
+> own pgm implementation (guess due to bit rot in the old M$
+> implementation).
 
+I don't know, it was just a general consideration.
 
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
