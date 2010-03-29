@@ -1,105 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985Ab0C2Gws (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 02:52:48 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:51889 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753485Ab0C2Gwq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 02:52:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=ggpjTd3dB8yO821thAt6R30AogSi66FdcBqoAGxUDb5P3rtEpQb4S2F5JHQZhLNsTI
-         RGCeoRfRYWHlgzYrG5qXrNRdp3ouBV5kXHxEZC8LrI+QRJ+psO/pyHNqe1ptTRivCnm6
-         R8EUkg8nvm9beh9g1F54B5yXz3nyV77gnblUs=
-Subject: Re: linux-next: build failure after merge of the final tree (net
- tree related)
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Tom Herbert <therbert@google.com>
-In-Reply-To: <20100329174300.512d83a8.sfr@canb.auug.org.au>
-References: <20100329174300.512d83a8.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Mar 2010 08:52:41 +0200
-Message-ID: <1269845561.2164.1.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1754118Ab0C2Gx1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 02:53:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7391 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753671Ab0C2Gx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 02:53:26 -0400
+From: Dave Airlie <airlied@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Dave Airlie <airlied@redhat.com>, David Howells <dhowells@redhat.com>
+Subject: [PATCH] slow-work: use get_ref wrapper instead of directly calling get_ref
+Date: Mon, 29 Mar 2010 16:51:42 +1000
+Message-Id: <1269845502-10163-1-git-send-email-airlied@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 29 mars 2010 à 17:43 +1100, Stephen Rothwell a écrit :
-> Hi Dave,
-> 
-> After merging the final tree, today's linux-next build (powerpc
-> ppc44x_defconfig) failed like this:
-> 
-> net/core/net-sysfs.c:476: warning: 'struct netdev_rx_queue' declared inside parameter list
-> net/core/net-sysfs.c:476: warning: its scope is only this definition or declaration, which is probably not what you want
-> net/core/net-sysfs.c:478: warning: 'struct netdev_rx_queue' declared inside parameter list
-> net/core/net-sysfs.c: In function 'rx_queue_attr_show':
-> net/core/net-sysfs.c:489: error: dereferencing pointer to incomplete type
-> net/core/net-sysfs.c:489: warning: type defaults to 'int' in declaration of '__mptr'
-> net/core/net-sysfs.c:489: warning: initialization from incompatible pointer type
-> net/core/net-sysfs.c:489: error: invalid use of undefined type 'struct netdev_rx_queue'
-> net/core/net-sysfs.c:494: warning: passing argument 1 of 'attribute->show' from incompatible pointer type
-> net/core/net-sysfs.c:494: note: expected 'struct netdev_rx_queue *' but argument is of type 'struct netdev_rx_queue *'
-> 
-> (and many more)
-> 
-> Caused by commit 0a9627f2649a02bea165cfd529d7bcb625c2fcad ("rps: Receive
-> Packet Steering") from the net tree.  struct netdev_rx_queue is protected by
-> CONFIG_RPS in netdevice.h, but uses are not so protected in net-sysfs.c.
-> 
-> I applied the following patch for today:
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 29 Mar 2010 17:27:55 +1100
-> Subject: [PATCH] rps: fix net-sysfs build for !CONFIG_RPS
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  net/core/net-sysfs.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
-> index c810042..95af841 100644
-> --- a/net/core/net-sysfs.c
-> +++ b/net/core/net-sysfs.c
-> @@ -467,6 +467,7 @@ static struct attribute_group wireless_group = {
->  };
->  #endif
->  
-> +#ifdef CONFIG_RPS
->  /*
->   * RX queue sysfs structures and functions.
->   */
-> @@ -677,6 +678,12 @@ static void rx_queue_remove_kobjects(struct net_device *net)
->  	kset_unregister(net->queues_kset);
->  }
->  
-> +#else /* CONFIG_RPS */
-> +
-> +static int rx_queue_register_kobjects(struct net_device *net) { return 0; }
-> +static void rx_queue_remove_kobjects(struct net_device *net) { }
-> +
-> +#endif /* CONFIG_RPS */
->  #endif /* CONFIG_SYSFS */
->  
->  #ifdef CONFIG_HOTPLUG
-> -- 
-> 1.7.0.3
+Otherwise we can get an oops if the user has no get_ref/put_ref
+requirement.
 
+Cc: David Howells <dhowells@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+---
+ kernel/slow-work.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thats right, this was on my first submission, but I forgot to add
-net/core/net-sysfs.c in my second commit, sorry.
-
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-
-
+diff --git a/kernel/slow-work.c b/kernel/slow-work.c
+index 7494bbf..7d3f4fa 100644
+--- a/kernel/slow-work.c
++++ b/kernel/slow-work.c
+@@ -637,7 +637,7 @@ int delayed_slow_work_enqueue(struct delayed_slow_work *dwork,
+ 			goto cancelled;
+ 
+ 		/* the timer holds a reference whilst it is pending */
+-		ret = work->ops->get_ref(work);
++		ret = slow_work_get_ref(work);
+ 		if (ret < 0)
+ 			goto cant_get_ref;
+ 
+-- 
+1.6.5.2
 
