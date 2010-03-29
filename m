@@ -1,103 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab0C2QrV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 12:47:21 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:37577 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461Ab0C2QrT (ORCPT
+	id S1755001Ab0C2QtK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 12:49:10 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39579 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754975Ab0C2QtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 12:47:19 -0400
-Date: Mon, 29 Mar 2010 18:47:55 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -v2] perf, probe-finder: Build fix on Debian
-Message-ID: <20100329164755.GA16034@aftab>
-References: <20100329154132.GA16223@aftab>
- <4BB0CC60.8010604@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BB0CC60.8010604@redhat.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 29 Mar 2010 12:49:01 -0400
+Subject: Re: [PATCH 3/3] perf/core, x86: implement ARCH_PERFMON_EVENTSEL
+ bit masks
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+       LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1269880612-25800-4-git-send-email-robert.richter@amd.com>
+References: <1269880612-25800-1-git-send-email-robert.richter@amd.com>
+	 <1269880612-25800-4-git-send-email-robert.richter@amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Mar 2010 18:48:58 +0200
+Message-ID: <1269881338.12097.361.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building chokes with
+On Mon, 2010-03-29 at 18:36 +0200, Robert Richter wrote:
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -454,20 +454,7 @@ static __initconst u64 atom_hw_cache_event_ids
+>  
+>  static u64 intel_pmu_raw_event(u64 hw_event)
+>  {
+> -#define CORE_EVNTSEL_EVENT_MASK                0x000000FFULL
+> -#define CORE_EVNTSEL_UNIT_MASK         0x0000FF00ULL
+> -#define CORE_EVNTSEL_EDGE_MASK         0x00040000ULL
+> -#define CORE_EVNTSEL_INV_MASK          0x00800000ULL
+> -#define CORE_EVNTSEL_REG_MASK          0xFF000000ULL
+> -
+> -#define CORE_EVNTSEL_MASK              \
+> -       (INTEL_ARCH_EVTSEL_MASK |       \
+> -        INTEL_ARCH_UNIT_MASK   |       \
+> -        INTEL_ARCH_EDGE_MASK   |       \
+> -        INTEL_ARCH_INV_MASK    |       \
+> -        INTEL_ARCH_CNT_MASK)
+> -
+> -       return hw_event & CORE_EVNTSEL_MASK;
+> +       return hw_event & X86_RAW_EVENT_MASK;
+>  } 
 
-In file included from /usr/include/gelf.h:53,
-                 from /usr/include/elfutils/libdw.h:53,
-                 from util/probe-finder.h:61,
-                 from util/probe-finder.c:39:
-/usr/include/libelf.h:98: error: expected specifier-qualifier-list before 'off64_t'
-/usr/include/libelf.h:160: error: expected specifier-qualifier-list before 'off64_t'
-/usr/include/libelf.h:201: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'elf_update'
-/usr/include/libelf.h:207: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'elf_getbase'
-/usr/include/libelf.h:305: error: expected declaration specifiers or '...' before 'off64_t'
-/usr/include/libelf.h:317: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'elf_getaroff'
-make: *** [util/probe-finder.o] Error 1
-make: *** Waiting for unfinished jobs....
-rm .perf.dev.null
+Could you fold this with your 2/3 and create x86_pmu_raw_event() which
+lives in arch/x86/kernel/cpu/perf_event.c, that's more consistent wrt
+the X86_RAW_EVENT_MASK name and that way you don't need to re-order the
+#include ""s either.
 
-which is due to the fact that </usr/include/libelf.h> isn't seeing
-off64_t from <sys/types.h>
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- tools/perf/Makefile |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 8a8f52d..bc0f670 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -200,7 +200,7 @@ endif
- 
- CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
- EXTLIBS = -lpthread -lrt -lelf -lm
--ALL_CFLAGS = $(CFLAGS)
-+ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
- ALL_LDFLAGS = $(LDFLAGS)
- STRIP ?= strip
- 
-@@ -492,19 +492,19 @@ ifeq ($(uname_S),Darwin)
- 	PTHREAD_LIBS =
- endif
- 
--ifeq ($(shell sh -c "(echo '\#include <libelf.h>'; echo 'int main(void) { Elf * elf = elf_begin(0, ELF_C_READ, 0); return (long)elf; }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
--ifneq ($(shell sh -c "(echo '\#include <gnu/libc-version.h>'; echo 'int main(void) { const char * version = gnu_get_libc_version(); return (long)version; }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
-+ifeq ($(shell sh -c "(echo '\#include <libelf.h>'; echo 'int main(void) { Elf * elf = elf_begin(0, ELF_C_READ, 0); return (long)elf; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
-+ifneq ($(shell sh -c "(echo '\#include <gnu/libc-version.h>'; echo 'int main(void) { const char * version = gnu_get_libc_version(); return (long)version; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
- 	msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
- endif
- 
--	ifneq ($(shell sh -c "(echo '\#include <libelf.h>'; echo 'int main(void) { Elf * elf = elf_begin(0, ELF_C_READ_MMAP, 0); return (long)elf; }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
-+	ifneq ($(shell sh -c "(echo '\#include <libelf.h>'; echo 'int main(void) { Elf * elf = elf_begin(0, ELF_C_READ_MMAP, 0); return (long)elf; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
- 		BASIC_CFLAGS += -DLIBELF_NO_MMAP
- 	endif
- else
- 	msg := $(error No libelf.h/libelf found, please install libelf-dev/elfutils-libelf-devel and glibc-dev[el]);
- endif
- 
--ifneq ($(shell sh -c "(echo '\#include <dwarf.h>'; echo '\#include <libdw.h>'; echo 'int main(void) { Dwarf *dbg; dbg = dwarf_begin(0, DWARF_C_READ); return (long)dbg; }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -I/usr/include/elfutils -ldw -lelf -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
-+ifneq ($(shell sh -c "(echo '\#include <dwarf.h>'; echo '\#include <libdw.h>'; echo 'int main(void) { Dwarf *dbg; dbg = dwarf_begin(0, DWARF_C_READ); return (long)dbg; }') | $(CC) -x c - $(ALL_CFLAGS) -I/usr/include/elfutils -ldw -lelf -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
- 	msg := $(warning No libdw.h found or old libdw.h found, disables dwarf support. Please install elfutils-devel/elfutils-dev);
- 	BASIC_CFLAGS += -DNO_DWARF_SUPPORT
- else
--- 
-1.5.6.5
-
--- 
-Regards/Gruss,
-Boris.
-
---
-Advanced Micro Devices, Inc.
-Operating Systems Research Center
