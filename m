@@ -1,89 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab0C2SoJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 14:44:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:45430 "EHLO hera.kernel.org"
+	id S1753500Ab0C2SoR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 14:44:17 -0400
+Received: from lucidpixels.com ([75.144.35.66]:56785 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753200Ab0C2SoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 14:44:04 -0400
-Date: Mon, 29 Mar 2010 18:43:11 GMT
-From: tip-bot for Ian Campbell <ian.campbell@citrix.com>
-Cc: linux-kernel@vger.kernel.org, joel.becker@oracle.com, hpa@zytor.com,
-       mingo@redhat.com, konrad.wilk@oracle.com, yinghai@kernel.org,
-       torvalds@linux-foundation.org, peterz@infradead.org,
-       ian.campbell@citrix.com, hannes@cmpxchg.org, davem@davemloft.net,
-       benh@kernel.crashing.org, tglx@linutronix.de, sgruszka@redhat.com,
-       mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, joel.becker@oracle.com,
-       linux-kernel@vger.kernel.org, yinghai@kernel.org,
-       konrad.wilk@oracle.com, torvalds@linux-foundation.org,
-       ian.campbell@citrix.com, peterz@infradead.org, hannes@cmpxchg.org,
-       davem@davemloft.net, benh@kernel.crashing.org, tglx@linutronix.de,
-       sgruszka@redhat.com, mingo@elte.hu
-In-Reply-To: <1269830604-26214-4-git-send-email-yinghai@kernel.org>
-References: <1269830604-26214-4-git-send-email-yinghai@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Do not free zero sized per cpu areas
-Message-ID: <tip-eed63519e3e74d515d2007ecd895338d0ba2a85c@git.kernel.org>
-Git-Commit-ID: eed63519e3e74d515d2007ecd895338d0ba2a85c
-X-Mailer: tip-git-log-daemon
+	id S1753438Ab0C2SoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 14:44:13 -0400
+Date: Mon, 29 Mar 2010 14:44:11 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+cc: Kernel development list <linux-kernel@vger.kernel.org>,
+       USB list <linux-usb@vger.kernel.org>, Alan Piszcz <ap@solarrain.com>
+Subject: Re: 2.6.33: Xorg+khubd lockup (D-state) BUG / ioctl EVIOCGNAME
+ failed: Inappropriate ioctl for device / PreInit returned NULL
+In-Reply-To: <Pine.LNX.4.44L0.1003291253410.3358-100000@iolanthe.rowland.org>
+Message-ID: <alpine.DEB.2.00.1003291443330.10153@p34.internal.lan>
+References: <Pine.LNX.4.44L0.1003291253410.3358-100000@iolanthe.rowland.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 29 Mar 2010 18:43:12 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  eed63519e3e74d515d2007ecd895338d0ba2a85c
-Gitweb:     http://git.kernel.org/tip/eed63519e3e74d515d2007ecd895338d0ba2a85c
-Author:     Ian Campbell <ian.campbell@citrix.com>
-AuthorDate: Sun, 28 Mar 2010 19:42:56 -0700
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 29 Mar 2010 18:55:40 +0200
 
-x86: Do not free zero sized per cpu areas
 
-This avoids an infinite loop in free_early_partial().
+On Mon, 29 Mar 2010, Alan Stern wrote:
 
-Add a warning to free_early_partial() to catch future problems.
+> On Mon, 29 Mar 2010, Justin Piszcz wrote:
+>
+> Yes it does.  Maybe there's something wrong with the way your email
+> client extracted the patch from the message.
+You're correct, sorry about that, when it recurs and I have the usbmon
+trace output I will send it along.
 
--v5: put back start > end back into WARN_ONCE()
--v6: use one line for warning, suggested by Linus
--v7: more tests
--v8: remove the function name as suggested by Johannes
-     WARN_ONCE() will print out that function name.
-
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Tested-by: Joel Becker <joel.becker@oracle.com>
-Tested-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: David Miller <davem@davemloft.net>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-LKML-Reference: <1269830604-26214-4-git-send-email-yinghai@kernel.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/early_res.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/early_res.c b/kernel/early_res.c
-index 3cb2c66..31aa933 100644
---- a/kernel/early_res.c
-+++ b/kernel/early_res.c
-@@ -333,6 +333,12 @@ void __init free_early_partial(u64 start, u64 end)
- 	struct early_res *r;
- 	int i;
- 
-+	if (start == end)
-+		return;
-+
-+	if (WARN_ONCE(start > end, "  wrong range [%#llx, %#llx]\n", start, end))
-+		return;
-+
- try_next:
- 	i = find_overlapped_early(start, end);
- 	if (i >= max_early_res)
+>
+>> It also fails against 2.6.34-rc2, can you diff -u and show the patch so
+>> I can patch manually or include a patch against 2.6.33 or 2.6.34-rc2?
+>
+> That _was_ a "diff -u"-style patch.
+>
+> Alan Stern
+>
