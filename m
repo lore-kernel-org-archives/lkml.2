@@ -1,164 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124Ab0C2P1h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 11:27:37 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:62997 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875Ab0C2P1f (ORCPT
+	id S1753056Ab0C2Pd0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 11:33:26 -0400
+Received: from fg-out-1718.google.com ([72.14.220.159]:51734 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957Ab0C2PdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 11:27:35 -0400
-Message-ID: <4BB0C6E1.2090606@petalogix.com>
-Date: Mon, 29 Mar 2010 17:27:29 +0200
-From: Michal Simek <michal.simek@petalogix.com>
-Reply-To: michal.simek@petalogix.com
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Mon, 29 Mar 2010 11:33:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=hpROXKKolp39FzeDXeMvW5hz0utvqtW4o4qSZTmGdwfQjik/YaesHU2nPlLOnLAGr6
+         IbAz5oZdKJcQn5ZGaarjC8+bjJ0JSIfrJ+QjWpc9+NytLaL3kblthBGV9hXL4Hc0+5Q6
+         72jJl2JO3YbzjkUZRUrmozxM0r7guC16sS2V8=
+Message-ID: <4BB0C840.7030802@gmail.com>
+Date: Mon, 29 Mar 2010 17:33:20 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.2pre) Gecko/20100308 SUSE/3.1b1-6.1 Thunderbird/3.1b1
 MIME-Version: 1.0
-CC: Eric Dumazet <eric.dumazet@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       John Williams <john.williams@petalogix.com>, netdev@vger.kernel.org,
-       Grant Likely <grant.likely@secretlab.ca>,
-       John Linn <John.Linn@xilinx.com>,
-       "Steven J. Magnani" <steve@digidescorp.com>,
-       Arnd Bergmann <arnd@arndb.de>, akpm@linux-foundation.org
-Subject: Re: Network performance - iperf
-References: <4BB09021.6020202@petalogix.com> <1269864994.2164.21.camel@edumazet-laptop> <4BB0BF28.5090505@petalogix.com>
-In-Reply-To: <4BB0BF28.5090505@petalogix.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org,
+       Nigel Cunningham <ncunningham@crca.org.au>
+Subject: Re: [RFC 09/15] PM / Hibernate: user, implement user_ops writer
+References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <201003252314.33256.rjw@sisk.pl> <4BAC7FC3.50405@gmail.com> <201003262304.32118.rjw@sisk.pl>
+In-Reply-To: <201003262304.32118.rjw@sisk.pl>
+X-Enigmail-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Simek wrote:
-> Eric Dumazet wrote:
->> Le lundi 29 mars 2010 à 13:33 +0200, Michal Simek a écrit :
->>
->>> Do you have any idea howto improve TCP/UDP performance in general?
->>> Or tests which can point me on weak places.
->>
->> Could you post "netstat -s" on your receiver, after fresh boot and your
->> iperf session, for 32 MB and 256 MB ram case ?
->>
+On 03/26/2010 11:04 PM, Rafael J. Wysocki wrote:
+> I have some other comments to this patch, but I'd like to understand what
+> really happens here, since the changelog is not too verbose.
 > 
-> I am not sure if is helpful but look below.
-> 
-Sorry I forget to c&p that second part. :-(
+> Please explain the design here.
 
-Look below.
-Michal
+Yeah, my bad.
 
-32MB
+What I want to achieve is to revert the behaviour of current
+implementation to the one used in toi. Now, it is that when writing a
+page to the swap, the hibernation does snapshot_read_page(page) with
+swap_write_page(page) in a loop. This is OK until one needs to do
+anything with the page.
 
-~ # cat /proc/meminfo | head -n 1
-MemTotal:          30024 kB
-~ # iperf -s
-------------------------------------------------------------
-Server listening on TCP port 5001
-TCP window size: 85.3 KByte (default)
-------------------------------------------------------------
-[  6] local 192.168.0.10 port 5001 connected with 192.168.0.101 port 43577
-[ ID] Interval       Transfer     Bandwidth
-[  6]  0.0-50.0 sec  78.0 MBytes  13.1 Mbits/sec
-~ # ./netstat -s
-Ip:
-     56596 total packets received
-     0 forwarded
-     0 incoming packets discarded
-     56596 incoming packets delivered
-     15752 requests sent out
-Icmp:
-     0 ICMP messages received
-     0 input ICMP message failed.
-     ICMP input histogram:
-     0 ICMP messages sent
-     0 ICMP messages failed
-     ICMP output histogram:
-Tcp:
-     0 active connections openings
-     1 passive connection openings
-     0 failed connection attempts
-     0 connection resets received
-     0 connections established
-     56596 segments received
-     15752 segments send out
-     0 segments retransmited
-     0 bad segments received.
-     0 resets sent
-Udp:
-     0 packets received
-     0 packets to unknown port received.
-     0 packet receive errors
-     0 packets sent
-     RcvbufErrors: 0
-     SndbufErrors: 0
-UdpLite:
-     InDatagrams: 0
-     NoPorts: 0
-     InErrors: 0
-     OutDatagrams: 0
-     RcvbufErrors: 0
-     SndbufErrors: 0
-error parsing /proc/net/snmp: Success
+When compression or encryption (or both) are needed to be done, this
+scenario does not work well because page returned by snapshot_read_page,
+after going through the crypto layers, is no longer PAGE_SIZE big.
+
+Probably the easiest solution is to revert it as noted above: a page is
+taken from snapshot (with patches I have here the snapshot layer is only
+told to "store next page" without returning a page to the caller), fed
+through crypto layers as needed and finally given to chunk writer which
+assembles PAGE_SIZE blocks from the chunks. Then whole pages of
+compressed/encrypted data are given to user or in-kernel block io by
+hibernate_io_ops->write_page. In-kernel .write_page simply calls
+swap_write_page (which in turn hib_bio_write_page while storing swap
+sector entries).
+
+User .write_page, with buf as a parameter, does the following:
+* to_do_buf = buf
+* set WORK bit
+* wake_up .read (below)
+* wait_for WORK bit clear
+
+Writer in this case is a user process performing fops->read. .read does
+the following:
+* wait_for WORK bit
+* copy_to_user to_do_buf
+* clear WORK bit
+* wake_up .write_page
 
 
-
-256MB
-
-
-~ # cat /proc/meminfo | head -n 1
-MemTotal:         257212 kB
-~ # iperf -s
-------------------------------------------------------------
-Server listening on TCP port 5001
-TCP window size: 85.3 KByte (default)
-------------------------------------------------------------
-[  6] local 192.168.0.10 port 5001 connected with 192.168.0.101 port 46069
-[ ID] Interval       Transfer     Bandwidth
-[  6]  0.0-50.2 sec  19.5 MBytes  3.26 Mbits/sec
-~ # ./netstat -s
-Ip:
-     14163 total packets received
-     0 forwarded
-     0 incoming packets discarded
-     14163 incoming packets delivered
-     5209 requests sent out
-Icmp:
-     0 ICMP messages received
-     0 input ICMP message failed.
-     ICMP input histogram:
-     0 ICMP messages sent
-     0 ICMP messages failed
-     ICMP output histogram:
-Tcp:
-     0 active connections openings
-     1 passive connection openings
-     0 failed connection attempts
-     0 connection resets received
-     0 connections established
-     14163 segments received
-     5209 segments send out
-     0 segments retransmited
-     0 bad segments received.
-     0 resets sent
-Udp:
-     0 packets received
-     0 packets to unknown port received.
-     0 packet receive errors
-     0 packets sent
-     RcvbufErrors: 0
-     SndbufErrors: 0
-UdpLite:
-     InDatagrams: 0
-     NoPorts: 0
-     InErrors: 0
-     OutDatagrams: 0
-     RcvbufErrors: 0
-     SndbufErrors: 0
-error parsing /proc/net/snmp: Success
+I need the barrier to ensure the "to_do_buf = buf" assignment is not
+reordered with the "set WORK bit" in .write_page. Otherwise .read will
+see WORK bit set, but have to_do_buf not updated. I certainly can lock
+the two operation together, but (a) I see no point in doing so; (b) it
+makes the code worse (I need to unlock and relock in wait_event and
+unlock on all fail paths).
 
 
+The very similar happens for fops->write, ergo hibernate_io_ops->read_page.
 
+thanks,
 -- 
-Michal Simek, Ing. (M.Eng)
-PetaLogix - Linux Solutions for a Reconfigurable World
-w: www.petalogix.com p: +61-7-30090663,+42-0-721842854 f: +61-7-30090663
+js
