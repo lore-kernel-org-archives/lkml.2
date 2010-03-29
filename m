@@ -1,131 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011Ab0C2Lsx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 07:48:53 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:55585 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925Ab0C2Lsw (ORCPT
+	id S1752004Ab0C2MAt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 08:00:49 -0400
+Received: from mail-iw0-f182.google.com ([209.85.223.182]:35788 "EHLO
+	mail-iw0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751646Ab0C2MAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 07:48:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andi Kleen <andi@firstfloor.org>
-Subject: Re: [GIT, RFC] Killing the Big Kernel Lock II
-Date: Mon, 29 Mar 2010 12:48:37 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Jiri Kosina <jkosina@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
-       linux-kernel@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>,
-       Thomas Gleixner <tglx@linutronix.de>, jblunck@suse.de,
-       Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-       gregkh@suse.de
-References: <201003242240.54907.arnd@arndb.de> <8739zk1529.fsf@basil.nowhere.org> <87tys0yly7.fsf_-_@basil.nowhere.org>
-In-Reply-To: <87tys0yly7.fsf_-_@basil.nowhere.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201003291348.37997.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX19tdoGLS7kY/azYNGVuEGlSRXX5gA766ZfpgBE
- TmXqhYFtBBN18cCHsTHgEYEMeRo4Dxd9/O9b90NBsvFdbx9YXj
- xXI8tmY+8ESN2oRE1xeWA==
+	Mon, 29 Mar 2010 08:00:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Z59cq3kpg3cnitV0o7liib5NRLxLLhYN+gYi05dcogpfWzvJQDbcO1+bvxBPcGzrIC
+         c7Dy2sYiZFo5qf5kAgg1M+1MF4lxFhTF72iNq5cf+I5Wje7v5Ud+nc+4GCzitolEGbRG
+         W0senpQQBcWumRqJ9DNu1DTFhWQe2cUO8w1x0=
+From: Kenji Toyama <kenji.toyama@gmail.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Kenji Toyama <kenji.toyama@gmail.com>
+Subject: [PATCH 6/6] staging: vt6656: michael.c: Fixed coding style issues
+Date: Mon, 29 Mar 2010 23:20:36 +1100
+Message-Id: <1269865236-16782-1-git-send-email-kenji.toyama@gmail.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 29 March 2010, Andi Kleen wrote:
-> Andi Kleen <andi@firstfloor.org> writes:
-> >
-> > From a quick grep at least EHCI doesn't seem to need it?
+Replaced lots of spaces by real tabs and resolved other minor issues.
+Signed-off-by: Daniel Kenji Toyama <kenji.toyama@gmail.com>
+---
+ drivers/staging/vt6656/michael.c |  177 ++++++++++++++++++-------------------
+ 1 files changed, 86 insertions(+), 91 deletions(-)
 
-Right.
+diff --git a/drivers/staging/vt6656/michael.c b/drivers/staging/vt6656/michael.c
+index c930e0c..d4c0820 100644
+--- a/drivers/staging/vt6656/michael.c
++++ b/drivers/staging/vt6656/michael.c
+@@ -48,20 +48,23 @@
+ 
+ /*---------------------  Static Functions  --------------------------*/
+ /*
+-static DWORD s_dwGetUINT32(BYTE * p);         // Get DWORD from 4 bytes LSByte first
+-static VOID s_vPutUINT32(BYTE* p, DWORD val); // Put DWORD into 4 bytes LSByte first
+-*/
+-static VOID s_vClear(void);                       // Clear the internal message,
+-                                              // resets the object to the state just after construction.
++ * static DWORD s_dwGetUINT32(BYTE * p);         Get DWORD from
++ *							4 bytes LSByte first
++ * static VOID s_vPutUINT32(BYTE* p, DWORD val); Put DWORD into
++ *							4 bytes LSByte first
++ */
++static VOID s_vClear(void);		/* Clear the internal message,
++					 * resets the object to the
++					 * state just after construction. */
+ static VOID s_vSetKey(DWORD dwK0, DWORD dwK1);
+-static VOID s_vAppendByte(BYTE b);            // Add a single byte to the internal message
++static VOID s_vAppendByte(BYTE b);	/* Add a single byte to the internal
++					 * message */
+ 
+ /*---------------------  Export Variables  --------------------------*/
+-static DWORD  L, R;           // Current state
+-
+-static DWORD  K0, K1;         // Key
+-static DWORD  M;              // Message accumulator (single word)
+-static UINT   nBytesInM;      // # bytes in M
++static DWORD  L, R;		/* Current state */
++static DWORD  K0, K1;		/* Key */
++static DWORD  M;		/* Message accumulator (single word) */
++static UINT   nBytesInM;	/* # bytes in M */
+ 
+ /*---------------------  Export Functions  --------------------------*/
+ 
+@@ -69,113 +72,105 @@ static UINT   nBytesInM;      // # bytes in M
+ static DWORD s_dwGetUINT32 (BYTE * p)
+ // Convert from BYTE[] to DWORD in a portable way
+ {
+-    DWORD res = 0;
+-    UINT i;
+-    for(i=0; i<4; i++ )
+-    {
+-        res |= (*p++) << (8*i);
+-    }
+-    return res;
++	DWORD res = 0;
++	UINT i;
++	for(i=0; i<4; i++ )
++		res |= (*p++) << (8*i);
++	return res;
+ }
+ 
+ static VOID s_vPutUINT32 (BYTE* p, DWORD val)
+ // Convert from DWORD to BYTE[] in a portable way
+ {
+-    UINT i;
+-    for(i=0; i<4; i++ )
+-    {
+-        *p++ = (BYTE) (val & 0xff);
+-        val >>= 8;
+-    }
++	UINT i;
++	for(i=0; i<4; i++ ) {
++		*p++ = (BYTE) (val & 0xff);
++		val >>= 8;
++	}
+ }
+ */
+ 
+-static VOID s_vClear (void)
++static VOID s_vClear(void)
+ {
+-    // Reset the state to the empty message.
+-    L = K0;
+-    R = K1;
+-    nBytesInM = 0;
+-    M = 0;
++	/* Reset the state to the empty message. */
++	L = K0;
++	R = K1;
++	nBytesInM = 0;
++	M = 0;
+ }
+ 
+-static VOID s_vSetKey (DWORD dwK0, DWORD dwK1)
++static VOID s_vSetKey(DWORD dwK0, DWORD dwK1)
+ {
+-    // Set the key
+-    K0 = dwK0;
+-    K1 = dwK1;
+-    // and reset the message
+-    s_vClear();
++	/* Set the key */
++	K0 = dwK0;
++	K1 = dwK1;
++	/* and reset the message */
++	s_vClear();
+ }
+ 
+-static VOID s_vAppendByte (BYTE b)
++static VOID s_vAppendByte(BYTE b)
+ {
+-    // Append the byte to our word-sized buffer
+-    M |= b << (8*nBytesInM);
+-    nBytesInM++;
+-    // Process the word if it is full.
+-    if( nBytesInM >= 4 )
+-    {
+-        L ^= M;
+-        R ^= ROL32( L, 17 );
+-        L += R;
+-        R ^= ((L & 0xff00ff00) >> 8) | ((L & 0x00ff00ff) << 8);
+-        L += R;
+-        R ^= ROL32( L, 3 );
+-        L += R;
+-        R ^= ROR32( L, 2 );
+-        L += R;
+-        // Clear the buffer
+-        M = 0;
+-        nBytesInM = 0;
+-    }
++	/* Append the byte to our word-sized buffer */
++	M |= b << (8*nBytesInM);
++	nBytesInM++;
++	/* Process the word if it is full. */
++	if (nBytesInM >= 4) {
++		L ^= M;
++		R ^= ROL32(L, 17);
++		L += R;
++		R ^= ((L & 0xff00ff00) >> 8) | ((L & 0x00ff00ff) << 8);
++		L += R;
++		R ^= ROL32(L, 3);
++		L += R;
++		R ^= ROR32(L, 2);
++		L += R;
++		/* Clear the buffer */
++		M = 0;
++		nBytesInM = 0;
++	}
+ }
+ 
+-VOID MIC_vInit (DWORD dwK0, DWORD dwK1)
++VOID MIC_vInit(DWORD dwK0, DWORD dwK1)
+ {
+-    // Set the key
+-    s_vSetKey(dwK0, dwK1);
++	/* Set the key */
++	s_vSetKey(dwK0, dwK1);
+ }
+ 
+ 
+-VOID MIC_vUnInit (void)
++VOID MIC_vUnInit(void)
+ {
+-    // Wipe the key material
+-    K0 = 0;
+-    K1 = 0;
++	/* Wipe the key material */
++	K0 = 0;
++	K1 = 0;
+ 
+-    // And the other fields as well.
+-    //Note that this sets (L,R) to (K0,K1) which is just fine.
+-    s_vClear();
++	/* And the other fields as well. */
++	/* Note that this sets (L,R) to (K0,K1) which is just fine. */
++	s_vClear();
+ }
+ 
+-VOID MIC_vAppend (PBYTE src, UINT nBytes)
++VOID MIC_vAppend(PBYTE src, UINT nBytes)
+ {
+-    // This is simple
+-    while (nBytes > 0)
+-    {
+-        s_vAppendByte(*src++);
+-        nBytes--;
+-    }
++    /* This is simple */
++	while (nBytes > 0) {
++		s_vAppendByte(*src++);
++		nBytes--;
++	}
+ }
+ 
+-VOID MIC_vGetMIC (PDWORD pdwL, PDWORD pdwR)
++VOID MIC_vGetMIC(PDWORD pdwL, PDWORD pdwR)
+ {
+-    // Append the minimum padding
+-    s_vAppendByte(0x5a);
+-    s_vAppendByte(0);
+-    s_vAppendByte(0);
+-    s_vAppendByte(0);
+-    s_vAppendByte(0);
+-    // and then zeroes until the length is a multiple of 4
+-    while( nBytesInM != 0 )
+-    {
+-        s_vAppendByte(0);
+-    }
+-    // The s_vAppendByte function has already computed the result.
+-    *pdwL = L;
+-    *pdwR = R;
+-    // Reset to the empty message.
+-    s_vClear();
++	/* Append the minimum padding */
++	s_vAppendByte(0x5a);
++	s_vAppendByte(0);
++	s_vAppendByte(0);
++	s_vAppendByte(0);
++	s_vAppendByte(0);
++	/* and then zeroes until the length is a multiple of 4 */
++	while (nBytesInM != 0)
++		s_vAppendByte(0);
++	/* The s_vAppendByte function has already computed the result. */
++	*pdwL = L;
++	*pdwR = R;
++	/* Reset to the empty message. */
++	s_vClear();
+ }
+-
+-- 
+1.6.3.3
 
-> As a followup:
-> 
-> I killed some time by going through the various BKL uses in USB and
-> came up with this git tree to address them . Feel free to integrate
-> into your tree.
-
-Great, I was hoping someone picks up the missing pieces. Maybe someone
-else can do the same for the sound drivers ;-).
-
-> With this only some obscure USB low level drivers still need to 
-> depend on BKL, the majority is clean. Gadgetfs also still needs
-> it for now.
-
-Sure, that absolutely makes sense.
-
-> I ended up also fixing some minor races in usb serial registration/
-> unregistration.
-> 
-> Opens:
-> - The usb serial ioctl entry needs to become a unlocked_ioctl,
-> but I think that needs your tree first. The code below it doesn't
-> need it anymore.
-
-The usb-serial driver has a few instances where it takes the BKL
-in the mainline code, but this gets converted to the Big TTY Mutex
-in my series. The ioctl method in there is fine as far as I can tell.
-
-> - The seek function in uhci-debug.c probably is still racy.
-
-That function could be removed in favor of using generic_file_ioctl
-and setting i_size to up->size.
-
-Also, the race is only between concurrent calls of llseek on
-the same file descriptor, which is undefined anyway.
-The current code also doesn't protect you against partial updates
-of f_pos during ->read() on 32 bit systems (nothing ever does),
-and it even fails to protect against the concurrent llseek race
-because the assignment is done outside of the f_pos update.
-
->commit 7160dc70d8a3e5a45c11eadfba05b9996966c6b4
->Author: Andi Kleen <ak@linux.intel.com>
->Date:   Mon Mar 29 01:26:35 2010 +0200
->
->    USB-BKL: Convert usb_driver ioctl to unlocked_ioctl
->
->    And audit all the users. None needed the BKL.  That was easy
->    because there was only very few around.
->
->    Tested with allmodconfig build on x86-64
->
->    Signed-off-by: Andi Kleen <ak@linux.intel.com>
->diff --git a/include/linux/usb.h b/include/linux/usb.h
->index ce1323c..2803ca4 100644
->--- a/include/linux/usb.h
->+++ b/include/linux/usb.h
->@@ -846,7 +846,7 @@ struct usb_driver {
->
-> 	void (*disconnect) (struct usb_interface *intf);
->
->-	int (*ioctl) (struct usb_interface *intf, unsigned int code,
->+	int (*unlocked_ioctl) (struct usb_interface *intf, unsigned int code,
-> 			void *buf);
->
-> 	int (*suspend) (struct usb_interface *intf, pm_message_t message);
-
-The patch looks correct, but I probably wouldn't bother with the rename,
-and simply drop the BKL in the caller.
-
->commit 89361b2e8d3dc3de83e105d60e49d5cdd9a68973
->Author: Andi Kleen <ak@linux.intel.com>
->Date:   Mon Mar 29 01:15:32 2010 +0200
->
->    USB-BKL: Remove BKL from usb serial drivers ioctl handlers
->
->    I audited all the low level serial ioctl handlers and none of them
->    actually need the BKL.
->
->    To make sure all code is checked change the usb_serial_driver ->ioctl
-> field to ->unlocked_ioctl
->
->    Note this is still called for now with BKL held because tty drivers
->    don't have a ->unlocked_ioctl from the tty layer in mainline.
->    This could be trivially changed now though.
->
->    Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
-The serial_ioctl function is already called without the BKL, depite the
-name. tty_operations->ioctl was converted a long time ago, so I guess this
-patch can be dropped from your series.
-
-	Arnd
