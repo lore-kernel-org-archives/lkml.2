@@ -1,50 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab0C2VAS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 17:00:18 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37415 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752422Ab0C2VAQ (ORCPT
+	id S1753931Ab0C2VAb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 17:00:31 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:42309 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753766Ab0C2VA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 17:00:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=WIeJXnqMtmTiEGIskYXqkUwHZlmgbqHwyS3zhyQU+pwWHAHfZhqVainJu+y00TJLu7
-         OJM1u4V0/ZFnglBNl5zMqY800Vki22DLNM863k2xUb3vzJcUf/MhcWRt2T/B5DaEUDyO
-         l/b+nMOE2icjgAUmk39LKGuiwQ3jdzE2jeSk0=
+	Mon, 29 Mar 2010 17:00:28 -0400
+Date: Mon, 29 Mar 2010 14:01:49 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       ceph-devel@vger.kernel.org
+Subject: [GIT PULL] Ceph fixes for 2.6.34-rc3
+Message-ID: <Pine.LNX.4.64.1003291007190.26704@cobra.newdream.net>
 MIME-Version: 1.0
-In-Reply-To: <4BB0D455.305@nortel.com>
-References: <69a32f311003281638g216d6d31n15bb837c5353d773@mail.gmail.com>
-	 <4BAFFAAC.9030905@gmail.com> <4BB0D455.305@nortel.com>
-Date: Mon, 29 Mar 2010 23:00:14 +0200
-Message-ID: <9c2470ce1003291400j8af99clf209263a25dbaf97@mail.gmail.com>
-Subject: Re: Another Linux Patent Issued [7,684,347 method and apparatus for 
-	network packet capture distributed storage system]
-From: Jan III Sobieski <jan3sobi3ski@gmail.com>
-To: Chris Friesen <cfriesen@nortel.com>
-Cc: Jeffrey Merkey <jeffmerkey@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/3/29 Chris Friesen <cfriesen@nortel.com>:
-> On 03/28/2010 06:56 PM, Jan III Sobieski wrote:
->> W dniu 2010-03-29 01:38, Jeffrey Merkey pisze:
->>> http://patft.uspto.gov/netacgi/nph-Parser?Sect1=PTO2&Sect2=HITOFF&p=1&u=%2Fnetahtml%2FPTO%2Fsearch-bool.html&r=1&f=G&l=50&co1=AND&d=PTXT&s1=merkey.INNM.&OS=IN/merkey&RS=IN/merkey
->
->> So you patented network sniffer?
->
-> No, he patented a *really fast* network sniffer.
+Hi Linus,
 
-So now it's time to patent a really fast operating system :)
+Please pull the current set of Ceph fixes for 2.6.34-rc3 from:
 
->
-> Chris
->
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
 
+There are a lot of bug fixes here, accumulated since the original pull 
+request was sent during the merge window.  A few client hangs, some 
+oopses, authentication fixes, and failure handling fixes.  There are also 
+a handful of cleanups mixed in here that didn't seem worth untangling from 
+the bug fixes, as well as some documentation updates that should make it 
+into 2.6.34.
 
--- 
-Jan III Sobieski
+I'm assuming I should send these to you sooner rather than later, although 
+if you prefer a consolidated pull later in the cycle I can do that too.
+
+Also, thanks for pulling Ceph into your tree!  It's already making a 
+difference in terms of code review and testing.
+
+Thanks-
+sage
+
+---
+
+Cheng Renquan (1):
+      ceph: some documentations fixes
+
+Dan Carpenter (1):
+      ceph: handle kmalloc() failure
+
+Sage Weil (26):
+      ceph: implemented caps should always be superset of issued caps
+      ceph: add missing locking to protect i_snap_realm_item during split
+      ceph: fix inode removal from snap realm when racing with migration
+      ceph: fix authenticator timeout
+      ceph: fix authenticator buffer size calculation
+      ceph: release old ticket_blob buffer
+      ceph: clean up service ticket decoding
+      ceph: fix null pointer deref of r_osd in debug output
+      ceph: drop unnecessary WARN_ON in caps migration
+      ceph: fix session locking in handle_caps, ceph_check_caps
+      ceph: clean up handle_cap_grant, handle_caps wrt session mutex
+      ceph: only release unused caps with mds requests
+      ceph: fix mds sync() race with completing requests
+      ceph: fix pg pool decoding from incremental osdmap update
+      ceph: prevent dup stale messages to console for restarting mds
+      ceph: fix connection fault con_work reentrancy problem
+      ceph: rename r_sent_stamp r_stamp
+      ceph: avoid reopening osd connections when address hasn't changed
+      ceph: fix snap rebuild condition
+      ceph: make write_begin wait propagate ERESTARTSYS
+      ceph: propagate mds session allocation failures to caller
+      ceph: fix session check on mds reply
+      ceph: fix possible double-free of mds request reference
+      ceph: avoid loaded term 'OSD' in documention
+      ceph: fix use after free on mds __unregister_request
+      ceph: update discussion list address in MAINTAINERS
+
+ Documentation/filesystems/00-INDEX |    2 +
+ Documentation/filesystems/ceph.txt |   11 +++--
+ MAINTAINERS                        |    2 +-
+ fs/ceph/addr.c                     |   10 ++++-
+ fs/ceph/auth_x.c                   |   53 ++++++++++++++++++-------
+ fs/ceph/caps.c                     |   73 +++++++++++++++++++-----------------
+ fs/ceph/dir.c                      |    4 +-
+ fs/ceph/inode.c                    |   16 ++++++++
+ fs/ceph/mds_client.c               |   43 ++++++++++++++++-----
+ fs/ceph/messenger.c                |   19 ++++-----
+ fs/ceph/messenger.h                |    1 +
+ fs/ceph/osd_client.c               |   29 ++++++++++----
+ fs/ceph/osd_client.h               |    2 +-
+ fs/ceph/osdmap.c                   |   17 +++++---
+ fs/ceph/snap.c                     |    6 ++-
+ 15 files changed, 191 insertions(+), 97 deletions(-)
