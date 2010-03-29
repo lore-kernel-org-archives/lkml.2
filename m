@@ -1,36 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab0C2Q07 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 12:26:59 -0400
-Received: from zcars04e.nortel.com ([47.129.242.56]:62742 "EHLO
-	zcars04e.nortel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754606Ab0C2Q05 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 12:26:57 -0400
-Message-ID: <4BB0D455.305@nortel.com>
-Date: Mon, 29 Mar 2010 10:24:53 -0600
-From: "Chris Friesen" <cfriesen@nortel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
+	id S1754690Ab0C2Q14 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 12:27:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33253 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754134Ab0C2Q1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 12:27:55 -0400
+Message-ID: <4BB0D500.1090409@redhat.com>
+Date: Mon, 29 Mar 2010 12:27:44 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
 MIME-Version: 1.0
-To: Jan III Sobieski <jan3sobi3ski@gmail.com>
-CC: Jeffrey Merkey <jeffmerkey@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: Another Linux Patent Issued [7,684,347 method and apparatus for
- network packet capture distributed storage system]
-References: <69a32f311003281638g216d6d31n15bb837c5353d773@mail.gmail.com> <4BAFFAAC.9030905@gmail.com>
-In-Reply-To: <4BAFFAAC.9030905@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kent Overstreet <kent.overstreet@gmail.com>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+       Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: KVM bug, git bisected
+References: <4BADFD74.8060904@gmail.com> <4BB0D11A.607@redhat.com>
+In-Reply-To: <4BB0D11A.607@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Mar 2010 16:26:54.0019 (UTC) FILETIME=[A4AC8130:01CACF5C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2010 06:56 PM, Jan III Sobieski wrote:
-> W dniu 2010-03-29 01:38, Jeffrey Merkey pisze:
->> http://patft.uspto.gov/netacgi/nph-Parser?Sect1=PTO2&Sect2=HITOFF&p=1&u=%2Fnetahtml%2FPTO%2Fsearch-bool.html&r=1&f=G&l=50&co1=AND&d=PTXT&s1=merkey.INNM.&OS=IN/merkey&RS=IN/merkey
+On 03/29/2010 12:11 PM, Rik van Riel wrote:
+> On 03/27/2010 08:43 AM, Kent Overstreet wrote:
+>> commit 5beb49305251e5669852ed541e8e2f2f7696c53e
+>> Author: Rik van Riel <riel@redhat.com>
+>> Date: Fri Mar 5 13:42:07 2010 -0800
+>>
+>> mm: change anon_vma linking to fix multi-process server scalability issue
+>>
+>> I get this when starting kvm. The warning hasn't caused me problems, but
+>> I've also been getting a scheduling while atomic panic when I start kvm
+>> that I can only reproduce when I don't want to. It's definitely config
+>> dependent, I'd guess preempt might have something to do with it.
+>
+>  From your trace, it looks like mm_take_all_locks is taking close
+> to 256 locks, which is where the preempt_count could overflow into
+> the softirq count.
+>
+> Since kvm-qemu is exec'd, I am guessing you have a very large
+> number of VMAs in your qemu process. Is that correct?
 
-> So you patented network sniffer?
+I just took a look at a qemu-kvm process on my own system.
 
-No, he patented a *really fast* network sniffer.
+It has a staggering 385 VMAs!
 
-Chris
+That definately has the potential of overflowing PREEMPT_BITS
+when undergoing mm_take_all_locks...
+
+> Peter, would it be safe to increase PREEMPT_BITS to eg. 10?
+
+Looks like we'll have to.   At least on 64 bits...
