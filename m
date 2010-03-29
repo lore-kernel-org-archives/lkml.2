@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab0C2TWD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 15:22:03 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:62637 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796Ab0C2TV7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 15:21:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=p1jWLGUk69EnN2w/lMLGVUGlBtnem5cgYD56yAGB5l0bDZIVdLatJ+/XkkON3xCxvF
-         pdHYD51X5SCeo39AFYC0GTAO+T/WAtWN9Us1ZrUTnLkl9zo9ukl52vt9FTNaNOojZ1Dj
-         RLGe+b0G2GymQCqSJ0+CzBYRDtPvKgWT+s07o=
+	id S1753438Ab0C2TWK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 15:22:10 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:60966 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753328Ab0C2TWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 15:22:02 -0400
+Date: Mon, 29 Mar 2010 12:21:59 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFS: Fix RCU warnings in
+ nfs_inode_return_delegation_noreclaim() [ver #2]
+Message-ID: <20100329192159.GM2569@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100319022527.GC2894@linux.vnet.ibm.com>
+ <20100318133302.29754.1584.stgit@warthog.procyon.org.uk>
+ <19192.1269889348@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20100329190307.GJ30031@ZenIV.linux.org.uk>
-References: <6278d2221003291136p6481fe8emfb039403343c082@mail.gmail.com>
-	 <20100329190307.GJ30031@ZenIV.linux.org.uk>
-Date: Mon, 29 Mar 2010 20:21:57 +0100
-Message-ID: <6278d2221003291221j78d93780uff516b07f134ef0f@mail.gmail.com>
-Subject: Re: [2.6.34-rc2 NFS4 oops] open error path failure...
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Trond Myklebust <trond.myklebust@fys.uio.no>, linux-nfs@vger.kernel.org,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <19192.1269889348@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al,
+On Mon, Mar 29, 2010 at 08:02:28PM +0100, David Howells wrote:
+> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > >  	spin_lock(&clp->cl_lock);
+> > > -	if (rcu_dereference(nfsi->delegation) != NULL) {
+> > > +	if (nfsi->delegation != NULL) {
+> > 
+> > And this one.  I thought that Trond said that clp->cl_lock protects
+> > this one, in which case this should work:
+> > 
+> > 	if (rcu_dereference_check(nfsi->delegation,
+> > 				  lockdep_is_held(&clp->cl_lock)) != NULL) {
+> 
+> If clp->cl_lock protects this pointer, why the need for rcu_dereference_check()
+> at all?  The check is redundant since the line above gets the very lock we're
+> checking for.
 
-On Mon, Mar 29, 2010 at 8:03 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Mon, Mar 29, 2010 at 07:36:45PM +0100, Daniel J Blueman wrote:
->> Hi Trond,
->>
->> When open fails and should return EPERM [1], instead we see an oops
->> [2]. I see this on 2.6.34-rc1 and -rc2 mainline; NFS4 server is
->> mainline 2.6.33.1.
->>
->> Let me know if you can't reproduce it and I'll provide some analysis
->> from this end.
->
-> Joy...  ERR_PTR(-EPERM) in nd.intent.file, and whoever had called
-> lookup_instantiate_filp() hadn't bothered to check the return value.
->
-> OK, I think I see what's going on.  Replace
->                                lookup_instantiate_filp(nd, (struct dentry *)state, NULL);
->                                return 1;
-> with
->                                lookup_instantiate_filp(nd, (struct dentry *)state, NULL);
->                                return state;
-> in fs/nfs/nfs4proc.c:nfs4_open_revalidate() and see if everything works
-> properly (or just lose the lookup_instantiate_filp() in there and simply
-> return state).
+Because Arnd Bergmann is working on a set of patches that makes sparse
+complain if you access an RCU-protected pointer directly, without using
+some flavor of rcu_dereference().
 
-That did the trick!
+So your approach would work for the moment, but would need another
+change, probably in the 2.6.35 timeframe.
 
-Looks like I should have reported this when I first encountered it,
-but I guess it goes to show there needs to be some NFS validation
-(LTP?). I'm still trying to chase down a rare NFSv4 dentry "Stale NFS
-file handle" issue I've seen.
+> > > -	if (rcu_dereference(nfsi->delegation) != NULL) {
+> > > +	if (nfsi->delegation != NULL) {
+> > 
+> > And this one, although the check for cp->cl_lock obviously won't work here.
+> > 
+> > >  		spin_lock(&clp->cl_lock);
+> > >  		delegation = nfs_detach_delegation_locked(nfsi, NULL);
+> > >  		spin_unlock(&clp->cl_lock);
+> 
+> On this one, why does nfsi->delegation need a memory barrier interpolating
+> afterwards?  It has an implicit one in the form of the spin_lock() immediately
+> after, if the value of the pointer wasn't NULL.  What two memory accesses is
+> the memory barrier ordering?
+> 
+> Ditto on the next one.
 
-Thanks,
-  Daniel
--- 
-Daniel J Blueman
+I must defer to Trond on this one.
+
+							Thanx, Paul
