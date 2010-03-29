@@ -1,113 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755770Ab0C2CoR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 22:44:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11185 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755553Ab0C2CoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 22:44:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,325,1267430400"; 
-   d="scan'208";a="504437658"
-Date: Mon, 29 Mar 2010 10:48:38 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Christian Pellegrin <chripell@fsfe.org>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "greg@kroah.com" <greg@kroah.com>,
-       "david-b@pacbell.net" <david-b@pacbell.net>,
-       "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-       "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-       "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-       "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Christian Pellegrin <chripell@fsfe.org>
-Subject: Re: [PATCH v1 3/4] max3100: adds console support for MAX3100
-Message-ID: <20100329104838.49c18075@feng-i7>
-In-Reply-To: <1269340170-6558-1-git-send-email-chripell@fsfe.org>
-References: <1269340105-6503-1-git-send-email-chripell@fsfe.org>
-	<1269340170-6558-1-git-send-email-chripell@fsfe.org>
-Organization: intel
-X-Mailer: Claws Mail 3.7.2 (GTK+ 2.18.3; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+	id S1755801Ab0C2Cq0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 22:46:26 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:29972 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755712Ab0C2CqX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 22:46:23 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 06/31] lmb: Add find_lmb_area()
+Date: Sun, 28 Mar 2010 19:42:59 -0700
+Message-Id: <1269830604-26214-7-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
+References: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A0B0201.4BB01464.016D,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+It will try find area according with size/align in specified range (start, end).
 
-I modified the code a little and run it on our HW platform, it really show
-some sigh of life: it can boots to console (the print format is not so good),
-I can input command and it execute correctly, but very slow, I type 3
-characters and it takes about 2 seconds to echo back on screen and start the
-execution, and after about 1 minute, the console hang there and input stopped
-to work.
+Need use it find correct buffer for new lmb.reserved.region.
 
-I also have some comments inline.
+also make it more easy for x86 to use lmb.
+x86 early_res is using find/reserve pattern instead of alloc.
 
-Thanks,
-Feng
+find_lmb_area() will hohor goal
 
+When we need temperary buff for range array etc for range work, if We are using
+lmb_alloc(), We will need to add some post fix code for buffer that is used
+by range array, because it is in the lmb.reserved already.
 
-On Tue, 23 Mar 2010 18:29:30 +0800
-Christian Pellegrin <chripell@fsfe.org> wrote:
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ include/linux/lmb.h |    4 ++
+ mm/lmb.c            |   81 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 85 insertions(+), 0 deletions(-)
 
-> This patch adds console support for the MAX3100 UART
-> (console=ttyMAX0,11500). The SPI subsystem and an
-
-115200?
-
->  
-> +#ifdef CONFIG_SERIAL_MAX3100_CONSOLE
-> +
-> +static void max3100_console_work(struct work_struct *w)
-> +{
-> +	struct max3100_port *s = container_of(w, struct max3100_port,
-> +					      console_work);
-> +	unsigned long start;
-> +	u16 tx, rx;
-> +
-> +	while (s->console_head != s->console_tail &&
-> +	       (s->console_flags & MAX3100_SUSPENDING) == 0) {
-> +		start = jiffies;
-> +		do {
-> +			tx = MAX3100_RC;
-> +			max3100_sr(s, tx, &rx);
-> +		} while ((rx & MAX3100_T) == 0 &&
-> +			 !time_after(jiffies, start +
-> s->console_tout));
-> +		tx = s->console_buf[s->console_tail];
-> +		max3100_calc_parity(s, &tx);
-> +		tx |= MAX3100_WD | MAX3100_RTS;
-
-Does this imply to have to work with HW flow control? on my platform
-I have to remove the RTS bit to make it work.
-
-> +		max3100_sr(s, tx, &rx);
-
-It doesn't handle received characters here? If the console is printing out
-a bulk of message while user input some command, the command may be ignored.
-Myself have met the same problem in our driver.
-
-
-> +		s->console_tail = (s->console_tail + 1) %
-> CONSOLE_BUF_SIZE;
-> +	}
-> +}
-> +
-> +static void max3100_console_putchar(struct uart_port *port, int ch)
-> +{
-> +	struct max3100_port *s = to_max3100_port(port);
-> +	int next = (s->console_head + 1) % CONSOLE_BUF_SIZE;
-> +
-> +	if (next != s->console_tail) {
-> +		s->console_buf[next] = ch;
-> +		s->console_head = next;
-> +	}
-
-Also I saw max3100_sr() uses cpu_to_be16() and be16_to_cpu(), is it really
-necessary, our platform is little-endian(x86), and I have to disable them
-to make the code work. Is your test platform big-endian?
+diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+index e14ea8d..05234bd 100644
+--- a/include/linux/lmb.h
++++ b/include/linux/lmb.h
+@@ -83,6 +83,10 @@ lmb_end_pfn(struct lmb_region *type, unsigned long region_nr)
+ 	       lmb_size_pages(type, region_nr);
+ }
+ 
++u64 __find_lmb_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
++			 u64 size, u64 align);
++u64 find_lmb_area(u64 start, u64 end, u64 size, u64 align);
++
+ #include <asm/lmb.h>
+ 
+ #endif /* __KERNEL__ */
+diff --git a/mm/lmb.c b/mm/lmb.c
+index 65b62dc..d5d5dc4 100644
+--- a/mm/lmb.c
++++ b/mm/lmb.c
+@@ -11,9 +11,13 @@
+  */
+ 
+ #include <linux/kernel.h>
++#include <linux/types.h>
+ #include <linux/init.h>
+ #include <linux/bitops.h>
+ #include <linux/lmb.h>
++#include <linux/bootmem.h>
++#include <linux/mm.h>
++#include <linux/range.h>
+ 
+ #define LMB_ALLOC_ANYWHERE	0
+ 
+@@ -546,3 +550,80 @@ int lmb_find(struct lmb_property *res)
+ 	}
+ 	return -1;
+ }
++
++static int __init find_overlapped_early(u64 start, u64 end)
++{
++	int i;
++	struct lmb_property *r;
++
++	for (i = 0; i < lmb.reserved.cnt && lmb.reserved.region[i].size; i++) {
++		r = &lmb.reserved.region[i];
++		if (end > r->base && start < (r->base + r->size))
++			break;
++	}
++
++	return i;
++}
++
++/* Check for already reserved areas */
++static inline bool __init bad_addr(u64 *addrp, u64 size, u64 align)
++{
++	int i;
++	u64 addr = *addrp;
++	bool changed = false;
++	struct lmb_property *r;
++again:
++	i = find_overlapped_early(addr, addr + size);
++	r = &lmb.reserved.region[i];
++	if (i < lmb.reserved.cnt && r->size) {
++		*addrp = addr = round_up(r->base + r->size, align);
++		changed = true;
++		goto again;
++	}
++	return changed;
++}
++
++u64 __init __find_lmb_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
++				 u64 size, u64 align)
++{
++	u64 addr, last;
++
++	addr = round_up(ei_start, align);
++	if (addr < start)
++		addr = round_up(start, align);
++	if (addr >= ei_last)
++		goto out;
++	while (bad_addr(&addr, size, align) && addr+size <= ei_last)
++		;
++	last = addr + size;
++	if (last > ei_last)
++		goto out;
++	if (last > end)
++		goto out;
++
++	return addr;
++
++out:
++	return -1ULL;
++}
++
++/*
++ * Find a free area with specified alignment in a specific range.
++ */
++u64 __init find_lmb_area(u64 start, u64 end, u64 size, u64 align)
++{
++	int i;
++
++	for (i = 0; i < lmb.memory.cnt; i++) {
++		u64 ei_start = lmb.memory.region[i].base;
++		u64 ei_last = ei_start + lmb.memory.region[i].size;
++		u64 addr;
++
++		addr = __find_lmb_area(ei_start, ei_last, start, end,
++					 size, align);
++
++		if (addr != -1ULL)
++			return addr;
++	}
++	return -1ULL;
++}
+-- 
+1.6.4.2
 
