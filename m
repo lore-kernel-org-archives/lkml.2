@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642Ab0C2TBm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 15:01:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53460 "EHLO mail.zytor.com"
+	id S1752843Ab0C2TCg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 15:02:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29298 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750957Ab0C2TBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 15:01:41 -0400
-Message-ID: <4BB0F7DA.6080603@zytor.com>
-Date: Mon, 29 Mar 2010 11:56:26 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Thunderbird/3.0.1
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Giel van Schijndel <me@mortis.eu>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Hans de Goede <hdegoede@redhat.com>, Jean Delvare <khali@linux-fr.org>,
-       Jonathan Cameron <jic23@cam.ac.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Bjorn Helgaas <bjorn.helgaas@hp.com>,
-       Dominik Brodowski <linux@dominikbrodowski.net>,
-       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
+	id S1750957Ab0C2TCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 15:02:34 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100319022527.GC2894@linux.vnet.ibm.com>
+References: <20100319022527.GC2894@linux.vnet.ibm.com> <20100318133302.29754.1584.stgit@warthog.procyon.org.uk>
+To: paulmck@linux.vnet.ibm.com
+Cc: dhowells@redhat.com, Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] resource: shared I/O region support
-References: <20100325125005.6d58cfaf@lxorguk.ukuu.org.uk>	<1269523063-30346-1-git-send-email-me@mortis.eu>	<20100325155705.1ec79dbc@lxorguk.ukuu.org.uk>	<20100325180347.GA2761@salidar.me.mortis.eu>	<20100325181633.0313b8a5@lxorguk.ukuu.org.uk>	<20100329081834.GB27956@salidar.me.mortis.eu>	<20100329090713.1317942b@jbarnes-piketon>	<20100329173800.GA3583@salidar.me.mortis.eu>	<4BB0E73F.2080104@zytor.com> <20100329193933.1a04762b@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100329193933.1a04762b@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] NFS: Fix RCU warnings in nfs_inode_return_delegation_noreclaim() [ver #2]
+Date: Mon, 29 Mar 2010 20:02:28 +0100
+Message-ID: <19192.1269889348@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2010 11:39 AM, Alan Cox wrote:
->> What I *really* object to with this patch is that it inherently assumes
->> that there is only one multiplexed resource in the entire system... but
->> of course nowhere enforces that.
+Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+
+> >  	spin_lock(&clp->cl_lock);
+> > -	if (rcu_dereference(nfsi->delegation) != NULL) {
+> > +	if (nfsi->delegation != NULL) {
 > 
-> The patch does nothing of the sort. Not unless there is a bug I am not
-> seeing anyway. It does assume nobody tries to grab pairs of such
-> resources as it doesn't do deadlock avoidance.
+> And this one.  I thought that Trond said that clp->cl_lock protects
+> this one, in which case this should work:
 > 
-> It's now a shared resource patch however, its a multiplexor patch and
-> that is precisely why it is called MUX not SHARED or OVERLAY
-> Alan
+> 	if (rcu_dereference_check(nfsi->delegation,
+> 				  lockdep_is_held(&clp->cl_lock)) != NULL) {
 
-Sorry, I missed the "continue", which of course handles the situation I
-was worried about.  The shared wait queue is a bit inelegant, but if it
-turns out to be a bottleneck in real life then we either have bigger
-problems or it can be addressed at that time.
+If clp->cl_lock protects this pointer, why the need for rcu_dereference_check()
+at all?  The check is redundant since the line above gets the very lock we're
+checking for.
 
-	-hpa
+> > -	if (rcu_dereference(nfsi->delegation) != NULL) {
+> > +	if (nfsi->delegation != NULL) {
+> 
+> And this one, although the check for cp->cl_lock obviously won't work here.
+> 
+> >  		spin_lock(&clp->cl_lock);
+> >  		delegation = nfs_detach_delegation_locked(nfsi, NULL);
+> >  		spin_unlock(&clp->cl_lock);
 
+On this one, why does nfsi->delegation need a memory barrier interpolating
+afterwards?  It has an implicit one in the form of the spin_lock() immediately
+after, if the value of the pointer wasn't NULL.  What two memory accesses is
+the memory barrier ordering?
+
+Ditto on the next one.
+
+David
