@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab0C2KZK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 06:25:10 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:37596 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754775Ab0C2KZF (ORCPT
+	id S1755246Ab0C2Krd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 06:47:33 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37616 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755168Ab0C2Krc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 06:25:05 -0400
-Subject: Re: Discrepancy between comments for sched_find_first_bit
-From: Peter Zijlstra <peterz@infradead.org>
-To: Matt Turner <mattst88@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-alpha@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <b4198de61003282037p502e9fbfi62123088b9d73923@mail.gmail.com>
-References: <b4198de61003282037p502e9fbfi62123088b9d73923@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Mar 2010 12:25:02 +0200
-Message-ID: <1269858302.12097.272.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 29 Mar 2010 06:47:32 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4BB0851B.3000908@jp.fujitsu.com>
+Date: Mon, 29 Mar 2010 19:46:51 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, hpa@zytor.com,
+       tglx@linutronix.de
+Subject: Re: [PATCH] x86: mce: Xeon75xx specific interface to get corrected
+ memory error information v2
+References: <20100324054044.GA4307@basil.fritz.box> <87vdcf7ent.fsf@basil.nowhere.org> <4BB06500.5060105@jp.fujitsu.com> <20100329090156.GE20695@one.firstfloor.org>
+In-Reply-To: <20100329090156.GE20695@one.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-03-28 at 23:37 -0400, Matt Turner wrote:
-> include/asm-generic/bitops/sched.h says
-> /*
->  * Every architecture must define this function. It's the fastest
->  * way of searching a 100-bit bitmap.  It's guaranteed that at least
->  * one of the 100 bits is cleared.
->  */
+(2010/03/29 18:01), Andi Kleen wrote:
+>>>> Xeon 75xx doesn't log physical addresses on corrected machine check
+>>>> events in the standard architectural MSRs. Instead the address has to
+>>>> be retrieved in a model specific way. This makes it impossible
+>>>> to do predictive failure analysis.
+>>
+>> Could you point proper specification or datasheet to know/check what
+>> you are going to do here?
 > 
-> arch/alpha/include/asm/bitops.h says
-> /*
->  * Every architecture must define this function. It's the fastest
->  * way of searching a 140-bit bitmap where the first 100 bits are
->  * unlikely to be set. It's guaranteed that at least one of the 140
->  * bits is set.
->  */
+> You mean how the model specific interface works?
 > 
-> Is the guarantee that one of the first 100-bits set (and that the last
-> 40 are useless?), or 140-bits? If it's just the first 100 bits we care
-> about, then the alpha version needs to be fixed.
+> There's currently no public specification for the interface,
+> but it should be reasonably clear from reading the driver how
+> it works.
 > 
-> I'm just checking this out, because gcc produces horrendous code for
-> sched_find_first_bit on alpha. I rewrote it in assembly and it's
-> better than 4 times faster.
-> 
-> Also, is it even worth optimizing that function? It looks like it's
-> only used in kernel/sched_rt.c.
+> -Andi
 
-(might help if you CC the scheduler people on scheduler functions :-)
+It looks like overengineered...
 
-Right, so it used to be 140 bits with the old O(1) scheduler, currently
-(as you noted) sched_rt is the only user left and will therefore only
-care about the first 100 bits.
+I have some questions: Is it impossible to get the address
+after polling handler have processed?  e.g. Is it possible to
+implement this module as mcelog's add-on that hooked & invoked
+immediately after reading /dev/mcelog?  I guess there are
+some limitation/restriction to call pfa_command().
 
-As it stands I think it might still make sense to optimize this as for
-rt loads it still on a hot path.
+Are there any alternative way to get the address?
+Polling like edac_i7 doesn't help this?
 
-As to the 100 vs 140 length, would it really make much of difference to
-shorten the implementation to 100? If not I'd leave it at 140.
+You pointed "This makes it impossible to do predictive failure
+analysis", but I guess we could do rough-but-enough analysis that
+requires coarse resolution like sockets.  Or we should not expect
+that one of DIMMs connected to the socket is broken if the socket
+reports corrected memory errors many time?
 
-Ingo, any comments?
+
+Thanks,
+H.Seto
+
+
 
