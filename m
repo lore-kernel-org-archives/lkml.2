@@ -1,40 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab0C2SFo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 14:05:44 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60782 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753319Ab0C2SFm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 14:05:42 -0400
-Subject: Re: [PATCH 2/2] perf: Use hot regs with software sched
- switch/migrate events
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>, David Miller <davem@davemloft.net>
-In-Reply-To: <20100329174723.GB5101@nowhere>
-References: <1269753066-17246-1-git-send-regression-fweisbec@gmail.com>
-	 <1269753066-17246-3-git-send-regression-fweisbec@gmail.com>
-	 <1269852599.12097.159.camel@laptop>  <20100329174723.GB5101@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Mar 2010 20:05:38 +0200
-Message-ID: <1269885938.12097.367.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754273Ab0C2SGB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 14:06:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49780 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754030Ab0C2SF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 14:05:59 -0400
+Date: Mon, 29 Mar 2010 14:05:21 -0400
+From: Josef Bacik <josef@redhat.com>
+To: Josef Bacik <josef@redhat.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cleanup __generic_block_fiemap and fix a few minor
+	issues
+Message-ID: <20100329180520.GA4539@localhost.localdomain>
+References: <20100303163715.GB2215@localhost.localdomain> <alpine.LFD.2.00.1003040754150.7046@localhost.localdomain> <20100304162039.GA5722@localhost.localdomain> <20100304085021.1b4e5c58.randy.dunlap@oracle.com> <20100304171253.GB5722@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100304171253.GB5722@localhost.localdomain>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-29 at 19:47 +0200, Frederic Weisbecker wrote:
+On Thu, Mar 04, 2010 at 12:12:54PM -0500, Josef Bacik wrote:
+> On Thu, Mar 04, 2010 at 08:50:21AM -0800, Randy Dunlap wrote:
+> > On Thu, 4 Mar 2010 11:20:40 -0500 Josef Bacik wrote:
+> > 
+> > > Ahh yes thats much nicer, thank you.  Here is my updated patch with your
+> > > suggestions.  Thanks,
+> > > 
+> > > Signed-off-by: Josef Bacik <josef@redhat.com>
+> > > ---
+> > >  fs/ioctl.c         |   81 +++++++++++++++++++++++++++++----------------------
+> > >  include/linux/fs.h |    5 ++-
+> > >  2 files changed, 49 insertions(+), 37 deletions(-)
+> > > 
+> > > diff --git a/fs/ioctl.c b/fs/ioctl.c
+> > > index 6c75110..64fed0b 100644
+> > > --- a/fs/ioctl.c
+> > > +++ b/fs/ioctl.c
+> > > @@ -228,13 +228,22 @@ static int ioctl_fiemap(struct file *filp, unsigned long arg)
+> > >  
+> > >  #ifdef CONFIG_BLOCK
+> > >  
+> > > -#define blk_to_logical(inode, blk) (blk << (inode)->i_blkbits)
+> > > -#define logical_to_blk(inode, offset) (offset >> (inode)->i_blkbits);
+> > > +static inline sector_t logical_to_blk(struct inode *inode, loff_t offset)
+> > > +{
+> > > +	return (offset >> inode->i_blkbits);
+> > > +}
+> > > +
+> > > +static inline loff_t blk_to_logical(struct inode *inode, sector_t blk)
+> > > +{
+> > > +	return (blk << inode->i_blkbits);
+> > > +}
+> > >  
+> > >  /**
+> > >   * __generic_block_fiemap - FIEMAP for block based inodes (no locking)
+> > >   * @inode - the inode to map
+> > > - * @arg - the pointer to userspace where we copy everything to
+> > > + * @fieinfo - the fiemap info struct that will be passed back to userspace
+> > > + * @start - where to start mapping in the inode
+> > > + * @len - how much space to map
+> > >   * @get_block - the fs's get_block function
+> > >   *
+> > >   * This does FIEMAP for block based inodes.  Basically it will just loop
+> > 
+> > Please fix the kernel-doc notation.  Function parameter notation is like:
+> > 
+> >  * @start: where to start mapping in the inode
 > 
-> 
-> I'm going to make a quick fix for perf_fetch_caller_regs() that
-> passes task_pt_regs if exclude_kernel for perf/urgent,
-> and I'll do the above cleanups/invasive fixes on perf/core.
-> 
-> 
-ok, sounds sensible, thanks!
+> Sounds good, fixed below.  Thanks,
+>
 
+Is there anything else that needs to be done with this?  I just noticed it did
+not get pulled in yet, just wanted to make sure there are no outstanding issues.
+Thanks,
+
+Josef 
