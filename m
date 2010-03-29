@@ -1,121 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789Ab0C2UJx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 16:09:53 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:37390 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753677Ab0C2UJu (ORCPT
+	id S1753605Ab0C2UJl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 16:09:41 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:36973 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753509Ab0C2UJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 16:09:50 -0400
-Date: Mon, 29 Mar 2010 16:09:46 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, Eric Dumazet <dada1@cosmosbay.com>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-       stable <stable@kernel.org>
-Subject: Re: [PATCH 2.6.29.x - 2.6.31.1] module: fix __module_ref_addr()
-Message-ID: <20100329200946.GA1618@Krystal>
-References: <20100327143126.GA25615@Krystal> <1269890492.19685.4767.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
+	Mon, 29 Mar 2010 16:09:38 -0400
+Date: Mon, 29 Mar 2010 22:09:34 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, mingo@elte.hu,
+       Linus Torvalds <torvalds@osdl.org>, linux-kernel@vger.kernel.org,
+       Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 0/2] perf: Use LBR for machine/oops debugging
+Message-ID: <20100329200934.GF20695@one.firstfloor.org>
+References: <20100329122021.765109681@chello.nl> <87bpe7qnrg.fsf@basil.nowhere.org> <1269872059.12097.338.camel@laptop>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1269890492.19685.4767.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 16:09:11 up 65 days, 22:46,  4 users,  load average: 0.02, 0.04,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1269872059.12097.338.camel@laptop>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> This patch does not apply to 2.6.34-rc, and the code in upstream looks
-> to have been fixed. Should this go to stable?
-
-Yes. 2.6.34-rc does not have this issue anymore, but the patch is needed in
--stable.
-
-Thanks,
-
-Mathieu
-
+On Mon, Mar 29, 2010 at 04:14:19PM +0200, Peter Zijlstra wrote:
+> On Mon, 2010-03-29 at 15:08 +0200, Andi Kleen wrote:
+> > Peter Zijlstra <a.p.zijlstra@chello.nl> writes:
+> > 
+> > > The LBRs are relatively cheap to keep enabled and provide some history
+> > > to OOPSen, also some CPUs are reported to keep them over soft-reset,
+> > > which allows us to use them to debug things like tripple faults.
+> > >
+> > > Therefore introduce a boot option: lbr_debug=on, which always enable
+> > > the LBRs and will print the LBRs on CPU init and die().
+> > 
+> > 
+> > die is too late. they will only contain the oops code then.
 > 
-> -- Steve
-> 
-> 
-> On Sat, 2010-03-27 at 10:31 -0400, Mathieu Desnoyers wrote:
-> > __module_ref_addr() should use per_cpu_ptr() to obfuscate the pointer
-> > (RELOC_HIDE is needed for per cpu pointers).
-> > 
-> > This non-standard per-cpu pointer use has been introduced by commit
-> > 720eba31f47aeade8ec130ca7f4353223c49170f
-> > 
-> > It causes a NULL pointer exception on some configurations when CONFIG_TRACING is
-> > enabled on 2.6.33. This patch fixes the problem (acknowledged by Randy who
-> > reported the bug).
-> > 
-> > It did not appear to hurt previously because most of the accesses were done
-> > through local_inc, which probably obfuscated the access enough that no compiler
-> > optimizations were done. But with local_read() done when CONFIG_TRACING is
-> > active, this becomes a problem. Non-CONFIG_TRACING is probably affected as well
-> > (module.c contains local_set and local_read that use __module_ref_addr()), but I
-> > guess nobody noticed because we've been lucky enough that the compiler did not
-> > generate the inappropriate optimization pattern there.
-> > 
-> > This patch should be queued for the 2.6.29.x through 2.6.33.x stable branches.
-> > (tested on 2.6.33.1 x86_64)
-> > 
-> > The __module_ref_addr() problem disappears in 2.6.34-rc kernels because these
-> > percpu accesses were re-factored.
-> > 
-> > It makes me wonder about other non-standard uses of per_cpu_offset: there is one
-> > in module.c and two in lockdep.c, which are still in 2.6.34-rc. This should
-> > probably be fixed by the code authors in separate patches.
-> > 
-> > lockdep.c: commit 8e18257d29238311e82085152741f0c3aa18b74d
-> > module.c: commit 6b588c18f8dacfa6d7957c33c5ff832096e752d3
-> > 
-> > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
-> > CC: Eric Dumazet <dada1@cosmosbay.com>
-> > CC: Rusty Russell <rusty@rustcorp.com.au>
-> > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > CC: Tejun Heo <tj@kernel.org>
-> > CC: Ingo Molnar <mingo@elte.hu>
-> > CC: Andrew Morton <akpm@linux-foundation.org>
-> > CC: Linus Torvalds <torvalds@linux-foundation.org>
-> > CC: Greg Kroah-Hartman <gregkh@suse.de>
-> > CC: Steven Rostedt <rostedt@goodmis.org>
-> > ---
-> >  include/linux/module.h |    2 +-
-> >  kernel/module.c        |    2 +-
-> >  2 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > Index: linux-2.6-lttng/include/linux/module.h
-> > ===================================================================
-> > --- linux-2.6-lttng.orig/include/linux/module.h	2010-03-25 11:01:53.000000000 -0400
-> > +++ linux-2.6-lttng/include/linux/module.h	2010-03-25 11:01:59.000000000 -0400
-> > @@ -467,7 +467,7 @@ void symbol_put_addr(void *addr);
-> >  static inline local_t *__module_ref_addr(struct module *mod, int cpu)
-> >  {
-> >  #ifdef CONFIG_SMP
-> > -	return (local_t *) (mod->refptr + per_cpu_offset(cpu));
-> > +	return (local_t *) per_cpu_ptr(mod->refptr, cpu);
-> >  #else
-> >  	return &mod->ref;
-> >  #endif
-> > 
-> 
-> 
+> We do an lbr_off() in oops_begin(), or is there a better/earlier place
+> we can do that?
 
+I had an old patch in the P4 era (slightly different but larger LBRs) which
+saved them all early in the exception handlers and then dumped
+them from the buffer. That's early enough that you only miss one or two.
+
+The problem is that it's somewhat more expensive, the MSR reads
+are not cheap and they will slow down all your page faults.
+
+I checked, but I can't find the old patch anymore. Could be probably
+redone. 
+
+-Andi
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+ak@linux.intel.com -- Speaking for myself only.
