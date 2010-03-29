@@ -1,109 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab0C2Utd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 16:49:33 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:29225 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752320Ab0C2Utb (ORCPT
+	id S1753670Ab0C2Utm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 16:49:42 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:41329 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753069Ab0C2Utc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 16:49:31 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=P6OYFsptFHv0PF0zKBofTrTfg7XKsKTl6KuXlOWUYTuyzd1NrfSNXtqodtYyDBBtw
-	wF4DhJTx8qFy/Y+sCtxQA==
-Date: Mon, 29 Mar 2010 13:49:19 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
-cc: anfei <anfei.zhou@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       nishimura@mxp.nes.nec.co.jp,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: [patch] oom: give current access to memory reserves if it has been
- killed
-In-Reply-To: <20100329112111.GA16971@redhat.com>
-Message-ID: <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com>
-References: <1269447905-5939-1-git-send-email-anfei.zhou@gmail.com> <20100326150805.f5853d1c.akpm@linux-foundation.org> <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com>
- <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 29 Mar 2010 16:49:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Jm/oPtNC1qMoyBeMfi5B0n4hPNjjagp+/OcJdiUSkiBFzw1bJSvsst5rtqV/wVyxP4
+         5uANeEeyb3IbR46E5JVHpPMW8zmBYz9Hc2uqqu6IOT/XWE/hcLtdsLBB30sCsldOz2WU
+         C3mS7W8MFurGl2gNSjahePheY2BBNpsbH8R34=
+Date: Mon, 29 Mar 2010 22:49:33 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [BUG] fault while using perf callchains in sparc64
+Message-ID: <20100329204931.GJ5101@nowhere>
+References: <20100328043446.GA11748@nowhere> <20100329.130931.149161813.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100329.130931.149161813.davem@davemloft.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Mar 2010, Oleg Nesterov wrote:
-
-> Can't comment, I do not understand these subtleties.
+On Mon, Mar 29, 2010 at 01:09:31PM -0700, David Miller wrote:
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Date: Sun, 28 Mar 2010 06:34:49 +0200
 > 
-> But I'd like to note that fatal_signal_pending() can be true when the
-> process wasn't killed, but another thread does exit_group/exec.
+> > I get kernel crashes each time I use perf with callchains
+> > on sparc 64.
+> > 
+> > It triggers with a simple:
+> > 
+> > 	perf record -a -f -g sleep 1
 > 
-
-I'm not sure there's a difference between whether a process was oom killed 
-and received a SIGKILL that way or whether exit_group(2) was used, so I 
-don't think we need to test for (p->signal->flags & SIGNAL_GROUP_EXIT) 
-here.
-
-We do need to guarantee that exiting tasks always can get memory, which is 
-the responsibility of setting TIF_MEMDIE.  The only thing this patch does 
-is defer calling the oom killer when a task has a pending SIGKILL and then 
-fail the allocation when it would otherwise repeat.  Instead of the 
-considerable risk involved with no failing GFP_KERNEL allocations that are 
-under PAGE_ALLOC_COSTLY_ORDER that is typically never done, it may make 
-more sense to retry the allocation with TIF_MEMDIE on the second 
-iteration: in essence, automatically selecting current for oom kill 
-regardless of other oom killed tasks if it already has a pending SIGKILL.
+> This should fix it, thanks again.
 
 
+I merged your tree on latest -git and it works well.
 
-oom: give current access to memory reserves if it has been killed
+Thanks!
 
-It's possible to livelock the page allocator if a thread has mm->mmap_sem and 
-fails to make forward progress because the oom killer selects another thread 
-sharing the same ->mm to kill that cannot exit until the semaphore is dropped.
+Sorry, I have another bug report.
 
-The oom killer will not kill multiple tasks at the same time; each oom killed 
-task must exit before another task may be killed.  Thus, if one thread is 
-holding mm->mmap_sem and cannot allocate memory, all threads sharing the same 
-->mm are blocked from exiting as well.  In the oom kill case, that means the
-thread holding mm->mmap_sem will never free additional memory since it cannot
-get access to memory reserves and the thread that depends on it with access to
-memory reserves cannot exit because it cannot acquire the semaphore.  Thus,
-the page allocators livelocks.
+While building perf tools, or the kernel, or whatever, I often
+get the following error in the middle:
 
-When the oom killer is called and current happens to have a pending SIGKILL,
-this patch automatically selects it for kill so that it has access to memory
-reserves and the better timeslice.  Upon returning to the page allocator, its
-allocation will hopefully succeed so it can quickly exit and free its memory.
+	gcc: Internal error: Segmentation fault (program as)
 
-Cc: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- mm/oom_kill.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+And this in the logs:
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -681,6 +681,16 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
- 	}
- 
- 	/*
-+	 * If current has a pending SIGKILL, then automatically select it.  The
-+	 * goal is to allow it to allocate so that it may quickly exit and free
-+	 * its memory.
-+	 */
-+	if (fatal_signal_pending(current)) {
-+		__oom_kill_task(current);
-+		return;
-+	}
-+
-+	/*
- 	 * Check if there were limitations on the allocation (only relevant for
- 	 * NUMA) that may require different handling.
- 	 */
+	[ 1429.477049] as[2658]: segfault at 4054dfa8 ip 0000000000020690 (rpc 00000000700adcf4) sp 00000000ffcbf008 
+error 30001 in as[10000+40000]
+
+My gcc / as and everything in userspace is 32 bits but the kernel is a 64.
+
+My config is the same as before.
+
+Again, tell me everything you need to help debugging this.
+
+Thanks.
+
