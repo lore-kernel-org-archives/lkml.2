@@ -1,83 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab0C2Crx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 22:47:53 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64957 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755845Ab0C2Crv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 22:47:51 -0400
-Message-ID: <4BB014DF.9030905@cn.fujitsu.com>
-Date: Mon, 29 Mar 2010 10:47:59 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
-MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] rcu: don't call rcu_preempt_note_context_switch() in rcu_check_callbacks()
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755866Ab0C2Cqx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 22:46:53 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:55886 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755949Ab0C2Cqt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 22:46:49 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 07/31] lmb: Add reserve_lmb/free_lmb
+Date: Sun, 28 Mar 2010 19:43:00 -0700
+Message-Id: <1269830604-26214-8-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
+References: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4BB0147D.002C,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+They will check if the region array is big enough.
 
-Even though in user mode or idle mode, rcu_check_callbacks() is not
-context switch, so we don't call rcu_preempt_note_context_switch()
-in rcu_check_callbacks().
+__check_and_double_region_array will try to double the region if that array spare
+slots if not big enough.
+find_lmb_area() is used to find good postion for new region array.
+Old array will be copied to new array.
 
-Though there is no harm that calls rcu_preempt_note_context_switch()
-in rcu_check_callbacks(), but it is waste.
+Arch code should provide to get_max_mapped, so the new array have accessiable
+address
 
-rcu_check_callbacks()
-  rcu_sched_qs()
-    rcu_preempt_note_context_switch()
-       Now, ->rcu_read_lock_nesting == 0, so we just calls
-       rcu_preempt_qs(), but, rcu_preempt_check_callbacks()
-       will call it again and set the ->rcu_read_unlock_special
-       correct again.
-
-So let rcu_preempt_check_callbacks() handle things for us.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 3ec8160..c7847ba 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -95,7 +95,7 @@ static int rcu_gp_in_progress(struct rcu_state *rsp)
-  * how many quiescent states passed, just if there was at least
-  * one since the start of the grace period, this just sets a flag.
-  */
--void rcu_sched_qs(int cpu)
-+static void __rcu_sched_qs(int cpu)
- {
- 	struct rcu_data *rdp;
- 
-@@ -103,6 +103,11 @@ void rcu_sched_qs(int cpu)
- 	rdp->passed_quiesc_completed = rdp->gpnum - 1;
- 	barrier();
- 	rdp->passed_quiesc = 1;
-+}
-+
-+void rcu_sched_qs(int cpu)
-+{
-+	__rcu_sched_qs(cpu);
- 	rcu_preempt_note_context_switch(cpu);
+ include/linux/lmb.h |    4 ++
+ mm/lmb.c            |   89 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 93 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+index 05234bd..95ae3f4 100644
+--- a/include/linux/lmb.h
++++ b/include/linux/lmb.h
+@@ -83,9 +83,13 @@ lmb_end_pfn(struct lmb_region *type, unsigned long region_nr)
+ 	       lmb_size_pages(type, region_nr);
  }
  
-@@ -1138,12 +1143,12 @@ void rcu_check_callbacks(int cpu, int user)
- 		 * a quiescent state, so note it.
- 		 *
- 		 * No memory barrier is required here because both
--		 * rcu_sched_qs() and rcu_bh_qs() reference only CPU-local
-+		 * __rcu_sched_qs() and rcu_bh_qs() reference only CPU-local
- 		 * variables that other CPUs neither access nor modify,
- 		 * at least not while the corresponding CPU is online.
- 		 */
++void reserve_lmb(u64 start, u64 end, char *name);
++void free_lmb(u64 start, u64 end);
++void add_lmb_memory(u64 start, u64 end);
+ u64 __find_lmb_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
+ 			 u64 size, u64 align);
+ u64 find_lmb_area(u64 start, u64 end, u64 size, u64 align);
++u64 get_max_mapped(void);
  
--		rcu_sched_qs(cpu);
-+		__rcu_sched_qs(cpu);
- 		rcu_bh_qs(cpu);
+ #include <asm/lmb.h>
  
- 	} else if (!in_softirq()) {
+diff --git a/mm/lmb.c b/mm/lmb.c
+index d5d5dc4..9798458 100644
+--- a/mm/lmb.c
++++ b/mm/lmb.c
+@@ -551,6 +551,95 @@ int lmb_find(struct lmb_property *res)
+ 	return -1;
+ }
+ 
++u64 __weak __init get_max_mapped(void)
++{
++	u64 end = max_low_pfn;
++
++	end <<= PAGE_SHIFT;
++
++	return end;
++}
++
++static void __init __check_and_double_region_array(struct lmb_region *type,
++			 struct lmb_property *static_region,
++			 u64 ex_start, u64 ex_end)
++{
++	u64 start, end, size, mem;
++	struct lmb_property *new, *old;
++	unsigned long rgnsz = type->nr_regions;
++
++	/* Do we have enough slots left ? */
++	if ((rgnsz - type->cnt) > max_t(unsigned long, rgnsz/8, 2))
++		return;
++
++	old = type->region;
++	/* Double the array size */
++	size = sizeof(struct lmb_property) * rgnsz * 2;
++	if (old == static_region)
++		start = 0;
++	else
++		start = __pa(old) + sizeof(struct lmb_property) * rgnsz;
++	end = ex_start;
++	mem = -1ULL;
++	if (start + size < end)
++		mem = find_lmb_area(start, end, size, sizeof(struct lmb_property));
++	if (mem == -1ULL) {
++		start = ex_end;
++		end = get_max_mapped();
++		if (start + size < end)
++			mem = find_lmb_area(start, end, size, sizeof(struct lmb_property));
++	}
++	if (mem == -1ULL)
++		panic("can not find more space for lmb.reserved.region array");
++
++	new = __va(mem);
++	/* Copy old to new */
++	memcpy(&new[0], &old[0], sizeof(struct lmb_property) * rgnsz);
++	memset(&new[rgnsz], 0, sizeof(struct lmb_property) * rgnsz);
++
++	memset(&old[0], 0, sizeof(struct lmb_property) * rgnsz);
++	type->region = new;
++	type->nr_regions = rgnsz * 2;
++	printk(KERN_DEBUG "lmb.reserved.region array is doubled to %ld at [%llx - %llx]\n",
++		type->nr_regions, mem, mem + size - 1);
++
++	/* Reserve new array and free old one */
++	lmb_reserve(mem, sizeof(struct lmb_property) * rgnsz * 2);
++	if (old != static_region)
++		lmb_free(__pa(old), sizeof(struct lmb_property) * rgnsz);
++}
++
++void __init add_lmb_memory(u64 start, u64 end)
++{
++	__check_and_double_region_array(&lmb.memory, &lmb_memory_region[0], start, end);
++	lmb_add(start, end - start);
++}
++
++void __init reserve_lmb(u64 start, u64 end, char *name)
++{
++	if (start == end)
++		return;
++
++	if (WARN_ONCE(start > end, "reserve_lmb: wrong range [%#llx, %#llx]\n", start, end))
++		return;
++
++	__check_and_double_region_array(&lmb.reserved, &lmb_reserved_region[0], start, end);
++	lmb_reserve(start, end - start);
++}
++
++void __init free_lmb(u64 start, u64 end)
++{
++	if (start == end)
++		return;
++
++	if (WARN_ONCE(start > end, "free_lmb: wrong range [%#llx, %#llx]\n", start, end))
++		return;
++
++	/* keep punching hole, could run out of slots too */
++	__check_and_double_region_array(&lmb.reserved, &lmb_reserved_region[0], start, end);
++	lmb_free(start, end - start);
++}
++
+ static int __init find_overlapped_early(u64 start, u64 end)
+ {
+ 	int i;
+-- 
+1.6.4.2
 
