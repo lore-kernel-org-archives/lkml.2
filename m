@@ -1,45 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578Ab0C2Nkl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 09:40:41 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:51756 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925Ab0C2Nkj (ORCPT
+	id S1752213Ab0C2NlV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 09:41:21 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:45226 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109Ab0C2NlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 09:40:39 -0400
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@zytor.com>,
+	Mon, 29 Mar 2010 09:41:18 -0400
+From: Chase Douglas <chase.douglas@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
-       Thomas Renninger <trenn@suse.de>,
-       Suresh Siddha <suresh.b.siddha@intel.com>, len.brown@intel.com
-Subject: Re: [PATCH 02/10] x86: fix out of order of gsi - full
-References: <1269221770-9667-1-git-send-email-yinghai@kernel.org>
-	<1269221770-9667-3-git-send-email-yinghai@kernel.org>
-	<alpine.LFD.2.00.1003221131470.3147@localhost.localdomain>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Mon, 29 Mar 2010 06:40:28 -0700
-In-Reply-To: <alpine.LFD.2.00.1003221131470.3147@localhost.localdomain> (Thomas Gleixner's message of "Mon\, 22 Mar 2010 12\:14\:15 +0100 \(CET\)")
-Message-ID: <m1iq8f1c1f.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: tglx@linutronix.de, len.brown@intel.com, suresh.b.siddha@intel.com, trenn@suse.de, linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org, akpm@linux-foundation.org, hpa@zytor.com, mingo@elte.hu, yinghai@kernel.org
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [REGRESSION 2.6.30][PATCH 1/1] sched: defer idle accounting till after load update period
+Date: Mon, 29 Mar 2010 09:41:12 -0400
+Message-Id: <1269870072-22449-2-git-send-email-chase.douglas@canonical.com>
+X-Mailer: git-send-email 1.7.0
+In-Reply-To: <1269870072-22449-1-git-send-email-chase.douglas@canonical.com>
+References: <1269870072-22449-1-git-send-email-chase.douglas@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There's a period of 10 ticks where calc_load_tasks is updated by all the
+cpus for the load avg. Usually all the cpus do this during the first
+tick. If any cpus go idle, calc_load_tasks is decremented accordingly.
+However, if they wake up calc_load_tasks is not incremented. Thus, if
+cpus go idle during the 10 tick period, calc_load_tasks may be
+decremented to a non-representative value. This issue can lead to
+systems having a load avg of exactly 0, even though the real load avg
+could theoretically be up to NR_CPUS.
 
-I have played with this a bit and I have a cleaner patchset that
-addresses this issue.  I plan to sleep on it, and then go through it
-again before I send it.
+This change defers calc_load_tasks accounting after each cpu updates the
+count until after the 10 tick period.
 
-Thomas is the procedure for working on this stuff write clean patches
-and send them, and they will land in an x86 topic branch?
+BugLink: http://bugs.launchpad.net/bugs/513848
 
-Eric
+Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+---
+ kernel/sched.c |   16 ++++++++++++++--
+ 1 files changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 9ab3cd7..c0aedac 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3064,7 +3064,8 @@ void calc_global_load(void)
+  */
+ static void calc_load_account_active(struct rq *this_rq)
+ {
+-	long nr_active, delta;
++	static atomic_long_t deferred;
++	long nr_active, delta, deferred_delta;
+ 
+ 	nr_active = this_rq->nr_running;
+ 	nr_active += (long) this_rq->nr_uninterruptible;
+@@ -3072,6 +3073,17 @@ static void calc_load_account_active(struct rq *this_rq)
+ 	if (nr_active != this_rq->calc_load_active) {
+ 		delta = nr_active - this_rq->calc_load_active;
+ 		this_rq->calc_load_active = nr_active;
++
++		/* Need to defer idle accounting during load update period: */
++		if (unlikely(time_before(jiffies, this_rq->calc_load_update) &&
++			     time_after_eq(jiffies, calc_load_update))) {
++			atomic_long_add(delta, &deferred);
++			return;
++		}
++
++		deferred_delta = atomic_long_xchg(&deferred, 0);
++		delta += deferred_delta;
++
+ 		atomic_long_add(delta, &calc_load_tasks);
+ 	}
+ }
+@@ -3106,8 +3118,8 @@ static void update_cpu_load(struct rq *this_rq)
+ 	}
+ 
+ 	if (time_after_eq(jiffies, this_rq->calc_load_update)) {
+-		this_rq->calc_load_update += LOAD_FREQ;
+ 		calc_load_account_active(this_rq);
++		this_rq->calc_load_update += LOAD_FREQ;
+ 	}
+ }
+ 
+-- 
+1.6.3.3
+
