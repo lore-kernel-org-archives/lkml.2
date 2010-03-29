@@ -1,131 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab0C2VJw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 17:09:52 -0400
-Received: from mail.perches.com ([173.55.12.10]:1236 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753051Ab0C2VJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 17:09:51 -0400
-Subject: [PATCH] kernel.h: Convert rounding macros to statement
- expressions, add ADD_MOD
-From: Joe Perches <joe@perches.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Jiri Kosina <trivial@kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1269892842.4558.7.camel@Joe-Laptop.home>
-References: <1269813447.1500.69.camel@Joe-Laptop.home>
-	 <20100329124708.898b617c.randy.dunlap@oracle.com>
-	 <1269892842.4558.7.camel@Joe-Laptop.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Mar 2010 14:09:49 -0700
-Message-ID: <1269896989.4558.18.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753907Ab0C2VLv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 17:11:51 -0400
+Received: from mail-iw0-f182.google.com ([209.85.223.182]:54817 "EHLO
+	mail-iw0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051Ab0C2VLt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 17:11:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=rd0LCx8QtKAE97rx/7ctyfjZ7ZNG6hhz1t9Q6lzTPwv5Sb4WBhkXXgNPYOr5PcExcE
+         f4YybUIfPFMPW6UoRXRh/daQoou1VlRVeOGmeUNXpTI16+MfjBdOVuf28nXav0vSgSdz
+         KHddL1FDwVVAExhgB/nACWIg+PJPGsw+Avruk=
+Date: Mon, 29 Mar 2010 23:11:50 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [BUG] fault while using perf callchains in sparc64
+Message-ID: <20100329211149.GK5101@nowhere>
+References: <20100328043446.GA11748@nowhere> <20100329.130931.149161813.davem@davemloft.net> <20100329204931.GJ5101@nowhere> <20100329.140131.118617762.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100329.140131.118617762.davem@davemloft.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-29 at 13:00 -0700, Joe Perches wrote:
-> On Mon, 2010-03-29 at 12:47 -0700, Randy Dunlap wrote:
-> > On Sun, 28 Mar 2010 14:57:27 -0700 Joe Perches wrote:
-> > > Add a macro for the somewhat common use of
-> > > 	(something + value) % value
-> > > because the test uses ADD_MOD
-> > > --- a/include/linux/kernel.h
-> > > +++ b/include/linux/kernel.h
-> > > +#define ADD_MOD(x, y) (((x) + (y)) % (y))
-> > It would be better not to evaluate y more than one time.
-
-Do you prefer something like this?
-
-Convert rounding macros to statement expressions
-so arguments are only evaluated once.
-Add kernel-doc to rounding macros
-Add ADD_MOD statement expression for "(x + y) % y"
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
- include/linux/kernel.h |   65 +++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 56 insertions(+), 9 deletions(-)
-
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index c96b1ac..6b92b20 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -55,15 +55,62 @@ extern const char linux_proc_banner[];
- #define round_down(x, y) ((x) & ~__round_mask(x, y))
- 
- #define FIELD_SIZEOF(t, f) (sizeof(((t*)0)->f))
--#define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
--#define roundup(x, y) ((((x) + ((y) - 1)) / (y)) * (y))
--#define DIV_ROUND_CLOSEST(x, divisor)(			\
--{							\
--	typeof(divisor) __divisor = divisor;		\
--	(((x) + ((__divisor) / 2)) / (__divisor));	\
--}							\
--)
--#define ADD_MOD(x, y) (((x) + (y)) % (y))
-+
-+/**
-+ * roundup() - Returns x rounded up to the next whole multiple of y
-+ * @x:	dividend
-+ * @y:	divisor
-+ *
-+ * ie: roundup(4, 2) is 4, roundup(5, 2) is 6
-+ * c type conversion rules apply when x and y types differ
-+ */
-+#define roundup(x, y)				\
-+({						\
-+	typeof(y) _y = y;			\
-+	((x) + (_y - 1) / _y) * _y;		\
-+})
-+
-+/**
-+ * DIV_ROUND_UP() - Returns x/y rounded up to the next whole number
-+ * @x:	dividend
-+ * @y:	divisor
-+ *
-+ * ie: DIV_ROUND_UP(4, 2) is 2, DIV_ROUND_UP(5, 2) is 3
-+ * c type conversion rules apply when x and y types differ
-+ */
-+#define DIV_ROUND_UP(x, y)			\
-+({						\
-+	typeof(y) _y = y;			\
-+	((x) + _y - 1) / _y;			\
-+})
-+
-+/**
-+ * DIV_ROUND_CLOSEST() - Returns x/y rounded to the nearest whole number
-+ * @x:	dividend
-+ * @y:	divisor
-+ *
-+ * ie: DIV_ROUND_CLOSEST(4, 3) is 1, DIV_ROUND_CLOSEST(5, 3) is 2
-+ * c type conversion rules apply when x and y types differ
-+ */
-+#define DIV_ROUND_CLOSEST(x, y)			\
-+({						\
-+	typeof(y) _y = y;			\
-+	((x) + (_y / 2)) / _y;			\
-+})
-+
-+/**
-+ * ADD_MOD() - Returns (x + y) % y
-+ * @x:	initial value
-+ * @y:	value added to x then used as modulo
-+ *
-+ * ie: ADD_MOD(4, 2) is 0, ADD_MOD(5, 2) is 1
-+ * c type conversion rules apply when x and y types differ
-+ */
-+#define ADD_MOD(x, y)				\
-+({						\
-+	typeof(y) _y = y;			\
-+	((x) + _y) % _y;			\
-+})
- 
- #define _RET_IP_		(unsigned long)__builtin_return_address(0)
- #define _THIS_IP_  ({ __label__ __here; __here: (unsigned long)&&__here; })
+On Mon, Mar 29, 2010 at 02:01:31PM -0700, David Miller wrote:
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Date: Mon, 29 Mar 2010 22:49:33 +0200
+> 
+> > While building perf tools, or the kernel, or whatever, I often
+> > get the following error in the middle:
+> > 
+> > 	gcc: Internal error: Segmentation fault (program as)
+> > 
+> > And this in the logs:
+> > 
+> > 	[ 1429.477049] as[2658]: segfault at 4054dfa8 ip 0000000000020690 (rpc 00000000700adcf4) sp 00000000ffcbf008 
+> > error 30001 in as[10000+40000]
+> 
+> What distribution and binutils are you using?
 
 
+It's a debian lenny, with binutils 2.18.1~cvs20080103-7.
 
