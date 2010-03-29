@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755431Ab0C2ACB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 20:02:01 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:36045 "EHLO
+	id S1755433Ab0C2AJF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 20:09:05 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:42331 "EHLO
 	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755411Ab0C2ACA (ORCPT
+	by vger.kernel.org with ESMTP id S1755381Ab0C2AJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 20:02:00 -0400
-Date: Sun, 28 Mar 2010 20:01:57 -0400
+	Sun, 28 Mar 2010 20:09:04 -0400
+Date: Sun, 28 Mar 2010 20:09:00 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: Imre Deak <imre.deak@nokia.com>
 Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
@@ -18,16 +18,18 @@ Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
        "rostedt@goodmis.org" <rostedt@goodmis.org>,
        "mingo@elte.hu" <mingo@elte.hu>,
        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH] create generic alignment api (v4)
-Message-ID: <20100329000157.GA27379@Krystal>
+Subject: [RFC PATCH] create generic alignment api (v5)
+Message-ID: <20100329000900.GB27379@Krystal>
+References: <20100328012247.GA17763@Krystal> <20100328154029.GA21061@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20100328154029.GA21061@localhost>
 X-Editor: vi
 X-Info: http://www.efficios.com
 X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 20:00:10 up 65 days,  2:37,  9 users,  load average: 0.22, 0.15,
-	0.14
+X-Uptime: 20:03:53 up 65 days,  2:41,  9 users,  load average: 0.20, 0.18,
+	0.15
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -41,6 +43,11 @@ available to everyone. Renaming to:
 - object_align_floor()
 - offset_align()
 - offset_align_floor()
+
+Changelog since v4:
+- add missing ( ) around parameters within object_align() and
+  object_align_floor().
+- More coding style cleanups to ALIGN() (checkpatch.pl is happy now).
 
 Changelog since v3:
 - optimize object_align*() so fewer instructions are needed for alignment of
@@ -85,7 +92,7 @@ CC: mingo@elte.hu
 Index: linux-2.6-lttng/include/linux/kernel.h
 ===================================================================
 --- linux-2.6-lttng.orig/include/linux/kernel.h	2010-03-27 20:46:07.000000000 -0400
-+++ linux-2.6-lttng/include/linux/kernel.h	2010-03-28 19:59:50.000000000 -0400
++++ linux-2.6-lttng/include/linux/kernel.h	2010-03-28 20:06:27.000000000 -0400
 @@ -37,10 +37,47 @@ extern const char linux_proc_banner[];
  
  #define STACK_MAGIC	0xdeadbeef
@@ -94,11 +101,11 @@ Index: linux-2.6-lttng/include/linux/kernel.h
 -#define __ALIGN_MASK(x,mask)	(((x)+(mask))&~(mask))
 -#define PTR_ALIGN(p, a)		((typeof(p))ALIGN((unsigned long)(p), (a)))
 -#define IS_ALIGNED(x, a)		(((x) & ((typeof(x))(a) - 1)) == 0)
-+#define ALIGN(x,a)		__ALIGN_MASK((x), (typeof(x)) (a) - 1)
-+#define __ALIGN_MASK(x,mask)	(((x) + (mask)) & ~(mask))
++#define ALIGN(x, a)		__ALIGN_MASK((x), (typeof(x)) (a) - 1)
++#define __ALIGN_MASK(x, mask)	(((x) + (mask)) & ~(mask))
 +#define PTR_ALIGN(p, a)		((typeof(p)) ALIGN((unsigned long) (p), (a)))
-+#define ALIGN_FLOOR(x,a)	__ALIGN_FLOOR_MASK((x), (typeof(x)) (a) - 1)
-+#define __ALIGN_FLOOR_MASK(x,mask)	((x) & ~(mask))
++#define ALIGN_FLOOR(x, a)	__ALIGN_FLOOR_MASK((x), (typeof(x)) (a) - 1)
++#define __ALIGN_FLOOR_MASK(x, mask)	((x) & ~(mask))
 +#define PTR_ALIGN_FLOOR(p, a) \
 +			((typeof(p)) ALIGN_FLOOR((unsigned long) (p), (a)))
 +#define IS_ALIGNED(x, a)	(((x) & ((typeof(x)) (a) - 1)) == 0)
@@ -106,8 +113,8 @@ Index: linux-2.6-lttng/include/linux/kernel.h
 +/*
 + * Align pointer on natural object alignment. Object size must be power of two.
 + */
-+#define object_align(obj)	PTR_ALIGN(obj, sizeof(*obj))
-+#define object_align_floor(obj)	PTR_ALIGN_FLOOR(obj, sizeof(*obj))
++#define object_align(obj)	PTR_ALIGN((obj), sizeof(*(obj)))
++#define object_align_floor(obj)	PTR_ALIGN_FLOOR((obj), sizeof(*(obj)))
 +
 +/**
 + * offset_align - Calculate the offset needed to align an object on its natural
@@ -138,6 +145,7 @@ Index: linux-2.6-lttng/include/linux/kernel.h
  
  #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]) + __must_be_array(arr))
  
+
 -- 
 Mathieu Desnoyers
 Operating System Efficiency R&D Consultant
