@@ -1,70 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456Ab0C2UJc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 16:09:32 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48990
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752272Ab0C2UJa (ORCPT
+	id S1753789Ab0C2UJx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 16:09:53 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:37390 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753677Ab0C2UJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 16:09:30 -0400
-Date: Mon, 29 Mar 2010 13:09:31 -0700 (PDT)
-Message-Id: <20100329.130931.149161813.davem@davemloft.net>
-To: fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [BUG] fault while using perf callchains in sparc64
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100328043446.GA11748@nowhere>
-References: <20100328043446.GA11748@nowhere>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Mar 2010 16:09:50 -0400
+Date: Mon, 29 Mar 2010 16:09:46 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, Eric Dumazet <dada1@cosmosbay.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+       stable <stable@kernel.org>
+Subject: Re: [PATCH 2.6.29.x - 2.6.31.1] module: fix __module_ref_addr()
+Message-ID: <20100329200946.GA1618@Krystal>
+References: <20100327143126.GA25615@Krystal> <1269890492.19685.4767.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269890492.19685.4767.camel@gandalf.stny.rr.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 16:09:11 up 65 days, 22:46,  4 users,  load average: 0.02, 0.04,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
-Date: Sun, 28 Mar 2010 06:34:49 +0200
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> This patch does not apply to 2.6.34-rc, and the code in upstream looks
+> to have been fixed. Should this go to stable?
 
-> I get kernel crashes each time I use perf with callchains
-> on sparc 64.
+Yes. 2.6.34-rc does not have this issue anymore, but the patch is needed in
+-stable.
+
+Thanks,
+
+Mathieu
+
 > 
-> It triggers with a simple:
+> -- Steve
 > 
-> 	perf record -a -f -g sleep 1
+> 
+> On Sat, 2010-03-27 at 10:31 -0400, Mathieu Desnoyers wrote:
+> > __module_ref_addr() should use per_cpu_ptr() to obfuscate the pointer
+> > (RELOC_HIDE is needed for per cpu pointers).
+> > 
+> > This non-standard per-cpu pointer use has been introduced by commit
+> > 720eba31f47aeade8ec130ca7f4353223c49170f
+> > 
+> > It causes a NULL pointer exception on some configurations when CONFIG_TRACING is
+> > enabled on 2.6.33. This patch fixes the problem (acknowledged by Randy who
+> > reported the bug).
+> > 
+> > It did not appear to hurt previously because most of the accesses were done
+> > through local_inc, which probably obfuscated the access enough that no compiler
+> > optimizations were done. But with local_read() done when CONFIG_TRACING is
+> > active, this becomes a problem. Non-CONFIG_TRACING is probably affected as well
+> > (module.c contains local_set and local_read that use __module_ref_addr()), but I
+> > guess nobody noticed because we've been lucky enough that the compiler did not
+> > generate the inappropriate optimization pattern there.
+> > 
+> > This patch should be queued for the 2.6.29.x through 2.6.33.x stable branches.
+> > (tested on 2.6.33.1 x86_64)
+> > 
+> > The __module_ref_addr() problem disappears in 2.6.34-rc kernels because these
+> > percpu accesses were re-factored.
+> > 
+> > It makes me wonder about other non-standard uses of per_cpu_offset: there is one
+> > in module.c and two in lockdep.c, which are still in 2.6.34-rc. This should
+> > probably be fixed by the code authors in separate patches.
+> > 
+> > lockdep.c: commit 8e18257d29238311e82085152741f0c3aa18b74d
+> > module.c: commit 6b588c18f8dacfa6d7957c33c5ff832096e752d3
+> > 
+> > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
+> > CC: Eric Dumazet <dada1@cosmosbay.com>
+> > CC: Rusty Russell <rusty@rustcorp.com.au>
+> > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > CC: Tejun Heo <tj@kernel.org>
+> > CC: Ingo Molnar <mingo@elte.hu>
+> > CC: Andrew Morton <akpm@linux-foundation.org>
+> > CC: Linus Torvalds <torvalds@linux-foundation.org>
+> > CC: Greg Kroah-Hartman <gregkh@suse.de>
+> > CC: Steven Rostedt <rostedt@goodmis.org>
+> > ---
+> >  include/linux/module.h |    2 +-
+> >  kernel/module.c        |    2 +-
+> >  2 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > Index: linux-2.6-lttng/include/linux/module.h
+> > ===================================================================
+> > --- linux-2.6-lttng.orig/include/linux/module.h	2010-03-25 11:01:53.000000000 -0400
+> > +++ linux-2.6-lttng/include/linux/module.h	2010-03-25 11:01:59.000000000 -0400
+> > @@ -467,7 +467,7 @@ void symbol_put_addr(void *addr);
+> >  static inline local_t *__module_ref_addr(struct module *mod, int cpu)
+> >  {
+> >  #ifdef CONFIG_SMP
+> > -	return (local_t *) (mod->refptr + per_cpu_offset(cpu));
+> > +	return (local_t *) per_cpu_ptr(mod->refptr, cpu);
+> >  #else
+> >  	return &mod->ref;
+> >  #endif
+> > 
+> 
+> 
 
-This should fix it, thanks again.
-
-sparc64: Properly truncate pt_regs framepointer in perf callback.
-
-For 32-bit processes, we save the full 64-bits of the regs in pt_regs.
-
-But unlike when the userspace actually does load and store
-instructions, the top 32-bits don't get automatically truncated by the
-cpu in kernel mode (because the kernel doesn't execute with PSTATE_AM
-address masking enabled).
-
-So we have to do it by hand.
-
-Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- arch/sparc/kernel/perf_event.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
-index 9f2b2ba..610112e 100644
---- a/arch/sparc/kernel/perf_event.c
-+++ b/arch/sparc/kernel/perf_event.c
-@@ -1337,7 +1337,7 @@ static void perf_callchain_user_32(struct pt_regs *regs,
- 	callchain_store(entry, PERF_CONTEXT_USER);
- 	callchain_store(entry, regs->tpc);
- 
--	ufp = regs->u_regs[UREG_I6];
-+	ufp = regs->u_regs[UREG_I6] & 0xffffffffUL;
- 	do {
- 		struct sparc_stackf32 *usf, sf;
- 		unsigned long pc;
 -- 
-1.7.0.3
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
