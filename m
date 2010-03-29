@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab0C2XWg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 19:22:36 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:44037 "EHLO
+	id S1755316Ab0C2XWk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 19:22:40 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:44025 "EHLO
 	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754692Ab0C2XUw (ORCPT
+	with ESMTP id S1754678Ab0C2XUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Mar 2010 19:20:52 -0400
 From: "Eric W. Biederman" <ebiederm@xmission.com>
@@ -19,9 +19,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
        Gary Hade <garyhade@us.ibm.com>,
        Natalie Protasevich <protasnb@gmail.com>,
        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 10/14] x86 ioapic: Move nr_ioapic_registers calculation to mp_register_ioapic.
-Date: Mon, 29 Mar 2010 16:20:21 -0700
-Message-Id: <1269904825-27462-10-git-send-email-ebiederm@xmission.com>
+Subject: [PATCH 04/14] x86 acpi/irq: Fix acpi_sci_ioapic_setup so it has both bus_irq and gsi
+Date: Mon, 29 Mar 2010 16:20:15 -0700
+Message-Id: <1269904825-27462-4-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.6.5.2.143.g8cc62
 In-Reply-To: <m1r5n2wwah.fsf_-_@fess.ebiederm.org>
 References: <m1r5n2wwah.fsf_-_@fess.ebiederm.org>
@@ -36,67 +36,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric W. Biederman <ebiederm@xmission.com>
 
-Now that all ioapic registration happens in mp_register_ioapic we can
-move the calculation of nr_ioapic_registers there from enable_IO_APIC.
-The number of ioapic registers is already calucated in mp_register_ioapic
-so all that really needs to be done is to save the caluclated value
-in nr_ioapic_registers.
+Currently acpi_sci_ioapic_setup calls mp_override_legacy_irq with
+bus_irq == gsi, which is wrong if we are comming from an override
+Instead pass the bus_irq into acpi_sci_ioapic_setup.
+
+This fix was inspired by a similar fix from:
+Yinghai Lu <yinghai@kernel.org>
 
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- arch/x86/kernel/apic/io_apic.c |   22 ++++++++--------------
- 1 files changed, 8 insertions(+), 14 deletions(-)
+ arch/x86/kernel/acpi/boot.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index a979a00..0515f26 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1944,20 +1944,8 @@ static struct { int pin, apic; } ioapic_i8259 = { -1, -1 };
- 
- void __init enable_IO_APIC(void)
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index f96060d..1742888 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -312,7 +312,7 @@ acpi_parse_ioapic(struct acpi_subtable_header * header, const unsigned long end)
+ /*
+  * Parse Interrupt Source Override for the ACPI SCI
+  */
+-static void __init acpi_sci_ioapic_setup(u32 gsi, u16 polarity, u16 trigger)
++static void __init acpi_sci_ioapic_setup(u8 bus_irq, u16 polarity, u16 trigger, u32 gsi)
  {
--	union IO_APIC_reg_01 reg_01;
- 	int i8259_apic, i8259_pin;
- 	int apic;
--	unsigned long flags;
--
--	/*
--	 * The number of IO-APIC IRQ registers (== #pins):
--	 */
--	for (apic = 0; apic < nr_ioapics; apic++) {
--		raw_spin_lock_irqsave(&ioapic_lock, flags);
--		reg_01.raw = io_apic_read(apic, 1);
--		raw_spin_unlock_irqrestore(&ioapic_lock, flags);
--		nr_ioapic_registers[apic] = reg_01.bits.entries+1;
--	}
- 
- 	if (!legacy_pic->nr_legacy_irqs)
- 		return;
-@@ -4280,6 +4268,7 @@ static int bad_ioapic(unsigned long address)
- void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
- {
- 	int idx = 0;
-+	int entries;
- 
- 	if (bad_ioapic(address))
- 		return;
-@@ -4298,9 +4287,14 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
- 	 * Build basic GSI lookup table to facilitate gsi->io_apic lookups
- 	 * and to prevent reprogramming of IOAPIC pins (PCI GSIs).
+ 	if (trigger == 0)	/* compatible SCI trigger is level */
+ 		trigger = 3;
+@@ -332,7 +332,7 @@ static void __init acpi_sci_ioapic_setup(u32 gsi, u16 polarity, u16 trigger)
+ 	 * If GSI is < 16, this will update its flags,
+ 	 * else it will create a new mp_irqs[] entry.
  	 */
-+	entries = io_apic_get_redir_entries(idx);
- 	mp_gsi_routing[idx].gsi_base = gsi_base;
--	mp_gsi_routing[idx].gsi_end = gsi_base +
--	    io_apic_get_redir_entries(idx);
-+	mp_gsi_routing[idx].gsi_end = gsi_base + entries;
-+
-+	/*
-+	 * The number of IO-APIC IRQ registers (== #pins):
-+	 */
-+	nr_ioapic_registers[idx] = entries;
+-	mp_override_legacy_irq(gsi, polarity, trigger, gsi);
++	mp_override_legacy_irq(bus_irq, polarity, trigger, gsi);
  
- 	if (mp_gsi_routing[idx].gsi_end > gsi_end)
- 		gsi_end = mp_gsi_routing[idx].gsi_end;
+ 	/*
+ 	 * stash over-ride to indicate we've been here
+@@ -356,9 +356,10 @@ acpi_parse_int_src_ovr(struct acpi_subtable_header * header,
+ 	acpi_table_print_madt_entry(header);
+ 
+ 	if (intsrc->source_irq == acpi_gbl_FADT.sci_interrupt) {
+-		acpi_sci_ioapic_setup(intsrc->global_irq,
++		acpi_sci_ioapic_setup(intsrc->source_irq,
+ 				      intsrc->inti_flags & ACPI_MADT_POLARITY_MASK,
+-				      (intsrc->inti_flags & ACPI_MADT_TRIGGER_MASK) >> 2);
++				      (intsrc->inti_flags & ACPI_MADT_TRIGGER_MASK) >> 2,
++				      intsrc->global_irq);
+ 		return 0;
+ 	}
+ 
+@@ -1161,7 +1162,8 @@ static int __init acpi_parse_madt_ioapic_entries(void)
+ 	 * pretend we got one so we can set the SCI flags.
+ 	 */
+ 	if (!acpi_sci_override_gsi)
+-		acpi_sci_ioapic_setup(acpi_gbl_FADT.sci_interrupt, 0, 0);
++		acpi_sci_ioapic_setup(acpi_gbl_FADT.sci_interrupt, 0, 0,
++				      acpi_gbl_FADT.sci_interrupt);
+ 
+ 	/* Fill in identity legacy mappings where no override */
+ 	mp_config_acpi_legacy_irqs();
 -- 
 1.6.5.2.143.g8cc62
 
