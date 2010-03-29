@@ -1,791 +1,1022 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648Ab0C2UbL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 16:31:11 -0400
-Received: from legolas.restena.lu ([158.64.1.34]:45306 "EHLO
-	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753592Ab0C2UbF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 16:31:05 -0400
-Date: Mon, 29 Mar 2010 22:30:53 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-       linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>,
-       Nicu Pavel <npavel@ituner.com>, Oliver Neukum <oliver@neukum.org>,
-       Jaya Kumar <jayakumar.lkml@gmail.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH v5 2/6] hid: add framebuffer support to PicoLCD device
-Message-ID: <20100329223053.4faca188@neptune.home>
-In-Reply-To: <20100327012249.29b11ad7@neptune.home>
-References: <20100324233707.7243b04d@neptune.home>
-	<20100324234945.6b7d1f37@neptune.home>
-	<20100327012249.29b11ad7@neptune.home>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752822Ab0C2Ubd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 16:31:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20896 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753789Ab0C2Uba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 16:31:30 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+Subject: [PATCH -tip 4/7] trace/kprobes: Support basic types
+To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
+Cc: systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Steven Rostedt <rostedt@goodmis.org>, Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Date: Mon, 29 Mar 2010 16:38:17 -0400
+Message-ID: <20100329203817.2577.88822.stgit@localhost6.localdomain6>
+In-Reply-To: <20100329203736.2577.56018.stgit@localhost6.localdomain6>
+References: <20100329203736.2577.56018.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add framebuffer support to PicoLCD device with use of deferred-io.
+Support basic types of integer (u8, u16, u32, u64, s8, s16, s32, s64) in
+kprobe tracer. With this patch, users can specify above basic types on
+each arguments after ':'. If omitted, the argument type is set as
+unsigned long (u32 or u64, arch-dependent).
 
-Only changed areas of framebuffer get sent to device in order to
-save USB bandwidth and especially resources on PicoLCD device or
-allow higher refresh rate for a small area. Changed tiles are
-determined while updating shadow framebuffer.
+ e.g.
+  echo 'p account_system_time+0 hardirq_offset=%si:s32' > kprobe_events
 
-Changes since v4:
- - make backbuffer inconsistent with framebuffer to force refresh
-   in picolcd_fb_reset (e.g. for reset_resume)
- - force picolcd_fb_update() to wait for urbs to get out of the queue
-   when it sends more than 1/2 queue worth as a full display refresh
-   fills the whole queue eventually causing queue overrun (and lost
-   report) on a quick system
-Changes since v3:
- - document fb_update_rate sysfs attribute
- - change fb_update_rate read behavior to match enum with selected
-   in brackets presentation
-Changes since v2:
- - add 8bit grayscale depth as near to no userspace app handles 1bit
- - properly send whole framebuffer on reset/init
- - drop inline keywords from non-stub functions
- - use device_{create,remove}_file instead of sysfs_{create,remove}_file
+  adds a probe recording hardirq_offset in signed-32bits value on the
+  entry of account_system_time.
 
-Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 ---
 
-Because on a quick system I get "output queue full" messages (and
-incomplete update of device's display) when a full framebuffer has to
-be transmitted back to PicoLCD device I have to wait on the queue to
-get a few reports out.
-Instead of duplicating "usbhid_wait_io()" I marked it with EXPORT_SYMBOL_GPL
-so I can still build hid-picolcd as a module.
+ Documentation/trace/kprobetrace.txt |    4 
+ kernel/trace/trace.h                |   16 -
+ kernel/trace/trace_kprobe.c         |  535 ++++++++++++++++++++++-------------
+ 3 files changed, 334 insertions(+), 221 deletions(-)
 
-
-
- Documentation/ABI/testing/sysfs-driver-hid-picolcd |   17 +
- drivers/hid/Kconfig                                |    7 +-
- drivers/hid/hid-picolcd.c                          |  570 +++++++++++++++++++-
- drivers/hid/usbhid/hid-core.c                      |    1 +
- 4 files changed, 593 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/ABI/testing/sysfs-driver-hid-picolcd b/Documentation/ABI/testing/sysfs-driver-hid-picolcd
-index 6fb4f21..14f52d7 100644
---- a/Documentation/ABI/testing/sysfs-driver-hid-picolcd
-+++ b/Documentation/ABI/testing/sysfs-driver-hid-picolcd
-@@ -15,3 +15,20 @@ Description:	Make it possible to switch the PicoLCD device between LCD
- 		disconnected and reconnects after above delay (default value
- 		is 5 seconds though this default should not be relied on).
+diff --git a/Documentation/trace/kprobetrace.txt b/Documentation/trace/kprobetrace.txt
+index a9100b2..ec94748 100644
+--- a/Documentation/trace/kprobetrace.txt
++++ b/Documentation/trace/kprobetrace.txt
+@@ -40,7 +40,9 @@ Synopsis of kprobe_events
+   $stack	: Fetch stack address.
+   $retval	: Fetch return value.(*)
+   +|-offs(FETCHARG) : Fetch memory at FETCHARG +|- offs address.(**)
+-  NAME=FETCHARG: Set NAME as the argument name of FETCHARG.
++  NAME=FETCHARG : Set NAME as the argument name of FETCHARG.
++  FETCHARG:TYPE : Set TYPE as the type of FETCHARG. Currently, basic types
++		  (u8/u16/u32/u64/s8/s16/s32/s64) are supported.
  
-+
-+What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/fb_update_rate
-+Date:		March 2010
-+Contact:	Bruno Prémont <bonbons@linux-vserver.org>
-+Description:	Make it possible to adjust defio refresh rate.
-+
-+		Reading: returns list of available refresh rates (expressed in Hz),
-+		the active refresh rate being enclosed in brackets ('[' and ']')
-+
-+		Writing: accepts new refresh rate expressed in integer Hz
-+		within permitted rates.
-+
-+		Note: As device can barely do 2 complete refreshes a second
-+		it only makes sense to adjust this value if only one or two
-+		tiles get changed and it's not appropriate to expect the application
-+		to flush it's tiny changes explicitely at higher than default rate.
-+
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 138ba6a..a813ea9 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -265,6 +265,11 @@ config HID_PETALYNX
- config HID_PICOLCD
- 	tristate "PicoLCD (graphic version)"
- 	depends on USB_HID
-+	select FB_DEFERRED_IO if FB
-+	select FB_SYS_FILLRECT if FB
-+	select FB_SYS_COPYAREA if FB
-+	select FB_SYS_IMAGEBLIT if FB
-+	select FB_SYS_FOPS if FB
- 	---help---
- 	  This provides support for Minibox PicoLCD devices, currently
- 	  only the graphical ones are supported.
-@@ -272,8 +277,8 @@ config HID_PICOLCD
- 	  This includes support for the following device features:
- 	  - Keypad
- 	  - Switching between Firmware and Flash mode
--	  Features that are not (yet) supported:
- 	  - Framebuffer for monochrome 256x64 display
-+	  Features that are not (yet) supported:
- 	  - Backlight control
- 	  - Contrast control
- 	  - IR
-diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
-index 28f8ea0..efc4bc8 100644
---- a/drivers/hid/hid-picolcd.c
-+++ b/drivers/hid/hid-picolcd.c
-@@ -24,6 +24,9 @@
- #include "usbhid/usbhid.h"
- #include <linux/usb.h>
- 
-+#include <linux/fb.h>
-+#include <linux/vmalloc.h>
-+
- #include <linux/seq_file.h>
- #include <linux/debugfs.h>
- 
-@@ -69,6 +72,59 @@
- #define REPORT_HOOK_VERSION    0xf7 /* LCD: IN[2], OUT[1]   */
- #define REPORT_EXIT_FLASHER    0xff /*                      Bootloader: OUT[2]         */
- 
-+#if defined(CONFIG_FB) || defined(CONFIG_FB_MODULE)
-+/* Framebuffer
-+ *
-+ * The PicoLCD use a Topway LCD module of 256x64 pixel
-+ * This display area is tiled over 4 controllers with 8 tiles
-+ * each. Each tile has 8x64 pixel, each data byte representing
-+ * a 1-bit wide vertical line of the tile.
-+ *
-+ * The display can be updated at a tile granularity.
-+ *
-+ *       Chip 1           Chip 2           Chip 3           Chip 4
-+ * +----------------+----------------+----------------+----------------+
-+ * |     Tile 1     |     Tile 1     |     Tile 1     |     Tile 1     |
-+ * +----------------+----------------+----------------+----------------+
-+ * |     Tile 2     |     Tile 2     |     Tile 2     |     Tile 2     |
-+ * +----------------+----------------+----------------+----------------+
-+ *                                  ...
-+ * +----------------+----------------+----------------+----------------+
-+ * |     Tile 8     |     Tile 8     |     Tile 8     |     Tile 8     |
-+ * +----------------+----------------+----------------+----------------+
-+ */
-+#define PICOLCDFB_NAME "picolcdfb"
-+#define PICOLCDFB_WIDTH (256)
-+#define PICOLCDFB_HEIGHT (64)
-+#define PICOLCDFB_SIZE (PICOLCDFB_WIDTH * PICOLCDFB_HEIGHT / 8)
-+
-+#define PICOLCDFB_UPDATE_RATE_LIMIT   10
-+#define PICOLCDFB_UPDATE_RATE_DEFAULT  2
-+
-+/* Framebuffer visual structures */
-+static const struct fb_fix_screeninfo picolcdfb_fix = {
-+	.id          = PICOLCDFB_NAME,
-+	.type        = FB_TYPE_PACKED_PIXELS,
-+	.visual      = FB_VISUAL_MONO01,
-+	.xpanstep    = 0,
-+	.ypanstep    = 0,
-+	.ywrapstep   = 0,
-+	.line_length = PICOLCDFB_WIDTH / 8,
-+	.accel       = FB_ACCEL_NONE,
-+};
-+
-+static const struct fb_var_screeninfo picolcdfb_var = {
-+	.xres           = PICOLCDFB_WIDTH,
-+	.yres           = PICOLCDFB_HEIGHT,
-+	.xres_virtual   = PICOLCDFB_WIDTH,
-+	.yres_virtual   = PICOLCDFB_HEIGHT,
-+	.width          = 103,
-+	.height         = 26,
-+	.bits_per_pixel = 1,
-+	.grayscale      = 1,
-+};
-+#endif /* CONFIG_FB */
-+
- /* Input device
-  *
-  * The PicoLCD has an IR receiver header, a built-in keypad with 5 keys
-@@ -118,6 +174,16 @@ struct picolcd_data {
- 	struct input_dev *input_cir;
- 	unsigned short keycode[PICOLCD_KEYS];
- 
-+#if defined(CONFIG_FB) || defined(CONFIG_FB_MODULE)
-+	/* Framebuffer stuff */
-+	u8 fb_update_rate;
-+	u8 fb_bpp;
-+	u8 *fb_vbitmap;		/* local copy of what was sent to PicoLCD */
-+	u8 *fb_bitmap;		/* framebuffer */
-+	struct fb_info *fb_info;
-+	struct fb_deferred_io fb_defio;
-+#endif /* CONFIG_FB */
-+
- 	/* Housekeeping stuff */
- 	spinlock_t lock;
- 	struct mutex mutex;
-@@ -125,6 +191,7 @@ struct picolcd_data {
- 	int status;
- #define PICOLCD_BOOTLOADER 1
- #define PICOLCD_FAILED 2
-+#define PICOLCD_READY_FB 4
+   (*) only for return probe.
+   (**) this is useful for fetching a field of data structures.
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index bec2c97..3ebdb6b 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -102,29 +102,17 @@ struct syscall_trace_exit {
+ 	long			ret;
  };
  
+-struct kprobe_trace_entry {
++struct kprobe_trace_entry_head {
+ 	struct trace_entry	ent;
+ 	unsigned long		ip;
+-	int			nargs;
+-	unsigned long		args[];
+ };
  
-@@ -197,6 +264,486 @@ static struct picolcd_pending *picolcd_send_and_wait(struct hid_device *hdev,
- 	return work;
- }
+-#define SIZEOF_KPROBE_TRACE_ENTRY(n)			\
+-	(offsetof(struct kprobe_trace_entry, args) +	\
+-	(sizeof(unsigned long) * (n)))
+-
+-struct kretprobe_trace_entry {
++struct kretprobe_trace_entry_head {
+ 	struct trace_entry	ent;
+ 	unsigned long		func;
+ 	unsigned long		ret_ip;
+-	int			nargs;
+-	unsigned long		args[];
+ };
  
-+#if defined(CONFIG_FB) || defined(CONFIG_FB_MODULE)
-+/* Send a given tile to PicoLCD */
-+static int picolcd_fb_send_tile(struct hid_device *hdev, int chip, int tile)
-+{
-+	struct picolcd_data *data = hid_get_drvdata(hdev);
-+	struct hid_report *report1 = picolcd_out_report(REPORT_LCD_CMD_DATA, hdev);
-+	struct hid_report *report2 = picolcd_out_report(REPORT_LCD_DATA, hdev);
-+	unsigned long flags;
-+	u8 *tdata;
-+	int i;
-+
-+	if (!report1 || report1->maxfield != 1 || !report2 || report2->maxfield != 1)
-+		return -ENODEV;
-+
-+	spin_lock_irqsave(&data->lock, flags);
-+	hid_set_field(report1->field[0],  0, chip << 2);
-+	hid_set_field(report1->field[0],  1, 0x02);
-+	hid_set_field(report1->field[0],  2, 0x00);
-+	hid_set_field(report1->field[0],  3, 0x00);
-+	hid_set_field(report1->field[0],  4, 0xb8 | tile);
-+	hid_set_field(report1->field[0],  5, 0x00);
-+	hid_set_field(report1->field[0],  6, 0x00);
-+	hid_set_field(report1->field[0],  7, 0x40);
-+	hid_set_field(report1->field[0],  8, 0x00);
-+	hid_set_field(report1->field[0],  9, 0x00);
-+	hid_set_field(report1->field[0], 10,   32);
-+
-+	hid_set_field(report2->field[0],  0, (chip << 2) | 0x01);
-+	hid_set_field(report2->field[0],  1, 0x00);
-+	hid_set_field(report2->field[0],  2, 0x00);
-+	hid_set_field(report2->field[0],  3,   32);
-+
-+	tdata = data->fb_vbitmap + (tile * 4 + chip) * 64;
-+	for (i = 0; i < 64; i++)
-+		if (i < 32)
-+			hid_set_field(report1->field[0], 11 + i, tdata[i]);
-+		else
-+			hid_set_field(report2->field[0], 4 + i - 32, tdata[i]);
-+
-+	usbhid_submit_report(data->hdev, report1, USB_DIR_OUT);
-+	usbhid_submit_report(data->hdev, report2, USB_DIR_OUT);
-+	spin_unlock_irqrestore(&data->lock, flags);
-+	return 0;
-+}
-+
-+/* Translate a single tile*/
-+static int picolcd_fb_update_tile(u8 *vbitmap, const u8 *bitmap, int bpp,
-+		int chip, int tile)
-+{
-+	int i, b, changed = 0;
-+	u8 tdata[64];
-+	u8 *vdata = vbitmap + (tile * 4 + chip) * 64;
-+
-+	if (bpp == 1) {
-+		for (b = 7; b >= 0; b--) {
-+			const u8 *bdata = bitmap + tile * 256 + chip * 8 + b * 32;
-+			for (i = 0; i < 64; i++) {
-+				tdata[i] <<= 1;
-+				tdata[i] |= (bdata[i/8] >> (7 - i % 8)) & 0x01;
-+			}
-+		}
-+	} else if (bpp == 8) {
-+		for (b = 7; b >= 0; b--) {
-+			const u8 *bdata = bitmap + (tile * 256 + chip * 8 + b * 32) * 8;
-+			for (i = 0; i < 64; i++) {
-+				tdata[i] <<= 1;
-+				tdata[i] |= (bdata[i] & 0x80) ? 0x01 : 0x00;
-+			}
-+		}
-+	} else {
-+		/* Oops, we should never get here! */
-+		WARN_ON(1);
-+		return 0;
-+	}
-+
-+	for (i = 0; i < 64; i++)
-+		if (tdata[i] != vdata[i]) {
-+			changed = 1;
-+			vdata[i] = tdata[i];
-+		}
-+	return changed;
-+}
-+
-+/* Reconfigure LCD display */
-+static int picolcd_fb_reset(struct picolcd_data *data, int clear)
-+{
-+	struct hid_report *report = picolcd_out_report(REPORT_LCD_CMD, data->hdev);
-+	int i, j;
-+	unsigned long flags;
-+	static const u8 mapcmd[8] = { 0x00, 0x02, 0x00, 0x64, 0x3f, 0x00, 0x64, 0xc0 };
-+
-+	if (!report || report->maxfield != 1)
-+		return -ENODEV;
-+
-+	spin_lock_irqsave(&data->lock, flags);
-+	for (i = 0; i < 4; i++) {
-+		for (j = 0; j < report->field[0]->maxusage; j++)
-+			if (j == 0)
-+				hid_set_field(report->field[0], j, i << 2);
-+			else if (j < sizeof(mapcmd))
-+				hid_set_field(report->field[0], j, mapcmd[j]);
-+			else
-+				hid_set_field(report->field[0], j, 0);
-+		usbhid_submit_report(data->hdev, report, USB_DIR_OUT);
-+	}
-+
-+	data->status |= PICOLCD_READY_FB;
-+	spin_unlock_irqrestore(&data->lock, flags);
-+
-+	if (data->fb_bitmap) {
-+		if (clear) {
-+			memset(data->fb_vbitmap, 0xff, PICOLCDFB_SIZE);
-+			memset(data->fb_bitmap, 0, PICOLCDFB_SIZE*data->fb_bpp);
-+		} else {
-+			/* invert 1 byte in each tile to force resend */
-+			for (i = 0; i < PICOLCDFB_SIZE; i+=64)
-+				data->fb_vbitmap[i] = ~data->fb_vbitmap[i];
-+		}
-+	}
-+
-+	/* schedule first output of framebuffer */
-+	if (data->fb_info)
-+		schedule_delayed_work(&data->fb_info->deferred_work, 0);
-+
-+	return 0;
-+}
-+
-+/* Update fb_vbitmap from the screen_base and send changed tiles to device */
-+static void picolcd_fb_update(struct picolcd_data *data)
-+{
-+	int chip, tile, n;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&data->lock, flags);
-+	if (!(data->status & PICOLCD_READY_FB)) {
-+		spin_unlock_irqrestore(&data->lock, flags);
-+		picolcd_fb_reset(data, 0);
-+	} else {
-+		spin_unlock_irqrestore(&data->lock, flags);
-+	}
-+
-+	/*
-+	 * Translate the framebuffer into the format needed by the PicoLCD.
-+	 * See display layout above.
-+	 * Do this one tile after the other and push those tiles that changed.
-+	 *
-+	 * Wait for our IO to complete as otherwise we might flood the queue!
-+	 */
-+	n = 0;
-+	for (chip = 0; chip < 4; chip++)
-+		for (tile = 0; tile < 8; tile++)
-+			if (picolcd_fb_update_tile(data->fb_vbitmap,
-+					data->fb_bitmap, data->fb_bpp, chip, tile)) {
-+				n += 2;
-+				if (n >= HID_OUTPUT_FIFO_SIZE / 2) {
-+					usbhid_wait_io(data->hdev);
-+					n = 0;
-+				}
-+				picolcd_fb_send_tile(data->hdev, chip, tile);
-+			}
-+	if (n)
-+		usbhid_wait_io(data->hdev);
-+}
-+
-+/* Stub to call the system default and update the image on the picoLCD */
-+static void picolcd_fb_fillrect(struct fb_info *info,
-+		const struct fb_fillrect *rect)
-+{
-+	if (!info->par)
-+		return;
-+	sys_fillrect(info, rect);
-+
-+	schedule_delayed_work(&info->deferred_work, 0);
-+}
-+
-+/* Stub to call the system default and update the image on the picoLCD */
-+static void picolcd_fb_copyarea(struct fb_info *info,
-+		const struct fb_copyarea *area)
-+{
-+	if (!info->par)
-+		return;
-+	sys_copyarea(info, area);
-+
-+	schedule_delayed_work(&info->deferred_work, 0);
-+}
-+
-+/* Stub to call the system default and update the image on the picoLCD */
-+static void picolcd_fb_imageblit(struct fb_info *info, const struct fb_image *image)
-+{
-+	if (!info->par)
-+		return;
-+	sys_imageblit(info, image);
-+
-+	schedule_delayed_work(&info->deferred_work, 0);
-+}
-+
-+/*
-+ * this is the slow path from userspace. they can seek and write to
-+ * the fb. it's inefficient to do anything less than a full screen draw
-+ */
-+static ssize_t picolcd_fb_write(struct fb_info *info, const char __user *buf,
-+		size_t count, loff_t *ppos)
-+{
-+	ssize_t ret;
-+	if (!info->par)
-+		return -ENODEV;
-+	ret = fb_sys_write(info, buf, count, ppos);
-+	if (ret >= 0)
-+		schedule_delayed_work(&info->deferred_work, 0);
-+	return ret;
-+}
-+
-+static int picolcd_fb_blank(int blank, struct fb_info *info)
-+{
-+	if (!info->par)
-+		return -ENODEV;
-+	/* We let fb notification do this for us via lcd/backlight device */
-+	return 0;
-+}
-+
-+static void picolcd_fb_destroy(struct fb_info *info)
-+{
-+	struct picolcd_data *data = info->par;
-+	info->par = NULL;
-+	if (data)
-+		data->fb_info = NULL;
-+	fb_deferred_io_cleanup(info);
-+	framebuffer_release(info);
-+}
-+
-+static int picolcd_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
-+{
-+	__u32 bpp      = var->bits_per_pixel;
-+	__u32 activate = var->activate;
-+
-+	/* only allow 1/8 bit depth (8-bit is grayscale) */
-+	*var = picolcdfb_var;
-+	var->activate = activate;
-+	if (bpp >= 8)
-+		var->bits_per_pixel = 8;
-+	else
-+		var->bits_per_pixel = 1;
-+	return 0;
-+}
-+
-+static int picolcd_set_par(struct fb_info *info)
-+{
-+	struct picolcd_data *data = info->par;
-+	u8 *o_fb, *n_fb;
-+	if (info->var.bits_per_pixel == data->fb_bpp)
-+		return 0;
-+	/* switch between 1/8 bit depths */
-+	if (info->var.bits_per_pixel != 1 && info->var.bits_per_pixel != 8)
-+		return -EINVAL;
-+
-+	o_fb = data->fb_bitmap;
-+	n_fb = vmalloc(PICOLCDFB_SIZE*info->var.bits_per_pixel);
-+	if (!n_fb)
-+		return -ENOMEM;
-+
-+	fb_deferred_io_cleanup(info);
-+	/* translate FB content to new bits-per-pixel */
-+	if (info->var.bits_per_pixel == 1) {
-+		int i, b;
-+		for (i = 0; i < PICOLCDFB_SIZE; i++) {
-+			u8 p = 0;
-+			for (b = 0; b < 8; b++) {
-+				p <<= 1;
-+				p |= o_fb[i*8+b] ? 0x01 : 0x00;
-+			}
-+		}
-+		info->fix.visual = FB_VISUAL_MONO01;
-+		info->fix.line_length = PICOLCDFB_WIDTH / 8;
-+	} else {
-+		int i;
-+		for (i = 0; i < PICOLCDFB_SIZE * 8; i++)
-+			n_fb[i] = o_fb[i/8] & (0x01 << (7 - i % 8)) ? 0xff : 0x00;
-+		info->fix.visual = FB_VISUAL_TRUECOLOR;
-+		info->fix.line_length = PICOLCDFB_WIDTH;
-+	}
-+
-+	data->fb_bitmap   = n_fb;
-+	data->fb_bpp      = info->var.bits_per_pixel;
-+	info->screen_base = (char __force __iomem *)n_fb;
-+	info->fix.smem_start = (unsigned long)n_fb;
-+	info->fix.smem_len   = PICOLCDFB_SIZE*data->fb_bpp;
-+	fb_deferred_io_init(info);
-+	vfree(o_fb);
-+	return 0;
-+}
-+
-+/* Note this can't be const because of struct fb_info definition */
-+static struct fb_ops picolcdfb_ops = {
-+	.owner        = THIS_MODULE,
-+	.fb_destroy   = picolcd_fb_destroy,
-+	.fb_read      = fb_sys_read,
-+	.fb_write     = picolcd_fb_write,
-+	.fb_blank     = picolcd_fb_blank,
-+	.fb_fillrect  = picolcd_fb_fillrect,
-+	.fb_copyarea  = picolcd_fb_copyarea,
-+	.fb_imageblit = picolcd_fb_imageblit,
-+	.fb_check_var = picolcd_fb_check_var,
-+	.fb_set_par   = picolcd_set_par,
-+};
-+
-+
-+/* Callback from deferred IO workqueue */
-+static void picolcd_fb_deferred_io(struct fb_info *info, struct list_head *pagelist)
-+{
-+	picolcd_fb_update(info->par);
-+}
-+
-+static const struct fb_deferred_io picolcd_fb_defio = {
-+	.delay = HZ / PICOLCDFB_UPDATE_RATE_DEFAULT,
-+	.deferred_io = picolcd_fb_deferred_io,
-+};
-+
-+
-+/*
-+ * The "fb_update_rate" sysfs attribute
-+ */
-+static ssize_t picolcd_fb_update_rate_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct picolcd_data *data = dev_get_drvdata(dev);
-+	unsigned i, fb_update_rate = data->fb_update_rate;
-+	size_t ret = 0;
-+
-+	for (i = 1; i <= PICOLCDFB_UPDATE_RATE_LIMIT; i++)
-+		if (ret >= PAGE_SIZE)
-+			break;
-+		else if (i == fb_update_rate)
-+			ret += snprintf(buf+ret, PAGE_SIZE-ret, "[%u] ", i);
-+		else
-+			ret += snprintf(buf+ret, PAGE_SIZE-ret, "%u ", i);
-+	if (ret > 0)
-+		buf[min(ret, (size_t)PAGE_SIZE)-1] = '\n';
-+	return ret;
-+}
-+
-+static ssize_t picolcd_fb_update_rate_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct picolcd_data *data = dev_get_drvdata(dev);
-+	int i;
-+	unsigned u;
-+
-+	if (count < 1 || count > 10)
-+		return -EINVAL;
-+
-+	i = sscanf(buf, "%u", &u);
-+	if (i != 1)
-+		return -EINVAL;
-+
-+	if (u > PICOLCDFB_UPDATE_RATE_LIMIT)
-+		return -ERANGE;
-+	else if (u == 0)
-+		u = PICOLCDFB_UPDATE_RATE_DEFAULT;
-+
-+	data->fb_update_rate = u;
-+	data->fb_defio.delay = HZ / data->fb_update_rate;
-+	return count;
-+}
-+
-+static DEVICE_ATTR(fb_update_rate, 0666, picolcd_fb_update_rate_show,
-+		picolcd_fb_update_rate_store);
-+
-+/* initialize Framebuffer device */
-+static int picolcd_init_framebuffer(struct picolcd_data *data)
-+{
-+	struct device *dev = &data->hdev->dev;
-+	struct fb_info *info = NULL;
-+	int error = -ENOMEM;
-+	u8 *fb_vbitmap = NULL;
-+	u8 *fb_bitmap  = NULL;
-+
-+	fb_bitmap = vmalloc(PICOLCDFB_SIZE*picolcdfb_var.bits_per_pixel);
-+	if (fb_bitmap == NULL) {
-+		dev_err(dev, "can't get a free page for framebuffer\n");
-+		goto err_nomem;
-+	}
-+
-+	fb_vbitmap = kmalloc(PICOLCDFB_SIZE, GFP_KERNEL);
-+	if (fb_vbitmap == NULL) {
-+		dev_err(dev, "can't alloc vbitmap image buffer\n");
-+		goto err_nomem;
-+	}
-+
-+	data->fb_update_rate = PICOLCDFB_UPDATE_RATE_DEFAULT;
-+	data->fb_defio = picolcd_fb_defio;
-+	info = framebuffer_alloc(0, dev);
-+	if (info == NULL) {
-+		dev_err(dev, "failed to allocate a framebuffer\n");
-+		goto err_nomem;
-+	}
-+
-+	info->fbdefio = &data->fb_defio;
-+	info->screen_base = (char __force __iomem *)fb_bitmap;
-+	info->fbops = &picolcdfb_ops;
-+	info->var = picolcdfb_var;
-+	info->fix = picolcdfb_fix;
-+	info->fix.smem_len   = PICOLCDFB_SIZE;
-+	info->fix.smem_start = (unsigned long)fb_bitmap;
-+	info->par = data;
-+	info->flags = FBINFO_FLAG_DEFAULT;
-+
-+	data->fb_vbitmap = fb_vbitmap;
-+	data->fb_bitmap  = fb_bitmap;
-+	data->fb_bpp     = picolcdfb_var.bits_per_pixel;
-+	error = picolcd_fb_reset(data, 1);
-+	if (error) {
-+		dev_err(dev, "failed to configure display\n");
-+		goto err_cleanup;
-+	}
-+	error = device_create_file(dev, &dev_attr_fb_update_rate);
-+	if (error) {
-+		dev_err(dev, "failed to create sysfs attributes\n");
-+		goto err_cleanup;
-+	}
-+	data->fb_info    = info;
-+	error = register_framebuffer(info);
-+	if (error) {
-+		dev_err(dev, "failed to register framebuffer\n");
-+		goto err_sysfs;
-+	}
-+	fb_deferred_io_init(info);
-+	/* schedule first output of framebuffer */
-+	schedule_delayed_work(&info->deferred_work, 0);
-+	return 0;
-+
-+err_sysfs:
-+	device_remove_file(dev, &dev_attr_fb_update_rate);
-+err_cleanup:
-+	data->fb_vbitmap = NULL;
-+	data->fb_bitmap  = NULL;
-+	data->fb_bpp     = 0;
-+	data->fb_info    = NULL;
-+
-+err_nomem:
-+	framebuffer_release(info);
-+	vfree(fb_bitmap);
-+	kfree(fb_vbitmap);
-+	return error;
-+}
-+
-+static void picolcd_exit_framebuffer(struct picolcd_data *data)
-+{
-+	struct fb_info *info = data->fb_info;
-+	u8 *fb_vbitmap = data->fb_vbitmap;
-+	u8 *fb_bitmap  = data->fb_bitmap;
-+
-+	if (!info)
-+		return;
-+
-+	data->fb_vbitmap = NULL;
-+	data->fb_bitmap  = NULL;
-+	data->fb_bpp     = 0;
-+	data->fb_info    = NULL;
-+	device_remove_file(&data->hdev->dev, &dev_attr_fb_update_rate);
-+	fb_deferred_io_cleanup(info);
-+	unregister_framebuffer(info);
-+	vfree(fb_bitmap);
-+	kfree(fb_vbitmap);
-+}
-+
-+
-+#else
-+static inline int picolcd_fb_reset(struct picolcd_data *data, int clear)
-+{
-+	return 0;
-+}
-+static inline int picolcd_init_framebuffer(struct picolcd_data *data)
-+{
-+	return 0;
-+}
-+static void picolcd_exit_framebuffer(struct picolcd_data *data)
-+{
-+}
-+#endif /* CONFIG_FB */
-+
+-#define SIZEOF_KRETPROBE_TRACE_ENTRY(n)			\
+-	(offsetof(struct kretprobe_trace_entry, args) +	\
+-	(sizeof(unsigned long) * (n)))
+-
  /*
-  * input class device
-  */
-@@ -314,6 +861,7 @@ static int picolcd_reset(struct hid_device *hdev)
- 	struct picolcd_data *data = hid_get_drvdata(hdev);
- 	struct hid_report *report = picolcd_out_report(REPORT_RESET, hdev);
- 	unsigned long flags;
-+	int error;
+  * trace_flag_type is an enumeration that holds different
+  * states when a trace occurs. These are:
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 1251e36..a751432 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -29,6 +29,8 @@
+ #include <linux/ctype.h>
+ #include <linux/ptrace.h>
+ #include <linux/perf_event.h>
++#include <linux/stringify.h>
++#include <asm/bitsperlong.h>
  
- 	if (!data || !report || report->maxfield != 1)
- 		return -ENODEV;
-@@ -327,7 +875,16 @@ static int picolcd_reset(struct hid_device *hdev)
- 	usbhid_submit_report(hdev, report, USB_DIR_OUT);
- 	spin_unlock_irqrestore(&data->lock, flags);
+ #include "trace.h"
+ #include "trace_output.h"
+@@ -40,7 +42,6 @@
  
--	return picolcd_check_version(hdev);
-+	error = picolcd_check_version(hdev);
-+	if (error)
-+		return error;
+ /* Reserved field names */
+ #define FIELD_STRING_IP "__probe_ip"
+-#define FIELD_STRING_NARGS "__probe_nargs"
+ #define FIELD_STRING_RETIP "__probe_ret_ip"
+ #define FIELD_STRING_FUNC "__probe_func"
+ 
+@@ -52,56 +53,102 @@ const char *reserved_field_names[] = {
+ 	"common_tgid",
+ 	"common_lock_depth",
+ 	FIELD_STRING_IP,
+-	FIELD_STRING_NARGS,
+ 	FIELD_STRING_RETIP,
+ 	FIELD_STRING_FUNC,
+ };
+ 
+-struct fetch_func {
+-	unsigned long (*func)(struct pt_regs *, void *);
++/* Printing function type */
++typedef int (*print_type_func_t)(struct trace_seq *, const char *, void *);
++#define PRINT_TYPE_FUNC_NAME(type)	print_type_##type
++#define PRINT_TYPE_FMT_NAME(type)	print_type_format_##type
 +
-+#if defined(CONFIG_FB) || defined(CONFIG_FB_MODULE)
-+	if (data->fb_info)
-+		schedule_delayed_work(&data->fb_info->deferred_work, 0);
-+#endif /* CONFIG_FB */
++/* Printing  in basic type function template */
++#define DEFINE_BASIC_PRINT_TYPE_FUNC(type, fmt, cast)			\
++static __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
++						const char *name, void *data)\
++{									\
++	return trace_seq_printf(s, " %s=" fmt, name, (cast)*(type *)data);\
++}									\
++static const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
 +
-+	return 0;
- }
- 
- /*
-@@ -931,6 +1488,9 @@ static int picolcd_reset_resume(struct hid_device *hdev)
- 	ret = picolcd_reset(hdev);
- 	if (ret)
- 		dbg_hid(PICOLCD_NAME " resetting our device failed: %d\n", ret);
-+	ret = picolcd_fb_reset(hid_get_drvdata(hdev), 0);
-+	if (ret)
-+		dbg_hid(PICOLCD_NAME " restoring framebuffer content failed: %d\n", ret);
- 	return 0;
- }
- #endif
-@@ -1027,6 +1587,11 @@ static int picolcd_probe_lcd(struct hid_device *hdev, struct picolcd_data *data)
- 	if (error)
- 		goto err;
- 
-+	/* Set up the framebuffer device */
-+	error = picolcd_init_framebuffer(data);
-+	if (error)
-+		goto err;
++DEFINE_BASIC_PRINT_TYPE_FUNC(u8, "%x", unsigned int)
++DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned int)
++DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%lx", unsigned long)
++DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%llx", unsigned long long)
++DEFINE_BASIC_PRINT_TYPE_FUNC(s8, "%d", int)
++DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", int)
++DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%ld", long)
++DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%lld", long long)
 +
- #ifdef CONFIG_DEBUG_FS
- 	report = picolcd_out_report(REPORT_READ_MEMORY, hdev);
- 	if (report && report->maxfield == 1 && report->field[0]->report_size == 8)
-@@ -1036,6 +1601,7 @@ static int picolcd_probe_lcd(struct hid_device *hdev, struct picolcd_data *data)
- #endif
- 	return 0;
- err:
-+	picolcd_exit_framebuffer(data);
- 	picolcd_exit_cir(data);
- 	picolcd_exit_keys(data);
- 	return error;
-@@ -1165,6 +1731,8 @@ static void picolcd_remove(struct hid_device *hdev)
- 		complete(&data->pending->ready);
- 	spin_unlock_irqrestore(&data->lock, flags);
++/* Data fetch function type */
++typedef	void (*fetch_func_t)(struct pt_regs *, void *, void *);
++
++struct fetch_param {
++	fetch_func_t	fn;
+ 	void *data;
+ };
  
-+	/* Clean up the framebuffer */
-+	picolcd_exit_framebuffer(data);
- 	/* Cleanup input */
- 	picolcd_exit_cir(data);
- 	picolcd_exit_keys(data);
-diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-index 39fe2e8..9acf573 100644
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -623,6 +623,7 @@ int usbhid_wait_io(struct hid_device *hid)
- 
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(usbhid_wait_io);
- 
- static int hid_set_idle(struct usb_device *dev, int ifnum, int report, int idle)
+-static __kprobes unsigned long call_fetch(struct fetch_func *f,
+-					  struct pt_regs *regs)
++static __kprobes void call_fetch(struct fetch_param *fprm,
++				 struct pt_regs *regs, void *dest)
  {
--- 
-1.6.4.4
+-	return f->func(regs, f->data);
++	return fprm->fn(regs, fprm->data, dest);
+ }
+ 
+-/* fetch handlers */
+-static __kprobes unsigned long fetch_register(struct pt_regs *regs,
+-					      void *offset)
+-{
+-	return regs_get_register(regs, (unsigned int)((unsigned long)offset));
++#define FETCH_FUNC_NAME(kind, type)	fetch_##kind##_##type
++/*
++ * Define macro for basic types - we don't need to define s* types, because
++ * we have to care only about bitwidth at recording time.
++ */
++#define DEFINE_BASIC_FETCH_FUNCS(kind)  \
++DEFINE_FETCH_##kind(u8)			\
++DEFINE_FETCH_##kind(u16)		\
++DEFINE_FETCH_##kind(u32)		\
++DEFINE_FETCH_##kind(u64)
++
++#define CHECK_BASIC_FETCH_FUNCS(kind, fn)	\
++	((FETCH_FUNC_NAME(kind, u8) == fn) ||	\
++	 (FETCH_FUNC_NAME(kind, u16) == fn) ||	\
++	 (FETCH_FUNC_NAME(kind, u32) == fn) ||	\
++	 (FETCH_FUNC_NAME(kind, u64) == fn))
++
++/* Data fetch function templates */
++#define DEFINE_FETCH_reg(type)						\
++static __kprobes void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs,	\
++					  void *offset, void *dest)	\
++{									\
++	*(type *)dest = (type)regs_get_register(regs,			\
++				(unsigned int)((unsigned long)offset));	\
+ }
+-
+-static __kprobes unsigned long fetch_stack(struct pt_regs *regs,
+-					   void *num)
+-{
+-	return regs_get_kernel_stack_nth(regs,
+-					 (unsigned int)((unsigned long)num));
++DEFINE_BASIC_FETCH_FUNCS(reg)
++
++#define DEFINE_FETCH_stack(type)					\
++static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
++					  void *offset, void *dest)	\
++{									\
++	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
++				(unsigned int)((unsigned long)offset));	\
+ }
++DEFINE_BASIC_FETCH_FUNCS(stack)
+ 
+-static __kprobes unsigned long fetch_memory(struct pt_regs *regs, void *addr)
+-{
+-	unsigned long retval;
+-
+-	if (probe_kernel_address(addr, retval))
+-		return 0;
+-	return retval;
++#define DEFINE_FETCH_retval(type)					\
++static __kprobes void FETCH_FUNC_NAME(retval, type)(struct pt_regs *regs,\
++					  void *dummy, void *dest)	\
++{									\
++	*(type *)dest = (type)regs_return_value(regs);			\
+ }
+-
+-static __kprobes unsigned long fetch_retvalue(struct pt_regs *regs,
+-					      void *dummy)
+-{
+-	return regs_return_value(regs);
+-}
+-
+-static __kprobes unsigned long fetch_stack_address(struct pt_regs *regs,
+-						   void *dummy)
+-{
+-	return kernel_stack_pointer(regs);
++DEFINE_BASIC_FETCH_FUNCS(retval)
++
++#define DEFINE_FETCH_memory(type)					\
++static __kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,\
++					  void *addr, void *dest)	\
++{									\
++	type retval;							\
++	if (probe_kernel_address(addr, retval))				\
++		*(type *)dest = 0;					\
++	else								\
++		*(type *)dest = retval;					\
+ }
++DEFINE_BASIC_FETCH_FUNCS(memory)
+ 
+ /* Memory fetching by symbol */
+ struct symbol_cache {
+@@ -145,51 +192,126 @@ static struct symbol_cache *alloc_symbol_cache(const char *sym, long offset)
+ 	return sc;
+ }
+ 
+-static __kprobes unsigned long fetch_symbol(struct pt_regs *regs, void *data)
+-{
+-	struct symbol_cache *sc = data;
+-
+-	if (sc->addr)
+-		return fetch_memory(regs, (void *)sc->addr);
+-	else
+-		return 0;
++#define DEFINE_FETCH_symbol(type)					\
++static __kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,\
++					  void *data, void *dest)	\
++{									\
++	struct symbol_cache *sc = data;					\
++	if (sc->addr)							\
++		fetch_memory_##type(regs, (void *)sc->addr, dest);	\
++	else								\
++		*(type *)dest = 0;					\
+ }
++DEFINE_BASIC_FETCH_FUNCS(symbol)
+ 
+-/* Special indirect memory access interface */
+-struct indirect_fetch_data {
+-	struct fetch_func orig;
++/* Dereference memory access function */
++struct deref_fetch_param {
++	struct fetch_param orig;
+ 	long offset;
+ };
+ 
+-static __kprobes unsigned long fetch_indirect(struct pt_regs *regs, void *data)
+-{
+-	struct indirect_fetch_data *ind = data;
+-	unsigned long addr;
+-
+-	addr = call_fetch(&ind->orig, regs);
+-	if (addr) {
+-		addr += ind->offset;
+-		return fetch_memory(regs, (void *)addr);
+-	} else
+-		return 0;
++#define DEFINE_FETCH_deref(type)					\
++static __kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,\
++					    void *data, void *dest)	\
++{									\
++	struct deref_fetch_param *dprm = data;				\
++	unsigned long addr;						\
++	call_fetch(&dprm->orig, regs, &addr);				\
++	if (addr) {							\
++		addr += dprm->offset;					\
++		fetch_memory_##type(regs, (void *)addr, dest);		\
++	} else								\
++		*(type *)dest = 0;					\
+ }
++DEFINE_BASIC_FETCH_FUNCS(deref)
+ 
+-static __kprobes void free_indirect_fetch_data(struct indirect_fetch_data *data)
++static __kprobes void free_deref_fetch_param(struct deref_fetch_param *data)
+ {
+-	if (data->orig.func == fetch_indirect)
+-		free_indirect_fetch_data(data->orig.data);
+-	else if (data->orig.func == fetch_symbol)
++	if (CHECK_BASIC_FETCH_FUNCS(deref, data->orig.fn))
++		free_deref_fetch_param(data->orig.data);
++	else if (CHECK_BASIC_FETCH_FUNCS(symbol, data->orig.fn))
+ 		free_symbol_cache(data->orig.data);
+ 	kfree(data);
+ }
+ 
++/* Default (unsigned long) fetch type */
++#define __DEFAULT_FETCH_TYPE(t) u##t
++#define _DEFAULT_FETCH_TYPE(t) __DEFAULT_FETCH_TYPE(t)
++#define DEFAULT_FETCH_TYPE _DEFAULT_FETCH_TYPE(BITS_PER_LONG)
++#define DEFAULT_FETCH_TYPE_STR __stringify(DEFAULT_FETCH_TYPE)
++
++#define ASSIGN_FETCH_FUNC(kind, type)	\
++	.kind = FETCH_FUNC_NAME(kind, type)
++
++#define ASSIGN_FETCH_TYPE(ptype, ftype, sign)	\
++	{.name = #ptype,			\
++	 .size = sizeof(ftype),			\
++	 .is_signed = sign,			\
++	 .print = PRINT_TYPE_FUNC_NAME(ptype),	\
++	 .fmt = PRINT_TYPE_FMT_NAME(ptype),	\
++ASSIGN_FETCH_FUNC(reg, ftype),			\
++ASSIGN_FETCH_FUNC(stack, ftype),		\
++ASSIGN_FETCH_FUNC(retval, ftype),		\
++ASSIGN_FETCH_FUNC(memory, ftype),		\
++ASSIGN_FETCH_FUNC(symbol, ftype),		\
++ASSIGN_FETCH_FUNC(deref, ftype),		\
++	}
++
++/* Fetch type information table */
++static const struct fetch_type {
++	const char	*name;		/* Name of type */
++	size_t		size;		/* Byte size of type */
++	int		is_signed;	/* Signed flag */
++	print_type_func_t	print;	/* Print functions */
++	const char	*fmt;		/* Fromat string */
++	/* Fetch functions */
++	fetch_func_t	reg;
++	fetch_func_t	stack;
++	fetch_func_t	retval;
++	fetch_func_t	memory;
++	fetch_func_t	symbol;
++	fetch_func_t	deref;
++} fetch_type_table[] = {
++	ASSIGN_FETCH_TYPE(u8,  u8,  0),
++	ASSIGN_FETCH_TYPE(u16, u16, 0),
++	ASSIGN_FETCH_TYPE(u32, u32, 0),
++	ASSIGN_FETCH_TYPE(u64, u64, 0),
++	ASSIGN_FETCH_TYPE(s8,  u8,  1),
++	ASSIGN_FETCH_TYPE(s16, u16, 1),
++	ASSIGN_FETCH_TYPE(s32, u32, 1),
++	ASSIGN_FETCH_TYPE(s64, u64, 1),
++};
++
++static const struct fetch_type *find_fetch_type(const char *type)
++{
++	int i;
++
++	if (!type)
++		type = DEFAULT_FETCH_TYPE_STR;
++
++	for (i = 0; i < ARRAY_SIZE(fetch_type_table); i++)
++		if (strcmp(type, fetch_type_table[i].name) == 0)
++			return &fetch_type_table[i];
++	return NULL;
++}
++
++/* Special function : only accept unsigned long */
++static __kprobes void fetch_stack_address(struct pt_regs *regs,
++					  void *dummy, void *dest)
++{
++	*(unsigned long *)dest = kernel_stack_pointer(regs);
++}
++
+ /**
+  * Kprobe event core functions
+  */
+ 
+ struct probe_arg {
+-	struct fetch_func	fetch;
+-	const char		*name;
++	struct fetch_param	fetch;
++	unsigned int		offset;	/* Offset from argument entry */
++	const char		*name;	/* Name of this argument */
++	const char		*comm;	/* Command of this argument */
++	const struct fetch_type	*type;	/* Type of this argument */
+ };
+ 
+ /* Flags for trace_probe */
+@@ -204,6 +326,7 @@ struct trace_probe {
+ 	const char		*symbol;	/* symbol name */
+ 	struct ftrace_event_call	call;
+ 	struct trace_event		event;
++	ssize_t			size;		/* trace entry size */
+ 	unsigned int		nr_args;
+ 	struct probe_arg	args[];
+ };
+@@ -212,6 +335,7 @@ struct trace_probe {
+ 	(offsetof(struct trace_probe, args) +	\
+ 	(sizeof(struct probe_arg) * (n)))
+ 
++
+ static __kprobes int probe_is_return(struct trace_probe *tp)
+ {
+ 	return tp->rp.handler != NULL;
+@@ -222,49 +346,6 @@ static __kprobes const char *probe_symbol(struct trace_probe *tp)
+ 	return tp->symbol ? tp->symbol : "unknown";
+ }
+ 
+-static int probe_arg_string(char *buf, size_t n, struct fetch_func *ff)
+-{
+-	int ret = -EINVAL;
+-
+-	if (ff->func == fetch_register) {
+-		const char *name;
+-		name = regs_query_register_name((unsigned int)((long)ff->data));
+-		ret = snprintf(buf, n, "%%%s", name);
+-	} else if (ff->func == fetch_stack)
+-		ret = snprintf(buf, n, "$stack%lu", (unsigned long)ff->data);
+-	else if (ff->func == fetch_memory)
+-		ret = snprintf(buf, n, "@0x%p", ff->data);
+-	else if (ff->func == fetch_symbol) {
+-		struct symbol_cache *sc = ff->data;
+-		if (sc->offset)
+-			ret = snprintf(buf, n, "@%s%+ld", sc->symbol,
+-					sc->offset);
+-		else
+-			ret = snprintf(buf, n, "@%s", sc->symbol);
+-	} else if (ff->func == fetch_retvalue)
+-		ret = snprintf(buf, n, "$retval");
+-	else if (ff->func == fetch_stack_address)
+-		ret = snprintf(buf, n, "$stack");
+-	else if (ff->func == fetch_indirect) {
+-		struct indirect_fetch_data *id = ff->data;
+-		size_t l = 0;
+-		ret = snprintf(buf, n, "%+ld(", id->offset);
+-		if (ret >= n)
+-			goto end;
+-		l += ret;
+-		ret = probe_arg_string(buf + l, n - l, &id->orig);
+-		if (ret < 0)
+-			goto end;
+-		l += ret;
+-		ret = snprintf(buf + l, n - l, ")");
+-		ret += l;
+-	}
+-end:
+-	if (ret >= n)
+-		return -ENOSPC;
+-	return ret;
+-}
+-
+ static int register_probe_event(struct trace_probe *tp);
+ static void unregister_probe_event(struct trace_probe *tp);
+ 
+@@ -347,11 +428,12 @@ error:
+ 
+ static void free_probe_arg(struct probe_arg *arg)
+ {
+-	if (arg->fetch.func == fetch_symbol)
++	if (CHECK_BASIC_FETCH_FUNCS(deref, arg->fetch.fn))
++		free_deref_fetch_param(arg->fetch.data);
++	else if (CHECK_BASIC_FETCH_FUNCS(symbol, arg->fetch.fn))
+ 		free_symbol_cache(arg->fetch.data);
+-	else if (arg->fetch.func == fetch_indirect)
+-		free_indirect_fetch_data(arg->fetch.data);
+ 	kfree(arg->name);
++	kfree(arg->comm);
+ }
+ 
+ static void free_trace_probe(struct trace_probe *tp)
+@@ -457,28 +539,30 @@ static int split_symbol_offset(char *symbol, unsigned long *offset)
+ #define PARAM_MAX_ARGS 16
+ #define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
+ 
+-static int parse_probe_vars(char *arg, struct fetch_func *ff, int is_return)
++static int parse_probe_vars(char *arg, const struct fetch_type *t,
++			    struct fetch_param *f, int is_return)
+ {
+ 	int ret = 0;
+ 	unsigned long param;
+ 
+ 	if (strcmp(arg, "retval") == 0) {
+-		if (is_return) {
+-			ff->func = fetch_retvalue;
+-			ff->data = NULL;
+-		} else
++		if (is_return)
++			f->fn = t->retval;
++		else
+ 			ret = -EINVAL;
+ 	} else if (strncmp(arg, "stack", 5) == 0) {
+ 		if (arg[5] == '\0') {
+-			ff->func = fetch_stack_address;
+-			ff->data = NULL;
++			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR) == 0)
++				f->fn = fetch_stack_address;
++			else
++				ret = -EINVAL;
+ 		} else if (isdigit(arg[5])) {
+ 			ret = strict_strtoul(arg + 5, 10, &param);
+ 			if (ret || param > PARAM_MAX_STACK)
+ 				ret = -EINVAL;
+ 			else {
+-				ff->func = fetch_stack;
+-				ff->data = (void *)param;
++				f->fn = t->stack;
++				f->data = (void *)param;
+ 			}
+ 		} else
+ 			ret = -EINVAL;
+@@ -488,7 +572,8 @@ static int parse_probe_vars(char *arg, struct fetch_func *ff, int is_return)
+ }
+ 
+ /* Recursive argument parser */
+-static int __parse_probe_arg(char *arg, struct fetch_func *ff, int is_return)
++static int __parse_probe_arg(char *arg, const struct fetch_type *t,
++			     struct fetch_param *f, int is_return)
+ {
+ 	int ret = 0;
+ 	unsigned long param;
+@@ -497,13 +582,13 @@ static int __parse_probe_arg(char *arg, struct fetch_func *ff, int is_return)
+ 
+ 	switch (arg[0]) {
+ 	case '$':
+-		ret = parse_probe_vars(arg + 1, ff, is_return);
++		ret = parse_probe_vars(arg + 1, t, f, is_return);
+ 		break;
+ 	case '%':	/* named register */
+ 		ret = regs_query_register_offset(arg + 1);
+ 		if (ret >= 0) {
+-			ff->func = fetch_register;
+-			ff->data = (void *)(unsigned long)ret;
++			f->fn = t->reg;
++			f->data = (void *)(unsigned long)ret;
+ 			ret = 0;
+ 		}
+ 		break;
+@@ -512,26 +597,22 @@ static int __parse_probe_arg(char *arg, struct fetch_func *ff, int is_return)
+ 			ret = strict_strtoul(arg + 1, 0, &param);
+ 			if (ret)
+ 				break;
+-			ff->func = fetch_memory;
+-			ff->data = (void *)param;
++			f->fn = t->memory;
++			f->data = (void *)param;
+ 		} else {
+ 			ret = split_symbol_offset(arg + 1, &offset);
+ 			if (ret)
+ 				break;
+-			ff->data = alloc_symbol_cache(arg + 1, offset);
+-			if (ff->data)
+-				ff->func = fetch_symbol;
+-			else
+-				ret = -EINVAL;
++			f->data = alloc_symbol_cache(arg + 1, offset);
++			if (f->data)
++				f->fn = t->symbol;
+ 		}
+ 		break;
+-	case '+':	/* indirect memory */
++	case '+':	/* deref memory */
+ 	case '-':
+ 		tmp = strchr(arg, '(');
+-		if (!tmp) {
+-			ret = -EINVAL;
++		if (!tmp)
+ 			break;
+-		}
+ 		*tmp = '\0';
+ 		ret = strict_strtol(arg + 1, 0, &offset);
+ 		if (ret)
+@@ -541,38 +622,58 @@ static int __parse_probe_arg(char *arg, struct fetch_func *ff, int is_return)
+ 		arg = tmp + 1;
+ 		tmp = strrchr(arg, ')');
+ 		if (tmp) {
+-			struct indirect_fetch_data *id;
++			struct deref_fetch_param *dprm;
++			const struct fetch_type *t2 = find_fetch_type(NULL);
+ 			*tmp = '\0';
+-			id = kzalloc(sizeof(struct indirect_fetch_data),
+-				     GFP_KERNEL);
+-			if (!id)
++			dprm = kzalloc(sizeof(struct deref_fetch_param),
++				       GFP_KERNEL);
++			if (!dprm)
+ 				return -ENOMEM;
+-			id->offset = offset;
+-			ret = __parse_probe_arg(arg, &id->orig, is_return);
++			dprm->offset = offset;
++			ret = __parse_probe_arg(arg, t2, &dprm->orig,
++						is_return);
+ 			if (ret)
+-				kfree(id);
++				kfree(dprm);
+ 			else {
+-				ff->func = fetch_indirect;
+-				ff->data = (void *)id;
++				f->fn = t->deref;
++				f->data = (void *)dprm;
+ 			}
+-		} else
+-			ret = -EINVAL;
++		}
+ 		break;
+-	default:
+-		/* TODO: support custom handler */
+-		ret = -EINVAL;
+ 	}
++	if (!ret && !f->fn)
++		ret = -EINVAL;
+ 	return ret;
+ }
+ 
+ /* String length checking wrapper */
+-static int parse_probe_arg(char *arg, struct fetch_func *ff, int is_return)
++static int parse_probe_arg(char *arg, struct trace_probe *tp,
++			   struct probe_arg *parg, int is_return)
+ {
++	const char *t;
++
+ 	if (strlen(arg) > MAX_ARGSTR_LEN) {
+ 		pr_info("Argument is too long.: %s\n",  arg);
+ 		return -ENOSPC;
+ 	}
+-	return __parse_probe_arg(arg, ff, is_return);
++	parg->comm = kstrdup(arg, GFP_KERNEL);
++	if (!parg->comm) {
++		pr_info("Failed to allocate memory for command '%s'.\n", arg);
++		return -ENOMEM;
++	}
++	t = strchr(parg->comm, ':');
++	if (t) {
++		arg[t - parg->comm] = '\0';
++		t++;
++	}
++	parg->type = find_fetch_type(t);
++	if (!parg->type) {
++		pr_info("Unsupported type: %s\n", t);
++		return -EINVAL;
++	}
++	parg->offset = tp->size;
++	tp->size += parg->type->size;
++	return __parse_probe_arg(arg, parg->type, &parg->fetch, is_return);
+ }
+ 
+ /* Return 1 if name is reserved or already used by another argument */
+@@ -602,15 +703,18 @@ static int create_trace_probe(int argc, char **argv)
+ 	 *  @ADDR	: fetch memory at ADDR (ADDR should be in kernel)
+ 	 *  @SYM[+|-offs] : fetch memory at SYM +|- offs (SYM is a data symbol)
+ 	 *  %REG	: fetch register REG
+-	 * Indirect memory fetch:
++	 * Dereferencing memory fetch:
+ 	 *  +|-offs(ARG) : fetch memory at ARG +|- offs address.
+ 	 * Alias name of args:
+ 	 *  NAME=FETCHARG : set NAME as alias of FETCHARG.
++	 * Type of args:
++	 *  FETCHARG:TYPE : use TYPE instead of unsigned long.
+ 	 */
+ 	struct trace_probe *tp;
+ 	int i, ret = 0;
+ 	int is_return = 0, is_delete = 0;
+-	char *symbol = NULL, *event = NULL, *arg = NULL, *group = NULL;
++	char *symbol = NULL, *event = NULL, *group = NULL;
++	char *arg, *tmp;
+ 	unsigned long offset = 0;
+ 	void *addr = NULL;
+ 	char buf[MAX_EVENT_NAME_LEN];
+@@ -723,13 +827,6 @@ static int create_trace_probe(int argc, char **argv)
+ 		else
+ 			arg = argv[i];
+ 
+-		if (conflict_field_name(argv[i], tp->args, i)) {
+-			pr_info("Argument%d name '%s' conflicts with "
+-				"another field.\n", i, argv[i]);
+-			ret = -EINVAL;
+-			goto error;
+-		}
+-
+ 		tp->args[i].name = kstrdup(argv[i], GFP_KERNEL);
+ 		if (!tp->args[i].name) {
+ 			pr_info("Failed to allocate argument%d name '%s'.\n",
+@@ -737,9 +834,19 @@ static int create_trace_probe(int argc, char **argv)
+ 			ret = -ENOMEM;
+ 			goto error;
+ 		}
++		tmp = strchr(tp->args[i].name, ':');
++		if (tmp)
++			*tmp = '_';	/* convert : to _ */
++
++		if (conflict_field_name(tp->args[i].name, tp->args, i)) {
++			pr_info("Argument%d name '%s' conflicts with "
++				"another field.\n", i, argv[i]);
++			ret = -EINVAL;
++			goto error;
++		}
+ 
+ 		/* Parse fetch argument */
+-		ret = parse_probe_arg(arg, &tp->args[i].fetch, is_return);
++		ret = parse_probe_arg(arg, tp, &tp->args[i], is_return);
+ 		if (ret) {
+ 			pr_info("Parse error at argument%d. (%d)\n", i, ret);
+ 			kfree(tp->args[i].name);
+@@ -794,8 +901,7 @@ static void probes_seq_stop(struct seq_file *m, void *v)
+ static int probes_seq_show(struct seq_file *m, void *v)
+ {
+ 	struct trace_probe *tp = v;
+-	int i, ret;
+-	char buf[MAX_ARGSTR_LEN + 1];
++	int i;
+ 
+ 	seq_printf(m, "%c", probe_is_return(tp) ? 'r' : 'p');
+ 	seq_printf(m, ":%s/%s", tp->call.system, tp->call.name);
+@@ -807,15 +913,10 @@ static int probes_seq_show(struct seq_file *m, void *v)
+ 	else
+ 		seq_printf(m, " %s", probe_symbol(tp));
+ 
+-	for (i = 0; i < tp->nr_args; i++) {
+-		ret = probe_arg_string(buf, MAX_ARGSTR_LEN, &tp->args[i].fetch);
+-		if (ret < 0) {
+-			pr_warning("Argument%d decoding error(%d).\n", i, ret);
+-			return ret;
+-		}
+-		seq_printf(m, " %s=%s", tp->args[i].name, buf);
+-	}
++	for (i = 0; i < tp->nr_args; i++)
++		seq_printf(m, " %s=%s", tp->args[i].name, tp->args[i].comm);
+ 	seq_printf(m, "\n");
++
+ 	return 0;
+ }
+ 
+@@ -945,9 +1046,10 @@ static const struct file_operations kprobe_profile_ops = {
+ static __kprobes void kprobe_trace_func(struct kprobe *kp, struct pt_regs *regs)
+ {
+ 	struct trace_probe *tp = container_of(kp, struct trace_probe, rp.kp);
+-	struct kprobe_trace_entry *entry;
++	struct kprobe_trace_entry_head *entry;
+ 	struct ring_buffer_event *event;
+ 	struct ring_buffer *buffer;
++	u8 *data;
+ 	int size, i, pc;
+ 	unsigned long irq_flags;
+ 	struct ftrace_event_call *call = &tp->call;
+@@ -957,7 +1059,7 @@ static __kprobes void kprobe_trace_func(struct kprobe *kp, struct pt_regs *regs)
+ 	local_save_flags(irq_flags);
+ 	pc = preempt_count();
+ 
+-	size = SIZEOF_KPROBE_TRACE_ENTRY(tp->nr_args);
++	size = sizeof(*entry) + tp->size;
+ 
+ 	event = trace_current_buffer_lock_reserve(&buffer, call->id, size,
+ 						  irq_flags, pc);
+@@ -965,10 +1067,10 @@ static __kprobes void kprobe_trace_func(struct kprobe *kp, struct pt_regs *regs)
+ 		return;
+ 
+ 	entry = ring_buffer_event_data(event);
+-	entry->nargs = tp->nr_args;
+ 	entry->ip = (unsigned long)kp->addr;
++	data = (u8 *)&entry[1];
+ 	for (i = 0; i < tp->nr_args; i++)
+-		entry->args[i] = call_fetch(&tp->args[i].fetch, regs);
++		call_fetch(&tp->args[i].fetch, regs, data + tp->args[i].offset);
+ 
+ 	if (!filter_current_check_discard(buffer, call, entry, event))
+ 		trace_nowake_buffer_unlock_commit(buffer, event, irq_flags, pc);
+@@ -979,9 +1081,10 @@ static __kprobes void kretprobe_trace_func(struct kretprobe_instance *ri,
+ 					  struct pt_regs *regs)
+ {
+ 	struct trace_probe *tp = container_of(ri->rp, struct trace_probe, rp);
+-	struct kretprobe_trace_entry *entry;
++	struct kretprobe_trace_entry_head *entry;
+ 	struct ring_buffer_event *event;
+ 	struct ring_buffer *buffer;
++	u8 *data;
+ 	int size, i, pc;
+ 	unsigned long irq_flags;
+ 	struct ftrace_event_call *call = &tp->call;
+@@ -989,7 +1092,7 @@ static __kprobes void kretprobe_trace_func(struct kretprobe_instance *ri,
+ 	local_save_flags(irq_flags);
+ 	pc = preempt_count();
+ 
+-	size = SIZEOF_KRETPROBE_TRACE_ENTRY(tp->nr_args);
++	size = sizeof(*entry) + tp->size;
+ 
+ 	event = trace_current_buffer_lock_reserve(&buffer, call->id, size,
+ 						  irq_flags, pc);
+@@ -997,11 +1100,11 @@ static __kprobes void kretprobe_trace_func(struct kretprobe_instance *ri,
+ 		return;
+ 
+ 	entry = ring_buffer_event_data(event);
+-	entry->nargs = tp->nr_args;
+ 	entry->func = (unsigned long)tp->rp.kp.addr;
+ 	entry->ret_ip = (unsigned long)ri->ret_addr;
++	data = (u8 *)&entry[1];
+ 	for (i = 0; i < tp->nr_args; i++)
+-		entry->args[i] = call_fetch(&tp->args[i].fetch, regs);
++		call_fetch(&tp->args[i].fetch, regs, data + tp->args[i].offset);
+ 
+ 	if (!filter_current_check_discard(buffer, call, entry, event))
+ 		trace_nowake_buffer_unlock_commit(buffer, event, irq_flags, pc);
+@@ -1011,13 +1114,14 @@ static __kprobes void kretprobe_trace_func(struct kretprobe_instance *ri,
+ enum print_line_t
+ print_kprobe_event(struct trace_iterator *iter, int flags)
+ {
+-	struct kprobe_trace_entry *field;
++	struct kprobe_trace_entry_head *field;
+ 	struct trace_seq *s = &iter->seq;
+ 	struct trace_event *event;
+ 	struct trace_probe *tp;
++	u8 *data;
+ 	int i;
+ 
+-	field = (struct kprobe_trace_entry *)iter->ent;
++	field = (struct kprobe_trace_entry_head *)iter->ent;
+ 	event = ftrace_find_event(field->ent.type);
+ 	tp = container_of(event, struct trace_probe, event);
+ 
+@@ -1030,9 +1134,10 @@ print_kprobe_event(struct trace_iterator *iter, int flags)
+ 	if (!trace_seq_puts(s, ")"))
+ 		goto partial;
+ 
+-	for (i = 0; i < field->nargs; i++)
+-		if (!trace_seq_printf(s, " %s=%lx",
+-				      tp->args[i].name, field->args[i]))
++	data = (u8 *)&field[1];
++	for (i = 0; i < tp->nr_args; i++)
++		if (!tp->args[i].type->print(s, tp->args[i].name,
++					     data + tp->args[i].offset))
+ 			goto partial;
+ 
+ 	if (!trace_seq_puts(s, "\n"))
+@@ -1046,13 +1151,14 @@ partial:
+ enum print_line_t
+ print_kretprobe_event(struct trace_iterator *iter, int flags)
+ {
+-	struct kretprobe_trace_entry *field;
++	struct kretprobe_trace_entry_head *field;
+ 	struct trace_seq *s = &iter->seq;
+ 	struct trace_event *event;
+ 	struct trace_probe *tp;
++	u8 *data;
+ 	int i;
+ 
+-	field = (struct kretprobe_trace_entry *)iter->ent;
++	field = (struct kretprobe_trace_entry_head *)iter->ent;
+ 	event = ftrace_find_event(field->ent.type);
+ 	tp = container_of(event, struct trace_probe, event);
+ 
+@@ -1071,9 +1177,10 @@ print_kretprobe_event(struct trace_iterator *iter, int flags)
+ 	if (!trace_seq_puts(s, ")"))
+ 		goto partial;
+ 
+-	for (i = 0; i < field->nargs; i++)
+-		if (!trace_seq_printf(s, " %s=%lx",
+-				      tp->args[i].name, field->args[i]))
++	data = (u8 *)&field[1];
++	for (i = 0; i < tp->nr_args; i++)
++		if (!tp->args[i].type->print(s, tp->args[i].name,
++					     data + tp->args[i].offset))
+ 			goto partial;
+ 
+ 	if (!trace_seq_puts(s, "\n"))
+@@ -1129,29 +1236,43 @@ static int probe_event_raw_init(struct ftrace_event_call *event_call)
+ static int kprobe_event_define_fields(struct ftrace_event_call *event_call)
+ {
+ 	int ret, i;
+-	struct kprobe_trace_entry field;
++	struct kprobe_trace_entry_head field;
+ 	struct trace_probe *tp = (struct trace_probe *)event_call->data;
+ 
+ 	DEFINE_FIELD(unsigned long, ip, FIELD_STRING_IP, 0);
+-	DEFINE_FIELD(int, nargs, FIELD_STRING_NARGS, 1);
+ 	/* Set argument names as fields */
+-	for (i = 0; i < tp->nr_args; i++)
+-		DEFINE_FIELD(unsigned long, args[i], tp->args[i].name, 0);
++	for (i = 0; i < tp->nr_args; i++) {
++		ret = trace_define_field(event_call, tp->args[i].type->name,
++					 tp->args[i].name,
++					 sizeof(field) + tp->args[i].offset,
++					 tp->args[i].type->size,
++					 tp->args[i].type->is_signed,
++					 FILTER_OTHER);
++		if (ret)
++			return ret;
++	}
+ 	return 0;
+ }
+ 
+ static int kretprobe_event_define_fields(struct ftrace_event_call *event_call)
+ {
+ 	int ret, i;
+-	struct kretprobe_trace_entry field;
++	struct kretprobe_trace_entry_head field;
+ 	struct trace_probe *tp = (struct trace_probe *)event_call->data;
+ 
+ 	DEFINE_FIELD(unsigned long, func, FIELD_STRING_FUNC, 0);
+ 	DEFINE_FIELD(unsigned long, ret_ip, FIELD_STRING_RETIP, 0);
+-	DEFINE_FIELD(int, nargs, FIELD_STRING_NARGS, 1);
+ 	/* Set argument names as fields */
+-	for (i = 0; i < tp->nr_args; i++)
+-		DEFINE_FIELD(unsigned long, args[i], tp->args[i].name, 0);
++	for (i = 0; i < tp->nr_args; i++) {
++		ret = trace_define_field(event_call, tp->args[i].type->name,
++					 tp->args[i].name,
++					 sizeof(field) + tp->args[i].offset,
++					 tp->args[i].type->size,
++					 tp->args[i].type->is_signed,
++					 FILTER_OTHER);
++		if (ret)
++			return ret;
++	}
+ 	return 0;
+ }
+ 
+@@ -1176,8 +1297,8 @@ static int __set_print_fmt(struct trace_probe *tp, char *buf, int len)
+ 	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
+ 
+ 	for (i = 0; i < tp->nr_args; i++) {
+-		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%%lx",
+-				tp->args[i].name);
++		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
++				tp->args[i].name, tp->args[i].type->fmt);
+ 	}
+ 
+ 	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
+@@ -1219,12 +1340,13 @@ static __kprobes void kprobe_perf_func(struct kprobe *kp,
+ {
+ 	struct trace_probe *tp = container_of(kp, struct trace_probe, rp.kp);
+ 	struct ftrace_event_call *call = &tp->call;
+-	struct kprobe_trace_entry *entry;
++	struct kprobe_trace_entry_head *entry;
++	u8 *data;
+ 	int size, __size, i;
+ 	unsigned long irq_flags;
+ 	int rctx;
+ 
+-	__size = SIZEOF_KPROBE_TRACE_ENTRY(tp->nr_args);
++	__size = sizeof(*entry) + tp->size;
+ 	size = ALIGN(__size + sizeof(u32), sizeof(u64));
+ 	size -= sizeof(u32);
+ 	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE,
+@@ -1235,10 +1357,10 @@ static __kprobes void kprobe_perf_func(struct kprobe *kp,
+ 	if (!entry)
+ 		return;
+ 
+-	entry->nargs = tp->nr_args;
+ 	entry->ip = (unsigned long)kp->addr;
++	data = (u8 *)&entry[1];
+ 	for (i = 0; i < tp->nr_args; i++)
+-		entry->args[i] = call_fetch(&tp->args[i].fetch, regs);
++		call_fetch(&tp->args[i].fetch, regs, data + tp->args[i].offset);
+ 
+ 	perf_trace_buf_submit(entry, size, rctx, entry->ip, 1, irq_flags, regs);
+ }
+@@ -1249,12 +1371,13 @@ static __kprobes void kretprobe_perf_func(struct kretprobe_instance *ri,
+ {
+ 	struct trace_probe *tp = container_of(ri->rp, struct trace_probe, rp);
+ 	struct ftrace_event_call *call = &tp->call;
+-	struct kretprobe_trace_entry *entry;
++	struct kretprobe_trace_entry_head *entry;
++	u8 *data;
+ 	int size, __size, i;
+ 	unsigned long irq_flags;
+ 	int rctx;
+ 
+-	__size = SIZEOF_KRETPROBE_TRACE_ENTRY(tp->nr_args);
++	__size = sizeof(*entry) + tp->size;
+ 	size = ALIGN(__size + sizeof(u32), sizeof(u64));
+ 	size -= sizeof(u32);
+ 	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE,
+@@ -1265,11 +1388,11 @@ static __kprobes void kretprobe_perf_func(struct kretprobe_instance *ri,
+ 	if (!entry)
+ 		return;
+ 
+-	entry->nargs = tp->nr_args;
+ 	entry->func = (unsigned long)tp->rp.kp.addr;
+ 	entry->ret_ip = (unsigned long)ri->ret_addr;
++	data = (u8 *)&entry[1];
+ 	for (i = 0; i < tp->nr_args; i++)
+-		entry->args[i] = call_fetch(&tp->args[i].fetch, regs);
++		call_fetch(&tp->args[i].fetch, regs, data + tp->args[i].offset);
+ 
+ 	perf_trace_buf_submit(entry, size, rctx, entry->ret_ip, 1,
+ 			       irq_flags, regs);
 
+
+-- 
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
