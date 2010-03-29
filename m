@@ -1,122 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab0C2ApS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 20:45:18 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:39867 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755475Ab0C2ApQ (ORCPT
+	id S1755516Ab0C2Au7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 20:50:59 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:52430 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755497Ab0C2Au5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 20:45:16 -0400
-Date: Sun, 28 Mar 2010 20:45:13 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, akpm@linux-foundation.org,
-       Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-       laijs@cn.fujitsu.com, dipankar@in.ibm.com, josh@joshtriplett.org,
-       dvhltc@us.ibm.com, niv@us.ibm.com, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       eric.dumazet@gmail.com, adobriyan@gmail.com
-Subject: Re: [patch 0/6] rcu head debugobjects
-Message-ID: <20100329004513.GA32467@Krystal>
-References: <20100327153233.993367557@efficios.com> <20100327224606.GK2343@linux.vnet.ibm.com> <alpine.LFD.2.00.1003280339590.3147@localhost.localdomain>
+	Sun, 28 Mar 2010 20:50:57 -0400
+Date: Sun, 28 Mar 2010 20:50:46 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: David Miller <davem@davemloft.net>
+Cc: michael.s.gilbert@gmail.com, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org
+Subject: Re: CVE-2009-4537
+Message-ID: <20100329005046.GA2157@localhost.localdomain>
+References: <20100327142100.38d21565.michael.s.gilbert@gmail.com>
+ <20100327.103407.260084965.davem@davemloft.net>
+ <20100327.103600.246539458.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1003280339590.3147@localhost.localdomain>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 20:44:47 up 65 days,  3:21,  7 users,  load average: 0.15, 0.12,
-	0.09
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100327.103600.246539458.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Spam-Score: -4.2 (----)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Thomas Gleixner (tglx@linutronix.de) wrote:
-> B1;2005;0cOn Sat, 27 Mar 2010, Paul E. McKenney wrote:
+On Sat, Mar 27, 2010 at 10:36:00AM -0700, David Miller wrote:
+> From: David Miller <davem@davemloft.net>
+> Date: Sat, 27 Mar 2010 10:34:07 -0700 (PDT)
+> 
+> > From: Michael Gilbert <michael.s.gilbert@gmail.com>
+> > Date: Sat, 27 Mar 2010 14:21:00 -0400
 > > 
-> > o	Patch 4/6 looks good to me, and given that Thomas hasn't
-> > 	complained, I am guessing that he is OK with it.
+> >> Hi,
+> >> 
+> >> CVE-2009-4537 has been disclosed without any upstream activity for a
+> >> while now. Discussion about the issue dried up in January [0], and a
+> >> patch had been proposed [1], but no arguments were seen either for or
+> >> against it. Note that redhat has already shipped that in their various
+> >> kernel security updates.  Would it make sense to merge those changes
+> >> officially?
+> > 
+> > A different version of the fix went into the tree.
 > 
-> Looks sane at the first glance. Will go over it in detail tomorrow.
->  
-> > o	Patch 6/6: Would it be possible to use the object_is_on_stack()
-> > 	function defined in include/linux/sched.h instead of passing
-> > 	in the flag on_stack to bdi_work_init()?  It looks like
-> > 	fs/fs-writeback.c already includes include/linux/sched.h, so
-> > 	shouldn't be a problem from a #include-hell viewpoint.
+> Ignore me, that was a fix for a different problem.
 > 
-> Well, I'm a bit wary about that. The reason is that we really want
-> the annotation of:
+> I was waiting for Francois to come up with a cleaner fix
+> but he stopped working on it, so yes I should put in
+> the fix you mention or something similar.
 > 
->        init_on_stack();
->        ....
->        destroy_on_stack();
+> Neil, can you formally submit a version of the r8169
+> CVE for upstream?
 > 
-> instead of the confusing:
+> Thanks.
 > 
->        init();
->        ....
->        destroy_on_stack();
-> 
-> So having an automatism in the bdi_work_init() function will people
-> make forget to put the destroy_on_stack() annotation into it.
-> 
-> The flag is horrible as well. How about this:
-> 
-> /* helper function, do not use in code ! */
-> __bdi_work_init(....., onstack)
-> {
-> 	....
-> 	if (on_stack) {
-> 	   work.state |= WS_ONSTACK;
-> 	   init_rcu_head_on_stack(&work.rcu_head);
-> 	} else {
-> 	....
-> }
-> 
-> See, how this moves also the "work.state |= WS_ONSTACK;" line out of
-> the calling code.
-> 
-> bdi_work_init(...)
-> {
-> 	 __bdi_work_init(...., false);
-> }
-> 
-> bdi_work_init_on_stack(...)
-> {
-> 	 __bdi_work_init(...., true);
-> }
-> 
-> 
-> out of the code.
-> 
-> To make it complete, please do not use the asymmetric:
-> 
->    destroy_rcu_head_on_stack(&work.rcu_head);
-> 
-> Create a helper function:
-> 
-> bdi_destroy_work_on_stack(...)
-> {
->    destroy_rcu_head_on_stack(work->rcu_head);
-> }    
-> 
-> That makes it way more readable and we did that with the other on
-> stack initializers as well.
+Absolutley, I'll review the CVE text and my origional patch tomorrow morning,
+and submit the official patch tomorrow afternoon.
 
-These changes are queued for v3. Thanks Thomas!
+Thanks!
+Neil
 
-Mathieu
-
-> 
-> Thanks,
-> 
-> 	tglx
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
