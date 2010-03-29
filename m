@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167Ab0C2Q6v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 12:58:51 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57264 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754778Ab0C2Q6t convert rfc822-to-8bit (ORCPT
+	id S1755236Ab0C2Q66 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 12:58:58 -0400
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:47028 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754778Ab0C2Q6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 12:58:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=WpRtzBX6L66rDAnaRywruxOz5IS7B1jGjqecqLlF1/Z3LpV8vIsH3w7106siKdwbWZ
-         0zkHK4axoW80Pvsnvq7E3eSZXHZSFH2mvEOFbjgFwqr5NnVzfcSEaLIqQF9WagkYfSoY
-         /q+/+qyv70CYMDRvpF8NStsJBvONa3plI1yr0=
-MIME-Version: 1.0
-In-Reply-To: <201003291942.56706.rusty@rustcorp.com.au>
-References: <20100318105533.GE25636@laptop>
-	 <201003291942.56706.rusty@rustcorp.com.au>
-Date: Tue, 30 Mar 2010 03:58:49 +1100
-Message-ID: <e619185d1003290958w23037176uc869c7dbc0a48bcc@mail.gmail.com>
-Subject: Re: Is module refcounting racy?
-From: Nick Piggin <npiggin@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Nick Piggin <npiggin@suse.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 29 Mar 2010 12:58:53 -0400
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: linux-kernel@vger.kernel.org
+Cc: socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+       sameo@linux.intel.com
+Subject: [PATCH 0/3] add support for Janz MODULbus devices
+Date: Mon, 29 Mar 2010 09:58:49 -0700
+Message-Id: <1269881932-3803-1-git-send-email-iws@ovro.caltech.edu>
+X-Mailer: git-send-email 1.5.4.3
+In-Reply-To: <>
+References: <>
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Mon, 29 Mar 2010 09:58:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 8:12 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> On Thu, 18 Mar 2010 09:25:34 pm Nick Piggin wrote:
->> Hey,
->>
->> I've been looking at weird and wonderful ways to do scalable refcounting,
->> for the vfs...
->>
->> Sadly, module refcounting doesn't fit my bill. But as far as I could see,
->> it is racy.
->
-> Other than for advisory purposes, the refcount is only checked against zero
-> under stop_machine.  For exactly this reason.
+This patch series adds support for the Janz CMOD-IO carrier board, as well
+as the Janz VMOD-ICAN3 Intelligent CAN controller and the Janz VMOD-TTL
+Digital IO controller. The CMOD-IO carrier board is a PCI to MODULbus
+bridge, into which plug MODULbus daughterboards.  I only have access to two
+types of daughtercards, the VMOD-ICAN3 and VMOD-TTL boards mentioned above.
 
-There definitely looks to me like there is code that checks the refcount
-*without* stop_machine. module_refcount is an exported function, and you
-expect drivers to get this right (scsi_device_put for a trivial example), but
-it even looks like it is used in a racy way in kernel/module.c code.
+The CAN driver has been tested under high loads. I am able to generate ~60%
+bus utilization. With two VMOD-ICAN3 boards looped back to each other,
+neither one loses any packets when only a single board is generating
+packets at maximum speed. Once both boards start generating packets, one
+board will sometimes loose arbitration, and cause some lost packets.
 
-Either we need to take my patch, or audit t, and put a WARN_ON
-if it is called while not under stop_machine.
+After much review from the last posting of the series, I believe that this
+should be ready for mainline. Many thanks to everyone that helped!
+
+RFCv4 -> RFCv5:
+- removed some dev_dbg() statements
+- change default MODULbus modules to "none"
+- accept both "empty" and "" in the MODULbus modules parameter
+- print an error message when no MODULbus modules are specified
+- add sysfs support to get/set CAN bus termination
+- fix error-active and error-passive state reporting
+- add support for netlink bus-error messages
+- fixed sparse warnings
+- used mfd-core API for multifunction device probing
+
+RFCv3 -> RFCv4:
+- addressed many review comments
+- switch to NAPI
+- add TX flow control
+- mark functions with __devinit and __devexit
+- add sysfs readout of MODULbus number (hex switch)
+- implement GPIO driver for VMOD-TTL
+
+RFCv2 -> RFCv3:
+- addressed many review comments
+- correct CAN bus error handling
+- use struct device to track subdevices
+- use structures for register layout
+- add lots of #defines for register values
+- use better function prefixes
+
+RFCv1 -> RFCv2:
+- converted to a multi-driver model
+- addressed many review comments
+- added CAN bus error handling
+- use a work function only instead of work + NAPI
+- use SJA1000 bittiming calculation code
+
+Thanks,
+Ira
