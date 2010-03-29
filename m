@@ -1,115 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab0C2KUS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 06:20:18 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:9877 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754884Ab0C2KUP (ORCPT
+	id S1755193Ab0C2KZK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 06:25:10 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:37596 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754775Ab0C2KZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 06:20:15 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Mon, 29 Mar 2010 12:18:43 +0200
-From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCH] USB: gadget: f_mass_storage: per function descriptors copy
-To: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-       David Brownell <dbrownell@users.sourceforge.net>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-       Peter Korsgaard <jacmet@sunsite.dk>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Michal Nazarewicz <m.nazarewicz@samsung.com>
-Message-id: <01616584180153ae03d983b6971f5a1b8097419e.1269631274.git.mina86@mina86.com>
-X-Mailer: git-send-email 1.7.0
+	Mon, 29 Mar 2010 06:25:05 -0400
+Subject: Re: Discrepancy between comments for sched_find_first_bit
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Turner <mattst88@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-alpha@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <b4198de61003282037p502e9fbfi62123088b9d73923@mail.gmail.com>
+References: <b4198de61003282037p502e9fbfi62123088b9d73923@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Mar 2010 12:25:02 +0200
+Message-ID: <1269858302.12097.272.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mass Storage Function (MSF) used the same descriptors for each
-usb_function instance (meaning usb_function::descriptors of different
-functions pointed to the same static area (the same was true for
-usb_function::hs_descriptors)).
+On Sun, 2010-03-28 at 23:37 -0400, Matt Turner wrote:
+> include/asm-generic/bitops/sched.h says
+> /*
+>  * Every architecture must define this function. It's the fastest
+>  * way of searching a 100-bit bitmap.  It's guaranteed that at least
+>  * one of the 100 bits is cleared.
+>  */
+> 
+> arch/alpha/include/asm/bitops.h says
+> /*
+>  * Every architecture must define this function. It's the fastest
+>  * way of searching a 140-bit bitmap where the first 100 bits are
+>  * unlikely to be set. It's guaranteed that at least one of the 140
+>  * bits is set.
+>  */
+> 
+> Is the guarantee that one of the first 100-bits set (and that the last
+> 40 are useless?), or 140-bits? If it's just the first 100 bits we care
+> about, then the alpha version needs to be fixed.
+> 
+> I'm just checking this out, because gcc produces horrendous code for
+> sched_find_first_bit on alpha. I rewrote it in assembly and it's
+> better than 4 times faster.
+> 
+> Also, is it even worth optimizing that function? It looks like it's
+> only used in kernel/sched_rt.c.
 
-This would leads to problems if MSF were used in several USB
-configurations with different interface and/or endpoint numbers.
-Descriptors for all configurations would have interface/endpoint
-numbers overwritten by the values valid for the last configuration.
+(might help if you CC the scheduler people on scheduler functions :-)
 
-This patch adds code that copies the descriptors each time MSF is
-added to USB configuration (that is for each usb_function).
+Right, so it used to be 140 bits with the old O(1) scheduler, currently
+(as you noted) sched_rt is the only user left and will therefore only
+care about the first 100 bits.
 
-Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/usb/gadget/f_mass_storage.c |   32 ++++++++++++++++++++++++++------
- 1 files changed, 26 insertions(+), 6 deletions(-)
+As it stands I think it might still make sense to optimize this as for
+rt loads it still on a hot path.
 
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index f4911c0..9fccdc3 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -2906,6 +2906,8 @@ static void fsg_unbind(struct usb_configuration *c, struct usb_function *f)
- 
- 	DBG(fsg, "unbind\n");
- 	fsg_common_put(fsg->common);
-+	usb_free_descriptors(fsg->function.descriptors);
-+	usb_free_descriptors(fsg->function.hs_descriptors);
- 	kfree(fsg);
- }
- 
-@@ -2946,7 +2948,13 @@ static int __init fsg_bind(struct usb_configuration *c, struct usb_function *f)
- 			fsg_fs_bulk_in_desc.bEndpointAddress;
- 		fsg_hs_bulk_out_desc.bEndpointAddress =
- 			fsg_fs_bulk_out_desc.bEndpointAddress;
--		f->hs_descriptors = fsg_hs_function;
-+		f->hs_descriptors = usb_copy_descriptors(fsg_hs_function);
-+		/* We don't care if we could not copy the high speed
-+		 * descriptor.  If we are out of memory we'll stick to
-+		 * full speed only.  Ie. it is an error that we cannot
-+		 * copy hs descriptors but not a fatal one. */
-+		/* if (unlikely(!f->hs_descriptors))
-+			return -ENOMEM; */
- 	}
- 
- 	return 0;
-@@ -2978,7 +2986,11 @@ static int fsg_add(struct usb_composite_dev *cdev,
- 
- 	fsg->function.name        = FSG_DRIVER_DESC;
- 	fsg->function.strings     = fsg_strings_array;
--	fsg->function.descriptors = fsg_fs_function;
-+	fsg->function.descriptors = usb_copy_descriptors(fsg_fs_function);
-+	if (unlikely(!fsg->function.descriptors)) {
-+		rc = -ENOMEM;
-+		goto error_free_fsg;
-+	}
- 	fsg->function.bind        = fsg_bind;
- 	fsg->function.unbind      = fsg_unbind;
- 	fsg->function.setup       = fsg_setup;
-@@ -2993,11 +3005,19 @@ static int fsg_add(struct usb_composite_dev *cdev,
- 	 * call to usb_add_function() was successful. */
- 
- 	rc = usb_add_function(c, &fsg->function);
-+	if (unlikely(rc))
-+		goto error_free_all;
- 
--	if (likely(rc == 0))
--		fsg_common_get(fsg->common);
--	else
--		kfree(fsg);
-+	fsg_common_get(fsg->common);
-+	return 0;
-+
-+error_free_all:
-+	usb_free_descriptors(fsg->function.descriptors);
-+	/* fsg_bind() might have copied those; or maybe not? who cares
-+	 * -- free it just in case. */
-+	usb_free_descriptors(fsg->function.hs_descriptors);
-+error_free_fsg:
-+	kfree(fsg);
- 
- 	return rc;
- }
--- 
-1.7.0
+As to the 100 vs 140 length, would it really make much of difference to
+shorten the implementation to 100? If not I'd leave it at 140.
+
+Ingo, any comments?
 
