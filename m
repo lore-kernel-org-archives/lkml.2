@@ -1,261 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab0C2MAt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 08:00:49 -0400
-Received: from mail-iw0-f182.google.com ([209.85.223.182]:35788 "EHLO
-	mail-iw0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646Ab0C2MAs (ORCPT
+	id S1752054Ab0C2MCM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 08:02:12 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:17562 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751646Ab0C2MCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 08:00:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Z59cq3kpg3cnitV0o7liib5NRLxLLhYN+gYi05dcogpfWzvJQDbcO1+bvxBPcGzrIC
-         c7Dy2sYiZFo5qf5kAgg1M+1MF4lxFhTF72iNq5cf+I5Wje7v5Ud+nc+4GCzitolEGbRG
-         W0senpQQBcWumRqJ9DNu1DTFhWQe2cUO8w1x0=
-From: Kenji Toyama <kenji.toyama@gmail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Kenji Toyama <kenji.toyama@gmail.com>
-Subject: [PATCH 6/6] staging: vt6656: michael.c: Fixed coding style issues
-Date: Mon, 29 Mar 2010 23:20:36 +1100
-Message-Id: <1269865236-16782-1-git-send-email-kenji.toyama@gmail.com>
-X-Mailer: git-send-email 1.6.3.3
+	Mon, 29 Mar 2010 08:02:10 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Mon, 29 Mar 2010 14:01:32 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCHv2] USB: gadget: f_mass_storage: per function
+In-reply-to: <20100329105204.GG29222@cmpxchg.org>
+To: Johannes Weiner <hannes@cmpxchg.org>,
+       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+       David Brownell <dbrownell@users.sourceforge.net>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+       Peter Korsgaard <jacmet@sunsite.dk>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Michal Nazarewicz <m.nazarewicz@samsung.com>
+Message-id: <7d23e1b58c7263c7b2479a409f9bf9d7922df3ab.1269863632.git.mina86@mina86.com>
+X-Mailer: git-send-email 1.7.0
+References: <20100329105204.GG29222@cmpxchg.org>
+ <01616584180153ae03d983b6971f5a1b8097419e.1269631274.git.mina86@mina86.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced lots of spaces by real tabs and resolved other minor issues.
-Signed-off-by: Daniel Kenji Toyama <kenji.toyama@gmail.com>
----
- drivers/staging/vt6656/michael.c |  177 ++++++++++++++++++-------------------
- 1 files changed, 86 insertions(+), 91 deletions(-)
+Mass Storage Function (MSF) used the same descriptors for each
+usb_function instance (meaning usb_function::descriptors of different
+functions pointed to the same static area (the same was true for
+usb_function::hs_descriptors)).
 
-diff --git a/drivers/staging/vt6656/michael.c b/drivers/staging/vt6656/michael.c
-index c930e0c..d4c0820 100644
---- a/drivers/staging/vt6656/michael.c
-+++ b/drivers/staging/vt6656/michael.c
-@@ -48,20 +48,23 @@
+This would leads to problems if MSF were used in several USB
+configurations with different interface and/or endpoint numbers.
+Descriptors for all configurations would have interface/endpoint
+numbers overwritten by the values valid for the last configuration.
+
+This patch adds code that copies the descriptors each time MSF is
+added to USB configuration (that is for each usb_function).
+
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+---
+> On Mon, Mar 29, 2010 at 12:18:43PM +0200, Michal Nazarewicz wrote:
+>> @@ -2946,7 +2948,13 @@ static int __init fsg_bind(struct usb_configuration *c, struct usb_function *f)
+>>  			fsg_fs_bulk_in_desc.bEndpointAddress;
+>>  		fsg_hs_bulk_out_desc.bEndpointAddress =
+>>  			fsg_fs_bulk_out_desc.bEndpointAddress;
+>> -		f->hs_descriptors = fsg_hs_function;
+>> +		f->hs_descriptors = usb_copy_descriptors(fsg_hs_function);
+>> +		/* We don't care if we could not copy the high speed
+>> +		 * descriptor.  If we are out of memory we'll stick to
+>> +		 * full speed only.  Ie. it is an error that we cannot
+>> +		 * copy hs descriptors but not a fatal one. */
+>> +		/* if (unlikely(!f->hs_descriptors))
+>> +			return -ENOMEM; */
+
+On Mon, 29 Mar 2010 12:52:04 +0200, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> I would much prefer to fail here and handle reloading a module in userspace
+> over having a gadget operate on varying speeds, depending on a transient
+> situation at module loading time that is not transparent to the user of an
+> embedded device in the field for example.
+
+As you wish.  Modified patch included.
+
+ drivers/usb/gadget/f_mass_storage.c |   28 ++++++++++++++++++++++------
+ 1 files changed, 22 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index f4911c0..1f7ca59 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -2906,6 +2906,8 @@ static void fsg_unbind(struct usb_configuration *c, struct usb_function *f)
  
- /*---------------------  Static Functions  --------------------------*/
- /*
--static DWORD s_dwGetUINT32(BYTE * p);         // Get DWORD from 4 bytes LSByte first
--static VOID s_vPutUINT32(BYTE* p, DWORD val); // Put DWORD into 4 bytes LSByte first
--*/
--static VOID s_vClear(void);                       // Clear the internal message,
--                                              // resets the object to the state just after construction.
-+ * static DWORD s_dwGetUINT32(BYTE * p);         Get DWORD from
-+ *							4 bytes LSByte first
-+ * static VOID s_vPutUINT32(BYTE* p, DWORD val); Put DWORD into
-+ *							4 bytes LSByte first
-+ */
-+static VOID s_vClear(void);		/* Clear the internal message,
-+					 * resets the object to the
-+					 * state just after construction. */
- static VOID s_vSetKey(DWORD dwK0, DWORD dwK1);
--static VOID s_vAppendByte(BYTE b);            // Add a single byte to the internal message
-+static VOID s_vAppendByte(BYTE b);	/* Add a single byte to the internal
-+					 * message */
- 
- /*---------------------  Export Variables  --------------------------*/
--static DWORD  L, R;           // Current state
--
--static DWORD  K0, K1;         // Key
--static DWORD  M;              // Message accumulator (single word)
--static UINT   nBytesInM;      // # bytes in M
-+static DWORD  L, R;		/* Current state */
-+static DWORD  K0, K1;		/* Key */
-+static DWORD  M;		/* Message accumulator (single word) */
-+static UINT   nBytesInM;	/* # bytes in M */
- 
- /*---------------------  Export Functions  --------------------------*/
- 
-@@ -69,113 +72,105 @@ static UINT   nBytesInM;      // # bytes in M
- static DWORD s_dwGetUINT32 (BYTE * p)
- // Convert from BYTE[] to DWORD in a portable way
- {
--    DWORD res = 0;
--    UINT i;
--    for(i=0; i<4; i++ )
--    {
--        res |= (*p++) << (8*i);
--    }
--    return res;
-+	DWORD res = 0;
-+	UINT i;
-+	for(i=0; i<4; i++ )
-+		res |= (*p++) << (8*i);
-+	return res;
+ 	DBG(fsg, "unbind\n");
+ 	fsg_common_put(fsg->common);
++	usb_free_descriptors(fsg->function.descriptors);
++	usb_free_descriptors(fsg->function.hs_descriptors);
+ 	kfree(fsg);
  }
  
- static VOID s_vPutUINT32 (BYTE* p, DWORD val)
- // Convert from DWORD to BYTE[] in a portable way
- {
--    UINT i;
--    for(i=0; i<4; i++ )
--    {
--        *p++ = (BYTE) (val & 0xff);
--        val >>= 8;
--    }
-+	UINT i;
-+	for(i=0; i<4; i++ ) {
-+		*p++ = (BYTE) (val & 0xff);
-+		val >>= 8;
+@@ -2946,7 +2948,9 @@ static int __init fsg_bind(struct usb_configuration *c, struct usb_function *f)
+ 			fsg_fs_bulk_in_desc.bEndpointAddress;
+ 		fsg_hs_bulk_out_desc.bEndpointAddress =
+ 			fsg_fs_bulk_out_desc.bEndpointAddress;
+-		f->hs_descriptors = fsg_hs_function;
++		f->hs_descriptors = usb_copy_descriptors(fsg_hs_function);
++		if (unlikely(!f->hs_descriptors))
++			return -ENOMEM;
+ 	}
+ 
+ 	return 0;
+@@ -2978,7 +2982,11 @@ static int fsg_add(struct usb_composite_dev *cdev,
+ 
+ 	fsg->function.name        = FSG_DRIVER_DESC;
+ 	fsg->function.strings     = fsg_strings_array;
+-	fsg->function.descriptors = fsg_fs_function;
++	fsg->function.descriptors = usb_copy_descriptors(fsg_fs_function);
++	if (unlikely(!fsg->function.descriptors)) {
++		rc = -ENOMEM;
++		goto error_free_fsg;
 +	}
+ 	fsg->function.bind        = fsg_bind;
+ 	fsg->function.unbind      = fsg_unbind;
+ 	fsg->function.setup       = fsg_setup;
+@@ -2993,11 +3001,19 @@ static int fsg_add(struct usb_composite_dev *cdev,
+ 	 * call to usb_add_function() was successful. */
+ 
+ 	rc = usb_add_function(c, &fsg->function);
++	if (unlikely(rc))
++		goto error_free_all;
+ 
+-	if (likely(rc == 0))
+-		fsg_common_get(fsg->common);
+-	else
+-		kfree(fsg);
++	fsg_common_get(fsg->common);
++	return 0;
++
++error_free_all:
++	usb_free_descriptors(fsg->function.descriptors);
++	/* fsg_bind() might have copied those; or maybe not? who cares
++	 * -- free it just in case. */
++	usb_free_descriptors(fsg->function.hs_descriptors);
++error_free_fsg:
++	kfree(fsg);
+ 
+ 	return rc;
  }
- */
- 
--static VOID s_vClear (void)
-+static VOID s_vClear(void)
- {
--    // Reset the state to the empty message.
--    L = K0;
--    R = K1;
--    nBytesInM = 0;
--    M = 0;
-+	/* Reset the state to the empty message. */
-+	L = K0;
-+	R = K1;
-+	nBytesInM = 0;
-+	M = 0;
- }
- 
--static VOID s_vSetKey (DWORD dwK0, DWORD dwK1)
-+static VOID s_vSetKey(DWORD dwK0, DWORD dwK1)
- {
--    // Set the key
--    K0 = dwK0;
--    K1 = dwK1;
--    // and reset the message
--    s_vClear();
-+	/* Set the key */
-+	K0 = dwK0;
-+	K1 = dwK1;
-+	/* and reset the message */
-+	s_vClear();
- }
- 
--static VOID s_vAppendByte (BYTE b)
-+static VOID s_vAppendByte(BYTE b)
- {
--    // Append the byte to our word-sized buffer
--    M |= b << (8*nBytesInM);
--    nBytesInM++;
--    // Process the word if it is full.
--    if( nBytesInM >= 4 )
--    {
--        L ^= M;
--        R ^= ROL32( L, 17 );
--        L += R;
--        R ^= ((L & 0xff00ff00) >> 8) | ((L & 0x00ff00ff) << 8);
--        L += R;
--        R ^= ROL32( L, 3 );
--        L += R;
--        R ^= ROR32( L, 2 );
--        L += R;
--        // Clear the buffer
--        M = 0;
--        nBytesInM = 0;
--    }
-+	/* Append the byte to our word-sized buffer */
-+	M |= b << (8*nBytesInM);
-+	nBytesInM++;
-+	/* Process the word if it is full. */
-+	if (nBytesInM >= 4) {
-+		L ^= M;
-+		R ^= ROL32(L, 17);
-+		L += R;
-+		R ^= ((L & 0xff00ff00) >> 8) | ((L & 0x00ff00ff) << 8);
-+		L += R;
-+		R ^= ROL32(L, 3);
-+		L += R;
-+		R ^= ROR32(L, 2);
-+		L += R;
-+		/* Clear the buffer */
-+		M = 0;
-+		nBytesInM = 0;
-+	}
- }
- 
--VOID MIC_vInit (DWORD dwK0, DWORD dwK1)
-+VOID MIC_vInit(DWORD dwK0, DWORD dwK1)
- {
--    // Set the key
--    s_vSetKey(dwK0, dwK1);
-+	/* Set the key */
-+	s_vSetKey(dwK0, dwK1);
- }
- 
- 
--VOID MIC_vUnInit (void)
-+VOID MIC_vUnInit(void)
- {
--    // Wipe the key material
--    K0 = 0;
--    K1 = 0;
-+	/* Wipe the key material */
-+	K0 = 0;
-+	K1 = 0;
- 
--    // And the other fields as well.
--    //Note that this sets (L,R) to (K0,K1) which is just fine.
--    s_vClear();
-+	/* And the other fields as well. */
-+	/* Note that this sets (L,R) to (K0,K1) which is just fine. */
-+	s_vClear();
- }
- 
--VOID MIC_vAppend (PBYTE src, UINT nBytes)
-+VOID MIC_vAppend(PBYTE src, UINT nBytes)
- {
--    // This is simple
--    while (nBytes > 0)
--    {
--        s_vAppendByte(*src++);
--        nBytes--;
--    }
-+    /* This is simple */
-+	while (nBytes > 0) {
-+		s_vAppendByte(*src++);
-+		nBytes--;
-+	}
- }
- 
--VOID MIC_vGetMIC (PDWORD pdwL, PDWORD pdwR)
-+VOID MIC_vGetMIC(PDWORD pdwL, PDWORD pdwR)
- {
--    // Append the minimum padding
--    s_vAppendByte(0x5a);
--    s_vAppendByte(0);
--    s_vAppendByte(0);
--    s_vAppendByte(0);
--    s_vAppendByte(0);
--    // and then zeroes until the length is a multiple of 4
--    while( nBytesInM != 0 )
--    {
--        s_vAppendByte(0);
--    }
--    // The s_vAppendByte function has already computed the result.
--    *pdwL = L;
--    *pdwR = R;
--    // Reset to the empty message.
--    s_vClear();
-+	/* Append the minimum padding */
-+	s_vAppendByte(0x5a);
-+	s_vAppendByte(0);
-+	s_vAppendByte(0);
-+	s_vAppendByte(0);
-+	s_vAppendByte(0);
-+	/* and then zeroes until the length is a multiple of 4 */
-+	while (nBytesInM != 0)
-+		s_vAppendByte(0);
-+	/* The s_vAppendByte function has already computed the result. */
-+	*pdwL = L;
-+	*pdwR = R;
-+	/* Reset to the empty message. */
-+	s_vClear();
- }
--
 -- 
-1.6.3.3
+1.7.0
 
