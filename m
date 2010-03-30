@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756986Ab0C3XWf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:22:35 -0400
-Received: from kroah.org ([198.145.64.141]:46609 "EHLO coco.kroah.org"
+	id S932699Ab0C3Xch (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:32:37 -0400
+Received: from kroah.org ([198.145.64.141]:46568 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932400Ab0C3XVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:21:37 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:41 2010
-Message-Id: <20100330224840.632946237@linux.site>
+	id S1756905Ab0C3XV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:21:28 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:37 2010
+Message-Id: <20100330224837.032380715@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:37 -0700
+Date: Tue, 30 Mar 2010 15:42:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
        "David S. Miller" <davem@davemloft.net>,
-       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-       "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-       Patrick McHardy <kaber@trash.net>, Zhu Yi <yi.zhu@intel.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
+       Frans van Berckel <fberckel@xs4all.nl>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [123/156] udp: use limited socket backlog
+Subject: [117/156] sparc64: Add very basic XVR-1000 framebuffer driver.
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,85 +27,282 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhu Yi <yi.zhu@intel.com>
+From: David S. Miller <davem@davemloft.net>
 
-[ Upstream commit 55349790d7cbf0d381873a7ece1dcafcffd4aaa9 ]
+[ Upstream commits 2d378b9179881b46a0faf11430efb421fe03ddd8 and
+  f04e879bf296d136bcafd8c5a26e95599b141671 ]
 
-Make udp adapt to the limited socket backlog change.
-
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: "Pekka Savola (ipv6)" <pekkas@netcore.fi>
-Cc: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Zhu Yi <yi.zhu@intel.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Frans van Berckel <fberckel@xs4all.nl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/ipv4/udp.c |    6 ++++--
- net/ipv6/udp.c |   28 ++++++++++++++++++----------
- 2 files changed, 22 insertions(+), 12 deletions(-)
 
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1372,8 +1372,10 @@ int udp_queue_rcv_skb(struct sock *sk, s
- 	bh_lock_sock(sk);
- 	if (!sock_owned_by_user(sk))
- 		rc = __udp_queue_rcv_skb(sk, skb);
--	else
--		sk_add_backlog(sk, skb);
-+	else if (sk_add_backlog_limited(sk, skb)) {
-+		bh_unlock_sock(sk);
-+		goto drop;
-+	}
- 	bh_unlock_sock(sk);
+---
+ drivers/video/Kconfig      |   12 ++
+ drivers/video/Makefile     |    1 
+ drivers/video/sunxvr1000.c |  228 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 241 insertions(+)
+
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -909,6 +909,18 @@ config FB_XVR2500
+ 	  mostly initialized the card already.  It is treated as a
+ 	  completely dumb framebuffer device.
  
- 	return rc;
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -584,16 +584,20 @@ static void flush_stack(struct sock **st
- 			bh_lock_sock(sk);
- 			if (!sock_owned_by_user(sk))
- 				udpv6_queue_rcv_skb(sk, skb1);
--			else
--				sk_add_backlog(sk, skb1);
-+			else if (sk_add_backlog_limited(sk, skb1)) {
-+				kfree_skb(skb1);
-+				bh_unlock_sock(sk);
-+				goto drop;
-+			}
- 			bh_unlock_sock(sk);
--		} else {
--			atomic_inc(&sk->sk_drops);
--			UDP6_INC_STATS_BH(sock_net(sk),
--					UDP_MIB_RCVBUFERRORS, IS_UDPLITE(sk));
--			UDP6_INC_STATS_BH(sock_net(sk),
--					UDP_MIB_INERRORS, IS_UDPLITE(sk));
-+			continue;
- 		}
-+drop:
-+		atomic_inc(&sk->sk_drops);
-+		UDP6_INC_STATS_BH(sock_net(sk),
-+				UDP_MIB_RCVBUFERRORS, IS_UDPLITE(sk));
-+		UDP6_INC_STATS_BH(sock_net(sk),
-+				UDP_MIB_INERRORS, IS_UDPLITE(sk));
- 	}
- }
- /*
-@@ -756,8 +760,12 @@ int __udp6_lib_rcv(struct sk_buff *skb,
- 	bh_lock_sock(sk);
- 	if (!sock_owned_by_user(sk))
- 		udpv6_queue_rcv_skb(sk, skb);
--	else
--		sk_add_backlog(sk, skb);
-+	else if (sk_add_backlog_limited(sk, skb)) {
-+		atomic_inc(&sk->sk_drops);
-+		bh_unlock_sock(sk);
-+		sock_put(sk);
-+		goto discard;
++config FB_XVR1000
++	bool "Sun XVR-1000 support"
++	depends on (FB = y) && SPARC64
++	select FB_CFB_FILLRECT
++	select FB_CFB_COPYAREA
++	select FB_CFB_IMAGEBLIT
++	help
++	  This is the framebuffer device for the Sun XVR-1000 and similar
++	  graphics cards.  The driver only works on sparc64 systems where
++	  the system firmware has mostly initialized the card already.  It
++	  is treated as a completely dumb framebuffer device.
++
+ config FB_PVR2
+ 	tristate "NEC PowerVR 2 display support"
+ 	depends on FB && SH_DREAMCAST
+--- a/drivers/video/Makefile
++++ b/drivers/video/Makefile
+@@ -79,6 +79,7 @@ obj-$(CONFIG_FB_N411)             += n41
+ obj-$(CONFIG_FB_HGA)              += hgafb.o
+ obj-$(CONFIG_FB_XVR500)           += sunxvr500.o
+ obj-$(CONFIG_FB_XVR2500)          += sunxvr2500.o
++obj-$(CONFIG_FB_XVR1000)          += sunxvr1000.o
+ obj-$(CONFIG_FB_IGA)              += igafb.o
+ obj-$(CONFIG_FB_APOLLO)           += dnfb.o
+ obj-$(CONFIG_FB_Q40)              += q40fb.o
+--- /dev/null
++++ b/drivers/video/sunxvr1000.c
+@@ -0,0 +1,228 @@
++/* sunxvr1000.c: Sun XVR-1000 driver for sparc64 systems
++ *
++ * Copyright (C) 2010 David S. Miller (davem@davemloft.net)
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/fb.h>
++#include <linux/init.h>
++#include <linux/of_device.h>
++
++struct gfb_info {
++	struct fb_info		*info;
++
++	char __iomem		*fb_base;
++	unsigned long		fb_base_phys;
++
++	struct device_node	*of_node;
++
++	unsigned int		width;
++	unsigned int		height;
++	unsigned int		depth;
++	unsigned int		fb_size;
++
++	u32			pseudo_palette[16];
++};
++
++static int __devinit gfb_get_props(struct gfb_info *gp)
++{
++	gp->width = of_getintprop_default(gp->of_node, "width", 0);
++	gp->height = of_getintprop_default(gp->of_node, "height", 0);
++	gp->depth = of_getintprop_default(gp->of_node, "depth", 32);
++
++	if (!gp->width || !gp->height) {
++		printk(KERN_ERR "gfb: Critical properties missing for %s\n",
++		       gp->of_node->full_name);
++		return -EINVAL;
 +	}
- 	bh_unlock_sock(sk);
- 	sock_put(sk);
- 	return 0;
++
++	return 0;
++}
++
++static int gfb_setcolreg(unsigned regno,
++			 unsigned red, unsigned green, unsigned blue,
++			 unsigned transp, struct fb_info *info)
++{
++	u32 value;
++
++	if (regno < 16) {
++		red >>= 8;
++		green >>= 8;
++		blue >>= 8;
++
++		value = (blue << 16) | (green << 8) | red;
++		((u32 *)info->pseudo_palette)[regno] = value;
++	}
++
++	return 0;
++}
++
++static struct fb_ops gfb_ops = {
++	.owner			= THIS_MODULE,
++	.fb_setcolreg		= gfb_setcolreg,
++	.fb_fillrect		= cfb_fillrect,
++	.fb_copyarea		= cfb_copyarea,
++	.fb_imageblit		= cfb_imageblit,
++};
++
++static int __devinit gfb_set_fbinfo(struct gfb_info *gp)
++{
++	struct fb_info *info = gp->info;
++	struct fb_var_screeninfo *var = &info->var;
++
++	info->flags = FBINFO_DEFAULT;
++	info->fbops = &gfb_ops;
++	info->screen_base = gp->fb_base;
++	info->screen_size = gp->fb_size;
++
++	info->pseudo_palette = gp->pseudo_palette;
++
++	/* Fill fix common fields */
++	strlcpy(info->fix.id, "gfb", sizeof(info->fix.id));
++        info->fix.smem_start = gp->fb_base_phys;
++        info->fix.smem_len = gp->fb_size;
++        info->fix.type = FB_TYPE_PACKED_PIXELS;
++	if (gp->depth == 32 || gp->depth == 24)
++		info->fix.visual = FB_VISUAL_TRUECOLOR;
++	else
++		info->fix.visual = FB_VISUAL_PSEUDOCOLOR;
++
++	var->xres = gp->width;
++	var->yres = gp->height;
++	var->xres_virtual = var->xres;
++	var->yres_virtual = var->yres;
++	var->bits_per_pixel = gp->depth;
++
++	var->red.offset = 0;
++	var->red.length = 8;
++	var->green.offset = 8;
++	var->green.length = 8;
++	var->blue.offset = 16;
++	var->blue.length = 8;
++	var->transp.offset = 0;
++	var->transp.length = 0;
++
++	if (fb_alloc_cmap(&info->cmap, 256, 0)) {
++		printk(KERN_ERR "gfb: Cannot allocate color map.\n");
++		return -ENOMEM;
++	}
++
++        return 0;
++}
++
++static int __devinit gfb_probe(struct of_device *op,
++			       const struct of_device_id *match)
++{
++	struct device_node *dp = op->node;
++	struct fb_info *info;
++	struct gfb_info *gp;
++	int err;
++
++	info = framebuffer_alloc(sizeof(struct gfb_info), &op->dev);
++	if (!info) {
++		printk(KERN_ERR "gfb: Cannot allocate fb_info\n");
++		err = -ENOMEM;
++		goto err_out;
++	}
++
++	gp = info->par;
++	gp->info = info;
++	gp->of_node = dp;
++
++	gp->fb_base_phys = op->resource[6].start;
++
++	err = gfb_get_props(gp);
++	if (err)
++		goto err_release_fb;
++
++	/* Framebuffer length is the same regardless of resolution. */
++	info->fix.line_length = 16384;
++	gp->fb_size = info->fix.line_length * gp->height;
++
++	gp->fb_base = of_ioremap(&op->resource[6], 0,
++				 gp->fb_size, "gfb fb");
++	if (!gp->fb_base)
++		goto err_release_fb;
++
++	err = gfb_set_fbinfo(gp);
++	if (err)
++		goto err_unmap_fb;
++
++	printk("gfb: Found device at %s\n", dp->full_name);
++
++	err = register_framebuffer(info);
++	if (err < 0) {
++		printk(KERN_ERR "gfb: Could not register framebuffer %s\n",
++		       dp->full_name);
++		goto err_unmap_fb;
++	}
++
++	dev_set_drvdata(&op->dev, info);
++
++	return 0;
++
++err_unmap_fb:
++	of_iounmap(&op->resource[6], gp->fb_base, gp->fb_size);
++
++err_release_fb:
++        framebuffer_release(info);
++
++err_out:
++	return err;
++}
++
++static int __devexit gfb_remove(struct of_device *op)
++{
++	struct fb_info *info = dev_get_drvdata(&op->dev);
++	struct gfb_info *gp = info->par;
++
++	unregister_framebuffer(info);
++
++	iounmap(gp->fb_base);
++
++	of_iounmap(&op->resource[6], gp->fb_base, gp->fb_size);
++
++        framebuffer_release(info);
++
++	dev_set_drvdata(&op->dev, NULL);
++
++	return 0;
++}
++
++static const struct of_device_id gfb_match[] = {
++	{
++		.name = "SUNW,gfb",
++	},
++	{},
++};
++MODULE_DEVICE_TABLE(of, ffb_match);
++
++static struct of_platform_driver gfb_driver = {
++	.name		= "gfb",
++	.match_table	= gfb_match,
++	.probe		= gfb_probe,
++	.remove		= __devexit_p(gfb_remove),
++};
++
++static int __init gfb_init(void)
++{
++	if (fb_get_options("gfb", NULL))
++		return -ENODEV;
++
++	return of_register_driver(&gfb_driver, &of_bus_type);
++}
++
++static void __exit gfb_exit(void)
++{
++	of_unregister_driver(&gfb_driver);
++}
++
++module_init(gfb_init);
++module_exit(gfb_exit);
++
++MODULE_DESCRIPTION("framebuffer driver for Sun XVR-1000 graphics");
++MODULE_AUTHOR("David S. Miller <davem@davemloft.net>");
++MODULE_VERSION("1.0");
++MODULE_LICENSE("GPL");
 
 
