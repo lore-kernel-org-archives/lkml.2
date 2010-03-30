@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757724Ab0CaA3r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:29:47 -0400
-Received: from kroah.org ([198.145.64.141]:48880 "EHLO coco.kroah.org"
+	id S1756165Ab0CaAaA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:30:00 -0400
+Received: from kroah.org ([198.145.64.141]:48870 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756165Ab0C3XMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:16 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:25 2010
-Message-Id: <20100330225825.154800852@linux.site>
+	id S1756406Ab0C3XMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:14 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:24 2010
+Message-Id: <20100330225824.006390017@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:29 -0700
+Date: Tue, 30 Mar 2010 15:57:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Ping Cheng <pingc@wacom.com>, Matthew Garrett <mjg@redhat.com>,
+       Dan Carpenter <error27@gmail.com>,
+       Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [27/89] serial: 8250_pnp: use wildcard for serial Wacom tablets
+Subject: [25/89] ecryptfs: use after free
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <mjg@redhat.com>
+From: Dan Carpenter <error27@gmail.com>
 
-commit 6d34855d9aa281f72c533ecb827405139d1b0fe9 upstream.
+commit ece550f51ba175c14ec3ec047815927d7386ea1f upstream.
 
-Wacom claims that the WACF namespace will always be devoted to serial
-Wacom tablets.  Remove the existing entries and add a wildcard to avoid
-having to update the kernel every time they add a new device.
+The "full_alg_name" variable is used on a couple error paths, so we
+shouldn't free it until the end.
 
-Signed-off-by: Ping Cheng <pingc@wacom.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Tested-by: Ping Cheng <pingc@wacom.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/serial/8250_pnp.c |   10 +---------
- 1 file changed, 1 insertion(+), 9 deletions(-)
+ fs/ecryptfs/crypto.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/serial/8250_pnp.c
-+++ b/drivers/serial/8250_pnp.c
-@@ -328,15 +328,7 @@ static const struct pnp_device_id pnp_de
- 	/* U.S. Robotics 56K Voice INT PnP*/
- 	{	"USR9190",		0	},
- 	/* Wacom tablets */
--	{	"WACF004",		0	},
--	{	"WACF005",		0	},
--	{       "WACF006",              0       },
--	{       "WACF007",              0       },
--	{       "WACF008",              0       },
--	{       "WACF009",              0       },
--	{       "WACF00A",              0       },
--	{       "WACF00B",              0       },
--	{       "WACF00C",              0       },
-+	{	"WACFXXX",		0	},
- 	/* Compaq touchscreen */
- 	{       "FPI2002",              0 },
- 	/* Fujitsu Stylistic touchscreens */
+--- a/fs/ecryptfs/crypto.c
++++ b/fs/ecryptfs/crypto.c
+@@ -1745,7 +1745,7 @@ ecryptfs_process_key_cipher(struct crypt
+ 			    char *cipher_name, size_t *key_size)
+ {
+ 	char dummy_key[ECRYPTFS_MAX_KEY_BYTES];
+-	char *full_alg_name;
++	char *full_alg_name = NULL;
+ 	int rc;
+ 
+ 	*key_tfm = NULL;
+@@ -1760,7 +1760,6 @@ ecryptfs_process_key_cipher(struct crypt
+ 	if (rc)
+ 		goto out;
+ 	*key_tfm = crypto_alloc_blkcipher(full_alg_name, 0, CRYPTO_ALG_ASYNC);
+-	kfree(full_alg_name);
+ 	if (IS_ERR(*key_tfm)) {
+ 		rc = PTR_ERR(*key_tfm);
+ 		printk(KERN_ERR "Unable to allocate crypto cipher with name "
+@@ -1782,6 +1781,7 @@ ecryptfs_process_key_cipher(struct crypt
+ 		goto out;
+ 	}
+ out:
++	kfree(full_alg_name);
+ 	return rc;
+ }
+ 
 
 
