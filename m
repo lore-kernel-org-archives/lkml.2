@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757801Ab0CaAfq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:35:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47395 "EHLO mx1.redhat.com"
+	id S1757815Ab0CaAgE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:36:04 -0400
+Received: from kroah.org ([198.145.64.141]:48727 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756197Ab0CaAfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 20:35:42 -0400
-Subject: Re: lockup in rb_get_reader_page
-From: Steven Rostedt <srostedt@redhat.com>
-To: Jiaying Zhang <jiayingz@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Michael Rubin <mrubin@google.com>,
-       David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
-       Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <m2u5df78e1d1003301627ya1f621f7qaf0ad099f62d787e@mail.gmail.com>
-References: <m2u5df78e1d1003301627ya1f621f7qaf0ad099f62d787e@mail.gmail.com>
-Content-Type: text/plain
-Organization: Red Hat
-Date: Tue, 30 Mar 2010 20:35:24 -0400
-Message-Id: <1269995724.22564.58.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756151Ab0C3XLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:11:44 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:09 2010
+Message-Id: <20100330225809.169197817@linux.site>
+User-Agent: quilt/0.47-14.9
+Date: Tue, 30 Mar 2010 15:57:04 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Thomas Gleixner <tglx@linutronix.de>, Darren Hart <dvhltc@us.ibm.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [02/89] futex: Handle futex value corruption gracefully
+In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiaying,
+2.6.31-stable review patch.  If anyone has any objections, please let us know.
 
+------------------
 
-On Tue, 2010-03-30 at 16:27 -0700, Jiaying Zhang wrote:
-> Hi Steven,
-> 
-> We recently saw some cpu lockups while running kernel tracing.
-> The problem started to happen after we synced up our ring buffer
-> code with the upstream lockless ring buffer change. It usually
-> took many hours and heavy trace load to hit this problem. When
-> the lockup happens, the problematic cpu seemed to be in an infinite
-> loop of trying to grab the head_page in rb_get_reader_page().
-> 
-> We would like to check with you on whether this is a known issue.
-> If so, do we have a bug fix? If not, do you have any suggestions on
-> where we should check?
+From: Thomas Gleixner <tglx@linutronix.de>
 
-I'm unaware of any problems with the ring buffer. I've been running the
-lockless version for over a year now, and hammering it with very
-intensive tracing.
+commit 59647b6ac3050dd964bc556fe6ef22f4db5b935c upstream.
 
-Now, you see this on the reader side. There has been a few recent fixes
-that could cause problems when we have multiple readers. Ftrace usage
-does not usually encounter multiple readers so I have not had issues.
-But Li Zefan had a stress test that did find and trigger the problems.
+The WARN_ON in lookup_pi_state which complains about a mismatch
+between pi_state->owner->pid and the pid which we retrieved from the
+user space futex is completely bogus.
 
-Are you using the latest ring buffer that is in Linus's tree? Are you
-resetting the ring buffer while reading it?
+The code just emits the warning and then continues despite the fact
+that it detected an inconsistent state of the futex. A conveniant way
+for user space to spam the syslog.
 
-I guess I need to know more exactly what you are doing to understand the
-problem.
+Replace the WARN_ON by a consistency check. If the values do not match
+return -EINVAL and let user space deal with the mess it created.
 
-Thanks,
+This also fixes the missing task_pid_vnr() when we compare the
+pi_state->owner pid with the futex value.
 
--- Steve
+Reported-by: Jermome Marchand <jmarchan@redhat.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Darren Hart <dvhltc@us.ibm.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ kernel/futex.c |   21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
+
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -531,8 +531,25 @@ lookup_pi_state(u32 uval, struct futex_h
+ 				return -EINVAL;
+ 
+ 			WARN_ON(!atomic_read(&pi_state->refcount));
+-			WARN_ON(pid && pi_state->owner &&
+-				pi_state->owner->pid != pid);
++
++			/*
++			 * When pi_state->owner is NULL then the owner died
++			 * and another waiter is on the fly. pi_state->owner
++			 * is fixed up by the task which acquires
++			 * pi_state->rt_mutex.
++			 *
++			 * We do not check for pid == 0 which can happen when
++			 * the owner died and robust_list_exit() cleared the
++			 * TID.
++			 */
++			if (pid && pi_state->owner) {
++				/*
++				 * Bail out if user space manipulated the
++				 * futex value.
++				 */
++				if (pid != task_pid_vnr(pi_state->owner))
++					return -EINVAL;
++			}
+ 
+ 			atomic_inc(&pi_state->refcount);
+ 			*ps = pi_state;
 
 
