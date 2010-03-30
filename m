@@ -1,107 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755801Ab0C3Sbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 14:31:50 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:57860 "EHLO
+	id S1755839Ab0C3Sbw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 14:31:52 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:59751 "EHLO
 	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755667Ab0C3Sbn (ORCPT
+	with ESMTP id S1755673Ab0C3Sbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 14:31:43 -0400
+	Tue, 30 Mar 2010 14:31:44 -0400
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
        Tejun Heo <tj@kernel.org>, Cornelia Huck <cornelia.huck@de.ibm.com>,
        linux-fsdevel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
        Benjamin LaHaise <bcrl@lhnet.ca>, Serge Hallyn <serue@us.ibm.com>,
-       <netdev@vger.kernel.org>,
-       "Eric W. Biederman" <ebiederm@maxwell.aristanetworks.com>,
-       "Eric W. Biederman" <ebiederm@aristanetworks.com>
-Subject: [PATCH 4/6] sysfs: Add support for tagged directories with untagged members.
-Date: Tue, 30 Mar 2010 11:31:27 -0700
-Message-Id: <1269973889-25260-4-git-send-email-ebiederm@xmission.com>
+       <netdev@vger.kernel.org>, "Eric W. Biederman" <ebiederm@xmission.com>,
+       Benjamin Thery <benjamin.thery@bull.net>
+Subject: [PATCH 6/6] driver core: Implement ns directory support for device classes.
+Date: Tue, 30 Mar 2010 11:31:29 -0700
+Message-Id: <1269973889-25260-6-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.6.5.2.143.g8cc62
 In-Reply-To: <m1fx3hk6gw.fsf@fess.ebiederm.org>
 References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
 X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
 X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: gregkh@suse.de, kay.sievers@vrfy.org, linux-kernel@vger.kernel.org, tj@kernel.org, cornelia.huck@de.ibm.com, linux-fsdevel@vger.kernel.org, eric.dumazet@gmail.com, bcrl@lhnet.ca, serue@us.ibm.com, netdev@vger.kernel.org, ebiederm@maxwell.aristanetworks.com, ebiederm@aristanetworks.com
+X-SA-Exim-Rcpt-To: gregkh@suse.de, kay.sievers@vrfy.org, linux-kernel@vger.kernel.org, tj@kernel.org, cornelia.huck@de.ibm.com, linux-fsdevel@vger.kernel.org, eric.dumazet@gmail.com, bcrl@lhnet.ca, serue@us.ibm.com, netdev@vger.kernel.org, ebiederm@xmission.com, benjamin.thery@bull.net
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric W. Biederman <ebiederm@maxwell.aristanetworks.com>
+From: Eric W. Biederman <ebiederm@xmission.com>
 
-I had hopped to avoid this but the bonding driver adds a file
-to /sys/class/net/  and the easiest way to handle that file is
-to make it untagged and to register it only once.
+device_del and device_rename were modified to use
+sysfs_delete_link and sysfs_rename_link respectively to ensure
+when these operations happen on devices whose classes
+are in namespace directories they work properly.
 
-So relax the rules on tagged directories, and make bonding work.
-
-Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Benjamin Thery <benjamin.thery@bull.net>
 ---
- fs/sysfs/dir.c   |   12 +++---------
- fs/sysfs/inode.c |    2 ++
- 2 files changed, 5 insertions(+), 9 deletions(-)
+ drivers/base/core.c |   21 ++++++++++++---------
+ 1 files changed, 12 insertions(+), 9 deletions(-)
 
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index b0e7911..d3dd097 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -383,12 +383,6 @@ int __sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd)
- 	if (sysfs_find_dirent(acxt->parent_sd, sd->s_ns, sd->s_name))
- 		return -EEXIST;
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 6b32f6e..73c352d 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -787,7 +787,7 @@ out_device:
+ out_busid:
+ 	if (dev->kobj.parent != &dev->class->p->class_subsys.kobj &&
+ 	    device_is_not_partition(dev))
+-		sysfs_remove_link(&dev->class->p->class_subsys.kobj,
++		sysfs_delete_link(&dev->class->p->class_subsys.kobj, &dev->kobj,
+ 				  dev_name(dev));
+ #else
+ 	/* link in the class directory pointing to the device */
+@@ -805,7 +805,7 @@ out_busid:
+ 	return 0;
  
--	if (sysfs_ns_type(acxt->parent_sd) && !sd->s_ns) {
--		WARN(1, KERN_WARNING "sysfs: ns required in '%s' for '%s'\n",
--			acxt->parent_sd->s_name, sd->s_name);
--		return -EINVAL;
--	}
--
- 	sd->s_parent = sysfs_get(acxt->parent_sd);
+ out_busid:
+-	sysfs_remove_link(&dev->class->p->class_subsys.kobj, dev_name(dev));
++	sysfs_delete_link(&dev->class->p->class_subsys.kobj, &dev->kobj, dev_name(dev));
+ #endif
  
- 	sysfs_link_sibling(sd);
-@@ -545,7 +539,7 @@ struct sysfs_dirent *sysfs_find_dirent(struct sysfs_dirent *parent_sd,
- 	struct sysfs_dirent *sd;
+ out_subsys:
+@@ -833,13 +833,13 @@ static void device_remove_class_symlinks(struct device *dev)
  
- 	for (sd = parent_sd->s_dir.children; sd; sd = sd->s_sibling) {
--		if (sd->s_ns != ns)
-+		if (ns && sd->s_ns && (sd->s_ns != ns))
- 			continue;
- 		if (!strcmp(sd->s_name, name))
- 			return sd;
-@@ -879,7 +873,7 @@ static struct sysfs_dirent *sysfs_dir_pos(const void *ns,
- 		while (pos && (ino > pos->s_ino))
- 			pos = pos->s_sibling;
+ 	if (dev->kobj.parent != &dev->class->p->class_subsys.kobj &&
+ 	    device_is_not_partition(dev))
+-		sysfs_remove_link(&dev->class->p->class_subsys.kobj,
++		sysfs_delete_link(&dev->class->p->class_subsys.kobj, &dev->kobj,
+ 				  dev_name(dev));
+ #else
+ 	if (dev->parent && device_is_not_partition(dev))
+ 		sysfs_remove_link(&dev->kobj, "device");
+ 
+-	sysfs_remove_link(&dev->class->p->class_subsys.kobj, dev_name(dev));
++	sysfs_delete_link(&dev->class->p->class_subsys.kobj, &dev->kobj, dev_name(dev));
+ #endif
+ 
+ 	sysfs_remove_link(&dev->kobj, "subsystem");
+@@ -1619,6 +1619,14 @@ int device_rename(struct device *dev, char *new_name)
+ 		goto out;
  	}
--	while (pos && pos->s_ns != ns)
-+	while (pos && pos->s_ns && pos->s_ns != ns)
- 		pos = pos->s_sibling;
- 	return pos;
- }
-@@ -890,7 +884,7 @@ static struct sysfs_dirent *sysfs_dir_next_pos(const void *ns,
- 	pos = sysfs_dir_pos(ns, parent_sd, ino, pos);
- 	if (pos)
- 		pos = pos->s_sibling;
--	while (pos && pos->s_ns != ns)
-+	while (pos && pos->s_ns && pos->s_ns != ns)
- 		pos = pos->s_sibling;
- 	return pos;
- }
-diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
-index 90a899e..6c962ca 100644
---- a/fs/sysfs/inode.c
-+++ b/fs/sysfs/inode.c
-@@ -334,6 +334,8 @@ int sysfs_hash_and_remove(struct sysfs_dirent *dir_sd, const void *ns, const cha
- 	sysfs_addrm_start(&acxt, dir_sd);
  
- 	sd = sysfs_find_dirent(dir_sd, ns, name);
-+	if (sd && (sd->s_ns != ns))
-+		sd = NULL;
- 	if (sd)
- 		sysfs_remove_one(&acxt, sd);
++#ifndef CONFIG_SYSFS_DEPRECATED
++	if (dev->class) {
++		error = sysfs_rename_link(&dev->class->p->class_subsys.kobj,
++			&dev->kobj, old_device_name, new_name);
++		if (error)
++			goto out;
++	}
++#endif
+ 	error = kobject_rename(&dev->kobj, new_name);
+ 	if (error)
+ 		goto out;
+@@ -1633,11 +1641,6 @@ int device_rename(struct device *dev, char *new_name)
+ 						  new_class_name);
+ 		}
+ 	}
+-#else
+-	if (dev->class) {
+-		error = sysfs_rename_link(&dev->class->p->class_subsys.kobj,
+-					  &dev->kobj, old_device_name, new_name);
+-	}
+ #endif
  
+ out:
 -- 
 1.6.5.2.143.g8cc62
 
