@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932378Ab0CaAOO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:14:14 -0400
-Received: from kroah.org ([198.145.64.141]:51861 "EHLO coco.kroah.org"
+	id S932560Ab0CaAQY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:16:24 -0400
+Received: from kroah.org ([198.145.64.141]:51811 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932135Ab0C3XRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:17:44 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:15 2010
-Message-Id: <20100330225615.121275326@linux.site>
+	id S1756745Ab0C3XRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:17:37 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:11 2010
+Message-Id: <20100330225610.518209974@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:05 -0700
+Date: Tue, 30 Mar 2010 15:54:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org,
-       Jeremy Fitzhardinge <jeremy@goop.org>,
+       Steven Rostedt <rostedt@goodmis.org>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [027/116] hrtimer: Tune hrtimer_interrupt hang logic
+Subject: [020/116] tracing: Disable buffer switching when starting or stopping trace
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,239 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Steven Rostedt <srostedt@redhat.com>
 
-commit 41d2e494937715d3150e5c75d01f0e75ae899337 upstream.
+commit a2f8071428ed9a0f06865f417c962421c9a6b488 upstream.
 
-The hrtimer_interrupt hang logic adjusts min_delta_ns based on the
-execution time of the hrtimer callbacks.
+When the trace iterator is read, tracing_start() and tracing_stop()
+is called to stop tracing while the iterator is processing the trace
+output.
 
-This is error-prone for virtual machines, where a guest vcpu can be
-scheduled out during the execution of the callbacks (and the callbacks
-themselves can do operations that translate to blocking operations in
-the hypervisor), which in can lead to large min_delta_ns rendering the
-system unusable.
+These functions disable both the standard buffer and the max latency
+buffer. But if the wakeup tracer is running, it can switch these
+buffers between the two disables:
 
-Replace the current heuristics with something more reliable. Allow the
-interrupt code to try 3 times to catch up with the lost time. If that
-fails use the total time spent in the interrupt handler to defer the
-next timer interrupt so the system can catch up with other things
-which got delayed. Limit that deferment to 100ms.
+  buffer = global_trace.buffer;
+  if (buffer)
+      ring_buffer_record_disable(buffer);
 
-The retry events and the maximum time spent in the interrupt handler
-are recorded and exposed via /proc/timer_list
+      <<<--------- swap happens here
 
-Inspired by a patch from Marcelo.
+  buffer = max_tr.buffer;
+  if (buffer)
+      ring_buffer_record_disable(buffer);
 
-Reported-by: Michael Tokarev <mjt@tls.msk.ru>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Tested-by: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: kvm@vger.kernel.org
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+What happens is that we disabled the same buffer twice. On tracing_start()
+we can enable the same buffer twice. All ring_buffer_record_disable()
+must be matched with a ring_buffer_record_enable() or the buffer
+can be disable permanently, or enable prematurely, and cause a bug
+where a reset happens while a trace is commiting.
+
+This patch protects these two by taking the ftrace_max_lock to prevent
+a switch from occurring.
+
+Found with Li Zefan's ftrace_stress_test.
+
+Reported-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/hrtimer.h  |   13 ++++--
- kernel/hrtimer.c         |   96 +++++++++++++++++++++++++++--------------------
- kernel/time/timer_list.c |    5 +-
- 3 files changed, 70 insertions(+), 44 deletions(-)
+ kernel/trace/trace.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -162,10 +162,11 @@ struct hrtimer_clock_base {
-  * @expires_next:	absolute time of the next event which was scheduled
-  *			via clock_set_next_event()
-  * @hres_active:	State of high resolution mode
-- * @check_clocks:	Indictator, when set evaluate time source and clock
-- *			event devices whether high resolution mode can be
-- *			activated.
-- * @nr_events:		Total number of timer interrupt events
-+ * @hang_detected:	The last hrtimer interrupt detected a hang
-+ * @nr_events:		Total number of hrtimer interrupt events
-+ * @nr_retries:		Total number of hrtimer interrupt retries
-+ * @nr_hangs:		Total number of hrtimer interrupt hangs
-+ * @max_hang_time:	Maximum time spent in hrtimer_interrupt
-  */
- struct hrtimer_cpu_base {
- 	spinlock_t			lock;
-@@ -173,7 +174,11 @@ struct hrtimer_cpu_base {
- #ifdef CONFIG_HIGH_RES_TIMERS
- 	ktime_t				expires_next;
- 	int				hres_active;
-+	int				hang_detected;
- 	unsigned long			nr_events;
-+	unsigned long			nr_retries;
-+	unsigned long			nr_hangs;
-+	ktime_t				max_hang_time;
- #endif
- };
- 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -557,7 +557,7 @@ hrtimer_force_reprogram(struct hrtimer_c
- static int hrtimer_reprogram(struct hrtimer *timer,
- 			     struct hrtimer_clock_base *base)
- {
--	ktime_t *expires_next = &__get_cpu_var(hrtimer_bases).expires_next;
-+	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
- 	ktime_t expires = ktime_sub(hrtimer_get_expires(timer), base->offset);
- 	int res;
- 
-@@ -582,7 +582,16 @@ static int hrtimer_reprogram(struct hrti
- 	if (expires.tv64 < 0)
- 		return -ETIME;
- 
--	if (expires.tv64 >= expires_next->tv64)
-+	if (expires.tv64 >= cpu_base->expires_next.tv64)
-+		return 0;
-+
-+	/*
-+	 * If a hang was detected in the last timer interrupt then we
-+	 * do not schedule a timer which is earlier than the expiry
-+	 * which we enforced in the hang detection. We want the system
-+	 * to make progress.
-+	 */
-+	if (cpu_base->hang_detected)
- 		return 0;
- 
- 	/*
-@@ -590,7 +599,7 @@ static int hrtimer_reprogram(struct hrti
- 	 */
- 	res = tick_program_event(expires, 0);
- 	if (!IS_ERR_VALUE(res))
--		*expires_next = expires;
-+		cpu_base->expires_next = expires;
- 	return res;
- }
- 
-@@ -1217,29 +1226,6 @@ static void __run_hrtimer(struct hrtimer
- 
- #ifdef CONFIG_HIGH_RES_TIMERS
- 
--static int force_clock_reprogram;
--
--/*
-- * After 5 iteration's attempts, we consider that hrtimer_interrupt()
-- * is hanging, which could happen with something that slows the interrupt
-- * such as the tracing. Then we force the clock reprogramming for each future
-- * hrtimer interrupts to avoid infinite loops and use the min_delta_ns
-- * threshold that we will overwrite.
-- * The next tick event will be scheduled to 3 times we currently spend on
-- * hrtimer_interrupt(). This gives a good compromise, the cpus will spend
-- * 1/4 of their time to process the hrtimer interrupts. This is enough to
-- * let it running without serious starvation.
-- */
--
--static inline void
--hrtimer_interrupt_hanging(struct clock_event_device *dev,
--			ktime_t try_time)
--{
--	force_clock_reprogram = 1;
--	dev->min_delta_ns = (unsigned long)try_time.tv64 * 3;
--	printk(KERN_WARNING "hrtimer: interrupt too slow, "
--		"forcing clock min delta to %lu ns\n", dev->min_delta_ns);
--}
- /*
-  * High resolution timer interrupt
-  * Called with interrupts disabled
-@@ -1248,21 +1234,15 @@ void hrtimer_interrupt(struct clock_even
- {
- 	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
- 	struct hrtimer_clock_base *base;
--	ktime_t expires_next, now;
--	int nr_retries = 0;
--	int i;
-+	ktime_t expires_next, now, entry_time, delta;
-+	int i, retries = 0;
- 
- 	BUG_ON(!cpu_base->hres_active);
- 	cpu_base->nr_events++;
- 	dev->next_event.tv64 = KTIME_MAX;
- 
-- retry:
--	/* 5 retries is enough to notice a hang */
--	if (!(++nr_retries % 5))
--		hrtimer_interrupt_hanging(dev, ktime_sub(ktime_get(), now));
--
--	now = ktime_get();
--
-+	entry_time = now = ktime_get();
-+retry:
- 	expires_next.tv64 = KTIME_MAX;
- 
- 	spin_lock(&cpu_base->lock);
-@@ -1324,10 +1304,48 @@ void hrtimer_interrupt(struct clock_even
- 	spin_unlock(&cpu_base->lock);
- 
- 	/* Reprogramming necessary ? */
--	if (expires_next.tv64 != KTIME_MAX) {
--		if (tick_program_event(expires_next, force_clock_reprogram))
--			goto retry;
-+	if (expires_next.tv64 == KTIME_MAX ||
-+	    !tick_program_event(expires_next, 0)) {
-+		cpu_base->hang_detected = 0;
-+		return;
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -858,6 +858,8 @@ void tracing_start(void)
+ 		goto out;
  	}
+ 
++	/* Prevent the buffers from switching */
++	__raw_spin_lock(&ftrace_max_lock);
+ 
+ 	buffer = global_trace.buffer;
+ 	if (buffer)
+@@ -867,6 +869,8 @@ void tracing_start(void)
+ 	if (buffer)
+ 		ring_buffer_record_enable(buffer);
+ 
++	__raw_spin_unlock(&ftrace_max_lock);
 +
-+	/*
-+	 * The next timer was already expired due to:
-+	 * - tracing
-+	 * - long lasting callbacks
-+	 * - being scheduled away when running in a VM
-+	 *
-+	 * We need to prevent that we loop forever in the hrtimer
-+	 * interrupt routine. We give it 3 attempts to avoid
-+	 * overreacting on some spurious event.
-+	 */
-+	now = ktime_get();
-+	cpu_base->nr_retries++;
-+	if (++retries < 3)
-+		goto retry;
-+	/*
-+	 * Give the system a chance to do something else than looping
-+	 * here. We stored the entry time, so we know exactly how long
-+	 * we spent here. We schedule the next event this amount of
-+	 * time away.
-+	 */
-+	cpu_base->nr_hangs++;
-+	cpu_base->hang_detected = 1;
-+	delta = ktime_sub(now, entry_time);
-+	if (delta.tv64 > cpu_base->max_hang_time.tv64)
-+		cpu_base->max_hang_time = delta;
-+	/*
-+	 * Limit it to a sensible value as we enforce a longer
-+	 * delay. Give the CPU at least 100ms to catch up.
-+	 */
-+	if (delta.tv64 > 100 * NSEC_PER_MSEC)
-+		expires_next = ktime_add_ns(now, 100 * NSEC_PER_MSEC);
-+	else
-+		expires_next = ktime_add(now, delta);
-+	tick_program_event(expires_next, 1);
-+	printk_once(KERN_WARNING "hrtimer: interrupt took %llu ns\n",
-+		    ktime_to_ns(delta));
+ 	ftrace_start();
+  out:
+ 	spin_unlock_irqrestore(&tracing_start_lock, flags);
+@@ -888,6 +892,9 @@ void tracing_stop(void)
+ 	if (trace_stop_count++)
+ 		goto out;
+ 
++	/* Prevent the buffers from switching */
++	__raw_spin_lock(&ftrace_max_lock);
++
+ 	buffer = global_trace.buffer;
+ 	if (buffer)
+ 		ring_buffer_record_disable(buffer);
+@@ -896,6 +903,8 @@ void tracing_stop(void)
+ 	if (buffer)
+ 		ring_buffer_record_disable(buffer);
+ 
++	__raw_spin_unlock(&ftrace_max_lock);
++
+  out:
+ 	spin_unlock_irqrestore(&tracing_start_lock, flags);
  }
- 
- /*
---- a/kernel/time/timer_list.c
-+++ b/kernel/time/timer_list.c
-@@ -150,6 +150,9 @@ static void print_cpu(struct seq_file *m
- 	P_ns(expires_next);
- 	P(hres_active);
- 	P(nr_events);
-+	P(nr_retries);
-+	P(nr_hangs);
-+	P_ns(max_hang_time);
- #endif
- #undef P
- #undef P_ns
-@@ -252,7 +255,7 @@ static int timer_list_show(struct seq_fi
- 	u64 now = ktime_to_ns(ktime_get());
- 	int cpu;
- 
--	SEQ_printf(m, "Timer List Version: v0.4\n");
-+	SEQ_printf(m, "Timer List Version: v0.5\n");
- 	SEQ_printf(m, "HRTIMER_MAX_CLOCK_BASES: %d\n", HRTIMER_MAX_CLOCK_BASES);
- 	SEQ_printf(m, "now at %Ld nsecs\n", (unsigned long long)now);
- 
 
 
