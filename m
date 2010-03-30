@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab0C3XWb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:22:31 -0400
-Received: from kroah.org ([198.145.64.141]:46560 "EHLO coco.kroah.org"
+	id S1756997Ab0C3X0I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:26:08 -0400
+Received: from kroah.org ([198.145.64.141]:46841 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756901Ab0C3XV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:21:26 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:36 2010
-Message-Id: <20100330224836.278595019@linux.site>
+	id S932696Ab0C3XWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:22:15 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:57 2010
+Message-Id: <20100330224857.119004258@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:30 -0700
+Date: Tue, 30 Mar 2010 15:43:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "David S. Miller" <davem@davemloft.net>,
+       Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [116/156] sparc64: Properly truncate pt_regs framepointer in perf callback.
+Subject: [149/156] ahci: use BIOS date in broken_suspend list
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +26,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David S. Miller <davem@davemloft.net>
+From: Tejun Heo <tj@kernel.org>
 
-[ Upstream commit 9e8307ecaf9f8c8b5b3b22145021204c4e73114a ]
+commit 9deb343189b3cf45e84dd08480f330575ffe2004 upstream.
 
-For 32-bit processes, we save the full 64-bits of the regs in pt_regs.
+HP is recycling both DMI_PRODUCT_NAME and DMI_BIOS_VERSION making
+ahci_broken_suspend() trigger for later products which are not
+affected by the original problems.  Match BIOS date instead of version
+and add references to bko's so that full information can be found
+easier later.
 
-But unlike when the userspace actually does load and store
-instructions, the top 32-bits don't get automatically truncated by the
-cpu in kernel mode (because the kernel doesn't execute with PSTATE_AM
-address masking enabled).
+This fixes http://bugzilla.kernel.org/show_bug.cgi?id=15462
 
-So we have to do it by hand.
-
-Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: tigerfishdaisy@gmail.com
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/sparc/kernel/perf_event.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/ahci.c |   28 ++++++++++++++++++++--------
+ 1 file changed, 20 insertions(+), 8 deletions(-)
 
---- a/arch/sparc/kernel/perf_event.c
-+++ b/arch/sparc/kernel/perf_event.c
-@@ -1337,7 +1337,7 @@ static void perf_callchain_user_32(struc
- 	callchain_store(entry, PERF_CONTEXT_USER);
- 	callchain_store(entry, regs->tpc);
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -2831,6 +2831,14 @@ static bool ahci_broken_suspend(struct p
+ 		 * On HP dv[4-6] and HDX18 with earlier BIOSen, link
+ 		 * to the harddisk doesn't become online after
+ 		 * resuming from STR.  Warn and fail suspend.
++		 *
++		 * http://bugzilla.kernel.org/show_bug.cgi?id=12276
++		 *
++		 * Use dates instead of versions to match as HP is
++		 * apparently recycling both product and version
++		 * strings.
++		 *
++		 * http://bugzilla.kernel.org/show_bug.cgi?id=15462
+ 		 */
+ 		{
+ 			.ident = "dv4",
+@@ -2839,7 +2847,7 @@ static bool ahci_broken_suspend(struct p
+ 				DMI_MATCH(DMI_PRODUCT_NAME,
+ 					  "HP Pavilion dv4 Notebook PC"),
+ 			},
+-			.driver_data = "F.30", /* cutoff BIOS version */
++			.driver_data = "20090105",	/* F.30 */
+ 		},
+ 		{
+ 			.ident = "dv5",
+@@ -2848,7 +2856,7 @@ static bool ahci_broken_suspend(struct p
+ 				DMI_MATCH(DMI_PRODUCT_NAME,
+ 					  "HP Pavilion dv5 Notebook PC"),
+ 			},
+-			.driver_data = "F.16", /* cutoff BIOS version */
++			.driver_data = "20090506",	/* F.16 */
+ 		},
+ 		{
+ 			.ident = "dv6",
+@@ -2857,7 +2865,7 @@ static bool ahci_broken_suspend(struct p
+ 				DMI_MATCH(DMI_PRODUCT_NAME,
+ 					  "HP Pavilion dv6 Notebook PC"),
+ 			},
+-			.driver_data = "F.21",	/* cutoff BIOS version */
++			.driver_data = "20090423",	/* F.21 */
+ 		},
+ 		{
+ 			.ident = "HDX18",
+@@ -2866,7 +2874,7 @@ static bool ahci_broken_suspend(struct p
+ 				DMI_MATCH(DMI_PRODUCT_NAME,
+ 					  "HP HDX18 Notebook PC"),
+ 			},
+-			.driver_data = "F.23",	/* cutoff BIOS version */
++			.driver_data = "20090430",	/* F.23 */
+ 		},
+ 		/*
+ 		 * Acer eMachines G725 has the same problem.  BIOS
+@@ -2874,6 +2882,8 @@ static bool ahci_broken_suspend(struct p
+ 		 * work.  Inbetween, there are V1.06, V2.06 and V3.03
+ 		 * that we don't have much idea about.  For now,
+ 		 * blacklist anything older than V3.04.
++		 *
++		 * http://bugzilla.kernel.org/show_bug.cgi?id=15104
+ 		 */
+ 		{
+ 			.ident = "G725",
+@@ -2881,19 +2891,21 @@ static bool ahci_broken_suspend(struct p
+ 				DMI_MATCH(DMI_SYS_VENDOR, "eMachines"),
+ 				DMI_MATCH(DMI_PRODUCT_NAME, "eMachines G725"),
+ 			},
+-			.driver_data = "V3.04",	/* cutoff BIOS version */
++			.driver_data = "20091216",	/* V3.04 */
+ 		},
+ 		{ }	/* terminate list */
+ 	};
+ 	const struct dmi_system_id *dmi = dmi_first_match(sysids);
+-	const char *ver;
++	int year, month, date;
++	char buf[9];
  
--	ufp = regs->u_regs[UREG_I6];
-+	ufp = regs->u_regs[UREG_I6] & 0xffffffffUL;
- 	do {
- 		struct sparc_stackf32 *usf, sf;
- 		unsigned long pc;
+ 	if (!dmi || pdev->bus->number || pdev->devfn != PCI_DEVFN(0x1f, 2))
+ 		return false;
+ 
+-	ver = dmi_get_system_info(DMI_BIOS_VERSION);
++	dmi_get_date(DMI_BIOS_DATE, &year, &month, &date);
++	snprintf(buf, sizeof(buf), "%04d%02d%02d", year, month, date);
+ 
+-	return !ver || strcmp(ver, dmi->driver_data) < 0;
++	return strcmp(buf, dmi->driver_data) < 0;
+ }
+ 
+ static bool ahci_broken_online(struct pci_dev *pdev)
 
 
