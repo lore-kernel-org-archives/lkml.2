@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756958Ab0C3Xdg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:33:36 -0400
-Received: from kroah.org ([198.145.64.141]:46528 "EHLO coco.kroah.org"
+	id S1754748Ab0C3Xzm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:55:42 -0400
+Received: from kroah.org ([198.145.64.141]:45624 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756883Ab0C3XVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:21:21 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:34 2010
-Message-Id: <20100330224833.819159047@linux.site>
+	id S932375Ab0C3XTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:13 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:23 2010
+Message-Id: <20100330224722.741509869@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:26 -0700
+Date: Tue, 30 Mar 2010 15:40:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
-       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [112/156] icside: bring back ->maskproc method
+Subject: [003/156] ARM: Fix decompressors kernel size estimation for ROM=y
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,173 +26,205 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-[ Upstream commit f75d4a238770d83d3a0475ce7f34e3fa37de161e ]
+commit 98e12b5a6e05413420a7e3b3eca7fbfc2ff41b6d upstream.
 
-Bring back ->maskproc method since it is still needed for proper operation,
-as noticed by Russell King:
+Commit 2552fc2 changed the way the decompressor decides if it is safe
+to decompress the kernel directly to its final location.  Unfortunately,
+it took the top of the compressed data as being the stack pointer,
+which it is for ROM=n cases.  However, for ROM=y, the stack pointer
+is not relevant, and results in the wrong answer.
 
-> This change is bogus.
->
->         writeb(0, base + ICS_ARCIN_V6_INTROFFSET_1);
->         readb(base + ICS_ARCIN_V6_INTROFFSET_2);
->
->         writeb(0, base + ICS_ARCIN_V6_INTROFFSET_2);
->         readb(base + ICS_ARCIN_V6_INTROFFSET_1);
->
-> This sequence of code does:
->
-> 1. enable interrupt 1
-> 2. disable interrupt 2
-> 3. enable interrupt 2
-> 4. disable interrupt 1
->
-> which results in the interrupt for the second channel being enabled -
-> leaving channel 1 blocked.
->
-> Firstly, icside shares its two IDE channels with one DMA engine - so it's
-> a simplex interface.  IDE supports those (or did when the code was written)
-> serializing requests between the two interfaces.  libata does not.
->
-> Secondly, the interrupt lines on icside float when there's no drive connected
-> or when the drive has its NIEN bit set, which means that you get spurious
-> screaming interrupts which can kill off all expansion card interrupts on
-> the machine unless you disable the channel interrupt on the card.
->
-> Since libata can not serialize the operation of the two channels like IDE
-> can, the libata version of the icside driver does not contain the interrupt
-> stearing logic.  Instead, it looks at the status after reset, and if
-> nothing was found on that channel, it masks the interrupt from that
-> channel.
+Fix this by explicitly storing the end of the biggybacked data in the
+decompressor, and use that to calculate the compressed image size.
 
-This patch reverts changes done in commit dff8817 (I became confused due to
-non-standard & undocumented ->maskproc method, anyway sorry about that).
-
-Noticed-by: Russell King <rmk@arm.linux.org.uk>
-Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ide/icside.c |   64 +++++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 60 insertions(+), 4 deletions(-)
+ arch/arm/boot/compressed/head.S         |   50 ++++++++++++++------------------
+ arch/arm/boot/compressed/vmlinux.lds.in |    3 +
+ 2 files changed, 26 insertions(+), 27 deletions(-)
 
---- a/drivers/ide/icside.c
-+++ b/drivers/ide/icside.c
-@@ -65,6 +65,8 @@ static struct cardinfo icside_cardinfo_v
- };
+--- a/arch/arm/boot/compressed/head.S
++++ b/arch/arm/boot/compressed/head.S
+@@ -170,8 +170,8 @@ not_angel:
  
- struct icside_state {
-+	unsigned int channel;
-+	unsigned int enabled;
- 	void __iomem *irq_port;
- 	void __iomem *ioc_base;
- 	unsigned int sel;
-@@ -114,11 +116,18 @@ static void icside_irqenable_arcin_v6 (s
- 	struct icside_state *state = ec->irq_data;
- 	void __iomem *base = state->irq_port;
+ 		.text
+ 		adr	r0, LC0
+- ARM(		ldmia	r0, {r1, r2, r3, r4, r5, r6, ip, sp}	)
+- THUMB(		ldmia	r0, {r1, r2, r3, r4, r5, r6, ip}	)
++ ARM(		ldmia	r0, {r1, r2, r3, r4, r5, r6, r11, ip, sp})
++ THUMB(		ldmia	r0, {r1, r2, r3, r4, r5, r6, r11, ip}	)
+  THUMB(		ldr	sp, [r0, #28]				)
+ 		subs	r0, r0, r1		@ calculate the delta offset
  
--	writeb(0, base + ICS_ARCIN_V6_INTROFFSET_1);
--	readb(base + ICS_ARCIN_V6_INTROFFSET_2);
-+	state->enabled = 1;
+@@ -182,12 +182,13 @@ not_angel:
+ 		/*
+ 		 * We're running at a different address.  We need to fix
+ 		 * up various pointers:
+-		 *   r5 - zImage base address
+-		 *   r6 - GOT start
++		 *   r5 - zImage base address (_start)
++		 *   r6 - size of decompressed image
++		 *   r11 - GOT start
+ 		 *   ip - GOT end
+ 		 */
+ 		add	r5, r5, r0
+-		add	r6, r6, r0
++		add	r11, r11, r0
+ 		add	ip, ip, r0
  
--	writeb(0, base + ICS_ARCIN_V6_INTROFFSET_2);
--	readb(base + ICS_ARCIN_V6_INTROFFSET_1);
-+	switch (state->channel) {
-+	case 0:
-+		writeb(0, base + ICS_ARCIN_V6_INTROFFSET_1);
-+		readb(base + ICS_ARCIN_V6_INTROFFSET_2);
-+		break;
-+	case 1:
-+		writeb(0, base + ICS_ARCIN_V6_INTROFFSET_2);
-+		readb(base + ICS_ARCIN_V6_INTROFFSET_1);
-+		break;
-+	}
- }
+ #ifndef CONFIG_ZBOOT_ROM
+@@ -205,10 +206,10 @@ not_angel:
+ 		/*
+ 		 * Relocate all entries in the GOT table.
+ 		 */
+-1:		ldr	r1, [r6, #0]		@ relocate entries in the GOT
++1:		ldr	r1, [r11, #0]		@ relocate entries in the GOT
+ 		add	r1, r1, r0		@ table.  This fixes up the
+-		str	r1, [r6], #4		@ C references.
+-		cmp	r6, ip
++		str	r1, [r11], #4		@ C references.
++		cmp	r11, ip
+ 		blo	1b
+ #else
  
- /* Prototype: icside_irqdisable_arcin_v6 (struct expansion_card *ec, int irqnr)
-@@ -128,6 +137,8 @@ static void icside_irqdisable_arcin_v6 (
- {
- 	struct icside_state *state = ec->irq_data;
+@@ -216,12 +217,12 @@ not_angel:
+ 		 * Relocate entries in the GOT table.  We only relocate
+ 		 * the entries that are outside the (relocated) BSS region.
+ 		 */
+-1:		ldr	r1, [r6, #0]		@ relocate entries in the GOT
++1:		ldr	r1, [r11, #0]		@ relocate entries in the GOT
+ 		cmp	r1, r2			@ entry < bss_start ||
+ 		cmphs	r3, r1			@ _end < entry
+ 		addlo	r1, r1, r0		@ table.  This fixes up the
+-		str	r1, [r6], #4		@ C references.
+-		cmp	r6, ip
++		str	r1, [r11], #4		@ C references.
++		cmp	r11, ip
+ 		blo	1b
+ #endif
  
-+	state->enabled = 0;
-+
- 	readb(state->irq_port + ICS_ARCIN_V6_INTROFFSET_1);
- 	readb(state->irq_port + ICS_ARCIN_V6_INTROFFSET_2);
- }
-@@ -149,6 +160,44 @@ static const expansioncard_ops_t icside_
- 	.irqpending	= icside_irqpending_arcin_v6,
- };
+@@ -247,6 +248,7 @@ not_relocated:	mov	r0, #0
+  * Check to see if we will overwrite ourselves.
+  *   r4 = final kernel address
+  *   r5 = start of this image
++ *   r6 = size of decompressed image
+  *   r2 = end of malloc space (and therefore this image)
+  * We basically want:
+  *   r4 >= r2 -> OK
+@@ -254,8 +256,7 @@ not_relocated:	mov	r0, #0
+  */
+ 		cmp	r4, r2
+ 		bhs	wont_overwrite
+-		sub	r3, sp, r5		@ > compressed kernel size
+-		add	r0, r4, r3, lsl #2	@ allow for 4x expansion
++		add	r0, r4, r6
+ 		cmp	r0, r5
+ 		bls	wont_overwrite
  
-+/*
-+ * Handle routing of interrupts.  This is called before
-+ * we write the command to the drive.
-+ */
-+static void icside_maskproc(ide_drive_t *drive, int mask)
-+{
-+	ide_hwif_t *hwif = drive->hwif;
-+	struct expansion_card *ec = ECARD_DEV(hwif->dev);
-+	struct icside_state *state = ecard_get_drvdata(ec);
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+
-+	state->channel = hwif->channel;
-+
-+	if (state->enabled && !mask) {
-+		switch (hwif->channel) {
-+		case 0:
-+			writeb(0, state->irq_port + ICS_ARCIN_V6_INTROFFSET_1);
-+			readb(state->irq_port + ICS_ARCIN_V6_INTROFFSET_2);
-+			break;
-+		case 1:
-+			writeb(0, state->irq_port + ICS_ARCIN_V6_INTROFFSET_2);
-+			readb(state->irq_port + ICS_ARCIN_V6_INTROFFSET_1);
-+			break;
-+		}
-+	} else {
-+		readb(state->irq_port + ICS_ARCIN_V6_INTROFFSET_2);
-+		readb(state->irq_port + ICS_ARCIN_V6_INTROFFSET_1);
-+	}
-+
-+	local_irq_restore(flags);
-+}
-+
-+static const struct ide_port_ops icside_v6_no_dma_port_ops = {
-+	.maskproc		= icside_maskproc,
-+};
-+
- #ifdef CONFIG_BLK_DEV_IDEDMA_ICS
+@@ -271,7 +272,6 @@ not_relocated:	mov	r0, #0
+  * r1-r3  = unused
+  * r4     = kernel execution address
+  * r5     = decompressed kernel start
+- * r6     = processor ID
+  * r7     = architecture ID
+  * r8     = atags pointer
+  * r9-r12,r14 = corrupted
+@@ -312,7 +312,8 @@ LC0:		.word	LC0			@ r1
+ 		.word	_end			@ r3
+ 		.word	zreladdr		@ r4
+ 		.word	_start			@ r5
+-		.word	_got_start		@ r6
++		.word	_image_size		@ r6
++		.word	_got_start		@ r11
+ 		.word	_got_end		@ ip
+ 		.word	user_stack+4096		@ sp
+ LC1:		.word	reloc_end - reloc_start
+@@ -336,7 +337,6 @@ params:		ldr	r0, =params_phys
+  *
+  * On entry,
+  *  r4 = kernel execution address
+- *  r6 = processor ID
+  *  r7 = architecture number
+  *  r8 = atags pointer
+  *  r9 = run-time address of "start"  (???)
+@@ -542,7 +542,6 @@ __common_mmu_cache_on:
+  * r1-r3  = unused
+  * r4     = kernel execution address
+  * r5     = decompressed kernel start
+- * r6     = processor ID
+  * r7     = architecture ID
+  * r8     = atags pointer
+  * r9-r12,r14 = corrupted
+@@ -581,19 +580,19 @@ call_kernel:	bl	cache_clean_flush
+  *  r1  = corrupted
+  *  r2  = corrupted
+  *  r3  = block offset
+- *  r6  = corrupted
++ *  r9  = corrupted
+  *  r12 = corrupted
+  */
+ 
+ call_cache_fn:	adr	r12, proc_types
+ #ifdef CONFIG_CPU_CP15
+-		mrc	p15, 0, r6, c0, c0	@ get processor ID
++		mrc	p15, 0, r9, c0, c0	@ get processor ID
+ #else
+-		ldr	r6, =CONFIG_PROCESSOR_ID
++		ldr	r9, =CONFIG_PROCESSOR_ID
+ #endif
+ 1:		ldr	r1, [r12, #0]		@ get value
+ 		ldr	r2, [r12, #4]		@ get mask
+-		eor	r1, r1, r6		@ (real ^ match)
++		eor	r1, r1, r9		@ (real ^ match)
+ 		tst	r1, r2			@       & mask
+  ARM(		addeq	pc, r12, r3		) @ call cache function
+  THUMB(		addeq	r12, r3			)
+@@ -778,8 +777,7 @@ proc_types:
+  * Turn off the Cache and MMU.  ARMv3 does not support
+  * reading the control register, but ARMv4 does.
+  *
+- * On entry,  r6 = processor ID
+- * On exit,   r0, r1, r2, r3, r12 corrupted
++ * On exit, r0, r1, r2, r3, r9, r12 corrupted
+  * This routine must preserve: r4, r6, r7
+  */
+ 		.align	5
+@@ -852,10 +850,8 @@ __armv3_mmu_cache_off:
  /*
-  * SG-DMA support.
-@@ -228,6 +277,7 @@ static void icside_set_dma_mode(ide_driv
+  * Clean and flush the cache to maintain consistency.
+  *
+- * On entry,
+- *  r6 = processor ID
+  * On exit,
+- *  r1, r2, r3, r11, r12 corrupted
++ *  r1, r2, r3, r9, r11, r12 corrupted
+  * This routine must preserve:
+  *  r0, r4, r5, r6, r7
+  */
+@@ -967,7 +963,7 @@ __armv4_mmu_cache_flush:
+ 		mov	r2, #64*1024		@ default: 32K dcache size (*2)
+ 		mov	r11, #32		@ default: 32 byte line size
+ 		mrc	p15, 0, r3, c0, c0, 1	@ read cache type
+-		teq	r3, r6			@ cache ID register present?
++		teq	r3, r9			@ cache ID register present?
+ 		beq	no_cache_id
+ 		mov	r1, r3, lsr #18
+ 		and	r1, r1, #7
+--- a/arch/arm/boot/compressed/vmlinux.lds.in
++++ b/arch/arm/boot/compressed/vmlinux.lds.in
+@@ -36,6 +36,9 @@ SECTIONS
  
- static const struct ide_port_ops icside_v6_port_ops = {
- 	.set_dma_mode		= icside_set_dma_mode,
-+	.maskproc		= icside_maskproc,
- };
+   _etext = .;
  
- static void icside_dma_host_set(ide_drive_t *drive, int on)
-@@ -272,6 +322,11 @@ static int icside_dma_setup(ide_drive_t
- 	BUG_ON(dma_channel_active(ec->dma));
- 
- 	/*
-+	 * Ensure that we have the right interrupt routed.
-+	 */
-+	icside_maskproc(drive, 0);
++  /* Assume size of decompressed image is 4x the compressed image */
++  _image_size = (_etext - _text) * 4;
 +
-+	/*
- 	 * Route the DMA signals to the correct interface.
- 	 */
- 	writeb(state->sel | hwif->channel, state->ioc_base);
-@@ -399,6 +454,7 @@ err_free:
- 
- static const struct ide_port_info icside_v6_port_info __initdata = {
- 	.init_dma		= icside_dma_off_init,
-+	.port_ops		= &icside_v6_no_dma_port_ops,
- 	.dma_ops		= &icside_v6_dma_ops,
- 	.host_flags		= IDE_HFLAG_SERIALIZE | IDE_HFLAG_MMIO,
- 	.mwdma_mask		= ATA_MWDMA2,
+   _got_start = .;
+   .got			: { *(.got) }
+   _got_end = .;
 
 
