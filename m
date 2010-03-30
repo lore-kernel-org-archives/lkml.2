@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab0C3Kqh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 06:46:37 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:55658 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755238Ab0C3Kqg (ORCPT
+	id S1756249Ab0C3Kuz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 06:50:55 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:45137 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755238Ab0C3Kuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 06:46:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=kBEKcw+lPogD8Ai4vR+KJ+KrXNpWVckNcbeFWxfAsSnjRarxUYQiXgjeh2ZAaH4Y3c
-         vLCQLGMIaaPhzRERONqgZSlHjlib9BOQRhoDhzRKvEmQoM8ZNpo7gGR59Tt+2HrMtLvN
-         Ic/zRotU9fTimFIIrgzZQCCFudfkcs+4xkplo=
+	Tue, 30 Mar 2010 06:50:54 -0400
+Date: Tue, 30 Mar 2010 12:50:29 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Holger Schurig <hs4233@mail.mn-solutions.de>
+Cc: linux-kernel@vger.kernel.org, Dan Williams <dcbw@redhat.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Bing Zhao <bzhao@marvell.com>, libertas-dev@lists.infradead.org,
+       linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] net/wireless/libertas: do not call wiphy_unregister()
+ w/o wiphy_register()
+Message-ID: <20100330105029.GO30801@buzzloop.caiaq.de>
+References: <1269875658-3324-1-git-send-email-daniel@caiaq.de>
+ <201003300849.07441.hs4233@mail.mn-solutions.de>
+ <20100330085253.GL30801@buzzloop.caiaq.de>
+ <201003301149.13462.hs4233@mail.mn-solutions.de>
 MIME-Version: 1.0
-In-Reply-To: <20100323132719.GY5768@kernel.dk>
-References: <8c4cf08c1003230428t274b8ca8y13d67d65b8830dd7@mail.gmail.com>
-	 <20100323132719.GY5768@kernel.dk>
-Date: Tue, 30 Mar 2010 12:46:34 +0200
-Message-ID: <8c4cf08c1003300346j73f4c106s49e494bbf2b329e7@mail.gmail.com>
-Subject: Re: Poor interactive performance with I/O loads with fsync()ing
-From: Pawel S <spawels13@gmail.com>
-To: Jens Axboe <jens.axboe@oracle.com>
-Cc: linux-kernel@vger.kernel.org, Ben Gamari <bgamari.foss@gmail.com>,
-       tytso <tytso@mit.edu>, Nick Piggin <npiggin@suse.de>,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201003301149.13462.hs4233@mail.mn-solutions.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/3/23 Jens Axboe <jens.axboe@oracle.com>:
+On Tue, Mar 30, 2010 at 11:49:13AM +0200, Holger Schurig wrote:
+> > If there's any better solution, I'd happily test it.
+> 
+> Not from me, unfortunately. I'm not really interested into getting full 
+> cfg80211 into Libertas. That is, until either _one_ of this two options 
+> happen:
+> 
+> * someone that actually uses/wants the proprietary Libertas mesh steps  
+> forward and says "We'll look after this and make it work with cfg80211"
+> * we remove the proprietary Libertas mesh support
+> 
+> That is: I won't work on Libertas mesh. I can't justify this time investment 
+> with my employer for something that I'll never need. For my device, my own 
+> version of Libertas + cfg80211 (without any WEXT anymore) works quite nice.
+> 
+> 
+> So, if neither of the above things happens, then Libertas will work for the 
+> rest of the world with WEXT, as it did before.
 
-> It's also been my sneaking suspicion that swap is involved. I had lots
-> of RAM in anything I use, even the laptop and workstation. I'll try and
-> run some tests with lower memory and force it into swap, I've seen nasty
-> hangs that way.
+I don't get your point. The patch I submitted fixes an Ooops in the
+driver, due to wrong handling of an API. What does that have to do with
+principle discussions about the frameworks in use?
 
-I am not sure if the memory swapping is the case. According to KDE
-System monitor swap is not even touched when copying files. I also
-noticed similar responsiveness problems when extracting some rar files
-- twelve parts , each about 100MB and the system becomes unresponsive
-for some time since the first seconds of operation, then it behaves
-normally and then problem is back. I have 2GB of RAM. I am using ext4
-file system and I am using noatime mount option.
+Daniel
 
-P.S. It seems it is a little better when I have AHCI mode set in BIOS
-(at least when extracting archives).
-
-P.S.2 I would be glad to provide some useful data. I created perf
-chart, but if this is not enough just instruct me what should I do
-next, please.
-
-Regards
-
-Pawel
