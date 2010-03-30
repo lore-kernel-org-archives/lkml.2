@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185Ab0C3Juq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 05:50:46 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40715 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794Ab0C3Jup (ORCPT
+	id S1756146Ab0C3J6m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 05:58:42 -0400
+Received: from ey-out-2122.google.com ([74.125.78.26]:59791 "EHLO
+	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088Ab0C3J6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 05:50:45 -0400
-Date: Tue, 30 Mar 2010 11:51:22 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: EDAC: Is it possible to calculate which piece of memory is bad?
-Message-ID: <20100330095122.GC19864@aftab>
-References: <alpine.DEB.2.00.1003290939340.27175@p34.internal.lan>
- <20100330070544.GA19488@aftab>
- <alpine.DEB.2.00.1003300400260.13468@p34.internal.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1003300400260.13468@p34.internal.lan>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 30 Mar 2010 05:58:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=SXDEZKqwuPBqlCb6CA7Sdr/9fVOwxe6q6LjKiYRN9N3WsV5YdNc1RxObndEIJhartv
+         sNi2/SXAiEhgFO6jLhUjoAv0OE2JzztCNDZe9GnoDSE/TOzlJP6oTNP9mz+uDiVl8rPO
+         qGwKq5LoXv9uauB+mTMq6l7PrtMCuPjejbufU=
+From: Anders Darander <anders.darander@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Ralf Baechle <ralf@linux-mips.org>, Maxime Bizon <mbizon@freebox.fr>,
+       Anders Darander <ad@datarespons.se>,
+       David Daney <ddaney@caviumnetworks.com>, Sekhar Nori <nsekhar@ti.com>,
+       Anton Vorontsov <avorontsov@ru.mvista.com>,
+       Andy Fleming <afleming@freescale.com>,
+       Grant Likely <grant.likely@secretlab.ca>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] Allow MACB to connect to a higher addresses PHY.
+Date: Tue, 30 Mar 2010 11:58:32 +0200
+Message-Id: <1269943112-6975-1-git-send-email-anders.darander@gmail.com>
+X-Mailer: git-send-email 1.7.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-Date: Tue, Mar 30, 2010 at 04:00:48AM -0400
+From: Anders Darander <ad@datarespons.se>
 
-Hi,
+Using the Atmel MACB together with an integrated switch, can make only port 1
+work. This is caused by macb_mii_probe trying to attach the MAC to the first
+PHY, which often is on one of the external ports.
 
-[..]
+E.g. the Micrel KSZ8873 connects to the MAC on port 3, thus phy_addr should be
+set to 3.
 
-> >>I see the following errors:
-> >>
-> >>EDAC MC0: CE page 0x8abba, offset 0xa10, grain 8, syndrome 0x4758, row 0, channel 0, label "": k8_edac
-> >
-> >It looks like it is the first DIMM on your mainboard, i.e., whichever
-> >gets mapped to channel 0 of the DCT.
-> >
-> >Sigh, someday we'll have a better mapping, hopefully, ... :|
-> >
-> >>EDAC MC0: CE - no information available: k8_edac Error Overflow set
-> >>EDAC k8 MC0: extended error code: ECC chipkill x4 error
-> >>EDAC k8 MC0: general bus error: participating processor(local node origin), time-out(no timeout) memory transaction type(generic read), mem or i/o(mem access), cache level(generic)
-> >>
-> >>Is it possible to use the page or offset to calculate which DIMM is having a
-> >>problem?
+Signed-off-by: Anders Darander <ad@datarespons.se>
+---
+ drivers/net/phy/Kconfig      |   19 ++++++++++++++++++-
+ drivers/net/phy/phy_device.c |    4 ++++
+ 2 files changed, 22 insertions(+), 1 deletions(-)
 
-[..]
-
-> Thanks, how did you make that calculation?
-
-well, you seem to have a k8 system which means a single DRAM controller
-with two channels. Assuming the output "row 0 channel 0" above is
-correct (you're using the old k8_edac driver), all sane motherboard
-layouts map channel 0 of the DCT to the first logical DIMM and row 0
-means chip select row 0 which should be the first rank of the first
-DIMM. What DIMMs are you using, by the way (exact part number)?
-
-You can verify this after removing DIMM0 and checking whether you
-still get those errors. Also, it would be helpful if you enabled
-CONFIG_EDAC_DEBUG and CONFIG_EDAC_DEBUG_VERBOSE (if it existed then) and
-send me the whole dmesg of the machine - it should dump the whole memory
-configuration.
-
-But as I said before, we need to have better mapping but I'll have to
-have some free time first to be able to do it :)
-
+diff --git a/drivers/net/phy/Kconfig b/drivers/net/phy/Kconfig
+index fc5938b..64aa003 100644
+--- a/drivers/net/phy/Kconfig
++++ b/drivers/net/phy/Kconfig
+@@ -15,11 +15,28 @@ if PHYLIB
+ 
+ comment "MII PHY device drivers"
+ 
++config SWITCHING_PHY
++	bool "An Ethernet switch is connected to the MAC"
++	depends on MACB
++	help
++	  If an Ethernet switch is connected to the MAC, it
++	  is quite common to have the connection on a port
++	  higher than the first port. This option allows to
++	  select the desired port number
++
++config SWITCHING_PHY_ADDR
++	int "PHYA address"
++	depends on SWITCHING_PHY
++	default "3"
++	help
++	  On e.g. the Micrel KSZ8873MLL, port 3 (and thus phy_addr
++	  3) is the one connected to the MAC of the MCU.
++
+ config MARVELL_PHY
+ 	tristate "Drivers for Marvell PHYs"
+ 	---help---
+ 	  Currently has a driver for the 88E1011S
+-	
++
+ config DAVICOM_PHY
+ 	tristate "Drivers for Davicom PHYs"
+ 	---help---
+diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+index db17945..891bd0d 100644
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -284,7 +284,11 @@ struct phy_device *phy_find_first(struct mii_bus *bus)
+ {
+ 	int addr;
+ 
++#ifdef CONFIG_SWITCHING_PHY
++	for (addr = CONFIG_SWITCHING_PHY_ADDR; addr < PHY_MAX_ADDR; addr++) {
++#else
+ 	for (addr = 0; addr < PHY_MAX_ADDR; addr++) {
++#endif
+ 		if (bus->phy_map[addr])
+ 			return bus->phy_map[addr];
+ 	}
 -- 
-Regards/Gruss,
-Boris.
+1.7.0.3
 
---
-Advanced Micro Devices, Inc.
-Operating Systems Research Center
