@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757099Ab0C3XgF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:36:05 -0400
-Received: from kroah.org ([198.145.64.141]:46427 "EHLO coco.kroah.org"
+	id S1756105Ab0C3Xhm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:37:42 -0400
+Received: from kroah.org ([198.145.64.141]:46375 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753590Ab0C3XVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:21:05 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:27 2010
-Message-Id: <20100330224826.465471117@linux.site>
+	id S1754079Ab0C3XUx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:20:53 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:22 2010
+Message-Id: <20100330224822.213105640@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:14 -0700
+Date: Tue, 30 Mar 2010 15:42:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Patrick McHardy <kaber@trash.net>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [100/156] netfilter: xt_recent: fix regression in rules using a zero hit_count
+       Miao Xie <miaox@cn.fujitsu.com>, David Rientjes <rientjes@google.com>,
+       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [093/156] cpuset: fix the problem that cpuset_mem_spread_node() returns an offline node
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +27,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Patrick McHardy <kaber@trash.net>
+From: Miao Xie <miaox@cn.fujitsu.com>
 
-commit ef1691504c83ba3eb636c0cfd3ed33f7a6d0b4ee upstream.
+commit 5ab116c9349ef52d6fbd2e2917a53f13194b048e upstream.
 
-Commit 8ccb92ad (netfilter: xt_recent: fix false match) fixed supposedly
-false matches in rules using a zero hit_count. As it turns out there is
-nothing false about these matches and people are actually using entries
-with a hit_count of zero to make rules dependant on addresses inserted
-manually through /proc.
+cpuset_mem_spread_node() returns an offline node, and causes an oops.
 
-Since this slipped past the eyes of three reviewers, instead of
-reverting the commit in question, this patch explicitly checks
-for a hit_count of zero to make the intentions more clear.
+This patch fixes it by initializing task->mems_allowed to
+node_states[N_HIGH_MEMORY], and updating task->mems_allowed when doing
+memory hotplug.
 
-Reported-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
-Tested-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Reported-by: Nick Piggin <npiggin@suse.de>
+Tested-by: Nick Piggin <npiggin@suse.de>
+Cc: Paul Menage <menage@google.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/netfilter/xt_recent.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ init/main.c      |    2 +-
+ kernel/cpuset.c  |   20 ++++++++++++--------
+ kernel/kthread.c |    2 +-
+ 3 files changed, 14 insertions(+), 10 deletions(-)
 
---- a/net/netfilter/xt_recent.c
-+++ b/net/netfilter/xt_recent.c
-@@ -260,7 +260,7 @@ recent_mt(const struct sk_buff *skb, con
- 		for (i = 0; i < e->nstamps; i++) {
- 			if (info->seconds && time_after(time, e->stamps[i]))
- 				continue;
--			if (info->hit_count && ++hits >= info->hit_count) {
-+			if (!info->hit_count || ++hits >= info->hit_count) {
- 				ret = !ret;
- 				break;
- 			}
+--- a/init/main.c
++++ b/init/main.c
+@@ -846,7 +846,7 @@ static int __init kernel_init(void * unu
+ 	/*
+ 	 * init can allocate pages on any node
+ 	 */
+-	set_mems_allowed(node_possible_map);
++	set_mems_allowed(node_states[N_HIGH_MEMORY]);
+ 	/*
+ 	 * init can run on any cpu.
+ 	 */
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -920,9 +920,6 @@ static int update_cpumask(struct cpuset
+  *    call to guarantee_online_mems(), as we know no one is changing
+  *    our task's cpuset.
+  *
+- *    Hold callback_mutex around the two modifications of our tasks
+- *    mems_allowed to synchronize with cpuset_mems_allowed().
+- *
+  *    While the mm_struct we are migrating is typically from some
+  *    other task, the task_struct mems_allowed that we are hacking
+  *    is for our current task, which must allocate new pages for that
+@@ -1391,11 +1388,10 @@ static void cpuset_attach(struct cgroup_
+ 
+ 	if (cs == &top_cpuset) {
+ 		cpumask_copy(cpus_attach, cpu_possible_mask);
+-		to = node_possible_map;
+ 	} else {
+ 		guarantee_online_cpus(cs, cpus_attach);
+-		guarantee_online_mems(cs, &to);
+ 	}
++	guarantee_online_mems(cs, &to);
+ 
+ 	/* do per-task migration stuff possibly for each in the threadgroup */
+ 	cpuset_attach_task(tsk, &to, cs);
+@@ -2090,15 +2086,23 @@ static int cpuset_track_online_cpus(stru
+ static int cpuset_track_online_nodes(struct notifier_block *self,
+ 				unsigned long action, void *arg)
+ {
++	nodemask_t oldmems;
++
+ 	cgroup_lock();
+ 	switch (action) {
+ 	case MEM_ONLINE:
+-	case MEM_OFFLINE:
++		oldmems = top_cpuset.mems_allowed;
+ 		mutex_lock(&callback_mutex);
+ 		top_cpuset.mems_allowed = node_states[N_HIGH_MEMORY];
+ 		mutex_unlock(&callback_mutex);
+-		if (action == MEM_OFFLINE)
+-			scan_for_empty_cpusets(&top_cpuset);
++		update_tasks_nodemask(&top_cpuset, &oldmems, NULL);
++		break;
++	case MEM_OFFLINE:
++		/*
++		 * needn't update top_cpuset.mems_allowed explicitly because
++		 * scan_for_empty_cpusets() will update it.
++		 */
++		scan_for_empty_cpusets(&top_cpuset);
+ 		break;
+ 	default:
+ 		break;
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -219,7 +219,7 @@ int kthreadd(void *unused)
+ 	set_task_comm(tsk, "kthreadd");
+ 	ignore_signals(tsk);
+ 	set_cpus_allowed_ptr(tsk, cpu_all_mask);
+-	set_mems_allowed(node_possible_map);
++	set_mems_allowed(node_states[N_HIGH_MEMORY]);
+ 
+ 	current->flags |= PF_NOFREEZE | PF_FREEZER_NOSIG;
+ 
 
 
