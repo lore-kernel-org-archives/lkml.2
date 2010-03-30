@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756520Ab0C3La4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 07:30:56 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:30176 "EHLO
+	id S1755344Ab0C3Lcg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 07:32:36 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:35449 "EHLO
 	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754160Ab0C3Law (ORCPT
+	with ESMTP id S1752993Ab0C3Lce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 07:30:52 -0400
+	Tue, 30 Mar 2010 07:32:34 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,77 +16,113 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 03/29] lmb: Seperate region array from lmb_region struct
-Date: Tue, 30 Mar 2010 04:19:37 -0700
-Message-Id: <1269948003-17221-4-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 06/29] bootmem, x86: Add weak version of reserve_bootmem_generic
+Date: Tue, 30 Mar 2010 04:19:40 -0700
+Message-Id: <1269948003-17221-7-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269948003-17221-1-git-send-email-yinghai@kernel.org>
 References: <1269948003-17221-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0205.4BB1DEC9.035C,ss=1,fgs=0
+X-CT-RefId: str=0001.0A0B0207.4BB1DEC0.03B8,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lmb_init() will connect them back.
+It will be used lmb_to_bootmem converting
 
-Add nr_regions in struct lmb_region to track region array size.
+It is an wrapper for reserve_bootmem, and x86 64bit is using special one.
+
+Also clean up that version for x86_64. We don't need to take care of numa
+path for that, bootmem can handle it how
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/lmb.h |    3 ++-
- mm/lmb.c            |    9 ++++++++-
- 2 files changed, 10 insertions(+), 2 deletions(-)
+ arch/x86/mm/init_32.c |    6 ------
+ arch/x86/mm/init_64.c |   20 ++------------------
+ mm/bootmem.c          |    6 ++++++
+ 3 files changed, 8 insertions(+), 24 deletions(-)
 
-diff --git a/include/linux/lmb.h b/include/linux/lmb.h
-index f3d1433..e14ea8d 100644
---- a/include/linux/lmb.h
-+++ b/include/linux/lmb.h
-@@ -26,7 +26,8 @@ struct lmb_property {
- struct lmb_region {
- 	unsigned long cnt;
- 	u64 size;
--	struct lmb_property region[MAX_LMB_REGIONS+1];
-+	struct lmb_property *region;
-+	unsigned long nr_regions;
- };
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 5cb3f0f..804bbe9 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -1069,9 +1069,3 @@ void mark_rodata_ro(void)
+ #endif
+ }
+ #endif
+-
+-int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+-				   int flags)
+-{
+-	return reserve_bootmem(phys, len, flags);
+-}
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index e9b040e..5ba6b0e 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -798,13 +798,10 @@ void mark_rodata_ro(void)
  
- struct lmb {
-diff --git a/mm/lmb.c b/mm/lmb.c
-index b1fc526..65b62dc 100644
---- a/mm/lmb.c
-+++ b/mm/lmb.c
-@@ -18,6 +18,8 @@
- #define LMB_ALLOC_ANYWHERE	0
+ #endif
  
- struct lmb lmb;
-+static struct lmb_property lmb_memory_region[MAX_LMB_REGIONS + 1];
-+static struct lmb_property lmb_reserved_region[MAX_LMB_REGIONS + 1];
- 
- static int lmb_debug;
- 
-@@ -106,6 +108,11 @@ static void lmb_coalesce_regions(struct lmb_region *rgn,
- 
- void __init lmb_init(void)
++#ifndef CONFIG_NO_BOOTMEM
+ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+ 				   int flags)
  {
-+	lmb.memory.region   = lmb_memory_region;
-+	lmb.reserved.region = lmb_reserved_region;
-+	lmb.memory.nr_regions   = ARRAY_SIZE(lmb_memory_region);
-+	lmb.reserved.nr_regions = ARRAY_SIZE(lmb_reserved_region);
+-#ifdef CONFIG_NUMA
+-	int nid, next_nid;
+-	int ret;
+-#endif
+ 	unsigned long pfn = phys >> PAGE_SHIFT;
+ 
+ 	if (pfn >= max_pfn) {
+@@ -820,21 +817,7 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+ 		return -EFAULT;
+ 	}
+ 
+-	/* Should check here against the e820 map to avoid double free */
+-#ifdef CONFIG_NUMA
+-	nid = phys_to_nid(phys);
+-	next_nid = phys_to_nid(phys + len - 1);
+-	if (nid == next_nid)
+-		ret = reserve_bootmem_node(NODE_DATA(nid), phys, len, flags);
+-	else
+-		ret = reserve_bootmem(phys, len, flags);
+-
+-	if (ret != 0)
+-		return ret;
+-
+-#else
+ 	reserve_bootmem(phys, len, flags);
+-#endif
+ 
+ 	if (phys+len <= MAX_DMA_PFN*PAGE_SIZE) {
+ 		dma_reserve += len / PAGE_SIZE;
+@@ -843,6 +826,7 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+ 
+ 	return 0;
+ }
++#endif
+ 
+ int kern_addr_valid(unsigned long addr)
+ {
+diff --git a/mm/bootmem.c b/mm/bootmem.c
+index 9b13446..fadbc3b 100644
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -512,6 +512,12 @@ int __init reserve_bootmem(unsigned long addr, unsigned long size,
+ }
+ 
+ #ifndef CONFIG_NO_BOOTMEM
++int __weak __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
++				   int flags)
++{
++	return reserve_bootmem(phys, len, flags);
++}
 +
- 	/* Create a dummy zero size LMB which will get coalesced away later.
- 	 * This simplifies the lmb_add() code below...
- 	 */
-@@ -169,7 +176,7 @@ static long lmb_add_region(struct lmb_region *rgn, u64 base, u64 size)
- 
- 	if (coalesced)
- 		return coalesced;
--	if (rgn->cnt >= MAX_LMB_REGIONS)
-+	if (rgn->cnt > rgn->nr_regions)
- 		return -1;
- 
- 	/* Couldn't coalesce the LMB, so add it to the sorted table. */
+ static unsigned long __init align_idx(struct bootmem_data *bdata,
+ 				      unsigned long idx, unsigned long step)
+ {
 -- 
 1.6.4.2
 
