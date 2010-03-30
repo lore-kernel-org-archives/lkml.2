@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757235Ab0C3Xn0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:43:26 -0400
-Received: from kroah.org ([198.145.64.141]:46184 "EHLO coco.kroah.org"
+	id S932624Ab0C3XUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:20:33 -0400
+Received: from kroah.org ([198.145.64.141]:45738 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932578Ab0C3XUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:21 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:06 2010
-Message-Id: <20100330224806.004805043@linux.site>
+	id S932328Ab0C3XT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:28 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:32 2010
+Message-Id: <20100330224731.837280702@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:41:44 -0700
+Date: Tue, 30 Mar 2010 15:40:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Bernhard Rosenkraenzer <bero@arklinux.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Paul Mackerras <paulus@samba.org>, Steven Rostedt <rostedt@goodmis.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [070/156] USB: qcserial: add new device ids
+Subject: [018/156] x86/stacktrace: Dont dereference bad frame pointers
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,57 +30,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bernhard Rosenkraenzer <br@blankpage.ch>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit 0725e95ea56698774e893edb7e7276b1d6890954 upstream.
+commit 29044ad1509ecc229f1d5a31aeed7a8dc61a71c4 upstream.
 
-This patch adds various USB device IDs for Gobi 2000 devices, as found in the
-drivers available at https://www.codeaurora.org/wiki/GOBI_Releases
+Callers of a stacktrace might pass bad frame pointers. Those
+are usually checked for safety in stack walking helpers before
+any dereferencing, but this is not the case when we need to go
+through one more frame pointer that backlinks the irq stack to
+the previous one, as we don't have any reliable address boudaries
+to compare this frame pointer against.
 
-Signed-off-by: Bernhard Rosenkraenzer <bero@arklinux.org>
+This raises crashes when we record callchains for ftrace events
+with perf because we don't use the right helpers to capture
+registers there. We get wrong frame pointers as we call
+task_pt_regs() even on kernel threads, which is a wrong thing
+as it gives us the initial state of any kernel threads freshly
+created. This is even not what we want for user tasks. What we want
+is a hot snapshot of registers when the ftrace event triggers, not
+the state before a task entered the kernel.
+
+This requires more thoughts to do it correctly though.
+So first put a guardian to ensure the given frame pointer
+can be dereferenced to avoid crashes. We'll think about how to fix
+the callers in a subsequent patch.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/qcserial.c |   29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+ arch/x86/kernel/dumpstack_64.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -47,6 +47,35 @@ static struct usb_device_id id_table[] =
- 	{USB_DEVICE(0x05c6, 0x9221)},	/* Generic Gobi QDL device */
- 	{USB_DEVICE(0x05c6, 0x9231)},	/* Generic Gobi QDL device */
- 	{USB_DEVICE(0x1f45, 0x0001)},	/* Unknown Gobi QDL device */
-+	{USB_DEVICE(0x413c, 0x8185)},	/* Dell Gobi 2000 QDL device (N0218, VU936) */
-+	{USB_DEVICE(0x413c, 0x8186)},	/* Dell Gobi 2000 Modem device (N0218, VU936) */
-+	{USB_DEVICE(0x05c6, 0x9224)},	/* Sony Gobi 2000 QDL device (N0279, VU730) */
-+	{USB_DEVICE(0x05c6, 0x9225)},	/* Sony Gobi 2000 Modem device (N0279, VU730) */
-+	{USB_DEVICE(0x05c6, 0x9244)},	/* Samsung Gobi 2000 QDL device (VL176) */
-+	{USB_DEVICE(0x05c6, 0x9245)},	/* Samsung Gobi 2000 Modem device (VL176) */
-+	{USB_DEVICE(0x03f0, 0x241d)},	/* HP Gobi 2000 QDL device (VP412) */
-+	{USB_DEVICE(0x03f0, 0x251d)},	/* HP Gobi 2000 Modem device (VP412) */
-+	{USB_DEVICE(0x05c6, 0x9214)},	/* Acer Gobi 2000 QDL device (VP413) */
-+	{USB_DEVICE(0x05c6, 0x9215)},	/* Acer Gobi 2000 Modem device (VP413) */
-+	{USB_DEVICE(0x05c6, 0x9264)},	/* Asus Gobi 2000 QDL device (VR305) */
-+	{USB_DEVICE(0x05c6, 0x9265)},	/* Asus Gobi 2000 Modem device (VR305) */
-+	{USB_DEVICE(0x05c6, 0x9234)},	/* Top Global Gobi 2000 QDL device (VR306) */
-+	{USB_DEVICE(0x05c6, 0x9235)},	/* Top Global Gobi 2000 Modem device (VR306) */
-+	{USB_DEVICE(0x05c6, 0x9274)},	/* iRex Technologies Gobi 2000 QDL device (VR307) */
-+	{USB_DEVICE(0x05c6, 0x9275)},	/* iRex Technologies Gobi 2000 Modem device (VR307) */
-+	{USB_DEVICE(0x1199, 0x9000)},	/* Sierra Wireless Gobi 2000 QDL device (VT773) */
-+	{USB_DEVICE(0x1199, 0x9001)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
-+	{USB_DEVICE(0x1199, 0x9002)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
-+	{USB_DEVICE(0x1199, 0x9003)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
-+	{USB_DEVICE(0x1199, 0x9004)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
-+	{USB_DEVICE(0x1199, 0x9005)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
-+	{USB_DEVICE(0x1199, 0x9006)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
-+	{USB_DEVICE(0x1199, 0x9007)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
-+	{USB_DEVICE(0x1199, 0x9008)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
-+	{USB_DEVICE(0x1199, 0x9009)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
-+	{USB_DEVICE(0x1199, 0x900a)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
-+	{USB_DEVICE(0x16d8, 0x8001)},	/* CMDTech Gobi 2000 QDL device (VU922) */
-+	{USB_DEVICE(0x16d8, 0x8002)},	/* CMDTech Gobi 2000 Modem device (VU922) */
- 	{ }				/* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, id_table);
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -125,9 +125,15 @@ fixup_bp_irq_link(unsigned long bp, unsi
+ {
+ #ifdef CONFIG_FRAME_POINTER
+ 	struct stack_frame *frame = (struct stack_frame *)bp;
++	unsigned long next;
+ 
+-	if (!in_irq_stack(stack, irq_stack, irq_stack_end))
+-		return (unsigned long)frame->next_frame;
++	if (!in_irq_stack(stack, irq_stack, irq_stack_end)) {
++		if (!probe_kernel_address(&frame->next_frame, next))
++			return next;
++		else
++			WARN_ONCE(1, "Perf: bad frame pointer = %p in "
++				  "callchain\n", &frame->next_frame);
++	}
+ #endif
+ 	return bp;
+ }
 
 
