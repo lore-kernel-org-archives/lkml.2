@@ -1,113 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab0C3XNP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:13:15 -0400
-Received: from kroah.org ([198.145.64.141]:49240 "EHLO coco.kroah.org"
+	id S1756862Ab0C3XU4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:20:56 -0400
+Received: from kroah.org ([198.145.64.141]:45970 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756649Ab0C3XNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:13:01 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:56 2010
-Message-Id: <20100330225855.912036111@linux.site>
+	id S932505Ab0C3XT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:56 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:50 2010
+Message-Id: <20100330224750.347955873@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:58:18 -0700
+Date: Tue, 30 Mar 2010 15:41:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Tilman Schmidt <tilman@imap.cc>,
        "David S. Miller" <davem@davemloft.net>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Stefan Bader <stefan.bader@canonical.com>
-Subject: [76/89] sparc: TIF_ABI_PENDING bit removal
-In-Reply-To: <20100330230520.GA28779@kroah.com>
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [047/156] gigaset: fix build failure
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.31-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: David Miller <davem@davemloft.net>
+From: Tilman Schmidt <tilman@imap.cc>
 
-commit 94673e968cbcce07fa78dac4b0ae05d24b5816e1 upstream.
+commit 22001a13d09d82772e831dcdac0553994a4bac5d upstream.
 
-Here are the sparc bits to remove TIF_ABI_PENDING now that
-set_personality() is called at the appropriate place in exec.
+Update the dummy LL interface to the LL interface change
+introduced by commit daab433c03c15fd642c71c94eb51bdd3f32602c8.
+This fixes the build failure occurring after that commit when
+enabling ISDN_DRV_GIGASET but neither ISDN_I4L nor ISDN_CAPI.
 
+Impact: bugfix
+Signed-off-by: Tilman Schmidt <tilman@imap.cc>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 
 ---
- arch/sparc/include/asm/elf_64.h         |   13 +++----------
- arch/sparc/include/asm/thread_info_64.h |    4 +---
- arch/sparc/kernel/process_64.c          |    8 --------
- 3 files changed, 4 insertions(+), 21 deletions(-)
+ drivers/isdn/gigaset/dummyll.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/arch/sparc/include/asm/elf_64.h
-+++ b/arch/sparc/include/asm/elf_64.h
-@@ -196,17 +196,10 @@ static inline unsigned int sparc64_elf_h
- #define ELF_PLATFORM	(NULL)
+--- a/drivers/isdn/gigaset/dummyll.c
++++ b/drivers/isdn/gigaset/dummyll.c
+@@ -57,12 +57,20 @@ void gigaset_isdn_stop(struct cardstate
+ {
+ }
  
- #define SET_PERSONALITY(ex)				\
--do {	unsigned long new_flags = current_thread_info()->flags; \
--	new_flags &= _TIF_32BIT;			\
--	if ((ex).e_ident[EI_CLASS] == ELFCLASS32)	\
--		new_flags |= _TIF_32BIT;		\
-+do {	if ((ex).e_ident[EI_CLASS] == ELFCLASS32)	\
-+		set_thread_flag(TIF_32BIT);		\
- 	else						\
--		new_flags &= ~_TIF_32BIT;		\
--	if ((current_thread_info()->flags & _TIF_32BIT) \
--	    != new_flags)				\
--		set_thread_flag(TIF_ABI_PENDING);	\
--	else						\
--		clear_thread_flag(TIF_ABI_PENDING);	\
-+		clear_thread_flag(TIF_32BIT);		\
- 	/* flush_thread will update pgd cache */	\
- 	if (personality(current->personality) != PER_LINUX32)	\
- 		set_personality(PER_LINUX |		\
---- a/arch/sparc/include/asm/thread_info_64.h
-+++ b/arch/sparc/include/asm/thread_info_64.h
-@@ -227,12 +227,11 @@ register struct thread_info *current_thr
- /* flag bit 8 is available */
- #define TIF_SECCOMP		9	/* secure computing */
- #define TIF_SYSCALL_AUDIT	10	/* syscall auditing active */
--/* flag bit 11 is available */
- /* NOTE: Thread flags >= 12 should be ones we have no interest
-  *       in using in assembly, else we can't use the mask as
-  *       an immediate value in instructions such as andcc.
-  */
--#define TIF_ABI_PENDING		12
-+/* flag bit 12 is available */
- #define TIF_MEMDIE		13
- #define TIF_POLLING_NRFLAG	14
- #define TIF_FREEZE		15	/* is freezing for suspend */
-@@ -246,7 +245,6 @@ register struct thread_info *current_thr
- #define _TIF_32BIT		(1<<TIF_32BIT)
- #define _TIF_SECCOMP		(1<<TIF_SECCOMP)
- #define _TIF_SYSCALL_AUDIT	(1<<TIF_SYSCALL_AUDIT)
--#define _TIF_ABI_PENDING	(1<<TIF_ABI_PENDING)
- #define _TIF_POLLING_NRFLAG	(1<<TIF_POLLING_NRFLAG)
- #define _TIF_FREEZE		(1<<TIF_FREEZE)
+-int gigaset_isdn_register(struct cardstate *cs, const char *isdnid)
++int gigaset_isdn_regdev(struct cardstate *cs, const char *isdnid)
+ {
+-	pr_info("no ISDN subsystem interface\n");
+ 	return 1;
+ }
  
---- a/arch/sparc/kernel/process_64.c
-+++ b/arch/sparc/kernel/process_64.c
-@@ -365,14 +365,6 @@ void flush_thread(void)
- 	struct thread_info *t = current_thread_info();
- 	struct mm_struct *mm;
- 
--	if (test_ti_thread_flag(t, TIF_ABI_PENDING)) {
--		clear_ti_thread_flag(t, TIF_ABI_PENDING);
--		if (test_ti_thread_flag(t, TIF_32BIT))
--			clear_ti_thread_flag(t, TIF_32BIT);
--		else
--			set_ti_thread_flag(t, TIF_32BIT);
--	}
--
- 	mm = t->task->mm;
- 	if (mm)
- 		tsb_context_switch(mm);
+-void gigaset_isdn_unregister(struct cardstate *cs)
++void gigaset_isdn_unregdev(struct cardstate *cs)
++{
++}
++
++void gigaset_isdn_regdrv(void)
++{
++	pr_info("no ISDN subsystem interface\n");
++}
++
++void gigaset_isdn_unregdrv(void)
+ {
+ }
 
 
