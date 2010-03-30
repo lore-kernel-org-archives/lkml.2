@@ -1,84 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab0C3XVQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:21:16 -0400
-Received: from kroah.org ([198.145.64.141]:46029 "EHLO coco.kroah.org"
+	id S932118Ab0C3XQS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:16:18 -0400
+Received: from kroah.org ([198.145.64.141]:49261 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932527Ab0C3XUC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:02 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:54 2010
-Message-Id: <20100330224754.024437278@linux.site>
+	id S1755994Ab0C3XNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:13:04 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:58 2010
+Message-Id: <20100330225857.809553411@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:41:27 -0700
+Date: Tue, 30 Mar 2010 15:58:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Ravikiran Thirumalai <kiran@scalex86.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [053/156] tmpfs: fix oops on mounts with mpol=default
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+       Andreas Schwab <schwab@linux-m68k.org>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Stefan Bader <stefan.bader@canonical.com>
+Subject: [79/89] powerpc: TIF_ABI_PENDING bit removal
+In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.31-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Ravikiran G Thirumalai <kiran@scalex86.org>
+From: Andreas Schwab <schwab@linux-m68k.org>
 
-commit 413b43deab8377819aba1dbad2abf0c15d59b491 upstream.
+commit 94f28da8409c6059135e89ac64a0839993124155 upstream.
 
-Fix an 'oops' when a tmpfs mount point is mounted with the mpol=default
-mempolicy.
+Here are the powerpc bits to remove TIF_ABI_PENDING now that
+set_personality() is called at the appropriate place in exec.
 
-Upon remounting a tmpfs mount point with 'mpol=default' option, the mount
-code crashed with a null pointer dereference.  The initial problem report
-was on 2.6.27, but the problem exists in mainline 2.6.34-rc as well.  On
-examining the code, we see that mpol_new returns NULL if default mempolicy
-was requested.  This 'NULL' mempolicy is accessed to store the node mask
-resulting in oops.
-
-The following patch fixes it.
-
-Signed-off-by: Ravikiran Thirumalai <kiran@scalex86.org>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 
 ---
- mm/mempolicy.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ arch/powerpc/include/asm/elf.h         |    8 ++------
+ arch/powerpc/include/asm/thread_info.h |    2 --
+ arch/powerpc/kernel/process.c          |   12 ------------
+ 3 files changed, 2 insertions(+), 20 deletions(-)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2187,10 +2187,15 @@ int mpol_parse_str(char *str, struct mem
- 			goto out;
- 		mode = MPOL_PREFERRED;
- 		break;
--
-+	case MPOL_DEFAULT:
-+		/*
-+		 * Insist on a empty nodelist
-+		 */
-+		if (!nodelist)
-+			err = 0;
-+		goto out;
- 	/*
- 	 * case MPOL_BIND:    mpol_new() enforces non-empty nodemask.
--	 * case MPOL_DEFAULT: mpol_new() enforces empty nodemask, ignores flags.
- 	 */
- 	}
+--- a/arch/powerpc/include/asm/elf.h
++++ b/arch/powerpc/include/asm/elf.h
+@@ -236,14 +236,10 @@ typedef elf_vrregset_t elf_fpxregset_t;
+ #ifdef __powerpc64__
+ # define SET_PERSONALITY(ex)					\
+ do {								\
+-	unsigned long new_flags = 0;				\
+ 	if ((ex).e_ident[EI_CLASS] == ELFCLASS32)		\
+-		new_flags = _TIF_32BIT;				\
+-	if ((current_thread_info()->flags & _TIF_32BIT)		\
+-	    != new_flags)					\
+-		set_thread_flag(TIF_ABI_PENDING);		\
++		set_thread_flag(TIF_32BIT);			\
+ 	else							\
+-		clear_thread_flag(TIF_ABI_PENDING);		\
++		clear_thread_flag(TIF_32BIT);			\
+ 	if (personality(current->personality) != PER_LINUX32)	\
+ 		set_personality(PER_LINUX |			\
+ 			(current->personality & (~PER_MASK)));	\
+--- a/arch/powerpc/include/asm/thread_info.h
++++ b/arch/powerpc/include/asm/thread_info.h
+@@ -111,7 +111,6 @@ static inline struct thread_info *curren
+ #define TIF_NOTIFY_RESUME	13	/* callback before returning to user */
+ #define TIF_FREEZE		14	/* Freezing for suspend */
+ #define TIF_RUNLATCH		15	/* Is the runlatch enabled? */
+-#define TIF_ABI_PENDING		16	/* 32/64 bit switch needed */
  
+ /* as above, but as bit values */
+ #define _TIF_SYSCALL_TRACE	(1<<TIF_SYSCALL_TRACE)
+@@ -129,7 +128,6 @@ static inline struct thread_info *curren
+ #define _TIF_NOTIFY_RESUME	(1<<TIF_NOTIFY_RESUME)
+ #define _TIF_FREEZE		(1<<TIF_FREEZE)
+ #define _TIF_RUNLATCH		(1<<TIF_RUNLATCH)
+-#define _TIF_ABI_PENDING	(1<<TIF_ABI_PENDING)
+ #define _TIF_SYSCALL_T_OR_A	(_TIF_SYSCALL_TRACE|_TIF_SYSCALL_AUDIT|_TIF_SECCOMP)
+ 
+ #define _TIF_USER_WORK_MASK	(_TIF_SIGPENDING | _TIF_NEED_RESCHED | \
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -554,18 +554,6 @@ void exit_thread(void)
+ 
+ void flush_thread(void)
+ {
+-#ifdef CONFIG_PPC64
+-	struct thread_info *t = current_thread_info();
+-
+-	if (test_ti_thread_flag(t, TIF_ABI_PENDING)) {
+-		clear_ti_thread_flag(t, TIF_ABI_PENDING);
+-		if (test_ti_thread_flag(t, TIF_32BIT))
+-			clear_ti_thread_flag(t, TIF_32BIT);
+-		else
+-			set_ti_thread_flag(t, TIF_32BIT);
+-	}
+-#endif
+-
+ 	discard_lazy_cpu_state();
+ 
+ 	if (current->thread.dabr) {
 
 
