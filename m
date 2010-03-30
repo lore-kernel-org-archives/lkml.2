@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757355Ab0C3XsT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:48:19 -0400
-Received: from kroah.org ([198.145.64.141]:45928 "EHLO coco.kroah.org"
+	id S1757340Ab0C3Xrm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:47:42 -0400
+Received: from kroah.org ([198.145.64.141]:45961 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932488Ab0C3XTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:51 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:47 2010
-Message-Id: <20100330224747.366384896@linux.site>
+	id S932501Ab0C3XTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:55 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:50 2010
+Message-Id: <20100330224749.772613133@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:41:16 -0700
+Date: Tue, 30 Mar 2010 15:41:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>,
+       Tilman Schmidt <tilman@imap.cc>, Karsten Keil <keil@b1-systems.de>,
+       "David S. Miller" <davem@davemloft.net>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [042/156] ALSA: hda: Fix 0 dB offset for HP laptops using CX20551 (Waikiki)
+Subject: [046/156] gigaset: avoid registering CAPI driver more than once
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +27,222 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: Tilman Schmidt <tilman@imap.cc>
 
-commit 025f206c9e0f96cc41567b01c07fb852d8900da1 upstream.
+commit bc35b4e347c047fb1c665bb761ddb22482539f7f upstream.
 
-BugLink: https://launchpad.net/bugs/420578
+Registering/unregistering the Gigaset CAPI driver when a device is
+connected/disconnected causes an Oops when disconnecting two Gigaset
+devices in a row, because the same capi_driver structure gets
+unregistered twice. Fix by making driver registration/unregistration
+a separate operation (empty in the ISDN4Linux case) called when the
+main module is loaded/unloaded.
 
-The OR has verified that his hardware distorts because of the 0 dB
-offset not corresponding to the highest PCM level. Fix this by capping
-said PCM level to 0 dB similarly to what we do for CX20549 (Venice).
-
-Reported-by: Mike Pontillo <pontillo@gmail.com>
-Tested-by: Mike Pontillo <pontillo@gmail.com>
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Impact: bugfix
+Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+Acked-by: Karsten Keil <keil@b1-systems.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_conexant.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ drivers/isdn/gigaset/capi.c    |   44 +++++++++++++++++++++++------------------
+ drivers/isdn/gigaset/common.c  |    6 +++--
+ drivers/isdn/gigaset/gigaset.h |    6 +++--
+ drivers/isdn/gigaset/i4l.c     |   28 ++++++++++++++++++--------
+ 4 files changed, 53 insertions(+), 31 deletions(-)
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -1570,6 +1570,21 @@ static int patch_cxt5047(struct hda_code
- #endif	
+--- a/drivers/isdn/gigaset/capi.c
++++ b/drivers/isdn/gigaset/capi.c
+@@ -2215,36 +2215,24 @@ static int gigaset_ctr_read_proc(char *p
+ }
+ 
+ 
+-static struct capi_driver capi_driver_gigaset = {
+-	.name		= "gigaset",
+-	.revision	= "1.0",
+-};
+-
+ /**
+- * gigaset_isdn_register() - register to LL
++ * gigaset_isdn_regdev() - register device to LL
+  * @cs:		device descriptor structure.
+  * @isdnid:	device name.
+  *
+- * Called by main module to register the device with the LL.
+- *
+  * Return value: 1 for success, 0 for failure
+  */
+-int gigaset_isdn_register(struct cardstate *cs, const char *isdnid)
++int gigaset_isdn_regdev(struct cardstate *cs, const char *isdnid)
+ {
+ 	struct gigaset_capi_ctr *iif;
+ 	int rc;
+ 
+-	pr_info("Kernel CAPI interface\n");
+-
+ 	iif = kmalloc(sizeof(*iif), GFP_KERNEL);
+ 	if (!iif) {
+ 		pr_err("%s: out of memory\n", __func__);
+ 		return 0;
  	}
- 	spec->vmaster_nid = 0x13;
+ 
+-	/* register driver with CAPI (ToDo: what for?) */
+-	register_capi_driver(&capi_driver_gigaset);
+-
+ 	/* prepare controller structure */
+ 	iif->ctr.owner         = THIS_MODULE;
+ 	iif->ctr.driverdata    = cs;
+@@ -2265,7 +2253,6 @@ int gigaset_isdn_register(struct cardsta
+ 	rc = attach_capi_ctr(&iif->ctr);
+ 	if (rc) {
+ 		pr_err("attach_capi_ctr failed (%d)\n", rc);
+-		unregister_capi_driver(&capi_driver_gigaset);
+ 		kfree(iif);
+ 		return 0;
+ 	}
+@@ -2276,17 +2263,36 @@ int gigaset_isdn_register(struct cardsta
+ }
+ 
+ /**
+- * gigaset_isdn_unregister() - unregister from LL
++ * gigaset_isdn_unregdev() - unregister device from LL
+  * @cs:		device descriptor structure.
+- *
+- * Called by main module to unregister the device from the LL.
+  */
+-void gigaset_isdn_unregister(struct cardstate *cs)
++void gigaset_isdn_unregdev(struct cardstate *cs)
+ {
+ 	struct gigaset_capi_ctr *iif = cs->iif;
+ 
+ 	detach_capi_ctr(&iif->ctr);
+ 	kfree(iif);
+ 	cs->iif = NULL;
++}
 +
-+	switch (codec->subsystem_id >> 16) {
-+	case 0x103c:
-+		/* HP laptops have really bad sound over 0 dB on NID 0x10.
-+		 * Fix max PCM level to 0 dB (originally it has 0x1e steps
-+		 * with 0 dB offset 0x17)
-+		 */
-+		snd_hda_override_amp_caps(codec, 0x10, HDA_INPUT,
-+					  (0x17 << AC_AMPCAP_OFFSET_SHIFT) |
-+					  (0x17 << AC_AMPCAP_NUM_STEPS_SHIFT) |
-+					  (0x05 << AC_AMPCAP_STEP_SIZE_SHIFT) |
-+					  (1 << AC_AMPCAP_MUTE_SHIFT));
-+		break;
-+	}
++static struct capi_driver capi_driver_gigaset = {
++	.name		= "gigaset",
++	.revision	= "1.0",
++};
 +
++/**
++ * gigaset_isdn_regdrv() - register driver to LL
++ */
++void gigaset_isdn_regdrv(void)
++{
++	pr_info("Kernel CAPI interface\n");
++	register_capi_driver(&capi_driver_gigaset);
++}
++
++/**
++ * gigaset_isdn_unregdrv() - unregister driver from LL
++ */
++void gigaset_isdn_unregdrv(void)
++{
+ 	unregister_capi_driver(&capi_driver_gigaset);
+ }
+--- a/drivers/isdn/gigaset/common.c
++++ b/drivers/isdn/gigaset/common.c
+@@ -505,7 +505,7 @@ void gigaset_freecs(struct cardstate *cs
+ 	case 2: /* error in initcshw */
+ 		/* Deregister from LL */
+ 		make_invalid(cs, VALID_ID);
+-		gigaset_isdn_unregister(cs);
++		gigaset_isdn_unregdev(cs);
+ 
+ 		/* fall through */
+ 	case 1: /* error when registering to LL */
+@@ -767,7 +767,7 @@ struct cardstate *gigaset_initcs(struct
+ 	cs->cmdbytes = 0;
+ 
+ 	gig_dbg(DEBUG_INIT, "setting up iif");
+-	if (!gigaset_isdn_register(cs, modulename)) {
++	if (!gigaset_isdn_regdev(cs, modulename)) {
+ 		pr_err("error registering ISDN device\n");
+ 		goto error;
+ 	}
+@@ -1214,11 +1214,13 @@ static int __init gigaset_init_module(vo
+ 		gigaset_debuglevel = DEBUG_DEFAULT;
+ 
+ 	pr_info(DRIVER_DESC DRIVER_DESC_DEBUG "\n");
++	gigaset_isdn_regdrv();
  	return 0;
  }
  
+ static void __exit gigaset_exit_module(void)
+ {
++	gigaset_isdn_unregdrv();
+ }
+ 
+ module_init(gigaset_init_module);
+--- a/drivers/isdn/gigaset/gigaset.h
++++ b/drivers/isdn/gigaset/gigaset.h
+@@ -674,8 +674,10 @@ int gigaset_isowbuf_getbytes(struct isow
+  */
+ 
+ /* Called from common.c for setting up/shutting down with the ISDN subsystem */
+-int gigaset_isdn_register(struct cardstate *cs, const char *isdnid);
+-void gigaset_isdn_unregister(struct cardstate *cs);
++void gigaset_isdn_regdrv(void);
++void gigaset_isdn_unregdrv(void);
++int gigaset_isdn_regdev(struct cardstate *cs, const char *isdnid);
++void gigaset_isdn_unregdev(struct cardstate *cs);
+ 
+ /* Called from hardware module to indicate completion of an skb */
+ void gigaset_skb_sent(struct bc_state *bcs, struct sk_buff *skb);
+--- a/drivers/isdn/gigaset/i4l.c
++++ b/drivers/isdn/gigaset/i4l.c
+@@ -632,15 +632,13 @@ void gigaset_isdn_stop(struct cardstate
+ }
+ 
+ /**
+- * gigaset_isdn_register() - register to LL
++ * gigaset_isdn_regdev() - register to LL
+  * @cs:		device descriptor structure.
+  * @isdnid:	device name.
+  *
+- * Called by main module to register the device with the LL.
+- *
+  * Return value: 1 for success, 0 for failure
+  */
+-int gigaset_isdn_register(struct cardstate *cs, const char *isdnid)
++int gigaset_isdn_regdev(struct cardstate *cs, const char *isdnid)
+ {
+ 	isdn_if *iif;
+ 
+@@ -690,15 +688,29 @@ int gigaset_isdn_register(struct cardsta
+ }
+ 
+ /**
+- * gigaset_isdn_unregister() - unregister from LL
++ * gigaset_isdn_unregdev() - unregister device from LL
+  * @cs:		device descriptor structure.
+- *
+- * Called by main module to unregister the device from the LL.
+  */
+-void gigaset_isdn_unregister(struct cardstate *cs)
++void gigaset_isdn_unregdev(struct cardstate *cs)
+ {
+ 	gig_dbg(DEBUG_CMD, "sending UNLOAD");
+ 	gigaset_i4l_cmd(cs, ISDN_STAT_UNLOAD);
+ 	kfree(cs->iif);
+ 	cs->iif = NULL;
+ }
++
++/**
++ * gigaset_isdn_regdrv() - register driver to LL
++ */
++void gigaset_isdn_regdrv(void)
++{
++	/* nothing to do */
++}
++
++/**
++ * gigaset_isdn_unregdrv() - unregister driver from LL
++ */
++void gigaset_isdn_unregdrv(void)
++{
++	/* nothing to do */
++}
 
 
