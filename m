@@ -1,148 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172Ab0C3U5q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 16:57:46 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33033 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754814Ab0C3U5l (ORCPT
+	id S1756214Ab0C3U5u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 16:57:50 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:52849 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754814Ab0C3U5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 16:57:41 -0400
-Date: Tue, 30 Mar 2010 13:56:34 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: cl@linux-foundation.org, lee.schermerhorn@hp.com, rientjes@google.com,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Rik van Riel <riel@redhat.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       "David S. Miller" <davem@davemloft.net>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, Troels Liebe Bentsen <tlb@rapanden.dk>,
-       linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH] exit: fix oops in sync_mm_rss
-Message-Id: <20100330135634.09e6b045.akpm@linux-foundation.org>
-In-Reply-To: <20100316170808.GA29400@redhat.com>
-References: <20100316170808.GA29400@redhat.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Mar 2010 16:57:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Ingo Molnar <mingo@elte.hu>, Arnd Bergmann <arnd@arndb.de>
+Subject: [RFC 4/9] tty: make termios mutex nest under tty_lock
+Date: Tue, 30 Mar 2010 22:56:15 +0200
+Message-Id: <1269982580-9361-5-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.0
+In-Reply-To: <1269982580-9361-1-git-send-email-arnd@arndb.de>
+References: <1269982580-9361-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX19Bzal5Ditad0bS5y8sNrbWT57AOMnjGxjIyky
+ 4ONe19bWecC4q5cFLzC4gVb8oIAXT/rF+SIqFDCkCZMHOccBa9
+ Me5bnmmK+ol8E+I5TAgPA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Mar 2010 19:08:08 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/char/pty.c            |    2 +-
+ drivers/char/tty_io.c         |    4 ++--
+ drivers/char/tty_ioctl.c      |   34 +++++++++++++++++-----------------
+ drivers/char/tty_ldisc.c      |    4 ++--
+ drivers/net/irda/irtty-sir.c  |    5 +++--
+ drivers/staging/strip/strip.c |    2 +-
+ 6 files changed, 26 insertions(+), 25 deletions(-)
 
-> In 2.6.34-rc1, removing vhost_net module causes an oops in sync_mm_rss
-> (called from do_exit) when workqueue is destroyed. This does not happen on
-> net-next, or with vhost on top of to 2.6.33.
-> 
-> The issue seems to be introduced by
-> 34e55232e59f7b19050267a05ff1226e5cd122a5: that commit added function
-> sync_mm_rss that is passed task->mm, and dereferences it without
-> checking. If task is a kernel thread, mm might be NULL.
-> I think this might also happen e.g. with aio.
-> 
-> This patch fixes the oops by calling sync_mm_rss when task->mm
-> is set to NULL. I also added BUG_ON to detect any other cases
-> where counters get incremented while mm is NULL.
-> 
-> The oops I observed looks like this:
-> 
-> BUG: unable to handle kernel NULL pointer dereference at 00000000000002a8
-> IP: [<ffffffff810b436d>] sync_mm_rss+0x33/0x6f
-> PGD 0
-> Oops: 0002 [#1] SMP
-> last sysfs file: /sys/devices/system/cpu/cpu7/cache/index2/shared_cpu_map
-> CPU 2
-> Modules linked in: vhost_net(-) tun bridge stp sunrpc ipv6 cpufreq_ondemand acpi_cpufreq freq_table kvm_intel kvm i5000_edac edac_core rtc_cmos bnx2 button i2c_i801 i2c_core rtc_core e1000e sg joydev ide_cd_mod serio_raw pcspkr rtc_lib cdrom virtio_net virtio_blk virtio_pci virtio_ring virtio af_packet e1000 shpchp aacraid uhci_hcd ohci_hcd ehci_hcd [last unloaded: microcode]
-> 
-> Pid: 2046, comm: vhost Not tainted 2.6.34-rc1-vhost #25 System Planar/IBM System x3550 -[7978B3G]-
-> RIP: 0010:[<ffffffff810b436d>]  [<ffffffff810b436d>] sync_mm_rss+0x33/0x6f
-> RSP: 0018:ffff8802379b7e60  EFLAGS: 00010202
-> RAX: 0000000000000008 RBX: ffff88023f2390c0 RCX: 0000000000000000
-> RDX: ffff88023f2396b0 RSI: 0000000000000000 RDI: ffff88023f2390c0
-> RBP: ffff8802379b7e60 R08: 0000000000000000 R09: 0000000000000000
-> R10: ffff88023aecfbc0 R11: 0000000000013240 R12: 0000000000000000
-> R13: ffffffff81051a6c R14: ffffe8ffffc0f540 R15: 0000000000000000
-> FS:  0000000000000000(0000) GS:ffff880001e80000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 00000000000002a8 CR3: 000000023af23000 CR4: 00000000000406e0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process vhost (pid: 2046, threadinfo ffff8802379b6000, task ffff88023f2390c0)
-> Stack:
->  ffff8802379b7ee0 ffffffff81040687 ffffe8ffffc0f558 ffffffffa00a3e2d
-> <0> 0000000000000000 ffff88023f2390c0 ffffffff81055817 ffff8802379b7e98
-> <0> ffff8802379b7e98 0000000100000286 ffff8802379b7ee0 ffff88023ad47d78
-> Call Trace:
->  [<ffffffff81040687>] do_exit+0x147/0x6c4
->  [<ffffffffa00a3e2d>] ? handle_rx_net+0x0/0x17 [vhost_net]
->  [<ffffffff81055817>] ? autoremove_wake_function+0x0/0x39
->  [<ffffffff81051a6c>] ? worker_thread+0x0/0x229
->  [<ffffffff810553c9>] kthreadd+0x0/0xf2
->  [<ffffffff810038d4>] kernel_thread_helper+0x4/0x10
->  [<ffffffff81055342>] ? kthread+0x0/0x87
->  [<ffffffff810038d0>] ? kernel_thread_helper+0x0/0x10
-> Code: 00 8b 87 6c 02 00 00 85 c0 74 14 48 98 f0 48 01 86 a0 02 00 00 c7 87 6c 02 00 00 00 00 00 00 8b 87 70 02 00 00 85 c0 74 14 48 98 <f0> 48 01 86 a8 02 00 00 c7 87 70 02 00 00 00 00 00 00 8b 87 74
-> RIP  [<ffffffff810b436d>] sync_mm_rss+0x33/0x6f
->  RSP <ffff8802379b7e60>
-> CR2: 00000000000002a8
-> ---[ end trace 41603ba922beddd2 ]---
-> Fixing recursive fault but reboot is needed!
-> 
-> (note: handle_rx_net is a work item using workqueue in question).
-> sync_mm_rss+0x33/0x6f gave me a hint. I also tried reverting
-> 34e55232e59f7b19050267a05ff1226e5cd122a5 and the oops goes away.
-> 
-> The module in question calls use_mm and later unuse_mm from a kernel
-> thread.  It is when this kernel thread is destroyed that the crash
-> happens.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  mm/memory.c      |    1 +
->  mm/mmu_context.c |    1 +
->  2 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/memory.c b/mm/memory.c
-> index d1153e3..27022b3 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -130,6 +130,7 @@ void __sync_task_rss_stat(struct task_struct *task, struct mm_struct *mm)
->  
->  	for (i = 0; i < NR_MM_COUNTERS; i++) {
->  		if (task->rss_stat.count[i]) {
-> +			BUG_ON(!mm);
->  			add_mm_counter(mm, i, task->rss_stat.count[i]);
->  			task->rss_stat.count[i] = 0;
->  		}
-> diff --git a/mm/mmu_context.c b/mm/mmu_context.c
-> index 0777654..9e82e93 100644
-> --- a/mm/mmu_context.c
-> +++ b/mm/mmu_context.c
-> @@ -53,6 +53,7 @@ void unuse_mm(struct mm_struct *mm)
->  	struct task_struct *tsk = current;
->  
->  	task_lock(tsk);
-> +	sync_mm_rss(tsk, mm);
->  	tsk->mm = NULL;
->  	/* active_mm is still 'mm' */
->  	enter_lazy_tlb(mm, tsk);
+diff --git a/drivers/char/pty.c b/drivers/char/pty.c
+index f02ff21..72fb501 100644
+--- a/drivers/char/pty.c
++++ b/drivers/char/pty.c
+@@ -231,7 +231,7 @@ int pty_resize(struct tty_struct *tty,  struct winsize *ws)
+ 	struct tty_struct *pty = tty->link;
+ 
+ 	/* For a PTY we need to lock the tty side */
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	if (!memcmp(ws, &tty->winsize, sizeof(*ws)))
+ 		goto done;
+ 
+diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
+index ef21e1d..91cc978 100644
+--- a/drivers/char/tty_io.c
++++ b/drivers/char/tty_io.c
+@@ -2028,7 +2028,7 @@ static int tiocgwinsz(struct tty_struct *tty, struct winsize __user *arg)
+ {
+ 	int err;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	err = copy_to_user(arg, &tty->winsize, sizeof(*arg));
+ 	mutex_unlock(&tty->termios_mutex);
+ 
+@@ -2051,7 +2051,7 @@ int tty_do_resize(struct tty_struct *tty, struct winsize *ws)
+ 	unsigned long flags;
+ 
+ 	/* Lock the tty */
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	if (!memcmp(ws, &tty->winsize, sizeof(*ws)))
+ 		goto done;
+ 	/* Get the PID values and reference them so we can
+diff --git a/drivers/char/tty_ioctl.c b/drivers/char/tty_ioctl.c
+index 6bd5f88..c9b385e 100644
+--- a/drivers/char/tty_ioctl.c
++++ b/drivers/char/tty_ioctl.c
+@@ -103,7 +103,7 @@ EXPORT_SYMBOL(tty_driver_flush_buffer);
+ 
+ void tty_throttle(struct tty_struct *tty)
+ {
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex);
+ 	/* check TTY_THROTTLED first so it indicates our state */
+ 	if (!test_and_set_bit(TTY_THROTTLED, &tty->flags) &&
+ 	    tty->ops->throttle)
+@@ -127,7 +127,7 @@ EXPORT_SYMBOL(tty_throttle);
+ 
+ void tty_unthrottle(struct tty_struct *tty)
+ {
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex);
+ 	if (test_and_clear_bit(TTY_THROTTLED, &tty->flags) &&
+ 	    tty->ops->unthrottle)
+ 		tty->ops->unthrottle(tty);
+@@ -510,7 +510,7 @@ static void change_termios(struct tty_struct *tty, struct ktermios *new_termios)
+ 
+ 	/* FIXME: we need to decide on some locking/ordering semantics
+ 	   for the set_termios notification eventually */
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex);
+ 	old_termios = *tty->termios;
+ 	*tty->termios = *new_termios;
+ 	unset_locked_termios(tty->termios, &old_termios, tty->termios_locked);
+@@ -571,7 +571,7 @@ static int set_termios(struct tty_struct *tty, void __user *arg, int opt)
+ 	if (retval)
+ 		return retval;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex);
+ 	memcpy(&tmp_termios, tty->termios, sizeof(struct ktermios));
+ 	mutex_unlock(&tty->termios_mutex);
+ 
+@@ -625,14 +625,14 @@ static int set_termios(struct tty_struct *tty, void __user *arg, int opt)
+ 
+ static void copy_termios(struct tty_struct *tty, struct ktermios *kterm)
+ {
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex);
+ 	memcpy(kterm, tty->termios, sizeof(struct ktermios));
+ 	mutex_unlock(&tty->termios_mutex);
+ }
+ 
+ static void copy_termios_locked(struct tty_struct *tty, struct ktermios *kterm)
+ {
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex);
+ 	memcpy(kterm, tty->termios_locked, sizeof(struct ktermios));
+ 	mutex_unlock(&tty->termios_mutex);
+ }
+@@ -681,7 +681,7 @@ static int set_termiox(struct tty_struct *tty, void __user *arg, int opt)
+ 			return -EINTR;
+ 	}
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex);
+ 	if (tty->ops->set_termiox)
+ 		tty->ops->set_termiox(tty, &tnew);
+ 	mutex_unlock(&tty->termios_mutex);
+@@ -719,7 +719,7 @@ static int get_sgttyb(struct tty_struct *tty, struct sgttyb __user *sgttyb)
+ {
+ 	struct sgttyb tmp;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex);
+ 	tmp.sg_ispeed = tty->termios->c_ispeed;
+ 	tmp.sg_ospeed = tty->termios->c_ospeed;
+ 	tmp.sg_erase = tty->termios->c_cc[VERASE];
+@@ -780,7 +780,7 @@ static int set_sgttyb(struct tty_struct *tty, struct sgttyb __user *sgttyb)
+ 	if (copy_from_user(&tmp, sgttyb, sizeof(tmp)))
+ 		return -EFAULT;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex);
+ 	termios = *tty->termios;
+ 	termios.c_cc[VERASE] = tmp.sg_erase;
+ 	termios.c_cc[VKILL] = tmp.sg_kill;
+@@ -801,7 +801,7 @@ static int get_tchars(struct tty_struct *tty, struct tchars __user *tchars)
+ {
+ 	struct tchars tmp;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex);
+ 	tmp.t_intrc = tty->termios->c_cc[VINTR];
+ 	tmp.t_quitc = tty->termios->c_cc[VQUIT];
+ 	tmp.t_startc = tty->termios->c_cc[VSTART];
+@@ -818,7 +818,7 @@ static int set_tchars(struct tty_struct *tty, struct tchars __user *tchars)
+ 
+ 	if (copy_from_user(&tmp, tchars, sizeof(tmp)))
+ 		return -EFAULT;
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex);
+ 	tty->termios->c_cc[VINTR] = tmp.t_intrc;
+ 	tty->termios->c_cc[VQUIT] = tmp.t_quitc;
+ 	tty->termios->c_cc[VSTART] = tmp.t_startc;
+@@ -835,7 +835,7 @@ static int get_ltchars(struct tty_struct *tty, struct ltchars __user *ltchars)
+ {
+ 	struct ltchars tmp;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex);
+ 	tmp.t_suspc = tty->termios->c_cc[VSUSP];
+ 	/* what is dsuspc anyway? */
+ 	tmp.t_dsuspc = tty->termios->c_cc[VSUSP];
+@@ -855,7 +855,7 @@ static int set_ltchars(struct tty_struct *tty, struct ltchars __user *ltchars)
+ 	if (copy_from_user(&tmp, ltchars, sizeof(tmp)))
+ 		return -EFAULT;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex);
+ 	tty->termios->c_cc[VSUSP] = tmp.t_suspc;
+ 	/* what is dsuspc anyway? */
+ 	tty->termios->c_cc[VEOL2] = tmp.t_dsuspc;
+@@ -913,7 +913,7 @@ static int tty_change_softcar(struct tty_struct *tty, int arg)
+ 	int bit = arg ? CLOCAL : 0;
+ 	struct ktermios old;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex);
+ 	old = *tty->termios;
+ 	tty->termios->c_cflag &= ~CLOCAL;
+ 	tty->termios->c_cflag |= bit;
+@@ -1022,7 +1022,7 @@ int tty_mode_ioctl(struct tty_struct *tty, struct file *file,
+ 		if (user_termios_to_kernel_termios(&kterm,
+ 					       (struct termios __user *) arg))
+ 			return -EFAULT;
+-		mutex_lock(&real_tty->termios_mutex);
++		mutex_lock_tty(&real_tty->termios_mutex);
+ 		memcpy(real_tty->termios_locked, &kterm, sizeof(struct ktermios));
+ 		mutex_unlock(&real_tty->termios_mutex);
+ 		return 0;
+@@ -1039,7 +1039,7 @@ int tty_mode_ioctl(struct tty_struct *tty, struct file *file,
+ 		if (user_termios_to_kernel_termios_1(&kterm,
+ 					       (struct termios __user *) arg))
+ 			return -EFAULT;
+-		mutex_lock(&real_tty->termios_mutex);
++		mutex_lock_tty(&real_tty->termios_mutex);
+ 		memcpy(real_tty->termios_locked, &kterm, sizeof(struct ktermios));
+ 		mutex_unlock(&real_tty->termios_mutex);
+ 		return ret;
+@@ -1049,7 +1049,7 @@ int tty_mode_ioctl(struct tty_struct *tty, struct file *file,
+ 		struct termiox ktermx;
+ 		if (real_tty->termiox == NULL)
+ 			return -EINVAL;
+-		mutex_lock(&real_tty->termios_mutex);
++		mutex_lock_tty(&real_tty->termios_mutex);
+ 		memcpy(&ktermx, real_tty->termiox, sizeof(struct termiox));
+ 		mutex_unlock(&real_tty->termios_mutex);
+ 		if (copy_to_user(p, &ktermx, sizeof(struct termiox)))
+diff --git a/drivers/char/tty_ldisc.c b/drivers/char/tty_ldisc.c
+index bddbe62..af5b4a7 100644
+--- a/drivers/char/tty_ldisc.c
++++ b/drivers/char/tty_ldisc.c
+@@ -428,7 +428,7 @@ EXPORT_SYMBOL_GPL(tty_ldisc_flush);
+ 
+ static void tty_set_termios_ldisc(struct tty_struct *tty, int num)
+ {
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex);
+ 	tty->termios->c_line = num;
+ 	mutex_unlock(&tty->termios_mutex);
+ }
+@@ -695,7 +695,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+ 
+ static void tty_reset_termios(struct tty_struct *tty)
+ {
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex);
+ 	*tty->termios = tty->driver->init_termios;
+ 	tty->termios->c_ispeed = tty_termios_input_baud_rate(tty->termios);
+ 	tty->termios->c_ospeed = tty_termios_baud_rate(tty->termios);
+diff --git a/drivers/net/irda/irtty-sir.c b/drivers/net/irda/irtty-sir.c
+index 20f9bc6..8938193 100644
+--- a/drivers/net/irda/irtty-sir.c
++++ b/drivers/net/irda/irtty-sir.c
+@@ -33,6 +33,7 @@
+ #include <asm/uaccess.h>
+ #include <linux/delay.h>
+ #include <linux/mutex.h>
++#include <linux/sched.h>
+ 
+ #include <net/irda/irda.h>
+ #include <net/irda/irda_device.h>
+@@ -122,7 +123,7 @@ static int irtty_change_speed(struct sir_dev *dev, unsigned speed)
+ 
+ 	tty = priv->tty;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex);
+ 	old_termios = *(tty->termios);
+ 	cflag = tty->termios->c_cflag;
+ 	tty_encode_baud_rate(tty, speed, speed);
+@@ -279,7 +280,7 @@ static inline void irtty_stop_receiver(struct tty_struct *tty, int stop)
+ 	struct ktermios old_termios;
+ 	int cflag;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty(&tty->termios_mutex);
+ 	old_termios = *(tty->termios);
+ 	cflag = tty->termios->c_cflag;
+ 	
+diff --git a/drivers/staging/strip/strip.c b/drivers/staging/strip/strip.c
+index 698aade..f7a90bc 100644
+--- a/drivers/staging/strip/strip.c
++++ b/drivers/staging/strip/strip.c
+@@ -775,7 +775,7 @@ static void set_baud(struct tty_struct *tty, speed_t baudrate)
+ {
+ 	struct ktermios old_termios;
+ 
+-	mutex_lock(&tty->termios_mutex);
++	mutex_lock_tty_off(&tty->termios_mutex);
+ 	old_termios =*(tty->termios);
+ 	tty_encode_baud_rate(tty, baudrate, baudrate);
+ 	tty->ops->set_termios(tty, &old_termios);
+-- 
+1.7.0
 
-That new BUG_ON() is triggering in Troels's machine when a bluetooth
-keyboard is enabled or disabled.  See
-(https://bugzilla.kernel.org/show_bug.cgi?id=15648.
-
-I guess the question is: how did a kernel thread get a non-zero
-task->rss_stat.count[i]?  If that's expected and OK then we will need
-to take some kernel-thread-avoidance action there.
-
-Could whoever fixes this please also make __sync_task_rss_stat()
-static.
-
-I'll toss this over to Rafael/Maciej for tracking as a post-2.6.33
-regression.
-
-Thanks.
