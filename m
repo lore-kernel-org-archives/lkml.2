@@ -1,40 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755710Ab0C3Snf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 14:43:35 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41174 "EHLO hera.kernel.org"
+	id S1755669Ab0C3StC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 14:49:02 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37964 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753761Ab0C3Snd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 14:43:33 -0400
-Date: Tue, 30 Mar 2010 18:42:49 GMT
+	id S1752011Ab0C3StB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 14:49:01 -0400
+Date: Tue, 30 Mar 2010 18:48:42 GMT
 From: tip-bot for Shaohua Li <shaohua.li@intel.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       colin.king@canonical.com, shaohua.li@intel.com, tglx@linutronix.de,
-       rjw@sisk.pl
+       stable@kernel.org, colin.king@canonical.com, shaohua.li@intel.com,
+       tglx@linutronix.de, rjw@sisk.pl
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       colin.king@canonical.com, tglx@linutronix.de, shaohua.li@intel.com,
-       rjw@sisk.pl
+       stable@kernel.org, colin.king@canonical.com, tglx@linutronix.de,
+       shaohua.li@intel.com, rjw@sisk.pl
 In-Reply-To: <20100305005932.GA22675@sli10-desk.sh.intel.com>
 References: <20100305005932.GA22675@sli10-desk.sh.intel.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:x86/urgent] x86-32, resume: do a global tlb flush in S4 resume
-Message-ID: <tip-f1ddc38590a400e19ba67963dac5bc3addc6e14b@git.kernel.org>
-Git-Commit-ID: f1ddc38590a400e19ba67963dac5bc3addc6e14b
+Message-ID: <tip-8ae06d223f8203c72104e5c0c4ee49a000aedb42@git.kernel.org>
+Git-Commit-ID: 8ae06d223f8203c72104e5c0c4ee49a000aedb42
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 30 Mar 2010 18:42:50 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 30 Mar 2010 18:48:43 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f1ddc38590a400e19ba67963dac5bc3addc6e14b
-Gitweb:     http://git.kernel.org/tip/f1ddc38590a400e19ba67963dac5bc3addc6e14b
+Commit-ID:  8ae06d223f8203c72104e5c0c4ee49a000aedb42
+Gitweb:     http://git.kernel.org/tip/8ae06d223f8203c72104e5c0c4ee49a000aedb42
 Author:     Shaohua Li <shaohua.li@intel.com>
 AuthorDate: Fri, 5 Mar 2010 08:59:32 +0800
 Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Tue, 30 Mar 2010 10:50:42 -0700
+CommitDate: Tue, 30 Mar 2010 11:46:02 -0700
 
 x86-32, resume: do a global tlb flush in S4 resume
 
@@ -57,6 +57,7 @@ Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 LKML-Reference: <20100305005932.GA22675@sli10-desk.sh.intel.com>
 Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: <stable@kernel.org>
 ---
  arch/x86/power/hibernate_asm_32.S |   15 +++++++--------
  1 files changed, 7 insertions(+), 8 deletions(-)
