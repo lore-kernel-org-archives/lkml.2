@@ -1,146 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755887Ab0C3Mle (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 08:41:34 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:44486 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755073Ab0C3Mlc (ORCPT
+	id S1755952Ab0C3MmE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 08:42:04 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58215 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755073Ab0C3MmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 08:41:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=ERvI8dxBPNkXGOhnAWIFVqoFdqZhM+vuKEhf8Fm4d7dRWo4StZbEdhhbH437p9q6X6
-         IKAuLTRsUvonHzwSxwDsF7r7NOJkG4VVcnOLHloZ/T/Mdz1CGPGw+8ZBbZBucHWzqmjN
-         d4NW81Hj2f4gfhiuqY0WgoHb1y/A4q1e0fYfE=
-Subject: Re: Network performance - iperf
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: michal.simek@petalogix.com
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       John Williams <john.williams@petalogix.com>, netdev@vger.kernel.org,
-       Grant Likely <grant.likely@secretlab.ca>,
-       John Linn <John.Linn@xilinx.com>,
-       "Steven J. Magnani" <steve@digidescorp.com>,
-       Arnd Bergmann <arnd@arndb.de>, akpm@linux-foundation.org
-In-Reply-To: <4BB1C5A5.5070202@petalogix.com>
-References: <4BB09021.6020202@petalogix.com>
-	 <1269864994.2164.21.camel@edumazet-laptop> <4BB0BF28.5090505@petalogix.com>
-	 <4BB0C6E1.2090606@petalogix.com> <1269884717.1958.2.camel@edumazet-laptop>
-	 <4BB1C5A5.5070202@petalogix.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 30 Mar 2010 14:41:25 +0200
-Message-ID: <1269952885.2012.58.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Tue, 30 Mar 2010 08:42:01 -0400
+Date: Tue, 30 Mar 2010 14:41:58 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: kernel-janitors@vger.kernel.org, linux-i2c@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 13/24] mfd: fix dangling pointers
+Message-ID: <20100330124158.GJ29472@pengutronix.de>
+References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de> <1269094385-16114-14-git-send-email-w.sang@pengutronix.de> <20100325104137.GA3720@sortiz.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JsihDCElWRmQcbOr"
+Content-Disposition: inline
+In-Reply-To: <20100325104137.GA3720@sortiz.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 30 mars 2010 à 11:34 +0200, Michal Simek a écrit :
 
->      2233 packets pruned from receive queue because of socket buffer overrun
->      TCPRcvCollapsed: 207654
+--JsihDCElWRmQcbOr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thats a problem. A big one :(
+On Thu, Mar 25, 2010 at 11:41:38AM +0100, Samuel Ortiz wrote:
+> Hi Wolfram,
+>=20
+> On Sat, Mar 20, 2010 at 03:12:54PM +0100, Wolfram Sang wrote:
+> > Fix I2C-drivers which missed setting clientdata to NULL before freeing =
+the
+> > structure it points to. Also fix drivers which do this _after_ the stru=
+cture
+> > was freed already.
+> Patch applied, many thanks.
 
-If I remember, you use LL_TEMAC driver.
+Thanks. Sadly some fixup will be needed:
 
-This drivers allocates big skbs for RX ring (more than 9000 bytes each
-skb). Given your 32 Mbytes kernel size, this seems plain wrong.
+We reached an agreement that a) setting the clientdata-pointer to NULL shou=
+ld
+be done in the i2c-core [1] and b) how to do it. Based on that, I will do t=
+he
+modification of the i2c-core for 2.6.34 (as it fixes the dangling pointers)=
+ and
+then create one single patch removing the then superflous calls to
+i2c_set_clientdata for 2.6.35 (as it is a cleanup). As you already applied =
+the
+above patch to your branch: you don't have to revert, we will fix it for yo=
+u in
+the next round.
 
-You might try to copybreak them before giving skb to network stack,
-consuming the minimum space.
+Sorry for the detour!
 
-This would also help this driver to survive in low memory conditions,
-avoiding death if high order pages are not available.
+Kind regards,
 
-I cannot even compile this driver on my x86 platform, but here is a
-preliminar patch to give you the idea :
+   Wolfram
 
+[1] http://thread.gmane.org/gmane.linux.drivers.i2c/5674/focus=3D5729
 
-[PATCH] ll_temac: Fix some memory allocation problems
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-Driver use high order allocations that might fail after a while.
-When receiving a buffer from card, try to copy it to keep a pool of
-pre-allocated high order buffers.
+--JsihDCElWRmQcbOr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
----
-Please please please note I did not test this patch.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
 
- drivers/net/ll_temac_main.c |   48 +++++++++++++++-------------------
- 1 file changed, 22 insertions(+), 26 deletions(-)
-diff --git a/drivers/net/ll_temac_main.c b/drivers/net/ll_temac_main.c
-index a18e348..412b72e 100644
---- a/drivers/net/ll_temac_main.c
-+++ b/drivers/net/ll_temac_main.c
-@@ -155,8 +155,8 @@ static int temac_dma_bd_init(struct net_device *ndev)
- 		lp->rx_bd_v[i].next = lp->rx_bd_p +
- 				sizeof(*lp->rx_bd_v) * ((i + 1) % RX_BD_NUM);
- 
--		skb = alloc_skb(XTE_MAX_JUMBO_FRAME_SIZE
--				+ XTE_ALIGN, GFP_ATOMIC);
-+		skb = alloc_skb(XTE_MAX_JUMBO_FRAME_SIZE + XTE_ALIGN,
-+				GFP_KERNEL);
- 		if (skb == 0) {
- 			dev_err(&ndev->dev, "alloc_skb error %d\n", i);
- 			return -1;
-@@ -625,34 +625,30 @@ static void ll_temac_recv(struct net_device *ndev)
- 		skb = lp->rx_skb[lp->rx_bd_ci];
- 		length = cur_p->app4 & 0x3FFF;
- 
--		skb_vaddr = virt_to_bus(skb->data);
-+		new_skb = netdev_alloc_skb_ip_align(length);
-+		if (new_skb) {
-+			skb_copy_to_linear_data(new_skb, skb->data, length);
-+			skb_put(new_skb, length);
-+			skb_vaddr = virt_to_bus(skb->data);
-+			dma_sync_single_for_device(ndev->dev.parent,
-+						   skb_vaddr,
-+						   XTE_MAX_JUMBO_FRAME_SIZE,
-+						   PCI_DMA_FROMDEVICE);
-+			new_skb->dev = ndev;
-+			new_skb->protocol = eth_type_trans(new_skb, ndev);
-+			new_skb->ip_summed = CHECKSUM_NONE;
-+
-+			netif_rx(new_skb);
-+
-+			ndev->stats.rx_packets++;
-+			ndev->stats.rx_bytes += length;
-+		} else
-+			ndev->stats.rx_dropped++;
-+
- 		dma_unmap_single(ndev->dev.parent, skb_vaddr, length,
- 				 DMA_FROM_DEVICE);
- 
--		skb_put(skb, length);
--		skb->dev = ndev;
--		skb->protocol = eth_type_trans(skb, ndev);
--		skb->ip_summed = CHECKSUM_NONE;
--
--		netif_rx(skb);
--
--		ndev->stats.rx_packets++;
--		ndev->stats.rx_bytes += length;
--
--		new_skb = alloc_skb(XTE_MAX_JUMBO_FRAME_SIZE + XTE_ALIGN,
--				GFP_ATOMIC);
--		if (new_skb == 0) {
--			dev_err(&ndev->dev, "no memory for new sk_buff\n");
--			spin_unlock_irqrestore(&lp->rx_lock, flags);
--			return;
--		}
--
--		skb_reserve(new_skb, BUFFER_ALIGN(new_skb->data));
--
- 		cur_p->app0 = STS_CTRL_APP0_IRQONEND;
--		cur_p->phys = dma_map_single(ndev->dev.parent, new_skb->data,
--					     XTE_MAX_JUMBO_FRAME_SIZE,
--					     DMA_FROM_DEVICE);
- 		cur_p->len = XTE_MAX_JUMBO_FRAME_SIZE;
- 		lp->rx_skb[lp->rx_bd_ci] = new_skb;
- 
+iEYEARECAAYFAkux8ZYACgkQD27XaX1/VRsWPQCeKipiGJ4vmu3Xb0myM+cG3Rx4
+OYYAoL9SIRKKxnPXLO+9qOgDgedTzq54
+=mQLF
+-----END PGP SIGNATURE-----
 
-
+--JsihDCElWRmQcbOr--
