@@ -1,111 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757484Ab0C3XwQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:52:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16720 "EHLO mx1.redhat.com"
+	id S932713Ab0C3X1t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:27:49 -0400
+Received: from kroah.org ([198.145.64.141]:46794 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756808Ab0C3XwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:52:04 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100330164912.GG2513@linux.vnet.ibm.com>
-References: <20100330164912.GG2513@linux.vnet.ibm.com> <20100329210520.GN2569@linux.vnet.ibm.com> <20100329192159.GM2569@linux.vnet.ibm.com> <20100319022527.GC2894@linux.vnet.ibm.com> <20100318133302.29754.1584.stgit@warthog.procyon.org.uk> <19192.1269889348@redhat.com> <23274.1269893706@redhat.com> <25276.1269901350@redhat.com> <26760.1269903543@redhat.com> <20100329232636.GT2569@linux.vnet.ibm.com> <2440.1269967151@redhat.com> 
-To: paulmck@linux.vnet.ibm.com
-Cc: dhowells@redhat.com, Eric Dumazet <eric.dumazet@gmail.com>,
-       Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS: Fix RCU warnings in nfs_inode_return_delegation_noreclaim() [ver #2]
-Date: Wed, 31 Mar 2010 00:51:04 +0100
-Message-ID: <21972.1269993064@redhat.com>
+	id S1756959Ab0C3XWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:22:00 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:51 2010
+Message-Id: <20100330224851.138052328@linux.site>
+User-Agent: quilt/0.47-14.9
+Date: Tue, 30 Mar 2010 15:42:53 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Pablo Neira Ayuso <pablo@netfilter.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [139/156] netfilter: ctnetlink: fix reliable event delivery if message building fails
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
-> Which it is, as long as the lock is held.
+------------------
 
-However, in one of the situations I'm thinking of, no lock is held.  All that
-is being tested is whether the pointer to some RCU-protected data is either
-NULL or non-NULL.  For example:
+From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-	@@ -345,7 +346,7 @@ int nfs_inode_return_delegation(struct inode *inode)
-		struct nfs_delegation *delegation;
-		int err = 0;
+[ Upstream commit 37b7ef7203240b3aba577bb1ff6765fe15225976 ]
 
-	-	if (rcu_dereference(nfsi->delegation) != NULL) {
-	+	if (nfsi->delegation != NULL) {
-			spin_lock(&clp->cl_lock);
-			delegation = nfs_detach_delegation_locked(nfsi, NULL);
-			spin_unlock(&clp->cl_lock);
+This patch fixes a bug that allows to lose events when reliable
+event delivery mode is used, ie. if NETLINK_BROADCAST_SEND_ERROR
+and NETLINK_RECV_NO_ENOBUFS socket options are set.
 
-No lock - RCU or spinlock - is held over the check of nfsi->delegation - which
-causes lockdep to complain about an unguarded rcu_dereference().
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-However, the use of rcu_dereference() here is unnecessary with respect to the
-interpolation (where appropriate) of a memory barrier because there is no
-second memory access against which to order.
+---
+ include/linux/netfilter/nfnetlink.h  |    2 +-
+ net/netfilter/nf_conntrack_netlink.c |    3 ++-
+ net/netfilter/nfnetlink.c            |    4 ++--
+ 3 files changed, 5 insertions(+), 4 deletions(-)
 
-That said, the memory access is repeated inside nfs_detach_delegation_locked(),
-which again was wrapped in an rcu_dereference():
+--- a/include/linux/netfilter/nfnetlink.h
++++ b/include/linux/netfilter/nfnetlink.h
+@@ -76,7 +76,7 @@ extern int nfnetlink_subsys_unregister(c
+ extern int nfnetlink_has_listeners(unsigned int group);
+ extern int nfnetlink_send(struct sk_buff *skb, u32 pid, unsigned group, 
+ 			  int echo, gfp_t flags);
+-extern void nfnetlink_set_err(u32 pid, u32 group, int error);
++extern int nfnetlink_set_err(u32 pid, u32 group, int error);
+ extern int nfnetlink_unicast(struct sk_buff *skb, u_int32_t pid, int flags);
+ 
+ extern void nfnl_lock(void);
+--- a/net/netfilter/nf_conntrack_netlink.c
++++ b/net/netfilter/nf_conntrack_netlink.c
+@@ -571,7 +571,8 @@ nla_put_failure:
+ nlmsg_failure:
+ 	kfree_skb(skb);
+ errout:
+-	nfnetlink_set_err(0, group, -ENOBUFS);
++	if (nfnetlink_set_err(0, group, -ENOBUFS) > 0)
++		return -ENOBUFS;
+ 	return 0;
+ }
+ #endif /* CONFIG_NF_CONNTRACK_EVENTS */
+--- a/net/netfilter/nfnetlink.c
++++ b/net/netfilter/nfnetlink.c
+@@ -114,9 +114,9 @@ int nfnetlink_send(struct sk_buff *skb,
+ }
+ EXPORT_SYMBOL_GPL(nfnetlink_send);
+ 
+-void nfnetlink_set_err(u32 pid, u32 group, int error)
++int nfnetlink_set_err(u32 pid, u32 group, int error)
+ {
+-	netlink_set_err(nfnl, pid, group, error);
++	return netlink_set_err(nfnl, pid, group, error);
+ }
+ EXPORT_SYMBOL_GPL(nfnetlink_set_err);
+ 
 
-	 static struct nfs_delegation *nfs_detach_delegation_locked(struct nfs_inode *nfsi, const nfs4_stateid *stateid)
-	 {
-	-	struct nfs_delegation *delegation = rcu_dereference(nfsi->delegation);
-	+	struct nfs_delegation *delegation = nfsi->delegation;
 
-		if (delegation == NULL)
-			goto nomatch;
-
-which was not necessary for its memory barrier interpolation properties in this
-case because of the spin_lock() the caller now holds.
-
-
-Your suggestion of using rcu_dereference_check() in both these places would
-result in two unnecessary memory barriers on something like an Alpha CPU.
-
-
-How about:
-
-	static struct nfs_delegation *nfs_detach_delegation_locked(struct nfs_inode *nfsi, const nfs4_stateid *stateid)
-	{
-		struct nfs_delegation *delegation =
-			rcu_locked_dereference(nfsi->delegation);
-		...
-	}
-
-where rcu_locked_dereference() only does the lockdep magic and the dereference,
-and does not include a memory barrier.  The documentation of such a function
-would note this may only be used when the pointer is guarded by an exclusive
-lock to prevent it from changing.
-
-And then:
-
-	int nfs_inode_return_delegation(struct inode *inode)
-	{
-		struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
-		struct nfs_inode *nfsi = NFS_I(inode);
-		struct nfs_delegation *delegation;
-		int err = 0;
-
-		if (rcu_pointer_not_null(nfsi->delegation)) {
-			spin_lock(&clp->cl_lock);
-			delegation = nfs_detach_delegation_locked(nfsi, NULL);
-			spin_unlock(&clp->cl_lock);
-			if (delegation != NULL) {
-				nfs_msync_inode(inode);
-				err = __nfs_inode_return_delegation(inode, delegation, 1);
-			}
-		}
-		return err;
-	}
-
-where rcu_pointer_not_null() simply tests the value of the pointer, casting
-away the sparse RCU annotation and not doing the lockdep check and not
-including a barrier.  It would not return the value of the pointer, thus
-preventing you from needing the barrier as a result.
-
-David
