@@ -1,62 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932596Ab0C3XUZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:20:25 -0400
-Received: from kroah.org ([198.145.64.141]:45677 "EHLO coco.kroah.org"
+	id S1757492Ab0C3X7K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:59:10 -0400
+Received: from kroah.org ([198.145.64.141]:45499 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932391Ab0C3XTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:19 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:27 2010
-Message-Id: <20100330224726.899480145@linux.site>
+	id S932332Ab0C3XS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:58 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:07 2010
+Message-Id: <20100330225707.397387802@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:40:44 -0700
+Date: Tue, 30 Mar 2010 15:56:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Christoph Fritz <chf.fritz@googlemail.com>,
-       Dmitry Torokhov <dtor@mail.ru>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [010/156] Input: i8042 - add ALDI/MEDION netbook E1222 to qurik reset table
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+       Johannes Berg <johannes@sipsolutions.net>,
+       Vivek Natarajan <vnatarajan@atheros.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [102/116] mac80211: Retry null data frame for power save
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Christoph Fritz <chf.fritz@googlemail.com>
+From: Vivek Natarajan <vnatarajan@atheros.com>
 
-commit 31968ecf584330b51a25b7bf881c2b632a02a3fb upstream.
+commit 375177bf35efc08e1bd37bbda4cc0c8cc4db8500 upstream.
 
-ALDI/MEDION netbook E1222 needs to be in the reset quirk list for
-its touchpad's proper function.
+Even if the null data frame is not acked by the AP, mac80211
+goes into power save. This might lead to loss of frames
+from the AP.
+Prevent this by restarting dynamic_ps_timer when ack is not
+received for null data frames.
 
-Reported-by: Michael Fischer <mifi@gmx.de>
-Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Vivek Natarajan <vnatarajan@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/input/serio/i8042-x86ia64io.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ include/net/mac80211.h     |    4 ++++
+ net/mac80211/ieee80211_i.h |    1 +
+ net/mac80211/main.c        |   15 +++++++++++++++
+ net/mac80211/mlme.c        |   20 +++++++++++++++-----
+ 4 files changed, 35 insertions(+), 5 deletions(-)
 
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -442,6 +442,13 @@ static const struct dmi_system_id __init
- 		},
- 	},
- 	{
-+		/* Medion Akoya E1222 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "MEDION"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "E122X"),
-+		},
-+	},
-+	{
- 		/* Mivvy M310 */
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "VIOOO"),
+--- a/include/net/mac80211.h
++++ b/include/net/mac80211.h
+@@ -908,6 +908,9 @@ enum ieee80211_tkip_key_type {
+  * @IEEE80211_HW_BEACON_FILTER:
+  *	Hardware supports dropping of irrelevant beacon frames to
+  *	avoid waking up cpu.
++ * @IEEE80211_HW_REPORTS_TX_ACK_STATUS:
++ *	Hardware can provide ack status reports of Tx frames to
++ *	the stack.
+  */
+ enum ieee80211_hw_flags {
+ 	IEEE80211_HW_RX_INCLUDES_FCS			= 1<<1,
+@@ -924,6 +927,7 @@ enum ieee80211_hw_flags {
+ 	IEEE80211_HW_SUPPORTS_DYNAMIC_PS		= 1<<12,
+ 	IEEE80211_HW_MFP_CAPABLE			= 1<<13,
+ 	IEEE80211_HW_BEACON_FILTER			= 1<<14,
++	IEEE80211_HW_REPORTS_TX_ACK_STATUS		= 1<<15,
+ };
+ 
+ /**
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -264,6 +264,7 @@ enum ieee80211_sta_flags {
+ 	IEEE80211_STA_DISABLE_11N	= BIT(4),
+ 	IEEE80211_STA_CSA_RECEIVED	= BIT(5),
+ 	IEEE80211_STA_MFP_ENABLED	= BIT(6),
++	IEEE80211_STA_NULLFUNC_ACKED	= BIT(7),
+ };
+ 
+ /* flags for MLME request */
+--- a/net/mac80211/main.c
++++ b/net/mac80211/main.c
+@@ -441,6 +441,7 @@ void ieee80211_tx_status(struct ieee8021
+ 	rcu_read_lock();
+ 
+ 	sband = local->hw.wiphy->bands[info->band];
++	fc = hdr->frame_control;
+ 
+ 	sta = sta_info_get(local, hdr->addr1);
+ 
+@@ -522,6 +523,20 @@ void ieee80211_tx_status(struct ieee8021
+ 			local->dot11FailedCount++;
+ 	}
+ 
++	if (ieee80211_is_nullfunc(fc) && ieee80211_has_pm(fc) &&
++	    (local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS) &&
++	    !(info->flags & IEEE80211_TX_CTL_INJECTED) &&
++	    local->ps_sdata && !(local->scanning)) {
++		if (info->flags & IEEE80211_TX_STAT_ACK) {
++			local->ps_sdata->u.mgd.flags |=
++				IEEE80211_STA_NULLFUNC_ACKED;
++			ieee80211_queue_work(&local->hw,
++					     &local->dynamic_ps_enable_work);
++		} else
++			mod_timer(&local->dynamic_ps_timer, jiffies +
++				  msecs_to_jiffies(10));
++	}
++
+ 	/* this was a transmitted frame, but now we want to reuse it */
+ 	skb_orphan(skb);
+ 
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -650,8 +650,11 @@ static void ieee80211_enable_ps(struct i
+ 	} else {
+ 		if (local->hw.flags & IEEE80211_HW_PS_NULLFUNC_STACK)
+ 			ieee80211_send_nullfunc(local, sdata, 1);
+-		conf->flags |= IEEE80211_CONF_PS;
+-		ieee80211_hw_config(local, IEEE80211_CONF_CHANGE_PS);
++
++		if (!(local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS)) {
++			conf->flags |= IEEE80211_CONF_PS;
++			ieee80211_hw_config(local, IEEE80211_CONF_CHANGE_PS);
++		}
+ 	}
+ }
+ 
+@@ -742,6 +745,7 @@ void ieee80211_dynamic_ps_enable_work(st
+ 		container_of(work, struct ieee80211_local,
+ 			     dynamic_ps_enable_work);
+ 	struct ieee80211_sub_if_data *sdata = local->ps_sdata;
++	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
+ 
+ 	/* can only happen when PS was just disabled anyway */
+ 	if (!sdata)
+@@ -750,11 +754,16 @@ void ieee80211_dynamic_ps_enable_work(st
+ 	if (local->hw.conf.flags & IEEE80211_CONF_PS)
+ 		return;
+ 
+-	if (local->hw.flags & IEEE80211_HW_PS_NULLFUNC_STACK)
++	if ((local->hw.flags & IEEE80211_HW_PS_NULLFUNC_STACK) &&
++	    (!(ifmgd->flags & IEEE80211_STA_NULLFUNC_ACKED)))
+ 		ieee80211_send_nullfunc(local, sdata, 1);
+ 
+-	local->hw.conf.flags |= IEEE80211_CONF_PS;
+-	ieee80211_hw_config(local, IEEE80211_CONF_CHANGE_PS);
++	if (!(local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS) ||
++	    (ifmgd->flags & IEEE80211_STA_NULLFUNC_ACKED)) {
++		ifmgd->flags &= ~IEEE80211_STA_NULLFUNC_ACKED;
++		local->hw.conf.flags |= IEEE80211_CONF_PS;
++		ieee80211_hw_config(local, IEEE80211_CONF_CHANGE_PS);
++	}
+ }
+ 
+ void ieee80211_dynamic_ps_timer(unsigned long data)
+@@ -2458,6 +2467,7 @@ int ieee80211_mgd_assoc(struct ieee80211
+ 	list_add(&wk->list, &ifmgd->work_list);
+ 
+ 	ifmgd->flags &= ~IEEE80211_STA_DISABLE_11N;
++	ifmgd->flags &= ~IEEE80211_STA_NULLFUNC_ACKED;
+ 
+ 	for (i = 0; i < req->crypto.n_ciphers_pairwise; i++)
+ 		if (req->crypto.ciphers_pairwise[i] == WLAN_CIPHER_SUITE_WEP40 ||
 
 
