@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757592Ab0CaAAC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:00:02 -0400
-Received: from kroah.org ([198.145.64.141]:45460 "EHLO coco.kroah.org"
+	id S1756704Ab0C3XS0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:18:26 -0400
+Received: from kroah.org ([198.145.64.141]:52010 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932315Ab0C3XSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:53 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:04 2010
-Message-Id: <20100330225703.854036388@linux.site>
+	id S1756640Ab0C3XSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:06 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:30 2010
+Message-Id: <20100330225629.966470958@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:56:14 -0700
+Date: Tue, 30 Mar 2010 15:55:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dean Nelson <dnelson@redhat.com>, Jean Delvare <khali@linux-fr.org>,
+       Tilman Schmidt <tilman@imap.cc>, Karsten Keil <keil@b1-systems.de>,
+       "David S. Miller" <davem@davemloft.net>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [096/116] hwmon: (coretemp) Add missing newline to dev_warn() message
+Subject: [049/116] gigaset: prune use of tty_buffer_request_room
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dean Nelson <dnelson@redhat.com>
+From: Tilman Schmidt <tilman@imap.cc>
 
-commit 4d7a5644e4adfafe76c2bd8ee168e3f3b5dae3a8 upstream.
+commit 873a69a358a6b393fd8d9d92e193ec8895cac4d7 upstream.
 
-Add missing newline to dev_warn() message string. This is more of an issue
-with older kernels that don't automatically add a newline if it was missing
-from the end of the previous line.
+Calling tty_buffer_request_room() before tty_insert_flip_string()
+is unnecessary, costs CPU and for big buffers can mess up the
+multi-page allocation avoidance.
 
-Signed-off-by: Dean Nelson <dnelson@redhat.com>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+Acked-by: Karsten Keil <keil@b1-systems.de>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/coretemp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/isdn/gigaset/interface.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -228,7 +228,7 @@ static int __devinit adjust_tjmax(struct
- 		if (err) {
- 			dev_warn(dev,
- 				 "Unable to access MSR 0xEE, for Tjmax, left"
--				 " at default");
-+				 " at default\n");
- 		} else if (eax & 0x40000000) {
- 			tjmax = tjmax_ee;
- 		}
+--- a/drivers/isdn/gigaset/interface.c
++++ b/drivers/isdn/gigaset/interface.c
+@@ -635,7 +635,6 @@ void gigaset_if_receive(struct cardstate
+ 	if ((tty = cs->tty) == NULL)
+ 		gig_dbg(DEBUG_ANY, "receive on closed device");
+ 	else {
+-		tty_buffer_request_room(tty, len);
+ 		tty_insert_flip_string(tty, buffer, len);
+ 		tty_flip_buffer_push(tty);
+ 	}
 
 
