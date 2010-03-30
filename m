@@ -1,59 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932644Ab0C3XUj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:20:39 -0400
-Received: from kroah.org ([198.145.64.141]:45802 "EHLO coco.kroah.org"
+	id S932448Ab0C3XTi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:19:38 -0400
+Received: from kroah.org ([198.145.64.141]:45531 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932437Ab0C3XTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:35 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:37 2010
-Message-Id: <20100330224736.644921321@linux.site>
+	id S932278Ab0C3XTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:02 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:10 2010
+Message-Id: <20100330225709.849388953@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:41:00 -0700
+Date: Tue, 30 Mar 2010 15:56:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Francesco Lavra <francescolavra@interfree.it>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       Dmitry Monakhov <dmonakhov@openvz.org>, Jan Kara <jack@suse.cz>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [026/156] V4L/DVB (13961): em28xx-dvb: fix memleak in dvb_fini()
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+Subject: [106/116] quota: manage reserved space when quota is not active [v2]
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Francesco Lavra <francescolavra@interfree.it>
+From: Dmitry Monakhov <dmonakhov@openvz.org>
 
-commit 19f48cb105b7fa18d0dcab435919a3a29b7a7c4c upstream.
+commit c469070aea5a0ada45a836937c776fd3083dae2b upstream.
 
-this patch fixes a memory leak which occurs when an em28xx card with DVB
-extension is unplugged or its DVB extension driver is unloaded. In
-dvb_fini(), dev->dvb must be freed before being set to NULL, as is done
-in dvb_init() in case of error.
-Note that this bug is also present in the latest stable kernel release.
+Since we implemented generic reserved space management interface,
+then it is possible to account reserved space even when quota
+is not active (similar to i_blocks/i_bytes).
 
-Signed-off-by: Francesco Lavra <francescolavra@interfree.it>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Without this patch following testcase result in massive comlain from
+WARN_ON in dquot_claim_space()
+
+TEST_CASE:
+mount /dev/sdb /mnt -oquota
+dd if=/dev/zero of=/mnt/test bs=1M count=1
+quotaon /mnt
+# fs_reserved_spave == 1Mb
+# quota_reserved_space == 0, because quota was disabled
+dd if=/dev/zero of=/mnt/test seek=1 bs=1M count=1
+# fs_reserved_spave == 2Mb
+# quota_reserved_space == 1Mb
+sync  # ->dquot_claim_space() -> WARN_ON
+
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/em28xx/em28xx-dvb.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/quota/dquot.c         |   10 ++++++----
+ include/linux/quotaops.h |   11 +++++++++--
+ 2 files changed, 15 insertions(+), 6 deletions(-)
 
---- a/drivers/media/video/em28xx/em28xx-dvb.c
-+++ b/drivers/media/video/em28xx/em28xx-dvb.c
-@@ -606,6 +606,7 @@ static int dvb_fini(struct em28xx *dev)
+--- a/fs/quota/dquot.c
++++ b/fs/quota/dquot.c
+@@ -1399,28 +1399,30 @@ static qsize_t *inode_reserved_space(str
+ 	return inode->i_sb->dq_op->get_reserved_space(inode);
+ }
  
- 	if (dev->dvb) {
- 		unregister_dvb(dev->dvb);
-+		kfree(dev->dvb);
- 		dev->dvb = NULL;
+-static void inode_add_rsv_space(struct inode *inode, qsize_t number)
++void inode_add_rsv_space(struct inode *inode, qsize_t number)
+ {
+ 	spin_lock(&inode->i_lock);
+ 	*inode_reserved_space(inode) += number;
+ 	spin_unlock(&inode->i_lock);
+ }
++EXPORT_SYMBOL(inode_add_rsv_space);
+ 
+-
+-static void inode_claim_rsv_space(struct inode *inode, qsize_t number)
++void inode_claim_rsv_space(struct inode *inode, qsize_t number)
+ {
+ 	spin_lock(&inode->i_lock);
+ 	*inode_reserved_space(inode) -= number;
+ 	__inode_add_bytes(inode, number);
+ 	spin_unlock(&inode->i_lock);
+ }
++EXPORT_SYMBOL(inode_claim_rsv_space);
+ 
+-static void inode_sub_rsv_space(struct inode *inode, qsize_t number)
++void inode_sub_rsv_space(struct inode *inode, qsize_t number)
+ {
+ 	spin_lock(&inode->i_lock);
+ 	*inode_reserved_space(inode) -= number;
+ 	spin_unlock(&inode->i_lock);
+ }
++EXPORT_SYMBOL(inode_sub_rsv_space);
+ 
+ static qsize_t inode_get_rsv_space(struct inode *inode)
+ {
+--- a/include/linux/quotaops.h
++++ b/include/linux/quotaops.h
+@@ -26,6 +26,10 @@ static inline void writeout_quota_sb(str
+ 		sb->s_qcop->quota_sync(sb, type);
+ }
+ 
++void inode_add_rsv_space(struct inode *inode, qsize_t number);
++void inode_claim_rsv_space(struct inode *inode, qsize_t number);
++void inode_sub_rsv_space(struct inode *inode, qsize_t number);
++
+ int dquot_initialize(struct inode *inode, int type);
+ int dquot_drop(struct inode *inode);
+ struct dquot *dqget(struct super_block *sb, unsigned int id, int type);
+@@ -42,7 +46,6 @@ int dquot_alloc_inode(const struct inode
+ int dquot_reserve_space(struct inode *inode, qsize_t number, int prealloc);
+ int dquot_claim_space(struct inode *inode, qsize_t number);
+ void dquot_release_reserved_space(struct inode *inode, qsize_t number);
+-qsize_t dquot_get_reserved_space(struct inode *inode);
+ 
+ int dquot_free_space(struct inode *inode, qsize_t number);
+ int dquot_free_inode(const struct inode *inode, qsize_t number);
+@@ -199,6 +202,8 @@ static inline int vfs_dq_reserve_space(s
+ 		if (inode->i_sb->dq_op->reserve_space(inode, nr, 0) == NO_QUOTA)
+ 			return 1;
  	}
++	else
++		inode_add_rsv_space(inode, nr);
+ 	return 0;
+ }
  
+@@ -221,7 +226,7 @@ static inline int vfs_dq_claim_space(str
+ 		if (inode->i_sb->dq_op->claim_space(inode, nr) == NO_QUOTA)
+ 			return 1;
+ 	} else
+-		inode_add_bytes(inode, nr);
++		inode_claim_rsv_space(inode, nr);
+ 
+ 	mark_inode_dirty(inode);
+ 	return 0;
+@@ -235,6 +240,8 @@ void vfs_dq_release_reservation_space(st
+ {
+ 	if (sb_any_quota_active(inode->i_sb))
+ 		inode->i_sb->dq_op->release_rsv(inode, nr);
++	else
++		inode_sub_rsv_space(inode, nr);
+ }
+ 
+ static inline void vfs_dq_free_space_nodirty(struct inode *inode, qsize_t nr)
 
 
