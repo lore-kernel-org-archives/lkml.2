@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757492Ab0C3X7K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:59:10 -0400
-Received: from kroah.org ([198.145.64.141]:45499 "EHLO coco.kroah.org"
+	id S932245Ab0C3XSW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:18:22 -0400
+Received: from kroah.org ([198.145.64.141]:52040 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932332Ab0C3XS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:58 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:07 2010
-Message-Id: <20100330225707.397387802@linux.site>
+	id S1756808Ab0C3XSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:09 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:32 2010
+Message-Id: <20100330225631.818500832@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:56:20 -0700
+Date: Tue, 30 Mar 2010 15:55:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Johannes Berg <johannes@sipsolutions.net>,
-       Vivek Natarajan <vnatarajan@atheros.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+       Ravikiran Thirumalai <kiran@scalex86.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [102/116] mac80211: Retry null data frame for power save
+Subject: [052/116] tmpfs: fix oops on mounts with mpol=default
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,141 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vivek Natarajan <vnatarajan@atheros.com>
+From: Ravikiran G Thirumalai <kiran@scalex86.org>
 
-commit 375177bf35efc08e1bd37bbda4cc0c8cc4db8500 upstream.
+commit 413b43deab8377819aba1dbad2abf0c15d59b491 upstream.
 
-Even if the null data frame is not acked by the AP, mac80211
-goes into power save. This might lead to loss of frames
-from the AP.
-Prevent this by restarting dynamic_ps_timer when ack is not
-received for null data frames.
+Fix an 'oops' when a tmpfs mount point is mounted with the mpol=default
+mempolicy.
 
-Cc: Johannes Berg <johannes@sipsolutions.net>
-Signed-off-by: Vivek Natarajan <vnatarajan@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+Upon remounting a tmpfs mount point with 'mpol=default' option, the mount
+code crashed with a null pointer dereference.  The initial problem report
+was on 2.6.27, but the problem exists in mainline 2.6.34-rc as well.  On
+examining the code, we see that mpol_new returns NULL if default mempolicy
+was requested.  This 'NULL' mempolicy is accessed to store the node mask
+resulting in oops.
+
+The following patch fixes it.
+
+Signed-off-by: Ravikiran Thirumalai <kiran@scalex86.org>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Acked-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/net/mac80211.h     |    4 ++++
- net/mac80211/ieee80211_i.h |    1 +
- net/mac80211/main.c        |   15 +++++++++++++++
- net/mac80211/mlme.c        |   20 +++++++++++++++-----
- 4 files changed, 35 insertions(+), 5 deletions(-)
+ mm/mempolicy.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/include/net/mac80211.h
-+++ b/include/net/mac80211.h
-@@ -908,6 +908,9 @@ enum ieee80211_tkip_key_type {
-  * @IEEE80211_HW_BEACON_FILTER:
-  *	Hardware supports dropping of irrelevant beacon frames to
-  *	avoid waking up cpu.
-+ * @IEEE80211_HW_REPORTS_TX_ACK_STATUS:
-+ *	Hardware can provide ack status reports of Tx frames to
-+ *	the stack.
-  */
- enum ieee80211_hw_flags {
- 	IEEE80211_HW_RX_INCLUDES_FCS			= 1<<1,
-@@ -924,6 +927,7 @@ enum ieee80211_hw_flags {
- 	IEEE80211_HW_SUPPORTS_DYNAMIC_PS		= 1<<12,
- 	IEEE80211_HW_MFP_CAPABLE			= 1<<13,
- 	IEEE80211_HW_BEACON_FILTER			= 1<<14,
-+	IEEE80211_HW_REPORTS_TX_ACK_STATUS		= 1<<15,
- };
- 
- /**
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -264,6 +264,7 @@ enum ieee80211_sta_flags {
- 	IEEE80211_STA_DISABLE_11N	= BIT(4),
- 	IEEE80211_STA_CSA_RECEIVED	= BIT(5),
- 	IEEE80211_STA_MFP_ENABLED	= BIT(6),
-+	IEEE80211_STA_NULLFUNC_ACKED	= BIT(7),
- };
- 
- /* flags for MLME request */
---- a/net/mac80211/main.c
-+++ b/net/mac80211/main.c
-@@ -441,6 +441,7 @@ void ieee80211_tx_status(struct ieee8021
- 	rcu_read_lock();
- 
- 	sband = local->hw.wiphy->bands[info->band];
-+	fc = hdr->frame_control;
- 
- 	sta = sta_info_get(local, hdr->addr1);
- 
-@@ -522,6 +523,20 @@ void ieee80211_tx_status(struct ieee8021
- 			local->dot11FailedCount++;
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2142,10 +2142,15 @@ int mpol_parse_str(char *str, struct mem
+ 			goto out;
+ 		mode = MPOL_PREFERRED;
+ 		break;
+-
++	case MPOL_DEFAULT:
++		/*
++		 * Insist on a empty nodelist
++		 */
++		if (!nodelist)
++			err = 0;
++		goto out;
+ 	/*
+ 	 * case MPOL_BIND:    mpol_new() enforces non-empty nodemask.
+-	 * case MPOL_DEFAULT: mpol_new() enforces empty nodemask, ignores flags.
+ 	 */
  	}
  
-+	if (ieee80211_is_nullfunc(fc) && ieee80211_has_pm(fc) &&
-+	    (local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS) &&
-+	    !(info->flags & IEEE80211_TX_CTL_INJECTED) &&
-+	    local->ps_sdata && !(local->scanning)) {
-+		if (info->flags & IEEE80211_TX_STAT_ACK) {
-+			local->ps_sdata->u.mgd.flags |=
-+				IEEE80211_STA_NULLFUNC_ACKED;
-+			ieee80211_queue_work(&local->hw,
-+					     &local->dynamic_ps_enable_work);
-+		} else
-+			mod_timer(&local->dynamic_ps_timer, jiffies +
-+				  msecs_to_jiffies(10));
-+	}
-+
- 	/* this was a transmitted frame, but now we want to reuse it */
- 	skb_orphan(skb);
- 
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -650,8 +650,11 @@ static void ieee80211_enable_ps(struct i
- 	} else {
- 		if (local->hw.flags & IEEE80211_HW_PS_NULLFUNC_STACK)
- 			ieee80211_send_nullfunc(local, sdata, 1);
--		conf->flags |= IEEE80211_CONF_PS;
--		ieee80211_hw_config(local, IEEE80211_CONF_CHANGE_PS);
-+
-+		if (!(local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS)) {
-+			conf->flags |= IEEE80211_CONF_PS;
-+			ieee80211_hw_config(local, IEEE80211_CONF_CHANGE_PS);
-+		}
- 	}
- }
- 
-@@ -742,6 +745,7 @@ void ieee80211_dynamic_ps_enable_work(st
- 		container_of(work, struct ieee80211_local,
- 			     dynamic_ps_enable_work);
- 	struct ieee80211_sub_if_data *sdata = local->ps_sdata;
-+	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
- 
- 	/* can only happen when PS was just disabled anyway */
- 	if (!sdata)
-@@ -750,11 +754,16 @@ void ieee80211_dynamic_ps_enable_work(st
- 	if (local->hw.conf.flags & IEEE80211_CONF_PS)
- 		return;
- 
--	if (local->hw.flags & IEEE80211_HW_PS_NULLFUNC_STACK)
-+	if ((local->hw.flags & IEEE80211_HW_PS_NULLFUNC_STACK) &&
-+	    (!(ifmgd->flags & IEEE80211_STA_NULLFUNC_ACKED)))
- 		ieee80211_send_nullfunc(local, sdata, 1);
- 
--	local->hw.conf.flags |= IEEE80211_CONF_PS;
--	ieee80211_hw_config(local, IEEE80211_CONF_CHANGE_PS);
-+	if (!(local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS) ||
-+	    (ifmgd->flags & IEEE80211_STA_NULLFUNC_ACKED)) {
-+		ifmgd->flags &= ~IEEE80211_STA_NULLFUNC_ACKED;
-+		local->hw.conf.flags |= IEEE80211_CONF_PS;
-+		ieee80211_hw_config(local, IEEE80211_CONF_CHANGE_PS);
-+	}
- }
- 
- void ieee80211_dynamic_ps_timer(unsigned long data)
-@@ -2458,6 +2467,7 @@ int ieee80211_mgd_assoc(struct ieee80211
- 	list_add(&wk->list, &ifmgd->work_list);
- 
- 	ifmgd->flags &= ~IEEE80211_STA_DISABLE_11N;
-+	ifmgd->flags &= ~IEEE80211_STA_NULLFUNC_ACKED;
- 
- 	for (i = 0; i < req->crypto.n_ciphers_pairwise; i++)
- 		if (req->crypto.ciphers_pairwise[i] == WLAN_CIPHER_SUITE_WEP40 ||
 
 
