@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab0C3XMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:12:38 -0400
-Received: from kroah.org ([198.145.64.141]:48960 "EHLO coco.kroah.org"
+	id S1756550Ab0CaAXs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:23:48 -0400
+Received: from kroah.org ([198.145.64.141]:49037 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756469Ab0C3XM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:29 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:34 2010
-Message-Id: <20100330225833.612743417@linux.site>
+	id S1756469Ab0C3XMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:38 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:40 2010
+Message-Id: <20100330225839.832918094@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:43 -0700
+Date: Tue, 30 Mar 2010 15:57:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Karel Zak <kzak@redhat.com>, Jens Axboe <jens.axboe@oracle.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [41/89] partitions: read whole sector with EFI GPT header
+       Wolfram Sang <w.sang@pengutronix.de>, Jean Delvare <khali@linux-fr.org>,
+       Jean Delvare <jdelvare@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [51/89] i2c/pca: Dont use *_interruptible
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,76 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Karel Zak <kzak@redhat.com>
+commit 22f8b2695eda496026623020811cae34590ee3d7 upstream.
 
-commit 87038c2d5bda2418fda8b1456a0ae81cc3ff5bd8 upstream.
+Unexpected signals can disturb the bus-handling and lock it up. Don't use
+interruptible in 'wait_event_*' and 'wake_*' as in commits
+dc1972d02747d2170fb1d78d114801f5ecb27506 (for cpm),
+1ab082d7cbd0f34e39a5396cc6340c00bc5d66ef (for mpc),
+b7af349b175af45f9d87b3bf3f0a221e1831ed39 (for omap).
 
-The size of EFI GPT header is not static, but whole sector is
-allocated for the header. The HeaderSize field must be greater
-than 92 (= sizeof(struct gpt_header) and must be less than or
-equal to the logical block size.
-
-It means we have to read whole sector with the header, because the
-header crc32 checksum is calculated according to HeaderSize.
-
-For more details see UEFI standard (version 2.3, May 2009):
-  - 5.3.1 GUID Format overview, page 93
-  - Table 13. GUID Partition Table Header, page 96
-
-Signed-off-by: Karel Zak <kzak@redhat.com>
-Signed-off-by: Jens Axboe <jens.axboe@oracle.com>
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Jean Delvare <jdelvare@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- fs/partitions/efi.c |    7 ++++---
- fs/partitions/efi.h |    8 ++++++--
- 2 files changed, 10 insertions(+), 5 deletions(-)
+Tested with custom hardware.
 
---- a/fs/partitions/efi.c
-+++ b/fs/partitions/efi.c
-@@ -257,15 +257,16 @@ static gpt_header *
- alloc_read_gpt_header(struct block_device *bdev, u64 lba)
- {
- 	gpt_header *gpt;
-+	unsigned ssz = bdev_logical_block_size(bdev);
-+
- 	if (!bdev)
- 		return NULL;
+ drivers/i2c/busses/i2c-pca-isa.c      |    4 ++--
+ drivers/i2c/busses/i2c-pca-platform.c |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+--- a/drivers/i2c/busses/i2c-pca-isa.c
++++ b/drivers/i2c/busses/i2c-pca-isa.c
+@@ -75,7 +75,7 @@ static int pca_isa_waitforcompletion(voi
+ 	unsigned long timeout;
  
--	gpt = kzalloc(sizeof (gpt_header), GFP_KERNEL);
-+	gpt = kzalloc(ssz, GFP_KERNEL);
- 	if (!gpt)
- 		return NULL;
+ 	if (irq > -1) {
+-		ret = wait_event_interruptible_timeout(pca_wait,
++		ret = wait_event_timeout(pca_wait,
+ 				pca_isa_readbyte(pd, I2C_PCA_CON)
+ 				& I2C_PCA_CON_SI, pca_isa_ops.timeout);
+ 	} else {
+@@ -96,7 +96,7 @@ static void pca_isa_resetchip(void *pd)
+ }
  
--	if (read_lba(bdev, lba, (u8 *) gpt,
--		     sizeof (gpt_header)) < sizeof (gpt_header)) {
-+	if (read_lba(bdev, lba, (u8 *) gpt, ssz) < ssz) {
- 		kfree(gpt);
-                 gpt=NULL;
- 		return NULL;
---- a/fs/partitions/efi.h
-+++ b/fs/partitions/efi.h
-@@ -37,7 +37,6 @@
- #define EFI_PMBR_OSTYPE_EFI 0xEF
- #define EFI_PMBR_OSTYPE_EFI_GPT 0xEE
+ static irqreturn_t pca_handler(int this_irq, void *dev_id) {
+-	wake_up_interruptible(&pca_wait);
++	wake_up(&pca_wait);
+ 	return IRQ_HANDLED;
+ }
  
--#define GPT_BLOCK_SIZE 512
- #define GPT_HEADER_SIGNATURE 0x5452415020494645ULL
- #define GPT_HEADER_REVISION_V1 0x00010000
- #define GPT_PRIMARY_PARTITION_TABLE_LBA 1
-@@ -79,7 +78,12 @@ typedef struct _gpt_header {
- 	__le32 num_partition_entries;
- 	__le32 sizeof_partition_entry;
- 	__le32 partition_entry_array_crc32;
--	u8 reserved2[GPT_BLOCK_SIZE - 92];
-+
-+	/* The rest of the logical block is reserved by UEFI and must be zero.
-+	 * EFI standard handles this by:
-+	 *
-+	 * uint8_t		reserved2[ BlockSize - 92 ];
-+	 */
- } __attribute__ ((packed)) gpt_header;
+--- a/drivers/i2c/busses/i2c-pca-platform.c
++++ b/drivers/i2c/busses/i2c-pca-platform.c
+@@ -84,7 +84,7 @@ static int i2c_pca_pf_waitforcompletion(
+ 	unsigned long timeout;
  
- typedef struct _gpt_entry_attributes {
+ 	if (i2c->irq) {
+-		ret = wait_event_interruptible_timeout(i2c->wait,
++		ret = wait_event_timeout(i2c->wait,
+ 			i2c->algo_data.read_byte(i2c, I2C_PCA_CON)
+ 			& I2C_PCA_CON_SI, i2c->adap.timeout);
+ 	} else {
+@@ -122,7 +122,7 @@ static irqreturn_t i2c_pca_pf_handler(in
+ 	if ((i2c->algo_data.read_byte(i2c, I2C_PCA_CON) & I2C_PCA_CON_SI) == 0)
+ 		return IRQ_NONE;
+ 
+-	wake_up_interruptible(&i2c->wait);
++	wake_up(&i2c->wait);
+ 
+ 	return IRQ_HANDLED;
+ }
 
 
