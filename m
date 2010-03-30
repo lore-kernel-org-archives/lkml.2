@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932361Ab0CaABl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:01:41 -0400
-Received: from kroah.org ([198.145.64.141]:45413 "EHLO coco.kroah.org"
+	id S932330Ab0CaAPQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:15:16 -0400
+Received: from kroah.org ([198.145.64.141]:51830 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756840Ab0C3XSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:47 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:59 2010
-Message-Id: <20100330225658.504101661@linux.site>
+	id S1756522Ab0C3XRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:17:40 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:13 2010
+Message-Id: <20100330225612.576578239@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:56:08 -0700
+Date: Tue, 30 Mar 2010 15:55:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Miao Xie <miaox@cn.fujitsu.com>, David Rientjes <rientjes@google.com>,
-       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [090/116] cpuset: fix the problem that cpuset_mem_spread_node() returns an offline node
+       Adam Jackson <ajax@redhat.com>, Dave Airlie <airlied@redhat.com>,
+       maximilian attems <max@stro.at>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [023/116] drm/edid: Unify detailed block parsing between base and extension blocks
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,106 +26,226 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miao Xie <miaox@cn.fujitsu.com>
+From: Adam Jackson <ajax@redhat.com>
 
-commit 5ab116c9349ef52d6fbd2e2917a53f13194b048e upstream.
+commit 9cf00977da092096c7a983276dad8b3002d23a99 upstream.
 
-cpuset_mem_spread_node() returns an offline node, and causes an oops.
+Also fix an embarassing bug in standard timing subblock parsing that
+would result in an infinite loop.
 
-This patch fixes it by initializing task->mems_allowed to
-node_states[N_HIGH_MEMORY], and updating task->mems_allowed when doing
-memory hotplug.
-
-Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Reported-by: Nick Piggin <npiggin@suse.de>
-Tested-by: Nick Piggin <npiggin@suse.de>
-Cc: Paul Menage <menage@google.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Adam Jackson <ajax@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- init/main.c      |    2 +-
- kernel/cpuset.c  |   20 ++++++++++++--------
- kernel/kthread.c |    2 +-
- 3 files changed, 14 insertions(+), 10 deletions(-)
+ drivers/gpu/drm/drm_edid.c |  163 ++++++++++++++++-----------------------------
+ 1 file changed, 61 insertions(+), 102 deletions(-)
 
---- a/init/main.c
-+++ b/init/main.c
-@@ -846,7 +846,7 @@ static int __init kernel_init(void * unu
- 	/*
- 	 * init can allocate pages on any node
- 	 */
--	set_mems_allowed(node_possible_map);
-+	set_mems_allowed(node_states[N_HIGH_MEMORY]);
- 	/*
- 	 * init can run on any cpu.
- 	 */
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -921,9 +921,6 @@ static int update_cpumask(struct cpuset
-  *    call to guarantee_online_mems(), as we know no one is changing
-  *    our task's cpuset.
-  *
-- *    Hold callback_mutex around the two modifications of our tasks
-- *    mems_allowed to synchronize with cpuset_mems_allowed().
-- *
-  *    While the mm_struct we are migrating is typically from some
-  *    other task, the task_struct mems_allowed that we are hacking
-  *    is for our current task, which must allocate new pages for that
-@@ -1392,11 +1389,10 @@ static void cpuset_attach(struct cgroup_
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -834,8 +834,57 @@ static int add_standard_modes(struct drm
+ 	return modes;
+ }
  
- 	if (cs == &top_cpuset) {
- 		cpumask_copy(cpus_attach, cpu_possible_mask);
--		to = node_possible_map;
- 	} else {
- 		guarantee_online_cpus(cs, cpus_attach);
--		guarantee_online_mems(cs, &to);
- 	}
-+	guarantee_online_mems(cs, &to);
- 
- 	/* do per-task migration stuff possibly for each in the threadgroup */
- 	cpuset_attach_task(tsk, &to, cs);
-@@ -2091,15 +2087,23 @@ static int cpuset_track_online_cpus(stru
- static int cpuset_track_online_nodes(struct notifier_block *self,
- 				unsigned long action, void *arg)
- {
-+	nodemask_t oldmems;
++static int add_detailed_modes(struct drm_connector *connector,
++			      struct detailed_timing *timing,
++			      struct edid *edid, u32 quirks, int preferred)
++{
++	int i, modes = 0;
++	struct detailed_non_pixel *data = &timing->data.other_data;
++	int timing_level = standard_timing_level(edid);
++	struct drm_display_mode *newmode;
++	struct drm_device *dev = connector->dev;
 +
- 	cgroup_lock();
- 	switch (action) {
- 	case MEM_ONLINE:
--	case MEM_OFFLINE:
-+		oldmems = top_cpuset.mems_allowed;
- 		mutex_lock(&callback_mutex);
- 		top_cpuset.mems_allowed = node_states[N_HIGH_MEMORY];
- 		mutex_unlock(&callback_mutex);
--		if (action == MEM_OFFLINE)
--			scan_for_empty_cpusets(&top_cpuset);
-+		update_tasks_nodemask(&top_cpuset, &oldmems, NULL);
++	if (timing->pixel_clock) {
++		newmode = drm_mode_detailed(dev, edid, timing, quirks);
++		if (!newmode)
++			return 0;
++
++		if (preferred)
++			newmode->type |= DRM_MODE_TYPE_PREFERRED;
++
++		drm_mode_probed_add(connector, newmode);
++		return 1;
++	}
++
++	/* other timing types */
++	switch (data->type) {
++	case EDID_DETAIL_MONITOR_RANGE:
++		/* Get monitor range data */
 +		break;
-+	case MEM_OFFLINE:
-+		/*
-+		 * needn't update top_cpuset.mems_allowed explicitly because
-+		 * scan_for_empty_cpusets() will update it.
-+		 */
-+		scan_for_empty_cpusets(&top_cpuset);
- 		break;
- 	default:
- 		break;
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -196,7 +196,7 @@ int kthreadd(void *unused)
- 	set_task_comm(tsk, "kthreadd");
- 	ignore_signals(tsk);
- 	set_cpus_allowed_ptr(tsk, cpu_all_mask);
--	set_mems_allowed(node_possible_map);
-+	set_mems_allowed(node_states[N_HIGH_MEMORY]);
++	case EDID_DETAIL_STD_MODES:
++		/* Six modes per detailed section */
++		for (i = 0; i < 6; i++) {
++			struct std_timing *std;
++			struct drm_display_mode *newmode;
++
++			std = &data->data.timings[i];
++			newmode = drm_mode_std(dev, std, edid->revision,
++					       timing_level);
++			if (newmode) {
++				drm_mode_probed_add(connector, newmode);
++				modes++;
++			}
++		}
++		break;
++	default:
++		break;
++	}
++
++	return modes;
++}
++
+ /**
+- * add_detailed_modes - get detailed mode info from EDID data
++ * add_detailed_info - get detailed mode info from EDID data
+  * @connector: attached connector
+  * @edid: EDID block to scan
+  * @quirks: quirks to apply
+@@ -846,67 +895,24 @@ static int add_standard_modes(struct drm
+ static int add_detailed_info(struct drm_connector *connector,
+ 			     struct edid *edid, u32 quirks)
+ {
+-	struct drm_device *dev = connector->dev;
+-	int i, j, modes = 0;
+-	int timing_level;
+-
+-	timing_level = standard_timing_level(edid);
++	int i, modes = 0;
  
- 	current->flags |= PF_NOFREEZE | PF_FREEZER_NOSIG;
+ 	for (i = 0; i < EDID_DETAILED_TIMINGS; i++) {
+ 		struct detailed_timing *timing = &edid->detailed_timings[i];
+-		struct detailed_non_pixel *data = &timing->data.other_data;
+-		struct drm_display_mode *newmode;
++		int preferred = (i == 0) && (edid->features & DRM_EDID_FEATURE_PREFERRED_TIMING);
  
+-		/* X server check is version 1.1 or higher */
+-		if (edid->version == 1 && edid->revision >= 1 &&
+-		    !timing->pixel_clock) {
+-			/* Other timing or info */
+-			switch (data->type) {
+-			case EDID_DETAIL_MONITOR_SERIAL:
+-				break;
+-			case EDID_DETAIL_MONITOR_STRING:
+-				break;
+-			case EDID_DETAIL_MONITOR_RANGE:
+-				/* Get monitor range data */
+-				break;
+-			case EDID_DETAIL_MONITOR_NAME:
+-				break;
+-			case EDID_DETAIL_MONITOR_CPDATA:
+-				break;
+-			case EDID_DETAIL_STD_MODES:
+-				for (j = 0; j < 6; i++) {
+-					struct std_timing *std;
+-					struct drm_display_mode *newmode;
+-
+-					std = &data->data.timings[j];
+-					newmode = drm_mode_std(dev, std,
+-							       edid->revision,
+-							       timing_level);
+-					if (newmode) {
+-						drm_mode_probed_add(connector, newmode);
+-						modes++;
+-					}
+-				}
+-				break;
+-			default:
+-				break;
+-			}
+-		} else {
+-			newmode = drm_mode_detailed(dev, edid, timing, quirks);
+-			if (!newmode)
+-				continue;
+-
+-			/* First detailed mode is preferred */
+-			if (i == 0 && (edid->features & DRM_EDID_FEATURE_PREFERRED_TIMING))
+-				newmode->type |= DRM_MODE_TYPE_PREFERRED;
+-			drm_mode_probed_add(connector, newmode);
++		/* In 1.0, only timings are allowed */
++		if (!timing->pixel_clock && edid->version == 1 &&
++			edid->revision == 0)
++			continue;
+ 
+-			modes++;
+-		}
++		modes += add_detailed_modes(connector, timing, edid, quirks,
++					    preferred);
+ 	}
+ 
+ 	return modes;
+ }
++
+ /**
+  * add_detailed_mode_eedid - get detailed mode info from addtional timing
+  * 			EDID block
+@@ -920,12 +926,9 @@ static int add_detailed_info(struct drm_
+ static int add_detailed_info_eedid(struct drm_connector *connector,
+ 			     struct edid *edid, u32 quirks)
+ {
+-	struct drm_device *dev = connector->dev;
+-	int i, j, modes = 0;
++	int i, modes = 0;
+ 	char *edid_ext = NULL;
+ 	struct detailed_timing *timing;
+-	struct detailed_non_pixel *data;
+-	struct drm_display_mode *newmode;
+ 	int edid_ext_num;
+ 	int start_offset, end_offset;
+ 	int timing_level;
+@@ -976,51 +979,7 @@ static int add_detailed_info_eedid(struc
+ 	for (i = start_offset; i < end_offset;
+ 			i += sizeof(struct detailed_timing)) {
+ 		timing = (struct detailed_timing *)(edid_ext + i);
+-		data = &timing->data.other_data;
+-		/* Detailed mode timing */
+-		if (timing->pixel_clock) {
+-			newmode = drm_mode_detailed(dev, edid, timing, quirks);
+-			if (!newmode)
+-				continue;
+-
+-			drm_mode_probed_add(connector, newmode);
+-
+-			modes++;
+-			continue;
+-		}
+-
+-		/* Other timing or info */
+-		switch (data->type) {
+-		case EDID_DETAIL_MONITOR_SERIAL:
+-			break;
+-		case EDID_DETAIL_MONITOR_STRING:
+-			break;
+-		case EDID_DETAIL_MONITOR_RANGE:
+-			/* Get monitor range data */
+-			break;
+-		case EDID_DETAIL_MONITOR_NAME:
+-			break;
+-		case EDID_DETAIL_MONITOR_CPDATA:
+-			break;
+-		case EDID_DETAIL_STD_MODES:
+-			/* Five modes per detailed section */
+-			for (j = 0; j < 5; i++) {
+-				struct std_timing *std;
+-				struct drm_display_mode *newmode;
+-
+-				std = &data->data.timings[j];
+-				newmode = drm_mode_std(dev, std,
+-						       edid->revision,
+-						       timing_level);
+-				if (newmode) {
+-					drm_mode_probed_add(connector, newmode);
+-					modes++;
+-				}
+-			}
+-			break;
+-		default:
+-			break;
+-		}
++		modes += add_detailed_modes(connector, timing, edid, quirks, 0);
+ 	}
+ 
+ 	return modes;
 
 
