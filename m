@@ -1,74 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600Ab0C3GOe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 02:14:34 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50190 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755481Ab0C3GOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 02:14:32 -0400
-Message-ID: <4BB19656.9040803@kernel.org>
-Date: Mon, 29 Mar 2010 23:12:38 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: michael@ellerman.id.au, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+	id S1755676Ab0C3GUS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 02:20:18 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:34946 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755634Ab0C3GUO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 02:20:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=O4x7eOQQ9/SExvWUOb+Ol7r7hzfS6yFM6mam+/9ddKXGdNj/2Mi/NHWfSJQ1jD/0Dk
+         /qX0fdYA1C25sOru47LUyfSUW7Cn4r8O+amWhdzuC7fpBew36zGgAer4Ax9vjYThBtZb
+         XnEwOIPdAmAFznqFMIX3vY2vCPqdczvh74N1o=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+       Thomas Gleixner <tglx@linutronix.de>,
        Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 07/31] lmb: Add reserve_lmb/free_lmb
-References: <1269830604-26214-1-git-send-email-yinghai@kernel.org>	 <1269830604-26214-8-git-send-email-yinghai@kernel.org>	 <1269865322.24620.42.camel@concordia>  <4BB0D92C.3010103@kernel.org>	 <1269901252.2286.11.camel@concordia> <1269905491.7101.40.camel@pasglop>	 <4BB13FDB.9060006@kernel.org> <1269926794.7101.46.camel@pasglop>
-In-Reply-To: <1269926794.7101.46.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+       John Kacur <jkacur@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Al Viro <viro@ZenIV.linux.org.uk>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH 1/6] procfs: Kill BKL in llseek on proc base
+Date: Tue, 30 Mar 2010 08:20:10 +0200
+Message-Id: <1269930015-863-2-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.6.2.3
+In-Reply-To: <1269930015-863-1-git-send-regression-fweisbec@gmail.com>
+References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2010 10:26 PM, Benjamin Herrenschmidt wrote:
-> On Mon, 2010-03-29 at 17:03 -0700, Yinghai Lu wrote:
->>
->> in short: It could make us to avoid use the range that we are going to
->> reserve,
->>       when we try to get new position new lmb.reserved.region. 
-> 
-> I'm not too sure I follow you. For the resizing, I would just basically
-> call a low level variant of alloc (__lmb_alloc ?) that explicitely
-> doesn't honor the total-2 "reserved" entries in the array.
+From: Arnd Bergmann <arnd@arndb.de>
 
-1. you want to reserve rangeA
-2. before that will check if region array is big enough,
-3. if region is not big enough, will call lmb_alloc to get new range.
-   lmb_alloc could return rangB that is overlapped with rangeA
-4. current lmb_alloc only honor limit, and doesn't honor low limit.
+We don't use the BKL elsewhere, so use generic_file_llseek
+so we can avoid default_llseek taking the BKL.
 
-another usage is: for temporary buffer, like range array for subtraction.
-we don't need to do free later.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+[restore proc_fdinfo_file_operations as non-seekable]
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: John Kacur <jkacur@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+---
+ fs/proc/base.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
-> 
-> Ie. It should all be one single find/allocation function.
-> 
-> In fact, you want to split lmb_find from lmb_reserve, then just make
-> lmb_alloc use the above, I don't want 2 implementations of the same
-> thing (maybe call it __lmb_find to expose the fact that it's a low level
-> function to avoid for normal use).
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index a731084..95d91cf 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -728,6 +728,7 @@ out_no_task:
+ 
+ static const struct file_operations proc_info_file_operations = {
+ 	.read		= proc_info_read,
++	.llseek		= generic_file_llseek,
+ };
+ 
+ static int proc_single_show(struct seq_file *m, void *v)
+@@ -985,6 +986,7 @@ out_no_task:
+ 
+ static const struct file_operations proc_environ_operations = {
+ 	.read		= environ_read,
++	.llseek		= generic_file_llseek,
+ };
+ 
+ static ssize_t oom_adjust_read(struct file *file, char __user *buf,
+@@ -1058,6 +1060,7 @@ static ssize_t oom_adjust_write(struct file *file, const char __user *buf,
+ static const struct file_operations proc_oom_adjust_operations = {
+ 	.read		= oom_adjust_read,
+ 	.write		= oom_adjust_write,
++	.llseek		= generic_file_llseek,
+ };
+ 
+ #ifdef CONFIG_AUDITSYSCALL
+@@ -1129,6 +1132,7 @@ out_free_page:
+ static const struct file_operations proc_loginuid_operations = {
+ 	.read		= proc_loginuid_read,
+ 	.write		= proc_loginuid_write,
++	.llseek		= generic_file_llseek,
+ };
+ 
+ static ssize_t proc_sessionid_read(struct file * file, char __user * buf,
+@@ -1149,6 +1153,7 @@ static ssize_t proc_sessionid_read(struct file * file, char __user * buf,
+ 
+ static const struct file_operations proc_sessionid_operations = {
+ 	.read		= proc_sessionid_read,
++	.llseek		= generic_file_llseek,
+ };
+ #endif
+ 
+@@ -1200,6 +1205,7 @@ static ssize_t proc_fault_inject_write(struct file * file,
+ static const struct file_operations proc_fault_inject_operations = {
+ 	.read		= proc_fault_inject_read,
+ 	.write		= proc_fault_inject_write,
++	.llseek		= generic_file_llseek,
+ };
+ #endif
+ 
+@@ -1941,7 +1947,7 @@ static ssize_t proc_fdinfo_read(struct file *file, char __user *buf,
+ }
+ 
+ static const struct file_operations proc_fdinfo_file_operations = {
+-	.open		= nonseekable_open,
++	.open           = nonseekable_open,
+ 	.read		= proc_fdinfo_read,
+ };
+ 
+@@ -2225,6 +2231,7 @@ out_no_task:
+ static const struct file_operations proc_pid_attr_operations = {
+ 	.read		= proc_pid_attr_read,
+ 	.write		= proc_pid_attr_write,
++	.llseek		= generic_file_llseek,
+ };
+ 
+ static const struct pid_entry attr_dir_stuff[] = {
+@@ -2345,6 +2352,7 @@ static ssize_t proc_coredump_filter_write(struct file *file,
+ static const struct file_operations proc_coredump_filter_operations = {
+ 	.read		= proc_coredump_filter_read,
+ 	.write		= proc_coredump_filter_write,
++	.llseek		= generic_file_llseek,
+ };
+ #endif
+ 
+-- 
+1.6.2.3
 
-that is some difference between them, and lmb_alloc doesn't honor low limit.
-
-we can provide
-lmb_find_area
-lmb_reserve_area
-lmb_free_area
-
-and use lmb_find_area + lmb_reserve_area to get one lmb_alloc()
-
-x86 sometime is using find_lmb_area to find big area, and use those area and later reserve actually used area.
-
-you could use lmb_alloc, and later lmb_free not used. that is equal to lmb_find + lmb_reserve + lmb_free ...
-
-Thanks
-
-Yinghai Lu
