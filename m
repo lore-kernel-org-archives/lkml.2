@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757168Ab0C3XhP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:37:15 -0400
-Received: from kroah.org ([198.145.64.141]:46383 "EHLO coco.kroah.org"
+	id S1755035Ab0CaAGE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:06:04 -0400
+Received: from kroah.org ([198.145.64.141]:45261 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756859Ab0C3XUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:55 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:23 2010
-Message-Id: <20100330224822.839646817@linux.site>
+	id S1756768Ab0C3XS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:26 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:42 2010
+Message-Id: <20100330225641.980727642@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:08 -0700
+Date: Tue, 30 Mar 2010 15:55:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+       Andiry Xu <andiry.xu@amd.com>,
+       Sarah Sharp <sarah.a.sharp@linux.intel.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [094/156] nilfs2: fix hang-up of cleaner after log writer returned with error
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+Subject: [067/116] USB: xHCI: re-initialize cmd_completion
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+From: Andiry Xu <andiry.xu@amd.com>
 
-commit 110d735a0ae69bdd11af9acb6ea3b979137eb118 upstream.
+commit 1d68064a7d80da4a7334cab0356162e36229c1a1 upstream.
 
-According to the report from Andreas Beckmann (Message-ID:
-<4BA54677.3090902@abeckmann.de>), nilfs in 2.6.33 kernel got stuck
-after a disk full error.
+When a signal interrupts a Configure Endpoint command, the cmd_completion used
+in xhci_configure_endpoint() is not re-initialized and the
+wait_for_completion_interruptible_timeout() will return failure. Initialize
+cmd_completion in xhci_configure_endpoint().
 
-This turned out to be a regression by log writer updates merged at
-kernel 2.6.33.  nilfs_segctor_abort_construction, which is a cleanup
-function for erroneous cases, was skipping writeback completion for
-some logs.
-
-This fixes the bug and would resolve the hang issue.
-
-Reported-by: Andreas Beckmann <debian@abeckmann.de>
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Signed-off-by: Andiry Xu <andiry.xu@amd.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nilfs2/segment.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/host/xhci-hcd.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/nilfs2/segment.c
-+++ b/fs/nilfs2/segment.c
-@@ -1902,8 +1902,7 @@ static void nilfs_segctor_abort_construc
+--- a/drivers/usb/host/xhci-hcd.c
++++ b/drivers/usb/host/xhci-hcd.c
+@@ -1157,6 +1157,7 @@ static int xhci_configure_endpoint(struc
+ 		cmd_completion = &virt_dev->cmd_completion;
+ 		cmd_status = &virt_dev->cmd_status;
+ 	}
++	init_completion(cmd_completion);
  
- 	list_splice_tail_init(&sci->sc_write_logs, &logs);
- 	ret = nilfs_wait_on_logs(&logs);
--	if (ret)
--		nilfs_abort_logs(&logs, NULL, sci->sc_super_root, ret);
-+	nilfs_abort_logs(&logs, NULL, sci->sc_super_root, ret ? : err);
- 
- 	list_splice_tail_init(&sci->sc_segbufs, &logs);
- 	nilfs_cancel_segusage(&logs, nilfs->ns_sufile);
+ 	if (!ctx_change)
+ 		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
 
 
