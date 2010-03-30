@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757217Ab0C3Xpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:45:30 -0400
-Received: from kroah.org ([198.145.64.141]:46086 "EHLO coco.kroah.org"
+	id S1757224Ab0C3Xmv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:42:51 -0400
+Received: from kroah.org ([198.145.64.141]:46200 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932539Ab0C3XUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:08 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:58 2010
-Message-Id: <20100330224758.272422399@linux.site>
+	id S932591Ab0C3XUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:20:24 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:07 2010
+Message-Id: <20100330224807.272219280@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:41:32 -0700
+Date: Tue, 30 Mar 2010 15:41:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Gal Rosen <galr@storwize.com>, James Smart <james.smart@emulex.com>,
-       James Bottomley <James.Bottomley@suse.de>,
+       Daniel Sangorrin <daniel.sangorrin@gmail.com>,
+       Andreas Mohr <andi@lisas.de>, Radek Liboska <liboska@uochb.cas.cz>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [058/156] SCSI: scsi_transport_fc: Fix synchronization issue while deleting vport
+Subject: [072/156] USB: serial: ftdi: add CONTEC vendor and product id
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,77 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gal Rosen <galr@storwize.com>
+From: Daniel Sangorrin <daniel.sangorrin@gmail.com>
 
-commit 0d9dc7c8b9b7fa0f53647423b41056ee1beed735 upstream.
+commit dee5658b482e9e2ac7d6205dc876fc11d4008138 upstream.
 
-The issue occur while deleting 60 virtual ports through the sys
-interface /sys/class/fc_vports/vport-X/vport_delete. It happen while in
-a mistake each request sent twice for the same vport. This interface is
-asynchronous, entering the delete request into a work queue, allowing
-more than one request to enter to the delete work queue. The result is a
-NULL pointer. The first request already delete the vport, while the
-second request got a pointer to the vport before the device destroyed.
-Re-create vport later cause system freeze.
+This is a patch to ftdi_sio_ids.h and ftdi_sio.c that adds identifiers for
+CONTEC USB serial converter.  I tested it with the device COM-1(USB)H
 
-Solution: Check vport flags before entering the request to the work queue.
-
-[jejb: fixed int<->long problem on spinlock flags variable]
-Signed-off-by: Gal Rosen <galr@storwize.com>
-Acked-by: James Smart <james.smart@emulex.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+[akpm@linux-foundation.org: keep the VIDs sorted a bit]
+Signed-off-by: Daniel Sangorrin <daniel.sangorrin@gmail.com>
+Cc: Andreas Mohr <andi@lisas.de>
+Cc: Radek Liboska <liboska@uochb.cas.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/scsi_transport_fc.c |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    7 +++++++
+ 2 files changed, 8 insertions(+)
 
---- a/drivers/scsi/scsi_transport_fc.c
-+++ b/drivers/scsi/scsi_transport_fc.c
-@@ -1216,6 +1216,15 @@ store_fc_vport_delete(struct device *dev
- {
- 	struct fc_vport *vport = transport_class_to_vport(dev);
- 	struct Scsi_Host *shost = vport_to_shost(vport);
-+	unsigned long flags;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -658,6 +658,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(EVOLUTION_VID, EVOLUTION_ER1_PID) },
+ 	{ USB_DEVICE(EVOLUTION_VID, EVO_HYBRID_PID) },
+ 	{ USB_DEVICE(EVOLUTION_VID, EVO_RCM4_PID) },
++	{ USB_DEVICE(CONTEC_VID, CONTEC_COM1USBH_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ARTEMIS_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ATIK_ATK16_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ATIK_ATK16C_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -501,6 +501,13 @@
+ #define CONTEC_COM1USBH_PID	0x8311	/* COM-1(USB)H */
+ 
+ /*
++ * Contec products (http://www.contec.com)
++ * Submitted by Daniel Sangorrin
++ */
++#define CONTEC_VID		0x06CE	/* Vendor ID */
++#define CONTEC_COM1USBH_PID	0x8311	/* COM-1(USB)H */
 +
-+	spin_lock_irqsave(shost->host_lock, flags);
-+	if (vport->flags & (FC_VPORT_DEL | FC_VPORT_CREATING)) {
-+		spin_unlock_irqrestore(shost->host_lock, flags);
-+		return -EBUSY;
-+	}
-+	vport->flags |= FC_VPORT_DELETING;
-+	spin_unlock_irqrestore(shost->host_lock, flags);
- 
- 	fc_queue_work(shost, &vport->vport_delete_work);
- 	return count;
-@@ -1805,6 +1814,9 @@ store_fc_host_vport_delete(struct device
- 	list_for_each_entry(vport, &fc_host->vports, peers) {
- 		if ((vport->channel == 0) &&
- 		    (vport->port_name == wwpn) && (vport->node_name == wwnn)) {
-+			if (vport->flags & (FC_VPORT_DEL | FC_VPORT_CREATING))
-+				break;
-+			vport->flags |= FC_VPORT_DELETING;
- 			match = 1;
- 			break;
- 		}
-@@ -3354,18 +3366,6 @@ fc_vport_terminate(struct fc_vport *vpor
- 	unsigned long flags;
- 	int stat;
- 
--	spin_lock_irqsave(shost->host_lock, flags);
--	if (vport->flags & FC_VPORT_CREATING) {
--		spin_unlock_irqrestore(shost->host_lock, flags);
--		return -EBUSY;
--	}
--	if (vport->flags & (FC_VPORT_DEL)) {
--		spin_unlock_irqrestore(shost->host_lock, flags);
--		return -EALREADY;
--	}
--	vport->flags |= FC_VPORT_DELETING;
--	spin_unlock_irqrestore(shost->host_lock, flags);
--
- 	if (i->f->vport_delete)
- 		stat = i->f->vport_delete(vport);
- 	else
++/*
+  * Definitions for B&B Electronics products.
+  */
+ #define BANDB_VID		0x0856	/* B&B Electronics Vendor ID */
 
 
