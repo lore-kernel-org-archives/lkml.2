@@ -1,139 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932480Ab0C3XTs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:19:48 -0400
-Received: from kroah.org ([198.145.64.141]:45546 "EHLO coco.kroah.org"
+	id S1757478Ab0C3Xv7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:51:59 -0400
+Received: from kroah.org ([198.145.64.141]:45787 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932342Ab0C3XTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:04 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:11 2010
-Message-Id: <20100330225710.982545218@linux.site>
+	id S932433Ab0C3XTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:33 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:36 2010
+Message-Id: <20100330224735.512220386@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:56:26 -0700
+Date: Tue, 30 Mar 2010 15:40:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [108/116] ahci: use BIOS date in broken_suspend list
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+Subject: [024/156] tracing: Do not record user stack trace from NMI context
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Steven Rostedt <srostedt@redhat.com>
 
-commit 9deb343189b3cf45e84dd08480f330575ffe2004 upstream.
+commit b6345879ccbd9b92864fbd7eb8ac48acdb4d6b15 upstream.
 
-HP is recycling both DMI_PRODUCT_NAME and DMI_BIOS_VERSION making
-ahci_broken_suspend() trigger for later products which are not
-affected by the original problems.  Match BIOS date instead of version
-and add references to bko's so that full information can be found
-easier later.
+A bug was found with Li Zefan's ftrace_stress_test that caused applications
+to segfault during the test.
 
-This fixes http://bugzilla.kernel.org/show_bug.cgi?id=15462
+Placing a tracing_off() in the segfault code, and examining several
+traces, I found that the following was always the case. The lock tracer
+was enabled (lockdep being required) and userstack was enabled. Testing
+this out, I just enabled the two, but that was not good enough. I needed
+to run something else that could trigger it. Running a load like hackbench
+did not work, but executing a new program would. The following would
+trigger the segfault within seconds:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: tigerfishdaisy@gmail.com
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+  # echo 1 > /debug/tracing/options/userstacktrace
+  # echo 1 > /debug/tracing/events/lock/enable
+  # while :; do ls > /dev/null ; done
+
+Enabling the function graph tracer and looking at what was happening
+I finally noticed that all cashes happened just after an NMI.
+
+ 1)               |    copy_user_handle_tail() {
+ 1)               |      bad_area_nosemaphore() {
+ 1)               |        __bad_area_nosemaphore() {
+ 1)               |          no_context() {
+ 1)               |            fixup_exception() {
+ 1)   0.319 us    |              search_exception_tables();
+ 1)   0.873 us    |            }
+[...]
+ 1)   0.314 us    |  __rcu_read_unlock();
+ 1)   0.325 us    |    native_apic_mem_write();
+ 1)   0.943 us    |  }
+ 1)   0.304 us    |  rcu_nmi_exit();
+[...]
+ 1)   0.479 us    |  find_vma();
+ 1)               |  bad_area() {
+ 1)               |    __bad_area() {
+
+After capturing several traces of failures, all of them happened
+after an NMI. Curious about this, I added a trace_printk() to the NMI
+handler to read the regs->ip to see where the NMI happened. In which I
+found out it was here:
+
+ffffffff8135b660 <page_fault>:
+ffffffff8135b660:       48 83 ec 78             sub    $0x78,%rsp
+ffffffff8135b664:       e8 97 01 00 00          callq  ffffffff8135b800 <error_entry>
+
+What was happening is that the NMI would happen at the place that a page
+fault occurred. It would call rcu_read_lock() which was traced by
+the lock events, and the user_stack_trace would run. This would trigger
+a page fault inside the NMI. I do not see where the CR2 register is
+saved or restored in NMI handling. This means that it would corrupt
+the page fault handling that the NMI interrupted.
+
+The reason the while loop of ls helped trigger the bug, was that
+each execution of ls would cause lots of pages to be faulted in, and
+increase the chances of the race happening.
+
+The simple solution is to not allow user stack traces in NMI context.
+After this patch, I ran the above "ls" test for a couple of hours
+without any issues. Without this patch, the bug would trigger in less
+than a minute.
+
+Reported-by: Li Zefan <lizf@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/ahci.c |   28 ++++++++++++++++++++--------
- 1 file changed, 20 insertions(+), 8 deletions(-)
+ kernel/trace/trace.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -2831,6 +2831,14 @@ static bool ahci_broken_suspend(struct p
- 		 * On HP dv[4-6] and HDX18 with earlier BIOSen, link
- 		 * to the harddisk doesn't become online after
- 		 * resuming from STR.  Warn and fail suspend.
-+		 *
-+		 * http://bugzilla.kernel.org/show_bug.cgi?id=12276
-+		 *
-+		 * Use dates instead of versions to match as HP is
-+		 * apparently recycling both product and version
-+		 * strings.
-+		 *
-+		 * http://bugzilla.kernel.org/show_bug.cgi?id=15462
- 		 */
- 		{
- 			.ident = "dv4",
-@@ -2839,7 +2847,7 @@ static bool ahci_broken_suspend(struct p
- 				DMI_MATCH(DMI_PRODUCT_NAME,
- 					  "HP Pavilion dv4 Notebook PC"),
- 			},
--			.driver_data = "F.30", /* cutoff BIOS version */
-+			.driver_data = "20090105",	/* F.30 */
- 		},
- 		{
- 			.ident = "dv5",
-@@ -2848,7 +2856,7 @@ static bool ahci_broken_suspend(struct p
- 				DMI_MATCH(DMI_PRODUCT_NAME,
- 					  "HP Pavilion dv5 Notebook PC"),
- 			},
--			.driver_data = "F.16", /* cutoff BIOS version */
-+			.driver_data = "20090506",	/* F.16 */
- 		},
- 		{
- 			.ident = "dv6",
-@@ -2857,7 +2865,7 @@ static bool ahci_broken_suspend(struct p
- 				DMI_MATCH(DMI_PRODUCT_NAME,
- 					  "HP Pavilion dv6 Notebook PC"),
- 			},
--			.driver_data = "F.21",	/* cutoff BIOS version */
-+			.driver_data = "20090423",	/* F.21 */
- 		},
- 		{
- 			.ident = "HDX18",
-@@ -2866,7 +2874,7 @@ static bool ahci_broken_suspend(struct p
- 				DMI_MATCH(DMI_PRODUCT_NAME,
- 					  "HP HDX18 Notebook PC"),
- 			},
--			.driver_data = "F.23",	/* cutoff BIOS version */
-+			.driver_data = "20090430",	/* F.23 */
- 		},
- 		/*
- 		 * Acer eMachines G725 has the same problem.  BIOS
-@@ -2874,6 +2882,8 @@ static bool ahci_broken_suspend(struct p
- 		 * work.  Inbetween, there are V1.06, V2.06 and V3.03
- 		 * that we don't have much idea about.  For now,
- 		 * blacklist anything older than V3.04.
-+		 *
-+		 * http://bugzilla.kernel.org/show_bug.cgi?id=15104
- 		 */
- 		{
- 			.ident = "G725",
-@@ -2881,19 +2891,21 @@ static bool ahci_broken_suspend(struct p
- 				DMI_MATCH(DMI_SYS_VENDOR, "eMachines"),
- 				DMI_MATCH(DMI_PRODUCT_NAME, "eMachines G725"),
- 			},
--			.driver_data = "V3.04",	/* cutoff BIOS version */
-+			.driver_data = "20091216",	/* V3.04 */
- 		},
- 		{ }	/* terminate list */
- 	};
- 	const struct dmi_system_id *dmi = dmi_first_match(sysids);
--	const char *ver;
-+	int year, month, date;
-+	char buf[9];
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1191,6 +1191,13 @@ ftrace_trace_userstack(struct ring_buffe
+ 	if (!(trace_flags & TRACE_ITER_USERSTACKTRACE))
+ 		return;
  
- 	if (!dmi || pdev->bus->number || pdev->devfn != PCI_DEVFN(0x1f, 2))
- 		return false;
- 
--	ver = dmi_get_system_info(DMI_BIOS_VERSION);
-+	dmi_get_date(DMI_BIOS_DATE, &year, &month, &date);
-+	snprintf(buf, sizeof(buf), "%04d%02d%02d", year, month, date);
- 
--	return !ver || strcmp(ver, dmi->driver_data) < 0;
-+	return strcmp(buf, dmi->driver_data) < 0;
- }
- 
- static bool ahci_broken_online(struct pci_dev *pdev)
++	/*
++	 * NMIs can not handle page faults, even with fix ups.
++	 * The save user stack can (and often does) fault.
++	 */
++	if (unlikely(in_nmi()))
++		return;
++
+ 	event = trace_buffer_lock_reserve(buffer, TRACE_USER_STACK,
+ 					  sizeof(*entry), flags, pc);
+ 	if (!event)
 
 
