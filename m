@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757549Ab0C3X73 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:59:29 -0400
-Received: from kroah.org ([198.145.64.141]:45486 "EHLO coco.kroah.org"
+	id S932775Ab0C3XXY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:23:24 -0400
+Received: from kroah.org ([198.145.64.141]:46925 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932326Ab0C3XS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:56 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:06 2010
-Message-Id: <20100330225706.172984111@linux.site>
+	id S932716Ab0C3XWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:22:24 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:01 2010
+Message-Id: <20100330224901.391243378@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:56:18 -0700
+Date: Tue, 30 Mar 2010 15:43:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>,
+       Joseph Chan <josephchan@via.com.tw>, Jeff Garzik <jgarzik@redhat.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [100/116] ALSA: hda: Use ALC260_WILL quirk for another Acer model (0x1025007f)
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+Subject: [156/156] pata_via: fix VT6410/6415/6330 detection issue
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: JosephChan@via.com.tw <JosephChan@via.com.tw>
 
-commit 950200e2ff11daae1c5d9426703bdd494603f38b upstream.
+commit bc8a67386fd462914269fa93446e1891955a8bb3 upstream.
 
-BugLink: https://bugs.launchpad.net/bugs/418627
+When using VT6410/6415/6330 chips on some VIA's platforms, the HDD
+connection to VT6410/6415/6330 cannot be detected.
 
-The original reporter states that this quirk is necessary to obtain
-reasonable gain for playback.  Without it, sound is inaudible.  Tested
-with playback (spkr and hp) and capture.
+It is because the driver detects wrong via_isa_bridge ID, and then
+causes this issue to happen.
 
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Joseph Chan <josephchan@via.com.tw>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/ata/pata_via.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -6252,6 +6252,7 @@ static const char *alc260_models[ALC260_
+--- a/drivers/ata/pata_via.c
++++ b/drivers/ata/pata_via.c
+@@ -588,6 +588,10 @@ static int via_init_one(struct pci_dev *
+ 			u8 rev = isa->revision;
+ 			pci_dev_put(isa);
  
- static struct snd_pci_quirk alc260_cfg_tbl[] = {
- 	SND_PCI_QUIRK(0x1025, 0x007b, "Acer C20x", ALC260_ACER),
-+	SND_PCI_QUIRK(0x1025, 0x007f, "Acer", ALC260_WILL),
- 	SND_PCI_QUIRK(0x1025, 0x008f, "Acer", ALC260_ACER),
- 	SND_PCI_QUIRK(0x1509, 0x4540, "Favorit 100XS", ALC260_FAVORIT100),
- 	SND_PCI_QUIRK(0x103c, 0x2808, "HP d5700", ALC260_HP_3013),
++			if ((id->device == 0x0415 || id->device == 0x3164) &&
++			    (config->id != id->device))
++				continue;
++
+ 			if (rev >= config->rev_min && rev <= config->rev_max)
+ 				break;
+ 		}
 
 
