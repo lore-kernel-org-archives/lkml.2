@@ -1,125 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932700Ab0C3XWL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:22:11 -0400
-Received: from kroah.org ([198.145.64.141]:46467 "EHLO coco.kroah.org"
+	id S932524Ab0C3XUB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:20:01 -0400
+Received: from kroah.org ([198.145.64.141]:45580 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755161Ab0C3XVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:21:14 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:31 2010
-Message-Id: <20100330224830.858028493@linux.site>
+	id S932358Ab0C3XTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:09 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:14 2010
+Message-Id: <20100330225714.111899574@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:21 -0700
+Date: Tue, 30 Mar 2010 15:56:31 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org,
+       Mike Snitzer <snitzer@redhat.com>
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Senthil Balasubramanian <senthilkumar@atheros.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+       martin.petersen@oracle.com, jens.axboe@oracle.com,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [107/156] ath9k: Enable TIM timer interrupt only when needed.
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+Subject: [113/116] block: Backport of various I/O topology fixes from 2.6.33 and 2.6.34
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Senthil Balasubramanian <senthilkumar@atheros.com>
+block: Backport of various I/O topology fixes from 2.6.33 and 2.6.34
 
-commit 3f7c5c10e9dc6bf90179eb9f7c06151d508fb324 upstream.
+The stacking code incorrectly scaled up the data offset in some cases
+causing misaligned devices to report alignment.  Rewrite the stacking
+algorithm to remedy this.  
 
-The TIM timer interrupt is enabled even before the ACK of nullqos
-is received which is unnecessary.
+(Upstream commit 9504e0864b58b4a304820dcf3755f1da80d5e72f)
 
-Also clean up the CONF_PS part of config callback properly for
-better readability.
+The top device misalignment flag would not be set if the added bottom
+device was already misaligned as opposed to causing a stacking failure.
+    
+Also massage the reporting so that an error is only returned if adding
+the bottom device caused the misalignment.  I.e. don't return an error
+if the top is already flagged as misaligned.
 
-Signed-off-by: Senthil Balasubramanian <senthilkumar@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+(Upstream commit fe0b393f2c0a0d23a9bc9ed7dc51a1ee511098bd)
+
+
+lcm() was defined to take integer-sized arguments.  The supplied
+arguments are multiplied, however, causing us to overflow given
+sufficiently large input.  That in turn led to incorrect optimal I/O
+size reporting in some cases.  Switch lcm() over to unsigned long
+similar to gcd() and move the function from blk-settings.c to lib.
+
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+Reviewed-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/ath9k.h |    1 +
- drivers/net/wireless/ath/ath9k/main.c  |   24 ++++++++++++++----------
- drivers/net/wireless/ath/ath9k/xmit.c  |    7 +++----
- 3 files changed, 18 insertions(+), 14 deletions(-)
+ block/blk-settings.c |   93 +++++++++++++++++++++++++++++++++++++--------------
+ include/linux/lcm.h  |    8 ++++
+ lib/Makefile         |    2 -
+ lib/lcm.c            |   15 ++++++++
+ 4 files changed, 92 insertions(+), 26 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/ath9k.h
-+++ b/drivers/net/wireless/ath/ath9k/ath9k.h
-@@ -267,6 +267,7 @@ void ath_tx_aggr_start(struct ath_softc
- 		       u16 tid, u16 *ssn);
- void ath_tx_aggr_stop(struct ath_softc *sc, struct ieee80211_sta *sta, u16 tid);
- void ath_tx_aggr_resume(struct ath_softc *sc, struct ieee80211_sta *sta, u16 tid);
-+void ath9k_enable_ps(struct ath_softc *sc);
+--- a/block/blk-settings.c
++++ b/block/blk-settings.c
+@@ -8,6 +8,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/bootmem.h>	/* for max_pfn/max_low_pfn */
+ #include <linux/gcd.h>
++#include <linux/lcm.h>
  
- /********/
- /* VIFs */
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -2681,6 +2681,19 @@ static void ath9k_remove_interface(struc
- 	mutex_unlock(&sc->mutex);
- }
+ #include "blk.h"
  
-+void ath9k_enable_ps(struct ath_softc *sc)
-+{
-+	sc->ps_enabled = true;
-+	if (!(sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_AUTOSLEEP)) {
-+		if ((sc->imask & ATH9K_INT_TIM_TIMER) == 0) {
-+			sc->imask |= ATH9K_INT_TIM_TIMER;
-+			ath9k_hw_set_interrupts(sc->sc_ah,
-+					sc->imask);
+@@ -490,18 +491,31 @@ EXPORT_SYMBOL(blk_queue_stack_limits);
+ 
+ /**
+  * blk_stack_limits - adjust queue_limits for stacked devices
+- * @t:	the stacking driver limits (top)
+- * @b:  the underlying queue limits (bottom)
++ * @t:	the stacking driver limits (top device)
++ * @b:  the underlying queue limits (bottom, component device)
+  * @offset:  offset to beginning of data within component device
+  *
+  * Description:
+- *    Merges two queue_limit structs.  Returns 0 if alignment didn't
+- *    change.  Returns -1 if adding the bottom device caused
+- *    misalignment.
++ *    This function is used by stacking drivers like MD and DM to ensure
++ *    that all component devices have compatible block sizes and
++ *    alignments.  The stacking driver must provide a queue_limits
++ *    struct (top) and then iteratively call the stacking function for
++ *    all component (bottom) devices.  The stacking function will
++ *    attempt to combine the values and ensure proper alignment.
++ *
++ *    Returns 0 if the top and bottom queue_limits are compatible.  The
++ *    top device's block sizes and alignment offsets may be adjusted to
++ *    ensure alignment with the bottom device. If no compatible sizes
++ *    and alignments exist, -1 is returned and the resulting top
++ *    queue_limits will have the misaligned flag set to indicate that
++ *    the alignment_offset is undefined.
+  */
+ int blk_stack_limits(struct queue_limits *t, struct queue_limits *b,
+ 		     sector_t offset)
+ {
++	sector_t alignment;
++	unsigned int top, bottom, ret = 0;
++
+ 	t->max_sectors = min_not_zero(t->max_sectors, b->max_sectors);
+ 	t->max_hw_sectors = min_not_zero(t->max_hw_sectors, b->max_hw_sectors);
+ 	t->bounce_pfn = min_not_zero(t->bounce_pfn, b->bounce_pfn);
+@@ -518,6 +532,26 @@ int blk_stack_limits(struct queue_limits
+ 	t->max_segment_size = min_not_zero(t->max_segment_size,
+ 					   b->max_segment_size);
+ 
++	t->misaligned |= b->misaligned;
++
++	alignment = queue_limit_alignment_offset(b, offset);
++
++	/* Bottom device has different alignment.  Check that it is
++	 * compatible with the current top alignment.
++	 */
++	if (t->alignment_offset != alignment) {
++
++		top = max(t->physical_block_size, t->io_min)
++			+ t->alignment_offset;
++		bottom = max(b->physical_block_size, b->io_min) + alignment;
++
++		/* Verify that top and bottom intervals line up */
++		if (max(top, bottom) & (min(top, bottom) - 1)) {
++			t->misaligned = 1;
++			ret = -1;
 +		}
 +	}
-+	ath9k_hw_setrxabort(sc->sc_ah, 1);
-+}
 +
- static int ath9k_config(struct ieee80211_hw *hw, u32 changed)
- {
- 	struct ath_wiphy *aphy = hw->priv;
-@@ -2734,22 +2747,13 @@ static int ath9k_config(struct ieee80211
- 	if (changed & IEEE80211_CONF_CHANGE_PS) {
- 		if (conf->flags & IEEE80211_CONF_PS) {
- 			sc->sc_flags |= SC_OP_PS_ENABLED;
--			if (!(ah->caps.hw_caps &
--			      ATH9K_HW_CAP_AUTOSLEEP)) {
--				if ((sc->imask & ATH9K_INT_TIM_TIMER) == 0) {
--					sc->imask |= ATH9K_INT_TIM_TIMER;
--					ath9k_hw_set_interrupts(sc->sc_ah,
--							sc->imask);
--				}
--			}
- 			/*
- 			 * At this point we know hardware has received an ACK
- 			 * of a previously sent null data frame.
- 			 */
- 			if ((sc->sc_flags & SC_OP_NULLFUNC_COMPLETED)) {
- 				sc->sc_flags &= ~SC_OP_NULLFUNC_COMPLETED;
--				sc->ps_enabled = true;
--				ath9k_hw_setrxabort(sc->sc_ah, 1);
-+				ath9k_enable_ps(sc);
-                         }
- 		} else {
- 			sc->ps_enabled = false;
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -2034,10 +2034,9 @@ static void ath_tx_processq(struct ath_s
- 		 */
- 		if (bf->bf_isnullfunc &&
- 		    (ds->ds_txstat.ts_status & ATH9K_TX_ACKED)) {
--			if ((sc->sc_flags & SC_OP_PS_ENABLED)) {
--				sc->ps_enabled = true;
--				ath9k_hw_setrxabort(sc->sc_ah, 1);
--			} else
-+			if ((sc->sc_flags & SC_OP_PS_ENABLED))
-+				ath9k_enable_ps(sc);
-+			else
- 				sc->sc_flags |= SC_OP_NULLFUNC_COMPLETED;
- 		}
+ 	t->logical_block_size = max(t->logical_block_size,
+ 				    b->logical_block_size);
  
+@@ -525,37 +559,46 @@ int blk_stack_limits(struct queue_limits
+ 				     b->physical_block_size);
+ 
+ 	t->io_min = max(t->io_min, b->io_min);
++	t->io_opt = lcm(t->io_opt, b->io_opt);
++
+ 	t->no_cluster |= b->no_cluster;
+ 
+-	/* Bottom device offset aligned? */
+-	if (offset &&
+-	    (offset & (b->physical_block_size - 1)) != b->alignment_offset) {
++	/* Physical block size a multiple of the logical block size? */
++	if (t->physical_block_size & (t->logical_block_size - 1)) {
++		t->physical_block_size = t->logical_block_size;
+ 		t->misaligned = 1;
+-		return -1;
++		ret = -1;
+ 	}
+ 
+-	/* If top has no alignment offset, inherit from bottom */
+-	if (!t->alignment_offset)
+-		t->alignment_offset =
+-			b->alignment_offset & (b->physical_block_size - 1);
++	/* Minimum I/O a multiple of the physical block size? */
++	if (t->io_min & (t->physical_block_size - 1)) {
++		t->io_min = t->physical_block_size;
++		t->misaligned = 1;
++		ret = -1;
++	}
+ 
+-	/* Top device aligned on logical block boundary? */
+-	if (t->alignment_offset & (t->logical_block_size - 1)) {
++	/* Optimal I/O a multiple of the physical block size? */
++	if (t->io_opt & (t->physical_block_size - 1)) {
++		t->io_opt = 0;
+ 		t->misaligned = 1;
+-		return -1;
++		ret = -1;
+ 	}
+ 
+-	/* Find lcm() of optimal I/O size */
+-	if (t->io_opt && b->io_opt)
+-		t->io_opt = (t->io_opt * b->io_opt) / gcd(t->io_opt, b->io_opt);
+-	else if (b->io_opt)
+-		t->io_opt = b->io_opt;
++	/* Find lowest common alignment_offset */
++	t->alignment_offset = lcm(t->alignment_offset, alignment)
++		& (max(t->physical_block_size, t->io_min) - 1);
++
++	/* Verify that new alignment_offset is on a logical block boundary */
++	if (t->alignment_offset & (t->logical_block_size - 1)) {
++		t->misaligned = 1;
++		ret = -1;
++	}
+ 
+-	/* Verify that optimal I/O size is a multiple of io_min */
+-	if (t->io_min && t->io_opt % t->io_min)
+-		return -1;
++	/* Discard */
++	t->max_discard_sectors = min_not_zero(t->max_discard_sectors,
++					      b->max_discard_sectors);
+ 
+-	return 0;
++	return ret;
+ }
+ EXPORT_SYMBOL(blk_stack_limits);
+ 
+--- /dev/null
++++ b/include/linux/lcm.h
+@@ -0,0 +1,8 @@
++#ifndef _LCM_H
++#define _LCM_H
++
++#include <linux/compiler.h>
++
++unsigned long lcm(unsigned long a, unsigned long b) __attribute_const__;
++
++#endif /* _LCM_H */
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -21,7 +21,7 @@ lib-y	+= kobject.o kref.o klist.o
+ 
+ obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
+ 	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
+-	 string_helpers.o gcd.o
++	 string_helpers.o gcd.o lcm.o
+ 
+ ifeq ($(CONFIG_DEBUG_KOBJECT),y)
+ CFLAGS_kobject.o += -DDEBUG
+--- /dev/null
++++ b/lib/lcm.c
+@@ -0,0 +1,15 @@
++#include <linux/kernel.h>
++#include <linux/gcd.h>
++#include <linux/module.h>
++
++/* Lowest common multiple */
++unsigned long lcm(unsigned long a, unsigned long b)
++{
++	if (a && b)
++		return (a * b) / gcd(a, b);
++	else if (b)
++		return b;
++
++	return a;
++}
++EXPORT_SYMBOL_GPL(lcm);
 
 
