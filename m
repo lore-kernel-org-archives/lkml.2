@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757350Ab0C3Xr4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:47:56 -0400
-Received: from kroah.org ([198.145.64.141]:45941 "EHLO coco.kroah.org"
+	id S1757381Ab0C3Xs0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:48:26 -0400
+Received: from kroah.org ([198.145.64.141]:45909 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932494Ab0C3XTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:53 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:49 2010
-Message-Id: <20100330224748.510081090@linux.site>
+	id S932482Ab0C3XTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:49 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:46 2010
+Message-Id: <20100330224745.531111746@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:41:18 -0700
+Date: Tue, 30 Mar 2010 15:41:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Tilman Schmidt <tilman@imap.cc>, Karsten Keil <keil@b1-systems.de>,
-       "David S. Miller" <davem@davemloft.net>,
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [044/156] gigaset: correct clearing of at_state strings on RING
+Subject: [039/156] ALSA: hda: Use LPIB and 6stack-dig for eMachines T5212
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,44 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 3a0a3a6b92edf181f849ebd8417122392ba73a96 upstream.
+commit 572c0e3c73341755f3e7dfaaef6b26df12bd709c upstream.
 
-In RING handling, clear the table of received parameter strings in
-a loop like everywhere else, instead of by enumeration which had
-already gotten out of sync.
+BugLink: https://bugs.launchpad.net/bugs/538895
 
-Impact: minor bugfix
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-Acked-by: Karsten Keil <keil@b1-systems.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The OR has verified that both position_fix=1 and model=6stack-dig are
+necessary to have capture function properly. (The existing 3stack-6ch
+model quirk seems to be incorrect.)
+
+Reported-by: Reuben Bailey <reuben.e.bailey@gmail.com>
+Tested-by: Reuben Bailey <reuben.e.bailey@gmail.com>
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/isdn/gigaset/ev-layer.c |   12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ sound/pci/hda/hda_intel.c     |    1 +
+ sound/pci/hda/patch_realtek.c |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/isdn/gigaset/ev-layer.c
-+++ b/drivers/isdn/gigaset/ev-layer.c
-@@ -1259,14 +1259,10 @@ static void do_action(int action, struct
- 		 * note that bcs may be NULL if no B channel is free
- 		 */
- 		at_state2->ConState = 700;
--		kfree(at_state2->str_var[STR_NMBR]);
--		at_state2->str_var[STR_NMBR] = NULL;
--		kfree(at_state2->str_var[STR_ZCPN]);
--		at_state2->str_var[STR_ZCPN] = NULL;
--		kfree(at_state2->str_var[STR_ZBC]);
--		at_state2->str_var[STR_ZBC] = NULL;
--		kfree(at_state2->str_var[STR_ZHLC]);
--		at_state2->str_var[STR_ZHLC] = NULL;
-+		for (i = 0; i < STR_NUM; ++i) {
-+			kfree(at_state2->str_var[i]);
-+			at_state2->str_var[i] = NULL;
-+		}
- 		at_state2->int_var[VAR_ZCTP] = -1;
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2267,6 +2267,7 @@ static struct snd_pci_quirk position_fix
+ 	SND_PCI_QUIRK(0x1043, 0x813d, "ASUS P5AD2", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1462, 0x1002, "MSI Wind U115", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1565, 0x820f, "Biostar Microtech", POS_FIX_LPIB),
++	SND_PCI_QUIRK(0x8086, 0xd601, "eMachines T5212", POS_FIX_LPIB),
+ 	{}
+ };
  
- 		spin_lock_irqsave(&cs->lock, flags);
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -9101,7 +9101,7 @@ static struct snd_pci_quirk alc882_cfg_t
+ 	SND_PCI_QUIRK(0x8086, 0x0022, "DX58SO", ALC889_INTEL),
+ 	SND_PCI_QUIRK(0x8086, 0x0021, "Intel IbexPeak", ALC889A_INTEL),
+ 	SND_PCI_QUIRK(0x8086, 0x3b56, "Intel IbexPeak", ALC889A_INTEL),
+-	SND_PCI_QUIRK(0x8086, 0xd601, "D102GGC", ALC883_3ST_6ch),
++	SND_PCI_QUIRK(0x8086, 0xd601, "D102GGC", ALC882_6ST_DIG),
+ 
+ 	{}
+ };
 
 
