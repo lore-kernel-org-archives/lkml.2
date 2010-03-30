@@ -1,78 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756396Ab0C3L5B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 07:57:01 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:62650 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756044Ab0C3L5A convert rfc822-to-8bit (ORCPT
+	id S1756540Ab0C3MHs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 08:07:48 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:40865 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756492Ab0C3MHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 07:57:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=xPTqY2RUE8v5FuAMTQeR3EQc2C+UwF+YLUqHr5f7wSyEQO2zDtZ4QTEPBiIOeBw6zN
-         vNHg5snYjN7WnYAcig9GOYUio1y/qLuE5cl5xTwvfw2/eEIdV2AiBM5zsdsac9/iNxKC
-         DANLHp4m58JDwUUWw/JCzGWuOL5TCFCKBYQGo=
+	Tue, 30 Mar 2010 08:07:47 -0400
+Message-ID: <4BB1E98E.9050702@canonical.com>
+Date: Tue, 30 Mar 2010 14:07:42 +0200
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-In-Reply-To: <20100330055304.GA2983@sli10-desk.sh.intel.com>
-References: <20100330055304.GA2983@sli10-desk.sh.intel.com>
-Date: Tue, 30 Mar 2010 17:26:56 +0530
-X-Google-Sender-Auth: 30380da808efa596
-Message-ID: <661de9471003300456r6527f17au6d70bd0d2ee0a941@mail.gmail.com>
-Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, fengguang.wu@intel.com,
-       kosaki.motohiro@jp.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: linux-kernel@vger.kernel.org
+CC: davem@davemloft.net, gregkh@suse.de, stable@kernel.org,
+       stable-commits@vger.kernel.org
+Subject: Re: patch sparc64-make-prom-entry-spinlock-nmi-safe.patch added to
+ 2.6.32-stable tree
+References: <12689584863184@kroah.org>
+In-Reply-To: <12689584863184@kroah.org>
+X-Enigmail-Version: 0.95.7
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 11:23 AM, Shaohua Li <shaohua.li@intel.com> wrote:
-> Commit 84b18490d1f1bc7ed5095c929f78bc002eb70f26 introduces a regression.
-> With it, our tmpfs test always oom. The test has a lot of rotated anon
-> pages and cause percent[0] zero. Actually the percent[0] is a very small
-> value, but our calculation round it to zero. The commit makes vmscan
-> completely skip anon pages and cause oops.
-> An option is if percent[x] is zero in get_scan_ratio(), forces it
-> to 1. See below patch.
-> But the offending commit still changes behavior. Without the commit, we scan
-> all pages if priority is zero, below patch doesn't fix this. Don't know if
-> It's required to fix this too.
->
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
->
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 79c8098..d5cc34e 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1604,6 +1604,18 @@ static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
->        /* Normalize to percentages */
->        percent[0] = 100 * ap / (ap + fp + 1);
->        percent[1] = 100 - percent[0];
-> +       /*
-> +        * if percent[x] is small and rounded to 0, this case doesn't mean we
-> +        * should skip scan. Give it at least 1% share.
-> +        */
-> +       if (percent[0] == 0) {
-> +               percent[0] = 1;
-> +               percent[1] = 99;
-> +       }
-> +       if (percent[1] == 0) {
-> +               percent[0] = 99;
-> +               percent[1] = 1;
-> +       }
->  }
->
+This converted the raw_spinlock usage which is used in the upstream patch but
+not available in 2.6.32 to normal spinlock usage. Should it get annotated to
+document that?
 
-Can you please post the meminfo before and after the changes (diff
-maybe?). Can you also please share the ap and fp data from which the
-percent figures are being calculated Is your swappiness set to 60? Can
-you please share the OOM/panic message as well.
+-Stefan
 
-Balbir
+gregkh@suse.de wrote:
+> This is a note to let you know that we have just queued up the patch titled
+> 
+>     Subject: [PATCH] sparc64: Make prom entry spinlock NMI safe.
+> 
+> to the 2.6.32-stable tree.  Its filename is
+> 
+>     sparc64-make-prom-entry-spinlock-nmi-safe.patch
+> 
+> A git repo of this tree can be found at 
+>     http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
+> 
+> 
+> From c682420e87cdd8db0212e29eb70c325cdfc0860c Mon Sep 17 00:00:00 2001
+> From: David S. Miller <davem@davemloft.net>
+> Date: Wed, 3 Mar 2010 09:06:03 -0800
+> Subject: [PATCH] sparc64: Make prom entry spinlock NMI safe.
+> 
+> From: David S. Miller <davem@davemloft.net>
+> 
+> [ Upstream commit 8a4fd1e4922413cfdfa6c51a59efb720d904a5eb ]
+> 
+> If we do something like try to print to the OF console from an NMI
+> while we're already in OpenFirmware, we'll deadlock on the spinlock.
+> 
+> Use a raw spinlock and disable NMIs when we take it.
+> 
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> ---
+>  arch/sparc/prom/p1275.c |   10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
+> 
+> --- a/arch/sparc/prom/p1275.c
+> +++ b/arch/sparc/prom/p1275.c
+> @@ -32,8 +32,7 @@ extern void prom_cif_interface(void);
+>  extern void prom_cif_callback(void);
+>  
+>  /*
+> - * This provides SMP safety on the p1275buf. prom_callback() drops this lock
+> - * to allow recursuve acquisition.
+> + * This provides SMP safety on the p1275buf.
+>   */
+>  DEFINE_SPINLOCK(prom_entry_lock);
+>  
+> @@ -47,7 +46,9 @@ long p1275_cmd(const char *service, long
+>  	
+>  	p = p1275buf.prom_buffer;
+>  
+> -	spin_lock_irqsave(&prom_entry_lock, flags);
+> +	raw_local_save_flags(flags);
+> +	raw_local_irq_restore(PIL_NMI);
+> +	spin_lock(&prom_entry_lock);
+>  
+>  	p1275buf.prom_args[0] = (unsigned long)p;		/* service */
+>  	strcpy (p, service);
+> @@ -139,7 +140,8 @@ long p1275_cmd(const char *service, long
+>  	va_end(list);
+>  	x = p1275buf.prom_args [nargs + 3];
+>  
+> -	spin_unlock_irqrestore(&prom_entry_lock, flags);
+> +	spin_unlock(&prom_entry_lock);
+> +	raw_local_irq_restore(flags);
+>  
+>  	return x;
+>  }
+> 
+> 
+> Patches currently in stable-queue which might be from davem@davemloft.net are
+> 
+> queue-2.6.32/pci-add-support-for-82576ns-serdes-to-existing-sr-iov-quirk.patch
+> queue-2.6.32/sparc64-make-prom-entry-spinlock-nmi-safe.patch
+> queue-2.6.32/ixgbe-add-support-for-82599-kr-device-0x1517.patch
+> queue-2.6.32/e1000e-enable-new-82567v-3-device.patch
+> queue-2.6.32/tg3-fix-tg3_poll_controller-passing-wrong-pointer-to-tg3_interrupt.patch
+> queue-2.6.32/tg3-fix-5906-transmit-hangs.patch
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable-commits" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
