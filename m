@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932332Ab0CaAQB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:16:01 -0400
-Received: from kroah.org ([198.145.64.141]:51815 "EHLO coco.kroah.org"
+	id S1754682Ab0CaAPI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:15:08 -0400
+Received: from kroah.org ([198.145.64.141]:51835 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756767Ab0C3XRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:17:38 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:11 2010
-Message-Id: <20100330225611.216298662@linux.site>
+	id S1756777Ab0C3XRl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:17:41 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:13 2010
+Message-Id: <20100330225613.110154017@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:54:59 -0700
+Date: Tue, 30 Mar 2010 15:55:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [021/116] tracing: Do not record user stack trace from NMI context
+       Marcin Slusarz <marcin.slusarz@gmail.com>,
+       Peter Jones <pjones@redhat.com>, Huang Ying <ying.huang@intel.com>,
+       Dave Airlie <airlied@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       maximilian attems <max@stro.at>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [024/116] efifb: fix framebuffer handoff
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,93 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
 
-commit b6345879ccbd9b92864fbd7eb8ac48acdb4d6b15 upstream.
+commit 89f3f2199084a160a3a45fa6d9af235696321758 upstream.
 
-A bug was found with Li Zefan's ftrace_stress_test that caused applications
-to segfault during the test.
+Commit 4410f3910947dcea8672280b3adecd53cec4e85e ("fbdev: add support for
+handoff from firmware to hw framebuffers") didn't add fb_destroy
+operation to efifb.  Fix it and change aperture_size to match size
+passed to request_mem_region.
 
-Placing a tracing_off() in the segfault code, and examining several
-traces, I found that the following was always the case. The lock tracer
-was enabled (lockdep being required) and userstack was enabled. Testing
-this out, I just enabled the two, but that was not good enough. I needed
-to run something else that could trigger it. Running a load like hackbench
-did not work, but executing a new program would. The following would
-trigger the segfault within seconds:
+Addresses http://bugzilla.kernel.org/show_bug.cgi?id=15151
 
-  # echo 1 > /debug/tracing/options/userstacktrace
-  # echo 1 > /debug/tracing/events/lock/enable
-  # while :; do ls > /dev/null ; done
-
-Enabling the function graph tracer and looking at what was happening
-I finally noticed that all cashes happened just after an NMI.
-
- 1)               |    copy_user_handle_tail() {
- 1)               |      bad_area_nosemaphore() {
- 1)               |        __bad_area_nosemaphore() {
- 1)               |          no_context() {
- 1)               |            fixup_exception() {
- 1)   0.319 us    |              search_exception_tables();
- 1)   0.873 us    |            }
-[...]
- 1)   0.314 us    |  __rcu_read_unlock();
- 1)   0.325 us    |    native_apic_mem_write();
- 1)   0.943 us    |  }
- 1)   0.304 us    |  rcu_nmi_exit();
-[...]
- 1)   0.479 us    |  find_vma();
- 1)               |  bad_area() {
- 1)               |    __bad_area() {
-
-After capturing several traces of failures, all of them happened
-after an NMI. Curious about this, I added a trace_printk() to the NMI
-handler to read the regs->ip to see where the NMI happened. In which I
-found out it was here:
-
-ffffffff8135b660 <page_fault>:
-ffffffff8135b660:       48 83 ec 78             sub    $0x78,%rsp
-ffffffff8135b664:       e8 97 01 00 00          callq  ffffffff8135b800 <error_entry>
-
-What was happening is that the NMI would happen at the place that a page
-fault occurred. It would call rcu_read_lock() which was traced by
-the lock events, and the user_stack_trace would run. This would trigger
-a page fault inside the NMI. I do not see where the CR2 register is
-saved or restored in NMI handling. This means that it would corrupt
-the page fault handling that the NMI interrupted.
-
-The reason the while loop of ls helped trigger the bug, was that
-each execution of ls would cause lots of pages to be faulted in, and
-increase the chances of the race happening.
-
-The simple solution is to not allow user stack traces in NMI context.
-After this patch, I ran the above "ls" test for a couple of hours
-without any issues. Without this patch, the bug would trigger in less
-than a minute.
-
-Reported-by: Li Zefan <lizf@cn.fujitsu.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Reported-by: Alex Zhavnerchik <alex.vizor@gmail.com>
+Tested-by: Alex Zhavnerchik <alex.vizor@gmail.com>
+Acked-by: Peter Jones <pjones@redhat.com>
+Cc: Huang Ying <ying.huang@intel.com>
+Cc: Dave Airlie <airlied@redhat.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/trace/trace.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/video/efifb.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1171,6 +1171,13 @@ ftrace_trace_userstack(struct ring_buffe
- 	if (!(trace_flags & TRACE_ITER_USERSTACKTRACE))
- 		return;
+--- a/drivers/video/efifb.c
++++ b/drivers/video/efifb.c
+@@ -161,8 +161,17 @@ static int efifb_setcolreg(unsigned regn
+ 	return 0;
+ }
  
-+	/*
-+	 * NMIs can not handle page faults, even with fix ups.
-+	 * The save user stack can (and often does) fault.
-+	 */
-+	if (unlikely(in_nmi()))
-+		return;
++static void efifb_destroy(struct fb_info *info)
++{
++	if (info->screen_base)
++		iounmap(info->screen_base);
++	release_mem_region(info->aperture_base, info->aperture_size);
++	framebuffer_release(info);
++}
 +
- 	event = trace_buffer_lock_reserve(buffer, TRACE_USER_STACK,
- 					  sizeof(*entry), flags, pc);
- 	if (!event)
+ static struct fb_ops efifb_ops = {
+ 	.owner		= THIS_MODULE,
++	.fb_destroy	= efifb_destroy,
+ 	.fb_setcolreg	= efifb_setcolreg,
+ 	.fb_fillrect	= cfb_fillrect,
+ 	.fb_copyarea	= cfb_copyarea,
+@@ -281,7 +290,7 @@ static int __init efifb_probe(struct pla
+ 	info->par = NULL;
+ 
+ 	info->aperture_base = efifb_fix.smem_start;
+-	info->aperture_size = size_total;
++	info->aperture_size = size_remap;
+ 
+ 	info->screen_base = ioremap(efifb_fix.smem_start, efifb_fix.smem_len);
+ 	if (!info->screen_base) {
 
 
