@@ -1,36 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab0C3BT5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 21:19:57 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:51084 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381Ab0C3BTz (ORCPT
+	id S1755026Ab0C3BVm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 21:21:42 -0400
+Received: from mail-yw0-f172.google.com ([209.85.211.172]:56036 "EHLO
+	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753288Ab0C3BVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 21:19:55 -0400
-Subject: Re: [PATCH next-next-2.6] virtio_net: missing sg_init_table
-From: Shirley Ma <mashirle@us.ibm.com>
-To: Thomas =?ISO-8859-1?Q?M=FCller?= <thomas@mathtm.de>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <4BB10010.5060505@mathtm.de>
-References: <1269887518.13277.13.camel@localhost.localdomain>
-	 <4BB10010.5060505@mathtm.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Mar 2010 18:19:51 -0700
-Message-ID: <1269911991.14013.5.camel@localhost.localdomain>
+	Mon, 29 Mar 2010 21:21:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=S/SDyTtC3ePoD8JHCFoEkSUi3Iu5/vHPexSpT+xPSMHsN7N6GmcvQVtdy96OMxGo+s
+         btk+8om8lwystGsHcesaudJveKMNvbErXN+js94hDnCAjQTxskQR8R193jmfvupByk4n
+         IrAV2hBhwhcv1ddGzAh7cc/57XKMfgFjSp4BI=
+Date: Tue, 30 Mar 2010 17:21:32 +0800
+From: wzt.wzt@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: axboe@kernel.dk
+Subject: [PATCH] Block: Fix block/elevator.c elevator_get() off-by-one error
+Message-ID: <20100330092132.GB2713@localhost.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-29 at 21:31 +0200, Thomas Müller wrote:
-> I've just tested the patch and it works fine, so I guess you can add a
-> Tested-by: Thomas Müller <thomas@mathtm.de>
-> line, if you like. 
+elevator_get() not check the name length, if the name length > sizeof(elv),
+elv will miss the '\0'. And elv buffer will be replace "-iosched" as something
+like aaaaaaaaa, then call request_module() can load an not trust module.
 
-Thanks. Updated the patch with Tested-by.
+Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
 
-Shirley
+---
+ block/elevator.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/block/elevator.c b/block/elevator.c
+index df75676..76e3702 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -154,7 +154,7 @@ static struct elevator_type *elevator_get(const char *name)
+ 
+ 		spin_unlock(&elv_list_lock);
+ 
+-		sprintf(elv, "%s-iosched", name);
++		snprintf(elv, sizeof(elv), "%s-iosched", name);
+ 
+ 		request_module("%s", elv);
+ 		spin_lock(&elv_list_lock);
+-- 
+1.6.5.3
 
