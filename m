@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab0C3DAl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 23:00:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:33271 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab0C3DAJ (ORCPT
+	id S1755281Ab0C3DEl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 23:04:41 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:33936 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750899Ab0C3DEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 23:00:09 -0400
-X-Authority-Analysis: v=1.1 cv=8Rq9yliVGc3GxcN10kx+g7e/eWPAtZnInWtRlahw0rA= c=1 sm=0 a=hXE_r7D8ljoA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=omOdbC7AAAAA:8 a=meVymXHHAAAA:8 a=wjzBHERUFhrufxORbz0A:9 a=43RRSe44h1U7d5C-vwOsb3UE3x8A:4 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Message-Id: <20100330030005.859603521@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Mon, 29 Mar 2010 22:58:01 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Li Zefan <lizf@cn.fujitsu.com>
-Subject: [PATCH 1/2] tracing: Fix lockdep warning in global_clock()
-References: <20100330025800.713540457@goodmis.org>
-Content-Disposition: inline; filename=0001-tracing-Fix-lockdep-warning-in-global_clock.patch
+	Mon, 29 Mar 2010 23:04:40 -0400
+Date: Mon, 29 Mar 2010 23:04:38 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Greg KH <greg@kroah.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, stable <stable@kernel.org>,
+       Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+       Eric Dumazet <dada1@cosmosbay.com>, Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [stable] [PATCH 2.6.29.x - 2.6.31.1] module: fix
+	__module_ref_addr()
+Message-ID: <20100330030438.GA7683@Krystal>
+References: <20100327143126.GA25615@Krystal> <1269890492.19685.4767.camel@gandalf.stny.rr.com> <20100329200946.GA1618@Krystal> <20100329210722.GA14993@kroah.com> <4BB15E1E.70504@kernel.org> <4BB16339.8090602@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BB16339.8090602@kernel.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 23:02:59 up 66 days,  5:40,  4 users,  load average: 0.01, 0.04,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Zefan <lizf@cn.fujitsu.com>
+* Tejun Heo (tj@kernel.org) wrote:
+> On 03/30/2010 11:12 AM, Tejun Heo wrote:
+> > Hello, Greg.
+> > 
+> > On 03/30/2010 06:07 AM, Greg KH wrote:
+> >>> Yes. 2.6.34-rc does not have this issue anymore, but the patch is needed in
+> >>> -stable.
+> >>
+> >> Why is this not in .34-rc2?  Can you find the specific patch in Linus's
+> >> tree that solves this and let stable@kernel.org know about it?
+> > 
+> > For 2.6.34, the following two patches should remove the problem.
+> > They're not in mainline yet but should appear in linux-next soon and
+> > after a few days, I'll push them to Linus.
+> > 
+> >  http://thread.gmane.org/gmane.linux.kernel/958794/focus=959493
+> 
+> Oh, Steven is right.  The ones which are removed by the above patch
+> are different ones.  That said, it might be a good idea to apply fixes
+> for them to -stable too.  Mathieu, are you interested in submitting
+> similar -stable fixes for kernel/module.c::percpu_modcopy() and
+> lockdep.c::static_obj()?
 
-# echo 1 > events/enable
- # echo global > trace_clock
+Sure, will do. I'm doing a bit of testing and I'll post these patches shortly.
 
-------------[ cut here ]------------
-WARNING: at kernel/lockdep.c:3162 check_flags+0xb2/0x190()
-...
----[ end trace 3f86734a89416623 ]---
-possible reason: unannotated irqs-on.
-...
+Thanks,
 
-There's no reason to use the raw_local_irq_save() in trace_clock_global.
-The local_irq_save() version is fine, and does not cause the bug in lockdep.
+Mathieu
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-LKML-Reference: <4BA97FA1.7030606@cn.fujitsu.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_clock.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> Thanks.
+> 
+> -- 
+> tejun
 
-diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
-index 6fbfb8f..9d589d8 100644
---- a/kernel/trace/trace_clock.c
-+++ b/kernel/trace/trace_clock.c
-@@ -84,7 +84,7 @@ u64 notrace trace_clock_global(void)
- 	int this_cpu;
- 	u64 now;
- 
--	raw_local_irq_save(flags);
-+	local_irq_save(flags);
- 
- 	this_cpu = raw_smp_processor_id();
- 	now = cpu_clock(this_cpu);
-@@ -110,7 +110,7 @@ u64 notrace trace_clock_global(void)
- 	arch_spin_unlock(&trace_clock_struct.lock);
- 
-  out:
--	raw_local_irq_restore(flags);
-+	local_irq_restore(flags);
- 
- 	return now;
- }
 -- 
-1.7.0
-
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
