@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668Ab0C3XIs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:08:48 -0400
-Received: from kroah.org ([198.145.64.141]:48347 "EHLO coco.kroah.org"
+	id S1755625Ab0C3XI6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:08:58 -0400
+Received: from kroah.org ([198.145.64.141]:48403 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752653Ab0C3XIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:08:47 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:40 2010
-Message-Id: <20100330224939.989304996@linux.site>
+	id S1754937Ab0C3XIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:08:54 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:45 2010
+Message-Id: <20100330224944.777509723@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:48:21 -0700
+Date: Tue, 30 Mar 2010 15:48:29 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Mika Westerberg <ext-mika.1.westerberg@nokia.com>,
-       Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [01/45] UBI: fix volume creation input checking
+       Raimonds Cicans <ray@apollo.lv>,
+       "David S. Miller" <davem@davemloft.net>,
+       Jean Delvare <khali@linux-fr.org>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [09/45] r8169: Fix receive buffer length when MTU is between 1515 and 1536
 In-Reply-To: <20100330230410.GA28712@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,29 +27,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
+From: Raimonds Cicans <ray@apollo.lv>
 
-commit c5ce5b46af76f52dea21f467397d24c4ae6cb3ff upstream.
+commit 8812304cf1110ae16b0778680f6022216cf4716a upstream.
 
-Do not use an unchecked variable UBI_IOCMKVOL ioctl.
+In r8169 driver MTU is used to calculate receive buffer size.
+Receive buffer size is used to configure hardware incoming packet filter.
 
-Signed-off-by: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+For jumbo frames:
+Receive buffer size = Max frame size = MTU + 14 (ethernet header) + 4
+(vlan header) + 4 (ethernet checksum) = MTU + 22
+
+Bug:
+driver for all MTU up to 1536 use receive buffer size 1536
+
+As you can see from formula, this mean all IP packets > 1536 - 22
+(for vlan tagged, 1536 - 18 for not tagged) are dropped by hardware
+filter.
+
+Example:
+
+host_good>  ifconfig eth0 mtu 1536
+host_r8169> ifconfig eth0 mtu 1536
+host_good>  ping host_r8169
+Ok
+host_good>  ping -s 1500 host_r8169
+Fail
+host_good>  ifconfig eth0 mtu 7000
+host_r8169> ifconfig eth0 mtu 7000
+host_good>  ping -s 1500 host_r8169
+Ok
+
+Bonus: got rid of magic number 8
+
+Signed-off-by: Raimonds Cicans <ray@apollo.lv>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mtd/ubi/cdev.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/net/r8169.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/mtd/ubi/cdev.c
-+++ b/drivers/mtd/ubi/cdev.c
-@@ -793,7 +793,6 @@ static int ubi_cdev_ioctl(struct inode *
- 			break;
- 		}
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -1842,9 +1842,9 @@ static void __devexit rtl8169_remove_one
+ static void rtl8169_set_rxbufsize(struct rtl8169_private *tp,
+ 				  struct net_device *dev)
+ {
+-	unsigned int mtu = dev->mtu;
++	unsigned int max_frame = dev->mtu + VLAN_ETH_HLEN + ETH_FCS_LEN;
  
--		req.name[req.name_len] = '\0';
- 		err = verify_mkvol_req(ubi, &req);
- 		if (err)
- 			break;
+-	tp->rx_buf_sz = (mtu > RX_BUF_SIZE) ? mtu + ETH_HLEN + 8 : RX_BUF_SIZE;
++	tp->rx_buf_sz = (max_frame > RX_BUF_SIZE) ? max_frame : RX_BUF_SIZE;
+ }
+ 
+ static int rtl8169_open(struct net_device *dev)
 
 
