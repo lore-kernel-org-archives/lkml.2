@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722Ab0C3XNU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:13:20 -0400
-Received: from kroah.org ([198.145.64.141]:49301 "EHLO coco.kroah.org"
+	id S1756104Ab0C3XJe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:09:34 -0400
+Received: from kroah.org ([198.145.64.141]:48602 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756667Ab0C3XNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:13:08 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:59:00 2010
-Message-Id: <20100330225900.098877155@linux.site>
+	id S1753972Ab0C3XJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:09:20 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:50:05 2010
+Message-Id: <20100330225004.469667001@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:58:25 -0700
+Date: Tue, 30 Mar 2010 15:48:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Ravikiran Thirumalai <kiran@scalex86.org>,
-       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Francesco Lavra <francescolavra@interfree.it>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [83/89] tmpfs: mpol=bind:0 dont cause mount error.
-In-Reply-To: <20100330230520.GA28779@kroah.com>
+Subject: [37/45] V4L/DVB (13961): em28xx-dvb: fix memleak in dvb_fini()
+In-Reply-To: <20100330230410.GA28712@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.31-stable review patch.  If anyone has any objections, please let us know.
+2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Francesco Lavra <francescolavra@interfree.it>
 
-commit d69b2e63e9172afb4d07c305601b79a55509ac4c upstream.
+commit 19f48cb105b7fa18d0dcab435919a3a29b7a7c4c upstream.
 
-Currently, following mount operation cause mount error.
+this patch fixes a memory leak which occurs when an em28xx card with DVB
+extension is unplugged or its DVB extension driver is unloaded. In
+dvb_fini(), dev->dvb must be freed before being set to NULL, as is done
+in dvb_init() in case of error.
+Note that this bug is also present in the latest stable kernel release.
 
-% mount -t tmpfs -ompol=bind:0 none /tmp
-
-Because commit 71fe804b6d5 (mempolicy: use struct mempolicy pointer in
-shmem_sb_info) corrupted MPOL_BIND parse code.
-
-This patch restore the needed one.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Ravikiran Thirumalai <kiran@scalex86.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Francesco Lavra <francescolavra@interfree.it>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/mempolicy.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/media/video/em28xx/em28xx-dvb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2149,9 +2149,13 @@ int mpol_parse_str(char *str, struct mem
- 		if (!nodelist)
- 			err = 0;
- 		goto out;
--	/*
--	 * case MPOL_BIND:    mpol_new() enforces non-empty nodemask.
--	 */
-+	case MPOL_BIND:
-+		/*
-+		 * Insist on a nodelist
-+		 */
-+		if (!nodelist)
-+			goto out;
-+		err = 0;
+--- a/drivers/media/video/em28xx/em28xx-dvb.c
++++ b/drivers/media/video/em28xx/em28xx-dvb.c
+@@ -501,6 +501,7 @@ static int dvb_fini(struct em28xx *dev)
+ 
+ 	if (dev->dvb) {
+ 		unregister_dvb(dev->dvb);
++		kfree(dev->dvb);
+ 		dev->dvb = NULL;
  	}
  
- 	mode_flags = 0;
 
 
