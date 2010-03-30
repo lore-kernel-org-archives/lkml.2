@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883Ab0CaAg2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:36:28 -0400
-Received: from kroah.org ([198.145.64.141]:48580 "EHLO coco.kroah.org"
+	id S1757751Ab0CaAg6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:36:58 -0400
+Received: from kroah.org ([198.145.64.141]:48567 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755949Ab0C3XJR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:09:17 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:50:02 2010
-Message-Id: <20100330225002.199228806@linux.site>
+	id S1755920Ab0C3XJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:09:15 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:50:01 2010
+Message-Id: <20100330225000.970252456@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:48:54 -0700
+Date: Tue, 30 Mar 2010 15:48:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jiri Slaby <jslaby@suse.cz>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>, Ollie Wild <aaw@google.com>,
-       x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [34/45] x86, ia32_aout: do not kill argument mapping
+Subject: [32/45] KVM: x86: check for cr3 validity in ioctl_set_sregs
 In-Reply-To: <20100330230410.GA28712@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,42 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Marcelo Tosatti <mtosatti@redhat.com>
 
-commit 318f6b228ba88a394ef560efc1bfe028ad5ae6b6 upstream.
+commit 59839dfff5eabca01cc4e20b45797a60a80af8cb upstream.
 
-Do not set current->mm->mmap to NULL in 32-bit emulation on 64-bit
-load_aout_binary after flush_old_exec as it would destroy already
-set brpm mapping with arguments.
+Matt T. Yourst notes that kvm_arch_vcpu_ioctl_set_sregs lacks validity
+checking for the new cr3 value:
 
-Introduced by b6a2fea39318e43fee84fa7b0b90d68bed92d2ba
-mm: variable length argument support
-where the argument mapping in bprm was added.
+"Userspace callers of KVM_SET_SREGS can pass a bogus value of cr3 to
+the kernel. This will trigger a NULL pointer access in gfn_to_rmap()
+when userspace next tries to call KVM_RUN on the affected VCPU and kvm
+attempts to activate the new non-existent page table root.
 
-[ hpa: this is a regression from 2.6.22... time to kill a.out? ]
+This happens since kvm only validates that cr3 points to a valid guest
+physical memory page when code *inside* the guest sets cr3. However, kvm
+currently trusts the userspace caller (e.g. QEMU) on the host machine to
+always supply a valid page table root, rather than properly validating
+it along with the rest of the reloaded guest state."
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-LKML-Reference: <1265831716-7668-1-git-send-email-jslaby@suse.cz>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ollie Wild <aaw@google.com>
-Cc: x86@kernel.org
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+http://sourceforge.net/tracker/?func=detail&atid=893831&aid=2687641&group_id=180599
+
+Check for a valid cr3 address in kvm_arch_vcpu_ioctl_set_sregs, triple
+fault in case of failure.
+
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/ia32/ia32_aout.c |    1 -
- 1 file changed, 1 deletion(-)
+ arch/x86/kvm/x86.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/arch/x86/ia32/ia32_aout.c
-+++ b/arch/x86/ia32/ia32_aout.c
-@@ -324,7 +324,6 @@ static int load_aout_binary(struct linux
- 	current->mm->free_area_cache = TASK_UNMAPPED_BASE;
- 	current->mm->cached_hole_size = 0;
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3658,7 +3658,13 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct
  
--	current->mm->mmap = NULL;
- 	compute_creds(bprm);
- 	current->flags &= ~PF_FORKNOEXEC;
+ 	vcpu->arch.cr2 = sregs->cr2;
+ 	mmu_reset_needed |= vcpu->arch.cr3 != sregs->cr3;
+-	vcpu->arch.cr3 = sregs->cr3;
++
++	down_read(&vcpu->kvm->slots_lock);
++	if (gfn_to_memslot(vcpu->kvm, sregs->cr3 >> PAGE_SHIFT))
++		vcpu->arch.cr3 = sregs->cr3;
++	else
++		set_bit(KVM_REQ_TRIPLE_FAULT, &vcpu->requests);
++	up_read(&vcpu->kvm->slots_lock);
+ 
+ 	kvm_set_cr8(vcpu, sregs->cr8);
  
 
 
