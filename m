@@ -1,308 +1,415 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070Ab0C3J2k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 05:28:40 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:32828 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756031Ab0C3J2h (ORCPT
+	id S1756118Ab0C3Jek (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 05:34:40 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:32929 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756028Ab0C3Jei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 05:28:37 -0400
-X-SpamScore: -9
-X-BigFish: VPS-9(zz98dN936eM62a3Lab9bha706l1422izz1202hzzz32i6bh2a8h62h)
-X-Spam-TCS-SCL: 1:0
-X-FB-SS: 5,
-X-WSS-ID: 0L038ZC-01-1AR-02
-X-M-MSG: 
-Date: Tue, 30 Mar 2010 11:28:21 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] perf/core, x86: implement ARCH_PERFMON_EVENTSEL
- bit masks
-Message-ID: <20100330092821.GH11907@erda.amd.com>
-References: <1269880612-25800-1-git-send-email-robert.richter@amd.com>
- <1269880612-25800-4-git-send-email-robert.richter@amd.com>
- <1269881338.12097.361.camel@laptop>
+	Tue, 30 Mar 2010 05:34:38 -0400
+Message-ID: <4BB1C5A5.5070202@petalogix.com>
+Date: Tue, 30 Mar 2010 11:34:29 +0200
+From: Michal Simek <michal.simek@petalogix.com>
+Reply-To: michal.simek@petalogix.com
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1269881338.12097.361.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 30 Mar 2010 09:28:22.0215 (UTC) FILETIME=[57490D70:01CACFEB]
-X-Reverse-DNS: ausb3extmailp02.amd.com
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+       John Williams <john.williams@petalogix.com>, netdev@vger.kernel.org,
+       Grant Likely <grant.likely@secretlab.ca>,
+       John Linn <John.Linn@xilinx.com>,
+       "Steven J. Magnani" <steve@digidescorp.com>,
+       Arnd Bergmann <arnd@arndb.de>, akpm@linux-foundation.org
+Subject: Re: Network performance - iperf
+References: <4BB09021.6020202@petalogix.com>	 <1269864994.2164.21.camel@edumazet-laptop> <4BB0BF28.5090505@petalogix.com>	 <4BB0C6E1.2090606@petalogix.com> <1269884717.1958.2.camel@edumazet-laptop>
+In-Reply-To: <1269884717.1958.2.camel@edumazet-laptop>
+Content-Type: multipart/mixed;
+ boundary="------------080408020503010204010104"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.03.10 18:48:58, Peter Zijlstra wrote:
-> Could you fold this with your 2/3 and create x86_pmu_raw_event() which
-> lives in arch/x86/kernel/cpu/perf_event.c, that's more consistent wrt
-> the X86_RAW_EVENT_MASK name and that way you don't need to re-order the
-> #include ""s either.
+This is a multi-part message in MIME format.
+--------------080408020503010204010104
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 
-The patch below replaces patches 2 and 3.
+Eric Dumazet wrote:
+> Le lundi 29 mars 2010 à 17:27 +0200, Michal Simek a écrit :
+>> Michal Simek wrote:
+>>> Eric Dumazet wrote:
+>>>> Le lundi 29 mars 2010 à 13:33 +0200, Michal Simek a écrit :
+>>>>
+>>>>> Do you have any idea howto improve TCP/UDP performance in general?
+>>>>> Or tests which can point me on weak places.
+>>>> Could you post "netstat -s" on your receiver, after fresh boot and your
+>>>> iperf session, for 32 MB and 256 MB ram case ?
+>>>>
+>>> I am not sure if is helpful but look below.
+>>>
+>> Sorry I forget to c&p that second part. :-(
+>>
+> 
+> Sorry, your netstat is not up2date.
 
--Robert
+I am afraid that is up2date.
 
----
+> 
+> If you cannot correct it to last version
+> [ net-tools 1.60 , netstat 1.42 ], please send
+> 
+> cat /proc/net/snmp
+> cat /proc/net/netstat
 
->From 2d77650a4dc5ded763dc3c120381bdbe5a0be911 Mon Sep 17 00:00:00 2001
-From: Robert Richter <robert.richter@amd.com>
-Date: Wed, 17 Mar 2010 12:32:37 +0100
-Subject: [PATCH] perf/core, x86: implement ARCH_PERFMON_EVENTSEL bit masks
+There is small buffer for parsing /proc/net/netstat.
+There is necessary to extend buffer size because one line is greater 
+than 1024 chars.
 
-ARCH_PERFMON_EVENTSEL bit masks are often used in the kernel. This
-patch adds macros for the bit masks and removes local defines. The
-function intel_pmu_raw_event() becomes x86_pmu_raw_event() which is
-generic for x86 models and same also for p6. Duplicate code is
-removed.
+~ # head -n 1 /proc/net/netstat
+TcpExt: SyncookiesSent SyncookiesRecv SyncookiesFailed EmbryonicRsts 
+PruneCalled RcvPruned OfoPruned OutOfWindowIcmps LockDroppedIcmps 
+ArpFilter TW TWRecycled TWKilled PAWSPassive PAWSActive PAWSEstab 
+DelayedACKs DelayedACKLocked DelayedACKLost ListenOverflows ListenDrops 
+TCPPrequeued TCPDirectCopyFromBacklog TCPDirectCopyFromPrequeue 
+TCPPrequeueDropped TCPHPHits TCPHPHitsToUser TCPPureAcks TCPHPAcks 
+TCPRenoRecovery TCPSackRecovery TCPSACKReneging TCPFACKReorder 
+TCPSACKReorder TCPRenoReorder TCPTSReorder TCPFullUndo TCPPartialUndo 
+TCPDSACKUndo TCPLossUndo TCPLoss TCPLostRetransmit TCPRenoFailures 
+TCPSackFailures TCPLossFailures TCPFastRetrans TCPForwardRetrans 
+TCPSlowStartRetrans TCPTimeouts TCPRenoRecoveryFail TCPSackRecoveryFail 
+TCPSchedulerFailed TCPRcvCollapsed TCPDSACKOldSent TCPDSACKOfoSent 
+TCPDSACKRecv TCPDSACKOfoRecv TCPAbortOnSyn TCPAbortOnData 
+TCPAbortOnClose TCPAbortOnMemory TCPAbortOnTimeout TCPAbortOnLinger 
+TCPAbortFailed TCPMemoryPressures TCPSACKDiscard TCPDSACKIgnoredOld 
+TCPDSACKIgnoredNoUndo TCPSpuriousRTOs TCPMD5NotFound TCPMD5Unexpected 
+TCPSackShifted TCPSackMerged TCPSackShiftFallback TCPBacklogDrop 
+TCPMinTTLDrop
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- arch/x86/include/asm/perf_event.h      |   58 ++++++++++++++------------------
- arch/x86/kernel/cpu/perf_event.c       |   19 +++++++++--
- arch/x86/kernel/cpu/perf_event_amd.c   |   15 +--------
- arch/x86/kernel/cpu/perf_event_intel.c |   22 +-----------
- arch/x86/kernel/cpu/perf_event_p6.c    |   20 +----------
- 5 files changed, 45 insertions(+), 89 deletions(-)
+Look at attached patch.
+And updated results are below.
 
-diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index 987bf67..f6d43db 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -18,39 +18,31 @@
- #define MSR_ARCH_PERFMON_EVENTSEL0			     0x186
- #define MSR_ARCH_PERFMON_EVENTSEL1			     0x187
- 
--#define ARCH_PERFMON_EVENTSEL_ENABLE			  (1 << 22)
--#define ARCH_PERFMON_EVENTSEL_ANY			  (1 << 21)
--#define ARCH_PERFMON_EVENTSEL_INT			  (1 << 20)
--#define ARCH_PERFMON_EVENTSEL_OS			  (1 << 17)
--#define ARCH_PERFMON_EVENTSEL_USR			  (1 << 16)
--
--/*
-- * Includes eventsel and unit mask as well:
-- */
--
--
--#define INTEL_ARCH_EVTSEL_MASK		0x000000FFULL
--#define INTEL_ARCH_UNIT_MASK		0x0000FF00ULL
--#define INTEL_ARCH_EDGE_MASK		0x00040000ULL
--#define INTEL_ARCH_INV_MASK		0x00800000ULL
--#define INTEL_ARCH_CNT_MASK		0xFF000000ULL
--#define INTEL_ARCH_EVENT_MASK	(INTEL_ARCH_UNIT_MASK|INTEL_ARCH_EVTSEL_MASK)
--
--/*
-- * filter mask to validate fixed counter events.
-- * the following filters disqualify for fixed counters:
-- *  - inv
-- *  - edge
-- *  - cnt-mask
-- *  The other filters are supported by fixed counters.
-- *  The any-thread option is supported starting with v3.
-- */
--#define INTEL_ARCH_FIXED_MASK \
--	(INTEL_ARCH_CNT_MASK| \
--	 INTEL_ARCH_INV_MASK| \
--	 INTEL_ARCH_EDGE_MASK|\
--	 INTEL_ARCH_UNIT_MASK|\
--	 INTEL_ARCH_EVENT_MASK)
-+#define ARCH_PERFMON_EVENTSEL_EVENT			0x000000FFULL
-+#define ARCH_PERFMON_EVENTSEL_UMASK			0x0000FF00ULL
-+#define ARCH_PERFMON_EVENTSEL_USR			(1ULL << 16)
-+#define ARCH_PERFMON_EVENTSEL_OS			(1ULL << 17)
-+#define ARCH_PERFMON_EVENTSEL_EDGE			(1ULL << 18)
-+#define ARCH_PERFMON_EVENTSEL_INT			(1ULL << 20)
-+#define ARCH_PERFMON_EVENTSEL_ANY			(1ULL << 21)
-+#define ARCH_PERFMON_EVENTSEL_ENABLE			(1ULL << 22)
-+#define ARCH_PERFMON_EVENTSEL_INV			(1ULL << 23)
-+#define ARCH_PERFMON_EVENTSEL_CMASK			0xFF000000ULL
-+
-+#define AMD64_EVENTSEL_EVENT	\
-+	(ARCH_PERFMON_EVENTSEL_EVENT | (0x0FULL << 32))
-+#define INTEL_ARCH_EVENT_MASK	\
-+	(ARCH_PERFMON_EVENTSEL_UMASK | ARCH_PERFMON_EVENTSEL_EVENT)
-+
-+#define X86_RAW_EVENT_MASK		\
-+	(ARCH_PERFMON_EVENTSEL_EVENT |	\
-+	 ARCH_PERFMON_EVENTSEL_UMASK |	\
-+	 ARCH_PERFMON_EVENTSEL_EDGE  |	\
-+	 ARCH_PERFMON_EVENTSEL_INV   |	\
-+	 ARCH_PERFMON_EVENTSEL_CMASK)
-+#define AMD64_RAW_EVENT_MASK		\
-+	(X86_RAW_EVENT_MASK          |  \
-+	 AMD64_EVENTSEL_EVENT)
- 
- #define ARCH_PERFMON_UNHALTED_CORE_CYCLES_SEL		      0x3c
- #define ARCH_PERFMON_UNHALTED_CORE_CYCLES_UMASK		(0x00 << 8)
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index f2fc2d8..4e8d233 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -142,13 +142,21 @@ struct cpu_hw_events {
-  * Constraint on the Event code.
-  */
- #define INTEL_EVENT_CONSTRAINT(c, n)	\
--	EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVTSEL_MASK)
-+	EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT)
- 
- /*
-  * Constraint on the Event code + UMask + fixed-mask
-+ *
-+ * filter mask to validate fixed counter events.
-+ * the following filters disqualify for fixed counters:
-+ *  - inv
-+ *  - edge
-+ *  - cnt-mask
-+ *  The other filters are supported by fixed counters.
-+ *  The any-thread option is supported starting with v3.
-  */
- #define FIXED_EVENT_CONSTRAINT(c, n)	\
--	EVENT_CONSTRAINT(c, (1ULL << (32+n)), INTEL_ARCH_FIXED_MASK)
-+	EVENT_CONSTRAINT(c, (1ULL << (32+n)), X86_RAW_EVENT_MASK)
- 
- /*
-  * Constraint on the Event code + UMask
-@@ -436,6 +444,11 @@ static int x86_hw_config(struct perf_event_attr *attr, struct hw_perf_event *hwc
- 	return 0;
- }
- 
-+static u64 x86_pmu_raw_event(u64 hw_event)
-+{
-+	return hw_event & X86_RAW_EVENT_MASK;
-+}
-+
- /*
-  * Setup the hardware configuration for a given attr_type
-  */
-@@ -1424,7 +1437,7 @@ void __init init_hw_perf_events(void)
- 
- 	if (x86_pmu.event_constraints) {
- 		for_each_event_constraint(c, x86_pmu.event_constraints) {
--			if (c->cmask != INTEL_ARCH_FIXED_MASK)
-+			if (c->cmask != X86_RAW_EVENT_MASK)
- 				continue;
- 
- 			c->idxmsk64 |= (1ULL << x86_pmu.num_counters) - 1;
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index 9d363ce..30e799a 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -113,20 +113,7 @@ static u64 amd_pmu_event_map(int hw_event)
- 
- static u64 amd_pmu_raw_event(u64 hw_event)
- {
--#define K7_EVNTSEL_EVENT_MASK	0xF000000FFULL
--#define K7_EVNTSEL_UNIT_MASK	0x00000FF00ULL
--#define K7_EVNTSEL_EDGE_MASK	0x000040000ULL
--#define K7_EVNTSEL_INV_MASK	0x000800000ULL
--#define K7_EVNTSEL_REG_MASK	0x0FF000000ULL
--
--#define K7_EVNTSEL_MASK			\
--	(K7_EVNTSEL_EVENT_MASK |	\
--	 K7_EVNTSEL_UNIT_MASK  |	\
--	 K7_EVNTSEL_EDGE_MASK  |	\
--	 K7_EVNTSEL_INV_MASK   |	\
--	 K7_EVNTSEL_REG_MASK)
--
--	return hw_event & K7_EVNTSEL_MASK;
-+	return hw_event & AMD64_RAW_EVENT_MASK;
- }
- 
- /*
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 0d68531..b65cfc3 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -452,24 +452,6 @@ static __initconst u64 atom_hw_cache_event_ids
-  },
- };
- 
--static u64 intel_pmu_raw_event(u64 hw_event)
--{
--#define CORE_EVNTSEL_EVENT_MASK		0x000000FFULL
--#define CORE_EVNTSEL_UNIT_MASK		0x0000FF00ULL
--#define CORE_EVNTSEL_EDGE_MASK		0x00040000ULL
--#define CORE_EVNTSEL_INV_MASK		0x00800000ULL
--#define CORE_EVNTSEL_REG_MASK		0xFF000000ULL
--
--#define CORE_EVNTSEL_MASK		\
--	(INTEL_ARCH_EVTSEL_MASK |	\
--	 INTEL_ARCH_UNIT_MASK   |	\
--	 INTEL_ARCH_EDGE_MASK   |	\
--	 INTEL_ARCH_INV_MASK    |	\
--	 INTEL_ARCH_CNT_MASK)
--
--	return hw_event & CORE_EVNTSEL_MASK;
--}
--
- static void intel_pmu_disable_all(void)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-@@ -788,7 +770,7 @@ static __initconst struct x86_pmu core_pmu = {
- 	.eventsel		= MSR_ARCH_PERFMON_EVENTSEL0,
- 	.perfctr		= MSR_ARCH_PERFMON_PERFCTR0,
- 	.event_map		= intel_pmu_event_map,
--	.raw_event		= intel_pmu_raw_event,
-+	.raw_event		= x86_pmu_raw_event,
- 	.max_events		= ARRAY_SIZE(intel_perfmon_event_map),
- 	.apic			= 1,
- 	/*
-@@ -827,7 +809,7 @@ static __initconst struct x86_pmu intel_pmu = {
- 	.eventsel		= MSR_ARCH_PERFMON_EVENTSEL0,
- 	.perfctr		= MSR_ARCH_PERFMON_PERFCTR0,
- 	.event_map		= intel_pmu_event_map,
--	.raw_event		= intel_pmu_raw_event,
-+	.raw_event		= x86_pmu_raw_event,
- 	.max_events		= ARRAY_SIZE(intel_perfmon_event_map),
- 	.apic			= 1,
- 	/*
-diff --git a/arch/x86/kernel/cpu/perf_event_p6.c b/arch/x86/kernel/cpu/perf_event_p6.c
-index b26fbc7..03c139a 100644
---- a/arch/x86/kernel/cpu/perf_event_p6.c
-+++ b/arch/x86/kernel/cpu/perf_event_p6.c
-@@ -27,24 +27,6 @@ static u64 p6_pmu_event_map(int hw_event)
-  */
- #define P6_NOP_EVENT			0x0000002EULL
- 
--static u64 p6_pmu_raw_event(u64 hw_event)
--{
--#define P6_EVNTSEL_EVENT_MASK		0x000000FFULL
--#define P6_EVNTSEL_UNIT_MASK		0x0000FF00ULL
--#define P6_EVNTSEL_EDGE_MASK		0x00040000ULL
--#define P6_EVNTSEL_INV_MASK		0x00800000ULL
--#define P6_EVNTSEL_REG_MASK		0xFF000000ULL
--
--#define P6_EVNTSEL_MASK			\
--	(P6_EVNTSEL_EVENT_MASK |	\
--	 P6_EVNTSEL_UNIT_MASK  |	\
--	 P6_EVNTSEL_EDGE_MASK  |	\
--	 P6_EVNTSEL_INV_MASK   |	\
--	 P6_EVNTSEL_REG_MASK)
--
--	return hw_event & P6_EVNTSEL_MASK;
--}
--
- static struct event_constraint p6_event_constraints[] =
- {
- 	INTEL_EVENT_CONSTRAINT(0xc1, 0x1),	/* FLOPS */
-@@ -114,7 +96,7 @@ static __initconst struct x86_pmu p6_pmu = {
- 	.eventsel		= MSR_P6_EVNTSEL0,
- 	.perfctr		= MSR_P6_PERFCTR0,
- 	.event_map		= p6_pmu_event_map,
--	.raw_event		= p6_pmu_raw_event,
-+	.raw_event		= x86_pmu_raw_event,
- 	.max_events		= ARRAY_SIZE(p6_perfmon_event_map),
- 	.apic			= 1,
- 	.max_period		= (1ULL << 31) - 1,
+Thanks,
+Michal
+
+
+
+
+
+256M
+
+~ # iperf -s
+------------------------------------------------------------
+Server listening on TCP port 5001
+TCP window size: 85.3 KByte (default)
+------------------------------------------------------------
+[  6] local 192.168.0.10 port 5001 connected with 192.168.0.101 port 33261
+[ ID] Interval       Transfer     Bandwidth
+[  6]  0.0-50.2 sec  22.9 MBytes  3.83 Mbits/sec
+~ # ./netstat -s
+Ip:
+     16618 total packets received
+     0 forwarded
+     0 incoming packets discarded
+     16618 incoming packets delivered
+     6490 requests sent out
+Icmp:
+     0 ICMP messages received
+     0 input ICMP message failed.
+     ICMP input histogram:
+     0 ICMP messages sent
+     0 ICMP messages failed
+     ICMP output histogram:
+Tcp:
+     0 active connections openings
+     1 passive connection openings
+     0 failed connection attempts
+     0 connection resets received
+     0 connections established
+     16618 segments received
+     6490 segments send out
+     0 segments retransmited
+     0 bad segments received.
+     0 resets sent
+Udp:
+     0 packets received
+     0 packets to unknown port received.
+     0 packet receive errors
+     0 packets sent
+     RcvbufErrors: 0
+     SndbufErrors: 0
+UdpLite:
+     InDatagrams: 0
+     NoPorts: 0
+     InErrors: 0
+     OutDatagrams: 0
+     RcvbufErrors: 0
+     SndbufErrors: 0
+TcpExt:
+     2233 packets pruned from receive queue because of socket buffer overrun
+     ArpFilter: 0
+     1 delayed acks sent
+     5519 packets header predicted
+     TCPPureAcks: 2
+     TCPHPAcks: 0
+     TCPRenoRecovery: 0
+     TCPSackRecovery: 0
+     TCPSACKReneging: 0
+     TCPFACKReorder: 0
+     TCPSACKReorder: 0
+     TCPRenoReorder: 0
+     TCPTSReorder: 0
+     TCPFullUndo: 0
+     TCPPartialUndo: 0
+     TCPDSACKUndo: 0
+     TCPLossUndo: 0
+     TCPLoss: 0
+     TCPLostRetransmit: 0
+     TCPRenoFailures: 0
+     TCPSackFailures: 0
+     TCPLossFailures: 0
+     TCPFastRetrans: 0
+     TCPForwardRetrans: 0
+     TCPSlowStartRetrans: 0
+     TCPTimeouts: 0
+     TCPRenoRecoveryFail: 0
+     TCPSackRecoveryFail: 0
+     TCPSchedulerFailed: 0
+     TCPRcvCollapsed: 207654
+     TCPDSACKOldSent: 0
+     TCPDSACKOfoSent: 0
+     TCPDSACKRecv: 0
+     TCPDSACKOfoRecv: 0
+     TCPAbortOnSyn: 0
+     TCPAbortOnData: 0
+     TCPAbortOnClose: 0
+     TCPAbortOnMemory: 0
+     TCPAbortOnTimeout: 0
+     TCPAbortOnLinger: 0
+     TCPAbortFailed: 0
+     TCPMemoryPressures: 0
+     TCPSACKDiscard: 0
+     TCPDSACKIgnoredOld: 0
+     TCPDSACKIgnoredNoUndo: 0
+     TCPSpuriousRTOs: 0
+     TCPMD5NotFound: 0
+     TCPMD5Unexpected: 0
+     TCPSackShifted: 0
+     TCPSackMerged: 0
+     TCPSackShiftFallback: 0
+     TCPBacklogDrop: 0
+     TCPMinTTLDrop: 0
+IpExt:
+     InNoRoutes: 0
+     InTruncatedPkts: 0
+     InMcastPkts: 0
+     OutMcastPkts: 0
+     InBcastPkts: 0
+     OutBcastPkts: 0
+     InOctets: 24915880
+     OutOctets: 337488
+     InMcastOctets: 0
+     OutMcastOctets: 0
+     InBcastOctets: 0
+     OutBcastOctets: 0
+~ # ./netstat --version
+net-tools 1.60
+netstat 1.42 (2001-04-15)
+Fred Baumgarten, Alan Cox, Bernd Eckenfels, Phil Blundell, Tuan Hoang 
+and others
++NEW_ADDRT +RTF_IRTT +RTF_REJECT +FW_MASQUERADE -I18N
+AF: (inet) +UNIX +INET -INET6 -IPX -AX25 -NETROM -X25 -ATALK -ECONET -ROSE
+HW:  +ETHER -ARC +SLIP +PPP -TUNNEL -TR -AX25 -NETROM -X25 -FR -ROSE 
+-ASH -SIT -FDDI -HIPPI -HDLC/LAPB
+~ # head -n 1 /proc/meminfo
+MemTotal:         257108 kB
+
+
+
+32MB
+
+~ # head -n 1 /proc/meminfo
+MemTotal:          29920 kB
+~ # iperf -s
+------------------------------------------------------------
+Server listening on TCP port 5001
+TCP window size: 85.3 KByte (default)
+------------------------------------------------------------
+[  6] local 192.168.0.10 port 5001 connected with 192.168.0.101 port 50088
+[ ID] Interval       Transfer     Bandwidth
+[  6]  0.0-50.0 sec    109 MBytes  18.3 Mbits/sec
+~ # ./netstat -s
+Ip:
+     79040 total packets received
+     0 forwarded
+     0 incoming packets discarded
+     79040 incoming packets delivered
+     29655 requests sent out
+Icmp:
+     0 ICMP messages received
+     0 input ICMP message failed.
+     ICMP input histogram:
+     0 ICMP messages sent
+     0 ICMP messages failed
+     ICMP output histogram:
+Tcp:
+     0 active connections openings
+     1 passive connection openings
+     0 failed connection attempts
+     0 connection resets received
+     0 connections established
+     79040 segments received
+     29655 segments send out
+     0 segments retransmited
+     0 bad segments received.
+     0 resets sent
+Udp:
+     0 packets received
+     0 packets to unknown port received.
+     0 packet receive errors
+     0 packets sent
+     RcvbufErrors: 0
+     SndbufErrors: 0
+UdpLite:
+     InDatagrams: 0
+     NoPorts: 0
+     InErrors: 0
+     OutDatagrams: 0
+     RcvbufErrors: 0
+     SndbufErrors: 0
+TcpExt:
+     9773 packets pruned from receive queue because of socket buffer overrun
+     ArpFilter: 0
+     1 delayed acks sent
+     101 packets directly queued to recvmsg prequeue.
+     558928 packets directly received from prequeue
+     33274 packets header predicted
+     378 packets header predicted and directly queued to user
+     TCPPureAcks: 2
+     TCPHPAcks: 0
+     TCPRenoRecovery: 0
+     TCPSackRecovery: 0
+     TCPSACKReneging: 0
+     TCPFACKReorder: 0
+     TCPSACKReorder: 0
+     TCPRenoReorder: 0
+     TCPTSReorder: 0
+     TCPFullUndo: 0
+     TCPPartialUndo: 0
+     TCPDSACKUndo: 0
+     TCPLossUndo: 0
+     TCPLoss: 0
+     TCPLostRetransmit: 0
+     TCPRenoFailures: 0
+     TCPSackFailures: 0
+     TCPLossFailures: 0
+     TCPFastRetrans: 0
+     TCPForwardRetrans: 0
+     TCPSlowStartRetrans: 0
+     TCPTimeouts: 0
+     TCPRenoRecoveryFail: 0
+     TCPSackRecoveryFail: 0
+     TCPSchedulerFailed: 0
+     TCPRcvCollapsed: 120195
+     TCPDSACKOldSent: 0
+     TCPDSACKOfoSent: 0
+     TCPDSACKRecv: 0
+     TCPDSACKOfoRecv: 0
+     TCPAbortOnSyn: 0
+     TCPAbortOnData: 0
+     TCPAbortOnClose: 0
+     TCPAbortOnMemory: 0
+     TCPAbortOnTimeout: 0
+     TCPAbortOnLinger: 0
+     TCPAbortFailed: 0
+     TCPMemoryPressures: 0
+     TCPSACKDiscard: 0
+     TCPDSACKIgnoredOld: 0
+     TCPDSACKIgnoredNoUndo: 0
+     TCPSpuriousRTOs: 0
+     TCPMD5NotFound: 0
+     TCPMD5Unexpected: 0
+     TCPSackShifted: 0
+     TCPSackMerged: 0
+     TCPSackShiftFallback: 0
+     TCPBacklogDrop: 0
+     TCPMinTTLDrop: 0
+IpExt:
+     InNoRoutes: 0
+     InTruncatedPkts: 0
+     InMcastPkts: 0
+     OutMcastPkts: 0
+     InBcastPkts: 0
+     OutBcastPkts: 0
+     InOctets: 118232864
+     OutOctets: 1542068
+     InMcastOctets: 0
+     OutMcastOctets: 0
+     InBcastOctets: 0
+     OutBcastOctets: 0
+~ #
+
+
+
+
+
+
+
+
+
+
 -- 
-1.7.0.3
+Michal Simek, Ing. (M.Eng)
+PetaLogix - Linux Solutions for a Reconfigurable World
+w: www.petalogix.com p: +61-7-30090663,+42-0-721842854 f: +61-7-30090663
 
+--------------080408020503010204010104
+Content-Type: text/x-patch;
+ name="0001-Extend-buffer-size-because-line-size-is-greater-than.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename*0="0001-Extend-buffer-size-because-line-size-is-greater-than.pa";
+ filename*1="tch"
 
+>From e2d160e2e235103af3e08b5bbbc451982bc0fed0 Mon Sep 17 00:00:00 2001
+From: Michal Simek <monstr@monstr.eu>
+Date: Tue, 30 Mar 2010 10:45:06 +0200
+Subject: [PATCH] Extend buffer size because line size is greater than 1024 chars
 
+Error shown on console
+
+UdpLite:
+    InDatagrams: 0
+    NoPorts: 0
+    InErrors: 0
+    OutDatagrams: 0
+    RcvbufErrors: 0
+    SndbufErrors: 0
+error parsing /proc/net/snmp: Success
+
+It is easy to check size of line which is necessary to check.
+
+1151
+
+Signed-off-by: Michal Simek <monstr@monstr.eu>
+---
+ statistics.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/statistics.c b/statistics.c
+index a878df8..51beb8a 100644
+--- a/statistics.c
++++ b/statistics.c
+@@ -291,7 +291,7 @@ struct tabtab *newtable(struct tabtab *tabs, char *title)
+ 
+ void process_fd(FILE *f)
+ {
+-    char buf1[1024], buf2[1024];
++    char buf1[2048], buf2[2048];
+     char *sp, *np, *p;
+     while (fgets(buf1, sizeof buf1, f)) {
+ 	int endflag;
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
+1.5.5.1
 
+
+--------------080408020503010204010104--
