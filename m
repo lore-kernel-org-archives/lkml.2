@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145Ab0C3XyA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:54:00 -0400
-Received: from kroah.org ([198.145.64.141]:45708 "EHLO coco.kroah.org"
+	id S932455Ab0CaACv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:02:51 -0400
+Received: from kroah.org ([198.145.64.141]:45368 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932399Ab0C3XTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:24 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:29 2010
-Message-Id: <20100330224729.251927350@linux.site>
+	id S932288Ab0C3XSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:42 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:54 2010
+Message-Id: <20100330225653.815049530@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:40:48 -0700
+Date: Tue, 30 Mar 2010 15:56:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Bob Copeland <me@bobcopeland.com>,
-       Nick Kossifidis <mickflemm@gmail.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
+       Dean Nelson <dnelson@redhat.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [014/156] ath5k: dont use external sleep clock in AP mode
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+Subject: [084/116] PCI: fix return value from pcix_get_max_mmrbc()
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Bob Copeland <me@bobcopeland.com>
+From: Dean Nelson <dnelson@redhat.com>
 
-commit 5d6ce628f986d1a3c523cbb0a5a52095c48cc332 upstream.
+commit 25daeb550b69e89aff59bc6a84218a12b5203531 upstream.
 
-When using the external sleep clock in AP mode, the
-TSF increments too quickly, causing beacon interval
-to be much lower than it is supposed to be, resulting
-in lots of beacon-not-ready interrupts.
+For the PCI_X_STATUS register, pcix_get_max_mmrbc() is returning an incorrect
+value, which is based on:
 
-This fixes http://bugzilla.kernel.org/show_bug.cgi?id=14802.
+	(stat & PCI_X_STATUS_MAX_READ) >> 12
 
-Signed-off-by: Bob Copeland <me@bobcopeland.com>
-Acked-by: Nick Kossifidis <mickflemm@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Valid return values are 512, 1024, 2048, 4096, which correspond to a 'stat'
+(masked and right shifted by 21) of 0, 1, 2, 3, respectively.
+
+A right shift by 11 would generate the correct return value when 'stat' (masked
+and right shifted by 21) has a value of 1 or 2. But for a value of 0 or 3 it's
+not possible to generate the correct return value by only right shifting.
+
+Fix is based on pcix_get_mmrbc()'s similar dealings with the PCI_X_CMD register.
+
+Signed-off-by: Dean Nelson <dnelson@redhat.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath5k/reset.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/pci/pci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath5k/reset.c
-+++ b/drivers/net/wireless/ath/ath5k/reset.c
-@@ -1371,8 +1371,9 @@ int ath5k_hw_reset(struct ath5k_hw *ah,
- 	 * Set clocks to 32KHz operation and use an
- 	 * external 32KHz crystal when sleeping if one
- 	 * exists */
--	if (ah->ah_version == AR5K_AR5212)
--			ath5k_hw_set_sleep_clock(ah, true);
-+	if (ah->ah_version == AR5K_AR5212 &&
-+	    ah->ah_op_mode != NL80211_IFTYPE_AP)
-+		ath5k_hw_set_sleep_clock(ah, true);
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -2361,7 +2361,7 @@ int pcix_get_max_mmrbc(struct pci_dev *d
+ 	if (err)
+ 		return -EINVAL;
  
- 	/*
- 	 * Disable beacons and reset the register
+-	return (stat & PCI_X_STATUS_MAX_READ) >> 12;
++	return 512 << ((stat & PCI_X_STATUS_MAX_READ) >> 21);
+ }
+ EXPORT_SYMBOL(pcix_get_max_mmrbc);
+ 
 
 
