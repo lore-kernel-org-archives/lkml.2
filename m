@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511Ab0C3LfL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 07:35:11 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:44520 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754513Ab0C3LfI (ORCPT
+	id S1756491Ab0C3Lgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 07:36:54 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:63019 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754475Ab0C3Lgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 07:35:08 -0400
+	Tue, 30 Mar 2010 07:36:52 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,107 +16,95 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 13/29] lmb: Add lmb_free_memory_size()
-Date: Tue, 30 Mar 2010 04:19:47 -0700
-Message-Id: <1269948003-17221-14-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 01/29] x86: Make e820_remove_range to handle all covered case
+Date: Tue, 30 Mar 2010 04:19:35 -0700
+Message-Id: <1269948003-17221-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269948003-17221-1-git-send-email-yinghai@kernel.org>
 References: <1269948003-17221-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4BB1DECB.000E,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090203.4BB1DEC7.00A3,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will return free memory size in specified range.
+Rusty found on lguest with trim_bios_range, max_pfn is not right anymore, and
+looks e820_remove_range does not work right.
 
-We can not use memory_size - reserved_size here, because some reserved area
-may not be in the scope of lmb.memory.region.
+[    0.000000] BIOS-provided physical RAM map:
+[    0.000000]  LGUEST: 0000000000000000 - 0000000004000000 (usable)
+[    0.000000] Notice: NX (Execute Disable) protection missing in CPU or disabled in BIOS!
+[    0.000000] DMI not present or invalid.
+[    0.000000] last_pfn = 0x3fa0 max_arch_pfn = 0x100000
+[    0.000000] init_memory_mapping: 0000000000000000-0000000003fa0000
 
-Use lmb.memory.region subtracting lmb.reserved.region to get free range array.
-then count size of all free ranges.
+root cause is: the e820_remove_range doesn't handle that all cover case.
+e820_remove_range(BIOS_START, BIOS_END - BIOS_start, ,,)
+get miss one left range.
 
+Make that is corresponding to e820_update_range() to handle that case too.
+
+Reported-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/lmb.h |    1 +
- mm/lmb.c            |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 52 insertions(+), 0 deletions(-)
+ arch/x86/kernel/e820.c |   24 ++++++++++++++++++++----
+ 1 files changed, 20 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/lmb.h b/include/linux/lmb.h
-index 4078825..b874dc0 100644
---- a/include/linux/lmb.h
-+++ b/include/linux/lmb.h
-@@ -100,6 +100,7 @@ int get_free_all_memory_range(struct range **rangep, int nodeid);
- void lmb_register_active_regions(int nid, unsigned long start_pfn,
- 					 unsigned long last_pfn);
- u64 lmb_hole_size(u64 start, u64 end);
-+u64 lmb_free_memory_size(u64 addr, u64 limit);
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 740b440..7bca3c6 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -519,29 +519,45 @@ u64 __init e820_remove_range(u64 start, u64 size, unsigned old_type,
+ 	printk(KERN_DEBUG "e820 remove range: %016Lx - %016Lx ",
+ 		       (unsigned long long) start,
+ 		       (unsigned long long) end);
+-	e820_print_type(old_type);
++	if (checktype)
++		e820_print_type(old_type);
+ 	printk(KERN_CONT "\n");
  
- #include <asm/lmb.h>
+ 	for (i = 0; i < e820.nr_map; i++) {
+ 		struct e820entry *ei = &e820.map[i];
+ 		u64 final_start, final_end;
++		u64 ei_end;
  
-diff --git a/mm/lmb.c b/mm/lmb.c
-index 97e582d..1a686ff 100644
---- a/mm/lmb.c
-+++ b/mm/lmb.c
-@@ -747,6 +747,57 @@ void __init lmb_to_bootmem(u64 start, u64 end)
- }
- #endif
+ 		if (checktype && ei->type != old_type)
+ 			continue;
++
++		ei_end = ei->addr + ei->size;
+ 		/* totally covered? */
+-		if (ei->addr >= start &&
+-		    (ei->addr + ei->size) <= (start + size)) {
++		if (ei->addr >= start && ei_end <= end) {
+ 			real_removed_size += ei->size;
+ 			memset(ei, 0, sizeof(struct e820entry));
+ 			continue;
+ 		}
++
++		/* new range is totally covered? */
++		if (ei->addr < start && ei_end > end) {
++			e820_add_region(end, ei_end - end, ei->type);
++			ei->size = start - ei->addr;
++			real_removed_size += size;
++			continue;
++		}
++
+ 		/* partially covered */
+ 		final_start = max(start, ei->addr);
+-		final_end = min(start + size, ei->addr + ei->size);
++		final_end = min(end, ei_end);
+ 		if (final_start >= final_end)
+ 			continue;
+ 		real_removed_size += final_end - final_start;
  
-+u64 __init lmb_free_memory_size(u64 addr, u64 limit)
-+{
-+	int i, count;
-+	struct range *range;
-+	int nr_range;
-+	u64 final_start, final_end;
-+	u64 free_size;
-+
-+	count = lmb.reserved.cnt * 2;
-+
-+	range = find_range_array(count);
-+	nr_range = 0;
-+
-+	addr = PFN_UP(addr);
-+	limit = PFN_DOWN(limit);
-+
-+	for (i = 0; i < lmb.memory.cnt; i++) {
-+		struct lmb_property *r = &lmb.memory.region[i];
-+
-+		final_start = PFN_UP(r->base);
-+		final_end = PFN_DOWN(r->base + r->size);
-+		if (final_start >= final_end)
-+			continue;
-+		if (final_start >= limit || final_end <= addr)
-+			continue;
-+
-+		nr_range = add_range(range, count, nr_range, final_start, final_end);
-+	}
-+	subtract_range(range, count, 0, addr);
-+	subtract_range(range, count, limit, -1ULL);
-+	for (i = 0; i < lmb.reserved.cnt; i++) {
-+		struct lmb_property *r = &lmb.reserved.region[i];
-+
-+		final_start = PFN_DOWN(r->base);
-+		final_end = PFN_UP(r->base + r->size);
-+		if (final_start >= final_end)
-+			continue;
-+		if (final_start >= limit || final_end <= addr)
-+			continue;
-+
-+		subtract_range(range, count, final_start, final_end);
-+	}
-+	nr_range = clean_sort_range(range, count);
-+
-+	free_size = 0;
-+	for (i = 0; i < nr_range; i++)
-+		free_size += range[i].end - range[i].start;
-+
-+	return free_size << PAGE_SHIFT;
-+}
-+
- u64 __init __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
- 				 u64 size, u64 align)
- {
++		/*
++		 * left range could be head or tail, so need to update
++		 * size at first.
++		 */
+ 		ei->size -= final_end - final_start;
+ 		if (ei->addr < final_start)
+ 			continue;
 -- 
 1.6.4.2
 
