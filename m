@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656Ab0CaA1P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:27:15 -0400
-Received: from kroah.org ([198.145.64.141]:48945 "EHLO coco.kroah.org"
+	id S1756446Ab0C3XMX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:12:23 -0400
+Received: from kroah.org ([198.145.64.141]:48876 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756461Ab0C3XM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:27 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:32 2010
-Message-Id: <20100330225832.429005147@linux.site>
+	id S1754373Ab0C3XMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:15 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:25 2010
+Message-Id: <20100330225824.586877414@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:41 -0700
+Date: Tue, 30 Mar 2010 15:57:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Yongseok Koh <yongseok.koh@samsung.com>, Nick Piggin <npiggin@suse.de>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [39/89] vmalloc: remove BUG_ON due to racy counting of VM_LAZY_FREE
+       Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [26/89] nozomi: quick fix for the close/close bug
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,77 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yongseok Koh <yongseok.koh@samsung.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit 88f5004430babb836cfce886d5d54c82166f8ba4 upstream.
+commit eeec32a731631a9bad9abb21c626b9f2840bee0d upstream.
 
-In free_unmap_area_noflush(), va->flags is marked as VM_LAZY_FREE first, and
-then vmap_lazy_nr is increased atomically.
+Nozomi goes wrong if you get the sequence
 
-But, in __purge_vmap_area_lazy(), while traversing of vmap_are_list, nr
-is counted by checking VM_LAZY_FREE is set to va->flags.  After counting
-the variable nr, kernel reads vmap_lazy_nr atomically and checks a
-BUG_ON condition whether nr is greater than vmap_lazy_nr to prevent
-vmap_lazy_nr from being negative.
+	open
+	open
+	close
 
-The problem is that, if interrupted right after marking VM_LAZY_FREE,
-increment of vmap_lazy_nr can be delayed.  Consequently, BUG_ON
-condition can be met because nr is counted more than vmap_lazy_nr.
+	[stuff]
+	close
 
-It is highly probable when vmalloc/vfree are called frequently.  This
-scenario have been verified by adding delay between marking VM_LAZY_FREE
-and increasing vmap_lazy_nr in free_unmap_area_noflush().
+which turns out to occur on some ppp type setups.
 
-Even the vmap_lazy_nr is for checking high watermark, it never be the
-strict watermark.  Although the BUG_ON condition is to prevent
-vmap_lazy_nr from being negative, vmap_lazy_nr is signed variable.  So,
-it could go down to negative value temporarily.
+This is a quick patch up for the problem. It's not really fixing Nozomi
+which completely fails to implement tty open/close semantics and all the
+other needed stuff. Doing it right is a rather more invasive patch set and
+not one that will backport.
 
-Consequently, removing the BUG_ON condition is proper.
-
-A possible BUG_ON message is like the below.
-
-   kernel BUG at mm/vmalloc.c:517!
-   invalid opcode: 0000 [#1] SMP
-   EIP: 0060:[<c04824a4>] EFLAGS: 00010297 CPU: 3
-   EIP is at __purge_vmap_area_lazy+0x144/0x150
-   EAX: ee8a8818 EBX: c08e77d4 ECX: e7c7ae40 EDX: c08e77ec
-   ESI: 000081fe EDI: e7c7ae60 EBP: e7c7ae64 ESP: e7c7ae3c
-   DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-   Call Trace:
-   [<c0482ad9>] free_unmap_vmap_area_noflush+0x69/0x70
-   [<c0482b02>] remove_vm_area+0x22/0x70
-   [<c0482c15>] __vunmap+0x45/0xe0
-   [<c04831ec>] vmalloc+0x2c/0x30
-   Code: 8d 59 e0 eb 04 66 90 89 cb 89 d0 e8 87 fe ff ff 8b 43 20 89 da 8d 48 e0 8d 43 20 3b 04 24 75 e7 fe 05 a8 a5 a3 c0 e9 78 ff ff ff <0f> 0b eb fe 90 8d b4 26 00 00 00 00 56 89 c6 b8 ac a5 a3 c0 31
-   EIP: [<c04824a4>] __purge_vmap_area_lazy+0x144/0x150 SS:ESP 0068:e7c7ae3c
-
-[ See also http://marc.info/?l=linux-kernel&m=126335856228090&w=2 ]
-
-Signed-off-by: Yongseok Koh <yongseok.koh@samsung.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Cc: Nick Piggin <npiggin@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/vmalloc.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/char/nozomi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -546,10 +546,8 @@ static void __purge_vmap_area_lazy(unsig
- 	}
- 	rcu_read_unlock();
+--- a/drivers/char/nozomi.c
++++ b/drivers/char/nozomi.c
+@@ -1628,10 +1628,10 @@ static void ntty_close(struct tty_struct
  
--	if (nr) {
--		BUG_ON(nr > atomic_read(&vmap_lazy_nr));
-+	if (nr)
- 		atomic_sub(nr, &vmap_lazy_nr);
--	}
+ 	dc->open_ttys--;
+ 	port->count--;
+-	tty_port_tty_set(port, NULL);
  
- 	if (nr || force_flush)
- 		flush_tlb_kernel_range(*start, *end);
+ 	if (port->count == 0) {
+ 		DBG1("close: %d", nport->token_dl);
++		tty_port_tty_set(port, NULL);
+ 		spin_lock_irqsave(&dc->spin_mutex, flags);
+ 		dc->last_ier &= ~(nport->token_dl);
+ 		writew(dc->last_ier, dc->reg_ier);
 
 
