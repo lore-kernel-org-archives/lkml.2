@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab0C3XJS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:09:18 -0400
-Received: from kroah.org ([198.145.64.141]:48546 "EHLO coco.kroah.org"
+	id S1755852Ab0C3XJI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:09:08 -0400
+Received: from kroah.org ([198.145.64.141]:48469 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755032Ab0C3XJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:09:12 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:59 2010
-Message-Id: <20100330224959.223804283@linux.site>
+	id S1755723Ab0C3XJB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:09:01 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:51 2010
+Message-Id: <20100330224950.266515228@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:48:49 -0700
+Date: Tue, 30 Mar 2010 15:48:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Ben Hutchings <ben@decadent.org.uk>, Dave Airlie <airlied@redhat.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [29/45] drm/r128: Add test for initialisation to all ioctls that require it
+       Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Ingo Molnar <mingo@elte.hu>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [17/45] sched: fine-tune SD_MC_INIT
 In-Reply-To: <20100330230410.GA28712@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,228 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Mike Galbraith <efault@gmx.de>
 
-commit 7dc482dfeeeefcfd000d4271c4626937406756d7 upstream.
+commit 14800984706bf6936bbec5187f736e928be5c218 upstream.
 
-Almost all r128's private ioctls require that the CCE state has
-already been initialised.  However, most do not test that this has
-been done, and will proceed to dereference a null pointer.  This may
-result in a security vulnerability, since some ioctls are
-unprivileged.
+Tune SD_MC_INIT the same way as SD_CPU_INIT:
+unset SD_BALANCE_NEWIDLE, and set SD_WAKE_BALANCE.
 
-This adds a macro for the common initialisation test and changes all
-ioctl implementations that require prior initialisation to use that
-macro.
+This improves vmark by 5%:
 
-Also, r128_do_init_cce() does not test that the CCE state has not
-been initialised already.  Repeated initialisation may lead to a crash
-or resource leak.  This adds that test.
+vmark         132102 125968 125497 messages/sec    avg 127855.66    .984
+vmark         139404 131719 131272 messages/sec    avg 134131.66   1.033
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- drivers/gpu/drm/r128/r128_cce.c   |   18 ++++++++++++++----
- drivers/gpu/drm/r128/r128_drv.h   |    8 ++++++++
- drivers/gpu/drm/r128/r128_state.c |   36 +++++++++++++++++++-----------------
- 3 files changed, 41 insertions(+), 21 deletions(-)
+ include/linux/topology.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/r128/r128_cce.c
-+++ b/drivers/gpu/drm/r128/r128_cce.c
-@@ -353,6 +353,11 @@ static int r128_do_init_cce(struct drm_d
- 
- 	DRM_DEBUG("\n");
- 
-+	if (dev->dev_private) {
-+		DRM_DEBUG("called when already initialized\n");
-+		return -EINVAL;
-+	}
-+
- 	dev_priv = drm_alloc(sizeof(drm_r128_private_t), DRM_MEM_DRIVER);
- 	if (dev_priv == NULL)
- 		return -ENOMEM;
-@@ -651,6 +656,8 @@ int r128_cce_start(struct drm_device *de
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
-+
- 	if (dev_priv->cce_running || dev_priv->cce_mode == R128_PM4_NONPM4) {
- 		DRM_DEBUG("while CCE running\n");
- 		return 0;
-@@ -673,6 +680,8 @@ int r128_cce_stop(struct drm_device *dev
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
-+
- 	/* Flush any pending CCE commands.  This ensures any outstanding
- 	 * commands are exectuted by the engine before we turn it off.
- 	 */
-@@ -710,10 +719,7 @@ int r128_cce_reset(struct drm_device *de
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
--	if (!dev_priv) {
--		DRM_DEBUG("called before init done\n");
--		return -EINVAL;
--	}
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
- 
- 	r128_do_cce_reset(dev_priv);
- 
-@@ -730,6 +736,8 @@ int r128_cce_idle(struct drm_device *dev
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
-+
- 	if (dev_priv->cce_running) {
- 		r128_do_cce_flush(dev_priv);
- 	}
-@@ -743,6 +751,8 @@ int r128_engine_reset(struct drm_device
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev->dev_private);
-+
- 	return r128_do_engine_reset(dev);
- }
- 
---- a/drivers/gpu/drm/r128/r128_drv.h
-+++ b/drivers/gpu/drm/r128/r128_drv.h
-@@ -418,6 +418,14 @@ static __inline__ void r128_update_ring_
-  * Misc helper macros
-  */
- 
-+#define DEV_INIT_TEST_WITH_RETURN(_dev_priv)                            \
-+do {                                                                    \
-+	if (!_dev_priv) {                                               \
-+		DRM_ERROR("called with no initialization\n");           \
-+		return -EINVAL;                                         \
-+	}                                                               \
-+} while (0)
-+
- #define RING_SPACE_TEST_WITH_RETURN( dev_priv )				\
- do {									\
- 	drm_r128_ring_buffer_t *ring = &dev_priv->ring; int i;		\
---- a/drivers/gpu/drm/r128/r128_state.c
-+++ b/drivers/gpu/drm/r128/r128_state.c
-@@ -1244,14 +1244,18 @@ static void r128_cce_dispatch_stipple(st
- static int r128_cce_clear(struct drm_device *dev, void *data, struct drm_file *file_priv)
- {
- 	drm_r128_private_t *dev_priv = dev->dev_private;
--	drm_r128_sarea_t *sarea_priv = dev_priv->sarea_priv;
-+	drm_r128_sarea_t *sarea_priv;
- 	drm_r128_clear_t *clear = data;
- 	DRM_DEBUG("\n");
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
-+
- 	RING_SPACE_TEST_WITH_RETURN(dev_priv);
- 
-+	sarea_priv = dev_priv->sarea_priv;
-+
- 	if (sarea_priv->nbox > R128_NR_SAREA_CLIPRECTS)
- 		sarea_priv->nbox = R128_NR_SAREA_CLIPRECTS;
- 
-@@ -1312,6 +1316,8 @@ static int r128_cce_flip(struct drm_devi
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
-+
- 	RING_SPACE_TEST_WITH_RETURN(dev_priv);
- 
- 	if (!dev_priv->page_flipping)
-@@ -1331,6 +1337,8 @@ static int r128_cce_swap(struct drm_devi
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
-+
- 	RING_SPACE_TEST_WITH_RETURN(dev_priv);
- 
- 	if (sarea_priv->nbox > R128_NR_SAREA_CLIPRECTS)
-@@ -1354,10 +1362,7 @@ static int r128_cce_vertex(struct drm_de
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
--	if (!dev_priv) {
--		DRM_ERROR("called with no initialization\n");
--		return -EINVAL;
--	}
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
- 
- 	DRM_DEBUG("pid=%d index=%d count=%d discard=%d\n",
- 		  DRM_CURRENTPID, vertex->idx, vertex->count, vertex->discard);
-@@ -1410,10 +1415,7 @@ static int r128_cce_indices(struct drm_d
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
--	if (!dev_priv) {
--		DRM_ERROR("called with no initialization\n");
--		return -EINVAL;
--	}
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
- 
- 	DRM_DEBUG("pid=%d buf=%d s=%d e=%d d=%d\n", DRM_CURRENTPID,
- 		  elts->idx, elts->start, elts->end, elts->discard);
-@@ -1476,6 +1478,8 @@ static int r128_cce_blit(struct drm_devi
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
-+
- 	DRM_DEBUG("pid=%d index=%d\n", DRM_CURRENTPID, blit->idx);
- 
- 	if (blit->idx < 0 || blit->idx >= dma->buf_count) {
-@@ -1501,6 +1505,8 @@ static int r128_cce_depth(struct drm_dev
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
-+
- 	RING_SPACE_TEST_WITH_RETURN(dev_priv);
- 
- 	ret = -EINVAL;
-@@ -1531,6 +1537,8 @@ static int r128_cce_stipple(struct drm_d
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
-+
- 	if (DRM_COPY_FROM_USER(&mask, stipple->mask, 32 * sizeof(u32)))
- 		return -EFAULT;
- 
-@@ -1555,10 +1563,7 @@ static int r128_cce_indirect(struct drm_
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
--	if (!dev_priv) {
--		DRM_ERROR("called with no initialization\n");
--		return -EINVAL;
--	}
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
- 
- 	DRM_DEBUG("idx=%d s=%d e=%d d=%d\n",
- 		  indirect->idx, indirect->start, indirect->end,
-@@ -1620,10 +1625,7 @@ static int r128_getparam(struct drm_devi
- 	drm_r128_getparam_t *param = data;
- 	int value;
- 
--	if (!dev_priv) {
--		DRM_ERROR("called with no initialization\n");
--		return -EINVAL;
--	}
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
- 
- 	DRM_DEBUG("pid=%d\n", DRM_CURRENTPID);
- 
+--- a/include/linux/topology.h
++++ b/include/linux/topology.h
+@@ -120,10 +120,10 @@ void arch_update_cpu_topology(void);
+ 	.wake_idx		= 1,			\
+ 	.forkexec_idx		= 1,			\
+ 	.flags			= SD_LOAD_BALANCE	\
+-				| SD_BALANCE_NEWIDLE	\
+ 				| SD_BALANCE_FORK	\
+ 				| SD_BALANCE_EXEC	\
+ 				| SD_WAKE_AFFINE	\
++				| SD_WAKE_BALANCE	\
+ 				| SD_SHARE_PKG_RESOURCES\
+ 				| BALANCE_FOR_MC_POWER,	\
+ 	.last_balance		= jiffies,		\
 
 
