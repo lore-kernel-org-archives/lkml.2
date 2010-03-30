@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756772Ab0C3XRj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:17:39 -0400
-Received: from kroah.org ([198.145.64.141]:51798 "EHLO coco.kroah.org"
+	id S1757600Ab0CaARO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:17:14 -0400
+Received: from kroah.org ([198.145.64.141]:51754 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756522Ab0C3XRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:17:35 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:09 2010
-Message-Id: <20100330225608.896350308@linux.site>
+	id S932097Ab0C3XRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:17:31 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:05 2010
+Message-Id: <20100330225604.499741823@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:54:56 -0700
+Date: Tue, 30 Mar 2010 15:54:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Marcel Holtmann <marcel@holtmann.org>,
-       Chase Douglas <chase.douglas@canonical.com>,
+       Jean Delvare <khali@linux-fr.org>, Oleg Ryjkov <oryjkov@gmail.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [018/116] Bluetooth: Fix sleeping function in RFCOMM within invalid context
+Subject: [013/116] i2c-i801: Dont use the block buffer for I2C block writes
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,77 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcel Holtmann <marcel@holtmann.org>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 485f1eff73a7b932fd3abb0dfcf804e1a1f59025 upstream.
+commit c074c39d62306efa5ba7c69c1a1531bc7333d252 upstream.
 
-With the commit 9e726b17422bade75fba94e625cd35fd1353e682 the
-rfcomm_session_put() gets accidentially called from a timeout
-callback and results in this:
+Experience has shown that the block buffer can only be used for SMBus
+(not I2C) block transactions, even though the datasheet doesn't
+mention this limitation.
 
-BUG: sleeping function called from invalid context at net/core/sock.c:1897
-in_atomic(): 1, irqs_disabled(): 0, pid: 0, name: swapper
-Pid: 0, comm: swapper Tainted: P           2.6.32 #31
-Call Trace:
- <IRQ>  [<ffffffff81036455>] __might_sleep+0xf8/0xfa
- [<ffffffff8138ef1d>] lock_sock_nested+0x29/0xc4
- [<ffffffffa03921b3>] lock_sock+0xb/0xd [l2cap]
- [<ffffffffa03948e6>] l2cap_sock_shutdown+0x1c/0x76 [l2cap]
- [<ffffffff8106adea>] ? clockevents_program_event+0x75/0x7e
- [<ffffffff8106bea2>] ? tick_dev_program_event+0x37/0xa5
- [<ffffffffa0394967>] l2cap_sock_release+0x27/0x67 [l2cap]
- [<ffffffff8138c971>] sock_release+0x1a/0x67
- [<ffffffffa03d2492>] rfcomm_session_del+0x34/0x53 [rfcomm]
- [<ffffffffa03d24c5>] rfcomm_session_put+0x14/0x16 [rfcomm]
- [<ffffffffa03d28b4>] rfcomm_session_timeout+0xe/0x1a [rfcomm]
- [<ffffffff810554a8>] run_timer_softirq+0x1e2/0x29a
- [<ffffffffa03d28a6>] ? rfcomm_session_timeout+0x0/0x1a [rfcomm]
- [<ffffffff8104e0f6>] __do_softirq+0xfe/0x1c5
- [<ffffffff8100e8ce>] ? timer_interrupt+0x1a/0x21
- [<ffffffff8100cc4c>] call_softirq+0x1c/0x28
- [<ffffffff8100e05b>] do_softirq+0x33/0x6b
- [<ffffffff8104daf6>] irq_exit+0x36/0x85
- [<ffffffff8100d7a9>] do_IRQ+0xa6/0xbd
- [<ffffffff8100c493>] ret_from_intr+0x0/0xa
- <EOI>  [<ffffffff812585b3>] ? acpi_idle_enter_bm+0x269/0x294
- [<ffffffff812585a9>] ? acpi_idle_enter_bm+0x25f/0x294
- [<ffffffff81373ddc>] ? cpuidle_idle_call+0x97/0x107
- [<ffffffff8100aca0>] ? cpu_idle+0x53/0xaa
- [<ffffffff81429006>] ? rest_init+0x7a/0x7c
- [<ffffffff8177bc8c>] ? start_kernel+0x389/0x394
- [<ffffffff8177b29c>] ? x86_64_start_reservations+0xac/0xb0
- [<ffffffff8177b384>] ? x86_64_start_kernel+0xe4/0xeb
-
-To fix this, the rfcomm_session_put() needs to be moved out of
-rfcomm_session_timeout() into rfcomm_process_sessions(). In that
-context it is perfectly fine to sleep and disconnect the socket.
-
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
-Tested-by: David John <davidjon@xenontk.org>
-Cc: Chase Douglas <chase.douglas@canonical.com>
+Reported-by: Felix Rubinstein <felixru@gmail.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Cc: Oleg Ryjkov <oryjkov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/bluetooth/rfcomm/core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/i2c/busses/i2c-i801.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/net/bluetooth/rfcomm/core.c
-+++ b/net/bluetooth/rfcomm/core.c
-@@ -251,7 +251,6 @@ static void rfcomm_session_timeout(unsig
- 	BT_DBG("session %p state %ld", s, s->state);
+--- a/drivers/i2c/busses/i2c-i801.c
++++ b/drivers/i2c/busses/i2c-i801.c
+@@ -415,9 +415,11 @@ static int i801_block_transaction(union
+ 		data->block[0] = 32;	/* max for SMBus block reads */
+ 	}
  
- 	set_bit(RFCOMM_TIMED_OUT, &s->flags);
--	rfcomm_session_put(s);
- 	rfcomm_schedule(RFCOMM_SCHED_TIMEO);
- }
- 
-@@ -1917,6 +1916,7 @@ static inline void rfcomm_process_sessio
- 		if (test_and_clear_bit(RFCOMM_TIMED_OUT, &s->flags)) {
- 			s->state = BT_DISCONN;
- 			rfcomm_send_disc(s, 0);
-+			rfcomm_session_put(s);
- 			continue;
- 		}
- 
++	/* Experience has shown that the block buffer can only be used for
++	   SMBus (not I2C) block transactions, even though the datasheet
++	   doesn't mention this limitation. */
+ 	if ((i801_features & FEATURE_BLOCK_BUFFER)
+-	 && !(command == I2C_SMBUS_I2C_BLOCK_DATA
+-	      && read_write == I2C_SMBUS_READ)
++	 && command != I2C_SMBUS_I2C_BLOCK_DATA
+ 	 && i801_set_block_buffer_mode() == 0)
+ 		result = i801_block_transaction_by_block(data, read_write,
+ 							 hwpec);
 
 
