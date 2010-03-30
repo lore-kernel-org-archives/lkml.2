@@ -1,116 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932768Ab0C3X13 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:27:29 -0400
-Received: from kroah.org ([198.145.64.141]:46816 "EHLO coco.kroah.org"
+	id S932170Ab0C3XRx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:17:53 -0400
+Received: from kroah.org ([198.145.64.141]:51867 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932693Ab0C3XWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:22:05 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:53 2010
-Message-Id: <20100330224852.835762887@linux.site>
+	id S932142Ab0C3XRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:17:45 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:16 2010
+Message-Id: <20100330225615.776547378@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:56 -0700
+Date: Tue, 30 Mar 2010 15:55:06 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       "David S. Miller" <davem@davemloft.net>,
+       <shaohui.zheng@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [142/156] net: Potential null skb->dev dereference
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+Subject: [028/116] x86, apic: Dont use logical-flat mode when CPU hotplug may exceed 8 CPUs
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Suresh Siddha <suresh.b.siddha@intel.com>
 
-[ Upstream commit 0641e4fbf2f824faee00ea74c459a088d94905fd ]
+commit 681ee44d40d7c93b42118320e4620d07d8704fd6 upstream
 
-When doing "ifenslave -d bond0 eth0", there is chance to get NULL
-dereference in netif_receive_skb(), because dev->master suddenly becomes
-NULL after we tested it.
+We need to fall back from logical-flat APIC mode to physical-flat mode
+when we have more than 8 CPUs.  However, in the presence of CPU
+hotplug(with bios listing not enabled but possible cpus as disabled cpus in
+MADT), we have to consider the number of possible CPUs rather than
+the number of current CPUs; otherwise we may cross the 8-CPU boundary
+when CPUs are added later.
 
-We should use ACCESS_ONCE() to avoid this (or rcu_dereference())
+32bit apic code can use more cleanups (like the removal of vendor checks in
+32bit default_setup_apic_routing()) and more unifications with 64bit code.
+Yinghai has some patches in works already. This patch addresses the boot issue
+that is reported in the virtualization guest context.
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Acked-by: Shaohui Zheng <shaohui.zheng@intel.com>
+Reviewed-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/netdevice.h |    8 ++++----
- net/8021q/vlan_core.c     |    4 ++--
- net/core/dev.c            |    8 +++++---
- 3 files changed, 11 insertions(+), 9 deletions(-)
+ arch/x86/kernel/acpi/boot.c     |    5 -----
+ arch/x86/kernel/apic/apic.c     |   14 --------------
+ arch/x86/kernel/apic/probe_32.c |   27 ++++++++++++++++++++++++++-
+ arch/x86/kernel/apic/probe_64.c |   13 ++-----------
+ arch/x86/kernel/mpparse.c       |    7 -------
+ arch/x86/kernel/smpboot.c       |    2 --
+ 6 files changed, 28 insertions(+), 40 deletions(-)
 
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -2023,12 +2023,12 @@ static inline void skb_bond_set_mac_by_m
-  * duplicates except for 802.3ad ETH_P_SLOW, alb non-mcast/bcast, and
-  * ARP on active-backup slaves with arp_validate enabled.
-  */
--static inline int skb_bond_should_drop(struct sk_buff *skb)
-+static inline int skb_bond_should_drop(struct sk_buff *skb,
-+				       struct net_device *master)
- {
--	struct net_device *dev = skb->dev;
--	struct net_device *master = dev->master;
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -1191,9 +1191,6 @@ static void __init acpi_process_madt(voi
+ 		if (!error) {
+ 			acpi_lapic = 1;
+ 
+-#ifdef CONFIG_X86_BIGSMP
+-			generic_bigsmp_probe();
+-#endif
+ 			/*
+ 			 * Parse MADT IO-APIC entries
+ 			 */
+@@ -1203,8 +1200,6 @@ static void __init acpi_process_madt(voi
+ 				acpi_ioapic = 1;
+ 
+ 				smp_found_config = 1;
+-				if (apic->setup_apic_routing)
+-					apic->setup_apic_routing();
+ 			}
+ 		}
+ 		if (error == -EINVAL) {
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1665,9 +1665,7 @@ int __init APIC_init_uniprocessor(void)
+ #endif
+ 
+ 	enable_IR_x2apic();
+-#ifdef CONFIG_X86_64
+ 	default_setup_apic_routing();
+-#endif
+ 
+ 	verify_local_APIC();
+ 	connect_bsp_APIC();
+@@ -1915,18 +1913,6 @@ void __cpuinit generic_processor_info(in
+ 	if (apicid > max_physical_apicid)
+ 		max_physical_apicid = apicid;
+ 
+-#ifdef CONFIG_X86_32
+-	switch (boot_cpu_data.x86_vendor) {
+-	case X86_VENDOR_INTEL:
+-		if (num_processors > 8)
+-			def_to_bigsmp = 1;
+-		break;
+-	case X86_VENDOR_AMD:
+-		if (max_physical_apicid >= 8)
+-			def_to_bigsmp = 1;
+-	}
+-#endif
 -
- 	if (master) {
-+		struct net_device *dev = skb->dev;
+ #if defined(CONFIG_SMP) || defined(CONFIG_X86_64)
+ 	early_per_cpu(x86_cpu_to_apicid, cpu) = apicid;
+ 	early_per_cpu(x86_bios_cpu_apicid, cpu) = apicid;
+--- a/arch/x86/kernel/apic/probe_32.c
++++ b/arch/x86/kernel/apic/probe_32.c
+@@ -54,6 +54,31 @@ late_initcall(print_ipi_mode);
+ 
+ void default_setup_apic_routing(void)
+ {
++	int version = apic_version[boot_cpu_physical_apicid];
 +
- 		if (master->priv_flags & IFF_MASTER_ARPMON)
- 			dev->last_rx = jiffies;
++	if (num_possible_cpus() > 8) {
++		switch (boot_cpu_data.x86_vendor) {
++		case X86_VENDOR_INTEL:
++			if (!APIC_XAPIC(version)) {
++				def_to_bigsmp = 0;
++				break;
++			}
++			/* If P4 and above fall through */
++		case X86_VENDOR_AMD:
++			def_to_bigsmp = 1;
++		}
++	}
++
++#ifdef CONFIG_X86_BIGSMP
++	generic_bigsmp_probe();
++#endif
++
++	if (apic->setup_apic_routing)
++		apic->setup_apic_routing();
++}
++
++void setup_apic_flat_routing(void)
++{
+ #ifdef CONFIG_X86_IO_APIC
+ 	printk(KERN_INFO
+ 		"Enabling APIC mode:  Flat.  Using %d I/O APICs\n",
+@@ -103,7 +128,7 @@ struct apic apic_default = {
+ 	.init_apic_ldr			= default_init_apic_ldr,
  
---- a/net/8021q/vlan_core.c
-+++ b/net/8021q/vlan_core.c
-@@ -11,7 +11,7 @@ int __vlan_hwaccel_rx(struct sk_buff *sk
- 	if (netpoll_rx(skb))
- 		return NET_RX_DROP;
+ 	.ioapic_phys_id_map		= default_ioapic_phys_id_map,
+-	.setup_apic_routing		= default_setup_apic_routing,
++	.setup_apic_routing		= setup_apic_flat_routing,
+ 	.multi_timer_check		= NULL,
+ 	.apicid_to_node			= default_apicid_to_node,
+ 	.cpu_to_logical_apicid		= default_cpu_to_logical_apicid,
+--- a/arch/x86/kernel/apic/probe_64.c
++++ b/arch/x86/kernel/apic/probe_64.c
+@@ -67,17 +67,8 @@ void __init default_setup_apic_routing(v
+ 	}
+ #endif
  
--	if (skb_bond_should_drop(skb))
-+	if (skb_bond_should_drop(skb, ACCESS_ONCE(skb->dev->master)))
- 		goto drop;
+-	if (apic == &apic_flat) {
+-		switch (boot_cpu_data.x86_vendor) {
+-		case X86_VENDOR_INTEL:
+-			if (num_processors > 8)
+-				apic = &apic_physflat;
+-			break;
+-		case X86_VENDOR_AMD:
+-			if (max_physical_apicid >= 8)
+-				apic = &apic_physflat;
+-		}
+-	}
++	if (apic == &apic_flat && num_possible_cpus() > 8)
++		apic = &apic_physflat;
  
- 	__vlan_hwaccel_put_tag(skb, vlan_tci);
-@@ -82,7 +82,7 @@ vlan_gro_common(struct napi_struct *napi
- {
- 	struct sk_buff *p;
+ 	printk(KERN_INFO "Setting APIC routing to %s\n", apic->name);
  
--	if (skb_bond_should_drop(skb))
-+	if (skb_bond_should_drop(skb, ACCESS_ONCE(skb->dev->master)))
- 		goto drop;
- 
- 	__vlan_hwaccel_put_tag(skb, vlan_tci);
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2421,6 +2421,7 @@ int netif_receive_skb(struct sk_buff *sk
- {
- 	struct packet_type *ptype, *pt_prev;
- 	struct net_device *orig_dev;
-+	struct net_device *master;
- 	struct net_device *null_or_orig;
- 	int ret = NET_RX_DROP;
- 	__be16 type;
-@@ -2440,11 +2441,12 @@ int netif_receive_skb(struct sk_buff *sk
- 
- 	null_or_orig = NULL;
- 	orig_dev = skb->dev;
--	if (orig_dev->master) {
--		if (skb_bond_should_drop(skb))
-+	master = ACCESS_ONCE(orig_dev->master);
-+	if (master) {
-+		if (skb_bond_should_drop(skb, master))
- 			null_or_orig = orig_dev; /* deliver only exact match */
- 		else
--			skb->dev = orig_dev->master;
-+			skb->dev = master;
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -359,13 +359,6 @@ static int __init smp_read_mpc(struct mp
+ 		x86_init.mpparse.mpc_record(1);
  	}
  
- 	__get_cpu_var(netdev_rx_stat).total++;
+-#ifdef CONFIG_X86_BIGSMP
+-	generic_bigsmp_probe();
+-#endif
+-
+-	if (apic->setup_apic_routing)
+-		apic->setup_apic_routing();
+-
+ 	if (!num_processors)
+ 		printk(KERN_ERR "MPTABLE: no processors registered!\n");
+ 	return num_processors;
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1066,9 +1066,7 @@ void __init native_smp_prepare_cpus(unsi
+ 	set_cpu_sibling_map(0);
+ 
+ 	enable_IR_x2apic();
+-#ifdef CONFIG_X86_64
+ 	default_setup_apic_routing();
+-#endif
+ 
+ 	if (smp_sanity_check(max_cpus) < 0) {
+ 		printk(KERN_INFO "SMP disabled\n");
 
 
