@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246Ab0C3XLv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:11:51 -0400
-Received: from kroah.org ([198.145.64.141]:48744 "EHLO coco.kroah.org"
+	id S1757845Ab0CaAeh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:34:37 -0400
+Received: from kroah.org ([198.145.64.141]:48763 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755961Ab0C3XLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:11:47 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:10 2010
-Message-Id: <20100330225810.443012972@linux.site>
+	id S1756241Ab0C3XLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:11:51 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:13 2010
+Message-Id: <20100330225812.338545097@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:06 -0700
+Date: Tue, 30 Mar 2010 15:57:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Mikael Pettersson <mikpe@it.uu.se>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Darren Hart <dvhltc@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [04/89] futex_lock_pi() key refcnt fix
+       "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+       Jens Axboe <jens.axboe@oracle.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [07/89] cciss: Make cciss_seq_show handle holes in the h->drv[] array
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,51 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikael Pettersson <mikpe@it.uu.se>
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-commit 5ecb01cfdf96c5f465192bdb2a4fd4a61a24c6cc upstream.
+commit 531c2dc70d339c5dfa8c3eb628c3459dc6f3a075 upstream.
 
-This fixes a futex key reference count bug in futex_lock_pi(),
-where a key's reference count is incremented twice but decremented
-only once, causing the backing object to not be released.
+It is possible (and expected) for there to be holes in the h->drv[]
+array, that is, some elements may be NULL pointers.  cciss_seq_show
+needs to be made aware of this possibility to avoid an Oops.
 
-If the futex is created in a temporary file in an ext3 file system,
-this bug causes the file's inode to become an "undead" orphan,
-which causes an oops from a BUG_ON() in ext3_put_super() when the
-file system is unmounted. glibc's test suite is known to trigger this,
-see <http://bugzilla.kernel.org/show_bug.cgi?id=14256>.
+To reproduce the Oops which this fixes:
 
-The bug is a regression from 2.6.28-git3, namely Peter Zijlstra's
-38d47c1b7075bd7ec3881141bb3629da58f88dab "[PATCH] futex: rely on
-get_user_pages() for shared futexes". That commit made get_futex_key()
-also increment the reference count of the futex key, and updated its
-callers to decrement the key's reference count before returning.
-Unfortunately the normal exit path in futex_lock_pi() wasn't corrected:
-the reference count is incremented by get_futex_key() and queue_lock(),
-but the normal exit path only decrements once, via unqueue_me_pi().
-The fix is to put_futex_key() after unqueue_me_pi(), since 2.6.31
-this is easily done by 'goto out_put_key' rather than 'goto out'.
+1) Create two "arrays" in the Array Configuratino Utility and
+   several logical drives on each array.
+2) cat /proc/driver/cciss/cciss* in an infinite loop
+3) delete some of the logical drives in the first "array."
 
-Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Darren Hart <dvhltc@us.ibm.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Signed-off-by: Jens Axboe <jens.axboe@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/futex.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/block/cciss.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -1974,7 +1974,7 @@ retry_private:
- 	/* Unqueue and drop the lock */
- 	unqueue_me_pi(&q);
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -323,6 +323,9 @@ static int cciss_seq_show(struct seq_fil
+ 	if (*pos > h->highest_lun)
+ 		return 0;
  
--	goto out;
-+	goto out_put_key;
++	if (drv == NULL) /* it's possible for h->drv[] to have holes. */
++		return 0;
++
+ 	if (drv->heads == 0)
+ 		return 0;
  
- out_unlock_put_key:
- 	queue_unlock(&q, hb);
 
 
