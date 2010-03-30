@@ -1,78 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932563Ab0C3Xyb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:54:31 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:47841 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932393Ab0C3XTW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=rYffwETZVAVSt2DMSvWeC9EgC05iXBa89S3+wTMZ8fSJ4/wAPk0OSisu4/gXWWpo/t
-         G7RXSyT1c1tgI0IhtnmQGD17T2YVouPyGp5+rY7aoSueWwrKlvuY4ozxp8neWVMRf7yz
-         17iI6d0zndQaWoKqivlE50on+rXimqcfvP9xw=
-Message-ID: <4BB286F5.9060706@freedesktop.org>
-Date: Wed, 31 Mar 2010 02:19:17 +0300
-From: Tiago Vignatti <vignatti@freedesktop.org>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-       xorg@lists.freedesktop.org, Alan Piszcz <ap@solarrain.com>
-Subject: Re: 2.6.33: Xorg+khubd lockup (D-state) BUG / ioctl EVIOCGNAME failed:
- Inappropriate ioctl for device / PreInit returned NULL
-References: <alpine.DEB.2.00.1003250800200.13307@p34.internal.lan>	<alpine.DEB.2.00.1003250833040.13307@p34.internal.lan> <alpine.DEB.2.00.1003250935030.21591@p34.internal.lan>
-In-Reply-To: <alpine.DEB.2.00.1003250935030.21591@p34.internal.lan>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932376Ab0C3XTN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:19:13 -0400
+Received: from kroah.org ([198.145.64.141]:45373 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932258Ab0C3XSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:43 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:55 2010
+Message-Id: <20100330225654.491053211@linux.site>
+User-Agent: quilt/0.47-14.9
+Date: Tue, 30 Mar 2010 15:56:03 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Dean Nelson <dnelson@redhat.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [085/116] PCI: fix access of PCI_X_CMD by pcix get and set mmrbc functions
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Justin Piszcz wrote:
-> 
-> 
-> On Thu, 25 Mar 2010, Justin Piszcz wrote:
-> 
->>
->>
->> On Thu, 25 Mar 2010, Justin Piszcz wrote:
->>
->> The same problem has been reported by another person, he says his 
->> entire system freezes, which, it appears to do unless you can SSH into 
->> the box:
->> http://www.openoffice.org/issues/show_bug.cgi?id=76797
->>
->> Look at his lspci listing.
->> james@dv6105us:~$ lspci
->> 00:00.0 RAM memory: nVidia Corporation C51 Host Bridge (rev a2)
->> 00:00.1 RAM memory: nVidia Corporation C51 Memory Controller 0 (rev a2)
->> 00:00.2 RAM memory: nVidia Corporation C51 Memory Controller 1 (rev a2)
->>
->> Here is mine:
->> $ lspci
->> 00:00.0 RAM memory: nVidia Corporation C51 Host Bridge (rev a2)
->> 00:00.1 RAM memory: nVidia Corporation C51 Memory Controller 0 (rev a2)
->> 00:00.2 RAM memory: nVidia Corporation C51 Memory Controller 1 (rev a2)
->> 00:00.3 RAM memory: nVidia Corporation C51 Memory Controller 5 (rev a2)
->>
->> Looks like the bug may be in the USB subsystem for this chipset.
->>
->> Justin.
->>
->>
-> 
-> Hi,
-> 
-> And there it goes again *LOCK*
-> root      2190  0.5  1.5  37832 31424 tty7     Ds+  09:00   0:12 
-> /usr/bin/X :0 vt7 -nolisten tcp -auth 
-> /var/lib/xdm/authdir/authfiles/A:0-N5V00o
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-running X server with -nosilk helps something?
+------------------
+
+From: Dean Nelson <dnelson@redhat.com>
+
+commit bdc2bda7c4dd253026cc1fce45fc939304749029 upstream.
+
+An e1000 driver on a system with a PCI-X bus was always being returned
+a value of 135 from both pcix_get_mmrbc() and pcix_set_mmrbc(). This
+value reflects an error return of PCIBIOS_BAD_REGISTER_NUMBER from
+pci_bus_read_config_dword(,, cap + PCI_X_CMD,).
+
+This is because for a dword, the following portion of the PCI_OP_READ()
+macro:
+
+	if (PCI_##size##_BAD) return PCIBIOS_BAD_REGISTER_NUMBER;
+
+expands to:
+
+	if (pos & 3) return PCIBIOS_BAD_REGISTER_NUMBER;
+
+And is always true for 'cap + PCI_X_CMD', which is 0xe4 + 2 = 0xe6. ('cap' is
+the result of calling pci_find_capability(, PCI_CAP_ID_PCIX).)
+
+The same problem exists for pci_bus_write_config_dword(,, cap + PCI_X_CMD,).
+In both cases, instead of calling _dword(), _word() should be called.
+
+Signed-off-by: Dean Nelson <dnelson@redhat.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/pci/pci.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -2375,13 +2375,13 @@ EXPORT_SYMBOL(pcix_get_max_mmrbc);
+ int pcix_get_mmrbc(struct pci_dev *dev)
+ {
+ 	int ret, cap;
+-	u32 cmd;
++	u16 cmd;
+ 
+ 	cap = pci_find_capability(dev, PCI_CAP_ID_PCIX);
+ 	if (!cap)
+ 		return -EINVAL;
+ 
+-	ret = pci_read_config_dword(dev, cap + PCI_X_CMD, &cmd);
++	ret = pci_read_config_word(dev, cap + PCI_X_CMD, &cmd);
+ 	if (!ret)
+ 		ret = 512 << ((cmd & PCI_X_CMD_MAX_READ) >> 2);
+ 
+@@ -2401,7 +2401,8 @@ EXPORT_SYMBOL(pcix_get_mmrbc);
+ int pcix_set_mmrbc(struct pci_dev *dev, int mmrbc)
+ {
+ 	int cap, err = -EINVAL;
+-	u32 stat, cmd, v, o;
++	u32 stat, v, o;
++	u16 cmd;
+ 
+ 	if (mmrbc < 512 || mmrbc > 4096 || !is_power_of_2(mmrbc))
+ 		goto out;
+@@ -2419,7 +2420,7 @@ int pcix_set_mmrbc(struct pci_dev *dev,
+ 	if (v > (stat & PCI_X_STATUS_MAX_READ) >> 21)
+ 		return -E2BIG;
+ 
+-	err = pci_read_config_dword(dev, cap + PCI_X_CMD, &cmd);
++	err = pci_read_config_word(dev, cap + PCI_X_CMD, &cmd);
+ 	if (err)
+ 		goto out;
+ 
+@@ -2431,7 +2432,7 @@ int pcix_set_mmrbc(struct pci_dev *dev,
+ 
+ 		cmd &= ~PCI_X_CMD_MAX_READ;
+ 		cmd |= v << 2;
+-		err = pci_write_config_dword(dev, cap + PCI_X_CMD, cmd);
++		err = pci_write_config_word(dev, cap + PCI_X_CMD, cmd);
+ 	}
+ out:
+ 	return err;
 
 
-           Tiago
