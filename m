@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754502Ab0C3HC5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 03:02:57 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:49819 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751657Ab0C3HC4 (ORCPT
+	id S1754442Ab0C3HFJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 03:05:09 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:37340 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751657Ab0C3HFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 03:02:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=TbaH4OnPDG2VieKSFE3XIv9NP+4obGn/0Aw7OpKTkNn5x4HZmyp9tFwL/bd9mm/nsg
-         4HbeDUxQgx7dgGsAjangC3KUIeqgqVppXNLyswTaCR/QmmhlIewFA0Su64IurKBM9zT4
-         eyqbUxhMxwpv9JZUnK3+ZOsP76EMMTvjAb4To=
-Date: Tue, 30 Mar 2010 09:02:59 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 5/6] procfs: Push down the bkl from ioctl
-Message-ID: <20100330070258.GB22419@nowhere>
-References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <1269930015-863-6-git-send-regression-fweisbec@gmail.com> <b6fcc0a1003292331n4fd0ce03v6d75a1a20ce14f0f@mail.gmail.com>
+	Tue, 30 Mar 2010 03:05:07 -0400
+Date: Tue, 30 Mar 2010 09:05:44 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: EDAC: Is it possible to calculate which piece of memory is bad?
+Message-ID: <20100330070544.GA19488@aftab>
+References: <alpine.DEB.2.00.1003290939340.27175@p34.internal.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <b6fcc0a1003292331n4fd0ce03v6d75a1a20ce14f0f@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.DEB.2.00.1003290939340.27175@p34.internal.lan>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 09:31:33AM +0300, Alexey Dobriyan wrote:
-> On Tue, Mar 30, 2010 at 9:20 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+Date: Mon, Mar 29, 2010 at 09:40:38AM -0400
+
+> Hello,
 > 
-> > --- a/net/sunrpc/cache.c
-> > +++ b/net/sunrpc/cache.c
-> > @@ -1331,12 +1331,22 @@ static unsigned int cache_poll_procfs(struct file *filp, poll_table *wait)
-> >        return cache_poll(filp, wait, cd);
-> >  }
-> >
-> > -static int cache_ioctl_procfs(struct inode *inode, struct file *filp,
-> > -                             unsigned int cmd, unsigned long arg)
-> > +static long cache_ioctl_procfs(struct file *filp,
-> > +                              unsigned int cmd, unsigned long arg)
-> >  {
-> > -       struct cache_detail *cd = PDE(inode)->data;
-> > +       long ret;
-> > +       struct cache_detail *cd;
-> > +       struct inode *inode = filp->f_path.dentry->d_inode;
-> >
-> > -       return cache_ioctl(inode, filp, cmd, arg, cd);
-> > +       /* Pushed down from procfs ioctl handler */
-> > +       lock_kernel();
-> > +
-> > +       cd = PDE(inode)->data;
+> I see the following errors:
 > 
-> ->data is not under BKL at all.
+> EDAC MC0: CE page 0x8abba, offset 0xa10, grain 8, syndrome 0x4758, row 0, channel 0, label "": k8_edac
+
+It looks like it is the first DIMM on your mainboard, i.e., whichever
+gets mapped to channel 0 of the DCT.
+
+Sigh, someday we'll have a better mapping, hopefully, ... :|
+
+> EDAC MC0: CE - no information available: k8_edac Error Overflow set
+> EDAC k8 MC0: extended error code: ECC chipkill x4 error
+> EDAC k8 MC0: general bus error: participating processor(local node origin), time-out(no timeout) memory transaction type(generic read), mem or i/o(mem access), cache level(generic)
+> 
+> Is it possible to use the page or offset to calculate which DIMM is having a
+> problem?
 
 
+-- 
+Regards/Gruss,
+Boris.
 
-Yeah. It's a very rough pushdown, I haven't looked at any bit to figure
-out what could need to be protected or not. I even did not know what does
-PDE. So I kept a plain bkl path. I just thought any further thinking should
-be done in a further patch.
-
-But I can move the bkl after in this same patch if you prefer.
-
-Thanks.
-
+--
+Advanced Micro Devices, Inc.
+Operating Systems Research Center
