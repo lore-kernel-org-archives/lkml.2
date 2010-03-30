@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757047Ab0C3XeV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:34:21 -0400
-Received: from kroah.org ([198.145.64.141]:46494 "EHLO coco.kroah.org"
+	id S932558Ab0C3XVl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:21:41 -0400
+Received: from kroah.org ([198.145.64.141]:46222 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756866Ab0C3XVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:21:15 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:31 2010
-Message-Id: <20100330224831.414726639@linux.site>
+	id S932601Ab0C3XU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:20:28 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:09 2010
+Message-Id: <20100330224809.025773547@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:22 -0700
+Date: Tue, 30 Mar 2010 15:41:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Senthil Balasubramanian <senthilkumar@atheros.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+       Nathaniel McCallum <nathaniel@natemccallum.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [108/156] ath9k: configure the beacon only if the STA is associated
+Subject: [075/156] USB: option: add support for a new CMOTECH device to usb/serial/option
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,36 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Senthil Balasubramanian <senthilkumar@atheros.com>
+From: Nathaniel McCallum <nathaniel@natemccallum.com>
 
-commit 1a20034a73a40b8056731f9db0c535cec2961eb7 upstream.
+commit 3b04872aa75006e2a4adaaec21e9c9ede8b8ad9d upstream.
 
-beacons configuration SHOULD be done only if the STA is associated.
-
-Signed-off-by: Senthil Balasubramanian <senthilkumar@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+Signed-off-by: Nathaniel McCallum <nathaniel@natemccallum.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/beacon.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wireless/ath/ath9k/beacon.c
-+++ b/drivers/net/wireless/ath/ath9k/beacon.c
-@@ -573,6 +573,13 @@ static void ath_beacon_config_sta(struct
- 	u64 tsf;
- 	int num_beacons, offset, dtim_dec_count, cfp_dec_count;
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -289,6 +289,7 @@ static int  option_resume(struct usb_ser
+ #define QUALCOMM_VENDOR_ID			0x05C6
  
-+	/* No need to configure beacon if we are not associated */
-+	if (!common->curaid) {
-+		ath_print(common, ATH_DBG_BEACON,
-+			 "STA is not yet associated..skipping beacon config\n");
-+		return;
-+	}
-+
- 	memset(&bs, 0, sizeof(bs));
- 	intval = conf->beacon_interval & ATH9K_BEACON_PERIOD;
+ #define CMOTECH_VENDOR_ID			0x16d8
++#define CMOTECH_PRODUCT_6008			0x6008
+ #define CMOTECH_PRODUCT_6280			0x6280
  
+ #define TELIT_VENDOR_ID				0x1bc7
+@@ -522,6 +523,7 @@ static struct usb_device_id option_ids[]
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6000)}, /* ZTE AC8700 */
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
+ 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6280) }, /* BP3-USB & BP3-EXT HSDPA */
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6008) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864E) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864G) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
 
 
