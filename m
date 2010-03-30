@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443Ab0C3DsS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 23:48:18 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:42035 "EHLO smtps.tip.net.au"
+	id S1751813Ab0C3ENJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 00:13:09 -0400
+Received: from ozlabs.org ([203.10.76.45]:44830 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755350Ab0C3DsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 23:48:16 -0400
-Date: Tue, 30 Mar 2010 14:48:09 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warning after merge of the sound tree
-Message-Id: <20100330144809.77620889.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
+	id S1751088Ab0C3ENH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 00:13:07 -0400
+Subject: Re: [PATCH 07/31] lmb: Add reserve_lmb/free_lmb
+From: Michael Ellerman <michael@ellerman.id.au>
+Reply-To: michael@ellerman.id.au
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+In-Reply-To: <4BB13D61.3040902@kernel.org>
+References: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
+	 <1269830604-26214-8-git-send-email-yinghai@kernel.org>
+	 <1269865322.24620.42.camel@concordia>  <4BB0D92C.3010103@kernel.org>
+	 <1269901252.2286.11.camel@concordia>  <4BB12BBA.4060108@kernel.org>
+	 <1269905664.7101.43.camel@pasglop>  <4BB13D61.3040902@kernel.org>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-EFkoRkgWekuvA7KH+Eho"
+Date: Tue, 30 Mar 2010 15:13:03 +1100
+Message-ID: <1269922383.15854.68.camel@concordia>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__30_Mar_2010_14_48_09_+1100_nvLqK/c7e6zepZaK"
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__30_Mar_2010_14_48_09_+1100_nvLqK/c7e6zepZaK
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+
+--=-EFkoRkgWekuvA7KH+Eho
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-Hi Takashi,
+On Mon, 2010-03-29 at 16:53 -0700, Yinghai Lu wrote:
+> On 03/29/2010 04:34 PM, Benjamin Herrenschmidt wrote:
+> > On Mon, 2010-03-29 at 15:37 -0700, Yinghai Lu wrote:
+> >>> We just need a lmb.alloc_limit and a lmb_set_alloc_limit() which arch
+> >>> code calls when it knows what the alloc limit is (and can call multip=
+le
+> >>> times during boot). Or maybe it should be called "default_alloc_limit=
+",
+> >>> but that's getting a bit long winded.
+> >>
+> >> ok, I will get_max_mapped() for now, an will change to new field...lat=
+er
+> >=20
+> > No. Do it now. get_max_mapped() sucks as an identifier.
+> >=20
+>=20
+> ok, can i reuse rmo_size, or introduce one new member in struct lmb.
+>=20
+> default_limit?
 
-After merging the sound tree, today's linux-next build (x86_64
-allmodconfig) produced this warning:
+alloc_limit or default_alloc_limit
 
-sound/pci/hda/patch_realtek.c: In function 'fillup_priv_adc_nids':
-sound/pci/hda/patch_realtek.c:5120: warning: format '%s' expects type 'char=
- *', but argument 2 has type 'int'
-sound/pci/hda/patch_realtek.c:5120: warning: too few arguments for format
+cheers
 
-Introduced by commit 6694635d3ae1b038d7a0e38b80637db867c7c8e2 ("ALSA: hda
-- Fix ADC/MUX assignment of ALC269 codec").
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__30_Mar_2010_14_48_09_+1100_nvLqK/c7e6zepZaK
-Content-Type: application/pgp-signature
+--=-EFkoRkgWekuvA7KH+Eho
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Version: GnuPG v1.4.9 (GNU/Linux)
 
-iEYEARECAAYFAkuxdHkACgkQjjKRsyhoI8xO/wCgrVHm1vOewQ8iYa6UW8RGYOrw
-gewAnisjL629+Uav2erxba78R6iF0Ft9
-=/XIL
+iEYEABECAAYFAkuxek8ACgkQdSjSd0sB4dJNkgCfTeCeEEWj8HyGyvN2YJ7K75cx
+LJoAn1RaPm+W3eDqR0M0LK+B/g4aACao
+=jvEL
 -----END PGP SIGNATURE-----
 
---Signature=_Tue__30_Mar_2010_14_48_09_+1100_nvLqK/c7e6zepZaK--
+--=-EFkoRkgWekuvA7KH+Eho--
+
