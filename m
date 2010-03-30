@@ -1,166 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab0C3PBA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 11:01:00 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:58839 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753487Ab0C3PA6 (ORCPT
+	id S1753907Ab0C3PFd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 11:05:33 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:36874 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab0C3PFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 11:00:58 -0400
-Subject: Re: [PATCH 0/3] perf/core, x86: unify perfctr bitmasks
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Cyrill Gorcunov <gorcunov@gmail.com>
-In-Reply-To: <bd4cb8901003300653lc8e414bp3930b03fee2fffbf@mail.gmail.com>
-References: <1269880612-25800-1-git-send-email-robert.richter@amd.com>
-	 <bd4cb8901003300311l4178891dvf1e63293a0ac51fe@mail.gmail.com>
-	 <20100330134145.GI11907@erda.amd.com>
-	 <bd4cb8901003300653lc8e414bp3930b03fee2fffbf@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 30 Mar 2010 17:00:55 +0200
-Message-ID: <1269961255.5258.221.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Mar 2010 11:05:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:subject:to:cc:in-reply-to:references;
+        b=kzkhELz4UNmelI9YWwSGUUJPE7h2RdSCPV6yDUSdO4l6F3ihbvcdYPts2hyCoAotn8
+         vAMV/BzouPq4euhYQoYUyS+G0yc6rso0D8uyS1s3DBt/0/qj8YPB1yOFKq77J6OYQipM
+         0KC7n9tBEhXfjH82yf1eWIatHmvK0Xze74xes=
+Message-ID: <4bb21338.0d0db80a.1685.ffffb9e1@mx.google.com>
+Date: Tue, 30 Mar 2010 08:05:28 -0700 (PDT)
+From: Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: [PATCH] scsi: fix lockdep warning
+To: Yinghai Lu <yinghai@kernel.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       James Bottomley <James.Bottomley@HansenPartnership.com>,
+       Greg KH <gregkh@suse.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linux-Scsi <linux-scsi@vger.kernel.org>
+In-Reply-To: <4BA47692.7040401@kernel.org>
+References: <a4423d671003081547v5c955d58t248db945c06d2a7f@mail.gmail.com>
+	<86802c441003081612r2f44efd6n9664b4b7c98a636a@mail.gmail.com>
+	<m1d3zel4b4.fsf@fess.ebiederm.org> <4B95F37E.6060309@kernel.org>
+	<m14okqnczd.fsf@fess.ebiederm.org> <4B99A6F0.4080203@kernel.org>
+	<4BA47692.7040401@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-30 at 15:53 +0200, Stephane Eranian wrote:
-> > So, there are some ARCH_PERFMON_EVENTSEL_* masks that are Intel only,
-> > which is true for ARCH_PERFMON_EVENTSEL_ANY. And indead, the code
-> > should be checked for this. ARCH_PERFMON_EVENTSEL_ANY is always
-> > cleared on AMD cpus, so this code is ok. Actually the bit is cleared
+On Sat, 20 Mar 2010 00:17:38 -0700, Yinghai Lu <yinghai@kernel.org> wrote:
 > 
-> Until AMD uses that bit too and you won't notice this test. This is a security
-> check specific to Intel and it should be in an Intel-specific function.
+> with qlogic and emulex card etc.
 > 
-> > for *all* cpus in x86_pmu_raw_event(), the code was and is broken for
-> > this.
-> >
-> Yes, needs to be authorized for any perfmon v3 and later revisions.
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
 
-So how about something like this on top of Robert's patches?
+As several others have pointed out, you appear to be call sysfs_bin_attr_init()
+against statically allocated attributes. Is there an updated patchset that you've been meaning to send out?
 
----
- arch/x86/kernel/cpu/perf_event.c       |   16 ++++++----------
- arch/x86/kernel/cpu/perf_event_amd.c   |    5 +++--
- arch/x86/kernel/cpu/perf_event_intel.c |   15 ++++++++++++++-
- arch/x86/kernel/cpu/perf_event_p4.c    |    5 +++--
- 4 files changed, 26 insertions(+), 15 deletions(-)
+Moreover, there are still failures in the ACPI thermal driver (at very least)
+on master (9623e5a23724d09283c238960946ec6f65733afe).
 
-Index: linux-2.6/arch/x86/kernel/cpu/perf_event.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/perf_event.c
-+++ linux-2.6/arch/x86/kernel/cpu/perf_event.c
-@@ -201,7 +201,7 @@ struct x86_pmu {
- 	unsigned	eventsel;
- 	unsigned	perfctr;
- 	u64		(*event_map)(int);
--	u64		(*raw_event)(u64);
-+	int		(*raw_event)(struct perf_event *event);
- 	int		max_events;
- 	int		num_counters;
- 	int		num_counters_fixed;
-@@ -445,9 +445,10 @@ static int x86_hw_config(struct perf_eve
- 	return 0;
- }
- 
--static u64 x86_pmu_raw_event(u64 hw_event)
-+static int x86_pmu_raw_event(struct perf_event *event)
- {
--	return hw_event & X86_RAW_EVENT_MASK;
-+	event->hw.config |= event->attr.config & X86_RAW_EVENT_MASK;
-+	return 0;
- }
- 
- /*
-@@ -511,13 +512,8 @@ static int __hw_perf_event_init(struct p
- 	/*
- 	 * Raw hw_event type provide the config in the hw_event structure
- 	 */
--	if (attr->type == PERF_TYPE_RAW) {
--		hwc->config |= x86_pmu.raw_event(attr->config);
--		if ((hwc->config & ARCH_PERFMON_EVENTSEL_ANY) &&
--		    perf_paranoid_cpu() && !capable(CAP_SYS_ADMIN))
--			return -EACCES;
--		return 0;
--	}
-+	if (attr->type == PERF_TYPE_RAW)
-+		return x86_pmu.raw_event(event);
- 
- 	if (attr->type == PERF_TYPE_HW_CACHE)
- 		return set_ext_hw_attr(hwc, attr);
-Index: linux-2.6/arch/x86/kernel/cpu/perf_event_amd.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_amd.c
-+++ linux-2.6/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -111,9 +111,10 @@ static u64 amd_pmu_event_map(int hw_even
- 	return amd_perfmon_event_map[hw_event];
- }
- 
--static u64 amd_pmu_raw_event(u64 hw_event)
-+static int amd_pmu_raw_event(struct perf_event *event)
- {
--	return hw_event & AMD64_RAW_EVENT_MASK;
-+	event->hw.config |= event->attr.config & AMD64_RAW_EVENT_MASK;
-+	return 0;
- }
- 
- /*
-Index: linux-2.6/arch/x86/kernel/cpu/perf_event_intel.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_intel.c
-+++ linux-2.6/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -758,6 +758,19 @@ intel_get_event_constraints(struct cpu_h
- 	return x86_get_event_constraints(cpuc, event);
- }
- 
-+static int intel_pmu_raw_event(struct perf_event *event)
-+{
-+	int ret = x86_pmu_raw_event(event);
-+	if (ret)
-+		return ret;
-+
-+	if ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) &&
-+			perf_paranoid_cpu() && !capable(CAP_SYS_ADMIN))
-+		return -EACCES;
-+
-+	return 0;
-+}
-+
- static __initconst struct x86_pmu core_pmu = {
- 	.name			= "core",
- 	.handle_irq		= x86_pmu_handle_irq,
-@@ -809,7 +822,7 @@ static __initconst struct x86_pmu intel_
- 	.eventsel		= MSR_ARCH_PERFMON_EVENTSEL0,
- 	.perfctr		= MSR_ARCH_PERFMON_PERFCTR0,
- 	.event_map		= intel_pmu_event_map,
--	.raw_event		= x86_pmu_raw_event,
-+	.raw_event		= intel_pmu_raw_event,
- 	.max_events		= ARRAY_SIZE(intel_perfmon_event_map),
- 	.apic			= 1,
- 	/*
-Index: linux-2.6/arch/x86/kernel/cpu/perf_event_p4.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_p4.c
-+++ linux-2.6/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -425,11 +425,12 @@ static u64 p4_pmu_event_map(int hw_event
-  * on HT machine but allow HT-compatible specifics to be
-  * passed on)
-  */
--static u64 p4_pmu_raw_event(u64 hw_event)
-+static int p4_pmu_raw_event(struct perf_event *event)
- {
--	return hw_event &
-+	event->hw.config |= event->attr.config &
- 		(p4_config_pack_escr(P4_ESCR_MASK_HT) |
- 		 p4_config_pack_cccr(P4_CCCR_MASK_HT));
-+	return 0;
- }
- 
- static int p4_hw_config(struct perf_event_attr *attr, struct hw_perf_event *hwc)
+- Ben
 
+
+[    3.240692] BUG: key ffff88011b1a9528 not in .data!
+[    3.245578] ------------[ cut here ]------------
+[    3.250195] WARNING: at kernel/lockdep.c:2706 lockdep_init_map+0x125/0x140()
+[    3.257229] Hardware name: Latitude D830                   
+[    3.262793] Modules linked in:
+[    3.265864] Pid: 1, comm: swapper Not tainted 2.6.34-rc2-ben #137
+[    3.271946] Call Trace:
+[    3.274397]  [<ffffffff8105a86b>] warn_slowpath_common+0x7b/0xc0
+[    3.280395]  [<ffffffff8105a8c4>] warn_slowpath_null+0x14/0x20
+[    3.286220]  [<ffffffff8108ea75>] lockdep_init_map+0x125/0x140
+[    3.292046]  [<ffffffff811ae51f>] sysfs_add_file_mode+0x6f/0xd0
+[    3.297960]  [<ffffffff8130b464>] ? snprintf+0x34/0x40
+[    3.303093]  [<ffffffff811ae591>] sysfs_add_file+0x11/0x20
+[    3.308570]  [<ffffffff811ae676>] sysfs_create_file+0x26/0x30
+[    3.314311]  [<ffffffff813bbe99>] device_create_file+0x19/0x20
+[    3.320136]  [<ffffffff8146176b>] thermal_zone_device_register+0x45b/0x860
+[    3.327001]  [<ffffffff81370e45>] acpi_thermal_add+0x245/0x4e4
+[    3.332827]  [<ffffffff811b0250>] ? sysfs_do_create_link+0xd0/0x170
+[    3.339085]  [<ffffffff81347100>] acpi_device_probe+0x50/0x122
+[    3.344909]  [<ffffffff813bee86>] driver_probe_device+0x96/0x1a0
+[    3.350906]  [<ffffffff813bef90>] ? __driver_attach+0x0/0xa0
+[    3.356557]  [<ffffffff813bf02b>] __driver_attach+0x9b/0xa0
+[    3.362121]  [<ffffffff813bef90>] ? __driver_attach+0x0/0xa0
+[    3.367773]  [<ffffffff813be2ac>] bus_for_each_dev+0x6c/0xa0
+[    3.373423]  [<ffffffff813becce>] driver_attach+0x1e/0x20
+[    3.378814]  [<ffffffff813be591>] bus_add_driver+0xe1/0x280
+[    3.384380]  [<ffffffff813bf378>] driver_register+0x78/0x140
+[    3.390031]  [<ffffffff81b2f591>] ? acpi_thermal_init+0x0/0x7b
+[    3.395855]  [<ffffffff81347a70>] acpi_bus_register_driver+0x43/0x45
+[    3.402199]  [<ffffffff81b2f5ea>] acpi_thermal_init+0x59/0x7b
+[    3.407938]  [<ffffffff8100204c>] do_one_initcall+0x3c/0x1a0
+[    3.413591]  [<ffffffff81b05757>] kernel_init+0x15a/0x1e4
+[    3.418984]  [<ffffffff8100aee4>] kernel_thread_helper+0x4/0x10
+[    3.424895]  [<ffffffff815bbf90>] ? restore_args+0x0/0x30
+[    3.430286]  [<ffffffff81b055fd>] ? kernel_init+0x0/0x1e4
+[    3.435678]  [<ffffffff8100aee0>] ? kernel_thread_helper+0x0/0x10
+[    3.441765] ---[ end trace a22d306b065d4a66 ]---
+[    3.446380] BUG: key ffff88011b1a9570 not in .data!
 
