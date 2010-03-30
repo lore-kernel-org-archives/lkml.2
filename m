@@ -1,44 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab0C3DXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 23:23:00 -0400
-Received: from mail-wy0-f194.google.com ([74.125.82.194]:36697 "EHLO
-	mail-wy0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755179Ab0C3DW6 (ORCPT
+	id S1755357Ab0C3DcO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 23:32:14 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:51580 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755287Ab0C3DcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 23:22:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=EAPull1DVbcbSXguTaGrXH8YCpkbpUWhZhA36cupi3X7PS10HD7ZWBqvNkKgUATo/w
-         6D6vHAglWdUvjxVijbqUr+oG4lA+8g25xjEUGR/uUr0MZ6vJ72KgoHpf+46iPmskm30i
-         IQow4YR8w1OgjDzkFkjUgNw6tF1iISnzNSYkQ=
+	Mon, 29 Mar 2010 23:32:13 -0400
+Date: Mon, 29 Mar 2010 23:32:11 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: linux-kernel@vger.kernel.org, stable <stable@kernel.org>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, Eric Dumazet <dada1@cosmosbay.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH -stable] modules fix incorrect percpu usage
+Message-ID: <20100330033211.GC7683@Krystal>
 MIME-Version: 1.0
-Date: Tue, 30 Mar 2010 04:01:00 +0100
-Message-ID: <5dbe04a51003292001v296e6eeen9305eafcca6404e8@mail.gmail.com>
-Subject: Good day,
-From: "rev.psalm" <rev.psalm@gmail.com>
-To: 1266109622.11290.10.camel@montroll.chem.mcgill.ca
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 23:30:56 up 66 days,  6:08,  4 users,  load average: 0.15, 0.08,
+	0.02
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good day,
+Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is needed
+for per cpu pointers).
 
-I am Osmond Amu, a Banker. Please do not be embarrass am seeking your help
-in order to receive the sum of 30.7million as result of surfeit profit made
-decade ago.
+Introduced by commit:
 
-If you will be so kind enough to grant me the permission, I will be glad to
-give the details.
+module.c: commit 6b588c18f8dacfa6d7957c33c5ff832096e752d3
 
-I am ready to offer you 40% of the total amount for your input.
+This patch should be queued for the stable branch, for kernels 2.6.29.x to
+2.6.33.x.
+(tested on 2.6.33.1 x86_64)
 
-If you are interested respond to rev.psalm@gmail.com Send your name in full,
-home address and telephone for cordial communication.
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Eric Dumazet <dada1@cosmosbay.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Tejun Heo <tj@kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: stable <stable@kernel.org>
+---
+ kernel/module.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Better still call my cell phone for easy communication: +2347066703751.
+Index: linux-2.6-lttng/kernel/module.c
+===================================================================
+--- linux-2.6-lttng.orig/kernel/module.c	2010-03-29 23:47:05.000000000 -0400
++++ linux-2.6-lttng/kernel/module.c	2010-03-29 23:47:27.000000000 -0400
+@@ -412,7 +412,7 @@ static void percpu_modcopy(void *pcpudes
+ 	int cpu;
+ 
+ 	for_each_possible_cpu(cpu)
+-		memcpy(pcpudest + per_cpu_offset(cpu), from, size);
++		memcpy(per_cpu_ptr(pcpudest, cpu), from, size);
+ }
+ 
+ #else /* ... !CONFIG_SMP */
 
-Regards
-Osmond Amu.
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
