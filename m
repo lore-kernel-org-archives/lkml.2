@@ -1,249 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932198Ab0C3XSB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:18:01 -0400
-Received: from kroah.org ([198.145.64.141]:51954 "EHLO coco.kroah.org"
+	id S1756648Ab0C3XNA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:13:00 -0400
+Received: from kroah.org ([198.145.64.141]:49187 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932158Ab0C3XR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:17:57 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:25 2010
-Message-Id: <20100330225624.535254353@linux.site>
+	id S1755972Ab0C3XMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:54 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:51 2010
+Message-Id: <20100330225850.929997013@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:19 -0700
+Date: Tue, 30 Mar 2010 15:58:10 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Ma Ling <ling.ma@intel.com>, Zhang@kroah.com,
-       Yanmin <yanmin_zhang@linux.intel.com>,
-       Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [041/116] sched: Fix SCHED_MC regression caused by change in sched cpu_power
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+       Dick Hollenbeck <dick@softplc.com>, Alan Cox <alan@linux.intel.com>,
+       Kees Schoenmakers <k.schoenmakers@sigmae.nl>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [68/89] serial: 8250: add serial transmitter fully empty test
+In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.31-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
+From: Dick Hollenbeck <dick@softplc.com>
 
-commit dd5feea14a7de4edbd9f36db1a2db785de91b88d upstream
+commit bca476139d2ded86be146dae09b06e22548b67f3 upstream.
 
-On platforms like dual socket quad-core platform, the scheduler load
-balancer is not detecting the load imbalances in certain scenarios. This
-is leading to scenarios like where one socket is completely busy (with
-all the 4 cores running with 4 tasks) and leaving another socket
-completely idle. This causes performance issues as those 4 tasks share
-the memory controller, last-level cache bandwidth etc. Also we won't be
-taking advantage of turbo-mode as much as we would like, etc.
+When controlling an industrial radio modem it can be necessary to
+manipulate the handshake lines in order to control the radio modem's
+transmitter, from userspace.
 
-Some of the comparisons in the scheduler load balancing code are
-comparing the "weighted cpu load that is scaled wrt sched_group's
-cpu_power" with the "weighted average load per task that is not scaled
-wrt sched_group's cpu_power". While this has probably been broken for a
-longer time (for multi socket numa nodes etc), the problem got aggrevated
-via this recent change:
+The transmitter should not be turned off before all characters have been
+transmitted.  serial8250_tx_empty() was reporting that all characters were
+transmitted before they actually were.
 
-|
-|  commit f93e65c186ab3c05ce2068733ca10e34fd00125e
-|  Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-|  Date:   Tue Sep 1 10:34:32 2009 +0200
-|
-|  sched: Restore __cpu_power to a straight sum of power
-|
+===
 
-Also with this change, the sched group cpu power alone no longer reflects
-the group capacity that is needed to implement MC, MT performance
-(default) and power-savings (user-selectable) policies.
+Discovered in parallel with more testing and analysis by Kees Schoenmakers
+as follows:
 
-We need to use the computed group capacity (sgs.group_capacity, that is
-computed using the SD_PREFER_SIBLING logic in update_sd_lb_stats()) to
-find out if the group with the max load is above its capacity and how
-much load to move etc.
+I ran into an NetMos 9835 serial pci board which behaves a little
+different than the standard.  This type of expansion board is very common.
 
-Reported-by: Ma Ling <ling.ma@intel.com>
-Initial-Analysis-by: Zhang, Yanmin <yanmin_zhang@linux.intel.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-[ -v2: build fix ]
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1266970432.11588.22.camel@sbs-t61.sc.intel.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+"Standard" 8250 compatible devices clear the 'UART_LST_TEMT" bit together
+with the "UART_LSR_THRE" bit when writing data to the device.
+
+The NetMos device does it slightly different
+
+I believe that the TEMT bit is coupled to the shift register.  The problem
+is that after writing data to the device and very quickly after that one
+does call serial8250_tx_empty, it returns the wrong information.
+
+My patch makes the test more robust (and solves the problem) and it does
+not affect the already correct devices.
+
+Alan:
+
+  We may yet need to quirk this but now we know which chips we have a
+  way to do that should we find this breaks some other 8250 clone with
+  dodgy THRE.
+
+Signed-off-by: Dick Hollenbeck <dick@softplc.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Cc: Kees Schoenmakers <k.schoenmakers@sigmae.nl>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/sched.c |   76 ++++++++++++++++++++++++++++++++-------------------------
- 1 file changed, 43 insertions(+), 33 deletions(-)
+ drivers/serial/8250.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3402,6 +3402,7 @@ struct sd_lb_stats {
- 	unsigned long max_load;
- 	unsigned long busiest_load_per_task;
- 	unsigned long busiest_nr_running;
-+	unsigned long busiest_group_capacity;
+--- a/drivers/serial/8250.c
++++ b/drivers/serial/8250.c
+@@ -81,6 +81,9 @@ static int serial_index(struct uart_port
  
- 	int group_imb; /* Is there imbalance in this sd */
- #if defined(CONFIG_SCHED_MC) || defined(CONFIG_SCHED_SMT)
-@@ -3721,8 +3722,7 @@ static inline void update_sg_lb_stats(st
- 	unsigned long load, max_cpu_load, min_cpu_load;
- 	int i;
- 	unsigned int balance_cpu = -1, first_idle_cpu = 0;
--	unsigned long sum_avg_load_per_task;
--	unsigned long avg_load_per_task;
-+	unsigned long avg_load_per_task = 0;
+ #define PASS_LIMIT	256
  
- 	if (local_group) {
- 		balance_cpu = group_first_cpu(group);
-@@ -3731,7 +3731,6 @@ static inline void update_sg_lb_stats(st
- 	}
++#define BOTH_EMPTY 	(UART_LSR_TEMT | UART_LSR_THRE)
++
++
+ /*
+  * We default to IRQ0 for the "no irq" hack.   Some
+  * machine types want others as well - they're free
+@@ -1790,7 +1793,7 @@ static unsigned int serial8250_tx_empty(
+ 	up->lsr_saved_flags |= lsr & LSR_SAVE_FLAGS;
+ 	spin_unlock_irqrestore(&up->port.lock, flags);
  
- 	/* Tally up the load of all CPUs in the group */
--	sum_avg_load_per_task = avg_load_per_task = 0;
- 	max_cpu_load = 0;
- 	min_cpu_load = ~0UL;
+-	return lsr & UART_LSR_TEMT ? TIOCSER_TEMT : 0;
++	return (lsr & BOTH_EMPTY) == BOTH_EMPTY ? TIOCSER_TEMT : 0;
+ }
  
-@@ -3761,7 +3760,6 @@ static inline void update_sg_lb_stats(st
- 		sgs->sum_nr_running += rq->nr_running;
- 		sgs->sum_weighted_load += weighted_cpuload(i);
+ static unsigned int serial8250_get_mctrl(struct uart_port *port)
+@@ -1848,8 +1851,6 @@ static void serial8250_break_ctl(struct
+ 	spin_unlock_irqrestore(&up->port.lock, flags);
+ }
  
--		sum_avg_load_per_task += cpu_avg_load_per_task(i);
- 	}
- 
- 	/*
-@@ -3779,7 +3777,6 @@ static inline void update_sg_lb_stats(st
- 	/* Adjust by relative CPU power of the group */
- 	sgs->avg_load = (sgs->group_load * SCHED_LOAD_SCALE) / group->cpu_power;
- 
+-#define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
 -
- 	/*
- 	 * Consider the group unbalanced when the imbalance is larger
- 	 * than the average weight of two tasks.
-@@ -3789,8 +3786,8 @@ static inline void update_sg_lb_stats(st
- 	 *      normalized nr_running number somewhere that negates
- 	 *      the hierarchy?
- 	 */
--	avg_load_per_task = (sum_avg_load_per_task * SCHED_LOAD_SCALE) /
--		group->cpu_power;
-+	if (sgs->sum_nr_running)
-+		avg_load_per_task = sgs->sum_weighted_load / sgs->sum_nr_running;
- 
- 	if ((max_cpu_load - min_cpu_load) > 2*avg_load_per_task)
- 		sgs->group_imb = 1;
-@@ -3859,6 +3856,7 @@ static inline void update_sd_lb_stats(st
- 			sds->max_load = sgs.avg_load;
- 			sds->busiest = group;
- 			sds->busiest_nr_running = sgs.sum_nr_running;
-+			sds->busiest_group_capacity = sgs.group_capacity;
- 			sds->busiest_load_per_task = sgs.sum_weighted_load;
- 			sds->group_imb = sgs.group_imb;
- 		}
-@@ -3881,6 +3879,7 @@ static inline void fix_small_imbalance(s
- {
- 	unsigned long tmp, pwr_now = 0, pwr_move = 0;
- 	unsigned int imbn = 2;
-+	unsigned long scaled_busy_load_per_task;
- 
- 	if (sds->this_nr_running) {
- 		sds->this_load_per_task /= sds->this_nr_running;
-@@ -3891,8 +3890,12 @@ static inline void fix_small_imbalance(s
- 		sds->this_load_per_task =
- 			cpu_avg_load_per_task(this_cpu);
- 
--	if (sds->max_load - sds->this_load + sds->busiest_load_per_task >=
--			sds->busiest_load_per_task * imbn) {
-+	scaled_busy_load_per_task = sds->busiest_load_per_task
-+						 * SCHED_LOAD_SCALE;
-+	scaled_busy_load_per_task /= sds->busiest->cpu_power;
-+
-+	if (sds->max_load - sds->this_load + scaled_busy_load_per_task >=
-+			(scaled_busy_load_per_task * imbn)) {
- 		*imbalance = sds->busiest_load_per_task;
- 		return;
- 	}
-@@ -3943,7 +3946,14 @@ static inline void fix_small_imbalance(s
- static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
- 		unsigned long *imbalance)
- {
--	unsigned long max_pull;
-+	unsigned long max_pull, load_above_capacity = ~0UL;
-+
-+	sds->busiest_load_per_task /= sds->busiest_nr_running;
-+	if (sds->group_imb) {
-+		sds->busiest_load_per_task =
-+			min(sds->busiest_load_per_task, sds->avg_load);
-+	}
-+
- 	/*
- 	 * In the presence of smp nice balancing, certain scenarios can have
- 	 * max load less than avg load(as we skip the groups at or below
-@@ -3954,9 +3964,29 @@ static inline void calculate_imbalance(s
- 		return fix_small_imbalance(sds, this_cpu, imbalance);
- 	}
- 
--	/* Don't want to pull so many tasks that a group would go idle */
--	max_pull = min(sds->max_load - sds->avg_load,
--			sds->max_load - sds->busiest_load_per_task);
-+	if (!sds->group_imb) {
-+		/*
-+		 * Don't want to pull so many tasks that a group would go idle.
-+		 */
-+		load_above_capacity = (sds->busiest_nr_running -
-+						sds->busiest_group_capacity);
-+
-+		load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_LOAD_SCALE);
-+
-+		load_above_capacity /= sds->busiest->cpu_power;
-+	}
-+
-+	/*
-+	 * We're trying to get all the cpus to the average_load, so we don't
-+	 * want to push ourselves above the average load, nor do we wish to
-+	 * reduce the max loaded cpu below the average load. At the same time,
-+	 * we also don't want to reduce the group load below the group capacity
-+	 * (so that we can implement power-savings policies etc). Thus we look
-+	 * for the minimum possible imbalance.
-+	 * Be careful of negative numbers as they'll appear as very large values
-+	 * with unsigned longs.
-+	 */
-+	max_pull = min(sds->max_load - sds->avg_load, load_above_capacity);
- 
- 	/* How much load to actually move to equalise the imbalance */
- 	*imbalance = min(max_pull * sds->busiest->cpu_power,
-@@ -4024,7 +4054,6 @@ find_busiest_group(struct sched_domain *
- 	 * 4) This group is more busy than the avg busieness at this
- 	 *    sched_domain.
- 	 * 5) The imbalance is within the specified limit.
--	 * 6) Any rebalance would lead to ping-pong
- 	 */
- 	if (balance && !(*balance))
- 		goto ret;
-@@ -4043,25 +4072,6 @@ find_busiest_group(struct sched_domain *
- 	if (100 * sds.max_load <= sd->imbalance_pct * sds.this_load)
- 		goto out_balanced;
- 
--	sds.busiest_load_per_task /= sds.busiest_nr_running;
--	if (sds.group_imb)
--		sds.busiest_load_per_task =
--			min(sds.busiest_load_per_task, sds.avg_load);
--
--	/*
--	 * We're trying to get all the cpus to the average_load, so we don't
--	 * want to push ourselves above the average load, nor do we wish to
--	 * reduce the max loaded cpu below the average load, as either of these
--	 * actions would just result in more rebalancing later, and ping-pong
--	 * tasks around. Thus we look for the minimum possible imbalance.
--	 * Negative imbalances (*we* are more loaded than anyone else) will
--	 * be counted as no imbalance for these purposes -- we can't fix that
--	 * by pulling tasks to us. Be careful of negative numbers as they'll
--	 * appear as very large values with unsigned longs.
--	 */
--	if (sds.max_load <= sds.busiest_load_per_task)
--		goto out_balanced;
--
- 	/* Looks like there is an imbalance. Compute it */
- 	calculate_imbalance(&sds, this_cpu, imbalance);
- 	return sds.busiest;
+ /*
+  *	Wait for transmitter & holding register to empty
+  */
 
 
