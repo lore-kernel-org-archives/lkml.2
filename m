@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501Ab0C3L1s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 07:27:48 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:51684 "EHLO
+	id S1756423Ab0C3L3N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 07:29:13 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:25555 "EHLO
 	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756391Ab0C3L11 (ORCPT
+	with ESMTP id S1751245Ab0C3L3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 07:27:27 -0400
+	Tue, 30 Mar 2010 07:29:09 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,122 +16,229 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 09/29] lmb: Add lmb_register_active_regions() and lmb_hole_size()
-Date: Tue, 30 Mar 2010 04:19:43 -0700
-Message-Id: <1269948003-17221-10-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 18/29] x86: Add sanitize_e820_map()
+Date: Tue, 30 Mar 2010 04:19:52 -0700
+Message-Id: <1269948003-17221-19-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269948003-17221-1-git-send-email-yinghai@kernel.org>
 References: <1269948003-17221-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0209.4BB1DEC3.01A4,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090203.4BB1DED5.017E,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lmb_register_active_regions() will be used to fill early_node_map,
-the result will be lmb.memory.region AND numa data
+So We don't need to take e820.map with it.
 
-lmb_hole_size will be used to find hole size on lmb.memory.region
-with specified range.
+Also change e820_saved to initdata to get some bytes memory back.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/lmb.h |    4 +++
- mm/lmb.c            |   68 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 72 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/e820.h |    5 ++---
+ arch/x86/kernel/e820.c      |   26 ++++++++++++++++++--------
+ arch/x86/kernel/efi.c       |    2 +-
+ arch/x86/kernel/setup.c     |   10 +++++-----
+ arch/x86/xen/setup.c        |    4 +---
+ 5 files changed, 27 insertions(+), 20 deletions(-)
 
-diff --git a/include/linux/lmb.h b/include/linux/lmb.h
-index 2ee2cc1..cf8f7ca 100644
---- a/include/linux/lmb.h
-+++ b/include/linux/lmb.h
-@@ -95,6 +95,10 @@ void lmb_to_bootmem(u64 start, u64 end);
- struct range;
- int get_free_all_memory_range(struct range **rangep, int nodeid);
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index ec8a52d..0457c49 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -75,15 +75,14 @@ struct e820map {
+ #ifdef __KERNEL__
+ /* see comment in arch/x86/kernel/e820.c */
+ extern struct e820map e820;
+-extern struct e820map e820_saved;
  
-+void lmb_register_active_regions(int nid, unsigned long start_pfn,
-+					 unsigned long last_pfn);
-+u64 lmb_hole_size(u64 start, u64 end);
-+
- #include <asm/lmb.h>
+ extern unsigned long pci_mem_start;
+ extern int e820_any_mapped(u64 start, u64 end, unsigned type);
+ extern int e820_all_mapped(u64 start, u64 end, unsigned type);
+ extern void e820_add_region(u64 start, u64 size, int type);
+ extern void e820_print_map(char *who);
+-extern int
+-sanitize_e820_map(struct e820entry *biosmap, int max_nr_map, u32 *pnr_map);
++int sanitize_e820_map(void);
++void save_e820_map(void);
+ extern u64 e820_update_range(u64 start, u64 size, unsigned old_type,
+ 			       unsigned new_type);
+ extern u64 e820_remove_range(u64 start, u64 size, unsigned old_type,
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 7bca3c6..14d0a1a 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -35,7 +35,7 @@
+  * next kernel with full memory.
+  */
+ struct e820map e820;
+-struct e820map e820_saved;
++static struct e820map __initdata e820_saved;
  
- #endif /* __KERNEL__ */
-diff --git a/mm/lmb.c b/mm/lmb.c
-index 134181a..ea9d459 100644
---- a/mm/lmb.c
-+++ b/mm/lmb.c
-@@ -791,3 +791,71 @@ u64 __init lmb_find_area(u64 start, u64 end, u64 size, u64 align)
- 	}
- 	return -1ULL;
+ /* For PCI or other memory-mapped resources */
+ unsigned long pci_mem_start = 0xaeedbabe;
+@@ -224,7 +224,7 @@ void __init e820_print_map(char *who)
+  *	   ______________________4_
+  */
+ 
+-int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
++static int __init __sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
+ 			     u32 *pnr_map)
+ {
+ 	struct change_member {
+@@ -383,6 +383,11 @@ int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
+ 	return 0;
  }
-+/*
-+ * Finds an active region in the address range from start_pfn to last_pfn and
-+ * returns its range in ei_startpfn and ei_endpfn for the lmb entry.
-+ */
-+static int __init lmb_find_active_region(const struct lmb_property *ei,
-+				  unsigned long start_pfn,
-+				  unsigned long last_pfn,
-+				  unsigned long *ei_startpfn,
-+				  unsigned long *ei_endpfn)
+ 
++int __init sanitize_e820_map(void)
 +{
-+	u64 align = PAGE_SIZE;
-+
-+	*ei_startpfn = round_up(ei->base, align) >> PAGE_SHIFT;
-+	*ei_endpfn = round_down(ei->base + ei->size, align) >> PAGE_SHIFT;
-+
-+	/* Skip map entries smaller than a page */
-+	if (*ei_startpfn >= *ei_endpfn)
-+		return 0;
-+
-+	/* Skip if map is outside the node */
-+	if (*ei_endpfn <= start_pfn || *ei_startpfn >= last_pfn)
-+		return 0;
-+
-+	/* Check for overlaps */
-+	if (*ei_startpfn < start_pfn)
-+		*ei_startpfn = start_pfn;
-+	if (*ei_endpfn > last_pfn)
-+		*ei_endpfn = last_pfn;
-+
-+	return 1;
++	return __sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
 +}
 +
-+/* Walk the lmb.memory map and register active regions within a node */
-+void __init lmb_register_active_regions(int nid, unsigned long start_pfn,
-+					 unsigned long last_pfn)
+ static int __init __append_e820_map(struct e820entry *biosmap, int nr_map)
+ {
+ 	while (nr_map) {
+@@ -571,7 +576,7 @@ void __init update_e820(void)
+ 	u32 nr_map;
+ 
+ 	nr_map = e820.nr_map;
+-	if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr_map))
++	if (__sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr_map))
+ 		return;
+ 	e820.nr_map = nr_map;
+ 	printk(KERN_INFO "modified physical RAM map:\n");
+@@ -582,7 +587,7 @@ static void __init update_e820_saved(void)
+ 	u32 nr_map;
+ 
+ 	nr_map = e820_saved.nr_map;
+-	if (sanitize_e820_map(e820_saved.map, ARRAY_SIZE(e820_saved.map), &nr_map))
++	if (__sanitize_e820_map(e820_saved.map, ARRAY_SIZE(e820_saved.map), &nr_map))
+ 		return;
+ 	e820_saved.nr_map = nr_map;
+ }
+@@ -677,7 +682,7 @@ void __init parse_e820_ext(struct setup_data *sdata, unsigned long pa_data)
+ 		sdata = early_ioremap(pa_data, map_len);
+ 	extmap = (struct e820entry *)(sdata->data);
+ 	__append_e820_map(extmap, entries);
+-	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
++	sanitize_e820_map();
+ 	if (map_len > PAGE_SIZE)
+ 		early_iounmap(sdata, map_len);
+ 	printk(KERN_INFO "extended physical RAM map:\n");
+@@ -1044,7 +1049,7 @@ void __init finish_e820_parsing(void)
+ 	if (userdef) {
+ 		u32 nr = e820.nr_map;
+ 
+-		if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr) < 0)
++		if (__sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr) < 0)
+ 			early_panic("Invalid user supplied memory map");
+ 		e820.nr_map = nr;
+ 
+@@ -1174,7 +1179,7 @@ char *__init default_machine_specific_memory_setup(void)
+ 	 * the next section from 1mb->appropriate_mem_k
+ 	 */
+ 	new_nr = boot_params.e820_entries;
+-	sanitize_e820_map(boot_params.e820_map,
++	__sanitize_e820_map(boot_params.e820_map,
+ 			ARRAY_SIZE(boot_params.e820_map),
+ 			&new_nr);
+ 	boot_params.e820_entries = new_nr;
+@@ -1201,12 +1206,17 @@ char *__init default_machine_specific_memory_setup(void)
+ 	return who;
+ }
+ 
++void __init save_e820_map(void)
 +{
-+	unsigned long ei_startpfn;
-+	unsigned long ei_endpfn;
-+	int i;
-+
-+	for (i = 0; i < lmb.memory.cnt; i++)
-+		if (lmb_find_active_region(&lmb.memory.region[i],
-+					    start_pfn, last_pfn,
-+					    &ei_startpfn, &ei_endpfn))
-+			add_active_range(nid, ei_startpfn, ei_endpfn);
++	memcpy(&e820_saved, &e820, sizeof(struct e820map));
 +}
 +
-+/*
-+ * Find the hole size (in bytes) in the memory range.
-+ * @start: starting address of the memory range to scan
-+ * @end: ending address of the memory range to scan
-+ */
-+u64 __init lmb_hole_size(u64 start, u64 end)
-+{
-+	unsigned long start_pfn = start >> PAGE_SHIFT;
-+	unsigned long last_pfn = end >> PAGE_SHIFT;
-+	unsigned long ei_startpfn, ei_endpfn, ram = 0;
-+	int i;
-+
-+	for (i = 0; i < lmb.memory.cnt; i++) {
-+		if (lmb_find_active_region(&lmb.memory.region[i],
-+					    start_pfn, last_pfn,
-+					    &ei_startpfn, &ei_endpfn))
-+			ram += ei_endpfn - ei_startpfn;
-+	}
-+	return end - start - ((u64)ram << PAGE_SHIFT);
-+}
-+
+ void __init setup_memory_map(void)
+ {
+ 	char *who;
+ 
+ 	who = x86_init.resources.memory_setup();
+-	memcpy(&e820_saved, &e820, sizeof(struct e820map));
++	save_e820_map();
+ 	printk(KERN_INFO "BIOS-provided physical RAM map:\n");
+ 	e820_print_map(who);
+ }
+diff --git a/arch/x86/kernel/efi.c b/arch/x86/kernel/efi.c
+index c2fa9b8..299f03f 100644
+--- a/arch/x86/kernel/efi.c
++++ b/arch/x86/kernel/efi.c
+@@ -272,7 +272,7 @@ static void __init do_add_efi_memmap(void)
+ 		}
+ 		e820_add_region(start, size, e820_type);
+ 	}
+-	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
++	sanitize_e820_map();
+ }
+ 
+ void __init efi_reserve_early(void)
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index d76e185..7ca6878 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -463,8 +463,8 @@ static void __init e820_reserve_setup_data(void)
+ 	if (!found)
+ 		return;
+ 
+-	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+-	memcpy(&e820_saved, &e820, sizeof(struct e820map));
++	sanitize_e820_map();
++	save_e820_map();
+ 	printk(KERN_INFO "extended physical RAM map:\n");
+ 	e820_print_map("reserve setup_data");
+ }
+@@ -616,7 +616,7 @@ static int __init dmi_low_memory_corruption(const struct dmi_system_id *d)
+ 		d->ident);
+ 
+ 	e820_update_range(0, 0x10000, E820_RAM, E820_RESERVED);
+-	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
++	sanitize_e820_map();
+ 
+ 	return 0;
+ }
+@@ -685,7 +685,7 @@ static void __init trim_bios_range(void)
+ 	 * take them out.
+ 	 */
+ 	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
+-	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
++	sanitize_e820_map();
+ }
+ 
+ /*
+@@ -856,7 +856,7 @@ void __init setup_arch(char **cmdline_p)
+ 	if (ppro_with_ram_bug()) {
+ 		e820_update_range(0x70000000ULL, 0x40000ULL, E820_RAM,
+ 				  E820_RESERVED);
+-		sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
++		sanitize_e820_map();
+ 		printk(KERN_INFO "fixed physical RAM map:\n");
+ 		e820_print_map("bad_ppro");
+ 	}
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index ad0047f..3f2c411 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -43,8 +43,6 @@ char * __init xen_memory_setup(void)
+ 
+ 	max_pfn = min(MAX_DOMAIN_PAGES, max_pfn);
+ 
+-	e820.nr_map = 0;
+-
+ 	e820_add_region(0, PFN_PHYS((u64)max_pfn), E820_RAM);
+ 
+ 	/*
+@@ -65,7 +63,7 @@ char * __init xen_memory_setup(void)
+ 		      __pa(xen_start_info->pt_base),
+ 			"XEN START INFO");
+ 
+-	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
++	sanitize_e820_map();
+ 
+ 	return "Xen";
+ }
 -- 
 1.6.4.2
 
