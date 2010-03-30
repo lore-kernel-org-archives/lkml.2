@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756575Ab0C3XMm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:12:42 -0400
-Received: from kroah.org ([198.145.64.141]:49083 "EHLO coco.kroah.org"
+	id S932183Ab0CaAWi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:22:38 -0400
+Received: from kroah.org ([198.145.64.141]:49114 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756492Ab0C3XMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:40 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:41 2010
-Message-Id: <20100330225841.291902026@linux.site>
+	id S1756303Ab0C3XMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:44 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:45 2010
+Message-Id: <20100330225844.465920596@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:55 -0700
+Date: Tue, 30 Mar 2010 15:58:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
-       Brandon Philips <bphilips@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [53/89] V4L/DVB (13155): uvcvideo: Add a module parameter to set the streaming control timeout
+       Andreas Gruenbacher <agruen@suse.de>, Eric Paris <eparis@redhat.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [58/89] dnotify: ignore FS_EVENT_ON_CHILD
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,87 +26,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit b232a012adfea9f535702e8296ea6b76e691f436 upstream
+From: Andreas Gruenbacher <agruen@suse.de>
 
-The default streaming control timeout was found by Ondrej Zary to be too low
-for some Logitech webcams. With kernel 2.6.22 and newer they would timeout
-during initialization unles the audio function was initialized before the
-video function.
+commit 945526846a84c00adac1efd1c6befdaa77039623 upstream.
 
-Add a module parameter to set the streaming control timeout and increase the
-default value from 1000ms to 3000ms to fix the above problem.
+Mask off FS_EVENT_ON_CHILD in dnotify_handle_event().  Otherwise, when there
+is more than one watch on a directory and dnotify_should_send_event()
+succeeds, events with FS_EVENT_ON_CHILD set will trigger all watches and cause
+spurious events.
 
-Thanks to Ondrej Zary for investigating the issue and providing an initial
-patch.
+This case was overlooked in commit e42e2773.
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Signed-off-by: Brandon Philips <bphilips@suse.de>
+	#define _GNU_SOURCE
+
+	#include <stdio.h>
+	#include <stdlib.h>
+	#include <unistd.h>
+	#include <signal.h>
+	#include <sys/types.h>
+	#include <sys/stat.h>
+	#include <fcntl.h>
+	#include <string.h>
+
+	static void create_event(int s, siginfo_t* si, void* p)
+	{
+		printf("create\n");
+	}
+
+	static void delete_event(int s, siginfo_t* si, void* p)
+	{
+		printf("delete\n");
+	}
+
+	int main (void) {
+		struct sigaction action;
+		char *tmpdir, *file;
+		int fd1, fd2;
+
+		sigemptyset (&action.sa_mask);
+		action.sa_flags = SA_SIGINFO;
+
+		action.sa_sigaction = create_event;
+		sigaction (SIGRTMIN + 0, &action, NULL);
+
+		action.sa_sigaction = delete_event;
+		sigaction (SIGRTMIN + 1, &action, NULL);
+
+	#	define TMPDIR "/tmp/test.XXXXXX"
+		tmpdir = malloc(strlen(TMPDIR) + 1);
+		strcpy(tmpdir, TMPDIR);
+		mkdtemp(tmpdir);
+
+	#	define TMPFILE "/file"
+		file = malloc(strlen(tmpdir) + strlen(TMPFILE) + 1);
+		sprintf(file, "%s/%s", tmpdir, TMPFILE);
+
+		fd1 = open (tmpdir, O_RDONLY);
+		fcntl(fd1, F_SETSIG, SIGRTMIN);
+		fcntl(fd1, F_NOTIFY, DN_MULTISHOT | DN_CREATE);
+
+		fd2 = open (tmpdir, O_RDONLY);
+		fcntl(fd2, F_SETSIG, SIGRTMIN + 1);
+		fcntl(fd2, F_NOTIFY, DN_MULTISHOT | DN_DELETE);
+
+		if (fork()) {
+			/* This triggers a create event */
+			creat(file, 0600);
+			/* This triggers a create and delete event (!) */
+			unlink(file);
+		} else {
+			sleep(1);
+			rmdir(tmpdir);
+		}
+
+		return 0;
+	}
+
+Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/uvc/uvc_driver.c |    3 +++
- drivers/media/video/uvc/uvc_video.c  |    4 ++--
- drivers/media/video/uvc/uvcvideo.h   |    3 ++-
- 3 files changed, 7 insertions(+), 3 deletions(-)
+ fs/notify/dnotify/dnotify.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/media/video/uvc/uvc_driver.c
-+++ b/drivers/media/video/uvc/uvc_driver.c
-@@ -46,6 +46,7 @@
- unsigned int uvc_no_drop_param;
- static unsigned int uvc_quirks_param;
- unsigned int uvc_trace_param;
-+unsigned int uvc_timeout_param = UVC_CTRL_STREAMING_TIMEOUT;
+--- a/fs/notify/dnotify/dnotify.c
++++ b/fs/notify/dnotify/dnotify.c
+@@ -91,6 +91,7 @@ static int dnotify_handle_event(struct f
+ 	struct dnotify_struct *dn;
+ 	struct dnotify_struct **prev;
+ 	struct fown_struct *fown;
++	__u32 test_mask = event->mask & ~FS_EVENT_ON_CHILD;
  
- /* ------------------------------------------------------------------------
-  * Video formats
-@@ -2034,6 +2035,8 @@ module_param_named(quirks, uvc_quirks_pa
- MODULE_PARM_DESC(quirks, "Forced device quirks");
- module_param_named(trace, uvc_trace_param, uint, S_IRUGO|S_IWUSR);
- MODULE_PARM_DESC(trace, "Trace level bitmask");
-+module_param_named(timeout, uvc_timeout_param, uint, S_IRUGO|S_IWUSR);
-+MODULE_PARM_DESC(timeout, "Streaming control requests timeout");
+ 	to_tell = event->to_tell;
  
- MODULE_AUTHOR(DRIVER_AUTHOR);
- MODULE_DESCRIPTION(DRIVER_DESC);
---- a/drivers/media/video/uvc/uvc_video.c
-+++ b/drivers/media/video/uvc/uvc_video.c
-@@ -130,7 +130,7 @@ static int uvc_get_video_ctrl(struct uvc
- 
- 	ret = __uvc_query_ctrl(video->dev, query, 0, video->streaming->intfnum,
- 		probe ? VS_PROBE_CONTROL : VS_COMMIT_CONTROL, data, size,
--		UVC_CTRL_STREAMING_TIMEOUT);
-+		uvc_timeout_param);
- 
- 	if ((query == GET_MIN || query == GET_MAX) && ret == 2) {
- 		/* Some cameras, mostly based on Bison Electronics chipsets,
-@@ -235,7 +235,7 @@ static int uvc_set_video_ctrl(struct uvc
- 	ret = __uvc_query_ctrl(video->dev, SET_CUR, 0,
- 		video->streaming->intfnum,
- 		probe ? VS_PROBE_CONTROL : VS_COMMIT_CONTROL, data, size,
--		UVC_CTRL_STREAMING_TIMEOUT);
-+		uvc_timeout_param);
- 	if (ret != size) {
- 		uvc_printk(KERN_ERR, "Failed to set UVC %s control : "
- 			"%d (exp. %u).\n", probe ? "probe" : "commit",
---- a/drivers/media/video/uvc/uvcvideo.h
-+++ b/drivers/media/video/uvc/uvcvideo.h
-@@ -304,7 +304,7 @@ struct uvc_xu_control {
- #define UVC_MAX_STATUS_SIZE	16
- 
- #define UVC_CTRL_CONTROL_TIMEOUT	300
--#define UVC_CTRL_STREAMING_TIMEOUT	1000
-+#define UVC_CTRL_STREAMING_TIMEOUT	3000
- 
- /* Devices quirks */
- #define UVC_QUIRK_STATUS_INTERVAL	0x00000001
-@@ -695,6 +695,7 @@ struct uvc_driver {
- 
- extern unsigned int uvc_no_drop_param;
- extern unsigned int uvc_trace_param;
-+extern unsigned int uvc_timeout_param;
- 
- #define uvc_trace(flag, msg...) \
- 	do { \
+@@ -106,7 +107,7 @@ static int dnotify_handle_event(struct f
+ 	spin_lock(&entry->lock);
+ 	prev = &dnentry->dn;
+ 	while ((dn = *prev) != NULL) {
+-		if ((dn->dn_mask & event->mask) == 0) {
++		if ((dn->dn_mask & test_mask) == 0) {
+ 			prev = &dn->dn_next;
+ 			continue;
+ 		}
 
 
