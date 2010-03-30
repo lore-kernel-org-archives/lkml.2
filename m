@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757078Ab0C3Xe4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:34:56 -0400
-Received: from kroah.org ([198.145.64.141]:46441 "EHLO coco.kroah.org"
+	id S1757099Ab0C3XgF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:36:05 -0400
+Received: from kroah.org ([198.145.64.141]:46427 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750962Ab0C3XVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:21:11 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:29 2010
-Message-Id: <20100330224828.857334831@linux.site>
+	id S1753590Ab0C3XVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:21:05 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:27 2010
+Message-Id: <20100330224826.465471117@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:18 -0700
+Date: Tue, 30 Mar 2010 15:42:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [104/156] ALSA: hda: Use LPIB for ga-ma770-ud3 board
+       Patrick McHardy <kaber@trash.net>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [100/156] netfilter: xt_recent: fix regression in rules using a zero hit_count
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: Patrick McHardy <kaber@trash.net>
 
-commit 9ec8ddad59fadd8021adfea4cb716a49b0e232e9 upstream.
+commit ef1691504c83ba3eb636c0cfd3ed33f7a6d0b4ee upstream.
 
-BugLink: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=575669
+Commit 8ccb92ad (netfilter: xt_recent: fix false match) fixed supposedly
+false matches in rules using a zero hit_count. As it turns out there is
+nothing false about these matches and people are actually using entries
+with a hit_count of zero to make rules dependant on addresses inserted
+manually through /proc.
 
-The OR states that position_fix=1 is necessary to work around glitching
-during volume adjustments using PulseAudio.
+Since this slipped past the eyes of three reviewers, instead of
+reverting the commit in question, this patch explicitly checks
+for a hit_count of zero to make the intentions more clear.
 
-Reported-by: Carlos Laviola <claviola@debian.org>
-Tested-by: Carlos Laviola <claviola@debian.org>
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Tested-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Signed-off-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/hda_intel.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/netfilter/xt_recent.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -2265,6 +2265,7 @@ static struct snd_pci_quirk position_fix
- 	SND_PCI_QUIRK(0x103c, 0x306d, "HP dv3", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1106, 0x3288, "ASUS M2V-MX SE", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1043, 0x813d, "ASUS P5AD2", POS_FIX_LPIB),
-+	SND_PCI_QUIRK(0x1458, 0xa022, "ga-ma770-ud3", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1462, 0x1002, "MSI Wind U115", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1565, 0x820f, "Biostar Microtech", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x8086, 0xd601, "eMachines T5212", POS_FIX_LPIB),
+--- a/net/netfilter/xt_recent.c
++++ b/net/netfilter/xt_recent.c
+@@ -260,7 +260,7 @@ recent_mt(const struct sk_buff *skb, con
+ 		for (i = 0; i < e->nstamps; i++) {
+ 			if (info->seconds && time_after(time, e->stamps[i]))
+ 				continue;
+-			if (info->hit_count && ++hits >= info->hit_count) {
++			if (!info->hit_count || ++hits >= info->hit_count) {
+ 				ret = !ret;
+ 				break;
+ 			}
 
 
