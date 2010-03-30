@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756955Ab0C3XVy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:21:54 -0400
-Received: from kroah.org ([198.145.64.141]:46358 "EHLO coco.kroah.org"
+	id S1757243Ab0C3Xv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:51:56 -0400
+Received: from kroah.org ([198.145.64.141]:45796 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756044Ab0C3XUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:51 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:21 2010
-Message-Id: <20100330224821.025709984@linux.site>
+	id S932436Ab0C3XTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:34 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:36 2010
+Message-Id: <20100330224736.149819063@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:05 -0700
+Date: Tue, 30 Mar 2010 15:40:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Clemens Ladisch <clemens@ladisch.de>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Neil Horman <nhorman@tuxdriver.com>, Andi Kleen <andi@firstfloor.org>,
+       Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Ingo Molnar <mingo@elte.hu>, maximilian attems <max@stro.at>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [091/156] PCI quirk: RS780/RS880: work around missing MSI initialization
+Subject: [025/156] coredump: suppress uid comparison test if core output files are pipes
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,98 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-commit a5ee4eb75413c145334c30e43f1af9875dad6fd7 upstream.
+commit 76595f79d76fbe6267a51b3a866a028d150f06d4 upstream.
 
-AMD says in section 2.5.4 (GFX MSI Enable) of #43291 (AMD 780G Family
-Register Programming Requirements):
+Modify uid check in do_coredump so as to not apply it in the case of
+pipes.
 
-  The SBIOS must enable internal graphics MSI capability in GCCFG by
-  setting the following: NBCFG.NB_CNTL.STRAP_MSI_ENABLE='1'
+This just got noticed in testing.  The end of do_coredump validates the
+uid of the inode for the created file against the uid of the crashing
+process to ensure that no one can pre-create a core file with different
+ownership and grab the information contained in the core when they
+shouldn' tbe able to.  This causes failures when using pipes for a core
+dumps if the crashing process is not root, which is the uid of the pipe
+when it is created.
 
-Quite a few BIOS writers misinterpret this sentence and think that
-enabling MSI is an optional feature.  However, clearing that bit just
-prevents delivery of MSI messages but does not remove the MSI PCI
-capabilities registers, and so leaves these devices unusable for any
-driver that attempts to use MSI.
+The fix is simple.  Since the check for matching uid's isn't relevant for
+pipes (a process can't create a pipe that the uermodehelper code will open
+anyway), we can just just skip it in the event ispipe is non-zero
 
-Setting that bit is not possible after the BIOS has locked down the
-configuration registers, so we have to manually disable MSI for the
-affected devices.
+Reverts a pipe-affecting change which was accidentally made in
 
-This fixes the codec communication errors in the HDA driver when
-accessing the HDMI audio device, and allows us to get rid of the
-overcautious quirk in radeon_irq_kms.c.
+: commit c46f739dd39db3b07ab5deb4e3ec81e1c04a91af
+: Author:     Ingo Molnar <mingo@elte.hu>
+: AuthorDate: Wed Nov 28 13:59:18 2007 +0100
+: Commit:     Linus Torvalds <torvalds@woody.linux-foundation.org>
+: CommitDate: Wed Nov 28 10:58:01 2007 -0800
+:
+:     vfs: coredumping fix
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Tested-by: Alex Deucher <alexdeucher@gamil.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_irq_kms.c |    8 -------
- drivers/pci/quirks.c                    |   33 ++++++++++++++++++++++++++++++++
- 2 files changed, 34 insertions(+), 7 deletions(-)
+ fs/exec.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -116,13 +116,7 @@ int radeon_irq_kms_init(struct radeon_de
- 	}
- 	/* enable msi */
- 	rdev->msi_enabled = 0;
--	/* MSIs don't seem to work on my rs780;
--	 * not sure about rs880 or other rs780s.
--	 * Needs more investigation.
--	 */
--	if ((rdev->family >= CHIP_RV380) &&
--	    (rdev->family != CHIP_RS780) &&
--	    (rdev->family != CHIP_RS880)) {
-+	if (rdev->family >= CHIP_RV380) {
- 		int ret = pci_enable_msi(rdev->pdev);
- 		if (!ret) {
- 			rdev->msi_enabled = 1;
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2484,6 +2484,39 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AT
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, 0x4375,
- 			quirk_msi_intx_disable_bug);
- 
-+/*
-+ * MSI does not work with the AMD RS780/RS880 internal graphics and HDMI audio
-+ * devices unless the BIOS has initialized the nb_cntl.strap_msi_enable bit.
-+ */
-+static void __init rs780_int_gfx_disable_msi(struct pci_dev *int_gfx_bridge)
-+{
-+	u32 nb_cntl;
-+
-+	if (!int_gfx_bridge->subordinate)
-+		return;
-+
-+	pci_bus_write_config_dword(int_gfx_bridge->bus, PCI_DEVFN(0, 0),
-+				   0x60, 0);
-+	pci_bus_read_config_dword(int_gfx_bridge->bus, PCI_DEVFN(0, 0),
-+				  0x64, &nb_cntl);
-+
-+	if (!(nb_cntl & BIT(10))) {
-+		dev_warn(&int_gfx_bridge->dev,
-+			 FW_WARN "RS780: MSI for internal graphics disabled\n");
-+		int_gfx_bridge->subordinate->bus_flags |= PCI_BUS_FLAGS_NO_MSI;
-+	}
-+}
-+
-+#define PCI_DEVICE_ID_AMD_RS780_P2P_INT_GFX	0x9602
-+
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD,
-+			PCI_DEVICE_ID_AMD_RS780_P2P_INT_GFX,
-+			rs780_int_gfx_disable_msi);
-+/* wrong vendor ID on M4A785TD motherboard: */
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ASUSTEK,
-+			PCI_DEVICE_ID_AMD_RS780_P2P_INT_GFX,
-+			rs780_int_gfx_disable_msi);
-+
- #endif /* CONFIG_PCI_MSI */
- 
- #ifdef CONFIG_PCI_IOV
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1923,8 +1923,9 @@ void do_coredump(long signr, int exit_co
+ 	/*
+ 	 * Dont allow local users get cute and trick others to coredump
+ 	 * into their pre-created files:
++	 * Note, this is not relevant for pipes
+ 	 */
+-	if (inode->i_uid != current_fsuid())
++	if (!ispipe && (inode->i_uid != current_fsuid()))
+ 		goto close_fail;
+ 	if (!cprm.file->f_op)
+ 		goto close_fail;
 
 
