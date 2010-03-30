@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864Ab0C3IJe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 04:09:34 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:47353 "EHLO
+	id S1755875Ab0C3IJh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 04:09:37 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:47360 "EHLO
 	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755369Ab0C3IHY (ORCPT
+	with ESMTP id S1755351Ab0C3IHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Mar 2010 04:07:24 -0400
 From: "Eric W. Biederman" <ebiederm@xmission.com>
@@ -19,9 +19,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
        Gary Hade <garyhade@us.ibm.com>,
        Natalie Protasevich <protasnb@gmail.com>,
        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 11/15] x86 ioapic: Move nr_ioapic_registers calculation to mp_register_ioapic.
-Date: Tue, 30 Mar 2010 01:07:12 -0700
-Message-Id: <1269936436-7039-11-git-send-email-ebiederm@xmission.com>
+Subject: [PATCH 01/15] x86 acpi/irq: Introduce apci_isa_irq_to_gsi
+Date: Tue, 30 Mar 2010 01:07:02 -0700
+Message-Id: <1269936436-7039-1-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.6.5.2.143.g8cc62
 In-Reply-To: <m1oci6qlmr.fsf_-_@fess.ebiederm.org>
 References: <m1oci6qlmr.fsf_-_@fess.ebiederm.org>
@@ -36,67 +36,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric W. Biederman <ebiederm@xmission.com>
 
-Now that all ioapic registration happens in mp_register_ioapic we can
-move the calculation of nr_ioapic_registers there from enable_IO_APIC.
-The number of ioapic registers is already calucated in mp_register_ioapic
-so all that really needs to be done is to save the caluclated value
-in nr_ioapic_registers.
+There are a number of cases where the current code makes the assumption
+that isa irqs identity map to the first 16 acpi global system intereupts.
+In most instances that assumption is correct as that is the required
+behaviour in dual i8259 mode and the default behavior in ioapic mode.
+
+However there are some systems out there that take advantage of acpis
+interrupt remapping  for the isa irqs to have a completely different
+mapping of isa_irq to gsi.
+
+Introduce acpi_isa_irq_to_gsi to perform this mapping explicitly in the
+code that needs it.  Initially this will be just the current assumed
+identity mapping to ensure it's introduction does not cause regressions.
 
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- arch/x86/kernel/apic/io_apic.c |   22 ++++++++--------------
- 1 files changed, 8 insertions(+), 14 deletions(-)
+ arch/ia64/kernel/acpi.c     |    8 ++++++++
+ arch/x86/kernel/acpi/boot.c |    8 ++++++++
+ include/linux/acpi.h        |    1 +
+ 3 files changed, 17 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 71988c5..c505fe0 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1944,20 +1944,8 @@ static struct { int pin, apic; } ioapic_i8259 = { -1, -1 };
+diff --git a/arch/ia64/kernel/acpi.c b/arch/ia64/kernel/acpi.c
+index f1c9f70..16921bd 100644
+--- a/arch/ia64/kernel/acpi.c
++++ b/arch/ia64/kernel/acpi.c
+@@ -784,6 +784,14 @@ int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
+ 	return 0;
+ }
  
- void __init enable_IO_APIC(void)
- {
--	union IO_APIC_reg_01 reg_01;
- 	int i8259_apic, i8259_pin;
- 	int apic;
--	unsigned long flags;
--
--	/*
--	 * The number of IO-APIC IRQ registers (== #pins):
--	 */
--	for (apic = 0; apic < nr_ioapics; apic++) {
--		raw_spin_lock_irqsave(&ioapic_lock, flags);
--		reg_01.raw = io_apic_read(apic, 1);
--		raw_spin_unlock_irqrestore(&ioapic_lock, flags);
--		nr_ioapic_registers[apic] = reg_01.bits.entries+1;
--	}
- 
- 	if (!legacy_pic->nr_legacy_irqs)
- 		return;
-@@ -4284,6 +4272,7 @@ static int bad_ioapic(unsigned long address)
- void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
- {
- 	int idx = 0;
-+	int entries;
- 
- 	if (bad_ioapic(address))
- 		return;
-@@ -4302,9 +4291,14 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
- 	 * Build basic GSI lookup table to facilitate gsi->io_apic lookups
- 	 * and to prevent reprogramming of IOAPIC pins (PCI GSIs).
- 	 */
-+	entries = io_apic_get_redir_entries(idx);
- 	mp_gsi_routing[idx].gsi_base = gsi_base;
--	mp_gsi_routing[idx].gsi_end = gsi_base +
--	    io_apic_get_redir_entries(idx) - 1;
-+	mp_gsi_routing[idx].gsi_end = gsi_base + entries - 1;
++int acpi_isa_irq_to_gsi(unsigned isa_irq, u32 *gsi)
++{
++	if (isa_irq >= 16)
++		return -1;
++	*gsi = isa_irq;
++	return 0;
++}
 +
-+	/*
-+	 * The number of IO-APIC IRQ registers (== #pins):
-+	 */
-+	nr_ioapic_registers[idx] = entries;
+ /*
+  *  ACPI based hotplug CPU support
+  */
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 0061ea2..f96060d 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -457,6 +457,14 @@ int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
+ 	return 0;
+ }
  
- 	if (mp_gsi_routing[idx].gsi_end > gsi_end)
- 		gsi_end = mp_gsi_routing[idx].gsi_end;
++int acpi_isa_irq_to_gsi(unsigned isa_irq, u32 *gsi)
++{
++	if (isa_irq >= 16)
++		return -1;
++	*gsi = isa_irq;
++	return 0;
++}
++
+ /*
+  * success: return IRQ number (>=0)
+  * failure: return < 0
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index b926afe..7a937da 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -116,6 +116,7 @@ extern unsigned long acpi_realmode_flags;
+ 
+ int acpi_register_gsi (struct device *dev, u32 gsi, int triggering, int polarity);
+ int acpi_gsi_to_irq (u32 gsi, unsigned int *irq);
++int acpi_isa_irq_to_gsi (unsigned isa_irq, u32 *gsi);
+ 
+ #ifdef CONFIG_X86_IO_APIC
+ extern int acpi_get_override_irq(int bus_irq, int *trigger, int *polarity);
 -- 
 1.6.5.2.143.g8cc62
 
