@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932746Ab0C3XZv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:25:51 -0400
-Received: from kroah.org ([198.145.64.141]:46852 "EHLO coco.kroah.org"
+	id S932802Ab0C3X2R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:28:17 -0400
+Received: from kroah.org ([198.145.64.141]:46772 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932705Ab0C3XWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:22:17 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:58 2010
-Message-Id: <20100330224857.813175383@linux.site>
+	id S932616Ab0C3XVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:21:55 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:50 2010
+Message-Id: <20100330224849.710018086@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:43:04 -0700
+Date: Tue, 30 Mar 2010 15:42:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Marcel Holtmann <marcel@holtmann.org>,
+       "Steven J. Magnani" <steve@digidescorp.com>,
+       "David S. Miller" <davem@davemloft.net>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [150/156] Bluetooth: Fix potential bad memory access with sysfs files
+Subject: [137/156] NET_DMA: free skbs periodically
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,142 +27,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcel Holtmann <marcel@holtmann.org>
+From: Steven J. Magnani <steve@digidescorp.com>
 
-commit 101545f6fef4a0a3ea8daf0b5b880df2c6a92a69 upstream.
+[ Upstream commit 73852e8151b7d7a529fbe019ab6d2d0c02d8f3f2 ]
 
-When creating a high number of Bluetooth sockets (L2CAP, SCO
-and RFCOMM) it is possible to scribble repeatedly on arbitrary
-pages of memory. Ensure that the content of these sysfs files is
-always less than one page. Even if this means truncating. The
-files in question are scheduled to be moved over to debugfs in
-the future anyway.
+Under NET_DMA, data transfer can grind to a halt when userland issues a
+large read on a socket with a high RCVLOWAT (i.e., 512 KB for both).
+This appears to be because the NET_DMA design queues up lots of memcpy
+operations, but doesn't issue or wait for them (and thus free the
+associated skbs) until it is time for tcp_recvmesg() to return.
+The socket hangs when its TCP window goes to zero before enough data is
+available to satisfy the read.
 
-Based on initial patches from Neil Brown and Linus Torvalds
+Periodically issue asynchronous memcpy operations, and free skbs for ones
+that have completed, to prevent sockets from going into zero-window mode.
 
-Reported-by: Neil Brown <neilb@suse.de>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/bluetooth/l2cap.c       |   10 +++++++++-
- net/bluetooth/rfcomm/core.c |   13 ++++++++++++-
- net/bluetooth/rfcomm/sock.c |   11 ++++++++++-
- net/bluetooth/sco.c         |   11 ++++++++++-
- 4 files changed, 41 insertions(+), 4 deletions(-)
+ net/ipv4/tcp.c |   63 ++++++++++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 43 insertions(+), 20 deletions(-)
 
---- a/net/bluetooth/l2cap.c
-+++ b/net/bluetooth/l2cap.c
-@@ -3942,16 +3942,24 @@ static ssize_t l2cap_sysfs_show(struct c
- 	struct sock *sk;
- 	struct hlist_node *node;
- 	char *str = buf;
-+	int size = PAGE_SIZE;
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1254,6 +1254,39 @@ static void tcp_prequeue_process(struct
+ 	tp->ucopy.memory = 0;
+ }
  
- 	read_lock_bh(&l2cap_sk_list.lock);
- 
- 	sk_for_each(sk, node, &l2cap_sk_list.head) {
- 		struct l2cap_pinfo *pi = l2cap_pi(sk);
-+		int len;
- 
--		str += sprintf(str, "%s %s %d %d 0x%4.4x 0x%4.4x %d %d %d\n",
-+		len = snprintf(str, size, "%s %s %d %d 0x%4.4x 0x%4.4x %d %d %d\n",
- 				batostr(&bt_sk(sk)->src), batostr(&bt_sk(sk)->dst),
- 				sk->sk_state, __le16_to_cpu(pi->psm), pi->scid,
- 				pi->dcid, pi->imtu, pi->omtu, pi->sec_level);
++#ifdef CONFIG_NET_DMA
++static void tcp_service_net_dma(struct sock *sk, bool wait)
++{
++	dma_cookie_t done, used;
++	dma_cookie_t last_issued;
++	struct tcp_sock *tp = tcp_sk(sk);
 +
-+		size -= len;
-+		if (size <= 0)
++	if (!tp->ucopy.dma_chan)
++		return;
++
++	last_issued = tp->ucopy.dma_cookie;
++	dma_async_memcpy_issue_pending(tp->ucopy.dma_chan);
++
++	do {
++		if (dma_async_memcpy_complete(tp->ucopy.dma_chan,
++					      last_issued, &done,
++					      &used) == DMA_SUCCESS) {
++			/* Safe to free early-copied skbs now */
++			__skb_queue_purge(&sk->sk_async_wait_queue);
 +			break;
++		} else {
++			struct sk_buff *skb;
++			while ((skb = skb_peek(&sk->sk_async_wait_queue)) &&
++			       (dma_async_is_complete(skb->dma_cookie, done,
++						      used) == DMA_SUCCESS)) {
++				__skb_dequeue(&sk->sk_async_wait_queue);
++				kfree_skb(skb);
++			}
++		}
++	} while (wait);
++}
++#endif
 +
-+		str += len;
- 	}
- 
- 	read_unlock_bh(&l2cap_sk_list.lock);
---- a/net/bluetooth/rfcomm/core.c
-+++ b/net/bluetooth/rfcomm/core.c
-@@ -2103,6 +2103,7 @@ static ssize_t rfcomm_dlc_sysfs_show(str
- 	struct rfcomm_session *s;
- 	struct list_head *pp, *p;
- 	char *str = buf;
-+	int size = PAGE_SIZE;
- 
- 	rfcomm_lock();
- 
-@@ -2111,11 +2112,21 @@ static ssize_t rfcomm_dlc_sysfs_show(str
- 		list_for_each(pp, &s->dlcs) {
- 			struct sock *sk = s->sock->sk;
- 			struct rfcomm_dlc *d = list_entry(pp, struct rfcomm_dlc, list);
-+			int len;
- 
--			str += sprintf(str, "%s %s %ld %d %d %d %d\n",
-+			len = snprintf(str, size, "%s %s %ld %d %d %d %d\n",
- 					batostr(&bt_sk(sk)->src), batostr(&bt_sk(sk)->dst),
- 					d->state, d->dlci, d->mtu, d->rx_credits, d->tx_credits);
-+
-+			size -= len;
-+			if (size <= 0)
-+				break;
-+
-+			str += len;
+ static inline struct sk_buff *tcp_recv_skb(struct sock *sk, u32 seq, u32 *off)
+ {
+ 	struct sk_buff *skb;
+@@ -1546,6 +1579,10 @@ int tcp_recvmsg(struct kiocb *iocb, stru
+ 			/* __ Set realtime policy in scheduler __ */
  		}
+ 
++#ifdef CONFIG_NET_DMA
++		if (tp->ucopy.dma_chan)
++			dma_async_memcpy_issue_pending(tp->ucopy.dma_chan);
++#endif
+ 		if (copied >= target) {
+ 			/* Do not sleep, just process backlog. */
+ 			release_sock(sk);
+@@ -1554,6 +1591,7 @@ int tcp_recvmsg(struct kiocb *iocb, stru
+ 			sk_wait_data(sk, &timeo);
+ 
+ #ifdef CONFIG_NET_DMA
++		tcp_service_net_dma(sk, false);  /* Don't block */
+ 		tp->ucopy.wakeup = 0;
+ #endif
+ 
+@@ -1633,6 +1671,9 @@ do_prequeue:
+ 						copied = -EFAULT;
+ 					break;
+ 				}
 +
-+		if (size <= 0)
-+			break;
++				dma_async_memcpy_issue_pending(tp->ucopy.dma_chan);
++
+ 				if ((offset + used) == skb->len)
+ 					copied_early = 1;
+ 
+@@ -1702,27 +1743,9 @@ skip_copy:
  	}
  
- 	rfcomm_unlock();
---- a/net/bluetooth/rfcomm/sock.c
-+++ b/net/bluetooth/rfcomm/sock.c
-@@ -1066,13 +1066,22 @@ static ssize_t rfcomm_sock_sysfs_show(st
- 	struct sock *sk;
- 	struct hlist_node *node;
- 	char *str = buf;
-+	int size = PAGE_SIZE;
+ #ifdef CONFIG_NET_DMA
+-	if (tp->ucopy.dma_chan) {
+-		dma_cookie_t done, used;
+-
+-		dma_async_memcpy_issue_pending(tp->ucopy.dma_chan);
+-
+-		while (dma_async_memcpy_complete(tp->ucopy.dma_chan,
+-						 tp->ucopy.dma_cookie, &done,
+-						 &used) == DMA_IN_PROGRESS) {
+-			/* do partial cleanup of sk_async_wait_queue */
+-			while ((skb = skb_peek(&sk->sk_async_wait_queue)) &&
+-			       (dma_async_is_complete(skb->dma_cookie, done,
+-						      used) == DMA_SUCCESS)) {
+-				__skb_dequeue(&sk->sk_async_wait_queue);
+-				kfree_skb(skb);
+-			}
+-		}
++	tcp_service_net_dma(sk, true);  /* Wait for queue to drain */
++	tp->ucopy.dma_chan = NULL;
  
- 	read_lock_bh(&rfcomm_sk_list.lock);
- 
- 	sk_for_each(sk, node, &rfcomm_sk_list.head) {
--		str += sprintf(str, "%s %s %d %d\n",
-+		int len;
-+
-+		len = snprintf(str, size, "%s %s %d %d\n",
- 				batostr(&bt_sk(sk)->src), batostr(&bt_sk(sk)->dst),
- 				sk->sk_state, rfcomm_pi(sk)->channel);
-+
-+		size -= len;
-+		if (size <= 0)
-+			break;
-+
-+		str += len;
- 	}
- 
- 	read_unlock_bh(&rfcomm_sk_list.lock);
---- a/net/bluetooth/sco.c
-+++ b/net/bluetooth/sco.c
-@@ -958,13 +958,22 @@ static ssize_t sco_sysfs_show(struct cla
- 	struct sock *sk;
- 	struct hlist_node *node;
- 	char *str = buf;
-+	int size = PAGE_SIZE;
- 
- 	read_lock_bh(&sco_sk_list.lock);
- 
- 	sk_for_each(sk, node, &sco_sk_list.head) {
--		str += sprintf(str, "%s %s %d\n",
-+		int len;
-+
-+		len = snprintf(str, size, "%s %s %d\n",
- 				batostr(&bt_sk(sk)->src), batostr(&bt_sk(sk)->dst),
- 				sk->sk_state);
-+
-+		size -= len;
-+		if (size <= 0)
-+			break;
-+
-+		str += len;
- 	}
- 
- 	read_unlock_bh(&sco_sk_list.lock);
+-		/* Safe to free early-copied skbs now */
+-		__skb_queue_purge(&sk->sk_async_wait_queue);
+-		tp->ucopy.dma_chan = NULL;
+-	}
+ 	if (tp->ucopy.pinned_list) {
+ 		dma_unpin_iovec_pages(tp->ucopy.pinned_list);
+ 		tp->ucopy.pinned_list = NULL;
 
 
