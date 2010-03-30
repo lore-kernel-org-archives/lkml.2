@@ -1,252 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625Ab0CaAVG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:21:06 -0400
-Received: from kroah.org ([198.145.64.141]:49163 "EHLO coco.kroah.org"
+	id S932253Ab0CaAJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:09:57 -0400
+Received: from kroah.org ([198.145.64.141]:52002 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756607Ab0C3XMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:50 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:48 2010
-Message-Id: <20100330225848.178293426@linux.site>
+	id S932205Ab0C3XSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:05 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:29 2010
+Message-Id: <20100330225629.332217808@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:58:06 -0700
+Date: Tue, 30 Mar 2010 15:55:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Ben Hutchings <ben@decadent.org.uk>, Dave Airlie <airlied@redhat.com>,
+       Tilman Schmidt <tilman@imap.cc>, Karsten Keil <keil@b1-systems.de>,
+       "David S. Miller" <davem@davemloft.net>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [64/89] drm/r128: Add test for initialisation to all ioctls that require it
-In-Reply-To: <20100330230520.GA28779@kroah.com>
+Subject: [048/116] gigaset: correct clearing of at_state strings on RING
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.31-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Tilman Schmidt <tilman@imap.cc>
 
-commit 7dc482dfeeeefcfd000d4271c4626937406756d7 upstream.
+commit 3a0a3a6b92edf181f849ebd8417122392ba73a96 upstream.
 
-Almost all r128's private ioctls require that the CCE state has
-already been initialised.  However, most do not test that this has
-been done, and will proceed to dereference a null pointer.  This may
-result in a security vulnerability, since some ioctls are
-unprivileged.
+In RING handling, clear the table of received parameter strings in
+a loop like everywhere else, instead of by enumeration which had
+already gotten out of sync.
 
-This adds a macro for the common initialisation test and changes all
-ioctl implementations that require prior initialisation to use that
-macro.
-
-Also, r128_do_init_cce() does not test that the CCE state has not
-been initialised already.  Repeated initialisation may lead to a crash
-or resource leak.  This adds that test.
-
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Impact: minor bugfix
+Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+Acked-by: Karsten Keil <keil@b1-systems.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/r128/r128_cce.c   |   18 ++++++++++++++----
- drivers/gpu/drm/r128/r128_drv.h   |    8 ++++++++
- drivers/gpu/drm/r128/r128_state.c |   36 +++++++++++++++++++-----------------
- 3 files changed, 41 insertions(+), 21 deletions(-)
+ drivers/isdn/gigaset/ev-layer.c |   12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
---- a/drivers/gpu/drm/r128/r128_cce.c
-+++ b/drivers/gpu/drm/r128/r128_cce.c
-@@ -353,6 +353,11 @@ static int r128_do_init_cce(struct drm_d
+--- a/drivers/isdn/gigaset/ev-layer.c
++++ b/drivers/isdn/gigaset/ev-layer.c
+@@ -1243,14 +1243,10 @@ static void do_action(int action, struct
+ 		 * note that bcs may be NULL if no B channel is free
+ 		 */
+ 		at_state2->ConState = 700;
+-		kfree(at_state2->str_var[STR_NMBR]);
+-		at_state2->str_var[STR_NMBR] = NULL;
+-		kfree(at_state2->str_var[STR_ZCPN]);
+-		at_state2->str_var[STR_ZCPN] = NULL;
+-		kfree(at_state2->str_var[STR_ZBC]);
+-		at_state2->str_var[STR_ZBC] = NULL;
+-		kfree(at_state2->str_var[STR_ZHLC]);
+-		at_state2->str_var[STR_ZHLC] = NULL;
++		for (i = 0; i < STR_NUM; ++i) {
++			kfree(at_state2->str_var[i]);
++			at_state2->str_var[i] = NULL;
++		}
+ 		at_state2->int_var[VAR_ZCTP] = -1;
  
- 	DRM_DEBUG("\n");
- 
-+	if (dev->dev_private) {
-+		DRM_DEBUG("called when already initialized\n");
-+		return -EINVAL;
-+	}
-+
- 	dev_priv = kzalloc(sizeof(drm_r128_private_t), GFP_KERNEL);
- 	if (dev_priv == NULL)
- 		return -ENOMEM;
-@@ -649,6 +654,8 @@ int r128_cce_start(struct drm_device *de
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
-+
- 	if (dev_priv->cce_running || dev_priv->cce_mode == R128_PM4_NONPM4) {
- 		DRM_DEBUG("while CCE running\n");
- 		return 0;
-@@ -671,6 +678,8 @@ int r128_cce_stop(struct drm_device *dev
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
-+
- 	/* Flush any pending CCE commands.  This ensures any outstanding
- 	 * commands are exectuted by the engine before we turn it off.
- 	 */
-@@ -708,10 +717,7 @@ int r128_cce_reset(struct drm_device *de
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
--	if (!dev_priv) {
--		DRM_DEBUG("called before init done\n");
--		return -EINVAL;
--	}
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
- 
- 	r128_do_cce_reset(dev_priv);
- 
-@@ -728,6 +734,8 @@ int r128_cce_idle(struct drm_device *dev
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
-+
- 	if (dev_priv->cce_running) {
- 		r128_do_cce_flush(dev_priv);
- 	}
-@@ -741,6 +749,8 @@ int r128_engine_reset(struct drm_device
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev->dev_private);
-+
- 	return r128_do_engine_reset(dev);
- }
- 
---- a/drivers/gpu/drm/r128/r128_drv.h
-+++ b/drivers/gpu/drm/r128/r128_drv.h
-@@ -422,6 +422,14 @@ static __inline__ void r128_update_ring_
-  * Misc helper macros
-  */
- 
-+#define DEV_INIT_TEST_WITH_RETURN(_dev_priv)				\
-+do {									\
-+	if (!_dev_priv) {						\
-+		DRM_ERROR("called with no initialization\n");		\
-+		return -EINVAL;						\
-+	}								\
-+} while (0)
-+
- #define RING_SPACE_TEST_WITH_RETURN( dev_priv )				\
- do {									\
- 	drm_r128_ring_buffer_t *ring = &dev_priv->ring; int i;		\
---- a/drivers/gpu/drm/r128/r128_state.c
-+++ b/drivers/gpu/drm/r128/r128_state.c
-@@ -1244,14 +1244,18 @@ static void r128_cce_dispatch_stipple(st
- static int r128_cce_clear(struct drm_device *dev, void *data, struct drm_file *file_priv)
- {
- 	drm_r128_private_t *dev_priv = dev->dev_private;
--	drm_r128_sarea_t *sarea_priv = dev_priv->sarea_priv;
-+	drm_r128_sarea_t *sarea_priv;
- 	drm_r128_clear_t *clear = data;
- 	DRM_DEBUG("\n");
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
-+
- 	RING_SPACE_TEST_WITH_RETURN(dev_priv);
- 
-+	sarea_priv = dev_priv->sarea_priv;
-+
- 	if (sarea_priv->nbox > R128_NR_SAREA_CLIPRECTS)
- 		sarea_priv->nbox = R128_NR_SAREA_CLIPRECTS;
- 
-@@ -1312,6 +1316,8 @@ static int r128_cce_flip(struct drm_devi
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
-+
- 	RING_SPACE_TEST_WITH_RETURN(dev_priv);
- 
- 	if (!dev_priv->page_flipping)
-@@ -1331,6 +1337,8 @@ static int r128_cce_swap(struct drm_devi
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
-+
- 	RING_SPACE_TEST_WITH_RETURN(dev_priv);
- 
- 	if (sarea_priv->nbox > R128_NR_SAREA_CLIPRECTS)
-@@ -1354,10 +1362,7 @@ static int r128_cce_vertex(struct drm_de
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
--	if (!dev_priv) {
--		DRM_ERROR("called with no initialization\n");
--		return -EINVAL;
--	}
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
- 
- 	DRM_DEBUG("pid=%d index=%d count=%d discard=%d\n",
- 		  DRM_CURRENTPID, vertex->idx, vertex->count, vertex->discard);
-@@ -1410,10 +1415,7 @@ static int r128_cce_indices(struct drm_d
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
--	if (!dev_priv) {
--		DRM_ERROR("called with no initialization\n");
--		return -EINVAL;
--	}
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
- 
- 	DRM_DEBUG("pid=%d buf=%d s=%d e=%d d=%d\n", DRM_CURRENTPID,
- 		  elts->idx, elts->start, elts->end, elts->discard);
-@@ -1476,6 +1478,8 @@ static int r128_cce_blit(struct drm_devi
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
-+
- 	DRM_DEBUG("pid=%d index=%d\n", DRM_CURRENTPID, blit->idx);
- 
- 	if (blit->idx < 0 || blit->idx >= dma->buf_count) {
-@@ -1501,6 +1505,8 @@ static int r128_cce_depth(struct drm_dev
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
-+
- 	RING_SPACE_TEST_WITH_RETURN(dev_priv);
- 
- 	ret = -EINVAL;
-@@ -1531,6 +1537,8 @@ static int r128_cce_stipple(struct drm_d
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
-+
- 	if (DRM_COPY_FROM_USER(&mask, stipple->mask, 32 * sizeof(u32)))
- 		return -EFAULT;
- 
-@@ -1555,10 +1563,7 @@ static int r128_cce_indirect(struct drm_
- 
- 	LOCK_TEST_WITH_RETURN(dev, file_priv);
- 
--	if (!dev_priv) {
--		DRM_ERROR("called with no initialization\n");
--		return -EINVAL;
--	}
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
- 
- 	DRM_DEBUG("idx=%d s=%d e=%d d=%d\n",
- 		  indirect->idx, indirect->start, indirect->end,
-@@ -1620,10 +1625,7 @@ static int r128_getparam(struct drm_devi
- 	drm_r128_getparam_t *param = data;
- 	int value;
- 
--	if (!dev_priv) {
--		DRM_ERROR("called with no initialization\n");
--		return -EINVAL;
--	}
-+	DEV_INIT_TEST_WITH_RETURN(dev_priv);
- 
- 	DRM_DEBUG("pid=%d\n", DRM_CURRENTPID);
- 
+ 		spin_lock_irqsave(&cs->lock, flags);
 
 
