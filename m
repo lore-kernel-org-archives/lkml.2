@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932479Ab0C3Xxg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:53:36 -0400
-Received: from kroah.org ([198.145.64.141]:45726 "EHLO coco.kroah.org"
+	id S1757510Ab0C3XxE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:53:04 -0400
+Received: from kroah.org ([198.145.64.141]:45756 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932403Ab0C3XT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:26 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:31 2010
-Message-Id: <20100330224730.467319437@linux.site>
+	id S932425Ab0C3XTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:30 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:34 2010
+Message-Id: <20100330224733.571179411@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:40:50 -0700
+Date: Tue, 30 Mar 2010 15:40:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
@@ -17,7 +17,7 @@ Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        Lai Jiangshan <laijs@cn.fujitsu.com>,
        Steven Rostedt <rostedt@goodmis.org>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [016/156] ring-buffer: Move disabled check into preempt disable section
+Subject: [021/156] tracing: Fix warning in s_next of trace file ops
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,58 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 52fbe9cde7fdb5c6fac196d7ebd2d92d05ef3cd4 upstream.
+commit ac91d85456372a90af5b85eb6620fd2efb1e431b upstream.
 
-The ring buffer resizing and resetting relies on a schedule RCU
-action. The buffers are disabled, a synchronize_sched() is called
-and then the resize or reset takes place.
+This warning in s_next() can be triggered by lseek():
+ [<c018b3f7>] ? s_next+0x77/0x80
+ [<c013e3c1>] warn_slowpath_common+0x81/0xa0
+ [<c018b3f7>] ? s_next+0x77/0x80
+ [<c013e3fa>] warn_slowpath_null+0x1a/0x20
+ [<c018b3f7>] s_next+0x77/0x80
+ [<c01efa77>] traverse+0x117/0x200
+ [<c01eff13>] seq_lseek+0xa3/0x120
+ [<c01efe70>] ? seq_lseek+0x0/0x120
+ [<c01d7081>] vfs_llseek+0x41/0x50
+ [<c01d8116>] sys_llseek+0x66/0xa0
+ [<c0102bd0>] sysenter_do_call+0x12/0x26
 
-But this only works if the disabling of the buffers are within the
-preempt disabled section, otherwise a window exists that the buffers
-can be written to while a reset or resize takes place.
+The iterator "leftover" variable is zeroed in the opening of the trace
+file. But lseek can call s_start() which will call s_next() without
+reseting the "leftover" variable back to zero, which might trigger
+the WARN_ON_ONCE(iter->leftover) that is in s_next().
 
-Reported-by: Li Zefan <lizf@cn.fujitsu.com>
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-LKML-Reference: <4B949E43.2010906@cn.fujitsu.com>
+LKML-Reference: <4B8CE06A.9090207@cn.fujitsu.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/trace/ring_buffer.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ kernel/trace/trace.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -2232,12 +2232,12 @@ ring_buffer_lock_reserve(struct ring_buf
- 	if (ring_buffer_flags != RB_BUFFERS_ON)
- 		return NULL;
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1628,6 +1628,7 @@ static void *s_start(struct seq_file *m,
  
--	if (atomic_read(&buffer->record_disabled))
--		return NULL;
--
- 	/* If we are tracing schedule, we don't want to recurse */
- 	resched = ftrace_preempt_disable();
+ 		ftrace_enable_cpu();
  
-+	if (atomic_read(&buffer->record_disabled))
-+		goto out_nocheck;
-+
- 	if (trace_recursive_lock())
- 		goto out_nocheck;
++		iter->leftover = 0;
+ 		for (p = iter; p && l < *pos; p = s_next(m, p, &l))
+ 			;
  
-@@ -2469,11 +2469,11 @@ int ring_buffer_write(struct ring_buffer
- 	if (ring_buffer_flags != RB_BUFFERS_ON)
- 		return -EBUSY;
- 
--	if (atomic_read(&buffer->record_disabled))
--		return -EBUSY;
--
- 	resched = ftrace_preempt_disable();
- 
-+	if (atomic_read(&buffer->record_disabled))
-+		goto out;
-+
- 	cpu = raw_smp_processor_id();
- 
- 	if (!cpumask_test_cpu(cpu, buffer->cpumask))
 
 
