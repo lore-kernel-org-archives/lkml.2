@@ -1,73 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932633Ab0C3XUh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:20:37 -0400
-Received: from kroah.org ([198.145.64.141]:45759 "EHLO coco.kroah.org"
+	id S932384Ab0CaACC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:02:02 -0400
+Received: from kroah.org ([198.145.64.141]:45405 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932422Ab0C3XT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:29 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:33 2010
-Message-Id: <20100330224733.087568762@linux.site>
+	id S1756478Ab0C3XSq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:46 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:58 2010
+Message-Id: <20100330225657.781470828@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:40:54 -0700
+Date: Tue, 30 Mar 2010 15:56:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Steven Rostedt <rostedt@goodmis.org>,
+       Felix Fietkau <nbd@openwrt.org>,
+       "John W. Linville" <linville@tuxdriver.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [020/156] function-graph: Init curr_ret_stack with ret_stack
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+Subject: [089/116] ath9k: fix BUG_ON triggered by PAE frames
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit ea14eb714041d40fcc5180b5a586034503650149 upstream.
+commit 4fdec031b9169b3c17938b9c4168f099f457169c upstream.
 
-If the graph tracer is active, and a task is forked but the allocating of
-the processes graph stack fails, it can cause crash later on.
+When I initially stumbled upon sequence number problems with PAE frames
+in ath9k, I submitted a patch to remove all special cases for PAE
+frames and let them go through the normal transmit path.
+Out of concern about crypto incompatibility issues, this change was
+merged instead:
 
-This is due to the temporary stack being NULL, but the curr_ret_stack
-variable is copied from the parent. If it is not -1, then in
-ftrace_graph_probe_sched_switch() the following:
+commit 6c8afef551fef87a3bf24f8a74c69a7f2f72fc82
+Author: Sujith <Sujith.Manoharan@atheros.com>
+Date:   Tue Feb 9 10:07:00 2010 +0530
 
-	for (index = next->curr_ret_stack; index >= 0; index--)
-		next->ret_stack[index].calltime += timestamp;
+    ath9k: Fix sequence numbers for PAE frames
 
-Will cause a kernel OOPS.
+After a lot of testing, I'm able to reliably trigger a driver crash on
+rekeying with current versions with this change in place.
+It seems that the driver does not support sending out regular MPDUs with
+the same TID while an A-MPDU session is active.
+This leads to duplicate entries in the TID Tx buffer, which hits the
+following BUG_ON in ath_tx_addto_baw():
 
-Found with Li Zefan's ftrace_stress_test.
+    index  = ATH_BA_INDEX(tid->seq_start, bf->bf_seqno);
+    cindex = (tid->baw_head + index) & (ATH_TID_MAX_BUFS - 1);
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+    BUG_ON(tid->tx_buf[cindex] != NULL);
+
+I believe until we actually have a reproducible case of an
+incompatibility with another AP using no PAE special cases, we should
+simply get rid of this mess.
+
+This patch completely fixes my crash issues in STA mode and makes it
+stay connected without throughput drops or connectivity issues even
+when the AP is configured to a very short group rekey interval.
+
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/trace/ftrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/xmit.c |   21 +--------------------
+ 1 file changed, 1 insertion(+), 20 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3364,6 +3364,7 @@ void ftrace_graph_init_task(struct task_
- {
- 	/* Make sure we do not use the parent ret_stack */
- 	t->ret_stack = NULL;
-+	t->curr_ret_stack = -1;
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -1320,25 +1320,6 @@ static enum ath9k_pkt_type get_hw_packet
+ 	return htype;
+ }
  
- 	if (ftrace_graph_active) {
- 		struct ftrace_ret_stack *ret_stack;
-@@ -3373,7 +3374,6 @@ void ftrace_graph_init_task(struct task_
- 				GFP_KERNEL);
- 		if (!ret_stack)
- 			return;
--		t->curr_ret_stack = -1;
- 		atomic_set(&t->tracing_graph_pause, 0);
- 		atomic_set(&t->trace_overrun, 0);
- 		t->ftrace_timestamp = 0;
+-static bool is_pae(struct sk_buff *skb)
+-{
+-	struct ieee80211_hdr *hdr;
+-	__le16 fc;
+-
+-	hdr = (struct ieee80211_hdr *)skb->data;
+-	fc = hdr->frame_control;
+-
+-	if (ieee80211_is_data(fc)) {
+-		if (ieee80211_is_nullfunc(fc) ||
+-		    /* Port Access Entity (IEEE 802.1X) */
+-		    (skb->protocol == cpu_to_be16(ETH_P_PAE))) {
+-			return true;
+-		}
+-	}
+-
+-	return false;
+-}
+-
+ static int get_hw_crypto_keytype(struct sk_buff *skb)
+ {
+ 	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
+@@ -1648,7 +1629,7 @@ static void ath_tx_start_dma(struct ath_
+ 			goto tx_done;
+ 		}
+ 
+-		if ((tx_info->flags & IEEE80211_TX_CTL_AMPDU) && !is_pae(skb)) {
++		if (tx_info->flags & IEEE80211_TX_CTL_AMPDU) {
+ 			/*
+ 			 * Try aggregation if it's a unicast data frame
+ 			 * and the destination is HT capable.
 
 
