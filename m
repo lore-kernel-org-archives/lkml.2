@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932456Ab0C3Xxe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:53:34 -0400
-Received: from kroah.org ([198.145.64.141]:45731 "EHLO coco.kroah.org"
+	id S1757198Ab0C3XmB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:42:01 -0400
+Received: from kroah.org ([198.145.64.141]:46234 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932409Ab0C3XT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:27 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:31 2010
-Message-Id: <20100330224731.222946982@linux.site>
+	id S932606Ab0C3XUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:20:30 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:10 2010
+Message-Id: <20100330224809.592504060@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:40:51 -0700
+Date: Tue, 30 Mar 2010 15:41:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [017/156] x86_64, cpa: Dont work hard in preserving kernel 2M mappings when using 4K already
+       Yoshihiro Shimoda <shimoda.yoshihiro@renesas.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [076/156] usb: r8a66597-hcd: fix removed from an attached hub
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,74 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
+From: Yoshihiro Shimoda <shimoda.yoshihiro@renesas.com>
 
-commit 281ff33b7c1b1ba2a5f9b03425e5f692a94913fa upstream.
+commit d835933436ac0d1e8f5b35fe809fd4e767e55d6e upstream.
 
-We currently enforce the !RW mapping for the kernel mapping that maps
-holes between different text, rodata and data sections. However, kernel
-identity mappings will have different RWX permissions to the pages mapping to
-text and to the pages padding (which are freed) the text, rodata sections.
-Hence kernel identity mappings will be broken to smaller pages. For 64-bit,
-kernel text and kernel identity mappings are different, so we can enable
-protection checks that come with CONFIG_DEBUG_RODATA, as well as retain 2MB
-large page mappings for kernel text.
+fix the problem that when a USB hub is attached to the r8a66597-hcd and
+a device is removed from that hub, it's likely that a kernel panic follows.
 
-Konrad reported a boot failure with the Linux Xen paravirt guest because of
-this. In this paravirt guest case, the kernel text mapping and the kernel
-identity mapping share the same page-table pages. Thus forcing the !RW mapping
-for some of the kernel mappings also cause the kernel identity mappings to be
-read-only resulting in the boot failure. Linux Xen paravirt guest also
-uses 4k mappings and don't use 2M mapping.
-
-Fix this issue and retain large page performance advantage for native kernels
-by not working hard and not enforcing !RW for the kernel text mapping,
-if the current mapping is already using small page mapping.
-
-Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-LKML-Reference: <1266522700.2909.34.camel@sbs-t61.sc.intel.com>
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Reported-by: Markus Pietrek <Markus.Pietrek@emtrion.de>
+Signed-off-by: Yoshihiro Shimoda <shimoda.yoshihiro@renesas.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/mm/pageattr.c |   25 +++++++++++++++++++++++--
- 1 file changed, 23 insertions(+), 2 deletions(-)
+ drivers/usb/host/r8a66597-hcd.c |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -291,8 +291,29 @@ static inline pgprot_t static_protection
- 	 */
- 	if (kernel_set_to_readonly &&
- 	    within(address, (unsigned long)_text,
--		   (unsigned long)__end_rodata_hpage_align))
--		pgprot_val(forbidden) |= _PAGE_RW;
-+		   (unsigned long)__end_rodata_hpage_align)) {
-+		unsigned int level;
-+
-+		/*
-+		 * Don't enforce the !RW mapping for the kernel text mapping,
-+		 * if the current mapping is already using small page mapping.
-+		 * No need to work hard to preserve large page mappings in this
-+		 * case.
-+		 *
-+		 * This also fixes the Linux Xen paravirt guest boot failure
-+		 * (because of unexpected read-only mappings for kernel identity
-+		 * mappings). In this paravirt guest case, the kernel text
-+		 * mapping and the kernel identity mapping share the same
-+		 * page-table pages. Thus we can't really use different
-+		 * protections for the kernel text and identity mappings. Also,
-+		 * these shared mappings are made of small page mappings.
-+		 * Thus this don't enforce !RW mapping for small page kernel
-+		 * text mapping logic will help Linux Xen parvirt guest boot
-+		 * aswell.
-+		 */
-+		if (lookup_address(address, &level) && (level != PG_LEVEL_4K))
-+			pgprot_val(forbidden) |= _PAGE_RW;
-+	}
- #endif
+--- a/drivers/usb/host/r8a66597-hcd.c
++++ b/drivers/usb/host/r8a66597-hcd.c
+@@ -418,7 +418,7 @@ static u8 alloc_usb_address(struct r8a66
  
- 	prot = __pgprot(pgprot_val(prot) & ~pgprot_val(forbidden));
+ /* this function must be called with interrupt disabled */
+ static void free_usb_address(struct r8a66597 *r8a66597,
+-			     struct r8a66597_device *dev)
++			     struct r8a66597_device *dev, int reset)
+ {
+ 	int port;
+ 
+@@ -430,7 +430,13 @@ static void free_usb_address(struct r8a6
+ 	dev->state = USB_STATE_DEFAULT;
+ 	r8a66597->address_map &= ~(1 << dev->address);
+ 	dev->address = 0;
+-	dev_set_drvdata(&dev->udev->dev, NULL);
++	/*
++	 * Only when resetting USB, it is necessary to erase drvdata. When
++	 * a usb device with usb hub is disconnect, "dev->udev" is already
++	 * freed on usb_desconnect(). So we cannot access the data.
++	 */
++	if (reset)
++		dev_set_drvdata(&dev->udev->dev, NULL);
+ 	list_del(&dev->device_list);
+ 	kfree(dev);
+ 
+@@ -1069,7 +1075,7 @@ static void r8a66597_usb_disconnect(stru
+ 	struct r8a66597_device *dev = r8a66597->root_hub[port].dev;
+ 
+ 	disable_r8a66597_pipe_all(r8a66597, dev);
+-	free_usb_address(r8a66597, dev);
++	free_usb_address(r8a66597, dev, 0);
+ 
+ 	start_root_hub_sampling(r8a66597, port, 0);
+ }
+@@ -2085,7 +2091,7 @@ static void update_usb_address_map(struc
+ 				spin_lock_irqsave(&r8a66597->lock, flags);
+ 				dev = get_r8a66597_device(r8a66597, addr);
+ 				disable_r8a66597_pipe_all(r8a66597, dev);
+-				free_usb_address(r8a66597, dev);
++				free_usb_address(r8a66597, dev, 0);
+ 				put_child_connect_map(r8a66597, addr);
+ 				spin_unlock_irqrestore(&r8a66597->lock, flags);
+ 			}
+@@ -2228,7 +2234,7 @@ static int r8a66597_hub_control(struct u
+ 			rh->port |= (1 << USB_PORT_FEAT_RESET);
+ 
+ 			disable_r8a66597_pipe_all(r8a66597, dev);
+-			free_usb_address(r8a66597, dev);
++			free_usb_address(r8a66597, dev, 1);
+ 
+ 			r8a66597_mdfy(r8a66597, USBRST, USBRST | UACT,
+ 				      get_dvstctr_reg(port));
 
 
