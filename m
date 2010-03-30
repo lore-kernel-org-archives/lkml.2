@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab0C3JfO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 05:35:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44982 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290Ab0C3JfL convert rfc822-to-8bit (ORCPT
+	id S1756144Ab0C3Jll (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 05:41:41 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:64381 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756088Ab0C3Jlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 05:35:11 -0400
-Subject: Re: scheduler bug: process running since 5124095h
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       =?ISO-8859-1?Q?T=F6r=F6k?= Edwin <edwintorok@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>,
-       Linux Kernel <linux-kernel@vger.kernel.org>,
-       Arjan van de Ven <arjan@infradead.org>
-In-Reply-To: <1269940324.19286.16.camel@marge.simson.net>
-References: <4BADD408.8080609@gmail.com>  <4BAF1802.8070002@gmail.com>
-	 <1269859960.6844.4.camel@marge.simson.net>
-	 <4BB09736.5010009@jp.fujitsu.com>  <4BB1989D.4050809@jp.fujitsu.com>
-	 <1269939704.5109.513.camel@twins>
-	 <1269940324.19286.16.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 30 Mar 2010 11:34:34 +0200
-Message-ID: <1269941674.5109.514.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	Tue, 30 Mar 2010 05:41:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=kzH1rwISKCukjqKl49oInZMRH8xD3z8UmN2rXlc7fqgFxDNZZdzCkMh6YvvXDZQYT3
+         uXLeqJGZl/T42cnKwLfoynnDcgQaAZYUnnnnhVKUNQNQzofmjV77CfRg39VVoe1NhhZr
+         ABxtl1CCgihnZSw90hNFAIuoHaR78kzfHuqhQ=
+Date: Tue, 30 Mar 2010 12:41:25 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Eric Van Hensbergen <ericvh@gmail.com>
+Cc: Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
+       Sripathi Kodi <sripathik@in.ibm.com>, Jim Garlick <garlick@llnl.gov>,
+       Martin Stava <martin.stava@gmail.com>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+       v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [patch] 9p: return on mutex_lock_interruptible()
+Message-ID: <20100330094125.GH5069@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Eric Van Hensbergen <ericvh@gmail.com>,
+	Ron Minnich <rminnich@sandia.gov>,
+	Latchesar Ionkov <lucho@ionkov.net>,
+	Sripathi Kodi <sripathik@in.ibm.com>,
+	Jim Garlick <garlick@llnl.gov>,
+	Martin Stava <martin.stava@gmail.com>,
+	"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+	v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-30 at 11:12 +0200, Mike Galbraith wrote:
-> On Tue, 2010-03-30 at 11:01 +0200, Peter Zijlstra wrote:
-> > On Tue, 2010-03-30 at 15:22 +0900, Hidetoshi Seto wrote:
-> > > 
-> > > [kernel/sched_debug.c]
-> > > void proc_sched_set_task(struct task_struct *p)
-> > > {
-> > >  :
-> > >         p->se.sum_exec_runtime                  = 0;
-> > >         p->se.prev_sum_exec_runtime             = 0;
-> > >         p->nvcsw                                = 0;
-> > >         p->nivcsw                               = 0;
-> > > } 
-> > 
-> > Urgh, that code should really die, bugger that latencytop relies on that
-> > though. Arjan anything you can do to cure latencytop of this madness?
-> 
-> I killed those 4 fields without _seeming_ to upset it.
+If "err" is -EINTR here the original code calls mutex_unlock() and then
+returns, but it should just return directly.
 
-OK, if Arjan doesn't complain I'll take it ;-)
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+
+diff --git a/fs/9p/vfs_dir.c b/fs/9p/vfs_dir.c
+index d8a3afe..bbe00cf 100644
+--- a/fs/9p/vfs_dir.c
++++ b/fs/9p/vfs_dir.c
+@@ -130,6 +130,8 @@ static int v9fs_dir_readdir(struct file *filp, void *dirent, filldir_t filldir)
+ 	rdir = (struct p9_rdir *) fid->rdir;
+ 
+ 	err = mutex_lock_interruptible(&rdir->mutex);
++	if (err)
++		return err;
+ 	while (err == 0) {
+ 		if (rdir->tail == rdir->head) {
+ 			err = v9fs_file_readn(filp, rdir->buf, NULL,
