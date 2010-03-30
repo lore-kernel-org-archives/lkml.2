@@ -1,104 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab0C3Vcc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 17:32:32 -0400
-Received: from gate.crashing.org ([63.228.1.57]:34426 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752320Ab0C3Vca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 17:32:30 -0400
-Subject: Re: [PATCH 07/31] lmb: Add reserve_lmb/free_lmb
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: michael@ellerman.id.au, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-In-Reply-To: <4BB19656.9040803@kernel.org>
-References: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
-	 <1269830604-26214-8-git-send-email-yinghai@kernel.org>
-	 <1269865322.24620.42.camel@concordia>  <4BB0D92C.3010103@kernel.org>
-	 <1269901252.2286.11.camel@concordia> <1269905491.7101.40.camel@pasglop>
-	 <4BB13FDB.9060006@kernel.org> <1269926794.7101.46.camel@pasglop>
-	 <4BB19656.9040803@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 31 Mar 2010 08:30:35 +1100
-Message-ID: <1269984635.7101.59.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1754202Ab0C3VfM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 17:35:12 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47211 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753592Ab0C3VfK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 17:35:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=uQbi/tGI4ZBbaquTQCQJL8L3qm7c1B7piw09ooPpr4IjWP9mhZX9FN6UfRd3PefnWE
+         c6Z2gFz9TFoFoWYDU+daTwzYPB/HAxrcuu0W7bhCamGDTRQNRmDKoxZ9jaS+F8ETodX3
+         SgIPw4qj/uBwz+xQ0sDN9TgC647vfW7orzpew=
+MIME-Version: 1.0
+Reply-To: eranian@gmail.com
+In-Reply-To: <4BB22BB0.8030208@linux.vnet.ibm.com>
+References: <4B560ACD.4040206@linux.vnet.ibm.com>
+	 <d3f22a1003290213x7d7904an59d50eb6a8616133@mail.gmail.com>
+	 <1269934931.8575.6.camel@minggr.sh.intel.com>
+	 <4BB22BB0.8030208@linux.vnet.ibm.com>
+Date: Tue, 30 Mar 2010 23:28:42 +0200
+Message-ID: <u2h7c86c4471003301428v9189ccbesec68ee149dfe9f@mail.gmail.com>
+Subject: Re: [RFC] perf_events: support for uncore a.k.a. nest units
+From: stephane eranian <eranian@googlemail.com>
+To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <peterz@infradead.org>,
+       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Andi Kleen <andi@firstfloor.org>, Paul Mackerras <paulus@samba.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+       Dan Terpstra <terpstra@eecs.utk.edu>, Philip Mucci <mucci@eecs.utk.edu>,
+       Maynard Johnson <mpjohn@us.ibm.com>, Carl Love <cel@us.ibm.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-29 at 23:12 -0700, Yinghai Lu wrote:
-> 
-> 1. you want to reserve rangeA
-> 2. before that will check if region array is big enough,
-> 3. if region is not big enough, will call lmb_alloc to get new range.
->    lmb_alloc could return rangB that is overlapped with rangeA
-> 4. current lmb_alloc only honor limit, and doesn't honor low limit.
+On Tue, Mar 30, 2010 at 6:49 PM, Corey Ashford
+<cjashfor@linux.vnet.ibm.com> wrote:
+> On 03/30/2010 12:42 AM, Lin Ming wrote:
+>>
+>> Hi, Corey
+>>
+>> How is this going now? Are you still working on this?
+>> I'd like to help to add support for uncore, test, write code or anything
+>> else.
+>>
+>> Thanks,
+>> Lin Ming
+>
+> I haven't been actively working on adding infrastructure for nest PMUs yet.
+>  At the moment we are working on supporting nest events for IBM's Wire-Speed
+> processor, using the current infrastructure, because of the time
+> limitations.  Using the existing infrastructure is definitely not ideal, but
+> for this processor, it's workable.
+>
+> There are still a lot of issues to solve for adding this infrastructure:
+>
+> 1) Does perf_events need a new context type (in addition to per-task and
+> per-cpu)?  This is partly because we don't want to be mixing the rotation of
+> CPU-events with nest events.  Each PMU really ought to have its own event
+> list.
+>
+I concur with the fact that you don't want to mix events form
+different PMUs in the
+same rotation list. There are some side effects of not doing this with
+AMD64 Northbridge
+events when you have multiple concurrent sessions. But this is a special case
+where the "uncore" (nest) PMU is actually controlled via the core PMU. I think
+that is okay for now, but you certainly don't want that for Nehalem uncore, for
+instance.
 
-I see. This is a direct consequence of you wanting to use find/reserve
-instead of alloc tho :-)
-
-This is also easily fixed. Instead of doing the resize "on demand" like
-I originally proposed, do it at the end of reserve/alloc. If the number
-of free entries is down to 1 or 0, then alloc a new chunk.
-
-Of course, all of that requires that reservations done from FW to take
-memory out because it must not be accessed need to be all done before
-the first grow of the array, and so the static array must be sized
-accordingly. We may want to catch these things too. We don't want to
-warn on multiple overlapping lmb_reserve() tho on powerpc...
- 
-> another usage is: for temporary buffer, like range array for
-> subtraction. we don't need to do free later.
-
-Sorry, doesn't parse.
-
-> > Ie. It should all be one single find/allocation function.
-> > 
-> > In fact, you want to split lmb_find from lmb_reserve, then just make
-> > lmb_alloc use the above, I don't want 2 implementations of the same
-> > thing (maybe call it __lmb_find to expose the fact that it's a low
-> level
-> > function to avoid for normal use).
-> 
-> that is some difference between them, and lmb_alloc doesn't honor low
-> limit.
-
-If you want a low and a high limit, then add the low limit to
-lmb_alloc_base(), it's easy to fix all callers, there aren't many, and
-make not one but two defaults for lmb_alloc(), one for the low limit and
-one for the high limit. Problem solved.
-
-> we can provide
-> lmb_find_area
-> lmb_reserve_area
-> lmb_free_area
-> 
-> and use lmb_find_area + lmb_reserve_area to get one lmb_alloc()
-
-I still don't understand why you insist on using find + reserve instead
-of alloc in x86 land. Can you give me a proper explanation as to why
-that is needed since it seems to be causing problems, and so far and I
-don't see what it solves.
-
-> x86 sometime is using find_lmb_area to find big area, and use those
-> area and later reserve actually used area.
-
-That's very wrong. If you use something, alloc/reserve it. You can
-always free it later.
-
-> you could use lmb_alloc, and later lmb_free not used. that is equal to
-> lmb_find + lmb_reserve + lmb_free ...
-
-Sure, then just do alloc + later free.
-
-Cheers,
-Ben.
-
-
+> 2) How do we deal with accessing PMU's which require slow access methods
+> (e.g. internal serial bus)?  The accesses may need to be placed on worker
+> threads so that they don't affect the performance of context switches and
+> system ticks.
+>
+> 3) How exactly do we represent the PMU's in the pseudofs (/sys or /proc)?
+>  And how exactly does the user specify the PMU to perf_events?
+> Peter Zijlstra and Stephane Eranian both recommended opening the PMU with
+> open() and then passing the resulting fd in through the perf_event_attr
+> struct.
+>
+> 4) How do we choose a CPU to do the housekeeping work for a particular nest
+> PMU.  Peter thought that user space should still specify the it via
+> open_perf_event() cpu parameter, but there's also an argument to be made for
+> the kernel choosing the best CPU to handle the job, or at least make it
+> optional for the user to choose the CPU.
+>
+One of the housekeeping task is to handle uncore PMU interrupts, for instance.
+That is not a trivial task given that events are managed independently and
+that you could be monitoring per-thread or system-wide. It may be that
+some uncore PMU can only interrupt one core. Intel Nehalem can interrupt
+many at once.
