@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755942Ab0C3Ivl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 04:51:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50624 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755649Ab0C3Ivk convert rfc822-to-8bit (ORCPT
+	id S1755977Ab0C3IxA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 04:53:00 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:56394 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755831Ab0C3Iw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 04:51:40 -0400
-Subject: Re: [PATCH tip/core/urgent] rcu: protect fork-time cgroup access
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Menage <menage@google.com>
-Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-       laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       abogani@texware.it
-In-Reply-To: <6599ad831003291543r71300bcfv2957004bf2e927bb@mail.gmail.com>
-References: <20100329211525.GA17703@linux.vnet.ibm.com>
-	 <6599ad831003291543r71300bcfv2957004bf2e927bb@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 30 Mar 2010 10:50:34 +0200
-Message-ID: <1269939034.5109.511.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	Tue, 30 Mar 2010 04:52:58 -0400
+Date: Tue, 30 Mar 2010 10:52:53 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Holger Schurig <hs4233@mail.mn-solutions.de>
+Cc: linux-kernel@vger.kernel.org, Dan Williams <dcbw@redhat.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Bing Zhao <bzhao@marvell.com>, libertas-dev@lists.infradead.org,
+       linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] net/wireless/libertas: do not call wiphy_unregister()
+ w/o wiphy_register()
+Message-ID: <20100330085253.GL30801@buzzloop.caiaq.de>
+References: <1269875658-3324-1-git-send-email-daniel@caiaq.de>
+ <201003300849.07441.hs4233@mail.mn-solutions.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201003300849.07441.hs4233@mail.mn-solutions.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-29 at 15:43 -0700, Paul Menage wrote:
-> On Mon, Mar 29, 2010 at 2:15 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > Add an rcu_read_lock() / rcu_read_unlock() pair to protect a fork-time
-> > cgroup access.  This seems likely to be a false positive.
-> >
-> > Located by: Alessio Igor Bogani <abogani@texware.it>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > ---
-> >
-> >  sched.c |    2 ++
-> >  1 file changed, 2 insertions(+)
-> >
-> > diff --git a/kernel/sched.c b/kernel/sched.c
-> > index 9ab3cd7..d4bb5e0 100644
-> > --- a/kernel/sched.c
-> > +++ b/kernel/sched.c
-> > @@ -2621,7 +2621,9 @@ void sched_fork(struct task_struct *p, int clone_flags)
-> >        if (p->sched_class->task_fork)
-> >                p->sched_class->task_fork(p);
-> >
-> > +       rcu_read_lock();
-> >        set_task_cpu(p, cpu);
-> > +       rcu_read_unlock();
+On Tue, Mar 30, 2010 at 08:49:07AM +0200, Holger Schurig wrote:
+> > The libertas driver calls wiphy_unregister() without a prior
+> > wiphy_register() when a devices fails initialization. Fix this by
+> > introducing a private flag.
 > 
-> I think you're right that this is a false positive - it would only be
-> a problem if it were possible for the task to be moved to a different
-> cgroup, and I think that shouldn't be the case at this point in the
-> fork path since the new process isn't visible on the tasklist yet,
-> right?
+> Nice.
+> 
+> However, I wonder: do we really need a private variable?  Does each driver 
+> introduce a private variable for this?
 
-Well the thing is, this fork time invocation of
-set_task_cpu()->set_task_rq() is in no way special, there's multiple
-places like that.
+I didn't check other drivers thoroughly. I just saw the comment on the
+function which does the wiphy allocation and considered libertas to be
+special in the way it deals with the wireless core:
 
+/*
+ * At this time lbs_private *priv doesn't even exist, so we just allocate
+ * memory and don't initialize the wiphy further. This is postponed until we
+ * can talk to the firmware and happens at registration time in
+ * lbs_cfg_wiphy_register().
+ */
+
+And as I didn't find any function to tell me whether a wiphy has been
+registered and not just allocated, I saw no other way than manually
+track what the libertas driver does.
+
+If there's any better solution, I'd happily test it.
+
+Thanks,
+Daniel
 
