@@ -1,81 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab0C3DVz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 23:21:55 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:56260 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755179Ab0C3DVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 23:21:54 -0400
-Date: Tue, 30 Mar 2010 14:21:48 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH 14/17] input: update gfp/slab.h includes
-Message-Id: <20100330142148.2ac3fc0e.sfr@canb.auug.org.au>
-In-Reply-To: <1269885165-18617-15-git-send-email-tj@kernel.org>
-References: <1269885165-18617-1-git-send-email-tj@kernel.org>
-	<1269885165-18617-15-git-send-email-tj@kernel.org>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__30_Mar_2010_14_21_48_+1100_pngSdui=qEdkgfkF"
+	id S1755392Ab0C3DXA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 23:23:00 -0400
+Received: from mail-wy0-f194.google.com ([74.125.82.194]:36697 "EHLO
+	mail-wy0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755179Ab0C3DW6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 23:22:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=EAPull1DVbcbSXguTaGrXH8YCpkbpUWhZhA36cupi3X7PS10HD7ZWBqvNkKgUATo/w
+         6D6vHAglWdUvjxVijbqUr+oG4lA+8g25xjEUGR/uUr0MZ6vJ72KgoHpf+46iPmskm30i
+         IQow4YR8w1OgjDzkFkjUgNw6tF1iISnzNSYkQ=
+MIME-Version: 1.0
+Date: Tue, 30 Mar 2010 04:01:00 +0100
+Message-ID: <5dbe04a51003292001v296e6eeen9305eafcca6404e8@mail.gmail.com>
+Subject: Good day,
+From: "rev.psalm" <rev.psalm@gmail.com>
+To: 1266109622.11290.10.camel@montroll.chem.mcgill.ca
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__30_Mar_2010_14_21_48_+1100_pngSdui=qEdkgfkF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Good day,
 
-Hi Tejun,
+I am Osmond Amu, a Banker. Please do not be embarrass am seeking your help
+in order to receive the sum of 30.7million as result of surfeit profit made
+decade ago.
 
-On Tue, 30 Mar 2010 02:52:42 +0900 Tejun Heo <tj@kernel.org> wrote:
->
-> Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
-> gfp.h or slab.h is included as necessary.
->=20
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> ---
->  drivers/char/sysrq.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->=20
-> diff --git a/drivers/char/sysrq.c b/drivers/char/sysrq.c
-> index 532c56c..593562d 100644
-> --- a/drivers/char/sysrq.c
-> +++ b/drivers/char/sysrq.c
-> @@ -41,7 +41,7 @@
->  #include <linux/hrtimer.h>
->  #include <linux/oom.h>
->  #include <linux/input.h>
-> -#include <linux/gfp.h>
-> +#include <linux/slab.h>
-> =20
->  #include <asm/ptrace.h>
->  #include <asm/irq_regs.h>
+If you will be so kind enough to grant me the permission, I will be glad to
+give the details.
 
-This patch does not apply to the input tree.  That tree does not have the=20
-#include <linux/gfp.h>
-line (your tree (slabh) adds that later in the linux-next cycle).
+I am ready to offer you 40% of the total amount for your input.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+If you are interested respond to rev.psalm@gmail.com Send your name in full,
+home address and telephone for cordial communication.
 
---Signature=_Tue__30_Mar_2010_14_21_48_+1100_pngSdui=qEdkgfkF
-Content-Type: application/pgp-signature
+Better still call my cell phone for easy communication: +2347066703751.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkuxbkwACgkQjjKRsyhoI8w+mwCaA2GOymsvN4zJCxRzTGg74Qea
-NcAAn2A7WJ3kkLLHc42DDmKcC1Iu1RIr
-=H/d/
------END PGP SIGNATURE-----
-
---Signature=_Tue__30_Mar_2010_14_21_48_+1100_pngSdui=qEdkgfkF--
+Regards
+Osmond Amu.
