@@ -1,110 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489Ab0C3Xwi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:52:38 -0400
-Received: from kroah.org ([198.145.64.141]:45780 "EHLO coco.kroah.org"
+	id S1755792Ab0C3X4d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:56:33 -0400
+Received: from kroah.org ([198.145.64.141]:45608 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932430Ab0C3XTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:32 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:35 2010
-Message-Id: <20100330224734.972203124@linux.site>
+	id S932368Ab0C3XTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:11 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:16 2010
+Message-Id: <20100330225715.926181800@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:40:57 -0700
+Date: Tue, 30 Mar 2010 15:56:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Steven Rostedt <rostedt@goodmis.org>,
+       Sachin Prabhu <sprabhu@redhat.com>,
+       Steven Whitehouse <swhiteho@redhat.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [023/156] tracing: Disable buffer switching when starting or stopping trace
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+Subject: [116/116] GFS2: Skip check for mandatory locks when unlocking
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Sachin Prabhu <sprabhu@redhat.com>
 
-commit a2f8071428ed9a0f06865f417c962421c9a6b488 upstream.
+commit 720e7749279bde0d08684b1bb4e7a2eedeec6394 upstream.
 
-When the trace iterator is read, tracing_start() and tracing_stop()
-is called to stop tracing while the iterator is processing the trace
-output.
+gfs2_lock() will skip locks on file which have mode set to 02666. This is a problem in cases where the mode of the file is changed after a process has obtained a lock on the file. Such a lock will be skipped and will result in a BUG in locks_remove_flock().
 
-These functions disable both the standard buffer and the max latency
-buffer. But if the wakeup tracer is running, it can switch these
-buffers between the two disables:
+gfs2_lock() should skip the check for mandatory locks when unlocking a file.
 
-  buffer = global_trace.buffer;
-  if (buffer)
-      ring_buffer_record_disable(buffer);
-
-      <<<--------- swap happens here
-
-  buffer = max_tr.buffer;
-  if (buffer)
-      ring_buffer_record_disable(buffer);
-
-What happens is that we disabled the same buffer twice. On tracing_start()
-we can enable the same buffer twice. All ring_buffer_record_disable()
-must be matched with a ring_buffer_record_enable() or the buffer
-can be disable permanently, or enable prematurely, and cause a bug
-where a reset happens while a trace is commiting.
-
-This patch protects these two by taking the ftrace_max_lock to prevent
-a switch from occurring.
-
-Found with Li Zefan's ftrace_stress_test.
-
-Reported-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/trace/trace.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ fs/gfs2/file.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -857,6 +857,8 @@ void tracing_start(void)
- 		goto out;
- 	}
+--- a/fs/gfs2/file.c
++++ b/fs/gfs2/file.c
+@@ -606,7 +606,7 @@ static int gfs2_lock(struct file *file,
  
-+	/* Prevent the buffers from switching */
-+	arch_spin_lock(&ftrace_max_lock);
+ 	if (!(fl->fl_flags & FL_POSIX))
+ 		return -ENOLCK;
+-	if (__mandatory_lock(&ip->i_inode))
++	if (__mandatory_lock(&ip->i_inode) && fl->fl_type != F_UNLCK)
+ 		return -ENOLCK;
  
- 	buffer = global_trace.buffer;
- 	if (buffer)
-@@ -866,6 +868,8 @@ void tracing_start(void)
- 	if (buffer)
- 		ring_buffer_record_enable(buffer);
- 
-+	arch_spin_unlock(&ftrace_max_lock);
-+
- 	ftrace_start();
-  out:
- 	spin_unlock_irqrestore(&tracing_start_lock, flags);
-@@ -887,6 +891,9 @@ void tracing_stop(void)
- 	if (trace_stop_count++)
- 		goto out;
- 
-+	/* Prevent the buffers from switching */
-+	arch_spin_lock(&ftrace_max_lock);
-+
- 	buffer = global_trace.buffer;
- 	if (buffer)
- 		ring_buffer_record_disable(buffer);
-@@ -895,6 +902,8 @@ void tracing_stop(void)
- 	if (buffer)
- 		ring_buffer_record_disable(buffer);
- 
-+	arch_spin_unlock(&ftrace_max_lock);
-+
-  out:
- 	spin_unlock_irqrestore(&tracing_start_lock, flags);
- }
+ 	if (cmd == F_CANCELLK) {
 
 
