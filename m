@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313Ab0CaAFX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:05:23 -0400
-Received: from kroah.org ([198.145.64.141]:45280 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756815Ab0C3XSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756818Ab0C3XSa (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 30 Mar 2010 19:18:30 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:45 2010
-Message-Id: <20100330225644.575371585@linux.site>
+Received: from kroah.org ([198.145.64.141]:52076 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932224Ab0C3XSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:13 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:35 2010
+Message-Id: <20100330225635.225702558@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:49 -0700
+Date: Tue, 30 Mar 2010 15:55:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Nathaniel McCallum <nathaniel@natemccallum.com>,
+       Gal Rosen <galr@storwize.com>, James Smart <james.smart@emulex.com>,
+       James Bottomley <James.Bottomley@suse.de>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [071/116] USB: option: add support for a new CMOTECH device to usb/serial/option
+Subject: [057/116] SCSI: scsi_transport_fc: Fix synchronization issue while deleting vport
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nathaniel McCallum <nathaniel@natemccallum.com>
+From: Gal Rosen <galr@storwize.com>
 
-commit 3b04872aa75006e2a4adaaec21e9c9ede8b8ad9d upstream.
+commit 0d9dc7c8b9b7fa0f53647423b41056ee1beed735 upstream.
 
-Signed-off-by: Nathaniel McCallum <nathaniel@natemccallum.com>
+The issue occur while deleting 60 virtual ports through the sys
+interface /sys/class/fc_vports/vport-X/vport_delete. It happen while in
+a mistake each request sent twice for the same vport. This interface is
+asynchronous, entering the delete request into a work queue, allowing
+more than one request to enter to the delete work queue. The result is a
+NULL pointer. The first request already delete the vport, while the
+second request got a pointer to the vport before the device destroyed.
+Re-create vport later cause system freeze.
+
+Solution: Check vport flags before entering the request to the work queue.
+
+[jejb: fixed int<->long problem on spinlock flags variable]
+Signed-off-by: Gal Rosen <galr@storwize.com>
+Acked-by: James Smart <james.smart@emulex.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/scsi/scsi_transport_fc.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -289,6 +289,7 @@ static int  option_resume(struct usb_ser
- #define QUALCOMM_VENDOR_ID			0x05C6
+--- a/drivers/scsi/scsi_transport_fc.c
++++ b/drivers/scsi/scsi_transport_fc.c
+@@ -1215,6 +1215,15 @@ store_fc_vport_delete(struct device *dev
+ {
+ 	struct fc_vport *vport = transport_class_to_vport(dev);
+ 	struct Scsi_Host *shost = vport_to_shost(vport);
++	unsigned long flags;
++
++	spin_lock_irqsave(shost->host_lock, flags);
++	if (vport->flags & (FC_VPORT_DEL | FC_VPORT_CREATING)) {
++		spin_unlock_irqrestore(shost->host_lock, flags);
++		return -EBUSY;
++	}
++	vport->flags |= FC_VPORT_DELETING;
++	spin_unlock_irqrestore(shost->host_lock, flags);
  
- #define CMOTECH_VENDOR_ID			0x16d8
-+#define CMOTECH_PRODUCT_6008			0x6008
- #define CMOTECH_PRODUCT_6280			0x6280
+ 	fc_queue_work(shost, &vport->vport_delete_work);
+ 	return count;
+@@ -1804,6 +1813,9 @@ store_fc_host_vport_delete(struct device
+ 	list_for_each_entry(vport, &fc_host->vports, peers) {
+ 		if ((vport->channel == 0) &&
+ 		    (vport->port_name == wwpn) && (vport->node_name == wwnn)) {
++			if (vport->flags & (FC_VPORT_DEL | FC_VPORT_CREATING))
++				break;
++			vport->flags |= FC_VPORT_DELETING;
+ 			match = 1;
+ 			break;
+ 		}
+@@ -3328,18 +3340,6 @@ fc_vport_terminate(struct fc_vport *vpor
+ 	unsigned long flags;
+ 	int stat;
  
- #define TELIT_VENDOR_ID				0x1bc7
-@@ -522,6 +523,7 @@ static struct usb_device_id option_ids[]
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6000)}, /* ZTE AC8700 */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
- 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6280) }, /* BP3-USB & BP3-EXT HSDPA */
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6008) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864E) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864G) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
+-	spin_lock_irqsave(shost->host_lock, flags);
+-	if (vport->flags & FC_VPORT_CREATING) {
+-		spin_unlock_irqrestore(shost->host_lock, flags);
+-		return -EBUSY;
+-	}
+-	if (vport->flags & (FC_VPORT_DEL)) {
+-		spin_unlock_irqrestore(shost->host_lock, flags);
+-		return -EALREADY;
+-	}
+-	vport->flags |= FC_VPORT_DELETING;
+-	spin_unlock_irqrestore(shost->host_lock, flags);
+-
+ 	if (i->f->vport_delete)
+ 		stat = i->f->vport_delete(vport);
+ 	else
 
 
