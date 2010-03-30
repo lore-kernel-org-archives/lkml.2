@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757930Ab0CaAkg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:40:36 -0400
-Received: from kroah.org ([198.145.64.141]:48462 "EHLO coco.kroah.org"
+	id S932844Ab0CaAk4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:40:56 -0400
+Received: from kroah.org ([198.145.64.141]:48455 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755698Ab0C3XJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:09:00 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:50 2010
-Message-Id: <20100330224949.190687646@linux.site>
+	id S1755630Ab0C3XI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:08:59 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:49 2010
+Message-Id: <20100330224948.404822857@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:48:36 -0700
+Date: Tue, 30 Mar 2010 15:48:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Mike McCormack <mikem@ring3k.org>,
-       Stephen Hemminger <shemminger@vyatta.com>,
+       Samuel Thibault <samuel.thibault@ens-lyon.org>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
        "David S. Miller" <davem@davemloft.net>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [16/45] sky2: Set SKY2_HW_RAM_BUFFER in sky2_init
+       Andi Kleen <andi@firstfloor.org>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [15/45] x86: fix csum_ipv6_magic asm memory clobber
 In-Reply-To: <20100330230410.GA28712@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,44 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike McCormack <mikem@ring3k.org>
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
 
-commit 74a61ebf653c6abe459f228eb40e9f24f7ef1fb7 upstream.
+commit 392d814daf460a9564d29b2cebc51e1ea34e0504 upstream.
 
-The SKY2_HW_RAM_BUFFER bit in hw->flags was checked in sky2_mac_init(),
- before being set later in sky2_up().
+Just like ip_fast_csum, the assembly snippet in csum_ipv6_magic needs a
+memory clobber, as it is only passed the address of the buffer, not a
+memory reference to the buffer itself.
 
-Setting SKY2_HW_RAM_BUFFER in sky2_init() where other hw->flags are set
- should avoid this problem recurring.
+This caused failures in Hurd's pfinetv4 when we tried to compile it with
+gcc-4.3 (bogus checksums).
 
-Signed-off-by: Mike McCormack <mikem@ring3k.org>
-Acked-by: Stephen Hemminger <shemminger@vyatta.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Acked-by: "David S. Miller" <davem@davemloft.net>
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/sky2.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ include/asm-x86/checksum_32.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/sky2.c
-+++ b/drivers/net/sky2.c
-@@ -1438,7 +1438,6 @@ static int sky2_up(struct net_device *de
- 	if (ramsize > 0) {
- 		u32 rxspace;
+--- a/include/asm-x86/checksum_32.h
++++ b/include/asm-x86/checksum_32.h
+@@ -161,7 +161,8 @@ static inline __sum16 csum_ipv6_magic(co
+ 	    "adcl $0, %0	;\n"
+ 	    : "=&r" (sum)
+ 	    : "r" (saddr), "r" (daddr),
+-	      "r" (htonl(len)), "r" (htonl(proto)), "0" (sum));
++	      "r" (htonl(len)), "r" (htonl(proto)), "0" (sum)
++	    : "memory");
  
--		hw->flags |= SKY2_HW_RAM_BUFFER;
- 		pr_debug(PFX "%s: ram buffer %dK\n", dev->name, ramsize);
- 		if (ramsize < 16)
- 			rxspace = ramsize / 2;
-@@ -2846,6 +2845,9 @@ static int __devinit sky2_init(struct sk
- 			++hw->ports;
- 	}
- 
-+	if (sky2_read8(hw, B2_E_0))
-+		hw->flags |= SKY2_HW_RAM_BUFFER;
-+
- 	return 0;
+ 	return csum_fold(sum);
  }
- 
 
 
