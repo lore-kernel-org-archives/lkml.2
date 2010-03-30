@@ -1,71 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757421Ab0CaAH3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:07:29 -0400
-Received: from kroah.org ([198.145.64.141]:45235 "EHLO coco.kroah.org"
+	id S1756429Ab0C3XMU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:12:20 -0400
+Received: from kroah.org ([198.145.64.141]:48859 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932233Ab0C3XST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:19 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:39 2010
-Message-Id: <20100330225638.675808945@linux.site>
+	id S1756402Ab0C3XMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:12 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:23 2010
+Message-Id: <20100330225822.456114499@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:40 -0700
+Date: Tue, 30 Mar 2010 15:57:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Mel Gorman <mel@csn.ul.ie>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [062/116] tty: Take a 256 byte padding into account when buffering below sub-page units
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+       Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [23/89] reiserfs: truncate blocks not used by a write
+In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.31-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Mel Gorman <mel@csn.ul.ie>
+From: Jan Kara <jack@suse.cz>
 
-commit 352fa6ad16b89f8ffd1a93b4419b1a8f2259feab upstream.
+commit ec8e2f7466ca370f5e09000ca40a71759afc9ac8 upstream.
 
-The TTY layer takes some care to ensure that only sub-page allocations
-are made with interrupts disabled. It does this by setting a goal of
-"TTY_BUFFER_PAGE" to allocate. Unfortunately, while TTY_BUFFER_PAGE takes the
-size of tty_buffer into account, it fails to account that tty_buffer_find()
-rounds the buffer size out to the next 256 byte boundary before adding on
-the size of the tty_buffer.
+It can happen that write does not use all the blocks allocated in
+write_begin either because of some filesystem error (like ENOSPC) or
+because page with data to write has been removed from memory.  We truncate
+these blocks so that we don't have dangling blocks beyond i_size.
 
-This patch adjusts the TTY_BUFFER_PAGE calculation to take into account the
-size of the tty_buffer and the padding. Once applied, tty_buffer_alloc()
-should not require high-order allocations.
-
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Cc: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/tty.h |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ fs/reiserfs/inode.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -70,12 +70,13 @@ struct tty_buffer {
+--- a/fs/reiserfs/inode.c
++++ b/fs/reiserfs/inode.c
+@@ -2531,6 +2531,12 @@ static int reiserfs_writepage(struct pag
+ 	return reiserfs_write_full_page(page, wbc);
+ }
  
- /*
-  * We default to dicing tty buffer allocations to this many characters
-- * in order to avoid multiple page allocations. We assume tty_buffer itself
-- * is under 256 bytes. See tty_buffer_find for the allocation logic this
-- * must match
-+ * in order to avoid multiple page allocations. We know the size of
-+ * tty_buffer itself but it must also be taken into account that the
-+ * the buffer is 256 byte aligned. See tty_buffer_find for the allocation
-+ * logic this must match
-  */
++static void reiserfs_truncate_failed_write(struct inode *inode)
++{
++	truncate_inode_pages(inode->i_mapping, inode->i_size);
++	reiserfs_truncate_file(inode, 0);
++}
++
+ static int reiserfs_write_begin(struct file *file,
+ 				struct address_space *mapping,
+ 				loff_t pos, unsigned len, unsigned flags,
+@@ -2597,6 +2603,8 @@ static int reiserfs_write_begin(struct f
+ 	if (ret) {
+ 		unlock_page(page);
+ 		page_cache_release(page);
++		/* Truncate allocated blocks */
++		reiserfs_truncate_failed_write(inode);
+ 	}
+ 	return ret;
+ }
+@@ -2689,8 +2697,7 @@ static int reiserfs_write_end(struct fil
+ 	 ** transaction tracking stuff when the size changes.  So, we have
+ 	 ** to do the i_size updates here.
+ 	 */
+-	pos += copied;
+-	if (pos > inode->i_size) {
++	if (pos + copied > inode->i_size) {
+ 		struct reiserfs_transaction_handle myth;
+ 		reiserfs_write_lock(inode->i_sb);
+ 		/* If the file have grown beyond the border where it
+@@ -2708,7 +2715,7 @@ static int reiserfs_write_end(struct fil
+ 			goto journal_error;
+ 		}
+ 		reiserfs_update_inode_transaction(inode);
+-		inode->i_size = pos;
++		inode->i_size = pos + copied;
+ 		/*
+ 		 * this will just nest into our transaction.  It's important
+ 		 * to use mark_inode_dirty so the inode gets pushed around on the
+@@ -2735,6 +2742,10 @@ static int reiserfs_write_end(struct fil
+       out:
+ 	unlock_page(page);
+ 	page_cache_release(page);
++
++	if (pos + len > inode->i_size)
++		reiserfs_truncate_failed_write(inode);
++
+ 	return ret == 0 ? copied : ret;
  
--#define TTY_BUFFER_PAGE		((PAGE_SIZE  - 256) / 2)
-+#define TTY_BUFFER_PAGE	(((PAGE_SIZE - sizeof(struct tty_buffer)) / 2) & ~0xFF)
- 
- 
- struct tty_bufhead {
+       journal_error:
 
 
