@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757119Ab0C3XgY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:36:24 -0400
-Received: from kroah.org ([198.145.64.141]:46408 "EHLO coco.kroah.org"
+	id S932071Ab0C3XOU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:14:20 -0400
+Received: from kroah.org ([198.145.64.141]:49328 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755774Ab0C3XU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:59 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:25 2010
-Message-Id: <20100330224824.584108264@linux.site>
+	id S1756683Ab0C3XNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:13:11 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:59:03 2010
+Message-Id: <20100330225902.698443402@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:11 -0700
+Date: Tue, 30 Mar 2010 15:58:29 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dan Carpenter <error27@gmail.com>, Eric Anholt <eric@anholt.net>,
+       Alan Stern <stern@rowland.harvard.edu>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [097/156] drm/i915: fix small leak on overlay error path
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+Subject: [87/89] USB: fix usbfs regression
+In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.31-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 915a428e43acfd05e4ffeaf40549b0cf163eebe2 upstream.
+commit 7152b592593b9d48b33f8997b1dfd6df9143f7ec upstream.
 
-We should free "params" before returning.
+This patch (as1352) fixes a bug in the way isochronous input data is
+returned to userspace for usbfs transfers.  The entire buffer must be
+copied, not just the first actual_length bytes, because the individual
+packets will be discontiguous if any of them are short.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Reviewed-by: Daniel Vetter <daniel@ffwll.ch>
-Signed-off-by: Eric Anholt <eric@anholt.net>
+Reported-by: Markus Rechberger <mrechberger@gmail.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/intel_overlay.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/usb/core/devio.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_overlay.c
-+++ b/drivers/gpu/drm/i915/intel_overlay.c
-@@ -1083,14 +1083,18 @@ int intel_overlay_put_image(struct drm_d
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -1139,6 +1139,13 @@ static int proc_do_submiturb(struct dev_
+ 			free_async(as);
+ 			return -ENOMEM;
+ 		}
++		/* Isochronous input data may end up being discontiguous
++		 * if some of the packets are short.  Clear the buffer so
++		 * that the gaps don't leak kernel data to userspace.
++		 */
++		if (is_in && uurb->type == USBDEVFS_URB_TYPE_ISO)
++			memset(as->urb->transfer_buffer, 0,
++					uurb->buffer_length);
+ 	}
+ 	as->urb->dev = ps->dev;
+ 	as->urb->pipe = (uurb->type << 30) |
+@@ -1240,10 +1247,14 @@ static int processcompl(struct async *as
+ 	void __user *addr = as->userurb;
+ 	unsigned int i;
  
- 	drmmode_obj = drm_mode_object_find(dev, put_image_rec->crtc_id,
-                         DRM_MODE_OBJECT_CRTC);
--	if (!drmmode_obj)
--		return -ENOENT;
-+	if (!drmmode_obj) {
-+		ret = -ENOENT;
-+		goto out_free;
+-	if (as->userbuffer && urb->actual_length)
+-		if (copy_to_user(as->userbuffer, urb->transfer_buffer,
+-				 urb->actual_length))
++	if (as->userbuffer && urb->actual_length) {
++		if (urb->number_of_packets > 0)		/* Isochronous */
++			i = urb->transfer_buffer_length;
++		else					/* Non-Isoc */
++			i = urb->actual_length;
++		if (copy_to_user(as->userbuffer, urb->transfer_buffer, i))
+ 			goto err_out;
 +	}
- 	crtc = to_intel_crtc(obj_to_crtc(drmmode_obj));
- 
- 	new_bo = drm_gem_object_lookup(dev, file_priv,
- 			put_image_rec->bo_handle);
--	if (!new_bo)
--		return -ENOENT;
-+	if (!new_bo) {
-+		ret = -ENOENT;
-+		goto out_free;
-+	}
- 
- 	mutex_lock(&dev->mode_config.mutex);
- 	mutex_lock(&dev->struct_mutex);
-@@ -1180,6 +1184,7 @@ out_unlock:
- 	mutex_unlock(&dev->struct_mutex);
- 	mutex_unlock(&dev->mode_config.mutex);
- 	drm_gem_object_unreference(new_bo);
-+out_free:
- 	kfree(params);
- 
- 	return ret;
+ 	if (put_user(as->status, &userurb->status))
+ 		goto err_out;
+ 	if (put_user(urb->actual_length, &userurb->actual_length))
 
 
