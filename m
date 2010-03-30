@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628Ab0C3SiK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 14:38:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38136 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752139Ab0C3SiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 14:38:08 -0400
-Subject: Re: [PATCH] libertas/sdio: set ECSI and SCSI bits for 1-bit
- transfers
-From: Dan Williams <dcbw@redhat.com>
-To: Daniel Mack <daniel@caiaq.de>
+	id S1755774Ab0C3Skw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 14:40:52 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:58923 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752546Ab0C3Sku (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 14:40:50 -0400
+Date: Tue, 30 Mar 2010 20:40:46 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Dan Williams <dcbw@redhat.com>
 Cc: linux-kernel@vger.kernel.org, Alagu Sankar <alagusankar@embwise.com>,
        Volker Ernst <volker.ernst@txtr.com>,
        "John W. Linville" <linville@tuxdriver.com>,
@@ -17,109 +17,41 @@ Cc: linux-kernel@vger.kernel.org, Alagu Sankar <alagusankar@embwise.com>,
        Bing Zhao <bzhao@marvell.com>, libertas-dev@lists.infradead.org,
        linux-wireless@vger.kernel.org, linux-mmc@vger.kernel.org,
        David Brownell <dbrownell@users.sourceforge.net>
-In-Reply-To: <1269970733-24681-1-git-send-email-daniel@caiaq.de>
+Subject: Re: [PATCH] libertas/sdio: set ECSI and SCSI bits for 1-bit
+ transfers
+Message-ID: <20100330184046.GY30801@buzzloop.caiaq.de>
 References: <1269970733-24681-1-git-send-email-daniel@caiaq.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 30 Mar 2010 11:37:39 -0700
-Message-ID: <1269974259.3019.52.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+ <1269974259.3019.52.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269974259.3019.52.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-30 at 19:38 +0200, Daniel Mack wrote:
-> When operating in 1-bit mode, SDAT1 is used as dedicated interrupt line.
-> However, the 8686 will only drive this line when the ECSI and SCSI bits
-> are set in the CCCR_IF register.
-
-While this looks fine enough to me, I don't have enough knowledge of the
-SDIO stack to know whether or not this would be considered a layering
-violation or not.  Given that I don't think there's an active maintainer
-for the SDIO subsystem though, I'd say it's fine enough for me...
-
-Any thoughts David since it appears to be at least somewhat SPI related?
-
-Acked-by: Dan Williams <dcbw@redhat.com>
-
-> Thanks to Alagu Sankar for pointing me in the right direction.
+On Tue, Mar 30, 2010 at 11:37:39AM -0700, Dan Williams wrote:
+> On Tue, 2010-03-30 at 19:38 +0200, Daniel Mack wrote:
+> > When operating in 1-bit mode, SDAT1 is used as dedicated interrupt line.
+> > However, the 8686 will only drive this line when the ECSI and SCSI bits
+> > are set in the CCCR_IF register.
 > 
-> Signed-off-by: Daniel Mack <daniel@caiaq.de>
-> Cc: Alagu Sankar <alagusankar@embwise.com>
-> Cc: Volker Ernst <volker.ernst@txtr.com>
-> Cc: Dan Williams <dcbw@redhat.com>
-> Cc: John W. Linville <linville@tuxdriver.com>
-> Cc: Holger Schurig <hs4233@mail.mn-solutions.de>
-> Cc: Bing Zhao <bzhao@marvell.com>
-> Cc: libertas-dev@lists.infradead.org
-> Cc: linux-wireless@vger.kernel.org
-> Cc: linux-mmc@vger.kernel.org
-> ---
->  drivers/net/wireless/libertas/if_sdio.c |   24 ++++++++++++++++++++++++
->  include/linux/mmc/sdio.h                |    2 ++
->  2 files changed, 26 insertions(+), 0 deletions(-)
+> While this looks fine enough to me, I don't have enough knowledge of the
+> SDIO stack to know whether or not this would be considered a layering
+> violation or not.  Given that I don't think there's an active maintainer
+> for the SDIO subsystem though, I'd say it's fine enough for me...
 > 
-> diff --git a/drivers/net/wireless/libertas/if_sdio.c b/drivers/net/wireless/libertas/if_sdio.c
-> index 7a73f62..d3170f2 100644
-> --- a/drivers/net/wireless/libertas/if_sdio.c
-> +++ b/drivers/net/wireless/libertas/if_sdio.c
-> @@ -34,6 +34,8 @@
->  #include <linux/mmc/card.h>
->  #include <linux/mmc/sdio_func.h>
->  #include <linux/mmc/sdio_ids.h>
-> +#include <linux/mmc/sdio.h>
-> +#include <linux/mmc/host.h>
->  
->  #include "host.h"
->  #include "decl.h"
-> @@ -942,6 +944,7 @@ static int if_sdio_probe(struct sdio_func *func,
->  	int ret, i;
->  	unsigned int model;
->  	struct if_sdio_packet *packet;
-> +	struct mmc_host *host = func->card->host;
->  
->  	lbs_deb_enter(LBS_DEB_SDIO);
->  
-> @@ -1022,6 +1025,27 @@ static int if_sdio_probe(struct sdio_func *func,
->  	if (ret)
->  		goto disable;
->  
-> +	/* For 1-bit transfers, we need to enable the interrupt flags in
-> +	 * the CCCR register. Temporarily set the function number to 0
-> +	 * for that. */
-> +	if ((host->caps & MMC_CAP_SDIO_IRQ) &&
-> +	    (host->ios.bus_width == MMC_BUS_WIDTH_1)) {
-> +		unsigned int num = func->num;
-> +		u8 reg;
-> +
-> +		func->num = 0;
-> +		reg = sdio_readb(func, SDIO_CCCR_IF, &ret);
-> +		if (ret)
-> +			goto release_int;
-> +
-> +		reg |= SDIO_BUS_ECSI | SDIO_BUS_SCSI;
-> +		sdio_writeb(func, reg, SDIO_CCCR_IF, &ret);
-> +		if (ret)
-> +			goto release_int;
-> +
-> +		func->num = num;
-> +	}
-> +
->  	card->ioport = sdio_readb(func, IF_SDIO_IOPORT, &ret);
->  	if (ret)
->  		goto release_int;
-> diff --git a/include/linux/mmc/sdio.h b/include/linux/mmc/sdio.h
-> index 0ebaef5..329a8fa 100644
-> --- a/include/linux/mmc/sdio.h
-> +++ b/include/linux/mmc/sdio.h
-> @@ -94,6 +94,8 @@
->  
->  #define  SDIO_BUS_WIDTH_1BIT	0x00
->  #define  SDIO_BUS_WIDTH_4BIT	0x02
-> +#define  SDIO_BUS_ECSI		0x20	/* Enable continuous SPI interrupt */
-> +#define  SDIO_BUS_SCSI		0x40	/* Support continuous SPI interrupt */
->  
->  #define  SDIO_BUS_ASYNC_INT	0x20
->  
+> Any thoughts David since it appears to be at least somewhat SPI related?
 
+I believe that these bits in question are just abused in this case. The
+device is not in SPI mode, so according to the specs, the bits shouldn't
+make any difference. This makes me think that this is specific to
+libertas, and doesn't belong in any lower level.
+
+> Acked-by: Dan Williams <dcbw@redhat.com>
+
+Thanks!
+
+Daniel
 
