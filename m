@@ -1,251 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932330Ab0CaAPQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:15:16 -0400
-Received: from kroah.org ([198.145.64.141]:51830 "EHLO coco.kroah.org"
+	id S932798Ab0C3X1e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:27:34 -0400
+Received: from kroah.org ([198.145.64.141]:46801 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756522Ab0C3XRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:17:40 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:13 2010
-Message-Id: <20100330225612.576578239@linux.site>
+	id S1756965Ab0C3XWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:22:04 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:52 2010
+Message-Id: <20100330224851.632237211@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:01 -0700
+Date: Tue, 30 Mar 2010 15:42:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Adam Jackson <ajax@redhat.com>, Dave Airlie <airlied@redhat.com>,
-       maximilian attems <max@stro.at>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [023/116] drm/edid: Unify detailed block parsing between base and extension blocks
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+       Pablo Neira Ayuso <pablo@netfilter.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [140/156] netlink: fix unaligned access in nla_get_be64()
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Adam Jackson <ajax@redhat.com>
+From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-commit 9cf00977da092096c7a983276dad8b3002d23a99 upstream.
+[ Upstream commit f5d410f2ea7ba340f11815a56e05b9fa9421c421 ]
 
-Also fix an embarassing bug in standard timing subblock parsing that
-would result in an infinite loop.
+This patch fixes a unaligned access in nla_get_be64() that was
+introduced by myself in a17c859849402315613a0015ac8fbf101acf0cc1.
 
-Signed-off-by: Adam Jackson <ajax@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Cc: maximilian attems <max@stro.at>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/drm_edid.c |  163 ++++++++++++++++-----------------------------
- 1 file changed, 61 insertions(+), 102 deletions(-)
+ include/net/netlink.h |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -834,8 +834,57 @@ static int add_standard_modes(struct drm
- 	return modes;
+--- a/include/net/netlink.h
++++ b/include/net/netlink.h
+@@ -945,7 +945,11 @@ static inline u64 nla_get_u64(const stru
+  */
+ static inline __be64 nla_get_be64(const struct nlattr *nla)
+ {
+-	return *(__be64 *) nla_data(nla);
++	__be64 tmp;
++
++	nla_memcpy(&tmp, nla, sizeof(tmp));
++
++	return tmp;
  }
  
-+static int add_detailed_modes(struct drm_connector *connector,
-+			      struct detailed_timing *timing,
-+			      struct edid *edid, u32 quirks, int preferred)
-+{
-+	int i, modes = 0;
-+	struct detailed_non_pixel *data = &timing->data.other_data;
-+	int timing_level = standard_timing_level(edid);
-+	struct drm_display_mode *newmode;
-+	struct drm_device *dev = connector->dev;
-+
-+	if (timing->pixel_clock) {
-+		newmode = drm_mode_detailed(dev, edid, timing, quirks);
-+		if (!newmode)
-+			return 0;
-+
-+		if (preferred)
-+			newmode->type |= DRM_MODE_TYPE_PREFERRED;
-+
-+		drm_mode_probed_add(connector, newmode);
-+		return 1;
-+	}
-+
-+	/* other timing types */
-+	switch (data->type) {
-+	case EDID_DETAIL_MONITOR_RANGE:
-+		/* Get monitor range data */
-+		break;
-+	case EDID_DETAIL_STD_MODES:
-+		/* Six modes per detailed section */
-+		for (i = 0; i < 6; i++) {
-+			struct std_timing *std;
-+			struct drm_display_mode *newmode;
-+
-+			std = &data->data.timings[i];
-+			newmode = drm_mode_std(dev, std, edid->revision,
-+					       timing_level);
-+			if (newmode) {
-+				drm_mode_probed_add(connector, newmode);
-+				modes++;
-+			}
-+		}
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	return modes;
-+}
-+
  /**
-- * add_detailed_modes - get detailed mode info from EDID data
-+ * add_detailed_info - get detailed mode info from EDID data
-  * @connector: attached connector
-  * @edid: EDID block to scan
-  * @quirks: quirks to apply
-@@ -846,67 +895,24 @@ static int add_standard_modes(struct drm
- static int add_detailed_info(struct drm_connector *connector,
- 			     struct edid *edid, u32 quirks)
- {
--	struct drm_device *dev = connector->dev;
--	int i, j, modes = 0;
--	int timing_level;
--
--	timing_level = standard_timing_level(edid);
-+	int i, modes = 0;
- 
- 	for (i = 0; i < EDID_DETAILED_TIMINGS; i++) {
- 		struct detailed_timing *timing = &edid->detailed_timings[i];
--		struct detailed_non_pixel *data = &timing->data.other_data;
--		struct drm_display_mode *newmode;
-+		int preferred = (i == 0) && (edid->features & DRM_EDID_FEATURE_PREFERRED_TIMING);
- 
--		/* X server check is version 1.1 or higher */
--		if (edid->version == 1 && edid->revision >= 1 &&
--		    !timing->pixel_clock) {
--			/* Other timing or info */
--			switch (data->type) {
--			case EDID_DETAIL_MONITOR_SERIAL:
--				break;
--			case EDID_DETAIL_MONITOR_STRING:
--				break;
--			case EDID_DETAIL_MONITOR_RANGE:
--				/* Get monitor range data */
--				break;
--			case EDID_DETAIL_MONITOR_NAME:
--				break;
--			case EDID_DETAIL_MONITOR_CPDATA:
--				break;
--			case EDID_DETAIL_STD_MODES:
--				for (j = 0; j < 6; i++) {
--					struct std_timing *std;
--					struct drm_display_mode *newmode;
--
--					std = &data->data.timings[j];
--					newmode = drm_mode_std(dev, std,
--							       edid->revision,
--							       timing_level);
--					if (newmode) {
--						drm_mode_probed_add(connector, newmode);
--						modes++;
--					}
--				}
--				break;
--			default:
--				break;
--			}
--		} else {
--			newmode = drm_mode_detailed(dev, edid, timing, quirks);
--			if (!newmode)
--				continue;
--
--			/* First detailed mode is preferred */
--			if (i == 0 && (edid->features & DRM_EDID_FEATURE_PREFERRED_TIMING))
--				newmode->type |= DRM_MODE_TYPE_PREFERRED;
--			drm_mode_probed_add(connector, newmode);
-+		/* In 1.0, only timings are allowed */
-+		if (!timing->pixel_clock && edid->version == 1 &&
-+			edid->revision == 0)
-+			continue;
- 
--			modes++;
--		}
-+		modes += add_detailed_modes(connector, timing, edid, quirks,
-+					    preferred);
- 	}
- 
- 	return modes;
- }
-+
- /**
-  * add_detailed_mode_eedid - get detailed mode info from addtional timing
-  * 			EDID block
-@@ -920,12 +926,9 @@ static int add_detailed_info(struct drm_
- static int add_detailed_info_eedid(struct drm_connector *connector,
- 			     struct edid *edid, u32 quirks)
- {
--	struct drm_device *dev = connector->dev;
--	int i, j, modes = 0;
-+	int i, modes = 0;
- 	char *edid_ext = NULL;
- 	struct detailed_timing *timing;
--	struct detailed_non_pixel *data;
--	struct drm_display_mode *newmode;
- 	int edid_ext_num;
- 	int start_offset, end_offset;
- 	int timing_level;
-@@ -976,51 +979,7 @@ static int add_detailed_info_eedid(struc
- 	for (i = start_offset; i < end_offset;
- 			i += sizeof(struct detailed_timing)) {
- 		timing = (struct detailed_timing *)(edid_ext + i);
--		data = &timing->data.other_data;
--		/* Detailed mode timing */
--		if (timing->pixel_clock) {
--			newmode = drm_mode_detailed(dev, edid, timing, quirks);
--			if (!newmode)
--				continue;
--
--			drm_mode_probed_add(connector, newmode);
--
--			modes++;
--			continue;
--		}
--
--		/* Other timing or info */
--		switch (data->type) {
--		case EDID_DETAIL_MONITOR_SERIAL:
--			break;
--		case EDID_DETAIL_MONITOR_STRING:
--			break;
--		case EDID_DETAIL_MONITOR_RANGE:
--			/* Get monitor range data */
--			break;
--		case EDID_DETAIL_MONITOR_NAME:
--			break;
--		case EDID_DETAIL_MONITOR_CPDATA:
--			break;
--		case EDID_DETAIL_STD_MODES:
--			/* Five modes per detailed section */
--			for (j = 0; j < 5; i++) {
--				struct std_timing *std;
--				struct drm_display_mode *newmode;
--
--				std = &data->data.timings[j];
--				newmode = drm_mode_std(dev, std,
--						       edid->revision,
--						       timing_level);
--				if (newmode) {
--					drm_mode_probed_add(connector, newmode);
--					modes++;
--				}
--			}
--			break;
--		default:
--			break;
--		}
-+		modes += add_detailed_modes(connector, timing, edid, quirks, 0);
- 	}
- 
- 	return modes;
 
 
