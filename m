@@ -1,89 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757815Ab0CaAgE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:36:04 -0400
-Received: from kroah.org ([198.145.64.141]:48727 "EHLO coco.kroah.org"
+	id S1757850Ab0CaAgY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:36:24 -0400
+Received: from kroah.org ([198.145.64.141]:48591 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756151Ab0C3XLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:11:44 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:09 2010
-Message-Id: <20100330225809.169197817@linux.site>
+	id S1755953Ab0C3XJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:09:18 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:50:03 2010
+Message-Id: <20100330225003.033279925@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:04 -0700
+Date: Tue, 30 Mar 2010 15:48:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Thomas Gleixner <tglx@linutronix.de>, Darren Hart <dvhltc@us.ibm.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Neil Horman <nhorman@tuxdriver.com>, Andi Kleen <andi@firstfloor.org>,
+       Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Ingo Molnar <mingo@elte.hu>, maximilian attems <max@stro.at>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [02/89] futex: Handle futex value corruption gracefully
-In-Reply-To: <20100330230520.GA28779@kroah.com>
+Subject: [35/45] coredump: suppress uid comparison test if core output files are pipes
+In-Reply-To: <20100330230410.GA28712@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.31-stable review patch.  If anyone has any objections, please let us know.
+2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-commit 59647b6ac3050dd964bc556fe6ef22f4db5b935c upstream.
+commit 76595f79d76fbe6267a51b3a866a028d150f06d4 upstream.
 
-The WARN_ON in lookup_pi_state which complains about a mismatch
-between pi_state->owner->pid and the pid which we retrieved from the
-user space futex is completely bogus.
+Modify uid check in do_coredump so as to not apply it in the case of
+pipes.
 
-The code just emits the warning and then continues despite the fact
-that it detected an inconsistent state of the futex. A conveniant way
-for user space to spam the syslog.
+This just got noticed in testing.  The end of do_coredump validates the
+uid of the inode for the created file against the uid of the crashing
+process to ensure that no one can pre-create a core file with different
+ownership and grab the information contained in the core when they
+shouldn' tbe able to.  This causes failures when using pipes for a core
+dumps if the crashing process is not root, which is the uid of the pipe
+when it is created.
 
-Replace the WARN_ON by a consistency check. If the values do not match
-return -EINVAL and let user space deal with the mess it created.
+The fix is simple.  Since the check for matching uid's isn't relevant for
+pipes (a process can't create a pipe that the uermodehelper code will open
+anyway), we can just just skip it in the event ispipe is non-zero
 
-This also fixes the missing task_pid_vnr() when we compare the
-pi_state->owner pid with the futex value.
+Reverts a pipe-affecting change which was accidentally made in
 
-Reported-by: Jermome Marchand <jmarchan@redhat.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: Darren Hart <dvhltc@us.ibm.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+: commit c46f739dd39db3b07ab5deb4e3ec81e1c04a91af
+: Author:     Ingo Molnar <mingo@elte.hu>
+: AuthorDate: Wed Nov 28 13:59:18 2007 +0100
+: Commit:     Linus Torvalds <torvalds@woody.linux-foundation.org>
+: CommitDate: Wed Nov 28 10:58:01 2007 -0800
+:
+:     vfs: coredumping fix
+
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/futex.c |   21 +++++++++++++++++++--
- 1 file changed, 19 insertions(+), 2 deletions(-)
+ fs/exec.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -531,8 +531,25 @@ lookup_pi_state(u32 uval, struct futex_h
- 				return -EINVAL;
- 
- 			WARN_ON(!atomic_read(&pi_state->refcount));
--			WARN_ON(pid && pi_state->owner &&
--				pi_state->owner->pid != pid);
-+
-+			/*
-+			 * When pi_state->owner is NULL then the owner died
-+			 * and another waiter is on the fly. pi_state->owner
-+			 * is fixed up by the task which acquires
-+			 * pi_state->rt_mutex.
-+			 *
-+			 * We do not check for pid == 0 which can happen when
-+			 * the owner died and robust_list_exit() cleared the
-+			 * TID.
-+			 */
-+			if (pid && pi_state->owner) {
-+				/*
-+				 * Bail out if user space manipulated the
-+				 * futex value.
-+				 */
-+				if (pid != task_pid_vnr(pi_state->owner))
-+					return -EINVAL;
-+			}
- 
- 			atomic_inc(&pi_state->refcount);
- 			*ps = pi_state;
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1826,8 +1826,9 @@ int do_coredump(long signr, int exit_cod
+ 	/*
+ 	 * Dont allow local users get cute and trick others to coredump
+ 	 * into their pre-created files:
++	 * Note, this is not relevant for pipes
+ 	 */
+-	if (inode->i_uid != current->fsuid)
++	if (!ispipe && (inode->i_uid != current->fsuid))
+ 		goto close_fail;
+ 	if (!file->f_op)
+ 		goto close_fail;
 
 
