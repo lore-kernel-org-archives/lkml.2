@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804Ab0C3XRt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:17:49 -0400
-Received: from kroah.org ([198.145.64.141]:51876 "EHLO coco.kroah.org"
+	id S932443Ab0CaAOe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:14:34 -0400
+Received: from kroah.org ([198.145.64.141]:51857 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756655Ab0C3XRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:17:46 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:16 2010
-Message-Id: <20100330225616.469592673@linux.site>
+	id S1756453Ab0C3XRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:17:43 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:15 2010
+Message-Id: <20100330225614.483663827@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:07 -0700
+Date: Tue, 30 Mar 2010 15:55:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Srinivas <satyasrinivasp@hcl.in>, Andy Yan <ayan@marvell.com>,
-       James Bottomley <James.Bottomley@suse.de>, Thomas Voegtle <tv@lio96.de>,
+       Francesco Lavra <francescolavra@interfree.it>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [029/116] [SCSI] mvsas: add support for Adaptec ASC-1045/1405 SAS/SATA HBA
+Subject: [026/116] V4L/DVB (13961): em28xx-dvb: fix memleak in dvb_fini()
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,32 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Srinivas <satyasrinivasp@hcl.in>
+From: Francesco Lavra <francescolavra@interfree.it>
 
-commit 7ec4ad0125db0222e397508c190b01c8f2b5f7cd upstream.
+commit 19f48cb105b7fa18d0dcab435919a3a29b7a7c4c upstream.
 
-This is support for Adaptec ASC-1045/1405 SAS/SATA HBA on mvsas, which
-is based on Marvell 88SE6440 chipset.
+this patch fixes a memory leak which occurs when an em28xx card with DVB
+extension is unplugged or its DVB extension driver is unloaded. In
+dvb_fini(), dev->dvb must be freed before being set to NULL, as is done
+in dvb_init() in case of error.
+Note that this bug is also present in the latest stable kernel release.
 
-Signed-off-by: Srinivas <satyasrinivasp@hcl.in>
-Cc: Andy Yan <ayan@marvell.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
-Cc: Thomas Voegtle <tv@lio96.de>
+Signed-off-by: Francesco Lavra <francescolavra@interfree.it>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/mvsas/mv_init.c |    1 +
+ drivers/media/video/em28xx/em28xx-dvb.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/scsi/mvsas/mv_init.c
-+++ b/drivers/scsi/mvsas/mv_init.c
-@@ -657,6 +657,7 @@ static struct pci_device_id __devinitdat
- 	{ PCI_VDEVICE(MARVELL, 0x9180), chip_9180 },
- 	{ PCI_VDEVICE(ARECA, PCI_DEVICE_ID_ARECA_1300), chip_1300 },
- 	{ PCI_VDEVICE(ARECA, PCI_DEVICE_ID_ARECA_1320), chip_1320 },
-+	{ PCI_VDEVICE(ADAPTEC2, 0x0450), chip_6440 },
+--- a/drivers/media/video/em28xx/em28xx-dvb.c
++++ b/drivers/media/video/em28xx/em28xx-dvb.c
+@@ -610,6 +610,7 @@ static int dvb_fini(struct em28xx *dev)
  
- 	{ }	/* terminate list */
- };
+ 	if (dev->dvb) {
+ 		unregister_dvb(dev->dvb);
++		kfree(dev->dvb);
+ 		dev->dvb = NULL;
+ 	}
+ 
 
 
