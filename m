@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932289Ab0C3XSm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:18:42 -0400
-Received: from kroah.org ([198.145.64.141]:45271 "EHLO coco.kroah.org"
+	id S1757400Ab0C3XtS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:49:18 -0400
+Received: from kroah.org ([198.145.64.141]:45879 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932258Ab0C3XS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:28 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:43 2010
-Message-Id: <20100330225643.333999710@linux.site>
+	id S932472Ab0C3XTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:46 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:44 2010
+Message-Id: <20100330224743.729186681@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:47 -0700
+Date: Tue, 30 Mar 2010 15:41:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Nathaniel McCallum <nathaniel@natemccallum.com>,
+       Barry Song <barry.song@analog.com>, Mike Frysinger <vapier@gentoo.org>,
+       Wolfgang Grandegger <wg@grandegger.com>,
+       "David S. Miller" <davem@davemloft.net>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [069/116] USB: option: fix incorrect manufacturer name in usb/serial/option: MAXON->CMOTECH
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+Subject: [036/156] can: fix bfin_can build error after alloc_candev() change
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Nathaniel McCallum <nathaniel@natemccallum.com>
+From: Barry Song <barry.song@analog.com>
 
-commit eaff4cdc978f414cf7b5441a333de3070d80e9c7 upstream.
+commit e9dcd1613f0ac0b3573b7d813a2c5672cd8302eb upstream.
 
-Signed-off-by: Nathaniel McCallum <nathaniel@natemccallum.com>
+Looks like commit a6e4bc530403 didn't include updates to drivers so the
+Blackfin CAN driver fails to build now.
+
+Signed-off-by: Barry Song <barry.song@analog.com>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Acked-by: Wolfgang Grandegger <wg@grandegger.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/can/bfin_can.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -288,7 +288,7 @@ static int  option_resume(struct usb_ser
+--- a/drivers/net/can/bfin_can.c
++++ b/drivers/net/can/bfin_can.c
+@@ -26,6 +26,7 @@
  
- #define QUALCOMM_VENDOR_ID			0x05C6
+ #define DRV_NAME "bfin_can"
+ #define BFIN_CAN_TIMEOUT 100
++#define TX_ECHO_SKB_MAX  1
  
--#define MAXON_VENDOR_ID				0x16d8
-+#define CMOTECH_VENDOR_ID			0x16d8
+ /*
+  * transmit and receive channels
+@@ -590,7 +591,7 @@ struct net_device *alloc_bfin_candev(voi
+ 	struct net_device *dev;
+ 	struct bfin_can_priv *priv;
  
- #define TELIT_VENDOR_ID				0x1bc7
- #define TELIT_PRODUCT_UC864E			0x1003
-@@ -520,7 +520,7 @@ static struct usb_device_id option_ids[]
- 	{ USB_DEVICE(KYOCERA_VENDOR_ID, KYOCERA_PRODUCT_KPC680) },
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6000)}, /* ZTE AC8700 */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
--	{ USB_DEVICE(MAXON_VENDOR_ID, 0x6280) }, /* BP3-USB & BP3-EXT HSDPA */
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, 0x6280) }, /* BP3-USB & BP3-EXT HSDPA */
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864E) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864G) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
+-	dev = alloc_candev(sizeof(*priv));
++	dev = alloc_candev(sizeof(*priv), TX_ECHO_SKB_MAX);
+ 	if (!dev)
+ 		return NULL;
+ 
 
 
