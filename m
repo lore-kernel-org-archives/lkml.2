@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241Ab0C3Chy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 22:37:54 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59908 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754724Ab0C3Chw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 22:37:52 -0400
-Date: Tue, 30 Mar 2010 13:37:45 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Shanyu Zhao <shanyu.zhao@intel.com>, Zhu Yi <yi.zhu@intel.com>,
-       Reinette Chatre <reinette.chatre@intel.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Johannes Berg <johannes.berg@intel.com>
-Subject: linux-next: manual merge of the net tree with the wireless-current
- tree
-Message-Id: <20100330133745.27295ee0.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755331Ab0C3DAM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 23:00:12 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:33271 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755200Ab0C3DAJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 23:00:09 -0400
+X-Authority-Analysis: v=1.1 cv=8Rq9yliVGc3GxcN10kx+g7e/eWPAtZnInWtRlahw0rA= c=1 sm=0 a=3ZfRqFL5B9AA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=OhcDZF3sqg2jO_E0CksA:9 a=531EBu4IW1d2itXw4wr7hi87hQUA:4 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Message-Id: <20100330025800.713540457@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Mon, 29 Mar 2010 22:58:00 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 0/2] [GIT PULL][v2.6.34] tracing: fixes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
 
-Today's linux-next merge of the net tree got a conflict in
-drivers/net/wireless/iwlwifi/iwl-agn.c between commit
-d4dca4e53fde2953d74198a2c445db1d36ed9fd2 ("iwlwifi: clear unattended
-interrupts in tasklet") from the wireless-current tree and commit
-a4c8b2a692601de0a7bcb032b69f806050944dff ("iwlwifi: move ICT data to agn
-part of union") from the net tree.
+Ingo,
 
-I fixed it up (see below) and can carry the fix for a while.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I rebased my branch against yours and removed the module patch
+since it looks like it is no longer urgent. I moved it over to
+my core branch along with a fix to the compile error you saw with it.
+I'll be pushing that later this week.
 
-diff --cc drivers/net/wireless/iwlwifi/iwl-agn.c
-index e4c2e1e,0a376f7..0000000
---- a/drivers/net/wireless/iwlwifi/iwl-agn.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
-@@@ -1258,17 -1236,9 +1236,17 @@@ static void iwl_irq_tasklet(struct iwl_
-  	/* Ack/clear/reset pending uCode interrupts.
-  	 * Note:  Some bits in CSR_INT are "OR" of bits in CSR_FH_INT_STATUS,
-  	 */
- -	iwl_write32(priv, CSR_INT, priv->_agn.inta);
- +	/* There is a hardware bug in the interrupt mask function that some
- +	 * interrupts (i.e. CSR_INT_BIT_SCD) can still be generated even if
- +	 * they are disabled in the CSR_INT_MASK register. Furthermore the
- +	 * ICT interrupt handling mechanism has another bug that might cause
- +	 * these unmasked interrupts fail to be detected. We workaround the
- +	 * hardware bugs here by ACKing all the possible interrupts so that
- +	 * interrupt coalescing can still be achieved.
- +	 */
-- 	iwl_write32(priv, CSR_INT, priv->inta | ~priv->inta_mask);
-++	iwl_write32(priv, CSR_INT, priv->_agn.inta | ~priv->inta_mask);
-  
-- 	inta = priv->inta;
-+ 	inta = priv->_agn.inta;
-  
-  #ifdef CONFIG_IWLWIFI_DEBUG
-  	if (iwl_get_debug_level(priv) & IWL_DL_ISR) {
+These two patchs still should go into 34.
+
+Please pull the latest tip/tracing/urgent tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/tracing/urgent
+
+
+Julia Lawall (1):
+      ring-buffer: Add missing unlock
+
+Li Zefan (1):
+      tracing: Fix lockdep warning in global_clock()
+
+----
+ kernel/trace/ring_buffer.c |    8 +++++---
+ kernel/trace/trace_clock.c |    4 ++--
+ 2 files changed, 7 insertions(+), 5 deletions(-)
