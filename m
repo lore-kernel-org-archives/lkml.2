@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165Ab0CaANg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:13:36 -0400
-Received: from kroah.org ([198.145.64.141]:51903 "EHLO coco.kroah.org"
+	id S1756786Ab0C3XRm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:17:42 -0400
+Received: from kroah.org ([198.145.64.141]:51790 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756802Ab0C3XRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:17:48 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:18 2010
-Message-Id: <20100330225618.196697028@linux.site>
+	id S1756453Ab0C3XRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:17:34 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:08 2010
+Message-Id: <20100330225607.841045069@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:10 -0700
+Date: Tue, 30 Mar 2010 15:54:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "David S. Miller" <davem@davemloft.net>,
+       Steven Rostedt <rostedt@goodmis.org>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [032/116] [PATCH] sparc64: Make prom entry spinlock NMI safe.
+Subject: [017/116] function-graph: Init curr_ret_stack with ret_stack
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David S. Miller <davem@davemloft.net>
+From: Steven Rostedt <srostedt@redhat.com>
 
-[ Upstream commit 8a4fd1e4922413cfdfa6c51a59efb720d904a5eb ]
+commit ea14eb714041d40fcc5180b5a586034503650149 upstream.
 
-If we do something like try to print to the OF console from an NMI
-while we're already in OpenFirmware, we'll deadlock on the spinlock.
+If the graph tracer is active, and a task is forked but the allocating of
+the processes graph stack fails, it can cause crash later on.
 
-Use a raw spinlock and disable NMIs when we take it.
+This is due to the temporary stack being NULL, but the curr_ret_stack
+variable is copied from the parent. If it is not -1, then in
+ftrace_graph_probe_sched_switch() the following:
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
+	for (index = next->curr_ret_stack; index >= 0; index--)
+		next->ret_stack[index].calltime += timestamp;
+
+Will cause a kernel OOPS.
+
+Found with Li Zefan's ftrace_stress_test.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/sparc/prom/p1275.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ kernel/trace/ftrace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/sparc/prom/p1275.c
-+++ b/arch/sparc/prom/p1275.c
-@@ -32,8 +32,7 @@ extern void prom_cif_interface(void);
- extern void prom_cif_callback(void);
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3258,6 +3258,7 @@ void ftrace_graph_init_task(struct task_
+ {
+ 	/* Make sure we do not use the parent ret_stack */
+ 	t->ret_stack = NULL;
++	t->curr_ret_stack = -1;
  
- /*
-- * This provides SMP safety on the p1275buf. prom_callback() drops this lock
-- * to allow recursuve acquisition.
-+ * This provides SMP safety on the p1275buf.
-  */
- DEFINE_SPINLOCK(prom_entry_lock);
- 
-@@ -47,7 +46,9 @@ long p1275_cmd(const char *service, long
- 	
- 	p = p1275buf.prom_buffer;
- 
--	spin_lock_irqsave(&prom_entry_lock, flags);
-+	raw_local_save_flags(flags);
-+	raw_local_irq_restore(PIL_NMI);
-+	spin_lock(&prom_entry_lock);
- 
- 	p1275buf.prom_args[0] = (unsigned long)p;		/* service */
- 	strcpy (p, service);
-@@ -139,7 +140,8 @@ long p1275_cmd(const char *service, long
- 	va_end(list);
- 	x = p1275buf.prom_args [nargs + 3];
- 
--	spin_unlock_irqrestore(&prom_entry_lock, flags);
-+	spin_unlock(&prom_entry_lock);
-+	raw_local_irq_restore(flags);
- 
- 	return x;
- }
+ 	if (ftrace_graph_active) {
+ 		struct ftrace_ret_stack *ret_stack;
+@@ -3267,7 +3268,6 @@ void ftrace_graph_init_task(struct task_
+ 				GFP_KERNEL);
+ 		if (!ret_stack)
+ 			return;
+-		t->curr_ret_stack = -1;
+ 		atomic_set(&t->tracing_graph_pause, 0);
+ 		atomic_set(&t->trace_overrun, 0);
+ 		t->ftrace_timestamp = 0;
 
 
