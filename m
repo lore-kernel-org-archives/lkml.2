@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757458Ab0C3Xvo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:51:44 -0400
-Received: from kroah.org ([198.145.64.141]:45812 "EHLO coco.kroah.org"
+	id S1757575Ab0CaALM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:11:12 -0400
+Received: from kroah.org ([198.145.64.141]:51979 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932439Ab0C3XTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:36 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:37 2010
-Message-Id: <20100330224737.353185340@linux.site>
+	id S932190Ab0C3XSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:00 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:26 2010
+Message-Id: <20100330225626.394316087@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:41:01 -0700
+Date: Tue, 30 Mar 2010 15:55:22 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Avi Kivity <avi@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [027/156] KVM: x86: Add KVM_CAP_X86_ROBUST_SINGLESTEP
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+       Takashi Iwai <tiwai@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [044/116] ALSA: hda - Disable MSI for Nvidia controller
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Jan Kiszka <jan.kiszka@siemens.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-Commit d2be1651b736002e0c76d7095d6c0ba77b4a897c upstream.
+commit 80c43ed724797627d8f86855248c497a6161a214 upstream.
 
-This marks the guest single-step API improvement of 94fe45da and
-91586a3b with a capability flag to allow reliable detection by user
-space.
+Judging from the member of enable_msi white-list, Nvidia controller
+seems to cause troubles with MSI enabled, e.g. boot hang up or other
+serious issue may come up.  It's safer to disable MSI as default for
+Nvidia controllers again for now.
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kvm/x86.c  |    1 +
- include/linux/kvm.h |    1 +
- 2 files changed, 2 insertions(+)
+ sound/pci/hda/hda_intel.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1351,6 +1351,7 @@ int kvm_dev_ioctl_check_extension(long e
- 	case KVM_CAP_XEN_HVM:
- 	case KVM_CAP_ADJUST_CLOCK:
- 	case KVM_CAP_VCPU_EVENTS:
-+	case KVM_CAP_X86_ROBUST_SINGLESTEP:
- 		r = 1;
- 		break;
- 	case KVM_CAP_COALESCED_MMIO:
---- a/include/linux/kvm.h
-+++ b/include/linux/kvm.h
-@@ -497,6 +497,7 @@ struct kvm_ioeventfd {
- #endif
- #define KVM_CAP_S390_PSW 42
- #define KVM_CAP_PPC_SEGSTATE 43
-+#define KVM_CAP_X86_ROBUST_SINGLESTEP 51
- 
- #ifdef KVM_CAP_IRQ_ROUTING
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2335,6 +2335,13 @@ static void __devinit check_msi(struct a
+ 		       "hda_intel: msi for device %04x:%04x set to %d\n",
+ 		       q->subvendor, q->subdevice, q->value);
+ 		chip->msi = q->value;
++		return;
++	}
++
++	/* NVidia chipsets seem to cause troubles with MSI */
++	if (chip->driver_type == AZX_DRIVER_NVIDIA) {
++		printk(KERN_INFO "hda_intel: Disable MSI for Nvidia chipset\n");
++		chip->msi = 0;
+ 	}
+ }
  
 
 
