@@ -1,209 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757919Ab0CaAjy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:39:54 -0400
-Received: from kroah.org ([198.145.64.141]:48482 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755585Ab0C3XJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:09:03 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:53 2010
-Message-Id: <20100330224952.154674501@linux.site>
-User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:48:39 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [19/45] sched: wakeup preempt when small overlap
-In-Reply-To: <20100330230410.GA28712@kroah.com>
+	id S1757927Ab0CaAkD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:40:03 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48306 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755585Ab0CaAj4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 20:39:56 -0400
+Date: Tue, 30 Mar 2010 17:37:21 -0400
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, cl@linux-foundation.org,
+       lee.schermerhorn@hp.com, rientjes@google.com,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       "David S. Miller" <davem@davemloft.net>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org, Troels Liebe Bentsen <tlb@rapanden.dk>,
+       linux-bluetooth@vger.kernel.org
+Subject: Re: [PATCH] exit: fix oops in sync_mm_rss
+Message-Id: <20100330173721.cbd442cb.akpm@linux-foundation.org>
+In-Reply-To: <20100331092815.c8b9d89c.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100316170808.GA29400@redhat.com>
+	<20100330135634.09e6b045.akpm@linux-foundation.org>
+	<20100331092815.c8b9d89c.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.27-stable review patch.  If anyone has any objections, please let us know.
+On Wed, 31 Mar 2010 09:28:15 +0900 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-------------------
+> On Tue, 30 Mar 2010 13:56:34 -0700
+> Andrew Morton <akpm@linux-foundation.org> wrote:
+> 
+> > That new BUG_ON() is triggering in Troels's machine when a bluetooth
+> > keyboard is enabled or disabled.  See
+> > (https://bugzilla.kernel.org/show_bug.cgi?id=15648.
+> > 
+> > I guess the question is: how did a kernel thread get a non-zero
+> > task->rss_stat.count[i]?  If that's expected and OK then we will need
+> > to take some kernel-thread-avoidance action there.
+> > 
+> It seems my fault that it's not initialized to be 0 at do_fork(), copy_process.
+> 
+> About do_exit, do_exit() does this check. So, tsk->mm can be NULL.
+> 
+>  949         if (group_dead) {
+>  950                 hrtimer_cancel(&tsk->signal->real_timer);
+>  951                 exit_itimers(tsk->signal);
+>  952                 if (tsk->mm)
+>  953                         setmax_mm_hiwater_rss(&tsk->signal->maxrss, tsk->mm);
+>  954         }
+> 
+> > Could whoever fixes this please also make __sync_task_rss_stat()
+> > static.
+> > 
+> Ah, yes. I should do so.
+> 
+> > I'll toss this over to Rafael/Maciej for tracking as a post-2.6.33
+> > regression.
+> > 
+> > Thanks.
+> > 
+> 
+> 
+> ==
+> 
+> task->rss_stat wasn't initialized to 0 at copy_process().
+> at exit, tsk->mm may be NULL.
+> And __sync_task_rss_stat() should be static.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  kernel/exit.c |    3 ++-
+>  kernel/fork.c |    3 +++
+>  mm/memory.c   |    2 +-
+>  3 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> Index: mmotm-2.6.34-Mar24/kernel/exit.c
+> ===================================================================
+> --- mmotm-2.6.34-Mar24.orig/kernel/exit.c
+> +++ mmotm-2.6.34-Mar24/kernel/exit.c
+> @@ -950,7 +950,8 @@ NORET_TYPE void do_exit(long code)
+>  
+>  	acct_update_integrals(tsk);
+>  	/* sync mm's RSS info before statistics gathering */
+> -	sync_mm_rss(tsk, tsk->mm);
+> +	if (tsk->mm)
+> +		sync_mm_rss(tsk, tsk->mm);
+>  	group_dead = atomic_dec_and_test(&tsk->signal->live);
+>  	if (group_dead) {
+>  		hrtimer_cancel(&tsk->signal->real_timer);
+> Index: mmotm-2.6.34-Mar24/mm/memory.c
+> ===================================================================
+> --- mmotm-2.6.34-Mar24.orig/mm/memory.c
+> +++ mmotm-2.6.34-Mar24/mm/memory.c
+> @@ -124,7 +124,7 @@ core_initcall(init_zero_pfn);
+>  
+>  #if defined(SPLIT_RSS_COUNTING)
+>  
+> -void __sync_task_rss_stat(struct task_struct *task, struct mm_struct *mm)
+> +static void __sync_task_rss_stat(struct task_struct *task, struct mm_struct *mm)
+>  {
+>  	int i;
+>  
+> Index: mmotm-2.6.34-Mar24/kernel/fork.c
+> ===================================================================
+> --- mmotm-2.6.34-Mar24.orig/kernel/fork.c
+> +++ mmotm-2.6.34-Mar24/kernel/fork.c
+> @@ -1060,6 +1060,9 @@ static struct task_struct *copy_process(
+>  	p->prev_utime = cputime_zero;
+>  	p->prev_stime = cputime_zero;
+>  #endif
+> +#if defined(SPLIT_RSS_COUNTING)
+> +	memset(&p->rss_stat, 0, sizeof(p->rss_stat));
+> +#endif
+>  
+>  	p->default_timer_slack_ns = current->timer_slack_ns;
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+OK, so the kenrel thread inherited a non-zero rss_stat from a userspace
+parent?
 
-commit 15afe09bf496ae10c989e1a375a6b5da7bd3e16e upstream.
-
-Lin Ming reported a 10% OLTP regression against 2.6.27-rc4.
-
-The difference seems to come from different preemption agressiveness,
-which affects the cache footprint of the workload and its effective
-cache trashing.
-
-Aggresively preempt a task if its avg overlap is very small, this should
-avoid the task going to sleep and find it still running when we schedule
-back to it - saving a wakeup.
-
-Reported-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- include/linux/sched.h   |    2 +-
- kernel/sched.c          |   12 ++++++------
- kernel/sched_fair.c     |   13 ++++++++++---
- kernel/sched_features.h |    1 +
- kernel/sched_idletask.c |    6 +++---
- kernel/sched_rt.c       |    2 +-
- 6 files changed, 22 insertions(+), 14 deletions(-)
-
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -901,7 +901,7 @@ struct sched_class {
- 	void (*yield_task) (struct rq *rq);
- 	int  (*select_task_rq)(struct task_struct *p, int sync);
- 
--	void (*check_preempt_curr) (struct rq *rq, struct task_struct *p);
-+	void (*check_preempt_curr) (struct rq *rq, struct task_struct *p, int sync);
- 
- 	struct task_struct * (*pick_next_task) (struct rq *rq);
- 	void (*put_prev_task) (struct rq *rq, struct task_struct *p);
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -604,9 +604,9 @@ struct rq {
- 
- static DEFINE_PER_CPU_SHARED_ALIGNED(struct rq, runqueues);
- 
--static inline void check_preempt_curr(struct rq *rq, struct task_struct *p)
-+static inline void check_preempt_curr(struct rq *rq, struct task_struct *p, int sync)
- {
--	rq->curr->sched_class->check_preempt_curr(rq, p);
-+	rq->curr->sched_class->check_preempt_curr(rq, p, sync);
- }
- 
- static inline int cpu_of(struct rq *rq)
-@@ -2285,7 +2285,7 @@ out_running:
- 	trace_mark(kernel_sched_wakeup,
- 		"pid %d state %ld ## rq %p task %p rq->curr %p",
- 		p->pid, p->state, rq, p, rq->curr);
--	check_preempt_curr(rq, p);
-+	check_preempt_curr(rq, p, sync);
- 
- 	p->state = TASK_RUNNING;
- #ifdef CONFIG_SMP
-@@ -2420,7 +2420,7 @@ void wake_up_new_task(struct task_struct
- 	trace_mark(kernel_sched_wakeup_new,
- 		"pid %d state %ld ## rq %p task %p rq->curr %p",
- 		p->pid, p->state, rq, p, rq->curr);
--	check_preempt_curr(rq, p);
-+	check_preempt_curr(rq, p, 0);
- #ifdef CONFIG_SMP
- 	if (p->sched_class->task_wake_up)
- 		p->sched_class->task_wake_up(rq, p);
-@@ -2880,7 +2880,7 @@ static void pull_task(struct rq *src_rq,
- 	 * Note that idle threads have a prio of MAX_PRIO, for this test
- 	 * to be always true for them.
- 	 */
--	check_preempt_curr(this_rq, p);
-+	check_preempt_curr(this_rq, p, 0);
- }
- 
- /*
-@@ -5957,7 +5957,7 @@ static int __migrate_task(struct task_st
- 	set_task_cpu(p, dest_cpu);
- 	if (on_rq) {
- 		activate_task(rq_dest, p, 0);
--		check_preempt_curr(rq_dest, p);
-+		check_preempt_curr(rq_dest, p, 0);
- 	}
- done:
- 	ret = 1;
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1331,7 +1331,7 @@ static inline int depth_se(struct sched_
- /*
-  * Preempt the current task with a newly woken task if needed:
-  */
--static void check_preempt_wakeup(struct rq *rq, struct task_struct *p)
-+static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int sync)
- {
- 	struct task_struct *curr = rq->curr;
- 	struct cfs_rq *cfs_rq = task_cfs_rq(curr);
-@@ -1360,6 +1360,13 @@ static void check_preempt_wakeup(struct
- 	if (!sched_feat(WAKEUP_PREEMPT))
- 		return;
- 
-+	if (sched_feat(WAKEUP_OVERLAP) && sync &&
-+			se->avg_overlap < sysctl_sched_migration_cost &&
-+			pse->avg_overlap < sysctl_sched_migration_cost) {
-+		resched_task(curr);
-+		return;
-+	}
-+
- 	/*
- 	 * preemption test can be made between sibling entities who are in the
- 	 * same cfs_rq i.e who have a common parent. Walk up the hierarchy of
-@@ -1642,7 +1649,7 @@ static void prio_changed_fair(struct rq
- 		if (p->prio > oldprio)
- 			resched_task(rq->curr);
- 	} else
--		check_preempt_curr(rq, p);
-+		check_preempt_curr(rq, p, 0);
- }
- 
- /*
-@@ -1659,7 +1666,7 @@ static void switched_to_fair(struct rq *
- 	if (running)
- 		resched_task(rq->curr);
- 	else
--		check_preempt_curr(rq, p);
-+		check_preempt_curr(rq, p, 0);
- }
- 
- /* Account for a task changing its policy or group.
---- a/kernel/sched_features.h
-+++ b/kernel/sched_features.h
-@@ -11,3 +11,4 @@ SCHED_FEAT(ASYM_GRAN, 1)
- SCHED_FEAT(LB_BIAS, 1)
- SCHED_FEAT(LB_WAKEUP_UPDATE, 1)
- SCHED_FEAT(ASYM_EFF_LOAD, 1)
-+SCHED_FEAT(WAKEUP_OVERLAP, 1)
---- a/kernel/sched_idletask.c
-+++ b/kernel/sched_idletask.c
-@@ -14,7 +14,7 @@ static int select_task_rq_idle(struct ta
- /*
-  * Idle tasks are unconditionally rescheduled:
-  */
--static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p)
-+static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p, int sync)
- {
- 	resched_task(rq->idle);
- }
-@@ -76,7 +76,7 @@ static void switched_to_idle(struct rq *
- 	if (running)
- 		resched_task(rq->curr);
- 	else
--		check_preempt_curr(rq, p);
-+		check_preempt_curr(rq, p, 0);
- }
- 
- static void prio_changed_idle(struct rq *rq, struct task_struct *p,
-@@ -93,7 +93,7 @@ static void prio_changed_idle(struct rq
- 		if (p->prio > oldprio)
- 			resched_task(rq->curr);
- 	} else
--		check_preempt_curr(rq, p);
-+		check_preempt_curr(rq, p, 0);
- }
- 
- /*
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -784,7 +784,7 @@ static void check_preempt_equal_prio(str
- /*
-  * Preempt the current task with a newly woken task if needed:
-  */
--static void check_preempt_curr_rt(struct rq *rq, struct task_struct *p)
-+static void check_preempt_curr_rt(struct rq *rq, struct task_struct *p, int sync)
- {
- 	if (p->prio < rq->curr->prio) {
- 		resched_task(rq->curr);
-
-
+With this fixed, the test for non-zero tsk->mm is't really needed in
+do_exit(), is it?  I guess it makes sense though - sync_mm_rss() only
+really works for kernel threads by luck..
