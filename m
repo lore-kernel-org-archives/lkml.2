@@ -1,271 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932121Ab0C3XQm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:16:42 -0400
-Received: from kroah.org ([198.145.64.141]:49233 "EHLO coco.kroah.org"
+	id S1756143Ab0C3XK3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:10:29 -0400
+Received: from kroah.org ([198.145.64.141]:48656 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756647Ab0C3XNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:13:00 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:55 2010
-Message-Id: <20100330225855.222839548@linux.site>
+	id S1756027Ab0C3XJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:09:25 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:50:08 2010
+Message-Id: <20100330225008.393055885@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:58:17 -0700
+Date: Tue, 30 Mar 2010 15:49:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "H. Peter Anvin" <hpa@zytor.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Stefan Bader <stefan.bader@canonical.com>
-Subject: [75/89] Split flush_old_exec into two functions
-In-Reply-To: <20100330230520.GA28779@kroah.com>
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Ravikiran Thirumalai <kiran@scalex86.org>,
+       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [43/45] tmpfs: cleanup mpol_parse_str()
+In-Reply-To: <20100330230410.GA28712@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.31-stable review patch.  If anyone has any objections, please let us know.
+2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit 221af7f87b97431e3ee21ce4b0e77d5411cf1549 upstream.
+commit 926f2ae04f183098cf9a30521776fb2759c8afeb upstream.
 
-'flush_old_exec()' is the point of no return when doing an execve(), and
-it is pretty badly misnamed.  It doesn't just flush the old executable
-environment, it also starts up the new one.
+mpol_parse_str() made lots 'err' variable related bug.  Because it is ugly
+and reviewing unfriendly.
 
-Which is very inconvenient for things like setting up the new
-personality, because we want the new personality to affect the starting
-of the new environment, but at the same time we do _not_ want the new
-personality to take effect if flushing the old one fails.
+This patch simplifies it.
 
-As a result, the x86-64 '32-bit' personality is actually done using this
-insane "I'm going to change the ABI, but I haven't done it yet" bit
-(TIF_ABI_PENDING), with SET_PERSONALITY() not actually setting the
-personality, but just the "pending" bit, so that "flush_thread()" can do
-the actual personality magic.
-
-This patch in no way changes any of that insanity, but it does split the
-'flush_old_exec()' function up into a preparatory part that can fail
-(still called flush_old_exec()), and a new part that will actually set
-up the new exec environment (setup_new_exec()).  All callers are changed
-to trivially comply with the new world order.
-
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Ravikiran Thirumalai <kiran@scalex86.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Acked-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 
 ---
- arch/sh/kernel/process_64.c |    2 +-
- arch/x86/ia32/ia32_aout.c   |   10 ++++++----
- fs/binfmt_aout.c            |    1 +
- fs/binfmt_elf.c             |   27 ++-------------------------
- fs/binfmt_elf_fdpic.c       |    3 +++
- fs/binfmt_flat.c            |    1 +
- fs/binfmt_som.c             |    1 +
- fs/exec.c                   |   26 ++++++++++++++++----------
- include/linux/binfmts.h     |    1 +
- include/linux/sched.h       |    2 +-
- 10 files changed, 33 insertions(+), 41 deletions(-)
+ mm/mempolicy.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
---- a/arch/sh/kernel/process_64.c
-+++ b/arch/sh/kernel/process_64.c
-@@ -367,7 +367,7 @@ void exit_thread(void)
- void flush_thread(void)
- {
- 
--	/* Called by fs/exec.c (flush_old_exec) to remove traces of a
-+	/* Called by fs/exec.c (setup_new_exec) to remove traces of a
- 	 * previously running executable. */
- #ifdef CONFIG_SH_FPU
- 	if (last_task_used_math == current) {
---- a/arch/x86/ia32/ia32_aout.c
-+++ b/arch/x86/ia32/ia32_aout.c
-@@ -308,15 +308,17 @@ static int load_aout_binary(struct linux
- 	if (retval)
- 		return retval;
- 
--	regs->cs = __USER32_CS;
--	regs->r8 = regs->r9 = regs->r10 = regs->r11 = regs->r12 =
--		regs->r13 = regs->r14 = regs->r15 = 0;
--
- 	/* OK, This is the point of no return */
- 	set_personality(PER_LINUX);
- 	set_thread_flag(TIF_IA32);
- 	clear_thread_flag(TIF_ABI_PENDING);
- 
-+	setup_new_exec(bprm);
-+
-+	regs->cs = __USER32_CS;
-+	regs->r8 = regs->r9 = regs->r10 = regs->r11 = regs->r12 =
-+		regs->r13 = regs->r14 = regs->r15 = 0;
-+
- 	current->mm->end_code = ex.a_text +
- 		(current->mm->start_code = N_TXTADDR(ex));
- 	current->mm->end_data = ex.a_data +
---- a/fs/binfmt_aout.c
-+++ b/fs/binfmt_aout.c
-@@ -263,6 +263,7 @@ static int load_aout_binary(struct linux
- #else
- 	set_personality(PER_LINUX);
- #endif
-+	setup_new_exec(bprm);
- 
- 	current->mm->end_code = ex.a_text +
- 		(current->mm->start_code = N_TXTADDR(ex));
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -662,27 +662,6 @@ static int load_elf_binary(struct linux_
- 			if (elf_interpreter[elf_ppnt->p_filesz - 1] != '\0')
- 				goto out_free_interp;
- 
--			/*
--			 * The early SET_PERSONALITY here is so that the lookup
--			 * for the interpreter happens in the namespace of the 
--			 * to-be-execed image.  SET_PERSONALITY can select an
--			 * alternate root.
--			 *
--			 * However, SET_PERSONALITY is NOT allowed to switch
--			 * this task into the new images's memory mapping
--			 * policy - that is, TASK_SIZE must still evaluate to
--			 * that which is appropriate to the execing application.
--			 * This is because exit_mmap() needs to have TASK_SIZE
--			 * evaluate to the size of the old image.
--			 *
--			 * So if (say) a 64-bit application is execing a 32-bit
--			 * application it is the architecture's responsibility
--			 * to defer changing the value of TASK_SIZE until the
--			 * switch really is going to happen - do this in
--			 * flush_thread().	- akpm
--			 */
--			SET_PERSONALITY(loc->elf_ex);
--
- 			interpreter = open_exec(elf_interpreter);
- 			retval = PTR_ERR(interpreter);
- 			if (IS_ERR(interpreter))
-@@ -730,9 +709,6 @@ static int load_elf_binary(struct linux_
- 		/* Verify the interpreter has a valid arch */
- 		if (!elf_check_arch(&loc->interp_elf_ex))
- 			goto out_free_dentry;
--	} else {
--		/* Executables without an interpreter also need a personality  */
--		SET_PERSONALITY(loc->elf_ex);
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2029,8 +2029,8 @@ int mpol_parse_str(char *str, struct mem
+ 			char *rest = nodelist;
+ 			while (isdigit(*rest))
+ 				rest++;
+-			if (!*rest)
+-				err = 0;
++			if (*rest)
++				goto out;
+ 		}
+ 		break;
+ 	case MPOL_INTERLEAVE:
+@@ -2039,7 +2039,6 @@ int mpol_parse_str(char *str, struct mem
+ 		 */
+ 		if (!nodelist)
+ 			nodes = node_states[N_HIGH_MEMORY];
+-		err = 0;
+ 		break;
+ 	case MPOL_LOCAL:
+ 		/*
+@@ -2048,7 +2047,6 @@ int mpol_parse_str(char *str, struct mem
+ 		if (nodelist)
+ 			goto out;
+ 		mode = MPOL_PREFERRED;
+-		err = 0;
+ 		break;
+ 	case MPOL_DEFAULT:
+ 		/*
+@@ -2063,7 +2061,6 @@ int mpol_parse_str(char *str, struct mem
+ 		 */
+ 		if (!nodelist)
+ 			goto out;
+-		err = 0;
  	}
  
- 	/* Flush all traces of the currently running executable */
-@@ -752,7 +728,8 @@ static int load_elf_binary(struct linux_
- 
- 	if (!(current->personality & ADDR_NO_RANDOMIZE) && randomize_va_space)
- 		current->flags |= PF_RANDOMIZE;
--	arch_pick_mmap_layout(current->mm);
-+
-+	setup_new_exec(bprm);
- 
- 	/* Do this so that we can load the interpreter, if need be.  We will
- 	   change some of these later */
---- a/fs/binfmt_elf_fdpic.c
-+++ b/fs/binfmt_elf_fdpic.c
-@@ -313,6 +313,9 @@ static int load_elf_fdpic_binary(struct
- 	 * defunct, deceased, etc. after this point we have to exit via
- 	 * error_kill */
- 	set_personality(PER_LINUX_FDPIC);
-+
-+	setup_new_exec(bprm);
-+
- 	set_binfmt(&elf_fdpic_format);
- 
- 	current->mm->start_code = 0;
---- a/fs/binfmt_flat.c
-+++ b/fs/binfmt_flat.c
-@@ -521,6 +521,7 @@ static int load_flat_file(struct linux_b
- 
- 		/* OK, This is the point of no return */
- 		set_personality(PER_LINUX_32BIT);
-+		setup_new_exec(bprm);
+ 	mode_flags = 0;
+@@ -2077,14 +2074,17 @@ int mpol_parse_str(char *str, struct mem
+ 		else if (!strcmp(flags, "relative"))
+ 			mode_flags |= MPOL_F_RELATIVE_NODES;
+ 		else
+-			err = 1;
++			goto out;
  	}
  
- 	/*
---- a/fs/binfmt_som.c
-+++ b/fs/binfmt_som.c
-@@ -227,6 +227,7 @@ load_som_binary(struct linux_binprm * bp
- 	/* OK, This is the point of no return */
- 	current->flags &= ~PF_FORKNOEXEC;
- 	current->personality = PER_HPUX;
-+	setup_new_exec(bprm);
+ 	new = mpol_new(mode, mode_flags, &nodes);
+ 	if (IS_ERR(new))
+-		err = 1;
+-	else if (no_context)
+-		new->w.user_nodemask = nodes;	/* save for contextualization */
++		goto out;
++	err = 0;
++	if (no_context) {
++		/* save for contextualization */
++		new->w.user_nodemask = nodes;
++	}
  
- 	/* Set the task size for HP-UX processes such that
- 	 * the gateway page is outside the address space.
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -928,9 +928,7 @@ void set_task_comm(struct task_struct *t
- 
- int flush_old_exec(struct linux_binprm * bprm)
- {
--	char * name;
--	int i, ch, retval;
--	char tcomm[sizeof(current->comm)];
-+	int retval;
- 
- 	/*
- 	 * Make sure we have a private signal table and that
-@@ -950,6 +948,20 @@ int flush_old_exec(struct linux_binprm *
- 		goto out;
- 
- 	bprm->mm = NULL;		/* We're using it now */
-+	return 0;
-+
-+out:
-+	return retval;
-+}
-+EXPORT_SYMBOL(flush_old_exec);
-+
-+void setup_new_exec(struct linux_binprm * bprm)
-+{
-+	int i, ch;
-+	char * name;
-+	char tcomm[sizeof(current->comm)];
-+
-+	arch_pick_mmap_layout(current->mm);
- 
- 	/* This is the point of no return */
- 	current->sas_ss_sp = current->sas_ss_size = 0;
-@@ -1006,14 +1018,8 @@ int flush_old_exec(struct linux_binprm *
- 			
- 	flush_signal_handlers(current, 0);
- 	flush_old_files(current->files);
--
--	return 0;
--
--out:
--	return retval;
- }
--
--EXPORT_SYMBOL(flush_old_exec);
-+EXPORT_SYMBOL(setup_new_exec);
- 
- /*
-  * Prepare credentials and lock ->cred_guard_mutex.
---- a/include/linux/binfmts.h
-+++ b/include/linux/binfmts.h
-@@ -101,6 +101,7 @@ extern int prepare_binprm(struct linux_b
- extern int __must_check remove_arg_zero(struct linux_binprm *);
- extern int search_binary_handler(struct linux_binprm *,struct pt_regs *);
- extern int flush_old_exec(struct linux_binprm * bprm);
-+extern void setup_new_exec(struct linux_binprm * bprm);
- 
- extern int suid_dumpable;
- #define SUID_DUMP_DISABLE	0	/* No setuid dumping */
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1296,7 +1296,7 @@ struct task_struct {
- 	char comm[TASK_COMM_LEN]; /* executable name excluding path
- 				     - access with [gs]et_task_comm (which lock
- 				       it with task_lock())
--				     - initialized normally by flush_old_exec */
-+				     - initialized normally by setup_new_exec */
- /* file system info */
- 	int link_count, total_link_count;
- #ifdef CONFIG_SYSVIPC
+ out:
+ 	/* Restore string for error message */
 
 
