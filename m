@@ -1,131 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756332Ab0C3XL7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:11:59 -0400
-Received: from kroah.org ([198.145.64.141]:48789 "EHLO coco.kroah.org"
+	id S1757044Ab0C3XeA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:34:00 -0400
+Received: from kroah.org ([198.145.64.141]:46502 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756302Ab0C3XL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:11:56 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:15 2010
-Message-Id: <20100330225814.972178051@linux.site>
+	id S1756871Ab0C3XVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:21:16 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:32 2010
+Message-Id: <20100330224831.989553484@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:13 -0700
+Date: Tue, 30 Mar 2010 15:42:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       David Quan <david.quan@atheros.com>,
-       Stephen Beahm <stephenbeahm@comcast.net>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       Vivek Natarajan <vnatarajan@atheros.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [11/89] ath5k: Fix eeprom checksum check for custom sized eeproms
-In-Reply-To: <20100330230520.GA28779@kroah.com>
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [109/156] mac80211: Retry null data frame for power save
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.31-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Luis R. Rodriguez <lrodriguez@atheros.com>
+From: Vivek Natarajan <vnatarajan@atheros.com>
 
-commit 359207c687cc8f4f9845c8dadd0d6dabad44e584 upstream.
+commit 375177bf35efc08e1bd37bbda4cc0c8cc4db8500 upstream.
 
-Commit 8bf3d79bc401ca417ccf9fc076d3295d1a71dbf5 enabled EEPROM
-checksum checks to avoid bogus bug reports but failed to address
-updating the code to consider devices with custom EEPROM sizes.
-Devices with custom sized EEPROMs have the upper limit size stuffed
-in the EEPROM. Use this as the upper limit instead of the static
-default size. In case of a checksum error also provide back the
-max size and whether or not this was the default size or a custom
-one. If the EEPROM is busted we add a failsafe check to ensure
-we don't loop forever or try to read bogus areas of hardware.
+Even if the null data frame is not acked by the AP, mac80211
+goes into power save. This might lead to loss of frames
+from the AP.
+Prevent this by restarting dynamic_ps_timer when ack is not
+received for null data frames.
 
-This closes bug 14874
-
-http://bugzilla.kernel.org/show_bug.cgi?id=14874
-
-Cc: stable@kernel.org
-Cc: David Quan <david.quan@atheros.com>
-Cc: Stephen Beahm <stephenbeahm@comcast.net>
-Reported-by: Joshua Covington <joshuacov@googlemail.com>
-Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Vivek Natarajan <vnatarajan@atheros.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath5k/eeprom.c |   32 +++++++++++++++++++++++++++++---
- drivers/net/wireless/ath/ath5k/eeprom.h |    8 ++++++++
- 2 files changed, 37 insertions(+), 3 deletions(-)
+ include/net/mac80211.h     |    4 ++++
+ net/mac80211/ieee80211_i.h |    1 +
+ net/mac80211/mlme.c        |   20 +++++++++++++++-----
+ net/mac80211/status.c      |   17 +++++++++++++++--
+ 4 files changed, 35 insertions(+), 7 deletions(-)
 
---- a/drivers/net/wireless/ath/ath5k/eeprom.c
-+++ b/drivers/net/wireless/ath/ath5k/eeprom.c
-@@ -97,7 +97,7 @@ ath5k_eeprom_init_header(struct ath5k_hw
- 	struct ath5k_eeprom_info *ee = &ah->ah_capabilities.cap_eeprom;
- 	int ret;
- 	u16 val;
--	u32 cksum, offset;
-+	u32 cksum, offset, eep_max = AR5K_EEPROM_INFO_MAX;
+--- a/include/net/mac80211.h
++++ b/include/net/mac80211.h
+@@ -926,6 +926,9 @@ enum ieee80211_tkip_key_type {
+  * @IEEE80211_HW_BEACON_FILTER:
+  *	Hardware supports dropping of irrelevant beacon frames to
+  *	avoid waking up cpu.
++ * @IEEE80211_HW_REPORTS_TX_ACK_STATUS:
++ *	Hardware can provide ack status reports of Tx frames to
++ *	the stack.
+  */
+ enum ieee80211_hw_flags {
+ 	IEEE80211_HW_HAS_RATE_CONTROL			= 1<<0,
+@@ -943,6 +946,7 @@ enum ieee80211_hw_flags {
+ 	IEEE80211_HW_SUPPORTS_DYNAMIC_PS		= 1<<12,
+ 	IEEE80211_HW_MFP_CAPABLE			= 1<<13,
+ 	IEEE80211_HW_BEACON_FILTER			= 1<<14,
++	IEEE80211_HW_REPORTS_TX_ACK_STATUS		= 1<<15,
+ };
  
- 	/*
- 	 * Read values from EEPROM and store them in the capability structure
-@@ -116,12 +116,38 @@ ath5k_eeprom_init_header(struct ath5k_hw
- 	 * Validate the checksum of the EEPROM date. There are some
- 	 * devices with invalid EEPROMs.
- 	 */
--	for (cksum = 0, offset = 0; offset < AR5K_EEPROM_INFO_MAX; offset++) {
-+	AR5K_EEPROM_READ(AR5K_EEPROM_SIZE_UPPER, val);
-+	if (val) {
-+		eep_max = (val & AR5K_EEPROM_SIZE_UPPER_MASK) <<
-+			   AR5K_EEPROM_SIZE_ENDLOC_SHIFT;
-+		AR5K_EEPROM_READ(AR5K_EEPROM_SIZE_LOWER, val);
-+		eep_max = (eep_max | val) - AR5K_EEPROM_INFO_BASE;
+ /**
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -264,6 +264,7 @@ enum ieee80211_sta_flags {
+ 	IEEE80211_STA_DISABLE_11N	= BIT(4),
+ 	IEEE80211_STA_CSA_RECEIVED	= BIT(5),
+ 	IEEE80211_STA_MFP_ENABLED	= BIT(6),
++	IEEE80211_STA_NULLFUNC_ACKED	= BIT(7),
+ };
+ 
+ /* flags for MLME request */
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -662,8 +662,11 @@ static void ieee80211_enable_ps(struct i
+ 	} else {
+ 		if (local->hw.flags & IEEE80211_HW_PS_NULLFUNC_STACK)
+ 			ieee80211_send_nullfunc(local, sdata, 1);
+-		conf->flags |= IEEE80211_CONF_PS;
+-		ieee80211_hw_config(local, IEEE80211_CONF_CHANGE_PS);
 +
-+		/*
-+		 * Fail safe check to prevent stupid loops due
-+		 * to busted EEPROMs. XXX: This value is likely too
-+		 * big still, waiting on a better value.
-+		 */
-+		if (eep_max > (3 * AR5K_EEPROM_INFO_MAX)) {
-+			ATH5K_ERR(ah->ah_sc, "Invalid max custom EEPROM size: "
-+				  "%d (0x%04x) max expected: %d (0x%04x)\n",
-+				  eep_max, eep_max,
-+				  3 * AR5K_EEPROM_INFO_MAX,
-+				  3 * AR5K_EEPROM_INFO_MAX);
-+			return -EIO;
++		if (!(local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS)) {
++			conf->flags |= IEEE80211_CONF_PS;
++			ieee80211_hw_config(local, IEEE80211_CONF_CHANGE_PS);
 +		}
+ 	}
+ }
+ 
+@@ -754,6 +757,7 @@ void ieee80211_dynamic_ps_enable_work(st
+ 		container_of(work, struct ieee80211_local,
+ 			     dynamic_ps_enable_work);
+ 	struct ieee80211_sub_if_data *sdata = local->ps_sdata;
++	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
+ 
+ 	/* can only happen when PS was just disabled anyway */
+ 	if (!sdata)
+@@ -762,11 +766,16 @@ void ieee80211_dynamic_ps_enable_work(st
+ 	if (local->hw.conf.flags & IEEE80211_CONF_PS)
+ 		return;
+ 
+-	if (local->hw.flags & IEEE80211_HW_PS_NULLFUNC_STACK)
++	if ((local->hw.flags & IEEE80211_HW_PS_NULLFUNC_STACK) &&
++	    (!(ifmgd->flags & IEEE80211_STA_NULLFUNC_ACKED)))
+ 		ieee80211_send_nullfunc(local, sdata, 1);
+ 
+-	local->hw.conf.flags |= IEEE80211_CONF_PS;
+-	ieee80211_hw_config(local, IEEE80211_CONF_CHANGE_PS);
++	if (!(local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS) ||
++	    (ifmgd->flags & IEEE80211_STA_NULLFUNC_ACKED)) {
++		ifmgd->flags &= ~IEEE80211_STA_NULLFUNC_ACKED;
++		local->hw.conf.flags |= IEEE80211_CONF_PS;
++		ieee80211_hw_config(local, IEEE80211_CONF_CHANGE_PS);
++	}
+ }
+ 
+ void ieee80211_dynamic_ps_timer(unsigned long data)
+@@ -2468,6 +2477,7 @@ int ieee80211_mgd_assoc(struct ieee80211
+ 	list_add(&wk->list, &ifmgd->work_list);
+ 
+ 	ifmgd->flags &= ~IEEE80211_STA_DISABLE_11N;
++	ifmgd->flags &= ~IEEE80211_STA_NULLFUNC_ACKED;
+ 
+ 	for (i = 0; i < req->crypto.n_ciphers_pairwise; i++)
+ 		if (req->crypto.ciphers_pairwise[i] == WLAN_CIPHER_SUITE_WEP40 ||
+--- a/net/mac80211/status.c
++++ b/net/mac80211/status.c
+@@ -165,6 +165,7 @@ void ieee80211_tx_status(struct ieee8021
+ 	rcu_read_lock();
+ 
+ 	sband = local->hw.wiphy->bands[info->band];
++	fc = hdr->frame_control;
+ 
+ 	sta = sta_info_get(local, hdr->addr1);
+ 
+@@ -180,8 +181,6 @@ void ieee80211_tx_status(struct ieee8021
+ 			return;
+ 		}
+ 
+-		fc = hdr->frame_control;
+-
+ 		if ((info->flags & IEEE80211_TX_STAT_AMPDU_NO_BACK) &&
+ 		    (ieee80211_is_data_qos(fc))) {
+ 			u16 tid, ssn;
+@@ -246,6 +245,20 @@ void ieee80211_tx_status(struct ieee8021
+ 			local->dot11FailedCount++;
+ 	}
+ 
++	if (ieee80211_is_nullfunc(fc) && ieee80211_has_pm(fc) &&
++	    (local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS) &&
++	    !(info->flags & IEEE80211_TX_CTL_INJECTED) &&
++	    local->ps_sdata && !(local->scanning)) {
++		if (info->flags & IEEE80211_TX_STAT_ACK) {
++			local->ps_sdata->u.mgd.flags |=
++					IEEE80211_STA_NULLFUNC_ACKED;
++			ieee80211_queue_work(&local->hw,
++					&local->dynamic_ps_enable_work);
++		} else
++			mod_timer(&local->dynamic_ps_timer, jiffies +
++					msecs_to_jiffies(10));
 +	}
 +
-+	for (cksum = 0, offset = 0; offset < eep_max; offset++) {
- 		AR5K_EEPROM_READ(AR5K_EEPROM_INFO(offset), val);
- 		cksum ^= val;
- 	}
- 	if (cksum != AR5K_EEPROM_INFO_CKSUM) {
--		ATH5K_ERR(ah->ah_sc, "Invalid EEPROM checksum 0x%04x\n", cksum);
-+		ATH5K_ERR(ah->ah_sc, "Invalid EEPROM "
-+			  "checksum: 0x%04x eep_max: 0x%04x (%s)\n",
-+			  cksum, eep_max,
-+			  eep_max == AR5K_EEPROM_INFO_MAX ?
-+				"default size" : "custom size");
- 		return -EIO;
- 	}
+ 	/* this was a transmitted frame, but now we want to reuse it */
+ 	skb_orphan(skb);
  
---- a/drivers/net/wireless/ath/ath5k/eeprom.h
-+++ b/drivers/net/wireless/ath/ath5k/eeprom.h
-@@ -34,6 +34,14 @@
- #define AR5K_EEPROM_RFKILL_POLARITY_S	1
- 
- #define AR5K_EEPROM_REG_DOMAIN		0x00bf	/* EEPROM regdom */
-+
-+/* FLASH(EEPROM) Defines for AR531X chips */
-+#define AR5K_EEPROM_SIZE_LOWER		0x1b /* size info -- lower */
-+#define AR5K_EEPROM_SIZE_UPPER		0x1c /* size info -- upper */
-+#define AR5K_EEPROM_SIZE_UPPER_MASK	0xfff0
-+#define AR5K_EEPROM_SIZE_UPPER_SHIFT	4
-+#define AR5K_EEPROM_SIZE_ENDLOC_SHIFT	12
-+
- #define AR5K_EEPROM_CHECKSUM		0x00c0	/* EEPROM checksum */
- #define AR5K_EEPROM_INFO_BASE		0x00c0	/* EEPROM header */
- #define AR5K_EEPROM_INFO_MAX		(0x400 - AR5K_EEPROM_INFO_BASE)
 
 
