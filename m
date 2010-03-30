@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552Ab0CaADw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:03:52 -0400
-Received: from kroah.org ([198.145.64.141]:45308 "EHLO coco.kroah.org"
+	id S932488Ab0CaADH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:03:07 -0400
+Received: from kroah.org ([198.145.64.141]:45349 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932262Ab0C3XSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:35 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:49 2010
-Message-Id: <20100330225648.215351706@linux.site>
+	id S932281Ab0C3XSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:40 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:52 2010
+Message-Id: <20100330225652.216564882@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:55 -0700
+Date: Tue, 30 Mar 2010 15:56:00 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Reinette Chatre <reinette.chatre@intel.com>,
-       Stanislaw Gruszka <sgruszka@redhat.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [077/116] iwlwifi: use dma_alloc_coherent
+       Daniel Taylor <daniel.taylor@wdc.com>,
+       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+       "H. Peter Anvin" <hpa@zytor.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [082/116] fs/partitions/msdos: add support for large disks
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,260 +27,254 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Daniel Taylor <Daniel.Taylor@wdc.com>
 
-commit f36d04abe684f9e2b07c6ebe9f77ae20eb5c1e84 upstream.
+commit 3fbf586cf7f245392142e5407c2a56f1cff979b6 upstream.
 
-Change pci_alloc_consistent() to dma_alloc_coherent() so we can use
-GFP_KERNEL flag.
+In order to use disks larger than 2TiB on Windows XP, it is necessary to
+use 4096-byte logical sectors in an MBR.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
+Although the kernel storage and functions called from msdos.c used
+"sector_t" internally, msdos.c still used u32 variables, which results in
+the ability to handle XP-compatible large disks.
+
+This patch changes the internal variables to "sector_t".
+
+Daniel said: "In the near future, WD will be releasing products that need
+this patch".
+
+[hirofumi@mail.parknet.co.jp: tweaks and fix]
+Signed-off-by: Daniel Taylor <daniel.taylor@wdc.com>
+Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-3945.c     |    8 +++-----
- drivers/net/wireless/iwlwifi/iwl-core.c     |   12 ++++++------
- drivers/net/wireless/iwlwifi/iwl-helpers.h  |    7 ++++---
- drivers/net/wireless/iwlwifi/iwl-rx.c       |   21 +++++++++++----------
- drivers/net/wireless/iwlwifi/iwl-tx.c       |   23 ++++++++++++-----------
- drivers/net/wireless/iwlwifi/iwl3945-base.c |   16 ++++++++--------
- 6 files changed, 44 insertions(+), 43 deletions(-)
+ fs/partitions/msdos.c |   74 ++++++++++++++++++++++++++------------------------
+ 1 file changed, 39 insertions(+), 35 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-3945.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-3945.c
-@@ -2545,11 +2545,9 @@ int iwl3945_hw_set_hw_params(struct iwl_
- 	memset((void *)&priv->hw_params, 0,
- 	       sizeof(struct iwl_hw_params));
+--- a/fs/partitions/msdos.c
++++ b/fs/partitions/msdos.c
+@@ -31,14 +31,17 @@
+  */
+ #include <asm/unaligned.h>
  
--	priv->shared_virt =
--	    pci_alloc_consistent(priv->pci_dev,
--				 sizeof(struct iwl3945_shared),
--				 &priv->shared_phys);
+-#define SYS_IND(p)	(get_unaligned(&p->sys_ind))
+-#define NR_SECTS(p)	({ __le32 __a =	get_unaligned(&p->nr_sects);	\
+-				le32_to_cpu(__a); \
+-			})
 -
-+	priv->shared_virt = dma_alloc_coherent(&priv->pci_dev->dev,
-+					       sizeof(struct iwl3945_shared),
-+					       &priv->shared_phys, GFP_KERNEL);
- 	if (!priv->shared_virt) {
- 		IWL_ERR(priv, "failed to allocate pci memory\n");
- 		mutex_unlock(&priv->mutex);
---- a/drivers/net/wireless/iwlwifi/iwl-core.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-core.c
-@@ -1598,9 +1598,9 @@ EXPORT_SYMBOL(iwl_uninit_drv);
- void iwl_free_isr_ict(struct iwl_priv *priv)
- {
- 	if (priv->ict_tbl_vir) {
--		pci_free_consistent(priv->pci_dev, (sizeof(u32) * ICT_COUNT) +
--					PAGE_SIZE, priv->ict_tbl_vir,
--					priv->ict_tbl_dma);
-+		dma_free_coherent(&priv->pci_dev->dev,
-+				  (sizeof(u32) * ICT_COUNT) + PAGE_SIZE,
-+				  priv->ict_tbl_vir, priv->ict_tbl_dma);
- 		priv->ict_tbl_vir = NULL;
- 	}
- }
-@@ -1616,9 +1616,9 @@ int iwl_alloc_isr_ict(struct iwl_priv *p
- 	if (priv->cfg->use_isr_legacy)
- 		return 0;
- 	/* allocate shrared data table */
--	priv->ict_tbl_vir = pci_alloc_consistent(priv->pci_dev, (sizeof(u32) *
--						  ICT_COUNT) + PAGE_SIZE,
--						  &priv->ict_tbl_dma);
-+	priv->ict_tbl_vir = dma_alloc_coherent(&priv->pci_dev->dev,
-+					(sizeof(u32) * ICT_COUNT) + PAGE_SIZE,
-+					&priv->ict_tbl_dma, GFP_KERNEL);
- 	if (!priv->ict_tbl_vir)
- 		return -ENOMEM;
+-#define START_SECT(p)	({ __le32 __a =	get_unaligned(&p->start_sect);	\
+-				le32_to_cpu(__a); \
+-			})
++#define SYS_IND(p)	get_unaligned(&p->sys_ind)
++
++static inline sector_t nr_sects(struct partition *p)
++{
++	return (sector_t)get_unaligned_le32(&p->nr_sects);
++}
++
++static inline sector_t start_sect(struct partition *p)
++{
++	return (sector_t)get_unaligned_le32(&p->start_sect);
++}
  
---- a/drivers/net/wireless/iwlwifi/iwl-helpers.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-helpers.h
-@@ -80,8 +80,8 @@ static inline void iwl_free_fw_desc(stru
- 				    struct fw_desc *desc)
+ static inline int is_extended_partition(struct partition *p)
  {
- 	if (desc->v_addr)
--		pci_free_consistent(pci_dev, desc->len,
--				    desc->v_addr, desc->p_addr);
-+		dma_free_coherent(&pci_dev->dev, desc->len,
-+				  desc->v_addr, desc->p_addr);
- 	desc->v_addr = NULL;
- 	desc->len = 0;
- }
-@@ -89,7 +89,8 @@ static inline void iwl_free_fw_desc(stru
- static inline int iwl_alloc_fw_desc(struct pci_dev *pci_dev,
- 				    struct fw_desc *desc)
- {
--	desc->v_addr = pci_alloc_consistent(pci_dev, desc->len, &desc->p_addr);
-+	desc->v_addr = dma_alloc_coherent(&pci_dev->dev, desc->len,
-+					  &desc->p_addr, GFP_KERNEL);
- 	return (desc->v_addr != NULL) ? 0 : -ENOMEM;
- }
+@@ -104,13 +107,13 @@ static int aix_magic_present(unsigned ch
  
---- a/drivers/net/wireless/iwlwifi/iwl-rx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-rx.c
-@@ -345,10 +345,10 @@ void iwl_rx_queue_free(struct iwl_priv *
- 		}
- 	}
- 
--	pci_free_consistent(priv->pci_dev, 4 * RX_QUEUE_SIZE, rxq->bd,
--			    rxq->dma_addr);
--	pci_free_consistent(priv->pci_dev, sizeof(struct iwl_rb_status),
--			    rxq->rb_stts, rxq->rb_stts_dma);
-+	dma_free_coherent(&priv->pci_dev->dev, 4 * RX_QUEUE_SIZE, rxq->bd,
-+			  rxq->dma_addr);
-+	dma_free_coherent(&priv->pci_dev->dev, sizeof(struct iwl_rb_status),
-+			  rxq->rb_stts, rxq->rb_stts_dma);
- 	rxq->bd = NULL;
- 	rxq->rb_stts  = NULL;
- }
-@@ -357,7 +357,7 @@ EXPORT_SYMBOL(iwl_rx_queue_free);
- int iwl_rx_queue_alloc(struct iwl_priv *priv)
+ static void
+ parse_extended(struct parsed_partitions *state, struct block_device *bdev,
+-			u32 first_sector, u32 first_size)
++			sector_t first_sector, sector_t first_size)
  {
- 	struct iwl_rx_queue *rxq = &priv->rxq;
--	struct pci_dev *dev = priv->pci_dev;
-+	struct device *dev = &priv->pci_dev->dev;
+ 	struct partition *p;
+ 	Sector sect;
+ 	unsigned char *data;
+-	u32 this_sector, this_size;
+-	int sector_size = bdev_logical_block_size(bdev) / 512;
++	sector_t this_sector, this_size;
++	sector_t sector_size = bdev_logical_block_size(bdev) / 512;
+ 	int loopct = 0;		/* number of links followed
+ 				   without finding a data partition */
  	int i;
+@@ -145,14 +148,14 @@ parse_extended(struct parsed_partitions
+ 		 * First process the data partition(s)
+ 		 */
+ 		for (i=0; i<4; i++, p++) {
+-			u32 offs, size, next;
+-			if (!NR_SECTS(p) || is_extended_partition(p))
++			sector_t offs, size, next;
++			if (!nr_sects(p) || is_extended_partition(p))
+ 				continue;
  
- 	spin_lock_init(&rxq->lock);
-@@ -365,12 +365,13 @@ int iwl_rx_queue_alloc(struct iwl_priv *
- 	INIT_LIST_HEAD(&rxq->rx_used);
+ 			/* Check the 3rd and 4th entries -
+ 			   these sometimes contain random garbage */
+-			offs = START_SECT(p)*sector_size;
+-			size = NR_SECTS(p)*sector_size;
++			offs = start_sect(p)*sector_size;
++			size = nr_sects(p)*sector_size;
+ 			next = this_sector + offs;
+ 			if (i >= 2) {
+ 				if (offs + size > this_size)
+@@ -179,13 +182,13 @@ parse_extended(struct parsed_partitions
+ 		 */
+ 		p -= 4;
+ 		for (i=0; i<4; i++, p++)
+-			if (NR_SECTS(p) && is_extended_partition(p))
++			if (nr_sects(p) && is_extended_partition(p))
+ 				break;
+ 		if (i == 4)
+ 			goto done;	 /* nothing left to do */
  
- 	/* Alloc the circular buffer of Read Buffer Descriptors (RBDs) */
--	rxq->bd = pci_alloc_consistent(dev, 4 * RX_QUEUE_SIZE, &rxq->dma_addr);
-+	rxq->bd = dma_alloc_coherent(dev, 4 * RX_QUEUE_SIZE, &rxq->dma_addr,
-+				     GFP_KERNEL);
- 	if (!rxq->bd)
- 		goto err_bd;
- 
--	rxq->rb_stts = pci_alloc_consistent(dev, sizeof(struct iwl_rb_status),
--					&rxq->rb_stts_dma);
-+	rxq->rb_stts = dma_alloc_coherent(dev, sizeof(struct iwl_rb_status),
-+					  &rxq->rb_stts_dma, GFP_KERNEL);
- 	if (!rxq->rb_stts)
- 		goto err_rb;
- 
-@@ -387,8 +388,8 @@ int iwl_rx_queue_alloc(struct iwl_priv *
- 	return 0;
- 
- err_rb:
--	pci_free_consistent(priv->pci_dev, 4 * RX_QUEUE_SIZE, rxq->bd,
--			    rxq->dma_addr);
-+	dma_free_coherent(&priv->pci_dev->dev, 4 * RX_QUEUE_SIZE, rxq->bd,
-+			  rxq->dma_addr);
- err_bd:
- 	return -ENOMEM;
- }
---- a/drivers/net/wireless/iwlwifi/iwl-tx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
-@@ -60,7 +60,8 @@ static const u16 default_tid_to_tx_fifo[
- static inline int iwl_alloc_dma_ptr(struct iwl_priv *priv,
- 				    struct iwl_dma_ptr *ptr, size_t size)
- {
--	ptr->addr = pci_alloc_consistent(priv->pci_dev, size, &ptr->dma);
-+	ptr->addr = dma_alloc_coherent(&priv->pci_dev->dev, size, &ptr->dma,
-+				       GFP_KERNEL);
- 	if (!ptr->addr)
- 		return -ENOMEM;
- 	ptr->size = size;
-@@ -73,7 +74,7 @@ static inline void iwl_free_dma_ptr(stru
- 	if (unlikely(!ptr->addr))
- 		return;
- 
--	pci_free_consistent(priv->pci_dev, ptr->size, ptr->addr, ptr->dma);
-+	dma_free_coherent(&priv->pci_dev->dev, ptr->size, ptr->addr, ptr->dma);
- 	memset(ptr, 0, sizeof(*ptr));
- }
- 
-@@ -145,7 +146,7 @@ void iwl_tx_queue_free(struct iwl_priv *
- {
- 	struct iwl_tx_queue *txq = &priv->txq[txq_id];
- 	struct iwl_queue *q = &txq->q;
--	struct pci_dev *dev = priv->pci_dev;
-+	struct device *dev = &priv->pci_dev->dev;
- 	int i, len;
- 
- 	if (q->n_bd == 0)
-@@ -164,8 +165,8 @@ void iwl_tx_queue_free(struct iwl_priv *
- 
- 	/* De-alloc circular buffer of TFDs */
- 	if (txq->q.n_bd)
--		pci_free_consistent(dev, priv->hw_params.tfd_size *
--				    txq->q.n_bd, txq->tfds, txq->q.dma_addr);
-+		dma_free_coherent(dev, priv->hw_params.tfd_size *
-+				  txq->q.n_bd, txq->tfds, txq->q.dma_addr);
- 
- 	/* De-alloc array of per-TFD driver data */
- 	kfree(txq->txb);
-@@ -194,7 +195,7 @@ void iwl_cmd_queue_free(struct iwl_priv
- {
- 	struct iwl_tx_queue *txq = &priv->txq[IWL_CMD_QUEUE_NUM];
- 	struct iwl_queue *q = &txq->q;
--	struct pci_dev *dev = priv->pci_dev;
-+	struct device *dev = &priv->pci_dev->dev;
- 	int i, len;
- 
- 	if (q->n_bd == 0)
-@@ -209,8 +210,8 @@ void iwl_cmd_queue_free(struct iwl_priv
- 
- 	/* De-alloc circular buffer of TFDs */
- 	if (txq->q.n_bd)
--		pci_free_consistent(dev, priv->hw_params.tfd_size *
--				    txq->q.n_bd, txq->tfds, txq->q.dma_addr);
-+		dma_free_coherent(dev, priv->hw_params.tfd_size * txq->q.n_bd,
-+				  txq->tfds, txq->q.dma_addr);
- 
- 	/* deallocate arrays */
- 	kfree(txq->cmd);
-@@ -301,7 +302,7 @@ static int iwl_queue_init(struct iwl_pri
- static int iwl_tx_queue_alloc(struct iwl_priv *priv,
- 			      struct iwl_tx_queue *txq, u32 id)
- {
--	struct pci_dev *dev = priv->pci_dev;
-+	struct device *dev = &priv->pci_dev->dev;
- 	size_t tfd_sz = priv->hw_params.tfd_size * TFD_QUEUE_SIZE_MAX;
- 
- 	/* Driver private data, only for Tx (not command) queues,
-@@ -320,8 +321,8 @@ static int iwl_tx_queue_alloc(struct iwl
- 
- 	/* Circular buffer of transmit frame descriptors (TFDs),
- 	 * shared with device */
--	txq->tfds = pci_alloc_consistent(dev, tfd_sz, &txq->q.dma_addr);
--
-+	txq->tfds = dma_alloc_coherent(dev, tfd_sz, &txq->q.dma_addr,
-+				       GFP_KERNEL);
- 	if (!txq->tfds) {
- 		IWL_ERR(priv, "pci_alloc_consistent(%zd) failed\n", tfd_sz);
- 		goto error;
---- a/drivers/net/wireless/iwlwifi/iwl3945-base.c
-+++ b/drivers/net/wireless/iwlwifi/iwl3945-base.c
-@@ -356,10 +356,10 @@ static int iwl3945_send_beacon_cmd(struc
- static void iwl3945_unset_hw_params(struct iwl_priv *priv)
- {
- 	if (priv->shared_virt)
--		pci_free_consistent(priv->pci_dev,
--				    sizeof(struct iwl3945_shared),
--				    priv->shared_virt,
--				    priv->shared_phys);
-+		dma_free_coherent(&priv->pci_dev->dev,
-+				  sizeof(struct iwl3945_shared),
-+				  priv->shared_virt,
-+				  priv->shared_phys);
- }
- 
- static void iwl3945_build_tx_cmd_hwcrypto(struct iwl_priv *priv,
-@@ -1272,10 +1272,10 @@ static void iwl3945_rx_queue_free(struct
- 		}
+-		this_sector = first_sector + START_SECT(p) * sector_size;
+-		this_size = NR_SECTS(p) * sector_size;
++		this_sector = first_sector + start_sect(p) * sector_size;
++		this_size = nr_sects(p) * sector_size;
+ 		put_dev_sector(sect);
  	}
+ done:
+@@ -197,7 +200,7 @@ done:
  
--	pci_free_consistent(priv->pci_dev, 4 * RX_QUEUE_SIZE, rxq->bd,
--			    rxq->dma_addr);
--	pci_free_consistent(priv->pci_dev, sizeof(struct iwl_rb_status),
--			    rxq->rb_stts, rxq->rb_stts_dma);
-+	dma_free_coherent(&priv->pci_dev->dev, 4 * RX_QUEUE_SIZE, rxq->bd,
-+			  rxq->dma_addr);
-+	dma_free_coherent(&priv->pci_dev->dev, sizeof(struct iwl_rb_status),
-+			  rxq->rb_stts, rxq->rb_stts_dma);
- 	rxq->bd = NULL;
- 	rxq->rb_stts  = NULL;
- }
+ static void
+ parse_solaris_x86(struct parsed_partitions *state, struct block_device *bdev,
+-			u32 offset, u32 size, int origin)
++			sector_t offset, sector_t size, int origin)
+ {
+ #ifdef CONFIG_SOLARIS_X86_PARTITION
+ 	Sector sect;
+@@ -244,7 +247,7 @@ parse_solaris_x86(struct parsed_partitio
+  */
+ static void
+ parse_bsd(struct parsed_partitions *state, struct block_device *bdev,
+-		u32 offset, u32 size, int origin, char *flavour,
++		sector_t offset, sector_t size, int origin, char *flavour,
+ 		int max_partitions)
+ {
+ 	Sector sect;
+@@ -263,7 +266,7 @@ parse_bsd(struct parsed_partitions *stat
+ 	if (le16_to_cpu(l->d_npartitions) < max_partitions)
+ 		max_partitions = le16_to_cpu(l->d_npartitions);
+ 	for (p = l->d_partitions; p - l->d_partitions < max_partitions; p++) {
+-		u32 bsd_start, bsd_size;
++		sector_t bsd_start, bsd_size;
+ 
+ 		if (state->next == state->limit)
+ 			break;
+@@ -290,7 +293,7 @@ parse_bsd(struct parsed_partitions *stat
+ 
+ static void
+ parse_freebsd(struct parsed_partitions *state, struct block_device *bdev,
+-		u32 offset, u32 size, int origin)
++		sector_t offset, sector_t size, int origin)
+ {
+ #ifdef CONFIG_BSD_DISKLABEL
+ 	parse_bsd(state, bdev, offset, size, origin,
+@@ -300,7 +303,7 @@ parse_freebsd(struct parsed_partitions *
+ 
+ static void
+ parse_netbsd(struct parsed_partitions *state, struct block_device *bdev,
+-		u32 offset, u32 size, int origin)
++		sector_t offset, sector_t size, int origin)
+ {
+ #ifdef CONFIG_BSD_DISKLABEL
+ 	parse_bsd(state, bdev, offset, size, origin,
+@@ -310,7 +313,7 @@ parse_netbsd(struct parsed_partitions *s
+ 
+ static void
+ parse_openbsd(struct parsed_partitions *state, struct block_device *bdev,
+-		u32 offset, u32 size, int origin)
++		sector_t offset, sector_t size, int origin)
+ {
+ #ifdef CONFIG_BSD_DISKLABEL
+ 	parse_bsd(state, bdev, offset, size, origin,
+@@ -324,7 +327,7 @@ parse_openbsd(struct parsed_partitions *
+  */
+ static void
+ parse_unixware(struct parsed_partitions *state, struct block_device *bdev,
+-		u32 offset, u32 size, int origin)
++		sector_t offset, sector_t size, int origin)
+ {
+ #ifdef CONFIG_UNIXWARE_DISKLABEL
+ 	Sector sect;
+@@ -348,7 +351,8 @@ parse_unixware(struct parsed_partitions
+ 
+ 		if (p->s_label != UNIXWARE_FS_UNUSED)
+ 			put_partition(state, state->next++,
+-						START_SECT(p), NR_SECTS(p));
++				      le32_to_cpu(p->start_sect),
++				      le32_to_cpu(p->nr_sects));
+ 		p++;
+ 	}
+ 	put_dev_sector(sect);
+@@ -363,7 +367,7 @@ parse_unixware(struct parsed_partitions
+  */
+ static void
+ parse_minix(struct parsed_partitions *state, struct block_device *bdev,
+-		u32 offset, u32 size, int origin)
++		sector_t offset, sector_t size, int origin)
+ {
+ #ifdef CONFIG_MINIX_SUBPARTITION
+ 	Sector sect;
+@@ -390,7 +394,7 @@ parse_minix(struct parsed_partitions *st
+ 			/* add each partition in use */
+ 			if (SYS_IND(p) == MINIX_PARTITION)
+ 				put_partition(state, state->next++,
+-					      START_SECT(p), NR_SECTS(p));
++					      start_sect(p), nr_sects(p));
+ 		}
+ 		printk(" >\n");
+ 	}
+@@ -401,7 +405,7 @@ parse_minix(struct parsed_partitions *st
+ static struct {
+ 	unsigned char id;
+ 	void (*parse)(struct parsed_partitions *, struct block_device *,
+-			u32, u32, int);
++			sector_t, sector_t, int);
+ } subtypes[] = {
+ 	{FREEBSD_PARTITION, parse_freebsd},
+ 	{NETBSD_PARTITION, parse_netbsd},
+@@ -415,7 +419,7 @@ static struct {
+  
+ int msdos_partition(struct parsed_partitions *state, struct block_device *bdev)
+ {
+-	int sector_size = bdev_logical_block_size(bdev) / 512;
++	sector_t sector_size = bdev_logical_block_size(bdev) / 512;
+ 	Sector sect;
+ 	unsigned char *data;
+ 	struct partition *p;
+@@ -483,8 +487,8 @@ int msdos_partition(struct parsed_partit
+ 
+ 	state->next = 5;
+ 	for (slot = 1 ; slot <= 4 ; slot++, p++) {
+-		u32 start = START_SECT(p)*sector_size;
+-		u32 size = NR_SECTS(p)*sector_size;
++		sector_t start = start_sect(p)*sector_size;
++		sector_t size = nr_sects(p)*sector_size;
+ 		if (!size)
+ 			continue;
+ 		if (is_extended_partition(p)) {
+@@ -513,7 +517,7 @@ int msdos_partition(struct parsed_partit
+ 		unsigned char id = SYS_IND(p);
+ 		int n;
+ 
+-		if (!NR_SECTS(p))
++		if (!nr_sects(p))
+ 			continue;
+ 
+ 		for (n = 0; subtypes[n].parse && id != subtypes[n].id; n++)
+@@ -521,8 +525,8 @@ int msdos_partition(struct parsed_partit
+ 
+ 		if (!subtypes[n].parse)
+ 			continue;
+-		subtypes[n].parse(state, bdev, START_SECT(p)*sector_size,
+-						NR_SECTS(p)*sector_size, slot);
++		subtypes[n].parse(state, bdev, start_sect(p)*sector_size,
++						nr_sects(p)*sector_size, slot);
+ 	}
+ 	put_dev_sector(sect);
+ 	return 1;
 
 
