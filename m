@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757624Ab0CaAZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:25:56 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:57689 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757641Ab0CaAZw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 20:25:52 -0400
-X-Sasl-enc: Ju5KNaOoy6AVADSpkHfhoqRsTJHILpLgLfyXPf1D6LbM 1269995151
-Date: Tue, 30 Mar 2010 21:25:49 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Thomas Pilarski <Thomas.Pilarski@arcor.de>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Jens Axboe <jens.axboe@oracle.com>
-Subject: Re: [Bug 12309] Large I/O operations result in slow performance
- and high iowait times
-Message-ID: <20100331002549.GB9925@khazad-dum.debian.net>
-References: <bug-12309-14043@http.bugzilla.kernel.org/>
- <201003162357.o2GNvkNF024562@demeter.kernel.org>
- <1269935094.2481.23.camel@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269935094.2481.23.camel@localhost>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757610Ab0CaAZY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:25:24 -0400
+Received: from kroah.org ([198.145.64.141]:48990 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756457Ab0C3XMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:34 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:37 2010
+Message-Id: <20100330225836.830303692@linux.site>
+User-Agent: quilt/0.47-14.9
+Date: Tue, 30 Mar 2010 15:57:48 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Al Viro <viro@ZenIV.linux.org.uk>, Tavis Ormandy <taviso@google.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [46/89] fnctl: f_modown should call write_lock_irqsave/restore
+In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Mar 2010, Thomas Pilarski wrote:
-> This problem is enormous increased, while the ultra bay disc is acceded
-> with udma2 instead of udma6 (caused by another bug), 
+2.6.31-stable review patch.  If anyone has any objections, please let us know.
 
-There is a thinkpad BIOS bug that could cause that: it will not signal a
-80-wire cable when you hot-add an HD on a PATA ultrabay.  Exists at least on
-all T4x, including the T43.
+------------------
 
-The fix is to whitelist these thinkpads for high-speed UDMA even on 40-wire
-cables.  The workaround is to add a kernel command line parameter (I forget
-which).
+From: Greg Kroah-Hartman <gregkh@suse.de>
 
-Does that match your udma2 instead of udma6 problem?
+commit b04da8bfdfbbd79544cab2fadfdc12e87eb01600 upstream.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Commit 703625118069f9f8960d356676662d3db5a9d116 exposed that f_modown()
+should call write_lock_irqsave instead of just write_lock_irq so that
+because a caller could have a spinlock held and it would not be good to
+renable interrupts.
+
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Tavis Ormandy <taviso@google.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+---
+ fs/fcntl.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/fs/fcntl.c
++++ b/fs/fcntl.c
+@@ -199,7 +199,9 @@ static int setfl(int fd, struct file * f
+ static void f_modown(struct file *filp, struct pid *pid, enum pid_type type,
+                      int force)
+ {
+-	write_lock_irq(&filp->f_owner.lock);
++	unsigned long flags;
++
++	write_lock_irqsave(&filp->f_owner.lock, flags);
+ 	if (force || !filp->f_owner.pid) {
+ 		put_pid(filp->f_owner.pid);
+ 		filp->f_owner.pid = get_pid(pid);
+@@ -211,7 +213,7 @@ static void f_modown(struct file *filp,
+ 			filp->f_owner.euid = cred->euid;
+ 		}
+ 	}
+-	write_unlock_irq(&filp->f_owner.lock);
++	write_unlock_irqrestore(&filp->f_owner.lock, flags);
+ }
+ 
+ int __f_setown(struct file *filp, struct pid *pid, enum pid_type type,
+
+
