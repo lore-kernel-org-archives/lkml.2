@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab0C3XLV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:11:21 -0400
-Received: from kroah.org ([198.145.64.141]:48616 "EHLO coco.kroah.org"
+	id S1756602Ab0C3XMs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:12:48 -0400
+Received: from kroah.org ([198.145.64.141]:49106 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755984Ab0C3XJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:09:22 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:50:06 2010
-Message-Id: <20100330225005.816053728@linux.site>
+	id S1756492Ab0C3XMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:44 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:44 2010
+Message-Id: <20100330225843.836091693@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:48:59 -0700
+Date: Tue, 30 Mar 2010 15:57:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Ravikiran Thirumalai <kiran@scalex86.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Jean Delvare <khali@linux-fr.org>, Jean Delvare <jdelvare@suse.de>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [39/45] tmpfs: fix oops on mounts with mpol=default
-In-Reply-To: <20100330230410.GA28712@kroah.com>
+Subject: [57/89] hwmon: (w83781d) Request I/O ports individually for probing
+In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.27-stable review patch.  If anyone has any objections, please let us know.
+2.6.31-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Ravikiran G Thirumalai <kiran@scalex86.org>
+commit b0bcdd3cd0adb85a7686b396ba50493871b1135c upstream.
 
-commit 413b43deab8377819aba1dbad2abf0c15d59b491 upstream.
+Different motherboards have different PNP declarations for
+W83781D/W83782D chips. Some declare the whole range of I/O ports (8
+ports), some declare only the useful ports (2 ports at offset 5) and
+some declare fancy ranges, for example 4 ports at offset 4. To
+properly handle all cases, request all ports individually for probing.
+After we have determined that we really have a W83781D or W83782D
+chip, the useful port range will be requested again, as a single
+block.
 
-Fix an 'oops' when a tmpfs mount point is mounted with the mpol=default
-mempolicy.
+I did not see a board which needs this yet, but I know of one for lm78
+driver and I'd like to keep the logic of these two drivers in sync.
 
-Upon remounting a tmpfs mount point with 'mpol=default' option, the mount
-code crashed with a null pointer dereference.  The initial problem report
-was on 2.6.27, but the problem exists in mainline 2.6.34-rc as well.  On
-examining the code, we see that mpol_new returns NULL if default mempolicy
-was requested.  This 'NULL' mempolicy is accessed to store the node mask
-resulting in oops.
-
-The following patch fixes it.
-
-Signed-off-by: Ravikiran Thirumalai <kiran@scalex86.org>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Jean Delvare <jdelvare@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- mm/mempolicy.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/hwmon/w83781d.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2049,10 +2049,15 @@ int mpol_parse_str(char *str, struct mem
- 			goto out;
- 		mode = MPOL_PREFERRED;
- 		break;
--
-+	case MPOL_DEFAULT:
-+		/*
-+		 * Insist on a empty nodelist
-+		 */
-+		if (!nodelist)
-+			err = 0;
-+		goto out;
- 	/*
- 	 * case MPOL_BIND:    mpol_new() enforces non-empty nodemask.
--	 * case MPOL_DEFAULT: mpol_new() enforces empty nodemask, ignores flags.
- 	 */
+--- a/drivers/hwmon/w83781d.c
++++ b/drivers/hwmon/w83781d.c
+@@ -1818,17 +1818,17 @@ static int __init
+ w83781d_isa_found(unsigned short address)
+ {
+ 	int val, save, found = 0;
++	int port;
+ 
+-	/* We have to request the region in two parts because some
+-	   boards declare base+4 to base+7 as a PNP device */
+-	if (!request_region(address, 4, "w83781d")) {
+-		pr_debug("w83781d: Failed to request low part of region\n");
+-		return 0;
+-	}
+-	if (!request_region(address + 4, 4, "w83781d")) {
+-		pr_debug("w83781d: Failed to request high part of region\n");
+-		release_region(address, 4);
+-		return 0;
++	/* Some boards declare base+0 to base+7 as a PNP device, some base+4
++	 * to base+7 and some base+5 to base+6. So we better request each port
++	 * individually for the probing phase. */
++	for (port = address; port < address + W83781D_EXTENT; port++) {
++		if (!request_region(port, 1, "w83781d")) {
++			pr_debug("w83781d: Failed to request port 0x%x\n",
++				 port);
++			goto release;
++		}
  	}
+ 
+ #define REALLY_SLOW_IO
+@@ -1902,8 +1902,8 @@ w83781d_isa_found(unsigned short address
+ 			val == 0x30 ? "W83782D" : "W83781D", (int)address);
+ 
+  release:
+-	release_region(address + 4, 4);
+-	release_region(address, 4);
++	for (port--; port >= address; port--)
++		release_region(port, 1);
+ 	return found;
+ }
  
 
 
