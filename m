@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756548Ab0C3LeA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 07:34:00 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:54293 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754583Ab0C3Ld5 (ORCPT
+	id S1756511Ab0C3LfL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 07:35:11 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:44520 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754513Ab0C3LfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 07:33:57 -0400
+	Tue, 30 Mar 2010 07:35:08 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,91 +16,106 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 11/29] lmb: Add find_memory_core_early()
-Date: Tue, 30 Mar 2010 04:19:45 -0700
-Message-Id: <1269948003-17221-12-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 13/29] lmb: Add lmb_free_memory_size()
+Date: Tue, 30 Mar 2010 04:19:47 -0700
+Message-Id: <1269948003-17221-14-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269948003-17221-1-git-send-email-yinghai@kernel.org>
 References: <1269948003-17221-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4BB1DEC5.025C,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090202.4BB1DECB.000E,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to node range in early_node_map[] with __lmb_find_area
-to find free range.
+It will return free memory size in specified range.
 
-Will be used by lmb_find_area_node()
+We can not use memory_size - reserved_size here, because some reserved area
+may not be in the scope of lmb.memory.region.
 
-lmb_find_area_node will be used to find right buffer for NODE_DATA
+Use lmb.memory.region subtracting lmb.reserved.region to get free range array.
+then count size of all free ranges.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/mm.h |    2 ++
- mm/page_alloc.c    |   29 +++++++++++++++++++++++++++++
- 2 files changed, 31 insertions(+), 0 deletions(-)
+ include/linux/lmb.h |    1 +
+ mm/lmb.c            |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 52 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index c8442b6..8070bd8 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1159,6 +1159,8 @@ extern void free_bootmem_with_active_regions(int nid,
- 						unsigned long max_low_pfn);
- int add_from_early_node_map(struct range *range, int az,
- 				   int nr_range, int nid);
-+u64 __init find_memory_core_early(int nid, u64 size, u64 align,
-+					u64 goal, u64 limit);
- void *__alloc_memory_core_early(int nodeid, u64 size, u64 align,
- 				 u64 goal, u64 limit);
- typedef int (*work_fn_t)(unsigned long, unsigned long, void *);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index d03c946..12a74ad 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -21,6 +21,7 @@
- #include <linux/pagemap.h>
- #include <linux/jiffies.h>
- #include <linux/bootmem.h>
-+#include <linux/lmb.h>
- #include <linux/compiler.h>
- #include <linux/kernel.h>
- #include <linux/kmemcheck.h>
-@@ -3393,6 +3394,34 @@ void __init free_bootmem_with_active_regions(int nid,
- 	}
- }
+diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+index 4078825..b874dc0 100644
+--- a/include/linux/lmb.h
++++ b/include/linux/lmb.h
+@@ -100,6 +100,7 @@ int get_free_all_memory_range(struct range **rangep, int nodeid);
+ void lmb_register_active_regions(int nid, unsigned long start_pfn,
+ 					 unsigned long last_pfn);
+ u64 lmb_hole_size(u64 start, u64 end);
++u64 lmb_free_memory_size(u64 addr, u64 limit);
  
-+#ifdef CONFIG_HAVE_LMB
-+u64 __init find_memory_core_early(int nid, u64 size, u64 align,
-+					u64 goal, u64 limit)
+ #include <asm/lmb.h>
+ 
+diff --git a/mm/lmb.c b/mm/lmb.c
+index 97e582d..1a686ff 100644
+--- a/mm/lmb.c
++++ b/mm/lmb.c
+@@ -747,6 +747,57 @@ void __init lmb_to_bootmem(u64 start, u64 end)
+ }
+ #endif
+ 
++u64 __init lmb_free_memory_size(u64 addr, u64 limit)
 +{
-+	int i;
++	int i, count;
++	struct range *range;
++	int nr_range;
++	u64 final_start, final_end;
++	u64 free_size;
 +
-+	/* Need to go over early_node_map to find out good range for node */
-+	for_each_active_range_index_in_nid(i, nid) {
-+		u64 addr;
-+		u64 ei_start, ei_last;
++	count = lmb.reserved.cnt * 2;
 +
-+		ei_last = early_node_map[i].end_pfn;
-+		ei_last <<= PAGE_SHIFT;
-+		ei_start = early_node_map[i].start_pfn;
-+		ei_start <<= PAGE_SHIFT;
-+		addr = __lmb_find_area(ei_start, ei_last,
-+					 goal, limit, size, align);
++	range = find_range_array(count);
++	nr_range = 0;
 +
-+		if (addr == -1ULL)
++	addr = PFN_UP(addr);
++	limit = PFN_DOWN(limit);
++
++	for (i = 0; i < lmb.memory.cnt; i++) {
++		struct lmb_property *r = &lmb.memory.region[i];
++
++		final_start = PFN_UP(r->base);
++		final_end = PFN_DOWN(r->base + r->size);
++		if (final_start >= final_end)
++			continue;
++		if (final_start >= limit || final_end <= addr)
 +			continue;
 +
-+		return addr;
++		nr_range = add_range(range, count, nr_range, final_start, final_end);
 +	}
++	subtract_range(range, count, 0, addr);
++	subtract_range(range, count, limit, -1ULL);
++	for (i = 0; i < lmb.reserved.cnt; i++) {
++		struct lmb_property *r = &lmb.reserved.region[i];
 +
-+	return -1ULL;
++		final_start = PFN_DOWN(r->base);
++		final_end = PFN_UP(r->base + r->size);
++		if (final_start >= final_end)
++			continue;
++		if (final_start >= limit || final_end <= addr)
++			continue;
++
++		subtract_range(range, count, final_start, final_end);
++	}
++	nr_range = clean_sort_range(range, count);
++
++	free_size = 0;
++	for (i = 0; i < nr_range; i++)
++		free_size += range[i].end - range[i].start;
++
++	return free_size << PAGE_SHIFT;
 +}
-+#endif
 +
- int __init add_from_early_node_map(struct range *range, int az,
- 				   int nr_range, int nid)
+ u64 __init __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
+ 				 u64 size, u64 align)
  {
 -- 
 1.6.4.2
