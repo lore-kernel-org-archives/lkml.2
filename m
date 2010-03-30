@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113Ab0C3XQB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:16:01 -0400
-Received: from kroah.org ([198.145.64.141]:49270 "EHLO coco.kroah.org"
+	id S1756559Ab0C3XMj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:12:39 -0400
+Received: from kroah.org ([198.145.64.141]:48973 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756658Ab0C3XNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:13:05 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:58 2010
-Message-Id: <20100330225858.355691909@linux.site>
+	id S1756492Ab0C3XMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:31 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:35 2010
+Message-Id: <20100330225834.938351193@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:58:22 -0700
+Date: Tue, 30 Mar 2010 15:57:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Neil Horman <nhorman@tuxdriver.com>, Andi Kleen <andi@firstfloor.org>,
-       Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-       Ingo Molnar <mingo@elte.hu>, maximilian attems <max@stro.at>,
+       Ben Hutchings <bhutchings@solarflare.com>,
+       "David S. Miller" <davem@davemloft.net>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [80/89] coredump: suppress uid comparison test if core output files are pipes
+Subject: [43/89] sfc: Fix DMA mapping cleanup in case of an error in TSO
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,62 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Neil Turton <nturton@solarflare.com>
 
-commit 76595f79d76fbe6267a51b3a866a028d150f06d4 upstream.
+commit a7ebd27a13757248863cd61e541af7fa9e7727ee upstream.
 
-Modify uid check in do_coredump so as to not apply it in the case of
-pipes.
+We need buffer->len to remain valid to work out the correct address to
+be unmapped.  We therefore need to clear buffer->len after the unmap
+operation.
 
-This just got noticed in testing.  The end of do_coredump validates the
-uid of the inode for the created file against the uid of the crashing
-process to ensure that no one can pre-create a core file with different
-ownership and grab the information contained in the core when they
-shouldn' tbe able to.  This causes failures when using pipes for a core
-dumps if the crashing process is not root, which is the uid of the pipe
-when it is created.
-
-The fix is simple.  Since the check for matching uid's isn't relevant for
-pipes (a process can't create a pipe that the uermodehelper code will open
-anyway), we can just just skip it in the event ispipe is non-zero
-
-Reverts a pipe-affecting change which was accidentally made in
-
-: commit c46f739dd39db3b07ab5deb4e3ec81e1c04a91af
-: Author:     Ingo Molnar <mingo@elte.hu>
-: AuthorDate: Wed Nov 28 13:59:18 2007 +0100
-: Commit:     Linus Torvalds <torvalds@woody.linux-foundation.org>
-: CommitDate: Wed Nov 28 10:58:01 2007 -0800
-:
-:     vfs: coredumping fix
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: maximilian attems <max@stro.at>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/exec.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/sfc/tx.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1861,8 +1861,9 @@ void do_coredump(long signr, int exit_co
- 	/*
- 	 * Dont allow local users get cute and trick others to coredump
- 	 * into their pre-created files:
-+	 * Note, this is not relevant for pipes
- 	 */
--	if (inode->i_uid != current_fsuid())
-+	if (!ispipe && (inode->i_uid != current_fsuid()))
- 		goto close_fail;
- 	if (!file->f_op)
- 		goto close_fail;
+--- a/drivers/net/sfc/tx.c
++++ b/drivers/net/sfc/tx.c
+@@ -823,8 +823,6 @@ static void efx_enqueue_unwind(struct ef
+ 					   tx_queue->efx->type->txd_ring_mask];
+ 		efx_tsoh_free(tx_queue, buffer);
+ 		EFX_BUG_ON_PARANOID(buffer->skb);
+-		buffer->len = 0;
+-		buffer->continuation = true;
+ 		if (buffer->unmap_len) {
+ 			unmap_addr = (buffer->dma_addr + buffer->len -
+ 				      buffer->unmap_len);
+@@ -838,6 +836,8 @@ static void efx_enqueue_unwind(struct ef
+ 					       PCI_DMA_TODEVICE);
+ 			buffer->unmap_len = 0;
+ 		}
++		buffer->len = 0;
++		buffer->continuation = true;
+ 	}
+ }
+ 
 
 
