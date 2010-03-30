@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113Ab0C3JPg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 05:15:36 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:45579 "EHLO gir.skynet.ie"
+	id S1756124Ab0C3JPi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 05:15:38 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:45571 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756067Ab0C3JO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756065Ab0C3JO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Mar 2010 05:14:57 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrew Morton <akpm@linux-foundation.org>
@@ -17,9 +17,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 13/14] Do not compact within a preferred zone after a compaction failure
-Date: Tue, 30 Mar 2010 10:14:48 +0100
-Message-Id: <1269940489-5776-14-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 12/14] Add a tunable that decides when memory should be compacted and when it should be reclaimed
+Date: Tue, 30 Mar 2010 10:14:47 +0100
+Message-Id: <1269940489-5776-13-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.6.5
 In-Reply-To: <1269940489-5776-1-git-send-email-mel@csn.ul.ie>
 References: <1269940489-5776-1-git-send-email-mel@csn.ul.ie>
@@ -27,122 +27,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fragmentation index may indicate that a failure is due to external
-fragmentation but after a compaction run completes, it is still possible
-for an allocation to fail. There are two obvious reasons as to why
-
-  o Page migration cannot move all pages so fragmentation remains
-  o A suitable page may exist but watermarks are not met
-
-In the event of compaction followed by an allocation failure, this patch
-defers further compaction in the zone for a period of time. The zone that
-is deferred is the first zone in the zonelist - i.e. the preferred zone.
-To defer compaction in the other zones, the information would need to be
-stored in the zonelist or implemented similar to the zonelist_cache.
-This would impact the fast-paths and is not justified at this time.
+The kernel applies some heuristics when deciding if memory should be
+compacted or reclaimed to satisfy a high-order allocation. One of these
+is based on the fragmentation. If the index is below 500, memory will
+not be compacted. This choice is arbitrary and not based on data. To
+help optimise the system and set a sensible default for this value, this
+patch adds a sysctl extfrag_threshold. The kernel will only compact
+memory if the fragmentation index is above the extfrag_threshold.
 
 Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Rik van Riel <riel@redhat.com>
 ---
- include/linux/compaction.h |   35 +++++++++++++++++++++++++++++++++++
- include/linux/mmzone.h     |    7 +++++++
- mm/page_alloc.c            |    5 ++++-
- 3 files changed, 46 insertions(+), 1 deletions(-)
+ Documentation/sysctl/vm.txt |   18 ++++++++++++++++--
+ include/linux/compaction.h  |    3 +++
+ kernel/sysctl.c             |   15 +++++++++++++++
+ mm/compaction.c             |   12 +++++++++++-
+ 4 files changed, 45 insertions(+), 3 deletions(-)
 
+diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+index 803c018..878b1b4 100644
+--- a/Documentation/sysctl/vm.txt
++++ b/Documentation/sysctl/vm.txt
+@@ -27,6 +27,7 @@ Currently, these files are in /proc/sys/vm:
+ - dirty_ratio
+ - dirty_writeback_centisecs
+ - drop_caches
++- extfrag_threshold
+ - hugepages_treat_as_movable
+ - hugetlb_shm_group
+ - laptop_mode
+@@ -131,8 +132,7 @@ out to disk.  This tunable expresses the interval between those wakeups, in
+ 
+ Setting this to zero disables periodic writeback altogether.
+ 
+-==============================================================
+-
++============================================================== 
+ drop_caches
+ 
+ Writing to this will cause the kernel to drop clean caches, dentries and
+@@ -150,6 +150,20 @@ user should run `sync' first.
+ 
+ ==============================================================
+ 
++extfrag_threshold
++
++This parameter affects whether the kernel will compact memory or direct
++reclaim to satisfy a high-order allocation. /proc/extfrag_index shows what
++the fragmentation index for each order is in each zone in the system. Values
++tending towards 0 imply allocations would fail due to lack of memory,
++values towards 1000 imply failures are due to fragmentation and -1 implies
++that the allocation will succeed as long as watermarks are met.
++
++The kernel will not compact memory in a zone if the
++fragmentation index is <= extfrag_threshold. The default value is 500.
++
++==============================================================
++
+ hugepages_treat_as_movable
+ 
+ This parameter is only useful when kernelcore= is specified at boot time to
 diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-index ae98afc..2a02719 100644
+index faa3faf..ae98afc 100644
 --- a/include/linux/compaction.h
 +++ b/include/linux/compaction.h
-@@ -18,6 +18,32 @@ extern int sysctl_extfrag_handler(struct ctl_table *table, int write,
+@@ -11,6 +11,9 @@
+ extern int sysctl_compact_memory;
+ extern int sysctl_compaction_handler(struct ctl_table *table, int write,
+ 			void __user *buffer, size_t *length, loff_t *ppos);
++extern int sysctl_extfrag_threshold;
++extern int sysctl_extfrag_handler(struct ctl_table *table, int write,
++			void __user *buffer, size_t *length, loff_t *ppos);
+ 
  extern int fragmentation_index(struct zone *zone, unsigned int order);
  extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 			int order, gfp_t gfp_mask, nodemask_t *mask);
-+
-+/* defer_compaction - Do not compact within a zone until a given time */
-+static inline void defer_compaction(struct zone *zone, unsigned long resume)
-+{
-+	/*
-+	 * This function is called when compaction fails to result in a page
-+	 * allocation success. This is somewhat unsatisfactory as the failure
-+	 * to compact has nothing to do with time and everything to do with
-+	 * the requested order, the number of free pages and watermarks. How
-+	 * to wait on that is more unclear, but the answer would apply to
-+	 * other areas where the VM waits based on time.
-+	 */
-+	zone->compact_resume = resume;
-+}
-+
-+static inline int compaction_deferred(struct zone *zone)
-+{
-+	/* init once if necessary */
-+	if (unlikely(!zone->compact_resume)) {
-+		zone->compact_resume = jiffies;
-+		return 0;
-+	}
-+
-+	return time_before(jiffies, zone->compact_resume);
-+}
-+
- #else
- static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 			int order, gfp_t gfp_mask, nodemask_t *nodemask)
-@@ -25,6 +51,15 @@ static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 	return COMPACT_INCOMPLETE;
- }
- 
-+static inline void defer_compaction(struct zone *zone, unsigned long resume)
-+{
-+}
-+
-+static inline int compaction_deferred(struct zone *zone)
-+{
-+	return 1;
-+}
-+
- #endif /* CONFIG_COMPACTION */
- 
- #if defined(CONFIG_COMPACTION) && defined(CONFIG_SYSFS) && defined(CONFIG_NUMA)
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index cf9e458..bde879b 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -321,6 +321,13 @@ struct zone {
- 	unsigned long		*pageblock_flags;
- #endif /* CONFIG_SPARSEMEM */
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 3838928..b8f292e 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -243,6 +243,11 @@ static int min_sched_shares_ratelimit = 100000; /* 100 usec */
+ static int max_sched_shares_ratelimit = NSEC_PER_SEC; /* 1 second */
+ #endif
  
 +#ifdef CONFIG_COMPACTION
-+	/*
-+	 * If a compaction fails, do not try compaction again until
-+	 * jiffies is after the value of compact_resume
-+	 */
-+	unsigned long		compact_resume;
++static int min_extfrag_threshold = 0;
++static int max_extfrag_threshold = 1000;
 +#endif
- 
- 	ZONE_PADDING(_pad1_)
- 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 7a2e4a2..66823bd 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1770,7 +1770,7 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
- 	cond_resched();
- 
- 	/* Try memory compaction for high-order allocations before reclaim */
--	if (order) {
-+	if (order && !compaction_deferred(preferred_zone)) {
- 		*did_some_progress = try_to_compact_pages(zonelist,
- 						order, gfp_mask, nodemask);
- 		if (*did_some_progress != COMPACT_SKIPPED) {
-@@ -1795,6 +1795,9 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
- 			 */
- 			count_vm_event(COMPACTFAIL);
- 
-+			/* On failure, avoid compaction for a short time. */
-+			defer_compaction(preferred_zone, jiffies + HZ/50);
 +
- 			cond_resched();
- 		}
- 	}
+ static struct ctl_table kern_table[] = {
+ 	{
+ 		.procname	= "sched_child_runs_first",
+@@ -1111,6 +1116,16 @@ static struct ctl_table vm_table[] = {
+ 		.mode		= 0200,
+ 		.proc_handler	= sysctl_compaction_handler,
+ 	},
++	{
++		.procname	= "extfrag_threshold",
++		.data		= &sysctl_extfrag_threshold,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= sysctl_extfrag_handler,
++		.extra1		= &min_extfrag_threshold,
++		.extra2		= &max_extfrag_threshold,
++	},
++
+ #endif /* CONFIG_COMPACTION */
+ 	{
+ 		.procname	= "min_free_kbytes",
+diff --git a/mm/compaction.c b/mm/compaction.c
+index e8ef511..3bb65d7 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -418,6 +418,8 @@ static unsigned long compact_zone_order(struct zone *zone,
+ 	return compact_zone(zone, &cc);
+ }
+ 
++int sysctl_extfrag_threshold = 500;
++
+ /**
+  * try_to_compact_pages - Direct compact to satisfy a high-order allocation
+  * @zonelist: The zonelist used for the current allocation
+@@ -476,7 +478,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 		 * Only compact if a failure would be due to fragmentation.
+ 		 */
+ 		fragindex = fragmentation_index(zone, order);
+-		if (fragindex >= 0 && fragindex <= 500)
++		if (fragindex >= 0 && fragindex <= sysctl_extfrag_threshold)
+ 			continue;
+ 
+ 		if (fragindex == -1 && zone_watermark_ok(zone, order, watermark, 0, 0)) {
+@@ -556,6 +558,14 @@ int sysctl_compaction_handler(struct ctl_table *table, int write,
+ 	return 0;
+ }
+ 
++int sysctl_extfrag_handler(struct ctl_table *table, int write,
++			void __user *buffer, size_t *length, loff_t *ppos)
++{
++	proc_dointvec_minmax(table, write, buffer, length, ppos);
++
++	return 0;
++}
++
+ #if defined(CONFIG_SYSFS) && defined(CONFIG_NUMA)
+ ssize_t sysfs_compact_node(struct sys_device *dev,
+ 			struct sysdev_attribute *attr,
 -- 
 1.6.5
 
