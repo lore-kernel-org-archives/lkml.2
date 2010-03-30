@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757213Ab0C3Xma (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:42:30 -0400
-Received: from kroah.org ([198.145.64.141]:46208 "EHLO coco.kroah.org"
+	id S932528Ab0C3XbF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:31:05 -0400
+Received: from kroah.org ([198.145.64.141]:46650 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932595Ab0C3XU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:26 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:08 2010
-Message-Id: <20100330224807.868190737@linux.site>
+	id S932474Ab0C3XVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:21:38 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:41 2010
+Message-Id: <20100330224841.293482367@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:41:47 -0700
+Date: Tue, 30 Mar 2010 15:42:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Nathaniel McCallum <nathaniel@natemccallum.com>,
+       Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+       Zhu Yi <yi.zhu@intel.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       "David S. Miller" <davem@davemloft.net>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [073/156] USB: option: fix incorrect manufacturer name in usb/serial/option: MAXON->CMOTECH
+Subject: [124/156] llc: use limited socket backlog
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nathaniel McCallum <nathaniel@natemccallum.com>
+From: Zhu Yi <yi.zhu@intel.com>
 
-commit eaff4cdc978f414cf7b5441a333de3070d80e9c7 upstream.
+[ Upstream commit 79545b681961d7001c1f4c3eb9ffb87bed4485db ]
 
-Signed-off-by: Nathaniel McCallum <nathaniel@natemccallum.com>
+Make llc adapt to the limited socket backlog change.
+
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Zhu Yi <yi.zhu@intel.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/usb/serial/option.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/llc/llc_conn.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -288,7 +288,7 @@ static int  option_resume(struct usb_ser
- 
- #define QUALCOMM_VENDOR_ID			0x05C6
- 
--#define MAXON_VENDOR_ID				0x16d8
-+#define CMOTECH_VENDOR_ID			0x16d8
- 
- #define TELIT_VENDOR_ID				0x1bc7
- #define TELIT_PRODUCT_UC864E			0x1003
-@@ -520,7 +520,7 @@ static struct usb_device_id option_ids[]
- 	{ USB_DEVICE(KYOCERA_VENDOR_ID, KYOCERA_PRODUCT_KPC680) },
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6000)}, /* ZTE AC8700 */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
--	{ USB_DEVICE(MAXON_VENDOR_ID, 0x6280) }, /* BP3-USB & BP3-EXT HSDPA */
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, 0x6280) }, /* BP3-USB & BP3-EXT HSDPA */
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864E) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864G) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
+--- a/net/llc/llc_conn.c
++++ b/net/llc/llc_conn.c
+@@ -756,7 +756,8 @@ void llc_conn_handler(struct llc_sap *sa
+ 	else {
+ 		dprintk("%s: adding to backlog...\n", __func__);
+ 		llc_set_backlog_type(skb, LLC_PACKET);
+-		sk_add_backlog(sk, skb);
++		if (sk_add_backlog_limited(sk, skb))
++			goto drop_unlock;
+ 	}
+ out:
+ 	bh_unlock_sock(sk);
 
 
