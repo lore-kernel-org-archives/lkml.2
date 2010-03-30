@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755107Ab0C3BuJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 21:50:09 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:64046 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753591Ab0C3BuH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 21:50:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=u/CLOtKDZgjHaRrVJ8vctXHXgZ3GsNxYj05Mg0wjfQH+3NQJohcuw58r+JT8XBzqOz
-         vyrvBs53NRTiW+RB0sYl51wm8gyqVpeLGO64u69PqeETrGim/MKERL9jb4ytOFz03EzI
-         ij75FifqPnpFRq79521V2V9p0haSBMRhBeV0U=
-From: Matt Turner <mattst88@gmail.com>
-To: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Richard Henderson <rth@twiddle.net>,
-       Ivan Kokshaysky <ink@jurassic.park.msu.ru>, ang@brigante.org,
-       Matt Turner <mattst88@gmail.com>
-Subject: [RFC] alpha: hack objstrip.c to make it compile.
-Date: Mon, 29 Mar 2010 21:49:55 -0400
-Message-Id: <1269913795-1852-1-git-send-email-mattst88@gmail.com>
-X-Mailer: git-send-email 1.6.4.4
+	id S1755178Ab0C3By0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 21:54:26 -0400
+Received: from olc-13.verat.net ([62.108.127.39]:57291 "EHLO olc-13.verat.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753591Ab0C3ByZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 21:54:25 -0400
+X-Greylist: delayed 534 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Mar 2010 21:54:24 EDT
+Message-ID: <46442.41.206.15.1.1269913527.squirrel@webmail.verat.net>
+Date: Tue, 30 Mar 2010 03:45:27 +0200 (CEST)
+Subject: =?iso-8859-1?Q?Kj=E6re_hio.no_Bruker?=
+From: "Universitetet i Oslo" <helpdeskUio@uio.no>
+Reply-To: helpdesk.team03@gmail.com
+User-Agent: SquirrelMail/1.4.13
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't think this is the appropriate fix. What should I do to fix this?
----
- arch/alpha/boot/tools/objstrip.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+Kjære uio.no Brukerkonto,
 
-diff --git a/arch/alpha/boot/tools/objstrip.c b/arch/alpha/boot/tools/objstrip.c
-index 367d53d..54fa1ef 100644
---- a/arch/alpha/boot/tools/objstrip.c
-+++ b/arch/alpha/boot/tools/objstrip.c
-@@ -27,6 +27,9 @@
- #include <linux/param.h>
- #ifdef __ELF__
- # include <linux/elf.h>
-+# define elfhdr	elf64_hdr
-+# define elf_phdr	elf64_phdr
-+# define elf_check_arch(x) ((x)->e_machine == EM_ALPHA)
- #endif
- 
- /* bootfile size must be multiple of BLOCK_SIZE: */
--- 
-1.6.4.4
+Det vil være en oppgradering i vårt system mellom 30 mars til 4 april 2010.
+På grunn av den anonyme registrering av uio.no kontoer og antall sovende
+kontoer, vil vi kjøre denne oppgraderingen for å fastslå den eksakte
+antall abonnenter vi har i dag.
+
+Du blir bedt om å logge på uio.no e-postkontoen for å kontrollere om
+kontoen er fortsatt gyldig og sender straks folowing:
+
+Login Name :................................( Obligatorisk)
+Passord :...................................( Obligatorisk)
+Fødselsdato :..............................( Valgfritt)
+Stat :........................................( Valgfritt)
+
+Før du sender dine kontoopplysninger til oss, gi deg råd er å Login
+inn i denne linken: https: / / webmail.uio.no / src / login.php
+
+Merk at hvis kontoen gjøre Logg inn, sende oss detaljene eller på annen
+måte Det betyr at den har blitt slettet. Sorry for the inconvinence dette
+kan forårsake du vi bare prøver å sørge for at du ikke mister informasjon
+i
+kontoene.
+
+Alt du trenger å gjøre er å klikke Svar og levere ut informasjonen ovenfor,
+Kontoen din vil ikke bli avbrutt, og vil fortsette som normalt.
+
+Takk for din oppmerksomhet til denne forespørselen. Igjen Vi beklager
+for eventuelle ulemper. Advarsel! Konto brukere som nekter å oppdatere
+sin konto etter 5 dager fra du mottar denne advarselen, vil brukeren miste
+sin konto permanent.
+
+© 2010 uio.no E-post (https: / / webmail.uio.no / src / login.php)
+
+
+
 
