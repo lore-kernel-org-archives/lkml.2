@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245Ab0C3XSW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:18:22 -0400
-Received: from kroah.org ([198.145.64.141]:52040 "EHLO coco.kroah.org"
+	id S1756005Ab0C3XJX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:09:23 -0400
+Received: from kroah.org ([198.145.64.141]:48551 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756808Ab0C3XSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:09 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:32 2010
-Message-Id: <20100330225631.818500832@linux.site>
+	id S1755396Ab0C3XJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:09:13 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:50:00 2010
+Message-Id: <20100330224959.844393619@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:30 -0700
+Date: Tue, 30 Mar 2010 15:48:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Ravikiran Thirumalai <kiran@scalex86.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       "David S. Miller" <davem@davemloft.net>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [052/116] tmpfs: fix oops on mounts with mpol=default
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+Subject: [30/45] tc: Fix unitialized kernel memory leak
+In-Reply-To: <20100330230410.GA28712@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Ravikiran G Thirumalai <kiran@scalex86.org>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit 413b43deab8377819aba1dbad2abf0c15d59b491 upstream.
+commit 16ebb5e0b36ceadc8186f71d68b0c4fa4b6e781b upstream.
 
-Fix an 'oops' when a tmpfs mount point is mounted with the mpol=default
-mempolicy.
+Three bytes of uninitialized kernel memory are currently leaked to user
 
-Upon remounting a tmpfs mount point with 'mpol=default' option, the mount
-code crashed with a null pointer dereference.  The initial problem report
-was on 2.6.27, but the problem exists in mainline 2.6.34-rc as well.  On
-examining the code, we see that mpol_new returns NULL if default mempolicy
-was requested.  This 'NULL' mempolicy is accessed to store the node mask
-resulting in oops.
-
-The following patch fixes it.
-
-Signed-off-by: Ravikiran Thirumalai <kiran@scalex86.org>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Reviewed-by: Jiri Pirko <jpirko@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/mempolicy.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ net/sched/sch_api.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2142,10 +2142,15 @@ int mpol_parse_str(char *str, struct mem
- 			goto out;
- 		mode = MPOL_PREFERRED;
- 		break;
--
-+	case MPOL_DEFAULT:
-+		/*
-+		 * Insist on a empty nodelist
-+		 */
-+		if (!nodelist)
-+			err = 0;
-+		goto out;
- 	/*
- 	 * case MPOL_BIND:    mpol_new() enforces non-empty nodemask.
--	 * case MPOL_DEFAULT: mpol_new() enforces empty nodemask, ignores flags.
- 	 */
- 	}
- 
+--- a/net/sched/sch_api.c
++++ b/net/sched/sch_api.c
+@@ -1453,6 +1453,8 @@ static int tc_fill_tclass(struct sk_buff
+ 	nlh = NLMSG_NEW(skb, pid, seq, event, sizeof(*tcm), flags);
+ 	tcm = NLMSG_DATA(nlh);
+ 	tcm->tcm_family = AF_UNSPEC;
++	tcm->tcm__pad1 = 0;
++	tcm->tcm__pad2 = 0;
+ 	tcm->tcm_ifindex = qdisc_dev(q)->ifindex;
+ 	tcm->tcm_parent = q->handle;
+ 	tcm->tcm_handle = q->handle;
 
 
