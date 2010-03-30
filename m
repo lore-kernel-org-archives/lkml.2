@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757003Ab0C3X1M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:27:12 -0400
-Received: from kroah.org ([198.145.64.141]:46801 "EHLO coco.kroah.org"
+	id S1757235Ab0C3Xn0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:43:26 -0400
+Received: from kroah.org ([198.145.64.141]:46184 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754968Ab0C3XWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:22:10 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:54 2010
-Message-Id: <20100330224853.402913400@linux.site>
+	id S932578Ab0C3XUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:20:21 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:06 2010
+Message-Id: <20100330224806.004805043@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:57 -0700
+Date: Tue, 30 Mar 2010 15:41:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Alexander Duyck <alexander.h.duyck@intel.com>,
-       Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       "David S. Miller" <davem@davemloft.net>,
+       Bernhard Rosenkraenzer <bero@arklinux.org>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [143/156] skbuff: remove unused dma_head & dma_maps fields
+Subject: [070/156] USB: qcserial: add new device ids
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,49 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Duyck <alexander.h.duyck@intel.com>
+From: Bernhard Rosenkraenzer <br@blankpage.ch>
 
-[ Upstream commit 03e6d819c2cb2cc8ce5642669a0a7c72336ee7a2 ]
+commit 0725e95ea56698774e893edb7e7276b1d6890954 upstream.
 
-The dma map fields in the skb_shared_info structure no longer has any users
-and can be dropped since it is making the skb_shared_info unecessarily larger.
+This patch adds various USB device IDs for Gobi 2000 devices, as found in the
+drivers available at https://www.codeaurora.org/wiki/GOBI_Releases
 
-Running slabtop show that we were using 4K slabs for the skb->head on x86_64 w/
-an allocation size of 1522.  It turns out that the dma_head and dma_maps array
-made skb_shared large enough that we had crossed over the 2k boundary with
-standard frames and as such we were using 4k blocks of memory for all skbs.
-
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Bernhard Rosenkraenzer <bero@arklinux.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/skbuff.h |    6 ------
- 1 file changed, 6 deletions(-)
+ drivers/usb/serial/qcserial.c |   29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -190,9 +190,6 @@ struct skb_shared_info {
- 	atomic_t	dataref;
- 	unsigned short	nr_frags;
- 	unsigned short	gso_size;
--#ifdef CONFIG_HAS_DMA
--	dma_addr_t	dma_head;
--#endif
- 	/* Warning: this field is not always filled in (UFO)! */
- 	unsigned short	gso_segs;
- 	unsigned short  gso_type;
-@@ -201,9 +198,6 @@ struct skb_shared_info {
- 	struct sk_buff	*frag_list;
- 	struct skb_shared_hwtstamps hwtstamps;
- 	skb_frag_t	frags[MAX_SKB_FRAGS];
--#ifdef CONFIG_HAS_DMA
--	dma_addr_t	dma_maps[MAX_SKB_FRAGS];
--#endif
- 	/* Intermediate layers must ensure that destructor_arg
- 	 * remains valid until skb destructor */
- 	void *		destructor_arg;
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -47,6 +47,35 @@ static struct usb_device_id id_table[] =
+ 	{USB_DEVICE(0x05c6, 0x9221)},	/* Generic Gobi QDL device */
+ 	{USB_DEVICE(0x05c6, 0x9231)},	/* Generic Gobi QDL device */
+ 	{USB_DEVICE(0x1f45, 0x0001)},	/* Unknown Gobi QDL device */
++	{USB_DEVICE(0x413c, 0x8185)},	/* Dell Gobi 2000 QDL device (N0218, VU936) */
++	{USB_DEVICE(0x413c, 0x8186)},	/* Dell Gobi 2000 Modem device (N0218, VU936) */
++	{USB_DEVICE(0x05c6, 0x9224)},	/* Sony Gobi 2000 QDL device (N0279, VU730) */
++	{USB_DEVICE(0x05c6, 0x9225)},	/* Sony Gobi 2000 Modem device (N0279, VU730) */
++	{USB_DEVICE(0x05c6, 0x9244)},	/* Samsung Gobi 2000 QDL device (VL176) */
++	{USB_DEVICE(0x05c6, 0x9245)},	/* Samsung Gobi 2000 Modem device (VL176) */
++	{USB_DEVICE(0x03f0, 0x241d)},	/* HP Gobi 2000 QDL device (VP412) */
++	{USB_DEVICE(0x03f0, 0x251d)},	/* HP Gobi 2000 Modem device (VP412) */
++	{USB_DEVICE(0x05c6, 0x9214)},	/* Acer Gobi 2000 QDL device (VP413) */
++	{USB_DEVICE(0x05c6, 0x9215)},	/* Acer Gobi 2000 Modem device (VP413) */
++	{USB_DEVICE(0x05c6, 0x9264)},	/* Asus Gobi 2000 QDL device (VR305) */
++	{USB_DEVICE(0x05c6, 0x9265)},	/* Asus Gobi 2000 Modem device (VR305) */
++	{USB_DEVICE(0x05c6, 0x9234)},	/* Top Global Gobi 2000 QDL device (VR306) */
++	{USB_DEVICE(0x05c6, 0x9235)},	/* Top Global Gobi 2000 Modem device (VR306) */
++	{USB_DEVICE(0x05c6, 0x9274)},	/* iRex Technologies Gobi 2000 QDL device (VR307) */
++	{USB_DEVICE(0x05c6, 0x9275)},	/* iRex Technologies Gobi 2000 Modem device (VR307) */
++	{USB_DEVICE(0x1199, 0x9000)},	/* Sierra Wireless Gobi 2000 QDL device (VT773) */
++	{USB_DEVICE(0x1199, 0x9001)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
++	{USB_DEVICE(0x1199, 0x9002)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
++	{USB_DEVICE(0x1199, 0x9003)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
++	{USB_DEVICE(0x1199, 0x9004)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
++	{USB_DEVICE(0x1199, 0x9005)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
++	{USB_DEVICE(0x1199, 0x9006)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
++	{USB_DEVICE(0x1199, 0x9007)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
++	{USB_DEVICE(0x1199, 0x9008)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
++	{USB_DEVICE(0x1199, 0x9009)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
++	{USB_DEVICE(0x1199, 0x900a)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
++	{USB_DEVICE(0x16d8, 0x8001)},	/* CMDTech Gobi 2000 QDL device (VU922) */
++	{USB_DEVICE(0x16d8, 0x8002)},	/* CMDTech Gobi 2000 Modem device (VU922) */
+ 	{ }				/* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, id_table);
 
 
