@@ -1,59 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab0C3XVp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:21:45 -0400
-Received: from kroah.org ([198.145.64.141]:46267 "EHLO coco.kroah.org"
+	id S932230Ab0C3XSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:18:17 -0400
+Received: from kroah.org ([198.145.64.141]:52022 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932416Ab0C3XUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:35 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:12 2010
-Message-Id: <20100330224812.096158303@linux.site>
+	id S1756684Ab0C3XSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:07 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:31 2010
+Message-Id: <20100330225630.552487526@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:41:54 -0700
+Date: Tue, 30 Mar 2010 15:55:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Borislav Petkov <borislav.petkov@amd.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [080/156] edac, mce: Filter out invalid values
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+       John Kacur <jkacur@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Tom Zanussi <tzanussi@gmail.com>, Kyle McMartin <kyle@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [050/116] perf: Make the install relative to DESTDIR if specified
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: John Kacur <jkacur@redhat.com>
 
-commit 5b89d2f9ace1970324facc68ca9b8fae19ce8096 upstream.
+commit 7ae5f21361fea11f58c398701da635f778635d13 upstream.
 
-Print the CPU associated with the error only when the field is valid.
+Without this change, the install path is relative to
+prefix/DESTDIR where prefix is automatically set to $HOME.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+This can produce unexpected results. For example:
+
+  make -C tools/perf DESTDIR=/home/jkacur/tmp install-man
+
+creates the directory:		/home/jkacur/home/jkacur/tmp/share/...
+instead of the expected:	/home/jkacur/tmp/share/...
+
+Signed-off-by: John Kacur <jkacur@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: Kyle McMartin <kyle@redhat.com>
+LKML-Reference: <1268312220-12880-1-git-send-email-jkacur@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/edac/edac_mce_amd.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ tools/perf/Documentation/Makefile |    4 +++-
+ tools/perf/Makefile               |    4 +++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/edac/edac_mce_amd.c
-+++ b/drivers/edac/edac_mce_amd.c
-@@ -316,7 +316,12 @@ void amd_decode_nb_mce(int node_id, stru
- 		if (regs->nbsh & K8_NBSH_ERR_CPU_VAL)
- 			pr_cont(", core: %u\n", (u8)(regs->nbsh & 0xf));
- 	} else {
--		pr_cont(", core: %d\n", fls((regs->nbsh & 0xf) - 1));
-+		u8 assoc_cpus = regs->nbsh & 0xf;
-+
-+		if (assoc_cpus > 0)
-+			pr_cont(", core: %d", fls(assoc_cpus) - 1);
-+
-+		pr_cont("\n");
- 	}
+--- a/tools/perf/Documentation/Makefile
++++ b/tools/perf/Documentation/Makefile
+@@ -24,7 +24,10 @@ DOC_MAN1=$(patsubst %.txt,%.1,$(MAN1_TXT
+ DOC_MAN5=$(patsubst %.txt,%.5,$(MAN5_TXT))
+ DOC_MAN7=$(patsubst %.txt,%.7,$(MAN7_TXT))
  
- 	pr_emerg("%s.\n", EXT_ERR_MSG(xec));
++# Make the path relative to DESTDIR, not prefix
++ifndef DESTDIR
+ prefix?=$(HOME)
++endif
+ bindir?=$(prefix)/bin
+ htmldir?=$(prefix)/share/doc/perf-doc
+ pdfdir?=$(prefix)/share/doc/perf-doc
+@@ -32,7 +35,6 @@ mandir?=$(prefix)/share/man
+ man1dir=$(mandir)/man1
+ man5dir=$(mandir)/man5
+ man7dir=$(mandir)/man7
+-# DESTDIR=
+ 
+ ASCIIDOC=asciidoc
+ ASCIIDOC_EXTRA = --unsafe
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -218,7 +218,10 @@ STRIP ?= strip
+ # runtime figures out where they are based on the path to the executable.
+ # This can help installing the suite in a relocatable way.
+ 
++# Make the path relative to DESTDIR, not to prefix
++ifndef DESTDIR
+ prefix = $(HOME)
++endif
+ bindir_relative = bin
+ bindir = $(prefix)/$(bindir_relative)
+ mandir = share/man
+@@ -235,7 +238,6 @@ sysconfdir = $(prefix)/etc
+ ETC_PERFCONFIG = etc/perfconfig
+ endif
+ lib = lib
+-# DESTDIR=
+ 
+ export prefix bindir sharedir sysconfdir
+ 
 
 
