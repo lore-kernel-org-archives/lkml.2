@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242Ab0C3Nvo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 09:51:44 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:57319 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755817Ab0C3Nvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 09:51:42 -0400
-Date: Wed, 31 Mar 2010 00:51:34 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Shanyu Zhao <shanyu.zhao@intel.com>, Zhu Yi <yi.zhu@intel.com>,
-       Reinette Chatre <reinette.chatre@intel.com>,
-       Johannes Berg <johannes.berg@intel.com>
-Subject: Re: linux-next: manual merge of the net tree with the
- wireless-current tree
-Message-Id: <20100331005134.67f76605.sfr@canb.auug.org.au>
-In-Reply-To: <20100330131220.GA13120@tuxdriver.com>
-References: <20100330133745.27295ee0.sfr@canb.auug.org.au>
-	<20100330131220.GA13120@tuxdriver.com>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__31_Mar_2010_00_51_34_+1100_i/gON9eVEyq2kS3F"
+	id S1756267Ab0C3NwN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 09:52:13 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:35526 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755458Ab0C3NwL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 09:52:11 -0400
+Date: Tue, 30 Mar 2010 09:52:08 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: linux-kernel@vger.kernel.org
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, Eric Dumazet <dada1@cosmosbay.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Steven Rostedt <rostedt@goodmis.org>, stable <stable@kernel.org>
+Subject: [PATCH] modules fix incorrect percpu usage
+Message-ID: <20100330135208.GC20673@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 09:50:49 up 66 days, 16:27,  9 users,  load average: 0.08, 0.09,
+	0.08
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__31_Mar_2010_00_51_34_+1100_i/gON9eVEyq2kS3F
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is needed
+for per cpu pointers).
 
-Hi John,
+Introduced by commit:
 
-On Tue, 30 Mar 2010 09:12:21 -0400 "John W. Linville" <linville@tuxdriver.c=
-om> wrote:
->
-> Yes, that looks correct to me -- at least, that's what I did in
-> wireless-testing. :-)
+module.c: commit 6b588c18f8dacfa6d7957c33c5ff832096e752d3
 
-Thanks for the confirmation.
+It applies to mainline as of 2.6.34-rc2. This patch should be queued for the
+stable branch, for kernels 2.6.29.x to 2.6.33.x.
+(based on 2.6.33.1, also applies to 2.6.34-rc2 -tip)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Eric Dumazet <dada1@cosmosbay.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Tejun Heo <tj@kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: stable <stable@kernel.org>
+---
+ kernel/module.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---Signature=_Wed__31_Mar_2010_00_51_34_+1100_i/gON9eVEyq2kS3F
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkuyAeYACgkQjjKRsyhoI8zeAQCcDMNEGPnD70EHi/IHyaSeCD/G
-lzUAnRX6rxemH7AyGIYHPmk2Fm8McCfq
-=W/as
------END PGP SIGNATURE-----
-
---Signature=_Wed__31_Mar_2010_00_51_34_+1100_i/gON9eVEyq2kS3F--
+Index: linux-2.6-lttng/kernel/module.c
+===================================================================
+--- linux-2.6-lttng.orig/kernel/module.c	2010-03-29 23:47:05.000000000 -0400
++++ linux-2.6-lttng/kernel/module.c	2010-03-29 23:47:27.000000000 -0400
+@@ -412,7 +412,7 @@ static void percpu_modcopy(void *pcpudes
+ 	int cpu;
+ 
+ 	for_each_possible_cpu(cpu)
+-		memcpy(pcpudest + per_cpu_offset(cpu), from, size);
++		memcpy(per_cpu_ptr(pcpudest, cpu), from, size);
+ }
+ 
+ #else /* ... !CONFIG_SMP */
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
