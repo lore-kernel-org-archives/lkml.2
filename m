@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab0C3ILi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 04:11:38 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:36260 "EHLO
+	id S1755913Ab0C3ILl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 04:11:41 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:36241 "EHLO
 	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755233Ab0C3IHX (ORCPT
+	with ESMTP id S1754997Ab0C3IHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 04:07:23 -0400
+	Tue, 30 Mar 2010 04:07:22 -0400
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
@@ -19,9 +19,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
        Gary Hade <garyhade@us.ibm.com>,
        Natalie Protasevich <protasnb@gmail.com>,
        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 10/15] x86 ioapic: In mpparse use mp_register_ioapic
-Date: Tue, 30 Mar 2010 01:07:11 -0700
-Message-Id: <1269936436-7039-10-git-send-email-ebiederm@xmission.com>
+Subject: [PATCH 07/15] x86 ioapic: Fix io_apic_redir_entries to return the number of entries.
+Date: Tue, 30 Mar 2010 01:07:08 -0700
+Message-Id: <1269936436-7039-7-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.6.5.2.143.g8cc62
 In-Reply-To: <m1oci6qlmr.fsf_-_@fess.ebiederm.org>
 References: <m1oci6qlmr.fsf_-_@fess.ebiederm.org>
@@ -36,88 +36,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric W. Biederman <ebiederm@xmission.com>
 
-Long ago MP_ioapic_info was the primary way of setting up our
-ioapic data structures and mp_register_ioapic was a compatibility
-shim for acpi code.  Now the situation is reversed and
-and mp_register_ioapic is the primary way of setting up our
-ioapic data structures.
+io_apic_redir_entries has a huge conceptual bug.  It returns the maximum
+redirection entry not the number of redirection entries.  Which simply
+does not match what the name of the function.  This just caught me
+and it caught  Feng Tang, and  Len Brown when they wrote sfi_parse_ioapic.
 
-Keep the setting up of ioapic data structures uniform by
-having mp_register_ioapic call mp_register_ioapic.
+Modify io_apic_redir_entries to actually return the number of redirection
+entries, and fix the callers so that they properly handle receiving the
+number of the number of redirection table entries, instead of the
+number of redirection table entries less one.
 
-This changes a few fields:
-
-- type: is now hardset to MP_IOAPIC but type had to
-  bey MP_IOAPIC or MP_ioapic_info would not have been called.
-
-- flags: is now hard coded to MPC_APIC_USABLE.
-  We require flags to contain at least MPC_APIC_USEBLE in
-  MP_ioapic_info and we don't ever examine flags so dropping
-  a few flags that might possibly exist that we have never
-  used is harmless.
-
-- apicaddr: Unchanged
-
-- apicver: Read from the ioapic instead of using the cached
-  hardware value in the MP table.  The real hardware value
-  will be more accurate.
-
-- apicid: Now verified to be unique and changed if it is not.
-  If the BIOS got this right this is a noop.  If the BIOS did
-  not fixing things appears to be the better solution.
-
-This adds gsi_base and gsi_end values to our ioapics defined with
-the mpatable, which will make our lives simpler later since
-we can always assume gsi_base and gsi_end are valid.
+While the usage in sfi.c does not show up in this patch it is fixed
+by virtue of the fact that io_apic_redir_entries now has the semantics
+sfi_parse_ioapic most reasonably expects.
 
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- arch/x86/kernel/mpparse.c |   25 +------------------------
- 1 files changed, 1 insertions(+), 24 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
-index a2c1edd..22ba4f3 100644
---- a/arch/x86/kernel/mpparse.c
-+++ b/arch/x86/kernel/mpparse.c
-@@ -115,21 +115,6 @@ static void __init MP_bus_info(struct mpc_bus *m)
- 		printk(KERN_WARNING "Unknown bustype %s - ignoring\n", str);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 54ba1f7..7e139bb 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3846,7 +3846,11 @@ int __init io_apic_get_redir_entries (int ioapic)
+ 	reg_01.raw = io_apic_read(ioapic, 1);
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ 
+-	return reg_01.bits.entries;
++	/* The register returns the maximum index redir index
++	 * supported, which is one less than the total number of redir
++	 * entries.
++	 */
++	return reg_01.bits.entries + 1;
  }
  
--static int bad_ioapic(unsigned long address)
--{
--	if (nr_ioapics >= MAX_IO_APICS) {
--		printk(KERN_ERR "ERROR: Max # of I/O APICs (%d) exceeded "
--		       "(found %d)\n", MAX_IO_APICS, nr_ioapics);
--		panic("Recompile kernel with bigger MAX_IO_APICS!\n");
--	}
--	if (!address) {
--		printk(KERN_ERR "WARNING: Bogus (zero) I/O APIC address"
--		       " found in table, skipping!\n");
--		return 1;
--	}
--	return 0;
--}
--
- static void __init MP_ioapic_info(struct mpc_ioapic *m)
- {
- 	if (!(m->flags & MPC_APIC_USABLE))
-@@ -138,15 +123,7 @@ static void __init MP_ioapic_info(struct mpc_ioapic *m)
- 	printk(KERN_INFO "I/O APIC #%d Version %d at 0x%X.\n",
- 	       m->apicid, m->apicver, m->apicaddr);
+ void __init probe_nr_irqs_gsi(void)
+@@ -3862,7 +3866,7 @@ void __init probe_nr_irqs_gsi(void)
  
--	if (bad_ioapic(m->apicaddr))
--		return;
--
--	mp_ioapics[nr_ioapics].apicaddr = m->apicaddr;
--	mp_ioapics[nr_ioapics].apicid = m->apicid;
--	mp_ioapics[nr_ioapics].type = m->type;
--	mp_ioapics[nr_ioapics].apicver = m->apicver;
--	mp_ioapics[nr_ioapics].flags = m->flags;
--	nr_ioapics++;
-+	mp_register_ioapic(m->apicid, m->apicaddr, gsi_end + 1);
- }
+ 		nr = 0;
+ 		for (idx = 0; idx < nr_ioapics; idx++)
+-			nr += io_apic_get_redir_entries(idx) + 1;
++			nr += io_apic_get_redir_entries(idx);
  
- static void print_MP_intsrc_info(struct mpc_intsrc *m)
+ 		if (nr > nr_irqs_gsi)
+ 			nr_irqs_gsi = nr;
+@@ -4297,7 +4301,7 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
+ 	 */
+ 	mp_gsi_routing[idx].gsi_base = gsi_base;
+ 	mp_gsi_routing[idx].gsi_end = gsi_base +
+-	    io_apic_get_redir_entries(idx);
++	    io_apic_get_redir_entries(idx) - 1;
+ 
+ 	printk(KERN_INFO "IOAPIC[%d]: apic_id %d, version %d, address 0x%x, "
+ 	       "GSI %d-%d\n", idx, mp_ioapics[idx].apicid,
 -- 
 1.6.5.2.143.g8cc62
 
