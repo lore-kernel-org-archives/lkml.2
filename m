@@ -1,121 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab0C3Scw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 14:32:52 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:57418 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755713Ab0C3Sbq (ORCPT
+	id S1755725Ab0C3Sec (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 14:34:32 -0400
+Received: from mail-pz0-f186.google.com ([209.85.222.186]:52675 "EHLO
+	mail-pz0-f186.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754404Ab0C3Sea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 14:31:46 -0400
-From: "Eric W. Biederman" <ebiederm@xmission.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Cornelia Huck <cornelia.huck@de.ibm.com>,
-       linux-fsdevel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-       Benjamin LaHaise <bcrl@lhnet.ca>, Serge Hallyn <serue@us.ibm.com>,
-       <netdev@vger.kernel.org>, "Eric W. Biederman" <ebiederm@xmission.com>,
-       Benjamin Thery <benjamin.thery@bull.net>,
-       Daniel Lezcano <dlezcano@fr.ibm.com>
-Subject: [PATCH 5/6] sysfs: Implement sysfs_delete_link
-Date: Tue, 30 Mar 2010 11:31:28 -0700
-Message-Id: <1269973889-25260-5-git-send-email-ebiederm@xmission.com>
-X-Mailer: git-send-email 1.6.5.2.143.g8cc62
-In-Reply-To: <m1fx3hk6gw.fsf@fess.ebiederm.org>
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: gregkh@suse.de, kay.sievers@vrfy.org, linux-kernel@vger.kernel.org, tj@kernel.org, cornelia.huck@de.ibm.com, linux-fsdevel@vger.kernel.org, eric.dumazet@gmail.com, bcrl@lhnet.ca, serue@us.ibm.com, netdev@vger.kernel.org, ebiederm@xmission.com, benjamin.thery@bull.net, dlezcano@fr.ibm.com
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+	Tue, 30 Mar 2010 14:34:30 -0400
+X-Greylist: delayed 438 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Mar 2010 14:34:30 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ROBLnU/njaMMbjDLys9vJKKQ9PuckQS3CbP0ueGqFJH6JprliKgyko4QIwH+1VzJtC
+         buf8bo7mhWg3cY+Tq1yLMZQDcvKo3uNDRtO3d/2/FQSKwTysQsBYLMnQDsh9phe6iPNe
+         GgWpBjaONKfSV9AzvnCpu2mPq6vQV+RBvCEiA=
+Date: Tue, 30 Mar 2010 20:27:12 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 5/6] procfs: Push down the bkl from ioctl
+Message-ID: <20100330182710.GC5078@nowhere>
+References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <1269930015-863-6-git-send-regression-fweisbec@gmail.com> <201003301237.28083.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201003301237.28083.arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric W. Biederman <ebiederm@xmission.com>
+On Tue, Mar 30, 2010 at 11:37:27AM +0100, Arnd Bergmann wrote:
+> On Tuesday 30 March 2010, Frederic Weisbecker wrote:
+> > Push down the bkl from procfs's ioctl main handler to its users.
+> > Only three procfs users implement an ioctl (non unlocked) handler.
+> > Turn them into unlocked_ioctl and push down the Devil inside.
+> 
+> Looks good to me. I would have used a single unlock and return statement
+> in i8k_ioctl and isdn_divert_ioctl, with goto instead of adding an
+> unlock to each return, but it doesn't matter much.
 
-When removing a symlink sysfs_remove_link does not provide
-enough information to figure out which tagged directory the symlink
-falls in.  So I need sysfs_delete_link which is passed the target
-of the symlink to delete.
 
-sysfs_rename_link is updated to call sysfs_delete_link instead
-of sysfs_remove_link as we have all of the information necessary
-and the callers are interesting.
+I did that first, but actually that didn't make much difference:
 
-Both of these functions now have enough information to find a symlink
-in a tagged directory.  The only restriction is that they must be called
-before the target kobject is renamed or deleted.  If they are called
-later I loose track of which tag the target kobject was marked with
-and can no longer find the old symlink to remove it.
+ret = foo;            unlock_kernel()
+goto end;      VS     return foo;
 
-This patch was split from an earlier patch.
 
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Benjamin Thery <benjamin.thery@bull.net>
-Signed-off-by: Daniel Lezcano <dlezcano@fr.ibm.com>
-Acked-by: Tejun Heo <tj@kernel.org>
----
- fs/sysfs/symlink.c    |   20 ++++++++++++++++++++
- include/linux/sysfs.h |    8 ++++++++
- 2 files changed, 28 insertions(+), 0 deletions(-)
 
-diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
-index 56ccdc6..cd11bf4 100644
---- a/fs/sysfs/symlink.c
-+++ b/fs/sysfs/symlink.c
-@@ -108,6 +108,26 @@ int sysfs_create_link_nowarn(struct kobject *kobj, struct kobject *target,
- }
- 
- /**
-+ *	sysfs_delete_link - remove symlink in object's directory.
-+ *	@kobj:	object we're acting for.
-+ *	@targ:	object we're pointing to.
-+ *	@name:	name of the symlink to remove.
-+ *
-+ *	Unlike sysfs_remove_link sysfs_delete_link has enough information
-+ *	to successfully delete symlinks in tagged directories.
-+ */
-+void sysfs_delete_link(struct kobject *kobj, struct kobject *targ,
-+			const char *name)
-+{
-+	const void *ns = NULL;
-+	spin_lock(&sysfs_assoc_lock);
-+	if (targ->sd)
-+		ns = targ->sd->s_ns;
-+	spin_unlock(&sysfs_assoc_lock);
-+	sysfs_hash_and_remove(kobj->sd, ns, name);
-+}
-+
-+/**
-  *	sysfs_remove_link - remove symlink in object's directory.
-  *	@kobj:	object we're acting for.
-  *	@name:	name of the symlink to remove.
-diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index 1885d21..976c466 100644
---- a/include/linux/sysfs.h
-+++ b/include/linux/sysfs.h
-@@ -155,6 +155,9 @@ void sysfs_remove_link(struct kobject *kobj, const char *name);
- int sysfs_rename_link(struct kobject *kobj, struct kobject *target,
- 			const char *old_name, const char *new_name);
- 
-+void sysfs_delete_link(struct kobject *dir, struct kobject *targ,
-+			const char *name);
-+
- int __must_check sysfs_create_group(struct kobject *kobj,
- 				    const struct attribute_group *grp);
- int sysfs_update_group(struct kobject *kobj,
-@@ -269,6 +272,11 @@ static inline int sysfs_rename_link(struct kobject *k, struct kobject *t,
- 	return 0;
- }
- 
-+static inline void sysfs_delete_link(struct kobject *k, struct kobject *t,
-+				     const char *name)
-+{
-+}
-+
- static inline int sysfs_create_group(struct kobject *kobj,
- 				     const struct attribute_group *grp)
- {
--- 
-1.6.5.2.143.g8cc62
+
+> 
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+
+Thanks.
 
