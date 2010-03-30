@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab0C3G4N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 02:56:13 -0400
-Received: from mail-yw0-f172.google.com ([209.85.211.172]:54941 "EHLO
-	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab0C3G4L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 02:56:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=HguE6c7R7XXoLWcTqHoQw9usVQW06gSY/hk0TBwJKgOGSjCVNvuHCvxQk3tajQBpGf
-         6rxPM5f4RUpQ3u4wLmtgsqO7nOAjpqEfFHVPbHBtIp5dBi/z4UpC5lfYujKc6HV2DH+V
-         NdtYtcBpD0/Dk4VUZ/WIMxh4atHzLrF9RqARw=
-Date: Mon, 29 Mar 2010 23:56:05 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Dominik Brodowski <linux@dominikbrodowski.net>, Tejun Heo <tj@kernel.org>,
-       Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 09/17] pcmcia: update gfp/slab.h includes
-Message-ID: <20100330065605.GA12764@core.coreip.homeip.net>
-References: <1269885165-18617-1-git-send-email-tj@kernel.org>
- <1269885165-18617-10-git-send-email-tj@kernel.org>
- <20100329193203.GA8450@comet.dominikbrodowski.net>
- <20100330103129.b76a70e3.sfr@canb.auug.org.au>
- <4BB14D7B.4010602@kernel.org>
- <20100330063609.GA4498@comet.dominikbrodowski.net>
+	id S1754614Ab0C3G75 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 02:59:57 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46003 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750902Ab0C3G7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 02:59:55 -0400
+Message-ID: <4BB1A0EA.8050305@kernel.org>
+Date: Mon, 29 Mar 2010 23:57:46 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100330063609.GA4498@comet.dominikbrodowski.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: michael@ellerman.id.au
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 07/31] lmb: Add reserve_lmb/free_lmb
+References: <1269830604-26214-1-git-send-email-yinghai@kernel.org>	 <1269830604-26214-8-git-send-email-yinghai@kernel.org>	 <1269865322.24620.42.camel@concordia>  <4BB0D92C.3010103@kernel.org>	 <1269901252.2286.11.camel@concordia> <1269905491.7101.40.camel@pasglop>	 <4BB13FDB.9060006@kernel.org> <1269926794.7101.46.camel@pasglop>	 <4BB19656.9040803@kernel.org> <1269931562.15854.83.camel@concordia>
+In-Reply-To: <1269931562.15854.83.camel@concordia>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 08:36:09AM +0200, Dominik Brodowski wrote:
-> On Tue, Mar 30, 2010 at 10:01:47AM +0900, Tejun Heo wrote:
-> > Hello,
-> > 
-> > On 03/30/2010 08:31 AM, Stephen Rothwell wrote:
-> > > Hi Dominik,
-> > > On Mon, 29 Mar 2010 21:32:03 +0200 Dominik Brodowski <linux@dominikbrodowski.net> wrote:
-> > >>
-> > >> On Tue, Mar 30, 2010 at 02:52:37AM +0900, Tejun Heo wrote:
-> > >>> Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
-> > >>> gfp.h or slab.h is included as necessary.
-> > >>>
-> > >>> Signed-off-by: Tejun Heo <tj@kernel.org>
-> > >>> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> > >>> Cc: Dominik Brodowski <linux@dominikbrodowski.net>
-> > >> Acked-by: Dominik Brodowski <linux@dominikbrodowski.net>
-> > > 
-> > > The plan here is for you to put this in your tree now.  It is safe to do
-> > > so and Tejun can't carry it because this does not apply to mainline. 
+On 03/29/2010 11:46 PM, Michael Ellerman wrote:
+> On Mon, 2010-03-29 at 23:12 -0700, Yinghai Lu wrote:
+>> On 03/29/2010 10:26 PM, Benjamin Herrenschmidt wrote:
+>>> On Mon, 2010-03-29 at 17:03 -0700, Yinghai Lu wrote:
+>>>>
+>>>> in short: It could make us to avoid use the range that we are going to
+>>>> reserve,
+>>>>       when we try to get new position new lmb.reserved.region. 
+>>>
+>>> I'm not too sure I follow you. For the resizing, I would just basically
+>>> call a low level variant of alloc (__lmb_alloc ?) that explicitely
+>>> doesn't honor the total-2 "reserved" entries in the array.
+>>
+>> 1. you want to reserve rangeA
+>> 2. before that will check if region array is big enough,
+>> 3. if region is not big enough, will call lmb_alloc to get new range.
+>>    lmb_alloc could return rangB that is overlapped with rangeA
 > 
-> Okay, applied it.
+> So instead you do it the other way.
 > 
-> > Stephen's patches on drivers/input/misc/ad714x.c and pcf8574_keypad.c
-> > into input tree.
-> 
-> That's nothing I can do anything about -- Dmitry?
-> 
+> 1. you want to reserve rangeA
+> 2. you reserve rangeA
+> 3. if reserving rangeA consumed a slot in the array then you check if
+> you have at least two free slots. If not you realloc. You don't need any
+> special tricks because you have space to lmb_alloc() a new area and move
+> everything over.
 
-Yes, I will roll teh relevant parts into respective patches if you don't
-mind.
+so that is check it later. should work.
 
--- 
-Dmitry
+one less find_lmb_area user.
+
+Thanks
+
+Yinghai
