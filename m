@@ -1,100 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068Ab0C3TXk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 15:23:40 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:43498 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755834Ab0C3TXh (ORCPT
+	id S1753761Ab0C3TeL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 15:34:11 -0400
+Received: from mail.windriver.com ([147.11.1.11]:33498 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139Ab0C3TeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 15:23:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=pmkpxvVr9eEZqf+2rLdkqQF/yQz3GIlLmiHOuWW84YmTELXHTuUkY2EQZy1GDF6WFL
-         D2C87VGtCNmswNNiAmR6VL2DkwDuNEWGdlTRW0etAXofcexQfE96UnNs3uybvwNUZZDp
-         gn86HPbj9Qnbk1iKmZ3dJRLYbZVN+PmkzH2KA=
-Subject: Re: [PATCH 1/6] sysfs: Basic support for multiple super blocks
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
-       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, linux-fsdevel@vger.kernel.org,
-       Benjamin LaHaise <bcrl@lhnet.ca>, Serge Hallyn <serue@us.ibm.com>,
-       netdev@vger.kernel.org
-In-Reply-To: <1269973889-25260-1-git-send-email-ebiederm@xmission.com>
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
-	 <1269973889-25260-1-git-send-email-ebiederm@xmission.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 30 Mar 2010 21:23:32 +0200
-Message-ID: <1269977012.2048.0.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Tue, 30 Mar 2010 15:34:07 -0400
+Message-ID: <4BB251EB.5010008@windriver.com>
+Date: Tue, 30 Mar 2010 14:32:59 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Tejun Heo <tj@kernel.org>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Martin Hicks <mort@sgi.com>
+Subject: Re: linux-next: build failure after merge of the slabh tree
+References: <20100329160248.e15e7836.sfr@canb.auug.org.au>
+In-Reply-To: <20100329160248.e15e7836.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 30 Mar 2010 19:32:58.0426 (UTC) FILETIME=[CD9791A0:01CAD03F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 30 mars 2010 à 11:31 -0700, Eric W. Biederman a écrit :
-> From: Eric W. Biederman <ebiederm@xmission.com>
-> 
-> Add all of the necessary bioler plate to support
-> multiple superblocks in sysfs.
-> 
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-> ---
->  fs/sysfs/mount.c |   58 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
->  fs/sysfs/sysfs.h |    3 ++
->  2 files changed, 59 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
-> index 0cb1088..6a433ac 100644
-> --- a/fs/sysfs/mount.c
-> +++ b/fs/sysfs/mount.c
-> @@ -71,16 +71,70 @@ static int sysfs_fill_super(struct super_block *sb, void *data, int silent)
->  	return 0;
->  }
->  
-> +static int sysfs_test_super(struct super_block *sb, void *data)
-> +{
-> +	struct sysfs_super_info *sb_info = sysfs_info(sb);
-> +	struct sysfs_super_info *info = data;
-> +	int found = 1;
-> +	return found;
-> +}
-> +
-> +static int sysfs_set_super(struct super_block *sb, void *data)
-> +{
-> +	int error;
-> +	error = set_anon_super(sb, data);
-> +	if (!error)
-> +		sb->s_fs_info = data;
-> +	return error;
-> +}
-> +
->  static int sysfs_get_sb(struct file_system_type *fs_type,
->  	int flags, const char *dev_name, void *data, struct vfsmount *mnt)
->  {
-> -	return get_sb_single(fs_type, flags, data, sysfs_fill_super, mnt);
-> +	struct sysfs_super_info *info;
-> +	struct super_block *sb;
-> +	int error;
-> +
-> +	error = -ENOMEM;
-> +	info = kzalloc(sizeof(*info), GFP_KERNEL);
-> +	if (!info)
-> +		goto out;
-> +	sb = sget(fs_type, sysfs_test_super, sysfs_set_super, info);
-> +	if (IS_ERR(sb) || sb->s_fs_info != info)
-> +		kfree(info);
-> +	if (IS_ERR(sb)) {
-> +		kfree(info);
+On 03/29/2010 12:02 AM, Stephen Rothwell wrote:
+> Hi Tejun,
+>
+> After merging the slabh tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>
+> kernel/debug/kdb/kdb_support.c: In function 'kdb_strdup':
+> kernel/debug/kdb/kdb_support.c:309: error: implicit declaration of function 'kmalloc'
+> kernel/debug/kdb/kdb_support.c:309: warning: initialization makes pointer from integer without a cast
+> kernel/debug/kdb/kdb_support.c: In function 'debug_kfree':
+> kernel/debug/kdb/kdb_support.c:810: error: implicit declaration of function 'kfree'
+>
+> Caused by commit d103d3b3e8512312b5254950035366d4422a479a ("percpu: don't
+> implicitly include slab.h from percpu.h") from the slabh tree interacting
+> with commit 5572dd736e5577dfefafe2ad3b54760e8323e33d ("kdb: core for kgdb
+> back end (1 of 2)") from the kgdb tree.
+>
+> I applied the following merge fixup patch which should be applied to the
+> kdbg tree (see Documentation/SubmitChecklist Rule #1 :-)).
+>
+>   
 
-double kfree(info) ?
+But of course.
 
-> +		error = PTR_ERR(sb);
-> +		goto out;
-> +	}
-> +
+This is applied and will appear in kgdb-next in the next hour.
 
-
+Thanks,
+Jason.
