@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756406Ab0C3OxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 10:53:04 -0400
-Received: from lobo.ruivo.org ([173.14.175.98]:44071 "EHLO lobo.ruivo.org"
+	id S1751156Ab0C3Oyu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 10:54:50 -0400
+Received: from mx2.zhaw.ch ([160.85.104.51]:43245 "EHLO mx2.zhaw.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751822Ab0C3OxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 10:53:01 -0400
-Date: Tue, 30 Mar 2010 10:52:38 -0400
-From: Aristeu Sergio Rozanski Filho <aris@ruivo.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [watchdog] combine nmi_watchdog and softlockup
-Message-ID: <20100330145238.GG6706@cathedrallabs.org>
-References: <20100323213338.GA29170@redhat.com>
- <20100328024650.GA26522@jake.ruivo.org>
- <20100329182617.GI15159@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100329182617.GI15159@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751357Ab0C3Oyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 10:54:49 -0400
+From: Tobias Klauser <tklauser@distanz.ch>
+To: linux-serial@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Cc: Tobias Klauser <tklauser@distanz.ch>, gregkh@suse.de,
+       nios2-dev@sopc.et.ntust.edu.tw, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 0/2] serial: Drivers for Altera UARTs
+Date: Tue, 30 Mar 2010 16:54:40 +0200
+Message-Id: <cover.1269960350.git.tklauser@distanz.ch>
+X-Mailer: git-send-email 1.6.3.3
+X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.3.11.95718
+X-PerlMx-Spam: Gauge=X, Probability=10%, Report='
+ TO_IN_SUBJECT 0.5, BODY_SIZE_1100_1199 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, TO_NO_NAME 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __MIME_TEXT_ONLY 0, __SANE_MSGID 0, __TO_MALFORMED_2 0'
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sat, Mar 27, 2010 at 10:46:50PM -0400, Aristeu Sergio Rozanski Filho wrote:
-> > Hi Don,
-> > > +/* deprecated */
-> > > +static int __init nosoftlockup_setup(char *str)
-> > > +{
-> > > +	no_watchdog = 1;
-> > > +	return 1;
-> > > +}
-> > > +__setup("nosoftlockup", nosoftlockup_setup);
-> > > +static int __init nonmi_watchdog_setup(char *str)
-> > > +{
-> > > +	no_watchdog = 1;
-> > > +	return 1;
-> > > +}
-> > > +__setup("nonmi_watchdog", nonmi_watchdog_setup);
-> > didn't you just add nonmi_watchdog parameter? I don't think there's a reason
-> > to keep compatibility here.
-> 
-> Hmm, I think you are right.  I thought I added that because it existed in
-> the old nmi_watchdog setup but I can't find it.  So yeah, I can drop that.
-you could provide a nmi_watchdog=0 backwards compatibility and warn about
-values != 0
+This is the fourth version of the patchset to add the serial drivers for the
+Altera UARTs. The following changes were made on top of the third version
+submitted on 5 Mar 2010:
 
--- 
-Aristeu
+ - altera_uart: Remove usage of altera_uart_getppdcd, altera_uart_getppdtr,
+   altera_uart_setppdtr. This makes altera_uart actually compile again (verified
+   on x86_64 with Linus' master branch as of today).
+
+Cheers,
+Tobias
+
+Tobias Klauser (2):
+  serial: Add driver for the Altera JTAG UART
+  serial: Add driver for the Altera UART
+
+ drivers/serial/Kconfig           |   52 ++++
+ drivers/serial/Makefile          |    2 +
+ drivers/serial/altera_jtaguart.c |  504 +++++++++++++++++++++++++++++++++
+ drivers/serial/altera_uart.c     |  570 ++++++++++++++++++++++++++++++++++++++
+ include/linux/altera_jtaguart.h  |   16 +
+ include/linux/altera_uart.h      |   14 +
+ include/linux/serial_core.h      |    4 +
+ 7 files changed, 1162 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/serial/altera_jtaguart.c
+ create mode 100644 drivers/serial/altera_uart.c
+ create mode 100644 include/linux/altera_jtaguart.h
+ create mode 100644 include/linux/altera_uart.h
 
