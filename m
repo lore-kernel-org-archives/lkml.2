@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036Ab0C3JOw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 05:14:52 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:45520 "EHLO gir.skynet.ie"
+	id S1756113Ab0C3JPg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 05:15:36 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:45579 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755972Ab0C3JOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 05:14:50 -0400
+	id S1756067Ab0C3JO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 05:14:57 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andrea Arcangeli <aarcange@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 01/14] mm,migration: Take a reference to the anon_vma before migrating
-Date: Tue, 30 Mar 2010 10:14:36 +0100
-Message-Id: <1269940489-5776-2-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 13/14] Do not compact within a preferred zone after a compaction failure
+Date: Tue, 30 Mar 2010 10:14:48 +0100
+Message-Id: <1269940489-5776-14-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.6.5
 In-Reply-To: <1269940489-5776-1-git-send-email-mel@csn.ul.ie>
 References: <1269940489-5776-1-git-send-email-mel@csn.ul.ie>
@@ -27,135 +27,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rmap_walk_anon() does not use page_lock_anon_vma() for looking up and
-locking an anon_vma and it does not appear to have sufficient locking to
-ensure the anon_vma does not disappear from under it.
+The fragmentation index may indicate that a failure is due to external
+fragmentation but after a compaction run completes, it is still possible
+for an allocation to fail. There are two obvious reasons as to why
 
-This patch copies an approach used by KSM to take a reference on the
-anon_vma while pages are being migrated. This should prevent rmap_walk()
-running into nasty surprises later because anon_vma has been freed.
+  o Page migration cannot move all pages so fragmentation remains
+  o A suitable page may exist but watermarks are not met
+
+In the event of compaction followed by an allocation failure, this patch
+defers further compaction in the zone for a period of time. The zone that
+is deferred is the first zone in the zonelist - i.e. the preferred zone.
+To defer compaction in the other zones, the information would need to be
+stored in the zonelist or implemented similar to the zonelist_cache.
+This would impact the fast-paths and is not justified at this time.
 
 Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 Acked-by: Rik van Riel <riel@redhat.com>
 ---
- include/linux/rmap.h |   23 +++++++++++++++++++++++
- mm/migrate.c         |   12 ++++++++++++
- mm/rmap.c            |   10 +++++-----
- 3 files changed, 40 insertions(+), 5 deletions(-)
+ include/linux/compaction.h |   35 +++++++++++++++++++++++++++++++++++
+ include/linux/mmzone.h     |    7 +++++++
+ mm/page_alloc.c            |    5 ++++-
+ 3 files changed, 46 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index d25bd22..567d43f 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -29,6 +29,9 @@ struct anon_vma {
- #ifdef CONFIG_KSM
- 	atomic_t ksm_refcount;
- #endif
-+#ifdef CONFIG_MIGRATION
-+	atomic_t migrate_refcount;
-+#endif
- 	/*
- 	 * NOTE: the LSB of the head.next is set by
- 	 * mm_take_all_locks() _after_ taking the above lock. So the
-@@ -81,6 +84,26 @@ static inline int ksm_refcount(struct anon_vma *anon_vma)
- 	return 0;
- }
- #endif /* CONFIG_KSM */
-+#ifdef CONFIG_MIGRATION
-+static inline void migrate_refcount_init(struct anon_vma *anon_vma)
+diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+index ae98afc..2a02719 100644
+--- a/include/linux/compaction.h
++++ b/include/linux/compaction.h
+@@ -18,6 +18,32 @@ extern int sysctl_extfrag_handler(struct ctl_table *table, int write,
+ extern int fragmentation_index(struct zone *zone, unsigned int order);
+ extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 			int order, gfp_t gfp_mask, nodemask_t *mask);
++
++/* defer_compaction - Do not compact within a zone until a given time */
++static inline void defer_compaction(struct zone *zone, unsigned long resume)
 +{
-+	atomic_set(&anon_vma->migrate_refcount, 0);
++	/*
++	 * This function is called when compaction fails to result in a page
++	 * allocation success. This is somewhat unsatisfactory as the failure
++	 * to compact has nothing to do with time and everything to do with
++	 * the requested order, the number of free pages and watermarks. How
++	 * to wait on that is more unclear, but the answer would apply to
++	 * other areas where the VM waits based on time.
++	 */
++	zone->compact_resume = resume;
 +}
 +
-+static inline int migrate_refcount(struct anon_vma *anon_vma)
++static inline int compaction_deferred(struct zone *zone)
 +{
-+	return atomic_read(&anon_vma->migrate_refcount);
-+}
-+#else
-+static inline void migrate_refcount_init(struct anon_vma *anon_vma)
-+{
-+}
-+
-+static inline int migrate_refcount(struct anon_vma *anon_vma)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_MIGRATE */
- 
- static inline struct anon_vma *page_anon_vma(struct page *page)
- {
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 6903abf..06e6316 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -542,6 +542,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 	int rcu_locked = 0;
- 	int charge = 0;
- 	struct mem_cgroup *mem = NULL;
-+	struct anon_vma *anon_vma = NULL;
- 
- 	if (!newpage)
- 		return -ENOMEM;
-@@ -598,6 +599,8 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 	if (PageAnon(page)) {
- 		rcu_read_lock();
- 		rcu_locked = 1;
-+		anon_vma = page_anon_vma(page);
-+		atomic_inc(&anon_vma->migrate_refcount);
- 	}
- 
- 	/*
-@@ -637,6 +640,15 @@ skip_unmap:
- 	if (rc)
- 		remove_migration_ptes(page, page);
- rcu_unlock:
-+
-+	/* Drop an anon_vma reference if we took one */
-+	if (anon_vma && atomic_dec_and_lock(&anon_vma->migrate_refcount, &anon_vma->lock)) {
-+		int empty = list_empty(&anon_vma->head);
-+		spin_unlock(&anon_vma->lock);
-+		if (empty)
-+			anon_vma_free(anon_vma);
++	/* init once if necessary */
++	if (unlikely(!zone->compact_resume)) {
++		zone->compact_resume = jiffies;
++		return 0;
 +	}
 +
- 	if (rcu_locked)
- 		rcu_read_unlock();
- uncharge:
-diff --git a/mm/rmap.c b/mm/rmap.c
-index fcd593c..578d0fe 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -248,7 +248,8 @@ static void anon_vma_unlink(struct anon_vma_chain *anon_vma_chain)
- 	list_del(&anon_vma_chain->same_anon_vma);
- 
- 	/* We must garbage collect the anon_vma if it's empty */
--	empty = list_empty(&anon_vma->head) && !ksm_refcount(anon_vma);
-+	empty = list_empty(&anon_vma->head) && !ksm_refcount(anon_vma) &&
-+					!migrate_refcount(anon_vma);
- 	spin_unlock(&anon_vma->lock);
- 
- 	if (empty)
-@@ -273,6 +274,7 @@ static void anon_vma_ctor(void *data)
- 
- 	spin_lock_init(&anon_vma->lock);
- 	ksm_refcount_init(anon_vma);
-+	migrate_refcount_init(anon_vma);
- 	INIT_LIST_HEAD(&anon_vma->head);
++	return time_before(jiffies, zone->compact_resume);
++}
++
+ #else
+ static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 			int order, gfp_t gfp_mask, nodemask_t *nodemask)
+@@ -25,6 +51,15 @@ static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 	return COMPACT_INCOMPLETE;
  }
  
-@@ -1338,10 +1340,8 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
- 	/*
- 	 * Note: remove_migration_ptes() cannot use page_lock_anon_vma()
- 	 * because that depends on page_mapped(); but not all its usages
--	 * are holding mmap_sem, which also gave the necessary guarantee
--	 * (that this anon_vma's slab has not already been destroyed).
--	 * This needs to be reviewed later: avoiding page_lock_anon_vma()
--	 * is risky, and currently limits the usefulness of rmap_walk().
-+	 * are holding mmap_sem. Users without mmap_sem are required to
-+	 * take a reference count to prevent the anon_vma disappearing
- 	 */
- 	anon_vma = page_anon_vma(page);
- 	if (!anon_vma)
++static inline void defer_compaction(struct zone *zone, unsigned long resume)
++{
++}
++
++static inline int compaction_deferred(struct zone *zone)
++{
++	return 1;
++}
++
+ #endif /* CONFIG_COMPACTION */
+ 
+ #if defined(CONFIG_COMPACTION) && defined(CONFIG_SYSFS) && defined(CONFIG_NUMA)
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index cf9e458..bde879b 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -321,6 +321,13 @@ struct zone {
+ 	unsigned long		*pageblock_flags;
+ #endif /* CONFIG_SPARSEMEM */
+ 
++#ifdef CONFIG_COMPACTION
++	/*
++	 * If a compaction fails, do not try compaction again until
++	 * jiffies is after the value of compact_resume
++	 */
++	unsigned long		compact_resume;
++#endif
+ 
+ 	ZONE_PADDING(_pad1_)
+ 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 7a2e4a2..66823bd 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1770,7 +1770,7 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
+ 	cond_resched();
+ 
+ 	/* Try memory compaction for high-order allocations before reclaim */
+-	if (order) {
++	if (order && !compaction_deferred(preferred_zone)) {
+ 		*did_some_progress = try_to_compact_pages(zonelist,
+ 						order, gfp_mask, nodemask);
+ 		if (*did_some_progress != COMPACT_SKIPPED) {
+@@ -1795,6 +1795,9 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
+ 			 */
+ 			count_vm_event(COMPACTFAIL);
+ 
++			/* On failure, avoid compaction for a short time. */
++			defer_compaction(preferred_zone, jiffies + HZ/50);
++
+ 			cond_resched();
+ 		}
+ 	}
 -- 
 1.6.5
 
