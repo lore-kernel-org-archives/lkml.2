@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757143Ab0C3Xiw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:38:52 -0400
-Received: from kroah.org ([198.145.64.141]:46325 "EHLO coco.kroah.org"
+	id S1757190Ab0C3Xkt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:40:49 -0400
+Received: from kroah.org ([198.145.64.141]:46278 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932667Ab0C3XUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:45 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:18 2010
-Message-Id: <20100330224817.521373732@linux.site>
+	id S932422Ab0C3XUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:20:37 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:13 2010
+Message-Id: <20100330224812.801994837@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:01 -0700
+Date: Tue, 30 Mar 2010 15:41:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-       Daniel Taylor <Daniel.Taylor@wdc.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Adel Gadllah <adel.gadllah@gmail.com>,
+       Reinette Chatre <reinette.chatre@intel.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [087/156] fs/partition/msdos: fix unusable extended partition for > 512B sector
+Subject: [081/156] iwlwifi: Silence tfds_in_queue message
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,48 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+From: Adel Gadllah <adel.gadllah@gmail.com>
 
-commit 8e0cc811e0f8029a7225372fb0951fab102c012f upstream.
+commit c8406ea8fa1adde8dc5400127281d497bbcdb84a upstream.
 
-Smaller size than a minimum blocksize can't be used, after all it's
-handled like 0 size.
+Commit a239a8b47cc0e5e6d7416a89f340beac06d5edaa introduced a
+noisy message, that fills up the log very fast.
 
-For extended partition itself, this makes sure to use bigger size than one
-logical sector size at least.
+The error seems not to be fatal (the connection is stable and
+performance is ok), so make it IWL_DEBUG_TX rather than IWL_ERR.
 
-Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Daniel Taylor <Daniel.Taylor@wdc.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Adel Gadllah <adel.gadllah@gmail.com>
+Acked-by: Reinette Chatre <reinette.chatre@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/partitions/msdos.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-tx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/partitions/msdos.c
-+++ b/fs/partitions/msdos.c
-@@ -492,9 +492,16 @@ int msdos_partition(struct parsed_partit
- 		if (!size)
- 			continue;
- 		if (is_extended_partition(p)) {
--			/* prevent someone doing mkfs or mkswap on an
--			   extended partition, but leave room for LILO */
--			put_partition(state, slot, start, size == 1 ? 1 : 2);
-+			/*
-+			 * prevent someone doing mkfs or mkswap on an
-+			 * extended partition, but leave room for LILO
-+			 * FIXME: this uses one logical sector for > 512b
-+			 * sector, although it may not be enough/proper.
-+			 */
-+			sector_t n = 2;
-+			n = min(size, max(sector_size, n));
-+			put_partition(state, slot, start, n);
-+
- 			printk(" <");
- 			parse_extended(state, bdev, start, size);
- 			printk(" >");
+--- a/drivers/net/wireless/iwlwifi/iwl-tx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
+@@ -127,7 +127,7 @@ void iwl_free_tfds_in_queue(struct iwl_p
+ 	if (priv->stations[sta_id].tid[tid].tfds_in_queue >= freed)
+ 		priv->stations[sta_id].tid[tid].tfds_in_queue -= freed;
+ 	else {
+-		IWL_ERR(priv, "free more than tfds_in_queue (%u:%d)\n",
++		IWL_DEBUG_TX(priv, "free more than tfds_in_queue (%u:%d)\n",
+ 			priv->stations[sta_id].tid[tid].tfds_in_queue,
+ 			freed);
+ 		priv->stations[sta_id].tid[tid].tfds_in_queue = 0;
 
 
