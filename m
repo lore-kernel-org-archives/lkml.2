@@ -1,104 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755127Ab0C3IGd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 04:06:33 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:36158 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754881Ab0C3IG3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 04:06:29 -0400
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
-       Thomas Renninger <trenn@suse.de>,
-       Suresh Siddha <suresh.b.siddha@intel.com>, len.brown@intel.com,
-       Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-       linux-acpi@vger.kernel.org, Iranna D Ankad <iranna.ankad@in.ibm.com>,
-       Gary Hade <garyhade@us.ibm.com>,
-       Natalie Protasevich <protasnb@gmail.com>
-Subject: [PATCH 0/15] Start coping gsis < 16 that are not isa irqs. v2
-References: <1269221770-9667-1-git-send-email-yinghai@kernel.org>
-	<1269221770-9667-3-git-send-email-yinghai@kernel.org>
-	<alpine.LFD.2.00.1003221131470.3147@localhost.localdomain>
-	<m1iq8f1c1f.fsf@fess.ebiederm.org> <4BB0EA22.7000004@zytor.com>
-	<m1r5n2wwah.fsf_-_@fess.ebiederm.org>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Tue, 30 Mar 2010 01:06:20 -0700
-In-Reply-To: <m1r5n2wwah.fsf_-_@fess.ebiederm.org> (Eric W. Biederman's message of "Mon\, 29 Mar 2010 16\:19\:34 -0700")
-Message-ID: <m1oci6qlmr.fsf_-_@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: hpa@zytor.com, protasnb@gmail.com, garyhade@us.ibm.com, iranna.ankad@in.ibm.com, linux-acpi@vger.kernel.org, fenghua.yu@intel.com, tony.luck@intel.com, len.brown@intel.com, suresh.b.siddha@intel.com, trenn@suse.de, linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org, akpm@linux-foundation.org, mingo@elte.hu, yinghai@kernel.org, tglx@linutronix.de
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+	id S1755538Ab0C3IHZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 04:07:25 -0400
+Received: from mail.gmx.net ([213.165.64.20]:38031 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751409Ab0C3IHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 04:07:21 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18oEbJGDRsoMVdXIB885gjExhGBKW8GhOa3Ekwqle
+	NvgDHtSGNr7dej
+Subject: Re: scheduler bug: process running since 5124095h
+From: Mike Galbraith <efault@gmx.de>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: =?ISO-8859-1?Q?T=F6r=F6k?= Edwin <edwintorok@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <4BB1989D.4050809@jp.fujitsu.com>
+References: <4BADD408.8080609@gmail.com>  <4BAF1802.8070002@gmail.com>
+	 <1269859960.6844.4.camel@marge.simson.net>
+	 <4BB09736.5010009@jp.fujitsu.com>  <4BB1989D.4050809@jp.fujitsu.com>
+Content-Type: text/plain
+Date: Tue, 30 Mar 2010 10:07:15 +0200
+Message-Id: <1269936435.6699.21.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.46000000000000002
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2010-03-30 at 15:22 +0900, Hidetoshi Seto wrote:
 
-It appears there are a few systems in the wild that use acpi
-interrupt source overrides to report a gsi > 16 is an isa irq.
+> Quick report:
+> 
+> The reason why this commit have bisected is because it changed
+> the type of time values from signed clock_t to unsigned cputime_t,
+> so that the following if-block become to be always taken:
+> 
+>    > -       stime = nsec_to_clock_t(p->se.sum_exec_runtime) -
+>    > -                       cputime_to_clock_t(task_utime(p));
+>    > +       stime = nsecs_to_cputime(p->se.sum_exec_runtime) - task_utime(p);
+>    > 
+> >> >         if (stime >= 0)
+>    > -               p->prev_stime = max(p->prev_stime, clock_t_to_cputime(stime));
+>    > +               p->prev_stime = max(p->prev_stime, stime);
+>    > 
+>    >         return p->prev_stime;
+> 
+> >From strace of latancytop, it does write to /proc/<pid>/sched:
+> 
+>    5891  open("/proc/1/sched", O_RDWR)     = 5
+>    5891  fstat(5, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
+>    5891  mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) =
+>     0x7fc6668f3000
+>    5891  read(5, "init (1, #threads: 1)\n----------"..., 1024) = 776
+>    5891  read(5, "", 1024)                 = 0
+> >> 5891  write(5, "erase", 5)              = 5
+>    5891  close(5)                          = 0
+> 
+> It results in:
+> 
+> [kernel/sched_debug.c]
+> void proc_sched_set_task(struct task_struct *p)
+> {
+>  :
+>         p->se.sum_exec_runtime                  = 0;
+>         p->se.prev_sum_exec_runtime             = 0;
+>         p->nvcsw                                = 0;
+>         p->nivcsw                               = 0;
+> }
 
-This breaks all kinds of assumptions I figure any BIOS doing that
-probably should be shot as that is very much not a conservative position.
+Hm.  Dunno why that (evilness) exists.
 
-That said acpi appears to allow this insanity and on the basis of being
-liberal in what we accept we should try to do something reasonable, and
-keep our notions of gsi, isa irq, and linux irq as straight as we can.
+> So soon some task will have great (in fact negative) stime.
+> 
+> There would be no doubt that this initialize in sched_debug.c
+> will break monotonicity of sum_exec_runtime.  I confirmed that
+> the issue is disappeared by comment-out of lines above.
+> 
+> Reverting the bisected commit is wrong solution, because it
+> will bring another issue, i.e. lost of runtime, and u/stime
+> seems to be frozen because these values restart from 0 so
+> prev_* is used for a while.
+> 
+> How to fix?  Is this a bug of latencytop? Kernel?
+> Please comment.
 
-To that end this patchset slightly modifies the gsi to linux irq
-mapping.  Making it a 1 to 1 identity mapping except for the first 16
-gsis.  If those gsis are isa irqs (the typical and default acpi
-configuration) they will be mapped into the first 16 irqs.  If those
-first 16 gsis are not isa irqs they will be given a linux irq number
-just past the last gsi.  Allowing us the chance to use them.
+I looked at it in tip this morning (where task_stime doesn't exist), and
+did the below to swat the underflow.  Seems ok, but I haven't yet
+enabled CONFIG_LATENCYTOP.
 
-This patchset is my attempt to straighten out our understanding of which
-kind of irq name is used where and the cleanups used to get there.
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 81575f1..cdf4fa4 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3366,6 +3366,7 @@ void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 	 * Compare with previous values, to keep monotonicity:
+ 	 */
+ 	p->prev_utime = max(p->prev_utime, utime);
++	rtime = max(rtime, p->prev_utime);
+ 	p->prev_stime = max(p->prev_stime, cputime_sub(rtime, p->prev_utime));
+ 
+ 	*ut = p->prev_utime;
+@@ -3396,6 +3397,7 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 		utime = rtime;
+ 
+ 	sig->prev_utime = max(sig->prev_utime, utime);
++	rtime = max(rtime, sig->prev_utime);
+ 	sig->prev_stime = max(sig->prev_stime,
+ 			      cputime_sub(rtime, sig->prev_utime));
+ 
 
-Thanks to Yinghai Lu <yinghai@kernel.org> for taking the first stab at
-this and finding that there is a real world problem here.  This patchset
-is inspired by his work, but little of it remains the same.
 
-This patchset lies in the weird world between the acpi and x86 and ia64.
-Since most of the changes are x86 related I think it makes most sense
-to go via the x86 tree.
-
-v2: Recognize that gsi_end is last gsi for an ioapic not one past the end.
-    Since I use gsi_end widely in my patchset a respin of many of the patches
-    made sense.
-
-Eric W. Biederman (15):
-      x86 acpi/irq: Introduce apci_isa_irq_to_gsi
-      x86 acpi/irq: Teach acpi_get_override_irq to take a gsi not an isa_irq
-      x86 acpi/irq: pci device dev->irq is an isa irq not a gsi
-      x86 acpi/irq: Fix acpi_sci_ioapic_setup so it has both bus_irq and gsi
-      x86 acpi/irq: Generalize mp_config_acpi_legacy_irqs
-      x86 ioapic: Only export mp_find_ioapic and mp_find_ioapic_pin in io_apic.h
-      x86 ioapic: Fix io_apic_redir_entries to return the number of entries.
-      x86 ioapic: Fix the types of gsi values
-      x86 ioapic: Teach mp_register_ioapic to compute a global gsi_end
-      x86 ioapic: In mpparse use mp_register_ioapic
-      x86 ioapic: Move nr_ioapic_registers calculation to mp_register_ioapic.
-      x86 ioapic: Optimize pin_2_irq
-      x86 ioapic: Simplify probe_nr_irqs_gsi.
-      x86 acpi/irq: Handle isa irqs that are not identity mapped to gsi's.
-      x86 irq: Kill io_apic_renumber_irq
-
- arch/ia64/kernel/acpi.c          |    8 ++
- arch/x86/include/asm/io_apic.h   |   12 ++--
- arch/x86/include/asm/mpspec.h    |   10 ---
- arch/x86/kernel/acpi/boot.c      |  133 ++++++++++++++++++++++++--------------
- arch/x86/kernel/apic/es7000_32.c |   19 ------
- arch/x86/kernel/apic/io_apic.c   |   99 +++++++++++++---------------
- arch/x86/kernel/mpparse.c        |   25 +-------
- arch/x86/kernel/sfi.c            |    4 +-
- drivers/acpi/pci_irq.c           |    8 ++-
- include/linux/acpi.h             |    5 +-
- 10 files changed, 154 insertions(+), 169 deletions(-)
-
-Eric
