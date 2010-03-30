@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789Ab0C3GVB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 02:21:01 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:34946 "EHLO
+	id S1755658Ab0C3GUQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 02:20:16 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:32918 "EHLO
 	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755638Ab0C3GUR (ORCPT
+	with ESMTP id S1755638Ab0C3GUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 02:20:17 -0400
+	Tue, 30 Mar 2010 02:20:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=IdFfJHGWQreRH9jdPhs7Mzgi1b3PbJe9PPZ6trN63/bUUUcPGkqnrev0yJ9Ku6B02r
-         JUoDXClWTRnLALytqmIxQ09z3n59ihWJDZ1tFlaZTlaw4masmrqqaWA1HGXgLQHxSTai
-         KU8xwf3foaZhEU5nhau/3rJe7XH0CsH8CMzxw=
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=AEkBYQYpiLWJi95UNpXYXmbJq8UX+vPYGKW3Jal3EFOGNlGjH7Io1mgn/OCV5j87GK
+         OCJu+GbyWUGZ8xiUZFPiiYQCo6D2zEHAXpenWOhOS5EEQjOyDjgM/vp6m22szzslc9yF
+         uKZUWxKocYH4VH6ov9pglhpuirdCLT/npLS5s=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -21,46 +21,58 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
        Andrew Morton <akpm@linux-foundation.org>,
        John Kacur <jkacur@redhat.com>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Al Viro <viro@ZenIV.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 3/6] procfs: Use generic_file_llseek in /proc/kmsg
-Date: Tue, 30 Mar 2010 08:20:12 +0200
-Message-Id: <1269930015-863-4-git-send-regression-fweisbec@gmail.com>
+       Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [PATCH 0/6] Kill the bkl in procfs
+Date: Tue, 30 Mar 2010 08:20:09 +0200
+Message-Id: <1269930015-863-1-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.6.2.3
-In-Reply-To: <1269930015-863-1-git-send-regression-fweisbec@gmail.com>
-References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need to hold the bkl to seek here, none of the other
-fops callbacks use it.
+Hi,
 
-Use generic_file_llseek explicitly.
+This patchset drops any use of the big kernel lock from procfs.
+May be there is still one or two NULL llseek somewhere but I
+think we have fixed 99% of those that were in the procfs core.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: John Kacur <jkacur@redhat.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
----
- fs/proc/kmsg.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Users of procfs implementing an ioctl have not been easy to
+spot automatically (there are hundreds of procfs users)
+as there are many indirect ways to register a procfs, depending
+on the subsystem you are.
 
-diff --git a/fs/proc/kmsg.c b/fs/proc/kmsg.c
-index cfe90a4..bd4b5a7 100644
---- a/fs/proc/kmsg.c
-+++ b/fs/proc/kmsg.c
-@@ -53,6 +53,7 @@ static const struct file_operations proc_kmsg_operations = {
- 	.poll		= kmsg_poll,
- 	.open		= kmsg_open,
- 	.release	= kmsg_release,
-+	.llseek		= generic_file_llseek,
- };
- 
- static int __init proc_kmsg_init(void)
--- 
-1.6.2.3
+So for those who want to verify the reliability of this check,
+you can look at the script there:
+
+	http://tglx.de/~fweisbec/seek.py
+
+Beware it's very dirty! The hardcoded path are those I had
+to check manually (or that I added to the automatic check).
+One day I should learn how to use Coccinelle instead.
+
+In the worst case, the remaining ones this script or my eyes
+forgot will trigger a warning.
+
+Thanks.
+
+
+Arnd Bergmann (1):
+  procfs: Kill BKL in llseek on proc base
+
+Frederic Weisbecker (5):
+  procfs: Use generic_file_llseek in /proc/kcore
+  procfs: Use generic_file_llseek in /proc/kmsg
+  procfs: Use generic_file_llseek in /proc/vmcore
+  procfs: Push down the bkl from ioctl
+  procfs: Kill the bkl in ioctl
+
+ drivers/char/i8k.c                  |   53 +++++++++++++++------
+ drivers/isdn/divert/divert_procfs.c |   90 ++++++++++++++++++++++-------------
+ fs/proc/base.c                      |   10 ++++-
+ fs/proc/inode.c                     |    4 +-
+ fs/proc/kcore.c                     |    1 +
+ fs/proc/kmsg.c                      |    1 +
+ fs/proc/vmcore.c                    |    1 +
+ net/sunrpc/cache.c                  |   20 ++++++--
+ 8 files changed, 123 insertions(+), 57 deletions(-)
 
