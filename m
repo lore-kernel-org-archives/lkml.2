@@ -1,69 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932763Ab0C3XXU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:23:20 -0400
-Received: from kroah.org ([198.145.64.141]:46841 "EHLO coco.kroah.org"
+	id S932781Ab0C3XYy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:24:54 -0400
+Received: from cantor.suse.de ([195.135.220.2]:40320 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754633Ab0C3XWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:22:21 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:00 2010
-Message-Id: <20100330224859.521323575@linux.site>
-User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:43:07 -0700
+	id S932713Ab0C3XYn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:24:43 -0400
+Date: Tue, 30 Mar 2010 16:25:06 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dimitri Sivanich <sivanich@sgi.com>,
-       Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [153/156] x86: Fix sched_clock_cpu for systems with unsynchronized TSC
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+To: "L. Alberto Gim??nez" <agimenez@sysvalve.es>
+Cc: devel@driverdev.osuosl.org, wfp5p@virginia.edu, bzolnier@gmail.com,
+       alan@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/net/usb: Add new driver ipheth
+Message-ID: <20100330232506.GB29851@suse.de>
+References: <1269984864-28159-2-git-send-email-agimenez@sysvalve.es> <1269990098-1920-1-git-send-email-agimenez@sysvalve.es>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269990098-1920-1-git-send-email-agimenez@sysvalve.es>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dimitri Sivanich <sivanich@sgi.com>
+On Wed, Mar 31, 2010 at 01:01:38AM +0200, L. Alberto Gim??nez wrote:
 
-commit 14be1f7454ea96ee614467a49cf018a1a383b189 upstream.
+Patches sent to drivers/net/usb/ need to be sent to the correct people.
 
-On UV systems, the TSC is not synchronized across blades.  The
-sched_clock_cpu() function is returning values that can go
-backwards  (I've seen as much as 8 seconds) when switching
-between cpus.
+Run scripts/get_maintainer.pl to determine who that is (and the proper
+list to send them to.)
 
-As each cpu comes up, early_init_intel() will currently set the
-sched_clock_stable flag true.  When mark_tsc_unstable() runs, it
-clears the flag, but this only occurs once (the first time a cpu
-comes up whose TSC is not synchronized with cpu 0).  After this,
-early_init_intel() will set the flag again as the next cpu comes
-up.
+thanks,
 
-Only set sched_clock_stable if tsc has not been marked unstable.
-
-Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
-Acked-by: Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <20100301174815.GC8224@sgi.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- arch/x86/kernel/cpu/intel.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -70,7 +70,8 @@ static void __cpuinit early_init_intel(s
- 	if (c->x86_power & (1 << 8)) {
- 		set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
- 		set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC);
--		sched_clock_stable = 1;
-+		if (!check_tsc_unstable())
-+			sched_clock_stable = 1;
- 	}
- 
- 	/*
-
-
+greg k-h
