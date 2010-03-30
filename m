@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab0C3AeU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 20:34:20 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:38281 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504Ab0C3AeS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 20:34:18 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Subject: Re: KVM bug, git bisected
-Cc: kosaki.motohiro@jp.fujitsu.com, Rik van Riel <riel@redhat.com>,
-       Kent Overstreet <kent.overstreet@gmail.com>,
-       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1269881082.12097.359.camel@laptop>
-References: <1269880140.12097.356.camel@laptop> <1269881082.12097.359.camel@laptop>
-Message-Id: <20100330093114.8E93.A69D9226@jp.fujitsu.com>
+	id S1754985Ab0C3BB7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 21:01:59 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37041 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754040Ab0C3BB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 21:01:58 -0400
+Message-ID: <4BB14D7B.4010602@kernel.org>
+Date: Tue, 30 Mar 2010 10:01:47 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 30 Mar 2010 09:34:15 +0900 (JST)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Dominik Brodowski <linux@dominikbrodowski.net>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 09/17] pcmcia: update gfp/slab.h includes
+References: <1269885165-18617-1-git-send-email-tj@kernel.org>	<1269885165-18617-10-git-send-email-tj@kernel.org>	<20100329193203.GA8450@comet.dominikbrodowski.net> <20100330103129.b76a70e3.sfr@canb.auug.org.au>
+In-Reply-To: <20100330103129.b76a70e3.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 30 Mar 2010 01:01:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, 2010-03-29 at 18:29 +0200, Peter Zijlstra wrote:
+Hello,
+
+On 03/30/2010 08:31 AM, Stephen Rothwell wrote:
+> Hi Dominik,
+> On Mon, 29 Mar 2010 21:32:03 +0200 Dominik Brodowski <linux@dominikbrodowski.net> wrote:
+>>
+>> On Tue, Mar 30, 2010 at 02:52:37AM +0900, Tejun Heo wrote:
+>>> Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+>>> gfp.h or slab.h is included as necessary.
+>>>
+>>> Signed-off-by: Tejun Heo <tj@kernel.org>
+>>> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+>>> Cc: Dominik Brodowski <linux@dominikbrodowski.net>
+>> Acked-by: Dominik Brodowski <linux@dominikbrodowski.net>
 > 
-> > > Peter, would it be safe to increase PREEMPT_BITS to eg. 10?
-> 
-> One reason this all sucks massive is that nesting that many spinlocks
-> creates a terribly large !preempt section.
-> 
-> There is nothing that stops someone from creating 64k vmas (or more when
-> someone raises that sysctl) and try this, that's just utter suckage.
+> The plan here is for you to put this in your tree now.  It is safe to do
+> so and Tejun can't carry it because this does not apply to mainline. 
 
-offtopic: We are plan to increase default maximum vmas limit from 64k
-at 1 or 2 years later on 64bit. It was necessary because gdb couldn't
-parse >64k vmas (i.e. mainly it's for core dump). but it was solved already.
+Yeap, something I completely forgot about when I asked Stephen to pull
+from the slabh tree.  It would be great if you can apply this one and
+Stephen's patches on drivers/input/misc/ad714x.c and pcf8574_keypad.c
+into input tree.
 
+Thank you.
 
-
+-- 
+tejun
