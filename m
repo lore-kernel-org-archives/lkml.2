@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab0C3PbY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 11:31:24 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41383 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752447Ab0C3PbW (ORCPT
+	id S1754369Ab0C3Pbg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 11:31:36 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:53507 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754122Ab0C3Pbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 11:31:22 -0400
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [2.6.31 and later] "struct pid" leak.
-References: <201003272121.ADE39095.JLFHOOMtSVOFQF@I-love.SAKURA.ne.jp>
-Date: Tue, 30 Mar 2010 16:31:13 +0100
-In-Reply-To: <201003272121.ADE39095.JLFHOOMtSVOFQF@I-love.SAKURA.ne.jp>
-	(Tetsuo Handa's message of "Sat, 27 Mar 2010 21:21:57 +0900")
-Message-ID: <tnxbpe5ygfy.fsf@e102109-lin.cambridge.arm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Tue, 30 Mar 2010 11:31:33 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=vkmnLT2R8ZW1siQLHo2HzSl7TS4u3Sm+2OsMuG9jZiYoGAFNwS1n5x5X2ESsdRCHo
+	om+kbNf5SPlgCi/QXArPw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-OriginalArrivalTime: 30 Mar 2010 15:31:18.0151 (UTC) FILETIME=[0AC13170:01CAD01E]
+In-Reply-To: <20100330151133.GB5211@lenovo>
+References: <1269880612-25800-1-git-send-email-robert.richter@amd.com>
+	 <bd4cb8901003300311l4178891dvf1e63293a0ac51fe@mail.gmail.com>
+	 <20100330134145.GI11907@erda.amd.com>
+	 <bd4cb8901003300653lc8e414bp3930b03fee2fffbf@mail.gmail.com>
+	 <1269961255.5258.221.camel@laptop> <20100330151133.GB5211@lenovo>
+Date: Tue, 30 Mar 2010 17:31:29 +0200
+Message-ID: <bd4cb8901003300831n48ed60c6l9fcd02393277ad32@mail.gmail.com>
+Subject: Re: [PATCH 0/3] perf/core, x86: unify perfctr bitmasks
+From: Stephane Eranian <eranian@google.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> wrote:
-> I got below report with 2.6.33.1 .
+On Tue, Mar 30, 2010 at 5:11 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> On Tue, Mar 30, 2010 at 05:00:55PM +0200, Peter Zijlstra wrote:
+>> On Tue, 2010-03-30 at 15:53 +0200, Stephane Eranian wrote:
+>> > > So, there are some ARCH_PERFMON_EVENTSEL_* masks that are Intel only,
+>> > > which is true for ARCH_PERFMON_EVENTSEL_ANY. And indead, the code
+>> > > should be checked for this. ARCH_PERFMON_EVENTSEL_ANY is always
+>> > > cleared on AMD cpus, so this code is ok. Actually the bit is cleared
+>> >
+>> > Until AMD uses that bit too and you won't notice this test. This is a security
+>> > check specific to Intel and it should be in an Intel-specific function.
+>> >
+>> > > for *all* cpus in x86_pmu_raw_event(), the code was and is broken for
+>> > > this.
+>> > >
+>> > Yes, needs to be authorized for any perfmon v3 and later revisions.
+>>
+>> So how about something like this on top of Robert's patches?
+>>
+> [...]
 >
-> unreferenced object 0xde144600 (size 64):
->   comm "init", pid 1, jiffies 4294678101 (age 291.508s)
->   hex dump (first 32 bytes):
->     02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->     00 00 00 00 04 76 ae de d1 76 43 c0 d6 08 00 00  .....v...vC.....
->   backtrace:
->     [<c0481704>] create_object+0x121/0x1ef
->     [<c05f546b>] kmemleak_alloc+0x25/0x42
->     [<c047e326>] kmemleak_alloc_recursive+0x1c/0x22
->     [<c047e36e>] kmem_cache_alloc+0x42/0x68
->     [<c0437701>] alloc_pid+0x19/0x288
->     [<c0428acc>] copy_process+0x95a/0xdac
->     [<c04290d8>] do_fork+0x129/0x261
->     [<c0407de5>] sys_clone+0x1f/0x24
->     [<c040292d>] ptregs_clone+0x15/0x28
->     [<ffffffff>] 0xffffffff
-> unreferenced object 0xdfa96a40 (size 64):
->   comm "login", pid 2259, jiffies 4294719437 (age 250.179s)
->   hex dump (first 32 bytes):
->     02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->     00 00 00 00 60 39 ae de d1 76 43 c0 bb 09 00 00  ....`9...vC.....
->   backtrace:
->     [<c0481704>] create_object+0x121/0x1ef
->     [<c05f546b>] kmemleak_alloc+0x25/0x42
->     [<c047e326>] kmemleak_alloc_recursive+0x1c/0x22
->     [<c047e36e>] kmem_cache_alloc+0x42/0x68
->     [<c0437701>] alloc_pid+0x19/0x288
->     [<c0428acc>] copy_process+0x95a/0xdac
->     [<c04290d8>] do_fork+0x129/0x261
->     [<c0407de5>] sys_clone+0x1f/0x24
->     [<c040292d>] ptregs_clone+0x15/0x28
->     [<ffffffff>] 0xffffffff
+> Looks good for me! Thanks Peter!
+>
+Looks better. Thanks.
 
-I reported similar leaks last year -
-http://lkml.org/lkml/2009/7/8/422. There is some analysis in the thread
-above of the reference counting but I couldn't figure out where it goes
-wrong. It looks to me like there isn't any reference to a struct pid
-block but its reference count is 2.
-
-There is a bugzilla entry as well -
-https://bugzilla.kernel.org/show_bug.cgi?id=13868
-
--- 
-Catalin
+Acked-by: Stephane Eranian <eranian@google.com>
