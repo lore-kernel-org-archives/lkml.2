@@ -1,110 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932641Ab0CaAUY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:20:24 -0400
-Received: from kroah.org ([198.145.64.141]:49197 "EHLO coco.kroah.org"
+	id S932591Ab0CaATI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:19:08 -0400
+Received: from kroah.org ([198.145.64.141]:51703 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756628Ab0C3XM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:56 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:52 2010
-Message-Id: <20100330225852.111231770@linux.site>
+	id S1756732Ab0C3XRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:17:23 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:55:58 2010
+Message-Id: <20100330225558.174651256@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:58:12 -0700
+Date: Tue, 30 Mar 2010 15:54:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dan Williams <dcbw@redhat.com>, Stanislaw Gruszka <sgruszka@redhat.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [70/89] airo: fix setting zero length WEP key
-In-Reply-To: <20100330230520.GA28779@kroah.com>
+Subject: [004/116] ARM: Fix decompressors kernel size estimation for ROM=y
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.31-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit f09c256375c7cf1e112b8ef6306cdd313490d7c0 upstream.
+commit 98e12b5a6e05413420a7e3b3eca7fbfc2ff41b6d upstream.
 
-Patch prevents call set_wep_key() with zero key length. That fix long
-standing regression since commit c0380693520b1a1e4f756799a0edc379378b462a
-"airo: clean up WEP key operations". Additionally print call trace when
-someone will try to use improper parameters, and remove key.len = 0
-assignment, because it is in not possible code path.
+Commit 2552fc2 changed the way the decompressor decides if it is safe
+to decompress the kernel directly to its final location.  Unfortunately,
+it took the top of the compressed data as being the stack pointer,
+which it is for ROM=n cases.  However, for ROM=y, the stack pointer
+is not relevant, and results in the wrong answer.
 
-Reported-by: Chris Siebenmann <cks-rhbugzilla@cs.toronto.edu>
-Bisected-by: Chris Siebenmann <cks-rhbugzilla@cs.toronto.edu>
-Tested-by: Chris Siebenmann <cks@cs.toronto.edu>
-Cc: Dan Williams <dcbw@redhat.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Fix this by explicitly storing the end of the biggybacked data in the
+decompressor, and use that to calculate the compressed image size.
+
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/airo.c |   34 ++++++++++++++++++----------------
- 1 file changed, 18 insertions(+), 16 deletions(-)
+ arch/arm/boot/compressed/head.S         |   50 ++++++++++++++------------------
+ arch/arm/boot/compressed/vmlinux.lds.in |    3 +
+ 2 files changed, 26 insertions(+), 27 deletions(-)
 
---- a/drivers/net/wireless/airo.c
-+++ b/drivers/net/wireless/airo.c
-@@ -5249,11 +5249,7 @@ static int set_wep_key(struct airo_info
- 	WepKeyRid wkr;
- 	int rc;
+--- a/arch/arm/boot/compressed/head.S
++++ b/arch/arm/boot/compressed/head.S
+@@ -162,8 +162,8 @@ not_angel:
  
--	if (keylen == 0) {
--		airo_print_err(ai->dev->name, "%s: key length to set was zero",
--			       __func__);
--		return -1;
--	}
-+	WARN_ON(keylen == 0);
+ 		.text
+ 		adr	r0, LC0
+- ARM(		ldmia	r0, {r1, r2, r3, r4, r5, r6, ip, sp}	)
+- THUMB(		ldmia	r0, {r1, r2, r3, r4, r5, r6, ip}	)
++ ARM(		ldmia	r0, {r1, r2, r3, r4, r5, r6, r11, ip, sp})
++ THUMB(		ldmia	r0, {r1, r2, r3, r4, r5, r6, r11, ip}	)
+  THUMB(		ldr	sp, [r0, #28]				)
+ 		subs	r0, r0, r1		@ calculate the delta offset
  
- 	memset(&wkr, 0, sizeof(wkr));
- 	wkr.len = cpu_to_le16(sizeof(wkr));
-@@ -6399,11 +6395,7 @@ static int airo_set_encode(struct net_de
- 		if (dwrq->length > MIN_KEY_SIZE)
- 			key.len = MAX_KEY_SIZE;
- 		else
--			if (dwrq->length > 0)
--				key.len = MIN_KEY_SIZE;
--			else
--				/* Disable the key */
--				key.len = 0;
-+			key.len = MIN_KEY_SIZE;
- 		/* Check if the key is not marked as invalid */
- 		if(!(dwrq->flags & IW_ENCODE_NOKEY)) {
- 			/* Cleanup */
-@@ -6584,12 +6576,22 @@ static int airo_set_encodeext(struct net
- 		default:
- 			return -EINVAL;
- 		}
--		/* Send the key to the card */
--		rc = set_wep_key(local, idx, key.key, key.len, perm, 1);
--		if (rc < 0) {
--			airo_print_err(local->dev->name, "failed to set WEP key"
--			               " at index %d: %d.", idx, rc);
--			return rc;
-+		if (key.len == 0) {
-+			rc = set_wep_tx_idx(local, idx, perm, 1);
-+			if (rc < 0) {
-+				airo_print_err(local->dev->name,
-+					       "failed to set WEP transmit index to %d: %d.",
-+					       idx, rc);
-+				return rc;
-+			}
-+		} else {
-+			rc = set_wep_key(local, idx, key.key, key.len, perm, 1);
-+			if (rc < 0) {
-+				airo_print_err(local->dev->name,
-+					       "failed to set WEP key at index %d: %d.",
-+					       idx, rc);
-+				return rc;
-+			}
- 		}
- 	}
+@@ -174,12 +174,13 @@ not_angel:
+ 		/*
+ 		 * We're running at a different address.  We need to fix
+ 		 * up various pointers:
+-		 *   r5 - zImage base address
+-		 *   r6 - GOT start
++		 *   r5 - zImage base address (_start)
++		 *   r6 - size of decompressed image
++		 *   r11 - GOT start
+ 		 *   ip - GOT end
+ 		 */
+ 		add	r5, r5, r0
+-		add	r6, r6, r0
++		add	r11, r11, r0
+ 		add	ip, ip, r0
  
+ #ifndef CONFIG_ZBOOT_ROM
+@@ -197,10 +198,10 @@ not_angel:
+ 		/*
+ 		 * Relocate all entries in the GOT table.
+ 		 */
+-1:		ldr	r1, [r6, #0]		@ relocate entries in the GOT
++1:		ldr	r1, [r11, #0]		@ relocate entries in the GOT
+ 		add	r1, r1, r0		@ table.  This fixes up the
+-		str	r1, [r6], #4		@ C references.
+-		cmp	r6, ip
++		str	r1, [r11], #4		@ C references.
++		cmp	r11, ip
+ 		blo	1b
+ #else
+ 
+@@ -208,12 +209,12 @@ not_angel:
+ 		 * Relocate entries in the GOT table.  We only relocate
+ 		 * the entries that are outside the (relocated) BSS region.
+ 		 */
+-1:		ldr	r1, [r6, #0]		@ relocate entries in the GOT
++1:		ldr	r1, [r11, #0]		@ relocate entries in the GOT
+ 		cmp	r1, r2			@ entry < bss_start ||
+ 		cmphs	r3, r1			@ _end < entry
+ 		addlo	r1, r1, r0		@ table.  This fixes up the
+-		str	r1, [r6], #4		@ C references.
+-		cmp	r6, ip
++		str	r1, [r11], #4		@ C references.
++		cmp	r11, ip
+ 		blo	1b
+ #endif
+ 
+@@ -239,6 +240,7 @@ not_relocated:	mov	r0, #0
+  * Check to see if we will overwrite ourselves.
+  *   r4 = final kernel address
+  *   r5 = start of this image
++ *   r6 = size of decompressed image
+  *   r2 = end of malloc space (and therefore this image)
+  * We basically want:
+  *   r4 >= r2 -> OK
+@@ -246,8 +248,7 @@ not_relocated:	mov	r0, #0
+  */
+ 		cmp	r4, r2
+ 		bhs	wont_overwrite
+-		sub	r3, sp, r5		@ > compressed kernel size
+-		add	r0, r4, r3, lsl #2	@ allow for 4x expansion
++		add	r0, r4, r6
+ 		cmp	r0, r5
+ 		bls	wont_overwrite
+ 
+@@ -263,7 +264,6 @@ not_relocated:	mov	r0, #0
+  * r1-r3  = unused
+  * r4     = kernel execution address
+  * r5     = decompressed kernel start
+- * r6     = processor ID
+  * r7     = architecture ID
+  * r8     = atags pointer
+  * r9-r12,r14 = corrupted
+@@ -304,7 +304,8 @@ LC0:		.word	LC0			@ r1
+ 		.word	_end			@ r3
+ 		.word	zreladdr		@ r4
+ 		.word	_start			@ r5
+-		.word	_got_start		@ r6
++		.word	_image_size		@ r6
++		.word	_got_start		@ r11
+ 		.word	_got_end		@ ip
+ 		.word	user_stack+4096		@ sp
+ LC1:		.word	reloc_end - reloc_start
+@@ -328,7 +329,6 @@ params:		ldr	r0, =params_phys
+  *
+  * On entry,
+  *  r4 = kernel execution address
+- *  r6 = processor ID
+  *  r7 = architecture number
+  *  r8 = atags pointer
+  *  r9 = run-time address of "start"  (???)
+@@ -534,7 +534,6 @@ __common_mmu_cache_on:
+  * r1-r3  = unused
+  * r4     = kernel execution address
+  * r5     = decompressed kernel start
+- * r6     = processor ID
+  * r7     = architecture ID
+  * r8     = atags pointer
+  * r9-r12,r14 = corrupted
+@@ -573,19 +572,19 @@ call_kernel:	bl	cache_clean_flush
+  *  r1  = corrupted
+  *  r2  = corrupted
+  *  r3  = block offset
+- *  r6  = corrupted
++ *  r9  = corrupted
+  *  r12 = corrupted
+  */
+ 
+ call_cache_fn:	adr	r12, proc_types
+ #ifdef CONFIG_CPU_CP15
+-		mrc	p15, 0, r6, c0, c0	@ get processor ID
++		mrc	p15, 0, r9, c0, c0	@ get processor ID
+ #else
+-		ldr	r6, =CONFIG_PROCESSOR_ID
++		ldr	r9, =CONFIG_PROCESSOR_ID
+ #endif
+ 1:		ldr	r1, [r12, #0]		@ get value
+ 		ldr	r2, [r12, #4]		@ get mask
+-		eor	r1, r1, r6		@ (real ^ match)
++		eor	r1, r1, r9		@ (real ^ match)
+ 		tst	r1, r2			@       & mask
+  ARM(		addeq	pc, r12, r3		) @ call cache function
+  THUMB(		addeq	r12, r3			)
+@@ -764,8 +763,7 @@ proc_types:
+  * Turn off the Cache and MMU.  ARMv3 does not support
+  * reading the control register, but ARMv4 does.
+  *
+- * On entry,  r6 = processor ID
+- * On exit,   r0, r1, r2, r3, r12 corrupted
++ * On exit, r0, r1, r2, r3, r9, r12 corrupted
+  * This routine must preserve: r4, r6, r7
+  */
+ 		.align	5
+@@ -838,10 +836,8 @@ __armv3_mmu_cache_off:
+ /*
+  * Clean and flush the cache to maintain consistency.
+  *
+- * On entry,
+- *  r6 = processor ID
+  * On exit,
+- *  r1, r2, r3, r11, r12 corrupted
++ *  r1, r2, r3, r9, r11, r12 corrupted
+  * This routine must preserve:
+  *  r0, r4, r5, r6, r7
+  */
+@@ -953,7 +949,7 @@ __armv4_mmu_cache_flush:
+ 		mov	r2, #64*1024		@ default: 32K dcache size (*2)
+ 		mov	r11, #32		@ default: 32 byte line size
+ 		mrc	p15, 0, r3, c0, c0, 1	@ read cache type
+-		teq	r3, r6			@ cache ID register present?
++		teq	r3, r9			@ cache ID register present?
+ 		beq	no_cache_id
+ 		mov	r1, r3, lsr #18
+ 		and	r1, r1, #7
+--- a/arch/arm/boot/compressed/vmlinux.lds.in
++++ b/arch/arm/boot/compressed/vmlinux.lds.in
+@@ -36,6 +36,9 @@ SECTIONS
+ 
+   _etext = .;
+ 
++  /* Assume size of decompressed image is 4x the compressed image */
++  _image_size = (_etext - _text) * 4;
++
+   _got_start = .;
+   .got			: { *(.got) }
+   _got_end = .;
 
 
