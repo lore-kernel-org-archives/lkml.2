@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201Ab0CaAGq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:06:46 -0400
-Received: from kroah.org ([198.145.64.141]:45242 "EHLO coco.kroah.org"
+	id S1757429Ab0C3X5x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:57:53 -0400
+Received: from kroah.org ([198.145.64.141]:45593 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932250Ab0C3XSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:23 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:40 2010
-Message-Id: <20100330225639.999195448@linux.site>
+	id S932361Ab0C3XTK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:10 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:15 2010
+Message-Id: <20100330225715.375996152@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:42 -0700
+Date: Tue, 30 Mar 2010 15:56:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Clemens Ladisch <clemens@ladisch.de>,
+       Dimitri Sivanich <sivanich@sgi.com>,
+       Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [064/116] USB: EHCI: fix ITD list order
+Subject: [115/116] x86: Fix sched_clock_cpu for systems with unsynchronized TSC
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,61 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Dimitri Sivanich <sivanich@sgi.com>
 
-commit 92bc3648e6027384479852b770a542722fadee7c upstream.
+commit 14be1f7454ea96ee614467a49cf018a1a383b189 upstream.
 
-When isochronous URBs are shorter than one frame and when more than one
-ITD in a frame has been completed before the interrupt can be handled,
-scan_periodic() completes the URBs in the order in which they are found
-in the descriptor list.  Therefore, the descriptor list must contain the
-ITDs in the correct order, i.e., a new ITD must be linked in after any
-previous ITDs of the same endpoint.
+On UV systems, the TSC is not synchronized across blades.  The
+sched_clock_cpu() function is returning values that can go
+backwards  (I've seen as much as 8 seconds) when switching
+between cpus.
 
-This should fix garbled capture data in the USB audio drivers.
+As each cpu comes up, early_init_intel() will currently set the
+sched_clock_stable flag true.  When mark_tsc_unstable() runs, it
+clears the flag, but this only occurs once (the first time a cpu
+comes up whose TSC is not synchronized with cpu 0).  After this,
+early_init_intel() will set the flag again as the next cpu comes
+up.
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Reported-by: Colin Fletcher <colin.m.fletcher@googlemail.com>
+Only set sched_clock_stable if tsc has not been marked unstable.
+
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+Acked-by: Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20100301174815.GC8224@sgi.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-sched.c |   24 +++++++++++++++++++-----
- 1 file changed, 19 insertions(+), 5 deletions(-)
+ arch/x86/kernel/cpu/intel.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -1553,13 +1553,27 @@ itd_patch(
- static inline void
- itd_link (struct ehci_hcd *ehci, unsigned frame, struct ehci_itd *itd)
- {
--	/* always prepend ITD/SITD ... only QH tree is order-sensitive */
--	itd->itd_next = ehci->pshadow [frame];
--	itd->hw_next = ehci->periodic [frame];
--	ehci->pshadow [frame].itd = itd;
-+	union ehci_shadow	*prev = &ehci->pshadow[frame];
-+	__hc32			*hw_p = &ehci->periodic[frame];
-+	union ehci_shadow	here = *prev;
-+	__hc32			type = 0;
-+
-+	/* skip any iso nodes which might belong to previous microframes */
-+	while (here.ptr) {
-+		type = Q_NEXT_TYPE(ehci, *hw_p);
-+		if (type == cpu_to_hc32(ehci, Q_TYPE_QH))
-+			break;
-+		prev = periodic_next_shadow(ehci, prev, type);
-+		hw_p = shadow_next_periodic(ehci, &here, type);
-+		here = *prev;
-+	}
-+
-+	itd->itd_next = here;
-+	itd->hw_next = *hw_p;
-+	prev->itd = itd;
- 	itd->frame = frame;
- 	wmb ();
--	ehci->periodic[frame] = cpu_to_hc32(ehci, itd->itd_dma | Q_TYPE_ITD);
-+	*hw_p = cpu_to_hc32(ehci, itd->itd_dma | Q_TYPE_ITD);
- }
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -70,7 +70,8 @@ static void __cpuinit early_init_intel(s
+ 	if (c->x86_power & (1 << 8)) {
+ 		set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
+ 		set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC);
+-		sched_clock_stable = 1;
++		if (!check_tsc_unstable())
++			sched_clock_stable = 1;
+ 	}
  
- /* fit urb's itds into the selected schedule slot; activate as needed */
+ 	/*
 
 
