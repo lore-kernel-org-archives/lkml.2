@@ -1,147 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab0C3QAI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 12:00:08 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.15]:27611
-	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754614Ab0C3QAF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 12:00:05 -0400
-X-SpamScore: -20
-X-BigFish: VPS-20(zba6lz1432R98dN936eM62a3Lab9bhzz1202hzzz32i6bh2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-SS: 5,
-X-WSS-ID: 0L03R3R-01-8O1-02
-X-M-MSG: 
-Date: Tue, 30 Mar 2010 17:59:49 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: Re: [PATCH 0/3] perf/core, x86: unify perfctr bitmasks
-Message-ID: <20100330155949.GJ11907@erda.amd.com>
-References: <1269880612-25800-1-git-send-email-robert.richter@amd.com>
- <bd4cb8901003300311l4178891dvf1e63293a0ac51fe@mail.gmail.com>
- <20100330134145.GI11907@erda.amd.com>
- <bd4cb8901003300653lc8e414bp3930b03fee2fffbf@mail.gmail.com>
- <1269961255.5258.221.camel@laptop>
+	id S1754598Ab0C3QDp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 12:03:45 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:58007 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751156Ab0C3QDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 12:03:44 -0400
+Date: Tue, 30 Mar 2010 09:03:39 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] rcu: don't call rcu_preempt_note_context_switch() in
+ rcu_check_callbacks()
+Message-ID: <20100330160339.GB2513@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4BB014DF.9030905@cn.fujitsu.com>
+ <20100329044236.GB2343@linux.vnet.ibm.com>
+ <4BB1C7C5.5070700@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1269961255.5258.221.camel@laptop>
+In-Reply-To: <4BB1C7C5.5070700@cn.fujitsu.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 30 Mar 2010 15:59:50.0076 (UTC) FILETIME=[072437C0:01CAD022]
-X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30.03.10 17:00:55, Peter Zijlstra wrote:
-> On Tue, 2010-03-30 at 15:53 +0200, Stephane Eranian wrote:
-> > > So, there are some ARCH_PERFMON_EVENTSEL_* masks that are Intel only,
-> > > which is true for ARCH_PERFMON_EVENTSEL_ANY. And indead, the code
-> > > should be checked for this. ARCH_PERFMON_EVENTSEL_ANY is always
-> > > cleared on AMD cpus, so this code is ok. Actually the bit is cleared
+On Tue, Mar 30, 2010 at 05:43:33PM +0800, Lai Jiangshan wrote:
+> Paul E. McKenney wrote:
+> > On Mon, Mar 29, 2010 at 10:47:59AM +0800, Lai Jiangshan wrote:
+> >> Content-Type: text/plain; charset=UTF-8
+> >> Content-Transfer-Encoding: 7bit
+> >>
+> >>
+> >> Even though in user mode or idle mode, rcu_check_callbacks() is not
+> >> context switch, so we don't call rcu_preempt_note_context_switch()
+> >> in rcu_check_callbacks().
+> >>
+> >> Though there is no harm that calls rcu_preempt_note_context_switch()
+> >> in rcu_check_callbacks(), but it is waste.
+> >>
+> >> rcu_check_callbacks()
+> >>   rcu_sched_qs()
+> >>     rcu_preempt_note_context_switch()
+> >>        Now, ->rcu_read_lock_nesting == 0, so we just calls
+> >>        rcu_preempt_qs(), but, rcu_preempt_check_callbacks()
+> >>        will call it again and set the ->rcu_read_unlock_special
+> >>        correct again.
+> >>
+> >> So let rcu_preempt_check_callbacks() handle things for us.
 > > 
-> > Until AMD uses that bit too and you won't notice this test. This is a security
-> > check specific to Intel and it should be in an Intel-specific function.
+> > Nice!!!
 > > 
-> > > for *all* cpus in x86_pmu_raw_event(), the code was and is broken for
-> > > this.
-> > >
-> > Yes, needs to be authorized for any perfmon v3 and later revisions.
+> > But how about naming the new function that invokes
+> > rcu_preempt_note_context_switch() something like
+> > rcu_sched_note_context_switch(), and then leaving the
+> > name of rcu_sched_qs() the same (rather than changing
+> > it to __rcu_sched_qs(), as below)?
+> > 
+> > This way, the names clearly call out what the function
+> > is doing.
+> > 
 > 
-> So how about something like this on top of Robert's patches?
+> If I understand right, it will become this:
 > 
-> ---
->  arch/x86/kernel/cpu/perf_event.c       |   16 ++++++----------
->  arch/x86/kernel/cpu/perf_event_amd.c   |    5 +++--
->  arch/x86/kernel/cpu/perf_event_intel.c |   15 ++++++++++++++-
->  arch/x86/kernel/cpu/perf_event_p4.c    |    5 +++--
->  4 files changed, 26 insertions(+), 15 deletions(-)
-> 
-> Index: linux-2.6/arch/x86/kernel/cpu/perf_event.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/cpu/perf_event.c
-> +++ linux-2.6/arch/x86/kernel/cpu/perf_event.c
-> @@ -201,7 +201,7 @@ struct x86_pmu {
->  	unsigned	eventsel;
->  	unsigned	perfctr;
->  	u64		(*event_map)(int);
-> -	u64		(*raw_event)(u64);
-> +	int		(*raw_event)(struct perf_event *event);
->  	int		max_events;
->  	int		num_counters;
->  	int		num_counters_fixed;
-> @@ -445,9 +445,10 @@ static int x86_hw_config(struct perf_eve
->  	return 0;
->  }
->  
-> -static u64 x86_pmu_raw_event(u64 hw_event)
-> +static int x86_pmu_raw_event(struct perf_event *event)
->  {
-> -	return hw_event & X86_RAW_EVENT_MASK;
-> +	event->hw.config |= event->attr.config & X86_RAW_EVENT_MASK;
+> schedule() / run_ksoftirqd() / rcu_needs_cpu()
+>   rcu_sched_note_context_switch()
+>     rcu_sched_qs()
+>     rcu_preempt_note_context_switch()
 
-This still clears the ANY bit. See below.
+Wow!!!  That was a scare!!!  I misread "run_ksoftirqd()" as
+"do_softirq().  ;-)
 
-> +	return 0;
->  }
->  
->  /*
-> @@ -511,13 +512,8 @@ static int __hw_perf_event_init(struct p
->  	/*
->  	 * Raw hw_event type provide the config in the hw_event structure
->  	 */
-> -	if (attr->type == PERF_TYPE_RAW) {
-> -		hwc->config |= x86_pmu.raw_event(attr->config);
-> -		if ((hwc->config & ARCH_PERFMON_EVENTSEL_ANY) &&
-> -		    perf_paranoid_cpu() && !capable(CAP_SYS_ADMIN))
-> -			return -EACCES;
-> -		return 0;
-> -	}
-> +	if (attr->type == PERF_TYPE_RAW)
-> +		return x86_pmu.raw_event(event);
+And I am not seeing a call to rcu_sched_qs() in rcu_needs_cpu()...
 
-We could go on with this and move this into *_hw_config(), but so far
-this change is fine to me. This would then remove .raw_event() at all.
+Here is how I believe it needs to go:
 
-[...]
+	schedule():
+		rcu_sched_note_context_switch()
+			rcu_sched_qs()
+			rcu_preempt_note_context_switch()
 
-> Index: linux-2.6/arch/x86/kernel/cpu/perf_event_intel.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ linux-2.6/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -758,6 +758,19 @@ intel_get_event_constraints(struct cpu_h
->  	return x86_get_event_constraints(cpuc, event);
->  }
->  
-> +static int intel_pmu_raw_event(struct perf_event *event)
-> +{
-> +	int ret = x86_pmu_raw_event(event);
-> +	if (ret)
-> +		return ret;
-> +
-> +	if ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) &&
-> +			perf_paranoid_cpu() && !capable(CAP_SYS_ADMIN))
-> +		return -EACCES;
-> +
-> +	return 0;
+	run_ksoftirqd():
+		rcu_sched_qs()
 
-Maybe this?
+	rcu_check_callbacks():
+		rcu_sched_qs() [if idle etc.]
+		rcu_bh_qs() [if not in softirq]
 
-	if (!(event->attr.config & ARCH_PERFMON_EVENTSEL_ANY))
-		return 0;
-	if (perf_paranoid_cpu() && !capable(CAP_SYS_ADMIN))
-		return -EACCES;
-	event->hw.config |= ARCH_PERFMON_EVENTSEL_ANY;
-	return 0;
+The reason we don't need rcu_bh_qs() from run_ksoftirqd() is that
+__do_softirq() already calls rcu_bh_qs().
 
--Robert
+Make sense, or am I missing something?
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
-
+							Thanx, Paul
