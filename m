@@ -1,105 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757021Ab0CaC4y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 22:56:54 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46763 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755428Ab0CaC4w convert rfc822-to-8bit (ORCPT
+	id S932110Ab0CaC46 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 22:56:58 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35831 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757024Ab0CaC4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 22:56:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=uRqibr40QjA/fV9rhvFgU9r4K64WsWwEBg8S/qssQudRqfnlz/gxb1nigcdTRvnBBV
-         z/QQVgPP+8nePxYpYQP2CQFHK1wx2SHklawoA3Gyq5vvtkaHaY6ntxdN7LY/sJ1Weug2
-         akAk9kC16yETff9bijAIKMYsqj/h97UXCJ2fM=
-MIME-Version: 1.0
-In-Reply-To: <0D753D10438DA54287A00B027084269763691C3440@AUSP01VMBX24.collaborationhost.net>
+	Tue, 30 Mar 2010 22:56:54 -0400
+Date: Tue, 30 Mar 2010 19:55:01 -0400
+From: Andrew Morton <akpm@linux-foundation.org>
+To: InKi Dae <daeinki@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-fbdev-devel@lists.sourceforge.net,
+       linux-kernel@vger.kernel.org, kyungmin.park@samsung.com
+Subject: Re: [PATCH] added S6E63M0 AMOLED LCD Panel driver.
+Message-Id: <20100330195501.747515e9.akpm@linux-foundation.org>
+In-Reply-To: <90b950fc1003301941r69dc5ce1ida64b590646049a7@mail.gmail.com>
 References: <90b950fc1003252024i5ba8989bg95f0a81e8e5e708e@mail.gmail.com>
-	 <20100330160257.e5f978a9.akpm@linux-foundation.org>
-	 <0D753D10438DA54287A00B027084269763691C3440@AUSP01VMBX24.collaborationhost.net>
-Date: Wed, 31 Mar 2010 11:56:50 +0900
-Message-ID: <90b950fc1003301956mf8246f4sd060852dbead1407@mail.gmail.com>
-Subject: Re: [Linux-fbdev-devel] [PATCH] added S6E63M0 AMOLED LCD Panel 
-	driver.
-From: InKi Dae <daeinki@gmail.com>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-       "linux-fbdev-devel@lists.sourceforge.net" 
-	<linux-fbdev-devel@lists.sourceforge.net>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Pavel Machek <pavel@ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	<20100330160257.e5f978a9.akpm@linux-foundation.org>
+	<90b950fc1003301941r69dc5ce1ida64b590646049a7@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hertley,
+On Wed, 31 Mar 2010 11:41:54 +0900 InKi Dae <daeinki@gmail.com> wrote:
 
-it's a good way.
-this way is more clear and also Andrew's concern could be solved.
+> Hi Andrew,
+> 
+> all the calls to s6e63m0_panel_send_sequence() would return -EINVAL.
+> by api_async() of driver/spi/spi.c
 
-I'd like to apply it to local repository and then I will send the patch
-in the near future.
+No, spi_async() does
 
-and Andrew, If you think that Hertley's way is clear then I would make
-the patch. maybe it would become second patch.
+	master->transfer(spi, message);
 
-Thank you.
+which can return at least EIO, EINPROGRESS, EINVAL or ETIMEDOUT.
 
-2010/3/31 H Hartley Sweeten <hartleys@visionengravers.com>:
-> On Tuesday, March 30, 2010 4:03 PM, Andrew Morton wrote:
->> On Fri, 26 Mar 2010 12:24:24 +0900
->> InKi Dae <daeinki@gmail.com> wrote:
->>
->>> +static int s6e63m0_ldi_init(struct s6e63m0 *lcd)
->>> +{
->>> +    int ret;
->>> +
->>> +    ret = s6e63m0_panel_send_sequence(lcd, SEQ_PANEL_CONDITION_SET);
->>> +    ret |= s6e63m0_panel_send_sequence(lcd, SEQ_DISPLAY_CONDITION_SET);
->>> +    ret |= s6e63m0_panel_send_sequence(lcd, SEQ_GAMMA_SETTING);
->>> +    ret |= s6e63m0_panel_send_sequence(lcd, SEQ_ETC_CONDITION_SET);
->>> +    ret |= s6e63m0_panel_send_sequence(lcd, SEQ_ACL_ON);
->>> +    ret |= s6e63m0_panel_send_sequence(lcd, SEQ_ELVSS_ON);
->>> +
->>> +    return ret;
->>> +}
->>
->> Well.  If one call to s6e63m0_panel_send_sequence() returns -ENOMEM and
->> another call returns -EIO (for example), this function will return some
->> other, incorrect errno.
->>
->> Which is a rather minor problem, unless some caller is explicitly
->> looking for some particular error code, which doesn't happen often.
->
-> Why not handle the calls with a loop?
->
-> +static int s6e63m0_ldi_init(struct s6e63m0 *lcd)
-> +{
-> +       const unsigned short *init_seq[] = {
-> +               SEQ_PANEL_CONDITION_SET,
-> +               SEQ_DISPLAY_CONDITION_SET,
-> +               SEQ_GAMMA_SETTING,
-> +               SEQ_ETC_CONDITION_SET,
-> +               SEQ_ACL_ON,
-> +               SEQ_ELVSS_ON,
-> +       };
-> +       int i, ret;
-> +
-> +       for (i = 0; i < ARRAY_SIZE(init_seq); i++) {
-> +               ret = s6e63m0_panel_send_sequence(lcd, init_seq[i]);
-> +               if (ret)
-> +                       break;
-> +       }
-> +       return ret;
-> +}
->
-> Note that _s6e63m0_gamma_ctl has the same issue.  Actually, the whole
-> driver has issues with returning errors properly.
->
-> Regards,
-> Hartley
+> so I think that those return values aren't changed to other.
+> 
+> and final step is to check only whether the return value is 0 or not.
+> if you still think that this code has minor problem or you want it to
+> be corrected
+> then I will patch this code to be corrected anytime.
+
+It's a bug.
+
+Also s6e63m0_power_on() is sloppy.  It again or's together disparate
+errnos.  Then if _anything_ failed it returns hardwired -EIO, but it
+should instead propagate the callee's errno back up to the caller.
+
+And s6e63m0_power_on() can return -EFAULT in several places, which is
+nonsensical.
+
+None of this is very critical, just ... sloppy.
+
+
