@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932645Ab0CaAQl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:16:41 -0400
-Received: from kroah.org ([198.145.64.141]:51778 "EHLO coco.kroah.org"
+	id S932629Ab0CaARs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:17:48 -0400
+Received: from kroah.org ([198.145.64.141]:51740 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932127Ab0C3XRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:17:33 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:06 2010
-Message-Id: <20100330225605.903393865@linux.site>
+	id S1756638Ab0C3XR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:17:29 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:03 2010
+Message-Id: <20100330225603.125225531@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:54:53 -0700
+Date: Tue, 30 Mar 2010 15:54:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Bob Copeland <me@bobcopeland.com>,
-       Nick Kossifidis <mickflemm@gmail.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [015/116] ath5k: fix setup for CAB queue
+       =?ISO-8859-15?q?Thomas=20B=C3=A4chler?= <thomas@archlinux.org>,
+       Dmitry Torokhov <dtor@mail.ru>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [011/116] Input: alps - add support for the touchpad on Toshiba Tecra A11-11L
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,101 +26,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Copeland <me@bobcopeland.com>
+From: Thomas Bächler <thomas@archlinux.org>
 
-commit a951ae2176b982574ffa197455db6c89359fd5eb upstream.
+commit eb8bff85c5bd5caef7c374ff32b86545029efb56 upstream.
 
-The beacon sent gating doesn't seem to work with any combination
-of flags.  Thus, buffered frames tend to stay buffered forever,
-using up tx descriptors.
-
-Instead, use the DBA gating and hold transmission of the buffered
-frames until 80% of the beacon interval has elapsed using the ready
-time.  This fixes the following error in AP mode:
-
-   ath5k phy0: no further txbuf available, dropping packet
-
-Add a comment to acknowledge that this isn't the best solution.
-
-Signed-off-by: Bob Copeland <me@bobcopeland.com>
-Acked-by: Nick Kossifidis <mickflemm@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Thomas Bächler <thomas@archlinux.org>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath5k/ath5k.h |    2 +-
- drivers/net/wireless/ath/ath5k/base.c  |   22 +++++++++++++++++++---
- drivers/net/wireless/ath/ath5k/qcu.c   |    5 +++--
- 3 files changed, 23 insertions(+), 6 deletions(-)
+ drivers/input/mouse/alps.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wireless/ath/ath5k/ath5k.h
-+++ b/drivers/net/wireless/ath/ath5k/ath5k.h
-@@ -540,7 +540,7 @@ struct ath5k_txq_info {
- 	u32	tqi_cbr_period; /* Constant bit rate period */
- 	u32	tqi_cbr_overflow_limit;
- 	u32	tqi_burst_time;
--	u32	tqi_ready_time; /* Not used */
-+	u32	tqi_ready_time; /* Time queue waits after an event */
+--- a/drivers/input/mouse/alps.c
++++ b/drivers/input/mouse/alps.c
+@@ -62,6 +62,8 @@ static const struct alps_model_info alps
+ 	{ { 0x62, 0x02, 0x14 }, 0xcf, 0xcf,
+ 		ALPS_PASS | ALPS_DUALPOINT | ALPS_PS2_INTERLEAVED },
+ 	{ { 0x73, 0x02, 0x50 }, 0xcf, 0xcf, ALPS_FW_BK_1 },		  /* Dell Vostro 1400 */
++	{ { 0x52, 0x01, 0x14 }, 0xff, 0xff,
++		ALPS_PASS | ALPS_DUALPOINT | ALPS_PS2_INTERLEAVED },	  /* Toshiba Tecra A11-11L */
  };
  
  /*
---- a/drivers/net/wireless/ath/ath5k/base.c
-+++ b/drivers/net/wireless/ath/ath5k/base.c
-@@ -1511,7 +1511,8 @@ ath5k_beaconq_config(struct ath5k_softc
- 
- 	ret = ath5k_hw_get_tx_queueprops(ah, sc->bhalq, &qi);
- 	if (ret)
--		return ret;
-+		goto err;
-+
- 	if (sc->opmode == NL80211_IFTYPE_AP ||
- 		sc->opmode == NL80211_IFTYPE_MESH_POINT) {
- 		/*
-@@ -1538,10 +1539,25 @@ ath5k_beaconq_config(struct ath5k_softc
- 	if (ret) {
- 		ATH5K_ERR(sc, "%s: unable to update parameters for beacon "
- 			"hardware queue!\n", __func__);
--		return ret;
-+		goto err;
- 	}
-+	ret = ath5k_hw_reset_tx_queue(ah, sc->bhalq); /* push to h/w */
-+	if (ret)
-+		goto err;
-+
-+	/* reconfigure cabq with ready time to 80% of beacon_interval */
-+	ret = ath5k_hw_get_tx_queueprops(ah, AR5K_TX_QUEUE_ID_CAB, &qi);
-+	if (ret)
-+		goto err;
-+
-+	qi.tqi_ready_time = (sc->bintval * 80) / 100;
-+	ret = ath5k_hw_set_tx_queueprops(ah, AR5K_TX_QUEUE_ID_CAB, &qi);
-+	if (ret)
-+		goto err;
- 
--	return ath5k_hw_reset_tx_queue(ah, sc->bhalq); /* push to h/w */;
-+	ret = ath5k_hw_reset_tx_queue(ah, AR5K_TX_QUEUE_ID_CAB);
-+err:
-+	return ret;
- }
- 
- static void
---- a/drivers/net/wireless/ath/ath5k/qcu.c
-+++ b/drivers/net/wireless/ath/ath5k/qcu.c
-@@ -408,12 +408,13 @@ int ath5k_hw_reset_tx_queue(struct ath5k
- 			break;
- 
- 		case AR5K_TX_QUEUE_CAB:
-+			/* XXX: use BCN_SENT_GT, if we can figure out how */
- 			AR5K_REG_ENABLE_BITS(ah, AR5K_QUEUE_MISC(queue),
--				AR5K_QCU_MISC_FRSHED_BCN_SENT_GT |
-+				AR5K_QCU_MISC_FRSHED_DBA_GT |
- 				AR5K_QCU_MISC_CBREXP_DIS |
- 				AR5K_QCU_MISC_CBREXP_BCN_DIS);
- 
--			ath5k_hw_reg_write(ah, ((AR5K_TUNE_BEACON_INTERVAL -
-+			ath5k_hw_reg_write(ah, ((tq->tqi_ready_time -
- 				(AR5K_TUNE_SW_BEACON_RESP -
- 				AR5K_TUNE_DMA_BEACON_RESP) -
- 				AR5K_TUNE_ADDITIONAL_SWBA_BACKOFF) * 1024) |
 
 
