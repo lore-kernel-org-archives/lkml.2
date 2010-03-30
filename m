@@ -1,99 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932748Ab0C3X0U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:26:20 -0400
-Received: from p01c11o142.mxlogic.net ([208.65.144.65]:54171 "EHLO
-	p01c11o142.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932703Ab0C3X0Q convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:26:16 -0400
-X-MXL-Hash: 4bb288981d5517c8-4fba9aac31cc4ad9324e5b9fb216c0531be2a022
-X-MXL-Hash: 4bb28865150d0ac3-f57aa32e7e04845577d2af58a7afceb1cd30d01c
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Andrew Morton <akpm@linux-foundation.org>, InKi Dae <daeinki@gmail.com>
-CC: "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-       "linux-fbdev-devel@lists.sourceforge.net" 
-	<linux-fbdev-devel@lists.sourceforge.net>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Pavel Machek <pavel@ucw.cz>
-Date: Tue, 30 Mar 2010 18:24:51 -0500
-Subject: RE: [Linux-fbdev-devel] [PATCH] added S6E63M0 AMOLED LCD Panel
-	driver.
-Thread-Topic: [Linux-fbdev-devel] [PATCH] added S6E63M0 AMOLED LCD Panel
-	driver.
-Thread-Index: AcrQXUmoYAAXDTbkQmOViSr8TtxIOAAAVUvg
-Message-ID: <0D753D10438DA54287A00B027084269763691C3440@AUSP01VMBX24.collaborationhost.net>
-References: <90b950fc1003252024i5ba8989bg95f0a81e8e5e708e@mail.gmail.com>
- <20100330160257.e5f978a9.akpm@linux-foundation.org>
-In-Reply-To: <20100330160257.e5f978a9.akpm@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010032501)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [216.166.12.31]
-X-AnalysisOut: [v=1.0 c=1 a=mkeGiTlneQQA:10 a=VphdPIyG4kEA:10 a=kj9zAlcOel]
-X-AnalysisOut: [0A:10 a=qS3xps/WtSuafY8lc/WARg==:17 a=pGLkceISAAAA:8 a=H8A]
-X-AnalysisOut: [gYNB9rK2gjXRbEzgA:9 a=PgU1wk1LBmWQeK63oP9ZZVqfz8wA:4 a=Cju]
-X-AnalysisOut: [IK1q_8ugA:10 a=MSl-tDqOz04A:10]
+	id S1757309Ab0C3X6G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:58:06 -0400
+Received: from kroah.org ([198.145.64.141]:45574 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932353Ab0C3XTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:08 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:14 2010
+Message-Id: <20100330225713.553002971@linux.site>
+User-Agent: quilt/0.47-14.9
+Date: Tue, 30 Mar 2010 15:56:30 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Michael Buesch <mb@bu3sch.de>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [112/116] b43: Workaround circular locking in hw-tkip key update callback
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 30, 2010 4:03 PM, Andrew Morton wrote:
-> On Fri, 26 Mar 2010 12:24:24 +0900
-> InKi Dae <daeinki@gmail.com> wrote:
-> 
->> +static int s6e63m0_ldi_init(struct s6e63m0 *lcd)
->> +{
->> +	int ret;
->> +
->> +	ret = s6e63m0_panel_send_sequence(lcd, SEQ_PANEL_CONDITION_SET);
->> +	ret |= s6e63m0_panel_send_sequence(lcd, SEQ_DISPLAY_CONDITION_SET);
->> +	ret |= s6e63m0_panel_send_sequence(lcd, SEQ_GAMMA_SETTING);
->> +	ret |= s6e63m0_panel_send_sequence(lcd, SEQ_ETC_CONDITION_SET);
->> +	ret |= s6e63m0_panel_send_sequence(lcd, SEQ_ACL_ON);
->> +	ret |= s6e63m0_panel_send_sequence(lcd, SEQ_ELVSS_ON);
->> +
->> +	return ret;
->> +}
->
-> Well.  If one call to s6e63m0_panel_send_sequence() returns -ENOMEM and
-> another call returns -EIO (for example), this function will return some
-> other, incorrect errno.
->
-> Which is a rather minor problem, unless some caller is explicitly
-> looking for some particular error code, which doesn't happen often.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-Why not handle the calls with a loop?
+------------------
 
-+static int s6e63m0_ldi_init(struct s6e63m0 *lcd)
-+{
-+	const unsigned short *init_seq[] = {
-+		SEQ_PANEL_CONDITION_SET,
-+		SEQ_DISPLAY_CONDITION_SET,
-+		SEQ_GAMMA_SETTING,
-+		SEQ_ETC_CONDITION_SET,
-+		SEQ_ACL_ON,
-+		SEQ_ELVSS_ON,
-+	};
-+	int i, ret;
-+
-+	for (i = 0; i < ARRAY_SIZE(init_seq); i++) {
-+		ret = s6e63m0_panel_send_sequence(lcd, init_seq[i]);
-+		if (ret)
-+			break;
-+	}
-+	return ret;
-+}
+From: Michael Buesch <mb@bu3sch.de>
 
-Note that _s6e63m0_gamma_ctl has the same issue.  Actually, the whole
-driver has issues with returning errors properly.
+commit 96869a39399269a776a94812e9fff3d38b47d838 upstream
 
-Regards,
-Hartley
+The TKIP key update callback is called from the RX path, where the driver
+mutex is already locked. This results in a circular locking bug.
+Avoid this by removing the lock.
+
+Johannes noted that there is a separate bug: The callback still breaks on SDIO
+hardware, because SDIO hardware access needs to sleep, but we are not allowed
+to sleep in the callback due to mac80211's RCU locking.
+
+Signed-off-by: Michael Buesch <mb@bu3sch.de>
+Tested-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: kecsa@kutfo.hit.bme.hu
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/net/wireless/b43/main.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
+
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -852,19 +852,16 @@ static void b43_op_update_tkip_key(struc
+ 	if (B43_WARN_ON(!modparam_hwtkip))
+ 		return;
+ 
+-	mutex_lock(&wl->mutex);
+-
++	/* This is only called from the RX path through mac80211, where
++	 * our mutex is already locked. */
++	B43_WARN_ON(!mutex_is_locked(&wl->mutex));
+ 	dev = wl->current_dev;
+-	if (!dev || b43_status(dev) < B43_STAT_INITIALIZED)
+-		goto out_unlock;
++	B43_WARN_ON(!dev || b43_status(dev) < B43_STAT_INITIALIZED);
+ 
+ 	keymac_write(dev, index, NULL);	/* First zero out mac to avoid race */
+ 
+ 	rx_tkip_phase1_write(dev, index, iv32, phase1key);
+ 	keymac_write(dev, index, addr);
+-
+-out_unlock:
+-	mutex_unlock(&wl->mutex);
+ }
+ 
+ static void do_key_write(struct b43_wldev *dev,
+
+
