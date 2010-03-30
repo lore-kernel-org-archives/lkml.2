@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672Ab0C3XR1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:17:27 -0400
-Received: from kroah.org ([198.145.64.141]:51688 "EHLO coco.kroah.org"
+	id S1757458Ab0C3Xvo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:51:44 -0400
+Received: from kroah.org ([198.145.64.141]:45812 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756522Ab0C3XRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:17:21 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:55:57 2010
-Message-Id: <20100330225556.356946216@linux.site>
+	id S932439Ab0C3XTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:36 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:37 2010
+Message-Id: <20100330224737.353185340@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:54:40 -0700
+Date: Tue, 30 Mar 2010 15:41:01 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Julia Lawall <julia@diku.dk>,
-       James Bottomley <James.Bottomley@HansenPartnership.com>,
+       Avi Kivity <avi@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [002/116] drivers/scsi/ses.c: eliminate double free
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+Subject: [027/156] KVM: x86: Add KVM_CAP_X86_ROBUST_SINGLESTEP
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Julia Lawall <julia@diku.dk>
+From: Jan Kiszka <jan.kiszka@siemens.com>
 
-commit 9b3a6549b2602ca30f58715a0071e29f9898cae9 upstream.
+Commit d2be1651b736002e0c76d7095d6c0ba77b4a897c upstream.
 
-The few lines below the kfree of hdr_buf may go to the label err_free
-which will also free hdr_buf.  The most straightforward solution seems to
-be to just move the kfree of hdr_buf after these gotos.
+This marks the guest single-step API improvement of 94fe45da and
+91586a3b with a capability flag to allow reliable detection by user
+space.
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
-
-// <smpl>
-@r@
-identifier E;
-expression E1;
-iterator I;
-statement S;
-@@
-
-*kfree(E);
-... when != E = E1
-    when != I(E,...) S
-    when != &E
-*kfree(E);
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/ses.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kvm/x86.c  |    1 +
+ include/linux/kvm.h |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/drivers/scsi/ses.c
-+++ b/drivers/scsi/ses.c
-@@ -591,8 +591,6 @@ static int ses_intf_add(struct device *c
- 		ses_dev->page10_len = len;
- 		buf = NULL;
- 	}
--	kfree(hdr_buf);
--
- 	scomp = kzalloc(sizeof(struct ses_component) * components, GFP_KERNEL);
- 	if (!scomp)
- 		goto err_free;
-@@ -604,6 +602,8 @@ static int ses_intf_add(struct device *c
- 		goto err_free;
- 	}
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1351,6 +1351,7 @@ int kvm_dev_ioctl_check_extension(long e
+ 	case KVM_CAP_XEN_HVM:
+ 	case KVM_CAP_ADJUST_CLOCK:
+ 	case KVM_CAP_VCPU_EVENTS:
++	case KVM_CAP_X86_ROBUST_SINGLESTEP:
+ 		r = 1;
+ 		break;
+ 	case KVM_CAP_COALESCED_MMIO:
+--- a/include/linux/kvm.h
++++ b/include/linux/kvm.h
+@@ -497,6 +497,7 @@ struct kvm_ioeventfd {
+ #endif
+ #define KVM_CAP_S390_PSW 42
+ #define KVM_CAP_PPC_SEGSTATE 43
++#define KVM_CAP_X86_ROBUST_SINGLESTEP 51
  
-+	kfree(hdr_buf);
-+
- 	edev->scratch = ses_dev;
- 	for (i = 0; i < components; i++)
- 		edev->component[i].scratch = scomp + i;
+ #ifdef KVM_CAP_IRQ_ROUTING
+ 
 
 
