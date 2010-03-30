@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab0C3JPm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 05:15:42 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:45596 "EHLO gir.skynet.ie"
+	id S1756036Ab0C3JOw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 05:14:52 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:45520 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756061Ab0C3JOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 05:14:55 -0400
+	id S1755972Ab0C3JOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 05:14:50 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andrea Arcangeli <aarcange@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 10/14] Add /sys trigger for per-node memory compaction
-Date: Tue, 30 Mar 2010 10:14:45 +0100
-Message-Id: <1269940489-5776-11-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 01/14] mm,migration: Take a reference to the anon_vma before migrating
+Date: Tue, 30 Mar 2010 10:14:36 +0100
+Message-Id: <1269940489-5776-2-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.6.5
 In-Reply-To: <1269940489-5776-1-git-send-email-mel@csn.ul.ie>
 References: <1269940489-5776-1-git-send-email-mel@csn.ul.ie>
@@ -27,123 +27,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a per-node sysfs file called compact. When the file is
-written to, each zone in that node is compacted. The intention that this
-would be used by something like a job scheduler in a batch system before
-a job starts so that the job can allocate the maximum number of
-hugepages without significant start-up cost.
+rmap_walk_anon() does not use page_lock_anon_vma() for looking up and
+locking an anon_vma and it does not appear to have sufficient locking to
+ensure the anon_vma does not disappear from under it.
+
+This patch copies an approach used by KSM to take a reference on the
+anon_vma while pages are being migrated. This should prevent rmap_walk()
+running into nasty surprises later because anon_vma has been freed.
 
 Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 Acked-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Christoph Lameter <cl@linux-foundation.org>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- Documentation/ABI/testing/sysfs-devices-node |    7 +++++++
- drivers/base/node.c                          |    3 +++
- include/linux/compaction.h                   |   16 ++++++++++++++++
- mm/compaction.c                              |   23 +++++++++++++++++++++++
- 4 files changed, 49 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-devices-node
+ include/linux/rmap.h |   23 +++++++++++++++++++++++
+ mm/migrate.c         |   12 ++++++++++++
+ mm/rmap.c            |   10 +++++-----
+ 3 files changed, 40 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-devices-node b/Documentation/ABI/testing/sysfs-devices-node
-new file mode 100644
-index 0000000..453a210
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-devices-node
-@@ -0,0 +1,7 @@
-+What:		/sys/devices/system/node/nodeX/compact
-+Date:		February 2010
-+Contact:	Mel Gorman <mel@csn.ul.ie>
-+Description:
-+		When this file is written to, all memory within that node
-+		will be compacted. When it completes, memory will be freed
-+		into blocks which have as many contiguous pages as possible
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index 93b3ac6..07cdcc6 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -15,6 +15,7 @@
- #include <linux/cpu.h>
- #include <linux/device.h>
- #include <linux/swap.h>
-+#include <linux/compaction.h>
- 
- static struct sysdev_class_attribute *node_state_attrs[];
- 
-@@ -245,6 +246,8 @@ int register_node(struct node *node, int num, struct node *parent)
- 		scan_unevictable_register_node(node);
- 
- 		hugetlb_register_node(node);
-+
-+		compaction_register_node(node);
- 	}
- 	return error;
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index d25bd22..567d43f 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -29,6 +29,9 @@ struct anon_vma {
+ #ifdef CONFIG_KSM
+ 	atomic_t ksm_refcount;
+ #endif
++#ifdef CONFIG_MIGRATION
++	atomic_t migrate_refcount;
++#endif
+ 	/*
+ 	 * NOTE: the LSB of the head.next is set by
+ 	 * mm_take_all_locks() _after_ taking the above lock. So the
+@@ -81,6 +84,26 @@ static inline int ksm_refcount(struct anon_vma *anon_vma)
+ 	return 0;
  }
-diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-index fef591b..c4ab05f 100644
---- a/include/linux/compaction.h
-+++ b/include/linux/compaction.h
-@@ -12,4 +12,20 @@ extern int sysctl_compaction_handler(struct ctl_table *table, int write,
- 			void __user *buffer, size_t *length, loff_t *ppos);
- #endif /* CONFIG_COMPACTION */
- 
-+#if defined(CONFIG_COMPACTION) && defined(CONFIG_SYSFS) && defined(CONFIG_NUMA)
-+extern int compaction_register_node(struct node *node);
-+extern void compaction_unregister_node(struct node *node);
+ #endif /* CONFIG_KSM */
++#ifdef CONFIG_MIGRATION
++static inline void migrate_refcount_init(struct anon_vma *anon_vma)
++{
++	atomic_set(&anon_vma->migrate_refcount, 0);
++}
 +
++static inline int migrate_refcount(struct anon_vma *anon_vma)
++{
++	return atomic_read(&anon_vma->migrate_refcount);
++}
 +#else
++static inline void migrate_refcount_init(struct anon_vma *anon_vma)
++{
++}
 +
-+static inline int compaction_register_node(struct node *node)
++static inline int migrate_refcount(struct anon_vma *anon_vma)
 +{
 +	return 0;
 +}
-+
-+static inline void compaction_unregister_node(struct node *node)
-+{
-+}
-+#endif /* CONFIG_COMPACTION && CONFIG_SYSFS && CONFIG_NUMA */
-+
- #endif /* _LINUX_COMPACTION_H */
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 615b811..b058bae 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -13,6 +13,7 @@
- #include <linux/mm_inline.h>
- #include <linux/backing-dev.h>
- #include <linux/sysctl.h>
-+#include <linux/sysfs.h>
- #include "internal.h"
++#endif /* CONFIG_MIGRATE */
  
- /*
-@@ -437,3 +438,25 @@ int sysctl_compaction_handler(struct ctl_table *table, int write,
+ static inline struct anon_vma *page_anon_vma(struct page *page)
+ {
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 6903abf..06e6316 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -542,6 +542,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 	int rcu_locked = 0;
+ 	int charge = 0;
+ 	struct mem_cgroup *mem = NULL;
++	struct anon_vma *anon_vma = NULL;
  
- 	return 0;
+ 	if (!newpage)
+ 		return -ENOMEM;
+@@ -598,6 +599,8 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 	if (PageAnon(page)) {
+ 		rcu_read_lock();
+ 		rcu_locked = 1;
++		anon_vma = page_anon_vma(page);
++		atomic_inc(&anon_vma->migrate_refcount);
+ 	}
+ 
+ 	/*
+@@ -637,6 +640,15 @@ skip_unmap:
+ 	if (rc)
+ 		remove_migration_ptes(page, page);
+ rcu_unlock:
++
++	/* Drop an anon_vma reference if we took one */
++	if (anon_vma && atomic_dec_and_lock(&anon_vma->migrate_refcount, &anon_vma->lock)) {
++		int empty = list_empty(&anon_vma->head);
++		spin_unlock(&anon_vma->lock);
++		if (empty)
++			anon_vma_free(anon_vma);
++	}
++
+ 	if (rcu_locked)
+ 		rcu_read_unlock();
+ uncharge:
+diff --git a/mm/rmap.c b/mm/rmap.c
+index fcd593c..578d0fe 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -248,7 +248,8 @@ static void anon_vma_unlink(struct anon_vma_chain *anon_vma_chain)
+ 	list_del(&anon_vma_chain->same_anon_vma);
+ 
+ 	/* We must garbage collect the anon_vma if it's empty */
+-	empty = list_empty(&anon_vma->head) && !ksm_refcount(anon_vma);
++	empty = list_empty(&anon_vma->head) && !ksm_refcount(anon_vma) &&
++					!migrate_refcount(anon_vma);
+ 	spin_unlock(&anon_vma->lock);
+ 
+ 	if (empty)
+@@ -273,6 +274,7 @@ static void anon_vma_ctor(void *data)
+ 
+ 	spin_lock_init(&anon_vma->lock);
+ 	ksm_refcount_init(anon_vma);
++	migrate_refcount_init(anon_vma);
+ 	INIT_LIST_HEAD(&anon_vma->head);
  }
-+
-+#if defined(CONFIG_SYSFS) && defined(CONFIG_NUMA)
-+ssize_t sysfs_compact_node(struct sys_device *dev,
-+			struct sysdev_attribute *attr,
-+			const char *buf, size_t count)
-+{
-+	compact_node(dev->id);
-+
-+	return count;
-+}
-+static SYSDEV_ATTR(compact, S_IWUSR, NULL, sysfs_compact_node);
-+
-+int compaction_register_node(struct node *node)
-+{
-+	return sysdev_create_file(&node->sysdev, &attr_compact);
-+}
-+
-+void compaction_unregister_node(struct node *node)
-+{
-+	return sysdev_remove_file(&node->sysdev, &attr_compact);
-+}
-+#endif /* CONFIG_SYSFS && CONFIG_NUMA */
+ 
+@@ -1338,10 +1340,8 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
+ 	/*
+ 	 * Note: remove_migration_ptes() cannot use page_lock_anon_vma()
+ 	 * because that depends on page_mapped(); but not all its usages
+-	 * are holding mmap_sem, which also gave the necessary guarantee
+-	 * (that this anon_vma's slab has not already been destroyed).
+-	 * This needs to be reviewed later: avoiding page_lock_anon_vma()
+-	 * is risky, and currently limits the usefulness of rmap_walk().
++	 * are holding mmap_sem. Users without mmap_sem are required to
++	 * take a reference count to prevent the anon_vma disappearing
+ 	 */
+ 	anon_vma = page_anon_vma(page);
+ 	if (!anon_vma)
 -- 
 1.6.5
 
