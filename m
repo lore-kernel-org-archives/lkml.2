@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757915Ab0CaAji (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:39:38 -0400
-Received: from kroah.org ([198.145.64.141]:48487 "EHLO coco.kroah.org"
+	id S1757919Ab0CaAjy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:39:54 -0400
+Received: from kroah.org ([198.145.64.141]:48482 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755751Ab0C3XJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:09:04 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:54 2010
-Message-Id: <20100330224953.284932305@linux.site>
+	id S1755585Ab0C3XJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:09:03 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:53 2010
+Message-Id: <20100330224952.154674501@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:48:40 -0700
+Date: Tue, 30 Mar 2010 15:48:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Salman Qazi <sqazi@google.com>, Nick Piggin <nickpiggin@yahoo.com.au>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [20/45] drivers/char/mem.c: avoid OOM lockup during large reads from /dev/zero
+Subject: [19/45] sched: wakeup preempt when small overlap
 In-Reply-To: <20100330230410.GA28712@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,58 +26,184 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Salman Qazi <sqazi@google.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit 730c586ad5228c339949b2eb4e72b80ae167abc4 upstream.
+commit 15afe09bf496ae10c989e1a375a6b5da7bd3e16e upstream.
 
-While running 20 parallel instances of dd as follows:
+Lin Ming reported a 10% OLTP regression against 2.6.27-rc4.
 
-  #!/bin/bash
-  for i in `seq 1 20`; do
-           dd if=/dev/zero of=/export/hda3/dd_$i bs=1073741824 count=1 &
-  done
-  wait
+The difference seems to come from different preemption agressiveness,
+which affects the cache footprint of the workload and its effective
+cache trashing.
 
-on a 16G machine, we noticed that rather than just killing the processes,
-the entire kernel went down.  Stracing dd reveals that it first does an
-mmap2, which makes 1GB worth of zero page mappings.  Then it performs a
-read on those pages from /dev/zero, and finally it performs a write.
+Aggresively preempt a task if its avg overlap is very small, this should
+avoid the task going to sleep and find it still running when we schedule
+back to it - saving a wakeup.
 
-The machine died during the reads.  Looking at the code, it was noticed
-that /dev/zero's read operation had been changed by
-557ed1fa2620dc119adb86b34c614e152a629a80 ("remove ZERO_PAGE") from giving
-zero page mappings to actually zeroing the page.
-
-The zeroing of the pages causes physical pages to be allocated to the
-process.  But, when the process exhausts all the memory that it can, the
-kernel cannot kill it, as it is still in the kernel mode allocating more
-memory.  Consequently, the kernel eventually crashes.
-
-To fix this, I propose that when a fatal signal is pending during
-/dev/zero read operation, we simply return and let the user process die.
-
-Signed-off-by: Salman Qazi <sqazi@google.com>
-Cc: Nick Piggin <nickpiggin@yahoo.com.au>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-[ Modified error return and comment trivially.  - Linus]
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Lin Ming <ming.m.lin@intel.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/mem.c |    3 +++
- 1 file changed, 3 insertions(+)
+ include/linux/sched.h   |    2 +-
+ kernel/sched.c          |   12 ++++++------
+ kernel/sched_fair.c     |   13 ++++++++++---
+ kernel/sched_features.h |    1 +
+ kernel/sched_idletask.c |    6 +++---
+ kernel/sched_rt.c       |    2 +-
+ 6 files changed, 22 insertions(+), 14 deletions(-)
 
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -724,6 +724,9 @@ static ssize_t read_zero(struct file * f
- 		written += chunk - unwritten;
- 		if (unwritten)
- 			break;
-+		/* Consider changing this to just 'signal_pending()' with lots of testing */
-+		if (fatal_signal_pending(current))
-+			return written ? written : -EINTR;
- 		buf += chunk;
- 		count -= chunk;
- 		cond_resched();
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -901,7 +901,7 @@ struct sched_class {
+ 	void (*yield_task) (struct rq *rq);
+ 	int  (*select_task_rq)(struct task_struct *p, int sync);
+ 
+-	void (*check_preempt_curr) (struct rq *rq, struct task_struct *p);
++	void (*check_preempt_curr) (struct rq *rq, struct task_struct *p, int sync);
+ 
+ 	struct task_struct * (*pick_next_task) (struct rq *rq);
+ 	void (*put_prev_task) (struct rq *rq, struct task_struct *p);
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -604,9 +604,9 @@ struct rq {
+ 
+ static DEFINE_PER_CPU_SHARED_ALIGNED(struct rq, runqueues);
+ 
+-static inline void check_preempt_curr(struct rq *rq, struct task_struct *p)
++static inline void check_preempt_curr(struct rq *rq, struct task_struct *p, int sync)
+ {
+-	rq->curr->sched_class->check_preempt_curr(rq, p);
++	rq->curr->sched_class->check_preempt_curr(rq, p, sync);
+ }
+ 
+ static inline int cpu_of(struct rq *rq)
+@@ -2285,7 +2285,7 @@ out_running:
+ 	trace_mark(kernel_sched_wakeup,
+ 		"pid %d state %ld ## rq %p task %p rq->curr %p",
+ 		p->pid, p->state, rq, p, rq->curr);
+-	check_preempt_curr(rq, p);
++	check_preempt_curr(rq, p, sync);
+ 
+ 	p->state = TASK_RUNNING;
+ #ifdef CONFIG_SMP
+@@ -2420,7 +2420,7 @@ void wake_up_new_task(struct task_struct
+ 	trace_mark(kernel_sched_wakeup_new,
+ 		"pid %d state %ld ## rq %p task %p rq->curr %p",
+ 		p->pid, p->state, rq, p, rq->curr);
+-	check_preempt_curr(rq, p);
++	check_preempt_curr(rq, p, 0);
+ #ifdef CONFIG_SMP
+ 	if (p->sched_class->task_wake_up)
+ 		p->sched_class->task_wake_up(rq, p);
+@@ -2880,7 +2880,7 @@ static void pull_task(struct rq *src_rq,
+ 	 * Note that idle threads have a prio of MAX_PRIO, for this test
+ 	 * to be always true for them.
+ 	 */
+-	check_preempt_curr(this_rq, p);
++	check_preempt_curr(this_rq, p, 0);
+ }
+ 
+ /*
+@@ -5957,7 +5957,7 @@ static int __migrate_task(struct task_st
+ 	set_task_cpu(p, dest_cpu);
+ 	if (on_rq) {
+ 		activate_task(rq_dest, p, 0);
+-		check_preempt_curr(rq_dest, p);
++		check_preempt_curr(rq_dest, p, 0);
+ 	}
+ done:
+ 	ret = 1;
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1331,7 +1331,7 @@ static inline int depth_se(struct sched_
+ /*
+  * Preempt the current task with a newly woken task if needed:
+  */
+-static void check_preempt_wakeup(struct rq *rq, struct task_struct *p)
++static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int sync)
+ {
+ 	struct task_struct *curr = rq->curr;
+ 	struct cfs_rq *cfs_rq = task_cfs_rq(curr);
+@@ -1360,6 +1360,13 @@ static void check_preempt_wakeup(struct
+ 	if (!sched_feat(WAKEUP_PREEMPT))
+ 		return;
+ 
++	if (sched_feat(WAKEUP_OVERLAP) && sync &&
++			se->avg_overlap < sysctl_sched_migration_cost &&
++			pse->avg_overlap < sysctl_sched_migration_cost) {
++		resched_task(curr);
++		return;
++	}
++
+ 	/*
+ 	 * preemption test can be made between sibling entities who are in the
+ 	 * same cfs_rq i.e who have a common parent. Walk up the hierarchy of
+@@ -1642,7 +1649,7 @@ static void prio_changed_fair(struct rq
+ 		if (p->prio > oldprio)
+ 			resched_task(rq->curr);
+ 	} else
+-		check_preempt_curr(rq, p);
++		check_preempt_curr(rq, p, 0);
+ }
+ 
+ /*
+@@ -1659,7 +1666,7 @@ static void switched_to_fair(struct rq *
+ 	if (running)
+ 		resched_task(rq->curr);
+ 	else
+-		check_preempt_curr(rq, p);
++		check_preempt_curr(rq, p, 0);
+ }
+ 
+ /* Account for a task changing its policy or group.
+--- a/kernel/sched_features.h
++++ b/kernel/sched_features.h
+@@ -11,3 +11,4 @@ SCHED_FEAT(ASYM_GRAN, 1)
+ SCHED_FEAT(LB_BIAS, 1)
+ SCHED_FEAT(LB_WAKEUP_UPDATE, 1)
+ SCHED_FEAT(ASYM_EFF_LOAD, 1)
++SCHED_FEAT(WAKEUP_OVERLAP, 1)
+--- a/kernel/sched_idletask.c
++++ b/kernel/sched_idletask.c
+@@ -14,7 +14,7 @@ static int select_task_rq_idle(struct ta
+ /*
+  * Idle tasks are unconditionally rescheduled:
+  */
+-static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p)
++static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p, int sync)
+ {
+ 	resched_task(rq->idle);
+ }
+@@ -76,7 +76,7 @@ static void switched_to_idle(struct rq *
+ 	if (running)
+ 		resched_task(rq->curr);
+ 	else
+-		check_preempt_curr(rq, p);
++		check_preempt_curr(rq, p, 0);
+ }
+ 
+ static void prio_changed_idle(struct rq *rq, struct task_struct *p,
+@@ -93,7 +93,7 @@ static void prio_changed_idle(struct rq
+ 		if (p->prio > oldprio)
+ 			resched_task(rq->curr);
+ 	} else
+-		check_preempt_curr(rq, p);
++		check_preempt_curr(rq, p, 0);
+ }
+ 
+ /*
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -784,7 +784,7 @@ static void check_preempt_equal_prio(str
+ /*
+  * Preempt the current task with a newly woken task if needed:
+  */
+-static void check_preempt_curr_rt(struct rq *rq, struct task_struct *p)
++static void check_preempt_curr_rt(struct rq *rq, struct task_struct *p, int sync)
+ {
+ 	if (p->prio < rq->curr->prio) {
+ 		resched_task(rq->curr);
 
 
