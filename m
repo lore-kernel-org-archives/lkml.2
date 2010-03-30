@@ -1,22 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab0C3X4S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:56:18 -0400
-Received: from kroah.org ([198.145.64.141]:45613 "EHLO coco.kroah.org"
+	id S932836Ab0C3Xbi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:31:38 -0400
+Received: from kroah.org ([198.145.64.141]:46609 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932370Ab0C3XTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:12 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:22 2010
-Message-Id: <20100330224722.089745293@linux.site>
+	id S1756932Ab0C3XVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:21:34 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:40 2010
+Message-Id: <20100330224839.430469569@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:40:36 -0700
+Date: Tue, 30 Mar 2010 15:42:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Alain Knaff <alain@knaff.lu>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [002/156] decompress: fix new decompressor for PIC
+       David Miller <davem@davemloft.net>,
+       Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+       "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+       Patrick McHardy <kaber@trash.net>,
+       Vlad Yasevich <vladislav.yasevich@hp.com>,
+       Sridhar Samudrala <sri@us.ibm.com>, Jon Maloy <jon.maloy@ericsson.com>,
+       Allan Stephens <allan.stephens@windriver.com>,
+       Andrew Hendry <andrew.hendry@gmail.com>, Zhu Yi <yi.zhu@intel.com>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [121/156] net: add limit for socket backlog
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,46 +36,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk@arm.linux.org.uk>
+From: Zhu Yi <yi.zhu@intel.com>
 
-commit 5ceaa2f39bfa73c4398cd01e78f1c3ebde3d3383 upstream.
+[ Upstream commit 8eae939f1400326b06d0c9afe53d2a484a326871 ]
 
-The ARM kernel decompressor wants to be able to relocate r/w data
-independently from the rest of the image, and we do this by ensuring that
-r/w data has global visibility.  Define STATIC_RW_DATA to be empty to
-achieve this.
+We got system OOM while running some UDP netperf testing on the loopback
+device. The case is multiple senders sent stream UDP packets to a single
+receiver via loopback on local host. Of course, the receiver is not able
+to handle all the packets in time. But we surprisingly found that these
+packets were not discarded due to the receiver's sk->sk_rcvbuf limit.
+Instead, they are kept queuing to sk->sk_backlog and finally ate up all
+the memory. We believe this is a secure hole that a none privileged user
+can crash the system.
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Alain Knaff <alain@knaff.lu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The root cause for this problem is, when the receiver is doing
+__release_sock() (i.e. after userspace recv, kernel udp_recvmsg ->
+skb_free_datagram_locked -> release_sock), it moves skbs from backlog to
+sk_receive_queue with the softirq enabled. In the above case, multiple
+busy senders will almost make it an endless loop. The skbs in the
+backlog end up eat all the system memory.
+
+The issue is not only for UDP. Any protocols using socket backlog is
+potentially affected. The patch adds limit for socket backlog so that
+the backlog size cannot be expanded endlessly.
+
+Reported-by: Alex Shi <alex.shi@intel.com>
+Cc: David Miller <davem@davemloft.net>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: "Pekka Savola (ipv6)" <pekkas@netcore.fi>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Vlad Yasevich <vladislav.yasevich@hp.com>
+Cc: Sridhar Samudrala <sri@us.ibm.com>
+Cc: Jon Maloy <jon.maloy@ericsson.com>
+Cc: Allan Stephens <allan.stephens@windriver.com>
+Cc: Andrew Hendry <andrew.hendry@gmail.com>
+Signed-off-by: Zhu Yi <yi.zhu@intel.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
---- a/include/linux/decompress/mm.h
-+++ b/include/linux/decompress/mm.h
-@@ -14,11 +14,21 @@
+---
+ include/net/sock.h |   15 ++++++++++++++-
+ net/core/sock.c    |   16 ++++++++++++++--
+ 2 files changed, 28 insertions(+), 3 deletions(-)
+
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -253,6 +253,8 @@ struct sock {
+ 	struct {
+ 		struct sk_buff *head;
+ 		struct sk_buff *tail;
++		int len;
++		int limit;
+ 	} sk_backlog;
+ 	wait_queue_head_t	*sk_sleep;
+ 	struct dst_entry	*sk_dst_cache;
+@@ -574,7 +576,7 @@ static inline int sk_stream_memory_free(
+ 	return sk->sk_wmem_queued < sk->sk_sndbuf;
+ }
  
- /* Code active when included from pre-boot environment: */
- 
-+/*
-+ * Some architectures want to ensure there is no local data in their
-+ * pre-boot environment, so that data can arbitarily relocated (via
-+ * GOT references).  This is achieved by defining STATIC_RW_DATA to
-+ * be null.
-+ */
-+#ifndef STATIC_RW_DATA
-+#define STATIC_RW_DATA static
-+#endif
-+
- /* A trivial malloc implementation, adapted from
-  *  malloc by Hannu Savolainen 1993 and Matthias Urlichs 1994
-  */
--static unsigned long malloc_ptr;
--static int malloc_count;
-+STATIC_RW_DATA unsigned long malloc_ptr;
-+STATIC_RW_DATA int malloc_count;
- 
- static void *malloc(int size)
+-/* The per-socket spinlock must be held here. */
++/* OOB backlog add */
+ static inline void sk_add_backlog(struct sock *sk, struct sk_buff *skb)
  {
+ 	if (!sk->sk_backlog.tail) {
+@@ -586,6 +588,17 @@ static inline void sk_add_backlog(struct
+ 	skb->next = NULL;
+ }
+ 
++/* The per-socket spinlock must be held here. */
++static inline int sk_add_backlog_limited(struct sock *sk, struct sk_buff *skb)
++{
++	if (sk->sk_backlog.len >= max(sk->sk_backlog.limit, sk->sk_rcvbuf << 1))
++		return -ENOBUFS;
++
++	sk_add_backlog(sk, skb);
++	sk->sk_backlog.len += skb->truesize;
++	return 0;
++}
++
+ static inline int sk_backlog_rcv(struct sock *sk, struct sk_buff *skb)
+ {
+ 	return sk->sk_backlog_rcv(sk, skb);
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -340,8 +340,12 @@ int sk_receive_skb(struct sock *sk, stru
+ 		rc = sk_backlog_rcv(sk, skb);
+ 
+ 		mutex_release(&sk->sk_lock.dep_map, 1, _RET_IP_);
+-	} else
+-		sk_add_backlog(sk, skb);
++	} else if (sk_add_backlog_limited(sk, skb)) {
++		bh_unlock_sock(sk);
++		atomic_inc(&sk->sk_drops);
++		goto discard_and_relse;
++	}
++
+ 	bh_unlock_sock(sk);
+ out:
+ 	sock_put(sk);
+@@ -1138,6 +1142,7 @@ struct sock *sk_clone(const struct sock
+ 		sock_lock_init(newsk);
+ 		bh_lock_sock(newsk);
+ 		newsk->sk_backlog.head	= newsk->sk_backlog.tail = NULL;
++		newsk->sk_backlog.len = 0;
+ 
+ 		atomic_set(&newsk->sk_rmem_alloc, 0);
+ 		/*
+@@ -1541,6 +1546,12 @@ static void __release_sock(struct sock *
+ 
+ 		bh_lock_sock(sk);
+ 	} while ((skb = sk->sk_backlog.head) != NULL);
++
++	/*
++	 * Doing the zeroing here guarantee we can not loop forever
++	 * while a wild producer attempts to flood us.
++	 */
++	sk->sk_backlog.len = 0;
+ }
+ 
+ /**
+@@ -1873,6 +1884,7 @@ void sock_init_data(struct socket *sock,
+ 	sk->sk_allocation	=	GFP_KERNEL;
+ 	sk->sk_rcvbuf		=	sysctl_rmem_default;
+ 	sk->sk_sndbuf		=	sysctl_wmem_default;
++	sk->sk_backlog.limit	=	sk->sk_rcvbuf << 1;
+ 	sk->sk_state		=	TCP_CLOSE;
+ 	sk_set_socket(sk, sock);
+ 
 
 
