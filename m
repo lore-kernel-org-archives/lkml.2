@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881Ab0C3Q4t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 12:56:49 -0400
-Received: from mail.atheros.com ([12.36.123.2]:30493 "EHLO mail.atheros.com"
+	id S1754916Ab0C3RAO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 13:00:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22534 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752764Ab0C3Q4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 12:56:47 -0400
-Date: Tue, 30 Mar 2010 09:56:45 -0700
-From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-To: Luis de Bethencourt <luisbg@ubuntu.com>
-CC: "linville@tuxdriver.com" <linville@tuxdriver.com>,
-       Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ath: fix code readability in regd.c
-Message-ID: <20100330165645.GB25095@tux>
-References: <ath/regd.c>
- <1269963873-2070-1-git-send-email-luisbg@ubuntu.com>
+	id S1753379Ab0C3RAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 13:00:13 -0400
+Date: Tue, 30 Mar 2010 18:58:29 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] set_cpus_allowed_ptr: don't use rq->migration_thread after
+	unlock
+Message-ID: <20100330165829.GA18284@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1269963873-2070-1-git-send-email-luisbg@ubuntu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 08:44:33AM -0700, Luis de Bethencourt wrote:
-> This is a patch to the ath/regd.c file that fixes two code
-> readability issues. A space between to separate two defines
-> and the indentation inside the ath_redg_is_eeprom_valid
-> function.
+Trivial typo fix. rq->migration_thread can be NULL after task_rq_unlock(),
+this is why we have "mt" which should be used instead.
 
-Acked-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
 
-You can drop netdev and linux-kernel from future linux-wireless e-mails
-like this one.
+ sched.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-  Luis
+--- 34-rc1/kernel/sched.c~S_C_A_P_USE_MT	2010-03-29 19:46:21.000000000 +0200
++++ 34-rc1/kernel/sched.c	2010-03-30 18:52:05.000000000 +0200
+@@ -5365,7 +5365,7 @@ int set_cpus_allowed_ptr(struct task_str
+ 
+ 		get_task_struct(mt);
+ 		task_rq_unlock(rq, &flags);
+-		wake_up_process(rq->migration_thread);
++		wake_up_process(mt);
+ 		put_task_struct(mt);
+ 		wait_for_completion(&req.done);
+ 		tlb_migrate_finish(p->mm);
+
