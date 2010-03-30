@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757210Ab0C3XnK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:43:10 -0400
-Received: from kroah.org ([198.145.64.141]:46191 "EHLO coco.kroah.org"
+	id S1757368Ab0C3XsV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:48:21 -0400
+Received: from kroah.org ([198.145.64.141]:45921 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932384Ab0C3XUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:22 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:07 2010
-Message-Id: <20100330224806.705989387@linux.site>
+	id S932485Ab0C3XTu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:50 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:47 2010
+Message-Id: <20100330224746.850288581@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:41:45 -0700
+Date: Tue, 30 Mar 2010 15:41:15 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Andiry Xu <andiry.xu@amd.com>,
-       Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [071/156] USB: xHCI: re-initialize cmd_completion
+       Takashi Iwai <tiwai@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [041/156] ALSA: hda - Fix secondary ADC of ALC260 basic model
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,32 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andiry Xu <andiry.xu@amd.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 1d68064a7d80da4a7334cab0356162e36229c1a1 upstream.
+commit 9c4cc0bdede1c39bde60a0d5d9251aac71fbe719 upstream.
 
-When a signal interrupts a Configure Endpoint command, the cmd_completion used
-in xhci_configure_endpoint() is not re-initialized and the
-wait_for_completion_interruptible_timeout() will return failure. Initialize
-cmd_completion in xhci_configure_endpoint().
+Fix adc_nids[] for ALC260 basic model to match with num_adc_nids.
+Otherwise you get an invalid NID in the secondary "Input Source" mixer
+element.
 
-Signed-off-by: Andiry Xu <andiry.xu@amd.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-hcd.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/patch_realtek.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-hcd.c
-+++ b/drivers/usb/host/xhci-hcd.c
-@@ -1173,6 +1173,7 @@ static int xhci_configure_endpoint(struc
- 		cmd_completion = &virt_dev->cmd_completion;
- 		cmd_status = &virt_dev->cmd_status;
- 	}
-+	init_completion(cmd_completion);
- 
- 	if (!ctx_change)
- 		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6384,7 +6384,7 @@ static struct alc_config_preset alc260_p
+ 		.num_dacs = ARRAY_SIZE(alc260_dac_nids),
+ 		.dac_nids = alc260_dac_nids,
+ 		.num_adc_nids = ARRAY_SIZE(alc260_dual_adc_nids),
+-		.adc_nids = alc260_adc_nids,
++		.adc_nids = alc260_dual_adc_nids,
+ 		.num_channel_mode = ARRAY_SIZE(alc260_modes),
+ 		.channel_mode = alc260_modes,
+ 		.input_mux = &alc260_capture_source,
 
 
