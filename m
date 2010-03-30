@@ -1,132 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105Ab0C3Xhm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:37:42 -0400
-Received: from kroah.org ([198.145.64.141]:46375 "EHLO coco.kroah.org"
+	id S932410Ab0C3XT1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:19:27 -0400
+Received: from kroah.org ([198.145.64.141]:45443 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754079Ab0C3XUx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:53 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:22 2010
-Message-Id: <20100330224822.213105640@linux.site>
+	id S932328Ab0C3XS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:57 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:07 2010
+Message-Id: <20100330225706.766576956@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:07 -0700
+Date: Tue, 30 Mar 2010 15:56:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Miao Xie <miaox@cn.fujitsu.com>, David Rientjes <rientjes@google.com>,
-       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [093/156] cpuset: fix the problem that cpuset_mem_spread_node() returns an offline node
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+       Senthil Balasubramanian <senthilkumar@atheros.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [101/116] ath9k: Enable TIM timer interrupt only when needed.
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Miao Xie <miaox@cn.fujitsu.com>
+From: Senthil Balasubramanian <senthilkumar@atheros.com>
 
-commit 5ab116c9349ef52d6fbd2e2917a53f13194b048e upstream.
+commit 3f7c5c10e9dc6bf90179eb9f7c06151d508fb324 upstream.
 
-cpuset_mem_spread_node() returns an offline node, and causes an oops.
+The TIM timer interrupt is enabled even before the ACK of nullqos
+is received which is unnecessary.
 
-This patch fixes it by initializing task->mems_allowed to
-node_states[N_HIGH_MEMORY], and updating task->mems_allowed when doing
-memory hotplug.
+Also clean up the CONF_PS part of config callback properly for
+better readability.
 
-Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Reported-by: Nick Piggin <npiggin@suse.de>
-Tested-by: Nick Piggin <npiggin@suse.de>
-Cc: Paul Menage <menage@google.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Senthil Balasubramanian <senthilkumar@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- init/main.c      |    2 +-
- kernel/cpuset.c  |   20 ++++++++++++--------
- kernel/kthread.c |    2 +-
- 3 files changed, 14 insertions(+), 10 deletions(-)
+ drivers/net/wireless/ath/ath9k/ath9k.h |    1 +
+ drivers/net/wireless/ath/ath9k/main.c  |   25 ++++++++++++++-----------
+ drivers/net/wireless/ath/ath9k/xmit.c  |    7 +++----
+ 3 files changed, 18 insertions(+), 15 deletions(-)
 
---- a/init/main.c
-+++ b/init/main.c
-@@ -846,7 +846,7 @@ static int __init kernel_init(void * unu
- 	/*
- 	 * init can allocate pages on any node
- 	 */
--	set_mems_allowed(node_possible_map);
-+	set_mems_allowed(node_states[N_HIGH_MEMORY]);
- 	/*
- 	 * init can run on any cpu.
- 	 */
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -920,9 +920,6 @@ static int update_cpumask(struct cpuset
-  *    call to guarantee_online_mems(), as we know no one is changing
-  *    our task's cpuset.
-  *
-- *    Hold callback_mutex around the two modifications of our tasks
-- *    mems_allowed to synchronize with cpuset_mems_allowed().
-- *
-  *    While the mm_struct we are migrating is typically from some
-  *    other task, the task_struct mems_allowed that we are hacking
-  *    is for our current task, which must allocate new pages for that
-@@ -1391,11 +1388,10 @@ static void cpuset_attach(struct cgroup_
+--- a/drivers/net/wireless/ath/ath9k/ath9k.h
++++ b/drivers/net/wireless/ath/ath9k/ath9k.h
+@@ -368,6 +368,7 @@ void ath_tx_aggr_start(struct ath_softc
+ 		       u16 tid, u16 *ssn);
+ void ath_tx_aggr_stop(struct ath_softc *sc, struct ieee80211_sta *sta, u16 tid);
+ void ath_tx_aggr_resume(struct ath_softc *sc, struct ieee80211_sta *sta, u16 tid);
++void ath9k_enable_ps(struct ath_softc *sc);
  
- 	if (cs == &top_cpuset) {
- 		cpumask_copy(cpus_attach, cpu_possible_mask);
--		to = node_possible_map;
- 	} else {
- 		guarantee_online_cpus(cs, cpus_attach);
--		guarantee_online_mems(cs, &to);
- 	}
-+	guarantee_online_mems(cs, &to);
+ /********/
+ /* VIFs */
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -2305,6 +2305,19 @@ static void ath9k_remove_interface(struc
+ 	mutex_unlock(&sc->mutex);
+ }
  
- 	/* do per-task migration stuff possibly for each in the threadgroup */
- 	cpuset_attach_task(tsk, &to, cs);
-@@ -2090,15 +2086,23 @@ static int cpuset_track_online_cpus(stru
- static int cpuset_track_online_nodes(struct notifier_block *self,
- 				unsigned long action, void *arg)
- {
-+	nodemask_t oldmems;
++void ath9k_enable_ps(struct ath_softc *sc)
++{
++	sc->ps_enabled = true;
++	if (!(sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_AUTOSLEEP)) {
++		if ((sc->imask & ATH9K_INT_TIM_TIMER) == 0) {
++			sc->imask |= ATH9K_INT_TIM_TIMER;
++			ath9k_hw_set_interrupts(sc->sc_ah,
++					sc->imask);
++		}
++	}
++	ath9k_hw_setrxabort(sc->sc_ah, 1);
++}
 +
- 	cgroup_lock();
- 	switch (action) {
- 	case MEM_ONLINE:
--	case MEM_OFFLINE:
-+		oldmems = top_cpuset.mems_allowed;
- 		mutex_lock(&callback_mutex);
- 		top_cpuset.mems_allowed = node_states[N_HIGH_MEMORY];
- 		mutex_unlock(&callback_mutex);
--		if (action == MEM_OFFLINE)
--			scan_for_empty_cpusets(&top_cpuset);
-+		update_tasks_nodemask(&top_cpuset, &oldmems, NULL);
-+		break;
-+	case MEM_OFFLINE:
-+		/*
-+		 * needn't update top_cpuset.mems_allowed explicitly because
-+		 * scan_for_empty_cpusets() will update it.
-+		 */
-+		scan_for_empty_cpusets(&top_cpuset);
- 		break;
- 	default:
- 		break;
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -219,7 +219,7 @@ int kthreadd(void *unused)
- 	set_task_comm(tsk, "kthreadd");
- 	ignore_signals(tsk);
- 	set_cpus_allowed_ptr(tsk, cpu_all_mask);
--	set_mems_allowed(node_possible_map);
-+	set_mems_allowed(node_states[N_HIGH_MEMORY]);
+ static int ath9k_config(struct ieee80211_hw *hw, u32 changed)
+ {
+ 	struct ath_wiphy *aphy = hw->priv;
+@@ -2336,19 +2349,9 @@ static int ath9k_config(struct ieee80211
+ 	if (changed & IEEE80211_CONF_CHANGE_PS) {
+ 		if (conf->flags & IEEE80211_CONF_PS) {
+ 			sc->sc_flags |= SC_OP_PS_ENABLED;
+-			if (!(ah->caps.hw_caps &
+-			      ATH9K_HW_CAP_AUTOSLEEP)) {
+-				if ((sc->imask & ATH9K_INT_TIM_TIMER) == 0) {
+-					sc->imask |= ATH9K_INT_TIM_TIMER;
+-					ath9k_hw_set_interrupts(sc->sc_ah,
+-							sc->imask);
+-				}
+-			}
+-			sc->ps_enabled = true;
+ 			if ((sc->sc_flags & SC_OP_NULLFUNC_COMPLETED)) {
+ 				sc->sc_flags &= ~SC_OP_NULLFUNC_COMPLETED;
+-				sc->ps_enabled = true;
+-				ath9k_hw_setrxabort(sc->sc_ah, 1);
++				ath9k_enable_ps(sc);
+ 			}
+ 		} else {
+ 			sc->ps_enabled = false;
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -1979,10 +1979,9 @@ static void ath_tx_processq(struct ath_s
  
- 	current->flags |= PF_NOFREEZE | PF_FREEZER_NOSIG;
+ 		if (bf->bf_isnullfunc &&
+ 		    (ds->ds_txstat.ts_status & ATH9K_TX_ACKED)) {
+-			if ((sc->sc_flags & SC_OP_PS_ENABLED)) {
+-				sc->ps_enabled = true;
+-				ath9k_hw_setrxabort(sc->sc_ah, 1);
+-			} else
++			if ((sc->sc_flags & SC_OP_PS_ENABLED))
++				ath9k_enable_ps(sc);
++			else
+ 				sc->sc_flags |= SC_OP_NULLFUNC_COMPLETED;
+ 		}
  
 
 
