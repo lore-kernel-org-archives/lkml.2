@@ -1,208 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932170Ab0C3XRx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:17:53 -0400
-Received: from kroah.org ([198.145.64.141]:51867 "EHLO coco.kroah.org"
+	id S1756914Ab0C3XV3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:21:29 -0400
+Received: from kroah.org ([198.145.64.141]:46144 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932142Ab0C3XRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:17:45 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:16 2010
-Message-Id: <20100330225615.776547378@linux.site>
+	id S932380Ab0C3XUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:20:15 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:03 2010
+Message-Id: <20100330224802.829684863@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:06 -0700
+Date: Tue, 30 Mar 2010 15:41:39 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       <shaohui.zheng@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [028/116] x86, apic: Dont use logical-flat mode when CPU hotplug may exceed 8 CPUs
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+       Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [065/156] tty: Keep the default buffering to sub-page units
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit 681ee44d40d7c93b42118320e4620d07d8704fd6 upstream
+commit d9661adfb8e53a7647360140af3b92284cbe52d4 upstream.
 
-We need to fall back from logical-flat APIC mode to physical-flat mode
-when we have more than 8 CPUs.  However, in the presence of CPU
-hotplug(with bios listing not enabled but possible cpus as disabled cpus in
-MADT), we have to consider the number of possible CPUs rather than
-the number of current CPUs; otherwise we may cross the 8-CPU boundary
-when CPUs are added later.
+We allocate during interrupts so while our buffering is normally diced up
+small anyway on some hardware at speed we can pressure the VM excessively
+for page pairs. We don't really need big buffers to be linear so don't try
+so hard.
 
-32bit apic code can use more cleanups (like the removal of vendor checks in
-32bit default_setup_apic_routing()) and more unifications with 64bit code.
-Yinghai has some patches in works already. This patch addresses the boot issue
-that is reported in the virtualization guest context.
+In order to make this work well we will tidy up excess callers to request_room,
+which cannot itself enforce this break up.
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Acked-by: Shaohui Zheng <shaohui.zheng@intel.com>
-Reviewed-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/acpi/boot.c     |    5 -----
- arch/x86/kernel/apic/apic.c     |   14 --------------
- arch/x86/kernel/apic/probe_32.c |   27 ++++++++++++++++++++++++++-
- arch/x86/kernel/apic/probe_64.c |   13 ++-----------
- arch/x86/kernel/mpparse.c       |    7 -------
- arch/x86/kernel/smpboot.c       |    2 --
- 6 files changed, 28 insertions(+), 40 deletions(-)
+ drivers/char/tty_buffer.c |    6 ++++--
+ include/linux/tty.h       |   10 ++++++++++
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -1191,9 +1191,6 @@ static void __init acpi_process_madt(voi
- 		if (!error) {
- 			acpi_lapic = 1;
- 
--#ifdef CONFIG_X86_BIGSMP
--			generic_bigsmp_probe();
--#endif
- 			/*
- 			 * Parse MADT IO-APIC entries
- 			 */
-@@ -1203,8 +1200,6 @@ static void __init acpi_process_madt(voi
- 				acpi_ioapic = 1;
- 
- 				smp_found_config = 1;
--				if (apic->setup_apic_routing)
--					apic->setup_apic_routing();
- 			}
- 		}
- 		if (error == -EINVAL) {
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1665,9 +1665,7 @@ int __init APIC_init_uniprocessor(void)
- #endif
- 
- 	enable_IR_x2apic();
--#ifdef CONFIG_X86_64
- 	default_setup_apic_routing();
--#endif
- 
- 	verify_local_APIC();
- 	connect_bsp_APIC();
-@@ -1915,18 +1913,6 @@ void __cpuinit generic_processor_info(in
- 	if (apicid > max_physical_apicid)
- 		max_physical_apicid = apicid;
- 
--#ifdef CONFIG_X86_32
--	switch (boot_cpu_data.x86_vendor) {
--	case X86_VENDOR_INTEL:
--		if (num_processors > 8)
--			def_to_bigsmp = 1;
--		break;
--	case X86_VENDOR_AMD:
--		if (max_physical_apicid >= 8)
--			def_to_bigsmp = 1;
--	}
--#endif
--
- #if defined(CONFIG_SMP) || defined(CONFIG_X86_64)
- 	early_per_cpu(x86_cpu_to_apicid, cpu) = apicid;
- 	early_per_cpu(x86_bios_cpu_apicid, cpu) = apicid;
---- a/arch/x86/kernel/apic/probe_32.c
-+++ b/arch/x86/kernel/apic/probe_32.c
-@@ -54,6 +54,31 @@ late_initcall(print_ipi_mode);
- 
- void default_setup_apic_routing(void)
+--- a/drivers/char/tty_buffer.c
++++ b/drivers/char/tty_buffer.c
+@@ -247,7 +247,8 @@ int tty_insert_flip_string(struct tty_st
  {
-+	int version = apic_version[boot_cpu_physical_apicid];
+ 	int copied = 0;
+ 	do {
+-		int space = tty_buffer_request_room(tty, size - copied);
++		int goal = min(size - copied, TTY_BUFFER_PAGE);
++		int space = tty_buffer_request_room(tty, goal);
+ 		struct tty_buffer *tb = tty->buf.tail;
+ 		/* If there is no space then tb may be NULL */
+ 		if (unlikely(space == 0))
+@@ -283,7 +284,8 @@ int tty_insert_flip_string_flags(struct
+ {
+ 	int copied = 0;
+ 	do {
+-		int space = tty_buffer_request_room(tty, size - copied);
++		int goal = min(size - copied, TTY_BUFFER_PAGE);
++		int space = tty_buffer_request_room(tty, goal);
+ 		struct tty_buffer *tb = tty->buf.tail;
+ 		/* If there is no space then tb may be NULL */
+ 		if (unlikely(space == 0))
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -68,6 +68,16 @@ struct tty_buffer {
+ 	unsigned long data[0];
+ };
+ 
++/*
++ * We default to dicing tty buffer allocations to this many characters
++ * in order to avoid multiple page allocations. We assume tty_buffer itself
++ * is under 256 bytes. See tty_buffer_find for the allocation logic this
++ * must match
++ */
 +
-+	if (num_possible_cpus() > 8) {
-+		switch (boot_cpu_data.x86_vendor) {
-+		case X86_VENDOR_INTEL:
-+			if (!APIC_XAPIC(version)) {
-+				def_to_bigsmp = 0;
-+				break;
-+			}
-+			/* If P4 and above fall through */
-+		case X86_VENDOR_AMD:
-+			def_to_bigsmp = 1;
-+		}
-+	}
++#define TTY_BUFFER_PAGE		((PAGE_SIZE  - 256) / 2)
 +
-+#ifdef CONFIG_X86_BIGSMP
-+	generic_bigsmp_probe();
-+#endif
 +
-+	if (apic->setup_apic_routing)
-+		apic->setup_apic_routing();
-+}
-+
-+void setup_apic_flat_routing(void)
-+{
- #ifdef CONFIG_X86_IO_APIC
- 	printk(KERN_INFO
- 		"Enabling APIC mode:  Flat.  Using %d I/O APICs\n",
-@@ -103,7 +128,7 @@ struct apic apic_default = {
- 	.init_apic_ldr			= default_init_apic_ldr,
- 
- 	.ioapic_phys_id_map		= default_ioapic_phys_id_map,
--	.setup_apic_routing		= default_setup_apic_routing,
-+	.setup_apic_routing		= setup_apic_flat_routing,
- 	.multi_timer_check		= NULL,
- 	.apicid_to_node			= default_apicid_to_node,
- 	.cpu_to_logical_apicid		= default_cpu_to_logical_apicid,
---- a/arch/x86/kernel/apic/probe_64.c
-+++ b/arch/x86/kernel/apic/probe_64.c
-@@ -67,17 +67,8 @@ void __init default_setup_apic_routing(v
- 	}
- #endif
- 
--	if (apic == &apic_flat) {
--		switch (boot_cpu_data.x86_vendor) {
--		case X86_VENDOR_INTEL:
--			if (num_processors > 8)
--				apic = &apic_physflat;
--			break;
--		case X86_VENDOR_AMD:
--			if (max_physical_apicid >= 8)
--				apic = &apic_physflat;
--		}
--	}
-+	if (apic == &apic_flat && num_possible_cpus() > 8)
-+		apic = &apic_physflat;
- 
- 	printk(KERN_INFO "Setting APIC routing to %s\n", apic->name);
- 
---- a/arch/x86/kernel/mpparse.c
-+++ b/arch/x86/kernel/mpparse.c
-@@ -359,13 +359,6 @@ static int __init smp_read_mpc(struct mp
- 		x86_init.mpparse.mpc_record(1);
- 	}
- 
--#ifdef CONFIG_X86_BIGSMP
--	generic_bigsmp_probe();
--#endif
--
--	if (apic->setup_apic_routing)
--		apic->setup_apic_routing();
--
- 	if (!num_processors)
- 		printk(KERN_ERR "MPTABLE: no processors registered!\n");
- 	return num_processors;
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1066,9 +1066,7 @@ void __init native_smp_prepare_cpus(unsi
- 	set_cpu_sibling_map(0);
- 
- 	enable_IR_x2apic();
--#ifdef CONFIG_X86_64
- 	default_setup_apic_routing();
--#endif
- 
- 	if (smp_sanity_check(max_cpus) < 0) {
- 		printk(KERN_INFO "SMP disabled\n");
+ struct tty_bufhead {
+ 	struct delayed_work work;
+ 	spinlock_t lock;
 
 
