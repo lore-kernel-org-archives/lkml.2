@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756467Ab0C3XM2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:12:28 -0400
-Received: from kroah.org ([198.145.64.141]:48892 "EHLO coco.kroah.org"
+	id S1757660Ab0CaA0w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:26:52 -0400
+Received: from kroah.org ([198.145.64.141]:48965 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756421Ab0C3XMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:18 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:26 2010
-Message-Id: <20100330225826.431264706@linux.site>
+	id S1756479Ab0C3XMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:30 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:34 2010
+Message-Id: <20100330225834.416578827@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:31 -0700
+Date: Tue, 30 Mar 2010 15:57:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Rickard Bellini <rickard.bellini@ericsson.com>,
+       Karel Zak <kzak@redhat.com>, Jens Axboe <jens.axboe@oracle.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [29/89] USB: add missing delay during remote wakeup
+Subject: [42/89] partitions: use sector size for EFI GPT
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,74 +26,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Karel Zak <kzak@redhat.com>
 
-commit 49d0f078f494b9d81e820a13dd8093a9bfb0b6b1 upstream.
+commit 7d13af3279985f554784a45cc961f706dbcdbdd1 upstream.
 
-This patch (as1330) fixes a bug in khbud's handling of remote
-wakeups.  When a device sends a remote-wakeup request, the parent hub
-(or the host controller driver, for directly attached devices) begins
-the resume sequence and notifies khubd when the sequence finishes.  At
-this point the port's SUSPEND feature is automatically turned off.
+Currently, kernel uses strictly 512-byte sectors for EFI GPT parsing.
+That's wrong.
 
-However the device needs an additional 10-ms resume-recovery time
-(TRSMRCY in the USB spec).  Khubd does not wait for this delay if the
-SUSPEND feature is off, and as a result some devices fail to behave
-properly following a remote wakeup.  This patch adds the missing
-delay to the remote-wakeup path.
+UEFI standard (version 2.3, May 2009, 5.3.1 GUID Format overview, page
+95) defines that LBA is always based on the logical block size. It
+means bdev_logical_block_size() (aka BLKSSZGET) for Linux.
 
-It also extends the resume-signalling delay used by ehci-hcd and
-uhci-hcd from 20 ms (the value in the spec) to 25 ms (the value we use
-for non-remote-wakeup resumes).  The extra time appears to help some
-devices.
+This patch removes static sector size from EFI GPT parser.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Cc: Rickard Bellini <rickard.bellini@ericsson.com>
+The problem is reproducible with the latest GNU Parted:
+
+ # modprobe scsi_debug dev_size_mb=50 sector_size=4096
+
+  # ./parted /dev/sdb print
+  Model: Linux scsi_debug (scsi)
+  Disk /dev/sdb: 52.4MB
+  Sector size (logical/physical): 4096B/4096B
+  Partition Table: gpt
+
+  Number  Start   End     Size    File system  Name     Flags
+   1      24.6kB  3002kB  2978kB               primary
+   2      3002kB  6001kB  2998kB               primary
+   3      6001kB  9003kB  3002kB               primary
+
+  # blockdev --rereadpt /dev/sdb
+  # dmesg | tail -1
+   sdb: unknown partition table      <---- !!!
+
+with this patch:
+
+  # blockdev --rereadpt /dev/sdb
+  # dmesg | tail -1
+   sdb: sdb1 sdb2 sdb3
+
+Signed-off-by: Karel Zak <kzak@redhat.com>
+Signed-off-by: Jens Axboe <jens.axboe@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/hub.c      |    3 +++
- drivers/usb/host/ehci-hcd.c |    5 +++--
- drivers/usb/host/uhci-hub.c |    2 +-
- 3 files changed, 7 insertions(+), 3 deletions(-)
+ fs/partitions/efi.c |   23 +++++++++++++++--------
+ 1 file changed, 15 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -3188,6 +3188,9 @@ static void hub_events(void)
- 					USB_PORT_FEAT_C_SUSPEND);
- 				udev = hdev->children[i-1];
- 				if (udev) {
-+					/* TRSMRCY = 10 msec */
-+					msleep(10);
+--- a/fs/partitions/efi.c
++++ b/fs/partitions/efi.c
+@@ -1,7 +1,9 @@
+ /************************************************************
+  * EFI GUID Partition Table handling
+- * Per Intel EFI Specification v1.02
+- * http://developer.intel.com/technology/efi/efi.htm
++ *
++ * http://www.uefi.org/specs/
++ * http://www.intel.com/technology/efi/
++ *
+  * efi.[ch] by Matt Domsch <Matt_Domsch@dell.com>
+  *   Copyright 2000,2001,2002,2004 Dell Inc.
+  *
+@@ -92,6 +94,7 @@
+  *
+  ************************************************************/
+ #include <linux/crc32.h>
++#include <linux/math64.h>
+ #include "check.h"
+ #include "efi.h"
+ 
+@@ -141,7 +144,8 @@ last_lba(struct block_device *bdev)
+ {
+ 	if (!bdev || !bdev->bd_inode)
+ 		return 0;
+-	return (bdev->bd_inode->i_size >> 9) - 1ULL;
++	return div_u64(bdev->bd_inode->i_size,
++		       bdev_logical_block_size(bdev)) - 1ULL;
+ }
+ 
+ static inline int
+@@ -188,6 +192,7 @@ static size_t
+ read_lba(struct block_device *bdev, u64 lba, u8 * buffer, size_t count)
+ {
+ 	size_t totalreadcount = 0;
++	sector_t n = lba * (bdev_logical_block_size(bdev) / 512);
+ 
+ 	if (!bdev || !buffer || lba > last_lba(bdev))
+                 return 0;
+@@ -195,7 +200,7 @@ read_lba(struct block_device *bdev, u64
+ 	while (count) {
+ 		int copied = 512;
+ 		Sector sect;
+-		unsigned char *data = read_dev_sector(bdev, lba++, &sect);
++		unsigned char *data = read_dev_sector(bdev, n++, &sect);
+ 		if (!data)
+ 			break;
+ 		if (copied > count)
+@@ -602,6 +607,7 @@ efi_partition(struct parsed_partitions *
+ 	gpt_header *gpt = NULL;
+ 	gpt_entry *ptes = NULL;
+ 	u32 i;
++	unsigned ssz = bdev_logical_block_size(bdev) / 512;
+ 
+ 	if (!find_valid_gpt(bdev, &gpt, &ptes) || !gpt || !ptes) {
+ 		kfree(gpt);
+@@ -612,13 +618,14 @@ efi_partition(struct parsed_partitions *
+ 	pr_debug("GUID Partition Table is valid!  Yea!\n");
+ 
+ 	for (i = 0; i < le32_to_cpu(gpt->num_partition_entries) && i < state->limit-1; i++) {
++		u64 start = le64_to_cpu(ptes[i].starting_lba);
++		u64 size = le64_to_cpu(ptes[i].ending_lba) -
++			   le64_to_cpu(ptes[i].starting_lba) + 1ULL;
 +
- 					usb_lock_device(udev);
- 					ret = remote_wakeup(hdev->
- 							children[i-1]);
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -764,9 +764,10 @@ static irqreturn_t ehci_irq (struct usb_
+ 		if (!is_pte_valid(&ptes[i], last_lba(bdev)))
+ 			continue;
  
- 			/* start 20 msec resume signaling from this port,
- 			 * and make khubd collect PORT_STAT_C_SUSPEND to
--			 * stop that signaling.
-+			 * stop that signaling.  Use 5 ms extra for safety,
-+			 * like usb_port_resume() does.
- 			 */
--			ehci->reset_done [i] = jiffies + msecs_to_jiffies (20);
-+			ehci->reset_done[i] = jiffies + msecs_to_jiffies(25);
- 			ehci_dbg (ehci, "port %d remote wakeup\n", i + 1);
- 			mod_timer(&hcd->rh_timer, ehci->reset_done[i]);
- 		}
---- a/drivers/usb/host/uhci-hub.c
-+++ b/drivers/usb/host/uhci-hub.c
-@@ -167,7 +167,7 @@ static void uhci_check_ports(struct uhci
- 				/* Port received a wakeup request */
- 				set_bit(port, &uhci->resuming_ports);
- 				uhci->ports_timeout = jiffies +
--						msecs_to_jiffies(20);
-+						msecs_to_jiffies(25);
+-		put_partition(state, i+1, le64_to_cpu(ptes[i].starting_lba),
+-				 (le64_to_cpu(ptes[i].ending_lba) -
+-                                  le64_to_cpu(ptes[i].starting_lba) +
+-				  1ULL));
++		put_partition(state, i+1, start * ssz, size * ssz);
  
- 				/* Make sure we see the port again
- 				 * after the resuming period is over. */
+ 		/* If this is a RAID volume, tell md */
+ 		if (!efi_guidcmp(ptes[i].partition_type_guid,
 
 
