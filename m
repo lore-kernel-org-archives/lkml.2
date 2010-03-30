@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab0C3USQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 16:18:16 -0400
-Received: from mail-yw0-f172.google.com ([209.85.211.172]:63014 "EHLO
-	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754576Ab0C3USO (ORCPT
+	id S1754755Ab0C3UYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 16:24:25 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:57152 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752822Ab0C3UYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 16:18:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=yAKwY6rTwGBKhnLnhGHGDHkFZkIE+hH/c1LDLNhnpR2SDJ54bc/bpicYB8tO+inlYy
-         Evg1hKYgilgZAvYWxwQhEi+zEGj98fVhzQzE26jgUagd/B6l8zLY3vrKf6zD7lDZuPVf
-         3PzW2Ox0OCkrdqM7hykAsZfHZMA4ftiQcp1H0=
-From: Soeren Moeller <soerenmoeller2001@gmail.com>
-To: gregkh@suse.de, richard@audacityteam.org, andre.goddard@gmail.com,
-       soerenmoeller2001@gmail.com, nm127@freemail.hu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: quatech_usb2: fix coding style issues
-Date: Tue, 30 Mar 2010 20:11:12 +0000
-Message-Id: <1269979872-14677-1-git-send-email-soerenmoeller2001@gmail.com>
-X-Mailer: git-send-email 1.6.3.3
+	Tue, 30 Mar 2010 16:24:24 -0400
+Date: Tue, 30 Mar 2010 16:24:22 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
+       Eric Dumazet <dada1@cosmosbay.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
+       Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Steven Rostedt <rostedt@goodmis.org>, stable <stable@kernel.org>
+Subject: Re: [PATCH] modules fix incorrect percpu usage
+Message-ID: <20100330202421.GA28800@Krystal>
+References: <20100330135208.GC20673@Krystal> <20100330125304.53f079db.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100330125304.53f079db.akpm@linux-foundation.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 16:08:42 up 66 days, 22:45,  5 users,  load average: 0.15, 0.08,
+	0.02
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the file quatech_usb2.c that fixes two space before tabular and one line of more than 80 characters warnings found by checkpatch.pl
+* Andrew Morton (akpm@linux-foundation.org) wrote:
+> On Tue, 30 Mar 2010 09:52:08 -0400
+> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> 
+> > Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is needed
+> > for per cpu pointers).
+> > 
+> > Introduced by commit:
+> > 
+> > module.c: commit 6b588c18f8dacfa6d7957c33c5ff832096e752d3
+> > 
+> > It applies to mainline as of 2.6.34-rc2. This patch should be queued for the
+> > stable branch, for kernels 2.6.29.x to 2.6.33.x.
+> > (based on 2.6.33.1, also applies to 2.6.34-rc2 -tip)
+> 
+> Why do you beleive this should be backported to -stable?  What are the
+> user-visible effects of this change?
+> 
 
-Signed-off-by: Soeren Moeller <soerenmoeller2001@gmail.com>
----
- drivers/staging/quatech_usb2/quatech_usb2.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+As for the user-visible impact of this specific patch, I guess nobody noticed
+any problem because we've been lucky enough that the compiler did not generate
+the inappropriate optimization pattern there.
 
-diff --git a/drivers/staging/quatech_usb2/quatech_usb2.c b/drivers/staging/quatech_usb2/quatech_usb2.c
-index 1561f74..ecd7313 100644
---- a/drivers/staging/quatech_usb2/quatech_usb2.c
-+++ b/drivers/staging/quatech_usb2/quatech_usb2.c
-@@ -57,7 +57,7 @@ static int debug;
- #define QT2_HW_FLOW_CONTROL_MASK		0xc5
- #define QT2_SW_FLOW_CONTROL_MASK		0xc6
- #define QT2_SW_FLOW_CONTROL_DISABLE		0xc7
--#define QT2_BREAK_CONTROL 			0xc8
-+#define QT2_BREAK_CONTROL			0xc8
- #define QT2_STOP_RECEIVE			0xe0
- #define QT2_FLUSH_DEVICE			0xc4
- #define QT2_GET_SET_QMCR			0xe1
-@@ -207,7 +207,7 @@ struct quatech2_dev {
- 	bool	ReadBulkStopped;
- 	char	open_ports;
- 	struct usb_serial_port *current_port;
--	int 	buffer_size;
-+	int	buffer_size;
- };
- 
- /* structure which holds line and modem status flags */
-@@ -1648,10 +1648,10 @@ __func__);
- 			} /*endif*/
- 			if (tty_st && urb->actual_length) {
- 				tty_buffer_request_room(tty_st, 1);
--				tty_insert_flip_string(tty_st,
--					&((unsigned char *)(urb->transfer_buffer)
--						)[i],
--					1);
-+				tty_insert_flip_string(tty_st, &(
-+						(unsigned char *)
-+						(urb->transfer_buffer)
-+					)[i], 1);
- 			}
- 		} /*endfor*/
- 		tty_flip_buffer_push(tty_st);
+This inappropriate use of per_cpu_ptr() elsewhere (in __module_ref_addr() from
+module.h) caused a NULL pointer exception on Randy's machine.
+
+So either we consider that the code is better left untouched, or we apply this
+patch to module.c in order to prevent compiler optimizations from subtly
+breaking the generated assembly with specific configurations of the current or
+future versions of the compiler. At that level, it becomes a policy question
+about what should go in -stable, for which I will defer to Greg and you. I would
+perfectly understand if you consider that it does not belong to -stable, because
+there is no perceived user impact so far.
+
+Thanks,
+
+Mathieu
+
 -- 
-1.6.3.3
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
