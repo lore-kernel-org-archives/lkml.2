@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757510Ab0C3XxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:53:04 -0400
-Received: from kroah.org ([198.145.64.141]:45756 "EHLO coco.kroah.org"
+	id S1756942Ab0C3XVt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:21:49 -0400
+Received: from kroah.org ([198.145.64.141]:46332 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932425Ab0C3XTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:30 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:34 2010
-Message-Id: <20100330224733.571179411@linux.site>
+	id S932550Ab0C3XUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:20:46 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:19 2010
+Message-Id: <20100330224818.405944786@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:40:55 -0700
+Date: Tue, 30 Mar 2010 15:42:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
+       Dean Nelson <dnelson@redhat.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [021/156] tracing: Fix warning in s_next of trace file ops
+Subject: [088/156] PCI: fix return value from pcix_get_max_mmrbc()
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,46 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+From: Dean Nelson <dnelson@redhat.com>
 
-commit ac91d85456372a90af5b85eb6620fd2efb1e431b upstream.
+commit 25daeb550b69e89aff59bc6a84218a12b5203531 upstream.
 
-This warning in s_next() can be triggered by lseek():
- [<c018b3f7>] ? s_next+0x77/0x80
- [<c013e3c1>] warn_slowpath_common+0x81/0xa0
- [<c018b3f7>] ? s_next+0x77/0x80
- [<c013e3fa>] warn_slowpath_null+0x1a/0x20
- [<c018b3f7>] s_next+0x77/0x80
- [<c01efa77>] traverse+0x117/0x200
- [<c01eff13>] seq_lseek+0xa3/0x120
- [<c01efe70>] ? seq_lseek+0x0/0x120
- [<c01d7081>] vfs_llseek+0x41/0x50
- [<c01d8116>] sys_llseek+0x66/0xa0
- [<c0102bd0>] sysenter_do_call+0x12/0x26
+For the PCI_X_STATUS register, pcix_get_max_mmrbc() is returning an incorrect
+value, which is based on:
 
-The iterator "leftover" variable is zeroed in the opening of the trace
-file. But lseek can call s_start() which will call s_next() without
-reseting the "leftover" variable back to zero, which might trigger
-the WARN_ON_ONCE(iter->leftover) that is in s_next().
+	(stat & PCI_X_STATUS_MAX_READ) >> 12
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-LKML-Reference: <4B8CE06A.9090207@cn.fujitsu.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Valid return values are 512, 1024, 2048, 4096, which correspond to a 'stat'
+(masked and right shifted by 21) of 0, 1, 2, 3, respectively.
+
+A right shift by 11 would generate the correct return value when 'stat' (masked
+and right shifted by 21) has a value of 1 or 2. But for a value of 0 or 3 it's
+not possible to generate the correct return value by only right shifting.
+
+Fix is based on pcix_get_mmrbc()'s similar dealings with the PCI_X_CMD register.
+
+Signed-off-by: Dean Nelson <dnelson@redhat.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/trace/trace.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/pci/pci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1628,6 +1628,7 @@ static void *s_start(struct seq_file *m,
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -2432,7 +2432,7 @@ int pcix_get_max_mmrbc(struct pci_dev *d
+ 	if (err)
+ 		return -EINVAL;
  
- 		ftrace_enable_cpu();
- 
-+		iter->leftover = 0;
- 		for (p = iter; p && l < *pos; p = s_next(m, p, &l))
- 			;
+-	return (stat & PCI_X_STATUS_MAX_READ) >> 12;
++	return 512 << ((stat & PCI_X_STATUS_MAX_READ) >> 21);
+ }
+ EXPORT_SYMBOL(pcix_get_max_mmrbc);
  
 
 
