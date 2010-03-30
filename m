@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab0C3NqA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 09:46:00 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:56373 "EHLO
+	id S1756046Ab0C3Nuu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 09:50:50 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:35503 "EHLO
 	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756147Ab0C3Np5 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 09:45:57 -0400
-Date: Tue, 30 Mar 2010 09:45:55 -0400
+	by vger.kernel.org with ESMTP id S1752139Ab0C3Nut (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 09:50:49 -0400
+Date: Tue, 30 Mar 2010 09:50:47 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, stable <stable@kernel.org>,
+       Randy Dunlap <randy.dunlap@oracle.com>,
        Eric Dumazet <dada1@cosmosbay.com>,
-       Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
        Linus Torvalds <torvalds@linux-foundation.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Steven Rostedt <rostedt@goodmis.org>, stable <stable@kernel.org>
-Subject: Re: [PATCH] lockdep fix incorrect percpu usage
-Message-ID: <20100330134555.GA20673@Krystal>
-References: <20100330033425.GD7683@Krystal> <1269938876.5109.510.camel@twins>
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH] modules fix incorrect percpu usage
+Message-ID: <20100330135047.GB20673@Krystal>
+References: <20100330033211.GC7683@Krystal> <20100330033617.GE7683@Krystal> <1269955201.19685.5867.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1269938876.5109.510.camel@twins>
+In-Reply-To: <1269955201.19685.5867.camel@gandalf.stny.rr.com>
 X-Editor: vi
 X-Info: http://www.efficios.com
 X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 09:41:37 up 66 days, 16:18,  9 users,  load average: 0.14, 0.12,
+X-Uptime: 09:50:34 up 66 days, 16:27,  9 users,  load average: 0.10, 0.09,
 	0.09
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra (peterz@infradead.org) wrote:
-> On Mon, 2010-03-29 at 23:34 -0400, Mathieu Desnoyers wrote:
-> > Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is needed
-> > for per cpu pointers).
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Mon, 2010-03-29 at 23:36 -0400, Mathieu Desnoyers wrote:
+> > * Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
+> > > Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is needed
+> > > for per cpu pointers).
+> > > 
+> > > Introduced by commit:
+> > > 
+> > > module.c: commit 6b588c18f8dacfa6d7957c33c5ff832096e752d3
+> > > 
+> > > This patch should be queued for the stable branch, for kernels 2.6.29.x to
+> > > 2.6.33.x.
+> > > (tested on 2.6.33.1 x86_64)
 > > 
-> > git blame points to commit:
-> > 
-> > lockdep.c: commit 8e18257d29238311e82085152741f0c3aa18b74d
-> > 
-> > But it's really just moving the code around. But it's enough to say that the
-> > problems appeared before Jul 19 01:48:54 2007, which brings us back to 2.6.23.
-> > 
-> > So it should be applied to stable 2.6.23.x to 2.6.33.x (or whichever of these
-> > stable branches are still maintained) and to mainline 2.6.34-rc2.
+> > It's actually needed for mainline too (2.6.34-rc2).
 > 
-> well, definately not to mainline, since that code is utterly busted in
-> mainline due to recent per-cpu changes.
+> Then all you need to do is submit it for mainline with a 
+> "Cc: stable@kernel.org" as you did below. It will then automatically be
+> added to the stable queue when Linus pulls it.
 
-How recent ? I'm based on 
-
-commit f57d4e859a8acd63f878cd0534ec4b990b1710dc
-Merge: 0528faa... eed6351...
-Author: Ingo Molnar <mingo@elte.hu>
-Date:   Mon Mar 29 18:56:00 2010 +0200
-
-from -tip and I see the problem there, both in module.c and lockdep.c.
-
-Thanks,
+OK, thanks for the info.
 
 Mathieu
 
+> 
+> -- Steve
+> 
+> > 
+> > Thanks,
+> > 
+> > Mathieu
+> > 
+> > > 
+> > > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > > CC: Randy Dunlap <randy.dunlap@oracle.com>
+> > > CC: Eric Dumazet <dada1@cosmosbay.com>
+> > > CC: Rusty Russell <rusty@rustcorp.com.au>
+> > > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > > CC: Tejun Heo <tj@kernel.org>
+> > > CC: Ingo Molnar <mingo@elte.hu>
+> > > CC: Andrew Morton <akpm@linux-foundation.org>
+> > > CC: Linus Torvalds <torvalds@linux-foundation.org>
+> > > CC: Greg Kroah-Hartman <gregkh@suse.de>
+> > > CC: Steven Rostedt <rostedt@goodmis.org>
+> > > CC: stable <stable@kernel.org>
+> > > ---
+> > >  kernel/module.c |    2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > 
+> 
 
 -- 
 Mathieu Desnoyers
