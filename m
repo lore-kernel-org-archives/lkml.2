@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756629Ab0CaAXd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:23:33 -0400
-Received: from kroah.org ([198.145.64.141]:49074 "EHLO coco.kroah.org"
+	id S1756546Ab0C3XMi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:12:38 -0400
+Received: from kroah.org ([198.145.64.141]:48960 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756553Ab0C3XMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:39 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:41 2010
-Message-Id: <20100330225840.514170790@linux.site>
+	id S1756469Ab0C3XM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:29 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:34 2010
+Message-Id: <20100330225833.612743417@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:54 -0700
+Date: Tue, 30 Mar 2010 15:57:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jean Delvare <khali@linux-fr.org>, Till Harbaum <till@harbaum.org>,
-       Jean Delvare <jdelvare@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [52/89] i2c-tiny-usb: Fix on big-endian systems
+       Karel Zak <kzak@redhat.com>, Jens Axboe <jens.axboe@oracle.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [41/89] partitions: read whole sector with EFI GPT header
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,77 +26,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 1c010ff8912cbc08d80e865aab9c32b6b00c527d upstream.
+From: Karel Zak <kzak@redhat.com>
 
-The functionality bit vector is always returned as a little-endian
-32-bit number by the device, so it must be byte-swapped to the host
-endianness.
+commit 87038c2d5bda2418fda8b1456a0ae81cc3ff5bd8 upstream.
 
-On the other hand, the delay value is handled by the USB stack, so no
-byte swapping is needed on our side.
+The size of EFI GPT header is not static, but whole sector is
+allocated for the header. The HeaderSize field must be greater
+than 92 (= sizeof(struct gpt_header) and must be less than or
+equal to the logical block size.
 
-This fixes bug #15105:
-http://bugzilla.kernel.org/show_bug.cgi?id=15105
+It means we have to read whole sector with the header, because the
+header crc32 checksum is calculated according to HeaderSize.
 
-Reported-by: Jens Richter <jens@richter-stutensee.de>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Tested-by: Jens Richter <jens@richter-stutensee.de>
-Cc: Till Harbaum <till@harbaum.org>
-Cc: stable@kernel.org
-Acked-by: Jean Delvare <jdelvare@suse.de>
+For more details see UEFI standard (version 2.3, May 2009):
+  - 5.3.1 GUID Format overview, page 93
+  - Table 13. GUID Partition Table Header, page 96
+
+Signed-off-by: Karel Zak <kzak@redhat.com>
+Signed-off-by: Jens Axboe <jens.axboe@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/i2c/busses/i2c-tiny-usb.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/i2c/busses/i2c-tiny-usb.c
-+++ b/drivers/i2c/busses/i2c-tiny-usb.c
-@@ -13,6 +13,7 @@
- #include <linux/kernel.h>
- #include <linux/errno.h>
- #include <linux/module.h>
-+#include <linux/types.h>
- 
- /* include interfaces to usb layer */
- #include <linux/usb.h>
-@@ -31,8 +32,8 @@
- #define CMD_I2C_IO_END		(1<<1)
- 
- /* i2c bit delay, default is 10us -> 100kHz */
--static int delay = 10;
--module_param(delay, int, 0);
-+static unsigned short delay = 10;
-+module_param(delay, ushort, 0);
- MODULE_PARM_DESC(delay, "bit delay in microseconds, "
- 		 "e.g. 10 for 100kHz (default is 100kHz)");
- 
-@@ -109,7 +110,7 @@ static int usb_xfer(struct i2c_adapter *
- 
- static u32 usb_func(struct i2c_adapter *adapter)
+---
+ fs/partitions/efi.c |    7 ++++---
+ fs/partitions/efi.h |    8 ++++++--
+ 2 files changed, 10 insertions(+), 5 deletions(-)
+
+--- a/fs/partitions/efi.c
++++ b/fs/partitions/efi.c
+@@ -257,15 +257,16 @@ static gpt_header *
+ alloc_read_gpt_header(struct block_device *bdev, u64 lba)
  {
--	u32 func;
-+	__le32 func;
+ 	gpt_header *gpt;
++	unsigned ssz = bdev_logical_block_size(bdev);
++
+ 	if (!bdev)
+ 		return NULL;
  
- 	/* get functionality from adapter */
- 	if (usb_read(adapter, CMD_GET_FUNC, 0, 0, &func, sizeof(func)) !=
-@@ -118,7 +119,7 @@ static u32 usb_func(struct i2c_adapter *
- 		return 0;
- 	}
+-	gpt = kzalloc(sizeof (gpt_header), GFP_KERNEL);
++	gpt = kzalloc(ssz, GFP_KERNEL);
+ 	if (!gpt)
+ 		return NULL;
  
--	return func;
-+	return le32_to_cpu(func);
- }
+-	if (read_lba(bdev, lba, (u8 *) gpt,
+-		     sizeof (gpt_header)) < sizeof (gpt_header)) {
++	if (read_lba(bdev, lba, (u8 *) gpt, ssz) < ssz) {
+ 		kfree(gpt);
+                 gpt=NULL;
+ 		return NULL;
+--- a/fs/partitions/efi.h
++++ b/fs/partitions/efi.h
+@@ -37,7 +37,6 @@
+ #define EFI_PMBR_OSTYPE_EFI 0xEF
+ #define EFI_PMBR_OSTYPE_EFI_GPT 0xEE
  
- /* This is the actual algorithm we define */
-@@ -216,8 +217,7 @@ static int i2c_tiny_usb_probe(struct usb
- 		 "i2c-tiny-usb at bus %03d device %03d",
- 		 dev->usb_dev->bus->busnum, dev->usb_dev->devnum);
+-#define GPT_BLOCK_SIZE 512
+ #define GPT_HEADER_SIGNATURE 0x5452415020494645ULL
+ #define GPT_HEADER_REVISION_V1 0x00010000
+ #define GPT_PRIMARY_PARTITION_TABLE_LBA 1
+@@ -79,7 +78,12 @@ typedef struct _gpt_header {
+ 	__le32 num_partition_entries;
+ 	__le32 sizeof_partition_entry;
+ 	__le32 partition_entry_array_crc32;
+-	u8 reserved2[GPT_BLOCK_SIZE - 92];
++
++	/* The rest of the logical block is reserved by UEFI and must be zero.
++	 * EFI standard handles this by:
++	 *
++	 * uint8_t		reserved2[ BlockSize - 92 ];
++	 */
+ } __attribute__ ((packed)) gpt_header;
  
--	if (usb_write(&dev->adapter, CMD_SET_DELAY,
--		      cpu_to_le16(delay), 0, NULL, 0) != 0) {
-+	if (usb_write(&dev->adapter, CMD_SET_DELAY, delay, 0, NULL, 0) != 0) {
- 		dev_err(&dev->adapter.dev,
- 			"failure setting delay to %dus\n", delay);
- 		retval = -EIO;
+ typedef struct _gpt_entry_attributes {
 
 
