@@ -1,923 +1,550 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953Ab0C3JGr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 05:06:47 -0400
-Received: from vps.mortis.eu ([79.99.135.181]:57687 "EHLO vps.mortis.eu"
+	id S1755999Ab0C3JH2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 05:07:28 -0400
+Received: from borg.asidev.net ([95.141.32.69]:57864 "EHLO borg.asidev.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754562Ab0C3JGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 05:06:44 -0400
-Date: Tue, 30 Mar 2010 11:06:39 +0200
-From: Giel van Schijndel <me@mortis.eu>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Jean Delvare <khali@linux-fr.org>, Jonathan Cameron <jic23@cam.ac.uk>,
-       Wim Van Sebroeck <wim@iguana.be>, Laurens Leemans <laurens@signips.com>,
-       lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] [RFC] watchdog: f71808e_wdt: new watchdog driver
- for Fintek F71808E
-Message-ID: <20100330090639.GA8822@salidar.me.mortis.eu>
-References: <20100325125005.6d58cfaf@lxorguk.ukuu.org.uk>
- <1269523063-30346-1-git-send-email-me@mortis.eu>
- <1269523063-30346-2-git-send-email-me@mortis.eu>
- <1269523063-30346-3-git-send-email-me@mortis.eu>
+	id S1754562Ab0C3JH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 05:07:26 -0400
+Message-ID: <4BB1BF49.2000609@evidence.eu.com>
+Date: Tue, 30 Mar 2010 11:07:21 +0200
+From: Claudio Scordino <claudio@evidence.eu.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IS0zKkzwUGydFO0o"
-Content-Disposition: inline
-In-Reply-To: <1269523063-30346-3-git-send-email-me@mortis.eu>
-OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ryan Mallon <ryan@bluewatersys.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       John Nicholls <john@thinlinx.com>, Rick Bronson <rick@efn.org>,
+       Sebastian Heutling <Sebastian.Heutling@who-ing.de>,
+       michael trimarchi <michael@evidence.eu.com>, alan@lxorguk.ukuu.org.uk,
+       rmk@arm.linux.org.uk, hskinnemoen@atmel.com, linux@maxim.org.za
+Subject: Re: [PATCH] atmel_serial: Atmel RS485 support v2
+References: <4BB053C4.7050700@evidence.eu.com> <4BB10304.6090006@bluewatersys.com>
+In-Reply-To: <4BB10304.6090006@bluewatersys.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ryan Mallon ha scritto:
+> Claudio Scordino wrote:
+>> Hi all,
+>>
+>>    this is the new version of the patch to add RS485 support to the
+>>    atmel_serial driver. It's been changed according to Ryan Mallon's
+>>    comments.
+>>
+>> This new patch has been tested again (with and without DMA) by Sebastian
+>> Heutling (CC:-ed).
+> 
+> A few more, mostly nitpicky, comments below.
 
---IS0zKkzwUGydFO0o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Ryan,
 
-On Thu, Mar 25, 2010 at 02:17:43PM +0100, Giel van Schijndel wrote:
-> Add a new watchdog driver for the Fintek F71808E Super I/O chip.
+   many thanks for your feedback.
 
-Updated patch:
- * fixes a bug where detection wouldn't function properly if a
-   non-Fintek device was found (or a wrong Super I/O port chosen).
- * Add support for the F71882FG
+Please find attached a new version of the patch, modified according to
+your comments.
 
-NOTE: This patch depends on patch [1] (applied in [2]) and patch [3].
+Regards,
 
-[1] https://patchwork.kernel.org/patch/89023/
-[2] http://git.kernel.org/?p=3Dlinux/kernel/git/jbarnes/pci-2.6.git;a=3Dcom=
-mit;h=3D316607809324cc796c0809630b6ae8a768404296
-[3] https://patchwork.kernel.org/patch/88235/
+         Claudio
 
-Patch after this line:
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-[RFC] watchdog: f71808e_wdt: new watchdog driver for Fintek F71808E
 
-Add a new watchdog driver for the Fintek F71808E Super I/O chip.
+atmel_serial: Atmel RS485 support
+
+Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
+Signed-off-by: Michael Trimarchi <michael@evidence.eu.com>
+Signed-off-by: Rick Bronson <rick@efn.org>
+Signed-off-by: Sebastian Heutling <Sebastian.Heutling@who-ing.de>
 ---
- drivers/watchdog/Kconfig       |   11 +
- drivers/watchdog/Makefile      |    1 +
- drivers/watchdog/f71808e_wdt.c |  767 ++++++++++++++++++++++++++++++++++++=
-++++
- 3 files changed, 779 insertions(+), 0 deletions(-)
- create mode 100644 drivers/watchdog/f71808e_wdt.c
+ arch/arm/include/asm/ioctls.h           |    2 +
+ arch/arm/mach-at91/include/mach/board.h |    8 +-
+ drivers/serial/atmel_serial.c           |  241 ++++++++++++++++++++++++++-----
+ 3 files changed, 212 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 050ee14..d973105 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -366,6 +366,17 @@ config ALIM7101_WDT
-=20
- 	  Most people will say N.
-=20
-+config F71808E_WDT
-+	tristate "Fintek F71808E Watchdog"
-+	depends on X86 && EXPERIMENTAL
-+	help
-+	  This is the driver for the hardware watchdog on the Fintek
-+	  F71808E Super I/O chip.
+diff --git a/arch/arm/include/asm/ioctls.h b/arch/arm/include/asm/ioctls.h
+index a91d8a1..82f2177 100644
+--- a/arch/arm/include/asm/ioctls.h
++++ b/arch/arm/include/asm/ioctls.h
+@@ -70,6 +70,8 @@
+ #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
+ #define FIOQSIZE	0x545E
+ 
++#define TIOCSRS485	0x5461
 +
-+	  You can compile this driver directly into the kernel, or use
-+	  it as a module.  The module will be called f71808e_wdt.
-+
-+
- config GEODE_WDT
- 	tristate "AMD Geode CS5535/CS5536 Watchdog"
- 	depends on CS5535_MFGPT
-diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-index 475c611..6f0f3d9 100644
---- a/drivers/watchdog/Makefile
-+++ b/drivers/watchdog/Makefile
-@@ -64,6 +64,7 @@ obj-$(CONFIG_ACQUIRE_WDT) +=3D acquirewdt.o
- obj-$(CONFIG_ADVANTECH_WDT) +=3D advantechwdt.o
- obj-$(CONFIG_ALIM1535_WDT) +=3D alim1535_wdt.o
- obj-$(CONFIG_ALIM7101_WDT) +=3D alim7101_wdt.o
-+obj-$(CONFIG_F71808E_WDT) +=3D f71808e_wdt.o
- obj-$(CONFIG_GEODE_WDT) +=3D geodewdt.o
- obj-$(CONFIG_SC520_WDT) +=3D sc520_wdt.o
- obj-$(CONFIG_SBC_FITPC2_WATCHDOG) +=3D sbc_fitpc2_wdt.o
-diff --git a/drivers/watchdog/f71808e_wdt.c b/drivers/watchdog/f71808e_wdt.c
-new file mode 100644
-index 0000000..b0314ea
---- /dev/null
-+++ b/drivers/watchdog/f71808e_wdt.c
-@@ -0,0 +1,767 @@
-+/*************************************************************************=
-**
-+ *   Copyright (C) 2006 by Hans Edgington <hans@edgington.nl>             =
- *
-+ *   Copyright (C) 2007-2009 Hans de Goede <hdegoede@redhat.com>          =
- *
-+ *   Copyright (C) 2010 Giel van Schijndel <me@mortis.eu>                 =
- *
-+ *                                                                        =
- *
-+ *   This program is free software; you can redistribute it and/or modify =
- *
-+ *   it under the terms of the GNU General Public License as published by =
- *
-+ *   the Free Software Foundation; either version 2 of the License, or    =
- *
-+ *   (at your option) any later version.                                  =
- *
-+ *                                                                        =
- *
-+ *   This program is distributed in the hope that it will be useful,      =
- *
-+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of       =
- *
-+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        =
- *
-+ *   GNU General Public License for more details.                         =
- *
-+ *                                                                        =
- *
-+ *   You should have received a copy of the GNU General Public License    =
- *
-+ *   along with this program; if not, write to the                        =
- *
-+ *   Free Software Foundation, Inc.,                                      =
- *
-+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.            =
- *
-+ *************************************************************************=
-**/
-+
-+#include <linux/err.h>
-+#include <linux/fs.h>
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/ioport.h>
-+#include <linux/miscdevice.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/notifier.h>
-+#include <linux/reboot.h>
+ /* Used for packet mode */
+ #define TIOCPKT_DATA		 0
+ #define TIOCPKT_FLUSHREAD	 1
+diff --git a/arch/arm/mach-at91/include/mach/board.h b/arch/arm/mach-at91/include/mach/board.h
+index ceaec6c..df2ed84 100644
+--- a/arch/arm/mach-at91/include/mach/board.h
++++ b/arch/arm/mach-at91/include/mach/board.h
+@@ -39,6 +39,7 @@
+ #include <linux/usb/atmel_usba_udc.h>
+ #include <linux/atmel-mci.h>
+ #include <sound/atmel-ac97c.h>
++#include <linux/serial.h>
+ 
+  /* USB Device */
+ struct at91_udc_data {
+@@ -143,9 +144,10 @@ extern struct platform_device *atmel_default_console_device;
+ extern void __init __deprecated at91_init_serial(struct at91_uart_config *config);
+ 
+ struct atmel_uart_data {
+-	short		use_dma_tx;	/* use transmit DMA? */
+-	short		use_dma_rx;	/* use receive DMA? */
+-	void __iomem	*regs;		/* virtual base address, if any */
++	short			use_dma_tx;	/* use transmit DMA? */
++	short			use_dma_rx;	/* use receive DMA? */
++	void __iomem		*regs;		/* virt. base address, if any */
++	struct serial_rs485	rs485;		/* rs485 settings */
+ };
+ extern void __init at91_add_device_serial(void);
+ 
+diff --git a/drivers/serial/atmel_serial.c b/drivers/serial/atmel_serial.c
+index 2c9bf9b..039cd65 100644
+--- a/drivers/serial/atmel_serial.c
++++ b/drivers/serial/atmel_serial.c
+@@ -38,6 +38,7 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/atmel_pdc.h>
+ #include <linux/atmel_serial.h>
 +#include <linux/uaccess.h>
-+#include <linux/watchdog.h>
+ 
+ #include <asm/io.h>
+ 
+@@ -59,6 +60,9 @@
+ 
+ #include <linux/serial_core.h>
+ 
++static void atmel_start_rx(struct uart_port *port);
++static void atmel_stop_rx(struct uart_port *port);
 +
-+#define DRVNAME "f71808e_wdt"
+ #ifdef CONFIG_SERIAL_ATMEL_TTYAT
+ 
+ /* Use device name ttyAT, major 204 and minor 154-169.  This is necessary if we
+@@ -93,6 +97,7 @@
+ #define UART_GET_BRGR(port)	__raw_readl((port)->membase + ATMEL_US_BRGR)
+ #define UART_PUT_BRGR(port,v)	__raw_writel(v, (port)->membase + ATMEL_US_BRGR)
+ #define UART_PUT_RTOR(port,v)	__raw_writel(v, (port)->membase + ATMEL_US_RTOR)
++#define UART_PUT_TTGR(port, v)	__raw_writel(v, (port)->membase + ATMEL_US_TTGR)
+ 
+  /* PDC registers */
+ #define UART_PUT_PTCR(port,v)	__raw_writel(v, (port)->membase + ATMEL_PDC_PTCR)
+@@ -147,6 +152,9 @@ struct atmel_uart_port {
+ 	unsigned int		irq_status_prev;
+ 
+ 	struct circ_buf		rx_ring;
 +
-+#define SIO_F71808FG_LD_WDT	0x07	/* Watchdog timer logical device */
-+#define SIO_UNLOCK_KEY		0x87	/* Key to enable Super-I/O */
-+#define SIO_LOCK_KEY		0xAA	/* Key to diasble Super-I/O */
-+
-+#define SIO_REG_LDSEL		0x07	/* Logical device select */
-+#define SIO_REG_DEVID		0x20	/* Device ID (2 bytes) */
-+#define SIO_REG_DEVREV		0x22	/* Device revision */
-+#define SIO_REG_MANID		0x23	/* Fintek ID (2 bytes) */
-+#define SIO_REG_ENABLE		0x30	/* Logical device enable */
-+#define SIO_REG_ADDR		0x60	/* Logical device address (2 bytes) */
-+
-+#define SIO_FINTEK_ID		0x1934	/* Manufacturers ID */
-+#define SIO_F71808_ID		0x0901  /* Chipset ID */
-+#define SIO_F71858_ID		0x0507  /* Chipset ID */
-+#define SIO_F71862_ID		0x0601	/* Chipset ID */
-+#define SIO_F71882_ID		0x0541	/* Chipset ID */
-+#define SIO_F71889_ID		0x0723	/* Chipset ID */
-+
-+#define	F71882FG_REG_START		0x01
-+
-+#define F71808FG_REG_WDO_CONF		0xf0
-+#define F71808FG_REG_WDT_CONF		0xf5
-+#define F71808FG_REG_WD_TIME		0xf6
-+
-+#define F71808FG_FLAG_WDOUT_EN		7
-+
-+#define F71808FG_FLAG_WDTMOUT_STS	5
-+#define F71808FG_FLAG_WD_EN		5
-+#define F71808FG_FLAG_WD_PULSE		4
-+#define F71808FG_FLAG_WD_UNIT		3
-+
-+/* Default values */
-+#define WATCHDOG_TIMEOUT	60	/* 1 minute default timeout */
-+#define WATCHDOG_MAX_TIMEOUT	(60 * 255)
-+#define WATCHDOG_PULSE_WIDTH	125	/* 125 ms, default pulse width for
-+					   watchdog signal */
-+
-+static unsigned short force_id;
-+module_param(force_id, ushort, 0);
-+MODULE_PARM_DESC(force_id, "Override the detected device ID");
-+
-+static const int max_timeout =3D WATCHDOG_MAX_TIMEOUT;
-+static int timeout =3D 60;	/* default timeout in seconds */
-+module_param(timeout, int, 0);
-+MODULE_PARM_DESC(timeout,
-+	"Watchdog timeout in seconds. 1<=3D timeout <=3D"
-+			__MODULE_STRING(WATCHDOG_MAX_TIMEOUT) " (default=3D"
-+			__MODULE_STRING(WATCHDOG_TIMEOUT) ")");
-+
-+static unsigned int pulse_width =3D WATCHDOG_PULSE_WIDTH;
-+module_param(pulse_width, uint, 0);
-+MODULE_PARM_DESC(pulse_width,
-+	"Watchdog signal pulse width. 0(=3Dlevel), 1 ms, 25 ms, 125 ms or 5000 ms"
-+			" (default=3D" __MODULE_STRING(WATCHDOG_PULSE_WIDTH) ")");
-+
-+static int nowayout =3D WATCHDOG_NOWAYOUT;
-+module_param(nowayout, bool, 0444);
-+MODULE_PARM_DESC(nowayout, "Disable watchdog shutdown on close");
-+
-+static unsigned int start_withtimeout;
-+module_param(start_withtimeout, uint, 0);
-+MODULE_PARM_DESC(start_withtimeout, "Start watchdog timer on module load w=
-ith"
-+	" given initial timeout. Zero (default) disables this feature.");
-+
-+enum chips { f71808fg, f71858fg, f71862fg, f71882fg, f71889fg };
-+
-+static const char *f71808e_names[] =3D {
-+	"f71808fg",
-+	"f71858fg",
-+	"f71862fg",
-+	"f71882fg",
-+	"f71889fg",
-+};
-+
-+/* Super-I/O Function prototypes */
-+static inline int superio_inb(int base, int reg);
-+static inline int superio_inw(int base, int reg);
-+static inline void superio_outb(int base, int reg, u8 val);
-+static inline void superio_set_bit(int base, int reg, int bit);
-+static inline void superio_clear_bit(int base, int reg, int bit);
-+static inline int superio_enter(int base);
-+static inline void superio_select(int base, int ld);
-+static inline void superio_exit(int base);
-+
-+struct watchdog_data {
-+	unsigned short	sioaddr;
-+	enum chips	type;
-+	unsigned long	opened;
-+	struct mutex	lock;
-+	char		expect_close;
-+	struct watchdog_info ident;
-+
-+	unsigned short	timeout;
-+	u8		timer_val;	/* content for the wd_time register */
-+	char		minutes_mode;
-+	u8		pulse_val;	/* pulse width flag */
-+	char		pulse_mode;	/* enable pulse output mode? */
-+	char		caused_reboot;	/* last reboot was by the watchdog */
-+};
-+
-+static struct watchdog_data watchdog =3D {
-+	.lock =3D __MUTEX_INITIALIZER(watchdog.lock),
-+};
-+
-+/* Super I/O functions */
-+static inline int superio_inb(int base, int reg)
++	struct serial_rs485	rs485;		/* rs485 settings */
++	unsigned int		tx_done_mask;
+ };
+ 
+ static struct atmel_uart_port atmel_ports[ATMEL_MAX_UART];
+@@ -187,6 +195,81 @@ static bool atmel_use_dma_tx(struct uart_port *port)
+ }
+ #endif
+ 
++/* Enable or disable the rs485 support */
++void atmel_config_rs485(struct uart_port *port, struct serial_rs485 *rs485conf)
 +{
-+	outb(reg, base);
-+	return inb(base + 1);
-+}
++	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
++	unsigned long flags;
++	unsigned int mode;
 +
-+static int superio_inw(int base, int reg)
-+{
-+	int val;
-+	val  =3D superio_inb(base, reg) << 8;
-+	val |=3D superio_inb(base, reg + 1);
-+	return val;
-+}
++	spin_lock_irqsave(&port->lock, flags);
 +
-+static inline void superio_outb(int base, int reg, u8 val)
-+{
-+	outb(reg, base);
-+	outb(val, base + 1);
-+}
++	mode = UART_GET_MR(port);
 +
-+static inline void superio_set_bit(int base, int reg, int bit)
-+{
-+	unsigned long val =3D superio_inb(base, reg);
-+	__set_bit(bit, &val);
-+	superio_outb(base, reg, val);
-+}
++	/* Resetting serial mode to RS232 (0x0) */
++	mode &= ~ATMEL_US_USMODE;
 +
-+static inline void superio_clear_bit(int base, int reg, int bit)
-+{
-+	unsigned long val =3D superio_inb(base, reg);
-+	__clear_bit(bit, &val);
-+	superio_outb(base, reg, val);
-+}
++	atmel_port->rs485 = *rs485conf;
 +
-+static inline int superio_enter(int base)
-+{
-+	/* Don't step on other drivers' I/O space by accident */
-+	if (!request_muxed_region(base, 2, DRVNAME)) {
-+		printk(KERN_ERR DRVNAME ": I/O address 0x%04x already in use\n",
-+				(int)base);
-+		return -EBUSY;
++	if (rs485conf->flags & SER_RS485_ENABLED) {
++		dev_dbg(port->dev, "Setting UART to RS485\n");
++		atmel_port->tx_done_mask = ATMEL_US_TXEMPTY;
++		UART_PUT_TTGR(port, rs485conf->delay_rts_before_send);
++		mode |= ATMEL_US_USMODE_RS485;
++	} else {
++		dev_dbg(port->dev, "Setting UART to RS232\n");
++		if (atmel_use_dma_tx(port))
++			atmel_port->tx_done_mask = ATMEL_US_ENDTX |
++				ATMEL_US_TXBUFE;
++		else
++			atmel_port->tx_done_mask = ATMEL_US_TXRDY;
 +	}
++	UART_PUT_MR(port, mode);
 +
-+	/* according to the datasheet the key must be send twice! */
-+	outb(SIO_UNLOCK_KEY, base);
-+	outb(SIO_UNLOCK_KEY, base);
-+
-+	return 0;
++	spin_unlock_irqrestore(&port->lock, flags);
 +}
 +
-+static inline void superio_select(int base, int ld)
++
++static ssize_t show_rs485(struct device *dev, struct device_attribute *attr,
++			   char *buf)
 +{
-+	outb(SIO_REG_LDSEL, base);
-+	outb(ld, base + 1);
++	struct platform_device *pdev = to_platform_device(dev);
++	struct uart_port *port = platform_get_drvdata(pdev);
++	unsigned int current_mode;
++
++	current_mode = UART_GET_MR(port) & ATMEL_US_USMODE;
++	return snprintf(buf, PAGE_SIZE, "%u\n", current_mode);
 +}
 +
-+static inline void superio_exit(int base)
++static ssize_t set_rs485(struct device *dev, struct device_attribute *attr,
++			  const char *buf, size_t len)
 +{
-+	outb(SIO_LOCK_KEY, base);
-+	release_region(base, 2);
-+}
++	struct platform_device *pdev = to_platform_device(dev);
++	struct uart_port *port = platform_get_drvdata(pdev);
++	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
++	struct serial_rs485 rs485conf = atmel_port->rs485;
++	unsigned int value;
 +
-+static int watchdog_set_timeout(int timeout)
-+{
-+	if (timeout <=3D 0
-+	 || timeout >  max_timeout) {
-+		printk(KERN_ERR DRVNAME ": watchdog timeout out of range\n");
++	if (!buf)
 +		return -EINVAL;
-+	}
 +
-+	mutex_lock(&watchdog.lock);
++	value = !!(simple_strtoul(buf, NULL, 0));
 +
-+	watchdog.timeout =3D timeout;
-+	if (timeout > 0xff) {
-+		watchdog.timer_val =3D DIV_ROUND_UP(timeout, 60);
-+		watchdog.minutes_mode =3D true;
++	if (value) {
++		rs485conf.flags |= SER_RS485_ENABLED;
++		/* 0x4 is the normal reset value. */
++		rs485conf.delay_rts_before_send = 0x00000004;
 +	} else {
-+		watchdog.timer_val =3D timeout;
-+		watchdog.minutes_mode =3D false;
++		rs485conf.flags &= ~SER_RS485_ENABLED;
 +	}
 +
-+	mutex_unlock(&watchdog.lock);
++	atmel_config_rs485(port, &rs485conf);
 +
-+	return 0;
++	return strnlen(buf, PAGE_SIZE);
 +}
 +
-+static int watchdog_set_pulse_width(unsigned int pw)
-+{
-+	int err =3D 0;
++static DEVICE_ATTR(rs485, 0644, show_rs485, set_rs485);
 +
-+	mutex_lock(&watchdog.lock);
+ /*
+  * Return TIOCSER_TEMT when transmitter FIFO and Shift register is empty.
+  */
+@@ -202,6 +285,7 @@ static void atmel_set_mctrl(struct uart_port *port, u_int mctrl)
+ {
+ 	unsigned int control = 0;
+ 	unsigned int mode;
++	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
+ 
+ #ifdef CONFIG_ARCH_AT91RM9200
+ 	if (cpu_is_at91rm9200()) {
+@@ -236,6 +320,17 @@ static void atmel_set_mctrl(struct uart_port *port, u_int mctrl)
+ 		mode |= ATMEL_US_CHMODE_LOC_LOOP;
+ 	else
+ 		mode |= ATMEL_US_CHMODE_NORMAL;
 +
-+	if        (pw <=3D    1) {
-+		watchdog.pulse_val =3D 0;
-+	} else if (pw <=3D   25) {
-+		watchdog.pulse_val =3D 1;
-+	} else if (pw <=3D  125) {
-+		watchdog.pulse_val =3D 2;
-+	} else if (pw <=3D 5000) {
-+		watchdog.pulse_val =3D 3;
++	/* Resetting serial mode to RS232 (0x0) */
++	mode &= ~ATMEL_US_USMODE;
++
++	if (atmel_port->rs485.flags & SER_RS485_ENABLED) {
++		dev_dbg(port->dev, "Setting UART to RS485\n");
++		UART_PUT_TTGR(port, atmel_port->rs485.delay_rts_before_send);
++		mode |= ATMEL_US_USMODE_RS485;
 +	} else {
-+		printk(KERN_ERR DRVNAME ": pulse width out of range\n");
-+		err =3D -EINVAL;
-+		goto exit_unlock;
++		dev_dbg(port->dev, "Setting UART to RS232\n");
 +	}
+ 	UART_PUT_MR(port, mode);
+ }
+ 
+@@ -268,12 +363,17 @@ static u_int atmel_get_mctrl(struct uart_port *port)
+  */
+ static void atmel_stop_tx(struct uart_port *port)
+ {
++	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
 +
-+	watchdog.pulse_mode =3D pw;
-+
-+exit_unlock:
-+	mutex_unlock(&watchdog.lock);
-+	return err;
-+}
-+
-+static int watchdog_keepalive(void)
-+{
-+	int err =3D 0;
-+
-+	mutex_lock(&watchdog.lock);
-+	err =3D superio_enter(watchdog.sioaddr);
-+	if (err)
-+		goto exit_unlock;
-+	superio_select(watchdog.sioaddr, SIO_F71808FG_LD_WDT);
-+
-+	if (watchdog.minutes_mode)
-+		/* select minutes for timer units */
-+		superio_set_bit(watchdog.sioaddr, F71808FG_REG_WDT_CONF,
-+				F71808FG_FLAG_WD_UNIT);
-+	else
-+		/* select seconds for timer units */
-+		superio_clear_bit(watchdog.sioaddr, F71808FG_REG_WDT_CONF,
-+				F71808FG_FLAG_WD_UNIT);
-+
-+	/* Set timer value */
-+	superio_outb(watchdog.sioaddr, F71808FG_REG_WD_TIME,
-+			   watchdog.timeout);
-+
-+	superio_exit(watchdog.sioaddr);
-+
-+exit_unlock:
-+	mutex_unlock(&watchdog.lock);
-+	return err;
-+}
-+
-+static int watchdog_start(void)
-+{
-+	/* Make sure we don't die as soon as the watchdog is enabled below */
-+	int err =3D watchdog_keepalive();
-+	if (err)
-+		return err;
-+
-+	mutex_lock(&watchdog.lock);
-+	err =3D superio_enter(watchdog.sioaddr);
-+	if (err)
-+		goto exit_unlock;
-+	superio_select(watchdog.sioaddr, SIO_F71808FG_LD_WDT);
-+
-+	/* Watchdog pin configuration */
-+	switch (watchdog.type) {
-+	case f71808fg:
-+		/* Set pin 21 to GPIO23/WDTRST#, then to WDTRST# */
-+		superio_clear_bit(watchdog.sioaddr, 0x2a, 3);
-+		superio_clear_bit(watchdog.sioaddr, 0x2b, 3);
-+		break;
-+
-+	case f71882fg:
-+		/* Set pin 56 to WDTRST# */
-+		superio_set_bit(watchdog.sioaddr, 0x29, 1);
-+		break;
-+
-+	default:
-+		/*
-+		 * 'default' label to shut up the compiler and catch
-+		 * programmer errors
-+		 */
-+		err =3D -ENODEV;
-+		goto exit_superio;
+ 	if (atmel_use_dma_tx(port)) {
+ 		/* disable PDC transmit */
+ 		UART_PUT_PTCR(port, ATMEL_PDC_TXTDIS);
+-		UART_PUT_IDR(port, ATMEL_US_ENDTX | ATMEL_US_TXBUFE);
+-	} else
+-		UART_PUT_IDR(port, ATMEL_US_TXRDY);
 +	}
++	/* Disable interrupts */
++	UART_PUT_IDR(port, atmel_port->tx_done_mask);
 +
-+	superio_select(watchdog.sioaddr, SIO_F71808FG_LD_WDT);
-+	superio_set_bit(watchdog.sioaddr, SIO_REG_ENABLE, 0);
-+	superio_set_bit(watchdog.sioaddr, F71808FG_REG_WDO_CONF,
-+			F71808FG_FLAG_WDOUT_EN);
++	if (atmel_port->rs485.flags & SER_RS485_ENABLED)
++		atmel_start_rx(port);
+ }
+ 
+ /*
+@@ -281,17 +381,39 @@ static void atmel_stop_tx(struct uart_port *port)
+  */
+ static void atmel_start_tx(struct uart_port *port)
+ {
++	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
 +
-+	superio_set_bit(watchdog.sioaddr, F71808FG_REG_WDT_CONF,
-+			F71808FG_FLAG_WD_EN);
+ 	if (atmel_use_dma_tx(port)) {
+ 		if (UART_GET_PTSR(port) & ATMEL_PDC_TXTEN)
+ 			/* The transmitter is already running.  Yes, we
+ 			   really need this.*/
+ 			return;
+ 
+-		UART_PUT_IER(port, ATMEL_US_ENDTX | ATMEL_US_TXBUFE);
++		if (atmel_port->rs485.flags & SER_RS485_ENABLED)
++			atmel_stop_rx(port);
 +
-+	if (watchdog.pulse_mode) {
-+		/* Select "pulse" output mode with given duration */
-+		u8 wdt_conf =3D superio_inb(watchdog.sioaddr,
-+				F71808FG_REG_WDT_CONF);
-+
-+		/* Set WD_PSWIDTH bits (1:0) */
-+		wdt_conf =3D (wdt_conf & 0xfc) | (watchdog.pulse_val & 0x03);
-+		/* Set WD_PULSE to "pulse" mode */
-+		wdt_conf |=3D BIT(F71808FG_FLAG_WD_PULSE);
-+
-+		superio_outb(watchdog.sioaddr, F71808FG_REG_WDT_CONF,
-+				wdt_conf);
-+	} else {
-+		/* Select "level" output mode */
-+		superio_clear_bit(watchdog.sioaddr, F71808FG_REG_WDT_CONF,
-+				F71808FG_FLAG_WD_PULSE);
+ 		/* re-enable PDC transmit */
+ 		UART_PUT_PTCR(port, ATMEL_PDC_TXTEN);
+-	} else
+-		UART_PUT_IER(port, ATMEL_US_TXRDY);
 +	}
-+
-+exit_superio:
-+	superio_exit(watchdog.sioaddr);
-+exit_unlock:
-+	mutex_unlock(&watchdog.lock);
-+
-+	return err;
-+}
-+
-+static int watchdog_stop(void)
-+{
-+	int err =3D 0;
-+
-+	mutex_lock(&watchdog.lock);
-+	err =3D superio_enter(watchdog.sioaddr);
-+	if (err)
-+		goto exit_unlock;
-+	superio_select(watchdog.sioaddr, SIO_F71808FG_LD_WDT);
-+
-+	superio_clear_bit(watchdog.sioaddr, F71808FG_REG_WDT_CONF,
-+			F71808FG_FLAG_WD_EN);
-+
-+	superio_exit(watchdog.sioaddr);
-+
-+exit_unlock:
-+	mutex_unlock(&watchdog.lock);
-+
-+	return err;
-+}
-+
-+static int watchdog_get_status(void)
-+{
-+	int status =3D 0;
-+
-+	mutex_lock(&watchdog.lock);
-+	status =3D (watchdog.caused_reboot) ? WDIOF_CARDRESET : 0;
-+	mutex_unlock(&watchdog.lock);
-+
-+	return status;
-+}
-+
-+static bool watchdog_is_running(void)
-+{
-+	/*
-+	 * if we fail to determine the watchdog's status assume it to be
-+	 * running to be on the safe side
-+	 */
-+	bool is_running =3D true;
-+
-+	mutex_lock(&watchdog.lock);
-+	if (superio_enter(watchdog.sioaddr))
-+		goto exit_unlock;
-+	superio_select(watchdog.sioaddr, SIO_F71808FG_LD_WDT);
-+
-+	is_running =3D (superio_inb(watchdog.sioaddr, SIO_REG_ENABLE) & BIT(0))
-+		&& (superio_inb(watchdog.sioaddr, F71808FG_REG_WDT_CONF) & F71808FG_FLAG=
-_WD_EN);
-+
-+	superio_exit(watchdog.sioaddr);
-+
-+exit_unlock:
-+	mutex_unlock(&watchdog.lock);
-+	return is_running;
-+}
-+
-+/* /dev/watchdog api */
-+
-+static int watchdog_open(struct inode *inode, struct file *file)
-+{
-+	int err;
-+
-+	/* If the watchdog is alive we don't need to start it again */
-+	if (test_and_set_bit(0, &watchdog.opened))
-+		return -EBUSY;
-+
-+	err =3D watchdog_start();
-+	if (err) {
-+		clear_bit(0, &watchdog.opened);
-+		return err;
-+	}
-+
-+	if (nowayout)
-+		__module_get(THIS_MODULE);
-+
-+	watchdog.expect_close =3D 0;
-+	return nonseekable_open(inode, file);
-+}
-+
-+static int watchdog_release(struct inode *inode, struct file *file)
-+{
-+	clear_bit(0, &watchdog.opened);
-+
-+	if (!watchdog.expect_close) {
-+		watchdog_keepalive();
-+		printk(KERN_CRIT DRVNAME
-+			": Unexpected close, not stopping watchdog!\n");
-+	} else if (!nowayout) {
-+		watchdog_stop();
-+	}
-+	return 0;
++	/* Enable interrupts */
++	UART_PUT_IER(port, atmel_port->tx_done_mask);
 +}
 +
 +/*
-+ *      watchdog_write:
-+ *      @file: file handle to the watchdog
-+ *      @buf: buffer to write
-+ *      @count: count of bytes
-+ *      @ppos: pointer to the position to write. No seeks allowed
-+ *
-+ *      A write to a watchdog device is defined as a keepalive signal. Any
-+ *      write of data will do, as we we don't define content meaning.
++ * start receiving - port is in process of being opened.
 + */
-+
-+static ssize_t watchdog_write(struct file *file, const char __user *buf,
-+			    size_t count, loff_t *ppos)
++static void atmel_start_rx(struct uart_port *port)
 +{
-+	if (count) {
-+		if (!nowayout) {
-+			size_t i;
++	UART_PUT_CR(port, ATMEL_US_RSTSTA);  /* reset status and receiver */
 +
-+			/* In case it was set long ago */
-+			bool expect_close =3D false;
-+
-+			for (i =3D 0; i !=3D count; i++) {
-+				char c;
-+				if (get_user(c, buf + i))
-+					return -EFAULT;
-+				expect_close =3D (c =3D=3D 'V');
-+			}
-+
-+			/* Properly order writes across fork()ed processes */
-+			mutex_lock(&watchdog.lock);
-+			watchdog.expect_close =3D expect_close;
-+			mutex_unlock(&watchdog.lock);
++	if (atmel_use_dma_rx(port)) {
++		/* enable PDC controller */
++		UART_PUT_IER(port, ATMEL_US_ENDRX | ATMEL_US_TIMEOUT |
++			port->read_status_mask);
++		UART_PUT_PTCR(port, ATMEL_PDC_RXTEN);
++	} else {
++		UART_PUT_IER(port, ATMEL_US_RXRDY);
++	}
+ }
+ 
+ /*
+@@ -302,9 +424,11 @@ static void atmel_stop_rx(struct uart_port *port)
+ 	if (atmel_use_dma_rx(port)) {
+ 		/* disable PDC receive */
+ 		UART_PUT_PTCR(port, ATMEL_PDC_RXTDIS);
+-		UART_PUT_IDR(port, ATMEL_US_ENDRX | ATMEL_US_TIMEOUT);
+-	} else
++		UART_PUT_IDR(port, ATMEL_US_ENDRX | ATMEL_US_TIMEOUT |
++			port->read_status_mask);
++	} else {
+ 		UART_PUT_IDR(port, ATMEL_US_RXRDY);
++	}
+ }
+ 
+ /*
+@@ -428,8 +552,9 @@ static void atmel_rx_chars(struct uart_port *port)
+ static void atmel_tx_chars(struct uart_port *port)
+ {
+ 	struct circ_buf *xmit = &port->state->xmit;
++	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
+ 
+-	if (port->x_char && UART_GET_CSR(port) & ATMEL_US_TXRDY) {
++	if (port->x_char && UART_GET_CSR(port) & atmel_port->tx_done_mask) {
+ 		UART_PUT_CHAR(port, port->x_char);
+ 		port->icount.tx++;
+ 		port->x_char = 0;
+@@ -437,7 +562,7 @@ static void atmel_tx_chars(struct uart_port *port)
+ 	if (uart_circ_empty(xmit) || uart_tx_stopped(port))
+ 		return;
+ 
+-	while (UART_GET_CSR(port) & ATMEL_US_TXRDY) {
++	while (UART_GET_CSR(port) & atmel_port->tx_done_mask) {
+ 		UART_PUT_CHAR(port, xmit->buf[xmit->tail]);
+ 		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
+ 		port->icount.tx++;
+@@ -449,7 +574,8 @@ static void atmel_tx_chars(struct uart_port *port)
+ 		uart_write_wakeup(port);
+ 
+ 	if (!uart_circ_empty(xmit))
+-		UART_PUT_IER(port, ATMEL_US_TXRDY);
++		/* Enable interrupts */
++		UART_PUT_IER(port, atmel_port->tx_done_mask);
+ }
+ 
+ /*
+@@ -501,18 +627,10 @@ atmel_handle_transmit(struct uart_port *port, unsigned int pending)
+ {
+ 	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
+ 
+-	if (atmel_use_dma_tx(port)) {
+-		/* PDC transmit */
+-		if (pending & (ATMEL_US_ENDTX | ATMEL_US_TXBUFE)) {
+-			UART_PUT_IDR(port, ATMEL_US_ENDTX | ATMEL_US_TXBUFE);
+-			tasklet_schedule(&atmel_port->tasklet);
+-		}
+-	} else {
+-		/* Interrupt transmit */
+-		if (pending & ATMEL_US_TXRDY) {
+-			UART_PUT_IDR(port, ATMEL_US_TXRDY);
+-			tasklet_schedule(&atmel_port->tasklet);
+-		}
++	if (pending & atmel_port->tx_done_mask) {
++		/* Either PDC or interrupt transmission */
++		UART_PUT_IDR(port, atmel_port->tx_done_mask);
++		tasklet_schedule(&atmel_port->tasklet);
+ 	}
+ }
+ 
+@@ -590,9 +708,15 @@ static void atmel_tx_dma(struct uart_port *port)
+ 
+ 		UART_PUT_TPR(port, pdc->dma_addr + xmit->tail);
+ 		UART_PUT_TCR(port, count);
+-		/* re-enable PDC transmit and interrupts */
++		/* re-enable PDC transmit */
+ 		UART_PUT_PTCR(port, ATMEL_PDC_TXTEN);
+-		UART_PUT_IER(port, ATMEL_US_ENDTX | ATMEL_US_TXBUFE);
++		/* Enable interrupts */
++		UART_PUT_IER(port, atmel_port->tx_done_mask);
++	} else {
++		if (atmel_port->rs485.flags & SER_RS485_ENABLED) {
++			/* DMA done, stop TX, start RX for RS485 */
++			atmel_start_rx(port);
 +		}
+ 	}
+ 
+ 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
+@@ -1017,6 +1141,7 @@ static void atmel_set_termios(struct uart_port *port, struct ktermios *termios,
+ {
+ 	unsigned long flags;
+ 	unsigned int mode, imr, quot, baud;
++	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
+ 
+ 	/* Get current mode register */
+ 	mode = UART_GET_MR(port) & ~(ATMEL_US_USCLKS | ATMEL_US_CHRL
+@@ -1115,6 +1240,17 @@ static void atmel_set_termios(struct uart_port *port, struct ktermios *termios,
+ 	/* disable receiver and transmitter */
+ 	UART_PUT_CR(port, ATMEL_US_TXDIS | ATMEL_US_RXDIS);
+ 
++	/* Resetting serial mode to RS232 (0x0) */
++	mode &= ~ATMEL_US_USMODE;
 +
-+		/* someone wrote to us, we should restart timer */
-+		watchdog_keepalive();
++	if (atmel_port->rs485.flags & SER_RS485_ENABLED) {
++		dev_dbg(port->dev, "Setting UART to RS485\n");
++		UART_PUT_TTGR(port, atmel_port->rs485.delay_rts_before_send);
++		mode |= ATMEL_US_USMODE_RS485;
++	} else {
++		dev_dbg(port->dev, "Setting UART to RS232\n");
 +	}
-+	return count;
-+}
 +
-+/*
-+ *      watchdog_ioctl:
-+ *      @inode: inode of the device
-+ *      @file: file handle to the device
-+ *      @cmd: watchdog command
-+ *      @arg: argument pointer
-+ *
-+ *      The watchdog API defines a common set of functions for all watchdo=
-gs
-+ *      according to their available features.
-+ */
-+static long watchdog_ioctl(struct file *file, unsigned int cmd,
-+	unsigned long arg)
+ 	/* set the parity, stop bits and data size */
+ 	UART_PUT_MR(port, mode);
+ 
+@@ -1231,6 +1367,28 @@ static void atmel_poll_put_char(struct uart_port *port, unsigned char ch)
+ }
+ #endif
+ 
++static int
++atmel_ioctl(struct uart_port *port, unsigned int cmd, unsigned long arg)
 +{
-+	int status;
-+	int new_options;
-+	int new_timeout;
-+	union {
-+		struct watchdog_info __user *ident;
-+		int __user *i;
-+	} uarg;
-+
-+	uarg.i =3D (int __user *)arg;
++	struct serial_rs485 rs485conf;
 +
 +	switch (cmd) {
-+	case WDIOC_GETSUPPORT:
-+		return copy_to_user(uarg.ident, &watchdog.ident,
-+			sizeof(watchdog.ident)) ? -EFAULT : 0;
-+
-+	case WDIOC_GETSTATUS:
-+		status =3D watchdog_get_status();
-+		if (status < 0)
-+			return status;
-+		return put_user(status, uarg.i);
-+
-+	case WDIOC_GETBOOTSTATUS:
-+		return put_user(0, uarg.i);
-+
-+	case WDIOC_SETOPTIONS:
-+		if (get_user(new_options, uarg.i))
++	case TIOCSRS485:
++		if (copy_from_user(&rs485conf, (struct serial_rs485 *) arg,
++					sizeof(rs485conf)))
 +			return -EFAULT;
 +
-+		if (new_options & WDIOS_DISABLECARD)
-+			watchdog_stop();
-+
-+		if (new_options & WDIOS_ENABLECARD)
-+			return watchdog_start();
-+
-+
-+	case WDIOC_KEEPALIVE:
-+		watchdog_keepalive();
-+		return 0;
-+
-+	case WDIOC_SETTIMEOUT:
-+		if (get_user(new_timeout, uarg.i))
-+			return -EFAULT;
-+
-+		if (watchdog_set_timeout(new_timeout))
-+			return -EINVAL;
-+
-+		watchdog_keepalive();
-+		/* Fall */
-+
-+	case WDIOC_GETTIMEOUT:
-+		return put_user(watchdog.timeout, uarg.i);
++		atmel_config_rs485(port, &rs485conf);
++		break;
 +
 +	default:
-+		return -ENOTTY;
-+
++		return -ENOIOCTLCMD;
 +	}
-+}
-+
-+static int watchdog_notify_sys(struct notifier_block *this, unsigned long =
-code,
-+	void *unused)
-+{
-+	if (code =3D=3D SYS_DOWN || code =3D=3D SYS_HALT)
-+		watchdog_stop();
-+	return NOTIFY_DONE;
-+}
-+
-+static const struct file_operations watchdog_fops =3D {
-+	.owner		=3D THIS_MODULE,
-+	.llseek		=3D no_llseek,
-+	.open		=3D watchdog_open,
-+	.release	=3D watchdog_release,
-+	.write		=3D watchdog_write,
-+	.unlocked_ioctl	=3D watchdog_ioctl,
-+};
-+
-+static struct miscdevice watchdog_miscdev =3D {
-+	.minor		=3D WATCHDOG_MINOR,
-+	.name		=3D "watchdog",
-+	.fops		=3D &watchdog_fops,
-+};
-+
-+static struct notifier_block watchdog_notifier =3D {
-+	.notifier_call =3D watchdog_notify_sys,
-+};
-+
-+static int __init watchdog_init(int sioaddr)
-+{
-+	int wdt_conf, err =3D 0;
-+
-+	/* No need to lock watchdog.lock here because no entry points
-+	 * into the module have been registered yet.
-+	 */
-+	watchdog.sioaddr =3D sioaddr;
-+	watchdog.ident.options =3D WDIOC_SETTIMEOUT
-+				| WDIOF_MAGICCLOSE
-+				| WDIOF_KEEPALIVEPING;
-+
-+	snprintf(watchdog.ident.identity,
-+		sizeof(watchdog.ident.identity), "%s watchdog",
-+		f71808e_names[watchdog.type]);
-+
-+	err =3D superio_enter(sioaddr);
-+	if (err)
-+		return err;
-+	superio_select(watchdog.sioaddr, SIO_F71808FG_LD_WDT);
-+
-+	wdt_conf =3D superio_inb(sioaddr, F71808FG_REG_WDT_CONF);
-+	watchdog.caused_reboot =3D wdt_conf & F71808FG_FLAG_WDTMOUT_STS;
-+
-+	superio_exit(sioaddr);
-+
-+	err =3D watchdog_set_timeout(timeout);
-+	if (err)
-+		return err;
-+	err =3D watchdog_set_pulse_width(pulse_width);
-+	if (err)
-+		return err;
-+
-+	err =3D register_reboot_notifier(&watchdog_notifier);
-+	if (err)
-+		return err;
-+
-+	err =3D misc_register(&watchdog_miscdev);
-+	if (err) {
-+		printk(KERN_ERR DRVNAME
-+			": cannot register miscdev on minor=3D%d\n",
-+				watchdog_miscdev.minor);
-+		goto exit_reboot;
-+	}
-+
-+	if (start_withtimeout) {
-+		if (start_withtimeout <=3D 0
-+		 || start_withtimeout >  max_timeout) {
-+			printk(KERN_ERR DRVNAME
-+				": starting timeout out of range\n");
-+			err =3D -EINVAL;
-+			goto exit_miscdev;
-+		}
-+
-+		err =3D watchdog_start();
-+		if (err) {
-+			printk(KERN_ERR DRVNAME
-+				": cannot start watchdog timer\n");
-+			goto exit_miscdev;
-+		}
-+
-+		mutex_lock(&watchdog.lock);
-+		err =3D superio_enter(sioaddr);
-+		if (err)
-+			goto exit_unlock;
-+		superio_select(watchdog.sioaddr, SIO_F71808FG_LD_WDT);
-+
-+		if (start_withtimeout > 0xff) {
-+			/* select minutes for timer units */
-+			superio_set_bit(sioaddr, F71808FG_REG_WDT_CONF,
-+				F71808FG_FLAG_WD_UNIT);
-+			superio_outb(sioaddr, F71808FG_REG_WD_TIME,
-+				DIV_ROUND_UP(start_withtimeout, 60));
-+		} else {
-+			/* select seconds for timer units */
-+			superio_clear_bit(sioaddr, F71808FG_REG_WDT_CONF,
-+				F71808FG_FLAG_WD_UNIT);
-+			superio_outb(sioaddr, F71808FG_REG_WD_TIME,
-+				start_withtimeout);
-+		}
-+
-+		superio_exit(sioaddr);
-+		mutex_unlock(&watchdog.lock);
-+
-+		if (nowayout)
-+			__module_get(THIS_MODULE);
-+
-+		printk(KERN_INFO DRVNAME
-+			": watchdog started with initial timeout of %u sec\n",
-+			start_withtimeout);
-+	}
-+
 +	return 0;
-+
-+exit_unlock:
-+	mutex_unlock(&watchdog.lock);
-+exit_miscdev:
-+	misc_deregister(&watchdog_miscdev);
-+exit_reboot:
-+	unregister_reboot_notifier(&watchdog_notifier);
-+
-+	return err;
 +}
 +
-+static int __init f71808e_find(int sioaddr)
-+{
-+	u16 devid;
-+	int err =3D superio_enter(sioaddr);
-+	if (err)
-+		return err;
 +
-+	devid =3D superio_inw(sioaddr, SIO_REG_MANID);
-+	if (devid !=3D SIO_FINTEK_ID) {
-+		pr_debug(DRVNAME ": Not a Fintek device\n");
-+		err =3D -ENODEV;
-+		goto exit;
++
+ static struct uart_ops atmel_pops = {
+ 	.tx_empty	= atmel_tx_empty,
+ 	.set_mctrl	= atmel_set_mctrl,
+@@ -1250,6 +1408,7 @@ static struct uart_ops atmel_pops = {
+ 	.config_port	= atmel_config_port,
+ 	.verify_port	= atmel_verify_port,
+ 	.pm		= atmel_serial_pm,
++	.ioctl		= atmel_ioctl,
+ #ifdef CONFIG_CONSOLE_POLL
+ 	.poll_get_char	= atmel_poll_get_char,
+ 	.poll_put_char	= atmel_poll_put_char,
+@@ -1265,13 +1424,12 @@ static void __devinit atmel_init_port(struct atmel_uart_port *atmel_port,
+ 	struct uart_port *port = &atmel_port->uart;
+ 	struct atmel_uart_data *data = pdev->dev.platform_data;
+ 
+-	port->iotype	= UPIO_MEM;
+-	port->flags	= UPF_BOOT_AUTOCONF;
+-	port->ops	= &atmel_pops;
+-	port->fifosize	= 1;
+-	port->line	= pdev->id;
+-	port->dev	= &pdev->dev;
+-
++	port->iotype		= UPIO_MEM;
++	port->flags		= UPF_BOOT_AUTOCONF;
++	port->ops		= &atmel_pops;
++	port->fifosize		= 1;
++	port->line		= pdev->id;
++	port->dev		= &pdev->dev;
+ 	port->mapbase	= pdev->resource[0].start;
+ 	port->irq	= pdev->resource[1].start;
+ 
+@@ -1299,8 +1457,16 @@ static void __devinit atmel_init_port(struct atmel_uart_port *atmel_port,
+ 
+ 	atmel_port->use_dma_rx = data->use_dma_rx;
+ 	atmel_port->use_dma_tx = data->use_dma_tx;
+-	if (atmel_use_dma_tx(port))
++	atmel_port->rs485	= data->rs485;
++	/* Use TXEMPTY for interrupt when rs485 else TXRDY or ENDTX|TXBUFE */
++	if (atmel_port->rs485.flags & SER_RS485_ENABLED)
++		atmel_port->tx_done_mask = ATMEL_US_TXEMPTY;
++	else if (atmel_use_dma_tx(port)) {
+ 		port->fifosize = PDC_BUFFER_SIZE;
++		atmel_port->tx_done_mask = ATMEL_US_ENDTX | ATMEL_US_TXBUFE;
++	} else {
++		atmel_port->tx_done_mask = ATMEL_US_TXRDY;
 +	}
+ }
+ 
+ /*
+@@ -1334,6 +1500,7 @@ static void atmel_console_putchar(struct uart_port *port, int ch)
+ static void atmel_console_write(struct console *co, const char *s, u_int count)
+ {
+ 	struct uart_port *port = &atmel_ports[co->index].uart;
++	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
+ 	unsigned int status, imr;
+ 	unsigned int pdc_tx;
+ 
+@@ -1341,7 +1508,7 @@ static void atmel_console_write(struct console *co, const char *s, u_int count)
+ 	 * First, save IMR and then disable interrupts
+ 	 */
+ 	imr = UART_GET_IMR(port);
+-	UART_PUT_IDR(port, ATMEL_US_RXRDY | ATMEL_US_TXRDY);
++	UART_PUT_IDR(port, ATMEL_US_RXRDY | atmel_port->tx_done_mask);
+ 
+ 	/* Store PDC transmit status and disable it */
+ 	pdc_tx = UART_GET_PTSR(port) & ATMEL_PDC_TXTEN;
+@@ -1355,7 +1522,7 @@ static void atmel_console_write(struct console *co, const char *s, u_int count)
+ 	 */
+ 	do {
+ 		status = UART_GET_CSR(port);
+-	} while (!(status & ATMEL_US_TXRDY));
++	} while (!(status & atmel_port->tx_done_mask));
+ 
+ 	/* Restore PDC transmit status */
+ 	if (pdc_tx)
+@@ -1587,7 +1754,7 @@ static int __devinit atmel_serial_probe(struct platform_device *pdev)
+ 	device_init_wakeup(&pdev->dev, 1);
+ 	platform_set_drvdata(pdev, port);
+ 
+-	return 0;
++	return device_create_file(&(pdev->dev), &dev_attr_rs485);
+ 
+ err_add_port:
+ 	kfree(port->rx_ring.buf);
+@@ -1619,6 +1786,8 @@ static int __devexit atmel_serial_remove(struct platform_device *pdev)
+ 
+ 	clk_put(atmel_port->clk);
+ 
++	device_remove_file(&(pdev->dev), &dev_attr_rs485);
 +
-+	devid =3D force_id ? force_id : superio_inw(sioaddr, SIO_REG_DEVID);
-+	switch (devid) {
-+	case SIO_F71808_ID:
-+		watchdog.type =3D f71808fg;
-+		break;
-+	case SIO_F71882_ID:
-+		watchdog.type =3D f71882fg;
-+		break;
-+	case SIO_F71862_ID:
-+	case SIO_F71889_ID:
-+		/* These have a watchdog, though it isn't implemented (yet). */
-+		err =3D -ENOSYS;
-+		goto exit;
-+	case SIO_F71858_ID:
-+		/* Confirmed (by datasheet) not to have a watchdog. */
-+		err =3D -ENODEV;
-+		goto exit;
-+	default:
-+		printk(KERN_INFO DRVNAME ": Unrecognized Fintek device: %04x\n",
-+		       (unsigned int)devid);
-+		err =3D -ENODEV;
-+		goto exit;
-+	}
-+
-+	printk(KERN_INFO DRVNAME ": Found %s watchdog chip, revision %d\n",
-+		f71808e_names[watchdog.type],
-+		(int)superio_inb(sioaddr, SIO_REG_DEVREV));
-+exit:
-+	superio_exit(sioaddr);
-+	return err;
-+}
-+
-+static int __init f71808e_init(void)
-+{
-+	static const unsigned short addrs[] =3D { 0x2e, 0x4e };
-+	int err =3D -ENODEV;
-+	int i;
-+
-+	for (i =3D 0; i < ARRAY_SIZE(addrs); i++) {
-+		err =3D f71808e_find(addrs[i]);
-+		if (err =3D=3D 0)
-+			break;
-+	}
-+	if (i =3D=3D ARRAY_SIZE(addrs))
-+		return err;
-+
-+	return watchdog_init(addrs[i]);
-+}
-+
-+static void __exit f71808e_exit(void)
-+{
-+	if (watchdog_is_running())
-+	{
-+		printk(KERN_WARNING DRVNAME ": Watchdog timer still running, stopping it=
-\n");
-+		watchdog_stop();
-+	}
-+	misc_deregister(&watchdog_miscdev);
-+	unregister_reboot_notifier(&watchdog_notifier);
-+}
-+
-+MODULE_DESCRIPTION("F71808E Watchdog Driver");
-+MODULE_AUTHOR("Giel van Schijndel <me@mortis.eu>");
-+MODULE_LICENSE("GPL");
-+
-+module_init(f71808e_init);
-+module_exit(f71808e_exit);
---=20
-1.6.4.4
+ 	return ret;
+ }
+ 
+-- 
+1.6.0.4
 
-
---=20
-Met vriendelijke groet,
-With kind regards,
-Giel van Schijndel
-
---IS0zKkzwUGydFO0o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkuxvxsACgkQZBYm/87l50Je/gCgiZpcw8Tr20tcAtAqGWuUBUGd
-fI0An3bTrJTbevQa1aQiNZw09xWsyRhE
-=e6pe
------END PGP SIGNATURE-----
-
---IS0zKkzwUGydFO0o--
