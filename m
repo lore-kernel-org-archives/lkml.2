@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757268Ab0C3Xou (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:44:50 -0400
-Received: from kroah.org ([198.145.64.141]:46114 "EHLO coco.kroah.org"
+	id S1757074Ab0C3Xen (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:34:43 -0400
+Received: from kroah.org ([198.145.64.141]:46467 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932546Ab0C3XUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:11 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:00 2010
-Message-Id: <20100330224800.138245099@linux.site>
+	id S1752292Ab0C3XVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:21:12 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:30 2010
+Message-Id: <20100330224829.470495114@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:41:35 -0700
+Date: Tue, 30 Mar 2010 15:42:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Trond Myklebust <Trond.Myklebust@netapp.com>,
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [061/156] NFS: Prevent another deadlock in nfs_release_page()
+Subject: [105/156] ALSA: ac97: Add Toshiba P500 to ac97 jack sense blacklist
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Daniel Chen <seven.steps@gmail.com>
 
-commit d812e575822a2b7ab1a7cadae2571505ec6ec2bd upstream.
+commit 5cd165e7057020884e430941c24454d3df9a799d upstream.
 
-We should not attempt to free the page if __GFP_FS is not set. Otherwise we
-can deadlock as per
+BugLink: https://launchpad.net/bugs/481058
 
-  http://bugzilla.kernel.org/show_bug.cgi?id=15578
+The OR has verified that both 'Headphone Jack Sense' and 'Line Jack Sense'
+need to be muted for sound to be audible, so just add the machine's SSID
+to the ac97 jack sense blacklist.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Reported-by: Richard Gagne
+Tested-by: Richard Gagne
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/file.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/pci/ac97/ac97_patch.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -486,7 +486,8 @@ static int nfs_release_page(struct page
- {
- 	dfprintk(PAGECACHE, "NFS: release_page(%p)\n", page);
- 
--	if (gfp & __GFP_WAIT)
-+	/* Only do I/O if gfp is a superset of GFP_KERNEL */
-+	if ((gfp & GFP_KERNEL) == GFP_KERNEL)
- 		nfs_wb_page(page->mapping->host, page);
- 	/* If PagePrivate() is set, then the page is not freeable */
- 	if (PagePrivate(page))
+--- a/sound/pci/ac97/ac97_patch.c
++++ b/sound/pci/ac97/ac97_patch.c
+@@ -1873,6 +1873,7 @@ static unsigned int ad1981_jacks_blackli
+ 	0x10280160, /* Dell Dimension 2400 */
+ 	0x104380b0, /* Asus A7V8X-MX */
+ 	0x11790241, /* Toshiba Satellite A-15 S127 */
++	0x1179ff10, /* Toshiba P500 */
+ 	0x144dc01a, /* Samsung NP-X20C004/SEG */
+ 	0 /* end */
+ };
 
 
