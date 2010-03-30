@@ -1,96 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab0C3DgU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 23:36:20 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:52115 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751666Ab0C3DgS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 23:36:18 -0400
-Date: Mon, 29 Mar 2010 23:36:17 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: linux-kernel@vger.kernel.org, stable <stable@kernel.org>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, Eric Dumazet <dada1@cosmosbay.com>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] modules fix incorrect percpu usage
-Message-ID: <20100330033617.GE7683@Krystal>
-References: <20100330033211.GC7683@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100330033211.GC7683@Krystal>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 23:34:33 up 66 days,  6:11,  4 users,  load average: 0.09, 0.12,
-	0.04
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755443Ab0C3DsS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 23:48:18 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:42035 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755350Ab0C3DsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 23:48:16 -0400
+Date: Tue, 30 Mar 2010 14:48:09 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build warning after merge of the sound tree
+Message-Id: <20100330144809.77620889.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__30_Mar_2010_14_48_09_+1100_nvLqK/c7e6zepZaK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is needed
-> for per cpu pointers).
-> 
-> Introduced by commit:
-> 
-> module.c: commit 6b588c18f8dacfa6d7957c33c5ff832096e752d3
-> 
-> This patch should be queued for the stable branch, for kernels 2.6.29.x to
-> 2.6.33.x.
-> (tested on 2.6.33.1 x86_64)
+--Signature=_Tue__30_Mar_2010_14_48_09_+1100_nvLqK/c7e6zepZaK
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It's actually needed for mainline too (2.6.34-rc2).
+Hi Takashi,
 
-Thanks,
+After merging the sound tree, today's linux-next build (x86_64
+allmodconfig) produced this warning:
 
-Mathieu
+sound/pci/hda/patch_realtek.c: In function 'fillup_priv_adc_nids':
+sound/pci/hda/patch_realtek.c:5120: warning: format '%s' expects type 'char=
+ *', but argument 2 has type 'int'
+sound/pci/hda/patch_realtek.c:5120: warning: too few arguments for format
 
-> 
-> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> CC: Randy Dunlap <randy.dunlap@oracle.com>
-> CC: Eric Dumazet <dada1@cosmosbay.com>
-> CC: Rusty Russell <rusty@rustcorp.com.au>
-> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> CC: Tejun Heo <tj@kernel.org>
-> CC: Ingo Molnar <mingo@elte.hu>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Linus Torvalds <torvalds@linux-foundation.org>
-> CC: Greg Kroah-Hartman <gregkh@suse.de>
-> CC: Steven Rostedt <rostedt@goodmis.org>
-> CC: stable <stable@kernel.org>
-> ---
->  kernel/module.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux-2.6-lttng/kernel/module.c
-> ===================================================================
-> --- linux-2.6-lttng.orig/kernel/module.c	2010-03-29 23:47:05.000000000 -0400
-> +++ linux-2.6-lttng/kernel/module.c	2010-03-29 23:47:27.000000000 -0400
-> @@ -412,7 +412,7 @@ static void percpu_modcopy(void *pcpudes
->  	int cpu;
->  
->  	for_each_possible_cpu(cpu)
-> -		memcpy(pcpudest + per_cpu_offset(cpu), from, size);
-> +		memcpy(per_cpu_ptr(pcpudest, cpu), from, size);
->  }
->  
->  #else /* ... !CONFIG_SMP */
-> 
-> -- 
-> Mathieu Desnoyers
-> Operating System Efficiency R&D Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
+Introduced by commit 6694635d3ae1b038d7a0e38b80637db867c7c8e2 ("ALSA: hda
+- Fix ADC/MUX assignment of ALC269 codec").
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__30_Mar_2010_14_48_09_+1100_nvLqK/c7e6zepZaK
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkuxdHkACgkQjjKRsyhoI8xO/wCgrVHm1vOewQ8iYa6UW8RGYOrw
+gewAnisjL629+Uav2erxba78R6iF0Ft9
+=/XIL
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__30_Mar_2010_14_48_09_+1100_nvLqK/c7e6zepZaK--
