@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab0CaAAr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:00:47 -0400
-Received: from kroah.org ([198.145.64.141]:45443 "EHLO coco.kroah.org"
+	id S932145Ab0C3XyA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:54:00 -0400
+Received: from kroah.org ([198.145.64.141]:45708 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932308Ab0C3XSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:51 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:02 2010
-Message-Id: <20100330225701.951044540@linux.site>
+	id S932399Ab0C3XTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:24 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:29 2010
+Message-Id: <20100330224729.251927350@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:56:12 -0700
+Date: Tue, 30 Mar 2010 15:40:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jan Beulich <jbeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
+       Bob Copeland <me@bobcopeland.com>,
+       Nick Kossifidis <mickflemm@gmail.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [094/116] x86: Fix placement of FIX_OHCI1394_BASE
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+Subject: [014/156] ath5k: dont use external sleep clock in AP mode
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Jan Beulich <JBeulich@novell.com>
+From: Bob Copeland <me@bobcopeland.com>
 
-commit ff30a0543e9a6cd732582063e7cae951cdb7acf2 upstream.
+commit 5d6ce628f986d1a3c523cbb0a5a52095c48cc332 upstream.
 
-Ever for 32-bit with sufficiently high NR_CPUS, and starting
-with commit 789d03f584484af85dbdc64935270c8e45f36ef7 also for
-64-bit, the statically allocated early fixmap page tables were
-not covering FIX_OHCI1394_BASE, leading to a boot time crash
-when "ohci1394_dma=early" was used. Despite this entry not being
-a permanently used one, it needs to be moved into the permanent
-range since it has to be close to FIX_DBGP_BASE and
-FIX_EARLYCON_MEM_BASE.
+When using the external sleep clock in AP mode, the
+TSF increments too quickly, causing beacon interval
+to be much lower than it is supposed to be, resulting
+in lots of beacon-not-ready interrupts.
 
-Reported-bisected-and-tested-by: Justin P. Mattock <justinmattock@gmail.com>
-Fixes-bug: http://bugzilla.kernel.org/show_bug.cgi?id=14487
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-LKML-Reference: <4B9E15D30200007800034D23@vpn.id2.novell.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+This fixes http://bugzilla.kernel.org/show_bug.cgi?id=14802.
+
+Signed-off-by: Bob Copeland <me@bobcopeland.com>
+Acked-by: Nick Kossifidis <mickflemm@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/fixmap.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/wireless/ath/ath5k/reset.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/x86/include/asm/fixmap.h
-+++ b/arch/x86/include/asm/fixmap.h
-@@ -82,6 +82,9 @@ enum fixed_addresses {
- #endif
- 	FIX_DBGP_BASE,
- 	FIX_EARLYCON_MEM_BASE,
-+#ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
-+	FIX_OHCI1394_BASE,
-+#endif
- #ifdef CONFIG_X86_LOCAL_APIC
- 	FIX_APIC_BASE,	/* local (CPU) APIC) -- required for SMP or not */
- #endif
-@@ -126,9 +129,6 @@ enum fixed_addresses {
- 	FIX_BTMAP_END = __end_of_permanent_fixed_addresses + 256 -
- 			(__end_of_permanent_fixed_addresses & 255),
- 	FIX_BTMAP_BEGIN = FIX_BTMAP_END + NR_FIX_BTMAPS*FIX_BTMAPS_SLOTS - 1,
--#ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
--	FIX_OHCI1394_BASE,
--#endif
- #ifdef CONFIG_X86_32
- 	FIX_WP_TEST,
- #endif
+--- a/drivers/net/wireless/ath/ath5k/reset.c
++++ b/drivers/net/wireless/ath/ath5k/reset.c
+@@ -1371,8 +1371,9 @@ int ath5k_hw_reset(struct ath5k_hw *ah,
+ 	 * Set clocks to 32KHz operation and use an
+ 	 * external 32KHz crystal when sleeping if one
+ 	 * exists */
+-	if (ah->ah_version == AR5K_AR5212)
+-			ath5k_hw_set_sleep_clock(ah, true);
++	if (ah->ah_version == AR5K_AR5212 &&
++	    ah->ah_op_mode != NL80211_IFTYPE_AP)
++		ath5k_hw_set_sleep_clock(ah, true);
+ 
+ 	/*
+ 	 * Disable beacons and reset the register
 
 
