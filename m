@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab0C3XIy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:08:54 -0400
-Received: from kroah.org ([198.145.64.141]:48379 "EHLO coco.kroah.org"
+	id S1754668Ab0C3XIs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:08:48 -0400
+Received: from kroah.org ([198.145.64.141]:48347 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754937Ab0C3XIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:08:51 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:43 2010
-Message-Id: <20100330224943.052193459@linux.site>
+	id S1752653Ab0C3XIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:08:47 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:40 2010
+Message-Id: <20100330224939.989304996@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:48:26 -0700
+Date: Tue, 30 Mar 2010 15:48:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jiri Slaby <jslaby@suse.cz>, James Morris <jmorris@namei.org>,
-       Heiko Carstens <heiko.carstens@de.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+       Mika Westerberg <ext-mika.1.westerberg@nokia.com>,
+       Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [06/45] resource: add helpers for fetching rlimits
+Subject: [01/45] UBI: fix volume creation input checking
 In-Reply-To: <20100330230410.GA28712@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,59 +27,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
 
-commit 3e10e716abf3c71bdb5d86b8f507f9e72236c9cd upstream.
+commit c5ce5b46af76f52dea21f467397d24c4ae6cb3ff upstream.
 
-We want to be sure that compiler fetches the limit variable only
-once, so add helpers for fetching current and maximal resource
-limits which do that.
+Do not use an unchecked variable UBI_IOCMKVOL ioctl.
 
-Add them to sched.h (instead of resource.h) due to circular dependency
- sched.h->resource.h->task_struct
-Alternative would be to create a separate res_access.h or similar.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: James Morris <jmorris@namei.org>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/sched.h |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ drivers/mtd/ubi/cdev.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2232,6 +2232,28 @@ static inline void mm_init_owner(struct
+--- a/drivers/mtd/ubi/cdev.c
++++ b/drivers/mtd/ubi/cdev.c
+@@ -793,7 +793,6 @@ static int ubi_cdev_ioctl(struct inode *
+ 			break;
+ 		}
  
- #define TASK_STATE_TO_CHAR_STR "RSDTtZX"
- 
-+static inline unsigned long task_rlimit(const struct task_struct *tsk,
-+		unsigned int limit)
-+{
-+	return ACCESS_ONCE(tsk->signal->rlim[limit].rlim_cur);
-+}
-+
-+static inline unsigned long task_rlimit_max(const struct task_struct *tsk,
-+		unsigned int limit)
-+{
-+	return ACCESS_ONCE(tsk->signal->rlim[limit].rlim_max);
-+}
-+
-+static inline unsigned long rlimit(unsigned int limit)
-+{
-+	return task_rlimit(current, limit);
-+}
-+
-+static inline unsigned long rlimit_max(unsigned int limit)
-+{
-+	return task_rlimit_max(current, limit);
-+}
-+
- #endif /* __KERNEL__ */
- 
- #endif
+-		req.name[req.name_len] = '\0';
+ 		err = verify_mkvol_req(ubi, &req);
+ 		if (err)
+ 			break;
 
 
