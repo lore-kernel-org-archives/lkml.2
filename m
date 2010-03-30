@@ -1,101 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755830Ab0C3Udy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 16:33:54 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:50015 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755072Ab0C3Udx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 16:33:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:subject:to:cc:in-reply-to:references;
-        b=haT3nDDImlMwRzdOnyou01Ow4+Yyzk/FzIp5ENGq4z7y0eyXKsvqlPdfB9XmBJR+pJ
-         7wJR8e7U8MHyP4Oju9HM48tmREhAYPy/SrszSywE4hS7NwROl57sBwaFH8T6RZWrgeK2
-         7shU2oZlXzlR1G2+k+CdMrHsmU/OayER2drpM=
-Message-ID: <4bb2602e.170d660a.5493.ffffbf62@mx.google.com>
-Date: Tue, 30 Mar 2010 13:33:50 -0700 (PDT)
-From: Ben Gamari <bgamari.foss@gmail.com>
-Subject: Re: [PATCH] scsi: fix lockdep warning
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       James Bottomley <James.Bottomley@HansenPartnership.com>,
-       Greg KH <gregkh@suse.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Linux-Scsi <linux-scsi@vger.kernel.org>
-In-Reply-To: <4BB22FF6.5040003@kernel.org>
-References: <a4423d671003081547v5c955d58t248db945c06d2a7f@mail.gmail.com>
-	<86802c441003081612r2f44efd6n9664b4b7c98a636a@mail.gmail.com>
-	<m1d3zel4b4.fsf@fess.ebiederm.org> <4B95F37E.6060309@kernel.org>
-	<m14okqnczd.fsf@fess.ebiederm.org> <4B99A6F0.4080203@kernel.org>
-	<4BA47692.7040401@kernel.org>
-	<4bb21338.0d0db80a.1685.ffffb9e1@mx.google.com>
-	<4BB22FF6.5040003@kernel.org>
+	id S1754814Ab0C3UjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 16:39:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58393 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754667Ab0C3UjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 16:39:10 -0400
+Date: Tue, 30 Mar 2010 13:38:42 -0700
+From: Greg KH <gregkh@suse.de>
+To: Pavan Savoy <pavan_savoy@ti.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, marcel@holtmann.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers:staging: sources for ST core
+Message-ID: <20100330203842.GA5850@suse.de>
+References: <20100330122201.02accf0f@lxorguk.ukuu.org.uk> <693134.37568.qm@web94902.mail.in2.yahoo.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <693134.37568.qm@web94902.mail.in2.yahoo.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Mar 2010 10:08:06 -0700, Yinghai Lu <yinghai@kernel.org> wrote:
-> On 03/30/2010 08:05 AM, Ben Gamari wrote:
-> > On Sat, 20 Mar 2010 00:17:38 -0700, Yinghai Lu <yinghai@kernel.org> wrote:
-> >>
-> >> with qlogic and emulex card etc.
-> >>
-> >> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> >>
+On Tue, Mar 30, 2010 at 09:23:23PM +0530, Pavan Savoy wrote:
+> Alan,
+> 
+> --- On Tue, 30/3/10, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> 
+> > From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> > Subject: Re: [PATCH] drivers:staging: sources for ST core
+> > To: pavan_savoy@ti.com
+> > Cc: marcel@holtmann.org, gregkh@suse.de, linux-kernel@vger.kernel.org, pavan_savoy@yahoo.co.in
+> > Date: Tuesday, 30 March, 2010, 4:52 PM
+> > > +/* all debug macros go in here
+> > */
+> > > +#define ST_DRV_ERR(fmt, arg...)? printk(KERN_ERR
+> > "(stc):"fmt"\n" , ## arg)
+> > > +#if defined(DEBUG)???
+> > ??? /* limited debug messages */
+> > > +#define ST_DRV_DBG(fmt, arg...)?
+> > printk(KERN_INFO "(stc):"fmt"\n" , ## arg)
+> > > +#define ST_DRV_VER(fmt, arg...)
+> > > +#elif defined(VERBOSE)???
+> > ??? /* very verbose */
+> > > +#define ST_DRV_DBG(fmt, arg...)?
+> > printk(KERN_INFO "(stc):"fmt"\n" , ## arg)
+> > > +#define ST_DRV_VER(fmt, arg...)?
+> > printk(KERN_INFO "(stc):"fmt"\n" , ## arg)
+> > > +#else /* error msgs only */
+> > > +#define ST_DRV_DBG(fmt, arg...)
+> > > +#define ST_DRV_VER(fmt, arg...)
+> > > +#endif
 > > 
-> > As several others have pointed out, you appear to be call sysfs_bin_attr_init()
-> > against statically allocated attributes. Is there an updated patchset that you've been meaning to send out?
+> > As Greg said earlier - needs to be using the standard debug
+> > macros
 > 
-> not tracking it for while. it seems James had the same version in scsi-next 
-> 
-> > 
-> > Moreover, there are still failures in the ACPI thermal driver (at very least)
-> > on master (9623e5a23724d09283c238960946ec6f65733afe).
-> 
-> can you send out the trace?
-> 
-I provided it at the bottom of my last message. I'll also include it below,
-just in case. Thanks!
+> Agree - It's all there because of the organization's coding standards.
+> Will correct it.
 
-- Ben
+Might you also want to correct your organization's coding standards to
+follow the correct Linux kernel ones?  That way you will not have this
+problem in the future.
 
-       [    3.240692] BUG: key ffff88011b1a9528 not in .data!
-       [    3.245578] ------------[ cut here ]------------
-       [    3.250195] WARNING: at kernel/lockdep.c:2706 lockdep_init_map+0x125/0x140()
-       [    3.257229] Hardware name: Latitude D830                   
-       [    3.262793] Modules linked in:
-       [    3.265864] Pid: 1, comm: swapper Not tainted 2.6.34-rc2-ben #137
-       [    3.271946] Call Trace:
-       [    3.274397]  [<ffffffff8105a86b>] warn_slowpath_common+0x7b/0xc0
-       [    3.280395]  [<ffffffff8105a8c4>] warn_slowpath_null+0x14/0x20
-       [    3.286220]  [<ffffffff8108ea75>] lockdep_init_map+0x125/0x140
-       [    3.292046]  [<ffffffff811ae51f>] sysfs_add_file_mode+0x6f/0xd0
-       [    3.297960]  [<ffffffff8130b464>] ? snprintf+0x34/0x40
-       [    3.303093]  [<ffffffff811ae591>] sysfs_add_file+0x11/0x20
-       [    3.308570]  [<ffffffff811ae676>] sysfs_create_file+0x26/0x30
-       [    3.314311]  [<ffffffff813bbe99>] device_create_file+0x19/0x20
-       [    3.320136]  [<ffffffff8146176b>] thermal_zone_device_register+0x45b/0x860
-       [    3.327001]  [<ffffffff81370e45>] acpi_thermal_add+0x245/0x4e4
-       [    3.332827]  [<ffffffff811b0250>] ? sysfs_do_create_link+0xd0/0x170
-       [    3.339085]  [<ffffffff81347100>] acpi_device_probe+0x50/0x122
-       [    3.344909]  [<ffffffff813bee86>] driver_probe_device+0x96/0x1a0
-       [    3.350906]  [<ffffffff813bef90>] ? __driver_attach+0x0/0xa0
-       [    3.356557]  [<ffffffff813bf02b>] __driver_attach+0x9b/0xa0
-       [    3.362121]  [<ffffffff813bef90>] ? __driver_attach+0x0/0xa0
-       [    3.367773]  [<ffffffff813be2ac>] bus_for_each_dev+0x6c/0xa0
-       [    3.373423]  [<ffffffff813becce>] driver_attach+0x1e/0x20
-       [    3.378814]  [<ffffffff813be591>] bus_add_driver+0xe1/0x280
-       [    3.384380]  [<ffffffff813bf378>] driver_register+0x78/0x140
-       [    3.390031]  [<ffffffff81b2f591>] ? acpi_thermal_init+0x0/0x7b
-       [    3.395855]  [<ffffffff81347a70>] acpi_bus_register_driver+0x43/0x45
-       [    3.402199]  [<ffffffff81b2f5ea>] acpi_thermal_init+0x59/0x7b
-       [    3.407938]  [<ffffffff8100204c>] do_one_initcall+0x3c/0x1a0
-       [    3.413591]  [<ffffffff81b05757>] kernel_init+0x15a/0x1e4
-       [    3.418984]  [<ffffffff8100aee4>] kernel_thread_helper+0x4/0x10
-       [    3.424895]  [<ffffffff815bbf90>] ? restore_args+0x0/0x30
-       [    3.430286]  [<ffffffff81b055fd>] ? kernel_init+0x0/0x1e4
-       [    3.435678]  [<ffffffff8100aee0>] ? kernel_thread_helper+0x0/0x10
-       [    3.441765] ---[ end trace a22d306b065d4a66 ]---
-       [    3.446380] BUG: key ffff88011b1a9570 not in .data!
+thanks,
 
+greg k-h
