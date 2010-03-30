@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108Ab0C3XPA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:15:00 -0400
-Received: from kroah.org ([198.145.64.141]:49305 "EHLO coco.kroah.org"
+	id S1755962Ab0C3XKH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:10:07 -0400
+Received: from kroah.org ([198.145.64.141]:48662 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756673Ab0C3XNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:13:08 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:59:01 2010
-Message-Id: <20100330225900.831092101@linux.site>
+	id S1755725Ab0C3XJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:09:26 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:50:09 2010
+Message-Id: <20100330225008.999625477@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:58:26 -0700
+Date: Tue, 30 Mar 2010 15:49:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Ravikiran Thirumalai <kiran@scalex86.org>,
-       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Alan Stern <stern@rowland.harvard.edu>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [84/89] tmpfs: handle MPOL_LOCAL mount option properly
-In-Reply-To: <20100330230520.GA28779@kroah.com>
+Subject: [44/45] USB: fix usbfs regression
+In-Reply-To: <20100330230410.GA28712@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.31-stable review patch.  If anyone has any objections, please let us know.
+2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 12821f5fb942e795f8009ece14bde868893bd811 upstream.
+commit 7152b592593b9d48b33f8997b1dfd6df9143f7ec upstream.
 
-commit 71fe804b6d5 (mempolicy: use struct mempolicy pointer in
-shmem_sb_info) added mpol=local mount option.  but its feature is broken
-since it was born.  because such code always return 1 (i.e.  mount
-failure).
+This patch (as1352) fixes a bug in the way isochronous input data is
+returned to userspace for usbfs transfers.  The entire buffer must be
+copied, not just the first actual_length bytes, because the individual
+packets will be discontiguous if any of them are short.
 
-This patch fixes it.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Ravikiran Thirumalai <kiran@scalex86.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Markus Rechberger <mrechberger@gmail.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/mempolicy.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/core/devio.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2141,6 +2141,7 @@ int mpol_parse_str(char *str, struct mem
- 		if (nodelist)
- 			goto out;
- 		mode = MPOL_PREFERRED;
-+		err = 0;
- 		break;
- 	case MPOL_DEFAULT:
- 		/*
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -1123,6 +1123,13 @@ static int proc_do_submiturb(struct dev_
+ 			free_async(as);
+ 			return -ENOMEM;
+ 		}
++		/* Isochronous input data may end up being discontiguous
++		 * if some of the packets are short.  Clear the buffer so
++		 * that the gaps don't leak kernel data to userspace.
++		 */
++		if (is_in && uurb->type == USBDEVFS_URB_TYPE_ISO)
++			memset(as->urb->transfer_buffer, 0,
++					uurb->buffer_length);
+ 	}
+ 	as->urb->dev = ps->dev;
+ 	as->urb->pipe = (uurb->type << 30) |
+@@ -1224,10 +1231,14 @@ static int processcompl(struct async *as
+ 	void __user *addr = as->userurb;
+ 	unsigned int i;
+ 
+-	if (as->userbuffer && urb->actual_length)
+-		if (copy_to_user(as->userbuffer, urb->transfer_buffer,
+-				 urb->actual_length))
++	if (as->userbuffer && urb->actual_length) {
++		if (urb->number_of_packets > 0)		/* Isochronous */
++			i = urb->transfer_buffer_length;
++		else					/* Non-Isoc */
++			i = urb->actual_length;
++		if (copy_to_user(as->userbuffer, urb->transfer_buffer, i))
+ 			goto err_out;
++	}
+ 	if (put_user(as->status, &userurb->status))
+ 		goto err_out;
+ 	if (put_user(urb->actual_length, &userurb->actual_length))
 
 
