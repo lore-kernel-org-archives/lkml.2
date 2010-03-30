@@ -1,157 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab0C3O5D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 10:57:03 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:59280 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752312Ab0C3O47 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 10:56:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=pxerl+07C2QvjDc4AFrvg/Cd5A13Op9TokgZSGGXuJHoZ9j8T32sO4Z54v1tbgYY0D
-         fwD4gN2C39kyN+Icbs0lgexMdPKEuIvIzph11aOqMlCl3K09nadPqogjzaN6h0sMhjdD
-         GGNBFmb+PmGiLdMnSPX6RVoJoSdYGP3NpYdJ0=
-Subject: Re: Tiny patch (w/ discussion) to provide the peer information on
- unix domain sockets
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Erkki Seppala <flux-lkml@inside.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       netdev <netdev@vger.kernel.org>
-In-Reply-To: <20100330143512.GF7980@coffee.modeemi.cs.tut.fi>
-References: <20100330143512.GF7980@coffee.modeemi.cs.tut.fi>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 30 Mar 2010 16:56:53 +0200
-Message-ID: <1269961013.2012.61.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1753721Ab0C3O7J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 10:59:09 -0400
+Received: from are.twiddle.net ([75.149.56.221]:41902 "EHLO are.twiddle.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752860Ab0C3O7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 10:59:07 -0400
+Message-ID: <4BB211B6.2060300@twiddle.net>
+Date: Tue, 30 Mar 2010 07:59:02 -0700
+From: Richard Henderson <rth@twiddle.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Matt Turner <mattst88@gmail.com>
+CC: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Ivan Kokshaysky <ink@jurassic.park.msu.ru>, ang@brigante.org
+Subject: Re: [RFC] alpha: hack objstrip.c to make it compile.
+References: <1269913795-1852-1-git-send-email-mattst88@gmail.com>	 <4BB20AAB.7000909@twiddle.net> <b4198de61003300749s7344f4f7o9070fafb142eb5b4@mail.gmail.com>
+In-Reply-To: <b4198de61003300749s7344f4f7o9070fafb142eb5b4@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 30 mars 2010 à 17:35 +0300, Erkki Seppala a écrit :
-> Hello,
-> 
-> Attached you will find a patch that appends the field 'Peer' to
-> /proc/net/unix indicating the peer of a connected unix domain
-> socket. It shows its kernel address, as this is how unix domain
-> sockets are identified in the same file. The preceding optional file
-> name (actual address of the socket) field is replaced with "-" if it
-> is not set. If there is no peer, 0 is used in its place.
-> 
-> The purpose of the patch is to provide information on onto which
-> services processes are connected. This information is readily
-> available for TCP/IP sockets but not for unix domain sockets. The
-> information can be retrieved with relative ease by using the following
-> scripts for GDB, if you have GDB 7.1 and debugging symbols around:
-> 
->   http://www.modeemi.fi/~flux/software/list-unix-sockets.tar.gz
-> 
-> But obviously this is not optimal :). With the patch, this is how you
-> can find out the peers of the sockets of the X server:
-> 
->   # grep -E $(lsof -p `pidof X` | grep unix | awk '{print s $6; s="|"}' |
->               tr -d '\n' | sed 's/0x//g;s/.*/(&)$/') /proc/net/unix
->   d913b000: 00000003 00000000 00000000 0001 03  5494 - d913b200
->   d9085600: 00000003 00000000 00000000 0001 03  5487 - d9085800
->   ..
-> 
-> The number in the first column is the address, for which the process
-> can be most easily found with lsof: 
-> 
->   # lsof | grep d913b000 
->   gnome-pow 1245        gdm    3u     unix 0xd913b000      0t0       5494 -
-> 
-> Hopefully this kind of work would be integrated into lsof to display
-> the information more easily.
-> 
-> The patch does break the current API, but the impact seems rather
-> light. I'm happy to incorporate alternative approaches if this seems
-> to severe.
-> 
-> Originally the last field in the field was fully optional: if it was
-> not known, the line would terminate immediately after the field
-> preceding it. Because we append a new field (instead of inserting it
-> before Path, which causes more severe problems), the missing field
-> value is indicated with a hyphen instead. So this (where $ indicates
-> EOL):
-> 
->   de38f800: 00000003 00000000 00000000 0001 03  2323$
-> 
-> becomes this:
-> 
->   de38f800: 00000003 00000000 00000000 0001 03  2323 - de2e4400$
-> 
-> This changes the output of netstat -x for unix domain sockets that
-> don't have a known address. I'm pretty sure nobody cares,
-> though.. Similarly this changes the behavior of lsof, which before the
-> patch can display:
-> 
->   rxvt      17693         ese    6u     unix 0xffff880050ba8900      0t0     746261 socket
-> 
-> but after the patch:
-> 
->   gconf-hel 1377        gdm    3u     unix 0xd9197800      0t0       5796 -
-> 
-> Pretty sure this is pretty much the same for everyone as well
-> :). Although that could likely be worked around by using "@" in place
-> of "-". Infact this might be the proper thing to do: I'm not sure what
-> the meaning of UNIX_ABSTRACT used in af_unix.c:unix_seq_show is,
-> perhaps just that there is no name to be found? I cannot use the
-> macro, though, because it uses the nondefined field addr.
-> 
-> Btw, I noticed that af_unix.c:unix_seq_show does not quote the unix
-> domain socket path (possibly due to lacking convenient quoting
-> function in seq_file.c), which allows spoofing the contents of the
-> file into a certain extent. Atleast spaces should be quoted for this
-> patch to work properly in the cases when socket names have spaces in
-> them.
-> 
-> Here is the patch, also available at 
-> 
->   http://www.modeemi.fi/~flux/software/linux-2.6.31-procfs-unix_peer_information.patch
-> 
-> --- linux-2.6.31/net/unix/af_unix.c	2010-03-30 16:19:52.306372568 +0300
-> +++ linux-2.6.31-flux/net/unix/af_unix.c	2010-03-30 14:32:47.000000000 +0300
-> @@ -2154,7 +2154,7 @@
->  
->  	if (v == SEQ_START_TOKEN)
->  		seq_puts(seq, "Num       RefCount Protocol Flags    Type St "
-> -			 "Inode Path\n");
-> +			 "Inode Path Peer\n");
->  	else {
->  		struct sock *s = v;
->  		struct unix_sock *u = unix_sk(s);
-> @@ -2185,7 +2185,14 @@
->  			}
->  			for ( ; i < len; i++)
->  				seq_putc(seq, u->addr->name->sun_path[i]);
-> -		}
-> +		} else
-> +			seq_puts(seq, " -");
-> +
-> +		if (u->peer)
-> +			seq_printf(seq, " %p", u->peer);
-> +		else
-> +			seq_puts(seq, " 0");
-> +		
->  		unix_state_unlock(s);
->  		seq_putc(seq, '\n');
->  	}
-> 
-Hi Erkki
+On 03/30/2010 07:49 AM, Matt Turner wrote:
+> The problem is that, at least with my distribution, probably others
+> too, the headers installed into /usr/include/linux/ are stripped of
+> anything inside #ifdef __KERNEL__.
 
-Such patches should be sent to netdev
+I thought this was built with kernel header files?  It used to be.
 
-I believe you missed some necessary locking.
+If it's built with system header files now, you might as well convert
+the thing to use <elf.h> instead.  Which shouldn't be too much different
+from what you've done already.  Although I wouldn't bother with the
+#defines... just propagate the name changes into the source proper.
 
 
-Prior art from Kenan Kalajdzic :
-
- http://patchwork.ozlabs.org/patch/46561/
-
-
-
+r~
