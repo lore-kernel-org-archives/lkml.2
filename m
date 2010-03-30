@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756668Ab0C3XQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:16:32 -0400
-Received: from kroah.org ([198.145.64.141]:49245 "EHLO coco.kroah.org"
+	id S1756692Ab0C3XPt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:15:49 -0400
+Received: from kroah.org ([198.145.64.141]:49280 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756651Ab0C3XNC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:13:02 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:57 2010
-Message-Id: <20100330225856.509858139@linux.site>
+	id S1756660Ab0C3XNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:13:06 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:59 2010
+Message-Id: <20100330225858.929251773@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:58:19 -0700
+Date: Tue, 30 Mar 2010 15:58:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "H. Peter Anvin" <hpa@zytor.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Stefan Bader <stefan.bader@canonical.com>
-Subject: [77/89] x86: get rid of the insane TIF_ABI_PENDING bit
+       Francesco Lavra <francescolavra@interfree.it>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [81/89] V4L/DVB (13961): em28xx-dvb: fix memleak in dvb_fini()
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,118 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: H. Peter Anvin <hpa@zytor.com>
+From: Francesco Lavra <francescolavra@interfree.it>
 
-commit 05d43ed8a89c159ff641d472f970e3f1baa66318 upstream.
+commit 19f48cb105b7fa18d0dcab435919a3a29b7a7c4c upstream.
 
-Now that the previous commit made it possible to do the personality
-setting at the point of no return, we do just that for ELF binaries.
-And suddenly all the reasons for that insane TIF_ABI_PENDING bit go
-away, and we can just make SET_PERSONALITY() just do the obvious thing
-for a 32-bit compat process.
+this patch fixes a memory leak which occurs when an em28xx card with DVB
+extension is unplugged or its DVB extension driver is unloaded. In
+dvb_fini(), dev->dvb must be freed before being set to NULL, as is done
+in dvb_init() in case of error.
+Note that this bug is also present in the latest stable kernel release.
 
-Everything becomes much more straightforward this way.
-
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Francesco Lavra <francescolavra@interfree.it>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 
 ---
- arch/x86/ia32/ia32_aout.c          |    1 -
- arch/x86/include/asm/elf.h         |   10 ++--------
- arch/x86/include/asm/thread_info.h |    2 --
- arch/x86/kernel/process.c          |   12 ------------
- arch/x86/kernel/process_64.c       |   11 +++++++++++
- 5 files changed, 13 insertions(+), 23 deletions(-)
+ drivers/media/video/em28xx/em28xx-dvb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/ia32/ia32_aout.c
-+++ b/arch/x86/ia32/ia32_aout.c
-@@ -311,7 +311,6 @@ static int load_aout_binary(struct linux
- 	/* OK, This is the point of no return */
- 	set_personality(PER_LINUX);
- 	set_thread_flag(TIF_IA32);
--	clear_thread_flag(TIF_ABI_PENDING);
+--- a/drivers/media/video/em28xx/em28xx-dvb.c
++++ b/drivers/media/video/em28xx/em28xx-dvb.c
+@@ -591,6 +591,7 @@ static int dvb_fini(struct em28xx *dev)
  
- 	setup_new_exec(bprm);
+ 	if (dev->dvb) {
+ 		unregister_dvb(dev->dvb);
++		kfree(dev->dvb);
+ 		dev->dvb = NULL;
+ 	}
  
---- a/arch/x86/include/asm/elf.h
-+++ b/arch/x86/include/asm/elf.h
-@@ -197,14 +197,8 @@ do {							\
- 	set_fs(USER_DS);				\
- } while (0)
- 
--#define COMPAT_SET_PERSONALITY(ex)			\
--do {							\
--	if (test_thread_flag(TIF_IA32))			\
--		clear_thread_flag(TIF_ABI_PENDING);	\
--	else						\
--		set_thread_flag(TIF_ABI_PENDING);	\
--	current->personality |= force_personality32;	\
--} while (0)
-+void set_personality_ia32(void);
-+#define COMPAT_SET_PERSONALITY(ex) set_personality_ia32()
- 
- #define COMPAT_ELF_PLATFORM			("i686")
- 
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -86,7 +86,6 @@ struct thread_info {
- #define TIF_NOTSC		16	/* TSC is not accessible in userland */
- #define TIF_IA32		17	/* 32bit process */
- #define TIF_FORK		18	/* ret_from_fork */
--#define TIF_ABI_PENDING		19
- #define TIF_MEMDIE		20
- #define TIF_DEBUG		21	/* uses debug registers */
- #define TIF_IO_BITMAP		22	/* uses I/O bitmap */
-@@ -110,7 +109,6 @@ struct thread_info {
- #define _TIF_NOTSC		(1 << TIF_NOTSC)
- #define _TIF_IA32		(1 << TIF_IA32)
- #define _TIF_FORK		(1 << TIF_FORK)
--#define _TIF_ABI_PENDING	(1 << TIF_ABI_PENDING)
- #define _TIF_DEBUG		(1 << TIF_DEBUG)
- #define _TIF_IO_BITMAP		(1 << TIF_IO_BITMAP)
- #define _TIF_FREEZE		(1 << TIF_FREEZE)
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -94,18 +94,6 @@ void flush_thread(void)
- {
- 	struct task_struct *tsk = current;
- 
--#ifdef CONFIG_X86_64
--	if (test_tsk_thread_flag(tsk, TIF_ABI_PENDING)) {
--		clear_tsk_thread_flag(tsk, TIF_ABI_PENDING);
--		if (test_tsk_thread_flag(tsk, TIF_IA32)) {
--			clear_tsk_thread_flag(tsk, TIF_IA32);
--		} else {
--			set_tsk_thread_flag(tsk, TIF_IA32);
--			current_thread_info()->status |= TS_COMPAT;
--		}
--	}
--#endif
--
- 	clear_tsk_thread_flag(tsk, TIF_DEBUG);
- 
- 	tsk->thread.debugreg0 = 0;
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -534,6 +534,17 @@ sys_clone(unsigned long clone_flags, uns
- 	return do_fork(clone_flags, newsp, regs, 0, parent_tid, child_tid);
- }
- 
-+void set_personality_ia32(void)
-+{
-+	/* inherit personality from parent */
-+
-+	/* Make sure to be in 32bit mode */
-+	set_thread_flag(TIF_IA32);
-+
-+	/* Prepare the first "return" to user space */
-+	current_thread_info()->status |= TS_COMPAT;
-+}
-+
- unsigned long get_wchan(struct task_struct *p)
- {
- 	unsigned long stack;
 
 
