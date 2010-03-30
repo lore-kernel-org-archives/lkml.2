@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755792Ab0C3X4d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:56:33 -0400
-Received: from kroah.org ([198.145.64.141]:45608 "EHLO coco.kroah.org"
+	id S1757174Ab0C3Xjd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:39:33 -0400
+Received: from kroah.org ([198.145.64.141]:46308 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932368Ab0C3XTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:11 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:16 2010
-Message-Id: <20100330225715.926181800@linux.site>
+	id S932658Ab0C3XUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:20:42 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:16 2010
+Message-Id: <20100330224815.918872357@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:56:34 -0700
+Date: Tue, 30 Mar 2010 15:41:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sachin Prabhu <sprabhu@redhat.com>,
-       Steven Whitehouse <swhiteho@redhat.com>,
+       Paulius Zaleckas <paulius.zaleckas@gmail.com>,
+       "David S. Miller" <davem@davemloft.net>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [116/116] GFS2: Skip check for mandatory locks when unlocking
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+Subject: [085/156] if_tunnel.h: add missing ams/byteorder.h include
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Sachin Prabhu <sprabhu@redhat.com>
+From: Paulius Zaleckas <paulius.zaleckas@gmail.com>
 
-commit 720e7749279bde0d08684b1bb4e7a2eedeec6394 upstream.
+commit 9bf35c8dddd56f7f247a27346f74f5adc18071f4 upstream.
 
-gfs2_lock() will skip locks on file which have mode set to 02666. This is a problem in cases where the mode of the file is changed after a process has obtained a lock on the file. Such a lock will be skipped and will result in a BUG in locks_remove_flock().
+When compiling userspace application which includes
+if_tunnel.h and uses GRE_* defines you will get undefined
+reference to __cpu_to_be16.
 
-gfs2_lock() should skip the check for mandatory locks when unlocking a file.
+Fix this by adding missing #include <asm/byteorder.h>
 
-Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+Signed-off-by: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/gfs2/file.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/if_tunnel.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/gfs2/file.c
-+++ b/fs/gfs2/file.c
-@@ -606,7 +606,7 @@ static int gfs2_lock(struct file *file,
+--- a/include/linux/if_tunnel.h
++++ b/include/linux/if_tunnel.h
+@@ -2,6 +2,7 @@
+ #define _IF_TUNNEL_H_
  
- 	if (!(fl->fl_flags & FL_POSIX))
- 		return -ENOLCK;
--	if (__mandatory_lock(&ip->i_inode))
-+	if (__mandatory_lock(&ip->i_inode) && fl->fl_type != F_UNLCK)
- 		return -ENOLCK;
+ #include <linux/types.h>
++#include <asm/byteorder.h>
  
- 	if (cmd == F_CANCELLK) {
+ #ifdef __KERNEL__
+ #include <linux/ip.h>
 
 
