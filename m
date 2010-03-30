@@ -1,57 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755753Ab0C3S51 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 14:57:27 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:58844 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753670Ab0C3S5Z convert rfc822-to-8bit (ORCPT
+	id S1755624Ab0C3TEI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 15:04:08 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45951 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754194Ab0C3TEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 14:57:25 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=ublpUn/na/ghdxrRl7d7qacn50MxzsakFpxZ5rAcQP7ZjZlxOWow+J+6aZgQD4ghb
-	Wpd6EaZpEmw7kmOdLeXwg==
-MIME-Version: 1.0
-In-Reply-To: <20100329230530.GS2569@linux.vnet.ibm.com>
-References: <20100329211525.GA17703@linux.vnet.ibm.com>
-	 <6599ad831003291543r71300bcfv2957004bf2e927bb@mail.gmail.com>
-	 <20100329230530.GS2569@linux.vnet.ibm.com>
-Date: Tue, 30 Mar 2010 11:57:14 -0700
-Message-ID: <6599ad831003301157p155ca446lce8d6a0e7a70c10e@mail.gmail.com>
-Subject: Re: [PATCH tip/core/urgent] rcu: protect fork-time cgroup access
-From: Paul Menage <menage@google.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       eric.dumazet@gmail.com, abogani@texware.it
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Tue, 30 Mar 2010 15:04:05 -0400
+Subject: Re: [PATCH 0/3] perf/core, x86: unify perfctr bitmasks
+From: Peter Zijlstra <peterz@infradead.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Robert Richter <robert.richter@amd.com>,
+       Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>, Lin Ming <ming.m.lin@intel.com>
+In-Reply-To: <20100330182906.GD5211@lenovo>
+References: <1269880612-25800-1-git-send-email-robert.richter@amd.com>
+	 <bd4cb8901003300311l4178891dvf1e63293a0ac51fe@mail.gmail.com>
+	 <20100330134145.GI11907@erda.amd.com>
+	 <bd4cb8901003300653lc8e414bp3930b03fee2fffbf@mail.gmail.com>
+	 <1269961255.5258.221.camel@laptop> <20100330155949.GJ11907@erda.amd.com>
+	 <1269968113.5258.442.camel@laptop>  <20100330182906.GD5211@lenovo>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Mar 2010 21:04:00 +0200
+Message-ID: <1269975840.5258.609.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 4:05 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
->
-> So I have to ask...  What happens if the underlying cgroup is removed
-> between the time sched_fork() calls set_task_cpu() and the time that
-> copy_process() puts the new task on the tasklist?  Or is the initial
-> cgroup guaranteed to be immortal?
->
+On Tue, 2010-03-30 at 22:29 +0400, Cyrill Gorcunov wrote:
+> On Tue, Mar 30, 2010 at 06:55:13PM +0200, Peter Zijlstra wrote:
+> [...]
+> > -static int p4_hw_config(struct perf_event_attr *attr, struct hw_perf_event *hwc)
+> > +static int p4_hw_config(struct perf_event *event)
+> >  {
+> >  	int cpu = raw_smp_processor_id();
+> >  	u32 escr, cccr;
+> > @@ -444,11 +431,29 @@ static int p4_hw_config(struct perf_even
+> >  	 */
+> >  
+> >  	cccr = p4_default_cccr_conf(cpu);
+> > -	escr = p4_default_escr_conf(cpu, attr->exclude_kernel, attr->exclude_user);
+> > -	hwc->config = p4_config_pack_escr(escr) | p4_config_pack_cccr(cccr);
+> > +	escr = p4_default_escr_conf(cpu, event->attr.exclude_kernel,
+> > +					 event->attr.exclude_user);
+> > +	event->hw.config = p4_config_pack_escr(escr) |
+> > +			   p4_config_pack_cccr(cccr);
+> >  
+> >  	if (p4_ht_active() && p4_ht_thread(cpu))
+> > -		hwc->config = p4_set_ht_bit(hwc->config);
+> > +		event->hw.config = p4_set_ht_bit(event->hw.config);
+> > +
+> > +	if (event->attr.type != PERF_TYPE_RAW)
+> > +		return 0;
+> > +
+> > +	/*
+> > +	 * We don't control raw events so it's up to the caller
+> > +	 * to pass sane values (and we don't count the thread number
+> > +	 * on HT machine but allow HT-compatible specifics to be
+> > +	 * passed on)
+> > +	 *
+> > +	 * XXX: HT wide things should check perf_paranoid_cpu() &&
+> > +	 *      CAP_SYS_ADMIN
+> > +	 */
+> > +	event->hw.config |= event->attr.config &
+> > +		(p4_config_pack_escr(P4_ESCR_MASK_HT) |
+> > +		 p4_config_pack_cccr(P4_CCCR_MASK_HT));
+> >  
+> >  	return 0;
+> >  }
+> [...]
+> 
+> P4 events thread specific is a bit more messy in compare with
+> architectural events. There are thread specific (TS) and thread
+> independent (TI) events. The exact effect of mixing flags from
+> what we call "ANY" bit is described in two matrix in SDM.
+> 
+> So to make code simplier I chose to just bind events to a
+> particular logical cpu, when event migrate to say a second cpu
+> the bits just flipped in accordance on which cpu the event is
+> going to run. Pretty simple. Even more -- if there was some
+> RAW event which have set "ANY" bit -- they all will be just stripped
+> and event get bound to a single cpu.
+> 
+> I'll try to find out an easy way to satisfy this "ANY" bit request
+> though it would require some time (perhaps today later or rather
+> tomorrow).
 
-As long as your code is running after cgroup_fork() - which
-sched_fork() is - then it should be OK. cgroup_fork() takes a
-reference count on the parent's cgroups set, which implicitly keeps
-all of those cgroups alive until the task either exits or is moved.
-But it can't be moved until it's visible on the task list.
+Right, so don't worry about actively supporting ANY on regular events,
+wider than logical cpu counting is a daft thing.
 
-Possibly dup_task_struct should do tsk->cgroups = NULL so that
-(currently) unsafe references to the un-refcounted tsk->cgroups before
-cgroup_fork() get caught.
+What would be nice to detect is if the raw event provided would be a TI
+(ANY) event, in which case we should apply the extra paranoia.
 
-Paul
