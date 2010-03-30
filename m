@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932274Ab0CaAKO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:10:14 -0400
-Received: from kroah.org ([198.145.64.141]:51993 "EHLO coco.kroah.org"
+	id S1757542Ab0CaAJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:09:27 -0400
+Received: from kroah.org ([198.145.64.141]:52055 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932202Ab0C3XSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:04 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:29 2010
-Message-Id: <20100330225628.464181504@linux.site>
+	id S932150Ab0C3XSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:11 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:33 2010
+Message-Id: <20100330225633.049074576@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:25 -0700
+Date: Tue, 30 Mar 2010 15:55:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Ravikiran Thirumalai <kiran@scalex86.org>,
+       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [047/116] ALSA: cmipci: work around invalid PCM pointer
+Subject: [054/116] tmpfs: handle MPOL_LOCAL mount option properly
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,53 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit 1c583063a5c769fe2ec604752e383972c69e6d9b upstream.
+commit 12821f5fb942e795f8009ece14bde868893bd811 upstream.
 
-When the CMI8738 FRAME2 register is read, the chip sometimes (probably
-when wrapping around) returns an invalid value that would be outside the
-programmed DMA buffer. This leads to an inconsistent PCM pointer that is
-likely to result in an underrun.
+commit 71fe804b6d5 (mempolicy: use struct mempolicy pointer in
+shmem_sb_info) added mpol=local mount option.  but its feature is broken
+since it was born.  because such code always return 1 (i.e.  mount
+failure).
 
-To work around this, read the register multiple times until we get a
-valid value; the error state seems to be very short-lived.
+This patch fixes it.
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Reported-and-tested-by: Matija Nalis <mnalis-alsadev@voyager.hr>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Ravikiran Thirumalai <kiran@scalex86.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Acked-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/cmipci.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ mm/mempolicy.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/pci/cmipci.c
-+++ b/sound/pci/cmipci.c
-@@ -941,13 +941,21 @@ static snd_pcm_uframes_t snd_cmipci_pcm_
- 						struct snd_pcm_substream *substream)
- {
- 	size_t ptr;
--	unsigned int reg;
-+	unsigned int reg, rem, tries;
-+
- 	if (!rec->running)
- 		return 0;
- #if 1 // this seems better..
- 	reg = rec->ch ? CM_REG_CH1_FRAME2 : CM_REG_CH0_FRAME2;
--	ptr = rec->dma_size - (snd_cmipci_read_w(cm, reg) + 1);
--	ptr >>= rec->shift;
-+	for (tries = 0; tries < 3; tries++) {
-+		rem = snd_cmipci_read_w(cm, reg);
-+		if (rem < rec->dma_size)
-+			goto ok;
-+	}
-+	printk(KERN_ERR "cmipci: invalid PCM pointer: %#x\n", rem);
-+	return SNDRV_PCM_POS_XRUN;
-+ok:
-+	ptr = (rec->dma_size - (rem + 1)) >> rec->shift;
- #else
- 	reg = rec->ch ? CM_REG_CH1_FRAME1 : CM_REG_CH0_FRAME1;
- 	ptr = snd_cmipci_read(cm, reg) - rec->offset;
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2141,6 +2141,7 @@ int mpol_parse_str(char *str, struct mem
+ 		if (nodelist)
+ 			goto out;
+ 		mode = MPOL_PREFERRED;
++		err = 0;
+ 		break;
+ 	case MPOL_DEFAULT:
+ 		/*
 
 
