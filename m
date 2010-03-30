@@ -1,56 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab0C3BVm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 21:21:42 -0400
-Received: from mail-yw0-f172.google.com ([209.85.211.172]:56036 "EHLO
-	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288Ab0C3BVl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 21:21:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=S/SDyTtC3ePoD8JHCFoEkSUi3Iu5/vHPexSpT+xPSMHsN7N6GmcvQVtdy96OMxGo+s
-         btk+8om8lwystGsHcesaudJveKMNvbErXN+js94hDnCAjQTxskQR8R193jmfvupByk4n
-         IrAV2hBhwhcv1ddGzAh7cc/57XKMfgFjSp4BI=
-Date: Tue, 30 Mar 2010 17:21:32 +0800
-From: wzt.wzt@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: axboe@kernel.dk
-Subject: [PATCH] Block: Fix block/elevator.c elevator_get() off-by-one error
-Message-ID: <20100330092132.GB2713@localhost.localdomain>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S1755117Ab0C3BXo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 21:23:44 -0400
+Received: from vpn.pathscale.com ([198.186.3.75]:40038 "HELO mx.mv.qlogic.com"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
+	id S1754976Ab0C3BXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 21:23:42 -0400
+Date: Mon, 29 Mar 2010 18:23:41 -0700 (PDT)
+From: Giridhar Malavali <giridhar.malavali@qlogic.com>
+X-X-Sender: gmalavali@mvluser00.mv.qlogic.com
+To: James.Bottomley@suse.de
+cc: andrew.vasquez@qlogic.com, julia@diku.dk, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 9/12] drivers/scsi/qla2xxx: Add missing unlock
+Message-ID: <alpine.LRH.2.00.1003291819330.28339@mvluser00.mv.qlogic.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-elevator_get() not check the name length, if the name length > sizeof(elv),
-elv will miss the '\0'. And elv buffer will be replace "-iosched" as something
-like aaaaaaaaa, then call request_module() can load an not trust module.
+On Mon, 29 Mar 2010, Julia Lawall wrote:
 
-Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
+> From: Julia Lawall <julia@diku.dk>
+>
+> This code represents error handling code.  Add an unlock as done in the
+> normal exit path from the function.
+>
+> A simplified version of the semantic patch that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> @r exists@
+> expression E1;
+> identifier f;
+> @@
+>
+> f (...) { <+...
+> * spin_lock_irqsave (E1,...);
+> ... when != E1
+> * return ...;
+> ...+> }
+> // </smpl>
+>
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+>
+> ---
+> drivers/scsi/qla2xxx/qla_attr.c     |    1 +
+> 1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/scsi/qla2xxx/qla_attr.c b/drivers/scsi/qla2xxx/qla_attr.c
+> index 90d1e06..e8ace7a 100644
+> --- a/drivers/scsi/qla2xxx/qla_attr.c
+> +++ b/drivers/scsi/qla2xxx/qla_attr.c
+> @@ -2392,6 +2392,7 @@ done:
+> 		kfree(sp->fcport);
+> 	kfree(sp->ctx);
+> 	mempool_free(sp, ha->srb_mempool);
+> +	spin_unlock_irqrestore(&ha->hardware_lock, flags);
+> 	return 0;
+> }
+>
+>
+James,
 
+Can u please include this patch.
+Here is the pointer for the similar patch submitted previously which I acked.
+http://marc.info/?l=linux-scsi&m=126877099912968&w=2
+
+With the new BSG patches submitted to scsi-misc at
+http://marc.info/?l=linux-scsi&m=126904344832176&w=2, the BSG related code
+is moved to new files bsg.[ch]. The patch below will fix the lock imbalance issue
+with latest patches submitted to scsi-misc.
+
+Giri
 ---
- block/elevator.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+diff --git a/drivers/scsi/qla2xxx/qla_bsg.c b/drivers/scsi/qla2xxx/qla_bsg.c
+index 387d694..21e5bcd 100644
+--- a/drivers/scsi/qla2xxx/qla_bsg.c
++++ b/drivers/scsi/qla2xxx/qla_bsg.c
+@@ -1199,6 +1199,7 @@ qla24xx_bsg_timeout(struct fc_bsg_job *bsg_job)
+   	return 0;
 
-diff --git a/block/elevator.c b/block/elevator.c
-index df75676..76e3702 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -154,7 +154,7 @@ static struct elevator_type *elevator_get(const char *name)
- 
- 		spin_unlock(&elv_list_lock);
- 
--		sprintf(elv, "%s-iosched", name);
-+		snprintf(elv, sizeof(elv), "%s-iosched", name);
- 
- 		request_module("%s", elv);
- 		spin_lock(&elv_list_lock);
--- 
-1.6.5.3
-
+   done:
++	spin_unlock_irqrestore(&ha->hardware_lock, flags);
+   	if (bsg_job->request->msgcode == FC_BSG_HST_CT)
+   		kfree(sp->fcport);
+   	kfree(sp->ctx);
