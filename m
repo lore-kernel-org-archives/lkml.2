@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814Ab0C3UjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 16:39:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58393 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754667Ab0C3UjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 16:39:10 -0400
-Date: Tue, 30 Mar 2010 13:38:42 -0700
-From: Greg KH <gregkh@suse.de>
-To: Pavan Savoy <pavan_savoy@ti.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, marcel@holtmann.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers:staging: sources for ST core
-Message-ID: <20100330203842.GA5850@suse.de>
-References: <20100330122201.02accf0f@lxorguk.ukuu.org.uk> <693134.37568.qm@web94902.mail.in2.yahoo.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <693134.37568.qm@web94902.mail.in2.yahoo.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1755386Ab0C3Upd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 16:45:33 -0400
+Received: from mail.digidescorp.com ([66.244.163.200]:24394 "EHLO
+	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754405Ab0C3Upb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 16:45:31 -0400
+X-Spam-Processed: digidescorp.com, Tue, 30 Mar 2010 15:45:30 -0500
+X-Authenticated-Sender: steve@digidescorp.com
+X-MDRemoteIP: 99.144.237.51
+X-Return-Path: prvs=1705e26b8f=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+From: "Steven J. Magnani" <steve@digidescorp.com>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+       "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+       James Morris <jmorris@namei.org>,
+       Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+       Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
+       monstr@monstr.eu, Karl Hiramoto <karl@hiramoto.org>,
+       "Steven J. Magnani" <steve@digidescorp.com>
+Subject: [PATCH] net: Fix oops from tcp_collapse() when using splice()
+Date: Tue, 30 Mar 2010 15:45:13 -0500
+Message-Id: <1269981913-18073-1-git-send-email-steve@digidescorp.com>
+X-Mailer: git-send-email 1.6.0.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 09:23:23PM +0530, Pavan Savoy wrote:
-> Alan,
-> 
-> --- On Tue, 30/3/10, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> 
-> > From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-> > Subject: Re: [PATCH] drivers:staging: sources for ST core
-> > To: pavan_savoy@ti.com
-> > Cc: marcel@holtmann.org, gregkh@suse.de, linux-kernel@vger.kernel.org, pavan_savoy@yahoo.co.in
-> > Date: Tuesday, 30 March, 2010, 4:52 PM
-> > > +/* all debug macros go in here
-> > */
-> > > +#define ST_DRV_ERR(fmt, arg...)? printk(KERN_ERR
-> > "(stc):"fmt"\n" , ## arg)
-> > > +#if defined(DEBUG)???
-> > ??? /* limited debug messages */
-> > > +#define ST_DRV_DBG(fmt, arg...)?
-> > printk(KERN_INFO "(stc):"fmt"\n" , ## arg)
-> > > +#define ST_DRV_VER(fmt, arg...)
-> > > +#elif defined(VERBOSE)???
-> > ??? /* very verbose */
-> > > +#define ST_DRV_DBG(fmt, arg...)?
-> > printk(KERN_INFO "(stc):"fmt"\n" , ## arg)
-> > > +#define ST_DRV_VER(fmt, arg...)?
-> > printk(KERN_INFO "(stc):"fmt"\n" , ## arg)
-> > > +#else /* error msgs only */
-> > > +#define ST_DRV_DBG(fmt, arg...)
-> > > +#define ST_DRV_VER(fmt, arg...)
-> > > +#endif
-> > 
-> > As Greg said earlier - needs to be using the standard debug
-> > macros
-> 
-> Agree - It's all there because of the organization's coding standards.
-> Will correct it.
+tcp_read_sock() can have a eat skbs without immediately advancing copied_seq.
+This can cause a panic in tcp_collapse() if it is called as a result
+of the recv_actor dropping the socket lock.
 
-Might you also want to correct your organization's coding standards to
-follow the correct Linux kernel ones?  That way you will not have this
-problem in the future.
+A userspace program that splices data from a socket to either another
+socket or to a file can trigger this bug.
 
-thanks,
+Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+---
+diff -uprN a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+--- a/net/ipv4/tcp.c	2010-03-30 15:25:55.000000000 -0500
++++ b/net/ipv4/tcp.c	2010-03-30 15:27:49.000000000 -0500
+@@ -1335,6 +1335,7 @@ int tcp_read_sock(struct sock *sk, read_
+ 		sk_eat_skb(sk, skb, 0);
+ 		if (!desc->count)
+ 			break;
++		tp->copied_seq = seq;
+ 	}
+ 	tp->copied_seq = seq;
+ 
 
-greg k-h
