@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757086Ab0C3Xfd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:35:33 -0400
-Received: from kroah.org ([198.145.64.141]:46437 "EHLO coco.kroah.org"
+	id S1756822Ab0C3XWl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:22:41 -0400
+Received: from kroah.org ([198.145.64.141]:46650 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754296Ab0C3XVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:21:06 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:27 2010
-Message-Id: <20100330224827.103489240@linux.site>
+	id S932548Ab0C3XVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:21:41 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:43 2010
+Message-Id: <20100330224842.693451249@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:15 -0700
+Date: Tue, 30 Mar 2010 15:42:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jan Beulich <jbeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
+       Jon Maloy <jon.maloy@ericsson.com>,
+       Allan Stephens <allan.stephens@windriver.com>,
+       Zhu Yi <yi.zhu@intel.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+       "David S. Miller" <davem@davemloft.net>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [101/156] x86: Fix placement of FIX_OHCI1394_BASE
+Subject: [126/156] tipc: use limited socket backlog
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@novell.com>
+From: Zhu Yi <yi.zhu@intel.com>
 
-commit ff30a0543e9a6cd732582063e7cae951cdb7acf2 upstream.
+[ Upstream commit 53eecb1be5ae499d399d2923933937a9ea1a284f ]
 
-Ever for 32-bit with sufficiently high NR_CPUS, and starting
-with commit 789d03f584484af85dbdc64935270c8e45f36ef7 also for
-64-bit, the statically allocated early fixmap page tables were
-not covering FIX_OHCI1394_BASE, leading to a boot time crash
-when "ohci1394_dma=early" was used. Despite this entry not being
-a permanently used one, it needs to be moved into the permanent
-range since it has to be close to FIX_DBGP_BASE and
-FIX_EARLYCON_MEM_BASE.
+Make tipc adapt to the limited socket backlog change.
 
-Reported-bisected-and-tested-by: Justin P. Mattock <justinmattock@gmail.com>
-Fixes-bug: http://bugzilla.kernel.org/show_bug.cgi?id=14487
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-LKML-Reference: <4B9E15D30200007800034D23@vpn.id2.novell.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Cc: Jon Maloy <jon.maloy@ericsson.com>
+Cc: Allan Stephens <allan.stephens@windriver.com>
+Signed-off-by: Zhu Yi <yi.zhu@intel.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: Allan Stephens <allan.stephens@windriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/fixmap.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/tipc/socket.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/arch/x86/include/asm/fixmap.h
-+++ b/arch/x86/include/asm/fixmap.h
-@@ -82,6 +82,9 @@ enum fixed_addresses {
- #endif
- 	FIX_DBGP_BASE,
- 	FIX_EARLYCON_MEM_BASE,
-+#ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
-+	FIX_OHCI1394_BASE,
-+#endif
- #ifdef CONFIG_X86_LOCAL_APIC
- 	FIX_APIC_BASE,	/* local (CPU) APIC) -- required for SMP or not */
- #endif
-@@ -126,9 +129,6 @@ enum fixed_addresses {
- 	FIX_BTMAP_END = __end_of_permanent_fixed_addresses + 256 -
- 			(__end_of_permanent_fixed_addresses & 255),
- 	FIX_BTMAP_BEGIN = FIX_BTMAP_END + NR_FIX_BTMAPS*FIX_BTMAPS_SLOTS - 1,
--#ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
--	FIX_OHCI1394_BASE,
--#endif
- #ifdef CONFIG_X86_32
- 	FIX_WP_TEST,
- #endif
+--- a/net/tipc/socket.c
++++ b/net/tipc/socket.c
+@@ -1322,8 +1322,10 @@ static u32 dispatch(struct tipc_port *tp
+ 	if (!sock_owned_by_user(sk)) {
+ 		res = filter_rcv(sk, buf);
+ 	} else {
+-		sk_add_backlog(sk, buf);
+-		res = TIPC_OK;
++		if (sk_add_backlog_limited(sk, buf))
++			res = TIPC_ERR_OVERLOAD;
++		else
++			res = TIPC_OK;
+ 	}
+ 	bh_unlock_sock(sk);
+ 
 
 
