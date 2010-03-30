@@ -1,68 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756408Ab0C3Ooq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 10:44:46 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:55689 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755535Ab0C3Ooo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 10:44:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=oOPRcQHtxqThySzsvC0m9PIbzyDNVxuIwewnb/os53M59b6hpBBXkPS43Xn+uAzhMs
-         gEWiQXP2y15+tbLiLAo8nDX1rwXRpoAPXWS0n7voNRFj6u4GU1piuk1whbkjA8kswOks
-         g0N1F1LmKrfDedo7uR/uhb/Zcf42SuQLsGWqc=
-Date: Tue, 30 Mar 2010 17:44:33 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: David Airlie <airlied@linux.ie>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Thomas Hellstrom <thellstrom@vmware.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       dri-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [patch] drm: sysfs files error handling
-Message-ID: <20100330144433.GM5069@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Andi Kleen <ak@linux.intel.com>, David Airlie <airlied@linux.ie>,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	Thomas Hellstrom <thellstrom@vmware.com>,
-	Jesse Barnes <jbarnes@virtuousgeek.org>,
-	dri-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
-References: <20100328112438.GK5069@bicker> <4BAFC232.8010404@linux.intel.com>
+	id S1756450Ab0C3Oql (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 10:46:41 -0400
+Received: from mail.cs.tut.fi ([130.230.4.42]:56883 "EHLO mail.cs.tut.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752241Ab0C3Oqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 10:46:39 -0400
+X-Greylist: delayed 684 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Mar 2010 10:46:39 EDT
+Date: Tue, 30 Mar 2010 17:35:13 +0300
+From: Erkki Seppala <flux-lkml@inside.org>
+To: linux-kernel@vger.kernel.org
+Subject: Tiny patch (w/ discussion) to provide the peer information on unix
+ domain sockets
+Message-ID: <20100330143512.GF7980@coffee.modeemi.cs.tut.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BAFC232.8010404@linux.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 28, 2010 at 10:55:14PM +0200, Andi Kleen wrote:
-> , Dan Carpenter wrote:
->>
->> In the original code we used "j" as an iterator but we used "i" as an
->> index.
->>
->> -               for (j = 0; j<  i; j++)
->> -                       device_remove_file(&connector->kdev,
->> -&connector_attrs[i]);
->
-> I guess this really should be a attribute group anyways?
->
-> Typically when there's such a open coded loop it means the wrong
-> interfaces are being used.
+Hello,
 
-My graphics card is crap and doesn't use this code at all.  I'd feel 
-uncomfortable those changes without being able to test it.
+Attached you will find a patch that appends the field 'Peer' to
+/proc/net/unix indicating the peer of a connected unix domain
+socket. It shows its kernel address, as this is how unix domain
+sockets are identified in the same file. The preceding optional file
+name (actual address of the socket) field is replaced with "-" if it
+is not set. If there is no peer, 0 is used in its place.
 
-So while, you are probably right, someone else should probably do that.
+The purpose of the patch is to provide information on onto which
+services processes are connected. This information is readily
+available for TCP/IP sockets but not for unix domain sockets. The
+information can be retrieved with relative ease by using the following
+scripts for GDB, if you have GDB 7.1 and debugging symbols around:
 
-regards,
-dan carpenter
+  http://www.modeemi.fi/~flux/software/list-unix-sockets.tar.gz
 
-> -Andi
+But obviously this is not optimal :). With the patch, this is how you
+can find out the peers of the sockets of the X server:
+
+  # grep -E $(lsof -p `pidof X` | grep unix | awk '{print s $6; s="|"}' |
+              tr -d '\n' | sed 's/0x//g;s/.*/(&)$/') /proc/net/unix
+  d913b000: 00000003 00000000 00000000 0001 03  5494 - d913b200
+  d9085600: 00000003 00000000 00000000 0001 03  5487 - d9085800
+  ..
+
+The number in the first column is the address, for which the process
+can be most easily found with lsof: 
+
+  # lsof | grep d913b000 
+  gnome-pow 1245        gdm    3u     unix 0xd913b000      0t0       5494 -
+
+Hopefully this kind of work would be integrated into lsof to display
+the information more easily.
+
+The patch does break the current API, but the impact seems rather
+light. I'm happy to incorporate alternative approaches if this seems
+to severe.
+
+Originally the last field in the field was fully optional: if it was
+not known, the line would terminate immediately after the field
+preceding it. Because we append a new field (instead of inserting it
+before Path, which causes more severe problems), the missing field
+value is indicated with a hyphen instead. So this (where $ indicates
+EOL):
+
+  de38f800: 00000003 00000000 00000000 0001 03  2323$
+
+becomes this:
+
+  de38f800: 00000003 00000000 00000000 0001 03  2323 - de2e4400$
+
+This changes the output of netstat -x for unix domain sockets that
+don't have a known address. I'm pretty sure nobody cares,
+though.. Similarly this changes the behavior of lsof, which before the
+patch can display:
+
+  rxvt      17693         ese    6u     unix 0xffff880050ba8900      0t0     746261 socket
+
+but after the patch:
+
+  gconf-hel 1377        gdm    3u     unix 0xd9197800      0t0       5796 -
+
+Pretty sure this is pretty much the same for everyone as well
+:). Although that could likely be worked around by using "@" in place
+of "-". Infact this might be the proper thing to do: I'm not sure what
+the meaning of UNIX_ABSTRACT used in af_unix.c:unix_seq_show is,
+perhaps just that there is no name to be found? I cannot use the
+macro, though, because it uses the nondefined field addr.
+
+Btw, I noticed that af_unix.c:unix_seq_show does not quote the unix
+domain socket path (possibly due to lacking convenient quoting
+function in seq_file.c), which allows spoofing the contents of the
+file into a certain extent. Atleast spaces should be quoted for this
+patch to work properly in the cases when socket names have spaces in
+them.
+
+Here is the patch, also available at 
+
+  http://www.modeemi.fi/~flux/software/linux-2.6.31-procfs-unix_peer_information.patch
+
+--- linux-2.6.31/net/unix/af_unix.c	2010-03-30 16:19:52.306372568 +0300
++++ linux-2.6.31-flux/net/unix/af_unix.c	2010-03-30 14:32:47.000000000 +0300
+@@ -2154,7 +2154,7 @@
+ 
+ 	if (v == SEQ_START_TOKEN)
+ 		seq_puts(seq, "Num       RefCount Protocol Flags    Type St "
+-			 "Inode Path\n");
++			 "Inode Path Peer\n");
+ 	else {
+ 		struct sock *s = v;
+ 		struct unix_sock *u = unix_sk(s);
+@@ -2185,7 +2185,14 @@
+ 			}
+ 			for ( ; i < len; i++)
+ 				seq_putc(seq, u->addr->name->sun_path[i]);
+-		}
++		} else
++			seq_puts(seq, " -");
++
++		if (u->peer)
++			seq_printf(seq, " %p", u->peer);
++		else
++			seq_puts(seq, " 0");
++		
+ 		unix_state_unlock(s);
+ 		seq_putc(seq, '\n');
+ 	}
+
+-- 
+  _____________________________________________________________________
+     / __// /__ ____  __               http://www.modeemi.fi/~flux/\   \
+    / /_ / // // /\ \/ /                                            \  /
+   /_/  /_/ \___/ /_/\_\@modeemi.fi                                  \/
