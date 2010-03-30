@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703Ab0C3PKK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 11:10:10 -0400
-Received: from web94916.mail.in2.yahoo.com ([203.104.17.196]:42163 "HELO
-	web94916.mail.in2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752051Ab0C3PKI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 11:10:08 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Mar 2010 11:10:07 EDT
-Message-ID: <792863.15718.qm@web94916.mail.in2.yahoo.com>
-X-YMail-OSG: WqGzP3EVM1kX.tm52Wqff3bL95Z4Nxsc_yL.zqzWSvqlsjt
- TAr2rvLz2CzKSpzRnVmOiqSRM2ovogAalAXas1Bi.7wcGNFO1KxyZdaWd6mk
- 95HFjLVMwHtrUu0Rn6dtR6yXbMSp0gwjfQYPDsiEShBnkIXWEtL3P8DRHyk1
- Z_dfZOX7OGrea6yuUqWBh8RxQcHSlrtO1wD7MGnmvTnpoaYUthhPEqfp4IU3
- GZ_nggaOUea_a9N1IG3R.Fi2chnoqnbQ0ZegV7ruYfHKZgArGHvJJxJFMXZ3
- JnM0k8wFd1ChB5FHo1HLlQig-
-X-RocketYMMF: pavan_savoy
-X-Mailer: YahooMailClassic/10.0.8 YahooMailWebService/0.8.100.260964
-Date: Tue, 30 Mar 2010 20:33:25 +0530 (IST)
-From: Pavan Savoy <pavan_savoy@ti.com>
-Reply-To: pavan_savoy@ti.com
-Subject: Re: [PATCH] drivers:staging: sources for HCI LL PM protocol
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: marcel@holtmann.org, gregkh@suse.de, linux-kernel@vger.kernel.org
-In-Reply-To: <20100330122440.1e3d8bf1@lxorguk.ukuu.org.uk>
+	id S1754258Ab0C3PLl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 11:11:41 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:48412 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312Ab0C3PLj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 11:11:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ShJ//BWo/RAtxcrbmC0baLHj3GcxgM55jsQECBW3SOMP0reGM+NvbYESbameGK/kwb
+         GH75LlHZWyayTA1ysNzX7l0jIrUWZwZDT30OFifCRPQNn9i36S7PwzFluMq9sjhz+o0p
+         bpFLCDvdIXt7HD07LmAxJ8b7PW8/bpSHg7N0E=
+Date: Tue, 30 Mar 2010 19:11:33 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>,
+       Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] perf/core, x86: unify perfctr bitmasks
+Message-ID: <20100330151133.GB5211@lenovo>
+References: <1269880612-25800-1-git-send-email-robert.richter@amd.com> <bd4cb8901003300311l4178891dvf1e63293a0ac51fe@mail.gmail.com> <20100330134145.GI11907@erda.amd.com> <bd4cb8901003300653lc8e414bp3930b03fee2fffbf@mail.gmail.com> <1269961255.5258.221.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269961255.5258.221.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Tue, 30/3/10, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-
-> From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-> Subject: Re: [PATCH] drivers:staging: sources for HCI LL PM protocol
-> To: pavan_savoy@ti.com
-> Cc: marcel@holtmann.org, gregkh@suse.de, linux-kernel@vger.kernel.org, pavan_savoy@yahoo.co.in
-> Date: Tuesday, 30 March, 2010, 4:54 PM
+On Tue, Mar 30, 2010 at 05:00:55PM +0200, Peter Zijlstra wrote:
+> On Tue, 2010-03-30 at 15:53 +0200, Stephane Eranian wrote:
+> > > So, there are some ARCH_PERFMON_EVENTSEL_* masks that are Intel only,
+> > > which is true for ARCH_PERFMON_EVENTSEL_ANY. And indead, the code
+> > > should be checked for this. ARCH_PERFMON_EVENTSEL_ANY is always
+> > > cleared on AMD cpus, so this code is ok. Actually the bit is cleared
+> > 
+> > Until AMD uses that bit too and you won't notice this test. This is a security
+> > check specific to Intel and it should be in an Intel-specific function.
+> > 
+> > > for *all* cpus in x86_pmu_raw_event(), the code was and is broken for
+> > > this.
+> > >
+> > Yes, needs to be authorized for any perfmon v3 and later revisions.
 > 
-> > +static struct ll_struct_s *ll;
+> So how about something like this on top of Robert's patches?
 > 
-> More magic globals. I think this more than anything else
-> demonstrates why
-> you need some kind of proper per device context passed
-> around
-> 
+[...]
 
-The ST KIM module, is a platform device, which I use to pass the GPIO data from the arch/XX/board-XXX.c files, so, suppose we do have 2 devices for a platform, then I would need 2 platform devices right ?
+Looks good for me! Thanks Peter!
 
-And there-by can I use that platform device context ?
-However the problem really is,
-
-Suppose a BT driver wants to do an st_register() and use ST as its transport, how can I then tie it to a device ?
-
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe
-> linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
-      Your Mail works best with the New Yahoo Optimized IE8. Get it NOW! http://downloads.yahoo.com/in/internetexplorer/
+	-- Cyrill
