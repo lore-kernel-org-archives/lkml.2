@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757895Ab0CaAlP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:41:15 -0400
-Received: from kroah.org ([198.145.64.141]:48445 "EHLO coco.kroah.org"
+	id S1757934Ab0CaAld (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:41:33 -0400
+Received: from kroah.org ([198.145.64.141]:48432 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754937Ab0C3XI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:08:59 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:48 2010
-Message-Id: <20100330224947.910378595@linux.site>
+	id S1755587Ab0C3XI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:08:57 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:47 2010
+Message-Id: <20100330224946.711976256@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:48:34 -0700
+Date: Tue, 30 Mar 2010 15:48:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Robert Varga <nite@hq.alert.sk>,
+       Miklos Szeredi <mszeredi@suse.cz>,
        "David S. Miller" <davem@davemloft.net>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [14/45] tcp: fix CONFIG_TCP_MD5SIG + CONFIG_PREEMPT timer BUG()
+Subject: [12/45] net: unix: fix sending fds in multiple buffers
 In-Reply-To: <20100330230410.GA28712@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,45 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Varga <nite@hq.alert.sk>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 657e9649e745b06675aa5063c84430986cdc3afa upstream.
+commit 8ba69ba6a324b13e1190fc31e41954d190fd4f1d upstream.
 
-I have recently came across a preemption imbalance detected by:
+Kalle Olavi Niemitalo reported that:
 
-<4>huh, entered ffffffff80644630 with preempt_count 00000102, exited with 00000101?
-<0>------------[ cut here ]------------
-<2>kernel BUG at /usr/src/linux/kernel/timer.c:664!
-<0>invalid opcode: 0000 [1] PREEMPT SMP
+  "..., when one process calls sendmsg once to send 43804 bytes of
+  data and one file descriptor, and another process then calls recvmsg
+  three times to receive the 16032+16032+11740 bytes, each of those
+  recvmsg calls returns the file descriptor in the ancillary data.  I
+  confirmed this with strace.  The behaviour differs from Linux
+  2.6.26, where reportedly only one of those recvmsg calls (I think
+  the first one) returned the file descriptor."
 
-with ffffffff80644630 being inet_twdr_hangman().
+This bug was introduced by a patch from me titled "net: unix: fix inflight
+counting bug in garbage collector", commit 6209344f5.
 
-This appeared after I enabled CONFIG_TCP_MD5SIG and played with it a
-bit, so I looked at what might have caused it.
+And the reason is, quoting Kalle:
 
-One thing that struck me as strange is tcp_twsk_destructor(), as it
-calls tcp_put_md5sig_pool() -- which entails a put_cpu(), causing the
-detected imbalance. Found on 2.6.23.9, but 2.6.31 is affected as well,
-as far as I can tell.
+  "Before your patch, unix_attach_fds() would set scm->fp = NULL, so
+  that if the loop in unix_stream_sendmsg() ran multiple iterations,
+  it could not call unix_attach_fds() again.  But now,
+  unix_attach_fds() leaves scm->fp unchanged, and I think this causes
+  it to be called multiple times and duplicate the same file
+  descriptors to each struct sk_buff."
 
-Signed-off-by: Robert Varga <nite@hq.alert.sk>
+Fix this by introducing a flag that is cleared at the start and set
+when the fds attached to the first buffer.  The resulting code should
+work equivalently to the one on 2.6.26.
+
+Reported-by: Kalle Olavi Niemitalo <kon@iki.fi>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/ipv4/tcp_minisocks.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/unix/af_unix.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/tcp_minisocks.c
-+++ b/net/ipv4/tcp_minisocks.c
-@@ -362,7 +362,7 @@ void tcp_twsk_destructor(struct sock *sk
- #ifdef CONFIG_TCP_MD5SIG
- 	struct tcp_timewait_sock *twsk = tcp_twsk(sk);
- 	if (twsk->tw_md5_keylen)
--		tcp_put_md5sig_pool();
-+		tcp_free_md5sig_pool();
- #endif
- }
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -1491,6 +1491,7 @@ static int unix_stream_sendmsg(struct ki
+ 	struct sk_buff *skb;
+ 	int sent=0;
+ 	struct scm_cookie tmp_scm;
++	bool fds_sent = false;
  
+ 	if (NULL == siocb->scm)
+ 		siocb->scm = &tmp_scm;
+@@ -1552,12 +1553,14 @@ static int unix_stream_sendmsg(struct ki
+ 		size = min_t(int, size, skb_tailroom(skb));
+ 
+ 		memcpy(UNIXCREDS(skb), &siocb->scm->creds, sizeof(struct ucred));
+-		if (siocb->scm->fp) {
++		/* Only send the fds in the first buffer */
++		if (siocb->scm->fp && !fds_sent) {
+ 			err = unix_attach_fds(siocb->scm, skb);
+ 			if (err) {
+ 				kfree_skb(skb);
+ 				goto out_err;
+ 			}
++			fds_sent = true;
+ 		}
+ 
+ 		if ((err = memcpy_fromiovec(skb_put(skb,size), msg->msg_iov, size)) != 0) {
 
 
