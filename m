@@ -1,98 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757198Ab0C3XmB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:42:01 -0400
-Received: from kroah.org ([198.145.64.141]:46234 "EHLO coco.kroah.org"
+	id S1757484Ab0C3XwQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:52:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16720 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932606Ab0C3XUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:30 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:10 2010
-Message-Id: <20100330224809.592504060@linux.site>
-User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:41:50 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Yoshihiro Shimoda <shimoda.yoshihiro@renesas.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [076/156] usb: r8a66597-hcd: fix removed from an attached hub
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+	id S1756808Ab0C3XwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:52:04 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100330164912.GG2513@linux.vnet.ibm.com>
+References: <20100330164912.GG2513@linux.vnet.ibm.com> <20100329210520.GN2569@linux.vnet.ibm.com> <20100329192159.GM2569@linux.vnet.ibm.com> <20100319022527.GC2894@linux.vnet.ibm.com> <20100318133302.29754.1584.stgit@warthog.procyon.org.uk> <19192.1269889348@redhat.com> <23274.1269893706@redhat.com> <25276.1269901350@redhat.com> <26760.1269903543@redhat.com> <20100329232636.GT2569@linux.vnet.ibm.com> <2440.1269967151@redhat.com> 
+To: paulmck@linux.vnet.ibm.com
+Cc: dhowells@redhat.com, Eric Dumazet <eric.dumazet@gmail.com>,
+       Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFS: Fix RCU warnings in nfs_inode_return_delegation_noreclaim() [ver #2]
+Date: Wed, 31 Mar 2010 00:51:04 +0100
+Message-ID: <21972.1269993064@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-------------------
+> Which it is, as long as the lock is held.
 
-From: Yoshihiro Shimoda <shimoda.yoshihiro@renesas.com>
+However, in one of the situations I'm thinking of, no lock is held.  All that
+is being tested is whether the pointer to some RCU-protected data is either
+NULL or non-NULL.  For example:
 
-commit d835933436ac0d1e8f5b35fe809fd4e767e55d6e upstream.
+	@@ -345,7 +346,7 @@ int nfs_inode_return_delegation(struct inode *inode)
+		struct nfs_delegation *delegation;
+		int err = 0;
 
-fix the problem that when a USB hub is attached to the r8a66597-hcd and
-a device is removed from that hub, it's likely that a kernel panic follows.
+	-	if (rcu_dereference(nfsi->delegation) != NULL) {
+	+	if (nfsi->delegation != NULL) {
+			spin_lock(&clp->cl_lock);
+			delegation = nfs_detach_delegation_locked(nfsi, NULL);
+			spin_unlock(&clp->cl_lock);
 
-Reported-by: Markus Pietrek <Markus.Pietrek@emtrion.de>
-Signed-off-by: Yoshihiro Shimoda <shimoda.yoshihiro@renesas.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+No lock - RCU or spinlock - is held over the check of nfsi->delegation - which
+causes lockdep to complain about an unguarded rcu_dereference().
 
----
- drivers/usb/host/r8a66597-hcd.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+However, the use of rcu_dereference() here is unnecessary with respect to the
+interpolation (where appropriate) of a memory barrier because there is no
+second memory access against which to order.
 
---- a/drivers/usb/host/r8a66597-hcd.c
-+++ b/drivers/usb/host/r8a66597-hcd.c
-@@ -418,7 +418,7 @@ static u8 alloc_usb_address(struct r8a66
- 
- /* this function must be called with interrupt disabled */
- static void free_usb_address(struct r8a66597 *r8a66597,
--			     struct r8a66597_device *dev)
-+			     struct r8a66597_device *dev, int reset)
- {
- 	int port;
- 
-@@ -430,7 +430,13 @@ static void free_usb_address(struct r8a6
- 	dev->state = USB_STATE_DEFAULT;
- 	r8a66597->address_map &= ~(1 << dev->address);
- 	dev->address = 0;
--	dev_set_drvdata(&dev->udev->dev, NULL);
-+	/*
-+	 * Only when resetting USB, it is necessary to erase drvdata. When
-+	 * a usb device with usb hub is disconnect, "dev->udev" is already
-+	 * freed on usb_desconnect(). So we cannot access the data.
-+	 */
-+	if (reset)
-+		dev_set_drvdata(&dev->udev->dev, NULL);
- 	list_del(&dev->device_list);
- 	kfree(dev);
- 
-@@ -1069,7 +1075,7 @@ static void r8a66597_usb_disconnect(stru
- 	struct r8a66597_device *dev = r8a66597->root_hub[port].dev;
- 
- 	disable_r8a66597_pipe_all(r8a66597, dev);
--	free_usb_address(r8a66597, dev);
-+	free_usb_address(r8a66597, dev, 0);
- 
- 	start_root_hub_sampling(r8a66597, port, 0);
- }
-@@ -2085,7 +2091,7 @@ static void update_usb_address_map(struc
- 				spin_lock_irqsave(&r8a66597->lock, flags);
- 				dev = get_r8a66597_device(r8a66597, addr);
- 				disable_r8a66597_pipe_all(r8a66597, dev);
--				free_usb_address(r8a66597, dev);
-+				free_usb_address(r8a66597, dev, 0);
- 				put_child_connect_map(r8a66597, addr);
- 				spin_unlock_irqrestore(&r8a66597->lock, flags);
- 			}
-@@ -2228,7 +2234,7 @@ static int r8a66597_hub_control(struct u
- 			rh->port |= (1 << USB_PORT_FEAT_RESET);
- 
- 			disable_r8a66597_pipe_all(r8a66597, dev);
--			free_usb_address(r8a66597, dev);
-+			free_usb_address(r8a66597, dev, 1);
- 
- 			r8a66597_mdfy(r8a66597, USBRST, USBRST | UACT,
- 				      get_dvstctr_reg(port));
+That said, the memory access is repeated inside nfs_detach_delegation_locked(),
+which again was wrapped in an rcu_dereference():
+
+	 static struct nfs_delegation *nfs_detach_delegation_locked(struct nfs_inode *nfsi, const nfs4_stateid *stateid)
+	 {
+	-	struct nfs_delegation *delegation = rcu_dereference(nfsi->delegation);
+	+	struct nfs_delegation *delegation = nfsi->delegation;
+
+		if (delegation == NULL)
+			goto nomatch;
+
+which was not necessary for its memory barrier interpolation properties in this
+case because of the spin_lock() the caller now holds.
 
 
+Your suggestion of using rcu_dereference_check() in both these places would
+result in two unnecessary memory barriers on something like an Alpha CPU.
+
+
+How about:
+
+	static struct nfs_delegation *nfs_detach_delegation_locked(struct nfs_inode *nfsi, const nfs4_stateid *stateid)
+	{
+		struct nfs_delegation *delegation =
+			rcu_locked_dereference(nfsi->delegation);
+		...
+	}
+
+where rcu_locked_dereference() only does the lockdep magic and the dereference,
+and does not include a memory barrier.  The documentation of such a function
+would note this may only be used when the pointer is guarded by an exclusive
+lock to prevent it from changing.
+
+And then:
+
+	int nfs_inode_return_delegation(struct inode *inode)
+	{
+		struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
+		struct nfs_inode *nfsi = NFS_I(inode);
+		struct nfs_delegation *delegation;
+		int err = 0;
+
+		if (rcu_pointer_not_null(nfsi->delegation)) {
+			spin_lock(&clp->cl_lock);
+			delegation = nfs_detach_delegation_locked(nfsi, NULL);
+			spin_unlock(&clp->cl_lock);
+			if (delegation != NULL) {
+				nfs_msync_inode(inode);
+				err = __nfs_inode_return_delegation(inode, delegation, 1);
+			}
+		}
+		return err;
+	}
+
+where rcu_pointer_not_null() simply tests the value of the pointer, casting
+away the sparse RCU annotation and not doing the lockdep check and not
+including a barrier.  It would not return the value of the pointer, thus
+preventing you from needing the barrier as a result.
+
+David
