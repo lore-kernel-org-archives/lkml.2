@@ -1,247 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932524Ab0C3XUB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:20:01 -0400
-Received: from kroah.org ([198.145.64.141]:45580 "EHLO coco.kroah.org"
+	id S1757086Ab0C3Xfd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:35:33 -0400
+Received: from kroah.org ([198.145.64.141]:46437 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932358Ab0C3XTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:09 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:14 2010
-Message-Id: <20100330225714.111899574@linux.site>
+	id S1754296Ab0C3XVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:21:06 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:27 2010
+Message-Id: <20100330224827.103489240@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:56:31 -0700
+Date: Tue, 30 Mar 2010 15:42:15 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org,
-       Mike Snitzer <snitzer@redhat.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       martin.petersen@oracle.com, jens.axboe@oracle.com,
+       Jan Beulich <jbeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [113/116] block: Backport of various I/O topology fixes from 2.6.33 and 2.6.34
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+Subject: [101/156] x86: Fix placement of FIX_OHCI1394_BASE
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-block: Backport of various I/O topology fixes from 2.6.33 and 2.6.34
+From: Jan Beulich <JBeulich@novell.com>
 
-The stacking code incorrectly scaled up the data offset in some cases
-causing misaligned devices to report alignment.  Rewrite the stacking
-algorithm to remedy this.  
+commit ff30a0543e9a6cd732582063e7cae951cdb7acf2 upstream.
 
-(Upstream commit 9504e0864b58b4a304820dcf3755f1da80d5e72f)
+Ever for 32-bit with sufficiently high NR_CPUS, and starting
+with commit 789d03f584484af85dbdc64935270c8e45f36ef7 also for
+64-bit, the statically allocated early fixmap page tables were
+not covering FIX_OHCI1394_BASE, leading to a boot time crash
+when "ohci1394_dma=early" was used. Despite this entry not being
+a permanently used one, it needs to be moved into the permanent
+range since it has to be close to FIX_DBGP_BASE and
+FIX_EARLYCON_MEM_BASE.
 
-The top device misalignment flag would not be set if the added bottom
-device was already misaligned as opposed to causing a stacking failure.
-    
-Also massage the reporting so that an error is only returned if adding
-the bottom device caused the misalignment.  I.e. don't return an error
-if the top is already flagged as misaligned.
-
-(Upstream commit fe0b393f2c0a0d23a9bc9ed7dc51a1ee511098bd)
-
-
-lcm() was defined to take integer-sized arguments.  The supplied
-arguments are multiplied, however, causing us to overflow given
-sufficiently large input.  That in turn led to incorrect optimal I/O
-size reporting in some cases.  Switch lcm() over to unsigned long
-similar to gcd() and move the function from blk-settings.c to lib.
-
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Reviewed-by: Mike Snitzer <snitzer@redhat.com>
+Reported-bisected-and-tested-by: Justin P. Mattock <justinmattock@gmail.com>
+Fixes-bug: http://bugzilla.kernel.org/show_bug.cgi?id=14487
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+LKML-Reference: <4B9E15D30200007800034D23@vpn.id2.novell.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/blk-settings.c |   93 +++++++++++++++++++++++++++++++++++++--------------
- include/linux/lcm.h  |    8 ++++
- lib/Makefile         |    2 -
- lib/lcm.c            |   15 ++++++++
- 4 files changed, 92 insertions(+), 26 deletions(-)
+ arch/x86/include/asm/fixmap.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/block/blk-settings.c
-+++ b/block/blk-settings.c
-@@ -8,6 +8,7 @@
- #include <linux/blkdev.h>
- #include <linux/bootmem.h>	/* for max_pfn/max_low_pfn */
- #include <linux/gcd.h>
-+#include <linux/lcm.h>
- 
- #include "blk.h"
- 
-@@ -490,18 +491,31 @@ EXPORT_SYMBOL(blk_queue_stack_limits);
- 
- /**
-  * blk_stack_limits - adjust queue_limits for stacked devices
-- * @t:	the stacking driver limits (top)
-- * @b:  the underlying queue limits (bottom)
-+ * @t:	the stacking driver limits (top device)
-+ * @b:  the underlying queue limits (bottom, component device)
-  * @offset:  offset to beginning of data within component device
-  *
-  * Description:
-- *    Merges two queue_limit structs.  Returns 0 if alignment didn't
-- *    change.  Returns -1 if adding the bottom device caused
-- *    misalignment.
-+ *    This function is used by stacking drivers like MD and DM to ensure
-+ *    that all component devices have compatible block sizes and
-+ *    alignments.  The stacking driver must provide a queue_limits
-+ *    struct (top) and then iteratively call the stacking function for
-+ *    all component (bottom) devices.  The stacking function will
-+ *    attempt to combine the values and ensure proper alignment.
-+ *
-+ *    Returns 0 if the top and bottom queue_limits are compatible.  The
-+ *    top device's block sizes and alignment offsets may be adjusted to
-+ *    ensure alignment with the bottom device. If no compatible sizes
-+ *    and alignments exist, -1 is returned and the resulting top
-+ *    queue_limits will have the misaligned flag set to indicate that
-+ *    the alignment_offset is undefined.
-  */
- int blk_stack_limits(struct queue_limits *t, struct queue_limits *b,
- 		     sector_t offset)
- {
-+	sector_t alignment;
-+	unsigned int top, bottom, ret = 0;
-+
- 	t->max_sectors = min_not_zero(t->max_sectors, b->max_sectors);
- 	t->max_hw_sectors = min_not_zero(t->max_hw_sectors, b->max_hw_sectors);
- 	t->bounce_pfn = min_not_zero(t->bounce_pfn, b->bounce_pfn);
-@@ -518,6 +532,26 @@ int blk_stack_limits(struct queue_limits
- 	t->max_segment_size = min_not_zero(t->max_segment_size,
- 					   b->max_segment_size);
- 
-+	t->misaligned |= b->misaligned;
-+
-+	alignment = queue_limit_alignment_offset(b, offset);
-+
-+	/* Bottom device has different alignment.  Check that it is
-+	 * compatible with the current top alignment.
-+	 */
-+	if (t->alignment_offset != alignment) {
-+
-+		top = max(t->physical_block_size, t->io_min)
-+			+ t->alignment_offset;
-+		bottom = max(b->physical_block_size, b->io_min) + alignment;
-+
-+		/* Verify that top and bottom intervals line up */
-+		if (max(top, bottom) & (min(top, bottom) - 1)) {
-+			t->misaligned = 1;
-+			ret = -1;
-+		}
-+	}
-+
- 	t->logical_block_size = max(t->logical_block_size,
- 				    b->logical_block_size);
- 
-@@ -525,37 +559,46 @@ int blk_stack_limits(struct queue_limits
- 				     b->physical_block_size);
- 
- 	t->io_min = max(t->io_min, b->io_min);
-+	t->io_opt = lcm(t->io_opt, b->io_opt);
-+
- 	t->no_cluster |= b->no_cluster;
- 
--	/* Bottom device offset aligned? */
--	if (offset &&
--	    (offset & (b->physical_block_size - 1)) != b->alignment_offset) {
-+	/* Physical block size a multiple of the logical block size? */
-+	if (t->physical_block_size & (t->logical_block_size - 1)) {
-+		t->physical_block_size = t->logical_block_size;
- 		t->misaligned = 1;
--		return -1;
-+		ret = -1;
- 	}
- 
--	/* If top has no alignment offset, inherit from bottom */
--	if (!t->alignment_offset)
--		t->alignment_offset =
--			b->alignment_offset & (b->physical_block_size - 1);
-+	/* Minimum I/O a multiple of the physical block size? */
-+	if (t->io_min & (t->physical_block_size - 1)) {
-+		t->io_min = t->physical_block_size;
-+		t->misaligned = 1;
-+		ret = -1;
-+	}
- 
--	/* Top device aligned on logical block boundary? */
--	if (t->alignment_offset & (t->logical_block_size - 1)) {
-+	/* Optimal I/O a multiple of the physical block size? */
-+	if (t->io_opt & (t->physical_block_size - 1)) {
-+		t->io_opt = 0;
- 		t->misaligned = 1;
--		return -1;
-+		ret = -1;
- 	}
- 
--	/* Find lcm() of optimal I/O size */
--	if (t->io_opt && b->io_opt)
--		t->io_opt = (t->io_opt * b->io_opt) / gcd(t->io_opt, b->io_opt);
--	else if (b->io_opt)
--		t->io_opt = b->io_opt;
-+	/* Find lowest common alignment_offset */
-+	t->alignment_offset = lcm(t->alignment_offset, alignment)
-+		& (max(t->physical_block_size, t->io_min) - 1);
-+
-+	/* Verify that new alignment_offset is on a logical block boundary */
-+	if (t->alignment_offset & (t->logical_block_size - 1)) {
-+		t->misaligned = 1;
-+		ret = -1;
-+	}
- 
--	/* Verify that optimal I/O size is a multiple of io_min */
--	if (t->io_min && t->io_opt % t->io_min)
--		return -1;
-+	/* Discard */
-+	t->max_discard_sectors = min_not_zero(t->max_discard_sectors,
-+					      b->max_discard_sectors);
- 
--	return 0;
-+	return ret;
- }
- EXPORT_SYMBOL(blk_stack_limits);
- 
---- /dev/null
-+++ b/include/linux/lcm.h
-@@ -0,0 +1,8 @@
-+#ifndef _LCM_H
-+#define _LCM_H
-+
-+#include <linux/compiler.h>
-+
-+unsigned long lcm(unsigned long a, unsigned long b) __attribute_const__;
-+
-+#endif /* _LCM_H */
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -21,7 +21,7 @@ lib-y	+= kobject.o kref.o klist.o
- 
- obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
- 	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
--	 string_helpers.o gcd.o
-+	 string_helpers.o gcd.o lcm.o
- 
- ifeq ($(CONFIG_DEBUG_KOBJECT),y)
- CFLAGS_kobject.o += -DDEBUG
---- /dev/null
-+++ b/lib/lcm.c
-@@ -0,0 +1,15 @@
-+#include <linux/kernel.h>
-+#include <linux/gcd.h>
-+#include <linux/module.h>
-+
-+/* Lowest common multiple */
-+unsigned long lcm(unsigned long a, unsigned long b)
-+{
-+	if (a && b)
-+		return (a * b) / gcd(a, b);
-+	else if (b)
-+		return b;
-+
-+	return a;
-+}
-+EXPORT_SYMBOL_GPL(lcm);
+--- a/arch/x86/include/asm/fixmap.h
++++ b/arch/x86/include/asm/fixmap.h
+@@ -82,6 +82,9 @@ enum fixed_addresses {
+ #endif
+ 	FIX_DBGP_BASE,
+ 	FIX_EARLYCON_MEM_BASE,
++#ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
++	FIX_OHCI1394_BASE,
++#endif
+ #ifdef CONFIG_X86_LOCAL_APIC
+ 	FIX_APIC_BASE,	/* local (CPU) APIC) -- required for SMP or not */
+ #endif
+@@ -126,9 +129,6 @@ enum fixed_addresses {
+ 	FIX_BTMAP_END = __end_of_permanent_fixed_addresses + 256 -
+ 			(__end_of_permanent_fixed_addresses & 255),
+ 	FIX_BTMAP_BEGIN = FIX_BTMAP_END + NR_FIX_BTMAPS*FIX_BTMAPS_SLOTS - 1,
+-#ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
+-	FIX_OHCI1394_BASE,
+-#endif
+ #ifdef CONFIG_X86_32
+ 	FIX_WP_TEST,
+ #endif
 
 
