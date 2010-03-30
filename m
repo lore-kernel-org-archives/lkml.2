@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872Ab0C3IK4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 04:10:56 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:47324 "EHLO
+	id S1755891Ab0C3IK6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 04:10:58 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:47330 "EHLO
 	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755324Ab0C3IHY (ORCPT
+	with ESMTP id S1755313Ab0C3IHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Mar 2010 04:07:24 -0400
 From: "Eric W. Biederman" <ebiederm@xmission.com>
@@ -19,80 +19,87 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
        Gary Hade <garyhade@us.ibm.com>,
        Natalie Protasevich <protasnb@gmail.com>,
        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 04/15] x86 acpi/irq: Fix acpi_sci_ioapic_setup so it has both bus_irq and gsi
-Date: Tue, 30 Mar 2010 01:07:05 -0700
-Message-Id: <1269936436-7039-4-git-send-email-ebiederm@xmission.com>
+Subject: [PATCH 08/15] x86 ioapic: Fix the types of gsi values
+Date: Tue, 30 Mar 2010 01:07:09 -0700
+Message-Id: <1269936436-7039-8-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.6.5.2.143.g8cc62
 In-Reply-To: <m1oci6qlmr.fsf_-_@fess.ebiederm.org>
 References: <m1oci6qlmr.fsf_-_@fess.ebiederm.org>
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
 X-SA-Exim-Connect-IP: 76.21.114.89
 X-SA-Exim-Rcpt-To: hpa@zytor.com, tglx@linutronix.de, mingo@elte.hu, akpm@linux-foundation.org, jbarnes@virtuousgeek.org, linux-kernel@vger.kernel.org, trenn@suse.de, suresh.b.siddha@intel.com, len.brown@intel.com, tony.luck@intel.com, fenghua.yu@intel.com, linux-acpi@vger.kernel.org, iranna.ankad@in.ibm.com, garyhade@us.ibm.com, protasnb@gmail.com, ebiederm@xmission.com
 X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric W. Biederman <ebiederm@xmission.com>
 
-Currently acpi_sci_ioapic_setup calls mp_override_legacy_irq with
-bus_irq == gsi, which is wrong if we are comming from an override
-Instead pass the bus_irq into acpi_sci_ioapic_setup.
+This patches fixes the types of gsi_base and gsi_end values in
+struct mp_ioapic_gsi, and the gsi parameter of mp_find_ioapic
+and mp_find_ioapic_pin
 
-This fix was inspired by a similar fix from:
-Yinghai Lu <yinghai@kernel.org>
+A gsi is cannonically a u32, not an int.
 
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- arch/x86/kernel/acpi/boot.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/io_apic.h |   10 +++++-----
+ arch/x86/kernel/apic/io_apic.c |    4 ++--
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index f96060d..1742888 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -312,7 +312,7 @@ acpi_parse_ioapic(struct acpi_subtable_header * header, const unsigned long end)
- /*
-  * Parse Interrupt Source Override for the ACPI SCI
-  */
--static void __init acpi_sci_ioapic_setup(u32 gsi, u16 polarity, u16 trigger)
-+static void __init acpi_sci_ioapic_setup(u8 bus_irq, u16 polarity, u16 trigger, u32 gsi)
- {
- 	if (trigger == 0)	/* compatible SCI trigger is level */
- 		trigger = 3;
-@@ -332,7 +332,7 @@ static void __init acpi_sci_ioapic_setup(u32 gsi, u16 polarity, u16 trigger)
- 	 * If GSI is < 16, this will update its flags,
- 	 * else it will create a new mp_irqs[] entry.
- 	 */
--	mp_override_legacy_irq(gsi, polarity, trigger, gsi);
-+	mp_override_legacy_irq(bus_irq, polarity, trigger, gsi);
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 35832a0..feeaf0d 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -180,12 +180,12 @@ extern void ioapic_write_entry(int apic, int pin,
+ extern void setup_ioapic_ids_from_mpc(void);
  
- 	/*
- 	 * stash over-ride to indicate we've been here
-@@ -356,9 +356,10 @@ acpi_parse_int_src_ovr(struct acpi_subtable_header * header,
- 	acpi_table_print_madt_entry(header);
+ struct mp_ioapic_gsi{
+-	int gsi_base;
+-	int gsi_end;
++	u32 gsi_base;
++	u32 gsi_end;
+ };
+ extern struct mp_ioapic_gsi  mp_gsi_routing[];
+-int mp_find_ioapic(int gsi);
+-int mp_find_ioapic_pin(int ioapic, int gsi);
++int mp_find_ioapic(u32 gsi);
++int mp_find_ioapic_pin(int ioapic, u32 gsi);
+ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base);
+ extern void __init pre_init_apic_IRQ0(void);
  
- 	if (intsrc->source_irq == acpi_gbl_FADT.sci_interrupt) {
--		acpi_sci_ioapic_setup(intsrc->global_irq,
-+		acpi_sci_ioapic_setup(intsrc->source_irq,
- 				      intsrc->inti_flags & ACPI_MADT_POLARITY_MASK,
--				      (intsrc->inti_flags & ACPI_MADT_TRIGGER_MASK) >> 2);
-+				      (intsrc->inti_flags & ACPI_MADT_TRIGGER_MASK) >> 2,
-+				      intsrc->global_irq);
- 		return 0;
+@@ -197,7 +197,7 @@ static const int timer_through_8259 = 0;
+ static inline void ioapic_init_mappings(void)	{ }
+ static inline void ioapic_insert_resources(void) { }
+ static inline void probe_nr_irqs_gsi(void)	{ }
+-static inline int mp_find_ioapic(int gsi) { return 0; }
++static inline int mp_find_ioapic(u32 gsi) { return 0; }
+ 
+ struct io_apic_irq_attr;
+ static inline int io_apic_set_pci_routing(struct device *dev, int irq,
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 7e139bb..4611c43 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -4238,7 +4238,7 @@ void __init ioapic_insert_resources(void)
  	}
+ }
  
-@@ -1161,7 +1162,8 @@ static int __init acpi_parse_madt_ioapic_entries(void)
- 	 * pretend we got one so we can set the SCI flags.
- 	 */
- 	if (!acpi_sci_override_gsi)
--		acpi_sci_ioapic_setup(acpi_gbl_FADT.sci_interrupt, 0, 0);
-+		acpi_sci_ioapic_setup(acpi_gbl_FADT.sci_interrupt, 0, 0,
-+				      acpi_gbl_FADT.sci_interrupt);
+-int mp_find_ioapic(int gsi)
++int mp_find_ioapic(u32 gsi)
+ {
+ 	int i = 0;
  
- 	/* Fill in identity legacy mappings where no override */
- 	mp_config_acpi_legacy_irqs();
+@@ -4253,7 +4253,7 @@ int mp_find_ioapic(int gsi)
+ 	return -1;
+ }
+ 
+-int mp_find_ioapic_pin(int ioapic, int gsi)
++int mp_find_ioapic_pin(int ioapic, u32 gsi)
+ {
+ 	if (WARN_ON(ioapic == -1))
+ 		return -1;
 -- 
 1.6.5.2.143.g8cc62
 
