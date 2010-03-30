@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756387Ab0C3LXP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 07:23:15 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:35615 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756348Ab0C3LW6 (ORCPT
+	id S1756309Ab0C3LXn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 07:23:43 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:53515 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752809Ab0C3LWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 07:22:58 -0400
+	Tue, 30 Mar 2010 07:22:37 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,153 +16,135 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 25/29] x86: Use wake_system_ram_range instead of e820_any_mapped in agp path
-Date: Tue, 30 Mar 2010 04:19:59 -0700
-Message-Id: <1269948003-17221-26-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 19/29] lmb: Add lmb_find_area_size()
+Date: Tue, 30 Mar 2010 04:19:53 -0700
+Message-Id: <1269948003-17221-20-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269948003-17221-1-git-send-email-yinghai@kernel.org>
 References: <1269948003-17221-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4BB1DEE4.0162,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090203.4BB1DEDA.009C,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move apterture_valid back to .c
+size is returned according free range.
 
-and early path still use e820_any_mapped()
-
-so later we can make e820_any_mapped() to _init
+Will be used to find free ranges for early_memtest and memory corruption check
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/gart.h   |   22 ----------------------
- arch/x86/kernel/aperture_64.c |   22 ++++++++++++++++++++++
- drivers/char/agp/amd64-agp.c  |   39 ++++++++++++++++++++++++++++++++++++++-
- 3 files changed, 60 insertions(+), 23 deletions(-)
+ arch/x86/mm/Makefile |    2 +
+ arch/x86/mm/lmb.c    |   88 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 90 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/mm/lmb.c
 
-diff --git a/arch/x86/include/asm/gart.h b/arch/x86/include/asm/gart.h
-index 4ac5b0f..2b63a91 100644
---- a/arch/x86/include/asm/gart.h
-+++ b/arch/x86/include/asm/gart.h
-@@ -74,26 +74,4 @@ static inline void enable_gart_translation(struct pci_dev *dev, u64 addr)
-         pci_write_config_dword(dev, AMD64_GARTAPERTURECTL, ctl);
- }
+diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
+index a4c7683..94d8e1f 100644
+--- a/arch/x86/mm/Makefile
++++ b/arch/x86/mm/Makefile
+@@ -26,4 +26,6 @@ obj-$(CONFIG_NUMA)		+= numa.o numa_$(BITS).o
+ obj-$(CONFIG_K8_NUMA)		+= k8topology_64.o
+ obj-$(CONFIG_ACPI_NUMA)		+= srat_$(BITS).o
  
--static inline int aperture_valid(u64 aper_base, u32 aper_size, u32 min_size)
--{
--	if (!aper_base)
--		return 0;
--
--	if (aper_base + aper_size > 0x100000000ULL) {
--		printk(KERN_INFO "Aperture beyond 4GB. Ignoring.\n");
--		return 0;
--	}
--	if (e820_any_mapped(aper_base, aper_base + aper_size, E820_RAM)) {
--		printk(KERN_INFO "Aperture pointing to e820 RAM. Ignoring.\n");
--		return 0;
--	}
--	if (aper_size < min_size) {
--		printk(KERN_INFO "Aperture too small (%d MB) than (%d MB)\n",
--				 aper_size>>20, min_size>>20);
--		return 0;
--	}
--
--	return 1;
--}
--
- #endif /* _ASM_X86_GART_H */
-diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
-index 3704997..f6e6270 100644
---- a/arch/x86/kernel/aperture_64.c
-+++ b/arch/x86/kernel/aperture_64.c
-@@ -145,6 +145,28 @@ static u32 __init find_cap(int bus, int slot, int func, int cap)
- 	return 0;
- }
- 
-+static int __init aperture_valid(u64 aper_base, u32 aper_size, u32 min_size)
++obj-$(CONFIG_HAVE_LMB) += lmb.o
++
+ obj-$(CONFIG_MEMTEST)		+= memtest.o
+diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
+new file mode 100644
+index 0000000..3229e9e
+--- /dev/null
++++ b/arch/x86/mm/lmb.c
+@@ -0,0 +1,88 @@
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/init.h>
++#include <linux/bitops.h>
++#include <linux/lmb.h>
++#include <linux/bootmem.h>
++#include <linux/mm.h>
++#include <linux/range.h>
++
++/* Check for already reserved areas */
++static inline bool __init bad_addr_size(u64 *addrp, u64 *sizep, u64 align)
 +{
-+	if (!aper_base)
-+		return 0;
-+
-+	if (aper_base + aper_size > 0x100000000ULL) {
-+		printk(KERN_INFO "Aperture beyond 4GB. Ignoring.\n");
-+		return 0;
++	int i;
++	u64 addr = *addrp, last;
++	u64 size = *sizep;
++	bool changed = false;
++again:
++	last = addr + size;
++	for (i = 0; i < lmb.reserved.cnt && lmb.reserved.region[i].size; i++) {
++		struct lmb_property *r = &lmb.reserved.region[i];
++		if (last > r->base && addr < r->base) {
++			size = r->base - addr;
++			changed = true;
++			goto again;
++		}
++		if (last > (r->base + r->size) && addr < (r->base + r->size)) {
++			addr = round_up(r->base + r->size, align);
++			size = last - addr;
++			changed = true;
++			goto again;
++		}
++		if (last <= (r->base + r->size) && addr >= r->base) {
++			(*sizep)++;
++			return false;
++		}
 +	}
-+	if (e820_any_mapped(aper_base, aper_base + aper_size, E820_RAM)) {
-+		printk(KERN_INFO "Aperture pointing to e820 RAM. Ignoring.\n");
-+		return 0;
++	if (changed) {
++		*addrp = addr;
++		*sizep = size;
 +	}
-+	if (aper_size < min_size) {
-+		printk(KERN_INFO "Aperture too small (%d MB) than (%d MB)\n",
-+				 aper_size>>20, min_size>>20);
-+		return 0;
-+	}
-+
-+	return 1;
++	return changed;
 +}
 +
- /* Read a standard AGPv3 bridge header */
- static u32 __init read_agp(int bus, int slot, int func, int cap, u32 *order)
- {
-diff --git a/drivers/char/agp/amd64-agp.c b/drivers/char/agp/amd64-agp.c
-index fd50ead..85cabd0 100644
---- a/drivers/char/agp/amd64-agp.c
-+++ b/drivers/char/agp/amd64-agp.c
-@@ -14,7 +14,6 @@
- #include <linux/agp_backend.h>
- #include <linux/mmzone.h>
- #include <asm/page.h>		/* PAGE_SIZE */
--#include <asm/e820.h>
- #include <asm/k8.h>
- #include <asm/gart.h>
- #include "agp.h"
-@@ -231,6 +230,44 @@ static const struct agp_bridge_driver amd_8151_driver = {
- 	.agp_type_to_mask_type  = agp_generic_type_to_mask_type,
- };
- 
-+static int __devinit
-+__is_ram(unsigned long pfn, unsigned long nr_pages, void *arg)
++static u64 __init __lmb_find_area_size(u64 ei_start, u64 ei_last, u64 start,
++			 u64 *sizep, u64 align)
 +{
-+	return 1;
++	u64 addr, last;
++
++	addr = round_up(ei_start, align);
++	if (addr < start)
++		addr = round_up(start, align);
++	if (addr >= ei_last)
++		goto out;
++	*sizep = ei_last - addr;
++	while (bad_addr_size(&addr, sizep, align) && addr + *sizep <= ei_last)
++		;
++	last = addr + *sizep;
++	if (last > ei_last)
++		goto out;
++
++	return addr;
++
++out:
++	return -1ULL;
 +}
 +
-+static int __devinit any_ram_in_range(u64 base, u64 size)
++/*
++ * Find next free range after *start
++ */
++u64 __init lmb_find_area_size(u64 start, u64 *sizep, u64 align)
 +{
-+	unsigned long pfn, nr_pages;
++	int i;
 +
-+	pfn = base >> PAGE_SHIFT;
-+	nr_pages = size >> PAGE_SHIFT;
++	for (i = 0; i < lmb.memory.cnt; i++) {
++		u64 ei_start = lmb.memory.region[i].base;
++		u64 ei_last = ei_start + lmb.memory.region[i].size;
++		u64 addr;
 +
-+	return walk_system_ram_range(pfn, nr_pages, NULL, __is_ram) == 1;
++		addr = __lmb_find_area_size(ei_start, ei_last, start,
++					 sizep, align);
++
++		if (addr != -1ULL)
++			return addr;
++	}
++
++	return -1ULL;
 +}
 +
-+static int __devinit aperture_valid(u64 aper_base, u32 aper_size, u32 min_size)
-+{
-+	if (!aper_base)
-+		return 0;
-+
-+	if (aper_base + aper_size > 0x100000000ULL) {
-+		printk(KERN_INFO "Aperture beyond 4GB. Ignoring.\n");
-+		return 0;
-+	}
-+	if (any_ram_in_range(aper_base, aper_size)) {
-+		printk(KERN_INFO "Aperture pointing to E820 RAM. Ignoring.\n");
-+		return 0;
-+	}
-+	if (aper_size < min_size) {
-+		printk(KERN_INFO "Aperture too small (%d MB) than (%d MB)\n",
-+				 aper_size>>20, min_size>>20);
-+		return 0;
-+	}
-+
-+	return 1;
-+}
-+
- /* Some basic sanity checks for the aperture. */
- static int __devinit agp_aperture_valid(u64 aper, u32 size)
- {
 -- 
 1.6.4.2
 
