@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932337Ab0C3XTA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:19:00 -0400
-Received: from kroah.org ([198.145.64.141]:45326 "EHLO coco.kroah.org"
+	id S932627Ab0C3X32 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:29:28 -0400
+Received: from kroah.org ([198.145.64.141]:46717 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932271Ab0C3XSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:37 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:50 2010
-Message-Id: <20100330225649.970174115@linux.site>
+	id S1756936Ab0C3XVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:21:47 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:46 2010
+Message-Id: <20100330224845.812087756@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:57 -0700
+Date: Tue, 30 Mar 2010 15:42:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Trond Myklebust <Trond.Myklebust@netapp.com>,
-       "J. Bruce Fields" <bfields@citi.umich.edu>,
+       "David S. Miller" <davem@davemloft.net>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [079/116] SUNRPC: Fix a potential memory leak in auth_gss
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+Subject: [131/156] e100: Fix ring parameter change handling regression.
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: David S. Miller <davem@davemloft.net>
 
-commit cdead7cf12896c0e50a8be2e52de52c364603095 upstream.
+[ Upstream commit 211a0d941b1924e667483f822a55e2cc694cd212 ]
 
-The function alloc_enc_pages() currently fails to release the pointer
-rqstp->rq_enc_pages in the error path.
+When the PCI pool changes were added to fix resume failures:
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Acked-by: J. Bruce Fields <bfields@citi.umich.edu>
+commit 98468efddb101f8a29af974101c17ba513b07be1
+e100: Use pci pool to work around GFP_ATOMIC order 5 memory allocation failu
+
+and
+
+commit 70abc8cb90e679d8519721e2761d8366a18212a6
+e100: Fix broken cbs accounting due to missing memset.
+
+This introduced a problem that can happen if the TX ring size
+is increased.  We need to size the PCI pool using cbs->max
+instead of the default cbs->count value.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/sunrpc/auth_gss/auth_gss.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/net/e100.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/sunrpc/auth_gss/auth_gss.c
-+++ b/net/sunrpc/auth_gss/auth_gss.c
-@@ -1273,9 +1273,8 @@ alloc_enc_pages(struct rpc_rqst *rqstp)
- 	rqstp->rq_release_snd_buf = priv_release_snd_buf;
- 	return 0;
- out_free:
--	for (i--; i >= 0; i--) {
--		__free_page(rqstp->rq_enc_pages[i]);
--	}
-+	rqstp->rq_enc_pages_num = i;
-+	priv_release_snd_buf(rqstp);
- out:
- 	return -EAGAIN;
- }
+--- a/drivers/net/e100.c
++++ b/drivers/net/e100.c
+@@ -2854,7 +2854,7 @@ static int __devinit e100_probe(struct p
+ 	}
+ 	nic->cbs_pool = pci_pool_create(netdev->name,
+ 			   nic->pdev,
+-			   nic->params.cbs.count * sizeof(struct cb),
++			   nic->params.cbs.max * sizeof(struct cb),
+ 			   sizeof(u32),
+ 			   0);
+ 	DPRINTK(PROBE, INFO, "addr 0x%llx, irq %d, MAC addr %pM\n",
 
 
