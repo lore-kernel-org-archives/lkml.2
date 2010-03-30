@@ -1,80 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756309Ab0C3Usk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 16:48:40 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:63956 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751588Ab0C3Use convert rfc822-to-8bit (ORCPT
+	id S1755518Ab0C3U4W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 16:56:22 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49353
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754731Ab0C3U4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 16:48:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=JZP/PnN0a0hEZiPzBYBjX8DLADyR0cNp8oGKVg17tg7iiqebQ1AoNxbDA+K3bvsdkT
-         rGHl7yzOumZ2RaWaNiYpXsC0N3VzBJNZfA5NIyzZuimFqikzgDxWCxmmAvJ+GO4EShDO
-         qoARyTUKfvSjkSfZbWhi2mD+IlBJ0YYaPAfYQ=
-MIME-Version: 1.0
-In-Reply-To: <20100330200842.GF1693@kroah.com>
-References: <12698953011038@site> <1269900575.2446.3425.camel@rchatre-DESK>
-	 <20100329222404.GA10927@suse.de> <4BB1A532.6030502@canonical.com>
-	 <20100330200842.GF1693@kroah.com>
-Date: Tue, 30 Mar 2010 22:48:32 +0200
-Message-ID: <6cf6b73e1003301348u5ed9dabap8690db5ca8a8d293@mail.gmail.com>
-Subject: Re: [stable] patch iwlwifi-silence-tfds_in_queue-message.patch added 
-	to 2.6.32-stable tree
-From: Adel Gadllah <adel.gadllah@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Stefan Bader <stefan.bader@canonical.com>, linux-kernel@vger.kernel.org,
-       "stable-commits@vger.kernel.org" <stable-commits@vger.kernel.org>,
-       reinette chatre <reinette.chatre@intel.com>,
-       "linville@tuxdriver.com" <linville@tuxdriver.com>,
-       "stable@kernel.org" <stable@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 30 Mar 2010 16:56:21 -0400
+Date: Tue, 30 Mar 2010 13:56:22 -0700 (PDT)
+Message-Id: <20100330.135622.233398574.davem@davemloft.net>
+To: steve@digidescorp.com
+Cc: netdev@vger.kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
+       jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+       linux-kernel@vger.kernel.org, monstr@monstr.eu, karl@hiramoto.org
+Subject: Re: [PATCH] net: Fix oops from tcp_collapse() when using splice()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100330.134741.203608594.davem@davemloft.net>
+References: <1269981913-18073-1-git-send-email-steve@digidescorp.com>
+	<20100330.134741.203608594.davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/3/30 Greg KH <greg@kroah.com>:
-> On Tue, Mar 30, 2010 at 09:16:02AM +0200, Stefan Bader wrote:
->> Greg KH wrote:
->> > On Mon, Mar 29, 2010 at 03:09:35PM -0700, reinette chatre wrote:
->> >> Hi,
->> >>
->> >> On Mon, 2010-03-29 at 13:41 -0700, gregkh@suse.de wrote:
->> >>> This is a note to let you know that we have just queued up the patch titled
->> >>>
->> >>>     Subject: iwlwifi: Silence tfds_in_queue message
->> >>>
->> >>> to the 2.6.32-stable tree.
->> >> [...]
->> >>
->> >> Please note that this patch is really just masking a problem introduced
->> >> by a 2.6.32 backported patch. The real fix is
->> >> https://patchwork.kernel.org/patch/86722/ which should be included in
->> >> 2.6.32.
->> >
->> > What is the git commit id for that patch?  patchwork links don't help me
->> > at all.
->>
->> There isn't one. The main problem only exists in 2.6.32.y
->> because the final hunk missed to remove the nfreed++ from
->> ouside the if.
->>
->> Introduced by backport of in 2.6.32.y
->>
->> commit a120e912eb51e347f36c71b60a1d13af74d30e83
->> Author: Stanislaw Gruszka <sgruszka@redhat.com>
->> Date:   Fri Feb 19 15:47:33 2010 -0800
->>
->>     iwlwifi: sanity check before counting number of tfds can be free
->
-> So, what exactly should I be doing here for the .32 stable queue?
+From: David Miller <davem@davemloft.net>
+Date: Tue, 30 Mar 2010 13:47:41 -0700 (PDT)
 
-Apply the patch that fixes the mess (i.e the one Reinette linked to)
-;), whether this patch (the one you are about to push) goes in or not
-does not matter much (i.e having it won't hurt, but the fix for the
-real problem should go in).
+> From: "Steven J. Magnani" <steve@digidescorp.com>
+> Date: Tue, 30 Mar 2010 15:45:13 -0500
+> 
+>> tcp_read_sock() can have a eat skbs without immediately advancing copied_seq.
+>> This can cause a panic in tcp_collapse() if it is called as a result
+>> of the recv_actor dropping the socket lock.
+>> 
+>> A userspace program that splices data from a socket to either another
+>> socket or to a file can trigger this bug.
+>> 
+>> Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+> 
+> Thanks for fixing this I'll look at your patch more closely
+> right now.
 
-Adel
+Patch applied, thanks Steven!
