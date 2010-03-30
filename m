@@ -1,124 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756374Ab0CaAcL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:32:11 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48259 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757649Ab0CaAcG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 20:32:06 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 31 Mar 2010 09:28:15 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, cl@linux-foundation.org,
-       lee.schermerhorn@hp.com, rientjes@google.com,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       "David S. Miller" <davem@davemloft.net>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, Troels Liebe Bentsen <tlb@rapanden.dk>,
-       linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH] exit: fix oops in sync_mm_rss
-Message-Id: <20100331092815.c8b9d89c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100330135634.09e6b045.akpm@linux-foundation.org>
-References: <20100316170808.GA29400@redhat.com>
-	<20100330135634.09e6b045.akpm@linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757812Ab0CaAcd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:32:33 -0400
+Received: from kroah.org ([198.145.64.141]:48809 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756302Ab0C3XMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:01 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:17 2010
+Message-Id: <20100330225816.992530549@linux.site>
+User-Agent: quilt/0.47-14.9
+Date: Tue, 30 Mar 2010 15:57:16 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Avi Kivity <avi@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [14/89] KVM: x86 emulator: limit instructions to 15 bytes
+In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Mar 2010 13:56:34 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+2.6.31-stable review patch.  If anyone has any objections, please let us know.
 
-> That new BUG_ON() is triggering in Troels's machine when a bluetooth
-> keyboard is enabled or disabled.  See
-> (https://bugzilla.kernel.org/show_bug.cgi?id=15648.
-> 
-> I guess the question is: how did a kernel thread get a non-zero
-> task->rss_stat.count[i]?  If that's expected and OK then we will need
-> to take some kernel-thread-avoidance action there.
-> 
-It seems my fault that it's not initialized to be 0 at do_fork(), copy_process.
+------------------
 
-About do_exit, do_exit() does this check. So, tsk->mm can be NULL.
+From: Avi Kivity <avi@redhat.com>
 
- 949         if (group_dead) {
- 950                 hrtimer_cancel(&tsk->signal->real_timer);
- 951                 exit_itimers(tsk->signal);
- 952                 if (tsk->mm)
- 953                         setmax_mm_hiwater_rss(&tsk->signal->maxrss, tsk->mm);
- 954         }
+commit eb3c79e64a70fb8f7473e30fa07e89c1ecc2c9bb upstream
 
-> Could whoever fixes this please also make __sync_task_rss_stat()
-> static.
-> 
-Ah, yes. I should do so.
+While we are never normally passed an instruction that exceeds 15 bytes,
+smp games can cause us to attempt to interpret one, which will cause
+large latencies in non-preempt hosts.
 
-> I'll toss this over to Rafael/Maciej for tracking as a post-2.6.33
-> regression.
-> 
-> Thanks.
-> 
-
-
-==
-
-task->rss_stat wasn't initialized to 0 at copy_process().
-at exit, tsk->mm may be NULL.
-And __sync_task_rss_stat() should be static.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- kernel/exit.c |    3 ++-
- kernel/fork.c |    3 +++
- mm/memory.c   |    2 +-
- 3 files changed, 6 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/kvm_x86_emulate.h |    2 +-
+ arch/x86/kvm/x86_emulate.c             |    5 ++++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-Index: mmotm-2.6.34-Mar24/kernel/exit.c
-===================================================================
---- mmotm-2.6.34-Mar24.orig/kernel/exit.c
-+++ mmotm-2.6.34-Mar24/kernel/exit.c
-@@ -950,7 +950,8 @@ NORET_TYPE void do_exit(long code)
- 
- 	acct_update_integrals(tsk);
- 	/* sync mm's RSS info before statistics gathering */
--	sync_mm_rss(tsk, tsk->mm);
-+	if (tsk->mm)
-+		sync_mm_rss(tsk, tsk->mm);
- 	group_dead = atomic_dec_and_test(&tsk->signal->live);
- 	if (group_dead) {
- 		hrtimer_cancel(&tsk->signal->real_timer);
-Index: mmotm-2.6.34-Mar24/mm/memory.c
-===================================================================
---- mmotm-2.6.34-Mar24.orig/mm/memory.c
-+++ mmotm-2.6.34-Mar24/mm/memory.c
-@@ -124,7 +124,7 @@ core_initcall(init_zero_pfn);
- 
- #if defined(SPLIT_RSS_COUNTING)
- 
--void __sync_task_rss_stat(struct task_struct *task, struct mm_struct *mm)
-+static void __sync_task_rss_stat(struct task_struct *task, struct mm_struct *mm)
+--- a/arch/x86/include/asm/kvm_x86_emulate.h
++++ b/arch/x86/include/asm/kvm_x86_emulate.h
+@@ -129,7 +129,7 @@ struct decode_cache {
+ 	u8 seg_override;
+ 	unsigned int d;
+ 	unsigned long regs[NR_VCPU_REGS];
+-	unsigned long eip;
++	unsigned long eip, eip_orig;
+ 	/* modrm */
+ 	u8 modrm;
+ 	u8 modrm_mod;
+--- a/arch/x86/kvm/x86_emulate.c
++++ b/arch/x86/kvm/x86_emulate.c
+@@ -606,6 +606,9 @@ static int do_insn_fetch(struct x86_emul
  {
- 	int i;
+ 	int rc = 0;
  
-Index: mmotm-2.6.34-Mar24/kernel/fork.c
-===================================================================
---- mmotm-2.6.34-Mar24.orig/kernel/fork.c
-+++ mmotm-2.6.34-Mar24/kernel/fork.c
-@@ -1060,6 +1060,9 @@ static struct task_struct *copy_process(
- 	p->prev_utime = cputime_zero;
- 	p->prev_stime = cputime_zero;
- #endif
-+#if defined(SPLIT_RSS_COUNTING)
-+	memset(&p->rss_stat, 0, sizeof(p->rss_stat));
-+#endif
++	/* x86 instructions are limited to 15 bytes. */
++	if (eip + size - ctxt->decode.eip_orig > 15)
++		return X86EMUL_UNHANDLEABLE;
+ 	eip += ctxt->cs_base;
+ 	while (size--) {
+ 		rc = do_fetch_insn_byte(ctxt, ops, eip++, dest++);
+@@ -864,7 +867,7 @@ x86_decode_insn(struct x86_emulate_ctxt
+ 	/* Shadow copy of register state. Committed on successful emulation. */
  
- 	p->default_timer_slack_ns = current->timer_slack_ns;
+ 	memset(c, 0, sizeof(struct decode_cache));
+-	c->eip = kvm_rip_read(ctxt->vcpu);
++	c->eip = c->eip_orig = kvm_rip_read(ctxt->vcpu);
+ 	ctxt->cs_base = seg_base(ctxt, VCPU_SREG_CS);
+ 	memcpy(c->regs, ctxt->vcpu->arch.regs, sizeof c->regs);
  
+
 
