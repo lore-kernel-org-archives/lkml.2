@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757110Ab0C3XgW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:36:22 -0400
-Received: from kroah.org ([198.145.64.141]:46414 "EHLO coco.kroah.org"
+	id S1757052Ab0C3Xk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:40:27 -0400
+Received: from kroah.org ([198.145.64.141]:46288 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755808Ab0C3XVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:21:00 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:25 2010
-Message-Id: <20100330224825.186397194@linux.site>
+	id S932640Ab0C3XUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:20:38 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:14 2010
+Message-Id: <20100330224813.588824771@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:12 -0700
+Date: Tue, 30 Mar 2010 15:41:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
+       Trond Myklebust <Trond.Myklebust@netapp.com>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [098/156] drm/i915: Avoid NULL deref in get_pages() unwind after error.
+Subject: [082/156] SUNRPC: Fix a potential memory leak in auth_gss
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,85 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 1f2b10131f83f7caa67bf1273cec126b4283015d upstream.
+commit cdead7cf12896c0e50a8be2e52de52c364603095 upstream.
 
-Fixes:
-  http://bugzilla.kernel.org/show_bug.cgi?id=15527
-  NULL pointer dereference in i915_gem_object_save_bit_17_swizzle
+The function alloc_enc_pages() currently fails to release the pointer
+rqstp->rq_enc_pages in the error path.
 
-BUG: unable to handle kernel NULL pointer dereference at (null)
-IP: [<f82b5d2b>] i915_gem_object_save_bit_17_swizzle+0x5b/0xc0 [i915]
-Call Trace:
-[<f82aea55>] ? i915_gem_object_put_pages+0x125/0x150 [i915]
-[<f82aeb71>] ? i915_gem_object_get_pages+0xf1/0x110 [i915]
-[<f82b0de8>] ? i915_gem_object_bind_to_gtt+0xb8/0x2a0 [i915]
-[<c02db74d>] ? drm_mm_get_block_generic+0x4d/0x180
-[<f82b11cd>] ? i915_gem_mmap_gtt_ioctl+0x16d/0x240 [i915]
-[<f82ae786>] ? i915_gem_madvise_ioctl+0x86/0x120 [i915]
-
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reported-by: maciej.rutecki@gmail.com
-Cc: stable@kernel.org
-Reviewed-by: Eric Anholt <eric@anholt.net>
-Signed-off-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Acked-by: J. Bruce Fields <bfields@citi.umich.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c |   21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ net/sunrpc/auth_gss/auth_gss.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -1470,9 +1470,6 @@ i915_gem_object_put_pages(struct drm_gem
- 		obj_priv->dirty = 0;
- 
- 	for (i = 0; i < page_count; i++) {
--		if (obj_priv->pages[i] == NULL)
--			break;
--
- 		if (obj_priv->dirty)
- 			set_page_dirty(obj_priv->pages[i]);
- 
-@@ -2228,7 +2225,6 @@ i915_gem_object_get_pages(struct drm_gem
- 	struct address_space *mapping;
- 	struct inode *inode;
- 	struct page *page;
--	int ret;
- 
- 	if (obj_priv->pages_refcount++ != 0)
- 		return 0;
-@@ -2251,11 +2247,9 @@ i915_gem_object_get_pages(struct drm_gem
- 					   mapping_gfp_mask (mapping) |
- 					   __GFP_COLD |
- 					   gfpmask);
--		if (IS_ERR(page)) {
--			ret = PTR_ERR(page);
--			i915_gem_object_put_pages(obj);
--			return ret;
--		}
-+		if (IS_ERR(page))
-+			goto err_pages;
-+
- 		obj_priv->pages[i] = page;
- 	}
- 
-@@ -2263,6 +2257,15 @@ i915_gem_object_get_pages(struct drm_gem
- 		i915_gem_object_do_bit_17_swizzle(obj);
- 
+--- a/net/sunrpc/auth_gss/auth_gss.c
++++ b/net/sunrpc/auth_gss/auth_gss.c
+@@ -1273,9 +1273,8 @@ alloc_enc_pages(struct rpc_rqst *rqstp)
+ 	rqstp->rq_release_snd_buf = priv_release_snd_buf;
  	return 0;
-+
-+err_pages:
-+	while (i--)
-+		page_cache_release(obj_priv->pages[i]);
-+
-+	drm_free_large(obj_priv->pages);
-+	obj_priv->pages = NULL;
-+	obj_priv->pages_refcount--;
-+	return PTR_ERR(page);
+ out_free:
+-	for (i--; i >= 0; i--) {
+-		__free_page(rqstp->rq_enc_pages[i]);
+-	}
++	rqstp->rq_enc_pages_num = i;
++	priv_release_snd_buf(rqstp);
+ out:
+ 	return -EAGAIN;
  }
- 
- static void i965_write_fence_reg(struct drm_i915_fence_reg *reg)
 
 
