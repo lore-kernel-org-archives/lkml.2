@@ -1,113 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603Ab0CaAAo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:00:44 -0400
-Received: from kroah.org ([198.145.64.141]:45451 "EHLO coco.kroah.org"
+	id S1757168Ab0C3XhP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:37:15 -0400
+Received: from kroah.org ([198.145.64.141]:46383 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932310Ab0C3XSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:52 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:03 2010
-Message-Id: <20100330225702.878171130@linux.site>
+	id S1756859Ab0C3XUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:20:55 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:23 2010
+Message-Id: <20100330224822.839646817@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:56:13 -0700
+Date: Tue, 30 Mar 2010 15:42:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Andreas Herrmann <andreas.herrmann3@amd.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [095/116] x86, amd: Restrict usage of c1e_idle()
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [094/156] nilfs2: fix hang-up of cleaner after log writer returned with error
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 
-commit 035a02c1e1de31888e8b6adac0ff667971ac04db upstream.
+commit 110d735a0ae69bdd11af9acb6ea3b979137eb118 upstream.
 
-Currently c1e_idle returns true for all CPUs greater than or equal to
-family 0xf model 0x40. This covers too many CPUs.
+According to the report from Andreas Beckmann (Message-ID:
+<4BA54677.3090902@abeckmann.de>), nilfs in 2.6.33 kernel got stuck
+after a disk full error.
 
-Meanwhile a respective erratum for the underlying problem was filed
-(#400). This patch adds the logic to check whether erratum #400
-applies to a given CPU.
-Especially for CPUs where SMI/HW triggered C1e is not supported,
-c1e_idle() doesn't need to be used. We can check this by looking at
-the respective OSVW bit for erratum #400.
+This turned out to be a regression by log writer updates merged at
+kernel 2.6.33.  nilfs_segctor_abort_construction, which is a cleanup
+function for erroneous cases, was skipping writeback completion for
+some logs.
 
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-LKML-Reference: <20100319110922.GA19614@alberich.amd.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+This fixes the bug and would resolve the hang issue.
+
+Reported-by: Andreas Beckmann <debian@abeckmann.de>
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/msr-index.h |    2 ++
- arch/x86/kernel/process.c        |   32 ++++++++++++++++++++++++--------
- 2 files changed, 26 insertions(+), 8 deletions(-)
+ fs/nilfs2/segment.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -104,6 +104,8 @@
- #define MSR_AMD64_PATCH_LEVEL		0x0000008b
- #define MSR_AMD64_NB_CFG		0xc001001f
- #define MSR_AMD64_PATCH_LOADER		0xc0010020
-+#define MSR_AMD64_OSVW_ID_LENGTH	0xc0010140
-+#define MSR_AMD64_OSVW_STATUS		0xc0010141
- #define MSR_AMD64_IBSFETCHCTL		0xc0011030
- #define MSR_AMD64_IBSFETCHLINAD		0xc0011031
- #define MSR_AMD64_IBSFETCHPHYSAD	0xc0011032
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -439,21 +439,37 @@ static int __cpuinit mwait_usable(const
- }
+--- a/fs/nilfs2/segment.c
++++ b/fs/nilfs2/segment.c
+@@ -1902,8 +1902,7 @@ static void nilfs_segctor_abort_construc
  
- /*
-- * Check for AMD CPUs, which have potentially C1E support
-+ * Check for AMD CPUs, where APIC timer interrupt does not wake up CPU from C1e.
-+ * For more information see
-+ * - Erratum #400 for NPT family 0xf and family 0x10 CPUs
-+ * - Erratum #365 for family 0x11 (not affected because C1e not in use)
-  */
- static int __cpuinit check_c1e_idle(const struct cpuinfo_x86 *c)
- {
-+	u64 val;
- 	if (c->x86_vendor != X86_VENDOR_AMD)
--		return 0;
--
--	if (c->x86 < 0x0F)
--		return 0;
-+		goto no_c1e_idle;
+ 	list_splice_tail_init(&sci->sc_write_logs, &logs);
+ 	ret = nilfs_wait_on_logs(&logs);
+-	if (ret)
+-		nilfs_abort_logs(&logs, NULL, sci->sc_super_root, ret);
++	nilfs_abort_logs(&logs, NULL, sci->sc_super_root, ret ? : err);
  
- 	/* Family 0x0f models < rev F do not have C1E */
--	if (c->x86 == 0x0f && c->x86_model < 0x40)
--		return 0;
-+	if (c->x86 == 0x0F && c->x86_model >= 0x40)
-+		return 1;
-+
-+	if (c->x86 == 0x10) {
-+		/*
-+		 * check OSVW bit for CPUs that are not affected
-+		 * by erratum #400
-+		 */
-+		rdmsrl(MSR_AMD64_OSVW_ID_LENGTH, val);
-+		if (val >= 2) {
-+			rdmsrl(MSR_AMD64_OSVW_STATUS, val);
-+			if (!(val & BIT(1)))
-+				goto no_c1e_idle;
-+		}
-+		return 1;
-+	}
- 
--	return 1;
-+no_c1e_idle:
-+	return 0;
- }
- 
- static cpumask_var_t c1e_mask;
+ 	list_splice_tail_init(&sci->sc_segbufs, &logs);
+ 	nilfs_cancel_segusage(&logs, nilfs->ns_sufile);
 
 
