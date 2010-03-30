@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362Ab0C3LW7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 07:22:59 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:35547 "EHLO
+	id S1756387Ab0C3LXP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 07:23:15 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:35615 "EHLO
 	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756346Ab0C3LW4 (ORCPT
+	with ESMTP id S1756348Ab0C3LW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 07:22:56 -0400
+	Tue, 30 Mar 2010 07:22:58 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,74 +16,153 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 28/29] x86: Use walk_system_ream_range()instead of referring e820.map directly for tboot
-Date: Tue, 30 Mar 2010 04:20:02 -0700
-Message-Id: <1269948003-17221-29-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 25/29] x86: Use wake_system_ram_range instead of e820_any_mapped in agp path
+Date: Tue, 30 Mar 2010 04:19:59 -0700
+Message-Id: <1269948003-17221-26-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269948003-17221-1-git-send-email-yinghai@kernel.org>
 References: <1269948003-17221-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0207.4BB1DEEC.0153,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090203.4BB1DEE4.0162,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So we can make e820 to be __initdata
+Move apterture_valid back to .c
+
+and early path still use e820_any_mapped()
+
+so later we can make e820_any_mapped() to _init
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/kernel/tboot.c |   22 +++++++++-------------
- 1 files changed, 9 insertions(+), 13 deletions(-)
+ arch/x86/include/asm/gart.h   |   22 ----------------------
+ arch/x86/kernel/aperture_64.c |   22 ++++++++++++++++++++++
+ drivers/char/agp/amd64-agp.c  |   39 ++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 60 insertions(+), 23 deletions(-)
 
-diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
-index cc2c604..cf27d64 100644
---- a/arch/x86/kernel/tboot.c
-+++ b/arch/x86/kernel/tboot.c
-@@ -170,34 +170,30 @@ static void tboot_create_trampoline(void)
- 
- #ifdef CONFIG_ACPI_SLEEP
- 
--static void add_mac_region(phys_addr_t start, unsigned long size)
-+static int
-+add_mac_region(unsigned long start_pfn, unsigned long nr_pages, void  *arg)
- {
-+	u64 start = start_pfn;
-+	u64 size = nr_pages;
- 	struct tboot_mac_region *mr;
--	phys_addr_t end = start + size;
- 
- 	if (tboot->num_mac_regions >= MAX_TB_MAC_REGIONS)
- 		panic("tboot: Too many MAC regions\n");
- 
- 	if (start && size) {
- 		mr = &tboot->mac_regions[tboot->num_mac_regions++];
--		mr->start = round_down(start, PAGE_SIZE);
--		mr->size  = round_up(end, PAGE_SIZE) - mr->start;
-+		mr->start = start << PAGE_SHIFT;
-+		mr->size  = (u32) (size << PAGE_SHIFT);
- 	}
-+
-+	return 0;
+diff --git a/arch/x86/include/asm/gart.h b/arch/x86/include/asm/gart.h
+index 4ac5b0f..2b63a91 100644
+--- a/arch/x86/include/asm/gart.h
++++ b/arch/x86/include/asm/gart.h
+@@ -74,26 +74,4 @@ static inline void enable_gart_translation(struct pci_dev *dev, u64 addr)
+         pci_write_config_dword(dev, AMD64_GARTAPERTURECTL, ctl);
  }
  
- static int tboot_setup_sleep(void)
- {
--	int i;
+-static inline int aperture_valid(u64 aper_base, u32 aper_size, u32 min_size)
+-{
+-	if (!aper_base)
+-		return 0;
 -
- 	tboot->num_mac_regions = 0;
- 
--	for (i = 0; i < e820.nr_map; i++) {
--		if ((e820.map[i].type != E820_RAM)
--		 && (e820.map[i].type != E820_RESERVED_KERN))
--			continue;
--
--		add_mac_region(e820.map[i].addr, e820.map[i].size);
+-	if (aper_base + aper_size > 0x100000000ULL) {
+-		printk(KERN_INFO "Aperture beyond 4GB. Ignoring.\n");
+-		return 0;
 -	}
-+	walk_system_ram_range(0, max_pfn, NULL, add_mac_region);
+-	if (e820_any_mapped(aper_base, aper_base + aper_size, E820_RAM)) {
+-		printk(KERN_INFO "Aperture pointing to e820 RAM. Ignoring.\n");
+-		return 0;
+-	}
+-	if (aper_size < min_size) {
+-		printk(KERN_INFO "Aperture too small (%d MB) than (%d MB)\n",
+-				 aper_size>>20, min_size>>20);
+-		return 0;
+-	}
+-
+-	return 1;
+-}
+-
+ #endif /* _ASM_X86_GART_H */
+diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
+index 3704997..f6e6270 100644
+--- a/arch/x86/kernel/aperture_64.c
++++ b/arch/x86/kernel/aperture_64.c
+@@ -145,6 +145,28 @@ static u32 __init find_cap(int bus, int slot, int func, int cap)
+ 	return 0;
+ }
  
- 	tboot->acpi_sinfo.kernel_s3_resume_vector = acpi_wakeup_address;
++static int __init aperture_valid(u64 aper_base, u32 aper_size, u32 min_size)
++{
++	if (!aper_base)
++		return 0;
++
++	if (aper_base + aper_size > 0x100000000ULL) {
++		printk(KERN_INFO "Aperture beyond 4GB. Ignoring.\n");
++		return 0;
++	}
++	if (e820_any_mapped(aper_base, aper_base + aper_size, E820_RAM)) {
++		printk(KERN_INFO "Aperture pointing to e820 RAM. Ignoring.\n");
++		return 0;
++	}
++	if (aper_size < min_size) {
++		printk(KERN_INFO "Aperture too small (%d MB) than (%d MB)\n",
++				 aper_size>>20, min_size>>20);
++		return 0;
++	}
++
++	return 1;
++}
++
+ /* Read a standard AGPv3 bridge header */
+ static u32 __init read_agp(int bus, int slot, int func, int cap, u32 *order)
+ {
+diff --git a/drivers/char/agp/amd64-agp.c b/drivers/char/agp/amd64-agp.c
+index fd50ead..85cabd0 100644
+--- a/drivers/char/agp/amd64-agp.c
++++ b/drivers/char/agp/amd64-agp.c
+@@ -14,7 +14,6 @@
+ #include <linux/agp_backend.h>
+ #include <linux/mmzone.h>
+ #include <asm/page.h>		/* PAGE_SIZE */
+-#include <asm/e820.h>
+ #include <asm/k8.h>
+ #include <asm/gart.h>
+ #include "agp.h"
+@@ -231,6 +230,44 @@ static const struct agp_bridge_driver amd_8151_driver = {
+ 	.agp_type_to_mask_type  = agp_generic_type_to_mask_type,
+ };
  
++static int __devinit
++__is_ram(unsigned long pfn, unsigned long nr_pages, void *arg)
++{
++	return 1;
++}
++
++static int __devinit any_ram_in_range(u64 base, u64 size)
++{
++	unsigned long pfn, nr_pages;
++
++	pfn = base >> PAGE_SHIFT;
++	nr_pages = size >> PAGE_SHIFT;
++
++	return walk_system_ram_range(pfn, nr_pages, NULL, __is_ram) == 1;
++}
++
++static int __devinit aperture_valid(u64 aper_base, u32 aper_size, u32 min_size)
++{
++	if (!aper_base)
++		return 0;
++
++	if (aper_base + aper_size > 0x100000000ULL) {
++		printk(KERN_INFO "Aperture beyond 4GB. Ignoring.\n");
++		return 0;
++	}
++	if (any_ram_in_range(aper_base, aper_size)) {
++		printk(KERN_INFO "Aperture pointing to E820 RAM. Ignoring.\n");
++		return 0;
++	}
++	if (aper_size < min_size) {
++		printk(KERN_INFO "Aperture too small (%d MB) than (%d MB)\n",
++				 aper_size>>20, min_size>>20);
++		return 0;
++	}
++
++	return 1;
++}
++
+ /* Some basic sanity checks for the aperture. */
+ static int __devinit agp_aperture_valid(u64 aper, u32 size)
+ {
 -- 
 1.6.4.2
 
