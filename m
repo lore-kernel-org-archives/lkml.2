@@ -1,85 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab0C3XNM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:13:12 -0400
-Received: from kroah.org ([198.145.64.141]:49204 "EHLO coco.kroah.org"
+	id S1756787Ab0C3XqI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:46:08 -0400
+Received: from kroah.org ([198.145.64.141]:46066 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756634Ab0C3XM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:56 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:53 2010
-Message-Id: <20100330225852.833042123@linux.site>
+	id S932532Ab0C3XUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:20:06 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:57 2010
+Message-Id: <20100330224756.551833880@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:58:13 -0700
+Date: Tue, 30 Mar 2010 15:41:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Kashyap Desai <kashyap.desai@lsi.com>,
-       James Bottomley <James.Bottomley@suse.de>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Ravikiran Thirumalai <kiran@scalex86.org>,
+       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [71/89] [SCSI] mpt2sas: Delete volume before HBA detach.
-In-Reply-To: <20100330230520.GA28779@kroah.com>
+Subject: [056/156] tmpfs: cleanup mpol_parse_str()
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.31-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Kashyap, Desai <kashyap.desai@lsi.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit d7384b28afb2bf2b7be835ddc8c852bdc5e0ce1c upstream.
+commit 926f2ae04f183098cf9a30521776fb2759c8afeb upstream.
 
-The driver hangs when doing `rmmod mpt2sas` if there are any
-IR volumes present.The hang is due the scsi midlayer trying to access the
-IR volumes after the driver releases controller resources.  Perhaps when
-scsi_remove_host is called,the scsi mid layer is sending some request.
-This doesn't occur for bare drives becuase the driver is already reporting
-those drives deleted prior to calling mpt2sas_base_detach.
-To solve this issue, we need to delete the volumes as well.
+mpol_parse_str() made lots 'err' variable related bug.  Because it is ugly
+and reviewing unfriendly.
 
-Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
-Reviewed-by: Eric Moore <eric.moore@lsi.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+This patch simplifies it.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Ravikiran Thirumalai <kiran@scalex86.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Acked-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ mm/mempolicy.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -5496,6 +5496,8 @@ _scsih_remove(struct pci_dev *pdev)
- 	struct _sas_port *mpt2sas_port;
- 	struct _sas_device *sas_device;
- 	struct _sas_node *expander_sibling;
-+	struct _raid_device *raid_device, *next;
-+	struct MPT2SAS_TARGET *sas_target_priv_data;
- 	struct workqueue_struct	*wq;
- 	unsigned long flags;
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2167,8 +2167,8 @@ int mpol_parse_str(char *str, struct mem
+ 			char *rest = nodelist;
+ 			while (isdigit(*rest))
+ 				rest++;
+-			if (!*rest)
+-				err = 0;
++			if (*rest)
++				goto out;
+ 		}
+ 		break;
+ 	case MPOL_INTERLEAVE:
+@@ -2177,7 +2177,6 @@ int mpol_parse_str(char *str, struct mem
+ 		 */
+ 		if (!nodelist)
+ 			nodes = node_states[N_HIGH_MEMORY];
+-		err = 0;
+ 		break;
+ 	case MPOL_LOCAL:
+ 		/*
+@@ -2186,7 +2185,6 @@ int mpol_parse_str(char *str, struct mem
+ 		if (nodelist)
+ 			goto out;
+ 		mode = MPOL_PREFERRED;
+-		err = 0;
+ 		break;
+ 	case MPOL_DEFAULT:
+ 		/*
+@@ -2201,7 +2199,6 @@ int mpol_parse_str(char *str, struct mem
+ 		 */
+ 		if (!nodelist)
+ 			goto out;
+-		err = 0;
+ 	}
  
-@@ -5509,6 +5511,21 @@ _scsih_remove(struct pci_dev *pdev)
- 	if (wq)
- 		destroy_workqueue(wq);
+ 	mode_flags = 0;
+@@ -2215,13 +2212,14 @@ int mpol_parse_str(char *str, struct mem
+ 		else if (!strcmp(flags, "relative"))
+ 			mode_flags |= MPOL_F_RELATIVE_NODES;
+ 		else
+-			err = 1;
++			goto out;
+ 	}
  
-+	/* release all the volumes */
-+	list_for_each_entry_safe(raid_device, next, &ioc->raid_device_list,
-+	    list) {
-+		if (raid_device->starget) {
-+			sas_target_priv_data =
-+			    raid_device->starget->hostdata;
-+			sas_target_priv_data->deleted = 1;
-+			scsi_remove_target(&raid_device->starget->dev);
-+		}
-+		printk(MPT2SAS_INFO_FMT "removing handle(0x%04x), wwid"
-+		    "(0x%016llx)\n", ioc->name,  raid_device->handle,
-+		    (unsigned long long) raid_device->wwid);
-+		_scsih_raid_device_remove(ioc, raid_device);
-+	}
+ 	new = mpol_new(mode, mode_flags, &nodes);
+ 	if (IS_ERR(new))
+-		err = 1;
+-	else {
++		goto out;
 +
- 	/* free ports attached to the sas_host */
-  retry_again:
- 	list_for_each_entry(mpt2sas_port,
++	{
+ 		int ret;
+ 		NODEMASK_SCRATCH(scratch);
+ 		if (scratch) {
+@@ -2232,13 +2230,15 @@ int mpol_parse_str(char *str, struct mem
+ 			ret = -ENOMEM;
+ 		NODEMASK_SCRATCH_FREE(scratch);
+ 		if (ret) {
+-			err = 1;
+ 			mpol_put(new);
+-		} else if (no_context) {
+-			/* save for contextualization */
+-			new->w.user_nodemask = nodes;
++			goto out;
+ 		}
+ 	}
++	err = 0;
++	if (no_context) {
++		/* save for contextualization */
++		new->w.user_nodemask = nodes;
++	}
+ 
+ out:
+ 	/* Restore string for error message */
 
 
