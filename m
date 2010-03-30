@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305Ab0C3XSt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:18:49 -0400
-Received: from kroah.org ([198.145.64.141]:45295 "EHLO coco.kroah.org"
+	id S932763Ab0C3XXU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:23:20 -0400
+Received: from kroah.org ([198.145.64.141]:46841 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756829Ab0C3XSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:32 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:46 2010
-Message-Id: <20100330225646.342236387@linux.site>
+	id S1754633Ab0C3XWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:22:21 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:00 2010
+Message-Id: <20100330224859.521323575@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:52 -0700
+Date: Tue, 30 Mar 2010 15:43:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Guo-Fu Tseng <cooldavid@cooldavid.org>,
-       "David S. Miller" <davem@davemloft.net>,
+       Dimitri Sivanich <sivanich@sgi.com>,
+       Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [074/116] jme: Fix VLAN memory leak
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+Subject: [153/156] x86: Fix sched_clock_cpu for systems with unsynchronized TSC
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+From: Dimitri Sivanich <sivanich@sgi.com>
 
-------------------
+commit 14be1f7454ea96ee614467a49cf018a1a383b189 upstream.
 
-From: Guo-Fu Tseng <cooldavid@cooldavid.org>
+On UV systems, the TSC is not synchronized across blades.  The
+sched_clock_cpu() function is returning values that can go
+backwards  (I've seen as much as 8 seconds) when switching
+between cpus.
 
-commit 17da69b8bfbe441a33a873ad5dd7d3d85800bf2b upstream.
+As each cpu comes up, early_init_intel() will currently set the
+sched_clock_stable flag true.  When mark_tsc_unstable() runs, it
+clears the flag, but this only occurs once (the first time a cpu
+comes up whose TSC is not synchronized with cpu 0).  After this,
+early_init_intel() will set the flag again as the next cpu comes
+up.
 
-Fix memory leak while receiving 8021q tagged packet which is not
-registered by user.
+Only set sched_clock_stable if tsc has not been marked unstable.
 
-Signed-off-by: Guo-Fu Tseng <cooldavid@cooldavid.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+Acked-by: Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20100301174815.GC8224@sgi.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/jme.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/kernel/cpu/intel.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/jme.c
-+++ b/drivers/net/jme.c
-@@ -946,6 +946,8 @@ jme_alloc_and_feed_skb(struct jme_adapte
- 				jme->jme_vlan_rx(skb, jme->vlgrp,
- 					le16_to_cpu(rxdesc->descwb.vlan));
- 				NET_STAT(jme).rx_bytes += 4;
-+			} else {
-+				dev_kfree_skb(skb);
- 			}
- 		} else {
- 			jme->jme_rx(skb);
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -70,7 +70,8 @@ static void __cpuinit early_init_intel(s
+ 	if (c->x86_power & (1 << 8)) {
+ 		set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
+ 		set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC);
+-		sched_clock_stable = 1;
++		if (!check_tsc_unstable())
++			sched_clock_stable = 1;
+ 	}
+ 
+ 	/*
 
 
