@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757451Ab0C3XvS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:51:18 -0400
-Received: from kroah.org ([198.145.64.141]:45822 "EHLO coco.kroah.org"
+	id S932186Ab0C3XR5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:17:57 -0400
+Received: from kroah.org ([198.145.64.141]:51921 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932447Ab0C3XTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:38 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:38 2010
-Message-Id: <20100330224738.008224775@linux.site>
+	id S932158Ab0C3XRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:17:51 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:21 2010
+Message-Id: <20100330225620.497053550@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:41:02 -0700
+Date: Tue, 30 Mar 2010 15:55:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Alexander Duyck <alexander.h.duyck@intel.com>,
+       Don Skidmore <donald.c.skidmore@intel.com>,
+       Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
        "David S. Miller" <davem@davemloft.net>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [028/156] pci: add support for 82576NS serdes to existing SR-IOV quirk
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+Subject: [035/116] ixgbe: add support for 82599 KR device 0x1517
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Alexander Duyck <alexander.h.duyck@intel.com>
+From: Don Skidmore <donald.c.skidmore@intel.com>
 
-commit 7a0deb6bcda98c2a764cb87f1441eef920fd3663 upstream.
+commit 74757d49016a8b06ca028196886641d7aeb78de5 upstream.
 
-This patch adds support for the 82576NS Serdes adapter to the existing pci
-quirk for 82576 parts.
-
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+Signed-off-by: Don Skidmore <donald.c.skidmore@intel.com>
+Acked-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
 Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/quirks.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ixgbe/ixgbe_82599.c |    1 +
+ drivers/net/ixgbe/ixgbe_main.c  |    2 ++
+ drivers/net/ixgbe/ixgbe_type.h  |    1 +
+ 3 files changed, 4 insertions(+)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2534,6 +2534,7 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_I
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e8, quirk_i82576_sriov);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x150a, quirk_i82576_sriov);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x150d, quirk_i82576_sriov);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x1518, quirk_i82576_sriov);
- 
- #endif	/* CONFIG_PCI_IOV */
- 
+--- a/drivers/net/ixgbe/ixgbe_82599.c
++++ b/drivers/net/ixgbe/ixgbe_82599.c
+@@ -332,6 +332,7 @@ static enum ixgbe_media_type ixgbe_get_m
+ 	case IXGBE_DEV_ID_82599_KX4:
+ 	case IXGBE_DEV_ID_82599_KX4_MEZZ:
+ 	case IXGBE_DEV_ID_82599_COMBO_BACKPLANE:
++	case IXGBE_DEV_ID_82599_KR:
+ 	case IXGBE_DEV_ID_82599_XAUI_LOM:
+ 		/* Default device ID is mezzanine card KX/KX4 */
+ 		media_type = ixgbe_media_type_backplane;
+--- a/drivers/net/ixgbe/ixgbe_main.c
++++ b/drivers/net/ixgbe/ixgbe_main.c
+@@ -96,6 +96,8 @@ static struct pci_device_id ixgbe_pci_tb
+ 	 board_82599 },
+ 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_XAUI_LOM),
+ 	 board_82599 },
++	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_KR),
++	 board_82599 },
+ 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_SFP),
+ 	 board_82599 },
+ 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_KX4_MEZZ),
+--- a/drivers/net/ixgbe/ixgbe_type.h
++++ b/drivers/net/ixgbe/ixgbe_type.h
+@@ -50,6 +50,7 @@
+ #define IXGBE_DEV_ID_82598EB_XF_LR       0x10F4
+ #define IXGBE_DEV_ID_82599_KX4           0x10F7
+ #define IXGBE_DEV_ID_82599_KX4_MEZZ      0x1514
++#define IXGBE_DEV_ID_82599_KR            0x1517
+ #define IXGBE_DEV_ID_82599_CX4           0x10F9
+ #define IXGBE_DEV_ID_82599_SFP           0x10FB
+ #define IXGBE_DEV_ID_82599_XAUI_LOM      0x10FC
 
 
