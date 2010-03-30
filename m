@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757309Ab0C3X6G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:58:06 -0400
-Received: from kroah.org ([198.145.64.141]:45574 "EHLO coco.kroah.org"
+	id S1756070Ab0CaABR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:01:17 -0400
+Received: from kroah.org ([198.145.64.141]:45433 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932353Ab0C3XTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:08 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:14 2010
-Message-Id: <20100330225713.553002971@linux.site>
+	id S932201Ab0C3XSt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:49 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:00 2010
+Message-Id: <20100330225700.176913416@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:56:30 -0700
+Date: Tue, 30 Mar 2010 15:56:10 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org,
-       Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Michael Buesch <mb@bu3sch.de>,
-       Johannes Berg <johannes@sipsolutions.net>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [112/116] b43: Workaround circular locking in hw-tkip key update callback
+       Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [092/116] drm/i915: Avoid NULL deref in get_pages() unwind after error.
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,54 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Buesch <mb@bu3sch.de>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 96869a39399269a776a94812e9fff3d38b47d838 upstream
+commit 1f2b10131f83f7caa67bf1273cec126b4283015d upstream.
 
-The TKIP key update callback is called from the RX path, where the driver
-mutex is already locked. This results in a circular locking bug.
-Avoid this by removing the lock.
+Fixes:
+  http://bugzilla.kernel.org/show_bug.cgi?id=15527
+  NULL pointer dereference in i915_gem_object_save_bit_17_swizzle
 
-Johannes noted that there is a separate bug: The callback still breaks on SDIO
-hardware, because SDIO hardware access needs to sleep, but we are not allowed
-to sleep in the callback due to mac80211's RCU locking.
+BUG: unable to handle kernel NULL pointer dereference at (null)
+IP: [<f82b5d2b>] i915_gem_object_save_bit_17_swizzle+0x5b/0xc0 [i915]
+Call Trace:
+[<f82aea55>] ? i915_gem_object_put_pages+0x125/0x150 [i915]
+[<f82aeb71>] ? i915_gem_object_get_pages+0xf1/0x110 [i915]
+[<f82b0de8>] ? i915_gem_object_bind_to_gtt+0xb8/0x2a0 [i915]
+[<c02db74d>] ? drm_mm_get_block_generic+0x4d/0x180
+[<f82b11cd>] ? i915_gem_mmap_gtt_ioctl+0x16d/0x240 [i915]
+[<f82ae786>] ? i915_gem_madvise_ioctl+0x86/0x120 [i915]
 
-Signed-off-by: Michael Buesch <mb@bu3sch.de>
-Tested-by: Larry Finger <Larry.Finger@lwfinger.net>
-Reported-by: kecsa@kutfo.hit.bme.hu
-Cc: Johannes Berg <johannes@sipsolutions.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reported-by: maciej.rutecki@gmail.com
+Cc: stable@kernel.org
+Reviewed-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: Eric Anholt <eric@anholt.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/b43/main.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |   21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -852,19 +852,16 @@ static void b43_op_update_tkip_key(struc
- 	if (B43_WARN_ON(!modparam_hwtkip))
- 		return;
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1470,9 +1470,6 @@ i915_gem_object_put_pages(struct drm_gem
+ 		obj_priv->dirty = 0;
  
--	mutex_lock(&wl->mutex);
+ 	for (i = 0; i < page_count; i++) {
+-		if (obj_priv->pages[i] == NULL)
+-			break;
 -
-+	/* This is only called from the RX path through mac80211, where
-+	 * our mutex is already locked. */
-+	B43_WARN_ON(!mutex_is_locked(&wl->mutex));
- 	dev = wl->current_dev;
--	if (!dev || b43_status(dev) < B43_STAT_INITIALIZED)
--		goto out_unlock;
-+	B43_WARN_ON(!dev || b43_status(dev) < B43_STAT_INITIALIZED);
+ 		if (obj_priv->dirty)
+ 			set_page_dirty(obj_priv->pages[i]);
  
- 	keymac_write(dev, index, NULL);	/* First zero out mac to avoid race */
+@@ -2246,7 +2243,6 @@ i915_gem_object_get_pages(struct drm_gem
+ 	struct address_space *mapping;
+ 	struct inode *inode;
+ 	struct page *page;
+-	int ret;
  
- 	rx_tkip_phase1_write(dev, index, iv32, phase1key);
- 	keymac_write(dev, index, addr);
--
--out_unlock:
--	mutex_unlock(&wl->mutex);
+ 	if (obj_priv->pages_refcount++ != 0)
+ 		return 0;
+@@ -2269,11 +2265,9 @@ i915_gem_object_get_pages(struct drm_gem
+ 					   mapping_gfp_mask (mapping) |
+ 					   __GFP_COLD |
+ 					   gfpmask);
+-		if (IS_ERR(page)) {
+-			ret = PTR_ERR(page);
+-			i915_gem_object_put_pages(obj);
+-			return ret;
+-		}
++		if (IS_ERR(page))
++			goto err_pages;
++
+ 		obj_priv->pages[i] = page;
+ 	}
+ 
+@@ -2281,6 +2275,15 @@ i915_gem_object_get_pages(struct drm_gem
+ 		i915_gem_object_do_bit_17_swizzle(obj);
+ 
+ 	return 0;
++
++err_pages:
++	while (i--)
++		page_cache_release(obj_priv->pages[i]);
++
++	drm_free_large(obj_priv->pages);
++	obj_priv->pages = NULL;
++	obj_priv->pages_refcount--;
++	return PTR_ERR(page);
  }
  
- static void do_key_write(struct b43_wldev *dev,
+ static void i965_write_fence_reg(struct drm_i915_fence_reg *reg)
 
 
