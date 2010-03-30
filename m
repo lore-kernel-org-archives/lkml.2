@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757820Ab0CaAeT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:34:19 -0400
-Received: from kroah.org ([198.145.64.141]:48769 "EHLO coco.kroah.org"
+	id S1756246Ab0C3XLv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:11:51 -0400
+Received: from kroah.org ([198.145.64.141]:48744 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756252Ab0C3XLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:11:52 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:13 2010
-Message-Id: <20100330225813.099145953@linux.site>
+	id S1755961Ab0C3XLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:11:47 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:10 2010
+Message-Id: <20100330225810.443012972@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:10 -0700
+Date: Tue, 30 Mar 2010 15:57:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Thomas Renninger <trenn@suse.de>, Dave Jones <davej@redhat.com>,
+       Mikael Pettersson <mikpe@it.uu.se>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Darren Hart <dvhltc@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [08/89] CPUFREQ: Fix use after free of struct powernow_k8_data
+Subject: [04/89] futex_lock_pi() key refcnt fix
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Renninger <trenn@suse.de>
+From: Mikael Pettersson <mikpe@it.uu.se>
 
-commit 557a701c16553b0b691dbb64ef30361115a80f64 upstream.
+commit 5ecb01cfdf96c5f465192bdb2a4fd4a61a24c6cc upstream.
 
-Easy fix for a regression introduced in 2.6.31.
+This fixes a futex key reference count bug in futex_lock_pi(),
+where a key's reference count is incremented twice but decremented
+only once, causing the backing object to not be released.
 
-On managed CPUs the cpufreq.c core will call driver->exit(cpu) on the
-managed cpus and powernow_k8 will free the core's data.
+If the futex is created in a temporary file in an ext3 file system,
+this bug causes the file's inode to become an "undead" orphan,
+which causes an oops from a BUG_ON() in ext3_put_super() when the
+file system is unmounted. glibc's test suite is known to trigger this,
+see <http://bugzilla.kernel.org/show_bug.cgi?id=14256>.
 
-Later driver->get(cpu) function might get called trying to read out the
-current freq of a managed cpu and the NULL pointer check does not work on
-the freed object -> better set it to NULL.
+The bug is a regression from 2.6.28-git3, namely Peter Zijlstra's
+38d47c1b7075bd7ec3881141bb3629da58f88dab "[PATCH] futex: rely on
+get_user_pages() for shared futexes". That commit made get_futex_key()
+also increment the reference count of the futex key, and updated its
+callers to decrement the key's reference count before returning.
+Unfortunately the normal exit path in futex_lock_pi() wasn't corrected:
+the reference count is incremented by get_futex_key() and queue_lock(),
+but the normal exit path only decrements once, via unqueue_me_pi().
+The fix is to put_futex_key() after unqueue_me_pi(), since 2.6.31
+this is easily done by 'goto out_put_key' rather than 'goto out'.
 
-->get() is unsigned and must return 0 as invalid frequency.
-
-Reference:
-http://bugzilla.kernel.org/show_bug.cgi?id=14391
-
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-Tested-by: Michal Schmidt <mschmidt@redhat.com>
-Signed-off-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Darren Hart <dvhltc@us.ibm.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/cpufreq/powernow-k8.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/futex.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-+++ b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-@@ -1372,6 +1372,7 @@ static int __devexit powernowk8_cpu_exit
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -1974,7 +1974,7 @@ retry_private:
+ 	/* Unqueue and drop the lock */
+ 	unqueue_me_pi(&q);
  
- 	kfree(data->powernow_table);
- 	kfree(data);
-+	per_cpu(powernow_data, pol->cpu) = NULL;
+-	goto out;
++	goto out_put_key;
  
- 	return 0;
- }
-@@ -1391,7 +1392,7 @@ static unsigned int powernowk8_get(unsig
- 	int err;
- 
- 	if (!data)
--		return -EINVAL;
-+		return 0;
- 
- 	smp_call_function_single(cpu, query_values_on_cpu, &err, true);
- 	if (err)
+ out_unlock_put_key:
+ 	queue_unlock(&q, hb);
 
 
