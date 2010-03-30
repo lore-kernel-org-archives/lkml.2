@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756744Ab0CaAUB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:20:01 -0400
-Received: from kroah.org ([198.145.64.141]:49212 "EHLO coco.kroah.org"
+	id S932338Ab0CaARp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:17:45 -0400
+Received: from kroah.org ([198.145.64.141]:51749 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756600Ab0C3XM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:57 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:53 2010
-Message-Id: <20100330225853.461694959@linux.site>
+	id S932081Ab0C3XRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:17:30 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:04 2010
+Message-Id: <20100330225603.832180809@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:58:14 -0700
+Date: Tue, 30 Mar 2010 15:54:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-       Martin Fuzzey <mfuzzey@gmail.com>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [72/89] V4L/DVB: Video : pwc : Fix regression in pwc_set_shutter_speed caused by bad 	constant => sizeof conversion.
-In-Reply-To: <20100330230520.GA28779@kroah.com>
+       Christoph Fritz <chf.fritz@googlemail.com>,
+       Dmitry Torokhov <dtor@mail.ru>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [012/116] Input: i8042 - add ALDI/MEDION netbook E1222 to qurik reset table
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.31-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Martin Fuzzey <mfuzzey@gmail.com>
+From: Christoph Fritz <chf.fritz@googlemail.com>
 
-commit 53f68607caba85db9a73846ccd289e4b7fa96295 upstream.
+commit 31968ecf584330b51a25b7bf881c2b632a02a3fb upstream.
 
-Regression was caused by my commit 6b35ca0d3d586b8ecb8396821af21186e20afaf0
-which determined message size using sizeof rather than hardcoded constants.
+ALDI/MEDION netbook E1222 needs to be in the reset quirk list for
+its touchpad's proper function.
 
-Unfortunately pwc_set_shutter_speed reuses a 2 byte buffer for a one byte
-message too so the sizeof was bogus in this case.
-
-All other uses of sizeof checked and are ok.
-
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Martin Fuzzey <mfuzzey@gmail.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Reported-by: Michael Fischer <mifi@gmx.de>
+Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/pwc/pwc-ctrl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/input/serio/i8042-x86ia64io.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/media/video/pwc/pwc-ctrl.c
-+++ b/drivers/media/video/pwc/pwc-ctrl.c
-@@ -753,7 +753,7 @@ int pwc_set_shutter_speed(struct pwc_dev
- 		buf[0] = 0xff; /* fixed */
- 
- 	ret = send_control_msg(pdev,
--		SET_LUM_CTL, SHUTTER_MODE_FORMATTER, &buf, sizeof(buf));
-+		SET_LUM_CTL, SHUTTER_MODE_FORMATTER, &buf, 1);
- 
- 	if (!mode && ret >= 0) {
- 		if (value < 0)
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -442,6 +442,13 @@ static const struct dmi_system_id __init
+ 		},
+ 	},
+ 	{
++		/* Medion Akoya E1222 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "MEDION"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "E122X"),
++		},
++	},
++	{
+ 		/* Mivvy M310 */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "VIOOO"),
 
 
