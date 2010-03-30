@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942Ab0C3XVt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:21:49 -0400
-Received: from kroah.org ([198.145.64.141]:46332 "EHLO coco.kroah.org"
+	id S1757427Ab0C3Xtl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:49:41 -0400
+Received: from kroah.org ([198.145.64.141]:45859 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932550Ab0C3XUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:46 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:19 2010
-Message-Id: <20100330224818.405944786@linux.site>
+	id S932465Ab0C3XTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:43 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:42 2010
+Message-Id: <20100330224741.789511392@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:02 -0700
+Date: Tue, 30 Mar 2010 15:41:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dean Nelson <dnelson@redhat.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [088/156] PCI: fix return value from pcix_get_max_mmrbc()
+       =?ISO-8859-15?q?Andr=C3=A9=20Goddard=20Rosa?= 
+	<andre.goddard@gmail.com>,
+       Al Viro <viro@zeniv.linux.org.uk>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [033/156] mqueue: fix mq_open() file descriptor leak on user-space processes
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,42 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dean Nelson <dnelson@redhat.com>
+From: André Goddard Rosa <andre.goddard@gmail.com>
 
-commit 25daeb550b69e89aff59bc6a84218a12b5203531 upstream.
+commit 4294a8eedb17bbc45e1e7447c2a4d05332943248 upstream.
 
-For the PCI_X_STATUS register, pcix_get_max_mmrbc() is returning an incorrect
-value, which is based on:
+We leak fd on lookup_one_len() failure
 
-	(stat & PCI_X_STATUS_MAX_READ) >> 12
-
-Valid return values are 512, 1024, 2048, 4096, which correspond to a 'stat'
-(masked and right shifted by 21) of 0, 1, 2, 3, respectively.
-
-A right shift by 11 would generate the correct return value when 'stat' (masked
-and right shifted by 21) has a value of 1 or 2. But for a value of 0 or 3 it's
-not possible to generate the correct return value by only right shifting.
-
-Fix is based on pcix_get_mmrbc()'s similar dealings with the PCI_X_CMD register.
-
-Signed-off-by: Dean Nelson <dnelson@redhat.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: André Goddard Rosa <andre.goddard@gmail.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ ipc/mqueue.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -2432,7 +2432,7 @@ int pcix_get_max_mmrbc(struct pci_dev *d
- 	if (err)
- 		return -EINVAL;
+--- a/ipc/mqueue.c
++++ b/ipc/mqueue.c
+@@ -705,7 +705,7 @@ SYSCALL_DEFINE4(mq_open, const char __us
+ 	dentry = lookup_one_len(name, ipc_ns->mq_mnt->mnt_root, strlen(name));
+ 	if (IS_ERR(dentry)) {
+ 		error = PTR_ERR(dentry);
+-		goto out_err;
++		goto out_putfd;
+ 	}
+ 	mntget(ipc_ns->mq_mnt);
  
--	return (stat & PCI_X_STATUS_MAX_READ) >> 12;
-+	return 512 << ((stat & PCI_X_STATUS_MAX_READ) >> 21);
- }
- EXPORT_SYMBOL(pcix_get_max_mmrbc);
- 
+@@ -742,7 +742,6 @@ out:
+ 	mntput(ipc_ns->mq_mnt);
+ out_putfd:
+ 	put_unused_fd(fd);
+-out_err:
+ 	fd = error;
+ out_upsem:
+ 	mutex_unlock(&ipc_ns->mq_mnt->mnt_root->d_inode->i_mutex);
 
 
