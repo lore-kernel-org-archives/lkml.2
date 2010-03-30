@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab0C3RJP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 13:09:15 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60588 "EHLO hera.kernel.org"
+	id S1755309Ab0C3RJr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 13:09:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40913 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755072Ab0C3RJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 13:09:14 -0400
-Message-ID: <4BB22FF6.5040003@kernel.org>
-Date: Tue, 30 Mar 2010 10:08:06 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Ben Gamari <bgamari.foss@gmail.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-       James Bottomley <James.Bottomley@HansenPartnership.com>,
-       Greg KH <gregkh@suse.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Linux-Scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH] scsi: fix lockdep warning
-References: <a4423d671003081547v5c955d58t248db945c06d2a7f@mail.gmail.com>	<86802c441003081612r2f44efd6n9664b4b7c98a636a@mail.gmail.com>	<m1d3zel4b4.fsf@fess.ebiederm.org> <4B95F37E.6060309@kernel.org>	<m14okqnczd.fsf@fess.ebiederm.org> <4B99A6F0.4080203@kernel.org>	<4BA47692.7040401@kernel.org> <4bb21338.0d0db80a.1685.ffffb9e1@mx.google.com>
-In-Reply-To: <4bb21338.0d0db80a.1685.ffffb9e1@mx.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755072Ab0C3RJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 13:09:45 -0400
+Subject: Re: [PATCH] net/wireless/libertas: do not call wiphy_unregister()
+ w/o wiphy_register()
+From: Dan Williams <dcbw@redhat.com>
+To: Holger Schurig <hs4233@mail.mn-solutions.de>
+Cc: Daniel Mack <daniel@caiaq.de>, libertas-dev@lists.infradead.org,
+       netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       "John W. Linville" <linville@tuxdriver.com>
+In-Reply-To: <201003301259.23973.hs4233@mail.mn-solutions.de>
+References: <1269875658-3324-1-git-send-email-daniel@caiaq.de>
+	 <201003301149.13462.hs4233@mail.mn-solutions.de>
+	 <20100330105029.GO30801@buzzloop.caiaq.de>
+	 <201003301259.23973.hs4233@mail.mn-solutions.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Mar 2010 10:04:33 -0700
+Message-ID: <1269968673.3019.37.camel@localhost.localdomain>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2010 08:05 AM, Ben Gamari wrote:
-> On Sat, 20 Mar 2010 00:17:38 -0700, Yinghai Lu <yinghai@kernel.org> wrote:
->>
->> with qlogic and emulex card etc.
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>
+On Tue, 2010-03-30 at 12:59 +0200, Holger Schurig wrote:
+> > I don't get your point. The patch I submitted fixes an Ooops in the
+> > driver, due to wrong handling of an API. What does that have to do with
+> > principle discussions about the frameworks in use?
 > 
-> As several others have pointed out, you appear to be call sysfs_bin_attr_init()
-> against statically allocated attributes. Is there an updated patchset that you've been meaning to send out?
+> I asked if there is a better method, and you said that you would test a better 
+> solution. That means that someone else should make a better solution.
+> 
+> I just pointed out that I won't be the one who creates the better solution, 
+> because for fundamental reasons I don't see the libertas+cfg80211 approach 
+> going forward. That issue has nothing to do with you or your patch, so please 
+> don't feel offended or confused.
 
-not tracking it for while. it seems James had the same version in scsi-next 
+Fine; just rip out the mesh code and do the vanilla cfg80211 conversion
+for infra & adhoc, and we'll add the mesh code back later.  I don't have
+time to do the cfg80211 bits, neither do the OLPC guys (AFAIK), so lets
+take advantage of your willingness to do this and just move the driver
+forward.
+
+Dan
 
 > 
-> Moreover, there are still failures in the ACPI thermal driver (at very least)
-> on master (9623e5a23724d09283c238960946ec6f65733afe).
+> Basically, I neither ack nor nak you patch. Given that it fixes an oops the 
+> patch should go in, and probably to stable at well. I just gave a hint, to 
+> make you think if you could come up with something better.
+> 
+> 
+> 
+> BTW, testing/fixing of failure paths in libertas as well as simplifying the 
+> call sequence of functions during initialisation could be quite useful.
+> 
+> _______________________________________________
+> libertas-dev mailing list
+> libertas-dev@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/libertas-dev
 
-can you send out the trace?
 
-Thanks
-
-Yinghai
