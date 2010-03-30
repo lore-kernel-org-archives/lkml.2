@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558Ab0C3MfW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 08:35:22 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48056 "EHLO
+	id S1755647Ab0C3MgT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 08:36:19 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48065 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753028Ab0C3MfU (ORCPT
+	with ESMTP id S1755572Ab0C3MgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 08:35:20 -0400
-Date: Tue, 30 Mar 2010 14:35:18 +0200
+	Tue, 30 Mar 2010 08:36:17 -0400
+Date: Tue, 30 Mar 2010 14:36:12 +0200
 From: Wolfram Sang <w.sang@pengutronix.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, linux-i2c@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 06/24] input/keyboard: fix dangling pointers
-Message-ID: <20100330123518.GG29472@pengutronix.de>
-References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de> <1269094385-16114-7-git-send-email-w.sang@pengutronix.de> <20100320192007.GA28402@core.coreip.homeip.net>
+To: kernel-janitors@vger.kernel.org
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Richard Purdie <rpurdie@rpsys.net>, Riku Voipio <riku.voipio@iki.fi>
+Subject: Re: [PATCH 08/24] leds: fix dangling pointers
+Message-ID: <20100330123612.GH29472@pengutronix.de>
+References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de> <1269094385-16114-9-git-send-email-w.sang@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Cgrdyab2wu3Akvjd"
+	protocol="application/pgp-signature"; boundary="EemXnrF2ob+xzFeB"
 Content-Disposition: inline
-In-Reply-To: <20100320192007.GA28402@core.coreip.homeip.net>
+In-Reply-To: <1269094385-16114-9-git-send-email-w.sang@pengutronix.de>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
 X-SA-Exim-Mail-From: wsa@pengutronix.de
@@ -30,41 +30,32 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Cgrdyab2wu3Akvjd
+--EemXnrF2ob+xzFeB
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Dmitry,
-
-> On Sat, Mar 20, 2010 at 03:12:47PM +0100, Wolfram Sang wrote:
-> > Fix I2C-drivers which missed setting clientdata to NULL before freeing =
-the
-> > structure it points to. Also fix drivers which do this _after_ the stru=
-cture
-> > was freed already.
-> >=20
+On Sat, Mar 20, 2010 at 03:12:49PM +0100, Wolfram Sang wrote:
+> Fix I2C-drivers which missed setting clientdata to NULL before freeing the
+> structure it points to. Also fix drivers which do this _after_ the struct=
+ure
+> was freed already.
 >=20
-> I am not sure if setting clientdata to NULL before freeing the data is
-> that important; we really want to be sure that we don't leave clientdata
-> dangling when we finish unbinding the driver. If there are another
-> thread the change will not really help the problem of accessing
-> non-existing client data.
->=20
-> I will apply lm8323 portion of the patch but leave qt2160 as is.
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Richard Purdie <rpurdie@rpsys.net>
+> Cc: Riku Voipio <riku.voipio@iki.fi>
 
-We reached an agreement that a) setting the clientdata-pointer to NULL shou=
-ld
-be done in the i2c-core [1] and b) how to do it. Based on that, I will do t=
-he
-modification of the i2c-core for 2.6.34 (as it fixes the dangling pointers)=
- and
-then create one single patch removing the then superflous calls to
-i2c_set_clientdata for 2.6.35 (as it is a cleanup). As you already applied =
-the
-above patch to your branch: you don't have to revert, we will fix it for yo=
-u in
-the next round.
+please drop this this patch. We reached an agreement that a) setting the
+clientdata-pointer to NULL should be done in the i2c-core [1] and b) how to=
+ do
+it. Based on that, I will do the modification of the i2c-core for 2.6.34 (a=
+s it
+fixes the dangling pointers) and then create one single patch removing the =
+then
+superflous calls to i2c_set_clientdata for 2.6.35 (as it is a cleanup). If =
+you
+already applied the above patch to your branch, you don't have to revert; we
+will fix it for you in the next round.
 
 Sorry for the detour!
 
@@ -78,7 +69,7 @@ Kind regards,
 Pengutronix e.K.                           | Wolfram Sang                |
 Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
---Cgrdyab2wu3Akvjd
+--EemXnrF2ob+xzFeB
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 Content-Disposition: inline
@@ -86,9 +77,9 @@ Content-Disposition: inline
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.9 (GNU/Linux)
 
-iEYEARECAAYFAkux8AYACgkQD27XaX1/VRs9oQCdEDKK0ngsZhgFzOhzRWf3QtE2
-NlQAn24Dj6voGeer6H30RiDpUyNBAWbU
-=oY6l
+iEYEARECAAYFAkux8DwACgkQD27XaX1/VRtGVwCfZkkftdDEO97j7QecceDftlaL
+4h4AnjBYnZQvW4F5FQnXcPDNQGmN5A8+
+=AvUU
 -----END PGP SIGNATURE-----
 
---Cgrdyab2wu3Akvjd--
+--EemXnrF2ob+xzFeB--
