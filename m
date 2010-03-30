@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932227Ab0CaALl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:11:41 -0400
-Received: from kroah.org ([198.145.64.141]:51948 "EHLO coco.kroah.org"
+	id S932207Ab0CaAMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:12:09 -0400
+Received: from kroah.org ([198.145.64.141]:51938 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932183Ab0C3XR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:17:56 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:24 2010
-Message-Id: <20100330225623.882213680@linux.site>
+	id S932142Ab0C3XRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:17:54 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:23 2010
+Message-Id: <20100330225622.607090805@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:18 -0700
+Date: Tue, 30 Mar 2010 15:55:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Oleg Nesterov <oleg@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [040/116] x86: set_personality_ia32() misses force_personality32
+       =?ISO-8859-15?q?Andr=C3=A9=20Goddard=20Rosa?= 
+	<andre.goddard@gmail.com>,
+       Al Viro <viro@zeniv.linux.org.uk>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [038/116] mqueue: fix mq_open() file descriptor leak on user-space processes
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,30 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: André Goddard Rosa <andre.goddard@gmail.com>
 
-commit 1252f238db48ec419f40c1bdf30fda649860eed9 upstream.
+commit 4294a8eedb17bbc45e1e7447c2a4d05332943248 upstream.
 
-05d43ed8a "x86: get rid of the insane TIF_ABI_PENDING bit" forgot about
-force_personality32.  Fix.
+We leak fd on lookup_one_len() failure
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: André Goddard Rosa <andre.goddard@gmail.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/process_64.c |    1 +
- 1 file changed, 1 insertion(+)
+ ipc/mqueue.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -546,6 +546,7 @@ void set_personality_ia32(void)
+--- a/ipc/mqueue.c
++++ b/ipc/mqueue.c
+@@ -706,7 +706,7 @@ SYSCALL_DEFINE4(mq_open, const char __us
+ 	dentry = lookup_one_len(name, ipc_ns->mq_mnt->mnt_root, strlen(name));
+ 	if (IS_ERR(dentry)) {
+ 		error = PTR_ERR(dentry);
+-		goto out_err;
++		goto out_putfd;
+ 	}
+ 	mntget(ipc_ns->mq_mnt);
  
- 	/* Make sure to be in 32bit mode */
- 	set_thread_flag(TIF_IA32);
-+	current->personality |= force_personality32;
- 
- 	/* Prepare the first "return" to user space */
- 	current_thread_info()->status |= TS_COMPAT;
+@@ -744,7 +744,6 @@ out:
+ 	mntput(ipc_ns->mq_mnt);
+ out_putfd:
+ 	put_unused_fd(fd);
+-out_err:
+ 	fd = error;
+ out_upsem:
+ 	mutex_unlock(&ipc_ns->mq_mnt->mnt_root->d_inode->i_mutex);
 
 
