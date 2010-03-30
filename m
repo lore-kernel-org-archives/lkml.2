@@ -1,109 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932217Ab0C3XSM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:18:12 -0400
-Received: from kroah.org ([198.145.64.141]:52030 "EHLO coco.kroah.org"
+	id S932791Ab0C3X2r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:28:47 -0400
+Received: from kroah.org ([198.145.64.141]:46746 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756792Ab0C3XSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:08 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:31 2010
-Message-Id: <20100330225631.192299131@linux.site>
+	id S932687Ab0C3XVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:21:51 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:48 2010
+Message-Id: <20100330224847.629433293@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:29 -0700
+Date: Tue, 30 Mar 2010 15:42:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+       Timo Teras <timo.teras@iki.fi>,
+       Herbert Xu <herbert@gondor.apana.org.au>,
+       "David S. Miller" <davem@davemloft.net>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [051/116] perf_event: Fix oops triggered by cpu offline/online
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+Subject: [134/156] ipv4: check rt_genid in dst_check
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
+From: Timo Teräs <timo.teras@iki.fi>
 
-commit 220b140b52ab6cc133f674a7ffec8fa792054f25 upstream.
+[ Upstream commit d11a4dc18bf41719c9f0d7ed494d295dd2973b92 ]
 
-Anton Blanchard found that he could reliably make the kernel hit a
-BUG_ON in the slab allocator by taking a cpu offline and then online
-while a system-wide perf record session was running.
+Xfrm_dst keeps a reference to ipv4 rtable entries on each
+cached bundle. The only way to renew xfrm_dst when the underlying
+route has changed, is to implement dst_check for this. This is
+what ipv6 side does too.
 
-The reason is that when the cpu comes up, we completely reinitialize
-the ctx field of the struct perf_cpu_context for the cpu.  If there is
-a system-wide perf record session running, then there will be a struct
-perf_event that has a reference to the context, so its refcount will
-be 2.  (The perf_event has been removed from the context's group_entry
-and event_entry lists by perf_event_exit_cpu(), but that doesn't
-remove the perf_event's reference to the context and doesn't decrement
-the context's refcount.)
+The problems started after 87c1e12b5eeb7b30b4b41291bef8e0b41fc3dde9
+("ipsec: Fix bogus bundle flowi") which fixed a bug causing xfrm_dst
+to not get reused, until that all lookups always generated new
+xfrm_dst with new route reference and path mtu worked. But after the
+fix, the old routes started to get reused even after they were expired
+causing pmtu to break (well it would occationally work if the rtable
+gc had run recently and marked the route obsolete causing dst_check to
+get called).
 
-When the cpu comes up, perf_event_init_cpu() gets called, and it calls
-__perf_event_init_context() on the cpu's context.  That resets the
-refcount to 1.  Then when the perf record session finishes and the
-perf_event is closed, the refcount gets decremented to 0 and the
-context gets kfreed after an RCU grace period.  Since the context
-wasn't kmalloced -- it's part of a per-cpu variable -- bad things
-happen.
-
-In fact we don't need to completely reinitialize the context when the
-cpu comes up.  It's sufficient to initialize the context once at boot,
-but we need to do it for all possible cpus.
-
-This moves the context initialization to happen at boot time.  With
-this, we don't trash the refcount and the context never gets kfreed,
-and we don't hit the BUG_ON.
-
-Reported-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Tested-by: Anton Blanchard <anton@samba.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Timo Teras <timo.teras@iki.fi>
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/perf_event.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ net/ipv4/route.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -4981,12 +4981,22 @@ int perf_event_init_task(struct task_str
- 	return ret;
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1415,7 +1415,7 @@ void ip_rt_redirect(__be32 old_gw, __be3
+ 					dev_hold(rt->u.dst.dev);
+ 				if (rt->idev)
+ 					in_dev_hold(rt->idev);
+-				rt->u.dst.obsolete	= 0;
++				rt->u.dst.obsolete	= -1;
+ 				rt->u.dst.lastuse	= jiffies;
+ 				rt->u.dst.path		= &rt->u.dst;
+ 				rt->u.dst.neighbour	= NULL;
+@@ -1480,7 +1480,7 @@ static struct dst_entry *ipv4_negative_a
+ 	struct dst_entry *ret = dst;
+ 
+ 	if (rt) {
+-		if (dst->obsolete) {
++		if (dst->obsolete > 0) {
+ 			ip_rt_put(rt);
+ 			ret = NULL;
+ 		} else if ((rt->rt_flags & RTCF_REDIRECTED) ||
+@@ -1700,7 +1700,9 @@ static void ip_rt_update_pmtu(struct dst
+ 
+ static struct dst_entry *ipv4_dst_check(struct dst_entry *dst, u32 cookie)
+ {
+-	return NULL;
++	if (rt_is_expired((struct rtable *)dst))
++		return NULL;
++	return dst;
  }
  
-+static void __init perf_event_init_all_cpus(void)
-+{
-+	int cpu;
-+	struct perf_cpu_context *cpuctx;
-+
-+	for_each_possible_cpu(cpu) {
-+		cpuctx = &per_cpu(perf_cpu_context, cpu);
-+		__perf_event_init_context(&cpuctx->ctx, NULL);
-+	}
-+}
-+
- static void __cpuinit perf_event_init_cpu(int cpu)
- {
- 	struct perf_cpu_context *cpuctx;
+ static void ipv4_dst_destroy(struct dst_entry *dst)
+@@ -1862,7 +1864,8 @@ static int ip_route_input_mc(struct sk_b
+ 	if (!rth)
+ 		goto e_nobufs;
  
- 	cpuctx = &per_cpu(perf_cpu_context, cpu);
--	__perf_event_init_context(&cpuctx->ctx, NULL);
+-	rth->u.dst.output= ip_rt_bug;
++	rth->u.dst.output = ip_rt_bug;
++	rth->u.dst.obsolete = -1;
  
- 	spin_lock(&perf_resource_lock);
- 	cpuctx->max_pertask = perf_max_events - perf_reserved_percpu;
-@@ -5057,6 +5067,7 @@ static struct notifier_block __cpuinitda
+ 	atomic_set(&rth->u.dst.__refcnt, 1);
+ 	rth->u.dst.flags= DST_HOST;
+@@ -2023,6 +2026,7 @@ static int __mkroute_input(struct sk_buf
+ 	rth->fl.oif 	= 0;
+ 	rth->rt_spec_dst= spec_dst;
  
- void __init perf_event_init(void)
- {
-+	perf_event_init_all_cpus();
- 	perf_cpu_notify(&perf_cpu_nb, (unsigned long)CPU_UP_PREPARE,
- 			(void *)(long)smp_processor_id());
- 	perf_cpu_notify(&perf_cpu_nb, (unsigned long)CPU_ONLINE,
++	rth->u.dst.obsolete = -1;
+ 	rth->u.dst.input = ip_forward;
+ 	rth->u.dst.output = ip_output;
+ 	rth->rt_genid = rt_genid(dev_net(rth->u.dst.dev));
+@@ -2187,6 +2191,7 @@ local_input:
+ 		goto e_nobufs;
+ 
+ 	rth->u.dst.output= ip_rt_bug;
++	rth->u.dst.obsolete = -1;
+ 	rth->rt_genid = rt_genid(net);
+ 
+ 	atomic_set(&rth->u.dst.__refcnt, 1);
+@@ -2413,6 +2418,7 @@ static int __mkroute_output(struct rtabl
+ 	rth->rt_spec_dst= fl->fl4_src;
+ 
+ 	rth->u.dst.output=ip_output;
++	rth->u.dst.obsolete = -1;
+ 	rth->rt_genid = rt_genid(dev_net(dev_out));
+ 
+ 	RT_CACHE_STAT_INC(out_slow_tot);
 
 
