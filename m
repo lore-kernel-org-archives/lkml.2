@@ -1,62 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932338Ab0CaARp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:17:45 -0400
-Received: from kroah.org ([198.145.64.141]:51749 "EHLO coco.kroah.org"
+	id S932641Ab0CaAUY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:20:24 -0400
+Received: from kroah.org ([198.145.64.141]:49197 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932081Ab0C3XRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:17:30 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:04 2010
-Message-Id: <20100330225603.832180809@linux.site>
+	id S1756628Ab0C3XM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:56 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:52 2010
+Message-Id: <20100330225852.111231770@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:54:50 -0700
+Date: Tue, 30 Mar 2010 15:58:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Christoph Fritz <chf.fritz@googlemail.com>,
-       Dmitry Torokhov <dtor@mail.ru>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [012/116] Input: i8042 - add ALDI/MEDION netbook E1222 to qurik reset table
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+       Dan Williams <dcbw@redhat.com>, Stanislaw Gruszka <sgruszka@redhat.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [70/89] airo: fix setting zero length WEP key
+In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.31-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Christoph Fritz <chf.fritz@googlemail.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 31968ecf584330b51a25b7bf881c2b632a02a3fb upstream.
+commit f09c256375c7cf1e112b8ef6306cdd313490d7c0 upstream.
 
-ALDI/MEDION netbook E1222 needs to be in the reset quirk list for
-its touchpad's proper function.
+Patch prevents call set_wep_key() with zero key length. That fix long
+standing regression since commit c0380693520b1a1e4f756799a0edc379378b462a
+"airo: clean up WEP key operations". Additionally print call trace when
+someone will try to use improper parameters, and remove key.len = 0
+assignment, because it is in not possible code path.
 
-Reported-by: Michael Fischer <mifi@gmx.de>
-Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Reported-by: Chris Siebenmann <cks-rhbugzilla@cs.toronto.edu>
+Bisected-by: Chris Siebenmann <cks-rhbugzilla@cs.toronto.edu>
+Tested-by: Chris Siebenmann <cks@cs.toronto.edu>
+Cc: Dan Williams <dcbw@redhat.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/input/serio/i8042-x86ia64io.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/net/wireless/airo.c |   34 ++++++++++++++++++----------------
+ 1 file changed, 18 insertions(+), 16 deletions(-)
 
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -442,6 +442,13 @@ static const struct dmi_system_id __init
- 		},
- 	},
- 	{
-+		/* Medion Akoya E1222 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "MEDION"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "E122X"),
-+		},
-+	},
-+	{
- 		/* Mivvy M310 */
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "VIOOO"),
+--- a/drivers/net/wireless/airo.c
++++ b/drivers/net/wireless/airo.c
+@@ -5249,11 +5249,7 @@ static int set_wep_key(struct airo_info
+ 	WepKeyRid wkr;
+ 	int rc;
+ 
+-	if (keylen == 0) {
+-		airo_print_err(ai->dev->name, "%s: key length to set was zero",
+-			       __func__);
+-		return -1;
+-	}
++	WARN_ON(keylen == 0);
+ 
+ 	memset(&wkr, 0, sizeof(wkr));
+ 	wkr.len = cpu_to_le16(sizeof(wkr));
+@@ -6399,11 +6395,7 @@ static int airo_set_encode(struct net_de
+ 		if (dwrq->length > MIN_KEY_SIZE)
+ 			key.len = MAX_KEY_SIZE;
+ 		else
+-			if (dwrq->length > 0)
+-				key.len = MIN_KEY_SIZE;
+-			else
+-				/* Disable the key */
+-				key.len = 0;
++			key.len = MIN_KEY_SIZE;
+ 		/* Check if the key is not marked as invalid */
+ 		if(!(dwrq->flags & IW_ENCODE_NOKEY)) {
+ 			/* Cleanup */
+@@ -6584,12 +6576,22 @@ static int airo_set_encodeext(struct net
+ 		default:
+ 			return -EINVAL;
+ 		}
+-		/* Send the key to the card */
+-		rc = set_wep_key(local, idx, key.key, key.len, perm, 1);
+-		if (rc < 0) {
+-			airo_print_err(local->dev->name, "failed to set WEP key"
+-			               " at index %d: %d.", idx, rc);
+-			return rc;
++		if (key.len == 0) {
++			rc = set_wep_tx_idx(local, idx, perm, 1);
++			if (rc < 0) {
++				airo_print_err(local->dev->name,
++					       "failed to set WEP transmit index to %d: %d.",
++					       idx, rc);
++				return rc;
++			}
++		} else {
++			rc = set_wep_key(local, idx, key.key, key.len, perm, 1);
++			if (rc < 0) {
++				airo_print_err(local->dev->name,
++					       "failed to set WEP key at index %d: %d.",
++					       idx, rc);
++				return rc;
++			}
+ 		}
+ 	}
+ 
 
 
