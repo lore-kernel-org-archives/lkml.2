@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128Ab0C3Npy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 09:45:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50354 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752653Ab0C3Npx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 09:45:53 -0400
-Date: Tue, 30 Mar 2010 15:43:53 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       Americo Wang <xiyou.wangcong@gmail.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Roland McGrath <roland@redhat.com>,
-       Spencer Candland <spencer@bluehost.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm 2/4] cputimers: make sure thread_group_cputime()
-	can't count the same thread twice lockless
-Message-ID: <20100330134353.GA7152@redhat.com>
-References: <20100324204550.GA31777@redhat.com> <20100326035344.GQ3308@balbir.in.ibm.com> <20100326214906.GA18467@redhat.com> <20100329111731.GA4488@dhcp-lab-161.englab.brq.redhat.com> <20100329125415.GA22451@redhat.com> <20100329181204.GA16356@redhat.com> <20100329181329.GC16356@redhat.com> <20100330110124.GA2566@dhcp-lab-161.englab.brq.redhat.com>
+	id S1756215Ab0C3NqA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 09:46:00 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:56373 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756147Ab0C3Np5 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 09:45:57 -0400
+Date: Tue, 30 Mar 2010 09:45:55 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
+       Eric Dumazet <dada1@cosmosbay.com>,
+       Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Steven Rostedt <rostedt@goodmis.org>, stable <stable@kernel.org>
+Subject: Re: [PATCH] lockdep fix incorrect percpu usage
+Message-ID: <20100330134555.GA20673@Krystal>
+References: <20100330033425.GD7683@Krystal> <1269938876.5109.510.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100330110124.GA2566@dhcp-lab-161.englab.brq.redhat.com>
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1269938876.5109.510.camel@twins>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 09:41:37 up 66 days, 16:18,  9 users,  load average: 0.14, 0.12,
+	0.09
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30, Stanislaw Gruszka wrote:
->
-> On Mon, Mar 29, 2010 at 08:13:29PM +0200, Oleg Nesterov wrote:
-> > - change __exit_signal() to do __unhash_process() before we accumulate
-> >   the counters in ->signal
-> >
-> > - add a couple of barriers into thread_group_cputime() and __exit_signal()
-> >   to make sure thread_group_cputime() can never account the same thread
-> >   twice if it races with exit.
-> >
-> >   If any thread T was already accounted in ->signal, next_thread() or
-> >   pid_alive() must see the result of __unhash_process(T).
->
-> Memory barriers prevents to account times twice, but as we write
-> sig->{u,s}time and sig->sum_sched_runtime on one cpu and read them
-> on another cpu, without a lock, this patch make theoretically possible
-> that some accumulated values of struct task_cputime may include exited
-> task values and some not. In example times->utime will include values
-> from 10 threads, and times->{stime,sum_exec_runtime} values form 9
-> threads, because local cpu updates sig->utime but not two other values.
+* Peter Zijlstra (peterz@infradead.org) wrote:
+> On Mon, 2010-03-29 at 23:34 -0400, Mathieu Desnoyers wrote:
+> > Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is needed
+> > for per cpu pointers).
+> > 
+> > git blame points to commit:
+> > 
+> > lockdep.c: commit 8e18257d29238311e82085152741f0c3aa18b74d
+> > 
+> > But it's really just moving the code around. But it's enough to say that the
+> > problems appeared before Jul 19 01:48:54 2007, which brings us back to 2.6.23.
+> > 
+> > So it should be applied to stable 2.6.23.x to 2.6.33.x (or whichever of these
+> > stable branches are still maintained) and to mainline 2.6.34-rc2.
+> 
+> well, definately not to mainline, since that code is utterly busted in
+> mainline due to recent per-cpu changes.
 
-Yes sure. From 4/4 changelog:
+How recent ? I'm based on 
 
-	This is a user visible change. Without ->siglock we can't get the "whole"
-	info atomically, and if we race with exit() we can miss the exiting thread.
+commit f57d4e859a8acd63f878cd0534ec4b990b1710dc
+Merge: 0528faa... eed6351...
+Author: Ingo Molnar <mingo@elte.hu>
+Date:   Mon Mar 29 18:56:00 2010 +0200
 
-this also means that it is possible that we don't miss the exiting thread
-"completely", but we miss its, say, ->stime.
+from -tip and I see the problem there, both in module.c and lockdep.c.
 
-> This can make scaling in thread_group_times() not correct.
+Thanks,
 
-Again, see above. The changelog explicitely explains that this patch
-assumes it is OK to return the info which is not atomic/accurate (as
-it seen under ->siglock).
+Mathieu
 
-> I'm not sure
-> how big drawback is that.
 
-Neither me, that is why I am asking for comments.
-
-To me this looks acceptable, but I can't judge.
-
-Oleg.
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
