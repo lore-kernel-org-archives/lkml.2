@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138Ab0C3JPk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 05:15:40 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:45566 "EHLO gir.skynet.ie"
+	id S1756159Ab0C3JPq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 05:15:46 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:45585 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756064Ab0C3JO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 05:14:56 -0400
+	id S1755994Ab0C3JOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 05:14:54 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andrea Arcangeli <aarcange@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 11/14] Direct compact when a high-order allocation fails
-Date: Tue, 30 Mar 2010 10:14:46 +0100
-Message-Id: <1269940489-5776-12-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 09/14] Add /proc trigger for memory compaction
+Date: Tue, 30 Mar 2010 10:14:44 +0100
+Message-Id: <1269940489-5776-10-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.6.5
 In-Reply-To: <1269940489-5776-1-git-send-email-mel@csn.ul.ie>
 References: <1269940489-5776-1-git-send-email-mel@csn.ul.ie>
@@ -27,329 +27,180 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ordinarily when a high-order allocation fails, direct reclaim is entered to
-free pages to satisfy the allocation.  With this patch, it is determined if
-an allocation failed due to external fragmentation instead of low memory
-and if so, the calling process will compact until a suitable page is
-freed. Compaction by moving pages in memory is considerably cheaper than
-paging out to disk and works where there are locked pages or no swap. If
-compaction fails to free a page of a suitable size, then reclaim will
-still occur.
-
-Direct compaction returns as soon as possible. As each block is compacted,
-it is checked if a suitable page has been freed and if so, it returns.
+This patch adds a proc file /proc/sys/vm/compact_memory. When an arbitrary
+value is written to the file, all zones are compacted. The expected user
+of such a trigger is a job scheduler that prepares the system before the
+target application runs.
 
 Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 Acked-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Christoph Lameter <cl@linux-foundation.org>
 ---
- include/linux/compaction.h |   20 ++++++--
- include/linux/vmstat.h     |    1 +
- mm/compaction.c            |  117 ++++++++++++++++++++++++++++++++++++++++++++
- mm/page_alloc.c            |   31 ++++++++++++
- mm/vmstat.c                |   15 +++++-
- 5 files changed, 178 insertions(+), 6 deletions(-)
+ Documentation/sysctl/vm.txt |   11 +++++++
+ include/linux/compaction.h  |    6 ++++
+ kernel/sysctl.c             |   10 +++++++
+ mm/compaction.c             |   62 ++++++++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 88 insertions(+), 1 deletions(-)
 
+diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+index 56366a5..803c018 100644
+--- a/Documentation/sysctl/vm.txt
++++ b/Documentation/sysctl/vm.txt
+@@ -19,6 +19,7 @@ files can be found in mm/swap.c.
+ Currently, these files are in /proc/sys/vm:
+ 
+ - block_dump
++- compact_memory
+ - dirty_background_bytes
+ - dirty_background_ratio
+ - dirty_bytes
+@@ -64,6 +65,16 @@ information on block I/O debugging is in Documentation/laptops/laptop-mode.txt.
+ 
+ ==============================================================
+ 
++compact_memory
++
++Available only when CONFIG_COMPACTION is set. When an arbitrary value
++is written to the file, all zones are compacted such that free memory
++is available in contiguous blocks where possible. This can be important
++for example in the allocation of huge pages although processes will also
++directly compact memory as required.
++
++==============================================================
++
+ dirty_background_bytes
+ 
+ Contains the amount of dirty memory at which the pdflush background writeback
 diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-index c4ab05f..faa3faf 100644
+index dbebe58..fef591b 100644
 --- a/include/linux/compaction.h
 +++ b/include/linux/compaction.h
-@@ -1,15 +1,27 @@
- #ifndef _LINUX_COMPACTION_H
- #define _LINUX_COMPACTION_H
+@@ -6,4 +6,10 @@
+ #define COMPACT_PARTIAL		1
+ #define COMPACT_COMPLETE	2
  
--/* Return values for compact_zone() */
--#define COMPACT_INCOMPLETE	0
--#define COMPACT_PARTIAL		1
--#define COMPACT_COMPLETE	2
-+/* Return values for compact_zone() and try_to_compact_pages() */
-+#define COMPACT_SKIPPED		0
-+#define COMPACT_INCOMPLETE	1
-+#define COMPACT_PARTIAL		2
-+#define COMPACT_COMPLETE	3
- 
- #ifdef CONFIG_COMPACTION
- extern int sysctl_compact_memory;
- extern int sysctl_compaction_handler(struct ctl_table *table, int write,
- 			void __user *buffer, size_t *length, loff_t *ppos);
++#ifdef CONFIG_COMPACTION
++extern int sysctl_compact_memory;
++extern int sysctl_compaction_handler(struct ctl_table *table, int write,
++			void __user *buffer, size_t *length, loff_t *ppos);
++#endif /* CONFIG_COMPACTION */
 +
-+extern int fragmentation_index(struct zone *zone, unsigned int order);
-+extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
-+			int order, gfp_t gfp_mask, nodemask_t *mask);
-+#else
-+static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
-+			int order, gfp_t gfp_mask, nodemask_t *nodemask)
-+{
-+	return COMPACT_INCOMPLETE;
-+}
-+
- #endif /* CONFIG_COMPACTION */
+ #endif /* _LINUX_COMPACTION_H */
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 455f394..3838928 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -53,6 +53,7 @@
+ #include <linux/slow-work.h>
+ #include <linux/perf_event.h>
+ #include <linux/kprobes.h>
++#include <linux/compaction.h>
  
- #if defined(CONFIG_COMPACTION) && defined(CONFIG_SYSFS) && defined(CONFIG_NUMA)
-diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
-index 56e4b44..b4b4d34 100644
---- a/include/linux/vmstat.h
-+++ b/include/linux/vmstat.h
-@@ -44,6 +44,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		KSWAPD_SKIP_CONGESTION_WAIT,
- 		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
- 		COMPACTBLOCKS, COMPACTPAGES, COMPACTPAGEFAILED,
-+		COMPACTSTALL, COMPACTFAIL, COMPACTSUCCESS,
- #ifdef CONFIG_HUGETLB_PAGE
- 		HTLB_BUDDY_PGALLOC, HTLB_BUDDY_PGALLOC_FAIL,
- #endif
+ #include <asm/uaccess.h>
+ #include <asm/processor.h>
+@@ -1102,6 +1103,15 @@ static struct ctl_table vm_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= drop_caches_sysctl_handler,
+ 	},
++#ifdef CONFIG_COMPACTION
++	{
++		.procname	= "compact_memory",
++		.data		= &sysctl_compact_memory,
++		.maxlen		= sizeof(int),
++		.mode		= 0200,
++		.proc_handler	= sysctl_compaction_handler,
++	},
++#endif /* CONFIG_COMPACTION */
+ 	{
+ 		.procname	= "min_free_kbytes",
+ 		.data		= &min_free_kbytes,
 diff --git a/mm/compaction.c b/mm/compaction.c
-index b058bae..e8ef511 100644
+index 4041209..615b811 100644
 --- a/mm/compaction.c
 +++ b/mm/compaction.c
-@@ -35,6 +35,8 @@ struct compact_control {
- 	unsigned long nr_anon;
- 	unsigned long nr_file;
+@@ -12,6 +12,7 @@
+ #include <linux/compaction.h>
+ #include <linux/mm_inline.h>
+ #include <linux/backing-dev.h>
++#include <linux/sysctl.h>
+ #include "internal.h"
  
-+	unsigned int order;		/* order a direct compactor needs */
-+	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
- 	struct zone *zone;
- };
- 
-@@ -327,6 +329,9 @@ static void update_nr_listpages(struct compact_control *cc)
- static int compact_finished(struct zone *zone,
- 						struct compact_control *cc)
- {
-+	unsigned int order;
-+	unsigned long watermark = low_wmark_pages(zone) + (1 << cc->order);
-+
- 	if (fatal_signal_pending(current))
- 		return COMPACT_PARTIAL;
- 
-@@ -334,6 +339,24 @@ static int compact_finished(struct zone *zone,
- 	if (cc->free_pfn <= cc->migrate_pfn)
- 		return COMPACT_COMPLETE;
- 
-+	/* Compaction run is not finished if the watermark is not met */
-+	if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
-+		return COMPACT_INCOMPLETE;
-+
-+	if (cc->order == -1)
-+		return COMPACT_INCOMPLETE;
-+
-+	/* Direct compactor: Is a suitable page free? */
-+	for (order = cc->order; order < MAX_ORDER; order++) {
-+		/* Job done if page is free of the right migratetype */
-+		if (!list_empty(&zone->free_area[order].free_list[cc->migratetype]))
-+			return COMPACT_PARTIAL;
-+
-+		/* Job done if allocation would set block type */
-+		if (order >= pageblock_order && zone->free_area[order].nr_free)
-+			return COMPACT_PARTIAL;
-+	}
-+
- 	return COMPACT_INCOMPLETE;
+ /*
+@@ -322,7 +323,7 @@ static void update_nr_listpages(struct compact_control *cc)
+ 	cc->nr_freepages = nr_freepages;
  }
  
-@@ -379,6 +402,99 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+-static inline int compact_finished(struct zone *zone,
++static int compact_finished(struct zone *zone,
+ 						struct compact_control *cc)
+ {
+ 	if (fatal_signal_pending(current))
+@@ -377,3 +378,62 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
  	return ret;
  }
  
-+static unsigned long compact_zone_order(struct zone *zone,
-+						int order, gfp_t gfp_mask)
++/* Compact all zones within a node */
++static int compact_node(int nid)
 +{
-+	struct compact_control cc = {
-+		.nr_freepages = 0,
-+		.nr_migratepages = 0,
-+		.order = order,
-+		.migratetype = allocflags_to_migratetype(gfp_mask),
-+		.zone = zone,
-+	};
-+	INIT_LIST_HEAD(&cc.freepages);
-+	INIT_LIST_HEAD(&cc.migratepages);
-+
-+	return compact_zone(zone, &cc);
-+}
-+
-+/**
-+ * try_to_compact_pages - Direct compact to satisfy a high-order allocation
-+ * @zonelist: The zonelist used for the current allocation
-+ * @order: The order of the current allocation
-+ * @gfp_mask: The GFP mask of the current allocation
-+ * @nodemask: The allowed nodes to allocate from
-+ *
-+ * This is the main entry point for direct page compaction.
-+ */
-+unsigned long try_to_compact_pages(struct zonelist *zonelist,
-+			int order, gfp_t gfp_mask, nodemask_t *nodemask)
-+{
-+	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
-+	int may_enter_fs = gfp_mask & __GFP_FS;
-+	int may_perform_io = gfp_mask & __GFP_IO;
-+	unsigned long watermark;
-+	struct zoneref *z;
++	int zoneid;
++	pg_data_t *pgdat;
 +	struct zone *zone;
-+	int rc = COMPACT_SKIPPED;
 +
-+	/*
-+	 * Check whether it is worth even starting compaction. The order check is
-+	 * made because an assumption is made that the page allocator can satisfy
-+	 * the "cheaper" orders without taking special steps
-+	 */
-+	if (order <= PAGE_ALLOC_COSTLY_ORDER || !may_enter_fs || !may_perform_io)
-+		return rc;
++	if (nid < 0 || nid >= nr_node_ids || !node_online(nid))
++		return -EINVAL;
++	pgdat = NODE_DATA(nid);
 +
-+	count_vm_event(COMPACTSTALL);
++	/* Flush pending updates to the LRU lists */
++	lru_add_drain_all();
 +
-+	/* Compact each zone in the list */
-+	for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
-+								nodemask) {
-+		int fragindex;
-+		int status;
++	for (zoneid = 0; zoneid < MAX_NR_ZONES; zoneid++) {
++		struct compact_control cc;
 +
-+		/*
-+		 * Watermarks for order-0 must be met for compaction. Note
-+		 * the 2UL. This is because during migration, copies of
-+		 * pages need to be allocated and for a short time, the
-+		 * footprint is higher
-+		 */
-+		watermark = low_wmark_pages(zone) + (2UL << order);
-+		if (!zone_watermark_ok(zone, 0, watermark, 0, 0))
++		zone = &pgdat->node_zones[zoneid];
++		if (!populated_zone(zone))
 +			continue;
 +
-+		/*
-+		 * fragmentation index determines if allocation failures are
-+		 * due to low memory or external fragmentation
-+		 *
-+		 * index of -1 implies allocations might succeed depending
-+		 * 	on watermarks
-+		 * index towards 0 implies failure is due to lack of memory
-+		 * index towards 1000 implies failure is due to fragmentation
-+		 *
-+		 * Only compact if a failure would be due to fragmentation.
-+		 */
-+		fragindex = fragmentation_index(zone, order);
-+		if (fragindex >= 0 && fragindex <= 500)
-+			continue;
++		cc.nr_freepages = 0;
++		cc.nr_migratepages = 0;
++		cc.zone = zone;
++		INIT_LIST_HEAD(&cc.freepages);
++		INIT_LIST_HEAD(&cc.migratepages);
 +
-+		if (fragindex == -1 && zone_watermark_ok(zone, order, watermark, 0, 0)) {
-+			rc = COMPACT_PARTIAL;
-+			break;
-+		}
++		compact_zone(zone, &cc);
 +
-+		status = compact_zone_order(zone, order, gfp_mask);
-+		rc = max(status, rc);
-+
-+		if (zone_watermark_ok(zone, order, watermark, 0, 0))
-+			break;
++		VM_BUG_ON(!list_empty(&cc.freepages));
++		VM_BUG_ON(!list_empty(&cc.migratepages));
 +	}
 +
-+	return rc;
++	return 0;
 +}
 +
-+
- /* Compact all zones within a node */
- static int compact_node(int nid)
- {
-@@ -403,6 +519,7 @@ static int compact_node(int nid)
- 		cc.nr_freepages = 0;
- 		cc.nr_migratepages = 0;
- 		cc.zone = zone;
-+		cc.order = -1;
- 		INIT_LIST_HEAD(&cc.freepages);
- 		INIT_LIST_HEAD(&cc.migratepages);
- 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 3cf947d..7a2e4a2 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -49,6 +49,7 @@
- #include <linux/debugobjects.h>
- #include <linux/kmemleak.h>
- #include <linux/memory.h>
-+#include <linux/compaction.h>
- #include <trace/events/kmem.h>
- #include <linux/ftrace_event.h>
- 
-@@ -1768,6 +1769,36 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
- 
- 	cond_resched();
- 
-+	/* Try memory compaction for high-order allocations before reclaim */
-+	if (order) {
-+		*did_some_progress = try_to_compact_pages(zonelist,
-+						order, gfp_mask, nodemask);
-+		if (*did_some_progress != COMPACT_SKIPPED) {
-+
-+			/* Page migration frees to the PCP lists but we want merging */
-+			drain_pages(get_cpu());
-+			put_cpu();
-+
-+			page = get_page_from_freelist(gfp_mask, nodemask,
-+					order, zonelist, high_zoneidx,
-+					alloc_flags, preferred_zone,
-+					migratetype);
-+			if (page) {
-+				__count_vm_event(COMPACTSUCCESS);
-+				return page;
-+			}
-+
-+			/*
-+			 * It's bad if compaction run occurs and fails.
-+			 * The most likely reason is that pages exist,
-+			 * but not enough to satisfy watermarks.
-+			 */
-+			count_vm_event(COMPACTFAIL);
-+
-+			cond_resched();
-+		}
-+	}
-+
- 	/* We now go into synchronous reclaim */
- 	cpuset_memory_pressure_bump();
- 	p->flags |= PF_MEMALLOC;
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 3a69b48..2780a36 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -561,7 +561,7 @@ static int unusable_show(struct seq_file *m, void *arg)
-  * The value can be used to determine if page reclaim or compaction
-  * should be used
-  */
--int fragmentation_index(unsigned int order, struct contig_page_info *info)
-+int __fragmentation_index(unsigned int order, struct contig_page_info *info)
- {
- 	unsigned long requested = 1UL << order;
- 
-@@ -581,6 +581,14 @@ int fragmentation_index(unsigned int order, struct contig_page_info *info)
- 	return 1000 - div_u64( (1000+(div_u64(info->free_pages * 1000ULL, requested))), info->free_blocks_total);
- }
- 
-+/* Same as __fragmentation index but allocs contig_page_info on stack */
-+int fragmentation_index(struct zone *zone, unsigned int order)
++/* Compact all nodes in the system */
++static int compact_nodes(void)
 +{
-+	struct contig_page_info info;
++	int nid;
 +
-+	fill_contig_page_info(zone, order, &info);
-+	return __fragmentation_index(order, &info);
++	for_each_online_node(nid)
++		compact_node(nid);
++
++	return COMPACT_COMPLETE;
 +}
- 
- static void extfrag_show_print(struct seq_file *m,
- 					pg_data_t *pgdat, struct zone *zone)
-@@ -596,7 +604,7 @@ static void extfrag_show_print(struct seq_file *m,
- 				zone->name);
- 	for (order = 0; order < MAX_ORDER; ++order) {
- 		fill_contig_page_info(zone, order, &info);
--		index = fragmentation_index(order, &info);
-+		index = __fragmentation_index(order, &info);
- 		seq_printf(m, "%d.%03d ", index / 1000, index % 1000);
- 	}
- 
-@@ -896,6 +904,9 @@ static const char * const vmstat_text[] = {
- 	"compact_blocks_moved",
- 	"compact_pages_moved",
- 	"compact_pagemigrate_failed",
-+	"compact_stall",
-+	"compact_fail",
-+	"compact_success",
- 
- #ifdef CONFIG_HUGETLB_PAGE
- 	"htlb_buddy_alloc_success",
++
++/* The written value is actually unused, all memory is compacted */
++int sysctl_compact_memory;
++
++/* This is the entry point for compacting all nodes via /proc/sys/vm */
++int sysctl_compaction_handler(struct ctl_table *table, int write,
++			void __user *buffer, size_t *length, loff_t *ppos)
++{
++	if (write)
++		return compact_nodes();
++
++	return 0;
++}
 -- 
 1.6.5
 
