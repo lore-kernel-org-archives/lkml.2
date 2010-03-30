@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757318Ab0C3XrG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:47:06 -0400
-Received: from kroah.org ([198.145.64.141]:45985 "EHLO coco.kroah.org"
+	id S1756954Ab0C3XWw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:22:52 -0400
+Received: from kroah.org ([198.145.64.141]:46784 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932515Ab0C3XT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:58 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:52 2010
-Message-Id: <20100330224751.508527804@linux.site>
+	id S932398Ab0C3XV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:21:58 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:51 2010
+Message-Id: <20100330224850.392269123@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:41:23 -0700
+Date: Tue, 30 Mar 2010 15:42:52 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jean Pihet <jpihet@mvista.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
+       Pablo Neira Ayuso <pablo@netfilter.org>,
        "David S. Miller" <davem@davemloft.net>,
-       Jamie Iles <jamie.iles@picochip.com>, Paul Mackerras <paulus@samba.org>,
-       Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [049/156] perf: Provide generic perf_sample_data initialization
+Subject: [138/156] netlink: fix NETLINK_RECV_NO_ENOBUFS in netlink_set_err()
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,169 +27,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-This makes it easier to extend perf_sample_data and fixes a bug on arm
-and sparc, which failed to set ->raw to NULL, which can cause crashes
-when combined with PERF_SAMPLE_RAW.
+[ Upstream commit 1a50307ba1826e4da0024e64b245ce4eadf7688a ]
 
-It also optimizes PowerPC and tracepoint, because the struct
-initialization is forced to zero out the whole structure.
+Currently, ENOBUFS errors are reported to the socket via
+netlink_set_err() even if NETLINK_RECV_NO_ENOBUFS is set. However,
+that should not happen. This fixes this problem and it changes the
+prototype of netlink_set_err() to return the number of sockets that
+have set the NETLINK_RECV_NO_ENOBUFS socket option. This return
+value is used in the next patch in these bugfix series.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Jean Pihet <jpihet@mvista.com>
-Reviewed-by: Frederic Weisbecker <fweisbec@gmail.com>
-Acked-by: David S. Miller <davem@davemloft.net>
-Cc: Jamie Iles <jamie.iles@picochip.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Stephane Eranian <eranian@google.com>
-LKML-Reference: <20100304140100.315416040@chello.nl>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/perf_event.c |    8 ++++----
- arch/sparc/kernel/perf_event.c   |    2 +-
- arch/x86/kernel/cpu/perf_event.c |    9 +++------
- include/linux/perf_event.h       |    7 +++++++
- kernel/perf_event.c              |   21 ++++++++-------------
- 5 files changed, 23 insertions(+), 24 deletions(-)
+ include/linux/netlink.h  |    2 +-
+ net/netlink/af_netlink.c |   17 ++++++++++++++---
+ 2 files changed, 15 insertions(+), 4 deletions(-)
 
---- a/arch/powerpc/kernel/perf_event.c
-+++ b/arch/powerpc/kernel/perf_event.c
-@@ -1164,10 +1164,10 @@ static void record_and_restart(struct pe
- 	 * Finally record data if requested.
- 	 */
- 	if (record) {
--		struct perf_sample_data data = {
--			.addr	= ~0ULL,
--			.period	= event->hw.last_period,
--		};
-+		struct perf_sample_data data;
-+
-+		perf_sample_data_init(&data, ~0ULL);
-+		data.period = event->hw.last_period;
+--- a/include/linux/netlink.h
++++ b/include/linux/netlink.h
+@@ -188,7 +188,7 @@ extern int netlink_has_listeners(struct
+ extern int netlink_unicast(struct sock *ssk, struct sk_buff *skb, __u32 pid, int nonblock);
+ extern int netlink_broadcast(struct sock *ssk, struct sk_buff *skb, __u32 pid,
+ 			     __u32 group, gfp_t allocation);
+-extern void netlink_set_err(struct sock *ssk, __u32 pid, __u32 group, int code);
++extern int netlink_set_err(struct sock *ssk, __u32 pid, __u32 group, int code);
+ extern int netlink_register_notifier(struct notifier_block *nb);
+ extern int netlink_unregister_notifier(struct notifier_block *nb);
  
- 		if (event->attr.sample_type & PERF_SAMPLE_ADDR)
- 			perf_get_data_addr(regs, &data.addr);
---- a/arch/sparc/kernel/perf_event.c
-+++ b/arch/sparc/kernel/perf_event.c
-@@ -1189,7 +1189,7 @@ static int __kprobes perf_event_nmi_hand
- 
- 	regs = args->regs;
- 
--	data.addr = 0;
-+	perf_sample_data_init(&data, 0);
- 
- 	cpuc = &__get_cpu_var(cpu_hw_events);
- 
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1636,10 +1636,9 @@ static void intel_pmu_drain_bts_buffer(s
- 
- 	ds->bts_index = ds->bts_buffer_base;
- 
-+	perf_sample_data_init(&data, 0);
- 
- 	data.period	= event->hw.last_period;
--	data.addr	= 0;
--	data.raw	= NULL;
- 	regs.ip		= 0;
- 
- 	/*
-@@ -1756,8 +1755,7 @@ static int p6_pmu_handle_irq(struct pt_r
- 	int idx, handled = 0;
- 	u64 val;
- 
--	data.addr = 0;
--	data.raw = NULL;
-+	perf_sample_data_init(&data, 0);
- 
- 	cpuc = &__get_cpu_var(cpu_hw_events);
- 
-@@ -1802,8 +1800,7 @@ static int intel_pmu_handle_irq(struct p
- 	int bit, loops;
- 	u64 ack, status;
- 
--	data.addr = 0;
--	data.raw = NULL;
-+	perf_sample_data_init(&data, 0);
- 
- 	cpuc = &__get_cpu_var(cpu_hw_events);
- 
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -793,6 +793,13 @@ struct perf_sample_data {
- 	struct perf_raw_record		*raw;
- };
- 
-+static inline
-+void perf_sample_data_init(struct perf_sample_data *data, u64 addr)
-+{
-+	data->addr = addr;
-+	data->raw  = NULL;
-+}
-+
- extern void perf_output_sample(struct perf_output_handle *handle,
- 			       struct perf_event_header *header,
- 			       struct perf_sample_data *data,
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -4027,8 +4027,7 @@ void __perf_sw_event(u32 event_id, u64 n
- 	if (rctx < 0)
- 		return;
- 
--	data.addr = addr;
--	data.raw  = NULL;
-+	perf_sample_data_init(&data, addr);
- 
- 	do_perf_sw_event(PERF_TYPE_SOFTWARE, event_id, nr, nmi, &data, regs);
- 
-@@ -4073,11 +4072,10 @@ static enum hrtimer_restart perf_swevent
- 	struct perf_event *event;
- 	u64 period;
- 
--	event	= container_of(hrtimer, struct perf_event, hw.hrtimer);
-+	event = container_of(hrtimer, struct perf_event, hw.hrtimer);
- 	event->pmu->read(event);
- 
--	data.addr = 0;
--	data.raw = NULL;
-+	perf_sample_data_init(&data, 0);
- 	data.period = event->hw.last_period;
- 	regs = get_irq_regs();
- 	/*
-@@ -4241,17 +4239,15 @@ static const struct pmu perf_ops_task_cl
- void perf_tp_event(int event_id, u64 addr, u64 count, void *record,
- 			  int entry_size)
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -1093,6 +1093,7 @@ static inline int do_one_set_err(struct
+ 				 struct netlink_set_err_data *p)
  {
-+	struct pt_regs *regs = get_irq_regs();
-+	struct perf_sample_data data;
- 	struct perf_raw_record raw = {
- 		.size = entry_size,
- 		.data = record,
- 	};
+ 	struct netlink_sock *nlk = nlk_sk(sk);
++	int ret = 0;
  
--	struct perf_sample_data data = {
--		.addr = addr,
--		.raw = &raw,
--	};
--
--	struct pt_regs *regs = get_irq_regs();
-+	perf_sample_data_init(&data, addr);
-+	data.raw = &raw;
+ 	if (sk == p->exclude_sk)
+ 		goto out;
+@@ -1104,10 +1105,15 @@ static inline int do_one_set_err(struct
+ 	    !test_bit(p->group - 1, nlk->groups))
+ 		goto out;
  
- 	if (!regs)
- 		regs = task_pt_regs(current);
-@@ -4367,8 +4363,7 @@ void perf_bp_event(struct perf_event *bp
- 	struct perf_sample_data sample;
- 	struct pt_regs *regs = data;
++	if (p->code == ENOBUFS && nlk->flags & NETLINK_RECV_NO_ENOBUFS) {
++		ret = 1;
++		goto out;
++	}
++
+ 	sk->sk_err = p->code;
+ 	sk->sk_error_report(sk);
+ out:
+-	return 0;
++	return ret;
+ }
  
--	sample.raw = NULL;
--	sample.addr = bp->attr.bp_addr;
-+	perf_sample_data_init(&sample, bp->attr.bp_addr);
+ /**
+@@ -1116,12 +1122,16 @@ out:
+  * @pid: the PID of a process that we want to skip (if any)
+  * @groups: the broadcast group that will notice the error
+  * @code: error code, must be negative (as usual in kernelspace)
++ *
++ * This function returns the number of broadcast listeners that have set the
++ * NETLINK_RECV_NO_ENOBUFS socket option.
+  */
+-void netlink_set_err(struct sock *ssk, u32 pid, u32 group, int code)
++int netlink_set_err(struct sock *ssk, u32 pid, u32 group, int code)
+ {
+ 	struct netlink_set_err_data info;
+ 	struct hlist_node *node;
+ 	struct sock *sk;
++	int ret = 0;
  
- 	if (!perf_exclude_event(bp, regs))
- 		perf_swevent_add(bp, 1, 1, &sample, regs);
+ 	info.exclude_sk = ssk;
+ 	info.pid = pid;
+@@ -1132,9 +1142,10 @@ void netlink_set_err(struct sock *ssk, u
+ 	read_lock(&nl_table_lock);
+ 
+ 	sk_for_each_bound(sk, node, &nl_table[ssk->sk_protocol].mc_list)
+-		do_one_set_err(sk, &info);
++		ret += do_one_set_err(sk, &info);
+ 
+ 	read_unlock(&nl_table_lock);
++	return ret;
+ }
+ EXPORT_SYMBOL(netlink_set_err);
+ 
 
 
