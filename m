@@ -1,59 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757581Ab0C3X7z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:59:55 -0400
-Received: from kroah.org ([198.145.64.141]:45443 "EHLO coco.kroah.org"
+	id S1757170Ab0C3Xi4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:38:56 -0400
+Received: from kroah.org ([198.145.64.141]:46316 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932318Ab0C3XSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:53 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:04 2010
-Message-Id: <20100330225704.482372201@linux.site>
+	id S932664Ab0C3XUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:20:44 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:17 2010
+Message-Id: <20100330224816.588702285@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:56:15 -0700
+Date: Tue, 30 Mar 2010 15:42:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [097/116] ALSA: hda: Use LPIB for ga-ma770-ud3 board
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+       Daniel Taylor <daniel.taylor@wdc.com>,
+       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+       "H. Peter Anvin" <hpa@zytor.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [086/156] fs/partitions/msdos: add support for large disks
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: Daniel Taylor <Daniel.Taylor@wdc.com>
 
-commit 9ec8ddad59fadd8021adfea4cb716a49b0e232e9 upstream.
+commit 3fbf586cf7f245392142e5407c2a56f1cff979b6 upstream.
 
-BugLink: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=575669
+In order to use disks larger than 2TiB on Windows XP, it is necessary to
+use 4096-byte logical sectors in an MBR.
 
-The OR states that position_fix=1 is necessary to work around glitching
-during volume adjustments using PulseAudio.
+Although the kernel storage and functions called from msdos.c used
+"sector_t" internally, msdos.c still used u32 variables, which results in
+the ability to handle XP-compatible large disks.
 
-Reported-by: Carlos Laviola <claviola@debian.org>
-Tested-by: Carlos Laviola <claviola@debian.org>
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This patch changes the internal variables to "sector_t".
+
+Daniel said: "In the near future, WD will be releasing products that need
+this patch".
+
+[hirofumi@mail.parknet.co.jp: tweaks and fix]
+Signed-off-by: Daniel Taylor <daniel.taylor@wdc.com>
+Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/hda_intel.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/partitions/msdos.c |   74 ++++++++++++++++++++++++++------------------------
+ 1 file changed, 39 insertions(+), 35 deletions(-)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -2228,6 +2228,7 @@ static struct snd_pci_quirk position_fix
- 	SND_PCI_QUIRK(0x1106, 0x3288, "ASUS M2V-MX SE", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1043, 0x813d, "ASUS P5AD2", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1028, 0x01f6, "Dell Latitude 131L", POS_FIX_LPIB),
-+	SND_PCI_QUIRK(0x1458, 0xa022, "ga-ma770-ud3", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1462, 0x1002, "MSI Wind U115", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1565, 0x820f, "Biostar Microtech", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x8086, 0xd601, "eMachines T5212", POS_FIX_LPIB),
+--- a/fs/partitions/msdos.c
++++ b/fs/partitions/msdos.c
+@@ -31,14 +31,17 @@
+  */
+ #include <asm/unaligned.h>
+ 
+-#define SYS_IND(p)	(get_unaligned(&p->sys_ind))
+-#define NR_SECTS(p)	({ __le32 __a =	get_unaligned(&p->nr_sects);	\
+-				le32_to_cpu(__a); \
+-			})
+-
+-#define START_SECT(p)	({ __le32 __a =	get_unaligned(&p->start_sect);	\
+-				le32_to_cpu(__a); \
+-			})
++#define SYS_IND(p)	get_unaligned(&p->sys_ind)
++
++static inline sector_t nr_sects(struct partition *p)
++{
++	return (sector_t)get_unaligned_le32(&p->nr_sects);
++}
++
++static inline sector_t start_sect(struct partition *p)
++{
++	return (sector_t)get_unaligned_le32(&p->start_sect);
++}
+ 
+ static inline int is_extended_partition(struct partition *p)
+ {
+@@ -104,13 +107,13 @@ static int aix_magic_present(unsigned ch
+ 
+ static void
+ parse_extended(struct parsed_partitions *state, struct block_device *bdev,
+-			u32 first_sector, u32 first_size)
++			sector_t first_sector, sector_t first_size)
+ {
+ 	struct partition *p;
+ 	Sector sect;
+ 	unsigned char *data;
+-	u32 this_sector, this_size;
+-	int sector_size = bdev_logical_block_size(bdev) / 512;
++	sector_t this_sector, this_size;
++	sector_t sector_size = bdev_logical_block_size(bdev) / 512;
+ 	int loopct = 0;		/* number of links followed
+ 				   without finding a data partition */
+ 	int i;
+@@ -145,14 +148,14 @@ parse_extended(struct parsed_partitions
+ 		 * First process the data partition(s)
+ 		 */
+ 		for (i=0; i<4; i++, p++) {
+-			u32 offs, size, next;
+-			if (!NR_SECTS(p) || is_extended_partition(p))
++			sector_t offs, size, next;
++			if (!nr_sects(p) || is_extended_partition(p))
+ 				continue;
+ 
+ 			/* Check the 3rd and 4th entries -
+ 			   these sometimes contain random garbage */
+-			offs = START_SECT(p)*sector_size;
+-			size = NR_SECTS(p)*sector_size;
++			offs = start_sect(p)*sector_size;
++			size = nr_sects(p)*sector_size;
+ 			next = this_sector + offs;
+ 			if (i >= 2) {
+ 				if (offs + size > this_size)
+@@ -179,13 +182,13 @@ parse_extended(struct parsed_partitions
+ 		 */
+ 		p -= 4;
+ 		for (i=0; i<4; i++, p++)
+-			if (NR_SECTS(p) && is_extended_partition(p))
++			if (nr_sects(p) && is_extended_partition(p))
+ 				break;
+ 		if (i == 4)
+ 			goto done;	 /* nothing left to do */
+ 
+-		this_sector = first_sector + START_SECT(p) * sector_size;
+-		this_size = NR_SECTS(p) * sector_size;
++		this_sector = first_sector + start_sect(p) * sector_size;
++		this_size = nr_sects(p) * sector_size;
+ 		put_dev_sector(sect);
+ 	}
+ done:
+@@ -197,7 +200,7 @@ done:
+ 
+ static void
+ parse_solaris_x86(struct parsed_partitions *state, struct block_device *bdev,
+-			u32 offset, u32 size, int origin)
++			sector_t offset, sector_t size, int origin)
+ {
+ #ifdef CONFIG_SOLARIS_X86_PARTITION
+ 	Sector sect;
+@@ -244,7 +247,7 @@ parse_solaris_x86(struct parsed_partitio
+  */
+ static void
+ parse_bsd(struct parsed_partitions *state, struct block_device *bdev,
+-		u32 offset, u32 size, int origin, char *flavour,
++		sector_t offset, sector_t size, int origin, char *flavour,
+ 		int max_partitions)
+ {
+ 	Sector sect;
+@@ -263,7 +266,7 @@ parse_bsd(struct parsed_partitions *stat
+ 	if (le16_to_cpu(l->d_npartitions) < max_partitions)
+ 		max_partitions = le16_to_cpu(l->d_npartitions);
+ 	for (p = l->d_partitions; p - l->d_partitions < max_partitions; p++) {
+-		u32 bsd_start, bsd_size;
++		sector_t bsd_start, bsd_size;
+ 
+ 		if (state->next == state->limit)
+ 			break;
+@@ -290,7 +293,7 @@ parse_bsd(struct parsed_partitions *stat
+ 
+ static void
+ parse_freebsd(struct parsed_partitions *state, struct block_device *bdev,
+-		u32 offset, u32 size, int origin)
++		sector_t offset, sector_t size, int origin)
+ {
+ #ifdef CONFIG_BSD_DISKLABEL
+ 	parse_bsd(state, bdev, offset, size, origin,
+@@ -300,7 +303,7 @@ parse_freebsd(struct parsed_partitions *
+ 
+ static void
+ parse_netbsd(struct parsed_partitions *state, struct block_device *bdev,
+-		u32 offset, u32 size, int origin)
++		sector_t offset, sector_t size, int origin)
+ {
+ #ifdef CONFIG_BSD_DISKLABEL
+ 	parse_bsd(state, bdev, offset, size, origin,
+@@ -310,7 +313,7 @@ parse_netbsd(struct parsed_partitions *s
+ 
+ static void
+ parse_openbsd(struct parsed_partitions *state, struct block_device *bdev,
+-		u32 offset, u32 size, int origin)
++		sector_t offset, sector_t size, int origin)
+ {
+ #ifdef CONFIG_BSD_DISKLABEL
+ 	parse_bsd(state, bdev, offset, size, origin,
+@@ -324,7 +327,7 @@ parse_openbsd(struct parsed_partitions *
+  */
+ static void
+ parse_unixware(struct parsed_partitions *state, struct block_device *bdev,
+-		u32 offset, u32 size, int origin)
++		sector_t offset, sector_t size, int origin)
+ {
+ #ifdef CONFIG_UNIXWARE_DISKLABEL
+ 	Sector sect;
+@@ -348,7 +351,8 @@ parse_unixware(struct parsed_partitions
+ 
+ 		if (p->s_label != UNIXWARE_FS_UNUSED)
+ 			put_partition(state, state->next++,
+-						START_SECT(p), NR_SECTS(p));
++				      le32_to_cpu(p->start_sect),
++				      le32_to_cpu(p->nr_sects));
+ 		p++;
+ 	}
+ 	put_dev_sector(sect);
+@@ -363,7 +367,7 @@ parse_unixware(struct parsed_partitions
+  */
+ static void
+ parse_minix(struct parsed_partitions *state, struct block_device *bdev,
+-		u32 offset, u32 size, int origin)
++		sector_t offset, sector_t size, int origin)
+ {
+ #ifdef CONFIG_MINIX_SUBPARTITION
+ 	Sector sect;
+@@ -390,7 +394,7 @@ parse_minix(struct parsed_partitions *st
+ 			/* add each partition in use */
+ 			if (SYS_IND(p) == MINIX_PARTITION)
+ 				put_partition(state, state->next++,
+-					      START_SECT(p), NR_SECTS(p));
++					      start_sect(p), nr_sects(p));
+ 		}
+ 		printk(" >\n");
+ 	}
+@@ -401,7 +405,7 @@ parse_minix(struct parsed_partitions *st
+ static struct {
+ 	unsigned char id;
+ 	void (*parse)(struct parsed_partitions *, struct block_device *,
+-			u32, u32, int);
++			sector_t, sector_t, int);
+ } subtypes[] = {
+ 	{FREEBSD_PARTITION, parse_freebsd},
+ 	{NETBSD_PARTITION, parse_netbsd},
+@@ -415,7 +419,7 @@ static struct {
+  
+ int msdos_partition(struct parsed_partitions *state, struct block_device *bdev)
+ {
+-	int sector_size = bdev_logical_block_size(bdev) / 512;
++	sector_t sector_size = bdev_logical_block_size(bdev) / 512;
+ 	Sector sect;
+ 	unsigned char *data;
+ 	struct partition *p;
+@@ -483,8 +487,8 @@ int msdos_partition(struct parsed_partit
+ 
+ 	state->next = 5;
+ 	for (slot = 1 ; slot <= 4 ; slot++, p++) {
+-		u32 start = START_SECT(p)*sector_size;
+-		u32 size = NR_SECTS(p)*sector_size;
++		sector_t start = start_sect(p)*sector_size;
++		sector_t size = nr_sects(p)*sector_size;
+ 		if (!size)
+ 			continue;
+ 		if (is_extended_partition(p)) {
+@@ -513,7 +517,7 @@ int msdos_partition(struct parsed_partit
+ 		unsigned char id = SYS_IND(p);
+ 		int n;
+ 
+-		if (!NR_SECTS(p))
++		if (!nr_sects(p))
+ 			continue;
+ 
+ 		for (n = 0; subtypes[n].parse && id != subtypes[n].id; n++)
+@@ -521,8 +525,8 @@ int msdos_partition(struct parsed_partit
+ 
+ 		if (!subtypes[n].parse)
+ 			continue;
+-		subtypes[n].parse(state, bdev, START_SECT(p)*sector_size,
+-						NR_SECTS(p)*sector_size, slot);
++		subtypes[n].parse(state, bdev, start_sect(p)*sector_size,
++						nr_sects(p)*sector_size, slot);
+ 	}
+ 	put_dev_sector(sect);
+ 	return 1;
 
 
