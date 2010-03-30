@@ -1,41 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220Ab0C3Uro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 16:47:44 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58985
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756185Ab0C3Url (ORCPT
+	id S1756249Ab0C3UsH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 16:48:07 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:37140 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755553Ab0C3Uq2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 16:47:41 -0400
-Date: Tue, 30 Mar 2010 13:47:41 -0700 (PDT)
-Message-Id: <20100330.134741.203608594.davem@davemloft.net>
-To: steve@digidescorp.com
-Cc: netdev@vger.kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
-       jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-       linux-kernel@vger.kernel.org, monstr@monstr.eu, karl@hiramoto.org
-Subject: Re: [PATCH] net: Fix oops from tcp_collapse() when using splice()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1269981913-18073-1-git-send-email-steve@digidescorp.com>
-References: <1269981913-18073-1-git-send-email-steve@digidescorp.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 30 Mar 2010 16:46:28 -0400
+Date: Tue, 30 Mar 2010 22:36:49 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+       linux-usb@vger.kernel.org, linux-fbdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>,
+       Nicu Pavel <npavel@ituner.com>, Oliver Neukum <oliver@neukum.org>,
+       Jaya Kumar <jayakumar.lkml@gmail.com>
+Subject: [PATCH v6 5/8] hid: add GPO (leds) support to PicoLCD device
+Message-ID: <20100330223649.049e2846@neptune.home>
+In-Reply-To: <20100330223224.18fe4f3e@neptune.home>
+References: <20100324233707.7243b04d@neptune.home>
+	<20100324234022.0361bd80@neptune.home>
+	<20100326065656.GC26602@core.coreip.homeip.net>
+	<20100326102951.3b9ecda1@neptune.home>
+	<alpine.LNX.2.00.1003262156280.24576@pobox.suse.cz>
+	<20100327012245.0ace6a09@neptune.home>
+	<alpine.LNX.2.00.1003291144350.24576@pobox.suse.cz>
+	<20100329121611.0c22dcaf@pluto.restena.lu>
+	<alpine.LNX.2.00.1003301010410.24576@pobox.suse.cz>
+	<20100330223224.18fe4f3e@neptune.home>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven J. Magnani" <steve@digidescorp.com>
-Date: Tue, 30 Mar 2010 15:45:13 -0500
+Add leds support to PicoLCD device to drive the GPO pins.
 
-> tcp_read_sock() can have a eat skbs without immediately advancing copied_seq.
-> This can cause a panic in tcp_collapse() if it is called as a result
-> of the recv_actor dropping the socket lock.
-> 
-> A userspace program that splices data from a socket to either another
-> socket or to a file can trigger this bug.
-> 
-> Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+GPO support depends on leds class and is only being
+compiled if leds class has been selected.
 
-Thanks for fixing this I'll look at your patch more closely
-right now.
+Changes since v3:
+ - Moved PM support to separate patch
+Changes since v2:
+ - Drop inline keyword on non-stub functions
+
+Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+---
+ drivers/hid/Kconfig       |    6 +-
+ drivers/hid/hid-picolcd.c |  163 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 166 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 399edc5..34f6593 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -278,11 +278,11 @@ config HID_PICOLCD
+ 	  - Keypad
+ 	  - Switching between Firmware and Flash mode
+ 	  - Framebuffer for monochrome 256x64 display
+-	  - Backlight control    (needs CONFIG_BACKLIGHT_CLASS_DEVICE)
+-	  - Contrast control     (needs CONFIG_LCD_CLASS_DEVICE)
++	  - Backlight control         (needs CONFIG_BACKLIGHT_CLASS_DEVICE)
++	  - Contrast control          (needs CONFIG_LCD_CLASS_DEVICE)
++	  - General purpose outputs   (needs CONFIG_LEDS_CLASS)
+ 	  Features that are not (yet) supported:
+ 	  - IR
+-	  - General purpose outputs
+ 	  - EEProm / Flash access
+ 
+ config HID_QUANTA
+diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
+index 9f2c859..9c8bbaf 100644
+--- a/drivers/hid/hid-picolcd.c
++++ b/drivers/hid/hid-picolcd.c
+@@ -29,6 +29,8 @@
+ #include <linux/backlight.h>
+ #include <linux/lcd.h>
+ 
++#include <linux/leds.h>
++
+ #include <linux/seq_file.h>
+ #include <linux/debugfs.h>
+ 
+@@ -194,6 +196,11 @@ struct picolcd_data {
+ 	u8 lcd_brightness;
+ 	u8 lcd_power;
+ #endif /* CONFIG_BACKLIGHT_CLASS_DEVICE */
++#if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
++	/* LED stuff */
++	u8 led_state;
++	struct led_classdev *led[8];
++#endif /* CONFIG_LEDS_CLASS */
+ 
+ 	/* Housekeeping stuff */
+ 	spinlock_t lock;
+@@ -960,6 +967,153 @@ static inline int picolcd_resume_lcd(struct picolcd_data *data)
+ }
+ #endif /* CONFIG_LCD_CLASS_DEVICE */
+ 
++#if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
++/**
++ * LED class device
++ */
++static void picolcd_leds_set(struct picolcd_data *data)
++{
++	struct hid_report *report;
++	unsigned long flags;
++
++	if (!data->led[0])
++		return;
++	report = picolcd_out_report(REPORT_LED_STATE, data->hdev);
++	if (!report || report->maxfield != 1 || report->field[0]->report_count != 1)
++		return;
++
++	spin_lock_irqsave(&data->lock, flags);
++	hid_set_field(report->field[0], 0, data->led_state);
++	usbhid_submit_report(data->hdev, report, USB_DIR_OUT);
++	spin_unlock_irqrestore(&data->lock, flags);
++}
++
++static void picolcd_led_set_brightness(struct led_classdev *led_cdev,
++			enum led_brightness value)
++{
++	struct device *dev;
++	struct hid_device *hdev;
++	struct picolcd_data *data;
++	int i, state = 0;
++
++	dev  = led_cdev->dev->parent;
++	hdev = container_of(dev, struct hid_device, dev);
++	data = hid_get_drvdata(hdev);
++	for (i = 0; i < 8; i++) {
++		if (led_cdev != data->led[i])
++			continue;
++		state = (data->led_state >> i) & 1;
++		if (value == LED_OFF && state) {
++			data->led_state &= ~(1 << i);
++			picolcd_leds_set(data);
++		} else if (value != LED_OFF && !state) {
++			data->led_state |= 1 << i;
++			picolcd_leds_set(data);
++		}
++		break;
++	}
++}
++
++static enum led_brightness picolcd_led_get_brightness(struct led_classdev *led_cdev)
++{
++	struct device *dev;
++	struct hid_device *hdev;
++	struct picolcd_data *data;
++	int i, value = 0;
++
++	dev  = led_cdev->dev->parent;
++	hdev = container_of(dev, struct hid_device, dev);
++	data = hid_get_drvdata(hdev);
++	for (i = 0; i < 8; i++)
++		if (led_cdev == data->led[i]) {
++			value = (data->led_state >> i) & 1;
++			break;
++		}
++	return value ? LED_FULL : LED_OFF;
++}
++
++static int picolcd_init_leds(struct picolcd_data *data, struct hid_report *report)
++{
++	struct device *dev = &data->hdev->dev;
++	struct led_classdev *led;
++	size_t name_sz = strlen(dev_name(dev)) + 8;
++	char *name;
++	int i, ret = 0;
++
++	if (!report)
++		return -ENODEV;
++	if (report->maxfield != 1 || report->field[0]->report_count != 1 ||
++			report->field[0]->report_size != 8) {
++		dev_err(dev, "unsupported LED_STATE report");
++		return -EINVAL;
++	}
++
++	for (i = 0; i < 8; i++) {
++		led = kzalloc(sizeof(struct led_classdev)+name_sz, GFP_KERNEL);
++		if (!led) {
++			dev_err(dev, "can't allocate memory for LED %d\n", i);
++			ret = -ENOMEM;
++			goto err;
++		}
++		name = (void *)(&led[1]);
++		snprintf(name, name_sz, "%s::GPO%d", dev_name(dev), i);
++		led->name = name;
++		led->brightness = 0;
++		led->max_brightness = 1;
++		led->brightness_get = picolcd_led_get_brightness;
++		led->brightness_set = picolcd_led_set_brightness;
++
++		data->led[i] = led;
++		ret = led_classdev_register(dev, data->led[i]);
++		if (ret) {
++			data->led[i] = NULL;
++			kfree(led);
++			dev_err(dev, "can't register LED %d\n", i);
++			goto err;
++		}
++	}
++	return 0;
++err:
++	for (i = 0; i < 8; i++)
++		if (data->led[i]) {
++			led = data->led[i];
++			data->led[i] = NULL;
++			led_classdev_unregister(led);
++			kfree(led);
++		}
++	return ret;
++}
++
++static void picolcd_exit_leds(struct picolcd_data *data)
++{
++	struct led_classdev *led;
++	int i;
++
++	for (i = 0; i < 8; i++) {
++		led = data->led[i];
++		data->led[i] = NULL;
++		if (!led)
++			continue;
++		led_classdev_unregister(led);
++		kfree(led);
++	}
++}
++
++#else
++static inline int picolcd_init_leds(struct picolcd_data *data,
++		struct hid_report *report)
++{
++	return 0;
++}
++static void picolcd_exit_leds(struct picolcd_data *data)
++{
++}
++static inline int picolcd_leds_set(struct picolcd_data *data)
++{
++	return 0;
++}
++#endif /* CONFIG_LEDS_CLASS */
++
+ /*
+  * input class device
+  */
+@@ -1102,6 +1256,7 @@ static int picolcd_reset(struct hid_device *hdev)
+ 		schedule_delayed_work(&data->fb_info->deferred_work, 0);
+ #endif /* CONFIG_FB */
+ 
++	picolcd_leds_set(data);
+ 	return 0;
+ }
+ 
+@@ -1795,6 +1950,11 @@ static int picolcd_probe_lcd(struct hid_device *hdev, struct picolcd_data *data)
+ 	if (error)
+ 		goto err;
+ 
++	/* Setup the LED class devices */
++	error = picolcd_init_leds(data, picolcd_out_report(REPORT_LED_STATE, hdev));
++	if (error)
++		goto err;
++
+ #ifdef CONFIG_DEBUG_FS
+ 	report = picolcd_out_report(REPORT_READ_MEMORY, hdev);
+ 	if (report && report->maxfield == 1 && report->field[0]->report_size == 8)
+@@ -1804,6 +1964,7 @@ static int picolcd_probe_lcd(struct hid_device *hdev, struct picolcd_data *data)
+ #endif
+ 	return 0;
+ err:
++	picolcd_exit_leds(data);
+ 	picolcd_exit_backlight(data);
+ 	picolcd_exit_lcd(data);
+ 	picolcd_exit_framebuffer(data);
+@@ -1936,6 +2097,8 @@ static void picolcd_remove(struct hid_device *hdev)
+ 		complete(&data->pending->ready);
+ 	spin_unlock_irqrestore(&data->lock, flags);
+ 
++	/* Cleanup LED */
++	picolcd_exit_leds(data);
+ 	/* Clean up the framebuffer */
+ 	picolcd_exit_backlight(data);
+ 	picolcd_exit_lcd(data);
+-- 
+1.6.4.4
+
