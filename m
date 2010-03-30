@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932721Ab0C3XW0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:22:26 -0400
-Received: from kroah.org ([198.145.64.141]:46544 "EHLO coco.kroah.org"
+	id S1757110Ab0C3XgW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:36:22 -0400
+Received: from kroah.org ([198.145.64.141]:46414 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756892Ab0C3XVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:21:24 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:35 2010
-Message-Id: <20100330224835.118495243@linux.site>
+	id S1755808Ab0C3XVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:21:00 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:25 2010
+Message-Id: <20100330224825.186397194@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:28 -0700
+Date: Tue, 30 Mar 2010 15:42:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       "David S. Miller" <davem@davemloft.net>,
+       Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [114/156] ide: Fix Promise UDMA33 IDE driver (pdc202xx_old)
+Subject: [098/156] drm/i915: Avoid NULL deref in get_pages() unwind after error.
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,88 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk@arm.linux.org.uk>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-[ Upstream commit c3be57b6f35ef96a980ce84e59d6a5a8ca6184ad ]
+commit 1f2b10131f83f7caa67bf1273cec126b4283015d upstream.
 
-On Sun, Jan 03, 2010 at 12:23:14AM +0000, Russell King wrote:
-> - with IDE
->   - locks the interrupt line, and makes the machine extremely painful -
->     about an hour to get to the point of being able to unload the
->     pdc202xx_old module.
+Fixes:
+  http://bugzilla.kernel.org/show_bug.cgi?id=15527
+  NULL pointer dereference in i915_gem_object_save_bit_17_swizzle
 
-Having manually bisected kernel versions, I've narrowed it down to some
-change between 2.6.30 and 2.6.31.  There's not much which has changed
-between the two kernels, but one change stands out like a sore thumb:
+BUG: unable to handle kernel NULL pointer dereference at (null)
+IP: [<f82b5d2b>] i915_gem_object_save_bit_17_swizzle+0x5b/0xc0 [i915]
+Call Trace:
+[<f82aea55>] ? i915_gem_object_put_pages+0x125/0x150 [i915]
+[<f82aeb71>] ? i915_gem_object_get_pages+0xf1/0x110 [i915]
+[<f82b0de8>] ? i915_gem_object_bind_to_gtt+0xb8/0x2a0 [i915]
+[<c02db74d>] ? drm_mm_get_block_generic+0x4d/0x180
+[<f82b11cd>] ? i915_gem_mmap_gtt_ioctl+0x16d/0x240 [i915]
+[<f82ae786>] ? i915_gem_madvise_ioctl+0x86/0x120 [i915]
 
-+static int pdc202xx_test_irq(ide_hwif_t *hwif)
-+{
-+       struct pci_dev *dev     = to_pci_dev(hwif->dev);
-+       unsigned long high_16   = pci_resource_start(dev, 4);
-+       u8 sc1d                 = inb(high_16 + 0x1d);
-+
-+       if (hwif->channel) {
-+               /*
-+                * bit 7: error, bit 6: interrupting,
-+                * bit 5: FIFO full, bit 4: FIFO empty
-+                */
-+               return ((sc1d & 0x50) == 0x40) ? 1 : 0;
-+       } else  {
-+               /*
-+                * bit 3: error, bit 2: interrupting,
-+                * bit 1: FIFO full, bit 0: FIFO empty
-+                */
-+               return ((sc1d & 0x05) == 0x04) ? 1 : 0;
-+       }
-+}
-
-Reading the (documented as a 32-bit) system control register when the
-interface is idle gives: 0x01da110c
-
-So, the byte at 0x1d is 0x11, which is documented as meaning that the
-primary and secondary FIFOs are empty.
-
-The code above, which is trying to see whether an IRQ is pending, checks
-for the IRQ bit to be one, and the FIFO bit to be zero - or in English,
-to be non-empty.
-
-Since during a BM-DMA read, the FIFOs will naturally be drained to the
-PCI bus, the chance of us getting to the interface before this happens
-are extremely small - and if we don't, it means we decide not to service
-the interrupt.  Hence, the screaming interrupt problem with drivers/ide.
-
-Fix this by only indicating an interrupt is ready if both the interrupt
-and FIFO empty bits are at '1'.
-
-This bug only affects PDC20246/PDC20247 (Promise Ultra33) based cards,
-and has been tested on 2.6.31 and 2.6.33-rc2.
-
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reported-by: maciej.rutecki@gmail.com
+Cc: stable@kernel.org
+Reviewed-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: Eric Anholt <eric@anholt.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ide/pdc202xx_old.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |   21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
---- a/drivers/ide/pdc202xx_old.c
-+++ b/drivers/ide/pdc202xx_old.c
-@@ -100,13 +100,13 @@ static int pdc202xx_test_irq(ide_hwif_t
- 		 * bit 7: error, bit 6: interrupting,
- 		 * bit 5: FIFO full, bit 4: FIFO empty
- 		 */
--		return ((sc1d & 0x50) == 0x40) ? 1 : 0;
-+		return ((sc1d & 0x50) == 0x50) ? 1 : 0;
- 	} else	{
- 		/*
- 		 * bit 3: error, bit 2: interrupting,
- 		 * bit 1: FIFO full, bit 0: FIFO empty
- 		 */
--		return ((sc1d & 0x05) == 0x04) ? 1 : 0;
-+		return ((sc1d & 0x05) == 0x05) ? 1 : 0;
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1470,9 +1470,6 @@ i915_gem_object_put_pages(struct drm_gem
+ 		obj_priv->dirty = 0;
+ 
+ 	for (i = 0; i < page_count; i++) {
+-		if (obj_priv->pages[i] == NULL)
+-			break;
+-
+ 		if (obj_priv->dirty)
+ 			set_page_dirty(obj_priv->pages[i]);
+ 
+@@ -2228,7 +2225,6 @@ i915_gem_object_get_pages(struct drm_gem
+ 	struct address_space *mapping;
+ 	struct inode *inode;
+ 	struct page *page;
+-	int ret;
+ 
+ 	if (obj_priv->pages_refcount++ != 0)
+ 		return 0;
+@@ -2251,11 +2247,9 @@ i915_gem_object_get_pages(struct drm_gem
+ 					   mapping_gfp_mask (mapping) |
+ 					   __GFP_COLD |
+ 					   gfpmask);
+-		if (IS_ERR(page)) {
+-			ret = PTR_ERR(page);
+-			i915_gem_object_put_pages(obj);
+-			return ret;
+-		}
++		if (IS_ERR(page))
++			goto err_pages;
++
+ 		obj_priv->pages[i] = page;
  	}
+ 
+@@ -2263,6 +2257,15 @@ i915_gem_object_get_pages(struct drm_gem
+ 		i915_gem_object_do_bit_17_swizzle(obj);
+ 
+ 	return 0;
++
++err_pages:
++	while (i--)
++		page_cache_release(obj_priv->pages[i]);
++
++	drm_free_large(obj_priv->pages);
++	obj_priv->pages = NULL;
++	obj_priv->pages_refcount--;
++	return PTR_ERR(page);
  }
  
+ static void i965_write_fence_reg(struct drm_i915_fence_reg *reg)
 
 
