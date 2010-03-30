@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339Ab0C3LWv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 07:22:51 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:37441 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756316Ab0C3LWq (ORCPT
+	id S1756362Ab0C3LW7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 07:22:59 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:35547 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756346Ab0C3LW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 07:22:46 -0400
+	Tue, 30 Mar 2010 07:22:56 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,88 +16,74 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 24/29] x86: Align e820 ram range to page
-Date: Tue, 30 Mar 2010 04:19:58 -0700
-Message-Id: <1269948003-17221-25-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 28/29] x86: Use walk_system_ream_range()instead of referring e820.map directly for tboot
+Date: Tue, 30 Mar 2010 04:20:02 -0700
+Message-Id: <1269948003-17221-29-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269948003-17221-1-git-send-email-yinghai@kernel.org>
 References: <1269948003-17221-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4BB1DEE2.0024,ss=1,fgs=0
+X-CT-RefId: str=0001.0A0B0207.4BB1DEEC.0153,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-to workaround wrong BIOS memory map.
+So we can make e820 to be __initdata
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/kernel/e820.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 44 insertions(+), 0 deletions(-)
+ arch/x86/kernel/tboot.c |   22 +++++++++-------------
+ 1 files changed, 9 insertions(+), 13 deletions(-)
 
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index e2a0b02..57c938a 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -910,6 +910,47 @@ static int __init parse_memmap_opt(char *p)
- }
- early_param("memmap", parse_memmap_opt);
+diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+index cc2c604..cf27d64 100644
+--- a/arch/x86/kernel/tboot.c
++++ b/arch/x86/kernel/tboot.c
+@@ -170,34 +170,30 @@ static void tboot_create_trampoline(void)
  
-+static void __init e820_align_ram_page(void)
-+{
-+	int i;
-+	bool changed = false;;
-+
-+	for (i = 0; i < e820.nr_map; i++) {
-+		struct e820entry *entry = &e820.map[i];
-+		u64 start, end;
-+		u64 start_aligned, end_aligned;
-+
-+		if (entry->type != E820_RAM)
-+			continue;
-+
-+		start = entry->addr;
-+		end = start + entry->size;
-+
-+		start_aligned = round_up(start, PAGE_SIZE);
-+		end_aligned = round_down(end, PAGE_SIZE);
-+
-+		if (end_aligned <= start_aligned) {
-+			e820_update_range(start, end - start, E820_RAM, E820_RESERVED);
-+			changed = true;
-+			continue;
-+		}
-+		if (start < start_aligned) {
-+			e820_update_range(start, start_aligned - start, E820_RAM, E820_RESERVED);
-+			changed = true;
-+		}
-+		if (end_aligned < end) {
-+			e820_update_range(end_aligned, end - end_aligned, E820_RAM, E820_RESERVED);
-+			changed = true;
-+		}
-+	}
-+
-+	if (changed) {
-+		sanitize_e820_map();
-+		printk(KERN_INFO "aligned physical RAM map:\n");
-+		e820_print_map("aligned");
-+	}
-+}
-+
- void __init finish_e820_parsing(void)
+ #ifdef CONFIG_ACPI_SLEEP
+ 
+-static void add_mac_region(phys_addr_t start, unsigned long size)
++static int
++add_mac_region(unsigned long start_pfn, unsigned long nr_pages, void  *arg)
  {
- 	if (userdef) {
-@@ -922,6 +963,9 @@ void __init finish_e820_parsing(void)
- 		printk(KERN_INFO "user-defined physical RAM map:\n");
- 		e820_print_map("user");
++	u64 start = start_pfn;
++	u64 size = nr_pages;
+ 	struct tboot_mac_region *mr;
+-	phys_addr_t end = start + size;
+ 
+ 	if (tboot->num_mac_regions >= MAX_TB_MAC_REGIONS)
+ 		panic("tboot: Too many MAC regions\n");
+ 
+ 	if (start && size) {
+ 		mr = &tboot->mac_regions[tboot->num_mac_regions++];
+-		mr->start = round_down(start, PAGE_SIZE);
+-		mr->size  = round_up(end, PAGE_SIZE) - mr->start;
++		mr->start = start << PAGE_SHIFT;
++		mr->size  = (u32) (size << PAGE_SHIFT);
  	}
 +
-+	/* In case, We have RAM entres that are not PAGE aligned */
-+	e820_align_ram_page();
++	return 0;
  }
  
- static inline const char *e820_type_to_string(int e820_type)
+ static int tboot_setup_sleep(void)
+ {
+-	int i;
+-
+ 	tboot->num_mac_regions = 0;
+ 
+-	for (i = 0; i < e820.nr_map; i++) {
+-		if ((e820.map[i].type != E820_RAM)
+-		 && (e820.map[i].type != E820_RESERVED_KERN))
+-			continue;
+-
+-		add_mac_region(e820.map[i].addr, e820.map[i].size);
+-	}
++	walk_system_ram_range(0, max_pfn, NULL, add_mac_region);
+ 
+ 	tboot->acpi_sinfo.kernel_s3_resume_vector = acpi_wakeup_address;
+ 
 -- 
 1.6.4.2
 
