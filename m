@@ -1,268 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab0C3HHI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 03:07:08 -0400
-Received: from mail-yw0-f172.google.com ([209.85.211.172]:59630 "EHLO
-	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab0C3HHE convert rfc822-to-8bit (ORCPT
+	id S1754263Ab0C3HHd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 03:07:33 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:36956 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794Ab0C3HHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 03:07:04 -0400
+	Tue, 30 Mar 2010 03:07:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=cEF45vBaSS8IoOOxvYJhzFdIOoCcdMzpK9CNtk1IkUeqW5mzpN/RpqUoGypu2rxTxA
-         5YjwMFXzOO/0g8AZYriYp98aZxxdjn9ACxWD9WF/IAH1OQJGrqJZ7a/s8cHqKxYIDruA
-         A+ojzRy3bpizRjKfrhMCNm2Qi7IHlHJBqj64g=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=K5ZoBEtMKUo8zUgOX9Nuv88BL5BfAwRYTLwz1z6JBANY4e8SZtAW5Btax3QYAt317O
+         99HdcmjEKwCM+KZ4ZzR48EFmlOq9BU7popJpCC+YjxjWMNBf5ZqZj9KeRGoWy/YydQqe
+         KyxcgYkW2m2lPEKUO3lekHjVfppYl0Xlc/SBk=
+Date: Tue, 30 Mar 2010 09:07:34 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 6/6] procfs: Kill the bkl in ioctl
+Message-ID: <20100330070733.GC22419@nowhere>
+References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <1269930015-863-7-git-send-regression-fweisbec@gmail.com> <b6fcc0a1003292338yafeb3d3k37fb3fa79af5340c@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1003300530150.5127@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1003300530150.5127@skynet.skynet.ie>
-Date: Tue, 30 Mar 2010 17:07:03 +1000
-Message-ID: <21d7e9971003300007re486f22jbd2e98fcc104ac92@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-From: Dave Airlie <airlied@gmail.com>
-To: Dave Airlie <airlied@linux.ie>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-       dri-devel@lists.sf.net
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <b6fcc0a1003292338yafeb3d3k37fb3fa79af5340c@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/3/30 Dave Airlie <airlied@linux.ie>:
->
-> [re-pull request]
+On Tue, Mar 30, 2010 at 09:38:11AM +0300, Alexey Dobriyan wrote:
+> On Tue, Mar 30, 2010 at 9:20 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > --- a/fs/proc/inode.c
+> > +++ b/fs/proc/inode.c
+> > @@ -231,9 +231,9 @@ static long proc_reg_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
+> >                if (rv == -ENOIOCTLCMD)
+> >                        rv = -EINVAL;
+> >        } else if (ioctl) {
+> > -               lock_kernel();
+> > +               WARN_ONCE(1, "Procfs ioctl handlers must use unlocked_ioctl, "
+> > +                         "%pf will be called without the Bkl held\n", ioctl);
+> >                rv = ioctl(file->f_path.dentry->d_inode, file, cmd, arg);
+> > -               unlock_kernel();
+> 
+> Then delete the branch.
+> Or go through formal feature-removal procedure.
 
-Actually Linus, don't bother, consider this revoked, I'm going to kill
-the GPU reset code
-and re-send this tomorrow, its just a mess to get it back out of the
-tree at this point,
 
-but I realised I was falling back to the old ways, of putting things
-with badness in, even
-if they helped a few people.
+I thought about it. I even started to write something in this
+feature-removal file but realized that I can't remove the
+.ioctl() callback from file operations. We still need to check
+the user hasn't made the mistake of implementing it.
 
-Jerome, GPU reset will have to wait until 2.6.35 now.
+What I can plan as a feature removal, though, is to keep the warning
+but don't actually call the ioctl.
 
-Dave.
-
->
-> Original pull req below + reverts the fallback placement change which had
-> a side effect of causing more lockups on some AGP systems (this is a bug in
-> the AGP drivers that needs to be tracked down), adds some further fixes
-> from Alex for radeon. Also in case you are wondering why this has a
-> v2.6.34-rc2 merge in the middle of it, one of the radeon changes needed an
-> i2c change before I could test it.
->
-> original pull text:
-> Some nouveau updates + misc drm core fixes,
->
-> radeon kms: mostly fixes, however a cleanup to the ugly asic tables to
-> avoid drift between C prototypes moves some stuff around, and I've merged
-> Jerome's GPU recovery code, as I'd much rather users had some of hope of
-> recovering from their GPU locking up than a dead box. It seems to work
-> for quite a lot of people that have tested it, and it won't make a GPU
-> lockup problem worse. This also finally fixes HDMI audio on rv7xx cards.
->
-> The following changes since commit 220bf991b0366cc50a94feede3d7341fa5710ee4:
->  Linus Torvalds (1):
->        Linux 2.6.34-rc2
->
-> are available in the git repository at:
->
->  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-linus
->
-> Alex Deucher (32):
->      drm/radeon: add new RS880 pci id
->      drm/radeon/kms/atom: spread spectrum fix
->      drm/radeon/kms: use lcd pll limits when available
->      drm/radeon/kms: further spread spectrum fixes
->      drm/radeon/kms: fix pal tv-out support on legacy IGP chips
->      drm/radeon/kms: fix for hw i2c
->      drm/radeon/kms: fix i2c prescale calc on older radeons
->      drm/radeon/kms/r1xx: enable hw i2c
->      drm/radeon/kms/rs4xx: make sure crtcs are enabled when setting timing
->      drm/radeon/r600: add missing license and comments to r600_blit_shaders.c
->      drm/radeon/kms: expose thermal/fan i2c buses
->      drm/radeon/kms/pm: fix segfault in clock code
->      drm/radeon/kms: gfx init fixes for r6xx/r7xx
->      drm/radeon/kms/pm: fix typo in power table parsing
->      drm/radeon/kms: init rdev->num_crtc at asic init
->      drm/radeon/kms: display watermark fixes
->      drm/radeon/kms: never treat rs4xx as AGP
->      drm/radeon/kms: fix display bandwidth setup on rs4xx
->      drm/radeon/kms: remove lvds quirks
->      drm/radeon/kms/atom: make sure tables are valid (v2)
->      drm/radeon/kms: use new pre/post_xfer i2c bit algo hooks
->      drm/radeon/kms: add hw_i2c module option
->      drm/radeon/r600: remove some regs are not safe regs for command buffers
->      drm/radeon/kms: fix some typos in r6xx/r7xx hpd setup
->      drm/radeon/r6xx/r7xx: CS parser fixes
->      drm/radeon/kms: bump the version for r6xx/r7xx const buffer support
->      drm/radeon: bump the UMS driver version for r6xx/r7xx const buffer support
->      drm/radeon/r6xx/r7xx: further safe reg clean up
->      drm/radeon/kms: fix macbookpro connector quirk
->      drm/radeon/kms/atom: minor fixes to transmitter setup
->      drm/radeon/kms/dp: remove extraneous training complete call
->      drm/radeon/kms: minor fixes for eDP with LCD* device tags (v2)
->
-> Ben Skeggs (5):
->      drm/nouveau: add option to allow override of dcb connector table types
->      drm/nouveau: Gigabyte NX85T connector table lies, it has DVI-I not HDMI
->      drm/nv50: fix connector table parsing for some cards
->      drm/nouveau: add module option to disable TV detection
->      drm/edid: allow certain bogus edids to hit a fixup path rather than fail
->
-> Chris Wilson (1):
->      drm: Return ENODEV if the inode mapping changes
->
-> Daniel Vetter (5):
->      drm/radeon: create radeon_asic.c
->      drm/radeon: move asic structs to radeon_asic.c
->      drm/radeon: unconfuse return value of radeon_asic->clear_surface_reg
->      drm/radeon: include radeon_asic.h in the asic specific files
->      drm/radeon: collect r100 asic related declarations in radeon_asic.h
->
-> Dave Airlie (8):
->      drm/ttm: use drm calloc large and free large
->      Merge remote branch 'nouveau/for-airlied' into drm-linus
->      Merge branch 'radeon-for-airlied' of ../linux-2.6 into drm-linus
->      drm/radeon/bo: add some fallback placements for VRAM only objects.
->      drm/radeon/kms: don't print error on -ERESTARTSYS.
->      Merge branch 'v2.6.34-rc2' into HEAD
->      Merge branch 'drm-radeon-fixes' into HEAD
->      Revert "drm/radeon/bo: add some fallback placements for VRAM only objects."
->
-> Francisco Jerez (2):
->      drm/nv04-nv40: Fix up the programmed horizontal sync pulse delay.
->      drm/nouveau: Never evict VRAM buffers to system.
->
-> Jerome Glisse (6):
->      drm/radeon/kms: catch atombios infinite loop and break out of it
->      drm/radeon/kms: fence cleanup + more reliable GPU lockup detection V4
->      drm/radeon/kms: rename gpu_reset to asic_reset
->      drm/radeon/kms: simplify & improve GPU reset V2
->      drm/radeon/kms: fix typo in r520 asic functions
->      drm/radeon/kms: avoid possible oops (call gart_fini before gart_disable)
->
-> Maarten Maathuis (2):
->      drm/nouveau: print a message very early during suspend
->      drm/nv50: add a memory barrier to pushbuf submission
->
-> Marcin Ko¶cielnicki (4):
->      drm/nv50: Remove redundant/incorrect ctxvals initialisation.
->      drm/nouveau: Fix fbcon corruption with font width not divisible by 8
->      drm/nv50: Make ctxprog wait until interrupt handler is done.
->      drm/nv50: Improve PGRAPH interrupt handling.
->
-> Michel Dänzer (1):
->      drm/radeon/kms: Only restrict BO to visible VRAM size when pinning to VRAM.
->
-> Pauli Nieminen (1):
->      drm/radeon/kms: Fix NULL pointer dereference if memory allocation failed.
->
-> Rafa³ Mi³ecki (8):
->      drm/radeon/kms: clean HDMI definitions
->      drm/radeon/kms: clean assigning HDMI blocks to encoders
->      drm/radeon/kms: add HDMI code for pre-DCE3 R6xx GPUs
->      drm/radeon/kms: enable audio engine on DCE32
->      drm/radeon/kms: remove dead audio/HDMI code
->      drm/radeon/kms: improve coding style a little
->      drm/radeon/kms: switch to condition waiting for reclocking
->      drm/radeon/kms: prepare for more reclocking operations
->
-> Randy Dunlap (2):
->      drm/vmwgfx: depends on FB
->      drm: fix build error when SYSRQ is disabled
->
-> Robert P. J. Day (1):
->      drm: "kobject_init/kobject_add" -> "kobject_init_and_add".
->
-> Zhao Yakui (1):
->      drm: remove the EDID blob stored in the EDID property when it is disconnected
->
->  drivers/gpu/drm/drm_crtc_helper.c           |    1 +
->  drivers/gpu/drm/drm_edid.c                  |    9 -
->  drivers/gpu/drm/drm_fb_helper.c             |    2 +
->  drivers/gpu/drm/drm_fops.c                  |   16 +-
->  drivers/gpu/drm/nouveau/Makefile            |    2 +-
->  drivers/gpu/drm/nouveau/nouveau_bios.c      |   28 +-
->  drivers/gpu/drm/nouveau/nouveau_bios.h      |    3 +-
->  drivers/gpu/drm/nouveau/nouveau_bo.c        |    3 +-
->  drivers/gpu/drm/nouveau/nouveau_connector.c |    2 +-
->  drivers/gpu/drm/nouveau/nouveau_dma.c       |    5 +
->  drivers/gpu/drm/nouveau/nouveau_drv.c       |   10 +
->  drivers/gpu/drm/nouveau/nouveau_drv.h       |    6 +
->  drivers/gpu/drm/nouveau/nouveau_irq.c       |  609 +++++++++++++++++++--
->  drivers/gpu/drm/nouveau/nouveau_state.c     |    5 +-
->  drivers/gpu/drm/nouveau/nv04_crtc.c         |    6 +-
->  drivers/gpu/drm/nouveau/nv04_fbcon.c        |    6 +-
->  drivers/gpu/drm/nouveau/nv50_display.c      |    4 +-
->  drivers/gpu/drm/nouveau/nv50_fb.c           |   32 ++
->  drivers/gpu/drm/nouveau/nv50_fbcon.c        |    2 +-
->  drivers/gpu/drm/nouveau/nv50_graph.c        |   22 +-
->  drivers/gpu/drm/nouveau/nv50_grctx.c        |   13 +-
->  drivers/gpu/drm/radeon/Makefile             |    2 +-
->  drivers/gpu/drm/radeon/atom.c               |   91 +++-
->  drivers/gpu/drm/radeon/atom.h               |    8 +-
->  drivers/gpu/drm/radeon/atombios_crtc.c      |   98 +++-
->  drivers/gpu/drm/radeon/atombios_dp.c        |    3 -
->  drivers/gpu/drm/radeon/evergreen.c          |   19 +-
->  drivers/gpu/drm/radeon/r100.c               |  262 +++++----
->  drivers/gpu/drm/radeon/r100d.h              |  128 +++++
->  drivers/gpu/drm/radeon/r200.c               |    1 +
->  drivers/gpu/drm/radeon/r300.c               |  161 +++---
->  drivers/gpu/drm/radeon/r300d.h              |   47 ++-
->  drivers/gpu/drm/radeon/r420.c               |    6 +-
->  drivers/gpu/drm/radeon/r520.c               |   14 +-
->  drivers/gpu/drm/radeon/r600.c               |  113 ++---
->  drivers/gpu/drm/radeon/r600_audio.c         |   52 +--
->  drivers/gpu/drm/radeon/r600_blit_kms.c      |    3 +
->  drivers/gpu/drm/radeon/r600_blit_shaders.c  |   35 ++
->  drivers/gpu/drm/radeon/r600_cp.c            |    3 +
->  drivers/gpu/drm/radeon/r600_cs.c            |   70 +++-
->  drivers/gpu/drm/radeon/r600_hdmi.c          |  191 ++++---
->  drivers/gpu/drm/radeon/r600_reg.h           |   10 +-
->  drivers/gpu/drm/radeon/r600d.h              |   49 ++
->  drivers/gpu/drm/radeon/radeon.h             |  175 +++----
->  drivers/gpu/drm/radeon/radeon_asic.c        |  786 +++++++++++++++++++++++++++
->  drivers/gpu/drm/radeon/radeon_asic.h        |  562 ++-----------------
->  drivers/gpu/drm/radeon/radeon_atombios.c    |  461 +++++++++-------
->  drivers/gpu/drm/radeon/radeon_combios.c     |    7 +-
->  drivers/gpu/drm/radeon/radeon_connectors.c  |    2 +-
->  drivers/gpu/drm/radeon/radeon_cs.c          |   15 +-
->  drivers/gpu/drm/radeon/radeon_device.c      |  261 ++-------
->  drivers/gpu/drm/radeon/radeon_display.c     |   51 ++-
->  drivers/gpu/drm/radeon/radeon_drv.c         |    7 +-
->  drivers/gpu/drm/radeon/radeon_drv.h         |    3 +-
->  drivers/gpu/drm/radeon/radeon_encoders.c    |  106 ++--
->  drivers/gpu/drm/radeon/radeon_fence.c       |  107 ++--
->  drivers/gpu/drm/radeon/radeon_gart.c        |    2 +-
->  drivers/gpu/drm/radeon/radeon_i2c.c         |  153 +++---
->  drivers/gpu/drm/radeon/radeon_irq_kms.c     |   14 +-
->  drivers/gpu/drm/radeon/radeon_legacy_crtc.c |    8 +
->  drivers/gpu/drm/radeon/radeon_legacy_tv.c   |   29 +-
->  drivers/gpu/drm/radeon/radeon_mode.h        |   12 +-
->  drivers/gpu/drm/radeon/radeon_object.c      |    6 +-
->  drivers/gpu/drm/radeon/radeon_pm.c          |   46 ++-
->  drivers/gpu/drm/radeon/reg_srcs/r600        |   75 ---
->  drivers/gpu/drm/radeon/rs400.c              |   11 +-
->  drivers/gpu/drm/radeon/rs600.c              |   85 +++-
->  drivers/gpu/drm/radeon/rs600d.h             |   46 ++
->  drivers/gpu/drm/radeon/rs690.c              |   93 ++--
->  drivers/gpu/drm/radeon/rv515.c              |  106 +----
->  drivers/gpu/drm/radeon/rv515d.h             |   46 ++
->  drivers/gpu/drm/radeon/rv770.c              |   37 +-
->  drivers/gpu/drm/ttm/ttm_bo.c                |    4 +-
->  drivers/gpu/drm/ttm/ttm_memory.c            |   18 +-
->  drivers/gpu/drm/ttm/ttm_tt.c                |   23 +-
->  drivers/gpu/drm/vmwgfx/Kconfig              |    2 +-
->  include/drm/drmP.h                          |   34 +--
->  include/drm/drm_mem_util.h                  |   65 +++
->  include/drm/drm_pciids.h                    |    1 +
->  include/drm/ttm/ttm_bo_driver.h             |    1 -
->  80 files changed, 3503 insertions(+), 2109 deletions(-)
->  create mode 100644 drivers/gpu/drm/nouveau/nv50_fb.c
->  create mode 100644 drivers/gpu/drm/radeon/radeon_asic.c
->  create mode 100644 include/drm/drm_mem_util.h
