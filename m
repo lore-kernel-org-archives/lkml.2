@@ -1,61 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab0CaALM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:11:12 -0400
-Received: from kroah.org ([198.145.64.141]:51979 "EHLO coco.kroah.org"
+	id S1756625Ab0CaAVG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:21:06 -0400
+Received: from kroah.org ([198.145.64.141]:49163 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932190Ab0C3XSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:00 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:26 2010
-Message-Id: <20100330225626.394316087@linux.site>
+	id S1756607Ab0C3XMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:50 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:48 2010
+Message-Id: <20100330225848.178293426@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:22 -0700
+Date: Tue, 30 Mar 2010 15:58:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Takashi Iwai <tiwai@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [044/116] ALSA: hda - Disable MSI for Nvidia controller
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+       Ben Hutchings <ben@decadent.org.uk>, Dave Airlie <airlied@redhat.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [64/89] drm/r128: Add test for initialisation to all ioctls that require it
+In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.31-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 80c43ed724797627d8f86855248c497a6161a214 upstream.
+commit 7dc482dfeeeefcfd000d4271c4626937406756d7 upstream.
 
-Judging from the member of enable_msi white-list, Nvidia controller
-seems to cause troubles with MSI enabled, e.g. boot hang up or other
-serious issue may come up.  It's safer to disable MSI as default for
-Nvidia controllers again for now.
+Almost all r128's private ioctls require that the CCE state has
+already been initialised.  However, most do not test that this has
+been done, and will proceed to dereference a null pointer.  This may
+result in a security vulnerability, since some ioctls are
+unprivileged.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This adds a macro for the common initialisation test and changes all
+ioctl implementations that require prior initialisation to use that
+macro.
+
+Also, r128_do_init_cce() does not test that the CCE state has not
+been initialised already.  Repeated initialisation may lead to a crash
+or resource leak.  This adds that test.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/hda_intel.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/gpu/drm/r128/r128_cce.c   |   18 ++++++++++++++----
+ drivers/gpu/drm/r128/r128_drv.h   |    8 ++++++++
+ drivers/gpu/drm/r128/r128_state.c |   36 +++++++++++++++++++-----------------
+ 3 files changed, 41 insertions(+), 21 deletions(-)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -2335,6 +2335,13 @@ static void __devinit check_msi(struct a
- 		       "hda_intel: msi for device %04x:%04x set to %d\n",
- 		       q->subvendor, q->subdevice, q->value);
- 		chip->msi = q->value;
-+		return;
+--- a/drivers/gpu/drm/r128/r128_cce.c
++++ b/drivers/gpu/drm/r128/r128_cce.c
+@@ -353,6 +353,11 @@ static int r128_do_init_cce(struct drm_d
+ 
+ 	DRM_DEBUG("\n");
+ 
++	if (dev->dev_private) {
++		DRM_DEBUG("called when already initialized\n");
++		return -EINVAL;
 +	}
 +
-+	/* NVidia chipsets seem to cause troubles with MSI */
-+	if (chip->driver_type == AZX_DRIVER_NVIDIA) {
-+		printk(KERN_INFO "hda_intel: Disable MSI for Nvidia chipset\n");
-+		chip->msi = 0;
+ 	dev_priv = kzalloc(sizeof(drm_r128_private_t), GFP_KERNEL);
+ 	if (dev_priv == NULL)
+ 		return -ENOMEM;
+@@ -649,6 +654,8 @@ int r128_cce_start(struct drm_device *de
+ 
+ 	LOCK_TEST_WITH_RETURN(dev, file_priv);
+ 
++	DEV_INIT_TEST_WITH_RETURN(dev_priv);
++
+ 	if (dev_priv->cce_running || dev_priv->cce_mode == R128_PM4_NONPM4) {
+ 		DRM_DEBUG("while CCE running\n");
+ 		return 0;
+@@ -671,6 +678,8 @@ int r128_cce_stop(struct drm_device *dev
+ 
+ 	LOCK_TEST_WITH_RETURN(dev, file_priv);
+ 
++	DEV_INIT_TEST_WITH_RETURN(dev_priv);
++
+ 	/* Flush any pending CCE commands.  This ensures any outstanding
+ 	 * commands are exectuted by the engine before we turn it off.
+ 	 */
+@@ -708,10 +717,7 @@ int r128_cce_reset(struct drm_device *de
+ 
+ 	LOCK_TEST_WITH_RETURN(dev, file_priv);
+ 
+-	if (!dev_priv) {
+-		DRM_DEBUG("called before init done\n");
+-		return -EINVAL;
+-	}
++	DEV_INIT_TEST_WITH_RETURN(dev_priv);
+ 
+ 	r128_do_cce_reset(dev_priv);
+ 
+@@ -728,6 +734,8 @@ int r128_cce_idle(struct drm_device *dev
+ 
+ 	LOCK_TEST_WITH_RETURN(dev, file_priv);
+ 
++	DEV_INIT_TEST_WITH_RETURN(dev_priv);
++
+ 	if (dev_priv->cce_running) {
+ 		r128_do_cce_flush(dev_priv);
  	}
+@@ -741,6 +749,8 @@ int r128_engine_reset(struct drm_device
+ 
+ 	LOCK_TEST_WITH_RETURN(dev, file_priv);
+ 
++	DEV_INIT_TEST_WITH_RETURN(dev->dev_private);
++
+ 	return r128_do_engine_reset(dev);
  }
+ 
+--- a/drivers/gpu/drm/r128/r128_drv.h
++++ b/drivers/gpu/drm/r128/r128_drv.h
+@@ -422,6 +422,14 @@ static __inline__ void r128_update_ring_
+  * Misc helper macros
+  */
+ 
++#define DEV_INIT_TEST_WITH_RETURN(_dev_priv)				\
++do {									\
++	if (!_dev_priv) {						\
++		DRM_ERROR("called with no initialization\n");		\
++		return -EINVAL;						\
++	}								\
++} while (0)
++
+ #define RING_SPACE_TEST_WITH_RETURN( dev_priv )				\
+ do {									\
+ 	drm_r128_ring_buffer_t *ring = &dev_priv->ring; int i;		\
+--- a/drivers/gpu/drm/r128/r128_state.c
++++ b/drivers/gpu/drm/r128/r128_state.c
+@@ -1244,14 +1244,18 @@ static void r128_cce_dispatch_stipple(st
+ static int r128_cce_clear(struct drm_device *dev, void *data, struct drm_file *file_priv)
+ {
+ 	drm_r128_private_t *dev_priv = dev->dev_private;
+-	drm_r128_sarea_t *sarea_priv = dev_priv->sarea_priv;
++	drm_r128_sarea_t *sarea_priv;
+ 	drm_r128_clear_t *clear = data;
+ 	DRM_DEBUG("\n");
+ 
+ 	LOCK_TEST_WITH_RETURN(dev, file_priv);
+ 
++	DEV_INIT_TEST_WITH_RETURN(dev_priv);
++
+ 	RING_SPACE_TEST_WITH_RETURN(dev_priv);
+ 
++	sarea_priv = dev_priv->sarea_priv;
++
+ 	if (sarea_priv->nbox > R128_NR_SAREA_CLIPRECTS)
+ 		sarea_priv->nbox = R128_NR_SAREA_CLIPRECTS;
+ 
+@@ -1312,6 +1316,8 @@ static int r128_cce_flip(struct drm_devi
+ 
+ 	LOCK_TEST_WITH_RETURN(dev, file_priv);
+ 
++	DEV_INIT_TEST_WITH_RETURN(dev_priv);
++
+ 	RING_SPACE_TEST_WITH_RETURN(dev_priv);
+ 
+ 	if (!dev_priv->page_flipping)
+@@ -1331,6 +1337,8 @@ static int r128_cce_swap(struct drm_devi
+ 
+ 	LOCK_TEST_WITH_RETURN(dev, file_priv);
+ 
++	DEV_INIT_TEST_WITH_RETURN(dev_priv);
++
+ 	RING_SPACE_TEST_WITH_RETURN(dev_priv);
+ 
+ 	if (sarea_priv->nbox > R128_NR_SAREA_CLIPRECTS)
+@@ -1354,10 +1362,7 @@ static int r128_cce_vertex(struct drm_de
+ 
+ 	LOCK_TEST_WITH_RETURN(dev, file_priv);
+ 
+-	if (!dev_priv) {
+-		DRM_ERROR("called with no initialization\n");
+-		return -EINVAL;
+-	}
++	DEV_INIT_TEST_WITH_RETURN(dev_priv);
+ 
+ 	DRM_DEBUG("pid=%d index=%d count=%d discard=%d\n",
+ 		  DRM_CURRENTPID, vertex->idx, vertex->count, vertex->discard);
+@@ -1410,10 +1415,7 @@ static int r128_cce_indices(struct drm_d
+ 
+ 	LOCK_TEST_WITH_RETURN(dev, file_priv);
+ 
+-	if (!dev_priv) {
+-		DRM_ERROR("called with no initialization\n");
+-		return -EINVAL;
+-	}
++	DEV_INIT_TEST_WITH_RETURN(dev_priv);
+ 
+ 	DRM_DEBUG("pid=%d buf=%d s=%d e=%d d=%d\n", DRM_CURRENTPID,
+ 		  elts->idx, elts->start, elts->end, elts->discard);
+@@ -1476,6 +1478,8 @@ static int r128_cce_blit(struct drm_devi
+ 
+ 	LOCK_TEST_WITH_RETURN(dev, file_priv);
+ 
++	DEV_INIT_TEST_WITH_RETURN(dev_priv);
++
+ 	DRM_DEBUG("pid=%d index=%d\n", DRM_CURRENTPID, blit->idx);
+ 
+ 	if (blit->idx < 0 || blit->idx >= dma->buf_count) {
+@@ -1501,6 +1505,8 @@ static int r128_cce_depth(struct drm_dev
+ 
+ 	LOCK_TEST_WITH_RETURN(dev, file_priv);
+ 
++	DEV_INIT_TEST_WITH_RETURN(dev_priv);
++
+ 	RING_SPACE_TEST_WITH_RETURN(dev_priv);
+ 
+ 	ret = -EINVAL;
+@@ -1531,6 +1537,8 @@ static int r128_cce_stipple(struct drm_d
+ 
+ 	LOCK_TEST_WITH_RETURN(dev, file_priv);
+ 
++	DEV_INIT_TEST_WITH_RETURN(dev_priv);
++
+ 	if (DRM_COPY_FROM_USER(&mask, stipple->mask, 32 * sizeof(u32)))
+ 		return -EFAULT;
+ 
+@@ -1555,10 +1563,7 @@ static int r128_cce_indirect(struct drm_
+ 
+ 	LOCK_TEST_WITH_RETURN(dev, file_priv);
+ 
+-	if (!dev_priv) {
+-		DRM_ERROR("called with no initialization\n");
+-		return -EINVAL;
+-	}
++	DEV_INIT_TEST_WITH_RETURN(dev_priv);
+ 
+ 	DRM_DEBUG("idx=%d s=%d e=%d d=%d\n",
+ 		  indirect->idx, indirect->start, indirect->end,
+@@ -1620,10 +1625,7 @@ static int r128_getparam(struct drm_devi
+ 	drm_r128_getparam_t *param = data;
+ 	int value;
+ 
+-	if (!dev_priv) {
+-		DRM_ERROR("called with no initialization\n");
+-		return -EINVAL;
+-	}
++	DEV_INIT_TEST_WITH_RETURN(dev_priv);
+ 
+ 	DRM_DEBUG("pid=%d\n", DRM_CURRENTPID);
  
 
 
