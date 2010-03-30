@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757904Ab0CaAjA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:39:00 -0400
-Received: from kroah.org ([198.145.64.141]:48500 "EHLO coco.kroah.org"
+	id S932881Ab0CaAjT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:39:19 -0400
+Received: from kroah.org ([198.145.64.141]:48492 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755738Ab0C3XJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:09:06 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:55 2010
-Message-Id: <20100330224954.939338778@linux.site>
+	id S1755790Ab0C3XJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:09:05 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:54 2010
+Message-Id: <20100330224954.169154773@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:48:42 -0700
+Date: Tue, 30 Mar 2010 15:48:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dick Hollenbeck <dick@softplc.com>, Alan Cox <alan@linux.intel.com>,
-       Kees Schoenmakers <k.schoenmakers@sigmae.nl>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [22/45] serial: 8250: add serial transmitter fully empty test
+       Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
+       Jean Delvare <khali@linux-fr.org>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [21/45] i2c: Do not use device name after device_unregister
 In-Reply-To: <20100330230410.GA28712@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,83 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dick Hollenbeck <dick@softplc.com>
 
-commit bca476139d2ded86be146dae09b06e22548b67f3 upstream.
+From: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
 
-When controlling an industrial radio modem it can be necessary to
-manipulate the handshake lines in order to control the radio modem's
-transmitter, from userspace.
+In Linus' tree:
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=c556752109794a5ff199b80a1673336b4df8433a
 
-The transmitter should not be turned off before all characters have been
-transmitted.  serial8250_tx_empty() was reporting that all characters were
-transmitted before they actually were.
+dev_dbg outputs dev_name, which is released with device_unregister. This bug
+resulted in output like this:
 
-===
+i2c Xy2�0: adapter [SMBus I801 adapter at 1880] unregistered
 
-Discovered in parallel with more testing and analysis by Kees Schoenmakers
-as follows:
+The right output would be:
+i2c i2c-0: adapter [SMBus I801 adapter at 1880] unregistered
 
-I ran into an NetMos 9835 serial pci board which behaves a little
-different than the standard.  This type of expansion board is very common.
-
-"Standard" 8250 compatible devices clear the 'UART_LST_TEMT" bit together
-with the "UART_LSR_THRE" bit when writing data to the device.
-
-The NetMos device does it slightly different
-
-I believe that the TEMT bit is coupled to the shift register.  The problem
-is that after writing data to the device and very quickly after that one
-does call serial8250_tx_empty, it returns the wrong information.
-
-My patch makes the test more robust (and solves the problem) and it does
-not affect the already correct devices.
-
-Alan:
-
-  We may yet need to quirk this but now we know which chips we have a
-  way to do that should we find this breaks some other 8250 clone with
-  dodgy THRE.
-
-Signed-off-by: Dick Hollenbeck <dick@softplc.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Cc: Kees Schoenmakers <k.schoenmakers@sigmae.nl>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/serial/8250.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/i2c/i2c-core.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/serial/8250.c
-+++ b/drivers/serial/8250.c
-@@ -70,6 +70,9 @@ static unsigned int nr_uarts = CONFIG_SE
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -644,6 +644,9 @@ int i2c_del_adapter(struct i2c_adapter *
+ 		}
+ 	}
  
- #define PASS_LIMIT	256
- 
-+#define BOTH_EMPTY 	(UART_LSR_TEMT | UART_LSR_THRE)
++	/* device name is gone after device_unregister */
++	dev_dbg(&adap->dev, "adapter [%s] unregistered\n", adap->name);
 +
-+
- /*
-  * We default to IRQ0 for the "no irq" hack.   Some
-  * machine types want others as well - they're free
-@@ -1656,7 +1659,7 @@ static unsigned int serial8250_tx_empty(
- 	up->lsr_saved_flags |= lsr & LSR_SAVE_FLAGS;
- 	spin_unlock_irqrestore(&up->port.lock, flags);
+ 	/* clean up the sysfs representation */
+ 	init_completion(&adap->dev_released);
+ 	device_unregister(&adap->dev);
+@@ -654,8 +657,6 @@ int i2c_del_adapter(struct i2c_adapter *
+ 	/* free bus id */
+ 	idr_remove(&i2c_adapter_idr, adap->nr);
  
--	return lsr & UART_LSR_TEMT ? TIOCSER_TEMT : 0;
-+	return (lsr & BOTH_EMPTY) == BOTH_EMPTY ? TIOCSER_TEMT : 0;
- }
- 
- static unsigned int serial8250_get_mctrl(struct uart_port *port)
-@@ -1714,8 +1717,6 @@ static void serial8250_break_ctl(struct
- 	spin_unlock_irqrestore(&up->port.lock, flags);
- }
- 
--#define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
+-	dev_dbg(&adap->dev, "adapter [%s] unregistered\n", adap->name);
 -
- /*
-  *	Wait for transmitter & holding register to empty
-  */
+ 	/* Clear the device structure in case this adapter is ever going to be
+ 	   added again */
+ 	memset(&adap->dev, 0, sizeof(adap->dev));
 
 
