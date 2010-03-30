@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932558Ab0C3XVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:21:41 -0400
-Received: from kroah.org ([198.145.64.141]:46222 "EHLO coco.kroah.org"
+	id S1757082Ab0C3Xe7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:34:59 -0400
+Received: from kroah.org ([198.145.64.141]:46441 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932601Ab0C3XU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:28 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:09 2010
-Message-Id: <20100330224809.025773547@linux.site>
+	id S1752822Ab0C3XVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:21:08 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:28 2010
+Message-Id: <20100330224827.758518046@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:41:49 -0700
+Date: Tue, 30 Mar 2010 15:42:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Nathaniel McCallum <nathaniel@natemccallum.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [075/156] USB: option: add support for a new CMOTECH device to usb/serial/option
+       Andreas Herrmann <andreas.herrmann3@amd.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [102/156] x86, amd: Restrict usage of c1e_idle()
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +26,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nathaniel McCallum <nathaniel@natemccallum.com>
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-commit 3b04872aa75006e2a4adaaec21e9c9ede8b8ad9d upstream.
+commit 035a02c1e1de31888e8b6adac0ff667971ac04db upstream.
 
-Signed-off-by: Nathaniel McCallum <nathaniel@natemccallum.com>
+Currently c1e_idle returns true for all CPUs greater than or equal to
+family 0xf model 0x40. This covers too many CPUs.
+
+Meanwhile a respective erratum for the underlying problem was filed
+(#400). This patch adds the logic to check whether erratum #400
+applies to a given CPU.
+Especially for CPUs where SMI/HW triggered C1e is not supported,
+c1e_idle() doesn't need to be used. We can check this by looking at
+the respective OSVW bit for erratum #400.
+
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+LKML-Reference: <20100319110922.GA19614@alberich.amd.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/include/asm/msr-index.h |    2 ++
+ arch/x86/kernel/process.c        |   32 ++++++++++++++++++++++++--------
+ 2 files changed, 26 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -289,6 +289,7 @@ static int  option_resume(struct usb_ser
- #define QUALCOMM_VENDOR_ID			0x05C6
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -105,6 +105,8 @@
+ #define MSR_AMD64_PATCH_LEVEL		0x0000008b
+ #define MSR_AMD64_NB_CFG		0xc001001f
+ #define MSR_AMD64_PATCH_LOADER		0xc0010020
++#define MSR_AMD64_OSVW_ID_LENGTH	0xc0010140
++#define MSR_AMD64_OSVW_STATUS		0xc0010141
+ #define MSR_AMD64_IBSFETCHCTL		0xc0011030
+ #define MSR_AMD64_IBSFETCHLINAD		0xc0011031
+ #define MSR_AMD64_IBSFETCHPHYSAD	0xc0011032
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -519,21 +519,37 @@ static int __cpuinit mwait_usable(const
+ }
  
- #define CMOTECH_VENDOR_ID			0x16d8
-+#define CMOTECH_PRODUCT_6008			0x6008
- #define CMOTECH_PRODUCT_6280			0x6280
+ /*
+- * Check for AMD CPUs, which have potentially C1E support
++ * Check for AMD CPUs, where APIC timer interrupt does not wake up CPU from C1e.
++ * For more information see
++ * - Erratum #400 for NPT family 0xf and family 0x10 CPUs
++ * - Erratum #365 for family 0x11 (not affected because C1e not in use)
+  */
+ static int __cpuinit check_c1e_idle(const struct cpuinfo_x86 *c)
+ {
++	u64 val;
+ 	if (c->x86_vendor != X86_VENDOR_AMD)
+-		return 0;
+-
+-	if (c->x86 < 0x0F)
+-		return 0;
++		goto no_c1e_idle;
  
- #define TELIT_VENDOR_ID				0x1bc7
-@@ -522,6 +523,7 @@ static struct usb_device_id option_ids[]
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6000)}, /* ZTE AC8700 */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
- 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6280) }, /* BP3-USB & BP3-EXT HSDPA */
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6008) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864E) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864G) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
+ 	/* Family 0x0f models < rev F do not have C1E */
+-	if (c->x86 == 0x0f && c->x86_model < 0x40)
+-		return 0;
++	if (c->x86 == 0x0F && c->x86_model >= 0x40)
++		return 1;
++
++	if (c->x86 == 0x10) {
++		/*
++		 * check OSVW bit for CPUs that are not affected
++		 * by erratum #400
++		 */
++		rdmsrl(MSR_AMD64_OSVW_ID_LENGTH, val);
++		if (val >= 2) {
++			rdmsrl(MSR_AMD64_OSVW_STATUS, val);
++			if (!(val & BIT(1)))
++				goto no_c1e_idle;
++		}
++		return 1;
++	}
+ 
+-	return 1;
++no_c1e_idle:
++	return 0;
+ }
+ 
+ static cpumask_var_t c1e_mask;
 
 
