@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab0C3By0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 21:54:26 -0400
-Received: from olc-13.verat.net ([62.108.127.39]:57291 "EHLO olc-13.verat.net"
+	id S1755189Ab0C3CIv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 22:08:51 -0400
+Received: from ozlabs.org ([203.10.76.45]:42769 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753591Ab0C3ByZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 21:54:25 -0400
-X-Greylist: delayed 534 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Mar 2010 21:54:24 EDT
-Message-ID: <46442.41.206.15.1.1269913527.squirrel@webmail.verat.net>
-Date: Tue, 30 Mar 2010 03:45:27 +0200 (CEST)
-Subject: =?iso-8859-1?Q?Kj=E6re_hio.no_Bruker?=
-From: "Universitetet i Oslo" <helpdeskUio@uio.no>
-Reply-To: helpdesk.team03@gmail.com
-User-Agent: SquirrelMail/1.4.13
+	id S1753591Ab0C3CIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 22:08:49 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH RFC] e820_remove_range fail?
+Date: Tue, 30 Mar 2010 12:38:42 +1030
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; i686; ; )
+Cc: x86@kernel.org, Yinghai Lu <yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003301238.43620.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kjære uio.no Brukerkonto,
+Hi Yinghai,
 
-Det vil være en oppgradering i vårt system mellom 30 mars til 4 april 2010.
-På grunn av den anonyme registrering av uio.no kontoer og antall sovende
-kontoer, vil vi kjøre denne oppgraderingen for å fastslå den eksakte
-antall abonnenter vi har i dag.
+   I just wrote this patch for lguest, but I think the real problem is
+that e820_remove_range can't split a range.  Is this a problem for
+real machines?
 
-Du blir bedt om å logge på uio.no e-postkontoen for å kontrollere om
-kontoen er fortsatt gyldig og sender straks folowing:
+[    0.000000] BIOS-provided physical RAM map:
+[    0.000000]  LGUEST: 0000000000000000 - 0000000004000000 (usable)
+[    0.000000] Notice: NX (Execute Disable) protection missing in CPU or disabled in BIOS!
+[    0.000000] DMI not present or invalid.
+[    0.000000] last_pfn = 0x3fa0 max_arch_pfn = 0x100000
+[    0.000000] init_memory_mapping: 0000000000000000-0000000003fa0000
 
-Login Name :................................( Obligatorisk)
-Passord :...................................( Obligatorisk)
-Fødselsdato :..............................( Valgfritt)
-Stat :........................................( Valgfritt)
+Thanks,
+Rusty.
+===
+lguest: handle trimming of our e820 map
 
-Før du sender dine kontoopplysninger til oss, gi deg råd er å Login
-inn i denne linken: https: / / webmail.uio.no / src / login.php
+Lguest doesn't need to reserve space for the BIOS, but in commit
+1b5576e69a5f Yinghai added trim_bios_range which mangles our e820 map.
+But e820_remove_range does not handle removing a range from the middle
+of a region correctly, so we end up with a bad max_pfn value.
 
-Merk at hvis kontoen gjøre Logg inn, sende oss detaljene eller på annen
-måte Det betyr at den har blitt slettet. Sorry for the inconvinence dette
-kan forårsake du vi bare prøver å sørge for at du ikke mister informasjon
-i
-kontoene.
+The result is we can't find our (lguest-specific) device table which
+we expect above the top of RAM, and fail to find the root device.
 
-Alt du trenger å gjøre er å klikke Svar og levere ut informasjonen ovenfor,
-Kontoen din vil ikke bli avbrutt, og vil fortsette som normalt.
+Cc: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
-Takk for din oppmerksomhet til denne forespørselen. Igjen Vi beklager
-for eventuelle ulemper. Advarsel! Konto brukere som nekter å oppdatere
-sin konto etter 5 dager fra du mottar denne advarselen, vil brukeren miste
-sin konto permanent.
-
-© 2010 uio.no E-post (https: / / webmail.uio.no / src / login.php)
-
-
-
-
+diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
+--- a/arch/x86/lguest/boot.c
++++ b/arch/x86/lguest/boot.c
+@@ -1135,12 +1135,15 @@ static struct notifier_block paniced = {
+ static __init char *lguest_memory_setup(void)
+ {
+ 	/*
+-	 *The Linux bootloader header contains an "e820" memory map: the
++	 * The Linux bootloader header contains an "e820" memory map: the
+ 	 * Launcher populated the first entry with our memory limit.
++	 *
++	 * We have to skip the traditional BIOS area here, otherwise the
++	 * kernel messes up our map trying to "fix" it in trim_bios_range.
+ 	 */
+-	e820_add_region(boot_params.e820_map[0].addr,
+-			  boot_params.e820_map[0].size,
+-			  boot_params.e820_map[0].type);
++	e820_add_region(0, BIOS_BEGIN, boot_params.e820_map[0].type);
++	e820_add_region(BIOS_END, boot_params.e820_map[0].size - BIOS_END,
++			boot_params.e820_map[0].type);
+ 
+ 	/* This string is for the boot messages. */
+ 	return "LGUEST";
