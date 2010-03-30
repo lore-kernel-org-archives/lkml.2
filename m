@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107Ab0C3MWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 08:22:00 -0400
-Received: from vitalin.sorra.shikadi.net ([64.71.152.201]:60819 "EHLO
-	vitalin.sorra.shikadi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932089Ab0C3MV7 (ORCPT
+	id S1756562Ab0C3M1o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 08:27:44 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48503 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756384Ab0C3M1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 08:21:59 -0400
-Message-ID: <4BB1ECE4.5070606@shikadi.net>
-Date: Tue, 30 Mar 2010 22:21:56 +1000
-From: Adam Nielsen <a.nielsen@shikadi.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-GB; rv:1.8.1.23) Gecko/20091130 Thunderbird/2.0.0.23 Mnenhy/0.7.5.0
+	Tue, 30 Mar 2010 08:27:43 -0400
+Date: Tue, 30 Mar 2010 14:26:44 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Russell King <rmk+lkml@arm.linux.org.uk>,
+       "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+       "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Subject: Re: [PATCH 01/24] mtd/maps/pismo: remove dangling pointer and a
+	leak
+Message-ID: <20100330122644.GC29472@pengutronix.de>
+References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de> <1269094385-16114-2-git-send-email-w.sang@pengutronix.de> <20100320145729.GA5399@flint.arm.linux.org.uk> <20100320153146.GB5515@pengutronix.de> <20100320154113.GB14470@flint.arm.linux.org.uk> <1269160241.4028.9777.camel@macbook.infradead.org>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: LKML Mailinglist <linux-kernel@vger.kernel.org>
-Subject: Re: usbhid: How to wait for response after submitting report
-References: <4B9B022F.6060402@shikadi.net> <alpine.LNX.2.00.1003151706330.18642@pobox.suse.cz> <4BADF177.1070201@shikadi.net> <alpine.LNX.2.00.1003301407320.24576@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1003301407320.24576@pobox.suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wxDdMuZNg1r63Hyj"
+Content-Disposition: inline
+In-Reply-To: <1269160241.4028.9777.camel@macbook.infradead.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Basically I have a USB HID device, and it works by submitting a HID report,
->> then waiting until it replies with (I assume) another HID report.  The
->> messages are all proprietary.  I can send the reports fine, but half the time
->> I get garbage coming back, which I assume is because I'm not getting the
->> message quickly enough and processing whatever was in the buffer instead.
->>
->> If you're able to point me in the direction of an example showing how to set
->> up and use a completion handler, hopefully I can change my code to work like
->> that instead.
-> 
-> Well this is rather more USB-related question than HID related question, 
-> I'd say.
 
-Well originally I was going to write a USB driver, but as it's a HID device
-and there's a HID class in the kernel, I thought it would be better to use the
-functions provided by the USB HID device class.
+--wxDdMuZNg1r63Hyj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Basically you prepare URB, along with specifying which routine should be 
-> called by USB core as completion handler, and then submit the URB.
+On Sun, Mar 21, 2010 at 08:30:41AM +0000, David Woodhouse wrote:
 
-Can I do this without conflicting with the HID "layer"?  I assumed that
-drivers appearing in the HID class should only use HID functions, and those
-functions would take care of the USB side of things.  I don't really want to
-reimplement all the standard HID communication code when it has already been
-implemented in the USB HID driver/class.
+> > Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> >=20
+> > David, are you going to pick this up?=20
+>=20
+> http://git.infradead.org/mtd-2.6.git/commitdiff/395b2288
 
-> USB HID implementation is working like this (and zillions of other USB 
-> drivers which are in kernel do as well) -- just look at initialization of 
-> control URB in usbhid_start(), and the completion handler (for control 
-> URBs) in hid_ctrl().
+Thanks. The handling of the dangling pointer will be handled differently fr=
+om
+2.6.35 on, but I will prepare the necessary fixup then. The fixed leak was
+good to have, I think.
 
-At the moment I am calling functions like hid_hw_start and
-usbhid_submit_report, which (I think) take care of all this for me.  There's
-not a lot of documentation about how the HID class works, and only a handful
-of drivers unfortunately, since it's a standard USB device class - you only
-need to write a driver for nonstandard hardware, which means all the existing
-HID drivers are all very different!
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-Because usbhid_submit_report takes the raw data to be packaged up inside a USB
-HID message, I don't have an opportunity to set any sort of completion
-handler.  I imagine the HID class takes care of it, but I don't know how to
-figure out whether the completion handler has been called and there's data to
-read.
+--wxDdMuZNg1r63Hyj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-Thanks,
-Adam.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkux7gQACgkQD27XaX1/VRtZqgCgw6MZ9rJru+nE6a2mkxJ98Cco
+khMAoJrN2JlWKWJeHTzq/t9FwLMVUq7t
+=S2Us
+-----END PGP SIGNATURE-----
+
+--wxDdMuZNg1r63Hyj--
