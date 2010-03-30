@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab0C3IIg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 04:08:36 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:36292 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755594Ab0C3IH3 (ORCPT
+	id S1755852Ab0C3IIz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 04:08:55 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:47414 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755552Ab0C3IH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 04:07:29 -0400
+	Tue, 30 Mar 2010 04:07:27 -0400
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
@@ -19,9 +19,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
        Gary Hade <garyhade@us.ibm.com>,
        Natalie Protasevich <protasnb@gmail.com>,
        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 14/15] x86 acpi/irq: Handle isa irqs that are not identity mapped to gsi's.
-Date: Tue, 30 Mar 2010 01:07:15 -0700
-Message-Id: <1269936436-7039-14-git-send-email-ebiederm@xmission.com>
+Subject: [PATCH 09/15] x86 ioapic: Teach mp_register_ioapic to compute a global gsi_end
+Date: Tue, 30 Mar 2010 01:07:10 -0700
+Message-Id: <1269936436-7039-9-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.6.5.2.143.g8cc62
 In-Reply-To: <m1oci6qlmr.fsf_-_@fess.ebiederm.org>
 References: <m1oci6qlmr.fsf_-_@fess.ebiederm.org>
@@ -36,153 +36,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric W. Biederman <ebiederm@xmission.com>
 
-ACPI irq source overrides are allowed for the 16 isa irqs and are
-allowed to map any gsi to any isa irq.  A few motherboards have been
-seen to take advantage of this and put the isa irqs on the 2nd or
-3rd ioapic.  This causes some problems, most notably the fact
-that we can not use any gsi < 16.
+Add the global variable gsi_end and teach mp_register_ioapic
+to keep it uptodate as we add more ioapics into the system.
 
-To correct this move the gsis that are not isa irqs and have
-a gsi number < 16 into the linux irq space just past gsi_end.
-This is what the es7000 platform is doing today.  Moving only the
-low 16 gsis above the rest of the gsi's only penalizes weird
-platforms, leaving sane acpi implementations with a 1-1 mapping
-of gsis and irqs.
+ioapics can only be added early in boot so the code that
+runs later can treat gsi_end as a constant.
+
+Remove the have hacks in sfi.c to second guess mp_register_ioapic
+by keeping t's own running total of how many gsi's have been seen,
+and instead use the gsi_end.
 
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- arch/x86/kernel/acpi/boot.c    |   57 +++++++++++++++++++++++++++++++++++++---
- arch/x86/kernel/apic/io_apic.c |    8 ++++-
- 2 files changed, 59 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/io_apic.h |    1 +
+ arch/x86/kernel/apic/io_apic.c |    6 ++++++
+ arch/x86/kernel/sfi.c          |    4 +---
+ 3 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 0e514a1..c4b4bd9 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -92,6 +92,53 @@ static u64 acpi_lapic_addr __initdata = APIC_DEFAULT_PHYS_BASE;
- enum acpi_irq_model_id acpi_irq_model = ACPI_IRQ_MODEL_PIC;
- 
- 
-+/* 
-+ * ISA irqs by default are the first 16 gsis but can be
-+ * any gsi as specified by an interrupt source override.
-+ */
-+static u32 isa_irq_to_gsi[NR_IRQS_LEGACY] __read_mostly = {
-+	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
-+};
-+
-+static unsigned int gsi_to_irq(unsigned int gsi)
-+{
-+	unsigned int irq = gsi + NR_IRQS_LEGACY;
-+	unsigned int i;
-+
-+	for (i = 0; i < NR_IRQS_LEGACY; i++) {
-+		if (isa_irq_to_gsi[i] == gsi) {
-+			return i;
-+		}
-+	}
-+
-+	/* Provide an identity mapping of gsi == irq
-+	 * except on truly weird platforms that have
-+	 * non isa irqs in the first 16 gsis.
-+	 */
-+	if (gsi >= NR_IRQS_LEGACY)
-+		irq = gsi;
-+	else
-+		irq = gsi_end + 1 + gsi;
-+
-+	return irq;
-+}
-+
-+static u32 irq_to_gsi(int irq)
-+{
-+	unsigned int gsi;
-+
-+	if (irq < NR_IRQS_LEGACY)
-+		gsi = isa_irq_to_gsi[irq];
-+	else if (irq <= gsi_end)
-+		gsi = irq;
-+	else if (irq <= (gsi_end + NR_IRQS_LEGACY))
-+		gsi = irq - gsi_end;
-+	else
-+		gsi = 0xffffffff;
-+
-+	return gsi;
-+}
-+
- /*
-  * Temporarily use the virtual area starting from FIX_IO_APIC_BASE_END,
-  * to map the target physical address. The problem is that set_fixmap()
-@@ -448,7 +495,7 @@ void __init acpi_pic_sci_set_trigger(unsigned int irq, u16 trigger)
- 
- int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
- {
--	*irq = gsi;
-+	*irq = gsi_to_irq(gsi);
- 
- #ifdef CONFIG_X86_IO_APIC
- 	if (acpi_irq_model == ACPI_IRQ_MODEL_IOAPIC)
-@@ -462,7 +509,7 @@ int acpi_isa_irq_to_gsi(unsigned isa_irq, u32 *gsi)
- {
- 	if (isa_irq >= 16)
- 		return -1;
--	*gsi = isa_irq;
-+	*gsi = irq_to_gsi(isa_irq);
- 	return 0;
- }
- 
-@@ -490,7 +537,7 @@ int acpi_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
- 		plat_gsi = mp_register_gsi(dev, gsi, trigger, polarity);
- 	}
- #endif
--	irq = plat_gsi;
-+	irq = gsi_to_irq(plat_gsi);
- 
- 	return irq;
- }
-@@ -932,6 +979,8 @@ void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger, u32 gsi)
- 	mp_irq.dstirq = pin;	/* INTIN# */
- 
- 	save_mp_irq(&mp_irq);
-+
-+	isa_irq_to_gsi[bus_irq] = gsi;
- }
- 
- void __init mp_config_acpi_legacy_irqs(void)
-@@ -1085,7 +1134,7 @@ int mp_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
- 	set_io_apic_irq_attr(&irq_attr, ioapic, ioapic_pin,
- 			     trigger == ACPI_EDGE_SENSITIVE ? 0 : 1,
- 			     polarity == ACPI_ACTIVE_HIGH ? 0 : 1);
--	io_apic_set_pci_routing(dev, gsi, &irq_attr);
-+	io_apic_set_pci_routing(dev, gsi_to_irq(gsi), &irq_attr);
- 
- 	return gsi;
- }
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index feeaf0d..37b0f2b 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -184,6 +184,7 @@ struct mp_ioapic_gsi{
+ 	u32 gsi_end;
+ };
+ extern struct mp_ioapic_gsi  mp_gsi_routing[];
++extern u32 gsi_end;
+ int mp_find_ioapic(u32 gsi);
+ int mp_find_ioapic_pin(int ioapic, u32 gsi);
+ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base);
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 6d6def8..0ac368a 100644
+index 4611c43..71988c5 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1036,7 +1036,11 @@ static int pin_2_irq(int idx, int apic, int pin)
-                  */
- 		if (ioapic_renumber_irq)
- 			gsi = ioapic_renumber_irq(apic, gsi);
--		irq = gsi;
+@@ -88,6 +88,9 @@ int nr_ioapics;
+ /* IO APIC gsi routing info */
+ struct mp_ioapic_gsi  mp_gsi_routing[MAX_IO_APICS];
+ 
++/* The last gsi number used */
++u32 gsi_end;
 +
-+		if (gsi >= NR_IRQS_LEGACY)
-+			irq = gsi;
-+		else
-+			irq = gsi_end + 1 + gsi;
- 	}
+ /* MP IRQ source entries */
+ struct mpc_intsrc mp_irqs[MAX_IRQ_SOURCES];
  
- #ifdef CONFIG_X86_32
-@@ -3843,7 +3847,7 @@ void __init probe_nr_irqs_gsi(void)
+@@ -4303,6 +4306,9 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
+ 	mp_gsi_routing[idx].gsi_end = gsi_base +
+ 	    io_apic_get_redir_entries(idx) - 1;
+ 
++	if (mp_gsi_routing[idx].gsi_end > gsi_end)
++		gsi_end = mp_gsi_routing[idx].gsi_end;
++
+ 	printk(KERN_INFO "IOAPIC[%d]: apic_id %d, version %d, address 0x%x, "
+ 	       "GSI %d-%d\n", idx, mp_ioapics[idx].apicid,
+ 	       mp_ioapics[idx].apicver, mp_ioapics[idx].apicaddr,
+diff --git a/arch/x86/kernel/sfi.c b/arch/x86/kernel/sfi.c
+index 34e0993..7ded578 100644
+--- a/arch/x86/kernel/sfi.c
++++ b/arch/x86/kernel/sfi.c
+@@ -81,7 +81,6 @@ static int __init sfi_parse_cpus(struct sfi_table_header *table)
+ #endif /* CONFIG_X86_LOCAL_APIC */
+ 
+ #ifdef CONFIG_X86_IO_APIC
+-static u32 gsi_base;
+ 
+ static int __init sfi_parse_ioapic(struct sfi_table_header *table)
  {
- 	int nr;
+@@ -94,8 +93,7 @@ static int __init sfi_parse_ioapic(struct sfi_table_header *table)
+ 	pentry = (struct sfi_apic_table_entry *)sb->pentry;
  
--	nr = gsi_end + 1;
-+	nr = gsi_end + 1 + NR_IRQS_LEGACY;
- 	if (nr > nr_irqs_gsi)
- 		nr_irqs_gsi = nr;
+ 	for (i = 0; i < num; i++) {
+-		mp_register_ioapic(i, pentry->phys_addr, gsi_base);
+-		gsi_base += io_apic_get_redir_entries(i);
++		mp_register_ioapic(i, pentry->phys_addr, gsi_end + 1);
+ 		pentry++;
+ 	}
  
 -- 
 1.6.5.2.143.g8cc62
