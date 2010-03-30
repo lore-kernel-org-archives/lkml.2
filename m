@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070Ab0CaABR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:01:17 -0400
-Received: from kroah.org ([198.145.64.141]:45433 "EHLO coco.kroah.org"
+	id S932118Ab0CaAAr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:00:47 -0400
+Received: from kroah.org ([198.145.64.141]:45443 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932201Ab0C3XSt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:49 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:00 2010
-Message-Id: <20100330225700.176913416@linux.site>
+	id S932308Ab0C3XSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:51 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:02 2010
+Message-Id: <20100330225701.951044540@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:56:10 -0700
+Date: Tue, 30 Mar 2010 15:56:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
+       Jan Beulich <jbeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [092/116] drm/i915: Avoid NULL deref in get_pages() unwind after error.
+Subject: [094/116] x86: Fix placement of FIX_OHCI1394_BASE
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,85 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Jan Beulich <JBeulich@novell.com>
 
-commit 1f2b10131f83f7caa67bf1273cec126b4283015d upstream.
+commit ff30a0543e9a6cd732582063e7cae951cdb7acf2 upstream.
 
-Fixes:
-  http://bugzilla.kernel.org/show_bug.cgi?id=15527
-  NULL pointer dereference in i915_gem_object_save_bit_17_swizzle
+Ever for 32-bit with sufficiently high NR_CPUS, and starting
+with commit 789d03f584484af85dbdc64935270c8e45f36ef7 also for
+64-bit, the statically allocated early fixmap page tables were
+not covering FIX_OHCI1394_BASE, leading to a boot time crash
+when "ohci1394_dma=early" was used. Despite this entry not being
+a permanently used one, it needs to be moved into the permanent
+range since it has to be close to FIX_DBGP_BASE and
+FIX_EARLYCON_MEM_BASE.
 
-BUG: unable to handle kernel NULL pointer dereference at (null)
-IP: [<f82b5d2b>] i915_gem_object_save_bit_17_swizzle+0x5b/0xc0 [i915]
-Call Trace:
-[<f82aea55>] ? i915_gem_object_put_pages+0x125/0x150 [i915]
-[<f82aeb71>] ? i915_gem_object_get_pages+0xf1/0x110 [i915]
-[<f82b0de8>] ? i915_gem_object_bind_to_gtt+0xb8/0x2a0 [i915]
-[<c02db74d>] ? drm_mm_get_block_generic+0x4d/0x180
-[<f82b11cd>] ? i915_gem_mmap_gtt_ioctl+0x16d/0x240 [i915]
-[<f82ae786>] ? i915_gem_madvise_ioctl+0x86/0x120 [i915]
-
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reported-by: maciej.rutecki@gmail.com
-Cc: stable@kernel.org
-Reviewed-by: Eric Anholt <eric@anholt.net>
-Signed-off-by: Eric Anholt <eric@anholt.net>
+Reported-bisected-and-tested-by: Justin P. Mattock <justinmattock@gmail.com>
+Fixes-bug: http://bugzilla.kernel.org/show_bug.cgi?id=14487
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+LKML-Reference: <4B9E15D30200007800034D23@vpn.id2.novell.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c |   21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ arch/x86/include/asm/fixmap.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -1470,9 +1470,6 @@ i915_gem_object_put_pages(struct drm_gem
- 		obj_priv->dirty = 0;
- 
- 	for (i = 0; i < page_count; i++) {
--		if (obj_priv->pages[i] == NULL)
--			break;
--
- 		if (obj_priv->dirty)
- 			set_page_dirty(obj_priv->pages[i]);
- 
-@@ -2246,7 +2243,6 @@ i915_gem_object_get_pages(struct drm_gem
- 	struct address_space *mapping;
- 	struct inode *inode;
- 	struct page *page;
--	int ret;
- 
- 	if (obj_priv->pages_refcount++ != 0)
- 		return 0;
-@@ -2269,11 +2265,9 @@ i915_gem_object_get_pages(struct drm_gem
- 					   mapping_gfp_mask (mapping) |
- 					   __GFP_COLD |
- 					   gfpmask);
--		if (IS_ERR(page)) {
--			ret = PTR_ERR(page);
--			i915_gem_object_put_pages(obj);
--			return ret;
--		}
-+		if (IS_ERR(page))
-+			goto err_pages;
-+
- 		obj_priv->pages[i] = page;
- 	}
- 
-@@ -2281,6 +2275,15 @@ i915_gem_object_get_pages(struct drm_gem
- 		i915_gem_object_do_bit_17_swizzle(obj);
- 
- 	return 0;
-+
-+err_pages:
-+	while (i--)
-+		page_cache_release(obj_priv->pages[i]);
-+
-+	drm_free_large(obj_priv->pages);
-+	obj_priv->pages = NULL;
-+	obj_priv->pages_refcount--;
-+	return PTR_ERR(page);
- }
- 
- static void i965_write_fence_reg(struct drm_i915_fence_reg *reg)
+--- a/arch/x86/include/asm/fixmap.h
++++ b/arch/x86/include/asm/fixmap.h
+@@ -82,6 +82,9 @@ enum fixed_addresses {
+ #endif
+ 	FIX_DBGP_BASE,
+ 	FIX_EARLYCON_MEM_BASE,
++#ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
++	FIX_OHCI1394_BASE,
++#endif
+ #ifdef CONFIG_X86_LOCAL_APIC
+ 	FIX_APIC_BASE,	/* local (CPU) APIC) -- required for SMP or not */
+ #endif
+@@ -126,9 +129,6 @@ enum fixed_addresses {
+ 	FIX_BTMAP_END = __end_of_permanent_fixed_addresses + 256 -
+ 			(__end_of_permanent_fixed_addresses & 255),
+ 	FIX_BTMAP_BEGIN = FIX_BTMAP_END + NR_FIX_BTMAPS*FIX_BTMAPS_SLOTS - 1,
+-#ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
+-	FIX_OHCI1394_BASE,
+-#endif
+ #ifdef CONFIG_X86_32
+ 	FIX_WP_TEST,
+ #endif
 
 
