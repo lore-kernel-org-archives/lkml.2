@@ -1,76 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072Ab0C3ICx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 04:02:53 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:52478 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab0C3ICu convert rfc822-to-8bit (ORCPT
+	id S1755127Ab0C3IGd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 04:06:33 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:36158 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754881Ab0C3IG3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 04:02:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=os2w2vvs78dud6s1SSn6uV3t5IGf/DdR2iN5cvYTL4AppzkMYtBG6gZ/mskc79uPhS
-         ZQormbIdTQ3uXuj3xaHjUuyX2egUVHY731rJxuPVXyyqpNbGyp5ImcPJunJKdoj0m2LJ
-         x2rYBASJ1OKf2I3ZsDHyer7flmcpuYl+bBhLQ=
+	Tue, 30 Mar 2010 04:06:29 -0400
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+       Thomas Renninger <trenn@suse.de>,
+       Suresh Siddha <suresh.b.siddha@intel.com>, len.brown@intel.com,
+       Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+       linux-acpi@vger.kernel.org, Iranna D Ankad <iranna.ankad@in.ibm.com>,
+       Gary Hade <garyhade@us.ibm.com>,
+       Natalie Protasevich <protasnb@gmail.com>
+Subject: [PATCH 0/15] Start coping gsis < 16 that are not isa irqs. v2
+References: <1269221770-9667-1-git-send-email-yinghai@kernel.org>
+	<1269221770-9667-3-git-send-email-yinghai@kernel.org>
+	<alpine.LFD.2.00.1003221131470.3147@localhost.localdomain>
+	<m1iq8f1c1f.fsf@fess.ebiederm.org> <4BB0EA22.7000004@zytor.com>
+	<m1r5n2wwah.fsf_-_@fess.ebiederm.org>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Tue, 30 Mar 2010 01:06:20 -0700
+In-Reply-To: <m1r5n2wwah.fsf_-_@fess.ebiederm.org> (Eric W. Biederman's message of "Mon\, 29 Mar 2010 16\:19\:34 -0700")
+Message-ID: <m1oci6qlmr.fsf_-_@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <54cce25c1003280829q2a173c91p55bc3297a3163452@mail.gmail.com>
-References: <54cce25c1003280829q2a173c91p55bc3297a3163452@mail.gmail.com>
-Date: Tue, 30 Mar 2010 10:02:48 +0200
-Message-ID: <54cce25c1003300102v71b6809cvad379bafd6d15c2d@mail.gmail.com>
-Subject: reiserfs + acl corruption
-From: Marco Gatti <marco.gatti@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 76.21.114.89
+X-SA-Exim-Rcpt-To: hpa@zytor.com, protasnb@gmail.com, garyhade@us.ibm.com, iranna.ankad@in.ibm.com, linux-acpi@vger.kernel.org, fenghua.yu@intel.com, tony.luck@intel.com, len.brown@intel.com, suresh.b.siddha@intel.com, trenn@suse.de, linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org, akpm@linux-foundation.org, mingo@elte.hu, yinghai@kernel.org, tglx@linutronix.de
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I hope to post in the right place.
-I recently suffered a filesystem corruption with reiserfs in a
-production environment and I was able to reproduce it.
-The corruption started when i played with extended attributes, posix
-acls, with a partition containing hundreds of thousands of files.
-To reproduce the issue test it this way (using bash) in a separate
-disk, partition or virtual disk using loopback:
 
-mkfsreiserfs /dev/sdc1
-mount -o acl /dev/sdc1 /mnt
-cd /mnt
-mkdir dir_with_many_files
-touch dir_with_many_files/{1..100000}
-setfacl -R -m u:username:rw dir_with_many_files
-setfacl -R -x u:username dir_with_many_files    (slow responsiveness of
-system during the execution of this command)
-setfacl -R -b dir_with_many_files
+It appears there are a few systems in the wild that use acpi
+interrupt source overrides to report a gsi > 16 is an isa irq.
 
-With a debian lenny standard kernel 2.6.26 (port amd64) these commands
-ends succesfully and no corruption occours.
-With a recent kernel, versions 2.6.32.8 - 2.6.32.9 - 2.6.32.10,
-(x86_64) compiled in different ways, from standard configuration to
-optimized versions even with no support for modules i get thousands of
-this kind of message:
+This breaks all kinds of assumptions I figure any BIOS doing that
+probably should be shot as that is very much not a conservative position.
 
-REISERFS warning (device sdc1): jdm-20002 reiserfs_xattr_get: Invalid
-hash for xattr (system.posix_acl_access) associated with [2 848 0x0
-SD]
+That said acpi appears to allow this insanity and on the basis of being
+liberal in what we accept we should try to do something reasonable, and
+keep our notions of gsi, isa irq, and linux irq as straight as we can.
 
-then wierd things start to happen and the more you use this filesystem
-the more you disrupt it: this leads to a corrupted filesystem!
-If you try with less files, let's say 50000, no corruption or error
-occour to me.
-The number of files to reproduce this behaviour could be different and
-it seems to be related to the machine you use: 100000 are enought for
-a virtual machine with 1GB of RAM, but i needed 300000 of files using
-a real machine with 4GB of RAM.
-I tested other filesystem but i get no corruption at all with ext2,
-ext3, ext4 and xfs.
-I use debian stable or testing environments and i'm using reiserfs
-included in vanilla kernels, with default options.
-Am I doing something wrong?
-Can someone test and reproduce this behaviour?
-Regards
+To that end this patchset slightly modifies the gsi to linux irq
+mapping.  Making it a 1 to 1 identity mapping except for the first 16
+gsis.  If those gsis are isa irqs (the typical and default acpi
+configuration) they will be mapped into the first 16 irqs.  If those
+first 16 gsis are not isa irqs they will be given a linux irq number
+just past the last gsi.  Allowing us the chance to use them.
 
-Marco Gatti
+This patchset is my attempt to straighten out our understanding of which
+kind of irq name is used where and the cleanups used to get there.
+
+Thanks to Yinghai Lu <yinghai@kernel.org> for taking the first stab at
+this and finding that there is a real world problem here.  This patchset
+is inspired by his work, but little of it remains the same.
+
+This patchset lies in the weird world between the acpi and x86 and ia64.
+Since most of the changes are x86 related I think it makes most sense
+to go via the x86 tree.
+
+v2: Recognize that gsi_end is last gsi for an ioapic not one past the end.
+    Since I use gsi_end widely in my patchset a respin of many of the patches
+    made sense.
+
+Eric W. Biederman (15):
+      x86 acpi/irq: Introduce apci_isa_irq_to_gsi
+      x86 acpi/irq: Teach acpi_get_override_irq to take a gsi not an isa_irq
+      x86 acpi/irq: pci device dev->irq is an isa irq not a gsi
+      x86 acpi/irq: Fix acpi_sci_ioapic_setup so it has both bus_irq and gsi
+      x86 acpi/irq: Generalize mp_config_acpi_legacy_irqs
+      x86 ioapic: Only export mp_find_ioapic and mp_find_ioapic_pin in io_apic.h
+      x86 ioapic: Fix io_apic_redir_entries to return the number of entries.
+      x86 ioapic: Fix the types of gsi values
+      x86 ioapic: Teach mp_register_ioapic to compute a global gsi_end
+      x86 ioapic: In mpparse use mp_register_ioapic
+      x86 ioapic: Move nr_ioapic_registers calculation to mp_register_ioapic.
+      x86 ioapic: Optimize pin_2_irq
+      x86 ioapic: Simplify probe_nr_irqs_gsi.
+      x86 acpi/irq: Handle isa irqs that are not identity mapped to gsi's.
+      x86 irq: Kill io_apic_renumber_irq
+
+ arch/ia64/kernel/acpi.c          |    8 ++
+ arch/x86/include/asm/io_apic.h   |   12 ++--
+ arch/x86/include/asm/mpspec.h    |   10 ---
+ arch/x86/kernel/acpi/boot.c      |  133 ++++++++++++++++++++++++--------------
+ arch/x86/kernel/apic/es7000_32.c |   19 ------
+ arch/x86/kernel/apic/io_apic.c   |   99 +++++++++++++---------------
+ arch/x86/kernel/mpparse.c        |   25 +-------
+ arch/x86/kernel/sfi.c            |    4 +-
+ drivers/acpi/pci_irq.c           |    8 ++-
+ include/linux/acpi.h             |    5 +-
+ 10 files changed, 154 insertions(+), 169 deletions(-)
+
+Eric
