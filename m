@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930Ab0C3XOC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:14:02 -0400
-Received: from kroah.org ([198.145.64.141]:49333 "EHLO coco.kroah.org"
+	id S1756617Ab0C3XMw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:12:52 -0400
+Received: from kroah.org ([198.145.64.141]:49149 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756688Ab0C3XNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:13:12 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:59:03 2010
-Message-Id: <20100330225903.318240703@linux.site>
+	id S1756600Ab0C3XMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:48 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:47 2010
+Message-Id: <20100330225846.951960815@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:58:30 -0700
+Date: Tue, 30 Mar 2010 15:58:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jan Beulich <jbeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
+       Trond Myklebust <Trond.Myklebust@netapp.com>,
+       David Howells <dhowells@redhat.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [88/89] x86: Fix placement of FIX_OHCI1394_BASE
+Subject: [62/89] NFS: Fix a bug in nfs_fscache_release_page()
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@novell.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit ff30a0543e9a6cd732582063e7cae951cdb7acf2 upstream.
+commit 2c1740098c708b465e87637b237feb2fd98f129a upstream.
 
-Ever for 32-bit with sufficiently high NR_CPUS, and starting
-with commit 789d03f584484af85dbdc64935270c8e45f36ef7 also for
-64-bit, the statically allocated early fixmap page tables were
-not covering FIX_OHCI1394_BASE, leading to a boot time crash
-when "ohci1394_dma=early" was used. Despite this entry not being
-a permanently used one, it needs to be moved into the permanent
-range since it has to be close to FIX_DBGP_BASE and
-FIX_EARLYCON_MEM_BASE.
+Not having an fscache cookie is perfectly valid if the user didn't mount
+with the fscache option.
 
-Reported-bisected-and-tested-by: Justin P. Mattock <justinmattock@gmail.com>
-Fixes-bug: http://bugzilla.kernel.org/show_bug.cgi?id=14487
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-LKML-Reference: <4B9E15D30200007800034D23@vpn.id2.novell.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+This patch fixes http://bugzilla.kernel.org/show_bug.cgi?id=15234
+
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Acked-by: David Howells <dhowells@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/fixmap.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/nfs/fscache.c |   21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
---- a/arch/x86/include/asm/fixmap.h
-+++ b/arch/x86/include/asm/fixmap.h
-@@ -82,6 +82,9 @@ enum fixed_addresses {
- #endif
- 	FIX_DBGP_BASE,
- 	FIX_EARLYCON_MEM_BASE,
-+#ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
-+	FIX_OHCI1394_BASE,
-+#endif
- #ifdef CONFIG_X86_LOCAL_APIC
- 	FIX_APIC_BASE,	/* local (CPU) APIC) -- required for SMP or not */
- #endif
-@@ -126,9 +129,6 @@ enum fixed_addresses {
- 	FIX_BTMAP_END = __end_of_permanent_fixed_addresses + 256 -
- 			(__end_of_permanent_fixed_addresses & 255),
- 	FIX_BTMAP_BEGIN = FIX_BTMAP_END + NR_FIX_BTMAPS*FIX_BTMAPS_SLOTS - 1,
--#ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
--	FIX_OHCI1394_BASE,
--#endif
- #ifdef CONFIG_X86_32
- 	FIX_WP_TEST,
- #endif
+--- a/fs/nfs/fscache.c
++++ b/fs/nfs/fscache.c
+@@ -337,21 +337,20 @@ void nfs_fscache_reset_inode_cookie(stru
+  */
+ int nfs_fscache_release_page(struct page *page, gfp_t gfp)
+ {
+-	struct nfs_inode *nfsi = NFS_I(page->mapping->host);
+-	struct fscache_cookie *cookie = nfsi->fscache;
+-
+-	BUG_ON(!cookie);
+-
+-	if (fscache_check_page_write(cookie, page)) {
+-		if (!(gfp & __GFP_WAIT))
+-			return 0;
+-		fscache_wait_on_page_write(cookie, page);
+-	}
+-
+ 	if (PageFsCache(page)) {
++		struct nfs_inode *nfsi = NFS_I(page->mapping->host);
++		struct fscache_cookie *cookie = nfsi->fscache;
++
++		BUG_ON(!cookie);
+ 		dfprintk(FSCACHE, "NFS: fscache releasepage (0x%p/0x%p/0x%p)\n",
+ 			 cookie, page, nfsi);
+ 
++		if (fscache_check_page_write(cookie, page)) {
++			if (!(gfp & __GFP_WAIT))
++				return 0;
++			fscache_wait_on_page_write(cookie, page);
++		}
++
+ 		fscache_uncache_page(cookie, page);
+ 		nfs_add_fscache_stats(page->mapping->host,
+ 				      NFSIOS_FSCACHE_PAGES_UNCACHED, 1);
 
 
