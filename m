@@ -1,86 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab0C3Mti (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 08:49:38 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52752 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755720Ab0C3Mtg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 08:49:36 -0400
-Date: Tue, 30 Mar 2010 14:49:32 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: kernel-janitors@vger.kernel.org
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Paul Gortmaker <p_gortmaker@yahoo.com>,
-       Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
-Subject: Re: [PATCH 18/24] rtc: fix dangling pointers
-Message-ID: <20100330124932.GM29472@pengutronix.de>
-References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de> <1269094385-16114-19-git-send-email-w.sang@pengutronix.de>
+	id S1756258Ab0C3M67 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 08:58:59 -0400
+Received: from lucidpixels.com ([75.144.35.66]:43353 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755738Ab0C3M65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 08:58:57 -0400
+Date: Tue, 30 Mar 2010 08:58:55 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+cc: Kernel development list <linux-kernel@vger.kernel.org>,
+       USB list <linux-usb@vger.kernel.org>, Alan Piszcz <ap@solarrain.com>
+Subject: Re: 2.6.33: Xorg+khubd lockup (D-state) BUG / ioctl EVIOCGNAME
+ failed: Inappropriate ioctl for device / PreInit returned NULL
+In-Reply-To: <alpine.DEB.2.00.1003291443330.10153@p34.internal.lan>
+Message-ID: <alpine.DEB.2.00.1003300848430.20258@p34.internal.lan>
+References: <Pine.LNX.4.44L0.1003291253410.3358-100000@iolanthe.rowland.org> <alpine.DEB.2.00.1003291443330.10153@p34.internal.lan>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UUMz/kfoogzZ9WLZ"
-Content-Disposition: inline
-In-Reply-To: <1269094385-16114-19-git-send-email-w.sang@pengutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---UUMz/kfoogzZ9WLZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Sat, Mar 20, 2010 at 03:12:59PM +0100, Wolfram Sang wrote:
-> Fix I2C-drivers which missed setting clientdata to NULL before freeing the
-> structure it points to. Also fix drivers which do this _after_ the struct=
-ure
-> was freed already.
->=20
-> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
-> Cc: Alessandro Zummo <a.zummo@towertech.it>
+On Mon, 29 Mar 2010, Justin Piszcz wrote:
 
-please drop this this patch. We reached an agreement that a) setting the
-clientdata-pointer to NULL should be done in the i2c-core [1] and b) how to=
- do
-it. Based on that, I will do the modification of the i2c-core for 2.6.34 (a=
-s it
-fixes the dangling pointers) and then create one single patch removing the =
-then
-superflous calls to i2c_set_clientdata for 2.6.35 (as it is a cleanup). If =
-you
-already applied the above patch to your branch, you don't have to revert; we
-will fix it for you in the next round.
+>
+>
+> On Mon, 29 Mar 2010, Alan Stern wrote:
+>
+>> On Mon, 29 Mar 2010, Justin Piszcz wrote:
+>> 
+>> Yes it does.  Maybe there's something wrong with the way your email
+>> client extracted the patch from the message.
+> You're correct, sorry about that, when it recurs and I have the usbmon
+> trace output I will send it along.
+>
+>> 
+>>> It also fails against 2.6.34-rc2, can you diff -u and show the patch so
+>>> I can patch manually or include a patch against 2.6.33 or 2.6.34-rc2?
+>> 
+>> That _was_ a "diff -u"-style patch.
+>> 
+>> Alan Stern
+>> 
+>
 
-Sorry for the detour!
+Hello!
 
-Kind regards,
+I have all the data you asked for:
 
-   Wolfram
+1. # cat 0u > /tmp/0u.mon.out
+2. The kernel log file.
 
-[1] http://thread.gmane.org/gmane.linux.drivers.i2c/5674/focus=3D5729
+Also 3.
+# date; cat 0u > /tmp/0u_after_disconnect_usb.mon.out
+Tue Mar 30 08:50:45 EDT 2010
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Here, I ran this, disconnected the mouse and re-connected it.
 
---UUMz/kfoogzZ9WLZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+All files are here:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
+http://home.comcast.net/~jpiszcz/20100330/0u.mon.out.bz2
+http://home.comcast.net/~jpiszcz/20100330/0u_after_disconnect_usb.mon.out.bz2
+http://home.comcast.net/~jpiszcz/20100330/kern.log.bz2
 
-iEYEARECAAYFAkux81wACgkQD27XaX1/VRtx5wCfZgJACPD30QCZN1KMxLrVxLM/
-cA8AoK1bGXV51a1vgcx8HLAsA59LAEEc
-=c4Fm
------END PGP SIGNATURE-----
+Hopefully something can be found!
 
---UUMz/kfoogzZ9WLZ--
+It has happened again, in addition, this is a LONG outstanding bug since
+2006 or 2007, see below research:
+
+URL:
+http://forums.linuxmint.com/viewtopic.php?f=55&t=44951&p=259375
+DESCRIPTION:
+Screen Randomly Freezes
+Sometimes the screen just freezes and the cursor will not move, and nothing responds at all. The only way (I have found so far) is to hold down the power button until the whole laptop powers off.
+CHIPSET:
+00:0b.0 USB Controller: nVidia Corporation MCP51 USB Controller (rev a3)
+00:0b.1 USB Controller: nVidia Corporation MCP51 USB Controller (rev a3)
+
+URL:
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=476633
+DESCRIPTION:
+Debian Bug report logs - #476633
+linux-image-2.6.24-1-686: USB mouse hangs system
+CHIPSET:
+00:0b.0 USB Controller [0c03]: nVidia Corporation MCP51 USB Controller [10de:026d] (rev a2) (prog-if 10 [OHCI])
+
+URL:
+https://bugzilla.redhat.com/show_bug.cgi?id=215539
+DESCRIPTION:
+https://bugzilla.redhat.com/show_bug.cgi?id=215539
+CHIPSET:
+  Bug 215539 - Unpredictable freeze of mouse and/or keyboard on amd64 x2 nvidia chipset (Dell E521)
+Aliases: 
+Summary:        Unpredictable freeze of mouse and/or keyboard on amd64 x2 nvidia chipset (Del...
+00:0b.0 USB Controller: nVidia Corporation MCP51 USB Controller (rev a3)
+
+A good post here:
+Luis Felipe Marzagao      2006-12-04 21:57:16 EST
+
+Hello. This bug is *serious* because it happens with all nforce 430 chipsets.
+The problem seems to be with that specifc chipset.
+
+This bug is a duplicate of:
+https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=201445
+
+Here is a lot of info about this issue:
+http://forums.fedoraforum.org/showthread.php?t=136879&page=1&pp=15
+https://launchpad.net/distros/ubuntu/+source/linux-source-2.6.17/+bug/67734
+http://forums.us.dell.com/supportforums/board/message?board.id=sw_other&message.id=54328&view=by_date_ascending&page=1
+
+
+
+Justin.
+
