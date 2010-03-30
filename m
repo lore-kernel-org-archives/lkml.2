@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014Ab0C3XeZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:34:25 -0400
-Received: from kroah.org ([198.145.64.141]:46453 "EHLO coco.kroah.org"
+	id S1757026Ab0C3Xdq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:33:46 -0400
+Received: from kroah.org ([198.145.64.141]:46520 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754554Ab0C3XVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:21:13 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:30 2010
-Message-Id: <20100330224830.136412313@linux.site>
+	id S1756880Ab0C3XVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:21:19 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:33 2010
+Message-Id: <20100330224833.204411065@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:20 -0700
+Date: Tue, 30 Mar 2010 15:42:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>,
+       Anton Vorontsov <avorontsov@ru.mvista.com>,
+       Richard Purdie <rpurdie@linux.intel.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [106/156] ALSA: ac97: Add IBM ThinkPad R40e to Headphone/Line Jack Sense blacklist
+Subject: [111/156] leds-gpio: fix default state handling on OF platforms
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: Anton Vorontsov <avorontsov@ru.mvista.com>
 
-commit e1f7f02b45cf33a774d56e505ce1718af9392f5e upstream.
+commit 0493a4ff10959ff4c8e0d65efee25b7ffd4fa5db upstream.
 
-BugLink: https://launchpad.net/bugs/303789
+The driver wrongly sets default state for LEDs that don't specify
+default-state property.
 
-This model needs both 'Headphone Jack Sense' and 'Line Jack Sense'
-muted for audible audio, so just add its SSID to the blacklist and
-don't enumerate the controls.
+Currently the driver handles default state this way:
 
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+memset(&led, 0, sizeof(led));
+for_each_child_of_node(np, child) {
+	state = of_get_property(child, "default-state", NULL);
+	if (state) {
+		if (!strcmp(state, "keep"))
+			led.default_state = LEDS_GPIO_DEFSTATE_KEEP;
+		...
+	}
+	ret = create_gpio_led(&led, ...);
+}
+
+Which means that all LEDs that do not specify default-state will inherit
+the last value of the default-state property, which is wrong.
+
+This patch fixes the issue by moving LED's template initialization into
+the loop body.
+
+Signed-off-by: Anton Vorontsov <avorontsov@ru.mvista.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Richard Purdie <rpurdie@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/ac97/ac97_patch.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/leds/leds-gpio.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/sound/pci/ac97/ac97_patch.c
-+++ b/sound/pci/ac97/ac97_patch.c
-@@ -1867,6 +1867,7 @@ static unsigned int ad1981_jacks_blackli
- 	0x10140523, /* Thinkpad R40 */
- 	0x10140534, /* Thinkpad X31 */
- 	0x10140537, /* Thinkpad T41p */
-+	0x1014053e, /* Thinkpad R40e */
- 	0x10140554, /* Thinkpad T42p/R50p */
- 	0x10140567, /* Thinkpad T43p 2668-G7U */
- 	0x10140581, /* Thinkpad X41-2527 */
+--- a/drivers/leds/leds-gpio.c
++++ b/drivers/leds/leds-gpio.c
+@@ -211,7 +211,6 @@ static int __devinit of_gpio_leds_probe(
+ 					const struct of_device_id *match)
+ {
+ 	struct device_node *np = ofdev->node, *child;
+-	struct gpio_led led;
+ 	struct gpio_led_of_platform_data *pdata;
+ 	int count = 0, ret;
+ 
+@@ -226,8 +225,8 @@ static int __devinit of_gpio_leds_probe(
+ 	if (!pdata)
+ 		return -ENOMEM;
+ 
+-	memset(&led, 0, sizeof(led));
+ 	for_each_child_of_node(np, child) {
++		struct gpio_led led = {};
+ 		enum of_gpio_flags flags;
+ 		const char *state;
+ 
 
 
