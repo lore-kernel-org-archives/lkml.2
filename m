@@ -1,50 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756269Ab0C3K6Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 06:58:24 -0400
-Received: from mx51.mymxserver.com ([85.199.173.110]:19305 "EHLO
-	mx51.mymxserver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756026Ab0C3K6X (ORCPT
+	id S1756292Ab0C3LBq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 07:01:46 -0400
+Received: from 1-1-12-13a.han.sth.bostream.se ([82.182.30.168]:46346 "EHLO
+	palpatine.hardeman.nu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756264Ab0C3LBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 06:58:23 -0400
-From: Holger Schurig <hs4233@mail.mn-solutions.de>
-To: Daniel Mack <daniel@caiaq.de>
-Subject: Re: [PATCH] net/wireless/libertas: do not call wiphy_unregister() w/o wiphy_register()
-Date: Tue, 30 Mar 2010 12:59:23 +0200
-User-Agent: KMail/1.13.1 (Linux/2.6.33; KDE/4.4.1; i686; ; )
-Cc: linux-kernel@vger.kernel.org, Dan Williams <dcbw@redhat.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Bing Zhao <bzhao@marvell.com>, libertas-dev@lists.infradead.org,
-       linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-References: <1269875658-3324-1-git-send-email-daniel@caiaq.de> <201003301149.13462.hs4233@mail.mn-solutions.de> <20100330105029.GO30801@buzzloop.caiaq.de>
-In-Reply-To: <20100330105029.GO30801@buzzloop.caiaq.de>
+	Tue, 30 Mar 2010 07:01:43 -0400
+Date: Tue, 30 Mar 2010 13:01:38 +0200
+From: David =?iso-8859-1?Q?H=E4rdeman?= <david@hardeman.nu>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Jon Smirl <jonsmirl@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+       Krzysztof Halasa <khc@pm.waw.pl>,
+       hermann pitton <hermann-pitton@arcor.de>,
+       Christoph Bartelmus <lirc@bartelmus.de>, awalls@radix.net, j@jannau.net,
+       jarod@redhat.com, jarod@wilsonet.com, kraxel@redhat.com,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-media@vger.kernel.org, superm1@ubuntu.com
+Subject: Re: [RFC] What are the goals for the architecture of an in-kernel
+ IR system?
+Message-ID: <20100330110138.GA6164@hardeman.nu>
+Mail-Followup-To: Mauro Carvalho Chehab <mchehab@redhat.com>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Jon Smirl <jonsmirl@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+	Krzysztof Halasa <khc@pm.waw.pl>,
+	hermann pitton <hermann-pitton@arcor.de>,
+	Christoph Bartelmus <lirc@bartelmus.de>, awalls@radix.net,
+	j@jannau.net, jarod@redhat.com, jarod@wilsonet.com,
+	kraxel@redhat.com, linux-input@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+	superm1@ubuntu.com
+References: <9e4733910912151229o371ee017tf3640d8f85728011@mail.gmail.com>
+ <20091215203300.GL24406@elf.ucw.cz>
+ <9e4733910912151245ne442a5dlcfee92609e364f70@mail.gmail.com>
+ <9e4733910912151338n62b30af5i35f8d0963e6591c@mail.gmail.com>
+ <4BAB7659.1040408@redhat.com>
+ <20100326112755.GB5387@hardeman.nu>
+ <4BACC769.6020906@redhat.com>
+ <20100326160150.GA28804@core.coreip.homeip.net>
+ <4BAFE4B7.2030204@redhat.com>
+ <4BAFF985.3090703@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201003301259.23973.hs4233@mail.mn-solutions.de>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4BAFF985.3090703@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I don't get your point. The patch I submitted fixes an Ooops in the
-> driver, due to wrong handling of an API. What does that have to do with
-> principle discussions about the frameworks in use?
+On Sun, Mar 28, 2010 at 09:51:17PM -0300, Mauro Carvalho Chehab wrote:
+> 
+> I spoke too soon... removing the index causes a problem at the read ioctl: there's no way
+> to retrieve just the non-sparsed values.
+> 
+> There's one solution that would allow both read/write and compat to work nicely,
+> but the API would become somewhat asymmetrical:
+> 
+> At get (EVIOCGKEYCODEBIG):
+> 	use index/len as input and keycode/scancode as output;
+> 
+> At set (EVIOCSKEYCODEBIG):
+> 	use scancode/keycode/len as input (and, optionally, index as output).
+> 
 
-I asked if there is a better method, and you said that you would test a better 
-solution. That means that someone else should make a better solution.
+This was exactly the approach I had in mind when I suggested using 
+indexes.
 
-I just pointed out that I won't be the one who creates the better solution, 
-because for fundamental reasons I don't see the libertas+cfg80211 approach 
-going forward. That issue has nothing to do with you or your patch, so please 
-don't feel offended or confused.
+> Having it asymmetrical doesn't sound good, but, on the other hand, 
+> using index for
+> the set function also doesn't seem good, as the driver may reorder the entries after
+> setting, for example to work with a binary tree or with hashes.
 
+I don't think the assymetry is really a problem. As I see it, there are 
+basically two user cases:
 
-Basically, I neither ack nor nak you patch. Given that it fixes an oops the 
-patch should go in, and probably to stable at well. I just gave a hint, to 
-make you think if you could come up with something better.
+1) Userspace wants scancode X to generate keypress Y
+   (In which case userspace doesn't care one iota what the index is)
 
+2) Userspace wants to get the current keytable from the kernel
+   (In which case a loop with an index from 0 to n is appropriate)
 
+and, possibly:
 
-BTW, testing/fixing of failure paths in libertas as well as simplifying the 
-call sequence of functions during initialisation could be quite useful.
+3) Userspace wants to know what keycode (if any) scancode X generates
+   (In which case approach 2 will work just as well, but this usecase
+    seems a bit contrived anyway...)
+
+-- 
+David Härdeman
