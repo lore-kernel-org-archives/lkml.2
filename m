@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757850Ab0CaAgY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:36:24 -0400
-Received: from kroah.org ([198.145.64.141]:48591 "EHLO coco.kroah.org"
+	id S1757883Ab0CaAg2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:36:28 -0400
+Received: from kroah.org ([198.145.64.141]:48580 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755953Ab0C3XJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:09:18 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:50:03 2010
-Message-Id: <20100330225003.033279925@linux.site>
+	id S1755949Ab0C3XJR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:09:17 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:50:02 2010
+Message-Id: <20100330225002.199228806@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:48:55 -0700
+Date: Tue, 30 Mar 2010 15:48:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Neil Horman <nhorman@tuxdriver.com>, Andi Kleen <andi@firstfloor.org>,
-       Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-       Ingo Molnar <mingo@elte.hu>, maximilian attems <max@stro.at>,
+       Jiri Slaby <jslaby@suse.cz>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>, Ollie Wild <aaw@google.com>,
+       x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [35/45] coredump: suppress uid comparison test if core output files are pipes
+Subject: [34/45] x86, ia32_aout: do not kill argument mapping
 In-Reply-To: <20100330230410.GA28712@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,62 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit 76595f79d76fbe6267a51b3a866a028d150f06d4 upstream.
+commit 318f6b228ba88a394ef560efc1bfe028ad5ae6b6 upstream.
 
-Modify uid check in do_coredump so as to not apply it in the case of
-pipes.
+Do not set current->mm->mmap to NULL in 32-bit emulation on 64-bit
+load_aout_binary after flush_old_exec as it would destroy already
+set brpm mapping with arguments.
 
-This just got noticed in testing.  The end of do_coredump validates the
-uid of the inode for the created file against the uid of the crashing
-process to ensure that no one can pre-create a core file with different
-ownership and grab the information contained in the core when they
-shouldn' tbe able to.  This causes failures when using pipes for a core
-dumps if the crashing process is not root, which is the uid of the pipe
-when it is created.
+Introduced by b6a2fea39318e43fee84fa7b0b90d68bed92d2ba
+mm: variable length argument support
+where the argument mapping in bprm was added.
 
-The fix is simple.  Since the check for matching uid's isn't relevant for
-pipes (a process can't create a pipe that the uermodehelper code will open
-anyway), we can just just skip it in the event ispipe is non-zero
+[ hpa: this is a regression from 2.6.22... time to kill a.out? ]
 
-Reverts a pipe-affecting change which was accidentally made in
-
-: commit c46f739dd39db3b07ab5deb4e3ec81e1c04a91af
-: Author:     Ingo Molnar <mingo@elte.hu>
-: AuthorDate: Wed Nov 28 13:59:18 2007 +0100
-: Commit:     Linus Torvalds <torvalds@woody.linux-foundation.org>
-: CommitDate: Wed Nov 28 10:58:01 2007 -0800
-:
-:     vfs: coredumping fix
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+LKML-Reference: <1265831716-7668-1-git-send-email-jslaby@suse.cz>
 Cc: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: maximilian attems <max@stro.at>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ollie Wild <aaw@google.com>
+Cc: x86@kernel.org
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/exec.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/ia32/ia32_aout.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1826,8 +1826,9 @@ int do_coredump(long signr, int exit_cod
- 	/*
- 	 * Dont allow local users get cute and trick others to coredump
- 	 * into their pre-created files:
-+	 * Note, this is not relevant for pipes
- 	 */
--	if (inode->i_uid != current->fsuid)
-+	if (!ispipe && (inode->i_uid != current->fsuid))
- 		goto close_fail;
- 	if (!file->f_op)
- 		goto close_fail;
+--- a/arch/x86/ia32/ia32_aout.c
++++ b/arch/x86/ia32/ia32_aout.c
+@@ -324,7 +324,6 @@ static int load_aout_binary(struct linux
+ 	current->mm->free_area_cache = TASK_UNMAPPED_BASE;
+ 	current->mm->cached_hole_size = 0;
+ 
+-	current->mm->mmap = NULL;
+ 	compute_creds(bprm);
+ 	current->flags &= ~PF_FORKNOEXEC;
+ 
 
 
