@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035Ab0CaAGE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:06:04 -0400
-Received: from kroah.org ([198.145.64.141]:45261 "EHLO coco.kroah.org"
+	id S932324Ab0C3XSz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:18:55 -0400
+Received: from kroah.org ([198.145.64.141]:45321 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756768Ab0C3XS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:26 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:42 2010
-Message-Id: <20100330225641.980727642@linux.site>
+	id S932266Ab0C3XSg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:36 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:49 2010
+Message-Id: <20100330225649.076746769@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:45 -0700
+Date: Tue, 30 Mar 2010 15:55:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Andiry Xu <andiry.xu@amd.com>,
-       Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+       Adel Gadllah <adel.gadllah@gmail.com>,
+       Reinette Chatre <reinette.chatre@intel.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [067/116] USB: xHCI: re-initialize cmd_completion
+Subject: [078/116] iwlwifi: Silence tfds_in_queue message
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,32 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andiry Xu <andiry.xu@amd.com>
+From: Adel Gadllah <adel.gadllah@gmail.com>
 
-commit 1d68064a7d80da4a7334cab0356162e36229c1a1 upstream.
+commit c8406ea8fa1adde8dc5400127281d497bbcdb84a upstream.
 
-When a signal interrupts a Configure Endpoint command, the cmd_completion used
-in xhci_configure_endpoint() is not re-initialized and the
-wait_for_completion_interruptible_timeout() will return failure. Initialize
-cmd_completion in xhci_configure_endpoint().
+Commit a239a8b47cc0e5e6d7416a89f340beac06d5edaa introduced a
+noisy message, that fills up the log very fast.
 
-Signed-off-by: Andiry Xu <andiry.xu@amd.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+The error seems not to be fatal (the connection is stable and
+performance is ok), so make it IWL_DEBUG_TX rather than IWL_ERR.
+
+Signed-off-by: Adel Gadllah <adel.gadllah@gmail.com>
+Acked-by: Reinette Chatre <reinette.chatre@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-hcd.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/iwlwifi/iwl-tx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-hcd.c
-+++ b/drivers/usb/host/xhci-hcd.c
-@@ -1157,6 +1157,7 @@ static int xhci_configure_endpoint(struc
- 		cmd_completion = &virt_dev->cmd_completion;
- 		cmd_status = &virt_dev->cmd_status;
- 	}
-+	init_completion(cmd_completion);
- 
- 	if (!ctx_change)
- 		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
+--- a/drivers/net/wireless/iwlwifi/iwl-tx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
+@@ -126,7 +126,7 @@ void iwl_free_tfds_in_queue(struct iwl_p
+ 	if (priv->stations[sta_id].tid[tid].tfds_in_queue >= freed)
+ 		priv->stations[sta_id].tid[tid].tfds_in_queue -= freed;
+ 	else {
+-		IWL_ERR(priv, "free more than tfds_in_queue (%u:%d)\n",
++		IWL_DEBUG_TX(priv, "free more than tfds_in_queue (%u:%d)\n",
+ 			priv->stations[sta_id].tid[tid].tfds_in_queue,
+ 			freed);
+ 		priv->stations[sta_id].tid[tid].tfds_in_queue = 0;
 
 
