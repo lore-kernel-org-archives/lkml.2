@@ -1,64 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755718Ab0C3Gbg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 02:31:36 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:64292 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755578Ab0C3Gbe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 02:31:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=BJP2+BYXEo8Jos/hrc5H6keV62FpWE1xePu2ysYzp4LZZ5jAYzTdC4yp6qxq6kYlaz
-         xXK00G0OlAzAk/cVLoAJiSHHM5J8qZ9mCOpks7jtO9+/rhwt8WUUSPMrzfCormKM4URs
-         JGPruUvvS9hJXLaXzG/bnfrX9JbK5iiDusr08=
-MIME-Version: 1.0
-In-Reply-To: <1269930015-863-6-git-send-regression-fweisbec@gmail.com>
-References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com>
-	 <1269930015-863-6-git-send-regression-fweisbec@gmail.com>
-Date: Tue, 30 Mar 2010 09:31:33 +0300
-Message-ID: <b6fcc0a1003292331n4fd0ce03v6d75a1a20ce14f0f@mail.gmail.com>
-Subject: Re: [PATCH 5/6] procfs: Push down the bkl from ioctl
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755735Ab0C3Gck (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 02:32:40 -0400
+Received: from mga01.intel.com ([192.55.52.88]:14752 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755595Ab0C3Gci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 02:32:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,333,1267430400"; 
+   d="scan'208";a="553326322"
+Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
+From: Shaohua Li <shaohua.li@intel.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "Wu, Fengguang" <fengguang.wu@intel.com>
+In-Reply-To: <20100330150453.8E9F.A69D9226@jp.fujitsu.com>
+References: <20100330055304.GA2983@sli10-desk.sh.intel.com>
+	 <20100330150453.8E9F.A69D9226@jp.fujitsu.com>
+Content-Type: multipart/mixed; boundary="=-M2SdH58dzaiUotI/Nad1"
+Date: Tue, 30 Mar 2010 14:32:36 +0800
+Message-ID: <1269930756.17240.4.camel@sli10-desk.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 9:20 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-> --- a/net/sunrpc/cache.c
-> +++ b/net/sunrpc/cache.c
-> @@ -1331,12 +1331,22 @@ static unsigned int cache_poll_procfs(struct file *filp, poll_table *wait)
->        return cache_poll(filp, wait, cd);
->  }
->
-> -static int cache_ioctl_procfs(struct inode *inode, struct file *filp,
-> -                             unsigned int cmd, unsigned long arg)
-> +static long cache_ioctl_procfs(struct file *filp,
-> +                              unsigned int cmd, unsigned long arg)
->  {
-> -       struct cache_detail *cd = PDE(inode)->data;
-> +       long ret;
-> +       struct cache_detail *cd;
-> +       struct inode *inode = filp->f_path.dentry->d_inode;
->
-> -       return cache_ioctl(inode, filp, cmd, arg, cd);
-> +       /* Pushed down from procfs ioctl handler */
-> +       lock_kernel();
-> +
-> +       cd = PDE(inode)->data;
+--=-M2SdH58dzaiUotI/Nad1
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-->data is not under BKL at all.
+On Tue, 2010-03-30 at 14:08 +0800, KOSAKI Motohiro wrote:
+> Hi
+> 
+> > Commit 84b18490d1f1bc7ed5095c929f78bc002eb70f26 introduces a regression.
+> > With it, our tmpfs test always oom. The test has a lot of rotated anon
+> > pages and cause percent[0] zero. Actually the percent[0] is a very small
+> > value, but our calculation round it to zero. The commit makes vmscan
+> > completely skip anon pages and cause oops.
+> > An option is if percent[x] is zero in get_scan_ratio(), forces it
+> > to 1. See below patch.
+> > But the offending commit still changes behavior. Without the commit, we scan
+> > all pages if priority is zero, below patch doesn't fix this. Don't know if
+> > It's required to fix this too.
+> 
+> Can you please post your /proc/meminfo 
+attached.
+> and reproduce program? I'll digg it.
+our test is quite sample. mount tmpfs with double memory size and store several
+copies (memory size * 2/G) of kernel in tmpfs, and then do kernel build.
+for example, there is 3G memory and then tmpfs size is 6G and there is 6
+kernel copy.
+> Very unfortunately, this patch isn't acceptable. In past time, vmscan 
+> had similar logic, but 1% swap-out made lots bug reports. 
+can you elaborate this?
+Completely restore previous behavior (do full scan with priority 0) is
+ok too.
 
-> +       ret = cache_ioctl(inode, filp, cmd, arg, cd);
+--=-M2SdH58dzaiUotI/Nad1
+Content-Disposition: attachment; filename="meminfo"
+Content-Type: text/plain; name="meminfo"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+MemTotal:        3078372 kB
+MemFree:           34612 kB
+Buffers:             960 kB
+Cached:          2577644 kB
+SwapCached:        24580 kB
+Active:          2125712 kB
+Inactive:         541972 kB
+Active(anon):    2120276 kB
+Inactive(anon):   534696 kB
+Active(file):       5436 kB
+Inactive(file):     7276 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+SwapTotal:       6297472 kB
+SwapFree:        6184988 kB
+Dirty:              1720 kB
+Writeback:         24024 kB
+AnonPages:         64888 kB
+Mapped:             3996 kB
+Shmem:           2566004 kB
+Slab:             290416 kB
+SReclaimable:     113840 kB
+SUnreclaim:       176576 kB
+KernelStack:        3072 kB
+PageTables:         6832 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:     7836656 kB
+Committed_AS:    2811564 kB
+VmallocTotal:   34359738367 kB
+VmallocUsed:      289724 kB
+VmallocChunk:   34359444080 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+DirectMap4k:       10240 kB
+DirectMap2M:     3127296 kB
+
+--=-M2SdH58dzaiUotI/Nad1--
+
