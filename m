@@ -1,90 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117Ab0C3BXo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 21:23:44 -0400
-Received: from vpn.pathscale.com ([198.186.3.75]:40038 "HELO mx.mv.qlogic.com"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
-	id S1754976Ab0C3BXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 21:23:42 -0400
-Date: Mon, 29 Mar 2010 18:23:41 -0700 (PDT)
-From: Giridhar Malavali <giridhar.malavali@qlogic.com>
-X-X-Sender: gmalavali@mvluser00.mv.qlogic.com
-To: James.Bottomley@suse.de
-cc: andrew.vasquez@qlogic.com, julia@diku.dk, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 9/12] drivers/scsi/qla2xxx: Add missing unlock
-Message-ID: <alpine.LRH.2.00.1003291819330.28339@mvluser00.mv.qlogic.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1755107Ab0C3BuJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 21:50:09 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64046 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753591Ab0C3BuH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 21:50:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=u/CLOtKDZgjHaRrVJ8vctXHXgZ3GsNxYj05Mg0wjfQH+3NQJohcuw58r+JT8XBzqOz
+         vyrvBs53NRTiW+RB0sYl51wm8gyqVpeLGO64u69PqeETrGim/MKERL9jb4ytOFz03EzI
+         ij75FifqPnpFRq79521V2V9p0haSBMRhBeV0U=
+From: Matt Turner <mattst88@gmail.com>
+To: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Richard Henderson <rth@twiddle.net>,
+       Ivan Kokshaysky <ink@jurassic.park.msu.ru>, ang@brigante.org,
+       Matt Turner <mattst88@gmail.com>
+Subject: [RFC] alpha: hack objstrip.c to make it compile.
+Date: Mon, 29 Mar 2010 21:49:55 -0400
+Message-Id: <1269913795-1852-1-git-send-email-mattst88@gmail.com>
+X-Mailer: git-send-email 1.6.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Mar 2010, Julia Lawall wrote:
-
-> From: Julia Lawall <julia@diku.dk>
->
-> This code represents error handling code.  Add an unlock as done in the
-> normal exit path from the function.
->
-> A simplified version of the semantic patch that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> @r exists@
-> expression E1;
-> identifier f;
-> @@
->
-> f (...) { <+...
-> * spin_lock_irqsave (E1,...);
-> ... when != E1
-> * return ...;
-> ...+> }
-> // </smpl>
->
-> Signed-off-by: Julia Lawall <julia@diku.dk>
->
-> ---
-> drivers/scsi/qla2xxx/qla_attr.c     |    1 +
-> 1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/scsi/qla2xxx/qla_attr.c b/drivers/scsi/qla2xxx/qla_attr.c
-> index 90d1e06..e8ace7a 100644
-> --- a/drivers/scsi/qla2xxx/qla_attr.c
-> +++ b/drivers/scsi/qla2xxx/qla_attr.c
-> @@ -2392,6 +2392,7 @@ done:
-> 		kfree(sp->fcport);
-> 	kfree(sp->ctx);
-> 	mempool_free(sp, ha->srb_mempool);
-> +	spin_unlock_irqrestore(&ha->hardware_lock, flags);
-> 	return 0;
-> }
->
->
-James,
-
-Can u please include this patch.
-Here is the pointer for the similar patch submitted previously which I acked.
-http://marc.info/?l=linux-scsi&m=126877099912968&w=2
-
-With the new BSG patches submitted to scsi-misc at
-http://marc.info/?l=linux-scsi&m=126904344832176&w=2, the BSG related code
-is moved to new files bsg.[ch]. The patch below will fix the lock imbalance issue
-with latest patches submitted to scsi-misc.
-
-Giri
+I don't think this is the appropriate fix. What should I do to fix this?
 ---
-diff --git a/drivers/scsi/qla2xxx/qla_bsg.c b/drivers/scsi/qla2xxx/qla_bsg.c
-index 387d694..21e5bcd 100644
---- a/drivers/scsi/qla2xxx/qla_bsg.c
-+++ b/drivers/scsi/qla2xxx/qla_bsg.c
-@@ -1199,6 +1199,7 @@ qla24xx_bsg_timeout(struct fc_bsg_job *bsg_job)
-   	return 0;
+ arch/alpha/boot/tools/objstrip.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-   done:
-+	spin_unlock_irqrestore(&ha->hardware_lock, flags);
-   	if (bsg_job->request->msgcode == FC_BSG_HST_CT)
-   		kfree(sp->fcport);
-   	kfree(sp->ctx);
+diff --git a/arch/alpha/boot/tools/objstrip.c b/arch/alpha/boot/tools/objstrip.c
+index 367d53d..54fa1ef 100644
+--- a/arch/alpha/boot/tools/objstrip.c
++++ b/arch/alpha/boot/tools/objstrip.c
+@@ -27,6 +27,9 @@
+ #include <linux/param.h>
+ #ifdef __ELF__
+ # include <linux/elf.h>
++# define elfhdr	elf64_hdr
++# define elf_phdr	elf64_phdr
++# define elf_check_arch(x) ((x)->e_machine == EM_ALPHA)
+ #endif
+ 
+ /* bootfile size must be multiple of BLOCK_SIZE: */
+-- 
+1.6.4.4
+
