@@ -1,57 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833Ab0C3Ucf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 16:32:35 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:29456 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755585Ab0C3Uc2 (ORCPT
+	id S1755830Ab0C3Udy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 16:33:54 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:50015 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755072Ab0C3Udx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 16:32:28 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=lLjskqCZK03twy9iaikmX84Xk2V6lppdqoI9posxNiK2imyIebyGDOV1m4QGba6Cp
-	mB6YEdCVOJ7CYyxYCuZjg==
-Date: Tue, 30 Mar 2010 13:32:21 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       nishimura@mxp.nes.nec.co.jp,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] oom: fix the unsafe proc_oom_score()->badness() call
-In-Reply-To: <20100330163909.GA16884@redhat.com>
-Message-ID: <alpine.DEB.2.00.1003301331110.5234@chino.kir.corp.google.com>
-References: <1269447905-5939-1-git-send-email-anfei.zhou@gmail.com> <20100326150805.f5853d1c.akpm@linux-foundation.org> <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com>
- <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330163909.GA16884@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Tue, 30 Mar 2010 16:33:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:subject:to:cc:in-reply-to:references;
+        b=haT3nDDImlMwRzdOnyou01Ow4+Yyzk/FzIp5ENGq4z7y0eyXKsvqlPdfB9XmBJR+pJ
+         7wJR8e7U8MHyP4Oju9HM48tmREhAYPy/SrszSywE4hS7NwROl57sBwaFH8T6RZWrgeK2
+         7shU2oZlXzlR1G2+k+CdMrHsmU/OayER2drpM=
+Message-ID: <4bb2602e.170d660a.5493.ffffbf62@mx.google.com>
+Date: Tue, 30 Mar 2010 13:33:50 -0700 (PDT)
+From: Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: [PATCH] scsi: fix lockdep warning
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+       James Bottomley <James.Bottomley@HansenPartnership.com>,
+       Greg KH <gregkh@suse.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linux-Scsi <linux-scsi@vger.kernel.org>
+In-Reply-To: <4BB22FF6.5040003@kernel.org>
+References: <a4423d671003081547v5c955d58t248db945c06d2a7f@mail.gmail.com>
+	<86802c441003081612r2f44efd6n9664b4b7c98a636a@mail.gmail.com>
+	<m1d3zel4b4.fsf@fess.ebiederm.org> <4B95F37E.6060309@kernel.org>
+	<m14okqnczd.fsf@fess.ebiederm.org> <4B99A6F0.4080203@kernel.org>
+	<4BA47692.7040401@kernel.org>
+	<4bb21338.0d0db80a.1685.ffffb9e1@mx.google.com>
+	<4BB22FF6.5040003@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Mar 2010, Oleg Nesterov wrote:
+On Tue, 30 Mar 2010 10:08:06 -0700, Yinghai Lu <yinghai@kernel.org> wrote:
+> On 03/30/2010 08:05 AM, Ben Gamari wrote:
+> > On Sat, 20 Mar 2010 00:17:38 -0700, Yinghai Lu <yinghai@kernel.org> wrote:
+> >>
+> >> with qlogic and emulex card etc.
+> >>
+> >> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> >>
+> > 
+> > As several others have pointed out, you appear to be call sysfs_bin_attr_init()
+> > against statically allocated attributes. Is there an updated patchset that you've been meaning to send out?
+> 
+> not tracking it for while. it seems James had the same version in scsi-next 
+> 
+> > 
+> > Moreover, there are still failures in the ACPI thermal driver (at very least)
+> > on master (9623e5a23724d09283c238960946ec6f65733afe).
+> 
+> can you send out the trace?
+> 
+I provided it at the bottom of my last message. I'll also include it below,
+just in case. Thanks!
 
-> proc_oom_score(task) have a reference to task_struct, but that is all.
-> If this task was already released before we take tasklist_lock
-> 
-> 	- we can't use task->group_leader, it points to nowhere
-> 
-> 	- it is not safe to call badness() even if this task is
-> 	  ->group_leader, has_intersects_mems_allowed() assumes
-> 	  it is safe to iterate over ->thread_group list.
-> 
-> Add the pid_alive() check to ensure __unhash_process() was not called.
-> 
-> Note: I think we shouldn't use ->group_leader, badness() should return
-> the same result for any sub-thread. However this is not true currently,
-> and I think that ->mm check and list_for_each_entry(p->children) in
-> badness are not right.
-> 
+- Ben
 
-I think it would be better to just use task and not task->group_leader.
+       [    3.240692] BUG: key ffff88011b1a9528 not in .data!
+       [    3.245578] ------------[ cut here ]------------
+       [    3.250195] WARNING: at kernel/lockdep.c:2706 lockdep_init_map+0x125/0x140()
+       [    3.257229] Hardware name: Latitude D830                   
+       [    3.262793] Modules linked in:
+       [    3.265864] Pid: 1, comm: swapper Not tainted 2.6.34-rc2-ben #137
+       [    3.271946] Call Trace:
+       [    3.274397]  [<ffffffff8105a86b>] warn_slowpath_common+0x7b/0xc0
+       [    3.280395]  [<ffffffff8105a8c4>] warn_slowpath_null+0x14/0x20
+       [    3.286220]  [<ffffffff8108ea75>] lockdep_init_map+0x125/0x140
+       [    3.292046]  [<ffffffff811ae51f>] sysfs_add_file_mode+0x6f/0xd0
+       [    3.297960]  [<ffffffff8130b464>] ? snprintf+0x34/0x40
+       [    3.303093]  [<ffffffff811ae591>] sysfs_add_file+0x11/0x20
+       [    3.308570]  [<ffffffff811ae676>] sysfs_create_file+0x26/0x30
+       [    3.314311]  [<ffffffff813bbe99>] device_create_file+0x19/0x20
+       [    3.320136]  [<ffffffff8146176b>] thermal_zone_device_register+0x45b/0x860
+       [    3.327001]  [<ffffffff81370e45>] acpi_thermal_add+0x245/0x4e4
+       [    3.332827]  [<ffffffff811b0250>] ? sysfs_do_create_link+0xd0/0x170
+       [    3.339085]  [<ffffffff81347100>] acpi_device_probe+0x50/0x122
+       [    3.344909]  [<ffffffff813bee86>] driver_probe_device+0x96/0x1a0
+       [    3.350906]  [<ffffffff813bef90>] ? __driver_attach+0x0/0xa0
+       [    3.356557]  [<ffffffff813bf02b>] __driver_attach+0x9b/0xa0
+       [    3.362121]  [<ffffffff813bef90>] ? __driver_attach+0x0/0xa0
+       [    3.367773]  [<ffffffff813be2ac>] bus_for_each_dev+0x6c/0xa0
+       [    3.373423]  [<ffffffff813becce>] driver_attach+0x1e/0x20
+       [    3.378814]  [<ffffffff813be591>] bus_add_driver+0xe1/0x280
+       [    3.384380]  [<ffffffff813bf378>] driver_register+0x78/0x140
+       [    3.390031]  [<ffffffff81b2f591>] ? acpi_thermal_init+0x0/0x7b
+       [    3.395855]  [<ffffffff81347a70>] acpi_bus_register_driver+0x43/0x45
+       [    3.402199]  [<ffffffff81b2f5ea>] acpi_thermal_init+0x59/0x7b
+       [    3.407938]  [<ffffffff8100204c>] do_one_initcall+0x3c/0x1a0
+       [    3.413591]  [<ffffffff81b05757>] kernel_init+0x15a/0x1e4
+       [    3.418984]  [<ffffffff8100aee4>] kernel_thread_helper+0x4/0x10
+       [    3.424895]  [<ffffffff815bbf90>] ? restore_args+0x0/0x30
+       [    3.430286]  [<ffffffff81b055fd>] ? kernel_init+0x0/0x1e4
+       [    3.435678]  [<ffffffff8100aee0>] ? kernel_thread_helper+0x0/0x10
+       [    3.441765] ---[ end trace a22d306b065d4a66 ]---
+       [    3.446380] BUG: key ffff88011b1a9570 not in .data!
+
