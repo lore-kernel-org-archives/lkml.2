@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755889Ab0C3StW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 14:49:22 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:63469 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755853Ab0C3StT (ORCPT
+	id S1755970Ab0C3St2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 14:49:28 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:60499 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755853Ab0C3StX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 14:49:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=wrnroGPfgHhNjaRfKRSdvb9Baj78a7EMdHIWfMzyl7kjGMNpkxgGvQIi8SuuhVZk4m
-         ZKfv1tMABiNsgnwWTnIPAWUmSBnbhQFEZ6OO2XL8J5vdv52KzYENPJY4YcGQUgVu4hUm
-         QrVzbJSi4GmrsCf/bZVwogO8cNFLQMxS1teuk=
-Date: Tue, 30 Mar 2010 20:49:22 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       stable@kernel.org
-Subject: Re: [PATCH] x86,kgdb: Always initialize the hw breakpoint attribute
-Message-ID: <20100330184921.GE5078@nowhere>
-References: <1269974370-24831-1-git-send-email-jason.wessel@windriver.com>
+	Tue, 30 Mar 2010 14:49:23 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Florian Westphal <fw@strlen.de>
+Subject: Re: [PATCH -next] x86, fs: add sys_compat_write for net/socket.c
+Date: Tue, 30 Mar 2010 20:48:58 +0200
+User-Agent: KMail/1.13.1 (Linux/2.6.33-00063-g0795fff; KDE/4.4.1; x86_64; ; )
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-fsdevel@vger.kernel.org,
+       Al Viro <viro@zeniv.linux.org.uk>,
+       "David S. Miller" <davem@davemloft.net>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       x86@kernel.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1269971469-1254-1-git-send-email-fw@strlen.de> <4BB23B35.7060401@zytor.com> <20100330181757.GB14721@Chamillionaire.breakpoint.cc>
+In-Reply-To: <20100330181757.GB14721@Chamillionaire.breakpoint.cc>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269974370-24831-1-git-send-email-jason.wessel@windriver.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003302048.59350.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1+THJ1W1Jgq1lDDhzhaWVfzp/aACgbDqYAnb6+
+ nSYnkmL0msgmhpVzrc8iRkI2LlVhjs0yPq9DgYzhXfoAIrPyeN
+ 5xihf0Bfm/puISBtnPOjQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 01:39:30PM -0500, Jason Wessel wrote:
-> It is required to call hw_breakpoint_init() on an attr before using it
-> in any other calls.  This fixes the problem where kgdb will sometimes
-> fail to initialize on x86_64.
-> 
-> CC: Frederic Weisbecker <fweisbec@gmail.com>
-> CC: Ingo Molnar <mingo@elte.hu>
-> CC: stable@kernel.org
-> Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-> ---
->  arch/x86/kernel/kgdb.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
-> index bfba601..d9adcde 100644
-> --- a/arch/x86/kernel/kgdb.c
-> +++ b/arch/x86/kernel/kgdb.c
-> @@ -618,6 +618,7 @@ int kgdb_arch_init(void)
->  	 * portion of kgdb because this operation requires mutexs to
->  	 * complete.
->  	 */
-> +	hw_breakpoint_init(&attr);
->  	attr.bp_addr = (unsigned long)kgdb_arch_init;
->  	attr.type = PERF_TYPE_BREAKPOINT;
+On Tuesday 30 March 2010 20:17:57 Florian Westphal wrote:
+> Now, I realize that adding a write compat syscall is borderline
+> insanity, and I am open to suggestions.
 
+Another option, which may be marginally better, would be to redefine
+the data structures to be compatible, and assign them new numbers,
+with kernel compat support for the numbers in x86-32 binaries.
 
-Minor neat: In this case you don't need to set the type.
+If you manually add padding to the new data structures in the places
+that the other architectures have implicit padding, the hack will only
+be needed on x86-32 and compat x86-64.
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+The obvious disadvantage is that you need to recompile the x86-32
+binaries to work in compat mode.
 
-
-
->  	attr.bp_len = HW_BREAKPOINT_LEN_1;
-> -- 
-> 1.6.3.1.9.g95405b
-> 
-
+	Arnd
