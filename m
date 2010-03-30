@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756799Ab0CaARK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:17:10 -0400
-Received: from kroah.org ([198.145.64.141]:51766 "EHLO coco.kroah.org"
+	id S932306Ab0CaAMk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:12:40 -0400
+Received: from kroah.org ([198.145.64.141]:51927 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932102Ab0C3XRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:17:32 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:05 2010
-Message-Id: <20100330225605.139131792@linux.site>
+	id S932162Ab0C3XRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:17:52 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:21 2010
+Message-Id: <20100330225621.431157496@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:54:52 -0700
+Date: Tue, 30 Mar 2010 15:55:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Bob Copeland <me@bobcopeland.com>, linux-wireless@vger.kernel.org,
-       linville@tuxdriver.com, mb@bu3sch.de, ath5k-devel@venema.h4ckr.net,
-       Nick Kossifidis <mickflemm@gmail.com>,
-       Luis Rodriguez <lrodriguez@atheros.com>,
+       Ping Cheng <pingc@wacom.com>, Dmitry Torokhov <dtor@mail.ru>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [014/116] ath5k: dont use external sleep clock in AP mode
+Subject: [036/116] Input: wacom - ensure the device is initialized properly upon resume
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,40 +26,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Copeland <me@bobcopeland.com>
+From: Ping Cheng <pingc@wacom.com>
 
-commit 5d6ce628f986d1a3c523cbb0a5a52095c48cc332 upstream
+commit 232f5693e5c9483e222528ef81979e42ea2f2908 upstream.
 
-When using the external sleep clock in AP mode, the
-TSF increments too quickly, causing beacon interval
-to be much lower than it is supposed to be, resulting
-in lots of beacon-not-ready interrupts.
+Call wacom_query_tablet_data() from wacom_resume() so the device will be
+switched to Wacom mode upon resume. Devices that require this are: regular
+tablets and two finger touch devices.
 
-This fixes http://bugzilla.kernel.org/show_bug.cgi?id=14802.
-
-Signed-off-by: Bob Copeland <me@bobcopeland.com>
-Acked-by: Nick Kossifidis <mickflemm@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Cc: Luis Rodriguez <lrodriguez@atheros.com>
+Signed-off-by: Ping Cheng <pingc@wacom.com>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath5k/reset.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/input/tablet/wacom.h     |    7 ++++---
+ drivers/input/tablet/wacom_sys.c |    7 ++++---
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/net/wireless/ath/ath5k/reset.c
-+++ b/drivers/net/wireless/ath/ath5k/reset.c
-@@ -1382,8 +1382,9 @@ int ath5k_hw_reset(struct ath5k_hw *ah,
- 	 * Set clocks to 32KHz operation and use an
- 	 * external 32KHz crystal when sleeping if one
- 	 * exists */
--	if (ah->ah_version == AR5K_AR5212)
--			ath5k_hw_set_sleep_clock(ah, true);
-+	if (ah->ah_version == AR5K_AR5212 &&
-+	    ah->ah_op_mode != NL80211_IFTYPE_AP)
-+		ath5k_hw_set_sleep_clock(ah, true);
+--- a/drivers/input/tablet/wacom.h
++++ b/drivers/input/tablet/wacom.h
+@@ -1,7 +1,7 @@
+ /*
+  * drivers/input/tablet/wacom.h
+  *
+- *  USB Wacom Graphire and Wacom Intuos tablet support
++ *  USB Wacom tablet support
+  *
+  *  Copyright (c) 2000-2004 Vojtech Pavlik	<vojtech@ucw.cz>
+  *  Copyright (c) 2000 Andreas Bach Aaen	<abach@stofanet.dk>
+@@ -69,6 +69,7 @@
+  *      v1.49 (pc) - Added support for USB Tablet PC (0x90, 0x93, and 0x9A)
+  *      v1.50 (pc) - Fixed a TabletPC touch bug in 2.6.28
+  *      v1.51 (pc) - Added support for Intuos4
++ *      v1.52 (pc) - Query Wacom data upon system resume
+  */
  
- 	/*
- 	 * Disable beacons and reset the register
+ /*
+@@ -89,9 +90,9 @@
+ /*
+  * Version Information
+  */
+-#define DRIVER_VERSION "v1.51"
++#define DRIVER_VERSION "v1.52"
+ #define DRIVER_AUTHOR "Vojtech Pavlik <vojtech@ucw.cz>"
+-#define DRIVER_DESC "USB Wacom Graphire and Wacom Intuos tablet driver"
++#define DRIVER_DESC "USB Wacom tablet driver"
+ #define DRIVER_LICENSE "GPL"
+ 
+ MODULE_AUTHOR(DRIVER_AUTHOR);
+--- a/drivers/input/tablet/wacom_sys.c
++++ b/drivers/input/tablet/wacom_sys.c
+@@ -1,7 +1,7 @@
+ /*
+  * drivers/input/tablet/wacom_sys.c
+  *
+- *  USB Wacom Graphire and Wacom Intuos tablet support - system specific code
++ *  USB Wacom tablet support - system specific code
+  */
+ 
+ /*
+@@ -562,9 +562,10 @@ static int wacom_resume(struct usb_inter
+ 	int rv;
+ 
+ 	mutex_lock(&wacom->lock);
+-	if (wacom->open)
++	if (wacom->open) {
+ 		rv = usb_submit_urb(wacom->irq, GFP_NOIO);
+-	else
++		wacom_query_tablet_data(intf);
++	} else
+ 		rv = 0;
+ 	mutex_unlock(&wacom->lock);
+ 
 
 
