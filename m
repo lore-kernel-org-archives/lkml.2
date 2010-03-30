@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab0C3Rd6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 13:33:58 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:18040 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab0C3Rd4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 13:33:56 -0400
-Message-ID: <4BB2358B.3090800@oracle.com>
-Date: Tue, 30 Mar 2010 10:31:55 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH -next] module.h: add stub for is_module_percpu_address
-References: <20100330191834.f2009292.sfr@canb.auug.org.au>
-In-Reply-To: <20100330191834.f2009292.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+	id S1752822Ab0C3Rgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 13:36:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65437 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751531Ab0C3Rgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 13:36:53 -0400
+Date: Tue, 30 Mar 2010 13:36:34 -0400
+From: Rik van Riel <riel@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, avi@redhat.com, aarcange@redhat.com,
+       akpm@linux-foundation.org, Kent Overstreet <kent.overstreet@gmail.com>
+Subject: [PATCH] increase PREEMPT_BITS to 12 to avoid overflow when starting
+ KVM
+Message-ID: <20100330133634.2f1bf3d6@cuia.bos.redhat.com>
+Organization: Red Hat, Inc
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4BB235CC.0122:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+Increase the PREEMPT_BITS to 12, to deal with a larger number
+of locks that can be taken in mm_take_all_locks or other places
+where many instances of the same type of lock can be taken.
 
-Fix build for CONFIG_MODULES not enabled by providing a stub
-for is_module_percpu_address().
+The overflow of PREEMPT_BITS should be harmless, since it simply
+increments the counter into the SOFTIRQ_BITS, and the counter
+will be decremented again later.
 
-kernel/lockdep.c:605: error: implicit declaration of function 'is_module_percpu_address'
+However, the overflow does lead to backtraces with CONFIG_PREEMPT_DEBUG
+enabled.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Reported-by: Kent Overstreet <kent.overstreet@gmail.com>
+
 ---
- include/linux/module.h |    5 +++++
- 1 file changed, 5 insertions(+)
+Kent, does this patch fix the issue you saw?
 
---- linux-next-20100330.orig/include/linux/module.h
-+++ linux-next-20100330/include/linux/module.h
-@@ -567,6 +567,11 @@ static inline bool is_module_address(uns
- 	return false;
- }
+Peter, I know you do not like this approach. However, I could not
+think of a way around mm_take_all_locks. We need to take those locks
+and want to track that fact for lock debugging...
+
+diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+index d5b3876..e74108f 100644
+--- a/include/linux/hardirq.h
++++ b/include/linux/hardirq.h
+@@ -14,8 +14,8 @@
+  * We put the hardirq and softirq counter into the preemption
+  * counter. The bitmask has the following meaning:
+  *
+- * - bits 0-7 are the preemption count (max preemption depth: 256)
+- * - bits 8-15 are the softirq count (max # of softirqs: 256)
++ * - bits 0-12 are the preemption count (max preemption depth: 4096)
++ * - bits 13-19 are the softirq count (max # of softirqs: 256)
+  *
+  * The hardirq count can in theory reach the same as NR_IRQS.
+  * In reality, the number of nested IRQS is limited to the stack
+@@ -24,16 +24,16 @@
+  * hardirq nesting. An arch may choose to give less than 10 bits.
+  * m68k expects it to be 8.
+  *
+- * - bits 16-25 are the hardirq count (max # of nested hardirqs: 1024)
+- * - bit 26 is the NMI_MASK
+- * - bit 28 is the PREEMPT_ACTIVE flag
++ * - bits 26-29 are the hardirq count (max # of nested hardirqs: 1024)
++ * - bit 30 is the NMI_MASK
++ * - bit 31 is the PREEMPT_ACTIVE flag
+  *
+- * PREEMPT_MASK: 0x000000ff
+- * SOFTIRQ_MASK: 0x0000ff00
+- * HARDIRQ_MASK: 0x03ff0000
+- *     NMI_MASK: 0x04000000
++ * PREEMPT_MASK: 0x00000fff
++ * SOFTIRQ_MASK: 0x000ff000
++ * HARDIRQ_MASK: 0x3ff00000
++ *     NMI_MASK: 0x40000000
+  */
+-#define PREEMPT_BITS	8
++#define PREEMPT_BITS	12
+ #define SOFTIRQ_BITS	8
+ #define NMI_BITS	1
  
-+static inline bool is_module_percpu_address(unsigned long addr)
-+{
-+	return false;
-+}
-+
- static inline bool is_module_text_address(unsigned long addr)
- {
- 	return false;
+
