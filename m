@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757571Ab0C3X7v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:59:51 -0400
-Received: from kroah.org ([198.145.64.141]:45473 "EHLO coco.kroah.org"
+	id S932274Ab0CaAKO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:10:14 -0400
+Received: from kroah.org ([198.145.64.141]:51993 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932279Ab0C3XSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:54 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:05 2010
-Message-Id: <20100330225705.055607224@linux.site>
+	id S932202Ab0C3XSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:04 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:29 2010
+Message-Id: <20100330225628.464181504@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:56:16 -0700
+Date: Tue, 30 Mar 2010 15:55:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>,
+       Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [098/116] ALSA: ac97: Add Toshiba P500 to ac97 jack sense blacklist
+Subject: [047/116] ALSA: cmipci: work around invalid PCM pointer
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Chen <seven.steps@gmail.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 5cd165e7057020884e430941c24454d3df9a799d upstream.
+commit 1c583063a5c769fe2ec604752e383972c69e6d9b upstream.
 
-BugLink: https://launchpad.net/bugs/481058
+When the CMI8738 FRAME2 register is read, the chip sometimes (probably
+when wrapping around) returns an invalid value that would be outside the
+programmed DMA buffer. This leads to an inconsistent PCM pointer that is
+likely to result in an underrun.
 
-The OR has verified that both 'Headphone Jack Sense' and 'Line Jack Sense'
-need to be muted for sound to be audible, so just add the machine's SSID
-to the ac97 jack sense blacklist.
+To work around this, read the register multiple times until we get a
+valid value; the error state seems to be very short-lived.
 
-Reported-by: Richard Gagne
-Tested-by: Richard Gagne
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Reported-and-tested-by: Matija Nalis <mnalis-alsadev@voyager.hr>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/ac97/ac97_patch.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/cmipci.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/sound/pci/ac97/ac97_patch.c
-+++ b/sound/pci/ac97/ac97_patch.c
-@@ -1873,6 +1873,7 @@ static unsigned int ad1981_jacks_blackli
- 	0x10280160, /* Dell Dimension 2400 */
- 	0x104380b0, /* Asus A7V8X-MX */
- 	0x11790241, /* Toshiba Satellite A-15 S127 */
-+	0x1179ff10, /* Toshiba P500 */
- 	0x144dc01a, /* Samsung NP-X20C004/SEG */
- 	0 /* end */
- };
+--- a/sound/pci/cmipci.c
++++ b/sound/pci/cmipci.c
+@@ -941,13 +941,21 @@ static snd_pcm_uframes_t snd_cmipci_pcm_
+ 						struct snd_pcm_substream *substream)
+ {
+ 	size_t ptr;
+-	unsigned int reg;
++	unsigned int reg, rem, tries;
++
+ 	if (!rec->running)
+ 		return 0;
+ #if 1 // this seems better..
+ 	reg = rec->ch ? CM_REG_CH1_FRAME2 : CM_REG_CH0_FRAME2;
+-	ptr = rec->dma_size - (snd_cmipci_read_w(cm, reg) + 1);
+-	ptr >>= rec->shift;
++	for (tries = 0; tries < 3; tries++) {
++		rem = snd_cmipci_read_w(cm, reg);
++		if (rem < rec->dma_size)
++			goto ok;
++	}
++	printk(KERN_ERR "cmipci: invalid PCM pointer: %#x\n", rem);
++	return SNDRV_PCM_POS_XRUN;
++ok:
++	ptr = (rec->dma_size - (rem + 1)) >> rec->shift;
+ #else
+ 	reg = rec->ch ? CM_REG_CH1_FRAME1 : CM_REG_CH0_FRAME1;
+ 	ptr = snd_cmipci_read(cm, reg) - rec->offset;
 
 
