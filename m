@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756297Ab0C3XLz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:11:55 -0400
-Received: from kroah.org ([198.145.64.141]:48758 "EHLO coco.kroah.org"
+	id S932094Ab0C3XOr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:14:47 -0400
+Received: from kroah.org ([198.145.64.141]:49315 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756231Ab0C3XLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:11:50 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:12 2010
-Message-Id: <20100330225811.677990770@linux.site>
+	id S1756562Ab0C3XNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:13:09 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:59:01 2010
+Message-Id: <20100330225901.505697070@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:08 -0700
+Date: Tue, 30 Mar 2010 15:58:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Mika Westerberg <ext-mika.1.westerberg@nokia.com>,
-       Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Ravikiran Thirumalai <kiran@scalex86.org>,
+       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [06/89] UBI: fix volume creation input checking
+Subject: [85/89] tmpfs: cleanup mpol_parse_str()
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,29 +30,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit c5ce5b46af76f52dea21f467397d24c4ae6cb3ff upstream.
+commit 926f2ae04f183098cf9a30521776fb2759c8afeb upstream.
 
-Do not use an unchecked variable UBI_IOCMKVOL ioctl.
+mpol_parse_str() made lots 'err' variable related bug.  Because it is ugly
+and reviewing unfriendly.
 
-Signed-off-by: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+This patch simplifies it.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Ravikiran Thirumalai <kiran@scalex86.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Acked-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mtd/ubi/cdev.c |    1 -
- 1 file changed, 1 deletion(-)
+ mm/mempolicy.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
---- a/drivers/mtd/ubi/cdev.c
-+++ b/drivers/mtd/ubi/cdev.c
-@@ -853,7 +853,6 @@ static long ubi_cdev_ioctl(struct file *
- 			break;
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2122,8 +2122,8 @@ int mpol_parse_str(char *str, struct mem
+ 			char *rest = nodelist;
+ 			while (isdigit(*rest))
+ 				rest++;
+-			if (!*rest)
+-				err = 0;
++			if (*rest)
++				goto out;
  		}
+ 		break;
+ 	case MPOL_INTERLEAVE:
+@@ -2132,7 +2132,6 @@ int mpol_parse_str(char *str, struct mem
+ 		 */
+ 		if (!nodelist)
+ 			nodes = node_states[N_HIGH_MEMORY];
+-		err = 0;
+ 		break;
+ 	case MPOL_LOCAL:
+ 		/*
+@@ -2141,7 +2140,6 @@ int mpol_parse_str(char *str, struct mem
+ 		if (nodelist)
+ 			goto out;
+ 		mode = MPOL_PREFERRED;
+-		err = 0;
+ 		break;
+ 	case MPOL_DEFAULT:
+ 		/*
+@@ -2156,7 +2154,6 @@ int mpol_parse_str(char *str, struct mem
+ 		 */
+ 		if (!nodelist)
+ 			goto out;
+-		err = 0;
+ 	}
  
--		req.name[req.name_len] = '\0';
- 		err = verify_mkvol_req(ubi, &req);
- 		if (err)
- 			break;
+ 	mode_flags = 0;
+@@ -2170,13 +2167,14 @@ int mpol_parse_str(char *str, struct mem
+ 		else if (!strcmp(flags, "relative"))
+ 			mode_flags |= MPOL_F_RELATIVE_NODES;
+ 		else
+-			err = 1;
++			goto out;
+ 	}
+ 
+ 	new = mpol_new(mode, mode_flags, &nodes);
+ 	if (IS_ERR(new))
+-		err = 1;
+-	else {
++		goto out;
++
++	{
+ 		int ret;
+ 		NODEMASK_SCRATCH(scratch);
+ 		if (scratch) {
+@@ -2187,13 +2185,15 @@ int mpol_parse_str(char *str, struct mem
+ 			ret = -ENOMEM;
+ 		NODEMASK_SCRATCH_FREE(scratch);
+ 		if (ret) {
+-			err = 1;
+ 			mpol_put(new);
+-		} else if (no_context) {
+-			/* save for contextualization */
+-			new->w.user_nodemask = nodes;
++			goto out;
+ 		}
+ 	}
++	err = 0;
++	if (no_context) {
++		/* save for contextualization */
++		new->w.user_nodemask = nodes;
++	}
+ 
+ out:
+ 	/* Restore string for error message */
 
 
