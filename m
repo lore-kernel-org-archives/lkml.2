@@ -1,110 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab0C3XGs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:06:48 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:37930 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753984Ab0C3XGp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:06:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=X+pTpOl938dwnLwwMo8QOhRIGkkQrm+AkFVv7TCazJLsJ4H5mT5SnEo+ToY4mEUhtI
-         rPI3ySroRaWmAhzc79Zy3bjd8DEsRyj48soNNNI2aU1iLT7C5E83gy/sM7Oo8Y6hJxUA
-         EYx947oQjZYitGiW+RwI0CMYiWCciAUY/zqD0=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Siedentopf <thomas.siedentopf@novell.com>,
-       Jeff Mahoney <jeffm@suse.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "2 . 6 . 33 . x" <stable@kernel.org>
-Subject: [GIT PULL] reiserfs fix
-Date: Wed, 31 Mar 2010 01:06:49 +0200
-Message-Id: <1269990409-6238-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.6.2.3
+	id S1755541Ab0C3XG7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:06:59 -0400
+Received: from kroah.org ([198.145.64.141]:51714 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752653Ab0C3XGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:06:09 -0400
+Date: Tue, 30 Mar 2010 16:04:10 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/45] 2.6.27.46-stable review
+Message-ID: <20100330230410.GA28712@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100330230338.GA28642@kroah.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+This is the start of the stable review cycle for the 2.6.27.46 release.
+There are 45 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-Please pull the reiserfs/kill-bkl branch that can be found at:
+Responses should be made by April 1, 2010, 22:00:00 UTC.
+Anything received after that time might be too late.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-	reiserfs/kill-bkl
-
-Thanks,
-	Frederic
----
-
-Jeff Mahoney (1):
-      reiserfs: Fix locking BUG during mount failure
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.27.46-rc1.gz
+and the diffstat can be found below.
 
 
- fs/reiserfs/super.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+thanks,
 
----
-commit b7b7fa43103a9fb30dbcc60cbd5161fdfc25f904
-Author: Jeff Mahoney <jeffm@jeffreymahoney.com>
-Date:   Mon Mar 29 15:12:39 2010 -0400
+greg k-h
 
-    reiserfs: Fix locking BUG during mount failure
-    
-    Commit 8ebc423238341b52912c7295b045a32477b33f09 (reiserfs: kill-the-BKL)
-    introduced a bug in the mount failure case.
-    
-    The error label releases the lock before calling journal_release_error,
-    but it requires that the lock be held. do_journal_release unlocks and
-    retakes it. When it releases it without it held, we trigger a BUG().
-    
-    The error_alloc label skips the unlock since the lock isn't held yet
-    but none of the other conditions that are clean up exist yet either.
-    
-    This patch returns immediately after the kzalloc failure and moves
-    the reiserfs_write_unlock after the journal_release_error call.
-    
-    This was reported in https://bugzilla.novell.com/show_bug.cgi?id=591807
-    
-    Reported-by:  Thomas Siedentopf <thomas.siedentopf@novell.com>
-    Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-    Cc: Thomas Siedentopf <thomas.siedentopf@novell.com>
-    Cc: Andrew Morton <akpm@linux-foundation.org>
-    Cc: 2.6.33.x <stable@kernel.org>
-    Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-diff --git a/fs/reiserfs/super.c b/fs/reiserfs/super.c
-index 04bf5d7..ab19051 100644
---- a/fs/reiserfs/super.c
-+++ b/fs/reiserfs/super.c
-@@ -1618,10 +1618,8 @@ static int reiserfs_fill_super(struct super_block *s, void *data, int silent)
- 	save_mount_options(s, data);
- 
- 	sbi = kzalloc(sizeof(struct reiserfs_sb_info), GFP_KERNEL);
--	if (!sbi) {
--		errval = -ENOMEM;
--		goto error_alloc;
--	}
-+	if (!sbi)
-+		return -ENOMEM;
- 	s->s_fs_info = sbi;
- 	/* Set default values for options: non-aggressive tails, RO on errors */
- 	REISERFS_SB(s)->s_mount_opt |= (1 << REISERFS_SMALLTAIL);
-@@ -1878,12 +1876,12 @@ static int reiserfs_fill_super(struct super_block *s, void *data, int silent)
- 	return (0);
- 
- error:
--	reiserfs_write_unlock(s);
--error_alloc:
- 	if (jinit_done) {	/* kill the commit thread, free journal ram */
- 		journal_release_error(NULL, s);
- 	}
- 
-+	reiserfs_write_unlock(s);
-+
- 	reiserfs_free_bitmap_cache(s);
- 	if (SB_BUFFER_WITH_SB(s))
- 		brelse(SB_BUFFER_WITH_SB(s));
+ Documentation/filesystems/tmpfs.txt     |    6 +++-
+ Makefile                                |    2 +-
+ arch/x86/ia32/ia32_aout.c               |    1 -
+ arch/x86/kvm/vmx.c                      |    3 ++
+ arch/x86/kvm/x86.c                      |   21 ++++++++++-
+ arch/x86/kvm/x86_emulate.c              |    5 ++-
+ drivers/char/mem.c                      |    3 ++
+ drivers/char/tty_io.c                   |    4 ++-
+ drivers/gpu/drm/r128/r128_cce.c         |   18 +++++++--
+ drivers/gpu/drm/r128/r128_drv.h         |    8 ++++
+ drivers/gpu/drm/r128/r128_state.c       |   36 ++++++++++---------
+ drivers/hwmon/coretemp.c                |    2 +-
+ drivers/hwmon/lm78.c                    |   23 ++++++++----
+ drivers/i2c/i2c-core.c                  |    5 ++-
+ drivers/media/video/em28xx/em28xx-dvb.c |    1 +
+ drivers/mtd/ubi/cdev.c                  |    1 -
+ drivers/net/b44.c                       |    3 +-
+ drivers/net/bonding/bond_main.c         |    8 ++++
+ drivers/net/r8169.c                     |    4 +-
+ drivers/net/sky2.c                      |    4 ++-
+ drivers/parisc/eisa_eeprom.c            |    2 +-
+ drivers/serial/8250.c                   |    7 ++--
+ drivers/usb/core/devio.c                |   61 +++++++++++++++++++++----------
+ drivers/usb/host/ehci-hub.c             |    7 ++--
+ drivers/usb/host/ehci-q.c               |   11 +++---
+ drivers/usb/host/ehci-sched.c           |    1 +
+ fs/exec.c                               |    3 +-
+ fs/ext4/super.c                         |    3 +-
+ fs/fcntl.c                              |    6 +--
+ fs/namei.c                              |   14 ++++++-
+ include/asm-x86/checksum_32.h           |    3 +-
+ include/asm-x86/kvm_host.h              |    1 +
+ include/asm-x86/kvm_x86_emulate.h       |    2 +-
+ include/linux/sched.h                   |   24 ++++++++++++-
+ include/linux/topology.h                |    4 +-
+ kernel/futex.c                          |   28 +++++++++++++-
+ kernel/printk.c                         |    2 +-
+ kernel/sched.c                          |   12 +++---
+ kernel/sched_fair.c                     |   13 +++++--
+ kernel/sched_features.h                 |    1 +
+ kernel/sched_idletask.c                 |    6 ++--
+ kernel/sched_rt.c                       |    2 +-
+ mm/mempolicy.c                          |   34 +++++++++++------
+ mm/migrate.c                            |    3 ++
+ net/ax25/af_ax25.c                      |    2 +-
+ net/ipv4/tcp_minisocks.c                |    2 +-
+ net/ipv6/sit.c                          |    2 +-
+ net/sched/sch_api.c                     |    2 +
+ net/unix/af_unix.c                      |    5 ++-
+ 49 files changed, 301 insertions(+), 120 deletions(-)
