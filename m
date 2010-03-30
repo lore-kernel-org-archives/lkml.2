@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757934Ab0CaAld (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:41:33 -0400
-Received: from kroah.org ([198.145.64.141]:48432 "EHLO coco.kroah.org"
+	id S1757941Ab0CaAlu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:41:50 -0400
+Received: from kroah.org ([198.145.64.141]:48422 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755587Ab0C3XI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:08:57 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:47 2010
-Message-Id: <20100330224946.711976256@linux.site>
+	id S1755577Ab0C3XI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:08:56 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:46 2010
+Message-Id: <20100330224945.987478556@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:48:32 -0700
+Date: Tue, 30 Mar 2010 15:48:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Miklos Szeredi <mszeredi@suse.cz>,
+       Jarek Poplawski <jarkao2@gmail.com>,
        "David S. Miller" <davem@davemloft.net>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [12/45] net: unix: fix sending fds in multiple buffers
+Subject: [11/45] ax25: Fix possible oops in ax25_make_new
 In-Reply-To: <20100330230410.GA28712@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,70 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Jarek Poplawski <jarkao2@gmail.com>
 
-commit 8ba69ba6a324b13e1190fc31e41954d190fd4f1d upstream.
+commit 8c185ab6185bf5e67766edb000ce428269364c86 upstream.
 
-Kalle Olavi Niemitalo reported that:
+In ax25_make_new, if kmemdup of digipeat returns an error, there would
+be an oops in sk_free while calling sk_destruct, because sk_protinfo
+is NULL at the moment; move sk->sk_destruct initialization after this.
 
-  "..., when one process calls sendmsg once to send 43804 bytes of
-  data and one file descriptor, and another process then calls recvmsg
-  three times to receive the 16032+16032+11740 bytes, each of those
-  recvmsg calls returns the file descriptor in the ancillary data.  I
-  confirmed this with strace.  The behaviour differs from Linux
-  2.6.26, where reportedly only one of those recvmsg calls (I think
-  the first one) returned the file descriptor."
+BTW of reported-by: Bernard Pidoux F6BVP <f6bvp@free.fr>
 
-This bug was introduced by a patch from me titled "net: unix: fix inflight
-counting bug in garbage collector", commit 6209344f5.
-
-And the reason is, quoting Kalle:
-
-  "Before your patch, unix_attach_fds() would set scm->fp = NULL, so
-  that if the loop in unix_stream_sendmsg() ran multiple iterations,
-  it could not call unix_attach_fds() again.  But now,
-  unix_attach_fds() leaves scm->fp unchanged, and I think this causes
-  it to be called multiple times and duplicate the same file
-  descriptors to each struct sk_buff."
-
-Fix this by introducing a flag that is cleared at the start and set
-when the fds attached to the first buffer.  The resulting code should
-work equivalently to the one on 2.6.26.
-
-Reported-by: Kalle Olavi Niemitalo <kon@iki.fi>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Jarek Poplawski <jarkao2@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/unix/af_unix.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ net/ax25/af_ax25.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -1491,6 +1491,7 @@ static int unix_stream_sendmsg(struct ki
- 	struct sk_buff *skb;
- 	int sent=0;
- 	struct scm_cookie tmp_scm;
-+	bool fds_sent = false;
+--- a/net/ax25/af_ax25.c
++++ b/net/ax25/af_ax25.c
+@@ -894,7 +894,6 @@ struct sock *ax25_make_new(struct sock *
  
- 	if (NULL == siocb->scm)
- 		siocb->scm = &tmp_scm;
-@@ -1552,12 +1553,14 @@ static int unix_stream_sendmsg(struct ki
- 		size = min_t(int, size, skb_tailroom(skb));
+ 	sock_init_data(NULL, sk);
  
- 		memcpy(UNIXCREDS(skb), &siocb->scm->creds, sizeof(struct ucred));
--		if (siocb->scm->fp) {
-+		/* Only send the fds in the first buffer */
-+		if (siocb->scm->fp && !fds_sent) {
- 			err = unix_attach_fds(siocb->scm, skb);
- 			if (err) {
- 				kfree_skb(skb);
- 				goto out_err;
- 			}
-+			fds_sent = true;
- 		}
+-	sk->sk_destruct = ax25_free_sock;
+ 	sk->sk_type     = osk->sk_type;
+ 	sk->sk_priority = osk->sk_priority;
+ 	sk->sk_protocol = osk->sk_protocol;
+@@ -932,6 +931,7 @@ struct sock *ax25_make_new(struct sock *
+ 	}
  
- 		if ((err = memcpy_fromiovec(skb_put(skb,size), msg->msg_iov, size)) != 0) {
+ 	sk->sk_protinfo = ax25;
++	sk->sk_destruct = ax25_free_sock;
+ 	ax25->sk    = sk;
+ 
+ 	return sk;
 
 
