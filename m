@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757751Ab0CaAg6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:36:58 -0400
-Received: from kroah.org ([198.145.64.141]:48567 "EHLO coco.kroah.org"
+	id S932841Ab0CaAgx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:36:53 -0400
+Received: from kroah.org ([198.145.64.141]:48573 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755920Ab0C3XJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:09:15 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:50:01 2010
-Message-Id: <20100330225000.970252456@linux.site>
+	id S1755931Ab0C3XJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:09:16 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:50:02 2010
+Message-Id: <20100330225001.595812327@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:48:52 -0700
+Date: Tue, 30 Mar 2010 15:48:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [32/45] KVM: x86: check for cr3 validity in ioctl_set_sregs
+       Al Viro <viro@zeniv.linux.org.uk>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [33/45] fix LOOKUP_FOLLOW on automount "symlinks"
 In-Reply-To: <20100330230410.GA28712@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,53 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcelo Tosatti <mtosatti@redhat.com>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit 59839dfff5eabca01cc4e20b45797a60a80af8cb upstream.
+commit ac278a9c505092dd82077a2446af8f9fc0d9c095 upstream.
 
-Matt T. Yourst notes that kvm_arch_vcpu_ioctl_set_sregs lacks validity
-checking for the new cr3 value:
+Make sure that automount "symlinks" are followed regardless of LOOKUP_FOLLOW;
+it should have no effect on them.
 
-"Userspace callers of KVM_SET_SREGS can pass a bogus value of cr3 to
-the kernel. This will trigger a NULL pointer access in gfn_to_rmap()
-when userspace next tries to call KVM_RUN on the affected VCPU and kvm
-attempts to activate the new non-existent page table root.
-
-This happens since kvm only validates that cr3 points to a valid guest
-physical memory page when code *inside* the guest sets cr3. However, kvm
-currently trusts the userspace caller (e.g. QEMU) on the host machine to
-always supply a valid page table root, rather than properly validating
-it along with the rest of the reloaded guest state."
-
-http://sourceforge.net/tracker/?func=detail&atid=893831&aid=2687641&group_id=180599
-
-Check for a valid cr3 address in kvm_arch_vcpu_ioctl_set_sregs, triple
-fault in case of failure.
-
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kvm/x86.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ fs/namei.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3658,7 +3658,13 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -841,6 +841,17 @@ fail:
+ }
  
- 	vcpu->arch.cr2 = sregs->cr2;
- 	mmu_reset_needed |= vcpu->arch.cr3 != sregs->cr3;
--	vcpu->arch.cr3 = sregs->cr3;
+ /*
++ * This is a temporary kludge to deal with "automount" symlinks; proper
++ * solution is to trigger them on follow_mount(), so that do_lookup()
++ * would DTRT.  To be killed before 2.6.34-final.
++ */
++static inline int follow_on_final(struct inode *inode, unsigned lookup_flags)
++{
++	return inode && unlikely(inode->i_op->follow_link) &&
++		((lookup_flags & LOOKUP_FOLLOW) || S_ISDIR(inode->i_mode));
++}
 +
-+	down_read(&vcpu->kvm->slots_lock);
-+	if (gfn_to_memslot(vcpu->kvm, sregs->cr3 >> PAGE_SHIFT))
-+		vcpu->arch.cr3 = sregs->cr3;
-+	else
-+		set_bit(KVM_REQ_TRIPLE_FAULT, &vcpu->requests);
-+	up_read(&vcpu->kvm->slots_lock);
- 
- 	kvm_set_cr8(vcpu, sregs->cr8);
- 
++/*
+  * Name resolution.
+  * This is the basic name resolution function, turning a pathname into
+  * the final dentry. We expect 'base' to be positive and a directory.
+@@ -984,8 +995,7 @@ last_component:
+ 		if (err)
+ 			break;
+ 		inode = next.dentry->d_inode;
+-		if ((lookup_flags & LOOKUP_FOLLOW)
+-		    && inode && inode->i_op && inode->i_op->follow_link) {
++		if (follow_on_final(inode, lookup_flags)) {
+ 			err = do_follow_link(&next, nd);
+ 			if (err)
+ 				goto return_err;
 
 
