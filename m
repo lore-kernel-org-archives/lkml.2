@@ -1,103 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756429Ab0C3XMU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:12:20 -0400
-Received: from kroah.org ([198.145.64.141]:48859 "EHLO coco.kroah.org"
+	id S1757571Ab0C3X7v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:59:51 -0400
+Received: from kroah.org ([198.145.64.141]:45473 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756402Ab0C3XMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:12 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:23 2010
-Message-Id: <20100330225822.456114499@linux.site>
+	id S932279Ab0C3XSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:54 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:05 2010
+Message-Id: <20100330225705.055607224@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:25 -0700
+Date: Tue, 30 Mar 2010 15:56:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>,
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [23/89] reiserfs: truncate blocks not used by a write
-In-Reply-To: <20100330230520.GA28779@kroah.com>
+Subject: [098/116] ALSA: ac97: Add Toshiba P500 to ac97 jack sense blacklist
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.31-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Daniel Chen <seven.steps@gmail.com>
 
-commit ec8e2f7466ca370f5e09000ca40a71759afc9ac8 upstream.
+commit 5cd165e7057020884e430941c24454d3df9a799d upstream.
 
-It can happen that write does not use all the blocks allocated in
-write_begin either because of some filesystem error (like ENOSPC) or
-because page with data to write has been removed from memory.  We truncate
-these blocks so that we don't have dangling blocks beyond i_size.
+BugLink: https://launchpad.net/bugs/481058
 
-Cc: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The OR has verified that both 'Headphone Jack Sense' and 'Line Jack Sense'
+need to be muted for sound to be audible, so just add the machine's SSID
+to the ac97 jack sense blacklist.
+
+Reported-by: Richard Gagne
+Tested-by: Richard Gagne
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/reiserfs/inode.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ sound/pci/ac97/ac97_patch.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/reiserfs/inode.c
-+++ b/fs/reiserfs/inode.c
-@@ -2531,6 +2531,12 @@ static int reiserfs_writepage(struct pag
- 	return reiserfs_write_full_page(page, wbc);
- }
- 
-+static void reiserfs_truncate_failed_write(struct inode *inode)
-+{
-+	truncate_inode_pages(inode->i_mapping, inode->i_size);
-+	reiserfs_truncate_file(inode, 0);
-+}
-+
- static int reiserfs_write_begin(struct file *file,
- 				struct address_space *mapping,
- 				loff_t pos, unsigned len, unsigned flags,
-@@ -2597,6 +2603,8 @@ static int reiserfs_write_begin(struct f
- 	if (ret) {
- 		unlock_page(page);
- 		page_cache_release(page);
-+		/* Truncate allocated blocks */
-+		reiserfs_truncate_failed_write(inode);
- 	}
- 	return ret;
- }
-@@ -2689,8 +2697,7 @@ static int reiserfs_write_end(struct fil
- 	 ** transaction tracking stuff when the size changes.  So, we have
- 	 ** to do the i_size updates here.
- 	 */
--	pos += copied;
--	if (pos > inode->i_size) {
-+	if (pos + copied > inode->i_size) {
- 		struct reiserfs_transaction_handle myth;
- 		reiserfs_write_lock(inode->i_sb);
- 		/* If the file have grown beyond the border where it
-@@ -2708,7 +2715,7 @@ static int reiserfs_write_end(struct fil
- 			goto journal_error;
- 		}
- 		reiserfs_update_inode_transaction(inode);
--		inode->i_size = pos;
-+		inode->i_size = pos + copied;
- 		/*
- 		 * this will just nest into our transaction.  It's important
- 		 * to use mark_inode_dirty so the inode gets pushed around on the
-@@ -2735,6 +2742,10 @@ static int reiserfs_write_end(struct fil
-       out:
- 	unlock_page(page);
- 	page_cache_release(page);
-+
-+	if (pos + len > inode->i_size)
-+		reiserfs_truncate_failed_write(inode);
-+
- 	return ret == 0 ? copied : ret;
- 
-       journal_error:
+--- a/sound/pci/ac97/ac97_patch.c
++++ b/sound/pci/ac97/ac97_patch.c
+@@ -1873,6 +1873,7 @@ static unsigned int ad1981_jacks_blackli
+ 	0x10280160, /* Dell Dimension 2400 */
+ 	0x104380b0, /* Asus A7V8X-MX */
+ 	0x11790241, /* Toshiba Satellite A-15 S127 */
++	0x1179ff10, /* Toshiba P500 */
+ 	0x144dc01a, /* Samsung NP-X20C004/SEG */
+ 	0 /* end */
+ };
 
 
