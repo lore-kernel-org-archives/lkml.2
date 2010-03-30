@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab0CaAL3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:11:29 -0400
-Received: from kroah.org ([198.145.64.141]:51975 "EHLO coco.kroah.org"
+	id S932122Ab0CaAFs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:05:48 -0400
+Received: from kroah.org ([198.145.64.141]:45265 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756231Ab0C3XR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:17:59 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:26 2010
-Message-Id: <20100330225625.743415981@linux.site>
+	id S932189Ab0C3XS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:27 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:43 2010
+Message-Id: <20100330225642.633720588@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:21 -0700
+Date: Tue, 30 Mar 2010 15:55:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>,
+       Daniel Sangorrin <daniel.sangorrin@gmail.com>,
+       Andreas Mohr <andi@lisas.de>, Radek Liboska <liboska@uochb.cas.cz>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [043/116] ALSA: hda: Use LPIB and 6stack-dig for eMachines T5212
+Subject: [068/116] USB: serial: ftdi: add CONTEC vendor and product id
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: Daniel Sangorrin <daniel.sangorrin@gmail.com>
 
-commit 572c0e3c73341755f3e7dfaaef6b26df12bd709c upstream.
+commit dee5658b482e9e2ac7d6205dc876fc11d4008138 upstream.
 
-BugLink: https://bugs.launchpad.net/bugs/538895
+This is a patch to ftdi_sio_ids.h and ftdi_sio.c that adds identifiers for
+CONTEC USB serial converter.  I tested it with the device COM-1(USB)H
 
-The OR has verified that both position_fix=1 and model=6stack-dig are
-necessary to have capture function properly. (The existing 3stack-6ch
-model quirk seems to be incorrect.)
-
-Reported-by: Reuben Bailey <reuben.e.bailey@gmail.com>
-Tested-by: Reuben Bailey <reuben.e.bailey@gmail.com>
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[akpm@linux-foundation.org: keep the VIDs sorted a bit]
+Signed-off-by: Daniel Sangorrin <daniel.sangorrin@gmail.com>
+Cc: Andreas Mohr <andi@lisas.de>
+Cc: Radek Liboska <liboska@uochb.cas.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/hda_intel.c     |    1 +
- sound/pci/hda/patch_realtek.c |    2 +-
- 2 files changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    7 +++++++
+ 2 files changed, 8 insertions(+)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -2230,6 +2230,7 @@ static struct snd_pci_quirk position_fix
- 	SND_PCI_QUIRK(0x1028, 0x01f6, "Dell Latitude 131L", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1462, 0x1002, "MSI Wind U115", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1565, 0x820f, "Biostar Microtech", POS_FIX_LPIB),
-+	SND_PCI_QUIRK(0x8086, 0xd601, "eMachines T5212", POS_FIX_LPIB),
- 	{}
- };
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -658,6 +658,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(EVOLUTION_VID, EVOLUTION_ER1_PID) },
+ 	{ USB_DEVICE(EVOLUTION_VID, EVO_HYBRID_PID) },
+ 	{ USB_DEVICE(EVOLUTION_VID, EVO_RCM4_PID) },
++	{ USB_DEVICE(CONTEC_VID, CONTEC_COM1USBH_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ARTEMIS_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ATIK_ATK16_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ATIK_ATK16C_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -501,6 +501,13 @@
+ #define CONTEC_COM1USBH_PID	0x8311	/* COM-1(USB)H */
  
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -8921,7 +8921,7 @@ static struct snd_pci_quirk alc882_cfg_t
- 	SND_PCI_QUIRK(0x8086, 0x0022, "DX58SO", ALC889_INTEL),
- 	SND_PCI_QUIRK(0x8086, 0x0021, "Intel IbexPeak", ALC889A_INTEL),
- 	SND_PCI_QUIRK(0x8086, 0x3b56, "Intel IbexPeak", ALC889A_INTEL),
--	SND_PCI_QUIRK(0x8086, 0xd601, "D102GGC", ALC883_3ST_6ch),
-+	SND_PCI_QUIRK(0x8086, 0xd601, "D102GGC", ALC882_6ST_DIG),
- 
- 	{}
- };
+ /*
++ * Contec products (http://www.contec.com)
++ * Submitted by Daniel Sangorrin
++ */
++#define CONTEC_VID		0x06CE	/* Vendor ID */
++#define CONTEC_COM1USBH_PID	0x8311	/* COM-1(USB)H */
++
++/*
+  * Definitions for B&B Electronics products.
+  */
+ #define BANDB_VID		0x0856	/* B&B Electronics Vendor ID */
 
 
