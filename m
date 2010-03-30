@@ -1,62 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab0C3TVO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 15:21:14 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:62913 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754433Ab0C3TVN (ORCPT
+	id S1756068Ab0C3TXk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 15:23:40 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:43498 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755834Ab0C3TXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 15:21:13 -0400
+	Tue, 30 Mar 2010 15:23:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Iw2cC78/UV0bLU/asmT3HFjsbhwFoN380KyL3PJHfpXJAQZ1FDVeN6hRYa+GKGiUGs
-         ZIJka87k9GGEbiNe1+5mtEvRLsLuNWIX0SN9H9nLnGbS6tQ1wJ9HMWov2/GQsBJStStS
-         xvVxr9r3UChnvlnRkYUBQUb98jmoiQwODID4Q=
-Date: Tue, 30 Mar 2010 21:21:14 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 5/6] procfs: Push down the bkl from ioctl
-Message-ID: <20100330192110.GI5078@nowhere>
-References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <201003301237.28083.arnd@arndb.de> <20100330182710.GC5078@nowhere> <201003302054.11962.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201003302054.11962.arnd@arndb.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=pmkpxvVr9eEZqf+2rLdkqQF/yQz3GIlLmiHOuWW84YmTELXHTuUkY2EQZy1GDF6WFL
+         D2C87VGtCNmswNNiAmR6VL2DkwDuNEWGdlTRW0etAXofcexQfE96UnNs3uybvwNUZZDp
+         gn86HPbj9Qnbk1iKmZ3dJRLYbZVN+PmkzH2KA=
+Subject: Re: [PATCH 1/6] sysfs: Basic support for multiple super blocks
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
+       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, linux-fsdevel@vger.kernel.org,
+       Benjamin LaHaise <bcrl@lhnet.ca>, Serge Hallyn <serue@us.ibm.com>,
+       netdev@vger.kernel.org
+In-Reply-To: <1269973889-25260-1-git-send-email-ebiederm@xmission.com>
+References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
+	 <1269973889-25260-1-git-send-email-ebiederm@xmission.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Mar 2010 21:23:32 +0200
+Message-ID: <1269977012.2048.0.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 08:54:11PM +0200, Arnd Bergmann wrote:
-> On Tuesday 30 March 2010 20:27:12 Frederic Weisbecker wrote:
-> > On Tue, Mar 30, 2010 at 11:37:27AM +0100, Arnd Bergmann wrote:
-> > > On Tuesday 30 March 2010, Frederic Weisbecker wrote:
-> > > > Push down the bkl from procfs's ioctl main handler to its users.
-> > > > Only three procfs users implement an ioctl (non unlocked) handler.
-> > > > Turn them into unlocked_ioctl and push down the Devil inside.
-> > > 
-> > > Looks good to me. I would have used a single unlock and return statement
-> > > in i8k_ioctl and isdn_divert_ioctl, with goto instead of adding an
-> > > unlock to each return, but it doesn't matter much.
-> > 
-> > 
-> > I did that first, but actually that didn't make much difference:
-> > 
-> > ret = foo;            unlock_kernel()
-> > goto end;      VS     return foo;
+Le mardi 30 mars 2010 à 11:31 -0700, Eric W. Biederman a écrit :
+> From: Eric W. Biederman <ebiederm@xmission.com>
 > 
-> Yes, the amount of code needed is comparable, but it is much easier
-> to validate that you did not miss an unlock when you know that there
-> is a single return statement in the function. It also helps the next
-> person that may want to replace the BKL with a different lock.
+> Add all of the necessary bioler plate to support
+> multiple superblocks in sysfs.
+> 
+> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+> ---
+>  fs/sysfs/mount.c |   58 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
+>  fs/sysfs/sysfs.h |    3 ++
+>  2 files changed, 59 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
+> index 0cb1088..6a433ac 100644
+> --- a/fs/sysfs/mount.c
+> +++ b/fs/sysfs/mount.c
+> @@ -71,16 +71,70 @@ static int sysfs_fill_super(struct super_block *sb, void *data, int silent)
+>  	return 0;
+>  }
+>  
+> +static int sysfs_test_super(struct super_block *sb, void *data)
+> +{
+> +	struct sysfs_super_info *sb_info = sysfs_info(sb);
+> +	struct sysfs_super_info *info = data;
+> +	int found = 1;
+> +	return found;
+> +}
+> +
+> +static int sysfs_set_super(struct super_block *sb, void *data)
+> +{
+> +	int error;
+> +	error = set_anon_super(sb, data);
+> +	if (!error)
+> +		sb->s_fs_info = data;
+> +	return error;
+> +}
+> +
+>  static int sysfs_get_sb(struct file_system_type *fs_type,
+>  	int flags, const char *dev_name, void *data, struct vfsmount *mnt)
+>  {
+> -	return get_sb_single(fs_type, flags, data, sysfs_fill_super, mnt);
+> +	struct sysfs_super_info *info;
+> +	struct super_block *sb;
+> +	int error;
+> +
+> +	error = -ENOMEM;
+> +	info = kzalloc(sizeof(*info), GFP_KERNEL);
+> +	if (!info)
+> +		goto out;
+> +	sb = sget(fs_type, sysfs_test_super, sysfs_set_super, info);
+> +	if (IS_ERR(sb) || sb->s_fs_info != info)
+> +		kfree(info);
+> +	if (IS_ERR(sb)) {
+> +		kfree(info);
 
+double kfree(info) ?
 
-Ah you're right!
+> +		error = PTR_ERR(sb);
+> +		goto out;
+> +	}
+> +
+
 
