@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932264Ab0CaAIh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:08:37 -0400
-Received: from kroah.org ([198.145.64.141]:52071 "EHLO coco.kroah.org"
+	id S1757447Ab0CaAEs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:04:48 -0400
+Received: from kroah.org ([198.145.64.141]:45287 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932219Ab0C3XSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:12 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:35 2010
-Message-Id: <20100330225634.276820999@linux.site>
+	id S1756823Ab0C3XSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:31 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:46 2010
+Message-Id: <20100330225645.735196426@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:34 -0700
+Date: Tue, 30 Mar 2010 15:55:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Ravikiran Thirumalai <kiran@scalex86.org>,
-       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Grazvydas Ignotas <notasas@gmail.com>, Kalle Valo <kalle.valo@iki.fi>,
+       "John W. Linville" <linville@tuxdriver.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [056/116] doc: add the documentation for mpol=local
+Subject: [073/116] wl1251: fix potential crash
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,51 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Grazvydas Ignotas <notasas@gmail.com>
 
-commit 5574169613b40b85d6f4c67208fa4846b897a0a1 upstream.
+commit 3f60ebc9d6291863652d564bacc430629271e6a9 upstream.
 
-commit 3f226aa1c (mempolicy: support mpol=local tmpfs mount option) added
-new mpol=local mount option.  but it didn't add a documentation.
+In case debugfs does not init for some reason (or is disabled
+on older kernels) driver does not allocate stats.fw_stats
+structure, but tries to clear it later and trips on a NULL
+pointer:
 
-This patch does it.
+Unable to handle kernel NULL pointer dereference at virtual address
+00000000
+PC is at __memzero+0x24/0x80
+Backtrace:
+[<bf0ddb88>] (wl1251_debugfs_reset+0x0/0x30 [wl1251])
+[<bf0d6a2c>] (wl1251_op_stop+0x0/0x12c [wl1251])
+[<bf0bc228>] (ieee80211_stop_device+0x0/0x74 [mac80211])
+[<bf0b0d10>] (ieee80211_stop+0x0/0x4ac [mac80211])
+[<c02deeac>] (dev_close+0x0/0xb4)
+[<c02deac0>] (dev_change_flags+0x0/0x184)
+[<c031f478>] (devinet_ioctl+0x0/0x704)
+[<c0320720>] (inet_ioctl+0x0/0x100)
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Ravikiran Thirumalai <kiran@scalex86.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Add a NULL pointer check to fix this.
+
+Signed-off-by: Grazvydas Ignotas <notasas@gmail.com>
+Acked-by: Kalle Valo <kalle.valo@iki.fi>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Documentation/filesystems/tmpfs.txt |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/net/wireless/wl12xx/wl1251_debugfs.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/Documentation/filesystems/tmpfs.txt
-+++ b/Documentation/filesystems/tmpfs.txt
-@@ -82,11 +82,13 @@ tmpfs has a mount option to set the NUMA
- all files in that instance (if CONFIG_NUMA is enabled) - which can be
- adjusted on the fly via 'mount -o remount ...'
+--- a/drivers/net/wireless/wl12xx/wl1251_debugfs.c
++++ b/drivers/net/wireless/wl12xx/wl1251_debugfs.c
+@@ -443,7 +443,8 @@ out:
  
--mpol=default             prefers to allocate memory from the local node
-+mpol=default             use the process allocation policy
-+                         (see set_mempolicy(2))
- mpol=prefer:Node         prefers to allocate memory from the given Node
- mpol=bind:NodeList       allocates memory only from nodes in NodeList
- mpol=interleave          prefers to allocate from each node in turn
- mpol=interleave:NodeList allocates from each node of NodeList in turn
-+mpol=local		 prefers to allocate memory from the local node
- 
- NodeList format is a comma-separated list of decimal numbers and ranges,
- a range being two hyphen-separated decimal numbers, the smallest and
-@@ -134,3 +136,5 @@ Author:
-    Christoph Rohland <cr@sap.com>, 1.12.01
- Updated:
-    Hugh Dickins, 4 June 2007
-+Updated:
-+   KOSAKI Motohiro, 16 Mar 2010
+ void wl1251_debugfs_reset(struct wl1251 *wl)
+ {
+-	memset(wl->stats.fw_stats, 0, sizeof(*wl->stats.fw_stats));
++	if (wl->stats.fw_stats != NULL)
++		memset(wl->stats.fw_stats, 0, sizeof(*wl->stats.fw_stats));
+ 	wl->stats.retry_count = 0;
+ 	wl->stats.excessive_retries = 0;
+ }
 
 
