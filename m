@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab0C3XMb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:12:31 -0400
-Received: from kroah.org ([198.145.64.141]:48933 "EHLO coco.kroah.org"
+	id S1757638Ab0CaA0e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:26:34 -0400
+Received: from kroah.org ([198.145.64.141]:48980 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756062Ab0C3XMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:25 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:31 2010
-Message-Id: <20100330225831.067087922@linux.site>
+	id S1756501Ab0C3XMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:32 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:36 2010
+Message-Id: <20100330225835.531191958@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:39 -0700
+Date: Tue, 30 Mar 2010 15:57:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Thomas Schlichter <thomas.schlichter@web.de>,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       Eric Anholt <eric@anholt.net>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Mart Raudsepp <mart.raudsepp@artecdesign.ee>,
+       Antti Palosaari <crope@iki.fi>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [37/89] x86/PCI/PAT: return EINVAL for pci mmap WC request for !pat_enabled
+Subject: [44/89] V4L/DVB: af9015: add new USB ID for KWorld PlusTV Dual DVB-T Stick (DVB-T 399U)
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,56 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
+From: Mart Raudsepp <mart.raudsepp@artecdesign.ee>
 
-commit 2992e545ea006992ec9dc91c4fa996ce1e15f921 upstream.
+commit c92f056308c4a77a833e1cc1e16c1b68974483a6 upstream.
 
-Thomas Schlichter reported:
-> X.org uses libpciaccess which tries to mmap with write combining enabled via
-> /sys/bus/pci/devices/*/resource0_wc. Currently, when PAT is not enabled, the
-> kernel does fall back to uncached mmap. Then libpciaccess thinks it succeeded
-> mapping with write combining enabled and does not set up suited MTRR entries.
-> ;-(
+Add new USB ID (1b80:e400) for KWorld PlusTV Dual DVB-T Stick (DVB-T 399U).
+The model number on the devices sticker label is "KW-DVB-T 399UR".
 
-Instead of silently mapping pci mmap region as UC minus in the case
-of !pat_enabled and wc request, we can return error. Eric Anholt mentioned
-that caller (like X) typically follows up with UC minus pci mmap request and
-if there is a free mtrr slot, caller will manage adding WC mtrr.
-
-Jesse Barnes says:
-> Older versions of libpciaccess will behave better if we do it that way
-> (iirc it only allocates an MTRR if the resource_wc file doesn't exist or
-> fails to get mapped).
-
-Reported-by: Thomas Schlichter <thomas.schlichter@web.de>
-Signed-off-by: Thomas Schlichter <thomas.schlichter@web.de>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Acked-by: Eric Anholt <eric@anholt.net>
-Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Mart Raudsepp <mart.raudsepp@artecdesign.ee>
+Acked-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/pci/i386.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/media/dvb/dvb-usb/af9015.c      |    4 +++-
+ drivers/media/dvb/dvb-usb/dvb-usb-ids.h |    1 +
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -282,6 +282,15 @@ int pci_mmap_page_range(struct pci_dev *
- 		return -EINVAL;
- 
- 	prot = pgprot_val(vma->vm_page_prot);
-+
-+	/*
-+ 	 * Return error if pat is not enabled and write_combine is requested.
-+ 	 * Caller can followup with UC MINUS request and add a WC mtrr if there
-+ 	 * is a free mtrr slot.
-+ 	 */
-+	if (!pat_enabled && write_combine)
-+		return -EINVAL;
-+
- 	if (pat_enabled && write_combine)
- 		prot |= _PAGE_CACHE_WC;
- 	else if (pat_enabled || boot_cpu_data.x86 > 3)
+--- a/drivers/media/dvb/dvb-usb/af9015.c
++++ b/drivers/media/dvb/dvb-usb/af9015.c
+@@ -1266,6 +1266,7 @@ static struct usb_device_id af9015_usb_t
+ 	{USB_DEVICE(USB_VID_KWORLD_2,  USB_PID_CONCEPTRONIC_CTVDIGRCU)},
+ 	{USB_DEVICE(USB_VID_KWORLD_2,  USB_PID_KWORLD_MC810)},
+ 	{USB_DEVICE(USB_VID_KYE,       USB_PID_GENIUS_TVGO_DVB_T03)},
++/* 25 */{USB_DEVICE(USB_VID_KWORLD_2,  USB_PID_KWORLD_399U_2)},
+ 	{0},
+ };
+ MODULE_DEVICE_TABLE(usb, af9015_usb_table);
+@@ -1346,7 +1347,8 @@ static struct dvb_usb_device_properties
+ 			{
+ 				.name = "KWorld PlusTV Dual DVB-T Stick " \
+ 					"(DVB-T 399U)",
+-				.cold_ids = {&af9015_usb_table[4], NULL},
++				.cold_ids = {&af9015_usb_table[4],
++					     &af9015_usb_table[25], NULL},
+ 				.warm_ids = {NULL},
+ 			},
+ 			{
+--- a/drivers/media/dvb/dvb-usb/dvb-usb-ids.h
++++ b/drivers/media/dvb/dvb-usb/dvb-usb-ids.h
+@@ -103,6 +103,7 @@
+ #define USB_PID_GRANDTEC_DVBT_USB_WARM			0x0fa1
+ #define USB_PID_INTEL_CE9500				0x9500
+ #define USB_PID_KWORLD_399U				0xe399
++#define USB_PID_KWORLD_399U_2				0xe400
+ #define USB_PID_KWORLD_395U				0xe396
+ #define USB_PID_KWORLD_395U_2				0xe39b
+ #define USB_PID_KWORLD_395U_3				0xe395
 
 
