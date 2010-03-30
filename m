@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509Ab0C3Lat (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 07:30:49 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:29911 "EHLO
+	id S1756520Ab0C3La4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 07:30:56 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:30176 "EHLO
 	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756492Ab0C3Laq (ORCPT
+	with ESMTP id S1754160Ab0C3Law (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 07:30:46 -0400
+	Tue, 30 Mar 2010 07:30:52 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,59 +16,77 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 02/29] lmb: Move lmb.c to mm/
-Date: Tue, 30 Mar 2010 04:19:36 -0700
-Message-Id: <1269948003-17221-3-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 03/29] lmb: Seperate region array from lmb_region struct
+Date: Tue, 30 Mar 2010 04:19:37 -0700
+Message-Id: <1269948003-17221-4-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269948003-17221-1-git-send-email-yinghai@kernel.org>
 References: <1269948003-17221-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0202.4BB1DEC6.0237,ss=1,fgs=0
+X-CT-RefId: str=0001.0A0B0205.4BB1DEC9.035C,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lmb.c is memory related, so move it to mm/ according to Ingo
+lmb_init() will connect them back.
+
+Add nr_regions in struct lmb_region to track region array size.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- lib/Makefile      |    2 --
- mm/Makefile       |    2 ++
- {lib => mm}/lmb.c |    0
- 3 files changed, 2 insertions(+), 2 deletions(-)
- rename {lib => mm}/lmb.c (100%)
+ include/linux/lmb.h |    3 ++-
+ mm/lmb.c            |    9 ++++++++-
+ 2 files changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/lib/Makefile b/lib/Makefile
-index 2e152ae..a463a4d 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -85,8 +85,6 @@ obj-$(CONFIG_FAULT_INJECTION) += fault-inject.o
+diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+index f3d1433..e14ea8d 100644
+--- a/include/linux/lmb.h
++++ b/include/linux/lmb.h
+@@ -26,7 +26,8 @@ struct lmb_property {
+ struct lmb_region {
+ 	unsigned long cnt;
+ 	u64 size;
+-	struct lmb_property region[MAX_LMB_REGIONS+1];
++	struct lmb_property *region;
++	unsigned long nr_regions;
+ };
  
- lib-$(CONFIG_GENERIC_BUG) += bug.o
+ struct lmb {
+diff --git a/mm/lmb.c b/mm/lmb.c
+index b1fc526..65b62dc 100644
+--- a/mm/lmb.c
++++ b/mm/lmb.c
+@@ -18,6 +18,8 @@
+ #define LMB_ALLOC_ANYWHERE	0
  
--obj-$(CONFIG_HAVE_LMB) += lmb.o
--
- obj-$(CONFIG_HAVE_ARCH_TRACEHOOK) += syscall.o
+ struct lmb lmb;
++static struct lmb_property lmb_memory_region[MAX_LMB_REGIONS + 1];
++static struct lmb_property lmb_reserved_region[MAX_LMB_REGIONS + 1];
  
- obj-$(CONFIG_DYNAMIC_DEBUG) += dynamic_debug.o
-diff --git a/mm/Makefile b/mm/Makefile
-index 7a68d2a..df22fd1 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -15,6 +15,8 @@ obj-y			:= bootmem.o filemap.o mempool.o oom_kill.o fadvise.o \
- 			   $(mmu-y)
- obj-y += init-mm.o
+ static int lmb_debug;
  
-+obj-$(CONFIG_HAVE_LMB) += lmb.o
+@@ -106,6 +108,11 @@ static void lmb_coalesce_regions(struct lmb_region *rgn,
+ 
+ void __init lmb_init(void)
+ {
++	lmb.memory.region   = lmb_memory_region;
++	lmb.reserved.region = lmb_reserved_region;
++	lmb.memory.nr_regions   = ARRAY_SIZE(lmb_memory_region);
++	lmb.reserved.nr_regions = ARRAY_SIZE(lmb_reserved_region);
 +
- obj-$(CONFIG_BOUNCE)	+= bounce.o
- obj-$(CONFIG_SWAP)	+= page_io.o swap_state.o swapfile.o thrash.o
- obj-$(CONFIG_HAS_DMA)	+= dmapool.o
-diff --git a/lib/lmb.c b/mm/lmb.c
-similarity index 100%
-rename from lib/lmb.c
-rename to mm/lmb.c
+ 	/* Create a dummy zero size LMB which will get coalesced away later.
+ 	 * This simplifies the lmb_add() code below...
+ 	 */
+@@ -169,7 +176,7 @@ static long lmb_add_region(struct lmb_region *rgn, u64 base, u64 size)
+ 
+ 	if (coalesced)
+ 		return coalesced;
+-	if (rgn->cnt >= MAX_LMB_REGIONS)
++	if (rgn->cnt > rgn->nr_regions)
+ 		return -1;
+ 
+ 	/* Couldn't coalesce the LMB, so add it to the sorted table. */
 -- 
 1.6.4.2
 
