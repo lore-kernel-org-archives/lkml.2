@@ -1,148 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab0C3RBm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 13:01:42 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:32785 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752795Ab0C3RBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 13:01:40 -0400
-Date: Tue, 30 Mar 2010 10:01:37 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Trond.Myklebust@netapp.com,
-       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS: Fix RCU warnings in
- nfs_inode_return_delegation_noreclaim() [ver #2]
-Message-ID: <20100330170137.GH2513@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100329223609.GR2569@linux.vnet.ibm.com>
- <20100329210520.GN2569@linux.vnet.ibm.com>
- <20100329192159.GM2569@linux.vnet.ibm.com>
- <20100319022527.GC2894@linux.vnet.ibm.com>
- <20100318133302.29754.1584.stgit@warthog.procyon.org.uk>
- <19192.1269889348@redhat.com>
- <23274.1269893706@redhat.com>
- <25276.1269901350@redhat.com>
- <26760.1269903543@redhat.com>
- <2397.1269967069@redhat.com>
+	id S1755011Ab0C3RCz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 13:02:55 -0400
+Received: from mail-iw0-f202.google.com ([209.85.223.202]:55693 "EHLO
+	mail-iw0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752527Ab0C3RCy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 13:02:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=RDNpHubwZJFGAPFvpuE5DFDbbjm7sriTsB1edFEovzo5mY9V8cZ2UqCsaZtK+uEycz
+         WuJajYl8hcdAJTaky/txAm6+5lmCTRffcM5vGY8x1Xx9S6x/QLnTMHl9pMuNAAFvw/Sl
+         mcS2CqoslGwxYKEhpf1kOISpeJuBwTwg5J/s8=
+Message-ID: <4BB22EBB.1070507@pobox.com>
+Date: Tue, 30 Mar 2010 13:02:51 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2397.1269967069@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tejun Heo <tj@kernel.org>
+CC: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 15/17] libata: update gfp/slab.h includes
+References: <1269885165-18617-1-git-send-email-tj@kernel.org> <1269885165-18617-16-git-send-email-tj@kernel.org>
+In-Reply-To: <1269885165-18617-16-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 05:37:49PM +0100, David Howells wrote:
-> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > rcu: Add update-side variant of rcu_dereference()
-> > 
-> > Upcoming consistency-checking features are requiring that even update-side
-> > accesses to RCU-protected pointers use some variant of rcu_dereference().
-> > Even though rcu_dereference() is quite lightweight, it does constrain the
-> > compiler, thus producing code that is worse than required.  This patch
-> > therefore adds rcu_dereference_update(), which allows lockdep-style
-> > checks for holding the correct update-side lock, but which does not
-> > constrain the compiler.
-> 
-> Ummm...  I'm not so keen on the name for two reasons.  Firstly, why shouldn't
-> the read side do:
-> 
-> 	struct foo {
-> 		struct bar *b;
-> 	};
-> 
-> 	void manage_bar(struct foo *f)
-> 	{
-> 		struct bar *b;
-> 
-> 		rcu_read_lock();
-> 		b = rcu_dereference(f->b);
-> 		if (b)
-> 			do_something_to_bar(b);
-> 		rcu_read_unlock();
-> 	}
-> 
-> 	void manage_foo(struct foo *f)
-> 	{
-> 		...
-> 		if (f->b)
-> 			manage_bar(f);
-> 		...
-> 	}
-> 
-> Why should this be limited to the update side?
+On 03/29/2010 01:52 PM, Tejun Heo wrote:
+> Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+> gfp.h or slab.h is included as necessary.
+>
+> Signed-off-by: Tejun Heo<tj@kernel.org>
+> Cc: Stephen Rothwell<sfr@canb.auug.org.au>
+> Cc: Jeff Garzik<jgarzik@pobox.com>
+> ---
+>   drivers/ata/ahci_platform.c |    1 +
+>   drivers/ata/libahci.c       |    1 +
+>   2 files changed, 2 insertions(+), 0 deletions(-)
 
-The main criterion is that you have to have done something to prevent
-the data structure from changing, which normally only happens on the
-update side.
+applied
 
-> Secondly, the name rcu_dereference_update() seems to imply that this function
-> itself does an update, perhaps after having done an rcu_dereference().
 
-Indeed, that is rather ugly.
-
-> Perhaps rcu_pointer_valid()?
-> 
-> 	if (rcu_pointer_valid(f->b))
-> 		manage_bar(f);
-
-Hmmm...  That sounds like something that checks the pointer for
-correct format or for pointing to valid data.
-
-> or if you really do want to limit this sort of thing to the update side:
-> 
-> 	if (rcu_destination_for_update(f->b)) {
-> 		spin_lock(&f->lock);
-> 		update_bar(f);
-> 		spin_unlock(&f->lock);
-> 	}
-
-What we are doing is dereferencing an RCU-protected pointer that we
-are somehow preventing from being concurrently updated, usually by
-holding the update-side lock.
-
-So maybe rcu_dereference_no_updates()?  Or rcu_dereference_locked()?
-
-But not rcu_dereference_with_concurrent_updates_somehow_prevented().  ;-)
-
-> Another possibility is have an 'RCU write lock' that just does the lockdep
-> thing and doesn't interpolate a barrier:
-> 
-> 	rcu_write_lock();
-> 	if (rcu_dereference_for_update(f->b)) {
-> 		spin_lock(&f->lock);
-> 		update_bar(f->b);
-> 		spin_unlock(&f->lock);
-> 	}
-> 	rcu_write_unlock();
-
-This would work for the moment, but I do not believe that sparse can
-deal with tracking rcu_write_lock() across compilation units.  Besides, I
-really really don't want anything that looks like it is somehow protecting
-the update.  Too many newcomers to RCU somehow get the impression that
-rcu_assign_pointer() provides that protection as it is.  :-/
-
-> Or might it make sense to roll together with the lock primitive:
-> 
-> 	if (rcu_dereference_and_lock(f->b, &f->lock)) {
-> 		update_bar(f);
-> 		spin_unlock(&f->lock);
-> 	}
-> 
-> (I'm not keen on that one because you might not want to take the lock
->  immediately, and you have a wide choice of locks).
-
-Indeed, the API explosion might be a bit unpleasant.  ;-)
-
-So, how about rcu_dereference_locked()?
-
-> Sorry to be picky.
-
-Given that I worked quite happily with RCU for quite some time without
-any words for any of the underlying concepts, I cannot claim that I
-don't need at least some help with name selection.  ;-)
-
-							Thanx, Paul
