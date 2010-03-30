@@ -1,126 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528Ab0CaAJB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:09:01 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:45897 "EHLO e6.ny.us.ibm.com"
+	id S1756724Ab0C3XNt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:13:49 -0400
+Received: from kroah.org ([198.145.64.141]:49338 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932249Ab0CaAIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 20:08:35 -0400
-Date: Tue, 30 Mar 2010 17:08:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Trond.Myklebust@netapp.com,
-       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS: Fix RCU warnings in
- nfs_inode_return_delegation_noreclaim() [ver #2]
-Message-ID: <20100331000832.GQ2513@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100329192159.GM2569@linux.vnet.ibm.com>
- <20100319022527.GC2894@linux.vnet.ibm.com>
- <20100318133302.29754.1584.stgit@warthog.procyon.org.uk>
- <19192.1269889348@redhat.com>
- <23274.1269893706@redhat.com>
- <25276.1269901350@redhat.com>
- <26760.1269903543@redhat.com>
- <20100329232636.GT2569@linux.vnet.ibm.com>
- <2440.1269967151@redhat.com>
- <21972.1269993064@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <21972.1269993064@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756692Ab0C3XNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:13:14 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:59:04 2010
+Message-Id: <20100330225904.124390677@linux.site>
+User-Agent: quilt/0.47-14.9
+Date: Tue, 30 Mar 2010 15:58:31 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Dean Nelson <dnelson@redhat.com>, Jean Delvare <khali@linux-fr.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [89/89] hwmon: (coretemp) Add missing newline to dev_warn() message
+In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 12:51:04AM +0100, David Howells wrote:
-> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > Which it is, as long as the lock is held.
-> 
-> However, in one of the situations I'm thinking of, no lock is held.  All that
-> is being tested is whether the pointer to some RCU-protected data is either
-> NULL or non-NULL.  For example:
-> 
-> 	@@ -345,7 +346,7 @@ int nfs_inode_return_delegation(struct inode *inode)
-> 		struct nfs_delegation *delegation;
-> 		int err = 0;
-> 
-> 	-	if (rcu_dereference(nfsi->delegation) != NULL) {
-> 	+	if (nfsi->delegation != NULL) {
-> 			spin_lock(&clp->cl_lock);
-> 			delegation = nfs_detach_delegation_locked(nfsi, NULL);
-> 			spin_unlock(&clp->cl_lock);
-> 
-> No lock - RCU or spinlock - is held over the check of nfsi->delegation - which
-> causes lockdep to complain about an unguarded rcu_dereference().
-> 
-> However, the use of rcu_dereference() here is unnecessary with respect to the
-> interpolation (where appropriate) of a memory barrier because there is no
-> second memory access against which to order.
-> 
-> That said, the memory access is repeated inside nfs_detach_delegation_locked(),
-> which again was wrapped in an rcu_dereference():
-> 
-> 	 static struct nfs_delegation *nfs_detach_delegation_locked(struct nfs_inode *nfsi, const nfs4_stateid *stateid)
-> 	 {
-> 	-	struct nfs_delegation *delegation = rcu_dereference(nfsi->delegation);
-> 	+	struct nfs_delegation *delegation = nfsi->delegation;
-> 
-> 		if (delegation == NULL)
-> 			goto nomatch;
-> 
-> which was not necessary for its memory barrier interpolation properties in this
-> case because of the spin_lock() the caller now holds.
-> 
-> 
-> Your suggestion of using rcu_dereference_check() in both these places would
-> result in two unnecessary memory barriers on something like an Alpha CPU.
-> 
-> 
-> How about:
-> 
-> 	static struct nfs_delegation *nfs_detach_delegation_locked(struct nfs_inode *nfsi, const nfs4_stateid *stateid)
-> 	{
-> 		struct nfs_delegation *delegation =
-> 			rcu_locked_dereference(nfsi->delegation);
-> 		...
-> 	}
-> 
-> where rcu_locked_dereference() only does the lockdep magic and the dereference,
-> and does not include a memory barrier.  The documentation of such a function
-> would note this may only be used when the pointer is guarded by an exclusive
-> lock to prevent it from changing.
-> 
-> And then:
-> 
-> 	int nfs_inode_return_delegation(struct inode *inode)
-> 	{
-> 		struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
-> 		struct nfs_inode *nfsi = NFS_I(inode);
-> 		struct nfs_delegation *delegation;
-> 		int err = 0;
-> 
-> 		if (rcu_pointer_not_null(nfsi->delegation)) {
-> 			spin_lock(&clp->cl_lock);
-> 			delegation = nfs_detach_delegation_locked(nfsi, NULL);
-> 			spin_unlock(&clp->cl_lock);
-> 			if (delegation != NULL) {
-> 				nfs_msync_inode(inode);
-> 				err = __nfs_inode_return_delegation(inode, delegation, 1);
-> 			}
-> 		}
-> 		return err;
-> 	}
-> 
-> where rcu_pointer_not_null() simply tests the value of the pointer, casting
-> away the sparse RCU annotation and not doing the lockdep check and not
-> including a barrier.  It would not return the value of the pointer, thus
-> preventing you from needing the barrier as a result.
+2.6.31-stable review patch.  If anyone has any objections, please let us know.
 
-How about Eric's suggestion of rcu_dereference_protected()?  That name
-doesn't imply a lock, which as you say above, isn't always needed to
-keep the structure from changing.
+------------------
 
-							Thanx, Paul
+From: Dean Nelson <dnelson@redhat.com>
+
+commit 4d7a5644e4adfafe76c2bd8ee168e3f3b5dae3a8 upstream.
+
+Add missing newline to dev_warn() message string. This is more of an issue
+with older kernels that don't automatically add a newline if it was missing
+from the end of the previous line.
+
+Signed-off-by: Dean Nelson <dnelson@redhat.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/hwmon/coretemp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -191,7 +191,7 @@ static int __devinit adjust_tjmax(struct
+ 		if (err) {
+ 			dev_warn(dev,
+ 				 "Unable to access MSR 0xEE, for Tjmax, left"
+-				 " at default");
++				 " at default\n");
+ 		} else if (eax & 0x40000000) {
+ 			tjmax = 85000;
+ 		}
+
+
