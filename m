@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab0CaAV6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:21:58 -0400
-Received: from kroah.org ([198.145.64.141]:49129 "EHLO coco.kroah.org"
+	id S1756756Ab0CaAWS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:22:18 -0400
+Received: from kroah.org ([198.145.64.141]:49123 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756577Ab0C3XMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:46 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:46 2010
-Message-Id: <20100330225845.752497539@linux.site>
+	id S1756583Ab0C3XMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:45 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:45 2010
+Message-Id: <20100330225845.117746432@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:58:02 -0700
+Date: Tue, 30 Mar 2010 15:58:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Al Viro <viro@zeniv.linux.org.uk>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [60/89] fix LOOKUP_FOLLOW on automount "symlinks"
+       Wei Yongjun <yjwei@cn.fujitsu.com>, Eric Paris <eparis@redhat.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [59/89] inotify: fix coalesce duplicate events into a single event in special case
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Wei Yongjun <yjwei@cn.fujitsu.com>
 
-commit ac278a9c505092dd82077a2446af8f9fc0d9c095 upstream.
+commit 3de0ef4f2067da58fa5126d821a56dcb98cdb565 upstream.
 
-Make sure that automount "symlinks" are followed regardless of LOOKUP_FOLLOW;
-it should have no effect on them.
+If we do rename a dir entry, like this:
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+  rename("/tmp/ino7UrgoJ.rename1", "/tmp/ino7UrgoJ.rename2")
+  rename("/tmp/ino7UrgoJ.rename2", "/tmp/ino7UrgoJ")
+
+The duplicate events should be coalesced into a single event. But those two
+events do not be coalesced into a single event, due to some bad check in
+event_compare(). It can not match the two NULL inodes as the same event.
+
+Signed-off-by: Wei Yongjun <yjwei@cn.fujitsu.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/namei.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ fs/notify/notification.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -823,6 +823,17 @@ fail:
- }
- 
- /*
-+ * This is a temporary kludge to deal with "automount" symlinks; proper
-+ * solution is to trigger them on follow_mount(), so that do_lookup()
-+ * would DTRT.  To be killed before 2.6.34-final.
-+ */
-+static inline int follow_on_final(struct inode *inode, unsigned lookup_flags)
-+{
-+	return inode && unlikely(inode->i_op->follow_link) &&
-+		((lookup_flags & LOOKUP_FOLLOW) || S_ISDIR(inode->i_mode));
-+}
-+
-+/*
-  * Name resolution.
-  * This is the basic name resolution function, turning a pathname into
-  * the final dentry. We expect 'base' to be positive and a directory.
-@@ -964,8 +975,7 @@ last_component:
- 		if (err)
+--- a/fs/notify/notification.c
++++ b/fs/notify/notification.c
+@@ -143,7 +143,7 @@ static bool event_compare(struct fsnotif
+ 			/* remember, after old was put on the wait_q we aren't
+ 			 * allowed to look at the inode any more, only thing
+ 			 * left to check was if the file_name is the same */
+-			if (old->name_len &&
++			if (!old->name_len ||
+ 			    !strcmp(old->file_name, new->file_name))
+ 				return true;
  			break;
- 		inode = next.dentry->d_inode;
--		if ((lookup_flags & LOOKUP_FOLLOW)
--		    && inode && inode->i_op->follow_link) {
-+		if (follow_on_final(inode, lookup_flags)) {
- 			err = do_follow_link(&next, nd);
- 			if (err)
- 				goto return_err;
 
 
