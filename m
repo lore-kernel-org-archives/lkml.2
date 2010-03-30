@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932411Ab0C3XxJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:53:09 -0400
-Received: from kroah.org ([198.145.64.141]:45756 "EHLO coco.kroah.org"
+	id S1757489Ab0C3Xwi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:52:38 -0400
+Received: from kroah.org ([198.145.64.141]:45780 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932417Ab0C3XT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:29 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:32 2010
-Message-Id: <20100330224732.429575021@linux.site>
+	id S932430Ab0C3XTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:32 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:35 2010
+Message-Id: <20100330224734.972203124@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:40:53 -0700
+Date: Tue, 30 Mar 2010 15:40:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "K.Prasad" <prasad@linux.vnet.ibm.com>,
-       Paul Mackerras <paulus@samba.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [019/156] hw-breakpoints: Remove stub unthrottle callback
+       Steven Rostedt <rostedt@goodmis.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [023/156] tracing: Disable buffer switching when starting or stopping trace
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,52 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-commit 1e259e0a9982078896f3404240096cbea01daca4 upstream.
+commit a2f8071428ed9a0f06865f417c962421c9a6b488 upstream.
 
-We support event unthrottling in breakpoint events. It means
-that if we have more than sysctl_perf_event_sample_rate/HZ,
-perf will throttle, ignoring subsequent events until the next
-tick.
+When the trace iterator is read, tracing_start() and tracing_stop()
+is called to stop tracing while the iterator is processing the trace
+output.
 
-So if ptrace exceeds this max rate, it will omit events, which
-breaks the ptrace determinism that is supposed to report every
-triggered breakpoints. This is likely to happen if we set
-sysctl_perf_event_sample_rate to 1.
+These functions disable both the standard buffer and the max latency
+buffer. But if the wakeup tracer is running, it can switch these
+buffers between the two disables:
 
-This patch removes support for unthrottling in breakpoint
-events to break throttling and restore ptrace determinism.
+  buffer = global_trace.buffer;
+  if (buffer)
+      ring_buffer_record_disable(buffer);
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: K.Prasad <prasad@linux.vnet.ibm.com>
-Cc: Paul Mackerras <paulus@samba.org>
+      <<<--------- swap happens here
+
+  buffer = max_tr.buffer;
+  if (buffer)
+      ring_buffer_record_disable(buffer);
+
+What happens is that we disabled the same buffer twice. On tracing_start()
+we can enable the same buffer twice. All ring_buffer_record_disable()
+must be matched with a ring_buffer_record_enable() or the buffer
+can be disable permanently, or enable prematurely, and cause a bug
+where a reset happens while a trace is commiting.
+
+This patch protects these two by taking the ftrace_max_lock to prevent
+a switch from occurring.
+
+Found with Li Zefan's ftrace_stress_test.
+
+Reported-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/hw_breakpoint.c |    5 -----
- kernel/hw_breakpoint.c          |    1 -
- 2 files changed, 6 deletions(-)
+ kernel/trace/trace.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/arch/x86/kernel/hw_breakpoint.c
-+++ b/arch/x86/kernel/hw_breakpoint.c
-@@ -531,8 +531,3 @@ void hw_breakpoint_pmu_read(struct perf_
- {
- 	/* TODO */
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -857,6 +857,8 @@ void tracing_start(void)
+ 		goto out;
+ 	}
+ 
++	/* Prevent the buffers from switching */
++	arch_spin_lock(&ftrace_max_lock);
+ 
+ 	buffer = global_trace.buffer;
+ 	if (buffer)
+@@ -866,6 +868,8 @@ void tracing_start(void)
+ 	if (buffer)
+ 		ring_buffer_record_enable(buffer);
+ 
++	arch_spin_unlock(&ftrace_max_lock);
++
+ 	ftrace_start();
+  out:
+ 	spin_unlock_irqrestore(&tracing_start_lock, flags);
+@@ -887,6 +891,9 @@ void tracing_stop(void)
+ 	if (trace_stop_count++)
+ 		goto out;
+ 
++	/* Prevent the buffers from switching */
++	arch_spin_lock(&ftrace_max_lock);
++
+ 	buffer = global_trace.buffer;
+ 	if (buffer)
+ 		ring_buffer_record_disable(buffer);
+@@ -895,6 +902,8 @@ void tracing_stop(void)
+ 	if (buffer)
+ 		ring_buffer_record_disable(buffer);
+ 
++	arch_spin_unlock(&ftrace_max_lock);
++
+  out:
+ 	spin_unlock_irqrestore(&tracing_start_lock, flags);
  }
--
--void hw_breakpoint_pmu_unthrottle(struct perf_event *bp)
--{
--	/* TODO */
--}
---- a/kernel/hw_breakpoint.c
-+++ b/kernel/hw_breakpoint.c
-@@ -489,5 +489,4 @@ struct pmu perf_ops_bp = {
- 	.enable		= arch_install_hw_breakpoint,
- 	.disable	= arch_uninstall_hw_breakpoint,
- 	.read		= hw_breakpoint_pmu_read,
--	.unthrottle	= hw_breakpoint_pmu_unthrottle
- };
 
 
