@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757026Ab0C3Xdq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:33:46 -0400
-Received: from kroah.org ([198.145.64.141]:46520 "EHLO coco.kroah.org"
+	id S932400Ab0C3XYq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:24:46 -0400
+Received: from kroah.org ([198.145.64.141]:46852 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756880Ab0C3XVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:21:19 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:33 2010
-Message-Id: <20100330224833.204411065@linux.site>
+	id S1756950Ab0C3XWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:22:22 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:00 2010
+Message-Id: <20100330224900.183976449@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:25 -0700
+Date: Tue, 30 Mar 2010 15:43:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Anton Vorontsov <avorontsov@ru.mvista.com>,
-       Richard Purdie <rpurdie@linux.intel.com>,
+       Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [111/156] leds-gpio: fix default state handling on OF platforms
+Subject: [154/156] classmate-laptop: use a single MODULE_DEVICE_TABLE to get correct aliases
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,60 +26,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Vorontsov <avorontsov@ru.mvista.com>
+From: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
 
-commit 0493a4ff10959ff4c8e0d65efee25b7ffd4fa5db upstream.
+commit 02e77a55f7b7e36888e39c62439fedb90ae4e808 upstream.
 
-The driver wrongly sets default state for LEDs that don't specify
-default-state property.
+Instead of a MODULE_DEVICE_TABLE for every acpi_driver ids table, we
+create a table containing all ids to export to get a module alias for
+each one.
 
-Currently the driver handles default state this way:
+This will fix automatic loading of the driver when one of the ACPI
+devices is not present (like the accelerometer, which is not present in
+some models).
 
-memset(&led, 0, sizeof(led));
-for_each_child_of_node(np, child) {
-	state = of_get_property(child, "default-state", NULL);
-	if (state) {
-		if (!strcmp(state, "keep"))
-			led.default_state = LEDS_GPIO_DEFSTATE_KEEP;
-		...
-	}
-	ret = create_gpio_led(&led, ...);
-}
-
-Which means that all LEDs that do not specify default-state will inherit
-the last value of the default-state property, which is wrong.
-
-This patch fixes the issue by moving LED's template initialization into
-the loop body.
-
-Signed-off-by: Anton Vorontsov <avorontsov@ru.mvista.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Richard Purdie <rpurdie@linux.intel.com>
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/leds/leds-gpio.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/platform/x86/classmate-laptop.c |   31 +++++++++++++++++++++----------
+ 1 file changed, 21 insertions(+), 10 deletions(-)
 
---- a/drivers/leds/leds-gpio.c
-+++ b/drivers/leds/leds-gpio.c
-@@ -211,7 +211,6 @@ static int __devinit of_gpio_leds_probe(
- 					const struct of_device_id *match)
- {
- 	struct device_node *np = ofdev->node, *child;
--	struct gpio_led led;
- 	struct gpio_led_of_platform_data *pdata;
- 	int count = 0, ret;
+--- a/drivers/platform/x86/classmate-laptop.c
++++ b/drivers/platform/x86/classmate-laptop.c
+@@ -34,6 +34,11 @@ struct cmpc_accel {
+ #define CMPC_ACCEL_SENSITIVITY_DEFAULT		5
  
-@@ -226,8 +225,8 @@ static int __devinit of_gpio_leds_probe(
- 	if (!pdata)
- 		return -ENOMEM;
  
--	memset(&led, 0, sizeof(led));
- 	for_each_child_of_node(np, child) {
-+		struct gpio_led led = {};
- 		enum of_gpio_flags flags;
- 		const char *state;
++#define CMPC_ACCEL_HID		"ACCE0000"
++#define CMPC_TABLET_HID		"TBLT0000"
++#define CMPC_BL_HID		"IPML200"
++#define CMPC_KEYS_HID		"FnBT0000"
++
+ /*
+  * Generic input device code.
+  */
+@@ -282,10 +287,9 @@ static int cmpc_accel_remove(struct acpi
+ }
  
+ static const struct acpi_device_id cmpc_accel_device_ids[] = {
+-	{"ACCE0000", 0},
++	{CMPC_ACCEL_HID, 0},
+ 	{"", 0}
+ };
+-MODULE_DEVICE_TABLE(acpi, cmpc_accel_device_ids);
+ 
+ static struct acpi_driver cmpc_accel_acpi_driver = {
+ 	.owner = THIS_MODULE,
+@@ -366,10 +370,9 @@ static int cmpc_tablet_resume(struct acp
+ }
+ 
+ static const struct acpi_device_id cmpc_tablet_device_ids[] = {
+-	{"TBLT0000", 0},
++	{CMPC_TABLET_HID, 0},
+ 	{"", 0}
+ };
+-MODULE_DEVICE_TABLE(acpi, cmpc_tablet_device_ids);
+ 
+ static struct acpi_driver cmpc_tablet_acpi_driver = {
+ 	.owner = THIS_MODULE,
+@@ -477,17 +480,16 @@ static int cmpc_bl_remove(struct acpi_de
+ 	return 0;
+ }
+ 
+-static const struct acpi_device_id cmpc_device_ids[] = {
+-	{"IPML200", 0},
++static const struct acpi_device_id cmpc_bl_device_ids[] = {
++	{CMPC_BL_HID, 0},
+ 	{"", 0}
+ };
+-MODULE_DEVICE_TABLE(acpi, cmpc_device_ids);
+ 
+ static struct acpi_driver cmpc_bl_acpi_driver = {
+ 	.owner = THIS_MODULE,
+ 	.name = "cmpc",
+ 	.class = "cmpc",
+-	.ids = cmpc_device_ids,
++	.ids = cmpc_bl_device_ids,
+ 	.ops = {
+ 		.add = cmpc_bl_add,
+ 		.remove = cmpc_bl_remove
+@@ -540,10 +542,9 @@ static int cmpc_keys_remove(struct acpi_
+ }
+ 
+ static const struct acpi_device_id cmpc_keys_device_ids[] = {
+-	{"FnBT0000", 0},
++	{CMPC_KEYS_HID, 0},
+ 	{"", 0}
+ };
+-MODULE_DEVICE_TABLE(acpi, cmpc_keys_device_ids);
+ 
+ static struct acpi_driver cmpc_keys_acpi_driver = {
+ 	.owner = THIS_MODULE,
+@@ -607,3 +608,13 @@ static void cmpc_exit(void)
+ 
+ module_init(cmpc_init);
+ module_exit(cmpc_exit);
++
++static const struct acpi_device_id cmpc_device_ids[] = {
++	{CMPC_ACCEL_HID, 0},
++	{CMPC_TABLET_HID, 0},
++	{CMPC_BL_HID, 0},
++	{CMPC_KEYS_HID, 0},
++	{"", 0}
++};
++
++MODULE_DEVICE_TABLE(acpi, cmpc_device_ids);
 
 
