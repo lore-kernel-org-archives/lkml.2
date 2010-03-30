@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756617Ab0C3XMw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:12:52 -0400
-Received: from kroah.org ([198.145.64.141]:49149 "EHLO coco.kroah.org"
+	id S1756700Ab0C3XNP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:13:15 -0400
+Received: from kroah.org ([198.145.64.141]:49240 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756600Ab0C3XMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:48 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:47 2010
-Message-Id: <20100330225846.951960815@linux.site>
+	id S1756649Ab0C3XNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:13:01 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:56 2010
+Message-Id: <20100330225855.912036111@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:58:04 -0700
+Date: Tue, 30 Mar 2010 15:58:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Trond Myklebust <Trond.Myklebust@netapp.com>,
-       David Howells <dhowells@redhat.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [62/89] NFS: Fix a bug in nfs_fscache_release_page()
+       "David S. Miller" <davem@davemloft.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Stefan Bader <stefan.bader@canonical.com>
+Subject: [76/89] sparc: TIF_ABI_PENDING bit removal
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,56 +27,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: David Miller <davem@davemloft.net>
 
-commit 2c1740098c708b465e87637b237feb2fd98f129a upstream.
+commit 94673e968cbcce07fa78dac4b0ae05d24b5816e1 upstream.
 
-Not having an fscache cookie is perfectly valid if the user didn't mount
-with the fscache option.
+Here are the sparc bits to remove TIF_ABI_PENDING now that
+set_personality() is called at the appropriate place in exec.
 
-This patch fixes http://bugzilla.kernel.org/show_bug.cgi?id=15234
-
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Acked-by: David Howells <dhowells@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 
 ---
- fs/nfs/fscache.c |   21 ++++++++++-----------
- 1 file changed, 10 insertions(+), 11 deletions(-)
+ arch/sparc/include/asm/elf_64.h         |   13 +++----------
+ arch/sparc/include/asm/thread_info_64.h |    4 +---
+ arch/sparc/kernel/process_64.c          |    8 --------
+ 3 files changed, 4 insertions(+), 21 deletions(-)
 
---- a/fs/nfs/fscache.c
-+++ b/fs/nfs/fscache.c
-@@ -337,21 +337,20 @@ void nfs_fscache_reset_inode_cookie(stru
+--- a/arch/sparc/include/asm/elf_64.h
++++ b/arch/sparc/include/asm/elf_64.h
+@@ -196,17 +196,10 @@ static inline unsigned int sparc64_elf_h
+ #define ELF_PLATFORM	(NULL)
+ 
+ #define SET_PERSONALITY(ex)				\
+-do {	unsigned long new_flags = current_thread_info()->flags; \
+-	new_flags &= _TIF_32BIT;			\
+-	if ((ex).e_ident[EI_CLASS] == ELFCLASS32)	\
+-		new_flags |= _TIF_32BIT;		\
++do {	if ((ex).e_ident[EI_CLASS] == ELFCLASS32)	\
++		set_thread_flag(TIF_32BIT);		\
+ 	else						\
+-		new_flags &= ~_TIF_32BIT;		\
+-	if ((current_thread_info()->flags & _TIF_32BIT) \
+-	    != new_flags)				\
+-		set_thread_flag(TIF_ABI_PENDING);	\
+-	else						\
+-		clear_thread_flag(TIF_ABI_PENDING);	\
++		clear_thread_flag(TIF_32BIT);		\
+ 	/* flush_thread will update pgd cache */	\
+ 	if (personality(current->personality) != PER_LINUX32)	\
+ 		set_personality(PER_LINUX |		\
+--- a/arch/sparc/include/asm/thread_info_64.h
++++ b/arch/sparc/include/asm/thread_info_64.h
+@@ -227,12 +227,11 @@ register struct thread_info *current_thr
+ /* flag bit 8 is available */
+ #define TIF_SECCOMP		9	/* secure computing */
+ #define TIF_SYSCALL_AUDIT	10	/* syscall auditing active */
+-/* flag bit 11 is available */
+ /* NOTE: Thread flags >= 12 should be ones we have no interest
+  *       in using in assembly, else we can't use the mask as
+  *       an immediate value in instructions such as andcc.
   */
- int nfs_fscache_release_page(struct page *page, gfp_t gfp)
- {
--	struct nfs_inode *nfsi = NFS_I(page->mapping->host);
--	struct fscache_cookie *cookie = nfsi->fscache;
--
--	BUG_ON(!cookie);
--
--	if (fscache_check_page_write(cookie, page)) {
--		if (!(gfp & __GFP_WAIT))
--			return 0;
--		fscache_wait_on_page_write(cookie, page);
+-#define TIF_ABI_PENDING		12
++/* flag bit 12 is available */
+ #define TIF_MEMDIE		13
+ #define TIF_POLLING_NRFLAG	14
+ #define TIF_FREEZE		15	/* is freezing for suspend */
+@@ -246,7 +245,6 @@ register struct thread_info *current_thr
+ #define _TIF_32BIT		(1<<TIF_32BIT)
+ #define _TIF_SECCOMP		(1<<TIF_SECCOMP)
+ #define _TIF_SYSCALL_AUDIT	(1<<TIF_SYSCALL_AUDIT)
+-#define _TIF_ABI_PENDING	(1<<TIF_ABI_PENDING)
+ #define _TIF_POLLING_NRFLAG	(1<<TIF_POLLING_NRFLAG)
+ #define _TIF_FREEZE		(1<<TIF_FREEZE)
+ 
+--- a/arch/sparc/kernel/process_64.c
++++ b/arch/sparc/kernel/process_64.c
+@@ -365,14 +365,6 @@ void flush_thread(void)
+ 	struct thread_info *t = current_thread_info();
+ 	struct mm_struct *mm;
+ 
+-	if (test_ti_thread_flag(t, TIF_ABI_PENDING)) {
+-		clear_ti_thread_flag(t, TIF_ABI_PENDING);
+-		if (test_ti_thread_flag(t, TIF_32BIT))
+-			clear_ti_thread_flag(t, TIF_32BIT);
+-		else
+-			set_ti_thread_flag(t, TIF_32BIT);
 -	}
 -
- 	if (PageFsCache(page)) {
-+		struct nfs_inode *nfsi = NFS_I(page->mapping->host);
-+		struct fscache_cookie *cookie = nfsi->fscache;
-+
-+		BUG_ON(!cookie);
- 		dfprintk(FSCACHE, "NFS: fscache releasepage (0x%p/0x%p/0x%p)\n",
- 			 cookie, page, nfsi);
- 
-+		if (fscache_check_page_write(cookie, page)) {
-+			if (!(gfp & __GFP_WAIT))
-+				return 0;
-+			fscache_wait_on_page_write(cookie, page);
-+		}
-+
- 		fscache_uncache_page(cookie, page);
- 		nfs_add_fscache_stats(page->mapping->host,
- 				      NFSIOS_FSCACHE_PAGES_UNCACHED, 1);
+ 	mm = t->task->mm;
+ 	if (mm)
+ 		tsb_context_switch(mm);
 
 
