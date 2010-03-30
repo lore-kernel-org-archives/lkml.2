@@ -1,116 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538Ab0C3IHZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 04:07:25 -0400
-Received: from mail.gmx.net ([213.165.64.20]:38031 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751409Ab0C3IHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 04:07:21 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18oEbJGDRsoMVdXIB885gjExhGBKW8GhOa3Ekwqle
-	NvgDHtSGNr7dej
-Subject: Re: scheduler bug: process running since 5124095h
-From: Mike Galbraith <efault@gmx.de>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: =?ISO-8859-1?Q?T=F6r=F6k?= Edwin <edwintorok@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <4BB1989D.4050809@jp.fujitsu.com>
-References: <4BADD408.8080609@gmail.com>  <4BAF1802.8070002@gmail.com>
-	 <1269859960.6844.4.camel@marge.simson.net>
-	 <4BB09736.5010009@jp.fujitsu.com>  <4BB1989D.4050809@jp.fujitsu.com>
-Content-Type: text/plain
-Date: Tue, 30 Mar 2010 10:07:15 +0200
-Message-Id: <1269936435.6699.21.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.46000000000000002
+	id S1755582Ab0C3IH2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 04:07:28 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:36219 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754926Ab0C3IHW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 04:07:22 -0400
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+       Thomas Renninger <trenn@suse.de>,
+       Suresh Siddha <suresh.b.siddha@intel.com>, len.brown@intel.com,
+       Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+       linux-acpi@vger.kernel.org, Iranna D Ankad <iranna.ankad@in.ibm.com>,
+       Gary Hade <garyhade@us.ibm.com>,
+       Natalie Protasevich <protasnb@gmail.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH 05/15] x86 acpi/irq: Generalize mp_config_acpi_legacy_irqs
+Date: Tue, 30 Mar 2010 01:07:06 -0700
+Message-Id: <1269936436-7039-5-git-send-email-ebiederm@xmission.com>
+X-Mailer: git-send-email 1.6.5.2.143.g8cc62
+In-Reply-To: <m1oci6qlmr.fsf_-_@fess.ebiederm.org>
+References: <m1oci6qlmr.fsf_-_@fess.ebiederm.org>
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 76.21.114.89
+X-SA-Exim-Rcpt-To: hpa@zytor.com, tglx@linutronix.de, mingo@elte.hu, akpm@linux-foundation.org, jbarnes@virtuousgeek.org, linux-kernel@vger.kernel.org, trenn@suse.de, suresh.b.siddha@intel.com, len.brown@intel.com, tony.luck@intel.com, fenghua.yu@intel.com, linux-acpi@vger.kernel.org, iranna.ankad@in.ibm.com, garyhade@us.ibm.com, protasnb@gmail.com, ebiederm@xmission.com
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-30 at 15:22 +0900, Hidetoshi Seto wrote:
+From: Eric W. Biederman <ebiederm@xmission.com>
 
-> Quick report:
-> 
-> The reason why this commit have bisected is because it changed
-> the type of time values from signed clock_t to unsigned cputime_t,
-> so that the following if-block become to be always taken:
-> 
->    > -       stime = nsec_to_clock_t(p->se.sum_exec_runtime) -
->    > -                       cputime_to_clock_t(task_utime(p));
->    > +       stime = nsecs_to_cputime(p->se.sum_exec_runtime) - task_utime(p);
->    > 
-> >> >         if (stime >= 0)
->    > -               p->prev_stime = max(p->prev_stime, clock_t_to_cputime(stime));
->    > +               p->prev_stime = max(p->prev_stime, stime);
->    > 
->    >         return p->prev_stime;
-> 
-> >From strace of latancytop, it does write to /proc/<pid>/sched:
-> 
->    5891  open("/proc/1/sched", O_RDWR)     = 5
->    5891  fstat(5, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
->    5891  mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) =
->     0x7fc6668f3000
->    5891  read(5, "init (1, #threads: 1)\n----------"..., 1024) = 776
->    5891  read(5, "", 1024)                 = 0
-> >> 5891  write(5, "erase", 5)              = 5
->    5891  close(5)                          = 0
-> 
-> It results in:
-> 
-> [kernel/sched_debug.c]
-> void proc_sched_set_task(struct task_struct *p)
-> {
->  :
->         p->se.sum_exec_runtime                  = 0;
->         p->se.prev_sum_exec_runtime             = 0;
->         p->nvcsw                                = 0;
->         p->nivcsw                               = 0;
-> }
+Remove the assumption that there is not an override for isa irq 0.
+Instead lookup the gsi and from that lookup the ioapic and pin of each
+isa irq indivdually.
 
-Hm.  Dunno why that (evilness) exists.
+In general this should not have any behavioural affect but in
+perverse cases this gets all of the details correct, instead of
+doing something weird.
 
-> So soon some task will have great (in fact negative) stime.
-> 
-> There would be no doubt that this initialize in sched_debug.c
-> will break monotonicity of sum_exec_runtime.  I confirmed that
-> the issue is disappeared by comment-out of lines above.
-> 
-> Reverting the bisected commit is wrong solution, because it
-> will bring another issue, i.e. lost of runtime, and u/stime
-> seems to be frozen because these values restart from 0 so
-> prev_* is used for a while.
-> 
-> How to fix?  Is this a bug of latencytop? Kernel?
-> Please comment.
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+---
+ arch/x86/kernel/acpi/boot.c |   30 ++++++++++++++++++------------
+ 1 files changed, 18 insertions(+), 12 deletions(-)
 
-I looked at it in tip this morning (where task_stime doesn't exist), and
-did the below to swat the underflow.  Seems ok, but I haven't yet
-enabled CONFIG_LATENCYTOP.
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 81575f1..cdf4fa4 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3366,6 +3366,7 @@ void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
- 	 * Compare with previous values, to keep monotonicity:
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 1742888..9c48e99 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -960,8 +960,6 @@ void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger, u32 gsi)
+ void __init mp_config_acpi_legacy_irqs(void)
+ {
+ 	int i;
+-	int ioapic;
+-	unsigned int dstapic;
+ 	struct mpc_intsrc mp_irq;
+ 
+ #if defined (CONFIG_MCA) || defined (CONFIG_EISA)
+@@ -982,19 +980,27 @@ void __init mp_config_acpi_legacy_irqs(void)
+ #endif
+ 
+ 	/*
+-	 * Locate the IOAPIC that manages the ISA IRQs (0-15).
+-	 */
+-	ioapic = mp_find_ioapic(0);
+-	if (ioapic < 0)
+-		return;
+-	dstapic = mp_ioapics[ioapic].apicid;
+-
+-	/*
+ 	 * Use the default configuration for the IRQs 0-15.  Unless
+ 	 * overridden by (MADT) interrupt source override entries.
  	 */
- 	p->prev_utime = max(p->prev_utime, utime);
-+	rtime = max(rtime, p->prev_utime);
- 	p->prev_stime = max(p->prev_stime, cputime_sub(rtime, p->prev_utime));
+ 	for (i = 0; i < 16; i++) {
++		int ioapic, pin;
++		unsigned int dstapic;
+ 		int idx;
++		u32 gsi;
++
++		/* Locate the gsi that irq i maps to. */
++		if (acpi_isa_irq_to_gsi(i, &gsi))
++			continue;
++
++		/*
++		 * Locate the IOAPIC that manages the ISA IRQ.
++		 */
++		ioapic = mp_find_ioapic(gsi);
++		if (ioapic < 0)
++			continue;
++		pin = mp_find_ioapic_pin(ioapic, gsi);
++		dstapic = mp_ioapics[ioapic].apicid;
  
- 	*ut = p->prev_utime;
-@@ -3396,6 +3397,7 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
- 		utime = rtime;
+ 		for (idx = 0; idx < mp_irq_entries; idx++) {
+ 			struct mpc_intsrc *irq = mp_irqs + idx;
+@@ -1004,7 +1010,7 @@ void __init mp_config_acpi_legacy_irqs(void)
+ 				break;
  
- 	sig->prev_utime = max(sig->prev_utime, utime);
-+	rtime = max(rtime, sig->prev_utime);
- 	sig->prev_stime = max(sig->prev_stime,
- 			      cputime_sub(rtime, sig->prev_utime));
+ 			/* Do we already have a mapping for this IOAPIC pin */
+-			if (irq->dstapic == dstapic && irq->dstirq == i)
++			if (irq->dstapic == dstapic && irq->dstirq == pin)
+ 				break;
+ 		}
  
-
+@@ -1019,7 +1025,7 @@ void __init mp_config_acpi_legacy_irqs(void)
+ 		mp_irq.dstapic = dstapic;
+ 		mp_irq.irqtype = mp_INT;
+ 		mp_irq.srcbusirq = i; /* Identity mapped */
+-		mp_irq.dstirq = i;
++		mp_irq.dstirq = pin;
+ 
+ 		save_mp_irq(&mp_irq);
+ 	}
+-- 
+1.6.5.2.143.g8cc62
 
