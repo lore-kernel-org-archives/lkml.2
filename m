@@ -1,60 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369Ab0C3Pbg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 11:31:36 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:53507 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754122Ab0C3Pbd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 11:31:33 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=vkmnLT2R8ZW1siQLHo2HzSl7TS4u3Sm+2OsMuG9jZiYoGAFNwS1n5x5X2ESsdRCHo
-	om+kbNf5SPlgCi/QXArPw==
+	id S1754263Ab0C3PkU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 11:40:20 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:53535 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752144Ab0C3PkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 11:40:18 -0400
+Date: Tue, 30 Mar 2010 08:40:15 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Trond.Myklebust@netapp.com,
+       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFS: Fix RCU warnings in
+ nfs_inode_return_delegation_noreclaim() [ver #2]
+Message-ID: <20100330154015.GA8183@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100329223609.GR2569@linux.vnet.ibm.com>
+ <20100329210520.GN2569@linux.vnet.ibm.com>
+ <20100329192159.GM2569@linux.vnet.ibm.com>
+ <20100319022527.GC2894@linux.vnet.ibm.com>
+ <20100318133302.29754.1584.stgit@warthog.procyon.org.uk>
+ <19192.1269889348@redhat.com>
+ <23274.1269893706@redhat.com>
+ <25276.1269901350@redhat.com>
+ <26760.1269903543@redhat.com>
+ <20100329232636.GT2569@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20100330151133.GB5211@lenovo>
-References: <1269880612-25800-1-git-send-email-robert.richter@amd.com>
-	 <bd4cb8901003300311l4178891dvf1e63293a0ac51fe@mail.gmail.com>
-	 <20100330134145.GI11907@erda.amd.com>
-	 <bd4cb8901003300653lc8e414bp3930b03fee2fffbf@mail.gmail.com>
-	 <1269961255.5258.221.camel@laptop> <20100330151133.GB5211@lenovo>
-Date: Tue, 30 Mar 2010 17:31:29 +0200
-Message-ID: <bd4cb8901003300831n48ed60c6l9fcd02393277ad32@mail.gmail.com>
-Subject: Re: [PATCH 0/3] perf/core, x86: unify perfctr bitmasks
-From: Stephane Eranian <eranian@google.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100329232636.GT2569@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 5:11 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> On Tue, Mar 30, 2010 at 05:00:55PM +0200, Peter Zijlstra wrote:
->> On Tue, 2010-03-30 at 15:53 +0200, Stephane Eranian wrote:
->> > > So, there are some ARCH_PERFMON_EVENTSEL_* masks that are Intel only,
->> > > which is true for ARCH_PERFMON_EVENTSEL_ANY. And indead, the code
->> > > should be checked for this. ARCH_PERFMON_EVENTSEL_ANY is always
->> > > cleared on AMD cpus, so this code is ok. Actually the bit is cleared
->> >
->> > Until AMD uses that bit too and you won't notice this test. This is a security
->> > check specific to Intel and it should be in an Intel-specific function.
->> >
->> > > for *all* cpus in x86_pmu_raw_event(), the code was and is broken for
->> > > this.
->> > >
->> > Yes, needs to be authorized for any perfmon v3 and later revisions.
->>
->> So how about something like this on top of Robert's patches?
->>
-> [...]
->
-> Looks good for me! Thanks Peter!
->
-Looks better. Thanks.
+On Mon, Mar 29, 2010 at 04:26:36PM -0700, Paul E. McKenney wrote:
+> On Mon, Mar 29, 2010 at 11:59:03PM +0100, David Howells wrote:
+> > Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> > 
+> > > Only on Alpha.  Otherwise only a volatile access.
+> > 
+> > Whilst that is true, it's the principle of the thing.  The extra barrier
+> > shouldn't be emitted on Alpha.  If Alpha's no longer important, then can we
+> > scrap smp_read_barrier_depends()?
+> > 
+> > My point is that some of these rcu_dereference*()'s are unnecessary.  If
+> > there're required for correctness tracking purposes, fine; but can we have a
+> > macro that is just a dummy for the purpose of stripping the pointer Sparse
+> > annotation?  One that doesn't invoke rcu_dereference_raw() and interpolate a
+> > barrier, pretend or otherwise, when there's no second reference to order
+> > against.
+> 
+> Interesting point.  Perhaps an rcu_dereference_update(p, c) for the
+> cases where the data structure cannot change.  Also, such a name makes
+> it more clear that this is an update-side access, and it further documents
+> the update-side lock.
+> 
+> Something like the following, then?  Untested, probably does not even
+> compile.
 
-Acked-by: Stephane Eranian <eranian@google.com>
+Scrap this one -- Arnd has it covered, under the much better name
+of rcu_dereference_const().
+
+							Thanx, Paul
+
+> ------------------------------------------------------------------------
+> 
+> rcu: Add update-side variant of rcu_dereference()
+> 
+> Upcoming consistency-checking features are requiring that even update-side
+> accesses to RCU-protected pointers use some variant of rcu_dereference().
+> Even though rcu_dereference() is quite lightweight, it does constrain the
+> compiler, thus producing code that is worse than required.  This patch
+> therefore adds rcu_dereference_update(), which allows lockdep-style
+> checks for holding the correct update-side lock, but which does not
+> constrain the compiler.
+> 
+> Suggested-by: David Howells <dhowells@redhat.com>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+> 
+>  rcupdate.h |   17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 872a98e..0a6047f 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -209,9 +209,26 @@ static inline int rcu_read_lock_sched_held(void)
+>  		rcu_dereference_raw(p); \
+>  	})
+>  
+> +/**
+> + * rcu_dereference_update - rcu_dereference on structure that cannot change
+> + *
+> + * Do rcu_dereference() checking, but just pick up the pointer without
+> + * the normal RCU read-side precautions.  These precautions are only
+> + * needed if the data structure can change.  The caller is responsible
+> + * for doing whatever is necessary (such as holding locks) to prevent
+> + * such changes from occurring.
+> + */
+> +#define rcu_dereference_update(p, c) \
+> +	({ \
+> +		if (debug_lockdep_rcu_enabled() && !(c)) \
+> +			lockdep_rcu_dereference(__FILE__, __LINE__); \
+> +		(p); \
+> +	})
+> +
+>  #else /* #ifdef CONFIG_PROVE_RCU */
+>  
+>  #define rcu_dereference_check(p, c)	rcu_dereference_raw(p)
+> +#define rcu_dereference_update(p, c)	(p)
+>  
+>  #endif /* #else #ifdef CONFIG_PROVE_RCU */
+>  
