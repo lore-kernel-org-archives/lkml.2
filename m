@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786Ab0C3XRm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:17:42 -0400
-Received: from kroah.org ([198.145.64.141]:51790 "EHLO coco.kroah.org"
+	id S932361Ab0CaABl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:01:41 -0400
+Received: from kroah.org ([198.145.64.141]:45413 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756453Ab0C3XRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:17:34 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:08 2010
-Message-Id: <20100330225607.841045069@linux.site>
+	id S1756840Ab0C3XSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:47 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:59 2010
+Message-Id: <20100330225658.504101661@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:54:55 -0700
+Date: Tue, 30 Mar 2010 15:56:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [017/116] function-graph: Init curr_ret_stack with ret_stack
+       Miao Xie <miaox@cn.fujitsu.com>, David Rientjes <rientjes@google.com>,
+       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [090/116] cpuset: fix the problem that cpuset_mem_spread_node() returns an offline node
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +27,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Miao Xie <miaox@cn.fujitsu.com>
 
-commit ea14eb714041d40fcc5180b5a586034503650149 upstream.
+commit 5ab116c9349ef52d6fbd2e2917a53f13194b048e upstream.
 
-If the graph tracer is active, and a task is forked but the allocating of
-the processes graph stack fails, it can cause crash later on.
+cpuset_mem_spread_node() returns an offline node, and causes an oops.
 
-This is due to the temporary stack being NULL, but the curr_ret_stack
-variable is copied from the parent. If it is not -1, then in
-ftrace_graph_probe_sched_switch() the following:
+This patch fixes it by initializing task->mems_allowed to
+node_states[N_HIGH_MEMORY], and updating task->mems_allowed when doing
+memory hotplug.
 
-	for (index = next->curr_ret_stack; index >= 0; index--)
-		next->ret_stack[index].calltime += timestamp;
-
-Will cause a kernel OOPS.
-
-Found with Li Zefan's ftrace_stress_test.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Reported-by: Nick Piggin <npiggin@suse.de>
+Tested-by: Nick Piggin <npiggin@suse.de>
+Cc: Paul Menage <menage@google.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/trace/ftrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ init/main.c      |    2 +-
+ kernel/cpuset.c  |   20 ++++++++++++--------
+ kernel/kthread.c |    2 +-
+ 3 files changed, 14 insertions(+), 10 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3258,6 +3258,7 @@ void ftrace_graph_init_task(struct task_
- {
- 	/* Make sure we do not use the parent ret_stack */
- 	t->ret_stack = NULL;
-+	t->curr_ret_stack = -1;
+--- a/init/main.c
++++ b/init/main.c
+@@ -846,7 +846,7 @@ static int __init kernel_init(void * unu
+ 	/*
+ 	 * init can allocate pages on any node
+ 	 */
+-	set_mems_allowed(node_possible_map);
++	set_mems_allowed(node_states[N_HIGH_MEMORY]);
+ 	/*
+ 	 * init can run on any cpu.
+ 	 */
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -921,9 +921,6 @@ static int update_cpumask(struct cpuset
+  *    call to guarantee_online_mems(), as we know no one is changing
+  *    our task's cpuset.
+  *
+- *    Hold callback_mutex around the two modifications of our tasks
+- *    mems_allowed to synchronize with cpuset_mems_allowed().
+- *
+  *    While the mm_struct we are migrating is typically from some
+  *    other task, the task_struct mems_allowed that we are hacking
+  *    is for our current task, which must allocate new pages for that
+@@ -1392,11 +1389,10 @@ static void cpuset_attach(struct cgroup_
  
- 	if (ftrace_graph_active) {
- 		struct ftrace_ret_stack *ret_stack;
-@@ -3267,7 +3268,6 @@ void ftrace_graph_init_task(struct task_
- 				GFP_KERNEL);
- 		if (!ret_stack)
- 			return;
--		t->curr_ret_stack = -1;
- 		atomic_set(&t->tracing_graph_pause, 0);
- 		atomic_set(&t->trace_overrun, 0);
- 		t->ftrace_timestamp = 0;
+ 	if (cs == &top_cpuset) {
+ 		cpumask_copy(cpus_attach, cpu_possible_mask);
+-		to = node_possible_map;
+ 	} else {
+ 		guarantee_online_cpus(cs, cpus_attach);
+-		guarantee_online_mems(cs, &to);
+ 	}
++	guarantee_online_mems(cs, &to);
+ 
+ 	/* do per-task migration stuff possibly for each in the threadgroup */
+ 	cpuset_attach_task(tsk, &to, cs);
+@@ -2091,15 +2087,23 @@ static int cpuset_track_online_cpus(stru
+ static int cpuset_track_online_nodes(struct notifier_block *self,
+ 				unsigned long action, void *arg)
+ {
++	nodemask_t oldmems;
++
+ 	cgroup_lock();
+ 	switch (action) {
+ 	case MEM_ONLINE:
+-	case MEM_OFFLINE:
++		oldmems = top_cpuset.mems_allowed;
+ 		mutex_lock(&callback_mutex);
+ 		top_cpuset.mems_allowed = node_states[N_HIGH_MEMORY];
+ 		mutex_unlock(&callback_mutex);
+-		if (action == MEM_OFFLINE)
+-			scan_for_empty_cpusets(&top_cpuset);
++		update_tasks_nodemask(&top_cpuset, &oldmems, NULL);
++		break;
++	case MEM_OFFLINE:
++		/*
++		 * needn't update top_cpuset.mems_allowed explicitly because
++		 * scan_for_empty_cpusets() will update it.
++		 */
++		scan_for_empty_cpusets(&top_cpuset);
+ 		break;
+ 	default:
+ 		break;
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -196,7 +196,7 @@ int kthreadd(void *unused)
+ 	set_task_comm(tsk, "kthreadd");
+ 	ignore_signals(tsk);
+ 	set_cpus_allowed_ptr(tsk, cpu_all_mask);
+-	set_mems_allowed(node_possible_map);
++	set_mems_allowed(node_states[N_HIGH_MEMORY]);
+ 
+ 	current->flags |= PF_NOFREEZE | PF_FREEZER_NOSIG;
+ 
 
 
