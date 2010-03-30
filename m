@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab0C3XRv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:17:51 -0400
-Received: from kroah.org ([198.145.64.141]:51886 "EHLO coco.kroah.org"
+	id S932217Ab0C3XSM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:18:12 -0400
+Received: from kroah.org ([198.145.64.141]:52030 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756231Ab0C3XRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:17:47 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:17 2010
-Message-Id: <20100330225617.033156687@linux.site>
+	id S1756792Ab0C3XSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:08 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:31 2010
+Message-Id: <20100330225631.192299131@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:08 -0700
+Date: Tue, 30 Mar 2010 15:55:29 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Alexander Duyck <alexander.h.duyck@intel.com>,
-       Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-       "David S. Miller" <davem@davemloft.net>,
+       Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [030/116] pci: add support for 82576NS serdes to existing SR-IOV quirk
+Subject: [051/116] perf_event: Fix oops triggered by cpu offline/online
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,31 +27,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Duyck <alexander.h.duyck@intel.com>
+From: Paul Mackerras <paulus@samba.org>
 
-commit 7a0deb6bcda98c2a764cb87f1441eef920fd3663 upstream.
+commit 220b140b52ab6cc133f674a7ffec8fa792054f25 upstream.
 
-This patch adds support for the 82576NS Serdes adapter to the existing pci
-quirk for 82576 parts.
+Anton Blanchard found that he could reliably make the kernel hit a
+BUG_ON in the slab allocator by taking a cpu offline and then online
+while a system-wide perf record session was running.
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The reason is that when the cpu comes up, we completely reinitialize
+the ctx field of the struct perf_cpu_context for the cpu.  If there is
+a system-wide perf record session running, then there will be a struct
+perf_event that has a reference to the context, so its refcount will
+be 2.  (The perf_event has been removed from the context's group_entry
+and event_entry lists by perf_event_exit_cpu(), but that doesn't
+remove the perf_event's reference to the context and doesn't decrement
+the context's refcount.)
+
+When the cpu comes up, perf_event_init_cpu() gets called, and it calls
+__perf_event_init_context() on the cpu's context.  That resets the
+refcount to 1.  Then when the perf record session finishes and the
+perf_event is closed, the refcount gets decremented to 0 and the
+context gets kfreed after an RCU grace period.  Since the context
+wasn't kmalloced -- it's part of a per-cpu variable -- bad things
+happen.
+
+In fact we don't need to completely reinitialize the context when the
+cpu comes up.  It's sufficient to initialize the context once at boot,
+but we need to do it for all possible cpus.
+
+This moves the context initialization to happen at boot time.  With
+this, we don't trash the refcount and the context never gets kfreed,
+and we don't hit the BUG_ON.
+
+Reported-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Tested-by: Anton Blanchard <anton@samba.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/quirks.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/perf_event.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2513,6 +2513,7 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_I
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e8, quirk_i82576_sriov);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x150a, quirk_i82576_sriov);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x150d, quirk_i82576_sriov);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x1518, quirk_i82576_sriov);
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -4981,12 +4981,22 @@ int perf_event_init_task(struct task_str
+ 	return ret;
+ }
  
- #endif	/* CONFIG_PCI_IOV */
++static void __init perf_event_init_all_cpus(void)
++{
++	int cpu;
++	struct perf_cpu_context *cpuctx;
++
++	for_each_possible_cpu(cpu) {
++		cpuctx = &per_cpu(perf_cpu_context, cpu);
++		__perf_event_init_context(&cpuctx->ctx, NULL);
++	}
++}
++
+ static void __cpuinit perf_event_init_cpu(int cpu)
+ {
+ 	struct perf_cpu_context *cpuctx;
  
+ 	cpuctx = &per_cpu(perf_cpu_context, cpu);
+-	__perf_event_init_context(&cpuctx->ctx, NULL);
+ 
+ 	spin_lock(&perf_resource_lock);
+ 	cpuctx->max_pertask = perf_max_events - perf_reserved_percpu;
+@@ -5057,6 +5067,7 @@ static struct notifier_block __cpuinitda
+ 
+ void __init perf_event_init(void)
+ {
++	perf_event_init_all_cpus();
+ 	perf_cpu_notify(&perf_cpu_nb, (unsigned long)CPU_UP_PREPARE,
+ 			(void *)(long)smp_processor_id());
+ 	perf_cpu_notify(&perf_cpu_nb, (unsigned long)CPU_ONLINE,
 
 
