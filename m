@@ -1,97 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831Ab0C3NmJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 09:42:09 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:48591 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653Ab0C3NmH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 09:42:07 -0400
-X-SpamScore: -28
-X-BigFish: VPS-28(zba6lz1432R98dN936eM62a3L9371Pzz1202hzzz32i6bh2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-SS: 5,
-X-WSS-ID: 0L03KPM-02-5XH-02
-X-M-MSG: 
-Date: Tue, 30 Mar 2010 15:41:45 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Stephane Eranian <eranian@google.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] perf/core, x86: unify perfctr bitmasks
-Message-ID: <20100330134145.GI11907@erda.amd.com>
-References: <1269880612-25800-1-git-send-email-robert.richter@amd.com>
- <bd4cb8901003300311l4178891dvf1e63293a0ac51fe@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <bd4cb8901003300311l4178891dvf1e63293a0ac51fe@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-OriginalArrivalTime: 30 Mar 2010 13:41:45.0855 (UTC) FILETIME=[BD5C68F0:01CAD00E]
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	id S1755889Ab0C3NoM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 09:44:12 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41035 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751985Ab0C3NoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 09:44:10 -0400
+Date: Wed, 31 Mar 2010 00:43:57 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <htejun@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH 14/17] input: update gfp/slab.h includes
+Message-Id: <20100331004357.570fd5f6.sfr@canb.auug.org.au>
+In-Reply-To: <4BB1FCAF.6080409@gmail.com>
+References: <1269885165-18617-1-git-send-email-tj@kernel.org>
+	<1269885165-18617-15-git-send-email-tj@kernel.org>
+	<20100330142148.2ac3fc0e.sfr@canb.auug.org.au>
+	<4BB1EBD4.9030707@kernel.org>
+	<4BB1FCAF.6080409@gmail.com>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__31_Mar_2010_00_43_57_+1100_rnL+zUVpiL4lSMKy"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30.03.10 12:11:46, Stephane Eranian wrote:
-> On Mon, Mar 29, 2010 at 6:36 PM, Robert Richter <robert.richter@amd.com> wrote:
-> > This patch set unifies performance counter bit masks for x86. All mask
-> > are almost the same for all x86 models and thus can use the same macro
-> > definitions in arch/x86/include/asm/perf_event.h. It removes duplicate
-> > code. There is also a patch that reverts some changes of the big
-> > perf_counter -> perf_event rename.
-> >
-> 
-> But there are still fields which are unique to each vendor:
-> - GUEST vs. HOST on AMD
-> - ANY_THREAD on Intel.
-> 
-> For instance, I noticed that in
-> 
-> arch/x86/kernel/cpu/perf_event.c:__hw_perf_event_init():
-> 
->       if (attr->type == PERF_TYPE_RAW) {
->                 hwc->config |= x86_pmu.raw_event(attr->config);
->                 if ((hwc->config & ARCH_PERFMON_EVENTSEL_ANY) &&
->                     perf_paranoid_cpu() && !capable(CAP_SYS_ADMIN))
->                         return -EACCES;
->                 return 0;
->         }
-> 
-> Assumes ANY also exists on AMD processors. That is not the case.
-> This check needs to be moved into an Intel specific function.
+--Signature=_Wed__31_Mar_2010_00_43_57_+1100_rnL+zUVpiL4lSMKy
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Generally, ARCH_PERFMON_EVENTSEL_* refers to:
+Hi Tejun,
 
- Intel® 64 and IA-32 Architectures Software Developer’s Manual Volume
- 3B: System Programming Guide, Part 2
- 30.2 ARCHITECTURAL PERFORMANCE MONITORING
- Appendix A: Performance-Monitoring Events
- Appendix B: Model-Specific Registers (MSRs) 
+On Tue, 30 Mar 2010 22:29:19 +0900 Tejun Heo <htejun@gmail.com> wrote:
+>
+> slabh updated such that...
+>=20
+> * kmemcheck fix patch is placed before the patch to break implicit
+>   slab.h inclusion.
+>=20
+> * sysrq.c now includes slab.h instead of gfp.h.
+>=20
+> * Updated against the current mainline
+>   9623e5a23724d09283c238960946ec6f65733afe.  Conversion script was run
+>   again and outputs are compared.  No new dependency appeared since
+>   the last round.
+>=20
+> So, it should now be safe to ignore this patch.
 
-and AMD64_EVENTSEL_* to:
+Great, thanks.
 
- AMD64 Architecture Programmer's Manual Volume 2: System Programming
- 13.3.1 Performance Counters
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-X86_* is generic.
+--Signature=_Wed__31_Mar_2010_00_43_57_+1100_rnL+zUVpiL4lSMKy
+Content-Type: application/pgp-signature
 
-If a feature is available from both vendors, the names shouln't be
-changed. Instead the first introduced mask should be used (at least
-this is my suggestion).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-So, there are some ARCH_PERFMON_EVENTSEL_* masks that are Intel only,
-which is true for ARCH_PERFMON_EVENTSEL_ANY. And indead, the code
-should be checked for this. ARCH_PERFMON_EVENTSEL_ANY is always
-cleared on AMD cpus, so this code is ok. Actually the bit is cleared
-for *all* cpus in x86_pmu_raw_event(), the code was and is broken for
-this.
+iEYEARECAAYFAkuyAB0ACgkQjjKRsyhoI8zWAwCcCO4dCfUkOw1ApDtHqwThd21F
+o+wAn2t1xUhPcqaA/T3rKy8c1VSpRayy
+=hduo
+-----END PGP SIGNATURE-----
 
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
-
+--Signature=_Wed__31_Mar_2010_00_43_57_+1100_rnL+zUVpiL4lSMKy--
