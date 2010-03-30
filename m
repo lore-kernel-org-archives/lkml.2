@@ -1,284 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab0C3JRe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 05:17:34 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:45517 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755964Ab0C3JOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 05:14:50 -0400
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 0/14] Memory Compaction v6
-Date: Tue, 30 Mar 2010 10:14:35 +0100
-Message-Id: <1269940489-5776-1-git-send-email-mel@csn.ul.ie>
-X-Mailer: git-send-email 1.6.5
+	id S1756070Ab0C3J2k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 05:28:40 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:32828 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756031Ab0C3J2h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 05:28:37 -0400
+X-SpamScore: -9
+X-BigFish: VPS-9(zz98dN936eM62a3Lab9bha706l1422izz1202hzzz32i6bh2a8h62h)
+X-Spam-TCS-SCL: 1:0
+X-FB-SS: 5,
+X-WSS-ID: 0L038ZC-01-1AR-02
+X-M-MSG: 
+Date: Tue, 30 Mar 2010 11:28:21 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] perf/core, x86: implement ARCH_PERFMON_EVENTSEL
+ bit masks
+Message-ID: <20100330092821.GH11907@erda.amd.com>
+References: <1269880612-25800-1-git-send-email-robert.richter@amd.com>
+ <1269880612-25800-4-git-send-email-robert.richter@amd.com>
+ <1269881338.12097.361.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1269881338.12097.361.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 30 Mar 2010 09:28:22.0215 (UTC) FILETIME=[57490D70:01CACFEB]
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are mostly minor changes based on feedback received on V5. The
-biggest difference is the last patch. Kamezawa Hiroyuki pointed out that
-PageSwapCache should be allowed to migrate even though they are unmapped
-anonymous pages. This was not as straight-forward as expected. Hence, I
-kept the patch responsible separate and at the end of the series. If it's
-not correct, it can be easily dropped until it is resolved.
+On 29.03.10 18:48:58, Peter Zijlstra wrote:
+> Could you fold this with your 2/3 and create x86_pmu_raw_event() which
+> lives in arch/x86/kernel/cpu/perf_event.c, that's more consistent wrt
+> the X86_RAW_EVENT_MASK name and that way you don't need to re-order the
+> #include ""s either.
 
-Changelog since V5
-  o Rebase to mmotm-2010-03-24-14-48
-  o Add more reviewed-by's
-  o Correct one spelling in vmstat.c and some leader clarifications
-  o Split the LRU isolation modes into a separate path
-  o Correct a NID change
-  o Call migrate_prep less frequently
-  o Remove unnecessary inlining
-  o Do not interfere with memory hot-remove
-  o Do not compact for orders <= PAGE_ALLOC_COSTLY_ORDER
-  o page_mapped instead of page_mapcount and allow swapcache to migrate
-  o Avoid too many pages being isolated for migration
-  o Handle PageSwapCache pages during migration
+The patch below replaces patches 2 and 3.
 
-Changelog since V4
-  o Remove unnecessary check for PageLRU and PageUnevictable
-  o Fix isolated accounting
-  o Close race window between page_mapcount and rcu_read_lock
-  o Added a lot more Reviewed-by tags
+-Robert
 
-Changelog since V3
-  o Document sysfs entries (subseqently, merged independently)
-  o COMPACTION should depend on MMU
-  o Comment updates
-  o Ensure proc/sysfs triggering of compaction fully completes
-  o Rename anon_vma refcount to external_refcount
-  o Rebase to mmotm on top of 2.6.34-rc1
+---
 
-Changelog since V2
-  o Move unusable and fragmentation indices to separate proc files
-  o Express indices as being between 0 and 1
-  o Update copyright notice for compaction.c
-  o Avoid infinite loop when split free page fails
-  o Init compact_resume at least once (impacted x86 testing)
-  o Fewer pages are isolated during compaction.
-  o LRU lists are no longer rotated when page is busy
-  o NR_ISOLATED_* is updated to avoid isolating too many pages
-  o Update zone LRU stats correctly when isolating pages
-  o Reference count anon_vma instead of insufficient locking with
-    use-after-free races in memory compaction
-  o Watch for unmapped anon pages during migration
-  o Remove unnecessary parameters on a few functions
-  o Add Reviewed-by's. Note that I didn't add the Acks and Reviewed
-    for the proc patches as they have been split out into separate
-    files and I don't know if the Acks are still valid.
+>From 2d77650a4dc5ded763dc3c120381bdbe5a0be911 Mon Sep 17 00:00:00 2001
+From: Robert Richter <robert.richter@amd.com>
+Date: Wed, 17 Mar 2010 12:32:37 +0100
+Subject: [PATCH] perf/core, x86: implement ARCH_PERFMON_EVENTSEL bit masks
 
-Changelog since V1
-  o Update help blurb on CONFIG_MIGRATION
-  o Max unusable free space index is 100, not 1000
-  o Move blockpfn forward properly during compaction
-  o Cleanup CONFIG_COMPACTION vs CONFIG_MIGRATION confusion
-  o Permissions on /proc and /sys files should be 0200
-  o Reduce verbosity
-  o Compact all nodes when triggered via /proc
-  o Add per-node compaction via sysfs
-  o Move defer_compaction out-of-line
-  o Fix lock oddities in rmap_walk_anon
-  o Add documentation
+ARCH_PERFMON_EVENTSEL bit masks are often used in the kernel. This
+patch adds macros for the bit masks and removes local defines. The
+function intel_pmu_raw_event() becomes x86_pmu_raw_event() which is
+generic for x86 models and same also for p6. Duplicate code is
+removed.
 
-This patchset is a memory compaction mechanism that reduces external
-fragmentation memory by moving GFP_MOVABLE pages to a fewer number of
-pageblocks. The term "compaction" was chosen as there are is a number of
-mechanisms that are not mutually exclusive that can be used to defragment
-memory. For example, lumpy reclaim is a form of defragmentation as was slub
-"defragmentation" (really a form of targeted reclaim). Hence, this is called
-"compaction" to distinguish it from other forms of defragmentation.
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ arch/x86/include/asm/perf_event.h      |   58 ++++++++++++++------------------
+ arch/x86/kernel/cpu/perf_event.c       |   19 +++++++++--
+ arch/x86/kernel/cpu/perf_event_amd.c   |   15 +--------
+ arch/x86/kernel/cpu/perf_event_intel.c |   22 +-----------
+ arch/x86/kernel/cpu/perf_event_p6.c    |   20 +----------
+ 5 files changed, 45 insertions(+), 89 deletions(-)
 
-In this implementation, a full compaction run involves two scanners operating
-within a zone - a migration and a free scanner. The migration scanner
-starts at the beginning of a zone and finds all movable pages within one
-pageblock_nr_pages-sized area and isolates them on a migratepages list. The
-free scanner begins at the end of the zone and searches on a per-area
-basis for enough free pages to migrate all the pages on the migratepages
-list. As each area is respectively migrated or exhausted of free pages,
-the scanners are advanced one area.  A compaction run completes within a
-zone when the two scanners meet.
+diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+index 987bf67..f6d43db 100644
+--- a/arch/x86/include/asm/perf_event.h
++++ b/arch/x86/include/asm/perf_event.h
+@@ -18,39 +18,31 @@
+ #define MSR_ARCH_PERFMON_EVENTSEL0			     0x186
+ #define MSR_ARCH_PERFMON_EVENTSEL1			     0x187
+ 
+-#define ARCH_PERFMON_EVENTSEL_ENABLE			  (1 << 22)
+-#define ARCH_PERFMON_EVENTSEL_ANY			  (1 << 21)
+-#define ARCH_PERFMON_EVENTSEL_INT			  (1 << 20)
+-#define ARCH_PERFMON_EVENTSEL_OS			  (1 << 17)
+-#define ARCH_PERFMON_EVENTSEL_USR			  (1 << 16)
+-
+-/*
+- * Includes eventsel and unit mask as well:
+- */
+-
+-
+-#define INTEL_ARCH_EVTSEL_MASK		0x000000FFULL
+-#define INTEL_ARCH_UNIT_MASK		0x0000FF00ULL
+-#define INTEL_ARCH_EDGE_MASK		0x00040000ULL
+-#define INTEL_ARCH_INV_MASK		0x00800000ULL
+-#define INTEL_ARCH_CNT_MASK		0xFF000000ULL
+-#define INTEL_ARCH_EVENT_MASK	(INTEL_ARCH_UNIT_MASK|INTEL_ARCH_EVTSEL_MASK)
+-
+-/*
+- * filter mask to validate fixed counter events.
+- * the following filters disqualify for fixed counters:
+- *  - inv
+- *  - edge
+- *  - cnt-mask
+- *  The other filters are supported by fixed counters.
+- *  The any-thread option is supported starting with v3.
+- */
+-#define INTEL_ARCH_FIXED_MASK \
+-	(INTEL_ARCH_CNT_MASK| \
+-	 INTEL_ARCH_INV_MASK| \
+-	 INTEL_ARCH_EDGE_MASK|\
+-	 INTEL_ARCH_UNIT_MASK|\
+-	 INTEL_ARCH_EVENT_MASK)
++#define ARCH_PERFMON_EVENTSEL_EVENT			0x000000FFULL
++#define ARCH_PERFMON_EVENTSEL_UMASK			0x0000FF00ULL
++#define ARCH_PERFMON_EVENTSEL_USR			(1ULL << 16)
++#define ARCH_PERFMON_EVENTSEL_OS			(1ULL << 17)
++#define ARCH_PERFMON_EVENTSEL_EDGE			(1ULL << 18)
++#define ARCH_PERFMON_EVENTSEL_INT			(1ULL << 20)
++#define ARCH_PERFMON_EVENTSEL_ANY			(1ULL << 21)
++#define ARCH_PERFMON_EVENTSEL_ENABLE			(1ULL << 22)
++#define ARCH_PERFMON_EVENTSEL_INV			(1ULL << 23)
++#define ARCH_PERFMON_EVENTSEL_CMASK			0xFF000000ULL
++
++#define AMD64_EVENTSEL_EVENT	\
++	(ARCH_PERFMON_EVENTSEL_EVENT | (0x0FULL << 32))
++#define INTEL_ARCH_EVENT_MASK	\
++	(ARCH_PERFMON_EVENTSEL_UMASK | ARCH_PERFMON_EVENTSEL_EVENT)
++
++#define X86_RAW_EVENT_MASK		\
++	(ARCH_PERFMON_EVENTSEL_EVENT |	\
++	 ARCH_PERFMON_EVENTSEL_UMASK |	\
++	 ARCH_PERFMON_EVENTSEL_EDGE  |	\
++	 ARCH_PERFMON_EVENTSEL_INV   |	\
++	 ARCH_PERFMON_EVENTSEL_CMASK)
++#define AMD64_RAW_EVENT_MASK		\
++	(X86_RAW_EVENT_MASK          |  \
++	 AMD64_EVENTSEL_EVENT)
+ 
+ #define ARCH_PERFMON_UNHALTED_CORE_CYCLES_SEL		      0x3c
+ #define ARCH_PERFMON_UNHALTED_CORE_CYCLES_UMASK		(0x00 << 8)
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index f2fc2d8..4e8d233 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -142,13 +142,21 @@ struct cpu_hw_events {
+  * Constraint on the Event code.
+  */
+ #define INTEL_EVENT_CONSTRAINT(c, n)	\
+-	EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVTSEL_MASK)
++	EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT)
+ 
+ /*
+  * Constraint on the Event code + UMask + fixed-mask
++ *
++ * filter mask to validate fixed counter events.
++ * the following filters disqualify for fixed counters:
++ *  - inv
++ *  - edge
++ *  - cnt-mask
++ *  The other filters are supported by fixed counters.
++ *  The any-thread option is supported starting with v3.
+  */
+ #define FIXED_EVENT_CONSTRAINT(c, n)	\
+-	EVENT_CONSTRAINT(c, (1ULL << (32+n)), INTEL_ARCH_FIXED_MASK)
++	EVENT_CONSTRAINT(c, (1ULL << (32+n)), X86_RAW_EVENT_MASK)
+ 
+ /*
+  * Constraint on the Event code + UMask
+@@ -436,6 +444,11 @@ static int x86_hw_config(struct perf_event_attr *attr, struct hw_perf_event *hwc
+ 	return 0;
+ }
+ 
++static u64 x86_pmu_raw_event(u64 hw_event)
++{
++	return hw_event & X86_RAW_EVENT_MASK;
++}
++
+ /*
+  * Setup the hardware configuration for a given attr_type
+  */
+@@ -1424,7 +1437,7 @@ void __init init_hw_perf_events(void)
+ 
+ 	if (x86_pmu.event_constraints) {
+ 		for_each_event_constraint(c, x86_pmu.event_constraints) {
+-			if (c->cmask != INTEL_ARCH_FIXED_MASK)
++			if (c->cmask != X86_RAW_EVENT_MASK)
+ 				continue;
+ 
+ 			c->idxmsk64 |= (1ULL << x86_pmu.num_counters) - 1;
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index 9d363ce..30e799a 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -113,20 +113,7 @@ static u64 amd_pmu_event_map(int hw_event)
+ 
+ static u64 amd_pmu_raw_event(u64 hw_event)
+ {
+-#define K7_EVNTSEL_EVENT_MASK	0xF000000FFULL
+-#define K7_EVNTSEL_UNIT_MASK	0x00000FF00ULL
+-#define K7_EVNTSEL_EDGE_MASK	0x000040000ULL
+-#define K7_EVNTSEL_INV_MASK	0x000800000ULL
+-#define K7_EVNTSEL_REG_MASK	0x0FF000000ULL
+-
+-#define K7_EVNTSEL_MASK			\
+-	(K7_EVNTSEL_EVENT_MASK |	\
+-	 K7_EVNTSEL_UNIT_MASK  |	\
+-	 K7_EVNTSEL_EDGE_MASK  |	\
+-	 K7_EVNTSEL_INV_MASK   |	\
+-	 K7_EVNTSEL_REG_MASK)
+-
+-	return hw_event & K7_EVNTSEL_MASK;
++	return hw_event & AMD64_RAW_EVENT_MASK;
+ }
+ 
+ /*
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 0d68531..b65cfc3 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -452,24 +452,6 @@ static __initconst u64 atom_hw_cache_event_ids
+  },
+ };
+ 
+-static u64 intel_pmu_raw_event(u64 hw_event)
+-{
+-#define CORE_EVNTSEL_EVENT_MASK		0x000000FFULL
+-#define CORE_EVNTSEL_UNIT_MASK		0x0000FF00ULL
+-#define CORE_EVNTSEL_EDGE_MASK		0x00040000ULL
+-#define CORE_EVNTSEL_INV_MASK		0x00800000ULL
+-#define CORE_EVNTSEL_REG_MASK		0xFF000000ULL
+-
+-#define CORE_EVNTSEL_MASK		\
+-	(INTEL_ARCH_EVTSEL_MASK |	\
+-	 INTEL_ARCH_UNIT_MASK   |	\
+-	 INTEL_ARCH_EDGE_MASK   |	\
+-	 INTEL_ARCH_INV_MASK    |	\
+-	 INTEL_ARCH_CNT_MASK)
+-
+-	return hw_event & CORE_EVNTSEL_MASK;
+-}
+-
+ static void intel_pmu_disable_all(void)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+@@ -788,7 +770,7 @@ static __initconst struct x86_pmu core_pmu = {
+ 	.eventsel		= MSR_ARCH_PERFMON_EVENTSEL0,
+ 	.perfctr		= MSR_ARCH_PERFMON_PERFCTR0,
+ 	.event_map		= intel_pmu_event_map,
+-	.raw_event		= intel_pmu_raw_event,
++	.raw_event		= x86_pmu_raw_event,
+ 	.max_events		= ARRAY_SIZE(intel_perfmon_event_map),
+ 	.apic			= 1,
+ 	/*
+@@ -827,7 +809,7 @@ static __initconst struct x86_pmu intel_pmu = {
+ 	.eventsel		= MSR_ARCH_PERFMON_EVENTSEL0,
+ 	.perfctr		= MSR_ARCH_PERFMON_PERFCTR0,
+ 	.event_map		= intel_pmu_event_map,
+-	.raw_event		= intel_pmu_raw_event,
++	.raw_event		= x86_pmu_raw_event,
+ 	.max_events		= ARRAY_SIZE(intel_perfmon_event_map),
+ 	.apic			= 1,
+ 	/*
+diff --git a/arch/x86/kernel/cpu/perf_event_p6.c b/arch/x86/kernel/cpu/perf_event_p6.c
+index b26fbc7..03c139a 100644
+--- a/arch/x86/kernel/cpu/perf_event_p6.c
++++ b/arch/x86/kernel/cpu/perf_event_p6.c
+@@ -27,24 +27,6 @@ static u64 p6_pmu_event_map(int hw_event)
+  */
+ #define P6_NOP_EVENT			0x0000002EULL
+ 
+-static u64 p6_pmu_raw_event(u64 hw_event)
+-{
+-#define P6_EVNTSEL_EVENT_MASK		0x000000FFULL
+-#define P6_EVNTSEL_UNIT_MASK		0x0000FF00ULL
+-#define P6_EVNTSEL_EDGE_MASK		0x00040000ULL
+-#define P6_EVNTSEL_INV_MASK		0x00800000ULL
+-#define P6_EVNTSEL_REG_MASK		0xFF000000ULL
+-
+-#define P6_EVNTSEL_MASK			\
+-	(P6_EVNTSEL_EVENT_MASK |	\
+-	 P6_EVNTSEL_UNIT_MASK  |	\
+-	 P6_EVNTSEL_EDGE_MASK  |	\
+-	 P6_EVNTSEL_INV_MASK   |	\
+-	 P6_EVNTSEL_REG_MASK)
+-
+-	return hw_event & P6_EVNTSEL_MASK;
+-}
+-
+ static struct event_constraint p6_event_constraints[] =
+ {
+ 	INTEL_EVENT_CONSTRAINT(0xc1, 0x1),	/* FLOPS */
+@@ -114,7 +96,7 @@ static __initconst struct x86_pmu p6_pmu = {
+ 	.eventsel		= MSR_P6_EVNTSEL0,
+ 	.perfctr		= MSR_P6_PERFCTR0,
+ 	.event_map		= p6_pmu_event_map,
+-	.raw_event		= p6_pmu_raw_event,
++	.raw_event		= x86_pmu_raw_event,
+ 	.max_events		= ARRAY_SIZE(p6_perfmon_event_map),
+ 	.apic			= 1,
+ 	.max_period		= (1ULL << 31) - 1,
+-- 
+1.7.0.3
 
-This method is a bit primitive but is easy to understand and greater
-sophistication would require maintenance of counters on a per-pageblock
-basis. This would have a big impact on allocator fast-paths to improve
-compaction which is a poor trade-off.
 
-It also does not try relocate virtually contiguous pages to be physically
-contiguous. However, assuming transparent hugepages were in use, a
-hypothetical khugepaged might reuse compaction code to isolate free pages,
-split them and relocate userspace pages for promotion.
 
-Memory compaction can be triggered in one of three ways. It may be triggered
-explicitly by writing any value to /proc/sys/vm/compact_memory and compacting
-all of memory. It can be triggered on a per-node basis by writing any
-value to /sys/devices/system/node/nodeN/compact where N is the node ID to
-be compacted. When a process fails to allocate a high-order page, it may
-compact memory in an attempt to satisfy the allocation instead of entering
-direct reclaim. Explicit compaction does not finish until the two scanners
-meet and direct compaction ends if a suitable page becomes available that
-would meet watermarks.
-
-The series is in 14 patches. The first three are not "core" to the series
-but are important pre-requisites.
-
-Patch 1 reference counts anon_vma for rmap_walk_anon(). Without this
-	patch, it's possible to use anon_vma after free if the caller is
-	not holding a VMA or mmap_sem for the pages in question. While
-	there should be no existing user that causes this problem,
-	it's a requirement for memory compaction to be stable. The patch
-	is at the start of the series for bisection reasons.
-Patch 2 skips over anon pages during migration that are no longer mapped
-	because there still appeared to be a small window between when
-	a page was isolated and migration started during which anon_vma
-	could disappear.
-Patch 3 merges the KSM and migrate counts. It could be merged with patch 1
-	but would be slightly harder to review.
-Patch 4 allows CONFIG_MIGRATION to be set without CONFIG_NUMA
-Patch 5 exports a "unusable free space index" via /proc/pagetypeinfo. It's
-	a measure of external fragmentation that takes the size of the
-	allocation request into account. It can also be calculated from
-	userspace so can be dropped if requested
-Patch 6 exports a "fragmentation index" which only has meaning when an
-	allocation request fails. It determines if an allocation failure
-	would be due to a lack of memory or external fragmentation.
-Patch 7 moves the definition for LRU isolation modes for use by compaction
-Patch 8 is the compaction mechanism although it's unreachable at this point
-Patch 9 adds a means of compacting all of memory with a proc trgger
-Patch 10 adds a means of compacting a specific node with a sysfs trigger
-Patch 11 adds "direct compaction" before "direct reclaim" if it is
-	determined there is a good chance of success.
-Patch 12 adds a sysctl that allows tuning of the threshold at which the
-	kernel will compact or direct reclaim
-Patch 13 temporarily disables compaction if an allocation failure occurs
-	after compaction.
-Patch 14 allows the migration of PageSwapCache pages. This patch was not
-	as straight-forward as rmap_walk and migration needed extra
-	smarts to avoid problems under heavy memory pressure. It's possible
-	that memory hot-remove could be affected.
-
-Testing of compaction was in three stages.  For the test, debugging, preempt,
-the sleep watchdog and lockdep were all enabled but nothing nasty popped
-out. min_free_kbytes was tuned as recommended by hugeadm to help fragmentation
-avoidance and high-order allocations. It was tested on X86, X86-64 and PPC64.
-
-Ths first test represents one of the easiest cases that can be faced for
-lumpy reclaim or memory compaction.
-
-1. Machine freshly booted and configured for hugepage usage with
-	a) hugeadm --create-global-mounts
-	b) hugeadm --pool-pages-max DEFAULT:8G
-	c) hugeadm --set-recommended-min_free_kbytes
-	d) hugeadm --set-recommended-shmmax
-
-	The min_free_kbytes here is important. Anti-fragmentation works best
-	when pageblocks don't mix. hugeadm knows how to calculate a value that
-	will significantly reduce the worst of external-fragmentation-related
-	events as reported by the mm_page_alloc_extfrag tracepoint.
-
-2. Load up memory
-	a) Start updatedb
-	b) Create in parallel a X files of pagesize*128 in size. Wait
-	   until files are created. By parallel, I mean that 4096 instances
-	   of dd were launched, one after the other using &. The crude
-	   objective being to mix filesystem metadata allocations with
-	   the buffer cache.
-	c) Delete every second file so that pageblocks are likely to
-	   have holes
-	d) kill updatedb if it's still running
-
-	At this point, the system is quiet, memory is full but it's full with
-	clean filesystem metadata and clean buffer cache that is unmapped.
-	This is readily migrated or discarded so you'd expect lumpy reclaim
-	to have no significant advantage over compaction but this is at
-	the POC stage.
-
-3. In increments, attempt to allocate 5% of memory as hugepages.
-	   Measure how long it took, how successful it was, how many
-	   direct reclaims took place and how how many compactions. Note
-	   the compaction figures might not fully add up as compactions
-	   can take place for orders other than the hugepage size
-
-X86				vanilla		compaction
-Final page count                    915                916 (attempted 1002)
-pages reclaimed                   88872               4920
-
-X86-64				vanilla		compaction
-Final page count:                   901                901 (attempted 1002)
-Total pages reclaimed:           137573              67434
-
-PPC64				vanilla		compaction
-Final page count:                    89                 92 (attempted 110)
-Total pages reclaimed:            84727               8822
-
-There was not a dramatic improvement in success rates but it wouldn't be
-expected in this case either. What was important is that far fewer pages
-were reclaimed in all cases reducing the amount of IO required to satisfy
-a huge page allocation.
-
-The second tests were all performance related - kernbench, netperf, iozone
-and sysbench. None showed anything too remarkable.
-
-The last test was a high-order allocation stress test. Many kernel compiles
-are started to fill memory with a pressured mix of unmovable and movable
-allocations. During this, an attempt is made to allocate 90% of memory
-as huge pages - one at a time with small delays between attempts to avoid
-flooding the IO queue.
-
-                                             vanilla   compaction
-Percentage of request allocated X86               96           99
-Percentage of request allocated X86-64            96           98
-Percentage of request allocated PPC64             51           70
-
-Success rates are a little higher, particularly on PPC64 with the larger
-huge pages. What is most interesting is the latency when allocating huge
-pages.
-
-X86:    http://www.csn.ul.ie/~mel/postings/compaction-20100329/highalloc-interlatency-arnold-compaction-stress-v6r24-mean.ps
-X86_64: http://www.csn.ul.ie/~mel/postings/compaction-20100329/highalloc-interlatency-hydra-compaction-stress-v6r24-mean.ps
-PPC64: http://www.csn.ul.ie/~mel/postings/compaction-20100329/highalloc-interlatency-powyah-compaction-stress-v6r24-mean.ps
-
-X86 latency is reduced the least but it is depending heavily on the HIGHMEM
-zone to allocate many of its huge pages which is a relatively straight-forward
-job. X86-64 and PPC64 both show reductions in average time taken to allocate
-huge pages. It is not reduced to zero because the system is under enough
-memory pressure that reclaim is still required for some of the allocations.
-
-What is also enlightening in the same directory is the "stddev" files. Each
-of them show that the variance between allocation times is heavily reduced.
-
- Documentation/ABI/testing/sysfs-devices-node |    7 +
- Documentation/filesystems/proc.txt           |   25 +-
- Documentation/sysctl/vm.txt                  |   29 ++-
- drivers/base/node.c                          |    3 +
- include/linux/compaction.h                   |   81 ++++
- include/linux/mm.h                           |    1 +
- include/linux/mmzone.h                       |    7 +
- include/linux/rmap.h                         |   27 +-
- include/linux/swap.h                         |    6 +
- include/linux/vmstat.h                       |    2 +
- kernel/sysctl.c                              |   25 ++
- mm/Kconfig                                   |   18 +-
- mm/Makefile                                  |    1 +
- mm/compaction.c                              |  589 ++++++++++++++++++++++++++
- mm/ksm.c                                     |    4 +-
- mm/migrate.c                                 |   28 ++
- mm/page_alloc.c                              |   73 ++++
- mm/rmap.c                                    |   16 +-
- mm/vmscan.c                                  |    5 -
- mm/vmstat.c                                  |  218 ++++++++++
- 20 files changed, 1135 insertions(+), 30 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-devices-node
- create mode 100644 include/linux/compaction.h
- create mode 100644 mm/compaction.c
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+email: robert.richter@amd.com
 
