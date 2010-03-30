@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756696Ab0CaAIl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:08:41 -0400
-Received: from kroah.org ([198.145.64.141]:52064 "EHLO coco.kroah.org"
+	id S932264Ab0CaAIh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:08:37 -0400
+Received: from kroah.org ([198.145.64.141]:52071 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932213Ab0C3XSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932219Ab0C3XSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Mar 2010 19:18:12 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:34 2010
-Message-Id: <20100330225633.676561565@linux.site>
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:35 2010
+Message-Id: <20100330225634.276820999@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:33 -0700
+Date: Tue, 30 Mar 2010 15:55:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
@@ -20,7 +20,7 @@ Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        Lee Schermerhorn <lee.schermerhorn@hp.com>,
        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [055/116] tmpfs: cleanup mpol_parse_str()
+Subject: [056/116] doc: add the documentation for mpol=local
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,12 +32,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit 926f2ae04f183098cf9a30521776fb2759c8afeb upstream.
+commit 5574169613b40b85d6f4c67208fa4846b897a0a1 upstream.
 
-mpol_parse_str() made lots 'err' variable related bug.  Because it is ugly
-and reviewing unfriendly.
+commit 3f226aa1c (mempolicy: support mpol=local tmpfs mount option) added
+new mpol=local mount option.  but it didn't add a documentation.
 
-This patch simplifies it.
+This patch does it.
 
 Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Cc: Ravikiran Thirumalai <kiran@scalex86.org>
@@ -50,83 +50,31 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/mempolicy.c |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ Documentation/filesystems/tmpfs.txt |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2122,8 +2122,8 @@ int mpol_parse_str(char *str, struct mem
- 			char *rest = nodelist;
- 			while (isdigit(*rest))
- 				rest++;
--			if (!*rest)
--				err = 0;
-+			if (*rest)
-+				goto out;
- 		}
- 		break;
- 	case MPOL_INTERLEAVE:
-@@ -2132,7 +2132,6 @@ int mpol_parse_str(char *str, struct mem
- 		 */
- 		if (!nodelist)
- 			nodes = node_states[N_HIGH_MEMORY];
--		err = 0;
- 		break;
- 	case MPOL_LOCAL:
- 		/*
-@@ -2141,7 +2140,6 @@ int mpol_parse_str(char *str, struct mem
- 		if (nodelist)
- 			goto out;
- 		mode = MPOL_PREFERRED;
--		err = 0;
- 		break;
- 	case MPOL_DEFAULT:
- 		/*
-@@ -2156,7 +2154,6 @@ int mpol_parse_str(char *str, struct mem
- 		 */
- 		if (!nodelist)
- 			goto out;
--		err = 0;
- 	}
+--- a/Documentation/filesystems/tmpfs.txt
++++ b/Documentation/filesystems/tmpfs.txt
+@@ -82,11 +82,13 @@ tmpfs has a mount option to set the NUMA
+ all files in that instance (if CONFIG_NUMA is enabled) - which can be
+ adjusted on the fly via 'mount -o remount ...'
  
- 	mode_flags = 0;
-@@ -2170,13 +2167,14 @@ int mpol_parse_str(char *str, struct mem
- 		else if (!strcmp(flags, "relative"))
- 			mode_flags |= MPOL_F_RELATIVE_NODES;
- 		else
--			err = 1;
-+			goto out;
- 	}
+-mpol=default             prefers to allocate memory from the local node
++mpol=default             use the process allocation policy
++                         (see set_mempolicy(2))
+ mpol=prefer:Node         prefers to allocate memory from the given Node
+ mpol=bind:NodeList       allocates memory only from nodes in NodeList
+ mpol=interleave          prefers to allocate from each node in turn
+ mpol=interleave:NodeList allocates from each node of NodeList in turn
++mpol=local		 prefers to allocate memory from the local node
  
- 	new = mpol_new(mode, mode_flags, &nodes);
- 	if (IS_ERR(new))
--		err = 1;
--	else {
-+		goto out;
-+
-+	{
- 		int ret;
- 		NODEMASK_SCRATCH(scratch);
- 		if (scratch) {
-@@ -2187,13 +2185,15 @@ int mpol_parse_str(char *str, struct mem
- 			ret = -ENOMEM;
- 		NODEMASK_SCRATCH_FREE(scratch);
- 		if (ret) {
--			err = 1;
- 			mpol_put(new);
--		} else if (no_context) {
--			/* save for contextualization */
--			new->w.user_nodemask = nodes;
-+			goto out;
- 		}
- 	}
-+	err = 0;
-+	if (no_context) {
-+		/* save for contextualization */
-+		new->w.user_nodemask = nodes;
-+	}
- 
- out:
- 	/* Restore string for error message */
+ NodeList format is a comma-separated list of decimal numbers and ranges,
+ a range being two hyphen-separated decimal numbers, the smallest and
+@@ -134,3 +136,5 @@ Author:
+    Christoph Rohland <cr@sap.com>, 1.12.01
+ Updated:
+    Hugh Dickins, 4 June 2007
++Updated:
++   KOSAKI Motohiro, 16 Mar 2010
 
 
