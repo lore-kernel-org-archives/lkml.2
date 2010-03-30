@@ -1,86 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713Ab0C3X1t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:27:49 -0400
-Received: from kroah.org ([198.145.64.141]:46794 "EHLO coco.kroah.org"
+	id S932480Ab0C3XTs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:19:48 -0400
+Received: from kroah.org ([198.145.64.141]:45546 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756959Ab0C3XWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:22:00 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:51 2010
-Message-Id: <20100330224851.138052328@linux.site>
+	id S932342Ab0C3XTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:04 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:11 2010
+Message-Id: <20100330225710.982545218@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:53 -0700
+Date: Tue, 30 Mar 2010 15:56:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Pablo Neira Ayuso <pablo@netfilter.org>,
-       "David S. Miller" <davem@davemloft.net>,
+       Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [139/156] netfilter: ctnetlink: fix reliable event delivery if message building fails
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+Subject: [108/116] ahci: use BIOS date in broken_suspend list
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Pablo Neira Ayuso <pablo@netfilter.org>
+From: Tejun Heo <tj@kernel.org>
 
-[ Upstream commit 37b7ef7203240b3aba577bb1ff6765fe15225976 ]
+commit 9deb343189b3cf45e84dd08480f330575ffe2004 upstream.
 
-This patch fixes a bug that allows to lose events when reliable
-event delivery mode is used, ie. if NETLINK_BROADCAST_SEND_ERROR
-and NETLINK_RECV_NO_ENOBUFS socket options are set.
+HP is recycling both DMI_PRODUCT_NAME and DMI_BIOS_VERSION making
+ahci_broken_suspend() trigger for later products which are not
+affected by the original problems.  Match BIOS date instead of version
+and add references to bko's so that full information can be found
+easier later.
 
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This fixes http://bugzilla.kernel.org/show_bug.cgi?id=15462
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: tigerfishdaisy@gmail.com
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/netfilter/nfnetlink.h  |    2 +-
- net/netfilter/nf_conntrack_netlink.c |    3 ++-
- net/netfilter/nfnetlink.c            |    4 ++--
- 3 files changed, 5 insertions(+), 4 deletions(-)
+ drivers/ata/ahci.c |   28 ++++++++++++++++++++--------
+ 1 file changed, 20 insertions(+), 8 deletions(-)
 
---- a/include/linux/netfilter/nfnetlink.h
-+++ b/include/linux/netfilter/nfnetlink.h
-@@ -76,7 +76,7 @@ extern int nfnetlink_subsys_unregister(c
- extern int nfnetlink_has_listeners(unsigned int group);
- extern int nfnetlink_send(struct sk_buff *skb, u32 pid, unsigned group, 
- 			  int echo, gfp_t flags);
--extern void nfnetlink_set_err(u32 pid, u32 group, int error);
-+extern int nfnetlink_set_err(u32 pid, u32 group, int error);
- extern int nfnetlink_unicast(struct sk_buff *skb, u_int32_t pid, int flags);
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -2831,6 +2831,14 @@ static bool ahci_broken_suspend(struct p
+ 		 * On HP dv[4-6] and HDX18 with earlier BIOSen, link
+ 		 * to the harddisk doesn't become online after
+ 		 * resuming from STR.  Warn and fail suspend.
++		 *
++		 * http://bugzilla.kernel.org/show_bug.cgi?id=12276
++		 *
++		 * Use dates instead of versions to match as HP is
++		 * apparently recycling both product and version
++		 * strings.
++		 *
++		 * http://bugzilla.kernel.org/show_bug.cgi?id=15462
+ 		 */
+ 		{
+ 			.ident = "dv4",
+@@ -2839,7 +2847,7 @@ static bool ahci_broken_suspend(struct p
+ 				DMI_MATCH(DMI_PRODUCT_NAME,
+ 					  "HP Pavilion dv4 Notebook PC"),
+ 			},
+-			.driver_data = "F.30", /* cutoff BIOS version */
++			.driver_data = "20090105",	/* F.30 */
+ 		},
+ 		{
+ 			.ident = "dv5",
+@@ -2848,7 +2856,7 @@ static bool ahci_broken_suspend(struct p
+ 				DMI_MATCH(DMI_PRODUCT_NAME,
+ 					  "HP Pavilion dv5 Notebook PC"),
+ 			},
+-			.driver_data = "F.16", /* cutoff BIOS version */
++			.driver_data = "20090506",	/* F.16 */
+ 		},
+ 		{
+ 			.ident = "dv6",
+@@ -2857,7 +2865,7 @@ static bool ahci_broken_suspend(struct p
+ 				DMI_MATCH(DMI_PRODUCT_NAME,
+ 					  "HP Pavilion dv6 Notebook PC"),
+ 			},
+-			.driver_data = "F.21",	/* cutoff BIOS version */
++			.driver_data = "20090423",	/* F.21 */
+ 		},
+ 		{
+ 			.ident = "HDX18",
+@@ -2866,7 +2874,7 @@ static bool ahci_broken_suspend(struct p
+ 				DMI_MATCH(DMI_PRODUCT_NAME,
+ 					  "HP HDX18 Notebook PC"),
+ 			},
+-			.driver_data = "F.23",	/* cutoff BIOS version */
++			.driver_data = "20090430",	/* F.23 */
+ 		},
+ 		/*
+ 		 * Acer eMachines G725 has the same problem.  BIOS
+@@ -2874,6 +2882,8 @@ static bool ahci_broken_suspend(struct p
+ 		 * work.  Inbetween, there are V1.06, V2.06 and V3.03
+ 		 * that we don't have much idea about.  For now,
+ 		 * blacklist anything older than V3.04.
++		 *
++		 * http://bugzilla.kernel.org/show_bug.cgi?id=15104
+ 		 */
+ 		{
+ 			.ident = "G725",
+@@ -2881,19 +2891,21 @@ static bool ahci_broken_suspend(struct p
+ 				DMI_MATCH(DMI_SYS_VENDOR, "eMachines"),
+ 				DMI_MATCH(DMI_PRODUCT_NAME, "eMachines G725"),
+ 			},
+-			.driver_data = "V3.04",	/* cutoff BIOS version */
++			.driver_data = "20091216",	/* V3.04 */
+ 		},
+ 		{ }	/* terminate list */
+ 	};
+ 	const struct dmi_system_id *dmi = dmi_first_match(sysids);
+-	const char *ver;
++	int year, month, date;
++	char buf[9];
  
- extern void nfnl_lock(void);
---- a/net/netfilter/nf_conntrack_netlink.c
-+++ b/net/netfilter/nf_conntrack_netlink.c
-@@ -571,7 +571,8 @@ nla_put_failure:
- nlmsg_failure:
- 	kfree_skb(skb);
- errout:
--	nfnetlink_set_err(0, group, -ENOBUFS);
-+	if (nfnetlink_set_err(0, group, -ENOBUFS) > 0)
-+		return -ENOBUFS;
- 	return 0;
- }
- #endif /* CONFIG_NF_CONNTRACK_EVENTS */
---- a/net/netfilter/nfnetlink.c
-+++ b/net/netfilter/nfnetlink.c
-@@ -114,9 +114,9 @@ int nfnetlink_send(struct sk_buff *skb,
- }
- EXPORT_SYMBOL_GPL(nfnetlink_send);
+ 	if (!dmi || pdev->bus->number || pdev->devfn != PCI_DEVFN(0x1f, 2))
+ 		return false;
  
--void nfnetlink_set_err(u32 pid, u32 group, int error)
-+int nfnetlink_set_err(u32 pid, u32 group, int error)
- {
--	netlink_set_err(nfnl, pid, group, error);
-+	return netlink_set_err(nfnl, pid, group, error);
- }
- EXPORT_SYMBOL_GPL(nfnetlink_set_err);
+-	ver = dmi_get_system_info(DMI_BIOS_VERSION);
++	dmi_get_date(DMI_BIOS_DATE, &year, &month, &date);
++	snprintf(buf, sizeof(buf), "%04d%02d%02d", year, month, date);
  
+-	return !ver || strcmp(ver, dmi->driver_data) < 0;
++	return strcmp(buf, dmi->driver_data) < 0;
+ }
+ 
+ static bool ahci_broken_online(struct pci_dev *pdev)
 
 
