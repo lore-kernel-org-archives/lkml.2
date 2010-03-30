@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302Ab0C3M7o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 08:59:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12488 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756145Ab0C3M7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 08:59:43 -0400
-Date: Tue, 30 Mar 2010 13:01:24 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       Americo Wang <xiyou.wangcong@gmail.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Roland McGrath <roland@redhat.com>,
-       Spencer Candland <spencer@bluehost.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm 2/4] cputimers: make sure thread_group_cputime()
-	can't count the same thread twice lockless
-Message-ID: <20100330110124.GA2566@dhcp-lab-161.englab.brq.redhat.com>
-References: <20100324204550.GA31777@redhat.com> <20100326035344.GQ3308@balbir.in.ibm.com> <20100326214906.GA18467@redhat.com> <20100329111731.GA4488@dhcp-lab-161.englab.brq.redhat.com> <20100329125415.GA22451@redhat.com> <20100329181204.GA16356@redhat.com> <20100329181329.GC16356@redhat.com>
+	id S1755950Ab0C3NPO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 09:15:14 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:35172 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754523Ab0C3NPM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 09:15:12 -0400
+Date: Tue, 30 Mar 2010 09:12:21 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Shanyu Zhao <shanyu.zhao@intel.com>, Zhu Yi <yi.zhu@intel.com>,
+       Reinette Chatre <reinette.chatre@intel.com>,
+       Johannes Berg <johannes.berg@intel.com>
+Subject: Re: linux-next: manual merge of the net tree with the
+	wireless-current tree
+Message-ID: <20100330131220.GA13120@tuxdriver.com>
+References: <20100330133745.27295ee0.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100329181329.GC16356@redhat.com>
+In-Reply-To: <20100330133745.27295ee0.sfr@canb.auug.org.au>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 08:13:29PM +0200, Oleg Nesterov wrote:
-> - change __exit_signal() to do __unhash_process() before we accumulate
->   the counters in ->signal
+On Tue, Mar 30, 2010 at 01:37:45PM +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> - add a couple of barriers into thread_group_cputime() and __exit_signal()
->   to make sure thread_group_cputime() can never account the same thread
->   twice if it races with exit.
->
->   If any thread T was already accounted in ->signal, next_thread() or
->   pid_alive() must see the result of __unhash_process(T).
+> Today's linux-next merge of the net tree got a conflict in
+> drivers/net/wireless/iwlwifi/iwl-agn.c between commit
+> d4dca4e53fde2953d74198a2c445db1d36ed9fd2 ("iwlwifi: clear unattended
+> interrupts in tasklet") from the wireless-current tree and commit
+> a4c8b2a692601de0a7bcb032b69f806050944dff ("iwlwifi: move ICT data to agn
+> part of union") from the net tree.
+> 
+> I fixed it up (see below) and can carry the fix for a while.
 
-Memory barriers prevents to account times twice, but as we write
-sig->{u,s}time and sig->sum_sched_runtime on one cpu and read them
-on another cpu, without a lock, this patch make theoretically possible
-that some accumulated values of struct task_cputime may include exited
-task values and some not. In example times->utime will include values
-from 10 threads, and times->{stime,sum_exec_runtime} values form 9
-threads, because local cpu updates sig->utime but not two other values.
-This can make scaling in thread_group_times() not correct. I'm not sure
-how big drawback is that.
+Yes, that looks correct to me -- at least, that's what I did in
+wireless-testing. :-)
 
-Stanislaw
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
