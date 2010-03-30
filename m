@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930Ab0CaACN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:02:13 -0400
-Received: from kroah.org ([198.145.64.141]:45397 "EHLO coco.kroah.org"
+	id S1757502Ab0CaAG1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:06:27 -0400
+Received: from kroah.org ([198.145.64.141]:45251 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932303Ab0C3XSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:45 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:57 2010
-Message-Id: <20100330225657.012198937@linux.site>
+	id S932252Ab0C3XSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:24 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:41 2010
+Message-Id: <20100330225640.737941898@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:56:06 -0700
+Date: Tue, 30 Mar 2010 15:55:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       575726@bugs.debian.org, linux-wireless <linux-wireless@vger.kernel.org>,
-       John Halton <johnhalton@gmail.com>,
-       Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
-       Ben Hutchings <ben@decadent.org.uk>,
+       Clemens Ladisch <clemens@ladisch.de>,
+       Alan Stern <stern@rowland.harvard.edu>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [088/116] rt2860sta: Fix argument to linux_pci_unmap_single()
+Subject: [065/116] USB: EHCI: adjust ehci_iso_stream for changes in ehci_qh
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,42 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-John Halton wrote in <http://bugs.debian.org/575726>:
-> Whenever wpa_supplicant is deactivated (whether by killing the process or
-> during a normal shutdown) I am getting a kerneloops that prevents the
-> computer from completing shutdown. Here is the relevant syslog output:
+commit 1082f57abfa26590b60c43f503afb24102a37016 upstream.
 
-The backtrace points to an incorrect call from RTMPFreeTxRxRingMemory()
-into linux_pci_unmap_single().  This appears to have been fixed in Linux
-2.6.33 by this change:
+The EHCI driver stores in usb_host_endpoint.hcpriv a pointer to either
+an ehci_qh or an ehci_iso_stream structure, and uses the contents of the
+hw_info1 field to distinguish the two cases.
 
-commit ca97b8388838ee9ea4b4bad04948f8f7f8a607a3
-Author: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Date:   Tue Sep 22 20:44:07 2009 +0200
+After ehci_qh was split into hw and sw parts, ehci_iso_stream must also
+be adjusted so that it again looks like an ehci_qh structure.
 
-    Staging: rt28x0: updates from vendor's V2.1.0.0 drivers
+This fixes a NULL pointer access in ehci_endpoint_disable() when it
+tries to access qh->hw->hw_info1.
 
-For stable-2.6.32, just fix this one function call.
-
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Reported-by: Colin Fletcher <colin.m.fletcher@googlemail.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/rt2860/common/2860_rtmp_init.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/ehci-hcd.c   |    2 +-
+ drivers/usb/host/ehci-sched.c |    4 ++--
+ drivers/usb/host/ehci.h       |    5 ++---
+ 3 files changed, 5 insertions(+), 6 deletions(-)
 
---- a/drivers/staging/rt2860/common/2860_rtmp_init.c
-+++ b/drivers/staging/rt2860/common/2860_rtmp_init.c
-@@ -716,7 +716,7 @@ VOID RTMPFreeTxRxRingMemory(
- 	{
- 		if ((pAd->RxRing.Cell[index].DmaBuf.AllocVa) && (pAd->RxRing.Cell[index].pNdisPacket))
- 		{
--			PCI_UNMAP_SINGLE(pObj->pci_dev, pAd->RxRing.Cell[index].DmaBuf.AllocPa, pAd->RxRing.Cell[index].DmaBuf.AllocSize, PCI_DMA_FROMDEVICE);
-+			PCI_UNMAP_SINGLE(pAd, pAd->RxRing.Cell[index].DmaBuf.AllocPa, pAd->RxRing.Cell[index].DmaBuf.AllocSize, PCI_DMA_FROMDEVICE);
- 			RELEASE_NDIS_PACKET(pAd, pAd->RxRing.Cell[index].pNdisPacket, NDIS_STATUS_SUCCESS);
- 		}
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -993,7 +993,7 @@ rescan:
+ 	/* endpoints can be iso streams.  for now, we don't
+ 	 * accelerate iso completions ... so spin a while.
+ 	 */
+-	if (qh->hw->hw_info1 == 0) {
++	if (qh->hw == NULL) {
+ 		ehci_vdbg (ehci, "iso delay\n");
+ 		goto idle_timeout;
  	}
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -1121,8 +1121,8 @@ iso_stream_find (struct ehci_hcd *ehci,
+ 					urb->interval);
+ 		}
+ 
+-	/* if dev->ep [epnum] is a QH, info1.maxpacket is nonzero */
+-	} else if (unlikely (stream->hw_info1 != 0)) {
++	/* if dev->ep [epnum] is a QH, hw is set */
++	} else if (unlikely (stream->hw != NULL)) {
+ 		ehci_dbg (ehci, "dev %s ep%d%s, not iso??\n",
+ 			urb->dev->devpath, epnum,
+ 			usb_pipein(urb->pipe) ? "in" : "out");
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -394,9 +394,8 @@ struct ehci_iso_sched {
+  * acts like a qh would, if EHCI had them for ISO.
+  */
+ struct ehci_iso_stream {
+-	/* first two fields match QH, but info1 == 0 */
+-	__hc32			hw_next;
+-	__hc32			hw_info1;
++	/* first field matches ehci_hq, but is NULL */
++	struct ehci_qh_hw	*hw;
+ 
+ 	u32			refcount;
+ 	u8			bEndpointAddress;
 
 
