@@ -1,83 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755813Ab0C3GqH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 02:46:07 -0400
-Received: from ozlabs.org ([203.10.76.45]:44664 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755587Ab0C3GqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 02:46:05 -0400
-Subject: Re: [PATCH 07/31] lmb: Add reserve_lmb/free_lmb
-From: Michael Ellerman <michael@ellerman.id.au>
-Reply-To: michael@ellerman.id.au
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
+	id S1755838Ab0C3GqX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 02:46:23 -0400
+Received: from mail-pz0-f173.google.com ([209.85.222.173]:41739 "EHLO
+	mail-pz0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755816Ab0C3GqV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 02:46:21 -0400
+X-Greylist: delayed 489 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Mar 2010 02:46:20 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Gclf3mu4elJObKNzqEXLphkxNDd/XLwqhYAMY70nATikPWxs9dCD7GtfqxrIavsJHE
+         CutpgNxWyj3p8Af0Nv6YLhQwDC4oeeCUp6EnbYy9FHdQBfJxQ0MRAO3L20NQfv5Snomv
+         +V0DPtrN34qMaHC+45pvQmpQs0HvuS2VDPkT4=
+MIME-Version: 1.0
+In-Reply-To: <1269930015-863-7-git-send-regression-fweisbec@gmail.com>
+References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com>
+	 <1269930015-863-7-git-send-regression-fweisbec@gmail.com>
+Date: Tue, 30 Mar 2010 09:38:11 +0300
+Message-ID: <b6fcc0a1003292338yafeb3d3k37fb3fa79af5340c@mail.gmail.com>
+Subject: Re: [PATCH 6/6] procfs: Kill the bkl in ioctl
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+       Thomas Gleixner <tglx@linutronix.de>,
        Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-In-Reply-To: <4BB19656.9040803@kernel.org>
-References: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
-	 <1269830604-26214-8-git-send-email-yinghai@kernel.org>
-	 <1269865322.24620.42.camel@concordia>  <4BB0D92C.3010103@kernel.org>
-	 <1269901252.2286.11.camel@concordia> <1269905491.7101.40.camel@pasglop>
-	 <4BB13FDB.9060006@kernel.org> <1269926794.7101.46.camel@pasglop>
-	 <4BB19656.9040803@kernel.org>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-vLj7XHQ4TkGgQS9dvZvf"
-Date: Tue, 30 Mar 2010 17:46:02 +1100
-Message-ID: <1269931562.15854.83.camel@concordia>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+       John Kacur <jkacur@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 30, 2010 at 9:20 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> --- a/fs/proc/inode.c
+> +++ b/fs/proc/inode.c
+> @@ -231,9 +231,9 @@ static long proc_reg_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
+>                if (rv == -ENOIOCTLCMD)
+>                        rv = -EINVAL;
+>        } else if (ioctl) {
+> -               lock_kernel();
+> +               WARN_ONCE(1, "Procfs ioctl handlers must use unlocked_ioctl, "
+> +                         "%pf will be called without the Bkl held\n", ioctl);
+>                rv = ioctl(file->f_path.dentry->d_inode, file, cmd, arg);
+> -               unlock_kernel();
 
---=-vLj7XHQ4TkGgQS9dvZvf
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, 2010-03-29 at 23:12 -0700, Yinghai Lu wrote:
-> On 03/29/2010 10:26 PM, Benjamin Herrenschmidt wrote:
-> > On Mon, 2010-03-29 at 17:03 -0700, Yinghai Lu wrote:
-> >>
-> >> in short: It could make us to avoid use the range that we are going to
-> >> reserve,
-> >>       when we try to get new position new lmb.reserved.region.=20
-> >=20
-> > I'm not too sure I follow you. For the resizing, I would just basically
-> > call a low level variant of alloc (__lmb_alloc ?) that explicitely
-> > doesn't honor the total-2 "reserved" entries in the array.
->=20
-> 1. you want to reserve rangeA
-> 2. before that will check if region array is big enough,
-> 3. if region is not big enough, will call lmb_alloc to get new range.
->    lmb_alloc could return rangB that is overlapped with rangeA
-
-So instead you do it the other way.
-
-1. you want to reserve rangeA
-2. you reserve rangeA
-3. if reserving rangeA consumed a slot in the array then you check if
-you have at least two free slots. If not you realloc. You don't need any
-special tricks because you have space to lmb_alloc() a new area and move
-everything over.
-
-cheers
-
---=-vLj7XHQ4TkGgQS9dvZvf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEABECAAYFAkuxnikACgkQdSjSd0sB4dJ/PwCgtPRHdf4Kul/aIgvEPig9BZqa
-DX4AoLJkuv3QmeakR+FqgMIrGD6tjppv
-=LZVB
------END PGP SIGNATURE-----
-
---=-vLj7XHQ4TkGgQS9dvZvf--
-
+Then delete the branch.
+Or go through formal feature-removal procedure.
