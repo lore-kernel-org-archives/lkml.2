@@ -1,280 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757170Ab0C3Xi4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:38:56 -0400
-Received: from kroah.org ([198.145.64.141]:46316 "EHLO coco.kroah.org"
+	id S932297Ab0CaAMT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:12:19 -0400
+Received: from kroah.org ([198.145.64.141]:51931 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932664Ab0C3XUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:44 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:17 2010
-Message-Id: <20100330224816.588702285@linux.site>
+	id S932169Ab0C3XRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:17:53 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:22 2010
+Message-Id: <20100330225621.992386498@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:00 -0700
+Date: Tue, 30 Mar 2010 15:55:15 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel Taylor <daniel.taylor@wdc.com>,
-       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-       "H. Peter Anvin" <hpa@zytor.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [086/156] fs/partitions/msdos: add support for large disks
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+       Ming Lei <tom.leiming@gmail.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [037/116] ath9k: fix lockdep warning when unloading module
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Daniel Taylor <Daniel.Taylor@wdc.com>
+From: Ming Lei <tom.leiming@gmail.com>
 
-commit 3fbf586cf7f245392142e5407c2a56f1cff979b6 upstream.
+commit a9f042cbe5284f34ccff15f3084477e11b39b17b upstream.
 
-In order to use disks larger than 2TiB on Windows XP, it is necessary to
-use 4096-byte logical sectors in an MBR.
+Since txq->axq_lock may be hold in softirq context, it must be
+acquired with spin_lock_bh() instead of spin_lock() if softieq is
+enabled.
 
-Although the kernel storage and functions called from msdos.c used
-"sector_t" internally, msdos.c still used u32 variables, which results in
-the ability to handle XP-compatible large disks.
+The patch fixes the lockdep warning below when unloading ath9k modules.
 
-This patch changes the internal variables to "sector_t".
+=================================
+[ INFO: inconsistent lock state ]
+2.6.33-wl #12
+---------------------------------
+inconsistent {IN-SOFTIRQ-W} -> {SOFTIRQ-ON-W} usage.
+rmmod/3642 [HC0[0]:SC0[0]:HE1:SE1] takes:
+ (&(&txq->axq_lock)->rlock){+.?...}, at: [<ffffffffa03568c3>] ath_tx_node_cleanup+0x62/0x180 [ath9k]
+{IN-SOFTIRQ-W} state was registered at:
+  [<ffffffff8107577d>] __lock_acquire+0x2f6/0xd35
+  [<ffffffff81076289>] lock_acquire+0xcd/0xf1
+  [<ffffffff813a7486>] _raw_spin_lock_bh+0x3b/0x6e
+  [<ffffffffa0356b49>] spin_lock_bh+0xe/0x10 [ath9k]
+  [<ffffffffa0358ec7>] ath_tx_tasklet+0xcd/0x391 [ath9k]
+  [<ffffffffa0354f5f>] ath9k_tasklet+0x70/0xc8 [ath9k]
+  [<ffffffff8104e601>] tasklet_action+0x8c/0xf4
+  [<ffffffff8104f459>] __do_softirq+0xf8/0x1cd
+  [<ffffffff8100ab1c>] call_softirq+0x1c/0x30
+  [<ffffffff8100c2cf>] do_softirq+0x4b/0xa3
+  [<ffffffff8104f045>] irq_exit+0x4a/0x8c
+  [<ffffffff813acccc>] do_IRQ+0xac/0xc3
+  [<ffffffff813a7d53>] ret_from_intr+0x0/0x16
+  [<ffffffff81302d52>] cpuidle_idle_call+0x9e/0xf8
+  [<ffffffff81008be7>] cpu_idle+0x62/0x9d
+  [<ffffffff81391c1a>] rest_init+0x7e/0x80
+  [<ffffffff818bbd38>] start_kernel+0x3e8/0x3f3
+  [<ffffffff818bb2bc>] x86_64_start_reservations+0xa7/0xab
+  [<ffffffff818bb3b8>] x86_64_start_kernel+0xf8/0x107
+irq event stamp: 42037
+hardirqs last  enabled at (42037): [<ffffffff813a7b21>] _raw_spin_unlock_irqrestore+0x47/0x56
+hardirqs last disabled at (42036): [<ffffffff813a72f4>] _raw_spin_lock_irqsave+0x2b/0x88
+softirqs last  enabled at (42000): [<ffffffffa0353ea6>] spin_unlock_bh+0xe/0x10 [ath9k]
+softirqs last disabled at (41998): [<ffffffff813a7463>] _raw_spin_lock_bh+0x18/0x6e
 
-Daniel said: "In the near future, WD will be releasing products that need
-this patch".
+other info that might help us debug this:
+4 locks held by rmmod/3642:
+ #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff8132c10d>] rtnl_lock+0x17/0x19
+ #1:  (&wdev->mtx){+.+.+.}, at: [<ffffffffa01e53f2>] cfg80211_netdev_notifier_call+0x28d/0x46d [cfg80211]
+ #2:  (&ifmgd->mtx){+.+.+.}, at: [<ffffffffa0260834>] ieee80211_mgd_deauth+0x3f/0x17e [mac80211]
+ #3:  (&local->sta_mtx){+.+.+.}, at: [<ffffffffa025a381>] sta_info_destroy_addr+0x2b/0x5e [mac80211]
 
-[hirofumi@mail.parknet.co.jp: tweaks and fix]
-Signed-off-by: Daniel Taylor <daniel.taylor@wdc.com>
-Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+stack backtrace:
+Pid: 3642, comm: rmmod Not tainted 2.6.33-wl #12
+Call Trace:
+ [<ffffffff81074469>] valid_state+0x178/0x18b
+ [<ffffffff81014f94>] ? save_stack_trace+0x2f/0x4c
+ [<ffffffff81074e08>] ? check_usage_backwards+0x0/0x88
+ [<ffffffff8107458f>] mark_lock+0x113/0x230
+ [<ffffffff810757f1>] __lock_acquire+0x36a/0xd35
+ [<ffffffff8101018d>] ? native_sched_clock+0x2d/0x5f
+ [<ffffffffa03568c3>] ? ath_tx_node_cleanup+0x62/0x180 [ath9k]
+ [<ffffffff81076289>] lock_acquire+0xcd/0xf1
+ [<ffffffffa03568c3>] ? ath_tx_node_cleanup+0x62/0x180 [ath9k]
+ [<ffffffff810732eb>] ? trace_hardirqs_off+0xd/0xf
+ [<ffffffff813a7193>] _raw_spin_lock+0x36/0x69
+ [<ffffffffa03568c3>] ? ath_tx_node_cleanup+0x62/0x180 [ath9k]
+ [<ffffffffa03568c3>] ath_tx_node_cleanup+0x62/0x180 [ath9k]
+ [<ffffffff810749ed>] ? trace_hardirqs_on+0xd/0xf
+ [<ffffffffa0353950>] ath9k_sta_remove+0x22/0x26 [ath9k]
+ [<ffffffffa025a08f>] __sta_info_destroy+0x1ad/0x38c [mac80211]
+ [<ffffffffa025a394>] sta_info_destroy_addr+0x3e/0x5e [mac80211]
+ [<ffffffffa02605d6>] ieee80211_set_disassoc+0x175/0x180 [mac80211]
+ [<ffffffffa026084d>] ieee80211_mgd_deauth+0x58/0x17e [mac80211]
+ [<ffffffff813a60c1>] ? __mutex_lock_common+0x37f/0x3a4
+ [<ffffffffa01e53f2>] ? cfg80211_netdev_notifier_call+0x28d/0x46d [cfg80211]
+ [<ffffffffa026786e>] ieee80211_deauth+0x1e/0x20 [mac80211]
+ [<ffffffffa01f47f9>] __cfg80211_mlme_deauth+0x130/0x13f [cfg80211]
+ [<ffffffffa01e53f2>] ? cfg80211_netdev_notifier_call+0x28d/0x46d [cfg80211]
+ [<ffffffff810732eb>] ? trace_hardirqs_off+0xd/0xf
+ [<ffffffffa01f7eee>] __cfg80211_disconnect+0x111/0x189 [cfg80211]
+ [<ffffffffa01e5433>] cfg80211_netdev_notifier_call+0x2ce/0x46d [cfg80211]
+ [<ffffffff813aa9ea>] notifier_call_chain+0x37/0x63
+ [<ffffffff81068c98>] raw_notifier_call_chain+0x14/0x16
+ [<ffffffff81322e97>] call_netdevice_notifiers+0x1b/0x1d
+ [<ffffffff8132386d>] dev_close+0x6a/0xa6
+ [<ffffffff8132395f>] rollback_registered_many+0xb6/0x2f4
+ [<ffffffff81323bb8>] unregister_netdevice_many+0x1b/0x66
+ [<ffffffffa026494f>] ieee80211_remove_interfaces+0xc5/0xd0 [mac80211]
+ [<ffffffffa02580a2>] ieee80211_unregister_hw+0x47/0xe8 [mac80211]
+ [<ffffffffa035290e>] ath9k_deinit_device+0x7a/0x9b [ath9k]
+ [<ffffffffa035bc26>] ath_pci_remove+0x38/0x76 [ath9k]
+ [<ffffffff8120940a>] pci_device_remove+0x2d/0x51
+ [<ffffffff8129d797>] __device_release_driver+0x7b/0xd1
+ [<ffffffff8129d885>] driver_detach+0x98/0xbe
+ [<ffffffff8129ca7a>] bus_remove_driver+0x94/0xb7
+ [<ffffffff8129ddd6>] driver_unregister+0x6c/0x74
+ [<ffffffff812096d2>] pci_unregister_driver+0x46/0xad
+ [<ffffffffa035bae1>] ath_pci_exit+0x15/0x17 [ath9k]
+ [<ffffffffa035e1a2>] ath9k_exit+0xe/0x2f [ath9k]
+ [<ffffffff8108050a>] sys_delete_module+0x1c7/0x236
+ [<ffffffff813a7df5>] ? retint_swapgs+0x13/0x1b
+ [<ffffffff810749b5>] ? trace_hardirqs_on_caller+0x119/0x144
+ [<ffffffff8109b9f6>] ? audit_syscall_entry+0x11e/0x14a
+ [<ffffffff81009bb2>] system_call_fastpath+0x16/0x1b
+wlan1: deauthenticating from 00:23:cd:e1:f9:b2 by local choice (reason=3)
+PM: Removing info for No Bus:wlan1
+cfg80211: Calling CRDA to update world regulatory domain
+PM: Removing info for No Bus:rfkill2
+PM: Removing info for No Bus:phy1
+ath9k 0000:16:00.0: PCI INT A disabled
+
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/partitions/msdos.c |   74 ++++++++++++++++++++++++++------------------------
- 1 file changed, 39 insertions(+), 35 deletions(-)
+ drivers/net/wireless/ath/ath9k/xmit.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/partitions/msdos.c
-+++ b/fs/partitions/msdos.c
-@@ -31,14 +31,17 @@
-  */
- #include <asm/unaligned.h>
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -2210,7 +2210,7 @@ void ath_tx_node_cleanup(struct ath_soft
+ 		if (ATH_TXQ_SETUP(sc, i)) {
+ 			txq = &sc->tx.txq[i];
  
--#define SYS_IND(p)	(get_unaligned(&p->sys_ind))
--#define NR_SECTS(p)	({ __le32 __a =	get_unaligned(&p->nr_sects);	\
--				le32_to_cpu(__a); \
--			})
--
--#define START_SECT(p)	({ __le32 __a =	get_unaligned(&p->start_sect);	\
--				le32_to_cpu(__a); \
--			})
-+#define SYS_IND(p)	get_unaligned(&p->sys_ind)
-+
-+static inline sector_t nr_sects(struct partition *p)
-+{
-+	return (sector_t)get_unaligned_le32(&p->nr_sects);
-+}
-+
-+static inline sector_t start_sect(struct partition *p)
-+{
-+	return (sector_t)get_unaligned_le32(&p->start_sect);
-+}
+-			spin_lock(&txq->axq_lock);
++			spin_lock_bh(&txq->axq_lock);
  
- static inline int is_extended_partition(struct partition *p)
- {
-@@ -104,13 +107,13 @@ static int aix_magic_present(unsigned ch
+ 			list_for_each_entry_safe(ac,
+ 					ac_tmp, &txq->axq_acq, list) {
+@@ -2231,7 +2231,7 @@ void ath_tx_node_cleanup(struct ath_soft
+ 				}
+ 			}
  
- static void
- parse_extended(struct parsed_partitions *state, struct block_device *bdev,
--			u32 first_sector, u32 first_size)
-+			sector_t first_sector, sector_t first_size)
- {
- 	struct partition *p;
- 	Sector sect;
- 	unsigned char *data;
--	u32 this_sector, this_size;
--	int sector_size = bdev_logical_block_size(bdev) / 512;
-+	sector_t this_sector, this_size;
-+	sector_t sector_size = bdev_logical_block_size(bdev) / 512;
- 	int loopct = 0;		/* number of links followed
- 				   without finding a data partition */
- 	int i;
-@@ -145,14 +148,14 @@ parse_extended(struct parsed_partitions
- 		 * First process the data partition(s)
- 		 */
- 		for (i=0; i<4; i++, p++) {
--			u32 offs, size, next;
--			if (!NR_SECTS(p) || is_extended_partition(p))
-+			sector_t offs, size, next;
-+			if (!nr_sects(p) || is_extended_partition(p))
- 				continue;
- 
- 			/* Check the 3rd and 4th entries -
- 			   these sometimes contain random garbage */
--			offs = START_SECT(p)*sector_size;
--			size = NR_SECTS(p)*sector_size;
-+			offs = start_sect(p)*sector_size;
-+			size = nr_sects(p)*sector_size;
- 			next = this_sector + offs;
- 			if (i >= 2) {
- 				if (offs + size > this_size)
-@@ -179,13 +182,13 @@ parse_extended(struct parsed_partitions
- 		 */
- 		p -= 4;
- 		for (i=0; i<4; i++, p++)
--			if (NR_SECTS(p) && is_extended_partition(p))
-+			if (nr_sects(p) && is_extended_partition(p))
- 				break;
- 		if (i == 4)
- 			goto done;	 /* nothing left to do */
- 
--		this_sector = first_sector + START_SECT(p) * sector_size;
--		this_size = NR_SECTS(p) * sector_size;
-+		this_sector = first_sector + start_sect(p) * sector_size;
-+		this_size = nr_sects(p) * sector_size;
- 		put_dev_sector(sect);
- 	}
- done:
-@@ -197,7 +200,7 @@ done:
- 
- static void
- parse_solaris_x86(struct parsed_partitions *state, struct block_device *bdev,
--			u32 offset, u32 size, int origin)
-+			sector_t offset, sector_t size, int origin)
- {
- #ifdef CONFIG_SOLARIS_X86_PARTITION
- 	Sector sect;
-@@ -244,7 +247,7 @@ parse_solaris_x86(struct parsed_partitio
-  */
- static void
- parse_bsd(struct parsed_partitions *state, struct block_device *bdev,
--		u32 offset, u32 size, int origin, char *flavour,
-+		sector_t offset, sector_t size, int origin, char *flavour,
- 		int max_partitions)
- {
- 	Sector sect;
-@@ -263,7 +266,7 @@ parse_bsd(struct parsed_partitions *stat
- 	if (le16_to_cpu(l->d_npartitions) < max_partitions)
- 		max_partitions = le16_to_cpu(l->d_npartitions);
- 	for (p = l->d_partitions; p - l->d_partitions < max_partitions; p++) {
--		u32 bsd_start, bsd_size;
-+		sector_t bsd_start, bsd_size;
- 
- 		if (state->next == state->limit)
- 			break;
-@@ -290,7 +293,7 @@ parse_bsd(struct parsed_partitions *stat
- 
- static void
- parse_freebsd(struct parsed_partitions *state, struct block_device *bdev,
--		u32 offset, u32 size, int origin)
-+		sector_t offset, sector_t size, int origin)
- {
- #ifdef CONFIG_BSD_DISKLABEL
- 	parse_bsd(state, bdev, offset, size, origin,
-@@ -300,7 +303,7 @@ parse_freebsd(struct parsed_partitions *
- 
- static void
- parse_netbsd(struct parsed_partitions *state, struct block_device *bdev,
--		u32 offset, u32 size, int origin)
-+		sector_t offset, sector_t size, int origin)
- {
- #ifdef CONFIG_BSD_DISKLABEL
- 	parse_bsd(state, bdev, offset, size, origin,
-@@ -310,7 +313,7 @@ parse_netbsd(struct parsed_partitions *s
- 
- static void
- parse_openbsd(struct parsed_partitions *state, struct block_device *bdev,
--		u32 offset, u32 size, int origin)
-+		sector_t offset, sector_t size, int origin)
- {
- #ifdef CONFIG_BSD_DISKLABEL
- 	parse_bsd(state, bdev, offset, size, origin,
-@@ -324,7 +327,7 @@ parse_openbsd(struct parsed_partitions *
-  */
- static void
- parse_unixware(struct parsed_partitions *state, struct block_device *bdev,
--		u32 offset, u32 size, int origin)
-+		sector_t offset, sector_t size, int origin)
- {
- #ifdef CONFIG_UNIXWARE_DISKLABEL
- 	Sector sect;
-@@ -348,7 +351,8 @@ parse_unixware(struct parsed_partitions
- 
- 		if (p->s_label != UNIXWARE_FS_UNUSED)
- 			put_partition(state, state->next++,
--						START_SECT(p), NR_SECTS(p));
-+				      le32_to_cpu(p->start_sect),
-+				      le32_to_cpu(p->nr_sects));
- 		p++;
- 	}
- 	put_dev_sector(sect);
-@@ -363,7 +367,7 @@ parse_unixware(struct parsed_partitions
-  */
- static void
- parse_minix(struct parsed_partitions *state, struct block_device *bdev,
--		u32 offset, u32 size, int origin)
-+		sector_t offset, sector_t size, int origin)
- {
- #ifdef CONFIG_MINIX_SUBPARTITION
- 	Sector sect;
-@@ -390,7 +394,7 @@ parse_minix(struct parsed_partitions *st
- 			/* add each partition in use */
- 			if (SYS_IND(p) == MINIX_PARTITION)
- 				put_partition(state, state->next++,
--					      START_SECT(p), NR_SECTS(p));
-+					      start_sect(p), nr_sects(p));
+-			spin_unlock(&txq->axq_lock);
++			spin_unlock_bh(&txq->axq_lock);
  		}
- 		printk(" >\n");
  	}
-@@ -401,7 +405,7 @@ parse_minix(struct parsed_partitions *st
- static struct {
- 	unsigned char id;
- 	void (*parse)(struct parsed_partitions *, struct block_device *,
--			u32, u32, int);
-+			sector_t, sector_t, int);
- } subtypes[] = {
- 	{FREEBSD_PARTITION, parse_freebsd},
- 	{NETBSD_PARTITION, parse_netbsd},
-@@ -415,7 +419,7 @@ static struct {
-  
- int msdos_partition(struct parsed_partitions *state, struct block_device *bdev)
- {
--	int sector_size = bdev_logical_block_size(bdev) / 512;
-+	sector_t sector_size = bdev_logical_block_size(bdev) / 512;
- 	Sector sect;
- 	unsigned char *data;
- 	struct partition *p;
-@@ -483,8 +487,8 @@ int msdos_partition(struct parsed_partit
- 
- 	state->next = 5;
- 	for (slot = 1 ; slot <= 4 ; slot++, p++) {
--		u32 start = START_SECT(p)*sector_size;
--		u32 size = NR_SECTS(p)*sector_size;
-+		sector_t start = start_sect(p)*sector_size;
-+		sector_t size = nr_sects(p)*sector_size;
- 		if (!size)
- 			continue;
- 		if (is_extended_partition(p)) {
-@@ -513,7 +517,7 @@ int msdos_partition(struct parsed_partit
- 		unsigned char id = SYS_IND(p);
- 		int n;
- 
--		if (!NR_SECTS(p))
-+		if (!nr_sects(p))
- 			continue;
- 
- 		for (n = 0; subtypes[n].parse && id != subtypes[n].id; n++)
-@@ -521,8 +525,8 @@ int msdos_partition(struct parsed_partit
- 
- 		if (!subtypes[n].parse)
- 			continue;
--		subtypes[n].parse(state, bdev, START_SECT(p)*sector_size,
--						NR_SECTS(p)*sector_size, slot);
-+		subtypes[n].parse(state, bdev, start_sect(p)*sector_size,
-+						nr_sects(p)*sector_size, slot);
- 	}
- 	put_dev_sector(sect);
- 	return 1;
+ }
 
 
