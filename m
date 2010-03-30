@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757764Ab0CaAaq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:30:46 -0400
-Received: from kroah.org ([198.145.64.141]:48850 "EHLO coco.kroah.org"
+	id S1757776Ab0CaAa6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:30:58 -0400
+Received: from kroah.org ([198.145.64.141]:48841 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756393Ab0C3XML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:11 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:22 2010
-Message-Id: <20100330225821.872106049@linux.site>
+	id S1756375Ab0C3XMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:10 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:21 2010
+Message-Id: <20100330225820.652208378@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:24 -0700
+Date: Tue, 30 Mar 2010 15:57:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       Chris McDermott <lcm@linux.vnet.ibm.com>,
-       Yinghai Lu <yinghai@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [22/89] x86, apic: use physical mode for IBM summit platforms
+       "Bryn M. Reeves" <bmr@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [20/89] [SCSI] megaraid_sas: remove sysfs poll_mode_io world writeable permissions
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,45 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
+From: Bryn M. Reeves <bmr@redhat.com>
 
-commit dfea91d5a7c795fd6f4e1a97489a98e4e767463e upstream.
+commit bb7d3f24c71e528989501617651b669fbed798cb upstream.
 
-Chris McDermott from IBM confirmed that hurricane chipset in IBM summit
-platforms doesn't support logical flat mode.  Irrespective of the other
-things like apic_id's, total number of logical cpu's, Linux kernel
-should default to physical mode for this system.
+/sys/bus/pci/drivers/megaraid_sas/poll_mode_io defaults to being
+world-writable, which seems bad (letting any user affect kernel driver
+behavior).
 
-The 32-bit kernel does so using the OEM checks for the IBM summit
-platform.  Add a similar OEM platform check for the 64bit kernel too.
+This turns off group and user write permissions, so that on typical
+production systems only root can write to it.
 
-Otherwise the linux kernel boot can hang on this platform under certain
-bios/platform settings.
-
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Tested-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Chris McDermott <lcm@linux.vnet.ibm.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Bryn M. Reeves <bmr@redhat.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/apic/apic_flat_64.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/scsi/megaraid/megaraid_sas.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/apic/apic_flat_64.c
-+++ b/arch/x86/kernel/apic/apic_flat_64.c
-@@ -240,6 +240,11 @@ static int physflat_acpi_madt_oem_check(
- 		printk(KERN_DEBUG "system APIC only can use physical flat");
- 		return 1;
- 	}
-+
-+	if (!strncmp(oem_id, "IBM", 3) && !strncmp(oem_table_id, "EXA", 3)) {
-+		printk(KERN_DEBUG "IBM Summit detected, will use apic physical");
-+		return 1;
-+	}
- #endif
+--- a/drivers/scsi/megaraid/megaraid_sas.c
++++ b/drivers/scsi/megaraid/megaraid_sas.c
+@@ -3451,7 +3451,7 @@ out:
+ 	return retval;
+ }
  
- 	return 0;
+-static DRIVER_ATTR(poll_mode_io, S_IRUGO|S_IWUGO,
++static DRIVER_ATTR(poll_mode_io, S_IRUGO|S_IWUSR,
+ 		megasas_sysfs_show_poll_mode_io,
+ 		megasas_sysfs_set_poll_mode_io);
+ 
 
 
