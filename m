@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756124Ab0C3JPi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 05:15:38 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:45571 "EHLO gir.skynet.ie"
+	id S1756116Ab0C3JQk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 05:16:40 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:45574 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756065Ab0C3JO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 05:14:57 -0400
+	id S1756044Ab0C3JOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 05:14:52 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andrea Arcangeli <aarcange@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 12/14] Add a tunable that decides when memory should be compacted and when it should be reclaimed
-Date: Tue, 30 Mar 2010 10:14:47 +0100
-Message-Id: <1269940489-5776-13-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 07/14] Move definition for LRU isolation modes to a header
+Date: Tue, 30 Mar 2010 10:14:42 +0100
+Message-Id: <1269940489-5776-8-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.6.5
 In-Reply-To: <1269940489-5776-1-git-send-email-mel@csn.ul.ie>
 References: <1269940489-5776-1-git-send-email-mel@csn.ul.ie>
@@ -27,149 +27,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel applies some heuristics when deciding if memory should be
-compacted or reclaimed to satisfy a high-order allocation. One of these
-is based on the fragmentation. If the index is below 500, memory will
-not be compacted. This choice is arbitrary and not based on data. To
-help optimise the system and set a sensible default for this value, this
-patch adds a sysctl extfrag_threshold. The kernel will only compact
-memory if the fragmentation index is above the extfrag_threshold.
+Currently, vmscan.c defines the isolation modes for
+__isolate_lru_page(). Memory compaction needs access to these modes for
+isolating pages for migration.  This patch exports them.
 
 Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Acked-by: Christoph Lameter <cl@linux-foundation.org>
 ---
- Documentation/sysctl/vm.txt |   18 ++++++++++++++++--
- include/linux/compaction.h  |    3 +++
- kernel/sysctl.c             |   15 +++++++++++++++
- mm/compaction.c             |   12 +++++++++++-
- 4 files changed, 45 insertions(+), 3 deletions(-)
+ include/linux/swap.h |    5 +++++
+ mm/vmscan.c          |    5 -----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index 803c018..878b1b4 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -27,6 +27,7 @@ Currently, these files are in /proc/sys/vm:
- - dirty_ratio
- - dirty_writeback_centisecs
- - drop_caches
-+- extfrag_threshold
- - hugepages_treat_as_movable
- - hugetlb_shm_group
- - laptop_mode
-@@ -131,8 +132,7 @@ out to disk.  This tunable expresses the interval between those wakeups, in
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 1f59d93..986b12d 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -238,6 +238,11 @@ static inline void lru_cache_add_active_file(struct page *page)
+ 	__lru_cache_add(page, LRU_ACTIVE_FILE);
+ }
  
- Setting this to zero disables periodic writeback altogether.
++/* LRU Isolation modes. */
++#define ISOLATE_INACTIVE 0	/* Isolate inactive pages. */
++#define ISOLATE_ACTIVE 1	/* Isolate active pages. */
++#define ISOLATE_BOTH 2		/* Isolate both active and inactive pages. */
++
+ /* linux/mm/vmscan.c */
+ extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 					gfp_t gfp_mask, nodemask_t *mask);
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 79c8098..ef89600 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -839,11 +839,6 @@ keep:
+ 	return nr_reclaimed;
+ }
  
--==============================================================
+-/* LRU Isolation modes. */
+-#define ISOLATE_INACTIVE 0	/* Isolate inactive pages. */
+-#define ISOLATE_ACTIVE 1	/* Isolate active pages. */
+-#define ISOLATE_BOTH 2		/* Isolate both active and inactive pages. */
 -
-+============================================================== 
- drop_caches
- 
- Writing to this will cause the kernel to drop clean caches, dentries and
-@@ -150,6 +150,20 @@ user should run `sync' first.
- 
- ==============================================================
- 
-+extfrag_threshold
-+
-+This parameter affects whether the kernel will compact memory or direct
-+reclaim to satisfy a high-order allocation. /proc/extfrag_index shows what
-+the fragmentation index for each order is in each zone in the system. Values
-+tending towards 0 imply allocations would fail due to lack of memory,
-+values towards 1000 imply failures are due to fragmentation and -1 implies
-+that the allocation will succeed as long as watermarks are met.
-+
-+The kernel will not compact memory in a zone if the
-+fragmentation index is <= extfrag_threshold. The default value is 500.
-+
-+==============================================================
-+
- hugepages_treat_as_movable
- 
- This parameter is only useful when kernelcore= is specified at boot time to
-diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-index faa3faf..ae98afc 100644
---- a/include/linux/compaction.h
-+++ b/include/linux/compaction.h
-@@ -11,6 +11,9 @@
- extern int sysctl_compact_memory;
- extern int sysctl_compaction_handler(struct ctl_table *table, int write,
- 			void __user *buffer, size_t *length, loff_t *ppos);
-+extern int sysctl_extfrag_threshold;
-+extern int sysctl_extfrag_handler(struct ctl_table *table, int write,
-+			void __user *buffer, size_t *length, loff_t *ppos);
- 
- extern int fragmentation_index(struct zone *zone, unsigned int order);
- extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 3838928..b8f292e 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -243,6 +243,11 @@ static int min_sched_shares_ratelimit = 100000; /* 100 usec */
- static int max_sched_shares_ratelimit = NSEC_PER_SEC; /* 1 second */
- #endif
- 
-+#ifdef CONFIG_COMPACTION
-+static int min_extfrag_threshold = 0;
-+static int max_extfrag_threshold = 1000;
-+#endif
-+
- static struct ctl_table kern_table[] = {
- 	{
- 		.procname	= "sched_child_runs_first",
-@@ -1111,6 +1116,16 @@ static struct ctl_table vm_table[] = {
- 		.mode		= 0200,
- 		.proc_handler	= sysctl_compaction_handler,
- 	},
-+	{
-+		.procname	= "extfrag_threshold",
-+		.data		= &sysctl_extfrag_threshold,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= sysctl_extfrag_handler,
-+		.extra1		= &min_extfrag_threshold,
-+		.extra2		= &max_extfrag_threshold,
-+	},
-+
- #endif /* CONFIG_COMPACTION */
- 	{
- 		.procname	= "min_free_kbytes",
-diff --git a/mm/compaction.c b/mm/compaction.c
-index e8ef511..3bb65d7 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -418,6 +418,8 @@ static unsigned long compact_zone_order(struct zone *zone,
- 	return compact_zone(zone, &cc);
- }
- 
-+int sysctl_extfrag_threshold = 500;
-+
- /**
-  * try_to_compact_pages - Direct compact to satisfy a high-order allocation
-  * @zonelist: The zonelist used for the current allocation
-@@ -476,7 +478,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 		 * Only compact if a failure would be due to fragmentation.
- 		 */
- 		fragindex = fragmentation_index(zone, order);
--		if (fragindex >= 0 && fragindex <= 500)
-+		if (fragindex >= 0 && fragindex <= sysctl_extfrag_threshold)
- 			continue;
- 
- 		if (fragindex == -1 && zone_watermark_ok(zone, order, watermark, 0, 0)) {
-@@ -556,6 +558,14 @@ int sysctl_compaction_handler(struct ctl_table *table, int write,
- 	return 0;
- }
- 
-+int sysctl_extfrag_handler(struct ctl_table *table, int write,
-+			void __user *buffer, size_t *length, loff_t *ppos)
-+{
-+	proc_dointvec_minmax(table, write, buffer, length, ppos);
-+
-+	return 0;
-+}
-+
- #if defined(CONFIG_SYSFS) && defined(CONFIG_NUMA)
- ssize_t sysfs_compact_node(struct sys_device *dev,
- 			struct sysdev_attribute *attr,
+ /*
+  * Attempt to remove the specified page from its LRU.  Only take this page
+  * if it is of the appropriate PageActive status.  Pages which are being
 -- 
 1.6.5
 
