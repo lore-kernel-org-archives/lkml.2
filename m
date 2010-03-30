@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab0C3JRB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 05:17:01 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:45557 "EHLO gir.skynet.ie"
+	id S1756092Ab0C3JRc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 05:17:32 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:45549 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756005Ab0C3JOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 05:14:51 -0400
+	id S1755996Ab0C3JOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 05:14:50 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andrea Arcangeli <aarcange@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 04/14] Allow CONFIG_MIGRATION to be set without CONFIG_NUMA or memory hot-remove
-Date: Tue, 30 Mar 2010 10:14:39 +0100
-Message-Id: <1269940489-5776-5-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 03/14] mm: Share the anon_vma ref counts between KSM and page migration
+Date: Tue, 30 Mar 2010 10:14:38 +0100
+Message-Id: <1269940489-5776-4-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.6.5
 In-Reply-To: <1269940489-5776-1-git-send-email-mel@csn.ul.ie>
 References: <1269940489-5776-1-git-send-email-mel@csn.ul.ie>
@@ -27,59 +27,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_MIGRATION currently depends on CONFIG_NUMA or on the architecture
-being able to hot-remove memory. The main users of page migration such as
-sys_move_pages(), sys_migrate_pages() and cpuset process migration are
-only beneficial on NUMA so it makes sense.
-
-As memory compaction will operate within a zone and is useful on both NUMA
-and non-NUMA systems, this patch allows CONFIG_MIGRATION to be set if the
-user selects CONFIG_COMPACTION as an option.
+For clarity of review, KSM and page migration have separate refcounts on
+the anon_vma. While clear, this is a waste of memory. This patch gets
+KSM and page migration to share their toys in a spirit of harmony.
 
 Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Reviewed-by: Christoph Lameter <cl@linux-foundation.org>
-Reviewed-by: Rik van Riel <riel@redhat.com>
 Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/Kconfig |   18 +++++++++++++++---
- 1 files changed, 15 insertions(+), 3 deletions(-)
+ include/linux/rmap.h |   50 ++++++++++++++++++--------------------------------
+ mm/ksm.c             |    4 ++--
+ mm/migrate.c         |    4 ++--
+ mm/rmap.c            |    6 ++----
+ 4 files changed, 24 insertions(+), 40 deletions(-)
 
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 9c61158..4fd75a0 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -172,6 +172,16 @@ config SPLIT_PTLOCK_CPUS
- 	default "4"
- 
- #
-+# support for memory compaction
-+config COMPACTION
-+	bool "Allow for memory compaction"
-+	def_bool y
-+	select MIGRATION
-+	depends on EXPERIMENTAL && HUGETLBFS && MMU
-+	help
-+	  Allows the compaction of memory for the allocation of huge pages.
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index 567d43f..7721674 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -26,11 +26,17 @@
+  */
+ struct anon_vma {
+ 	spinlock_t lock;	/* Serialize access to vma list */
+-#ifdef CONFIG_KSM
+-	atomic_t ksm_refcount;
+-#endif
+-#ifdef CONFIG_MIGRATION
+-	atomic_t migrate_refcount;
++#if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
 +
-+#
- # support for page migration
- #
- config MIGRATION
-@@ -180,9 +190,11 @@ config MIGRATION
- 	depends on NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE
- 	help
- 	  Allows the migration of the physical location of pages of processes
--	  while the virtual addresses are not changed. This is useful for
--	  example on NUMA systems to put pages nearer to the processors accessing
--	  the page.
-+	  while the virtual addresses are not changed. This is useful in
-+	  two situations. The first is on NUMA systems to put pages nearer
-+	  to the processors accessing. The second is when allocating huge
-+	  pages as migration can relocate pages to satisfy a huge page
-+	  allocation instead of reclaiming.
++	/*
++	 * The external_refcount is taken by either KSM or page migration
++	 * to take a reference to an anon_vma when there is no
++	 * guarantee that the vma of page tables will exist for
++	 * the duration of the operation. A caller that takes
++	 * the reference is responsible for clearing up the
++	 * anon_vma if they are the last user on release
++	 */
++	atomic_t external_refcount;
+ #endif
+ 	/*
+ 	 * NOTE: the LSB of the head.next is set by
+@@ -64,46 +70,26 @@ struct anon_vma_chain {
+ };
  
- config PHYS_ADDR_T_64BIT
- 	def_bool 64BIT || ARCH_PHYS_ADDR_T_64BIT
+ #ifdef CONFIG_MMU
+-#ifdef CONFIG_KSM
+-static inline void ksm_refcount_init(struct anon_vma *anon_vma)
++#if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
++static inline void anonvma_external_refcount_init(struct anon_vma *anon_vma)
+ {
+-	atomic_set(&anon_vma->ksm_refcount, 0);
++	atomic_set(&anon_vma->external_refcount, 0);
+ }
+ 
+-static inline int ksm_refcount(struct anon_vma *anon_vma)
++static inline int anonvma_external_refcount(struct anon_vma *anon_vma)
+ {
+-	return atomic_read(&anon_vma->ksm_refcount);
++	return atomic_read(&anon_vma->external_refcount);
+ }
+ #else
+-static inline void ksm_refcount_init(struct anon_vma *anon_vma)
++static inline void anonvma_external_refcount_init(struct anon_vma *anon_vma)
+ {
+ }
+ 
+-static inline int ksm_refcount(struct anon_vma *anon_vma)
++static inline int anonvma_external_refcount(struct anon_vma *anon_vma)
+ {
+ 	return 0;
+ }
+ #endif /* CONFIG_KSM */
+-#ifdef CONFIG_MIGRATION
+-static inline void migrate_refcount_init(struct anon_vma *anon_vma)
+-{
+-	atomic_set(&anon_vma->migrate_refcount, 0);
+-}
+-
+-static inline int migrate_refcount(struct anon_vma *anon_vma)
+-{
+-	return atomic_read(&anon_vma->migrate_refcount);
+-}
+-#else
+-static inline void migrate_refcount_init(struct anon_vma *anon_vma)
+-{
+-}
+-
+-static inline int migrate_refcount(struct anon_vma *anon_vma)
+-{
+-	return 0;
+-}
+-#endif /* CONFIG_MIGRATE */
+ 
+ static inline struct anon_vma *page_anon_vma(struct page *page)
+ {
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 8cdfc2a..3666d43 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -318,14 +318,14 @@ static void hold_anon_vma(struct rmap_item *rmap_item,
+ 			  struct anon_vma *anon_vma)
+ {
+ 	rmap_item->anon_vma = anon_vma;
+-	atomic_inc(&anon_vma->ksm_refcount);
++	atomic_inc(&anon_vma->external_refcount);
+ }
+ 
+ static void drop_anon_vma(struct rmap_item *rmap_item)
+ {
+ 	struct anon_vma *anon_vma = rmap_item->anon_vma;
+ 
+-	if (atomic_dec_and_lock(&anon_vma->ksm_refcount, &anon_vma->lock)) {
++	if (atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->lock)) {
+ 		int empty = list_empty(&anon_vma->head);
+ 		spin_unlock(&anon_vma->lock);
+ 		if (empty)
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 5c5c1bd..35aad2a 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -611,7 +611,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 			goto rcu_unlock;
+ 
+ 		anon_vma = page_anon_vma(page);
+-		atomic_inc(&anon_vma->migrate_refcount);
++		atomic_inc(&anon_vma->external_refcount);
+ 	}
+ 
+ 	/*
+@@ -653,7 +653,7 @@ skip_unmap:
+ rcu_unlock:
+ 
+ 	/* Drop an anon_vma reference if we took one */
+-	if (anon_vma && atomic_dec_and_lock(&anon_vma->migrate_refcount, &anon_vma->lock)) {
++	if (anon_vma && atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->lock)) {
+ 		int empty = list_empty(&anon_vma->head);
+ 		spin_unlock(&anon_vma->lock);
+ 		if (empty)
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 578d0fe..af35b75 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -248,8 +248,7 @@ static void anon_vma_unlink(struct anon_vma_chain *anon_vma_chain)
+ 	list_del(&anon_vma_chain->same_anon_vma);
+ 
+ 	/* We must garbage collect the anon_vma if it's empty */
+-	empty = list_empty(&anon_vma->head) && !ksm_refcount(anon_vma) &&
+-					!migrate_refcount(anon_vma);
++	empty = list_empty(&anon_vma->head) && !anonvma_external_refcount(anon_vma);
+ 	spin_unlock(&anon_vma->lock);
+ 
+ 	if (empty)
+@@ -273,8 +272,7 @@ static void anon_vma_ctor(void *data)
+ 	struct anon_vma *anon_vma = data;
+ 
+ 	spin_lock_init(&anon_vma->lock);
+-	ksm_refcount_init(anon_vma);
+-	migrate_refcount_init(anon_vma);
++	anonvma_external_refcount_init(anon_vma);
+ 	INIT_LIST_HEAD(&anon_vma->head);
+ }
+ 
 -- 
 1.6.5
 
