@@ -1,164 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756715Ab0C3XRL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:17:11 -0400
-Received: from kroah.org ([198.145.64.141]:49218 "EHLO coco.kroah.org"
+	id S1755860Ab0C3XUx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:20:53 -0400
+Received: from kroah.org ([198.145.64.141]:45948 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756641Ab0C3XM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:58 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:54 2010
-Message-Id: <20100330225854.046657601@linux.site>
+	id S932498Ab0C3XTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:54 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:49 2010
+Message-Id: <20100330224749.148020901@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:58:15 -0700
+Date: Tue, 30 Mar 2010 15:41:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       Tilman Schmidt <tilman@imap.cc>, Karsten Keil <keil@b1-systems.de>,
+       "David S. Miller" <davem@davemloft.net>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [73/89] x86: Fix SCI on IOAPIC != 0
-In-Reply-To: <20100330230520.GA28779@kroah.com>
+Subject: [045/156] gigaset: prune use of tty_buffer_request_room
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.31-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Tilman Schmidt <tilman@imap.cc>
 
-commit 18dce6ba5c8c6bd0f3ab4efa4cbdd698dab5c40a upstream.
+commit 873a69a358a6b393fd8d9d92e193ec8895cac4d7 upstream.
 
-Thomas Renninger <trenn@suse.de> reported on IBM x3330
+Calling tty_buffer_request_room() before tty_insert_flip_string()
+is unnecessary, costs CPU and for big buffers can mess up the
+multi-page allocation avoidance.
 
-booting a latest kernel on this machine results in:
-
-PCI: PCI BIOS revision 2.10 entry at 0xfd61c, last bus=1
-PCI: Using configuration type 1 for base access bio: create slab <bio-0> at 0
-ACPI: SCI (IRQ30) allocation failed
-ACPI Exception: AE_NOT_ACQUIRED, Unable to install System Control Interrupt handler (20090903/evevent-161)
-ACPI: Unable to start the ACPI Interpreter
-
-Later all kind of devices fail...
-
-and bisect it down to this commit:
-commit b9c61b70075c87a8612624736faf4a2de5b1ed30
-
-    x86/pci: update pirq_enable_irq() to setup io apic routing
-
-it turns out we need to set irq routing for the sci on ioapic1 early.
-
--v2: make it work without sparseirq too.
--v3: fix checkpatch.pl warning, and cc to stable
-
-Reported-by: Thomas Renninger <trenn@suse.de>
-Bisected-by: Thomas Renninger <trenn@suse.de>
-Tested-by: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-LKML-Reference: <1265793639-15071-2-git-send-email-yinghai@kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+Acked-by: Karsten Keil <keil@b1-systems.de>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/io_apic.h |    1 
- arch/x86/kernel/acpi/boot.c    |    9 ++++++-
- arch/x86/kernel/apic/io_apic.c |   50 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 59 insertions(+), 1 deletion(-)
+ drivers/isdn/gigaset/interface.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -159,6 +159,7 @@ extern int io_apic_get_redir_entries(int
- struct io_apic_irq_attr;
- extern int io_apic_set_pci_routing(struct device *dev, int irq,
- 		 struct io_apic_irq_attr *irq_attr);
-+void setup_IO_APIC_irq_extra(u32 gsi);
- extern int (*ioapic_renumber_irq)(int ioapic, int irq);
- extern void ioapic_init_mappings(void);
- extern void ioapic_insert_resources(void);
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -446,6 +446,12 @@ void __init acpi_pic_sci_set_trigger(uns
- int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
- {
- 	*irq = gsi;
-+
-+#ifdef CONFIG_X86_IO_APIC
-+	if (acpi_irq_model == ACPI_IRQ_MODEL_IOAPIC)
-+		setup_IO_APIC_irq_extra(gsi);
-+#endif
-+
- 	return 0;
- }
- 
-@@ -473,7 +479,8 @@ int acpi_register_gsi(struct device *dev
- 		plat_gsi = mp_register_gsi(dev, gsi, trigger, polarity);
+--- a/drivers/isdn/gigaset/interface.c
++++ b/drivers/isdn/gigaset/interface.c
+@@ -632,7 +632,6 @@ void gigaset_if_receive(struct cardstate
+ 	if (tty == NULL)
+ 		gig_dbg(DEBUG_ANY, "receive on closed device");
+ 	else {
+-		tty_buffer_request_room(tty, len);
+ 		tty_insert_flip_string(tty, buffer, len);
+ 		tty_flip_buffer_push(tty);
  	}
- #endif
--	acpi_gsi_to_irq(plat_gsi, &irq);
-+	irq = plat_gsi;
-+
- 	return irq;
- }
- 
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1558,6 +1558,56 @@ static void __init setup_IO_APIC_irqs(vo
- }
- 
- /*
-+ * for the gsit that is not in first ioapic
-+ * but could not use acpi_register_gsi()
-+ * like some special sci in IBM x3330
-+ */
-+void setup_IO_APIC_irq_extra(u32 gsi)
-+{
-+	int apic_id = 0, pin, idx, irq;
-+	int node = cpu_to_node(boot_cpu_id);
-+	struct irq_desc *desc;
-+	struct irq_cfg *cfg;
-+
-+	/*
-+	 * Convert 'gsi' to 'ioapic.pin'.
-+	 */
-+	apic_id = mp_find_ioapic(gsi);
-+	if (apic_id < 0)
-+		return;
-+
-+	pin = mp_find_ioapic_pin(apic_id, gsi);
-+	idx = find_irq_entry(apic_id, pin, mp_INT);
-+	if (idx == -1)
-+		return;
-+
-+	irq = pin_2_irq(idx, apic_id, pin);
-+#ifdef CONFIG_SPARSE_IRQ
-+	desc = irq_to_desc(irq);
-+	if (desc)
-+		return;
-+#endif
-+	desc = irq_to_desc_alloc_node(irq, node);
-+	if (!desc) {
-+		printk(KERN_INFO "can not get irq_desc for %d\n", irq);
-+		return;
-+	}
-+
-+	cfg = desc->chip_data;
-+	add_pin_to_irq_node(cfg, node, apic_id, pin);
-+
-+	if (test_bit(pin, mp_ioapic_routing[apic_id].pin_programmed)) {
-+		pr_debug("Pin %d-%d already programmed\n",
-+			 mp_ioapics[apic_id].apicid, pin);
-+		return;
-+	}
-+	set_bit(pin, mp_ioapic_routing[apic_id].pin_programmed);
-+
-+	setup_IO_APIC_irq(apic_id, pin, irq, desc,
-+			irq_trigger(idx), irq_polarity(idx));
-+}
-+
-+/*
-  * Set up the timer pin, possibly with the 8259A-master behind.
-  */
- static void __init setup_timer_IRQ0_pin(unsigned int apic_id, unsigned int pin,
 
 
