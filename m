@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab0C3XKH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:10:07 -0400
-Received: from kroah.org ([198.145.64.141]:48662 "EHLO coco.kroah.org"
+	id S1756297Ab0C3XLz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:11:55 -0400
+Received: from kroah.org ([198.145.64.141]:48758 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755725Ab0C3XJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:09:26 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:50:09 2010
-Message-Id: <20100330225008.999625477@linux.site>
+	id S1756231Ab0C3XLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:11:50 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:12 2010
+Message-Id: <20100330225811.677990770@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:49:04 -0700
+Date: Tue, 30 Mar 2010 15:57:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Alan Stern <stern@rowland.harvard.edu>,
+       Mika Westerberg <ext-mika.1.westerberg@nokia.com>,
+       Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [44/45] USB: fix usbfs regression
-In-Reply-To: <20100330230410.GA28712@kroah.com>
+Subject: [06/89] UBI: fix volume creation input checking
+In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.27-stable review patch.  If anyone has any objections, please let us know.
+2.6.31-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
 
-commit 7152b592593b9d48b33f8997b1dfd6df9143f7ec upstream.
+commit c5ce5b46af76f52dea21f467397d24c4ae6cb3ff upstream.
 
-This patch (as1352) fixes a bug in the way isochronous input data is
-returned to userspace for usbfs transfers.  The entire buffer must be
-copied, not just the first actual_length bytes, because the individual
-packets will be discontiguous if any of them are short.
+Do not use an unchecked variable UBI_IOCMKVOL ioctl.
 
-Reported-by: Markus Rechberger <mrechberger@gmail.com>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/devio.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ drivers/mtd/ubi/cdev.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -1123,6 +1123,13 @@ static int proc_do_submiturb(struct dev_
- 			free_async(as);
- 			return -ENOMEM;
+--- a/drivers/mtd/ubi/cdev.c
++++ b/drivers/mtd/ubi/cdev.c
+@@ -853,7 +853,6 @@ static long ubi_cdev_ioctl(struct file *
+ 			break;
  		}
-+		/* Isochronous input data may end up being discontiguous
-+		 * if some of the packets are short.  Clear the buffer so
-+		 * that the gaps don't leak kernel data to userspace.
-+		 */
-+		if (is_in && uurb->type == USBDEVFS_URB_TYPE_ISO)
-+			memset(as->urb->transfer_buffer, 0,
-+					uurb->buffer_length);
- 	}
- 	as->urb->dev = ps->dev;
- 	as->urb->pipe = (uurb->type << 30) |
-@@ -1224,10 +1231,14 @@ static int processcompl(struct async *as
- 	void __user *addr = as->userurb;
- 	unsigned int i;
  
--	if (as->userbuffer && urb->actual_length)
--		if (copy_to_user(as->userbuffer, urb->transfer_buffer,
--				 urb->actual_length))
-+	if (as->userbuffer && urb->actual_length) {
-+		if (urb->number_of_packets > 0)		/* Isochronous */
-+			i = urb->transfer_buffer_length;
-+		else					/* Non-Isoc */
-+			i = urb->actual_length;
-+		if (copy_to_user(as->userbuffer, urb->transfer_buffer, i))
- 			goto err_out;
-+	}
- 	if (put_user(as->status, &userurb->status))
- 		goto err_out;
- 	if (put_user(urb->actual_length, &userurb->actual_length))
+-		req.name[req.name_len] = '\0';
+ 		err = verify_mkvol_req(ubi, &req);
+ 		if (err)
+ 			break;
 
 
