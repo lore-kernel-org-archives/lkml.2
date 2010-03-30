@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542Ab0CaAJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:09:27 -0400
-Received: from kroah.org ([198.145.64.141]:52055 "EHLO coco.kroah.org"
+	id S932579Ab0C3Xyf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:54:35 -0400
+Received: from kroah.org ([198.145.64.141]:45691 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932150Ab0C3XSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:11 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:33 2010
-Message-Id: <20100330225633.049074576@linux.site>
+	id S932394Ab0C3XTW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:22 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:28 2010
+Message-Id: <20100330224728.072929273@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:32 -0700
+Date: Tue, 30 Mar 2010 15:40:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Ravikiran Thirumalai <kiran@scalex86.org>,
-       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Jean Delvare <khali@linux-fr.org>, Oleg Ryjkov <oryjkov@gmail.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [054/116] tmpfs: handle MPOL_LOCAL mount option properly
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+Subject: [012/156] i2c-i801: Dont use the block buffer for I2C block writes
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 12821f5fb942e795f8009ece14bde868893bd811 upstream.
+commit c074c39d62306efa5ba7c69c1a1531bc7333d252 upstream.
 
-commit 71fe804b6d5 (mempolicy: use struct mempolicy pointer in
-shmem_sb_info) added mpol=local mount option.  but its feature is broken
-since it was born.  because such code always return 1 (i.e.  mount
-failure).
+Experience has shown that the block buffer can only be used for SMBus
+(not I2C) block transactions, even though the datasheet doesn't
+mention this limitation.
 
-This patch fixes it.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Ravikiran Thirumalai <kiran@scalex86.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Felix Rubinstein <felixru@gmail.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Cc: Oleg Ryjkov <oryjkov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/mempolicy.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/i2c/busses/i2c-i801.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2141,6 +2141,7 @@ int mpol_parse_str(char *str, struct mem
- 		if (nodelist)
- 			goto out;
- 		mode = MPOL_PREFERRED;
-+		err = 0;
- 		break;
- 	case MPOL_DEFAULT:
- 		/*
+--- a/drivers/i2c/busses/i2c-i801.c
++++ b/drivers/i2c/busses/i2c-i801.c
+@@ -415,9 +415,11 @@ static int i801_block_transaction(union
+ 		data->block[0] = 32;	/* max for SMBus block reads */
+ 	}
+ 
++	/* Experience has shown that the block buffer can only be used for
++	   SMBus (not I2C) block transactions, even though the datasheet
++	   doesn't mention this limitation. */
+ 	if ((i801_features & FEATURE_BLOCK_BUFFER)
+-	 && !(command == I2C_SMBUS_I2C_BLOCK_DATA
+-	      && read_write == I2C_SMBUS_READ)
++	 && command != I2C_SMBUS_I2C_BLOCK_DATA
+ 	 && i801_set_block_buffer_mode() == 0)
+ 		result = i801_block_transaction_by_block(data, read_write,
+ 							 hwpec);
 
 
