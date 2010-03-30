@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932609Ab0C3XUa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:20:30 -0400
-Received: from kroah.org ([198.145.64.141]:45684 "EHLO coco.kroah.org"
+	id S1757113Ab0C3Xie (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:38:34 -0400
+Received: from kroah.org ([198.145.64.141]:46341 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756776Ab0C3XTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:20 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:27 2010
-Message-Id: <20100330224727.426715293@linux.site>
+	id S1754899Ab0C3XUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:20:47 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:20 2010
+Message-Id: <20100330224819.264286110@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:40:45 -0700
+Date: Tue, 30 Mar 2010 15:42:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jean Delvare <khali@linux-fr.org>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Dean Nelson <dnelson@redhat.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [011/156] i2c-powermac: Be less verbose in the absence of real errors.
+Subject: [089/156] PCI: fix access of PCI_X_CMD by pcix get and set mmrbc functions
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,62 +27,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Dean Nelson <dnelson@redhat.com>
 
-commit 8e4b980c28c91cfe9d0ce0431bc0af56e146b49e upstream.
+commit bdc2bda7c4dd253026cc1fce45fc939304749029 upstream.
 
-Be less verbose in the absence of real errors. We don't have to report
-failed probes to the users, it's only confusing them.
+An e1000 driver on a system with a PCI-X bus was always being returned
+a value of 135 from both pcix_get_mmrbc() and pcix_set_mmrbc(). This
+value reflects an error return of PCIBIOS_BAD_REGISTER_NUMBER from
+pci_bus_read_config_dword(,, cap + PCI_X_CMD,).
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Tested-by: Andrey Gusev <ronne@list.ru>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+This is because for a dword, the following portion of the PCI_OP_READ()
+macro:
+
+	if (PCI_##size##_BAD) return PCIBIOS_BAD_REGISTER_NUMBER;
+
+expands to:
+
+	if (pos & 3) return PCIBIOS_BAD_REGISTER_NUMBER;
+
+And is always true for 'cap + PCI_X_CMD', which is 0xe4 + 2 = 0xe6. ('cap' is
+the result of calling pci_find_capability(, PCI_CAP_ID_PCIX).)
+
+The same problem exists for pci_bus_write_config_dword(,, cap + PCI_X_CMD,).
+In both cases, instead of calling _dword(), _word() should be called.
+
+Signed-off-by: Dean Nelson <dnelson@redhat.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/i2c/busses/i2c-powermac.c |   25 ++++++++++++++++++-------
- 1 file changed, 18 insertions(+), 7 deletions(-)
+ drivers/pci/pci.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/i2c/busses/i2c-powermac.c
-+++ b/drivers/i2c/busses/i2c-powermac.c
-@@ -122,9 +122,14 @@ static s32 i2c_powermac_smbus_xfer(	stru
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -2446,13 +2446,13 @@ EXPORT_SYMBOL(pcix_get_max_mmrbc);
+ int pcix_get_mmrbc(struct pci_dev *dev)
+ {
+ 	int ret, cap;
+-	u32 cmd;
++	u16 cmd;
  
- 	rc = pmac_i2c_xfer(bus, addrdir, subsize, subaddr, buf, len);
- 	if (rc) {
--		dev_err(&adap->dev,
--			"I2C transfer at 0x%02x failed, size %d, err %d\n",
--			addrdir >> 1, size, rc);
-+		if (rc == -ENXIO)
-+			dev_dbg(&adap->dev,
-+				"I2C transfer at 0x%02x failed, size %d, "
-+				"err %d\n", addrdir >> 1, size, rc);
-+		else
-+			dev_err(&adap->dev,
-+				"I2C transfer at 0x%02x failed, size %d, "
-+				"err %d\n", addrdir >> 1, size, rc);
- 		goto bail;
- 	}
+ 	cap = pci_find_capability(dev, PCI_CAP_ID_PCIX);
+ 	if (!cap)
+ 		return -EINVAL;
  
-@@ -175,10 +180,16 @@ static int i2c_powermac_master_xfer(	str
- 		goto bail;
+-	ret = pci_read_config_dword(dev, cap + PCI_X_CMD, &cmd);
++	ret = pci_read_config_word(dev, cap + PCI_X_CMD, &cmd);
+ 	if (!ret)
+ 		ret = 512 << ((cmd & PCI_X_CMD_MAX_READ) >> 2);
+ 
+@@ -2472,7 +2472,8 @@ EXPORT_SYMBOL(pcix_get_mmrbc);
+ int pcix_set_mmrbc(struct pci_dev *dev, int mmrbc)
+ {
+ 	int cap, err = -EINVAL;
+-	u32 stat, cmd, v, o;
++	u32 stat, v, o;
++	u16 cmd;
+ 
+ 	if (mmrbc < 512 || mmrbc > 4096 || !is_power_of_2(mmrbc))
+ 		goto out;
+@@ -2490,7 +2491,7 @@ int pcix_set_mmrbc(struct pci_dev *dev,
+ 	if (v > (stat & PCI_X_STATUS_MAX_READ) >> 21)
+ 		return -E2BIG;
+ 
+-	err = pci_read_config_dword(dev, cap + PCI_X_CMD, &cmd);
++	err = pci_read_config_word(dev, cap + PCI_X_CMD, &cmd);
+ 	if (err)
+ 		goto out;
+ 
+@@ -2502,7 +2503,7 @@ int pcix_set_mmrbc(struct pci_dev *dev,
+ 
+ 		cmd &= ~PCI_X_CMD_MAX_READ;
+ 		cmd |= v << 2;
+-		err = pci_write_config_dword(dev, cap + PCI_X_CMD, cmd);
++		err = pci_write_config_word(dev, cap + PCI_X_CMD, cmd);
  	}
- 	rc = pmac_i2c_xfer(bus, addrdir, 0, 0, msgs->buf, msgs->len);
--	if (rc < 0)
--		dev_err(&adap->dev, "I2C %s 0x%02x failed, err %d\n",
--			addrdir & 1 ? "read from" : "write to", addrdir >> 1,
--			rc);
-+	if (rc < 0) {
-+		if (rc == -ENXIO)
-+			dev_dbg(&adap->dev, "I2C %s 0x%02x failed, err %d\n",
-+				addrdir & 1 ? "read from" : "write to",
-+				addrdir >> 1, rc);
-+		else
-+			dev_err(&adap->dev, "I2C %s 0x%02x failed, err %d\n",
-+				addrdir & 1 ? "read from" : "write to",
-+				addrdir >> 1, rc);
-+	}
-  bail:
- 	pmac_i2c_close(bus);
- 	return rc < 0 ? rc : 1;
+ out:
+ 	return err;
 
 
