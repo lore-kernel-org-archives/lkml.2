@@ -1,56 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341Ab0C3Xuo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:50:44 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:45202 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757276Ab0C3Xug (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:50:36 -0400
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
-       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, linux-fsdevel@vger.kernel.org,
-       Benjamin LaHaise <bcrl@lhnet.ca>, Serge Hallyn <serue@us.ibm.com>,
-       netdev@vger.kernel.org
-Subject: [PATCH 7/6] sysfs: Remove double free sysfs_get_sb
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
-	<1269973889-25260-1-git-send-email-ebiederm@xmission.com>
-	<1269977012.2048.0.camel@edumazet-laptop>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Tue, 30 Mar 2010 16:50:26 -0700
-In-Reply-To: <1269977012.2048.0.camel@edumazet-laptop> (Eric Dumazet's message of "Tue\, 30 Mar 2010 21\:23\:32 +0200")
-Message-ID: <m1zl1pbc8t.fsf_-_@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: eric.dumazet@gmail.com, netdev@vger.kernel.org, serue@us.ibm.com, bcrl@lhnet.ca, linux-fsdevel@vger.kernel.org, cornelia.huck@de.ibm.com, tj@kernel.org, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, gregkh@suse.de
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+	id S1757318Ab0C3XrG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:47:06 -0400
+Received: from kroah.org ([198.145.64.141]:45985 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932515Ab0C3XT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:19:58 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:47:52 2010
+Message-Id: <20100330224751.508527804@linux.site>
+User-Agent: quilt/0.47-14.9
+Date: Tue, 30 Mar 2010 15:41:23 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Jean Pihet <jpihet@mvista.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       Jamie Iles <jamie.iles@picochip.com>, Paul Mackerras <paulus@samba.org>,
+       Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [049/156] perf: Provide generic perf_sample_data initialization
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
-Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
+------------------
+
+From: Peter Zijlstra <peterz@infradead.org>
+
+This makes it easier to extend perf_sample_data and fixes a bug on arm
+and sparc, which failed to set ->raw to NULL, which can cause crashes
+when combined with PERF_SAMPLE_RAW.
+
+It also optimizes PowerPC and tracepoint, because the struct
+initialization is forced to zero out the whole structure.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Jean Pihet <jpihet@mvista.com>
+Reviewed-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: David S. Miller <davem@davemloft.net>
+Cc: Jamie Iles <jamie.iles@picochip.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Stephane Eranian <eranian@google.com>
+LKML-Reference: <20100304140100.315416040@chello.nl>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- fs/sysfs/mount.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ arch/powerpc/kernel/perf_event.c |    8 ++++----
+ arch/sparc/kernel/perf_event.c   |    2 +-
+ arch/x86/kernel/cpu/perf_event.c |    9 +++------
+ include/linux/perf_event.h       |    7 +++++++
+ kernel/perf_event.c              |   21 ++++++++-------------
+ 5 files changed, 23 insertions(+), 24 deletions(-)
 
-diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
-index 13bd0ba..bbba090 100644
---- a/fs/sysfs/mount.c
-+++ b/fs/sysfs/mount.c
-@@ -121,7 +121,6 @@ static int sysfs_get_sb(struct file_system_type *fs_type,
- 	if (IS_ERR(sb) || sb->s_fs_info != info)
- 		kfree(info);
- 	if (IS_ERR(sb)) {
--		kfree(info);
- 		error = PTR_ERR(sb);
- 		goto out;
- 	}
--- 
-1.6.5.2.143.g8cc62
+--- a/arch/powerpc/kernel/perf_event.c
++++ b/arch/powerpc/kernel/perf_event.c
+@@ -1164,10 +1164,10 @@ static void record_and_restart(struct pe
+ 	 * Finally record data if requested.
+ 	 */
+ 	if (record) {
+-		struct perf_sample_data data = {
+-			.addr	= ~0ULL,
+-			.period	= event->hw.last_period,
+-		};
++		struct perf_sample_data data;
++
++		perf_sample_data_init(&data, ~0ULL);
++		data.period = event->hw.last_period;
+ 
+ 		if (event->attr.sample_type & PERF_SAMPLE_ADDR)
+ 			perf_get_data_addr(regs, &data.addr);
+--- a/arch/sparc/kernel/perf_event.c
++++ b/arch/sparc/kernel/perf_event.c
+@@ -1189,7 +1189,7 @@ static int __kprobes perf_event_nmi_hand
+ 
+ 	regs = args->regs;
+ 
+-	data.addr = 0;
++	perf_sample_data_init(&data, 0);
+ 
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1636,10 +1636,9 @@ static void intel_pmu_drain_bts_buffer(s
+ 
+ 	ds->bts_index = ds->bts_buffer_base;
+ 
++	perf_sample_data_init(&data, 0);
+ 
+ 	data.period	= event->hw.last_period;
+-	data.addr	= 0;
+-	data.raw	= NULL;
+ 	regs.ip		= 0;
+ 
+ 	/*
+@@ -1756,8 +1755,7 @@ static int p6_pmu_handle_irq(struct pt_r
+ 	int idx, handled = 0;
+ 	u64 val;
+ 
+-	data.addr = 0;
+-	data.raw = NULL;
++	perf_sample_data_init(&data, 0);
+ 
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+@@ -1802,8 +1800,7 @@ static int intel_pmu_handle_irq(struct p
+ 	int bit, loops;
+ 	u64 ack, status;
+ 
+-	data.addr = 0;
+-	data.raw = NULL;
++	perf_sample_data_init(&data, 0);
+ 
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -793,6 +793,13 @@ struct perf_sample_data {
+ 	struct perf_raw_record		*raw;
+ };
+ 
++static inline
++void perf_sample_data_init(struct perf_sample_data *data, u64 addr)
++{
++	data->addr = addr;
++	data->raw  = NULL;
++}
++
+ extern void perf_output_sample(struct perf_output_handle *handle,
+ 			       struct perf_event_header *header,
+ 			       struct perf_sample_data *data,
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -4027,8 +4027,7 @@ void __perf_sw_event(u32 event_id, u64 n
+ 	if (rctx < 0)
+ 		return;
+ 
+-	data.addr = addr;
+-	data.raw  = NULL;
++	perf_sample_data_init(&data, addr);
+ 
+ 	do_perf_sw_event(PERF_TYPE_SOFTWARE, event_id, nr, nmi, &data, regs);
+ 
+@@ -4073,11 +4072,10 @@ static enum hrtimer_restart perf_swevent
+ 	struct perf_event *event;
+ 	u64 period;
+ 
+-	event	= container_of(hrtimer, struct perf_event, hw.hrtimer);
++	event = container_of(hrtimer, struct perf_event, hw.hrtimer);
+ 	event->pmu->read(event);
+ 
+-	data.addr = 0;
+-	data.raw = NULL;
++	perf_sample_data_init(&data, 0);
+ 	data.period = event->hw.last_period;
+ 	regs = get_irq_regs();
+ 	/*
+@@ -4241,17 +4239,15 @@ static const struct pmu perf_ops_task_cl
+ void perf_tp_event(int event_id, u64 addr, u64 count, void *record,
+ 			  int entry_size)
+ {
++	struct pt_regs *regs = get_irq_regs();
++	struct perf_sample_data data;
+ 	struct perf_raw_record raw = {
+ 		.size = entry_size,
+ 		.data = record,
+ 	};
+ 
+-	struct perf_sample_data data = {
+-		.addr = addr,
+-		.raw = &raw,
+-	};
+-
+-	struct pt_regs *regs = get_irq_regs();
++	perf_sample_data_init(&data, addr);
++	data.raw = &raw;
+ 
+ 	if (!regs)
+ 		regs = task_pt_regs(current);
+@@ -4367,8 +4363,7 @@ void perf_bp_event(struct perf_event *bp
+ 	struct perf_sample_data sample;
+ 	struct pt_regs *regs = data;
+ 
+-	sample.raw = NULL;
+-	sample.addr = bp->attr.bp_addr;
++	perf_sample_data_init(&sample, bp->attr.bp_addr);
+ 
+ 	if (!perf_exclude_event(bp, regs))
+ 		perf_swevent_add(bp, 1, 1, &sample, regs);
+
 
