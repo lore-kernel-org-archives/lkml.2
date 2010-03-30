@@ -1,96 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932849Ab0C3Xbk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:31:40 -0400
-Received: from kroah.org ([198.145.64.141]:46598 "EHLO coco.kroah.org"
+	id S932144Ab0C3XRp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:17:45 -0400
+Received: from kroah.org ([198.145.64.141]:51805 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756925Ab0C3XVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:21:32 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:39 2010
-Message-Id: <20100330224838.884108218@linux.site>
+	id S1756655Ab0C3XRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:17:36 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:10 2010
+Message-Id: <20100330225609.778211759@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:34 -0700
+Date: Tue, 30 Mar 2010 15:54:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Vitaliy Gusev <vgusev@openvz.org>, Neil Horman <nhorman@tuxdriver.com>,
-       "David S. Miller" <davem@davemloft.net>,
+       Steven Rostedt <rostedt@goodmis.org>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [120/156] route: Fix caught BUG_ON during rt_secret_rebuild_oneshot()
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+Subject: [019/116] tracing: Use same local variable when resetting the ring buffer
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Vitaliy Gusev <vgusev@openvz.org>
+From: Steven Rostedt <srostedt@redhat.com>
 
-[ Upstream commit 858a18a6a2f74e8f0e5b2e9671d4b74694aba708 ]
+commit 283740c619d211e34572cc93c8cdba92ccbdb9cc upstream.
 
-route: Fix caught BUG_ON during rt_secret_rebuild_oneshot()
+In the ftrace code that resets the ring buffer it references the
+buffer with a local variable, but then uses the tr->buffer as the
+parameter to reset. If the wakeup tracer is running, which can
+switch the tr->buffer with the max saved buffer, this can break
+the requirement of disabling the buffer before the reset.
 
-Call rt_secret_rebuild can cause BUG_ON(timer_pending(&net->ipv4.rt_secret_timer)) in
-add_timer as there is not any synchronization for call rt_secret_rebuild_oneshot()
-for the same net namespace.
+   buffer = tr->buffer;
+   ring_buffer_record_disable(buffer);
+   synchronize_sched();
+   __tracing_reset(tr->buffer, cpu);
 
-Also this issue affects to rt_secret_reschedule().
+If the tr->buffer is swapped, then the reset is not happening to the
+buffer that was disabled. This will cause the ring buffer to fail.
 
-Thus use mod_timer enstead.
+Found with Li Zefan's ftrace_stress_test.
 
-Signed-off-by: Vitaliy Gusev <vgusev@openvz.org>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/ipv4/route.c |   16 ++++++----------
- 1 file changed, 6 insertions(+), 10 deletions(-)
+ kernel/trace/trace.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -922,10 +922,8 @@ static void rt_secret_rebuild_oneshot(st
- {
- 	del_timer_sync(&net->ipv4.rt_secret_timer);
- 	rt_cache_invalidate(net);
--	if (ip_rt_secret_interval) {
--		net->ipv4.rt_secret_timer.expires += ip_rt_secret_interval;
--		add_timer(&net->ipv4.rt_secret_timer);
--	}
-+	if (ip_rt_secret_interval)
-+		mod_timer(&net->ipv4.rt_secret_timer, jiffies + ip_rt_secret_interval);
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -748,10 +748,10 @@ out:
+ 	mutex_unlock(&trace_types_lock);
  }
  
- static void rt_emergency_hash_rebuild(struct net *net)
-@@ -3072,22 +3070,20 @@ static void rt_secret_reschedule(int old
- 	rtnl_lock();
- 	for_each_net(net) {
- 		int deleted = del_timer_sync(&net->ipv4.rt_secret_timer);
-+		long time;
+-static void __tracing_reset(struct trace_array *tr, int cpu)
++static void __tracing_reset(struct ring_buffer *buffer, int cpu)
+ {
+ 	ftrace_disable_cpu();
+-	ring_buffer_reset_cpu(tr->buffer, cpu);
++	ring_buffer_reset_cpu(buffer, cpu);
+ 	ftrace_enable_cpu();
+ }
  
- 		if (!new)
- 			continue;
+@@ -763,7 +763,7 @@ void tracing_reset(struct trace_array *t
  
- 		if (deleted) {
--			long time = net->ipv4.rt_secret_timer.expires - jiffies;
-+			time = net->ipv4.rt_secret_timer.expires - jiffies;
+ 	/* Make sure all commits have finished */
+ 	synchronize_sched();
+-	__tracing_reset(tr, cpu);
++	__tracing_reset(buffer, cpu);
  
- 			if (time <= 0 || (time += diff) <= 0)
- 				time = 0;
--
--			net->ipv4.rt_secret_timer.expires = time;
- 		} else
--			net->ipv4.rt_secret_timer.expires = new;
-+			time = new;
+ 	ring_buffer_record_enable(buffer);
+ }
+@@ -781,7 +781,7 @@ void tracing_reset_online_cpus(struct tr
+ 	tr->time_start = ftrace_now(tr->cpu);
  
--		net->ipv4.rt_secret_timer.expires += jiffies;
--		add_timer(&net->ipv4.rt_secret_timer);
-+		mod_timer(&net->ipv4.rt_secret_timer, jiffies + time);
- 	}
- 	rtnl_unlock();
+ 	for_each_online_cpu(cpu)
+-		__tracing_reset(tr, cpu);
++		__tracing_reset(buffer, cpu);
+ 
+ 	ring_buffer_record_enable(buffer);
  }
 
 
