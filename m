@@ -1,136 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079Ab0C3Rk7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 13:40:59 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:45548 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751588Ab0C3Rk5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 13:40:57 -0400
-Date: Tue, 30 Mar 2010 13:40:56 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-cc: Kernel development list <linux-kernel@vger.kernel.org>,
-       USB list <linux-usb@vger.kernel.org>, Alan Piszcz <ap@solarrain.com>
-Subject: Re: 2.6.33: Xorg+khubd lockup (D-state) BUG / ioctl EVIOCGNAME
- failed: Inappropriate ioctl for device / PreInit returned NULL
-In-Reply-To: <alpine.DEB.2.00.1003300848430.20258@p34.internal.lan>
-Message-ID: <Pine.LNX.4.44L0.1003301329160.1634-100000@iolanthe.rowland.org>
+	id S1753971Ab0C3RqX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 13:46:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32480 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750902Ab0C3RqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 13:46:22 -0400
+Date: Tue, 30 Mar 2010 19:43:37 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>, anfei <anfei.zhou@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH -mm] proc: don't take ->siglock for /proc/pid/oom_adj
+Message-ID: <20100330174337.GA21663@redhat.com>
+References: <1269447905-5939-1-git-send-email-anfei.zhou@gmail.com> <20100326150805.f5853d1c.akpm@linux-foundation.org> <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330163909.GA16884@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100330163909.GA16884@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Mar 2010, Justin Piszcz wrote:
+->siglock is no longer needed to access task->signal, change
+oom_adjust_read() and oom_adjust_write() to read/write oom_adj
+lockless.
 
-> Hello!
-> 
-> I have all the data you asked for:
-> 
-> 1. # cat 0u > /tmp/0u.mon.out
-> 2. The kernel log file.
+Yes, this means that "echo 2 >oom_adj" and "echo 1 >oom_adj"
+can race and the second write can win, but I hope this is OK.
 
-I prefer to get dmesg output rather than log files.  Logging programs
-sometimes drop or skip lines.  But this was okay.
+Also, cleanup the EACCES case a bit.
 
-Also, I'd like to see the contents of your /proc/interrupts.  It looks 
-like the OHCI controller shares an IRQ line with some other device.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
 
-> Also 3.
-> # date; cat 0u > /tmp/0u_after_disconnect_usb.mon.out
-> Tue Mar 30 08:50:45 EDT 2010
-> 
-> Here, I ran this, disconnected the mouse and re-connected it.
-> 
-> All files are here:
-> 
-> http://home.comcast.net/~jpiszcz/20100330/0u.mon.out.bz2
-> http://home.comcast.net/~jpiszcz/20100330/0u_after_disconnect_usb.mon.out.bz2
-> http://home.comcast.net/~jpiszcz/20100330/kern.log.bz2
-> 
-> Hopefully something can be found!
+ fs/proc/base.c |   28 ++++++----------------------
+ 1 file changed, 6 insertions(+), 22 deletions(-)
 
-Well, I'm making progress.  Below is a new debugging patch to try in
-place of the first one.  This time the dmesg log alone will be
-sufficient, no need for a usbmon trace.  And the output should be a lot
-smaller, since the new patch doesn't print something every time an
-interrupt occurs, but rather only when you unplug the mouse.
-
-In fact, you might try unplugging the mouse while it still works and
-then plugging it back in.  The difference between the debugging
-messages while everything is working and the same thing after the mouse
-fails should be informative.
-
-(By the way, these tests are meant to find out why your Xorg and khubd
-processes hang when the mouse fails, not for finding the original cause
-behind the mouse failure.  That can be addressed later.)
-
-> It has happened again, in addition, this is a LONG outstanding bug since
-> 2006 or 2007, see below research:
-...
-
-Some of those reports indicate that a BIOS update could fix the
-problem.  Have you checked your BIOS version?
-
-Alan Stern
-
-
-
-Index: usb-2.6/drivers/usb/host/ohci-hcd.c
-===================================================================
---- usb-2.6.orig/drivers/usb/host/ohci-hcd.c
-+++ usb-2.6/drivers/usb/host/ohci-hcd.c
-@@ -292,6 +292,8 @@ static int ohci_urb_dequeue(struct usb_h
- 		if (urb_priv) {
- 			if (urb_priv->ed->state == ED_OPER)
- 				start_ed_unlink (ohci, urb_priv->ed);
-+			ohci_info(ohci, "start unlink urb %p, ed %p tick %u\n",
-+					urb, urb_priv->ed, urb_priv->ed->tick);
- 		}
- 	} else {
- 		/*
-@@ -324,6 +326,9 @@ ohci_endpoint_disable (struct usb_hcd *h
+--- 34-rc1/fs/proc/base.c~PROC_5_OOM_ADJ	2010-03-30 18:23:50.000000000 +0200
++++ 34-rc1/fs/proc/base.c	2010-03-30 19:14:43.000000000 +0200
+@@ -981,22 +981,16 @@ static ssize_t oom_adjust_read(struct fi
+ {
+ 	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
+ 	char buffer[PROC_NUMBUF];
++	int oom_adjust;
+ 	size_t len;
+-	int oom_adjust = OOM_DISABLE;
+-	unsigned long flags;
  
- 	if (!ed)
- 		return;
-+	ohci_info(ohci, "disable ed %p (#%02x) state %d%s\n",
-+			ed, ep->desc.bEndpointAddress, ed->state,
-+			list_empty(&ed->td_list) ? "" : " (has tds)");
+ 	if (!task)
+ 		return -ESRCH;
  
- rescan:
- 	spin_lock_irqsave (&ohci->lock, flags);
-Index: usb-2.6/drivers/usb/host/ohci-q.c
-===================================================================
---- usb-2.6.orig/drivers/usb/host/ohci-q.c
-+++ usb-2.6/drivers/usb/host/ohci-q.c
-@@ -912,6 +912,9 @@ rescan_all:
- 		 * frame counter wraps and EDs with partially retired TDs
- 		 */
- 		if (likely (HC_IS_RUNNING(ohci_to_hcd(ohci)->state))) {
-+			ohci_info(ohci, "finish_unlinks: tick %u, ed %p %u, %d\n",
-+					tick, ed, ed->tick,
-+					tick_before(tick, ed->tick));
- 			if (tick_before (tick, ed->tick)) {
- skip_ed:
- 				last = &ed->ed_next;
-@@ -928,6 +931,8 @@ skip_ed:
- 								TD_MASK;
+-	if (lock_task_sighand(task, &flags)) {
+-		oom_adjust = task->signal->oom_adj;
+-		unlock_task_sighand(task, &flags);
+-	}
+-
++	oom_adjust = task->signal->oom_adj;
+ 	put_task_struct(task);
  
- 				/* INTR_WDH may need to clean up first */
-+				ohci_info(ohci, "dma %llx head %x\n",
-+					(unsigned long long) td->td_dma, head);
- 				if (td->td_dma != head) {
- 					if (ed == ohci->ed_to_check)
- 						ohci->ed_to_check = NULL;
-@@ -990,6 +995,8 @@ rescan_this:
- 			/* HC may have partly processed this TD */
- 			td_done (ohci, urb, td);
- 			urb_priv->td_cnt++;
-+			ohci_info(ohci, "td_cnt %d length %d\n",
-+					urb_priv->td_cnt, urb_priv->length);
+ 	len = snprintf(buffer, sizeof(buffer), "%i\n", oom_adjust);
+-
+ 	return simple_read_from_buffer(buf, count, ppos, buffer, len);
+ }
  
- 			/* if URB is done, clean up */
- 			if (urb_priv->td_cnt == urb_priv->length) {
+@@ -1006,7 +1000,6 @@ static ssize_t oom_adjust_write(struct f
+ 	struct task_struct *task;
+ 	char buffer[PROC_NUMBUF];
+ 	long oom_adjust;
+-	unsigned long flags;
+ 	int err;
+ 
+ 	memset(buffer, 0, sizeof(buffer));
+@@ -1025,20 +1018,11 @@ static ssize_t oom_adjust_write(struct f
+ 	task = get_proc_task(file->f_path.dentry->d_inode);
+ 	if (!task)
+ 		return -ESRCH;
+-	if (!lock_task_sighand(task, &flags)) {
+-		put_task_struct(task);
+-		return -ESRCH;
+-	}
+-
+-	if (oom_adjust < task->signal->oom_adj && !capable(CAP_SYS_RESOURCE)) {
+-		unlock_task_sighand(task, &flags);
+-		put_task_struct(task);
+-		return -EACCES;
+-	}
+ 
+-	task->signal->oom_adj = oom_adjust;
+-
+-	unlock_task_sighand(task, &flags);
++	if (task->signal->oom_adj <= oom_adjust || capable(CAP_SYS_RESOURCE))
++		task->signal->oom_adj = oom_adjust;
++	else
++		count = -EACCES;
+ 	put_task_struct(task);
+ 
+ 	return count;
 
