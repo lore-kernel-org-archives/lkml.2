@@ -1,108 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab0C3XQS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:16:18 -0400
-Received: from kroah.org ([198.145.64.141]:49261 "EHLO coco.kroah.org"
+	id S1757078Ab0C3Xe4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:34:56 -0400
+Received: from kroah.org ([198.145.64.141]:46441 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755994Ab0C3XNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:13:04 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:58 2010
-Message-Id: <20100330225857.809553411@linux.site>
+	id S1750962Ab0C3XVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:21:11 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:29 2010
+Message-Id: <20100330224828.857334831@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:58:21 -0700
+Date: Tue, 30 Mar 2010 15:42:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Andreas Schwab <schwab@linux-m68k.org>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Stefan Bader <stefan.bader@canonical.com>
-Subject: [79/89] powerpc: TIF_ABI_PENDING bit removal
-In-Reply-To: <20100330230520.GA28779@kroah.com>
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [104/156] ALSA: hda: Use LPIB for ga-ma770-ud3 board
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.31-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Andreas Schwab <schwab@linux-m68k.org>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 94f28da8409c6059135e89ac64a0839993124155 upstream.
+commit 9ec8ddad59fadd8021adfea4cb716a49b0e232e9 upstream.
 
-Here are the powerpc bits to remove TIF_ABI_PENDING now that
-set_personality() is called at the appropriate place in exec.
+BugLink: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=575669
 
-Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+The OR states that position_fix=1 is necessary to work around glitching
+during volume adjustments using PulseAudio.
+
+Reported-by: Carlos Laviola <claviola@debian.org>
+Tested-by: Carlos Laviola <claviola@debian.org>
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 
 ---
- arch/powerpc/include/asm/elf.h         |    8 ++------
- arch/powerpc/include/asm/thread_info.h |    2 --
- arch/powerpc/kernel/process.c          |   12 ------------
- 3 files changed, 2 insertions(+), 20 deletions(-)
+ sound/pci/hda/hda_intel.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/powerpc/include/asm/elf.h
-+++ b/arch/powerpc/include/asm/elf.h
-@@ -236,14 +236,10 @@ typedef elf_vrregset_t elf_fpxregset_t;
- #ifdef __powerpc64__
- # define SET_PERSONALITY(ex)					\
- do {								\
--	unsigned long new_flags = 0;				\
- 	if ((ex).e_ident[EI_CLASS] == ELFCLASS32)		\
--		new_flags = _TIF_32BIT;				\
--	if ((current_thread_info()->flags & _TIF_32BIT)		\
--	    != new_flags)					\
--		set_thread_flag(TIF_ABI_PENDING);		\
-+		set_thread_flag(TIF_32BIT);			\
- 	else							\
--		clear_thread_flag(TIF_ABI_PENDING);		\
-+		clear_thread_flag(TIF_32BIT);			\
- 	if (personality(current->personality) != PER_LINUX32)	\
- 		set_personality(PER_LINUX |			\
- 			(current->personality & (~PER_MASK)));	\
---- a/arch/powerpc/include/asm/thread_info.h
-+++ b/arch/powerpc/include/asm/thread_info.h
-@@ -111,7 +111,6 @@ static inline struct thread_info *curren
- #define TIF_NOTIFY_RESUME	13	/* callback before returning to user */
- #define TIF_FREEZE		14	/* Freezing for suspend */
- #define TIF_RUNLATCH		15	/* Is the runlatch enabled? */
--#define TIF_ABI_PENDING		16	/* 32/64 bit switch needed */
- 
- /* as above, but as bit values */
- #define _TIF_SYSCALL_TRACE	(1<<TIF_SYSCALL_TRACE)
-@@ -129,7 +128,6 @@ static inline struct thread_info *curren
- #define _TIF_NOTIFY_RESUME	(1<<TIF_NOTIFY_RESUME)
- #define _TIF_FREEZE		(1<<TIF_FREEZE)
- #define _TIF_RUNLATCH		(1<<TIF_RUNLATCH)
--#define _TIF_ABI_PENDING	(1<<TIF_ABI_PENDING)
- #define _TIF_SYSCALL_T_OR_A	(_TIF_SYSCALL_TRACE|_TIF_SYSCALL_AUDIT|_TIF_SECCOMP)
- 
- #define _TIF_USER_WORK_MASK	(_TIF_SIGPENDING | _TIF_NEED_RESCHED | \
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -554,18 +554,6 @@ void exit_thread(void)
- 
- void flush_thread(void)
- {
--#ifdef CONFIG_PPC64
--	struct thread_info *t = current_thread_info();
--
--	if (test_ti_thread_flag(t, TIF_ABI_PENDING)) {
--		clear_ti_thread_flag(t, TIF_ABI_PENDING);
--		if (test_ti_thread_flag(t, TIF_32BIT))
--			clear_ti_thread_flag(t, TIF_32BIT);
--		else
--			set_ti_thread_flag(t, TIF_32BIT);
--	}
--#endif
--
- 	discard_lazy_cpu_state();
- 
- 	if (current->thread.dabr) {
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2265,6 +2265,7 @@ static struct snd_pci_quirk position_fix
+ 	SND_PCI_QUIRK(0x103c, 0x306d, "HP dv3", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1106, 0x3288, "ASUS M2V-MX SE", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1043, 0x813d, "ASUS P5AD2", POS_FIX_LPIB),
++	SND_PCI_QUIRK(0x1458, 0xa022, "ga-ma770-ud3", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1462, 0x1002, "MSI Wind U115", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1565, 0x820f, "Biostar Microtech", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x8086, 0xd601, "eMachines T5212", POS_FIX_LPIB),
 
 
