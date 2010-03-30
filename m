@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757693Ab0CaA1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:27:41 -0400
-Received: from kroah.org ([198.145.64.141]:48924 "EHLO coco.kroah.org"
+	id S1757713Ab0CaA17 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:27:59 -0400
+Received: from kroah.org ([198.145.64.141]:48919 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756445Ab0C3XMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756435Ab0C3XMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Mar 2010 19:12:23 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:30 2010
-Message-Id: <20100330225829.991965274@linux.site>
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:29 2010
+Message-Id: <20100330225829.414678924@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:37 -0700
+Date: Tue, 30 Mar 2010 15:57:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Johan Hovold <jhovold@gmail.com>, Greg KH <greg@kroah.com>,
-       Jason Wessel <jason.wessel@windriver.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [35/89] usb: serial: fix memory leak in generic driver
+Subject: [34/89] USB: fix bitmask merge error
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,37 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 2591530204a76fecc843529ade56afe865dd2657 upstream.
+commit a91b593edd4b3e8aa91f671b763b27b8119eb49d upstream.
 
-Fix a regression introduced by commit
-715b1dc01fe44537e8fce9566e4bb48d6821d84b ("USB: usb_debug,
-usb_generic_serial: implement multi urb write").
+This patch adds a mask bit which was mistakenly omitted from the
+as1311 patch (usb-storage: add BAD_SENSE flag).
 
-URB transfer buffer was never freed when using multi-urb writes.
-Currently the only driver enabling multi-urb writes is usb_debug.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Cc: Greg KH <greg@kroah.com>
-Acked-by: Jason Wessel <jason.wessel@windriver.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/generic.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/storage/usb.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/generic.c
-+++ b/drivers/usb/serial/generic.c
-@@ -480,6 +480,8 @@ void usb_serial_generic_write_bulk_callb
- 	dbg("%s - port %d", __func__, port->number);
- 
- 	if (port->serial->type->max_in_flight_urbs) {
-+		kfree(urb->transfer_buffer);
-+
- 		spin_lock_irqsave(&port->lock, flags);
- 		--port->urbs_in_flight;
- 		port->tx_bytes_flight -= urb->transfer_buffer_length;
+--- a/drivers/usb/storage/usb.c
++++ b/drivers/usb/storage/usb.c
+@@ -430,7 +430,8 @@ static void adjust_quirks(struct us_data
+ 	u16 vid = le16_to_cpu(us->pusb_dev->descriptor.idVendor);
+ 	u16 pid = le16_to_cpu(us->pusb_dev->descriptor.idProduct);
+ 	unsigned f = 0;
+-	unsigned int mask = (US_FL_SANE_SENSE | US_FL_FIX_CAPACITY |
++	unsigned int mask = (US_FL_SANE_SENSE | US_FL_BAD_SENSE |
++			US_FL_FIX_CAPACITY |
+ 			US_FL_CAPACITY_HEURISTICS | US_FL_IGNORE_DEVICE |
+ 			US_FL_NOT_LOCKABLE | US_FL_MAX_SECTORS_64 |
+ 			US_FL_CAPACITY_OK | US_FL_IGNORE_RESIDUE |
 
 
