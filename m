@@ -1,60 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab0C3IxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 04:53:00 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:56394 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755831Ab0C3Iw6 (ORCPT
+	id S1755361Ab0C3I46 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 04:56:58 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36908 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753637Ab0C3I44 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 04:52:58 -0400
-Date: Tue, 30 Mar 2010 10:52:53 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Holger Schurig <hs4233@mail.mn-solutions.de>
-Cc: linux-kernel@vger.kernel.org, Dan Williams <dcbw@redhat.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Bing Zhao <bzhao@marvell.com>, libertas-dev@lists.infradead.org,
-       linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] net/wireless/libertas: do not call wiphy_unregister()
- w/o wiphy_register()
-Message-ID: <20100330085253.GL30801@buzzloop.caiaq.de>
-References: <1269875658-3324-1-git-send-email-daniel@caiaq.de>
- <201003300849.07441.hs4233@mail.mn-solutions.de>
+	Tue, 30 Mar 2010 04:56:56 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Robert =?utf-8?q?Sch=C3=B6ne?= <robert.schoene@tu-dresden.de>
+Subject: Re: [PATCH] trace power_frequency events on the correct cpu  (for Intel x86 CPUs)
+Date: Tue, 30 Mar 2010 09:56:52 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.1-desktop; KDE/4.3.5; x86_64; ; )
+Cc: Arjan van de Ven <arjan@linux.intel.com>, Dave Jones <davej@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "linux-kernel" <linux-kernel@vger.kernel.org>,
+       cpufreq <cpufreq@vger.kernel.org>, x86@kernel.org
+References: <1268399863.3407.15.camel@localhost> <1269414437.3355.6.camel@localhost> <1269928015.3384.2.camel@localhost>
+In-Reply-To: <1269928015.3384.2.camel@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201003300849.07441.hs4233@mail.mn-solutions.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201003301056.52967.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 08:49:07AM +0200, Holger Schurig wrote:
-> > The libertas driver calls wiphy_unregister() without a prior
-> > wiphy_register() when a devices fails initialization. Fix this by
-> > introducing a private flag.
-> 
-> Nice.
-> 
-> However, I wonder: do we really need a private variable?  Does each driver 
-> introduce a private variable for this?
+On Tuesday 30 March 2010 07:46:55 Robert Schöne wrote:
+...
+> I really want to keep this diskussion alive until there's a soultion we
+> can all agree.
+> So Arjan and Thomas, are there any comments/preferences to the proposed
+> options?
+I'd like to extend the powertracer and pass the cpu.
+This is the only possibility I see to be able to support IO driven
+frequency switching drivers where the switching code must not be executed
+on the CPU that gets switched (without executing the tracer on each
+CPU explicitly which does not make sense).
 
-I didn't check other drivers thoroughly. I just saw the comment on the
-function which does the wiphy allocation and considered libertas to be
-special in the way it deals with the wireless core:
+The next problem where current implementation is unfixable broken with
+the tracer just passing the frequency is the fact that several CPUs
+could get switched with one MSR write to a depending CPU (SW_ANY).
+The same btw applies to C-states for which the tracer is used in
+the same way (compare with 8.4.2.2 _CSD (C-State Dependency) of a
+current ACPI spec).
 
-/*
- * At this time lbs_private *priv doesn't even exist, so we just allocate
- * memory and don't initialize the wiphy further. This is postponed until we
- * can talk to the firmware and happens at registration time in
- * lbs_cfg_wiphy_register().
- */
+No idea what the impact on userspace tools is, if I find some time
+I can have a look at timechart how trace data gets read/used.
+But I fear the Cstate tracing is used in some more tools already?
+It would be great to get feedback/suggestions from people making use
+of it already.
 
-And as I didn't find any function to tell me whether a wiphy has been
-registered and not just allocated, I saw no other way than manually
-track what the libertas driver does.
+Below is still broken, but should make things at least a bit better:
 
-If there's any better solution, I'd happily test it.
+---
+X86 cpufreq: Fix powertracer in acpi-cpufreq and exec it on the correct cpu(s)
 
-Thanks,
-Daniel
+Several things are broken with the tracer currently.
+This patch fixes:
+  - With the userspace governor the wrong cpu could get tracked if the target
+    function is executed on a CPU which does not get switched
+  - In SW_ALL CPU dependency case (CPUFREQ_SHARED_TYPE_ALL) only one CPU got
+    tracked. Now all CPUs that depend on each other are tracked.
 
+What this patch does not fix:
+  - In SW_ANY case (CPUFREQ_SHARED_TYPE_ANY) it's enough to write to a MSR of
+    one of the depending CPUs. The power trace macro misses the ability
+    to pass the cpu. Thus only one of the depending CPUs gets tracked correctly.
+    To be able to fix this the power trace macro must get extended.
+
+
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+CC: Robert Schöne <robert.schoene@tu-dresden.de>
+CC: x86@kernel.org
+CC: cpufreq <cpufreq@vger.kernel.org>
+CC: Arjan van de Ven <arjan@linux.intel.com>
+CC: stable@kernel.org
+
+---
+ arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
+index 1b1920f..259c49e 100644
+--- a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
++++ b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
+@@ -144,6 +144,7 @@ struct drv_cmd {
+ 		struct io_addr io;
+ 	} addr;
+ 	u32 val;
++	unsigned int frequency;
+ };
+ 
+ /* Called via smp_call_function_single(), on the target CPU */
+@@ -177,11 +178,13 @@ static void do_drv_write(void *_cmd)
+ 		rdmsr(cmd->addr.msr.reg, lo, hi);
+ 		lo = (lo & ~INTEL_MSR_RANGE) | (cmd->val & INTEL_MSR_RANGE);
+ 		wrmsr(cmd->addr.msr.reg, lo, hi);
++		trace_power_frequency(POWER_PSTATE, cmd->frequency);
+ 		break;
+ 	case SYSTEM_IO_CAPABLE:
+ 		acpi_os_write_port((acpi_io_address)cmd->addr.io.port,
+ 				cmd->val,
+ 				(u32)cmd->addr.io.bit_width);
++		trace_power_frequency(POWER_PSTATE, cmd->frequency);
+ 		break;
+ 	default:
+ 		break;
+@@ -363,7 +366,7 @@ static int acpi_cpufreq_target(struct cpufreq_policy *policy,
+ 		}
+ 	}
+ 
+-	trace_power_frequency(POWER_PSTATE, data->freq_table[next_state].frequency);
++	cmd.frequency = data->freq_table[next_state].frequency;
+ 
+ 	switch (data->cpu_feature) {
+ 	case SYSTEM_INTEL_MSR_CAPABLE:
+  
