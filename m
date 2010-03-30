@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756261Ab0C3XLx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:11:53 -0400
-Received: from kroah.org ([198.145.64.141]:48748 "EHLO coco.kroah.org"
+	id S1755792Ab0C3XJF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:09:05 -0400
+Received: from kroah.org ([198.145.64.141]:48477 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755926Ab0C3XLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:11:48 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:11 2010
-Message-Id: <20100330225811.050146887@linux.site>
+	id S1755663Ab0C3XJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:09:02 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:52 2010
+Message-Id: <20100330224951.271498807@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:07 -0700
+Date: Tue, 30 Mar 2010 15:48:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jiri Slaby <jirislaby@gmail.com>, James Morris <jmorris@namei.org>,
-       Stephen Smalley <sds@tycho.nsa.gov>, Eric Paris <eparis@parisplace.org>,
-       David Howells <dhowells@redhat.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [05/89] SECURITY: selinux, fix update_rlimit_cpu parameter
-In-Reply-To: <20100330230520.GA28779@kroah.com>
+       Ingo Molnar <mingo@elte.hu>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [18/45] sched: fine-tune SD_SIBLING_INIT
+In-Reply-To: <20100330230410.GA28712@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.31-stable review patch.  If anyone has any objections, please let us know.
+2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Jiri Slaby <jirislaby@gmail.com>
+From: Ingo Molnar <mingo@elte.hu>
 
-commit 17740d89785aeb4143770923d67c293849414710 upstream.
+commit 52c642f33b14bfa1b00ef2b68296effb34a573f3 upstream.
 
-Don't pass current RLIMIT_RTTIME to update_rlimit_cpu() in
-selinux_bprm_committing_creds, since update_rlimit_cpu expects
-RLIMIT_CPU limit.
+fine-tune the HT sched-domains parameters as well.
 
-Use proper rlim[RLIMIT_CPU].rlim_cur instead to fix that.
+On a HT capable box, this increases lat_ctx performance from 23.87
+usecs to 1.49 usecs:
 
-Signed-off-by: Jiri Slaby <jirislaby@gmail.com>
-Acked-by: James Morris <jmorris@namei.org>
-Cc: Stephen Smalley <sds@tycho.nsa.gov>
-Cc: Eric Paris <eparis@parisplace.org>
-Cc: David Howells <dhowells@redhat.com>
+ # before
+
+ $ ./lat_ctx -s 0 2
+
+   "size=0k ovr=1.89
+    2 23.87
+
+ # after
+
+ $ ./lat_ctx -s 0 2
+
+   "size=0k ovr=1.84
+     2 1.49
+
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- security/selinux/hooks.c |    2 +-
+ include/linux/topology.h |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -2360,7 +2360,7 @@ static void selinux_bprm_committing_cred
- 			initrlim = init_task.signal->rlim + i;
- 			rlim->rlim_cur = min(rlim->rlim_max, initrlim->rlim_cur);
- 		}
--		update_rlimit_cpu(rlim->rlim_cur);
-+		update_rlimit_cpu(current->signal->rlim[RLIMIT_CPU].rlim_cur);
- 	}
- }
- 
+--- a/include/linux/topology.h
++++ b/include/linux/topology.h
+@@ -99,7 +99,7 @@ void arch_update_cpu_topology(void);
+ 				| SD_BALANCE_FORK	\
+ 				| SD_BALANCE_EXEC	\
+ 				| SD_WAKE_AFFINE	\
+-				| SD_WAKE_IDLE		\
++				| SD_WAKE_BALANCE	\
+ 				| SD_SHARE_CPUPOWER,	\
+ 	.last_balance		= jiffies,		\
+ 	.balance_interval	= 1,			\
 
 
