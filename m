@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab0CaAJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:09:57 -0400
-Received: from kroah.org ([198.145.64.141]:52002 "EHLO coco.kroah.org"
+	id S1756740Ab0CaAV0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:21:26 -0400
+Received: from kroah.org ([198.145.64.141]:49154 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932205Ab0C3XSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:05 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:29 2010
-Message-Id: <20100330225629.332217808@linux.site>
+	id S1756492Ab0C3XMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:49 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:48 2010
+Message-Id: <20100330225847.519132447@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:26 -0700
+Date: Tue, 30 Mar 2010 15:58:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Tilman Schmidt <tilman@imap.cc>, Karsten Keil <keil@b1-systems.de>,
-       "David S. Miller" <davem@davemloft.net>,
+       Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
+       Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [048/116] gigaset: correct clearing of at_state strings on RING
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+Subject: [63/89] cifs: fix length calculation for converted unicode readdir names
+In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.31-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 3a0a3a6b92edf181f849ebd8417122392ba73a96 upstream.
+commit f12f98dba6ea1517cd7fbb912208893b9c014c15 upstream.
 
-In RING handling, clear the table of received parameter strings in
-a loop like everywhere else, instead of by enumeration which had
-already gotten out of sync.
+cifs_from_ucs2 returns the length of the converted name, including the
+length of the NULL terminator. We don't want to include the NULL
+terminator in the dentry name length however since that'll throw off the
+hash calculation for the dentry cache.
 
-Impact: minor bugfix
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-Acked-by: Karsten Keil <keil@b1-systems.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+I believe that this is the root cause of several problems that have
+cropped up recently that seem to be papered over with the "noserverino"
+mount option. More confirmation of that would be good, but this is
+clearly a bug and it fixes at least one reproducible problem that
+was reported.
+
+This patch fixes at least this reproducer in this kernel.org bug:
+
+    http://bugzilla.kernel.org/show_bug.cgi?id=15088#c12
+
+Reported-by: Bjorn Tore Sund <bjorn.sund@it.uib.no>
+Acked-by: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/isdn/gigaset/ev-layer.c |   12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ fs/cifs/readdir.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/isdn/gigaset/ev-layer.c
-+++ b/drivers/isdn/gigaset/ev-layer.c
-@@ -1243,14 +1243,10 @@ static void do_action(int action, struct
- 		 * note that bcs may be NULL if no B channel is free
- 		 */
- 		at_state2->ConState = 700;
--		kfree(at_state2->str_var[STR_NMBR]);
--		at_state2->str_var[STR_NMBR] = NULL;
--		kfree(at_state2->str_var[STR_ZCPN]);
--		at_state2->str_var[STR_ZCPN] = NULL;
--		kfree(at_state2->str_var[STR_ZBC]);
--		at_state2->str_var[STR_ZBC] = NULL;
--		kfree(at_state2->str_var[STR_ZHLC]);
--		at_state2->str_var[STR_ZHLC] = NULL;
-+		for (i = 0; i < STR_NUM; ++i) {
-+			kfree(at_state2->str_var[i]);
-+			at_state2->str_var[i] = NULL;
-+		}
- 		at_state2->int_var[VAR_ZCTP] = -1;
- 
- 		spin_lock_irqsave(&cs->lock, flags);
+--- a/fs/cifs/readdir.c
++++ b/fs/cifs/readdir.c
+@@ -666,6 +666,7 @@ static int cifs_get_name_from_search_buf
+ 					   min(len, max_len), nlt,
+ 					   cifs_sb->mnt_cifs_flags &
+ 						CIFS_MOUNT_MAP_SPECIAL_CHR);
++		pqst->len -= nls_nullsize(nlt);
+ 	} else {
+ 		pqst->name = filename;
+ 		pqst->len = len;
 
 
