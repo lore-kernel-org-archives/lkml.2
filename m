@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab0C3X6Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:58:25 -0400
-Received: from kroah.org ([198.145.64.141]:45566 "EHLO coco.kroah.org"
+	id S932190Ab0CaAL3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:11:29 -0400
+Received: from kroah.org ([198.145.64.141]:51975 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932351Ab0C3XTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:07 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:13 2010
-Message-Id: <20100330225712.949574310@linux.site>
+	id S1756231Ab0C3XR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:17:59 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:26 2010
+Message-Id: <20100330225625.743415981@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:56:29 -0700
+Date: Tue, 30 Mar 2010 15:55:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Nobuhiro Iwamatsu <iwamatsu.nobuhiro@renesas.com>,
-       Yoshihiro Shimoda <shimoda.yoshihiro@renesas.com>,
-       Paul Mundt <lethal@linux-sh.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [111/116] [PATCH] sh: Fix zImage boot using fixed PMB.
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [043/116] ALSA: hda: Use LPIB and 6stack-dig for eMachines T5212
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,27 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 319c2cc761505ee54a9536c5d0b9c2ee3fb33866 upstream.
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-Signed-off-by: Nobuhiro Iwamatsu <iwamatsu.nobuhiro@renesas.com>
-Signed-off-by: Yoshihiro Shimoda <shimoda.yoshihiro@renesas.com>
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+commit 572c0e3c73341755f3e7dfaaef6b26df12bd709c upstream.
+
+BugLink: https://bugs.launchpad.net/bugs/538895
+
+The OR has verified that both position_fix=1 and model=6stack-dig are
+necessary to have capture function properly. (The existing 3stack-6ch
+model quirk seems to be incorrect.)
+
+Reported-by: Reuben Bailey <reuben.e.bailey@gmail.com>
+Tested-by: Reuben Bailey <reuben.e.bailey@gmail.com>
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/sh/boot/compressed/misc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/hda_intel.c     |    1 +
+ sound/pci/hda/patch_realtek.c |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/sh/boot/compressed/misc.c
-+++ b/arch/sh/boot/compressed/misc.c
-@@ -132,7 +132,7 @@ void decompress_kernel(void)
- 	output_addr = (CONFIG_MEMORY_START + 0x2000);
- #else
- 	output_addr = PHYSADDR((unsigned long)&_text+PAGE_SIZE);
--#ifdef CONFIG_29BIT
-+#if defined(CONFIG_29BIT) || defined(CONFIG_PMB_FIXED)
- 	output_addr |= P2SEG;
- #endif
- #endif
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2230,6 +2230,7 @@ static struct snd_pci_quirk position_fix
+ 	SND_PCI_QUIRK(0x1028, 0x01f6, "Dell Latitude 131L", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1462, 0x1002, "MSI Wind U115", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1565, 0x820f, "Biostar Microtech", POS_FIX_LPIB),
++	SND_PCI_QUIRK(0x8086, 0xd601, "eMachines T5212", POS_FIX_LPIB),
+ 	{}
+ };
+ 
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -8921,7 +8921,7 @@ static struct snd_pci_quirk alc882_cfg_t
+ 	SND_PCI_QUIRK(0x8086, 0x0022, "DX58SO", ALC889_INTEL),
+ 	SND_PCI_QUIRK(0x8086, 0x0021, "Intel IbexPeak", ALC889A_INTEL),
+ 	SND_PCI_QUIRK(0x8086, 0x3b56, "Intel IbexPeak", ALC889A_INTEL),
+-	SND_PCI_QUIRK(0x8086, 0xd601, "D102GGC", ALC883_3ST_6ch),
++	SND_PCI_QUIRK(0x8086, 0xd601, "D102GGC", ALC882_6ST_DIG),
+ 
+ 	{}
+ };
 
 
