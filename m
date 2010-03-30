@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932468Ab0C3XVh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:21:37 -0400
-Received: from kroah.org ([198.145.64.141]:46177 "EHLO coco.kroah.org"
+	id S932700Ab0C3XWL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:22:11 -0400
+Received: from kroah.org ([198.145.64.141]:46467 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932381Ab0C3XUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:19 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:05 2010
-Message-Id: <20100330224805.329133576@linux.site>
+	id S1755161Ab0C3XVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:21:14 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:31 2010
+Message-Id: <20100330224830.858028493@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:41:43 -0700
+Date: Tue, 30 Mar 2010 15:42:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Clemens Ladisch <clemens@ladisch.de>,
-       Alan Stern <stern@rowland.harvard.edu>,
+       Senthil Balasubramanian <senthilkumar@atheros.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       "Luis R. Rodriguez" <lrodriguez@atheros.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [069/156] USB: EHCI: adjust ehci_iso_stream for changes in ehci_qh
+Subject: [107/156] ath9k: Enable TIM timer interrupt only when needed.
 In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,68 +28,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Senthil Balasubramanian <senthilkumar@atheros.com>
 
-commit 1082f57abfa26590b60c43f503afb24102a37016 upstream.
+commit 3f7c5c10e9dc6bf90179eb9f7c06151d508fb324 upstream.
 
-The EHCI driver stores in usb_host_endpoint.hcpriv a pointer to either
-an ehci_qh or an ehci_iso_stream structure, and uses the contents of the
-hw_info1 field to distinguish the two cases.
+The TIM timer interrupt is enabled even before the ACK of nullqos
+is received which is unnecessary.
 
-After ehci_qh was split into hw and sw parts, ehci_iso_stream must also
-be adjusted so that it again looks like an ehci_qh structure.
+Also clean up the CONF_PS part of config callback properly for
+better readability.
 
-This fixes a NULL pointer access in ehci_endpoint_disable() when it
-tries to access qh->hw->hw_info1.
-
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Reported-by: Colin Fletcher <colin.m.fletcher@googlemail.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Senthil Balasubramanian <senthilkumar@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-hcd.c   |    2 +-
- drivers/usb/host/ehci-sched.c |    4 ++--
- drivers/usb/host/ehci.h       |    5 ++---
- 3 files changed, 5 insertions(+), 6 deletions(-)
+ drivers/net/wireless/ath/ath9k/ath9k.h |    1 +
+ drivers/net/wireless/ath/ath9k/main.c  |   24 ++++++++++++++----------
+ drivers/net/wireless/ath/ath9k/xmit.c  |    7 +++----
+ 3 files changed, 18 insertions(+), 14 deletions(-)
 
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -995,7 +995,7 @@ rescan:
- 	/* endpoints can be iso streams.  for now, we don't
- 	 * accelerate iso completions ... so spin a while.
- 	 */
--	if (qh->hw->hw_info1 == 0) {
-+	if (qh->hw == NULL) {
- 		ehci_vdbg (ehci, "iso delay\n");
- 		goto idle_timeout;
- 	}
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -1121,8 +1121,8 @@ iso_stream_find (struct ehci_hcd *ehci,
- 					urb->interval);
+--- a/drivers/net/wireless/ath/ath9k/ath9k.h
++++ b/drivers/net/wireless/ath/ath9k/ath9k.h
+@@ -267,6 +267,7 @@ void ath_tx_aggr_start(struct ath_softc
+ 		       u16 tid, u16 *ssn);
+ void ath_tx_aggr_stop(struct ath_softc *sc, struct ieee80211_sta *sta, u16 tid);
+ void ath_tx_aggr_resume(struct ath_softc *sc, struct ieee80211_sta *sta, u16 tid);
++void ath9k_enable_ps(struct ath_softc *sc);
+ 
+ /********/
+ /* VIFs */
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -2681,6 +2681,19 @@ static void ath9k_remove_interface(struc
+ 	mutex_unlock(&sc->mutex);
+ }
+ 
++void ath9k_enable_ps(struct ath_softc *sc)
++{
++	sc->ps_enabled = true;
++	if (!(sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_AUTOSLEEP)) {
++		if ((sc->imask & ATH9K_INT_TIM_TIMER) == 0) {
++			sc->imask |= ATH9K_INT_TIM_TIMER;
++			ath9k_hw_set_interrupts(sc->sc_ah,
++					sc->imask);
++		}
++	}
++	ath9k_hw_setrxabort(sc->sc_ah, 1);
++}
++
+ static int ath9k_config(struct ieee80211_hw *hw, u32 changed)
+ {
+ 	struct ath_wiphy *aphy = hw->priv;
+@@ -2734,22 +2747,13 @@ static int ath9k_config(struct ieee80211
+ 	if (changed & IEEE80211_CONF_CHANGE_PS) {
+ 		if (conf->flags & IEEE80211_CONF_PS) {
+ 			sc->sc_flags |= SC_OP_PS_ENABLED;
+-			if (!(ah->caps.hw_caps &
+-			      ATH9K_HW_CAP_AUTOSLEEP)) {
+-				if ((sc->imask & ATH9K_INT_TIM_TIMER) == 0) {
+-					sc->imask |= ATH9K_INT_TIM_TIMER;
+-					ath9k_hw_set_interrupts(sc->sc_ah,
+-							sc->imask);
+-				}
+-			}
+ 			/*
+ 			 * At this point we know hardware has received an ACK
+ 			 * of a previously sent null data frame.
+ 			 */
+ 			if ((sc->sc_flags & SC_OP_NULLFUNC_COMPLETED)) {
+ 				sc->sc_flags &= ~SC_OP_NULLFUNC_COMPLETED;
+-				sc->ps_enabled = true;
+-				ath9k_hw_setrxabort(sc->sc_ah, 1);
++				ath9k_enable_ps(sc);
+                         }
+ 		} else {
+ 			sc->ps_enabled = false;
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -2034,10 +2034,9 @@ static void ath_tx_processq(struct ath_s
+ 		 */
+ 		if (bf->bf_isnullfunc &&
+ 		    (ds->ds_txstat.ts_status & ATH9K_TX_ACKED)) {
+-			if ((sc->sc_flags & SC_OP_PS_ENABLED)) {
+-				sc->ps_enabled = true;
+-				ath9k_hw_setrxabort(sc->sc_ah, 1);
+-			} else
++			if ((sc->sc_flags & SC_OP_PS_ENABLED))
++				ath9k_enable_ps(sc);
++			else
+ 				sc->sc_flags |= SC_OP_NULLFUNC_COMPLETED;
  		}
  
--	/* if dev->ep [epnum] is a QH, info1.maxpacket is nonzero */
--	} else if (unlikely (stream->hw_info1 != 0)) {
-+	/* if dev->ep [epnum] is a QH, hw is set */
-+	} else if (unlikely (stream->hw != NULL)) {
- 		ehci_dbg (ehci, "dev %s ep%d%s, not iso??\n",
- 			urb->dev->devpath, epnum,
- 			usb_pipein(urb->pipe) ? "in" : "out");
---- a/drivers/usb/host/ehci.h
-+++ b/drivers/usb/host/ehci.h
-@@ -394,9 +394,8 @@ struct ehci_iso_sched {
-  * acts like a qh would, if EHCI had them for ISO.
-  */
- struct ehci_iso_stream {
--	/* first two fields match QH, but info1 == 0 */
--	__hc32			hw_next;
--	__hc32			hw_info1;
-+	/* first field matches ehci_hq, but is NULL */
-+	struct ehci_qh_hw	*hw;
- 
- 	u32			refcount;
- 	u8			bEndpointAddress;
 
 
