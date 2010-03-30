@@ -1,167 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932496Ab0C3XTx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:19:53 -0400
-Received: from kroah.org ([198.145.64.141]:45552 "EHLO coco.kroah.org"
+	id S932687Ab0C3X2v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:28:51 -0400
+Received: from kroah.org ([198.145.64.141]:46736 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932344Ab0C3XTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:19:05 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:57:12 2010
-Message-Id: <20100330225711.731917290@linux.site>
+	id S932470Ab0C3XVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:21:50 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:47 2010
+Message-Id: <20100330224847.091054103@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:56:27 -0700
+Date: Tue, 30 Mar 2010 15:42:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Marcel Holtmann <marcel@holtmann.org>,
+       Herbert Xu <herbert@gondor.apana.org.au>,
+       Steffen Klassert <steffen.klassert@secunet.com>,
+       Jamal Hadi Salim <hadi@cyberus.ca>,
+       "David S. Miller" <davem@davemloft.net>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [109/116] Bluetooth: Fix potential bad memory access with sysfs files
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+Subject: [133/156] ipsec: Fix bogus bundle flowi
+In-Reply-To: <20100330230630.GA28824@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Marcel Holtmann <marcel@holtmann.org>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-commit 101545f6fef4a0a3ea8daf0b5b880df2c6a92a69 upstream.
+[ Upstream commit 87c1e12b5eeb7b30b4b41291bef8e0b41fc3dde9 ]
 
-When creating a high number of Bluetooth sockets (L2CAP, SCO
-and RFCOMM) it is possible to scribble repeatedly on arbitrary
-pages of memory. Ensure that the content of these sysfs files is
-always less than one page. Even if this means truncating. The
-files in question are scheduled to be moved over to debugfs in
-the future anyway.
+When I merged the bundle creation code, I introduced a bogus
+flowi value in the bundle.  Instead of getting from the caller,
+it was instead set to the flow in the route object, which is
+totally different.
 
-Based on initial patches from Neil Brown and Linus Torvalds
+The end result is that the bundles we created never match, and
+we instead end up with an ever growing bundle list.
 
-Reported-by: Neil Brown <neilb@suse.de>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Thanks to Jamal for find this problem.
+
+Reported-by: Jamal Hadi Salim <hadi@cyberus.ca>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+Acked-by: Jamal Hadi Salim <hadi@cyberus.ca>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- net/bluetooth/l2cap.c       |   10 +++++++++-
- net/bluetooth/rfcomm/core.c |   13 ++++++++++++-
- net/bluetooth/rfcomm/sock.c |   11 ++++++++++-
- net/bluetooth/sco.c         |   11 ++++++++++-
- 4 files changed, 41 insertions(+), 4 deletions(-)
+ include/net/xfrm.h      |    3 ++-
+ net/ipv4/xfrm4_policy.c |    5 +++--
+ net/ipv6/xfrm6_policy.c |    3 ++-
+ net/xfrm/xfrm_policy.c  |    7 ++++---
+ 4 files changed, 11 insertions(+), 7 deletions(-)
 
---- a/net/bluetooth/l2cap.c
-+++ b/net/bluetooth/l2cap.c
-@@ -3885,16 +3885,24 @@ static ssize_t l2cap_sysfs_show(struct c
- 	struct sock *sk;
- 	struct hlist_node *node;
- 	char *str = buf;
-+	int size = PAGE_SIZE;
+--- a/include/net/xfrm.h
++++ b/include/net/xfrm.h
+@@ -274,7 +274,8 @@ struct xfrm_policy_afinfo {
+ 					     struct dst_entry *dst,
+ 					     int nfheader_len);
+ 	int			(*fill_dst)(struct xfrm_dst *xdst,
+-					    struct net_device *dev);
++					    struct net_device *dev,
++					    struct flowi *fl);
+ };
  
- 	read_lock_bh(&l2cap_sk_list.lock);
+ extern int xfrm_policy_register_afinfo(struct xfrm_policy_afinfo *afinfo);
+--- a/net/ipv4/xfrm4_policy.c
++++ b/net/ipv4/xfrm4_policy.c
+@@ -91,11 +91,12 @@ static int xfrm4_init_path(struct xfrm_d
+ 	return 0;
+ }
  
- 	sk_for_each(sk, node, &l2cap_sk_list.head) {
- 		struct l2cap_pinfo *pi = l2cap_pi(sk);
-+		int len;
+-static int xfrm4_fill_dst(struct xfrm_dst *xdst, struct net_device *dev)
++static int xfrm4_fill_dst(struct xfrm_dst *xdst, struct net_device *dev,
++			  struct flowi *fl)
+ {
+ 	struct rtable *rt = (struct rtable *)xdst->route;
  
--		str += sprintf(str, "%s %s %d %d 0x%4.4x 0x%4.4x %d %d %d\n",
-+		len = snprintf(str, size, "%s %s %d %d 0x%4.4x 0x%4.4x %d %d %d\n",
- 				batostr(&bt_sk(sk)->src), batostr(&bt_sk(sk)->dst),
- 				sk->sk_state, __le16_to_cpu(pi->psm), pi->scid,
- 				pi->dcid, pi->imtu, pi->omtu, pi->sec_level);
-+
-+		size -= len;
-+		if (size <= 0)
-+			break;
-+
-+		str += len;
- 	}
+-	xdst->u.rt.fl = rt->fl;
++	xdst->u.rt.fl = *fl;
  
- 	read_unlock_bh(&l2cap_sk_list.lock);
---- a/net/bluetooth/rfcomm/core.c
-+++ b/net/bluetooth/rfcomm/core.c
-@@ -2096,6 +2096,7 @@ static ssize_t rfcomm_dlc_sysfs_show(str
- 	struct rfcomm_session *s;
- 	struct list_head *pp, *p;
- 	char *str = buf;
-+	int size = PAGE_SIZE;
+ 	xdst->u.dst.dev = dev;
+ 	dev_hold(dev);
+--- a/net/ipv6/xfrm6_policy.c
++++ b/net/ipv6/xfrm6_policy.c
+@@ -116,7 +116,8 @@ static int xfrm6_init_path(struct xfrm_d
+ 	return 0;
+ }
  
- 	rfcomm_lock();
+-static int xfrm6_fill_dst(struct xfrm_dst *xdst, struct net_device *dev)
++static int xfrm6_fill_dst(struct xfrm_dst *xdst, struct net_device *dev,
++			  struct flowi *fl)
+ {
+ 	struct rt6_info *rt = (struct rt6_info*)xdst->route;
  
-@@ -2104,11 +2105,21 @@ static ssize_t rfcomm_dlc_sysfs_show(str
- 		list_for_each(pp, &s->dlcs) {
- 			struct sock *sk = s->sock->sk;
- 			struct rfcomm_dlc *d = list_entry(pp, struct rfcomm_dlc, list);
-+			int len;
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -1354,7 +1354,8 @@ static inline int xfrm_init_path(struct
+ 	return err;
+ }
  
--			str += sprintf(str, "%s %s %ld %d %d %d %d\n",
-+			len = snprintf(str, size, "%s %s %ld %d %d %d %d\n",
- 					batostr(&bt_sk(sk)->src), batostr(&bt_sk(sk)->dst),
- 					d->state, d->dlci, d->mtu, d->rx_credits, d->tx_credits);
-+
-+			size -= len;
-+			if (size <= 0)
-+				break;
-+
-+			str += len;
- 		}
-+
-+		if (size <= 0)
-+			break;
- 	}
+-static inline int xfrm_fill_dst(struct xfrm_dst *xdst, struct net_device *dev)
++static inline int xfrm_fill_dst(struct xfrm_dst *xdst, struct net_device *dev,
++				struct flowi *fl)
+ {
+ 	struct xfrm_policy_afinfo *afinfo =
+ 		xfrm_policy_get_afinfo(xdst->u.dst.ops->family);
+@@ -1363,7 +1364,7 @@ static inline int xfrm_fill_dst(struct x
+ 	if (!afinfo)
+ 		return -EINVAL;
  
- 	rfcomm_unlock();
---- a/net/bluetooth/rfcomm/sock.c
-+++ b/net/bluetooth/rfcomm/sock.c
-@@ -1065,13 +1065,22 @@ static ssize_t rfcomm_sock_sysfs_show(st
- 	struct sock *sk;
- 	struct hlist_node *node;
- 	char *str = buf;
-+	int size = PAGE_SIZE;
+-	err = afinfo->fill_dst(xdst, dev);
++	err = afinfo->fill_dst(xdst, dev, fl);
  
- 	read_lock_bh(&rfcomm_sk_list.lock);
+ 	xfrm_policy_put_afinfo(afinfo);
  
- 	sk_for_each(sk, node, &rfcomm_sk_list.head) {
--		str += sprintf(str, "%s %s %d %d\n",
-+		int len;
-+
-+		len = snprintf(str, size, "%s %s %d %d\n",
- 				batostr(&bt_sk(sk)->src), batostr(&bt_sk(sk)->dst),
- 				sk->sk_state, rfcomm_pi(sk)->channel);
-+
-+		size -= len;
-+		if (size <= 0)
-+			break;
-+
-+		str += len;
- 	}
+@@ -1468,7 +1469,7 @@ static struct dst_entry *xfrm_bundle_cre
+ 	for (dst_prev = dst0; dst_prev != dst; dst_prev = dst_prev->child) {
+ 		struct xfrm_dst *xdst = (struct xfrm_dst *)dst_prev;
  
- 	read_unlock_bh(&rfcomm_sk_list.lock);
---- a/net/bluetooth/sco.c
-+++ b/net/bluetooth/sco.c
-@@ -957,13 +957,22 @@ static ssize_t sco_sysfs_show(struct cla
- 	struct sock *sk;
- 	struct hlist_node *node;
- 	char *str = buf;
-+	int size = PAGE_SIZE;
+-		err = xfrm_fill_dst(xdst, dev);
++		err = xfrm_fill_dst(xdst, dev, fl);
+ 		if (err)
+ 			goto free_dst;
  
- 	read_lock_bh(&sco_sk_list.lock);
- 
- 	sk_for_each(sk, node, &sco_sk_list.head) {
--		str += sprintf(str, "%s %s %d\n",
-+		int len;
-+
-+		len = snprintf(str, size, "%s %s %d\n",
- 				batostr(&bt_sk(sk)->src), batostr(&bt_sk(sk)->dst),
- 				sk->sk_state);
-+
-+		size -= len;
-+		if (size <= 0)
-+			break;
-+
-+		str += len;
- 	}
- 
- 	read_unlock_bh(&sco_sk_list.lock);
 
 
