@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757862Ab0CaAcg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:32:36 -0400
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:24955 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756027Ab0C3XMA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:00 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Ozgur Yuksel <ozgur.yuksel@oracle.com>
-Subject: Re: [Bugme-new] [Bug 15621] New: BUG: unable to handle kernel paging request - comm: pccardd
-Date: Tue, 30 Mar 2010 17:10:59 -0600
-User-Agent: KMail/1.9.10
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Yinghai Lu <yinghai@kernel.org>, Dmitry Torokhov <dtor@mail.ru>,
-       bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org,
-       linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-References: <bug-15621-10286@https.bugzilla.kernel.org/> <20100325170138.GA5424@comet.dominikbrodowski.net> <20100329091241.GA3237@oracle.com>
-In-Reply-To: <20100329091241.GA3237@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201003301711.00351.bjorn.helgaas@hp.com>
+	id S1757867Ab0CaAdE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:33:04 -0400
+Received: from kroah.org ([198.145.64.141]:48798 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756308Ab0C3XL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:11:58 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:16 2010
+Message-Id: <20100330225815.618223674@linux.site>
+User-Agent: quilt/0.47-14.9
+Date: Tue, 30 Mar 2010 15:57:14 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Xiaotian Feng <dfeng@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Jeff Mahoney <jeffm@suse.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [12/89] clockevent: Dont remove broadcast device when cpu is dead
+In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael, this is a regression from 2.6.33, in case it's not on your
-list yet.
+2.6.31-stable review patch.  If anyone has any objections, please let us know.
 
-Ozgur, thanks for attaching the logs.  There's some interesting stuff
-there that I don't understand yet, such as this from the pci=nocrs dmesg:
+------------------
 
-  [    1.577758] pci 0000:00:1e.0: PCI bridge to [bus 03-04]
-  [    1.583031] pci 0000:00:1e.0:   bridge window [io  0x5000-0x5fff]
-  [    1.551889] pci 0000:03:01.0: CardBus bridge to [bus 04-07]
-  [    1.557507] pci 0000:03:01.0:   bridge window [io  0x5000-0x50ff]
-  [    1.603303] PCI: No. 2 try to assign unassigned res
-  [    1.688208] pci 0000:03:01.0: CardBus bridge to [bus 04-07]
-  [    1.693826] pci 0000:03:01.0:   bridge window [io  0x0000-0x00ff]
+From: Xiaotian Feng <dfeng@redhat.com>
 
-Apparently we moved that CardBus I/O window from [0x5000-0x5fff] to
-[0x0-0xff].  I'm dubious about that because the upstream bridge at
-00:1e.0 only positively decodes [0x5000-0x5fff] (though it *is* in
-subtractive decode mode, so it will forward more).  I wish we had
-a little more debug output about when & why we moved that window.
+commit ea9d8e3f45404d411c00ae67b45cc35c58265bb7 upstream.
 
-I'm especially dubious because your /proc/ioports with pci=nocrs
-from comment 8 (which is the case that's supposed to be working)
-contains this:
+Marc reported that the BUG_ON in clockevents_notify() triggers on his
+system. This happens because the kernel tries to remove an active
+clock event device (used for broadcasting) from the device list.
 
-  5000-5fff : PCI Bus 0000:03
-    0000-00ff : PCI CardBus 0000:04
-    0000-00ff : PCI CardBus 0000:04
+The handling of devices which can be used as per cpu device and as a
+global broadcast device is suboptimal.
 
-That looks completely broken in terms of the hierarchy.  It looks
-like you have a USB device in the CardBus slot (ohci_hcd 0000:04:00.0).
-Maybe the broken hierarchy doesn't cause problems with this device
-because it doesn't use I/O ports.
+The simplest solution for now (and for stable) is to check whether the
+device is used as global broadcast device, but this needs to be
+revisited.
 
-Anyway, I'd like to see the entire dmesg log when booted *without*
-pci=nocrs, because that's the case that fails.  Since the system doesn't
-boot, you'll have to use a serial console or netconsole to collect the
-whole thing.  The serial console log in comment 7 is corrupted; it looks
-like all the lines got truncated to 80 columns or something.  And please
-boot with "ignore_loglevel" so we see all the debug messages on the console.
-Also, no need to tar up and compress your attachments -- I always figure
-if bugzilla wants to compress stuff, it can do it internally without
-bothering us.
+[ tglx: restored the cpuweight check and massaged the changelog ]
+
+Reported-by: Marc Dionne <marc.c.dionne@gmail.com>
+Tested-by: Marc Dionne <marc.c.dionne@gmail.com>
+Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+LKML-Reference: <1262834564-13033-1-git-send-email-dfeng@redhat.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ kernel/time/clockevents.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -20,6 +20,8 @@
+ #include <linux/sysdev.h>
+ #include <linux/tick.h>
+ 
++#include "tick-internal.h"
++
+ /* The registered clock event devices */
+ static LIST_HEAD(clockevent_devices);
+ static LIST_HEAD(clockevents_released);
+@@ -258,7 +260,8 @@ void clockevents_notify(unsigned long re
+ 		cpu = *((int *)arg);
+ 		list_for_each_entry_safe(dev, tmp, &clockevent_devices, list) {
+ 			if (cpumask_test_cpu(cpu, dev->cpumask) &&
+-			    cpumask_weight(dev->cpumask) == 1) {
++			    cpumask_weight(dev->cpumask) == 1 &&
++			    !tick_is_broadcast_device(dev)) {
+ 				BUG_ON(dev->mode != CLOCK_EVT_MODE_UNUSED);
+ 				list_del(&dev->list);
+ 			}
+
+
