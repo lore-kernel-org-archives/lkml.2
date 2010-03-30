@@ -1,138 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756947Ab0C3Xav (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:30:51 -0400
-Received: from kroah.org ([198.145.64.141]:46659 "EHLO coco.kroah.org"
+	id S932223Ab0CaAJm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:09:42 -0400
+Received: from kroah.org ([198.145.64.141]:52047 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932426Ab0C3XVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:21:39 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:42 2010
-Message-Id: <20100330224841.993382230@linux.site>
+	id S1756810Ab0C3XSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:10 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:32 2010
+Message-Id: <20100330225632.465027188@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:42:39 -0700
+Date: Tue, 30 Mar 2010 15:55:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Vlad Yasevich <vladislav.yasevich@hp.com>,
-       Sridhar Samudrala <sri@us.ibm.com>, Zhu Yi <yi.zhu@intel.com>,
-       "David S. Miller" <davem@davemloft.net>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Ravikiran Thirumalai <kiran@scalex86.org>,
+       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [125/156] sctp: use limited socket backlog
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+Subject: [053/116] tmpfs: mpol=bind:0 dont cause mount error.
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Zhu Yi <yi.zhu@intel.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-[ Upstream commit 50b1a782f845140f4138f14a1ce8a4a6dd0cc82f ]
+commit d69b2e63e9172afb4d07c305601b79a55509ac4c upstream.
 
-Make sctp adapt to the limited socket backlog change.
+Currently, following mount operation cause mount error.
 
-Cc: Vlad Yasevich <vladislav.yasevich@hp.com>
-Cc: Sridhar Samudrala <sri@us.ibm.com>
-Signed-off-by: Zhu Yi <yi.zhu@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+% mount -t tmpfs -ompol=bind:0 none /tmp
+
+Because commit 71fe804b6d5 (mempolicy: use struct mempolicy pointer in
+shmem_sb_info) corrupted MPOL_BIND parse code.
+
+This patch restore the needed one.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Ravikiran Thirumalai <kiran@scalex86.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Acked-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/sctp/input.c  |   42 +++++++++++++++++++++++++++---------------
- net/sctp/socket.c |    3 +++
- 2 files changed, 30 insertions(+), 15 deletions(-)
 
---- a/net/sctp/input.c
-+++ b/net/sctp/input.c
-@@ -75,7 +75,7 @@ static struct sctp_association *__sctp_l
- 					const union sctp_addr *peer,
- 					struct sctp_transport **pt);
- 
--static void sctp_add_backlog(struct sock *sk, struct sk_buff *skb);
-+static int sctp_add_backlog(struct sock *sk, struct sk_buff *skb);
- 
- 
- /* Calculate the SCTP checksum of an SCTP packet.  */
-@@ -265,8 +265,13 @@ int sctp_rcv(struct sk_buff *skb)
+---
+ mm/mempolicy.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2149,9 +2149,13 @@ int mpol_parse_str(char *str, struct mem
+ 		if (!nodelist)
+ 			err = 0;
+ 		goto out;
+-	/*
+-	 * case MPOL_BIND:    mpol_new() enforces non-empty nodemask.
+-	 */
++	case MPOL_BIND:
++		/*
++		 * Insist on a nodelist
++		 */
++		if (!nodelist)
++			goto out;
++		err = 0;
  	}
  
- 	if (sock_owned_by_user(sk)) {
-+		if (sctp_add_backlog(sk, skb)) {
-+			sctp_bh_unlock_sock(sk);
-+			sctp_chunk_free(chunk);
-+			skb = NULL; /* sctp_chunk_free already freed the skb */
-+			goto discard_release;
-+		}
- 		SCTP_INC_STATS_BH(SCTP_MIB_IN_PKT_BACKLOG);
--		sctp_add_backlog(sk, skb);
- 	} else {
- 		SCTP_INC_STATS_BH(SCTP_MIB_IN_PKT_SOFTIRQ);
- 		sctp_inq_push(&chunk->rcvr->inqueue, chunk);
-@@ -336,8 +341,10 @@ int sctp_backlog_rcv(struct sock *sk, st
- 		sctp_bh_lock_sock(sk);
- 
- 		if (sock_owned_by_user(sk)) {
--			sk_add_backlog(sk, skb);
--			backloged = 1;
-+			if (sk_add_backlog_limited(sk, skb))
-+				sctp_chunk_free(chunk);
-+			else
-+				backloged = 1;
- 		} else
- 			sctp_inq_push(inqueue, chunk);
- 
-@@ -362,22 +369,27 @@ done:
- 	return 0;
- }
- 
--static void sctp_add_backlog(struct sock *sk, struct sk_buff *skb)
-+static int sctp_add_backlog(struct sock *sk, struct sk_buff *skb)
- {
- 	struct sctp_chunk *chunk = SCTP_INPUT_CB(skb)->chunk;
- 	struct sctp_ep_common *rcvr = chunk->rcvr;
-+	int ret;
- 
--	/* Hold the assoc/ep while hanging on the backlog queue.
--	 * This way, we know structures we need will not disappear from us
--	 */
--	if (SCTP_EP_TYPE_ASSOCIATION == rcvr->type)
--		sctp_association_hold(sctp_assoc(rcvr));
--	else if (SCTP_EP_TYPE_SOCKET == rcvr->type)
--		sctp_endpoint_hold(sctp_ep(rcvr));
--	else
--		BUG();
-+	ret = sk_add_backlog_limited(sk, skb);
-+	if (!ret) {
-+		/* Hold the assoc/ep while hanging on the backlog queue.
-+		 * This way, we know structures we need will not disappear
-+		 * from us
-+		 */
-+		if (SCTP_EP_TYPE_ASSOCIATION == rcvr->type)
-+			sctp_association_hold(sctp_assoc(rcvr));
-+		else if (SCTP_EP_TYPE_SOCKET == rcvr->type)
-+			sctp_endpoint_hold(sctp_ep(rcvr));
-+		else
-+			BUG();
-+	}
-+	return ret;
- 
--	sk_add_backlog(sk, skb);
- }
- 
- /* Handle icmp frag needed error. */
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -3720,6 +3720,9 @@ SCTP_STATIC int sctp_init_sock(struct so
- 	SCTP_DBG_OBJCNT_INC(sock);
- 	percpu_counter_inc(&sctp_sockets_allocated);
- 
-+	/* Set socket backlog limit. */
-+	sk->sk_backlog.limit = sysctl_sctp_rmem[1];
-+
- 	local_bh_disable();
- 	sock_prot_inuse_add(sock_net(sk), sk->sk_prot, 1);
- 	local_bh_enable();
+ 	mode_flags = 0;
 
 
