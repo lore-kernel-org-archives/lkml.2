@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502Ab0CaAG1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:06:27 -0400
-Received: from kroah.org ([198.145.64.141]:45251 "EHLO coco.kroah.org"
+	id S932239Ab0CaAIW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:08:22 -0400
+Received: from kroah.org ([198.145.64.141]:52081 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932252Ab0C3XSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:24 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:41 2010
-Message-Id: <20100330225640.737941898@linux.site>
+	id S932084Ab0C3XSO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:14 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:36 2010
+Message-Id: <20100330225636.015008727@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:43 -0700
+Date: Tue, 30 Mar 2010 15:55:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Clemens Ladisch <clemens@ladisch.de>,
-       Alan Stern <stern@rowland.harvard.edu>,
+       Trond Myklebust <Trond.Myklebust@netapp.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [065/116] USB: EHCI: adjust ehci_iso_stream for changes in ehci_qh
+Subject: [058/116] NFSv4: Dont ignore the NFS_INO_REVAL_FORCED flag in nfs_revalidate_inode()
 In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,68 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 1082f57abfa26590b60c43f503afb24102a37016 upstream.
+commit b4d2314bb88b07e5a04e6c75b442a1dfcd60e340 upstream.
 
-The EHCI driver stores in usb_host_endpoint.hcpriv a pointer to either
-an ehci_qh or an ehci_iso_stream structure, and uses the contents of the
-hw_info1 field to distinguish the two cases.
+If the NFS_INO_REVAL_FORCED flag is set, that means that we don't yet have
+an up to date attribute cache. Even if we hold a delegation, we must
+put a GETATTR on the wire.
 
-After ehci_qh was split into hw and sw parts, ehci_iso_stream must also
-be adjusted so that it again looks like an ehci_qh structure.
-
-This fixes a NULL pointer access in ehci_endpoint_disable() when it
-tries to access qh->hw->hw_info1.
-
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Reported-by: Colin Fletcher <colin.m.fletcher@googlemail.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-hcd.c   |    2 +-
- drivers/usb/host/ehci-sched.c |    4 ++--
- drivers/usb/host/ehci.h       |    5 ++---
- 3 files changed, 5 insertions(+), 6 deletions(-)
+ fs/nfs/delegation.h |    6 ++++++
+ fs/nfs/dir.c        |    2 +-
+ fs/nfs/inode.c      |    2 +-
+ 3 files changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -993,7 +993,7 @@ rescan:
- 	/* endpoints can be iso streams.  for now, we don't
- 	 * accelerate iso completions ... so spin a while.
- 	 */
--	if (qh->hw->hw_info1 == 0) {
-+	if (qh->hw == NULL) {
- 		ehci_vdbg (ehci, "iso delay\n");
- 		goto idle_timeout;
- 	}
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -1121,8 +1121,8 @@ iso_stream_find (struct ehci_hcd *ehci,
- 					urb->interval);
- 		}
+--- a/fs/nfs/delegation.h
++++ b/fs/nfs/delegation.h
+@@ -68,4 +68,10 @@ static inline int nfs_inode_return_deleg
+ }
+ #endif
  
--	/* if dev->ep [epnum] is a QH, info1.maxpacket is nonzero */
--	} else if (unlikely (stream->hw_info1 != 0)) {
-+	/* if dev->ep [epnum] is a QH, hw is set */
-+	} else if (unlikely (stream->hw != NULL)) {
- 		ehci_dbg (ehci, "dev %s ep%d%s, not iso??\n",
- 			urb->dev->devpath, epnum,
- 			usb_pipein(urb->pipe) ? "in" : "out");
---- a/drivers/usb/host/ehci.h
-+++ b/drivers/usb/host/ehci.h
-@@ -394,9 +394,8 @@ struct ehci_iso_sched {
-  * acts like a qh would, if EHCI had them for ISO.
-  */
- struct ehci_iso_stream {
--	/* first two fields match QH, but info1 == 0 */
--	__hc32			hw_next;
--	__hc32			hw_info1;
-+	/* first field matches ehci_hq, but is NULL */
-+	struct ehci_qh_hw	*hw;
++static inline int nfs_have_delegated_attributes(struct inode *inode)
++{
++	return nfs_have_delegation(inode, FMODE_READ) &&
++		!(NFS_I(inode)->cache_validity & NFS_INO_REVAL_FORCED);
++}
++
+ #endif
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -1797,7 +1797,7 @@ static int nfs_access_get_cached(struct
+ 	cache = nfs_access_search_rbtree(inode, cred);
+ 	if (cache == NULL)
+ 		goto out;
+-	if (!nfs_have_delegation(inode, FMODE_READ) &&
++	if (!nfs_have_delegated_attributes(inode) &&
+ 	    !time_in_range_open(jiffies, cache->jiffies, cache->jiffies + nfsi->attrtimeo))
+ 		goto out_stale;
+ 	res->jiffies = cache->jiffies;
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -759,7 +759,7 @@ int nfs_attribute_timeout(struct inode *
+ {
+ 	struct nfs_inode *nfsi = NFS_I(inode);
  
- 	u32			refcount;
- 	u8			bEndpointAddress;
+-	if (nfs_have_delegation(inode, FMODE_READ))
++	if (nfs_have_delegated_attributes(inode))
+ 		return 0;
+ 	return !time_in_range_open(jiffies, nfsi->read_cache_jiffies, nfsi->read_cache_jiffies + nfsi->attrtimeo);
+ }
 
 
