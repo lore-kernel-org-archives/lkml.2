@@ -1,62 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755720Ab0C3XJB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:09:01 -0400
-Received: from kroah.org ([198.145.64.141]:48440 "EHLO coco.kroah.org"
+	id S1756668Ab0C3XQc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:16:32 -0400
+Received: from kroah.org ([198.145.64.141]:49245 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755619Ab0C3XI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:08:58 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:49:47 2010
-Message-Id: <20100330224947.310212430@linux.site>
+	id S1756651Ab0C3XNC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:13:02 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:57 2010
+Message-Id: <20100330225856.509858139@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:48:33 -0700
+Date: Tue, 30 Mar 2010 15:58:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sascha Hlusiak <contact@saschahlusiak.de>,
-       "Fred L. Templin" <Fred.L.Templin@boeing.com>,
-       "David S. Miller" <davem@davemloft.net>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [13/45] sit: fix off-by-one in ipip6_tunnel_get_prl
-In-Reply-To: <20100330230410.GA28712@kroah.com>
+       "H. Peter Anvin" <hpa@zytor.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Stefan Bader <stefan.bader@canonical.com>
+Subject: [77/89] x86: get rid of the insane TIF_ABI_PENDING bit
+In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.27-stable review patch.  If anyone has any objections, please let us know.
+2.6.31-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Sascha Hlusiak <contact@saschahlusiak.de>
+From: H. Peter Anvin <hpa@zytor.com>
 
-commit 298bf12ddb25841804f26234a43b89da1b1c0e21 upstream.
+commit 05d43ed8a89c159ff641d472f970e3f1baa66318 upstream.
 
-When requesting all prl entries (kprl.addr == INADDR_ANY) and there are
-more prl entries than there is space passed from userspace, the existing
-code would always copy cmax+1 entries, which is more than can be handled.
+Now that the previous commit made it possible to do the personality
+setting at the point of no return, we do just that for ELF binaries.
+And suddenly all the reasons for that insane TIF_ABI_PENDING bit go
+away, and we can just make SET_PERSONALITY() just do the obvious thing
+for a 32-bit compat process.
 
-This patch makes the kernel copy only exactly cmax entries.
+Everything becomes much more straightforward this way.
 
-Signed-off-by: Sascha Hlusiak <contact@saschahlusiak.de>
-Acked-By: Fred L. Templin <Fred.L.Templin@boeing.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 
 ---
- net/ipv6/sit.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/ia32/ia32_aout.c          |    1 -
+ arch/x86/include/asm/elf.h         |   10 ++--------
+ arch/x86/include/asm/thread_info.h |    2 --
+ arch/x86/kernel/process.c          |   12 ------------
+ arch/x86/kernel/process_64.c       |   11 +++++++++++
+ 5 files changed, 13 insertions(+), 23 deletions(-)
 
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -260,7 +260,7 @@ static int ipip6_tunnel_get_prl(struct i
+--- a/arch/x86/ia32/ia32_aout.c
++++ b/arch/x86/ia32/ia32_aout.c
+@@ -311,7 +311,6 @@ static int load_aout_binary(struct linux
+ 	/* OK, This is the point of no return */
+ 	set_personality(PER_LINUX);
+ 	set_thread_flag(TIF_IA32);
+-	clear_thread_flag(TIF_ABI_PENDING);
  
- 	c = 0;
- 	for (prl = t->prl; prl; prl = prl->next) {
--		if (c > cmax)
-+		if (c >= cmax)
- 			break;
- 		if (kprl.addr != htonl(INADDR_ANY) && prl->addr != kprl.addr)
- 			continue;
+ 	setup_new_exec(bprm);
+ 
+--- a/arch/x86/include/asm/elf.h
++++ b/arch/x86/include/asm/elf.h
+@@ -197,14 +197,8 @@ do {							\
+ 	set_fs(USER_DS);				\
+ } while (0)
+ 
+-#define COMPAT_SET_PERSONALITY(ex)			\
+-do {							\
+-	if (test_thread_flag(TIF_IA32))			\
+-		clear_thread_flag(TIF_ABI_PENDING);	\
+-	else						\
+-		set_thread_flag(TIF_ABI_PENDING);	\
+-	current->personality |= force_personality32;	\
+-} while (0)
++void set_personality_ia32(void);
++#define COMPAT_SET_PERSONALITY(ex) set_personality_ia32()
+ 
+ #define COMPAT_ELF_PLATFORM			("i686")
+ 
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -86,7 +86,6 @@ struct thread_info {
+ #define TIF_NOTSC		16	/* TSC is not accessible in userland */
+ #define TIF_IA32		17	/* 32bit process */
+ #define TIF_FORK		18	/* ret_from_fork */
+-#define TIF_ABI_PENDING		19
+ #define TIF_MEMDIE		20
+ #define TIF_DEBUG		21	/* uses debug registers */
+ #define TIF_IO_BITMAP		22	/* uses I/O bitmap */
+@@ -110,7 +109,6 @@ struct thread_info {
+ #define _TIF_NOTSC		(1 << TIF_NOTSC)
+ #define _TIF_IA32		(1 << TIF_IA32)
+ #define _TIF_FORK		(1 << TIF_FORK)
+-#define _TIF_ABI_PENDING	(1 << TIF_ABI_PENDING)
+ #define _TIF_DEBUG		(1 << TIF_DEBUG)
+ #define _TIF_IO_BITMAP		(1 << TIF_IO_BITMAP)
+ #define _TIF_FREEZE		(1 << TIF_FREEZE)
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -94,18 +94,6 @@ void flush_thread(void)
+ {
+ 	struct task_struct *tsk = current;
+ 
+-#ifdef CONFIG_X86_64
+-	if (test_tsk_thread_flag(tsk, TIF_ABI_PENDING)) {
+-		clear_tsk_thread_flag(tsk, TIF_ABI_PENDING);
+-		if (test_tsk_thread_flag(tsk, TIF_IA32)) {
+-			clear_tsk_thread_flag(tsk, TIF_IA32);
+-		} else {
+-			set_tsk_thread_flag(tsk, TIF_IA32);
+-			current_thread_info()->status |= TS_COMPAT;
+-		}
+-	}
+-#endif
+-
+ 	clear_tsk_thread_flag(tsk, TIF_DEBUG);
+ 
+ 	tsk->thread.debugreg0 = 0;
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -534,6 +534,17 @@ sys_clone(unsigned long clone_flags, uns
+ 	return do_fork(clone_flags, newsp, regs, 0, parent_tid, child_tid);
+ }
+ 
++void set_personality_ia32(void)
++{
++	/* inherit personality from parent */
++
++	/* Make sure to be in 32bit mode */
++	set_thread_flag(TIF_IA32);
++
++	/* Prepare the first "return" to user space */
++	current_thread_info()->status |= TS_COMPAT;
++}
++
+ unsigned long get_wchan(struct task_struct *p)
+ {
+ 	unsigned long stack;
 
 
