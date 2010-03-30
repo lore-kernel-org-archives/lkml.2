@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757786Ab0CaAbQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:31:16 -0400
-Received: from kroah.org ([198.145.64.141]:48833 "EHLO coco.kroah.org"
+	id S1757808Ab0CaAbf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:31:35 -0400
+Received: from kroah.org ([198.145.64.141]:48823 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756330Ab0C3XMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:09 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:20 2010
-Message-Id: <20100330225819.952145421@linux.site>
+	id S1756348Ab0C3XMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:07 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:19 2010
+Message-Id: <20100330225818.747869908@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:21 -0700
+Date: Tue, 30 Mar 2010 15:57:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Tamas Vincze <tom@vincze.org>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
-       Doug Thompson <dougthompson@xmission.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [19/89] edac: i5000_edac critical fix panic out of bounds
+       Eric Paris <eparis@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [17/89] inotify: do not reuse watch descriptors
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,46 +25,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tamas Vincze <tom@vincze.org>
+From: Eric Paris <eparis@redhat.com>
 
-commit 118f3e1afd5534c15f9701f33514186cfc841a27 upstream.
+commit 9e572cc9877ee6c43af60778f6b8d5ba0692d935 upstream.
 
-EDAC MC0: INTERNAL ERROR: channel-b out of range (4 >= 4)
-Kernel panic - not syncing: EDAC MC0: Uncorrected Error  (XEN) Domain 0 crashed: 'noreboot' set - not rebooting.
+Since commit 7e790dd5fc937bc8d2400c30a05e32a9e9eef276 ("inotify: fix
+error paths in inotify_update_watch") inotify changed the manor in which
+it gave watch descriptors back to userspace.  Previous to this commit
+inotify acted like the following:
 
-This happens because FERR_NF_FBD bit 28 is not updated on i5000.  Due to
-that, both bits 28 and 29 may be equal to one, returning channel = 3.  As
-this value is invalid, EDAC core generates the panic.
+  inotify_add_watch(X, Y, Z) = 1
+  inotify_rm_watch(X, 1);
+  inotify_add_watch(X, Y, Z) = 2
 
-Addresses http://bugzilla.kernel.org/show_bug.cgi?id=14568
+but after this patch inotify would return watch descriptors like so:
 
-Signed-off-by: Tamas Vincze <tom@vincze.org>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Signed-off-by: Doug Thompson <dougthompson@xmission.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+  inotify_add_watch(X, Y, Z) = 1
+  inotify_rm_watch(X, 1);
+  inotify_add_watch(X, Y, Z) = 1
+
+which I saw as equivalent to opening an fd where
+
+  open(file) = 1;
+  close(1);
+  open(file) = 1;
+
+seemed perfectly reasonable.  The issue is that quite a bit of userspace
+apparently relies on the behavior in which watch descriptors will not be
+quickly reused.  KDE relies on it, I know some selinux packages rely on
+it, and I have heard complaints from other random sources such as debian
+bug 558981.
+
+Although the man page implies what we do is ok, we broke userspace so
+this patch almost reverts us to the old behavior.  It is still slightly
+racey and I have patches that would fix that, but they are rather large
+and this will fix it for all real world cases.  The race is as follows:
+
+ - task1 creates a watch and blocks in idr_new_watch() before it updates
+   the hint.
+ - task2 creates a watch and updates the hint.
+ - task1 updates the hint with it's older wd
+ - task removes the watch created by task2
+ - task adds a new watch and will reuse the wd originally given to task2
+
+it requires moving some locking around the hint (last_wd) but this should
+solve it for the real world and be -stable safe.
+
+As a side effect this patch papers over a bug in the lib/idr code which
+is causing a large number WARN's to pop on people's system and many
+reports in kerneloops.org.  I'm working on the root cause of that idr
+bug seperately but this should make inotify immune to that issue.
+
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/edac/i5000_edac.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ fs/notify/inotify/inotify_user.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/edac/i5000_edac.c
-+++ b/drivers/edac/i5000_edac.c
-@@ -577,7 +577,13 @@ static void i5000_process_nonfatal_error
- 		debugf0("\tUncorrected bits= 0x%x\n", ue_errors);
+--- a/fs/notify/inotify/inotify_user.c
++++ b/fs/notify/inotify/inotify_user.c
+@@ -558,7 +558,7 @@ retry:
  
- 		branch = EXTRACT_FBDCHAN_INDX(info->ferr_nf_fbd);
--		channel = branch;
-+
-+		/*
-+		 * According with i5000 datasheet, bit 28 has no significance
-+		 * for errors M4Err-M12Err and M17Err-M21Err, on FERR_NF_FBD
-+		 */
-+		channel = branch & 2;
-+
- 		bank = NREC_BANK(info->nrecmema);
- 		rank = NREC_RANK(info->nrecmema);
- 		rdwr = NREC_RDWR(info->nrecmema);
+ 	spin_lock(&group->inotify_data.idr_lock);
+ 	ret = idr_get_new_above(&group->inotify_data.idr, &tmp_ientry->fsn_entry,
+-				group->inotify_data.last_wd,
++				group->inotify_data.last_wd+1,
+ 				&tmp_ientry->wd);
+ 	spin_unlock(&group->inotify_data.idr_lock);
+ 	if (ret) {
+@@ -638,7 +638,7 @@ static struct fsnotify_group *inotify_ne
+ 
+ 	spin_lock_init(&group->inotify_data.idr_lock);
+ 	idr_init(&group->inotify_data.idr);
+-	group->inotify_data.last_wd = 1;
++	group->inotify_data.last_wd = 0;
+ 	group->inotify_data.user = user;
+ 	group->inotify_data.fa = NULL;
+ 
 
 
