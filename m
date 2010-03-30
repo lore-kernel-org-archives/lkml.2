@@ -1,85 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab0C3Hbx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 03:31:53 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50314 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755225Ab0C3Hbr (ORCPT
+	id S1754737Ab0C3HpK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 03:45:10 -0400
+Received: from mail-in-12.arcor-online.net ([151.189.21.52]:53503 "EHLO
+	mail-in-12.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750904Ab0C3HpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 03:31:47 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
-Cc: kosaki.motohiro@jp.fujitsu.com, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "Wu, Fengguang" <fengguang.wu@intel.com>
-In-Reply-To: <20100330065358.GA24828@sli10-desk.sh.intel.com>
-References: <20100330153750.8EA2.A69D9226@jp.fujitsu.com> <20100330065358.GA24828@sli10-desk.sh.intel.com>
-Message-Id: <20100330160820.8EA8.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Tue, 30 Mar 2010 03:45:06 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-05.arcor-online.net 3673B332A40
+Subject: Re: [Bug 12309] Large I/O operations result in slow performance
+ and high iowait times
+From: Thomas Pilarski <Thomas.Pilarski@arcor.de>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Jens Axboe <jens.axboe@oracle.com>
+In-Reply-To: <201003162357.o2GNvkNF024562@demeter.kernel.org>
+References: <bug-12309-14043@http.bugzilla.kernel.org/>
+	 <201003162357.o2GNvkNF024562@demeter.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Mar 2010 09:44:54 +0200
+Message-ID: <1269935094.2481.23.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 30 Mar 2010 16:31:40 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > Very unfortunately, this patch isn't acceptable. In past time, vmscan 
-> > > > had similar logic, but 1% swap-out made lots bug reports. 
-> > > can you elaborate this?
-> > > Completely restore previous behavior (do full scan with priority 0) is
-> > > ok too.
-> > 
-> > This is a option. but we need to know the root cause anyway.
-> I thought I mentioned the root cause in first mail. My debug shows
-> recent_rotated[0] is big, but recent_rotated[1] is almost zero, which makes
-> percent[0] 0. But you can double check too.
+Sorry for the late answer. 
 
-To revert can save percent[0]==0 && priority==0 case. but it shouldn't
-happen, I think. It mean to happen big latency issue.
+There is regression in desktop responsiveness from 2.6.32 to 2.6.33. I
+am working on a notebook with a full encrypted lvm partition. The
+throughput of the disk is about 70MB/s in the outer regions. There is
+another hard disk in an ultra bay slot. 
 
-Can you please try following patch? Also, I'll prepare reproduce environment soon.
+While 2.6.32 is "usable", the 2.6.33 freezes for up to two minutes in a
+30 seconds interval while tracker starts to index a new inserted hard
+disk with a lot of small files (openembedded build tree). This starts
+with a wrong configured tracker and the 2.6.32 kernel with freezes up to
+10 seconds.
+
+The indexed ultrabay dics is not encrypted and formated with ext4, only
+the indexes are writen on an ext3 partition in an ecrypted logical
+volume group, which also contains the system partition.
+
+This problem is enormous increased, while the ultra bay disc is acceded
+with udma2 instead of udma6 (caused by another bug), 
+
+I can execute some tests, but you should tell me, which results you need
+to identify the problem.
+
+Thomas Pilarski
 
 
-
----
- mm/vmscan.c |   12 ++++++++----
- 1 files changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 79c8098..abf7f79 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1571,15 +1571,19 @@ static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
- 	 */
- 	if (unlikely(reclaim_stat->recent_scanned[0] > anon / 4)) {
- 		spin_lock_irq(&zone->lru_lock);
--		reclaim_stat->recent_scanned[0] /= 2;
--		reclaim_stat->recent_rotated[0] /= 2;
-+		while (reclaim_stat->recent_scanned[0] > anon / 4) {
-+			reclaim_stat->recent_scanned[0] /= 2;
-+			reclaim_stat->recent_rotated[0] /= 2;
-+		}
- 		spin_unlock_irq(&zone->lru_lock);
- 	}
- 
- 	if (unlikely(reclaim_stat->recent_scanned[1] > file / 4)) {
- 		spin_lock_irq(&zone->lru_lock);
--		reclaim_stat->recent_scanned[1] /= 2;
--		reclaim_stat->recent_rotated[1] /= 2;
-+		while (reclaim_stat->recent_scanned[1] > file / 4) {
-+			reclaim_stat->recent_scanned[1] /= 2;
-+			reclaim_stat->recent_rotated[1] /= 2;
-+		}
- 		spin_unlock_irq(&zone->lru_lock);
- 	}
- 
--- 
-1.6.5.2
-
+Am Dienstag, den 16.03.2010, 23:57 +0000 schrieb
+bugzilla-daemon@bugzilla.kernel.org: 
+> http://bugzilla.kernel.org/show_bug.cgi?id=12309
+> 
+> --- Comment #420 from Andrew Morton <akpm@linux-foundation.org>  2010-03-16 23:56:58 ---
+> (In reply to comment #419)
+> > I am currently using the linux kernel 2.6.33 and the the desktop responsiveness
+> > is awful on my machine compared to the 2.6.32.x kernel. It's even worse than I
+> > have even seen it before. The load avg is rising to >7 very quickly, while
+> > writing many small file to the filesystem. I can make some tests with my
+> > configuration, but a kernel developer should tell me which tests.
+> 
+> This isn't really the best place to bring this up.  Please send a full
+> description to linux-kernel@vger.kernel.org.  cc myself, Ingo Molnar
+> <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>, Jens Axboe
+> <jens.axboe@oracle.com>.  In that email, please identify what the system is
+> doing at the time.  Is it disk-related?  CPU scheduler related?  etc.
+> 
+> Thanks.
+> 
 
 
 
