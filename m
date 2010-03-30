@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756602Ab0C3XMs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:12:48 -0400
-Received: from kroah.org ([198.145.64.141]:49106 "EHLO coco.kroah.org"
+	id S1756162Ab0C3XK7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:10:59 -0400
+Received: from kroah.org ([198.145.64.141]:48636 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756492Ab0C3XMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:44 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:44 2010
-Message-Id: <20100330225843.836091693@linux.site>
+	id S1752653Ab0C3XJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:09:23 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:50:07 2010
+Message-Id: <20100330225007.232164471@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:59 -0700
+Date: Tue, 30 Mar 2010 15:49:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jean Delvare <khali@linux-fr.org>, Jean Delvare <jdelvare@suse.de>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Ravikiran Thirumalai <kiran@scalex86.org>,
+       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [57/89] hwmon: (w83781d) Request I/O ports individually for probing
-In-Reply-To: <20100330230520.GA28779@kroah.com>
+Subject: [41/45] tmpfs: handle MPOL_LOCAL mount option properly
+In-Reply-To: <20100330230410.GA28712@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.31-stable review patch.  If anyone has any objections, please let us know.
+2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-commit b0bcdd3cd0adb85a7686b396ba50493871b1135c upstream.
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Different motherboards have different PNP declarations for
-W83781D/W83782D chips. Some declare the whole range of I/O ports (8
-ports), some declare only the useful ports (2 ports at offset 5) and
-some declare fancy ranges, for example 4 ports at offset 4. To
-properly handle all cases, request all ports individually for probing.
-After we have determined that we really have a W83781D or W83782D
-chip, the useful port range will be requested again, as a single
-block.
+commit 12821f5fb942e795f8009ece14bde868893bd811 upstream.
 
-I did not see a board which needs this yet, but I know of one for lm78
-driver and I'd like to keep the logic of these two drivers in sync.
+commit 71fe804b6d5 (mempolicy: use struct mempolicy pointer in
+shmem_sb_info) added mpol=local mount option.  but its feature is broken
+since it was born.  because such code always return 1 (i.e.  mount
+failure).
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Jean Delvare <jdelvare@suse.de>
+This patch fixes it.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Ravikiran Thirumalai <kiran@scalex86.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Acked-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/hwmon/w83781d.c |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
 
---- a/drivers/hwmon/w83781d.c
-+++ b/drivers/hwmon/w83781d.c
-@@ -1818,17 +1818,17 @@ static int __init
- w83781d_isa_found(unsigned short address)
- {
- 	int val, save, found = 0;
-+	int port;
- 
--	/* We have to request the region in two parts because some
--	   boards declare base+4 to base+7 as a PNP device */
--	if (!request_region(address, 4, "w83781d")) {
--		pr_debug("w83781d: Failed to request low part of region\n");
--		return 0;
--	}
--	if (!request_region(address + 4, 4, "w83781d")) {
--		pr_debug("w83781d: Failed to request high part of region\n");
--		release_region(address, 4);
--		return 0;
-+	/* Some boards declare base+0 to base+7 as a PNP device, some base+4
-+	 * to base+7 and some base+5 to base+6. So we better request each port
-+	 * individually for the probing phase. */
-+	for (port = address; port < address + W83781D_EXTENT; port++) {
-+		if (!request_region(port, 1, "w83781d")) {
-+			pr_debug("w83781d: Failed to request port 0x%x\n",
-+				 port);
-+			goto release;
-+		}
- 	}
- 
- #define REALLY_SLOW_IO
-@@ -1902,8 +1902,8 @@ w83781d_isa_found(unsigned short address
- 			val == 0x30 ? "W83782D" : "W83781D", (int)address);
- 
-  release:
--	release_region(address + 4, 4);
--	release_region(address, 4);
-+	for (port--; port >= address; port--)
-+		release_region(port, 1);
- 	return found;
- }
- 
+---
+ mm/mempolicy.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2048,6 +2048,7 @@ int mpol_parse_str(char *str, struct mem
+ 		if (nodelist)
+ 			goto out;
+ 		mode = MPOL_PREFERRED;
++		err = 0;
+ 		break;
+ 	case MPOL_DEFAULT:
+ 		/*
 
 
