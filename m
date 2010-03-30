@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab0C3Isq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 04:48:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39752 "EHLO
+	id S1755942Ab0C3Ivl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 04:51:41 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50624 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755649Ab0C3Iso convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755649Ab0C3Ivk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 04:48:44 -0400
-Subject: Re: [PATCH] lockdep fix incorrect percpu usage
+	Tue, 30 Mar 2010 04:51:40 -0400
+Subject: Re: [PATCH tip/core/urgent] rcu: protect fork-time cgroup access
 From: Peter Zijlstra <peterz@infradead.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: linux-kernel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
-       Eric Dumazet <dada1@cosmosbay.com>,
-       Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Steven Rostedt <rostedt@goodmis.org>, stable <stable@kernel.org>
-In-Reply-To: <20100330033425.GD7683@Krystal>
-References: <20100330033425.GD7683@Krystal>
+To: Paul Menage <menage@google.com>
+Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+       laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       abogani@texware.it
+In-Reply-To: <6599ad831003291543r71300bcfv2957004bf2e927bb@mail.gmail.com>
+References: <20100329211525.GA17703@linux.vnet.ibm.com>
+	 <6599ad831003291543r71300bcfv2957004bf2e927bb@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 30 Mar 2010 10:47:56 +0200
-Message-ID: <1269938876.5109.510.camel@twins>
+Date: Tue, 30 Mar 2010 10:50:34 +0200
+Message-ID: <1269939034.5109.511.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-29 at 23:34 -0400, Mathieu Desnoyers wrote:
-> Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is needed
-> for per cpu pointers).
+On Mon, 2010-03-29 at 15:43 -0700, Paul Menage wrote:
+> On Mon, Mar 29, 2010 at 2:15 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > Add an rcu_read_lock() / rcu_read_unlock() pair to protect a fork-time
+> > cgroup access.  This seems likely to be a false positive.
+> >
+> > Located by: Alessio Igor Bogani <abogani@texware.it>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >
+> >  sched.c |    2 ++
+> >  1 file changed, 2 insertions(+)
+> >
+> > diff --git a/kernel/sched.c b/kernel/sched.c
+> > index 9ab3cd7..d4bb5e0 100644
+> > --- a/kernel/sched.c
+> > +++ b/kernel/sched.c
+> > @@ -2621,7 +2621,9 @@ void sched_fork(struct task_struct *p, int clone_flags)
+> >        if (p->sched_class->task_fork)
+> >                p->sched_class->task_fork(p);
+> >
+> > +       rcu_read_lock();
+> >        set_task_cpu(p, cpu);
+> > +       rcu_read_unlock();
 > 
-> git blame points to commit:
-> 
-> lockdep.c: commit 8e18257d29238311e82085152741f0c3aa18b74d
-> 
-> But it's really just moving the code around. But it's enough to say that the
-> problems appeared before Jul 19 01:48:54 2007, which brings us back to 2.6.23.
-> 
-> So it should be applied to stable 2.6.23.x to 2.6.33.x (or whichever of these
-> stable branches are still maintained) and to mainline 2.6.34-rc2.
+> I think you're right that this is a false positive - it would only be
+> a problem if it were possible for the task to be moved to a different
+> cgroup, and I think that shouldn't be the case at this point in the
+> fork path since the new process isn't visible on the tasklist yet,
+> right?
 
-well, definately not to mainline, since that code is utterly busted in
-mainline due to recent per-cpu changes.
+Well the thing is, this fork time invocation of
+set_task_cpu()->set_task_rq() is in no way special, there's multiple
+places like that.
+
+
