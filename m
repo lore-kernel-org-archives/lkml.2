@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757776Ab0CaAa6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:30:58 -0400
-Received: from kroah.org ([198.145.64.141]:48841 "EHLO coco.kroah.org"
+	id S1757786Ab0CaAbQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:31:16 -0400
+Received: from kroah.org ([198.145.64.141]:48833 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756375Ab0C3XMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:10 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:21 2010
-Message-Id: <20100330225820.652208378@linux.site>
+	id S1756330Ab0C3XMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:09 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:20 2010
+Message-Id: <20100330225819.952145421@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:22 -0700
+Date: Tue, 30 Mar 2010 15:57:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "Bryn M. Reeves" <bmr@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [20/89] [SCSI] megaraid_sas: remove sysfs poll_mode_io world writeable permissions
+       Tamas Vincze <tom@vincze.org>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       Doug Thompson <dougthompson@xmission.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [19/89] edac: i5000_edac critical fix panic out of bounds
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bryn M. Reeves <bmr@redhat.com>
+From: Tamas Vincze <tom@vincze.org>
 
-commit bb7d3f24c71e528989501617651b669fbed798cb upstream.
+commit 118f3e1afd5534c15f9701f33514186cfc841a27 upstream.
 
-/sys/bus/pci/drivers/megaraid_sas/poll_mode_io defaults to being
-world-writable, which seems bad (letting any user affect kernel driver
-behavior).
+EDAC MC0: INTERNAL ERROR: channel-b out of range (4 >= 4)
+Kernel panic - not syncing: EDAC MC0: Uncorrected Error  (XEN) Domain 0 crashed: 'noreboot' set - not rebooting.
 
-This turns off group and user write permissions, so that on typical
-production systems only root can write to it.
+This happens because FERR_NF_FBD bit 28 is not updated on i5000.  Due to
+that, both bits 28 and 29 may be equal to one, returning channel = 3.  As
+this value is invalid, EDAC core generates the panic.
 
-Signed-off-by: Bryn M. Reeves <bmr@redhat.com>
+Addresses http://bugzilla.kernel.org/show_bug.cgi?id=14568
+
+Signed-off-by: Tamas Vincze <tom@vincze.org>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Doug Thompson <dougthompson@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/megaraid/megaraid_sas.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/edac/i5000_edac.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/megaraid/megaraid_sas.c
-+++ b/drivers/scsi/megaraid/megaraid_sas.c
-@@ -3451,7 +3451,7 @@ out:
- 	return retval;
- }
+--- a/drivers/edac/i5000_edac.c
++++ b/drivers/edac/i5000_edac.c
+@@ -577,7 +577,13 @@ static void i5000_process_nonfatal_error
+ 		debugf0("\tUncorrected bits= 0x%x\n", ue_errors);
  
--static DRIVER_ATTR(poll_mode_io, S_IRUGO|S_IWUGO,
-+static DRIVER_ATTR(poll_mode_io, S_IRUGO|S_IWUSR,
- 		megasas_sysfs_show_poll_mode_io,
- 		megasas_sysfs_set_poll_mode_io);
- 
+ 		branch = EXTRACT_FBDCHAN_INDX(info->ferr_nf_fbd);
+-		channel = branch;
++
++		/*
++		 * According with i5000 datasheet, bit 28 has no significance
++		 * for errors M4Err-M12Err and M17Err-M21Err, on FERR_NF_FBD
++		 */
++		channel = branch & 2;
++
+ 		bank = NREC_BANK(info->nrecmema);
+ 		rank = NREC_RANK(info->nrecmema);
+ 		rdwr = NREC_RDWR(info->nrecmema);
 
 
