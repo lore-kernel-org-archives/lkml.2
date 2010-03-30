@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757870Ab0CaAdY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:33:24 -0400
-Received: from kroah.org ([198.145.64.141]:48784 "EHLO coco.kroah.org"
+	id S1757881Ab0CaAdm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:33:42 -0400
+Received: from kroah.org ([198.145.64.141]:48776 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756285Ab0C3XLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:11:55 -0400
+	id S1755926Ab0C3XLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:11:54 -0400
 X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:14 2010
-Message-Id: <20100330225814.356152024@linux.site>
+Message-Id: <20100330225813.705542964@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:12 -0700
+Date: Tue, 30 Mar 2010 15:57:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sergey Matyukevich <geomatsi@gmail.com>,
-       Alessandro Zummo <a.zummo@towertech.it>,
-       Sergey Lapin <slapin@ossfans.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [10/89] rtc-fm3130: add missing braces
+       Jiri Slaby <jslaby@suse.cz>, James Morris <jmorris@namei.org>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [09/89] resource: add helpers for fetching rlimits
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,49 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergey Matyukevich <geomatsi@gmail.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit f4b5162820de60204afa5c8639335f4931b7fb0c upstream.
+commit 3e10e716abf3c71bdb5d86b8f507f9e72236c9cd upstream.
 
-Add missing braces for multiline 'if' statements in fm3130_probe.
+We want to be sure that compiler fetches the limit variable only
+once, so add helpers for fetching current and maximal resource
+limits which do that.
 
-Signed-off-by: Sergey Matyukevich <geomatsi@gmail.com>
-Signed-off-by: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Sergey Lapin <slapin@ossfans.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Add them to sched.h (instead of resource.h) due to circular dependency
+ sched.h->resource.h->task_struct
+Alternative would be to create a separate res_access.h or similar.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: James Morris <jmorris@namei.org>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/rtc/rtc-fm3130.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ include/linux/sched.h |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
---- a/drivers/rtc/rtc-fm3130.c
-+++ b/drivers/rtc/rtc-fm3130.c
-@@ -376,20 +376,22 @@ static int __devinit fm3130_probe(struct
- 	}
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2485,6 +2485,28 @@ static inline void mm_init_owner(struct
  
- 	/* Disabling calibration mode */
--	if (fm3130->regs[FM3130_RTC_CONTROL] & FM3130_RTC_CONTROL_BIT_CAL)
-+	if (fm3130->regs[FM3130_RTC_CONTROL] & FM3130_RTC_CONTROL_BIT_CAL) {
- 		i2c_smbus_write_byte_data(client, FM3130_RTC_CONTROL,
- 			fm3130->regs[FM3130_RTC_CONTROL] &
- 				~(FM3130_RTC_CONTROL_BIT_CAL));
- 		dev_warn(&client->dev, "Disabling calibration mode!\n");
-+	}
+ #define TASK_STATE_TO_CHAR_STR "RSDTtZX"
  
- 	/* Disabling read and write modes */
- 	if (fm3130->regs[FM3130_RTC_CONTROL] & FM3130_RTC_CONTROL_BIT_WRITE ||
--	    fm3130->regs[FM3130_RTC_CONTROL] & FM3130_RTC_CONTROL_BIT_READ)
-+	    fm3130->regs[FM3130_RTC_CONTROL] & FM3130_RTC_CONTROL_BIT_READ) {
- 		i2c_smbus_write_byte_data(client, FM3130_RTC_CONTROL,
- 			fm3130->regs[FM3130_RTC_CONTROL] &
- 				~(FM3130_RTC_CONTROL_BIT_READ |
- 					FM3130_RTC_CONTROL_BIT_WRITE));
- 		dev_warn(&client->dev, "Disabling READ or WRITE mode!\n");
-+	}
++static inline unsigned long task_rlimit(const struct task_struct *tsk,
++		unsigned int limit)
++{
++	return ACCESS_ONCE(tsk->signal->rlim[limit].rlim_cur);
++}
++
++static inline unsigned long task_rlimit_max(const struct task_struct *tsk,
++		unsigned int limit)
++{
++	return ACCESS_ONCE(tsk->signal->rlim[limit].rlim_max);
++}
++
++static inline unsigned long rlimit(unsigned int limit)
++{
++	return task_rlimit(current, limit);
++}
++
++static inline unsigned long rlimit_max(unsigned int limit)
++{
++	return task_rlimit_max(current, limit);
++}
++
+ #endif /* __KERNEL__ */
  
- 	/* oscillator off?  turn it on, so clock can tick. */
- 	if (fm3130->regs[FM3130_CAL_CONTROL] & FM3130_CAL_CONTROL_BIT_nOSCEN)
+ #endif
 
 
