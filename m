@@ -1,59 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab0C3R4j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 13:56:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55969 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752773Ab0C3R4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 13:56:37 -0400
-Message-ID: <4BB23B35.7060401@zytor.com>
-Date: Tue, 30 Mar 2010 10:56:05 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Florian Westphal <fw@strlen.de>
-CC: linux-fsdevel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-       "David S. Miller" <davem@davemloft.net>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       x86@kernel.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] x86, fs: add sys_compat_write for net/socket.c
-References: <1269971469-1254-1-git-send-email-fw@strlen.de>
-In-Reply-To: <1269971469-1254-1-git-send-email-fw@strlen.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754881Ab0C3R4s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 13:56:48 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:52032 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753612Ab0C3R4q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 13:56:46 -0400
+Subject: Re: [PATCH] increase PREEMPT_BITS to 12 to avoid overflow when
+ starting KVM
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, avi@redhat.com, aarcange@redhat.com,
+       akpm@linux-foundation.org, Kent Overstreet <kent.overstreet@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>, tglx <tglx@linutronix.de>
+In-Reply-To: <20100330133634.2f1bf3d6@cuia.bos.redhat.com>
+References: <20100330133634.2f1bf3d6@cuia.bos.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Mar 2010 19:56:42 +0200
+Message-ID: <1269971802.5258.524.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2010 10:51 AM, Florian Westphal wrote:
-> On some configurations, e.g. x86_64 with 32bit userspace, netlink/xfrm
-> misinterprets messages from userspace due to different structure
-> layout (u64 has different alignment requirements on x86 vs. x86_64).
+On Tue, 2010-03-30 at 13:36 -0400, Rik van Riel wrote:
+> Increase the PREEMPT_BITS to 12, to deal with a larger number
+> of locks that can be taken in mm_take_all_locks or other places
+> where many instances of the same type of lock can be taken.
 > 
-> As long as messages are sent via sendmsg(), this could be handled via
-> net/compat.c; it will set the CMSG_MSG_COMPAT flag in struct msghdr
-> for compat tasks, which would allow to the xfrm_user code to detect
-> when messages need compat fixups.
+> The overflow of PREEMPT_BITS should be harmless, since it simply
+> increments the counter into the SOFTIRQ_BITS, and the counter
+> will be decremented again later.
 > 
-> Unfortunately, some programs (e.g. pluto ike daemon), send netlink data
-> to the kernel using write().
+> However, the overflow does lead to backtraces with CONFIG_PREEMPT_DEBUG
+> enabled.
 > 
-> Thus, introduce f_ops->compat_aio_write and compat_sys_write to treat
-> writes on sockets specially.
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Reported-by: Kent Overstreet <kent.overstreet@gmail.com>
 > 
-> This only wires up compat_sys_write for x86/x86_64 -- at the moment this
-> is only required to parse xfrm netlink messages, which happen to only
-> need special treatment in case of COMPAT_FOR_U64_ALIGNMENT=y.
+> ---
+> Kent, does this patch fix the issue you saw?
 > 
-> Setting CMSG_MSG_COMPAT depending on plain is_compat_task() in net/socket.c
-> was not done due to concerns regarding the kernel doing socket
-> writes in response to a user event (which might set MSG_COMPAT erronously).
+> Peter, I know you do not like this approach. However, I could not
+> think of a way around mm_take_all_locks. We need to take those locks
+> and want to track that fact for lock debugging...
+
+Does this even boot? It tramples all over PREEMPT_ACTIVE for x86.
+
+Also, you'll need to convince mingo and tglx too.. taking that many
+spinlocks is utter suckage..
+
+> diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+> index d5b3876..e74108f 100644
+> --- a/include/linux/hardirq.h
+> +++ b/include/linux/hardirq.h
+> @@ -14,8 +14,8 @@
+>   * We put the hardirq and softirq counter into the preemption
+>   * counter. The bitmask has the following meaning:
+>   *
+> - * - bits 0-7 are the preemption count (max preemption depth: 256)
+> - * - bits 8-15 are the softirq count (max # of softirqs: 256)
+> + * - bits 0-12 are the preemption count (max preemption depth: 4096)
+> + * - bits 13-19 are the softirq count (max # of softirqs: 256)
+>   *
+>   * The hardirq count can in theory reach the same as NR_IRQS.
+>   * In reality, the number of nested IRQS is limited to the stack
+> @@ -24,16 +24,16 @@
+>   * hardirq nesting. An arch may choose to give less than 10 bits.
+>   * m68k expects it to be 8.
+>   *
+> - * - bits 16-25 are the hardirq count (max # of nested hardirqs: 1024)
+> - * - bit 26 is the NMI_MASK
+> - * - bit 28 is the PREEMPT_ACTIVE flag
+> + * - bits 26-29 are the hardirq count (max # of nested hardirqs: 1024)
+> + * - bit 30 is the NMI_MASK
+> + * - bit 31 is the PREEMPT_ACTIVE flag
+>   *
+> - * PREEMPT_MASK: 0x000000ff
+> - * SOFTIRQ_MASK: 0x0000ff00
+> - * HARDIRQ_MASK: 0x03ff0000
+> - *     NMI_MASK: 0x04000000
+> + * PREEMPT_MASK: 0x00000fff
+> + * SOFTIRQ_MASK: 0x000ff000
+> + * HARDIRQ_MASK: 0x3ff00000
+> + *     NMI_MASK: 0x40000000
+>   */
+> -#define PREEMPT_BITS	8
+> +#define PREEMPT_BITS	12
+>  #define SOFTIRQ_BITS	8
+>  #define NMI_BITS	1
+>  
 > 
 
-OK... I have to ask the question:
 
-This only applies if you're using unpacked structures with
-non-naturally-aligned objects in them.  Where to we have those, and can
-we shoot the authors?
 
-	-hpa
