@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757174Ab0C3Xjd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:39:33 -0400
-Received: from kroah.org ([198.145.64.141]:46308 "EHLO coco.kroah.org"
+	id S932337Ab0C3XTA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:19:00 -0400
+Received: from kroah.org ([198.145.64.141]:45326 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932658Ab0C3XUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:42 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:16 2010
-Message-Id: <20100330224815.918872357@linux.site>
+	id S932271Ab0C3XSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:18:37 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:50 2010
+Message-Id: <20100330225649.970174115@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:41:59 -0700
+Date: Tue, 30 Mar 2010 15:55:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Paulius Zaleckas <paulius.zaleckas@gmail.com>,
-       "David S. Miller" <davem@davemloft.net>,
+       Trond Myklebust <Trond.Myklebust@netapp.com>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [085/156] if_tunnel.h: add missing ams/byteorder.h include
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+Subject: [079/116] SUNRPC: Fix a potential memory leak in auth_gss
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 9bf35c8dddd56f7f247a27346f74f5adc18071f4 upstream.
+commit cdead7cf12896c0e50a8be2e52de52c364603095 upstream.
 
-When compiling userspace application which includes
-if_tunnel.h and uses GRE_* defines you will get undefined
-reference to __cpu_to_be16.
+The function alloc_enc_pages() currently fails to release the pointer
+rqstp->rq_enc_pages in the error path.
 
-Fix this by adding missing #include <asm/byteorder.h>
-
-Signed-off-by: Paulius Zaleckas <paulius.zaleckas@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Acked-by: J. Bruce Fields <bfields@citi.umich.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/if_tunnel.h |    1 +
- 1 file changed, 1 insertion(+)
+ net/sunrpc/auth_gss/auth_gss.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/include/linux/if_tunnel.h
-+++ b/include/linux/if_tunnel.h
-@@ -2,6 +2,7 @@
- #define _IF_TUNNEL_H_
- 
- #include <linux/types.h>
-+#include <asm/byteorder.h>
- 
- #ifdef __KERNEL__
- #include <linux/ip.h>
+--- a/net/sunrpc/auth_gss/auth_gss.c
++++ b/net/sunrpc/auth_gss/auth_gss.c
+@@ -1273,9 +1273,8 @@ alloc_enc_pages(struct rpc_rqst *rqstp)
+ 	rqstp->rq_release_snd_buf = priv_release_snd_buf;
+ 	return 0;
+ out_free:
+-	for (i--; i >= 0; i--) {
+-		__free_page(rqstp->rq_enc_pages[i]);
+-	}
++	rqstp->rq_enc_pages_num = i;
++	priv_release_snd_buf(rqstp);
+ out:
+ 	return -EAGAIN;
+ }
 
 
