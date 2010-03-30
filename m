@@ -1,63 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab0C3UcX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 16:32:23 -0400
-Received: from kroah.org ([198.145.64.141]:50775 "EHLO coco.kroah.org"
+	id S1755559Ab0C3Uc0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 16:32:26 -0400
+Received: from kroah.org ([198.145.64.141]:50783 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751643Ab0C3UcW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 16:32:22 -0400
-Date: Tue, 30 Mar 2010 13:03:20 -0700
+	id S1751643Ab0C3UcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 16:32:24 -0400
+Date: Tue, 30 Mar 2010 13:05:22 -0700
 From: Greg KH <greg@kroah.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: stable@kernel.org, linux-nfs@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [stable] nfsd changes for 2.6.34
-Message-ID: <20100330200320.GB1693@kroah.com>
-References: <20100306175212.GB22650@fieldses.org> <20100324142414.GE12057@fieldses.org> <20100329182443.GC3778@kroah.com> <20100330144054.GD11545@fieldses.org>
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable-commits@vger.kernel.org,
+       gregkh@suse.de, davem@davemloft.net, stable@kernel.org
+Subject: Re: [stable] patch sparc64-make-prom-entry-spinlock-nmi-safe.patch
+	added to 2.6.32-stable tree
+Message-ID: <20100330200522.GD1693@kroah.com>
+References: <12689584863184@kroah.org> <4BB1E98E.9050702@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100330144054.GD11545@fieldses.org>
+In-Reply-To: <4BB1E98E.9050702@canonical.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 10:40:54AM -0400, J. Bruce Fields wrote:
-> On Mon, Mar 29, 2010 at 11:24:43AM -0700, Greg KH wrote:
-> > On Wed, Mar 24, 2010 at 10:24:14AM -0400, J. Bruce Fields wrote:
-> > > On Sat, Mar 06, 2010 at 12:52:12PM -0500, bfields wrote:
-> > > > Please pull the following nfsd changes from the 'nfsd' branch at:
-> > > > 
-> > > >   git://linux-nfs.org/~bfields/linux.git for-2.6.34 nfsd
-> > > > 
-> > > > This is an unusually quiet cycle for the NFS server--bugfixes, some IPv6
-> > > > progress, and one new export operation to improve sync performance.
-> > > > 
-> > > > One exception to the 'mostly quiet' statement was a regression in the
-> > > > rpc code which hit a lot of people: enormous thanks to Neil for tracking
-> > > > that down.
-> > > 
-> > > However, I forgot to Cc stable on all of those.  Stable people, could
-> > > you also take the following three commits?:
-> > > 
-> > > 	f5822754ea006563e1bf0a1f43faaad49c0d8bb2 Revert "sunrpc: fix
-> > > 	peername failed on closed listener"
-> > > 	1b644b6e6f6160ae35ce4b52c2ca89ed3e356e18 Revert "sunrpc: move
-> > > 	the close processing after do recvfrom method"
-> > > 	301e99ce4a2f42a317129230fd42e6cd874c64b0 nfsd: ensure sockets
-> > > 	are closed on error
-> > > 
-> > > Let me know if you need more information.
-> > 
-> > I've queued all of these up for the .33 -stable tree.  If any of them
-> > need to go into .32 (maybe that last one?), please let me know.
-> 
-> Thanks; .32 needs all three of those.
+On Tue, Mar 30, 2010 at 02:07:42PM +0200, Stefan Bader wrote:
+> This converted the raw_spinlock usage which is used in the upstream patch but
+> not available in 2.6.32 to normal spinlock usage. Should it get annotated to
+> document that?
 
-Ok, care to backport them and send them to stable@kernel.org?  They
-don't all apply cleanly from what I can see.
+why, you obviously figured that out :)
+
+It's not the normal thing to do for backports otherwise we would be here
+all day long...
 
 thanks,
 
