@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757638Ab0CaA0e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:26:34 -0400
-Received: from kroah.org ([198.145.64.141]:48980 "EHLO coco.kroah.org"
+	id S1756467Ab0C3XM2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:12:28 -0400
+Received: from kroah.org ([198.145.64.141]:48892 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756501Ab0C3XMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:32 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:36 2010
-Message-Id: <20100330225835.531191958@linux.site>
+	id S1756421Ab0C3XMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:12:18 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:26 2010
+Message-Id: <20100330225826.431264706@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:46 -0700
+Date: Tue, 30 Mar 2010 15:57:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Mart Raudsepp <mart.raudsepp@artecdesign.ee>,
-       Antti Palosaari <crope@iki.fi>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Rickard Bellini <rickard.bellini@ericsson.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [44/89] V4L/DVB: af9015: add new USB ID for KWorld PlusTV Dual DVB-T Stick (DVB-T 399U)
+Subject: [29/89] USB: add missing delay during remote wakeup
 In-Reply-To: <20100330230520.GA28779@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,52 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mart Raudsepp <mart.raudsepp@artecdesign.ee>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit c92f056308c4a77a833e1cc1e16c1b68974483a6 upstream.
+commit 49d0f078f494b9d81e820a13dd8093a9bfb0b6b1 upstream.
 
-Add new USB ID (1b80:e400) for KWorld PlusTV Dual DVB-T Stick (DVB-T 399U).
-The model number on the devices sticker label is "KW-DVB-T 399UR".
+This patch (as1330) fixes a bug in khbud's handling of remote
+wakeups.  When a device sends a remote-wakeup request, the parent hub
+(or the host controller driver, for directly attached devices) begins
+the resume sequence and notifies khubd when the sequence finishes.  At
+this point the port's SUSPEND feature is automatically turned off.
 
-Signed-off-by: Mart Raudsepp <mart.raudsepp@artecdesign.ee>
-Acked-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+However the device needs an additional 10-ms resume-recovery time
+(TRSMRCY in the USB spec).  Khubd does not wait for this delay if the
+SUSPEND feature is off, and as a result some devices fail to behave
+properly following a remote wakeup.  This patch adds the missing
+delay to the remote-wakeup path.
+
+It also extends the resume-signalling delay used by ehci-hcd and
+uhci-hcd from 20 ms (the value in the spec) to 25 ms (the value we use
+for non-remote-wakeup resumes).  The extra time appears to help some
+devices.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Cc: Rickard Bellini <rickard.bellini@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/dvb/dvb-usb/af9015.c      |    4 +++-
- drivers/media/dvb/dvb-usb/dvb-usb-ids.h |    1 +
- 2 files changed, 4 insertions(+), 1 deletion(-)
+ drivers/usb/core/hub.c      |    3 +++
+ drivers/usb/host/ehci-hcd.c |    5 +++--
+ drivers/usb/host/uhci-hub.c |    2 +-
+ 3 files changed, 7 insertions(+), 3 deletions(-)
 
---- a/drivers/media/dvb/dvb-usb/af9015.c
-+++ b/drivers/media/dvb/dvb-usb/af9015.c
-@@ -1266,6 +1266,7 @@ static struct usb_device_id af9015_usb_t
- 	{USB_DEVICE(USB_VID_KWORLD_2,  USB_PID_CONCEPTRONIC_CTVDIGRCU)},
- 	{USB_DEVICE(USB_VID_KWORLD_2,  USB_PID_KWORLD_MC810)},
- 	{USB_DEVICE(USB_VID_KYE,       USB_PID_GENIUS_TVGO_DVB_T03)},
-+/* 25 */{USB_DEVICE(USB_VID_KWORLD_2,  USB_PID_KWORLD_399U_2)},
- 	{0},
- };
- MODULE_DEVICE_TABLE(usb, af9015_usb_table);
-@@ -1346,7 +1347,8 @@ static struct dvb_usb_device_properties
- 			{
- 				.name = "KWorld PlusTV Dual DVB-T Stick " \
- 					"(DVB-T 399U)",
--				.cold_ids = {&af9015_usb_table[4], NULL},
-+				.cold_ids = {&af9015_usb_table[4],
-+					     &af9015_usb_table[25], NULL},
- 				.warm_ids = {NULL},
- 			},
- 			{
---- a/drivers/media/dvb/dvb-usb/dvb-usb-ids.h
-+++ b/drivers/media/dvb/dvb-usb/dvb-usb-ids.h
-@@ -103,6 +103,7 @@
- #define USB_PID_GRANDTEC_DVBT_USB_WARM			0x0fa1
- #define USB_PID_INTEL_CE9500				0x9500
- #define USB_PID_KWORLD_399U				0xe399
-+#define USB_PID_KWORLD_399U_2				0xe400
- #define USB_PID_KWORLD_395U				0xe396
- #define USB_PID_KWORLD_395U_2				0xe39b
- #define USB_PID_KWORLD_395U_3				0xe395
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -3188,6 +3188,9 @@ static void hub_events(void)
+ 					USB_PORT_FEAT_C_SUSPEND);
+ 				udev = hdev->children[i-1];
+ 				if (udev) {
++					/* TRSMRCY = 10 msec */
++					msleep(10);
++
+ 					usb_lock_device(udev);
+ 					ret = remote_wakeup(hdev->
+ 							children[i-1]);
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -764,9 +764,10 @@ static irqreturn_t ehci_irq (struct usb_
+ 
+ 			/* start 20 msec resume signaling from this port,
+ 			 * and make khubd collect PORT_STAT_C_SUSPEND to
+-			 * stop that signaling.
++			 * stop that signaling.  Use 5 ms extra for safety,
++			 * like usb_port_resume() does.
+ 			 */
+-			ehci->reset_done [i] = jiffies + msecs_to_jiffies (20);
++			ehci->reset_done[i] = jiffies + msecs_to_jiffies(25);
+ 			ehci_dbg (ehci, "port %d remote wakeup\n", i + 1);
+ 			mod_timer(&hcd->rh_timer, ehci->reset_done[i]);
+ 		}
+--- a/drivers/usb/host/uhci-hub.c
++++ b/drivers/usb/host/uhci-hub.c
+@@ -167,7 +167,7 @@ static void uhci_check_ports(struct uhci
+ 				/* Port received a wakeup request */
+ 				set_bit(port, &uhci->resuming_ports);
+ 				uhci->ports_timeout = jiffies +
+-						msecs_to_jiffies(20);
++						msecs_to_jiffies(25);
+ 
+ 				/* Make sure we see the port again
+ 				 * after the resuming period is over. */
 
 
