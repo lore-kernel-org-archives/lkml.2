@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757224Ab0C3Xmv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 19:42:51 -0400
-Received: from kroah.org ([198.145.64.141]:46200 "EHLO coco.kroah.org"
+	id S932100Ab0C3XRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 19:17:31 -0400
+Received: from kroah.org ([198.145.64.141]:51729 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932591Ab0C3XUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:20:24 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:48:07 2010
-Message-Id: <20100330224807.272219280@linux.site>
+	id S1756749Ab0C3XR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 19:17:27 -0400
+X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:02 2010
+Message-Id: <20100330225601.843819406@linux.site>
 User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:41:46 -0700
+Date: Tue, 30 Mar 2010 15:54:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel Sangorrin <daniel.sangorrin@gmail.com>,
-       Andreas Mohr <andi@lisas.de>, Radek Liboska <liboska@uochb.cas.cz>,
+       Takashi Iwai <tiwai@suse.de>, Daniel T Chen <crimsun@ubuntu.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [072/156] USB: serial: ftdi: add CONTEC vendor and product id
-In-Reply-To: <20100330230630.GA28824@kroah.com>
+Subject: [009/116] ALSA: hda: enable MSI for Gateway M-6866
+In-Reply-To: <20100330230600.GA28802@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Daniel Sangorrin <daniel.sangorrin@gmail.com>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit dee5658b482e9e2ac7d6205dc876fc11d4008138 upstream.
+BugLink: https://bugs.launchpad.net/bugs/538918
 
-This is a patch to ftdi_sio_ids.h and ftdi_sio.c that adds identifiers for
-CONTEC USB serial converter.  I tested it with the device COM-1(USB)H
+The OR has verified that explicitly enabling MSI is necessary for audio
+to be audible by default.
 
-[akpm@linux-foundation.org: keep the VIDs sorted a bit]
-Signed-off-by: Daniel Sangorrin <daniel.sangorrin@gmail.com>
-Cc: Andreas Mohr <andi@lisas.de>
-Cc: Radek Liboska <liboska@uochb.cas.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+This patch is only applicable to 2.6.32.y; in 2.6.33, MSI is enabled by
+default.
+
+Reported-by: Sam Townsend <stownsend42@sbcglobal.net>
+Tested-by: Sam Townsend <stownsend42@sbcglobal.net>
+Acked-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    7 +++++++
- 2 files changed, 8 insertions(+)
+ sound/pci/hda/hda_intel.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -658,6 +658,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(EVOLUTION_VID, EVOLUTION_ER1_PID) },
- 	{ USB_DEVICE(EVOLUTION_VID, EVO_HYBRID_PID) },
- 	{ USB_DEVICE(EVOLUTION_VID, EVO_RCM4_PID) },
-+	{ USB_DEVICE(CONTEC_VID, CONTEC_COM1USBH_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ARTEMIS_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ATIK_ATK16_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ATIK_ATK16C_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -501,6 +501,13 @@
- #define CONTEC_COM1USBH_PID	0x8311	/* COM-1(USB)H */
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2317,6 +2317,7 @@ static void __devinit check_probe_mask(s
+ static struct snd_pci_quirk msi_white_list[] __devinitdata = {
+ 	SND_PCI_QUIRK(0x103c, 0x30f7, "HP Pavilion dv4t-1300", 1),
+ 	SND_PCI_QUIRK(0x103c, 0x3607, "HP Compa CQ40", 1),
++	SND_PCI_QUIRK(0x107b, 0x0380, "Gateway M-6866", 1),
+ 	{}
+ };
  
- /*
-+ * Contec products (http://www.contec.com)
-+ * Submitted by Daniel Sangorrin
-+ */
-+#define CONTEC_VID		0x06CE	/* Vendor ID */
-+#define CONTEC_COM1USBH_PID	0x8311	/* COM-1(USB)H */
-+
-+/*
-  * Definitions for B&B Electronics products.
-  */
- #define BANDB_VID		0x0856	/* B&B Electronics Vendor ID */
 
 
