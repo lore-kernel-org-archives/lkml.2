@@ -1,48 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab0C3GI5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 02:08:57 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:52527 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754649Ab0C3GI4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 02:08:56 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       fengguang.wu@intel.com
-In-Reply-To: <20100330055304.GA2983@sli10-desk.sh.intel.com>
-References: <20100330055304.GA2983@sli10-desk.sh.intel.com>
-Message-Id: <20100330150453.8E9F.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1755580Ab0C3GJc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 02:09:32 -0400
+Received: from mail.perches.com ([173.55.12.10]:1252 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754649Ab0C3GJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 02:09:31 -0400
+Subject: Re: [PATCH] fs/cifs: Neaten cERROR and cFYI macros, reduce text
+ space  ~2.5K
+From: Joe Perches <joe@perches.com>
+To: Steve French <smfrench@gmail.com>
+Cc: Steve French <sfrench@samba.org>, linux-cifs-client@lists.samba.org,
+       samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
+In-Reply-To: <524f69651003292223t229cfb59xedf8bdb4bdb45102@mail.gmail.com>
+References: <1268778571.1652.8.camel@Joe-Laptop.home>
+	 <524f69651003162020v43b7d9cfh5b409fc1a4d0f716@mail.gmail.com>
+	 <524f69651003292223t229cfb59xedf8bdb4bdb45102@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Mar 2010 23:09:29 -0700
+Message-ID: <1269929369.4558.107.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 30 Mar 2010 15:08:53 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, 2010-03-30 at 00:23 -0500, Steve French wrote:
+> Merged the equivalent into smb2.git
 
-> Commit 84b18490d1f1bc7ed5095c929f78bc002eb70f26 introduces a regression.
-> With it, our tmpfs test always oom. The test has a lot of rotated anon
-> pages and cause percent[0] zero. Actually the percent[0] is a very small
-> value, but our calculation round it to zero. The commit makes vmscan
-> completely skip anon pages and cause oops.
-> An option is if percent[x] is zero in get_scan_ratio(), forces it
-> to 1. See below patch.
-> But the offending commit still changes behavior. Without the commit, we scan
-> all pages if priority is zero, below patch doesn't fix this. Don't know if
-> It's required to fix this too.
+Thanks.
 
-Can you please post your /proc/meminfo and reproduce program? I'll digg it.
+> Due to its large size, would prefer to wait on the cifs version of
+> this until next merge window.
 
-Very unfortunately, this patch isn't acceptable. In past time, vmscan 
-had similar logic, but 1% swap-out made lots bug reports. 
-
-
+Makes sense to me.
+I presume these changes for both smb2 and cifs are for 2.6.35.
 
