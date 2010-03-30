@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab0C3PF4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 11:05:56 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:48268 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751813Ab0C3PFy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 11:05:54 -0400
-Date: Tue, 30 Mar 2010 11:05:51 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
-       Eric Dumazet <dada1@cosmosbay.com>,
-       Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Steven Rostedt <rostedt@goodmis.org>, stable <stable@kernel.org>
-Subject: Re: [PATCH] lockdep fix incorrect percpu usage
-Message-ID: <20100330150551.GA22312@Krystal>
-References: <20100330033425.GD7683@Krystal> <1269938876.5109.510.camel@twins> <20100330134555.GA20673@Krystal> <1269959111.5258.142.camel@laptop>
+	id S1753703Ab0C3PKK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 11:10:10 -0400
+Received: from web94916.mail.in2.yahoo.com ([203.104.17.196]:42163 "HELO
+	web94916.mail.in2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752051Ab0C3PKI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 11:10:08 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Mar 2010 11:10:07 EDT
+Message-ID: <792863.15718.qm@web94916.mail.in2.yahoo.com>
+X-YMail-OSG: WqGzP3EVM1kX.tm52Wqff3bL95Z4Nxsc_yL.zqzWSvqlsjt
+ TAr2rvLz2CzKSpzRnVmOiqSRM2ovogAalAXas1Bi.7wcGNFO1KxyZdaWd6mk
+ 95HFjLVMwHtrUu0Rn6dtR6yXbMSp0gwjfQYPDsiEShBnkIXWEtL3P8DRHyk1
+ Z_dfZOX7OGrea6yuUqWBh8RxQcHSlrtO1wD7MGnmvTnpoaYUthhPEqfp4IU3
+ GZ_nggaOUea_a9N1IG3R.Fi2chnoqnbQ0ZegV7ruYfHKZgArGHvJJxJFMXZ3
+ JnM0k8wFd1ChB5FHo1HLlQig-
+X-RocketYMMF: pavan_savoy
+X-Mailer: YahooMailClassic/10.0.8 YahooMailWebService/0.8.100.260964
+Date: Tue, 30 Mar 2010 20:33:25 +0530 (IST)
+From: Pavan Savoy <pavan_savoy@ti.com>
+Reply-To: pavan_savoy@ti.com
+Subject: Re: [PATCH] drivers:staging: sources for HCI LL PM protocol
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: marcel@holtmann.org, gregkh@suse.de, linux-kernel@vger.kernel.org
+In-Reply-To: <20100330122440.1e3d8bf1@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269959111.5258.142.camel@laptop>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 11:03:39 up 66 days, 17:40,  9 users,  load average: 0.90, 0.71,
-	0.73
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra (peterz@infradead.org) wrote:
-> On Tue, 2010-03-30 at 09:45 -0400, Mathieu Desnoyers wrote:
-> > * Peter Zijlstra (peterz@infradead.org) wrote:
-> > > On Mon, 2010-03-29 at 23:34 -0400, Mathieu Desnoyers wrote:
-> > > > Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is needed
-> > > > for per cpu pointers).
-> > > > 
-> > > > git blame points to commit:
-> > > > 
-> > > > lockdep.c: commit 8e18257d29238311e82085152741f0c3aa18b74d
-> > > > 
-> > > > But it's really just moving the code around. But it's enough to say that the
-> > > > problems appeared before Jul 19 01:48:54 2007, which brings us back to 2.6.23.
-> > > > 
-> > > > So it should be applied to stable 2.6.23.x to 2.6.33.x (or whichever of these
-> > > > stable branches are still maintained) and to mainline 2.6.34-rc2.
-> > > 
-> > > well, definately not to mainline, since that code is utterly busted in
-> > > mainline due to recent per-cpu changes.
-> > 
-> > How recent ? I'm based on 
-> > 
-> > commit f57d4e859a8acd63f878cd0534ec4b990b1710dc
-> > Merge: 0528faa... eed6351...
-> > Author: Ingo Molnar <mingo@elte.hu>
-> > Date:   Mon Mar 29 18:56:00 2010 +0200
-> > 
-> > from -tip and I see the problem there, both in module.c and lockdep.c.
+--- On Tue, 30/3/10, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+
+> From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> Subject: Re: [PATCH] drivers:staging: sources for HCI LL PM protocol
+> To: pavan_savoy@ti.com
+> Cc: marcel@holtmann.org, gregkh@suse.de, linux-kernel@vger.kernel.org, pavan_savoy@yahoo.co.in
+> Date: Tuesday, 30 March, 2010, 4:54 PM
 > 
-> Yeah, its basically been busted since the early merge window period,
-> hopefully Tejun's patches will make it in soon:
+> > +static struct ll_struct_s *ll;
 > 
->   http://lkml.org/lkml/2010/3/10/79
-
-I see. These patches are "on their way" to mainline, so it's better not to
-create conflicts. So the lockdep patch should only be applied to -stable, but
-separate module.c patch should apply to both -stable and mainline. Am I
-correct ?
-
-Thanks,
-
-Mathieu
-
-
-> 
-> 
+> More magic globals. I think this more than anything else
+> demonstrates why
+> you need some kind of proper per device context passed
+> around
 > 
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+The ST KIM module, is a platform device, which I use to pass the GPIO data from the arch/XX/board-XXX.c files, so, suppose we do have 2 devices for a platform, then I would need 2 platform devices right ?
+
+And there-by can I use that platform device context ?
+However the problem really is,
+
+Suppose a BT driver wants to do an st_register() and use ST as its transport, how can I then tie it to a device ?
+
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe
+> linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
+      Your Mail works best with the New Yahoo Optimized IE8. Get it NOW! http://downloads.yahoo.com/in/internetexplorer/
