@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757168Ab0CaOXM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 10:23:12 -0400
-Received: from acsinet11.oracle.com ([141.146.126.233]:23438 "EHLO
-	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753765Ab0CaOXJ (ORCPT
+	id S1754911Ab0CaO0w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 10:26:52 -0400
+Received: from mail-iw0-f199.google.com ([209.85.223.199]:44559 "EHLO
+	mail-iw0-f199.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570Ab0CaO0t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 10:23:09 -0400
-Message-ID: <4BB35A53.5000003@oracle.com>
-Date: Wed, 31 Mar 2010 10:21:07 -0400
-From: Chuck Lever <chuck.lever@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.3
+	Wed, 31 Mar 2010 10:26:49 -0400
 MIME-Version: 1.0
-To: Daniel J Blueman <daniel.blueman@gmail.com>
-CC: Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Al Viro <viro@zeniv.linux.org.uk>, linux-nfs@vger.kernel.org,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [2.6.34-rc2 NFS4 oops] open error path failure...
-References: <6278d2221003291136p6481fe8emfb039403343c082@mail.gmail.com>	 <20100329190307.GJ30031@ZenIV.linux.org.uk>	 <1269897740.15895.82.camel@localhost.localdomain> <w2s6278d2221003310420xd36fa9ey92b781fb9f4d1a10@mail.gmail.com>
-In-Reply-To: <w2s6278d2221003310420xd36fa9ey92b781fb9f4d1a10@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0205.4BB35AC4.0095:SCFMA4539814,ss=1,fgs=0
+In-Reply-To: <20100331064707.GA11428@isilmar.linta.de>
+References: <1269972879-27400-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br> 
+	<20100331064707.GA11428@isilmar.linta.de>
+From: Marcelo Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Date: Wed, 31 Mar 2010 11:26:28 -0300
+Message-ID: <w2ycecb6d8f1003310726lead65adcq2de9cb4b8560a034@mail.gmail.com>
+Subject: Re: [PATCH] ARM: pcmcia: Adds nanoEngine PCMCIA support.
+To: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
+       Russell King <linux@arm.linux.org.uk>,
+       Ralf Baechle <ralf@linux-mips.org>, Eric Miao <eric.y.miao@gmail.com>,
+       Wolfram Sang <w.sang@pengutronix.de>,
+       Manuel Lauss <manuel.lauss@gmail.com>,
+       Dmitry Artamonow <mad_soft@inbox.ru>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       linux-pcmcia@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2010 07:20 AM, Daniel J Blueman wrote:
-> Talking of expensive, I see latencytop show>16000ms latency for
-> writing pages when I have a workload that does large buffered I/O to
-> an otherwise uncongested server. The gigabit network is saturated, and
-> reads often stall for 1000-4000ms (!). Client has the default 16 TCP
-> request slots, and server has 8 nfsds - the server is far from disk or
-> processor-saturated. I'll see if there is any useful debugging I can
-> get about this.
+Hi Dominik,
 
-That latency is pretty much guaranteed to be due to a long RPC backlog 
-queue on the client.  Bumping the size of the slot table to 128 and 
-increasing the number of NFSD threads may help.
+On Wed, Mar 31, 2010 at 03:47, Dominik Brodowski
+<linux@dominikbrodowski.net> wrote:
+> On Tue, Mar 30, 2010 at 03:14:39PM -0300, Marcelo Roberto Jimenez wrote:
+>> This patch adds nanoEngine PCMCIA support, with support for two sockets.
+>>
+>> In order to have a fully functional pcmcia subsystem in a BSE nanoEngine board
+>> you should carefully read this:
+>>
+>> http://cambuca.ldhs.cetuc.puc-rio.br/nanoengine/
+>
+> That website still talks about pcmcia-cs ... which was superseded by
+> pcmciautils.
 
--- 
-chuck[dot]lever[at]oracle[dot]com
+Indeed, pcmcia-cs is not needed anymore, in fact, does not work with
+my setup, I am using pcmciautils now. The web site has not been
+updated because it refers to the project as it was with the kernel 2.4
+implementation. The link is there because there are two serious
+hardware problems when implementing PCMCIA with nanoengine: one is
+that it needs external logic, the other is that it is necessary to
+reprogram the bogus version of the CPLD that originally came with the
+nanoEngine board.
+
+> The patch gets an
+>
+>        Acked-by: Dominik Brodowski <linux@dominikbrodowski.net>
+>
+> as I assume that Russell prefers to take it into his tree?
+
+Thanks!
+
+> Best,
+>        Dominik
+
+Regards,
+Marcelo.
