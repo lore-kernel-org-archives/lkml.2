@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757622Ab0CaAZb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:25:31 -0400
-Received: from kroah.org ([198.145.64.141]:48985 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756512Ab0C3XMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:33 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:36 2010
-Message-Id: <20100330225836.170313258@linux.site>
-User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:47 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "Serge E. Hallyn" <serue@us.ibm.com>, Nick Piggin <npiggin@suse.de>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [45/89] ipc ns: fix memory leak (idr)
-In-Reply-To: <20100330230520.GA28779@kroah.com>
+	id S1757634Ab0CaAZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:25:46 -0400
+Received: from anchor-post-1.mail.demon.net ([195.173.77.132]:61340 "EHLO
+	anchor-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756571Ab0CaAZl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 20:25:41 -0400
+Message-ID: <4BB29675.9050507@lougher.demon.co.uk>
+Date: Wed, 31 Mar 2010 01:25:25 +0100
+From: Phillip Lougher <phillip@lougher.demon.co.uk>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: Ferenc Wagner <wferi@niif.hu>
+CC: Alain Knaff <alain@knaff.lu>, linux-kernel@vger.kernel.org,
+       "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: kernel decompressor interface
+References: <877hotu6x9.fsf@tac.ki.iif.hu>
+In-Reply-To: <877hotu6x9.fsf@tac.ki.iif.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.31-stable review patch.  If anyone has any objections, please let us know.
+Ferenc Wagner wrote:
+> Hi,
+> 
+> While  working with SquashFS code recently, I got the impression that the
+> current decompress_fn interface isn't best suited for general use: it
+> rules out real scatter/gather operation, which -- one hopes -- is a
+> general feature of stream decompressors.  For example, if one has to
+> decompress data from a series of buffer_heads into a bunch of (cache)
+> pages (typical operation in compressed file systems), the inflate
+> interface in zlib.h provides the possibility of changing input and
+> output buffer addresses, but decompress_fn does not, necessitating extra
+> memory copying.  On the other hand, the latter is admittedly simpler.
+> 
 
-------------------
+The decompress_fn interface is rather limited, however, it must
+be borne in mind that it was adequate for the original intended
+users (initramfs/initrd decompression). Squashfs (and other filesystems) on
+the other hand can certainly make use of a much better multi-call interface.
+My strategy in adding LZMA support to Squashfs has been to get an implementation
+using the current interface mainlined, and one this has been done to look at
+improving the decompress_fn interface.
 
-From: Serge E. Hallyn <serue@us.ibm.com>
+> However, I feel like their advantages could be combined by making the
+> fill() and flush() callbacks able to change the buffer addresses, like
+> int fill(void **, unsigned int) for example.  Even better, some context
+> could also be passed around, so that they can easily carry private state.
+> 
+> A cursory look at the LZMA decompressor implementation suggests that
+> this would be straightforward change (although I haven't done it).  
 
-commit 7d6feeb287c61aafa88f06345387b1188edf4b86 upstream.
+LZMA decompressors have a quirk in that they use the output buffer
+as the history buffer (e.g. look for peek_old_byte() in decompress_unlzma.c).
+This means any multi-call interface such as zlib which modifies the output
+buffer pointer dynamically (without allowing the decompressor to look back at
+previously passed in buffers) won't work.   A multi-call interface that
+passes the output buffers in an iovec style array should work though
+(incidentally this is why Squashfs passes the output buffers as an array
+to the decompressor wrapper even though LZMA cannot as yet make use of it)
 
-We have apparently had a memory leak since
-7ca7e564e049d8b350ec9d958ff25eaa24226352 "ipc: store ipcs into IDRs" in
-2007.  The idr of which 3 exist for each ipc namespace is never freed.
+The following original thread about inclusion of LZMA into the kernel
+has some relevant information.
 
-This patch simply frees them when the ipcns is freed.  I don't believe any
-idr_remove() are done from rcu (and could therefore be delayed until after
-this idr_destroy()), so the patch should be safe.  Some quick testing
-showed no harm, and the memory leak fixed.
+http://www.mail-archive.com/linux-embedded@vger.kernel.org/msg01371.html
 
-Caught by kmemleak.
+Phillip
 
-Signed-off-by: Serge E. Hallyn <serue@us.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Acked-by: Nick Piggin <npiggin@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- ipc/msg.c |    1 +
- ipc/sem.c |    1 +
- ipc/shm.c |    1 +
- 3 files changed, 3 insertions(+)
-
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -125,6 +125,7 @@ void msg_init_ns(struct ipc_namespace *n
- void msg_exit_ns(struct ipc_namespace *ns)
- {
- 	free_ipcs(ns, &msg_ids(ns), freeque);
-+	idr_destroy(&ns->ids[IPC_MSG_IDS].ipcs_idr);
- }
- #endif
- 
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -129,6 +129,7 @@ void sem_init_ns(struct ipc_namespace *n
- void sem_exit_ns(struct ipc_namespace *ns)
- {
- 	free_ipcs(ns, &sem_ids(ns), freeary);
-+	idr_destroy(&ns->ids[IPC_SEM_IDS].ipcs_idr);
- }
- #endif
- 
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -101,6 +101,7 @@ static void do_shm_rmid(struct ipc_names
- void shm_exit_ns(struct ipc_namespace *ns)
- {
- 	free_ipcs(ns, &shm_ids(ns), do_shm_rmid);
-+	idr_destroy(&ns->ids[IPC_SHM_IDS].ipcs_idr);
- }
- #endif
- 
-
+> Do
+> you think that
+> 1. it could be done for other decompressors (lzo, bunzip) as well, and
+> 2. it should be done in any form (interface replacement or extension)?
 
