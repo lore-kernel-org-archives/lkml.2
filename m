@@ -1,100 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757308Ab0CaGNL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 02:13:11 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41333 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757123Ab0CaGNH (ORCPT
+	id S1757356Ab0CaGRx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 02:17:53 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35130 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757261Ab0CaGRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 02:13:07 -0400
-Date: Wed, 31 Mar 2010 08:13:43 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: davej@redhat.com, trenn@suse.de, linux@dominikbrodowski.net, mingo@elte.hu,
-       hpa@zytor.com, tglx@linutronix.de, cpufreq@vger.kernel.org,
-       x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [-v2 PATCH 2/6] powernow-k8: Add core performance boost support
-Message-ID: <20100331061343.GA28659@aftab>
-References: <1269610800-23847-1-git-send-email-bp@amd64.org>
- <1269610800-23847-3-git-send-email-bp@amd64.org>
- <20100330154229.dc8ebd24.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100330154229.dc8ebd24.akpm@linux-foundation.org>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 31 Mar 2010 02:17:52 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 31 Mar 2010 15:13:56 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: David Rientjes <rientjes@google.com>
+Cc: anfei <anfei.zhou@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp, Mel Gorman <mel@csn.ul.ie>,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
+Subject: Re: [PATCH] oom killer: break from infinite loop
+Message-Id: <20100331151356.673c16c0.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.DEB.2.00.1003302302420.22316@chino.kir.corp.google.com>
+References: <1269447905-5939-1-git-send-email-anfei.zhou@gmail.com>
+	<20100326150805.f5853d1c.akpm@linux-foundation.org>
+	<20100326223356.GA20833@redhat.com>
+	<20100328145528.GA14622@desktop>
+	<20100328162821.GA16765@redhat.com>
+	<alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com>
+	<20100329140633.GA26464@desktop>
+	<alpine.DEB.2.00.1003291259400.14859@chino.kir.corp.google.com>
+	<20100330142923.GA10099@desktop>
+	<alpine.DEB.2.00.1003301326490.5234@chino.kir.corp.google.com>
+	<20100331095714.9137caab.kamezawa.hiroyu@jp.fujitsu.com>
+	<alpine.DEB.2.00.1003302302420.22316@chino.kir.corp.google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, Mar 30, 2010 at 03:42:29PM -0700
+On Tue, 30 Mar 2010 23:07:08 -0700 (PDT)
+David Rientjes <rientjes@google.com> wrote:
 
-Hi Andrew,
-
-> On Fri, 26 Mar 2010 14:39:56 +0100
-> Borislav Petkov <bp@amd64.org> wrote:
+> On Wed, 31 Mar 2010, KAMEZAWA Hiroyuki wrote:
 > 
-> > From: Borislav Petkov <borislav.petkov@amd.com>
+> > > > diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> > > > index 0cb1ca4..9e89a29 100644
+> > > > --- a/mm/oom_kill.c
+> > > > +++ b/mm/oom_kill.c
+> > > > @@ -510,8 +510,10 @@ retry:
+> > > >  	if (PTR_ERR(p) == -1UL)
+> > > >  		goto out;
+> > > >  
+> > > > -	if (!p)
+> > > > -		p = current;
+> > > > +	if (!p) {
+> > > > +		read_unlock(&tasklist_lock);
+> > > > +		panic("Out of memory and no killable processes...\n");
+> > > > +	}
+> > > >  
+> > > >  	if (oom_kill_process(p, gfp_mask, 0, points, limit, mem,
+> > > >  				"Memory cgroup out of memory"))
+> > > > 
+> > > 
+> > > This actually does appear to be necessary but for a different reason: if 
+> > > current is unkillable because it has OOM_DISABLE, for example, then 
+> > > oom_kill_process() will repeatedly fail and mem_cgroup_out_of_memory() 
+> > > will infinitely loop.
+> > > 
+> > > Kame-san?
+> > > 
 > > 
-> > Starting with F10h, revE, AMD processors add support for a dynamic
-> > core boosting feature called Core Performance Boost. When a specific
-> > condition is present, a subset of the cores on a system are boosted
-> > beyond their P0 operating frequency to speed up the performance of
-> > single-threaded applications.
+> > When a memcg goes into OOM and it only has unkillable processes (OOM_DISABLE),
+> > we can do nothing. (we can't panic because container's death != system death.)
 > > 
-> > In the normal case, the system comes out of reset with core boosting
-> > enabled. This patch adds a sysfs knob with which core boosting can be
-> > switched on or off for benchmarking purposes.
+> > Because memcg itself has mutex+waitqueue for mutual execusion of OOM killer, 
+> > I think infinite-loop will not be critical probelm for the whole system.
 > > 
-> > While at it, cleanup the driver init codepath and update copyrights.
+> > And, now, memcg has oom-kill-disable + oom-kill-notifier features.
+> > So, If a memcg goes into OOM and there is no killable process, but oom-kill is
+> > not disabled by memcg.....it means system admin's mis-configuraton.
 > > 
-> > ...
-> >
-> > +static void _cpb_toggle_msrs(bool t)
-> > +{
-> > +	int cpu;
-> > +
-> > +	rdmsr_on_cpus(cpu_online_mask, MSR_K7_HWCR, msrs);
-> > +
-> > +	for_each_cpu(cpu, cpu_online_mask) {
-> > +		struct msr *reg = per_cpu_ptr(msrs, cpu);
-> > +		if (t)
-> > +			reg->l &= ~BIT(25);
-> > +		else
-> > +			reg->l |= BIT(25);
-> > +	}
-> > +	wrmsr_on_cpus(cpu_online_mask, MSR_K7_HWCR, msrs);
-> > +}
+> > He can stop inifite loop by hand, anyway.
+> > # echo 1 > ..../group_A/memory.oom_control
+> > 
 > 
-> What prevents cpu_online_mask from changing while this is happening?
+> Then we should be able to do this since current is by definition 
+> unkillable since it was not found in select_bad_process(), right?
 
-Frankly, nothing. And yes, we talked a lot about this internally, since,
-you need this bit cleared on _all_ cores for the processor to boost.
-Now, if you've offlined some of the cores, you won't be able to execute
-any code on them and thus clear this bit.
+To me, this patch is acceptable and seems reasnoable.
 
-However, this interface is there only for benchmarking purposes and
-stuff, i.e. normally, you shouldn't need to touch it _at_ _all_ and
-boosting will work out of the box and without user interaction.
+But I didn't joined to memcg development when this check was added
+and don't know why kill current..
 
-So, IMHO, hotplug notifiers won't work since you need all cores online
-at that particular moment to enable boosting. It sounds more reasonable
-to me to WARN when a core is missing from the mask that boosting cannot
-be enabled. I'll cook up something later today.
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=c7ba5c9e8176704bfac0729875fa62798037584d
 
-Thanks.
+Addinc Balbir to CC. Maybe situation is changed now.
+Because we can stop inifinite loop (by hand) and there is no rushing oom-kill
+callers, this change is acceptable.
 
--- 
-Regards/Gruss,
-Boris.
+Thanks,
+-Kame
 
---
-Advanced Micro Devices, Inc.
-Operating Systems Research Center
+
+
+> ---
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -500,12 +500,9 @@ void mem_cgroup_out_of_memory(struct mem_cgroup *mem, gfp_t gfp_mask)
+>  	read_lock(&tasklist_lock);
+>  retry:
+>  	p = select_bad_process(&points, limit, mem, CONSTRAINT_NONE, NULL);
+> -	if (PTR_ERR(p) == -1UL)
+> +	if (!p || PTR_ERR(p) == -1UL)
+>  		goto out;
+>  
+> -	if (!p)
+> -		p = current;
+> -
+>  	if (oom_kill_process(p, gfp_mask, 0, points, limit, mem,
+>  				"Memory cgroup out of memory"))
+>  		goto retry;
+> 
+
