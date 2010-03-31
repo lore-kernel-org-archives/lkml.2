@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758045Ab0CaCVG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 22:21:06 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:26437 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755338Ab0CaCVB (ORCPT
+	id S1758059Ab0CaCVS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 22:21:18 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:57282 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756802Ab0CaCVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 22:21:01 -0400
+	Tue, 30 Mar 2010 22:21:15 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,88 +16,53 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 16/33] lmb: Add lmb_reserve_area_overlap_ok()
-Date: Tue, 30 Mar 2010 19:17:01 -0700
-Message-Id: <1270001838-15857-17-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 33/33] x86: make e820 to be __initdata
+Date: Tue, 30 Mar 2010 19:17:18 -0700
+Message-Id: <1270001838-15857-34-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1270001838-15857-1-git-send-email-yinghai@kernel.org>
 References: <1270001838-15857-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4BB2B121.0014,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090206.4BB2B11E.00A3,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some areas from firmware could be reserved several times from different callers.
-
-If these area are overlapped, We may have overlapped entries in lmb.reserved.
-
-Try to free the area at first, before rerserve them again.
+Finally no users after init boot stage. We can free it to save some bytes.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/lmb.h |    1 +
- mm/lmb.c            |   27 +++++++++++++++++++++++++--
- 2 files changed, 26 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/e820.h |    2 --
+ arch/x86/kernel/e820.c      |    2 +-
+ 2 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/lmb.h b/include/linux/lmb.h
-index 8332934..3c8095f 100644
---- a/include/linux/lmb.h
-+++ b/include/linux/lmb.h
-@@ -86,6 +86,7 @@ lmb_end_pfn(struct lmb_region *type, unsigned long region_nr)
- }
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index cd7de51..f2ab72e 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -73,8 +73,6 @@ struct e820map {
+ #define BIOS_END		0x00100000
  
- void lmb_reserve_area(u64 start, u64 end, char *name);
-+void lmb_reserve_area_overlap_ok(u64 start, u64 end, char *name);
- void lmb_free_area(u64 start, u64 end);
- void lmb_add_memory(u64 start, u64 end);
- u64 __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
-diff --git a/mm/lmb.c b/mm/lmb.c
-index e88ac58..38d4aef 100644
---- a/mm/lmb.c
-+++ b/mm/lmb.c
-@@ -605,6 +605,12 @@ void __init lmb_add_memory(u64 start, u64 end)
- 	__check_and_double_region_array(&lmb.memory, &lmb_memory_region[0]);
- }
+ #ifdef __KERNEL__
+-/* see comment in arch/x86/kernel/e820.c */
+-extern struct e820map e820;
  
-+static void __init __lmb_reserve_area(u64 start, u64 end, char *name)
-+{
-+	lmb_add_region(&lmb.reserved, start, end - start);
-+	__check_and_double_region_array(&lmb.reserved, &lmb_reserved_region[0]);
-+}
-+
- void __init lmb_reserve_area(u64 start, u64 end, char *name)
- {
- 	if (start == end)
-@@ -613,8 +619,25 @@ void __init lmb_reserve_area(u64 start, u64 end, char *name)
- 	if (WARN_ONCE(start > end, "lmb_reserve_area: wrong range [%#llx, %#llx]\n", start, end))
- 		return;
+ #if defined(CONFIG_X86_OOSTORE) && defined(CONFIG_CPU_SUP_CENTAUR)
+ extern int centaur_ram_top;
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 471784b..2c1260f 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -35,7 +35,7 @@
+  * user can e.g. boot the original kernel with mem=1G while still booting the
+  * next kernel with full memory.
+  */
+-struct e820map e820;
++static struct e820map __initdata e820;
+ static struct e820map __initdata e820_saved;
  
--	lmb_add_region(&lmb.reserved, start, end - start);
--	__check_and_double_region_array(&lmb.reserved, &lmb_reserved_region[0]);
-+	__lmb_reserve_area(start, end, name);
-+}
-+
-+/*
-+ * Could be used to avoid having overlap entries in lmb.reserved.region.
-+ *  Don't need to use it with area that is from lmb_find_area()
-+ *  Only use it for the area that fw hidden area.
-+ */
-+void __init lmb_reserve_area_overlap_ok(u64 start, u64 end, char *name)
-+{
-+	if (start == end)
-+		return;
-+
-+	if (WARN_ONCE(start > end, "lmb_reserve_area_overlap_ok: wrong range [%#llx, %#llx]\n", start, end))
-+		return;
-+
-+	/* Free that region at first */
-+	lmb_free(start, end - start);
-+	__lmb_reserve_area(start, end, name);
- }
- 
- void __init lmb_free_area(u64 start, u64 end)
+ /* For PCI or other memory-mapped resources */
 -- 
 1.6.4.2
 
