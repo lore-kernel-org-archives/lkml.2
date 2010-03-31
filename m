@@ -1,123 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755960Ab0CaDP0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 23:15:26 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:58719 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab0CaDPY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 23:15:24 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 31 Mar 2010 12:11:20 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-       cl@linux-foundation.org, lee.schermerhorn@hp.com, rientjes@google.com,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-       "David S. Miller" <davem@davemloft.net>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, Troels Liebe Bentsen <tlb@rapanden.dk>,
-       linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH] exit: fix oops in sync_mm_rss
-Message-Id: <20100331121120.9bd35fd5.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100330200336.dd0ff9fd.akpm@linux-foundation.org>
-References: <20100316170808.GA29400@redhat.com>
-	<20100330135634.09e6b045.akpm@linux-foundation.org>
-	<20100331092815.c8b9d89c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100330173721.cbd442cb.akpm@linux-foundation.org>
-	<20100331094124.43c49290.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100330182258.59813fe6.akpm@linux-foundation.org>
-	<20100331102755.92a89ca5.kamezawa.hiroyu@jp.fujitsu.com>
-	<n2m28c262361003301953iea82f541u227e7227a23702e@mail.gmail.com>
-	<20100330200336.dd0ff9fd.akpm@linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756433Ab0CaDUw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 23:20:52 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45448 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755699Ab0CaDUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 23:20:50 -0400
+Message-ID: <4BB2BF8A.6080501@suse.de>
+Date: Wed, 31 Mar 2010 12:20:42 +0900
+From: Tejun Heo <teheo@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Neil Brown <neilb@suse.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] refcounting improvements in sysfs.
+References: <20100324031829.2136.66489.stgit@notabene.brown>	<4BAC3CE0.2010408@suse.de>	<20100326170214.517a17cc@notabene.brown>	<4BAC5513.8060608@suse.de> <20100329161054.2dfcdfa8@notabene.brown>
+In-Reply-To: <20100329161054.2dfcdfa8@notabene.brown>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Mar 2010 20:03:36 -0400
-Andrew Morton <akpm@linux-foundation.org> wrote:
+Hello, Neil.
 
-> On Wed, 31 Mar 2010 11:53:00 +0900 Minchan Kim <minchan.kim@gmail.com> wrote:
- 
-> really.  Apart from the fact that we'll otherwise perform an empty
-> NR_MM_COUNTERS loop in __sync_task_rss_stat(), sync_mm_rss() just isn't
-> set up to handle kernel threads.  Given that the function of
-> sync_task_mm(from, to) is to move stuff from "from" and into "to", it's
-> daft to call it with a NULL value of `to'!
+On 03/29/2010 02:10 PM, Neil Brown wrote:
+>> I don't know.  After spending some time with k* and device model, I
+>> grew a pretty strong dislike for abstractions without clear functional
+>> necessities.  kref being much simpler than kobject, the abuse is much
+>> less severe but there have been kref misuses (in kobject and SCSI
+>> midlayer) which could have been avoided or at least easily located if
+>> they simply had used atomic_t instead of dreaming up some mystical
+>> properties of kref.
 > 
-Updated again.
+> this strikes me as really valuable experience that it would be great
+> to share.  While I generally like kref and see value in at least
+> some of kobject I don't for a moment suppose they are perfect.
+> Fixing them requires a good understanding of the problems they
+> cause.  If you have that knowledge, it would be a great resource for
+> anyone wanting to 'fix' kobject.  Are you interested in writing
+> anything (more) up at all???
 
-==
+I'm not sure I have enough to say to write something up about. :-) One
+thing I've been hoping to do is to hide the k* abstraction behind
+device model abstraction so that device model API users only have to
+deal with device model abstractions - devices and drivers.  They are
+what the driver writers need and have pretty good tangible concrete
+concept about.  I think my opinions can be compressed into
 
-task->rss_stat wasn't initialized to 0 at copy_process().
-At exit, tsk->mm may be NULL. It's not valid to call sync_mm_rss()
-against not exisiting mm_struct, We should check it.
-And __sync_task_rss_stat() should be static.
-This patch also removes BUG_ON(!mm) in __sync_task_rss_stat().
-The code will panic if !mm without it.
+* Add abstractions which serve concrete functional necessities as
+  doing so makes communication among peer programmers much easier by
+  reducing confusion.
 
-Changelog:
- - removed BUG_ON()
- - added check task->mm in exit.c before calling sync_mm_rss().
+* Don't get too attached to software engineering theories.  They're
+  not bad in themselves but often end up labeling only certain small
+  subset of all the things which need to be considered, with the
+  adverse side effect of emphasizing those named ones out of
+  proportion harming overall trade-off balance.
 
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- kernel/exit.c |    3 ++-
- kernel/fork.c |    3 +++
- mm/memory.c   |    3 +--
- 3 files changed, 6 insertions(+), 3 deletions(-)
+> This would argue that having a return value from kobject_get violates Rusty's
+> law that interfaces should be hard to misuse.
+> We could probably change that - it is only used 19 times in the current
+> kernel.
+> It probably doesn't help that Documentation/kobject.txt includes the text:
+> 
+>     A successful call to kobject_get() will increment the kobject's reference
+>     counter and return the pointer to the kobject.
+> 
+> which seems to suggest that an unsuccessful call is possible.
 
-Index: mmotm-2.6.34-Mar24/mm/memory.c
-===================================================================
---- mmotm-2.6.34-Mar24.orig/mm/memory.c
-+++ mmotm-2.6.34-Mar24/mm/memory.c
-@@ -124,13 +124,12 @@ core_initcall(init_zero_pfn);
- 
- #if defined(SPLIT_RSS_COUNTING)
- 
--void __sync_task_rss_stat(struct task_struct *task, struct mm_struct *mm)
-+static void __sync_task_rss_stat(struct task_struct *task, struct mm_struct *mm)
- {
- 	int i;
- 
- 	for (i = 0; i < NR_MM_COUNTERS; i++) {
- 		if (task->rss_stat.count[i]) {
--			BUG_ON(!mm);
- 			add_mm_counter(mm, i, task->rss_stat.count[i]);
- 			task->rss_stat.count[i] = 0;
- 		}
-Index: mmotm-2.6.34-Mar24/kernel/fork.c
-===================================================================
---- mmotm-2.6.34-Mar24.orig/kernel/fork.c
-+++ mmotm-2.6.34-Mar24/kernel/fork.c
-@@ -1060,6 +1060,9 @@ static struct task_struct *copy_process(
- 	p->prev_utime = cputime_zero;
- 	p->prev_stime = cputime_zero;
- #endif
-+#if defined(SPLIT_RSS_COUNTING)
-+	memset(&p->rss_stat, 0, sizeof(p->rss_stat));
-+#endif
- 
- 	p->default_timer_slack_ns = current->timer_slack_ns;
- 
-Index: mmotm-2.6.34-Mar24/kernel/exit.c
-===================================================================
---- mmotm-2.6.34-Mar24.orig/kernel/exit.c
-+++ mmotm-2.6.34-Mar24/kernel/exit.c
-@@ -950,7 +950,8 @@ NORET_TYPE void do_exit(long code)
- 
- 	acct_update_integrals(tsk);
- 	/* sync mm's RSS info before statistics gathering */
--	sync_mm_rss(tsk, tsk->mm);
-+	if (tsk->mm)
-+		sync_mm_rss(tsk, tsk->mm);
- 	group_dead = atomic_dec_and_test(&tsk->signal->live);
- 	if (group_dead) {
- 		hrtimer_cancel(&tsk->signal->real_timer);
+Yeap, the return value is only for convenience and I think it's more
+harmful overall, but then again I suppose most people got used to it
+now, which is another important factor to consider.  Given that there
+are not many users of the return value, I agree that removing it would
+be better.
 
+>> This is *way* worse than atomic_t not better and the confusion is
+>> caused exactly by superflous abstraction which leads the users of the
+>> API to imagine some non-existing function of the abstraction and
+>> hinders the flow of review.
+> 
+> I'm not immediately convinced by this, though maybe I haven't seen enough
+> examples yet.
+> 
+> The deadlocks that I have come across would not have been any more obvious in
+> either of the above - they were caused because sysfs_remove deadlocks when
+> called from inside a sysfs attribute action...
+>
+> Also, while this re-write is possible for kref uses it isn't really possible
+> in kobject as the 'final_put' function must be included in the ktype (though
+> maybe you don't like that either).
+
+Ah, right, I probably was mixing kobject and kref release functions
+when talking about the problems I've seen.  I still don't like the
+kref API and have chosen atomic_t over it in several cases.  To me,
+the separate ->release seems way too heavy compared to the
+functionality the abstraction actually provides and hinders writing
+and reviewing more than it clarifies things.
+
+> What would be really helpful here is a survey of what sorts of things are
+> actually done in final_put functions so would could create some guidelines
+> about how to write the release functions.
+
+For kobject, I'm not sure what should be done other than hiding it as
+much as possible behind device model abstractions.  For kref, I think
+it would be great if it can be made simpler and dumber so that it only
+clarifies the intention of the usage instead of forcing separate
+->release.  If fancier reference helper is needed, capability to defer
+release to a separate context and handle module symbol dereference
+problem automatically would be nice provided they can be done in clean
+manner, but these are just something I've been vaguely hoping for so
+they may be absurd to actually implement.  :-)
+
+Thanks.
+
+-- 
+tejun
