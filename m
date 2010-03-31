@@ -1,78 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758018Ab0CaR7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 13:59:12 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43102 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757829Ab0CaR7J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 13:59:09 -0400
-Date: Wed, 31 Mar 2010 10:54:45 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: San Mehat <san@google.com>
-cc: linux-kernel@vger.kernel.org, Brian Swetland <swetland@google.com>,
-       Matt Mackall <mpm@selenic.com>, Dave Hansen <haveblue@us.ibm.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] proc: pagemap: Hold mmap_sem during page walk
-In-Reply-To: <1270056227-5442-1-git-send-email-san@google.com>
-Message-ID: <alpine.LFD.2.00.1003311036200.3707@i5.linux-foundation.org>
-References: <1270056227-5442-1-git-send-email-san@google.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1758024Ab0CaSAu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 14:00:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4881 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757808Ab0CaSAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 14:00:49 -0400
+Date: Wed, 31 Mar 2010 19:58:36 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [patch] oom: give current access to memory reserves if it has
+	been killed
+Message-ID: <20100331175836.GA11635@redhat.com>
+References: <1269447905-5939-1-git-send-email-anfei.zhou@gmail.com> <20100326150805.f5853d1c.akpm@linux-foundation.org> <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330154659.GA12416@redhat.com> <alpine.DEB.2.00.1003301320020.5234@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1003301320020.5234@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 31 Mar 2010, San Mehat wrote:
+On 03/30, David Rientjes wrote:
 >
-> If the mmap_sem is not held while we walk_page_range(), then
-> it is possible for find_vma() to race with a remove_vma_list()
-> caused by do_munmap() (or others).
+> On Tue, 30 Mar 2010, Oleg Nesterov wrote:
+>
+> > Note that __oom_kill_task() does force_sig(SIGKILL) which assumes that
+> > ->sighand != NULL. This is not true if out_of_memory() is called after
+> > current has already passed exit_notify().
+>
+> We have an even bigger problem if current is in the oom killer at
+> exit_notify() since it has already detached its ->mm in exit_mm() :)
 
-I think you've found a bug, but I also look at that code and say "that's 
-just totally insane".
+Can't understand... I thought that in theory even kmalloc(1) can trigger
+oom.
 
-Why does it do that initial "get_user_pages()" at all? It never _uses_ 
-that 'pages' array except to mark the pages dirty, but that's insane, 
-since as far as I can see the way it actually dirties the pages in 
-question is by doing a regular "put_user(pfn, pm->out);". And that will 
-dirty the pages in hardware (or put_user).
+Say, right after exit_mm() we are doing acct_process(), and f_op->write()
+needs a page. So, you are saying that in this case __page_cache_alloc()
+can never trigger out_of_memory() ?
 
-Also, I get the feeling that the _reason_ it is not doing that down_read() 
-is that it would dead-lock the whole system, exactly on that "put_user()", 
-if somebody else did a down_write() in another thread. In that case you 
-have:
+> > IOW, unless I missed something, it is very easy to hide the process
+> > from oom-kill:
+> >
+> > 	int main()
+> > 	{
+> > 		pthread_create(memory_hog_func);
+> > 		syscall(__NR_exit);
+> > 	}
+> >
+>
+> The check for !p->mm was moved in the -mm tree (and the oom killer was
+> entirely rewritten in that tree, so I encourage you to work off of it
+> instead
 
-	thread#1		thread#2
-	--------		--------
+OK, but I guess this !p->mm check is still wrong for the same reason.
+In fact I do not understand why it is needed in select_bad_process()
+right before oom_badness() which checks ->mm too (and this check is
+equally wrong).
 
-	down_read()
-	...
-				down_write() - blocks
-	...
-	put_user();
-	 .. page fault ..
-	  down_read();	 **DEADLOCK **
+> with
+> oom-avoid-race-for-oom-killed-tasks-detaching-mm-prior-to-exit.patch to
+> even after the check for PF_EXITING.  This is set in the exit path before
+> the ->mm is detached
+
+Yes. Then I do not understand "if (!p->mm)" completely.
+
+> so if the oom killer finds an already exiting task,
+> it will become a no-op since it should eventually free memory and avoids a
+> needless oom kill.
+
+No, afaics, And this reminds that I already complained about this
+PF_EXITING check.
+
+Once again, p is the group leader. It can be dead (no ->mm, PF_EXITING
+is set) but it can have sub-threads. This means, unless I missed something,
+any user can trivially disable select_bad_process() forever.
 
 
-because our down_read() tries to be fair to the down_write().
+Well. Looks like, -mm has a lot of changes in oom_kill.c. Perhaps it
+would be better to fix these mt bugs first...
 
-So I think your patch would just create _different_ trouble.
+Say, oom_forkbomb_penalty() does list_for_each_entry(tsk->children).
+Again, this is not right even if we forget about !child->mm check.
+This list_for_each_entry() can only see the processes forked by the
+main thread.
 
-I get the _feeling_ that the whole point of that 'pages' array was to not 
-do that put_user() at all, but write to the physical pages through that 
-array. But the code looks totally buggy.
+Likewise, oom_kill_process()->list_for_each_entry() is not right too.
 
-I would seriously suggest that we consider removing the 'pagemap' 
-interface. The way that code looks, it's just broken.
+Hmm. Why oom_forkbomb_penalty() does thread_group_cputime() under
+task_lock() ? It seems, ->alloc_lock() is only needed for get_mm_rss().
 
-Matt - give me a reason (which includes either a patch to fix this sh*t up 
-or telling me why I'm wrong, but _also_ includes a real independent reason 
-to keep that thing around regardless) to not remove it all.
+Oleg.
 
-The whole notion seems to be utterly misdesigned.
-
-			Linus
