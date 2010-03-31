@@ -1,58 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758367Ab0CaWu4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 18:50:56 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49018 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758335Ab0CaWuy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 18:50:54 -0400
-Date: Wed, 31 Mar 2010 15:49:55 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Matthew Wilcox <matthew@wil.cx>, Yinghai Lu <yinghai@kernel.org>,
-       Rabin Vincent <rabin@rab.in>, lkml <linux-kernel@vger.kernel.org>,
-       penberg@cs.helsinki.fi, linux-arch@vger.kernel.org
-Subject: Re: start_kernel(): bug: interrupts were enabled early
-Message-Id: <20100331154955.54176e5e.akpm@linux-foundation.org>
-In-Reply-To: <1270075071.7101.79.camel@pasglop>
-References: <20100325194100.GA2364@debian>
-	<20100331134048.da4e35a7.akpm@linux-foundation.org>
-	<4BB3B4DB.7040904@kernel.org>
-	<20100331210145.GB32165@parisc-linux.org>
-	<4BB3B8FC.1020608@zytor.com>
-	<20100331211754.GC32165@parisc-linux.org>
-	<alpine.DEB.2.00.1003311640410.30456@router.home>
-	<20100331215411.GB17715@flint.arm.linux.org.uk>
-	<4BB3C540.9000405@zytor.com>
-	<1270075071.7101.79.camel@pasglop>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758378Ab0CaWwm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 18:52:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61928 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758337Ab0CaWwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 18:52:41 -0400
+Date: Thu, 1 Apr 2010 00:50:11 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [patch] oom: give current access to memory reserves if it has
+	been killed
+Message-ID: <20100331224904.GA4025@redhat.com>
+References: <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330154659.GA12416@redhat.com> <alpine.DEB.2.00.1003301320020.5234@chino.kir.corp.google.com> <20100331175836.GA11635@redhat.com> <alpine.DEB.2.00.1003311342410.25284@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1003311342410.25284@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 01 Apr 2010 09:37:51 +1100
-Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+On 03/31, David Rientjes wrote:
+>
+> On Wed, 31 Mar 2010, Oleg Nesterov wrote:
+>
+> > On 03/30, David Rientjes wrote:
+> > >
+> > > On Tue, 30 Mar 2010, Oleg Nesterov wrote:
+> > >
+> > > > Note that __oom_kill_task() does force_sig(SIGKILL) which assumes that
+> > > > ->sighand != NULL. This is not true if out_of_memory() is called after
+> > > > current has already passed exit_notify().
+> > >
+> > > We have an even bigger problem if current is in the oom killer at
+> > > exit_notify() since it has already detached its ->mm in exit_mm() :)
+> >
+> > Can't understand... I thought that in theory even kmalloc(1) can trigger
+> > oom.
+>
+> __oom_kill_task() cannot be called on a task without an ->mm.
 
-> On Wed, 2010-03-31 at 14:57 -0700, H. Peter Anvin wrote:
-> > 
-> > The question still remains what the incremental cost is of doing
-> > irqsave/irqrestore. 
-> 
-> The only other option is to have local_irq_enable() check a global
-> (system_state ?) before enabling. Almost as gross ...
-> 
+Why? You ignored this part:
 
-Add an irq-disable-depth counter to the task_struct, fix all the bugs
-which that exposes..
+	Say, right after exit_mm() we are doing acct_process(), and f_op->write()
+	needs a page. So, you are saying that in this case __page_cache_alloc()
+	can never trigger out_of_memory() ?
 
-But these things are all utterly gross.  The bottom line is that
-radix_tree_init() is manifestly unsuited to being called with local
-interrupts disabled.  773e3eb7b81e5ba13b5155dfb3bb75b8ce37f8f9 was just
-a wrong patch.
+why this is not possible?
+
+David, I am not arguing, I am asking.
+
+> > > The check for !p->mm was moved in the -mm tree (and the oom killer was
+> > > entirely rewritten in that tree, so I encourage you to work off of it
+> > > instead
+> >
+> > OK, but I guess this !p->mm check is still wrong for the same reason.
+> > In fact I do not understand why it is needed in select_bad_process()
+> > right before oom_badness() which checks ->mm too (and this check is
+> > equally wrong).
+>
+> It prevents kthreads from being killed.
+
+No it doesn't, see use_mm(). See also another email I sent.
+
+> > > so if the oom killer finds an already exiting task,
+> > > it will become a no-op since it should eventually free memory and avoids a
+> > > needless oom kill.
+> >
+> > No, afaics, And this reminds that I already complained about this
+> > PF_EXITING check.
+> >
+> > Once again, p is the group leader. It can be dead (no ->mm, PF_EXITING
+> > is set) but it can have sub-threads. This means, unless I missed something,
+> > any user can trivially disable select_bad_process() forever.
+> >
+>
+> The task is in the process of exiting and will do so if its not current,
+> otherwise it will get access to memory reserves since we're obviously oom
+> in the exit path.  Thus, we'll be freeing that memory soon or recalling
+> the oom killer to kill additional tasks once those children have been
+> reparented (or one of its children was sacrificed).
+
+Just can't understand.
+
+OK, a bad user does
+
+	int sleep_forever(void *)
+	{
+		pause();
+	}
+
+	int main(void)
+	{
+		pthread_create(sleep_forever);
+		syscall(__NR_exit);
+	}
+
+Now, every time select_bad_process() is called it will find this process
+and PF_EXITING is true, so it just returns ERR_PTR(-1UL). And note that
+this process is not going to exit.
+
+> > Say, oom_forkbomb_penalty() does list_for_each_entry(tsk->children).
+> > Again, this is not right even if we forget about !child->mm check.
+> > This list_for_each_entry() can only see the processes forked by the
+> > main thread.
+> >
+>
+> That's the intention.
+
+Why? shouldn't oom_badness() return the same result for any thread
+in thread group? We should take all childs into account.
+
+> > Likewise, oom_kill_process()->list_for_each_entry() is not right too.
+> >
+>
+> Why?
+>
+> > Hmm. Why oom_forkbomb_penalty() does thread_group_cputime() under
+> > task_lock() ? It seems, ->alloc_lock() is only needed for get_mm_rss().
+> >
+>
+> Right, but we need to ensure that the check for !child->mm || child->mm ==
+> tsk->mm fails before adding in get_mm_rss(child->mm).  It can race and
+> detach its mm prior to the dereference.
+
+Oh, yes sure, I mentioned get_mm_rss() above.
+
+> It would be possible to move the
+> thread_group_cputime() out of this critical section,
+
+Yes, this is what I meant.
+
+> but I felt it was
+> better to do filter all tasks with child->mm == tsk->mm first before
+> unnecessarily finding the cputime for them.
+
+Yes, but we can check child->mm == tsk->mm, call get_mm_counter() and drop
+task_lock().
+
+Oleg.
+
 
