@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758051Ab0CaSGX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 14:06:23 -0400
-Received: from braint.aber.ac.uk ([144.124.16.42]:42566 "EHLO
-	braint.aber.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757797Ab0CaSGV (ORCPT
+	id S932912Ab0CaSJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 14:09:57 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:35526 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757910Ab0CaSJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 14:06:21 -0400
-X-Greylist: delayed 1806 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Mar 2010 14:06:21 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=outgoing; d=aber.ac.uk;
-	h=Received:Received:Received:Message-ID:Date:Subject:From:To:User-Agent:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Priority:Importance:X-UWA-Mid:X-UWA-Originating-IP:X-UWA-Sophos-Scanned;
-	b=EAmXYu9/CZIxPZDdNZqR5o+xRmonYOmw0AeFWtiFkKsftcO2Pdcv7jbkoUk+qnbfEgvU3g+7YCSp+y0HZ5f7ggDsEFKAYvAw2iOnZh1JlBnBIhEJlGNBR/c0pWZosneK;
-Message-ID: <40fe3da502608d32ff82523c57a62da1.squirrel@webmail.aber.ac.uk>
-Date: Wed, 31 Mar 2010 18:36:08 +0100
-Subject: Ftrace and Systemtap
-From: swb6@aber.ac.uk
-To: linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.19
+	Wed, 31 Mar 2010 14:09:55 -0400
+To: "Serge E. Hallyn" <serue@us.ibm.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
+       Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>, Cornelia Huck <cornelia.huck@de.ibm.com>,
+       linux-fsdevel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+       Benjamin LaHaise <bcrl@lhnet.ca>, netdev@vger.kernel.org
+Subject: Re: [PATCH 0/6] tagged sysfs support
+References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
+	<20100331172110.GA18838@us.ibm.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Wed, 31 Mar 2010 11:09:46 -0700
+In-Reply-To: <20100331172110.GA18838@us.ibm.com> (Serge E. Hallyn's message of "Wed\, 31 Mar 2010 12\:21\:10 -0500")
+Message-ID: <m1vdccwefp.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-UWA-Mid: 1Nx1pp-0000H1-48
-X-UWA-Originating-IP: 144.124.16.33
-X-UWA-Sophos-Scanned: from swb6@aber.ac.uk virus scanned OK
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 76.21.114.89
+X-SA-Exim-Rcpt-To: serue@us.ibm.com, netdev@vger.kernel.org, bcrl@lhnet.ca, eric.dumazet@gmail.com, linux-fsdevel@vger.kernel.org, cornelia.huck@de.ibm.com, tj@kernel.org, linux-kernel@vger.kernel.org, greg@kroah.com, kay.sievers@vrfy.org, gregkh@suse.de
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I am currently writing up my
-dissertation based on dynamic tracing and reducing the learning curve to
-understanding the UNIX kernel. I used two dynamic tracing technologies
-(Systemtap and Dtrace) to monitor some virtual machines on a network.
-Whilst going over my initial review of technologies in the area of dynamic
-tracing I realised I had underestimated ftrace, and even dismissed it as
-not being dynamic. However I read hear (http://lwn.net/Articles/343766/)
-that you were as of July last year trying to introduce a patch that would
-allow ftrace the ability to dynamically trace. Also it would be completely
-instrumented from the command line without the need to compile a kernel
-module al la Systemtap.
+"Serge E. Hallyn" <serue@us.ibm.com> writes:
 
-My question is do you think Systemtap will be replaced by ftrace in the
-future if so I feel I may need to include this fact in my updated
-technology review.
+> Quoting Eric W. Biederman (ebiederm@xmission.com):
+>> 
+>> The main short coming of using multiple network namespaces today
+>> is that only network devices for the primary network namespaces
+>> can be put in the kobject layer and sysfs.
+>> 
+>> This is essentially the earlier version of this patchset that was
+>> reviewed before, just now on top of a version of sysfs that doesn't
+>> need cleanup patches to support it.
+>> 
+>> I have been running these patches in some form for well over a
+>> year so the basics should at least be solid.  
+>> 
+>> This patchset is currently against 2.6.34-rc1.
+>> 
+>> This patchset is just the basic infrastructure a couple of more pretty
+>> trivial patches are needed to actually enable network namespaces to use this.
+>> My current plan is to send those after these patches have made it through
+>> review.
+>
+> Thanks very much for keeping this going, Eric!  I'm going to keep
+> looking through the code some more, but so far I see no problems.
+>
+> Acked-by: Serge Hallyn <serue@us.ibm.com>
+>
+> to the full patchset.  I'm really hoping you'll also include the
+> patch to implement the netns support (i.e. basically commit
+> fdc0adeaa8bfab9a179e1eb349cab400ddb70403 that you sent inline this
+> morning to Tejun).
 
-Than you for your time
-Steve Brown
+One step at a time.  My goal is to have it all send out and reviewed
+in time for 2.6.35.
 
+Eric
