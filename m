@@ -1,102 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758109Ab0CaUUF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 16:20:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50701 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757061Ab0CaUUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 16:20:01 -0400
-Date: Wed, 31 Mar 2010 22:17:46 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       nishimura@mxp.nes.nec.co.jp,
+	id S1758115Ab0CaUVc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 16:21:32 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:57676 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757061Ab0CaUVb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 16:21:31 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 6/6] procfs: Kill the bkl in ioctl
+Date: Wed, 31 Mar 2010 22:21:23 +0200
+User-Agent: KMail/1.13.1 (Linux/2.6.33-00063-g0795fff; KDE/4.4.1; x86_64; ; )
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] oom: fix the unsafe proc_oom_score()->badness() call
-Message-ID: <20100331201746.GC11635@redhat.com>
-References: <20100326150805.f5853d1c.akpm@linux-foundation.org> <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330163909.GA16884@redhat.com> <alpine.DEB.2.00.1003301331110.5234@chino.kir.corp.google.com> <20100331091628.GA11438@redhat.com>
+       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
+References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <201003301233.40461.arnd@arndb.de> <20100331172208.GB5163@nowhere>
+In-Reply-To: <20100331172208.GB5163@nowhere>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100331091628.GA11438@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003312221.23953.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1//D4fmJtO2rZrgSVPnzQ95gyoaQ0hW2gjeY4T
+ 6qwEfCCNoabuTuOtbrSzHbHti1flACAL1jcuzN03UQ5Z79ZpxC
+ emLibNAENt+g1TIMGRGZg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31, Oleg Nesterov wrote:
->
-> On 03/30, David Rientjes wrote:
-> >
-> > On Tue, 30 Mar 2010, Oleg Nesterov wrote:
-> >
-> > > proc_oom_score(task) have a reference to task_struct, but that is all.
-> > > If this task was already released before we take tasklist_lock
-> > >
-> > > 	- we can't use task->group_leader, it points to nowhere
-> > >
-> > > 	- it is not safe to call badness() even if this task is
-> > > 	  ->group_leader, has_intersects_mems_allowed() assumes
-> > > 	  it is safe to iterate over ->thread_group list.
-> > >
-> > > Add the pid_alive() check to ensure __unhash_process() was not called.
-> > >
-> > > Note: I think we shouldn't use ->group_leader, badness() should return
-> > > the same result for any sub-thread. However this is not true currently,
-> > > and I think that ->mm check and list_for_each_entry(p->children) in
-> > > badness are not right.
-> > >
-> >
-> > I think it would be better to just use task and not task->group_leader.
->
-> Sure, agreed. I preserved ->group_leader just because I didn't understand
-> why the current code doesn't use task. But note that pid_alive() is still
-> needed.
+On Wednesday 31 March 2010 19:22:11 Frederic Weisbecker wrote:
+> On Tue, Mar 30, 2010 at 11:33:40AM +0100, Arnd Bergmann wrote:
+> > I believe we can actually remove ioctl from file_operations. The patch I did
+> > to convert all users to ".unlocked_ioctl = default_ioctl," should really catch
+> > all cases, and I think we can enforce this by renaming fops->ioctl to locked_ioctl
+> > or old_ioctl to make sure we didn't miss any, and then mandate that this one
+> > is only used when unlocked_ioctl is set to default_ioctl.
+> 
+> I just looked at the patch in question and noted that the changelog
+> is pretty high, but how could it be else.
+> Actually it's not that large, but highly spread:
+<snip>
+>  157 files changed, 372 insertions(+), 80 deletions(-)
+> 
+> 
+> I wonder if we should actually just turn all these into unlocked_ioctl
+> directly. And then bring a warn on ioctl, and finally schedule the removal
+> of this callback.
+> 
+> What do you think?
 
-Oh. No, with the current code in -mm pid_alive() is not needed if
-we use task instead of task->group_leader. But once we fix
-oom_forkbomb_penalty() it will be needed again.
+I don't think the warning helps all that much, at least not across an
+entire release. We could leave it in for the merge window and fix all
+users for -rc1, then submit a patch that kills everything that came
+in during the merge window and remove it completely in -rc2.
 
+Getting rid of ioctl completely is a lot of work though, covering the
+entire lot of ~150 device drivers. I think the patch as is (or the
+variant renaming .ioctl to .locked_ioctl) is far less work and has
+less potential of introducing regressions.
 
-But. Oh well. David, oom-badness-heuristic-rewrite.patch changed badness()
-to consult p->signal->oom_score_adj. Until recently this was wrong when it
-is called from proc_oom_score().
+> You plan looks good but I fear this actually carries the problem forward
+> in that we won't be able to remove .ioctl after that.
+> 
+> I can handle that if you agree.
 
-This means oom-badness-heuristic-rewrite.patch depends on
-signals-make-task_struct-signal-immutable-refcountable.patch, or we
-need the pid_alive() check again.
+I don't think we really need to get rid of it this soon in the obsolete
+drivers, pushing down the BKL into an unlocked_ioctl function only slightly
+shifts the problem around, since the driver still depends on the BKL then
+and gets disabled if you build with CONFIG_BKL=n.
 
+IMHO, a better use of your time would be to completely remove the BKL
+along with the ioctl function from any of the drivers in this lists that
+looks like it could be relevant to real users.
 
+In the meantime, we can move the declaration of the .locked_ioctl callback
+into an #ifdef CONFIG_BKL, to make sure nobody builds a driver with an
+ioctl function that does not get called.
 
-oom_badness() gets the new argument, long totalpages, and the callers
-were updated. However, long uptime is not used any longer, probably
-it make sense to kill this arg and simplify the callers? Unless you
-are going to take run-time into account later.
+Another crazy idea I had was to simply turn the BKL into a regular mutex
+as soon as we can show that all remaining users are of the non-recursive
+kind and don't rely on the autorelease-on-sleep. Doing that would be
+much easier without the pushdown into .unlocked_ioctl than it would be
+with it.
 
-So, I think -mm needs the patch below, but I have no idea how to
-write the changelog ;)
-
-Oleg.
-
---- x/fs/proc/base.c
-+++ x/fs/proc/base.c
-@@ -430,12 +430,13 @@ static const struct file_operations proc
- /* The badness from the OOM killer */
- static int proc_oom_score(struct task_struct *task, char *buffer)
- {
--	unsigned long points;
-+	unsigned long points = 0;
- 	struct timespec uptime;
- 
- 	do_posix_clock_monotonic_gettime(&uptime);
- 	read_lock(&tasklist_lock);
--	points = oom_badness(task->group_leader,
-+	if (pid_alive(task))
-+		points = oom_badness(task,
- 				global_page_state(NR_INACTIVE_ANON) +
- 				global_page_state(NR_ACTIVE_ANON) +
- 				global_page_state(NR_INACTIVE_FILE) +
-
+	Arnd
