@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757162Ab0CaDFf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 23:05:35 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48494 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754644Ab0CaDFd (ORCPT
+	id S1756804Ab0CaDGJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 23:06:09 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39016 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754644Ab0CaDGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 23:05:33 -0400
-Date: Tue, 30 Mar 2010 20:03:36 -0400
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       "Michael S. Tsirkin" <mst@redhat.com>, cl@linux-foundation.org,
-       lee.schermerhorn@hp.com, rientjes@google.com,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-       "David S. Miller" <davem@davemloft.net>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, Troels Liebe Bentsen <tlb@rapanden.dk>,
-       linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH] exit: fix oops in sync_mm_rss
-Message-Id: <20100330200336.dd0ff9fd.akpm@linux-foundation.org>
-In-Reply-To: <n2m28c262361003301953iea82f541u227e7227a23702e@mail.gmail.com>
-References: <20100316170808.GA29400@redhat.com>
-	<20100330135634.09e6b045.akpm@linux-foundation.org>
-	<20100331092815.c8b9d89c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100330173721.cbd442cb.akpm@linux-foundation.org>
-	<20100331094124.43c49290.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100330182258.59813fe6.akpm@linux-foundation.org>
-	<20100331102755.92a89ca5.kamezawa.hiroyu@jp.fujitsu.com>
-	<n2m28c262361003301953iea82f541u227e7227a23702e@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Mar 2010 23:06:06 -0400
+Date: Wed, 31 Mar 2010 05:06:02 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: amit.kucheria@canonical.com, netdev@vger.kernel.org,
+       s.hauer@pengutronix.de, linux-kernel@vger.kernel.org,
+       kernel-team@lists.ubuntu.com, gerg@uclinux.org,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] netdev/fec.c: add phylib supporting to enable carrier
+	detection
+Message-ID: <20100331030602.GD3520@pengutronix.de>
+References: <1269597052-10104-1-git-send-email-bryan.wu@canonical.com> <20100327125703.GB5880@pengutronix.de> <4BB06769.7040708@canonical.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EY/WZ/HvNxOox07X"
+Content-Disposition: inline
+In-Reply-To: <4BB06769.7040708@canonical.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Mar 2010 11:53:00 +0900 Minchan Kim <minchan.kim@gmail.com> wrote:
 
-> >> I think we should do this too:
-> >>
-> >> --- a/mm/memory.c~exit-fix-oops-in-sync_mm_rss-fix
-> >> +++ a/mm/memory.c
-> >> @@ -131,7 +131,6 @@ static void __sync_task_rss_stat(struct
-> >>
-> >> __ __ __ for (i = 0; i < NR_MM_COUNTERS; i++) {
-> >> __ __ __ __ __ __ __ if (task->rss_stat.count[i]) {
-> >> - __ __ __ __ __ __ __ __ __ __ BUG_ON(!mm);
-> >> __ __ __ __ __ __ __ __ __ __ __ add_mm_counter(mm, i, task->rss_stat.count[i]);
-> >> __ __ __ __ __ __ __ __ __ __ __ task->rss_stat.count[i] = 0;
-> >> __ __ __ __ __ __ __ }
+--EY/WZ/HvNxOox07X
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-^^ gargh, gmail.
+On Mon, Mar 29, 2010 at 04:40:09PM +0800, Bryan Wu wrote:
+> On 03/27/2010 08:57 PM, Wolfram Sang wrote:
+>> On Fri, Mar 26, 2010 at 05:50:52PM +0800, Bryan Wu wrote:
+>>> BugLink: http://bugs.launchpad.net/bugs/457878
+>>>
+>>>   - removed old MII phy control code
+>>>   - add phylib supporting
+>>>   - add ethtool interface to make user space NetworkManager works
+>>>
+>>> Tested on Freescale i.MX51 Babbage board.
+>>
+>> Sadly, I have problems here booting a custom board:
+>>
+>
+> Firstly, I working on our Ubuntu Lucid 2.6.31 based kernel. This patch wo=
+rks
+> fine on our system. Then I forward port it to 2.6.34-rc2 Linus mainline k=
+ernel.
+> It also works fine on my hardware.
 
-> >>
-> >> Because we just made sure it can't happen, and if it _does_ happen, the
-> >> oops will tell us the samme thing that the BUG_ON() would have.
-> >>
-> >
-> > Hmm, then, finaly..
-> > ==
-> >
-> > task->rss_stat wasn't initialized to 0 at copy_process().
-> > And __sync_task_rss_stat() should be static.
-> > removed BUG_ON(!mm) in __sync_task_rss_stat() for avoiding to show
-> > wrong information to code readers. Anyway, if !mm && task->rss_stat
-> > has some value, panic will happen.
-> >
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Hmm, can I provide some more information to get an idea what is happening h=
+ere?
 
-I think we should keep the
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
---- a/kernel/exit.c~exit-fix-oops-in-sync_mm_rss
-+++ a/kernel/exit.c
-@@ -953,7 +953,8 @@ NORET_TYPE void do_exit(long code)
- 
- 	acct_update_integrals(tsk);
- 	/* sync mm's RSS info before statistics gathering */
--	sync_mm_rss(tsk, tsk->mm);
-+	if (tsk->mm)
-+		sync_mm_rss(tsk, tsk->mm);
- 	group_dead = atomic_dec_and_test(&tsk->signal->live);
- 	if (group_dead) {
- 		hrtimer_cancel(&tsk->signal->real_timer);
+--EY/WZ/HvNxOox07X
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-really.  Apart from the fact that we'll otherwise perform an empty
-NR_MM_COUNTERS loop in __sync_task_rss_stat(), sync_mm_rss() just isn't
-set up to handle kernel threads.  Given that the function of
-sync_task_mm(from, to) is to move stuff from "from" and into "to", it's
-daft to call it with a NULL value of `to'!
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
 
+iEYEARECAAYFAkuyvBoACgkQD27XaX1/VRsmMwCeKfQmn0y9V/UZzx5oy5+LV7GA
+slUAnjLhCMms5PSTJWw/U+m4nR/M4Us4
+=EygU
+-----END PGP SIGNATURE-----
+
+--EY/WZ/HvNxOox07X--
