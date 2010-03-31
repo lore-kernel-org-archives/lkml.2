@@ -1,91 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756872Ab0CaONw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 10:13:52 -0400
-Received: from mail-pz0-f201.google.com ([209.85.222.201]:64084 "EHLO
-	mail-pz0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755790Ab0CaONu convert rfc822-to-8bit (ORCPT
+	id S1757168Ab0CaOXM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 10:23:12 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:23438 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753765Ab0CaOXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 10:13:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=WDxsNrweN0bLqKgcGaxbEGATLk41Qf5kZOI+bn1GV1Kn2KuLi+zDgpB8yS/oiJlwMn
-         EA4AZDcJe+lueBqWihAS85e78Tl9MqdugbmH3Ugs9Bin5f9QyqrBp5FlIymnYOB7PYYT
-         hlDCt08Elb3fxqwnrzRqWlNe6o7SId5iAsUHM=
+	Wed, 31 Mar 2010 10:23:09 -0400
+Message-ID: <4BB35A53.5000003@oracle.com>
+Date: Wed, 31 Mar 2010 10:21:07 -0400
+From: Chuck Lever <chuck.lever@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.3
 MIME-Version: 1.0
-Reply-To: eranian@gmail.com
-In-Reply-To: <1270044116.1616.26.camel@laptop>
-References: <4B560ACD.4040206@linux.vnet.ibm.com>
-	 <d3f22a1003290213x7d7904an59d50eb6a8616133@mail.gmail.com>
-	 <1269934931.8575.6.camel@minggr.sh.intel.com>
-	 <4BB22BB0.8030208@linux.vnet.ibm.com>
-	 <1269969305.5258.479.camel@laptop>
-	 <4BB27764.2060802@linux.vnet.ibm.com>
-	 <1270044116.1616.26.camel@laptop>
-Date: Wed, 31 Mar 2010 16:13:46 +0200
-Message-ID: <p2u7c86c4471003310713q9fa48b5en6a77a938aa56c524@mail.gmail.com>
-Subject: Re: [RFC] perf_events: support for uncore a.k.a. nest units
-From: stephane eranian <eranian@googlemail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-       Paul Mackerras <paulus@samba.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-       Dan Terpstra <terpstra@eecs.utk.edu>, Philip Mucci <mucci@eecs.utk.edu>,
-       Maynard Johnson <mpjohn@us.ibm.com>, Carl Love <cel@us.ibm.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Daniel J Blueman <daniel.blueman@gmail.com>
+CC: Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Al Viro <viro@zeniv.linux.org.uk>, linux-nfs@vger.kernel.org,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [2.6.34-rc2 NFS4 oops] open error path failure...
+References: <6278d2221003291136p6481fe8emfb039403343c082@mail.gmail.com>	 <20100329190307.GJ30031@ZenIV.linux.org.uk>	 <1269897740.15895.82.camel@localhost.localdomain> <w2s6278d2221003310420xd36fa9ey92b781fb9f4d1a10@mail.gmail.com>
+In-Reply-To: <w2s6278d2221003310420xd36fa9ey92b781fb9f4d1a10@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A0B0205.4BB35AC4.0095:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 4:01 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2010-03-30 at 15:12 -0700, Corey Ashford wrote:
->>
->> > Initially I'd not allow per-pmu-per-task contexts
->> > because then things like perf_event_task_sched_out() would get rather
->> > complex.
->>
->> Definitely.  I don't think it makes sense to have per-task context on
->> nest/uncore PMUs.  At least we haven't found any justification for it.
->
-> For uncore no, but there is also the hw-breakpoint stuff that is being
-> presented as a pmu, for those it would make sense to have a separate
-> per-task context.
->
-> But doing multiple per-task contexts is something for a next step
-> indeed.
->
->> > For RR we can move away from perf_event_task_tick and let the pmu
->> > install a (hr)timer for this on their own.
->>
->> This is necessary I think, because of the access time for some of the PMU's.  I
->> wonder though if it should, perhaps optionally, be off-loaded to a high-priority
->> task to do the switching so that access latency to the PMU can be controlled.
->>
->> As I mentioned when we met, some of the Wire-Speed processor nest PMU control
->> registers are accessed via SCOM, which is an internal, 200 MHz serial bus.  We
->> are being quoted ~525 SCOM bus ticks to do a PMU control register access, which
->> comes out to about 2.5 microseconds.  If you figure 5 accesses to rotate the
->> events on a PMU, that's a minimum of 12.5 microseconds.
->
-> Yeah, you mentioned that.. for those things we need some changes anyway,
-> since currently we install per-cpu counters using IPIs and expect the
-> pmu::enable() method to be synchronous (it has a return value). It would
-> be totally unacceptable to do 2.5ms pokes with IRQs disabled.
->
-> The RR thing would be the easiest to solve, just let the timer wake up a
-> thread instead of doing the work itself, that's fully isolated to how
-> the pmu chooses to implement that. The above mentioned issue however
-> would be much more challenging to fix nicely.
->
->
-Also some of perf_enable()/perf_disable() would have to be per PMU and
-not global like they are today.
+On 03/31/2010 07:20 AM, Daniel J Blueman wrote:
+> Talking of expensive, I see latencytop show>16000ms latency for
+> writing pages when I have a workload that does large buffered I/O to
+> an otherwise uncongested server. The gigabit network is saturated, and
+> reads often stall for 1000-4000ms (!). Client has the default 16 TCP
+> request slots, and server has 8 nfsds - the server is far from disk or
+> processor-saturated. I'll see if there is any useful debugging I can
+> get about this.
+
+That latency is pretty much guaranteed to be due to a long RPC backlog 
+queue on the client.  Bumping the size of the slot table to 128 and 
+increasing the number of NFSD threads may help.
+
+-- 
+chuck[dot]lever[at]oracle[dot]com
