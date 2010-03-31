@@ -1,90 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758115Ab0CaUVc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 16:21:32 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:57676 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757061Ab0CaUVb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 16:21:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 6/6] procfs: Kill the bkl in ioctl
-Date: Wed, 31 Mar 2010 22:21:23 +0200
-User-Agent: KMail/1.13.1 (Linux/2.6.33-00063-g0795fff; KDE/4.4.1; x86_64; ; )
-Cc: Alexey Dobriyan <adobriyan@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
-References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <201003301233.40461.arnd@arndb.de> <20100331172208.GB5163@nowhere>
-In-Reply-To: <20100331172208.GB5163@nowhere>
+	id S1758132Ab0CaUY5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 16:24:57 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50451 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757833Ab0CaUYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 16:24:55 -0400
+Date: Wed, 31 Mar 2010 13:24:42 -0700
+From: Greg KH <gregkh@suse.de>
+To: Pavan Savoy <pavan_savoy@ti.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>, alan@lxorguk.ukuu.org.uk,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers:staging: sources for ST core
+Message-ID: <20100331202442.GC12995@suse.de>
+References: <725083.7688.qm@web94907.mail.in2.yahoo.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201003312221.23953.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1//D4fmJtO2rZrgSVPnzQ95gyoaQ0hW2gjeY4T
- 6qwEfCCNoabuTuOtbrSzHbHti1flACAL1jcuzN03UQ5Z79ZpxC
- emLibNAENt+g1TIMGRGZg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <725083.7688.qm@web94907.mail.in2.yahoo.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 31 March 2010 19:22:11 Frederic Weisbecker wrote:
-> On Tue, Mar 30, 2010 at 11:33:40AM +0100, Arnd Bergmann wrote:
-> > I believe we can actually remove ioctl from file_operations. The patch I did
-> > to convert all users to ".unlocked_ioctl = default_ioctl," should really catch
-> > all cases, and I think we can enforce this by renaming fops->ioctl to locked_ioctl
-> > or old_ioctl to make sure we didn't miss any, and then mandate that this one
-> > is only used when unlocked_ioctl is set to default_ioctl.
+On Thu, Apr 01, 2010 at 12:57:06AM +0530, Pavan Savoy wrote:
+> --- On Wed, 31/3/10, Greg KH <gregkh@suse.de> wrote:
 > 
-> I just looked at the patch in question and noted that the changelog
-> is pretty high, but how could it be else.
-> Actually it's not that large, but highly spread:
-<snip>
->  157 files changed, 372 insertions(+), 80 deletions(-)
+> > From: Greg KH <gregkh@suse.de>
+> > Subject: Re: [PATCH] drivers:staging: sources for ST core
+> > To: "Pavan Savoy" <pavan_savoy@ti.com>
+> > Cc: "Marcel Holtmann" <marcel@holtmann.org>, alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org
+> > Date: Wednesday, 31 March, 2010, 11:49 PM
+> > On Wed, Mar 31, 2010 at 11:32:39PM
+> > +0530, Pavan Savoy wrote:
+> > > --- On Wed, 31/3/10, Greg KH <gregkh@suse.de>
+> > wrote:
+> > > 
+> > > > From: Greg KH <gregkh@suse.de>
+> > > > Subject: Re: [PATCH] drivers:staging: sources for
+> > ST core
+> > > > To: "Pavan Savoy" <pavan_savoy@ti.com>
+> > > > Cc: "Marcel Holtmann" <marcel@holtmann.org>,
+> > alan@lxorguk.ukuu.org.uk,
+> > linux-kernel@vger.kernel.org
+> > > > Date: Wednesday, 31 March, 2010, 11:00 PM
+> > > > On Wed, Mar 31, 2010 at 04:20:22AM
+> > > > +0530, Pavan Savoy wrote:
+> > > > > 
+> > > > > --- On Wed, 31/3/10, Pavan Savoy <pavan_savoy@ti.com>
+> > > > wrote:
+> > > > > 
+> > > > > > From: Pavan Savoy <pavan_savoy@ti.com>
+> > > > > > Subject: Re: [PATCH] drivers:staging:
+> > sources for
+> > > > ST core
+> > > > > > To: gregkh@suse.de
+> > > > > > Cc: "Marcel Holtmann" <marcel@holtmann.org>,
+> > > > alan@lxorguk.ukuu.org.uk
+> > > > > > Date: Wednesday, 31 March, 2010, 4:11
+> > AM
+> > > > > > --- On Wed, 31/3/10, Pavan Savoy
+> > > > > > <pavan_savoy@yahoo.co.in>
+> > > > > > wrote:
+> > > > > > 
+> > > > > > > From: Pavan Savoy <pavan_savoy@yahoo.co.in>
+> > > > > > > Subject: Re: [PATCH]
+> > drivers:staging:
+> > > > sources for ST
+> > > > > > core
+> > > > > > > To: "pavan_savoy@yahoo.co.in"
+> > > > > > <pavan_savoy@yahoo.co.in>
+> > > > > > > Date: Wednesday, 31 March, 2010,
+> > 4:06 AM
+> > > > > > > > From: Greg KH [gregkh@suse.de]
+> > > > > > > > Sent: Wednesday, March 31,
+> > 2010 3:17
+> > > > AM
+> > > > > > > > To: Savoy, Pavan
+> > > > > > > > Cc: Alan Cox; marcel@holtmann.org;
+> > > > > > > > linux-kernel@vger.kernel.org
+> > > > > > > > Subject: Re: [PATCH]
+> > drivers:staging:
+> > > > sources for
+> > > > > > ST
+> > > > > > > core
+> > > > > > > > 
+> > > > > > > > On Wed, Mar 31, 2010 at
+> > 02:35:55AM
+> > > > +0530, Pavan
+> > > > > > Savoy
+> > > > > > > > wrote:
+> > > > > > > > > So, something like the
+> > below is
+> > > > ok, I have
+> > > > > > > defined my
+> > > > > > > > own pr_fmt,
+> > > > > > > > > however default log
+> > level on my
+> > > > board is 7,
+> > > > > > and
+> > > > > > > hence
+> > > > > > > > pr_info is a bit
+> > > > > > > > > more annoying than
+> > usual.
+> > > > > > > > 
+> > > > > > > > No, a driver should use
+> > dev_dbg() and
+> > > > other
+> > > > > > > dev_printk()
+> > > > > > > > calls, not
+> > > > > > > > pr_debug() or anything like
+> > that.
+> > > > > > > > 
+> > > > > > > > Please don't roll your own
+> > formats, use
+> > > > the ones
+> > > > > > that
+> > > > > > > are
+> > > > > > > > well defined
+> > > > > > > > and uniquely describe your
+> > driver and
+> > > > device in
+> > > > > > a
+> > > > > > > format
+> > > > > > > > that the whole
+> > > > > > > > kernel uses.
+> > > > > > > 
+> > > > > > 
+> > > > > 
+> > > > > forgot lkml the last time..
+> > > > > 
+> > > > > Nope, I couldn't find any instance of struct
+> > device at
+> > > > all,
+> > > > > I need that to use dev_dbg right ? - None of
+> > the
+> > > > tty_*
+> > > > > structure accessible by ldiscs seems to have
+> > a
+> > > > reference to
+> > > > > it.
+> > > > > Also I happened to look at other line
+> > discipline
+> > > > driver, if
+> > > > > they have a smarter way of doing this, Nope
+> > - n_tty,
+> > > > n_hdlc,
+> > > > > n_slip all seem to use plain old printks.
+> > > > >? 
+> > > > > Any clues ??
+> > > > 
+> > > > Sorry, you are correct, we only have a struct
+> > kref right
+> > > > now for tty
+> > > > core objects, not a struct device.? So nevermind,
+> > this
+> > > > should be fine.
+> > > 
+> > > Oh cool. Thanks, So that leaves me with 1 pending item
+> > from Alan which is to tie these 3 modules (KIM/Core/LL) up
+> > onto a TTY device specific context, and avoid all global
+> > ptrs.
+> > > 
+> > > So without that is it good to go in ?
+> > 
+> > Yes, care to do that and resubmit?
 > 
+> Oh, But that would take some major re-structuring with the driver, because with the existing driver being a platform_device/driver structure-I can't do that.
 > 
-> I wonder if we should actually just turn all these into unlocked_ioctl
-> directly. And then bring a warn on ioctl, and finally schedule the removal
-> of this callback.
+> I have made it similar to TTY<->LDISCs, LDISCs register to TTY core, here BT/FM/GPS register to ST core.
+> TTY has a array of ldisc registered which is global, locked resource, I have st_gdata which is global and locked resource.
 > 
-> What do you think?
-
-I don't think the warning helps all that much, at least not across an
-entire release. We could leave it in for the merge window and fix all
-users for -rc1, then submit a patch that kills everything that came
-in during the merge window and remove it completely in -rc2.
-
-Getting rid of ioctl completely is a lot of work though, covering the
-entire lot of ~150 device drivers. I think the patch as is (or the
-variant renaming .ioctl to .locked_ioctl) is far less work and has
-less potential of introducing regressions.
-
-> You plan looks good but I fear this actually carries the problem forward
-> in that we won't be able to remove .ioctl after that.
+> Each ldisc is to be in context of tty, because multiple UART exist, but this is also a platform device and exports symbols for other drivers to register in, so essentially only 1 such device exist per platform.
 > 
-> I can handle that if you agree.
+> I agree it's unlike other device drivers in kernel, But is this unacceptable this way ?
 
-I don't think we really need to get rid of it this soon in the obsolete
-drivers, pushing down the BKL into an unlocked_ioctl function only slightly
-shifts the problem around, since the driver still depends on the BKL then
-and gets disabled if you build with CONFIG_BKL=n.
+Think about what you just said, I think you answered your own question
+:)
 
-IMHO, a better use of your time would be to completely remove the BKL
-along with the ioctl function from any of the drivers in this lists that
-looks like it could be relevant to real users.
+Please work on the change as requested.
 
-In the meantime, we can move the declaration of the .locked_ioctl callback
-into an #ifdef CONFIG_BKL, to make sure nobody builds a driver with an
-ioctl function that does not get called.
+thanks,
 
-Another crazy idea I had was to simply turn the BKL into a regular mutex
-as soon as we can show that all remaining users are of the non-recursive
-kind and don't rely on the autorelease-on-sleep. Doing that would be
-much easier without the pushdown into .unlocked_ioctl than it would be
-with it.
-
-	Arnd
+greg k-h
