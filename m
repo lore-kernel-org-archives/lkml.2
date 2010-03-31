@@ -1,54 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756806Ab0CaScH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 14:32:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50116 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756059Ab0CaScD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 14:32:03 -0400
-Message-ID: <4BB39518.2020200@zytor.com>
-Date: Wed, 31 Mar 2010 11:31:52 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com
-Subject: Re: [PATCH][RESEND] x86: Do not write to VGA memory space if CONFIG_VGA_CONSOLE
- is undefined
-References: <1270046479-4486-1-git-send-email-guenter.roeck@ericsson.com>
-In-Reply-To: <1270046479-4486-1-git-send-email-guenter.roeck@ericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756849Ab0CaSdE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 14:33:04 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:57625 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755992Ab0CaSdA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 14:33:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=cEY+IKuBY+f/zSJIQUFcuLfgGaBL+gUuD3h00e8rA9grF22V/ILQAGonRnK0+HqimJ
+         SeK4TLlYLAUDyO1UJ/LzUZccM6JtQ5e1/cAQjZuZmAnnUZnj/gBF0XZZo2hB/riGqOAj
+         lEuSrktQdDF3McgCmPZs8A/hjIKvcA9C1HRfE=
+Subject: Re: [PATCH] NFS: Fix RCU warnings in
+ nfs_inode_return_delegation_noreclaim() [ver #2]
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: paulmck@linux.vnet.ibm.com, Trond.Myklebust@netapp.com,
+       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <15371.1270057054@redhat.com>
+References: <20100331151604.GC2461@linux.vnet.ibm.com>
+	 <20100319022527.GC2894@linux.vnet.ibm.com>
+	 <20100318133302.29754.1584.stgit@warthog.procyon.org.uk>
+	 <19192.1269889348@redhat.com> <23274.1269893706@redhat.com>
+	 <25276.1269901350@redhat.com> <26760.1269903543@redhat.com>
+	 <20100329232636.GT2569@linux.vnet.ibm.com> <2440.1269967151@redhat.com>
+	 <21972.1269993064@redhat.com> <10818.1270044273@redhat.com>
+	 <15371.1270057054@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 31 Mar 2010 20:32:46 +0200
+Message-ID: <1270060366.1931.19.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2010 07:41 AM, Guenter Roeck wrote:
-> Current early_printk code writes into VGA memory space even
-> if CONFIG_VGA_CONSOLE is undefined. This can cause problems
-> if there is no VGA device in the system, especially if the memory
-> is used by another device.
+Le mercredi 31 mars 2010 à 18:37 +0100, David Howells a écrit :
+> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 > 
-> Fix problem by redirecting output to early_serial_console
-> if CONFIG_VGA_CONSOLE is undefined.
+> > Protected by something that the caller did, be it holding the the correct
+> > lock, operating on it during initialization before other CPUs have access
+> > to it, operating on it during cleanup after other CPUs' access has been
+> > revoked, or whatever.
 > 
-> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
->  
->  asmlinkage void early_printk(const char *fmt, ...)
-> @@ -216,7 +224,7 @@ static int __init setup_early_printk(char *buf)
->  			early_serial_init(buf + 4);
->  			early_console_register(&early_serial_console, keep);
->  		}
-> -		if (!strncmp(buf, "vga", 3) &&
-> +		if (have_vga_console && !strncmp(buf, "vga", 3) &&
->  		    boot_params.screen_info.orig_video_isVGA == 1) {
->  			max_xpos = boot_params.screen_info.orig_video_cols;
->  			max_ypos = boot_params.screen_info.orig_video_lines;
+> But the point I made very early this morning still stands:  What if someone
+> simply wants to test the pointer, not actually to dereference it?
+> 
+> NFS was using rcu_dereference() for this in a couple of places - which is
+> overkill.  I suggested stripping this off and you countered with the
+> suggestion that it should be using rcu_dereference_check().
+> 
 
-I'm confused in a big way about how you could end up with a system where:
+If pointer has the rcu mark, and somehing access this pointer without
+proper locking, then automatic checkers (sparse...) will trigger a
+warning, this is what Paul said.
 
-a) there is no VGA;
-b) VGA memory is used by another device(!!!);
-c) boot_params.screen_info.orig_video_isVGA == 1?
+Example of such checks, 
 
-	-hpa
+# define __percpu   __attribute__((noderef, address_space(3))) 
+
+If someone tries to manipulate a __percpu marked ptr without proper API,
+sparse loudly complains.
+
+
+> Why do I need anything at all?
+> 
+
+If you dont own a lock, and test a pointer, what guarantee do you have
+this pointer doesnt change right after you tested it ?
+
+If *something* protects the pointer from being changed, then how can be
+expressed this fact ?
+
+If nothing protects the pointer, why test it then, as result of test is
+unreliable ?
+
+If NFS was using rcu_dereference(), it probably was for a reason, but if
+nobody can recall it, it was a wrong reason ?
+
+Sorry, too many questions and no answer I guess...
+
+
+
