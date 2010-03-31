@@ -1,52 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758233Ab0CaVL4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 17:11:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46296 "EHLO mx2.suse.de"
+	id S1758244Ab0CaVM3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 17:12:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33670 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758176Ab0CaVLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 17:11:53 -0400
-Date: Wed, 31 Mar 2010 14:12:04 -0700
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       stable@kernel.org, stable-review@kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>, alan@lxorguk.ukuu.org.uk,
-       Clemens Ladisch <clemens@ladisch.de>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [087/116] PCI quirk: RS780/RS880: work around missing MSI
-	initialization
-Message-ID: <20100331211204.GB19139@suse.de>
-References: <20100330225656.136257690@linux.site> <alpine.LFD.2.00.1003301711330.3707@i5.linux-foundation.org>
+	id S1758186Ab0CaVM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 17:12:26 -0400
+Message-ID: <4BB3B9C1.5000100@zytor.com>
+Date: Wed, 31 Mar 2010 14:08:17 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1003301711330.3707@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Yinghai Lu <yinghai@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+       Rabin Vincent <rabin@rab.in>, lkml <linux-kernel@vger.kernel.org>,
+       penberg@cs.helsinki.fi, cl@linux-foundation.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       linux-arch@vger.kernel.org
+Subject: Re: start_kernel(): bug: interrupts were enabled early
+References: <20100325194100.GA2364@debian> <20100331134048.da4e35a7.akpm@linux-foundation.org> <4BB3B4DB.7040904@kernel.org> <20100331210555.GA17715@flint.arm.linux.org.uk>
+In-Reply-To: <20100331210555.GA17715@flint.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 05:13:13PM -0700, Linus Torvalds wrote:
+On 03/31/2010 02:05 PM, Russell King wrote:
 > 
+> We use the standard generic kernel implementation.  Is x86 different? ;)
 > 
-> 
-> On Tue, 30 Mar 2010, Greg KH wrote:
-> >
-> > 2.6.32-stable review patch.  If anyone has any objections, please let us know.
-> > 
-> > ------------------
-> > 
-> > From: Clemens Ladisch <clemens@ladisch.de>
-> > 
-> > commit a5ee4eb75413c145334c30e43f1af9875dad6fd7 upstream.
-> 
-> NAK. 
-> 
-> Rafael reports this causes a regression. I don't think we know why, but 
-> more importantly, that definitely means this is not stable material.
 
-Thanks, I've now dropped this from the .32 and .33 queues.
+Yes, these are optimized on x86.
 
-greg k-h
+	-hpa
