@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753Ab0CaHv4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 03:51:56 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:36950 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756435Ab0CaHvy (ORCPT
+	id S1757055Ab0CaH5m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 03:57:42 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:62547 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756182Ab0CaH5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 03:51:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=kRYjWuv0HnCuKcNpMc75gih9GttgnEJbDOnelIPEMixB4qIuz4UiGD/cmpvZfsYD7C
-         +mVoB6XrXk2XextL9lmQnhBr2bTafGZNg75x7CsHW3x4dIMSQr+TZTBxoTidsVZrIHqt
-         NiaSoYzd48JF63unXG8jzLmZkqJg4woy1IdwY=
-From: Anders Darander <anders.darander@gmail.com>
-To: Haavard Skinnemoen <hskinnemoen@atmel.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jpirko@redhat.com>,
-       Erik Waling <erik.waling@konftel.com>,
-       Patrick McHardy <kaber@trash.net>, Anders Darander <ad@datarespons.se>,
-       Grant Likely <grant.likely@secretlab.ca>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] MACB: Set PHY address in kernel parameters
-Date: Wed, 31 Mar 2010 09:51:42 +0200
-Message-Id: <1270021902-6556-1-git-send-email-anders.darander@gmail.com>
-X-Mailer: git-send-email 1.7.0.3
+	Wed, 31 Mar 2010 03:57:41 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [RFC 0/9] BKL conversion in TTY drivers
+Date: Wed, 31 Mar 2010 09:57:02 +0200
+User-Agent: KMail/1.13.1 (Linux/2.6.33-00063-g0795fff; KDE/4.4.1; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Ingo Molnar <mingo@elte.hu>
+References: <1269982580-9361-1-git-send-email-arnd@arndb.de> <20100330233759.00877e80@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100330233759.00877e80@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003310957.03025.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1+pwSOI/BXRTh8v9iIO+y/a40+rg9jXSj+9hzf
+ WZ2r43cSnXJUckYct8gLsuzN7Nqy6zCwQV5r5WPFdm6CyDLzQm
+ zcdr61WdolKl2ajy67mcA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anders Darander <ad@datarespons.se>
+On Wednesday 31 March 2010 00:37:59 Alan Cox wrote:
+> 
+> > This means we are still safe, because there is no code
+> > left that the new BTM fails to serialize with.
+> 
+> We hope. I'm currently poking at sorting out the locking properly and
+> quite frankly the locking rules for the current tty reference have me
+> baffled. It clearly works as we've not got a pile of dumps in the
+> bugzilla tree but its also quite a mystery *how*.
 
-Add the possibility to set the phy address. This is needed if an integrated
-switch is connected to the MAC, as it is often the case that the highest port
-is the one connected to the MAC of the MCU.
+Yes, that's why I didn't even attempt to find out why the BKL is
+in some places or what it protects, but only changed the way it gets
+taken and released.
 
-E.g. in the case of the Micrel KSZ8873, port 3 is the one to connect to the
-MCU, thus, the MAC needs to connect to phy address 0x03, instead of the first
-phy found.
+We also have empirical evidence that turning the BKL into a semaphore
+doesn't make the code fall apart, so I'm assuming that the mutex based
+implementation with the explicit release-when-blocking instead of
+implicit release-when-sleeping is still equivalent.
 
-Signed-off-by: Anders Darander <ad@datarespons.se>
----
- drivers/net/macb.c |   14 +++++++++++++-
- 1 files changed, 13 insertions(+), 1 deletions(-)
+Are you more worried that the interface conversion (patches 1-8)
+can introduce bugs and make your life harder, or that the mutex
+based implementation from patch 9 causes problems that were previously
+hidden by other bugs?
 
-diff --git a/drivers/net/macb.c b/drivers/net/macb.c
-index c8a18a6..9b4e301 100644
---- a/drivers/net/macb.c
-+++ b/drivers/net/macb.c
-@@ -53,6 +53,14 @@
- #define MACB_RX_INT_FLAGS	(MACB_BIT(RCOMP) | MACB_BIT(RXUBR)	\
- 				 | MACB_BIT(ISR_ROVR))
- 
-+/*
-+ * Setup PHY probeing
-+ */
-+
-+static int phy_addr = PHY_MAX_ADDR;
-+module_param(phy_addr, ushort, 0);
-+MODULE_PARAM_DESC(phy_addr, "PHY address connected to the MACB");
-+
- static void __macb_set_hwaddr(struct macb *bp)
- {
- 	u32 bottom;
-@@ -193,7 +201,11 @@ static int macb_mii_probe(struct net_device *dev)
- 	struct eth_platform_data *pdata;
- 	int ret;
- 
--	phydev = phy_find_first(bp->mii_bus);
-+	if (phy_addr >= PHY_MAX_ADDRESS)
-+		phydev = phy_find_first(bp->mii_bus);
-+	else
-+		phydev = bp->mii_bus->phy_map[phy_addr];
-+
- 	if (!phydev) {
- 		printk (KERN_ERR "%s: no PHY found\n", dev->name);
- 		return -1;
--- 
-1.7.0.3
-
+	Arnd
