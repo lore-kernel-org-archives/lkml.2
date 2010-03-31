@@ -1,246 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757169Ab0CaFlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 01:41:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:31197 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756465Ab0CaFlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 01:41:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,340,1267430400"; 
-   d="scan'208";a="609035960"
-Date: Wed, 31 Mar 2010 13:41:09 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: "Li, Shaohua" <shaohua.li@intel.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
-Message-ID: <20100331054109.GA21371@localhost>
-References: <20100330055304.GA2983@sli10-desk.sh.intel.com> <20100330150453.8E9F.A69D9226@jp.fujitsu.com> <20100331045348.GA3396@sli10-desk.sh.intel.com>
+	id S1757186Ab0CaFmI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 01:42:08 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:58983 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756637Ab0CaFmE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 01:42:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=e4rqHkHotucN+tGM8t71THL1CZsRSILR0CKqjgrGwOT19iMCLpBnNpZiV++vfy2Wcm
+         axRNCoAWqZehyurWyklRd7TmhE7tLZROrIuwFEGAoAA9GujMAoMC/Qq964ZRPAaiixFT
+         8KtzMRNnijN42qMmwhEcAbovqJjG8ud8bqHrI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100331045348.GA3396@sli10-desk.sh.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1269967960.4558.162.camel@Joe-Laptop.home>
+References: <912ec82a1003300907o7edeb73bp92d56741cfee1064@mail.gmail.com>
+	 <1269967960.4558.162.camel@Joe-Laptop.home>
+Date: Wed, 31 Mar 2010 08:42:02 +0300
+Message-ID: <u2y912ec82a1003302242sb4f1ac2arb9c464d35993b7a1@mail.gmail.com>
+Subject: Re: pr_* versus dev_*
+From: Neshama Parhoti <pneshama@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 12:53:48PM +0800, Li, Shaohua wrote:
-> On Tue, Mar 30, 2010 at 02:08:53PM +0800, KOSAKI Motohiro wrote:
-> > Hi
-> > 
-> > > Commit 84b18490d1f1bc7ed5095c929f78bc002eb70f26 introduces a regression.
-> > > With it, our tmpfs test always oom. The test has a lot of rotated anon
-> > > pages and cause percent[0] zero. Actually the percent[0] is a very small
-> > > value, but our calculation round it to zero. The commit makes vmscan
-> > > completely skip anon pages and cause oops.
-> > > An option is if percent[x] is zero in get_scan_ratio(), forces it
-> > > to 1. See below patch.
-> > > But the offending commit still changes behavior. Without the commit, we scan
-> > > all pages if priority is zero, below patch doesn't fix this. Don't know if
-> > > It's required to fix this too.
-> > 
-> > Can you please post your /proc/meminfo and reproduce program? I'll digg it.
-> > 
-> > Very unfortunately, this patch isn't acceptable. In past time, vmscan 
-> > had similar logic, but 1% swap-out made lots bug reports. 
-> if 1% is still big, how about below patch?
-> 
-> Commit 84b18490d1f1bc7ed5095c929f78bc002eb70f26 introduces a regression.
-> With it, our tmpfs test always oom. The test has a lot of rotated anon
-> pages and cause percent[0] zero. Actually the percent[0] is a very small
-> value, but our calculation round it to zero. The commit makes vmscan
-> completely skip anon pages and cause oops.
-> To avoid underflow, we don't use percentage, instead we directly calculate
-> how many pages should be scaned.
+On Tue, Mar 30, 2010 at 7:52 PM, Joe Perches <joe@perches.com> wrote:
+> On Tue, 2010-03-30 at 19:07 +0300, Neshama Parhoti wrote:
+>> Which set of macros should I use in my driver ?
+>>
+>> pr_info, pr_err, etc...  or dev_info, dev_err,    etc. ?
+>
+> Possibly all of them.
+>
+>> what are the advantages of the dev_* macros over the pr_* macros
+>> (why does it take the device pointer as an argument) ?
+>>
+>> obviously I don't have access to my device pointer in all my functions..
+>> so pr_info is easier to use..
+>> but if it's wanted, obviously I can arrange to have my device pointer
+>> accessible..
+>
+> You should also use dev_<level> where possible.
+> You should also use netdev_<level> and netif_<level> if your
+> device is a networking driver.
+> You should #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> to have a standard prefix for your driver.
+>
+> Function        Benefit
+>
+> pr_<level>:     Slightly shorter than printk(KERN_<LEVEL>)
+>                Gets a standard prefix with pr_fmt
+> dev_<level>:    Standardized device information:
+>                dev_driver_string, then dev_name
+>                dev_driver_string is the device's driver's name
+>                if it is bound to a device.  If the device is not
+>                bound to a device, the name of the bus it is
+>                attached to.  If it is not attached to a bus but
+>                has a class, the class name.
+>                If no class, you'll find an empty dance card.
+> netdev_<level>: Appends struct net_device.name to dev_<level> prefix
+>                Use dev_<level> until alloc_netdev or alloc_etherdev
+>                has been called successfully.
+> netif_<level>:  Test network interface message level (netif_msg_<foo>)
+>                before calling netdev_<level>
+>
+> Message logging with KERN_DEBUG levels are a bit more complicated:
+>
+> These calls are optimized away and never printed unless
+> DEBUG is #defined or CONFIG_DYNAMIC_DEBUG is enabled.
+>
+> pr_debug
+> dev_dbg
+> netdev_dbg
+> netif_dbg
+>
+> To always have these emitted, use the appropriate printk calls
+>
+> printk(KERN_DEBUG       this does not get a standard prefix
+>                        use printk(KERN_DEBUG pr_fmt(fmt) if desired
+> dev_printk(KERN_DEBUG
+> netdev_printk(KERN_DEBUG
+> netif_printk(priv, msg, KERN_DEBUG
+>
+> There are  _vdbg variants for even more verbose output if
+> VERBOSE_DEBUG is #defined.
 
-The changelog can be improved. For example, to describe these items
-in separate paragraphs:
+thank you.
 
-- the behavior change introduced by 84b18490d1f (which claims to be cleanup)
-- the tmpfs test case
-- the root cause
-- the solution
-- test result
+so i should use whatever print call that adds most information right ?
 
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 79c8098..80a7ed5 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1519,27 +1519,50 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
->  }
->  
->  /*
-> + * Smallish @nr_to_scan's are deposited in @nr_saved_scan,
-> + * until we collected @swap_cluster_max pages to scan.
-> + */
-> +static unsigned long nr_scan_try_batch(unsigned long nr_to_scan,
-> +				       unsigned long *nr_saved_scan)
-> +{
-> +	unsigned long nr;
-> +
-> +	*nr_saved_scan += nr_to_scan;
-> +	nr = *nr_saved_scan;
-> +
-> +	if (nr >= SWAP_CLUSTER_MAX)
-> +		*nr_saved_scan = 0;
-> +	else
-> +		nr = 0;
-> +
-> +	return nr;
-> +}
-> +
-> +/*
->   * Determine how aggressively the anon and file LRU lists should be
->   * scanned.  The relative value of each set of LRU lists is determined
->   * by looking at the fraction of the pages scanned we did rotate back
->   * onto the active list instead of evict.
->   *
-> - * percent[0] specifies how much pressure to put on ram/swap backed
-> - * memory, while percent[1] determines pressure on the file LRUs.
-> + * nr[x] specifies how many pages should be scaned
+even if that means that some part of the driver uses pr_* and some
+part of the driver use dev_* ?
 
-typo: scanned
-
->   */
-> -static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
-> -					unsigned long *percent)
-> +static void get_scan_count(struct zone *zone, struct scan_control *sc,
-> +				unsigned long *nr, int priority)
->  {
->  	unsigned long anon, file, free;
->  	unsigned long anon_prio, file_prio;
->  	unsigned long ap, fp;
->  	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
-> +	unsigned long fraction[2], denominator[2];
-
-The denominator is shared, so one scaler would be sufficient.
-Also ap, fp can be removed and to use fraction[] directly.
-
-And it's better to retain this comment:
-                                        /* anon @ 0; file @ 1 */
-
-> +	enum lru_list l;
->  
->  	/* If we have no swap space, do not bother scanning anon pages. */
->  	if (!sc->may_swap || (nr_swap_pages <= 0)) {
-> -		percent[0] = 0;
-> -		percent[1] = 100;
-> -		return;
-> +		fraction[0] = 0;
-> +		denominator[0] = 1;
-> +		fraction[1] = 1;
-> +		denominator[1] = 1;
-> +		goto out;
->  	}
->  
->  	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
-> @@ -1552,9 +1575,11 @@ static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
->  		/* If we have very few page cache pages,
->  		   force-scan anon pages. */
->  		if (unlikely(file + free <= high_wmark_pages(zone))) {
-> -			percent[0] = 100;
-> -			percent[1] = 0;
-> -			return;
-> +			fraction[0] = 1;
-> +			denominator[0] = 1;
-> +			fraction[1] = 0;
-> +			denominator[1] = 1;
-> +			goto out;
->  		}
->  	}
->  
-> @@ -1601,29 +1626,29 @@ static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
->  	fp = (file_prio + 1) * (reclaim_stat->recent_scanned[1] + 1);
->  	fp /= reclaim_stat->recent_rotated[1] + 1;
->  
-> -	/* Normalize to percentages */
-> -	percent[0] = 100 * ap / (ap + fp + 1);
-> -	percent[1] = 100 - percent[0];
-> -}
-> -
-> -/*
-> - * Smallish @nr_to_scan's are deposited in @nr_saved_scan,
-> - * until we collected @swap_cluster_max pages to scan.
-> - */
-> -static unsigned long nr_scan_try_batch(unsigned long nr_to_scan,
-> -				       unsigned long *nr_saved_scan)
-> -{
-> -	unsigned long nr;
-> +	fraction[0] = ap;
-> +	denominator[0] = ap + fp + 1;
-> +	fraction[1] = fp;
-> +	denominator[1] = ap + fp + 1;
->  
-> -	*nr_saved_scan += nr_to_scan;
-> -	nr = *nr_saved_scan;
-> +out:
-> +	for_each_evictable_lru(l) {
-> +		int file = is_file_lru(l);
-> +		unsigned long scan;
->  
-> -	if (nr >= SWAP_CLUSTER_MAX)
-> -		*nr_saved_scan = 0;
-> -	else
-> -		nr = 0;
-> +		if (fraction[file] == 0) {
-> +			nr[l] = 0;
-> +			continue;
-> +		}
->  
-> -	return nr;
-> +		scan = zone_nr_lru_pages(zone, sc, l);
-> +		if (priority) {
-> +			scan >>= priority;
-> +			scan = (scan * fraction[file] / denominator[file]);
-
-			scan = (scan * fraction[file]) / denominator[file];
-
-Thanks,
-Fengguang
-
-> +		}
-> +		nr[l] = nr_scan_try_batch(scan,
-> +					  &reclaim_stat->nr_saved_scan[l]);
-> +	}
->  }
->  
->  /*
-> @@ -1634,31 +1659,11 @@ static void shrink_zone(int priority, struct zone *zone,
->  {
->  	unsigned long nr[NR_LRU_LISTS];
->  	unsigned long nr_to_scan;
-> -	unsigned long percent[2];	/* anon @ 0; file @ 1 */
->  	enum lru_list l;
->  	unsigned long nr_reclaimed = sc->nr_reclaimed;
->  	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
-> -	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
-> -
-> -	get_scan_ratio(zone, sc, percent);
->  
-> -	for_each_evictable_lru(l) {
-> -		int file = is_file_lru(l);
-> -		unsigned long scan;
-> -
-> -		if (percent[file] == 0) {
-> -			nr[l] = 0;
-> -			continue;
-> -		}
-> -
-> -		scan = zone_nr_lru_pages(zone, sc, l);
-> -		if (priority) {
-> -			scan >>= priority;
-> -			scan = (scan * percent[file]) / 100;
-> -		}
-> -		nr[l] = nr_scan_try_batch(scan,
-> -					  &reclaim_stat->nr_saved_scan[l]);
-> -	}
-> +	get_scan_count(zone, sc, nr, priority);
->  
->  	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
->  					nr[LRU_INACTIVE_FILE]) {
+thank you again
+>
+>
