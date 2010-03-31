@@ -1,83 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758195Ab0CaVG1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 17:06:27 -0400
-Received: from sj-iport-5.cisco.com ([171.68.10.87]:44977 "EHLO
-	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758171Ab0CaVGZ (ORCPT
+	id S1758192Ab0CaVH2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 17:07:28 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:21034 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752990Ab0CaVHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 17:06:25 -0400
-Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAKlVs0urR7Ht/2dsb2JhbACbOXGoP5khhQAEgyM
-X-IronPort-AV: E=Sophos;i="4.51,343,1267401600"; 
-   d="scan'208";a="175546733"
-From: Roland Dreier <rdreier@cisco.com>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-       jirislaby@gmail.com, Or Gerlitz <ogerlitz@voltaire.com>
-Subject: Re: [PATCH 1/1] infiniband: ulp/iser, fix error retval in iser_create_ib_conn_res
-References: <1268750962-13547-1-git-send-email-jslaby@suse.cz>
-	<ada634v9644.fsf@roland-alpha.cisco.com>
-	<20100317151122.GF5331@bicker>
-X-Message-Flag: Warning: May contain useful information
-Date: Wed, 31 Mar 2010 14:06:21 -0700
-In-Reply-To: <20100317151122.GF5331@bicker> (Dan Carpenter's message of "Wed,
-	17 Mar 2010 18:11:22 +0300")
-Message-ID: <adak4ssi4ky.fsf@roland-alpha.cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 31 Mar 2010 17:07:25 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=Ojo+w7TLO2PjEhQUjATgc8X4DCZ8PP9ki6x4cXGS5H1zbjv2DSX7GtlXtnEIriIAE
+	1yBJTAhyF6DATgV/b/sZQ==
+Date: Wed, 31 Mar 2010 14:07:15 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [patch] oom: give current access to memory reserves if it has
+ been killed
+In-Reply-To: <20100331175836.GA11635@redhat.com>
+Message-ID: <alpine.DEB.2.00.1003311342410.25284@chino.kir.corp.google.com>
+References: <1269447905-5939-1-git-send-email-anfei.zhou@gmail.com> <20100326150805.f5853d1c.akpm@linux-foundation.org> <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com>
+ <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330154659.GA12416@redhat.com> <alpine.DEB.2.00.1003301320020.5234@chino.kir.corp.google.com>
+ <20100331175836.GA11635@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So looking at merging this finally, I think I see one problem with the
-proposed patch.  We have:
+On Wed, 31 Mar 2010, Oleg Nesterov wrote:
 
- > @@ -183,7 +180,7 @@  static int iser_create_ib_conn_res(struct iser_conn *ib_conn)
- >  	ib_conn->fmr_pool = ib_create_fmr_pool(device->pd, &params);
- >  	if (IS_ERR(ib_conn->fmr_pool)) {
- >  		ret = PTR_ERR(ib_conn->fmr_pool);
- > -		goto fmr_pool_err;
- > +		goto out_err;
- >  	}
+> On 03/30, David Rientjes wrote:
+> >
+> > On Tue, 30 Mar 2010, Oleg Nesterov wrote:
+> >
+> > > Note that __oom_kill_task() does force_sig(SIGKILL) which assumes that
+> > > ->sighand != NULL. This is not true if out_of_memory() is called after
+> > > current has already passed exit_notify().
+> >
+> > We have an even bigger problem if current is in the oom killer at
+> > exit_notify() since it has already detached its ->mm in exit_mm() :)
+> 
+> Can't understand... I thought that in theory even kmalloc(1) can trigger
+> oom.
+> 
 
-and
+__oom_kill_task() cannot be called on a task without an ->mm.
 
- > @@ -209,12 +206,7 @@  static int iser_create_ib_conn_res(struct iser_conn *ib_conn)
- >  		 ib_conn->fmr_pool, ib_conn->cma_id->qp);
- >  	return ret;
- >  
- > -qp_err:
- > -	(void)ib_destroy_fmr_pool(ib_conn->fmr_pool);
- > -fmr_pool_err:
- > -	kfree(ib_conn->page_vec);
- > -	kfree(ib_conn->login_buf);
- > -alloc_err:
- > +out_err:
- >  	iser_err("unable to alloc mem or create resource, err %d\n", ret);
- >  	return ret;
- >  }
+> > > IOW, unless I missed something, it is very easy to hide the process
+> > > from oom-kill:
+> > >
+> > > 	int main()
+> > > 	{
+> > > 		pthread_create(memory_hog_func);
+> > > 		syscall(__NR_exit);
+> > > 	}
+> > >
+> >
+> > The check for !p->mm was moved in the -mm tree (and the oom killer was
+> > entirely rewritten in that tree, so I encourage you to work off of it
+> > instead
+> 
+> OK, but I guess this !p->mm check is still wrong for the same reason.
+> In fact I do not understand why it is needed in select_bad_process()
+> right before oom_badness() which checks ->mm too (and this check is
+> equally wrong).
+> 
 
-so if ib_create_fmr_pool() fails, we're left with ib_conn->fmr_pool
-holding an error pointer, right?  But we're relying on
-iser_free_ib_conn_res() to clean up after us, and that has:
+It prevents kthreads from being killed.  We already identify tasks that 
+are in the exit path with PF_EXITING in select_bad_process() and chosen to 
+make the oom killer a no-op when it's not current so it can exit and free 
+its memory.  If it is current, then we're ooming in the exit path and we 
+need to oom kill it so that it gets access to memory reserves so its no 
+longer blocking.
 
-	if (ib_conn->fmr_pool != NULL)
-		ib_destroy_fmr_pool(ib_conn->fmr_pool);
+> > so if the oom killer finds an already exiting task,
+> > it will become a no-op since it should eventually free memory and avoids a
+> > needless oom kill.
+> 
+> No, afaics, And this reminds that I already complained about this
+> PF_EXITING check.
+> 
+> Once again, p is the group leader. It can be dead (no ->mm, PF_EXITING
+> is set) but it can have sub-threads. This means, unless I missed something,
+> any user can trivially disable select_bad_process() forever.
+> 
 
-so we're going to end up trying to free an error pointer, which will
-probably crash.
+The task is in the process of exiting and will do so if its not current, 
+otherwise it will get access to memory reserves since we're obviously oom 
+in the exit path.  Thus, we'll be freeing that memory soon or recalling 
+the oom killer to kill additional tasks once those children have been 
+reparented (or one of its children was sacrificed).
 
-I think.
+> 
+> Well. Looks like, -mm has a lot of changes in oom_kill.c. Perhaps it
+> would be better to fix these mt bugs first...
+> 
+> Say, oom_forkbomb_penalty() does list_for_each_entry(tsk->children).
+> Again, this is not right even if we forget about !child->mm check.
+> This list_for_each_entry() can only see the processes forked by the
+> main thread.
+>
 
-Dan or Or, am I wrong here or do we need another iteration of this
-patch? (the login_buf and page_vec changes do look correct to me, since
-a failed kmalloc() will leave us with a NULL pointer that it is safe to
-kfree() later)
+That's the intention.
+ 
+> Likewise, oom_kill_process()->list_for_each_entry() is not right too.
+> 
 
- - R.
--- 
-Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
-http://www.cisco.com/web/about/doing_business/legal/cri/index.html
+Why?
+
+> Hmm. Why oom_forkbomb_penalty() does thread_group_cputime() under
+> task_lock() ? It seems, ->alloc_lock() is only needed for get_mm_rss().
+> 
+
+Right, but we need to ensure that the check for !child->mm || child->mm == 
+tsk->mm fails before adding in get_mm_rss(child->mm).  It can race and 
+detach its mm prior to the dereference.  It would be possible to move the 
+thread_group_cputime() out of this critical section, but I felt it was 
+better to do filter all tasks with child->mm == tsk->mm first before 
+unnecessarily finding the cputime for them.
