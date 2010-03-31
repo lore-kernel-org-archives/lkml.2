@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757515Ab0CaPwW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 11:52:22 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:42857 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757193Ab0CaPwN (ORCPT
+	id S932125Ab0CaPwg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 11:52:36 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:55389 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757151Ab0CaPwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 11:52:13 -0400
+	Wed, 31 Mar 2010 11:52:33 -0400
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
        Andrew Morton <akpm@linux-foundation.org>,
@@ -19,128 +19,186 @@ Cc: Masami Hiramatsu <mhiramat@redhat.com>,
        Frederic Weisbecker <fweisbec@gmail.com>,
        "Frank Ch. Eigler" <fche@redhat.com>,
        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 31 Mar 2010 21:22:08 +0530
-Message-Id: <20100331155208.4181.59176.sendpatchset@localhost6.localdomain6>
+Date: Wed, 31 Mar 2010 21:22:28 +0530
+Message-Id: <20100331155228.4181.61294.sendpatchset@localhost6.localdomain6>
 In-Reply-To: <20100331155106.4181.50759.sendpatchset@localhost6.localdomain6>
 References: <20100331155106.4181.50759.sendpatchset@localhost6.localdomain6>
-Subject: [PATCH v2 5/11] X86 details for user space breakpoint assistance.
+Subject: [PATCH v2 7/11] Uprobes Implementation
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86 support for user breakpoint Infrastructure
+Uprobes Implementation
 
 Changelog:
-	set USER_BKPT_FIX_SLEEPY if post_xol might sleep.
+	- If fixup might sleep; then do the post singlestep
+	   processing in task context.
 
-This patch provides x86 specific userspace breakpoint assistance
-implementation details. It uses the "x86: instruction decoder API" patch
-to do validate and analyze the instructions. This analysis is used at
-the time of post-processing of breakpoint hit to do the necessary
-fix-ups.
+The uprobes infrastructure enables a user to dynamically establish
+probepoints in user applications and collect information by executing a
+handler function when a probepoint is hit.
 
-Almost all instructions are handled for traditional strategy and
-execution out of line strategy. Instruction handled include the RIP
-relative instructions.
+The user specifies the virtual address and the pid of the process of
+interest along with the action to be performed (handler). The handle
+Uprobes is implemented on the user-space breakpoint assistance layer
+and uses the execution out of line strategy. Uprobes follows lazy slot
+allocation. I.e, on the first probe hit for that process, a new vma (to
+hold the probed instructions for execution out of line) is allocated.
+Once allocated, this vma remains for the life of the process, and is
+reused as needed for subsequent probes.  A slot in the vma is allocated
+for a probepoint when it is first hit.
 
-This patch requires "x86: instruction decoder API" patch.
-http://lkml.org/lkml/2009/6/1/459
+A slot is marked for reuse when the probe gets unregistered and no
+threads are using that slot.
 
-Signed-off-by: Jim Keniston <jkenisto@us.ibm.com>
+In a multithreaded process, a probepoint once registered is active for
+all threads of a process. If a thread specific action for a probepoint
+is required then the handler should be implemented to do the same.
+
+If a breakpoint already exists at a particular address (irrespective of
+who inserted the breakpoint including uprobes), uprobes will refuse to
+register any more probes at that address.
+
+You need to follow this up with the uprobes patch for your
+architecture.
+
+For more information: please refer to Documentation/uprobes.txt
+
+TODO:
+1. Perf/trace events interface for uprobes.
+2. Allow multiple probes at a probepoint.
+3. Booster probes.
+4. Allow probes to be inherited across fork.
+5. probing function returns.
+
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Jim Keniston <jkenisto@us.ibm.com>
 ---
 
- arch/x86/Kconfig                 |    1 
- arch/x86/include/asm/user_bkpt.h |   43 +++
- arch/x86/kernel/Makefile         |    2 
- arch/x86/kernel/user_bkpt.c      |  572 ++++++++++++++++++++++++++++++++++++++
- 4 files changed, 618 insertions(+), 0 deletions(-)
- create mode 100644 arch/x86/include/asm/user_bkpt.h
- create mode 100644 arch/x86/kernel/user_bkpt.c
+ arch/Kconfig              |   13 +
+ include/linux/sched.h     |    3 
+ include/linux/tracehook.h |   18 +
+ include/linux/uprobes.h   |  187 ++++++++++
+ kernel/Makefile           |    1 
+ kernel/fork.c             |    3 
+ kernel/uprobes.c          |  803 +++++++++++++++++++++++++++++++++++++++++++++
+ 7 files changed, 1028 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/uprobes.h
+ create mode 100644 kernel/uprobes.c
 
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 0eacb1f..851cedc 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -53,6 +53,7 @@ config X86
- 	select HAVE_KERNEL_LZMA
- 	select HAVE_KERNEL_LZO
- 	select HAVE_HW_BREAKPOINT
-+	select HAVE_USER_BKPT
- 	select PERF_EVENTS
- 	select ANON_INODES
- 	select HAVE_ARCH_KMEMCHECK
-diff --git a/arch/x86/include/asm/user_bkpt.h b/arch/x86/include/asm/user_bkpt.h
-new file mode 100644
-index 0000000..df8a4a0
---- /dev/null
-+++ b/arch/x86/include/asm/user_bkpt.h
-@@ -0,0 +1,43 @@
-+#ifndef _ASM_USER_BKPT_H
-+#define _ASM_USER_BKPT_H
-+/*
-+ * User-space BreakPoint support (user_bkpt) for x86
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright (C) IBM Corporation, 2008-2010
-+ * Authors:
-+ *	Srikar Dronamraju
-+ *	Jim Keniston
-+ */
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 1a53e30..5144fc3 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -63,6 +63,16 @@ config USER_BKPT
+ 	  This service is used by components such as uprobes.
+ 	  If in doubt, say "N".
+ 
++config UPROBES
++	bool "User-space probes (EXPERIMENTAL)"
++	depends on MODULES && USER_BKPT_XOL
++	depends on HAVE_UPROBES
++	help
++	  Uprobes enables kernel modules to establish probepoints
++	  in user applications and execute handler functions when
++	  the probepoints are hit. For more information, refer to
++	  Documentation/uprobes.txt. If in doubt, say "N".
 +
-+typedef u8 user_bkpt_opcode_t;
-+#define MAX_UINSN_BYTES 16
-+#define USER_BKPT_XOL_SLOT_BYTES (MAX_UINSN_BYTES)
+ config HAVE_EFFICIENT_UNALIGNED_ACCESS
+ 	bool
+ 	help
+@@ -114,6 +124,9 @@ config HAVE_KRETPROBES
+ 
+ config HAVE_OPTPROBES
+ 	bool
 +
-+#ifdef CONFIG_X86_64
-+struct bkpt_arch_info {
-+	unsigned long rip_target_address;
-+	u8 orig_insn[MAX_UINSN_BYTES];
-+};
-+struct user_bkpt_task_arch_info {
-+	unsigned long saved_scratch_register;
-+};
-+#else
-+struct bkpt_arch_info {};
-+struct user_bkpt_task_arch_info {};
++config HAVE_UPROBES
++	def_bool n
+ #
+ # An arch should select this if it provides all these things:
+ #
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index dad7f66..2d2433a 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1506,6 +1506,9 @@ struct task_struct {
+ 		unsigned long memsw_bytes; /* uncharged mem+swap usage */
+ 	} memcg_batch;
+ #endif
++#ifdef CONFIG_UPROBES
++	struct uprobe_task *utask;
 +#endif
-+
-+#endif	/* _ASM_USER_BKPT_H */
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 4c58352..98c74b4 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -117,6 +117,8 @@ obj-$(CONFIG_X86_CHECK_BIOS_CORRUPTION) += check.o
+ };
  
- obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+diff --git a/include/linux/tracehook.h b/include/linux/tracehook.h
+index 10db010..9a91d1e 100644
+--- a/include/linux/tracehook.h
++++ b/include/linux/tracehook.h
+@@ -49,6 +49,7 @@
+ #include <linux/sched.h>
+ #include <linux/ptrace.h>
+ #include <linux/security.h>
++#include <linux/uprobes.h>
+ struct linux_binprm;
  
-+obj-$(CONFIG_USER_BKPT)			+= user_bkpt.o
+ /**
+@@ -204,6 +205,11 @@ static inline void tracehook_report_exec(struct linux_binfmt *fmt,
+ 	if (!ptrace_event(PT_TRACE_EXEC, PTRACE_EVENT_EXEC, 0) &&
+ 	    unlikely(task_ptrace(current) & PT_PTRACED))
+ 		send_sig(SIGTRAP, current, 0);
 +
- ###
- # 64 bit specific files
- ifeq ($(CONFIG_X86_64),y)
-diff --git a/arch/x86/kernel/user_bkpt.c b/arch/x86/kernel/user_bkpt.c
++#ifdef CONFIG_UPROBES
++	if (unlikely(current->utask))
++		uprobe_free_utask();
++#endif
+ }
+ 
+ /**
+@@ -219,6 +225,10 @@ static inline void tracehook_report_exec(struct linux_binfmt *fmt,
+ static inline void tracehook_report_exit(long *exit_code)
+ {
+ 	ptrace_event(PT_TRACE_EXIT, PTRACE_EVENT_EXIT, *exit_code);
++#ifdef CONFIG_UPROBES
++	if (unlikely(current->utask))
++		uprobe_free_utask();
++#endif
+ }
+ 
+ /**
+@@ -293,6 +303,10 @@ static inline void tracehook_report_clone(struct pt_regs *regs,
+ 		sigaddset(&child->pending.signal, SIGSTOP);
+ 		set_tsk_thread_flag(child, TIF_SIGPENDING);
+ 	}
++#ifdef CONFIG_UPROBES
++	if (unlikely(current->utask))
++		uprobe_handle_clone(clone_flags, child);
++#endif
+ }
+ 
+ /**
+@@ -593,6 +607,10 @@ static inline void set_notify_resume(struct task_struct *task)
+  */
+ static inline void tracehook_notify_resume(struct pt_regs *regs)
+ {
++#ifdef CONFIG_UPROBES
++	if (current->utask && current->utask->active_ppt)
++		uprobe_notify_resume(regs);
++#endif
+ }
+ #endif	/* TIF_NOTIFY_RESUME */
+ 
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
 new file mode 100644
-index 0000000..eb74a8d
+index 0000000..58bb07b
 --- /dev/null
-+++ b/arch/x86/kernel/user_bkpt.c
-@@ -0,0 +1,572 @@
++++ b/include/linux/uprobes.h
+@@ -0,0 +1,187 @@
++#ifndef _LINUX_UPROBES_H
++#define _LINUX_UPROBES_H
 +/*
-+ * User-space BreakPoint support (user_bkpt) for x86
++ * Userspace Probes (UProbes)
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -161,553 +219,1001 @@ index 0000000..eb74a8d
 + *	Srikar Dronamraju
 + *	Jim Keniston
 + */
-+
-+#include <linux/kernel.h>
-+#include <linux/sched.h>
-+#include <linux/ptrace.h>
++#include <linux/types.h>
++#include <linux/list.h>
++#include <linux/rcupdate.h>
++#include <linux/mutex.h>
++#include <linux/wait.h>
++#include <linux/spinlock_types.h>
++#include <asm/atomic.h>
 +#include <linux/user_bkpt.h>
-+#include <asm/insn.h>
++#include <linux/user_bkpt_xol.h>
 +
-+#ifdef CONFIG_X86_32
-+#define is_32bit_app(tsk) 1
++struct task_struct;
++struct pid;
++struct pt_regs;
++
++/* This is what the user supplies us. */
++struct uprobe {
++	/*
++	 * The pid of the probed process.  Currently, this can be the
++	 * thread ID (task->pid) of any active thread in the process.
++	 */
++	pid_t pid;
++
++	/* Location of the probepoint */
++	unsigned long vaddr;
++
++	/* Handler to run when the probepoint is hit */
++	void (*handler)(struct uprobe*, struct pt_regs*);
++
++	/* true if handler runs in interrupt context*/
++	bool handler_in_interrupt;
++};
++
++/*
++ * uprobe_process -- not a user-visible struct.
++ * A uprobe_process represents a probed process.  A process can have
++ * multiple probepoints (each represented by a uprobe_probept) and
++ * one or more threads (each represented by a uprobe_task).
++ */
++struct uprobe_process {
++	/*
++	 * mutex locked for any change to the uprobe_process's
++	 * graph (including uprobe_probept, taking a slot in xol_area) --
++	 * e.g., due to probe [un]registration or special events like exit.
++	 */
++	struct mutex mutex;
++
++	/* Table of uprobe_probepts registered for this process */
++	struct list_head uprobe_list;
++
++	atomic_t refcount;
++
++	/* lock held while traversing/modifying uprobe_list and n_ppts */
++	spinlock_t pptlist_lock;	/* protects uprobe_list */
++
++	/* number of probept allocated for this process */
++	int n_ppts;
++
++	/*
++	 * All threads (tasks) in a process share the same uprobe_process.
++	 */
++	struct pid *tg_leader;
++
++	/*
++	 * Manages slots for instruction-copies to be single-stepped
++	 * out of line.
++	 */
++	void *xol_area;
++};
++
++/*
++ * uprobe_probept -- not a user-visible struct.
++ * A uprobe_probept represents a probepoint.
++ * Guarded by uproc->lock.
++ */
++struct uprobe_probept {
++	/* breakpoint/XOL details */
++	struct user_bkpt user_bkpt;
++
++	/*
++	 * ppt goes in the uprobe_process->uprobe_table when registered --
++	 * even before the breakpoint has been inserted.
++	 */
++	struct list_head ut_node;
++
++	atomic_t refcount;
++
++	/* The parent uprobe_process */
++	struct uprobe_process *uproc;
++
++	struct uprobe *uprobe;
++};
++
++enum uprobe_task_state {
++	UTASK_RUNNING,
++	UTASK_BP_HIT,
++	UTASK_SSTEP
++};
++
++/*
++ * uprobe_utask -- not a user-visible struct.
++ * Corresponds to a thread in a probed process.
++ * Guarded by uproc->mutex.
++ */
++struct uprobe_task {
++	struct user_bkpt_task_arch_info arch_info;
++
++	/* Back pointer to the associated uprobe_process */
++	struct uprobe_process *uproc;
++
++	enum uprobe_task_state state;
++
++
++	struct uprobe_probept *active_ppt;
++};
++
++#ifdef CONFIG_UPROBES
++extern int uprobes_exception_notify(struct notifier_block *self,
++				unsigned long val, void *data);
++extern int uprobe_bkpt_notifier(struct pt_regs *regs);
++extern int uprobe_post_notifier(struct pt_regs *regs);
++extern void uprobe_notify_resume(struct pt_regs *regs);
++extern void arch_uprobe_enable_sstep(struct pt_regs *regs);
++extern void arch_uprobe_disable_sstep(struct pt_regs *regs);
++extern int register_uprobe(struct uprobe *u);
++extern void unregister_uprobe(struct uprobe *u);
++extern void uprobe_free_utask(void);
++extern void uprobe_handle_clone(unsigned long clone_flags,
++				struct task_struct *child);
++extern void uprobe_enable_interrupts(void);
++extern void uprobe_disable_interrupts(void);
 +#else
-+#define is_32bit_app(tsk) (test_tsk_thread_flag(tsk, TIF_IA32))
-+#endif
-+
-+#define USER_BKPT_FIX_RIP_AX	0x8000
-+#define USER_BKPT_FIX_RIP_CX	0x4000
-+
-+/* Adaptations for mhiramat x86 decoder v14. */
-+#define OPCODE1(insn) ((insn)->opcode.bytes[0])
-+#define OPCODE2(insn) ((insn)->opcode.bytes[1])
-+#define OPCODE3(insn) ((insn)->opcode.bytes[2])
-+#define MODRM_REG(insn) X86_MODRM_REG(insn->modrm.value)
-+
-+static void set_ip(struct pt_regs *regs, unsigned long vaddr)
-+{
-+	regs->ip = vaddr;
-+}
-+
-+#ifdef CONFIG_X86_64
-+static bool is_riprel_insn(struct user_bkpt *user_bkpt)
-+{
-+	return ((user_bkpt->fixups &
-+			(USER_BKPT_FIX_RIP_AX | USER_BKPT_FIX_RIP_CX)) != 0);
-+}
-+
-+static void cancel_xol(struct task_struct *tsk, struct user_bkpt *user_bkpt)
-+{
-+	if (is_riprel_insn(user_bkpt)) {
-+		/*
-+		 * We rewrote user_bkpt->insn to use indirect addressing rather
-+		 * than rip-relative addressing for XOL.  For
-+		 * single-stepping inline, put back the original instruction.
-+		 */
-+		memcpy(user_bkpt->insn, user_bkpt->arch_info.orig_insn,
-+							MAX_UINSN_BYTES);
-+		user_bkpt->strategy &= ~USER_BKPT_HNT_TSKINFO;
-+	}
-+}
-+#endif	/* CONFIG_X86_64 */
-+
-+static const u32 good_insns_64[256 / 32] = {
-+	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-+	/*      ----------------------------------------------         */
-+	W(0x00, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) | /* 00 */
-+	W(0x10, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) , /* 10 */
-+	W(0x20, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) | /* 20 */
-+	W(0x30, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) , /* 30 */
-+	W(0x40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) | /* 40 */
-+	W(0x50, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 50 */
-+	W(0x60, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* 60 */
-+	W(0x70, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 70 */
-+	W(0x80, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 80 */
-+	W(0x90, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 90 */
-+	W(0xa0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* a0 */
-+	W(0xb0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* b0 */
-+	W(0xc0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0) | /* c0 */
-+	W(0xd0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* d0 */
-+	W(0xe0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* e0 */
-+	W(0xf0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1)   /* f0 */
-+	/*      ----------------------------------------------         */
-+	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-+};
-+
-+/* Good-instruction tables for 32-bit apps -- copied from i386 uprobes */
-+
-+static const u32 good_insns_32[256 / 32] = {
-+	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-+	/*      ----------------------------------------------         */
-+	W(0x00, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0) | /* 00 */
-+	W(0x10, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0) , /* 10 */
-+	W(0x20, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1) | /* 20 */
-+	W(0x30, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1) , /* 30 */
-+	W(0x40, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 40 */
-+	W(0x50, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 50 */
-+	W(0x60, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* 60 */
-+	W(0x70, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 70 */
-+	W(0x80, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 80 */
-+	W(0x90, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 90 */
-+	W(0xa0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* a0 */
-+	W(0xb0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* b0 */
-+	W(0xc0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0) | /* c0 */
-+	W(0xd0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* d0 */
-+	W(0xe0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* e0 */
-+	W(0xf0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1)   /* f0 */
-+	/*      ----------------------------------------------         */
-+	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-+};
-+
-+/* Using this for both 64-bit and 32-bit apps */
-+static const u32 good_2byte_insns[256 / 32] = {
-+	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-+	/*      ----------------------------------------------         */
-+	W(0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1) | /* 00 */
-+	W(0x10, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1) , /* 10 */
-+	W(0x20, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1) | /* 20 */
-+	W(0x30, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) , /* 30 */
-+	W(0x40, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 40 */
-+	W(0x50, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 50 */
-+	W(0x60, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 60 */
-+	W(0x70, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1) , /* 70 */
-+	W(0x80, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 80 */
-+	W(0x90, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 90 */
-+	W(0xa0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1) | /* a0 */
-+	W(0xb0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1) , /* b0 */
-+	W(0xc0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* c0 */
-+	W(0xd0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* d0 */
-+	W(0xe0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* e0 */
-+	W(0xf0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)   /* f0 */
-+	/*      ----------------------------------------------         */
-+	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-+};
 +
 +/*
-+ * opcodes we'll probably never support:
-+ * 6c-6d, e4-e5, ec-ed - in
-+ * 6e-6f, e6-e7, ee-ef - out
-+ * cc, cd - int3, int
-+ * cf - iret
-+ * d6 - illegal instruction
-+ * f1 - int1/icebp
-+ * f4 - hlt
-+ * fa, fb - cli, sti
-+ * 0f - lar, lsl, syscall, clts, sysret, sysenter, sysexit, invd, wbinvd, ud2
-+ *
-+ * invalid opcodes in 64-bit mode:
-+ * 06, 0e, 16, 1e, 27, 2f, 37, 3f, 60-62, 82, c4-c5, d4-d5
-+ *
-+ * 63 - we support this opcode in x86_64 but not in i386.
-+ *
-+ * opcodes we may need to refine support for:
-+ * 0f - 2-byte instructions: For many of these instructions, the validity
-+ * depends on the prefix and/or the reg field.  On such instructions, we
-+ * just consider the opcode combination valid if it corresponds to any
-+ * valid instruction.
-+ * 8f - Group 1 - only reg = 0 is OK
-+ * c6-c7 - Group 11 - only reg = 0 is OK
-+ * d9-df - fpu insns with some illegal encodings
-+ * f2, f3 - repnz, repz prefixes.  These are also the first byte for
-+ * certain floating-point instructions, such as addsd.
-+ * fe - Group 4 - only reg = 0 or 1 is OK
-+ * ff - Group 5 - only reg = 0-6 is OK
-+ *
-+ * others -- Do we need to support these?
-+ * 0f - (floating-point?) prefetch instructions
-+ * 07, 17, 1f - pop es, pop ss, pop ds
-+ * 26, 2e, 36, 3e - es:, cs:, ss:, ds: segment prefixes --
-+ *	but 64 and 65 (fs: and gs:) seem to be used, so we support them
-+ * 67 - addr16 prefix
-+ * ce - into
-+ * f0 - lock prefix
++ * Only register_uprobe() and unregister_uprobe() are part of
++ * the client API.
 + */
-+
-+/*
-+ * TODO:
-+ * - Where necessary, examine the modrm byte and allow only valid instructions
-+ * in the different Groups and fpu instructions.
-+ */
-+
-+static bool is_prefix_bad(struct insn *insn)
++static inline int register_uprobe(struct uprobe *u)
 +{
-+	int i;
-+
-+	for (i = 0; i < insn->prefixes.nbytes; i++) {
-+		switch (insn->prefixes.bytes[i]) {
-+		case 0x26:	 /*INAT_PFX_ES   */
-+		case 0x2E:	 /*INAT_PFX_CS   */
-+		case 0x36:	 /*INAT_PFX_DS   */
-+		case 0x3E:	 /*INAT_PFX_SS   */
-+		case 0xF0:	 /*INAT_PFX_LOCK */
-+			return 1;
-+		}
-+	}
++	return -ENOSYS;
++}
++static inline void unregister_uprobe(struct uprobe *u)
++{
++}
++static inline void uprobe_free_utask(void)
++{
++}
++static inline void uprobe_handle_clone(unsigned long clone_flags,
++				struct task_struct *child)
++{
++}
++static inline void uprobe_notify_resume(struct pt_regs *regs)
++{
++}
++static inline int uprobe_bkpt_notifier(struct pt_regs *regs)
++{
 +	return 0;
 +}
-+
-+static void report_bad_prefix(void)
++static inline int uprobe_post_notifier(struct pt_regs *regs)
 +{
-+	printk(KERN_ERR "user_bkpt does not currently support probing "
-+		"instructions with any of the following prefixes: "
-+		"cs:, ds:, es:, ss:, lock:\n");
++	return 0;
 +}
++#endif	/* CONFIG_UPROBES */
++#endif	/* _LINUX_UPROBES_H */
+diff --git a/kernel/Makefile b/kernel/Makefile
+index e404aa0..f0cfb02 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -107,6 +107,7 @@ obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
+ obj-$(CONFIG_PADATA) += padata.o
+ obj-$(CONFIG_USER_BKPT) += user_bkpt.o
+ obj-$(CONFIG_USER_BKPT_XOL) += user_bkpt_xol.o
++obj-$(CONFIG_UPROBES) += uprobes.o
+ 
+ ifneq ($(CONFIG_SCHED_OMIT_FRAME_POINTER),y)
+ # According to Alan Modra <alan@linuxcare.com.au>, the -fno-omit-frame-pointer is
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 4799c5f..63c5efc 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1180,6 +1180,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	INIT_LIST_HEAD(&p->pi_state_list);
+ 	p->pi_state_cache = NULL;
+ #endif
++#ifdef CONFIG_UPROBES
++	p->utask = NULL;
++#endif
+ 	/*
+ 	 * sigaltstack should be cleared when sharing the same VM
+ 	 */
+diff --git a/kernel/uprobes.c b/kernel/uprobes.c
+new file mode 100644
+index 0000000..4a1325d
+--- /dev/null
++++ b/kernel/uprobes.c
+@@ -0,0 +1,803 @@
++/*
++ *  Userspace Probes (UProbes)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ * Copyright (C) IBM Corporation, 2008-2010
++ * Authors:
++ *	Srikar Dronamraju
++ *	Jim Keniston
++ */
++#include <linux/types.h>
++#include <linux/hash.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/sched.h>
++#include <linux/err.h>
++#include <linux/uprobes.h>
++#include <linux/string.h>
++#include <linux/uaccess.h>
++#include <linux/errno.h>
++#include <linux/kdebug.h>
 +
-+static void report_bad_1byte_opcode(int mode, user_bkpt_opcode_t op)
++static u16 user_bkpt_strategies;
++
++struct notifier_block uprobes_exception_nb = {
++	.notifier_call = uprobes_exception_notify,
++	.priority = 0x7ffffff0,
++};
++
++typedef void (*uprobe_handler_t)(struct uprobe*, struct pt_regs*);
++
++/* Guards lookup, creation, and deletion of uproc. */
++static DEFINE_MUTEX(uprobe_mutex);
++
++static inline void get_probept(struct uprobe_probept *ppt)
 +{
-+	printk(KERN_ERR "In %d-bit apps, "
-+		"user_bkpt does not currently support probing "
-+		"instructions whose first byte is 0x%2.2x\n", mode, op);
-+}
-+
-+static void report_bad_2byte_opcode(user_bkpt_opcode_t op)
-+{
-+	printk(KERN_ERR "user_bkpt does not currently support probing "
-+		"instructions with the 2-byte opcode 0x0f 0x%2.2x\n", op);
-+}
-+
-+static int validate_insn_32bits(struct user_bkpt *user_bkpt, struct insn *insn)
-+{
-+	insn_init(insn, user_bkpt->insn, false);
-+
-+	/* Skip good instruction prefixes; reject "bad" ones. */
-+	insn_get_opcode(insn);
-+	if (is_prefix_bad(insn)) {
-+		report_bad_prefix();
-+		return -EPERM;
-+	}
-+	if (test_bit(OPCODE1(insn), (unsigned long *) good_insns_32))
-+		return 0;
-+	if (insn->opcode.nbytes == 2) {
-+		if (test_bit(OPCODE2(insn),
-+					(unsigned long *) good_2byte_insns))
-+			return 0;
-+		report_bad_2byte_opcode(OPCODE2(insn));
-+	} else
-+		report_bad_1byte_opcode(32, OPCODE1(insn));
-+	return -EPERM;
-+}
-+
-+static int validate_insn_64bits(struct user_bkpt *user_bkpt, struct insn *insn)
-+{
-+	insn_init(insn, user_bkpt->insn, true);
-+
-+	/* Skip good instruction prefixes; reject "bad" ones. */
-+	insn_get_opcode(insn);
-+	if (is_prefix_bad(insn)) {
-+		report_bad_prefix();
-+		return -EPERM;
-+	}
-+	if (test_bit(OPCODE1(insn), (unsigned long *) good_insns_64))
-+		return 0;
-+	if (insn->opcode.nbytes == 2) {
-+		if (test_bit(OPCODE2(insn),
-+					(unsigned long *) good_2byte_insns))
-+			return 0;
-+		report_bad_2byte_opcode(OPCODE2(insn));
-+	} else
-+		report_bad_1byte_opcode(64, OPCODE1(insn));
-+	return -EPERM;
++	atomic_inc(&ppt->refcount);
 +}
 +
 +/*
-+ * Figure out which fixups post_xol() will need to perform, and annotate
-+ * user_bkpt->fixups accordingly.  To start with, user_bkpt->fixups is
-+ * either zero or it reflects rip-related fixups.
++ * Creates a uprobe_probept and connects it to uprobe and uproc.
++ * Runs with uproc->mutex locked.
 + */
-+static void prepare_fixups(struct user_bkpt *user_bkpt, struct insn *insn)
++static struct uprobe_probept *add_probept(struct uprobe *u,
++					struct uprobe_process *uproc)
 +{
-+	bool fix_ip = true, fix_call = false;	/* defaults */
-+	insn_get_opcode(insn);	/* should be a nop */
++	struct uprobe_probept *ppt;
 +
-+	switch (OPCODE1(insn)) {
-+	case 0xc3:		/* ret/lret */
-+	case 0xcb:
-+	case 0xc2:
-+	case 0xca:
-+		/* ip is correct */
-+		fix_ip = false;
-+		break;
-+	case 0xe8:		/* call relative - Fix return addr */
-+		fix_call = true;
-+		break;
-+	case 0x9a:		/* call absolute - Fix return addr, not ip */
-+		fix_call = true;
-+		fix_ip = false;
-+		break;
-+	case 0xff:
-+	    {
-+		int reg;
-+		insn_get_modrm(insn);
-+		reg = MODRM_REG(insn);
-+		if (reg == 2 || reg == 3) {
-+			/* call or lcall, indirect */
-+			/* Fix return addr; ip is correct. */
-+			fix_call = true;
-+			fix_ip = false;
-+		} else if (reg == 4 || reg == 5) {
-+			/* jmp or ljmp, indirect */
-+			/* ip is correct. */
-+			fix_ip = false;
-+		}
-+		break;
-+	    }
-+	case 0xea:		/* jmp absolute -- ip is correct */
-+		fix_ip = false;
-+		break;
-+	default:
-+		break;
-+	}
-+	if (fix_ip)
-+		user_bkpt->fixups |= USER_BKPT_FIX_IP;
-+	if (fix_call)
-+		user_bkpt->fixups |=
-+			(USER_BKPT_FIX_CALL | USER_BKPT_FIX_SLEEPY);
++	ppt = kzalloc(sizeof *ppt, GFP_USER);
++	if (unlikely(ppt == NULL))
++		return ERR_PTR(-ENOMEM);
++
++	ppt->user_bkpt.vaddr = u->vaddr;
++	ppt->uprobe = u;
++	ppt->user_bkpt.xol_vaddr = 0;
++
++	ppt->user_bkpt.strategy = user_bkpt_strategies;
++
++	ppt->uproc = uproc;
++	INIT_LIST_HEAD(&ppt->ut_node);
++	spin_lock(&uproc->pptlist_lock);
++	list_add(&ppt->ut_node, &uproc->uprobe_list);
++	uproc->n_ppts++;
++	spin_unlock(&uproc->pptlist_lock);
++	atomic_set(&ppt->refcount, 1);
++	return ppt;
 +}
 +
-+#ifdef CONFIG_X86_64
-+static int handle_riprel_insn(struct user_bkpt *user_bkpt, struct insn *insn);
-+#endif
-+
-+static int analyze_insn(struct task_struct *tsk, struct user_bkpt *user_bkpt)
++static void put_probept(struct uprobe_probept *ppt)
 +{
-+	int ret;
-+	struct insn insn;
++	struct uprobe_process *uproc;
 +
-+	user_bkpt->fixups = 0;
-+#ifdef CONFIG_X86_64
-+	user_bkpt->arch_info.rip_target_address = 0x0;
-+#endif
++	uproc = ppt->uproc;
++	if (atomic_dec_and_lock(&ppt->refcount, &uproc->pptlist_lock)) {
++		list_del(&ppt->ut_node);
++		uproc->n_ppts--;
++		xol_free_insn_slot(ppt->user_bkpt.xol_vaddr, uproc->xol_area);
++		spin_unlock(&uproc->pptlist_lock);
++		kfree(ppt);
++	}
++}
 +
-+	if (is_32bit_app(tsk))
-+		ret = validate_insn_32bits(user_bkpt, &insn);
++/*
++ * In the given uproc's hash table of probepoints, find the one with the
++ * specified virtual address.
++ * Called with uproc->pptlist_lock acquired.
++ */
++static struct uprobe_probept *find_probept(struct uprobe_process *uproc,
++							unsigned long vaddr)
++{
++	struct uprobe_probept *ppt;
++
++	list_for_each_entry(ppt, &uproc->uprobe_list, ut_node) {
++		if (ppt->user_bkpt.vaddr == vaddr)
++			return ppt;
++	}
++	return NULL;
++}
++
++/*
++ * Save a copy of the original instruction (so it can be single-stepped
++ * out of line), insert the breakpoint instruction.
++ * Runs with uproc->mutex locked.
++ */
++static int insert_bkpt(struct uprobe_probept *ppt, struct task_struct *tsk)
++{
++	int result;
++
++	if (tsk)
++		result = user_bkpt_insert_bkpt(tsk, &ppt->user_bkpt);
 +	else
-+		ret = validate_insn_64bits(user_bkpt, &insn);
-+	if (ret != 0)
-+		return ret;
-+	if (user_bkpt->strategy & USER_BKPT_HNT_INLINE)
-+		return 0;
-+#ifdef CONFIG_X86_64
-+	ret = handle_riprel_insn(user_bkpt, &insn);
-+	if (ret == -1)
-+		/* rip-relative; can't XOL */
-+		return 0;
-+	else if (ret == 0)
-+		/* not rip-relative */
-+		user_bkpt->strategy &= ~USER_BKPT_HNT_TSKINFO;
-+#endif
-+	prepare_fixups(user_bkpt, &insn);
++		/* No surviving tasks associated with ppt->uproc */
++		result = -ESRCH;
++	return result;
++}
++
++ /* Runs with uproc->mutex locked. */
++static void remove_bkpt(struct uprobe_probept *ppt, struct task_struct *tsk)
++{
++	if (!tsk)
++		return;
++
++	if (user_bkpt_remove_bkpt(tsk, &ppt->user_bkpt) != 0) {
++		printk(KERN_ERR "Error removing uprobe at pid %d vaddr %#lx:"
++			" can't restore original instruction\n",
++			tsk->tgid, ppt->user_bkpt.vaddr);
++		/*
++		 * This shouldn't happen, since we were previously able
++		 * to write the breakpoint at that address.  There's not
++		 * much we can do besides let the process die with a
++		 * SIGTRAP the next time the breakpoint is hit.
++		 */
++	}
++}
++
++/* Runs with the uprobe_mutex held. */
++static struct uprobe_process *find_uprocess(struct pid *tg_leader)
++{
++	struct uprobe_process *uproc;
++	struct task_struct *tsk = get_pid_task(tg_leader, PIDTYPE_PID);
++
++	if (!tsk)
++		return NULL;
++
++	if (!tsk->utask || !tsk->utask->uproc) {
++		put_task_struct(tsk);
++		return NULL;
++	}
++
++	uproc = tsk->utask->uproc;
++	BUG_ON(uproc->tg_leader != tg_leader);
++	atomic_inc(&uproc->refcount);
++	put_task_struct(tsk);
++	return uproc;
++}
++
++/*
++ * uproc's process is exiting or exec-ing.
++ * Called in context of the last thread of the process. This thread is also
++ * exiting. Hence we can traverse the uprobe_list without
++ * taking spinlock.
++ * Called with no locks held.
++ */
++static int free_uprocess(struct uprobe_process *uproc)
++{
++	struct uprobe_probept *ppt, *pnode;
++
++	mutex_lock(&uproc->mutex);
++	list_for_each_entry_safe(ppt, pnode, &uproc->uprobe_list, ut_node) {
++		put_probept(ppt);
++	}
++	if (uproc->xol_area)
++		xol_free_area(uproc->xol_area);
++
++	put_pid(uproc->tg_leader);
++	uproc->tg_leader = NULL;
++	mutex_unlock(&uproc->mutex);	/* So kfree doesn't complain */
++	kfree(uproc);
 +	return 0;
 +}
 +
-+#ifdef CONFIG_X86_64
 +/*
-+ * If user_bkpt->insn doesn't use rip-relative addressing, return 0.  Otherwise,
-+ * rewrite the instruction so that it accesses its memory operand
-+ * indirectly through a scratch register.  Set user_bkpt->fixups and
-+ * user_bkpt->arch_info.rip_target_address accordingly.  (The contents of the
-+ * scratch register will be saved before we single-step the modified
-+ * instruction, and restored afterward.)  Return 1.
-+ *
-+ * (... except if the client doesn't support our USER_BKPT_HNT_TSKINFO strategy,
-+ * we must suppress XOL for rip-relative instructions: return -1.)
-+ *
-+ * We do this because a rip-relative instruction can access only a
-+ * relatively small area (+/- 2 GB from the instruction), and the XOL
-+ * area typically lies beyond that area.  At least for instructions
-+ * that store to memory, we can't execute the original instruction
-+ * and "fix things up" later, because the misdirected store could be
-+ * disastrous.
-+ *
-+ * Some useful facts about rip-relative instructions:
-+ * - There's always a modrm byte.
-+ * - There's never a SIB byte.
-+ * - The displacement is always 4 bytes.
++ * Dismantle uproc and all its remaining uprobe_tasks.
++ * Runs with uprobe_mutex held;
 + */
-+static int handle_riprel_insn(struct user_bkpt *user_bkpt, struct insn *insn)
++static void cleanup_uprocess(struct uprobe_process *uproc,
++					struct task_struct *start)
 +{
-+	u8 *cursor;
-+	u8 reg;
++	struct task_struct *tsk = start;
 +
-+	if (!insn_rip_relative(insn))
++	if (!start)
++		return;
++
++	rcu_read_lock();
++	do {
++		if (tsk->utask) {
++			kfree(tsk->utask);
++			tsk->utask = NULL;
++		}
++		tsk = next_thread(tsk);
++	} while (tsk != start);
++	rcu_read_unlock();
++}
++
++/* Called with no locks held */
++static void put_uprocess(struct uprobe_process *uproc)
++{
++	if (atomic_dec_and_test(&uproc->refcount))
++		free_uprocess(uproc);
++}
++
++/*
++ * Called with no locks held.
++ * Called in context of a exiting or a exec-ing thread.
++ */
++void uprobe_free_utask(void)
++{
++	struct uprobe_process *uproc;
++	struct uprobe_task *utask;
++
++	mutex_lock(&uprobe_mutex);
++	utask = current->utask;
++	if (!utask) {
++		mutex_unlock(&uprobe_mutex);
++		return;
++	}
++	uproc = utask->uproc;
++
++	kfree(utask);
++	current->utask = NULL;
++	mutex_unlock(&uprobe_mutex);
++	put_uprocess(uproc);
++}
++
++/*
++ * Allocate a uprobe_task object for the task and add it to uproc's list.
++ * Called with t "got" and uprobe_mutex locked.  Called in one of
++ * the following cases:
++ * - before setting the first uprobe in t's process
++ * - we're in clone() and t is the newly added thread
++ *
++ * Returns:
++ * - pointer to new uprobe_task on success
++ * - negative errno otherwise
++ */
++static struct uprobe_task *add_utask(struct task_struct *t,
++					struct uprobe_process *uproc)
++{
++	struct uprobe_task *utask;
++
++	if (!t)
++		return NULL;
++	utask = kzalloc(sizeof *utask, GFP_USER);
++	if (unlikely(utask == NULL))
++		return ERR_PTR(-ENOMEM);
++
++	utask->uproc = uproc;
++	utask->active_ppt = NULL;
++	t->utask = utask;
++	atomic_inc(&uproc->refcount);
++
++	return utask;
++}
++
++/*
++ * Find the next thread that doesn't have a corresponding uprobe_task
++ * yet.  start is the a ref-counted thread in the probed process. We
++ * decrement the ref-count for start here.
++ *
++ * Return the next ref-counted thread for that process, if any, else
++ * NULL.
++ */
++static struct task_struct *find_next_thread(struct uprobe_process *uproc,
++						struct task_struct *start)
++{
++	struct task_struct *next_t = NULL;
++
++	rcu_read_lock();
++	if (start) {
++		struct task_struct *t = start;
++
++		do {
++			if (unlikely(t->flags & PF_EXITING))
++				goto dont_add;
++			if (t->utask)
++				/* Already added */
++				goto dont_add;
++
++			/* Found thread/task to add. */
++			get_task_struct(t);
++			next_t = t;
++			break;
++dont_add:
++			t = next_thread(t);
++		} while (t != start);
++	}
++	rcu_read_unlock();
++	return next_t;
++}
++
++/* Runs with uprobe_mutex held; */
++static struct uprobe_process *create_uprocess(struct pid *tg_leader)
++{
++	struct uprobe_process *uproc;
++	struct uprobe_task *utask;
++	struct task_struct *add_me, *cur_t;
++	long err;
++
++	uproc = kzalloc(sizeof *uproc, GFP_USER);
++	if (unlikely(uproc == NULL))
++		return ERR_PTR(-ENOMEM);
++
++	/* Initialize fields */
++	mutex_init(&uproc->mutex);
++	spin_lock_init(&uproc->pptlist_lock);
++	atomic_set(&uproc->refcount, 1);
++	uproc->tg_leader = get_pid(tg_leader);
++	INIT_LIST_HEAD(&uproc->uprobe_list);
++
++	/*
++	 * Create and populate one utask per thread in this process.  We
++	 * can't call add_utask() while holding RCU lock, so we:
++	 *	1. rcu_read_lock()
++	 *	2. Find the next thread, add_me, in this process that's not
++	 *	having a utask struct allocated.
++	 *	3. rcu_read_unlock()
++	 *	4. add_utask(add_me, uproc)
++	 *	Repeat 1-4 'til we have utasks for all threads.
++	 */
++	cur_t = get_pid_task(tg_leader, PIDTYPE_PID);
++	do {
++		utask = add_utask(cur_t, uproc);
++		if (IS_ERR(utask)) {
++			err = PTR_ERR(utask);
++			goto fail;
++		}
++		add_me = find_next_thread(uproc, cur_t);
++		put_task_struct(cur_t);
++		cur_t = add_me;
++	} while (add_me != NULL);
++
++	return uproc;
++
++fail:
++	cleanup_uprocess(uproc, cur_t);
++	put_task_struct(cur_t);
++	kfree(uproc);
++	return ERR_PTR(err);
++}
++
++/*
++ * Given a numeric thread ID, return a ref-counted struct pid for the
++ * task-group-leader thread.
++ */
++static struct pid *get_tg_leader(pid_t p)
++{
++	struct pid *pid = NULL;
++
++	rcu_read_lock();
++	if (current->nsproxy)
++		pid = find_vpid(p);
++	if (pid) {
++		struct task_struct *t = pid_task(pid, PIDTYPE_PID);
++
++		if (!t || unlikely(t->flags & PF_EXITING))
++			pid = NULL;
++		else
++			pid = get_pid(task_tgid(t));
++	}
++	rcu_read_unlock();
++	return pid;
++}
++
++/* See Documentation/uprobes.txt. */
++int register_uprobe(struct uprobe *u)
++{
++	struct uprobe_process *uproc;
++	struct uprobe_probept *ppt;
++	struct pid *p;
++	int ret = 0;
++
++	if (!u || !u->handler)
++		return -EINVAL;
++
++	p = get_tg_leader(u->pid);
++	if (!p)
++		return -ESRCH;
++
++
++	/* Get the uprobe_process for this pid, or make a new one. */
++	mutex_lock(&uprobe_mutex);
++	uproc = find_uprocess(p);
++
++	if (!uproc) {
++		uproc = create_uprocess(p);
++		if (IS_ERR(uproc)) {
++			ret = (int) PTR_ERR(uproc);
++			mutex_unlock(&uprobe_mutex);
++			goto fail_tsk;
++		}
++	}
++	mutex_unlock(&uprobe_mutex);
++	mutex_lock(&uproc->mutex);
++
++	if (uproc->n_ppts >= MAX_USER_BKPT_XOL_SLOTS)
++		goto fail_uproc;
++
++	ret = xol_validate_vaddr(p, u->vaddr, uproc->xol_area);
++	if (ret < 0)
++		goto fail_uproc;
++
++	/* See if we already have a probepoint at the vaddr. */
++	spin_lock(&uproc->pptlist_lock);
++	ppt = find_probept(uproc, u->vaddr);
++	spin_unlock(&uproc->pptlist_lock);
++	if (ppt) {
++		/*
++		 * A uprobe already exists at that address.
++		 */
++		ret = -EALREADY;
++		goto fail_uproc;
++	} else {
++		ppt = add_probept(u, uproc);
++		if (IS_ERR(ppt)) {
++			ret = (int) PTR_ERR(ppt);
++			goto fail_uproc;
++		}
++		ret = insert_bkpt(ppt, pid_task(p, PIDTYPE_PID));
++		if (ret != 0)
++			goto fail_uproc;
++	}
++
++fail_uproc:
++	mutex_unlock(&uproc->mutex);
++	put_uprocess(uproc);
++
++fail_tsk:
++	put_pid(p);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(register_uprobe);
++
++/* See Documentation/uprobes.txt. */
++void unregister_uprobe(struct uprobe *u)
++{
++	struct uprobe_process *uproc;
++	struct uprobe_probept *ppt;
++	struct pid *p;
++
++	if (!u)
++		return;
++	p = get_tg_leader(u->pid);
++	if (!p)
++		return;
++
++	/* Get the uprobe_process for this pid. */
++	mutex_lock(&uprobe_mutex);
++	uproc = find_uprocess(p);
++	mutex_unlock(&uprobe_mutex);
++	if (!uproc) {
++		put_pid(p);
++		return;
++	}
++
++	/*
++	 * Lock uproc before walking the graph, in case the process
++	 * we're probing is exiting.
++	 */
++	mutex_lock(&uproc->mutex);
++
++	spin_lock(&uproc->pptlist_lock);
++	ppt = find_probept(uproc, u->vaddr);
++	spin_unlock(&uproc->pptlist_lock);
++	if (!ppt)
++		/*
++		 * This probe was never successfully registered, or
++		 * has already been unregistered.
++		 */
++		goto done;
++
++	if (ppt->uprobe != u)
++		/*
++		 * unregister request doesnt correspond to successful
++		 * register request.
++		 */
++		goto done;
++
++	remove_bkpt(ppt, pid_task(p, PIDTYPE_PID));
++
++	/*
++	 * Breakpoint is removed; however a thread could have hit the
++	 * same breakpoint and yet to find its corresponding probepoint.
++	 * Before we remove the probepoint, give the breakpointed thread a
++	 * chance to find the probepoint.
++	 */
++	mutex_unlock(&uproc->mutex);
++	synchronize_sched();
++	mutex_lock(&uproc->mutex);
++	put_probept(ppt);
++
++done:
++	mutex_unlock(&uproc->mutex);
++	put_uprocess(uproc);
++	put_pid(p);
++}
++EXPORT_SYMBOL_GPL(unregister_uprobe);
++
++/* Prepare to single-step ppt's probed instruction out of line. */
++static int pre_ssout(struct uprobe_task *utask, struct uprobe_probept *ppt,
++						struct pt_regs *regs)
++{
++	struct uprobe_process *uproc = utask->uproc;
++
++	if (unlikely(!ppt->user_bkpt.xol_vaddr)) {
++#ifdef CONFIG_X86_32
++		/*
++		 * On x86_32, do_notify_resume() gets called with
++		 * interrupts disabled. Hence enable interrupts if they
++		 * are still disabled.
++		 */
++		uprobe_enable_interrupts();
++#endif
++		mutex_lock(&uproc->mutex);
++		if (unlikely(!uproc->xol_area))
++			uproc->xol_area = xol_alloc_area();
++		if (uproc->xol_area && !ppt->user_bkpt.xol_vaddr)
++			ppt->user_bkpt.xol_vaddr =
++					xol_get_insn_slot(&ppt->user_bkpt,
++							uproc->xol_area);
++		mutex_unlock(&uproc->mutex);
++#ifdef CONFIG_X86_32
++		uprobe_disable_interrupts();
++#endif
++		if (unlikely(!ppt->user_bkpt.xol_vaddr))
++			goto fail;
++	}
++	user_bkpt_pre_sstep(current, &ppt->user_bkpt,
++						&utask->arch_info, regs);
++	user_bkpt_set_ip(regs, ppt->user_bkpt.xol_vaddr);
++	return 0;
++
++/*
++ * We failed to execute out of line.
++ * reset the instruction pointer and remove the breakpoint.
++ */
++fail:
++	remove_bkpt(ppt, current);
++	user_bkpt_set_ip(regs, ppt->user_bkpt.vaddr);
++	put_probept(ppt);
++	return -1;
++}
++
++/* Prepare to continue execution after single-stepping out of line. */
++static int post_ssout(struct uprobe_probept *ppt, struct pt_regs *regs)
++{
++	return user_bkpt_post_sstep(current, &ppt->user_bkpt,
++					&current->utask->arch_info, regs);
++}
++
++/*
++ * Verify from Instruction Pointer if singlestep has indeed occurred.
++ * If Singlestep has occurred, then do post singlestep fix-ups.
++ */
++static bool sstep_complete(struct pt_regs *regs,
++				struct uprobe_probept *ppt)
++{
++	unsigned long vaddr = instruction_pointer(regs);
++
++	/*
++	 * If we have executed out of line, Instruction pointer
++	 * cannot be same as virtual address of XOL slot.
++	 */
++	if (vaddr == ppt->user_bkpt.xol_vaddr)
++		return false;
++	post_ssout(ppt, regs);
++	return true;
++}
++
++/*
++ * Clone callback: The current task has spawned a thread/process.
++ * NOTE: For now, we don't pass on uprobes from the parent to the
++ * child. We now do the necessary clearing of breakpoints in the
++ * child's address space.
++ *
++ * TODO:
++ *	- Provide option for child to inherit uprobes.
++ */
++void uprobe_handle_clone(unsigned long clone_flags,
++				struct task_struct *child)
++{
++	struct uprobe_process *uproc;
++	struct uprobe_task *ptask, *ctask;
++
++	ptask = current->utask;
++	if (!ptask)
++		return;
++
++	uproc = ptask->uproc;
++
++	if (clone_flags & CLONE_THREAD) {
++		mutex_lock(&uprobe_mutex);
++		/* New thread in the same process. */
++		ctask = child->utask;
++		if (unlikely(ctask)) {
++			/*
++			 * create_uprocess() ran just as this clone
++			 * happened, and has already accounted for the
++			 * new child.
++			 */
++		} else
++			ctask = add_utask(child, uproc);
++		mutex_unlock(&uprobe_mutex);
++	} else {
++		struct uprobe_probept *ppt;
++		int ret;
++
++		/*
++		 * New process spawned by parent.  Remove the probepoints
++		 * in the child's text.
++		 *
++		 * We also hold the uproc->mutex for the parent - so no
++		 * new uprobes will be registered 'til we return.
++		 */
++		mutex_lock(&uproc->mutex);
++		ctask = child->utask;
++		if (unlikely(ctask)) {
++			/*
++			 * create_uprocess() ran just as this fork
++			 * happened, and has already created a new utask.
++			 */
++			mutex_unlock(&uproc->mutex);
++			return;
++		}
++		list_for_each_entry(ppt, &uproc->uprobe_list, ut_node) {
++			ret = user_bkpt_remove_bkpt(child, &ppt->user_bkpt);
++			if (ret && ret != -EINVAL) {
++				/* Ratelimit this? */
++				printk(KERN_ERR "Pid %d forked %d; failed to"
++					" remove probepoint at %#lx in child\n",
++					current->pid, child->pid,
++					ppt->user_bkpt.vaddr);
++			}
++		}
++		mutex_unlock(&uproc->mutex);
++	}
++}
++
++
++/*
++ * uprobe_notify_resume gets called in task context just before returning
++ * to userspace.  it gets called if.
++ *  - handler has to be run in task context.
++ *  - 1st time the probepoint is hit.
++ *
++ *  If its the first time the probepoint is hit, we allocate the slot here.
++ */
++void uprobe_notify_resume(struct pt_regs *regs)
++{
++	struct uprobe_probept *ppt;
++	struct uprobe_task *utask;
++	struct uprobe *u;
++
++	utask = current->utask;
++	if (!utask)
++		return;
++
++	ppt = utask->active_ppt;
++	if (!ppt)
++		return;
++
++	if (utask->state == UTASK_BP_HIT) {
++		u = ppt->uprobe;
++		if (!u->handler_in_interrupt && u->handler)
++			u->handler(u, regs);
++		if (!pre_ssout(utask, ppt, regs))
++			arch_uprobe_enable_sstep(regs);
++	} else if (utask->state == UTASK_SSTEP) {
++		if (sstep_complete(regs, ppt)) {
++			arch_uprobe_disable_sstep(regs);
++			put_probept(ppt);
++			utask->active_ppt = NULL;
++			utask->state = UTASK_RUNNING;
++		}
++	}
++}
++
++/*
++ * uprobe_bkpt_notifier gets called from interrupt context
++ * it sets TIF_NOTIFY_RESUME flag, if
++ *	- handler has to be run in task context
++ *	- slot for the probepoint is not yet allocated.
++ */
++int uprobe_bkpt_notifier(struct pt_regs *regs)
++{
++	struct uprobe_process *uproc;
++	struct uprobe_probept *ppt;
++	struct uprobe_task *utask;
++	struct uprobe *u;
++	unsigned long probept;
++
++	utask = current->utask;
++	if (!utask || !utask->uproc)
++		/* task is currently not uprobed */
 +		return 0;
 +
-+	/*
-+	 * We have a rip-relative instruction.  To allow this instruction
-+	 * to be single-stepped out of line, the client must provide us
-+	 * with a per-task user_bkpt_task_arch_info object.
-+	 */
-+	if (!(user_bkpt->strategy & USER_BKPT_HNT_TSKINFO)) {
-+		user_bkpt->strategy |= USER_BKPT_HNT_INLINE;
-+		return -1;
++	uproc = utask->uproc;
++	probept = user_bkpt_get_bkpt_addr(regs);
++	spin_lock(&uproc->pptlist_lock);
++	ppt = find_probept(uproc, probept);
++	if (!ppt) {
++		spin_unlock(&uproc->pptlist_lock);
++		return 0;
 +	}
-+	memcpy(user_bkpt->arch_info.orig_insn, user_bkpt->insn,
-+							MAX_UINSN_BYTES);
++	get_probept(ppt);
++	spin_unlock(&uproc->pptlist_lock);
++	utask->active_ppt = ppt;
++	u = ppt->uprobe;
 +
-+	/*
-+	 * Point cursor at the modrm byte.  The next 4 bytes are the
-+	 * displacement.  Beyond the displacement, for some instructions,
-+	 * is the immediate operand.
-+	 */
-+	cursor = user_bkpt->insn + insn->prefixes.nbytes
-+			+ insn->rex_prefix.nbytes + insn->opcode.nbytes;
-+	insn_get_length(insn);
++	if (u->handler_in_interrupt && u->handler)
++		u->handler(u, regs);
 +
-+	/*
-+	 * Convert from rip-relative addressing to indirect addressing
-+	 * via a scratch register.  Change the r/m field from 0x5 (%rip)
-+	 * to 0x0 (%rax) or 0x1 (%rcx), and squeeze out the offset field.
-+	 */
-+	reg = MODRM_REG(insn);
-+	if (reg == 0) {
-+		/*
-+		 * The register operand (if any) is either the A register
-+		 * (%rax, %eax, etc.) or (if the 0x4 bit is set in the
-+		 * REX prefix) %r8.  In any case, we know the C register
-+		 * is NOT the register operand, so we use %rcx (register
-+		 * #1) for the scratch register.
-+		 */
-+		user_bkpt->fixups = USER_BKPT_FIX_RIP_CX;
-+		/* Change modrm from 00 000 101 to 00 000 001. */
-+		*cursor = 0x1;
-+	} else {
-+		/* Use %rax (register #0) for the scratch register. */
-+		user_bkpt->fixups = USER_BKPT_FIX_RIP_AX;
-+		/* Change modrm from 00 xxx 101 to 00 xxx 000 */
-+		*cursor = (reg << 3);
-+	}
-+
-+	/* Target address = address of next instruction + (signed) offset */
-+	user_bkpt->arch_info.rip_target_address = (long) user_bkpt->vaddr +
-+				insn->length + insn->displacement.value;
-+	/* Displacement field is gone; slide immediate field (if any) over. */
-+	if (insn->immediate.nbytes) {
-+		cursor++;
-+		memmove(cursor, cursor + insn->displacement.nbytes,
-+						insn->immediate.nbytes);
-+	}
++	utask->state = UTASK_BP_HIT;
++	if (ppt->user_bkpt.xol_vaddr && u->handler_in_interrupt) {
++		user_bkpt_pre_sstep(current, &ppt->user_bkpt,
++						&utask->arch_info, regs);
++		arch_uprobe_enable_sstep(regs);
++	} else
++		set_thread_flag(TIF_NOTIFY_RESUME);
 +	return 1;
 +}
 +
 +/*
-+ * If we're emulating a rip-relative instruction, save the contents
-+ * of the scratch register and store the target address in that register.
++ * uprobe_post_notifier gets called in interrupt context.
++ * It completes the single step operation.
 + */
-+static int pre_xol(struct task_struct *tsk, struct user_bkpt *user_bkpt,
-+		struct user_bkpt_task_arch_info *tskinfo, struct pt_regs *regs)
++int uprobe_post_notifier(struct pt_regs *regs)
 +{
-+	BUG_ON(!user_bkpt->xol_vaddr);
-+	regs->ip = user_bkpt->xol_vaddr;
-+	if (user_bkpt->fixups & USER_BKPT_FIX_RIP_AX) {
-+		tskinfo->saved_scratch_register = regs->ax;
-+		regs->ax = user_bkpt->arch_info.rip_target_address;
-+	} else if (user_bkpt->fixups & USER_BKPT_FIX_RIP_CX) {
-+		tskinfo->saved_scratch_register = regs->cx;
-+		regs->cx = user_bkpt->arch_info.rip_target_address;
++	struct uprobe_process *uproc;
++	struct uprobe_probept *ppt;
++	struct uprobe_task *utask;
++
++	utask = current->utask;
++	ppt = utask->active_ppt;
++	uproc = utask->uproc;
++
++	if (!utask || !utask->uproc)
++		/* task is currently not uprobed */
++		return 0;
++
++	if (!ppt)
++		return 0;
++
++	utask->state = UTASK_SSTEP;
++	if (user_bkpt_resume_can_sleep(&ppt->user_bkpt)) {
++		set_thread_flag(TIF_NOTIFY_RESUME);
++		return 1;
++	}
++
++	if (sstep_complete(regs, ppt)) {
++		arch_uprobe_disable_sstep(regs);
++		put_probept(ppt);
++		utask->active_ppt = NULL;
++		utask->state = UTASK_RUNNING;
++		return 1;
 +	}
 +	return 0;
 +}
-+#endif
 +
-+/*
-+ * Called by post_xol() to adjust the return address pushed by a call
-+ * instruction executed out of line.
-+ */
-+static int adjust_ret_addr(struct task_struct *tsk, unsigned long sp,
-+							long correction)
++
++static int __init init_uprobes(void)
 +{
-+	int rasize, ncopied;
-+	long ra = 0;
++	int ret;
 +
-+	if (is_32bit_app(tsk))
-+		rasize = 4;
-+	else
-+		rasize = 8;
-+	ncopied = user_bkpt_read_vm(tsk, (void __user *) sp, &ra, rasize);
-+	if (unlikely(ncopied != rasize))
-+		goto fail;
-+	ra += correction;
-+	ncopied = user_bkpt_write_data(tsk, (void __user *) sp, &ra, rasize);
-+	if (unlikely(ncopied != rasize))
-+		goto fail;
-+	return 0;
-+
-+fail:
-+	printk(KERN_ERR
-+		"user_bkpt: Failed to adjust return address after"
-+		" single-stepping call instruction;"
-+		" pid=%d, sp=%#lx\n", tsk->pid, sp);
-+	return -EFAULT;
-+}
-+
-+/*
-+ * Called after single-stepping.  user_bkpt->vaddr is the address of the
-+ * instruction whose first byte has been replaced by the "int3"
-+ * instruction.  To avoid the SMP problems that can occur when we
-+ * temporarily put back the original opcode to single-step, we
-+ * single-stepped a copy of the instruction.  The address of this
-+ * copy is user_bkpt->xol_vaddr.
-+ *
-+ * This function prepares to resume execution after the single-step.
-+ * We have to fix things up as follows:
-+ *
-+ * Typically, the new ip is relative to the copied instruction.  We need
-+ * to make it relative to the original instruction (FIX_IP).  Exceptions
-+ * are return instructions and absolute or indirect jump or call instructions.
-+ *
-+ * If the single-stepped instruction was a call, the return address that
-+ * is atop the stack is the address following the copied instruction.  We
-+ * need to make it the address following the original instruction (FIX_CALL).
-+ *
-+ * If the original instruction was a rip-relative instruction such as
-+ * "movl %edx,0xnnnn(%rip)", we have instead executed an equivalent
-+ * instruction using a scratch register -- e.g., "movl %edx,(%rax)".
-+ * We need to restore the contents of the scratch register and adjust
-+ * the ip, keeping in mind that the instruction we executed is 4 bytes
-+ * shorter than the original instruction (since we squeezed out the offset
-+ * field).  (FIX_RIP_AX or FIX_RIP_CX)
-+ */
-+static int post_xol(struct task_struct *tsk, struct user_bkpt *user_bkpt,
-+		struct user_bkpt_task_arch_info *tskinfo, struct pt_regs *regs)
-+{
-+	/* Typically, the XOL vma is at a high addr, so correction < 0. */
-+	long correction = (long) (user_bkpt->vaddr - user_bkpt->xol_vaddr);
-+	int result = 0;
-+
-+#ifdef CONFIG_X86_64
-+	if (is_riprel_insn(user_bkpt)) {
-+		if (user_bkpt->fixups & USER_BKPT_FIX_RIP_AX)
-+			regs->ax = tskinfo->saved_scratch_register;
-+		else
-+			regs->cx = tskinfo->saved_scratch_register;
-+		/*
-+		 * The original instruction includes a displacement, and so
-+		 * is 4 bytes longer than what we've just single-stepped.
-+		 * Fall through to handle stuff like "jmpq *...(%rip)" and
-+		 * "callq *...(%rip)".
-+		 */
-+		correction += 4;
++	user_bkpt_strategies = USER_BKPT_HNT_TSKINFO;
++	ret = user_bkpt_init(&user_bkpt_strategies);
++	if (ret != 0) {
++		printk(KERN_ERR "Can't start uprobes: user_bkpt_init() returned %d\n",
++								ret);
++		return ret;
 +	}
-+#endif
-+	if (user_bkpt->fixups & USER_BKPT_FIX_IP)
-+		regs->ip += correction;
-+	if (user_bkpt->fixups & USER_BKPT_FIX_CALL)
-+		result = adjust_ret_addr(tsk, regs->sp, correction);
-+	return result;
++
++	register_die_notifier(&uprobes_exception_nb);
++	return 0;
 +}
 +
-+struct user_bkpt_arch_info user_bkpt_arch_info = {
-+	.bkpt_insn = 0xcc,
-+	.ip_advancement_by_bkpt_insn = 1,
-+	.max_insn_bytes = MAX_UINSN_BYTES,
-+#ifdef CONFIG_X86_32
-+	.strategies = 0x0,
-+#else
-+	/* rip-relative instructions require special handling. */
-+	.strategies = USER_BKPT_HNT_TSKINFO,
-+	.pre_xol = pre_xol,
-+	.cancel_xol = cancel_xol,
-+#endif
-+	.set_ip = set_ip,
-+	.analyze_insn = analyze_insn,
-+	.post_xol = post_xol,
-+};
++static void __exit exit_uprobes(void)
++{
++}
++
++module_init(init_uprobes);
++module_exit(exit_uprobes);
