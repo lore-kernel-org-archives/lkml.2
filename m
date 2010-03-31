@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230Ab0CaPwp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 11:52:45 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:42899 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756881Ab0CaPwm (ORCPT
+	id S932104Ab0CaPxJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 11:53:09 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:42973 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932136Ab0CaPxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 11:52:42 -0400
+	Wed, 31 Mar 2010 11:53:04 -0400
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>,
        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
@@ -19,64 +19,102 @@ Cc: Masami Hiramatsu <mhiramat@redhat.com>,
        Frederic Weisbecker <fweisbec@gmail.com>,
        "Frank Ch. Eigler" <fche@redhat.com>,
        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 31 Mar 2010 21:22:38 +0530
-Message-Id: <20100331155238.4181.65911.sendpatchset@localhost6.localdomain6>
+Date: Wed, 31 Mar 2010 21:22:58 +0530
+Message-Id: <20100331155258.4181.83725.sendpatchset@localhost6.localdomain6>
 In-Reply-To: <20100331155106.4181.50759.sendpatchset@localhost6.localdomain6>
 References: <20100331155106.4181.50759.sendpatchset@localhost6.localdomain6>
-Subject: [PATCH v2 8/11] X86 details for uprobes.
+Subject: [PATCH v2 10/11] Uprobes samples.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-X86 support for Uprobes
+Uprobes Samples
 
-This patch provides x86 specific details for uprobes.
-This includes interrupt notifier for uprobes, enabling/disabling
-singlestep.
+This provides an example uprobes module in the samples directory.
+
+To run this module run (as root)
+ insmod uprobe_example.ko vaddr=<vaddr> pid=<pid>
+	 Where <vaddr> is the address where we want to place the probe.
+		<pid> is the pid of the process we are interested to probe.
+
+ example: -
+# cd samples/uprobes
+
+[get the virtual address to place the probe.]
+# vaddr=0x$(objdump -T /bin/bash |awk '/echo_builtin/ {print $1}')
+
+[Run a bash shell in the background; have it echo 4 lines.]
+# (sleep 10; echo 1; echo 2; echo 3; echo 4) &
+[Probe calls echo_builtin() in the background bash process.]
+
+# insmod uprobe_example.ko vaddr=$vaddr pid=$!
+# sleep 10
+# rmmod uprobe_example
+# dmesg | tail -n 3
+Registering uprobe on pid 10875, vaddr 0x45aa30
+Unregistering uprobe on pid 10875, vaddr 0x45aa30
+Probepoint was hit 4 times
+#
+[ Output shows that echo_builtin function was hit 4 times. ]
 
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 ---
 
- arch/x86/Kconfig          |    1 +
- arch/x86/kernel/Makefile  |    1 +
- arch/x86/kernel/uprobes.c |   87 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 89 insertions(+), 0 deletions(-)
- create mode 100644 arch/x86/kernel/uprobes.c
+ samples/Kconfig                  |    7 +++
+ samples/uprobes/Makefile         |   17 ++++++++
+ samples/uprobes/uprobe_example.c |   83 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 107 insertions(+), 0 deletions(-)
+ create mode 100644 samples/uprobes/Makefile
+ create mode 100644 samples/uprobes/uprobe_example.c
 
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 851cedc..a860a9b 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -54,6 +54,7 @@ config X86
- 	select HAVE_KERNEL_LZO
- 	select HAVE_HW_BREAKPOINT
- 	select HAVE_USER_BKPT
-+	select HAVE_UPROBES
- 	select PERF_EVENTS
- 	select ANON_INODES
- 	select HAVE_ARCH_KMEMCHECK
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 98c74b4..bfa48f0 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -118,6 +118,7 @@ obj-$(CONFIG_X86_CHECK_BIOS_CORRUPTION) += check.o
- obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
+diff --git a/samples/Kconfig b/samples/Kconfig
+index 8924f72..50b8b1c 100644
+--- a/samples/Kconfig
++++ b/samples/Kconfig
+@@ -44,4 +44,11 @@ config SAMPLE_HW_BREAKPOINT
+ 	help
+ 	  This builds kernel hardware breakpoint example modules.
  
- obj-$(CONFIG_USER_BKPT)			+= user_bkpt.o
-+obj-$(CONFIG_UPROBES)			+= uprobes.o
- 
- ###
- # 64 bit specific files
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
++config SAMPLE_UPROBES
++	tristate "Build uprobes example -- loadable module only"
++	depends on UPROBES && m
++	help
++	  This builds uprobes example module.
++
++
+ endif # SAMPLES
+diff --git a/samples/uprobes/Makefile b/samples/uprobes/Makefile
 new file mode 100644
-index 0000000..1acce22
+index 0000000..f535f6f
 --- /dev/null
-+++ b/arch/x86/kernel/uprobes.c
-@@ -0,0 +1,87 @@
++++ b/samples/uprobes/Makefile
+@@ -0,0 +1,17 @@
++# builds the uprobes example kernel modules;
++# then to use one (as root):
++# insmod <module_name.ko> vaddr=<vaddr> pid=<pid>
++#
++#
++# example: -
++# vaddr=0x$(objdump -T /bin/bash |awk '/echo_builtin/ print $1}')
++# (sleep 10; echo 1; echo 2; echo 3; echo 4) &
++# insmod uprobe_example.ko vaddr=$vaddr pid=$!
++# sleep 10
++# rmmod uprobe_example
++# dmesg | tail -n 3
++#	Registering uprobe on pid 3920, vaddr 0x45aa30
++#	Unregistering uprobe on pid 3920, vaddr 0x45aa30
++#	Probepoint was hit 4 times
++
++obj-$(CONFIG_SAMPLE_UPROBES) += uprobe_example.o
+diff --git a/samples/uprobes/uprobe_example.c b/samples/uprobes/uprobe_example.c
+new file mode 100644
+index 0000000..f625bae
+--- /dev/null
++++ b/samples/uprobes/uprobe_example.c
+@@ -0,0 +1,83 @@
 +/*
-+ *  Userspace Probes (UProbes)
++ * Uprobes Example
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -92,73 +130,69 @@ index 0000000..1acce22
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 + *
-+ * Copyright (C) IBM Corporation, 2010
++ * Copyright (C) IBM Corporation, 2008-2010
 + * Authors:
 + *	Srikar Dronamraju
-+ *	Ananth N Mavinakayanahalli
++ *	Jim Keniston
 + */
 +
-+#include <linux/sched.h>
-+#include <linux/kdebug.h>
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
 +#include <linux/uprobes.h>
 +
 +/*
-+ * Wrapper routine for handling exceptions.
++ * Usage: insmod uprobe_example.ko pid=<pid> vaddr=<address> [verbose=0]
++ * where <pid> identifies the probed process and <address> is the virtual
++ * address of the probed instruction.
 + */
-+int uprobes_exception_notify(struct notifier_block *self,
-+				       unsigned long val, void *data)
++
++static int pid;
++module_param(pid, int, 0);
++MODULE_PARM_DESC(pid, "pid");
++
++static int verbose;
++module_param(verbose, int, 0);
++MODULE_PARM_DESC(verbose, "verbose");
++
++static long vaddr;
++module_param(vaddr, long, 0);
++MODULE_PARM_DESC(vaddr, "vaddr");
++
++static int nhits;
++static struct uprobe usp;
++
++static void uprobe_handler(struct uprobe *u, struct pt_regs *regs)
 +{
-+	struct die_args *args = data;
-+	struct pt_regs *regs = args->regs;
-+	int ret = NOTIFY_DONE;
++	nhits++;
++	if (verbose)
++		printk(KERN_INFO "Hit #%d on probepoint at %#lx\n",
++			nhits, u->vaddr);
++}
 +
-+	/* We are only interested in userspace traps */
-+	if (regs && !user_mode_vm(regs))
-+		return NOTIFY_DONE;
-+
-+	switch (val) {
-+	case DIE_INT3:
-+		/* Run your handler here */
-+		if (uprobe_bkpt_notifier(regs))
-+			ret = NOTIFY_STOP;
-+		break;
-+	case DIE_DEBUG:
-+		if (uprobe_post_notifier(regs))
-+			ret = NOTIFY_STOP;
-+	default:
-+		break;
++int __init init_module(void)
++{
++	int ret;
++	usp.pid = pid;
++	usp.vaddr = vaddr;
++	usp.handler = uprobe_handler;
++	printk(KERN_INFO "Registering uprobe on pid %d, vaddr %#lx\n",
++		usp.pid, usp.vaddr);
++	ret = register_uprobe(&usp);
++	if (ret != 0) {
++		printk(KERN_ERR "register_uprobe() failed, returned %d\n", ret);
++		printk(KERN_ERR "Usage: insmod uprobe_example.ko pid=<pid> "
++						"vaddr=<address>\n");
++		return ret;
 +	}
-+	return ret;
++	return 0;
 +}
 +
-+void arch_uprobe_enable_sstep(struct pt_regs *regs)
++void __exit cleanup_module(void)
 +{
-+	/*
-+	 * Enable single-stepping by
-+	 * - Set TF on stack
-+	 * - Set TIF_SINGLESTEP: Guarantees that TF is set when
-+	 *	returning to user mode.
-+	 *  - Indicate that TF is set by us.
-+	 */
-+	regs->flags |= X86_EFLAGS_TF;
-+	set_thread_flag(TIF_SINGLESTEP);
-+	set_thread_flag(TIF_FORCED_TF);
++	printk(KERN_INFO "Unregistering uprobe on pid %d, vaddr %#lx\n",
++		usp.pid, usp.vaddr);
++	printk(KERN_INFO "Probepoint was hit %d times\n", nhits);
++	unregister_uprobe(&usp);
 +}
-+
-+void arch_uprobe_disable_sstep(struct pt_regs *regs)
-+{
-+		/* Disable single-stepping by clearing what we set */
-+		clear_thread_flag(TIF_SINGLESTEP);
-+		clear_thread_flag(TIF_FORCED_TF);
-+		regs->flags &= ~X86_EFLAGS_TF;
-+}
-+
-+void uprobe_enable_interrupts(void)
-+{
-+	native_irq_enable();
-+}
-+
-+void uprobe_disable_interrupts(void)
-+{
-+	native_irq_disable();
-+}
++MODULE_LICENSE("GPL");
