@@ -1,64 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758156Ab0CaUhW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 16:37:22 -0400
-Received: from kroah.org ([198.145.64.141]:46670 "EHLO coco.kroah.org"
+	id S1758166Ab0CaUhs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 16:37:48 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:45823 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757954Ab0CaUhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 16:37:20 -0400
-Date: Wed, 31 Mar 2010 13:34:47 -0700
-From: Greg KH <greg@kroah.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Linux PCI <linux-pci@vger.kernel.org>, Greg KH <gregkh@suse.de>,
-       Clemens Ladisch <clemens@ladisch.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Alex Deucher <alexdeucher@gamil.com>, dri-devel@lists.sourceforge.net,
-       Dave Airlie <airlied@gmail.com>, stable@kernel.org
-Subject: Re: [stable] [Regression, post-rc2] Commit a5ee4eb7541 breaks
-	OpenGL on RS780 (was: Re: Linux 2.6.34-rc3)
-Message-ID: <20100331203447.GA13360@kroah.com>
-References: <alpine.LFD.2.00.1003301029250.3707@i5.linux-foundation.org> <201003302316.45651.rjw@sisk.pl>
+	id S1757954Ab0CaUhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 16:37:46 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg KH <gregkh@suse.de>
+Subject: Re: [091/156] PCI quirk: RS780/RS880: work around missing MSI initialization
+Date: Wed, 31 Mar 2010 22:40:39 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk, Clemens Ladisch <clemens@ladisch.de>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+References: <20100330224821.025709984@linux.site>
+In-Reply-To: <20100330224821.025709984@linux.site>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201003302316.45651.rjw@sisk.pl>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003312240.39444.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 11:16:45PM +0200, Rafael J. Wysocki wrote:
-> On Tuesday 30 March 2010, Linus Torvalds wrote:
-> ...
-> > Other than that? Random fixes and updates all over. Mostly drivers and 
-> > filesystems, and mostly fairly small things. If you had PCI resource 
-> > conflict problems with the early -rc's due to the _CRS window thing, for 
-> > example, that should hopefully be fixed. See the appended shortlog for 
-> > other details.
-> 
-> ...
-> 
-> > Clemens Ladisch (4):
-> >       firewire: core: fw_iso_resource_manage: fix error handling
-> >       firewire: ohci: add cycle timer quirk for the TI TSB12LV22
-> >       ALSA: cmipci: work around invalid PCM pointer
-> >       PCI quirk: RS780/RS880: work around missing MSI initialization
-> 
-> This one (commit a5ee4eb7541) broke OpenGL acceleration on my new test box
-> which happens to have a RS780.
-> 
-> The symptom is that every operation involving the GPU is _very_ slow, so the
-> window manager eventually disables compositing.  Reverting this commit makes
-> things work flawlessly again.
-> 
-> So, please revert.
-> 
-> BTW, I don't think it's a -stable material.
+On Wednesday 31 March 2010, Greg KH wrote:
+> 2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
-Ok, I'll go drop it.
+I do, this one causes a regression to happen on my test box.
 
-thanks,
+Rafael
 
-greg k-h
+
+> ------------------
+> 
+> From: Clemens Ladisch <clemens@ladisch.de>
+> 
+> commit a5ee4eb75413c145334c30e43f1af9875dad6fd7 upstream.
+> 
+> AMD says in section 2.5.4 (GFX MSI Enable) of #43291 (AMD 780G Family
+> Register Programming Requirements):
+> 
+>   The SBIOS must enable internal graphics MSI capability in GCCFG by
+>   setting the following: NBCFG.NB_CNTL.STRAP_MSI_ENABLE='1'
+> 
+> Quite a few BIOS writers misinterpret this sentence and think that
+> enabling MSI is an optional feature.  However, clearing that bit just
+> prevents delivery of MSI messages but does not remove the MSI PCI
+> capabilities registers, and so leaves these devices unusable for any
+> driver that attempts to use MSI.
+> 
+> Setting that bit is not possible after the BIOS has locked down the
+> configuration registers, so we have to manually disable MSI for the
+> affected devices.
+> 
+> This fixes the codec communication errors in the HDA driver when
+> accessing the HDMI audio device, and allows us to get rid of the
+> overcautious quirk in radeon_irq_kms.c.
+> 
+> Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+> Tested-by: Alex Deucher <alexdeucher@gamil.com>
+> Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> ---
+>  drivers/gpu/drm/radeon/radeon_irq_kms.c |    8 -------
+>  drivers/pci/quirks.c                    |   33 ++++++++++++++++++++++++++++++++
+>  2 files changed, 34 insertions(+), 7 deletions(-)
+> 
+> --- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
+> +++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+> @@ -116,13 +116,7 @@ int radeon_irq_kms_init(struct radeon_de
+>  	}
+>  	/* enable msi */
+>  	rdev->msi_enabled = 0;
+> -	/* MSIs don't seem to work on my rs780;
+> -	 * not sure about rs880 or other rs780s.
+> -	 * Needs more investigation.
+> -	 */
+> -	if ((rdev->family >= CHIP_RV380) &&
+> -	    (rdev->family != CHIP_RS780) &&
+> -	    (rdev->family != CHIP_RS880)) {
+> +	if (rdev->family >= CHIP_RV380) {
+>  		int ret = pci_enable_msi(rdev->pdev);
+>  		if (!ret) {
+>  			rdev->msi_enabled = 1;
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -2484,6 +2484,39 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AT
+>  DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, 0x4375,
+>  			quirk_msi_intx_disable_bug);
+>  
+> +/*
+> + * MSI does not work with the AMD RS780/RS880 internal graphics and HDMI audio
+> + * devices unless the BIOS has initialized the nb_cntl.strap_msi_enable bit.
+> + */
+> +static void __init rs780_int_gfx_disable_msi(struct pci_dev *int_gfx_bridge)
+> +{
+> +	u32 nb_cntl;
+> +
+> +	if (!int_gfx_bridge->subordinate)
+> +		return;
+> +
+> +	pci_bus_write_config_dword(int_gfx_bridge->bus, PCI_DEVFN(0, 0),
+> +				   0x60, 0);
+> +	pci_bus_read_config_dword(int_gfx_bridge->bus, PCI_DEVFN(0, 0),
+> +				  0x64, &nb_cntl);
+> +
+> +	if (!(nb_cntl & BIT(10))) {
+> +		dev_warn(&int_gfx_bridge->dev,
+> +			 FW_WARN "RS780: MSI for internal graphics disabled\n");
+> +		int_gfx_bridge->subordinate->bus_flags |= PCI_BUS_FLAGS_NO_MSI;
+> +	}
+> +}
+> +
+> +#define PCI_DEVICE_ID_AMD_RS780_P2P_INT_GFX	0x9602
+> +
+> +DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD,
+> +			PCI_DEVICE_ID_AMD_RS780_P2P_INT_GFX,
+> +			rs780_int_gfx_disable_msi);
+> +/* wrong vendor ID on M4A785TD motherboard: */
+> +DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ASUSTEK,
+> +			PCI_DEVICE_ID_AMD_RS780_P2P_INT_GFX,
+> +			rs780_int_gfx_disable_msi);
+> +
+>  #endif /* CONFIG_PCI_MSI */
+>  
+>  #ifdef CONFIG_PCI_IOV
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+
