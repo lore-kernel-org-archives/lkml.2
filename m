@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009Ab0CaCP6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 22:15:58 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53332 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755972Ab0CaCP4 (ORCPT
+	id S1758019Ab0CaCQb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 22:16:31 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56739 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758002Ab0CaCQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 22:15:56 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 31 Mar 2010 11:12:02 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       "Michael S. Tsirkin" <mst@redhat.com>, cl@linux-foundation.org,
-       lee.schermerhorn@hp.com, rientjes@google.com,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-       "David S. Miller" <davem@davemloft.net>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, Troels Liebe Bentsen <tlb@rapanden.dk>,
-       linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH] exit: fix oops in sync_mm_rss
-Message-Id: <20100331111202.a94b233a.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <z2t28c262361003301857l77db88dbv7d025b5c5947ad72@mail.gmail.com>
-References: <20100316170808.GA29400@redhat.com>
-	<20100330135634.09e6b045.akpm@linux-foundation.org>
-	<20100331092815.c8b9d89c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100330173721.cbd442cb.akpm@linux-foundation.org>
-	<20100331094124.43c49290.kamezawa.hiroyu@jp.fujitsu.com>
-	<z2t28c262361003301857l77db88dbv7d025b5c5947ad72@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Mar 2010 22:16:28 -0400
+Date: Wed, 31 Mar 2010 04:16:26 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.34-rc3
+Message-ID: <20100331021626.GB3520@pengutronix.de>
+References: <4BB24E5F.3030703@lwfinger.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="s2ZSL+KKDSLx8OML"
+Content-Disposition: inline
+In-Reply-To: <4BB24E5F.3030703@lwfinger.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Mar 2010 10:57:18 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
 
-> On Wed, Mar 31, 2010 at 9:41 AM, KAMEZAWA Hiroyuki
-
-> > Doesn't make sense ?
-> >
-> 
-> Nitpick.
-> How about moving sync_mm_rss into after check !mm of exit_mm?
-> 
-Hmm.
-==
-        sync_mm_rss(tsk, tsk->mm);
-        group_dead = atomic_dec_and_test(&tsk->signal->live);
-        if (group_dead) {
-                hrtimer_cancel(&tsk->signal->real_timer);
-                exit_itimers(tsk->signal);
-                if (tsk->mm)
-                        setmax_mm_hiwater_rss(&tsk->signal->maxrss, tsk->mm); ---(**)
-        }
-        acct_collect(code, group_dead);
-        if (group_dead)
-                tty_audit_exit();
-        if (unlikely(tsk->audit_context))
-                audit_free(tsk);
-
-        tsk->exit_code = code;
-        taskstats_exit(tsk, group_dead); --------(*)
-	
-        exit_mm(tsk);
-==
-task_acct routine has to handle mm information (*).
-So, we have to sync somewhere before exit_mm() or tsk->mm goes to NULL.
-
-I think taskstat is an only acct hook which gatheres mm's rss information
-but I placed sync_mm_rss() before all accounting routine.
-Anyway, sync_mm_rss() should be before (**)
-setmax_mm_hiwater_rss(&tsk->signal->maxrss, tsk->mm);
-
-Thanks,
--Kame 
+--s2ZSL+KKDSLx8OML
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
 
+> Remember our old friend? See also
+> http://lkml.indiana.edu/hypermail/linux/kernel/1003.1/02769.html and a lo=
+ng
 
+There is a patch available:
 
+https://patchwork.kernel.org/patch/87436/
+(or https://bugzilla.kernel.org/show_bug.cgi?id=3D15548)
+
+Seems it was jussed missed.
+
+> related discussion at
+> http://lkml.indiana.edu/hypermail/linux/kernel/1003.1/02772.html.
+
+The firmware bug should be gone, but there is also
+
+https://patchwork.kernel.org/patch/87359/
+
+pointing out a few more potential issues. I will resend it without the
+thermal_sys-part and hope I'll get some comments.
+
+Kind regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--s2ZSL+KKDSLx8OML
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkuysHoACgkQD27XaX1/VRsAUwCfdKkA8JF7NyN90SB+Fy4pQnbw
+5fEAn3OAs1xtskqESV3jdq536o1u0xRH
+=vzUP
+-----END PGP SIGNATURE-----
+
+--s2ZSL+KKDSLx8OML--
