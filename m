@@ -1,73 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab0CaVON (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 17:14:13 -0400
-Received: from mail-iw0-f202.google.com ([209.85.223.202]:35547 "EHLO
-	mail-iw0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932141Ab0CaVOL (ORCPT
+	id S932369Ab0CaVOk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 17:14:40 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:22820 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932329Ab0CaVOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 17:14:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=H7f11CbEvlenW+Gk8NtWBKDjyF8FKeHWkBtiU6AhA2WHUmO5Avb2mBVgLO7hJ/MNWZ
-         7trY5VESYjsYf4S78lgXa9THDXKWDCEm1EuU3ehOqd1b9I/QCFQZeK6WJmFV+ejcvrmY
-         Io6BCpuE41naD1FQhG/cLAwEgSRXFI5rYDPa0=
+	Wed, 31 Mar 2010 17:14:38 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=etMp4nSqpBnOgSoQZrd/YxLQOE7KjJVKU6iipTbYwdpIJIZXxO4w/Q4n0RRf9G9lV
+	x0br5qEpkQy95C8b8Gk4A==
+Date: Wed, 31 Mar 2010 14:14:32 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm] proc: don't take ->siglock for /proc/pid/oom_adj
+In-Reply-To: <20100331185950.GB11635@redhat.com>
+Message-ID: <alpine.DEB.2.00.1003311408520.31252@chino.kir.corp.google.com>
+References: <20100326150805.f5853d1c.akpm@linux-foundation.org> <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com>
+ <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330163909.GA16884@redhat.com> <20100330174337.GA21663@redhat.com> <alpine.DEB.2.00.1003301329420.5234@chino.kir.corp.google.com> <20100331185950.GB11635@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20100331185916.GA12306@elte.hu>
-References: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org>
-	 <4BB2EB1B.8090303@zytor.com>
-	 <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org>
-	 <20100331185916.GA12306@elte.hu>
-Date: Thu, 1 Apr 2010 07:14:08 +1000
-Message-ID: <r2h21d7e9971003311414pc38f5bebk1778a01872657395@mail.gmail.com>
-Subject: Re: Config NO_BOOTMEM breaks my amd64 box
-From: Dave Airlie <airlied@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: James Morris <jmorris@namei.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-       airlied@linux.ie, Thomas Gleixner <tglx@linutronix.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 1, 2010 at 4:59 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * James Morris <jmorris@namei.org> wrote:
->
->> On Tue, 30 Mar 2010, H. Peter Anvin wrote:
->>
->> > On 03/30/2010 09:49 PM, James Morris wrote:
->> > >
->> > > Please make NO_BOOTMEM default to n, at least for amd64, where I've found
->> > > that it leads to all kinds of strange, undebuggable boot hangs and errors
->> > > (with relatively current Fedora development userland).
->> >
->> > Have you tested it with the latest fixes that are now in Linus' tree (-rc3)?
->>
->> Yes, it was happening with -rc3.
->
-> Could you please send the bootlog that Yinghai asked for, plus also one that
-> you get with NO_BOOTMEM turned off (for comparison)?
->
-> Also, when did you first hit this bug? This code has been upstream for almost
-> a month, and it was in linux-next before that - so you should have hit this
-> much sooner. A rough timeframe would suffice. I suppose you were booting
-> upstream kernels during the merge window as well?
->
-> We can flip the default around if there's no fix available based on the
-> bootlogs. (Plus the help text should definitely be improved.)
->
+On Wed, 31 Mar 2010, Oleg Nesterov wrote:
 
-Are you testing this btw with initramfs/initrds? I suspect lots of testing
-is being done by people on monolithic kernels, this is just a misc guess,
-considering I couldn't boot from when this landed until rc3 with this option
-on a basic 32-bit install on a dual-core 64-bit CPU, it suggested a
-hole of some sort
-in the test coverage.
+> David, I just can't understand why
+> 	oom-badness-heuristic-rewrite.patch
+> duplicates the related code in fs/proc/base.c and why it preserves
+> the deprecated signal->oom_adj.
+> 
 
-Dave
+You could combine the two write functions together and then two read 
+functions together if you'd like.
+
+> OK. Please forget about lock_task_sighand/signal issues. Can't we kill
+> signal->oom_adj and create a single helper for both
+> /proc/pid/{oom_adj,oom_score_adj} ?
+> 
+> 	static ssize_t oom_any_adj_write(struct file *file, const char __user *buf,
+> 						size_t count, bool deprecated_mode)
+> 	{
+> 		struct task_struct *task;
+> 		char buffer[PROC_NUMBUF];
+> 		unsigned long flags;
+> 		long oom_score_adj;
+> 		int err;
+> 
+> 		memset(buffer, 0, sizeof(buffer));
+> 		if (count > sizeof(buffer) - 1)
+> 			count = sizeof(buffer) - 1;
+> 		if (copy_from_user(buffer, buf, count))
+> 			return -EFAULT;
+> 
+> 		err = strict_strtol(strstrip(buffer), 0, &oom_score_adj);
+> 		if (err)
+> 			return -EINVAL;
+> 
+> 		if (depraceted_mode) {
+> 			 if (oom_score_adj == OOM_ADJUST_MAX)
+> 				oom_score_adj = OOM_SCORE_ADJ_MAX;
+
+???
+
+> 			 else
+> 				oom_score_adj = (oom_score_adj * OOM_SCORE_ADJ_MAX) /
+> 						-OOM_DISABLE;
+> 		}
+> 
+> 		if (oom_score_adj < OOM_SCORE_ADJ_MIN ||
+> 				oom_score_adj > OOM_SCORE_ADJ_MAX)
+
+That doesn't work for depraceted_mode (sic), you'd need to test for 
+OOM_ADJUST_MIN and OOM_ADJUST_MAX in that case.
+
+> 			return -EINVAL;
+> 
+> 		task = get_proc_task(file->f_path.dentry->d_inode);
+> 		if (!task)
+> 			return -ESRCH;
+> 		if (!lock_task_sighand(task, &flags)) {
+> 			put_task_struct(task);
+> 			return -ESRCH;
+> 		}
+> 		if (oom_score_adj < task->signal->oom_score_adj &&
+> 				!capable(CAP_SYS_RESOURCE)) {
+> 			unlock_task_sighand(task, &flags);
+> 			put_task_struct(task);
+> 			return -EACCES;
+> 		}
+> 
+> 		task->signal->oom_score_adj = oom_score_adj;
+> 
+> 		unlock_task_sighand(task, &flags);
+> 		put_task_struct(task);
+> 		return count;
+> 	}
+> 
+
+There have been efforts to reuse as much of this code as possible for 
+other sysctl handlers as well, you might be better off looking for other 
+users of the common read and write code and then merging them first 
+(comm_write, proc_coredump_filter_write, etc).
