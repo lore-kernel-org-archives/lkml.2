@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757601Ab0CaXe3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 19:34:29 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:64948 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750842Ab0CaXe1 convert rfc822-to-8bit (ORCPT
+	id S1757209Ab0CaXfz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 19:35:55 -0400
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:12010 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753317Ab0CaXfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 19:34:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nlVXUQexCMeb5ldx4RVz89gRm+w4vIh/qiixp9k/e/wPeTiiqhx1wFlsNcwdzh57io
-         yhVGDhUozXNBUDrPq1XLZyP+x5pNUE+IKuGlOwydfAbQgVYAApzcmJGmpXlHsPyaT/uF
-         3NsEKomyROkLo4NyK5kMB0VwunbmCRHnUqoc4=
+	Wed, 31 Mar 2010 19:35:54 -0400
+Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAMZ4s0urR7Ht/2dsb2JhbACbOXGbZpkchQAEgyM
+X-IronPort-AV: E=Sophos;i="4.51,344,1267401600"; 
+   d="scan'208";a="506367718"
+From: Roland Dreier <rdreier@cisco.com>
+To: Darren Hart <dvhltc@us.ibm.com>
+Cc: "lkml\, " <linux-kernel@vger.kernel.org>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Peter Morreale <pmorreale@novell.com>,
+       Chris Wright <chrisw@sous-sol.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: RFC: Ideal Adaptive Spinning Conditions
+References: <4BB3D90C.3030108@us.ibm.com>
+X-Message-Flag: Warning: May contain useful information
+Date: Wed, 31 Mar 2010 16:35:53 -0700
+In-Reply-To: <4BB3D90C.3030108@us.ibm.com> (Darren Hart's message of "Wed, 31
+	Mar 2010 16:21:48 -0700")
+Message-ID: <adaeij0gj3a.fsf@roland-alpha.cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <577FAEEB8540FB4F9C91B6BB262576755905DC@XVS-DCFR-22.europe.corp.altran.com>
-References: <AcrQ47RPeBz4nhRMR9ORyzmB2isxaQ==>
-	 <577FAEEB8540FB4F9C91B6BB262576755905DC@XVS-DCFR-22.europe.corp.altran.com>
-Date: Thu, 1 Apr 2010 01:34:24 +0200
-Message-ID: <x2y63386a3d1003311634l71486234n95f60e506b776948@mail.gmail.com>
-Subject: Re: [PATCH] Arm nomadik : Vendor tool compatibility
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Lemetayer Jean Marie <jeanmarie.lemetayer@altran.com>
-Cc: linux@arm.linux.org.uk, dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/3/31 Lemetayer Jean Marie <jeanmarie.lemetayer@altran.com>:
+ > I'm looking at some adaptive spinning with futexes as a way to help
+ > reduce the dependence on sched_yield() to implement userspace
+ > spinlocks. Chris, I included you in the CC after reading your comments
+ > regarding sched_yield() at kernel summit and I thought you might be
+ > interested.
 
-> +#ifdef CONFIG_VENDOR_TOOL_COMPATIBILITY
-> +static struct nand_ecclayout nomadik_ecc_layout = {
-> +       .eccbytes = 3 * 4,
-> +       .eccpos = {
-> +               0x28, 0x29, 0x2A,
-> +               0x2B, 0x2C, 0x2D,
-> +               0x2E, 0x2F, 0x30,
-> +               0x31, 0x32, 0x33},
-> +       .oobfree = {{0x02, 0x26}, {0x34, 0x0C} },
-> +};
-> +#else
->  static struct nand_ecclayout nomadik_ecc_layout = {
->         .eccbytes = 3 * 4,
->         .eccpos = { /* each subpage has 16 bytes: pos 2,3,4 hosts ECC */
-> @@ -54,6 +65,7 @@ static struct nand_ecclayout nomadik_ecc_layout = {
->         /* let's keep bytes 5,6,7 for us, just in case we change ECC algo */
->         .oobfree = { {0x08, 0x08}, {0x18, 0x08}, {0x28, 0x08}, {0x38, 0x08}
-> },
->  };
-> +#endif
-
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
-
-I don't think any of this layout belongs in the driver itself frankly speaking,
-I am facing the need to use this in U300 and we use yet *another*
-ECC layout with the FSMC, so we have to add yet another #ifdef.
-However I can fix that up with a patch on top of this one after it's
-queued.
-
-Yours,
-Linus Walleij
+I think you may have the wrong Chris.  Chris Wright wasn't at the most
+recent kernel summit and I do have a vague recollection of Chris Mason
+mentioning that Oracle developers found that sched_yield() performed
+better than futexes + kernel scheduling.
+-- 
+Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
+http://www.cisco.com/web/about/doing_business/legal/cri/index.html
