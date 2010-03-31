@@ -1,72 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933309Ab0CaNMI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 09:12:08 -0400
-Received: from ey-out-2122.google.com ([74.125.78.26]:33213 "EHLO
-	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933291Ab0CaNMD (ORCPT
+	id S933330Ab0CaNbG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 09:31:06 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:49384 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757682Ab0CaNbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 09:12:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
-         :mime-version:content-type:content-transfer-encoding;
-        b=NQ78bsKhCLzsDUXmCbE+vlnz9AiaSKnBFwmgNvi4BFwF40xyXOXIGJ+GEm5uVVl2dX
-         I3ZBKq7NISfUa3SheLMg5UCusFk+rTNX0xLya4KxC0g+ujNbJ9iNCx1KMIInLfnVXjf0
-         BbkSMYTDkW28+YT5W5Zvd62Is600XASVUxtjI=
-Date: Wed, 31 Mar 2010 16:11:53 +0300
-From: Jarkko Nikula <jhnikula@gmail.com>
-To: kishore kadiyala <kishorek.kadiyala@gmail.com>
-Cc: Vimal Singh <vimal.newwork@gmail.com>, Madhusudhan <madhu.cr@ti.com>,
-       tony@atomide.com, svenkatr@ti.com, linux-omap@vger.kernel.org,
-       linux-kernel@vger.kernel.org, jarkko.lavinen@nokia.com
-Subject: Re: [PATCH-V2] OMAP: Fix for bus width which improves SD card's 
- peformance.
-Message-Id: <20100331161153.73d687ee.jhnikula@gmail.com>
-In-Reply-To: <h2p7f9d1ffb1003310003z508e21dbqe37b6e1cad425866@mail.gmail.com>
-References: <35697.192.168.10.89.1265898023.squirrel@dbdmail.itg.ti.com>
-	<004701caab40$68b576e0$544ff780@am.dhcp.ti.com>
-	<x2q7f9d1ffb1003302307nb8e91be0o55da59c3375f1720@mail.gmail.com>
-	<v2yce9ab5791003302327hc67deb3akc7d18146534038f9@mail.gmail.com>
-	<h2p7f9d1ffb1003310003z508e21dbqe37b6e1cad425866@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.0 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 31 Mar 2010 09:31:04 -0400
+Date: Wed, 31 Mar 2010 09:31:00 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
+       laijs@cn.fujitsu.com, dipankar@in.ibm.com, josh@joshtriplett.org,
+       dvhltc@us.ibm.com, niv@us.ibm.com, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+       eric.dumazet@gmail.com, adobriyan@gmail.com,
+       "David S. Miller" <davem@davemloft.net>
+Subject: Re: [patch 1/5] Debugobjects transition check
+Message-ID: <20100331133100.GA25453@Krystal>
+References: <20100329143405.252313609@efficios.com> <20100329143701.765545140@efficios.com> <alpine.LFD.2.00.1003301819060.32352@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1003301819060.32352@localhost.localdomain>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 09:29:25 up 67 days, 16:06,  3 users,  load average: 0.00, 0.02,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Mar 2010 12:33:01 +0530
-kishore kadiyala <kishorek.kadiyala@gmail.com> wrote:
-
-> This patch improves low speeds for SD cards.
-> OMAP-MMC controller's can support maximum bus width of '8'.
-> when bus width is mentioned as "8" in controller data,the SD
-> stack will check whether bus width is "4" and if not it will
-> set bus width to "1" and there by degrading performance.
-> This patch fixes the issue and improves the performance of
-> SD cards.
+* Thomas Gleixner (tglx@linutronix.de) wrote:
+> On Mon, 29 Mar 2010, Mathieu Desnoyers wrote:
 > 
-> Signed-off-by: Kishore Kadiyala <kishore.kadiyala@ti.com>
-> Signed-off-by: Venkatraman S <svenkatr@ti.com>
-> Acked-by: Madhusudhan Chikkature <madhu.cr@ti.com>
+> > Implement a basic state machine checker in the debugobjects.
 > 
-> ---
-> In V2 : Appended Signed-off by Venkat and Ack by Madhu
+> Can you please add some real explanation how that checker works and
+> why we want to have it ?
+
+We can add this to the changelog. Is it worth it to create a Documentation file
+for it ?
+
+
+This state machine checker detects races and inconsistencies within the "active"
+life of a debugobject. The checker only keeps track of the current state; all
+the state machine logic is kept at the object instance level.
+
+The checker works by adding a supplementary "unsigned int astate" field to the
+debug_obj structure. It keeps track of the current "active state" of the object.
+
+The only constraints that are imposed on the states by the debugobjects system
+is that:
+
+- activation of an object sets the current active state to 0,
+- deactivation of an object expects the current active state to be 0.
+
+For the rest of the states, the state mapping is determined by the specific
+object instance. Therefore, the logic keeping track of the state machine is
+within the specialized instance, without any need to know about it at the
+debugobject level.
+
+The current object active state is changed by calling:
+
+debug_object_active_state(addr, descr, expect, next)
+
+where "expect" is the expected state and "next" is the next state to move to if
+the expected state is found. A warning is generated if the expected is not
+found.
+
+
+Thanks,
+
+Mathieu
+
 > 
->  Here are my experiment numbers, on a Class 6 SDHC card:
->  Read peformance is increased by 220%
->  Write Performance is increased by 52%
+> Thanks,
 > 
-Some results from the BeagleBoard and 2 GB SD card:
+> 	tglx
+> 
+> 
+> 
 
-sync; time (dd if=/dev/zero of=`date +%s`.bin bs=1M count=100; sync)
--> ~40 % improvement over 4 writes.
-
-time dd if=12700xxxxx.bin of=/dev/null
--> ~96 % improvement over 4 reads.
-
-Feel free to add my tested-by.
-
-Tested-by: Jarkko Nikula <jhnikula@gmail.com>
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
