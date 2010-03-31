@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932871Ab0CaGqM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 02:46:12 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34484
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757401Ab0CaGqL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 02:46:11 -0400
-Date: Tue, 30 Mar 2010 23:46:11 -0700 (PDT)
-Message-Id: <20100330.234611.50622716.davem@davemloft.net>
-To: wg@grandegger.com
-Cc: iws@ovro.caltech.edu, linux-kernel@vger.kernel.org,
-       socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-       sameo@linux.intel.com
-Subject: Re: [PATCH 2/3] can: add support for Janz VMOD-ICAN3 Intelligent
- CAN module
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4BB1B2DA.60002@grandegger.com>
-References: <1269881932-3803-3-git-send-email-iws@ovro.caltech.edu>
-	<4BB1B2DA.60002@grandegger.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S932908Ab0CaGqs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 02:46:48 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42787 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757341Ab0CaGqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 02:46:46 -0400
+Message-ID: <4BB2F083.1050803@kernel.org>
+Date: Wed, 31 Mar 2010 15:49:39 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
+       linux-kernel@vger.kernel.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
+       linux-fsdevel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+       Benjamin LaHaise <bcrl@lhnet.ca>, Serge Hallyn <serue@us.ibm.com>,
+       netdev@vger.kernel.org, Benjamin Thery <benjamin.thery@bull.net>
+Subject: Re: [PATCH 3/6] sysfs: Implement sysfs tagged directory support.
+References: <m1fx3hk6gw.fsf@fess.ebiederm.org> <1269973889-25260-3-git-send-email-ebiederm@xmission.com>
+In-Reply-To: <1269973889-25260-3-git-send-email-ebiederm@xmission.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 31 Mar 2010 06:46:26 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wolfgang Grandegger <wg@grandegger.com>
-Date: Tue, 30 Mar 2010 10:14:18 +0200
+Hello, Eric.
 
-> Ira W. Snyder wrote:
->> The Janz VMOD-ICAN3 is a MODULbus daughterboard which fits onto any
->> MODULbus carrier board. It is an intelligent CAN controller with a
->> microcontroller and associated firmware.
->> 
->> Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
-> 
-> Acked-by: Wolfgang Grandegger <wg@grandegger.com>
+On 03/31/2010 03:31 AM, Eric W. Biederman wrote:
+> What this patch does is to add an additional tag field to the
+> sysfs dirent structure.  For directories that should show different
+> contents depending on the context such as /sys/class/net/, and
+> /sys/devices/virtual/net/ this tag field is used to specify the
+> context in which those directories should be visible.  Effectively
+> this is the same as creating multiple distinct directories with
+> the same name but internally to sysfs the result is nicer.
 
-Since this driver depends upon the MFD stuff and that goes
-through other maintainers, just toss this CAN driver in
-via whatever tree the MFD thing goes through and add my:
+This has become a long running project. :-)
 
-Acked-by: David S. Miller <davem@davemloft.net>
+The way to implement partial visibility seems much cleaner now and I
+don't have any objection.  Thanks for cleaning up the whole sysfs and
+implementing this properly.  Unfortunately, I still feel quite
+uncomfortable about how the scope of visibility is determined and how
+deep knowledge about specific namespace implementation seeps down to
+kobject / sysfs layer.  It almost looks like a gross layering
+violation.
 
-Thanks!
+Is it at all possible to implement it in properly layered manner?
+ie. sysfs providing mechanisms for selective visibility, driver model
+wraps it and exports it and namespace implements namespaces on top of
+those mechanisms?  I can see that there should be some interaction
+between the driver model and namespaces but I can't see why that
+information should be visible deep down in kobject and sysfs.
+
+Thanks.
+
+-- 
+tejun
