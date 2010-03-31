@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755699Ab0CaOdj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 10:33:39 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:47992 "EHLO
+	id S1754887Ab0CaOgz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 10:36:55 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:35645 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751770Ab0CaOdi (ORCPT
+	by vger.kernel.org with ESMTP id S1751623Ab0CaOgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 10:33:38 -0400
-Date: Wed, 31 Mar 2010 16:33:27 +0200
+	Wed, 31 Mar 2010 10:36:53 -0400
+Date: Wed, 31 Mar 2010 16:36:42 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: "L. Alberto Gim?nez" <agimenez@sysvalve.es>
-Cc: Greg KH <gregkh@suse.de>, bzolnier@gmail.com, linux-kernel@vger.kernel.org,
-       devel@driverdev.osuosl.org, alan@linux.intel.com
-Subject: Re: [PATCH] Staging: Add new driver ipheth
-Message-ID: <20100331143326.GA1843@ucw.cz>
-References: <1269984864-28159-1-git-send-email-agimenez@sysvalve.es> <1269984864-28159-2-git-send-email-agimenez@sysvalve.es> <20100330214509.GA1388@suse.de> <4BB273FE.8010004@sysvalve.es>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Andre Przywara <andre.przywara@amd.com>, Jiri Kosina <jkosina@suse.cz>,
+       Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>,
+       Joerg Roedel <joerg.roedel@amd.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org
+Subject: Re: KVM warning about uncertified CPU for SMP for AMD model 2,
+	stepping 3
+Message-ID: <20100331143640.GB1843@ucw.cz>
+References: <alpine.LNX.2.00.1003310047470.24576@pobox.suse.cz> <20100331024213.GV20695@one.firstfloor.org> <4BB33C0D.9090808@amd.com> <20100331125135.GW20695@one.firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BB273FE.8010004@sysvalve.es>
+In-Reply-To: <20100331125135.GW20695@one.firstfloor.org>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2010-03-30 23:58:22, "L. Alberto Gim?nez" wrote:
-> On 03/30/2010 11:45 PM, Greg KH wrote:
-> > On Tue, Mar 30, 2010 at 11:34:24PM +0200, L. Alberto Gim??nez wrote:
-> >> Add new driver to use tethering with an iPhone device to the staging tree.
-
-Does it work out of the box, or is it some kind of driver for
-jailbroken iphones?
-
-> > Why the staging tree?
-> > 
-> > What is wrong with the driver that it needs to go there and not to the
-> > main kernel tree?
-> > 
+On Wed 2010-03-31 14:51:35, Andi Kleen wrote:
+> > >I guess these warnings could be just disabled. With nearly everyone
+> > >using multi-core these days they are kind of obsolete anyways.
+> > Well, the warning refers to an old single-core only CPU model. Most of 
+> > those were able to run in SMP boards, but only a subset of them was 
+> > officially certified to do so (Athlon-MP instead of Athlon-XP).
 > 
-> Sorry, I thought that the first step was getting into staging. I ignored
-> the fact that it needed a TODO file. I'm not either sure about where
-> should it go since it uses the USB interface but in fact is used as a
-> network device (drivers/net? drivers/usb?). My guess is drivers/net, but
-> I'm pretty sure I'm wrong :)
+> Thanks for pointing out the obvious.
+> 
+> > To avoid complaints about instability of such systems, the warning was 
+> > introduced. If you consider these systems still supported, I wouldn't 
+> > disable this warning, at least the check should be disabled only if the 
+> > hypervisor CPUID bit is set.
+> 
+> The point was that everyone can have a multi-core system for cheap
+> these days, no real motivation for anyone anymore to use old unsupported
+> configurations to get one.
 
-drivers/net/usb seems like a place.
+It still seems better to fix kvm to emulate smp-capable cpu...
 
-								Pavel
 -- 
 (english) http://www.livejournal.com/~pavelmachek
 (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
