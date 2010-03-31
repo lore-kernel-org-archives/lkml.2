@@ -1,98 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757680Ab0CaKhV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 06:37:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3526 "EHLO mx1.redhat.com"
+	id S1756421Ab0CaKnY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 06:43:24 -0400
+Received: from www.tglx.de ([62.245.132.106]:42768 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752003Ab0CaKhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 06:37:19 -0400
-Date: Wed, 31 Mar 2010 12:36:54 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCHv3 0/2] tracing: function graph output for
- preempt/irqs-off tracers
-Message-ID: <20100331103654.GB2152@jolsa.lab.eng.brq.redhat.com>
-References: <1269606723-12439-1-git-send-email-jolsa@redhat.com>
- <1269615239.19685.78.camel@gandalf.stny.rr.com>
- <20100329111701.GC1715@jolsa>
- <1269875347.19685.4492.camel@gandalf.stny.rr.com>
- <20100329152154.GF1715@jolsa>
- <1269877299.19685.4527.camel@gandalf.stny.rr.com>
- <20100331073738.GA2152@jolsa.lab.eng.brq.redhat.com>
- <20100331080154.GA5229@nowhere>
+	id S1752764Ab0CaKnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 06:43:22 -0400
+Date: Wed, 31 Mar 2010 12:43:13 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Gary King <GKing@nvidia.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Bug in hrtimer_get_next_event?
+In-Reply-To: <A0A1E7539300DF49AA383E614C7827BC04930A0DBB@HQMAIL01.nvidia.com>
+Message-ID: <alpine.LFD.2.00.1003311231090.32352@localhost.localdomain>
+References: <A0A1E7539300DF49AA383E614C7827BC04930A0DBB@HQMAIL01.nvidia.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100331080154.GA5229@nowhere>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 10:01:57AM +0200, Frederic Weisbecker wrote:
-> On Wed, Mar 31, 2010 at 09:37:38AM +0200, Jiri Olsa wrote:
-> > On Mon, Mar 29, 2010 at 11:41:39AM -0400, Steven Rostedt wrote:
-> > > On Mon, 2010-03-29 at 17:21 +0200, Jiri Olsa wrote:
-> > > 
-> > > > > Understand what I'm trying to ask?
-> > > > 
-> > > > ok, so what you mean is:
-> > > > - dont clear the max_tr and 
-> > > > - add function graph events.
-> > > > 
-> > > > So when the tracing_enabled and display-graph are disabled we will
-> > > > get events output rather than 'unknown event' output... right?
-> > > 
-> > > Right, although when the display-graph is disabled, we lose the /* */
-> > > but that's fine.
-> > 
-> > ok, I have it done, but found another issue..
-> > 
-> > It's the tracer_flags which governs the tracer output. As I'm using
-> > the function_graph tracer output functions, they follow function_graph
-> > tracer's flags settings..
-> > 
-> > My first idea was a change that would allow tracer using flags
-> > of other tracers.. so, when enabling irqsoff tracer the function_graph
-> > tracer's options would become available.
-> > 
-> > I made the patch but got to the set_flag function which can be overloaded
-> > by tracer. So I'd need to remember the flags's tracer, and it does
-> > not seem right.. :)
-> > 
-> > any ideas?
-> > 
-> > thanks,
-> > jirka
-> 
-> 
-> Hehe :)
-> 
-> I don't think we need such a feature. I doubt anybody
-> is going to play with the options granularity of the function
-> graph tracer there.
-> 
-> We should rather focus on what is useful to display for irqsoff
-> tracing, which means we need every function graph options set except
-> funcgraph-overrun that is only there to debug the tracer
-> itself (I haven't tried it for a while BTW).
-> 
-> What you can do is to save the function graph tracer options
-> when the irqsoff tracer starts, then overwrite them, and eventually
-> restore the previous values when the irqsoff reset callback is called.
-> 
-> Or preferably...
-> 
-> Another solution, a bit more proper, is to sanitize a bit the function
-> graph tracer printing helpers by pushing the options as a parameter to
-> them.
-> 
-> So the function graph tracer can call them by passing the function graph
-> tracer options, and the irqsoff tracer or any other tracer can call them
-> with its own options.
+Gary,
 
-ok, this one looks good :) thanks
+please configure your mail client to do proper line breaks around 78
+chars.
 
-jirka
+On Tue, 30 Mar 2010, Gary King wrote:
+
+> I am implementing idle state controls (CPU_IDLE) for Tegra SoCs, and
+> one of the idle states is not awakened by the hrtimer
+> interrupt. There is a system-wide high-resolution timer which can be
+> used as a wakeup source, but I need the high-resolution sleep time
+> to configure the alarm.
+>
+> To fix this, I want to use hrtimer_get_next_event; however, the code
+> that is in the tree only walks the hrtimer bases when hres mode is
+> not active; when hres mode is active, hrtimer_get_next_event always
+> returns KTIME_MAX. Is there any reason for the negative comparison,
+> or is this a bug?
+>
+> After changing this locally, I encountered one other problem on
+> dynamic-tick systems: get_next_timer_interrupt is called to
+> determine whether or not it is safe to enter nohz mode; however,
+> hrtimer_get_next_event (which is used by get_next_timer_interrupt)
+> will always return <=1 jiffy, since the emulated tick scheduler
+> event will be armed when tick_nohz_stop_sched_tick queries the sleep
+> time. As a result, tick_nohz_stop_sched_tick will never enter nohz
+> mode.  I can think of a couple ways to address this (cancel the tick
+> timer before querying the event and rearm if necessary from either
+> the arch cpu_idle code or nohz_stop_sched_tick; ignore the tick
+> timer in hrtimer_get_next_event); does anyone have a recommendation
+> for a preferred approach?
+
+get_next_timer_interrupt() and hrtimer_get_next_event() are working
+perfectly fine.
+
+In the !HIGHRES case we get the next pending timer from both the timer
+wheel and the hrtimer queue. Note that there is no tick timer in the
+hrtimer queue, because the tick is generated periodically from the
+NOHZ code.
+
+In the HIGHRES case we replace the periodic tick by a hrtimer. We do
+return KTIME_MAX in that case because we know from the clock event
+when the next hrtimer is due. So the check works that way:
+
+     query next timer wheel timer
+     if that timer is due in the next jiffy, keep going
+
+     if not, cancel the tick timer and rearm it to the next timer
+     wheel interrupt. If there is any hrtimer pending _BEFORE_ the
+     next timer wheel timer then the clock event is armed to that
+     event anyway and not overridden by the modified tick timer.
+
+Simply, do not use the hrtimer_get_next_event() and
+get_next_timer_interrupt() for your purpose. They work only with the
+tick management layer and are not designed for general purpose use.
+
+If you want to know how far away the next timer event is, then use:
+
+   tick_nohz_get_sleep_length()
+
+That's going to tell you when the next timer interrupt will happen
+when the system is idle. That works for high res off and on case.
+
+Thanks,
+
+	tglx
+
