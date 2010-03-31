@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932965Ab0CaJHL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 05:07:11 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:44723 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757209Ab0CaJHI convert rfc822-to-8bit (ORCPT
+	id S932991Ab0CaJIq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 05:08:46 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:39844 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932943Ab0CaJIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 05:07:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=M+OpYtSCUtraES3z82EYtTVj4NDMsUVslM4MrF1H71wxw9Gb7Fy/GQ2ifQbgwvB92T
-         4pI8fezpeD4e9tlJ8mjPBOR5svRci+8cqdqp/mZmJYGR0ujoOmlQ59ngXdFh7AQb+tR3
-         5XEohoIHWj7qpZltUcWRIfET32EvAnpRyXw7o=
-MIME-Version: 1.0
-In-Reply-To: <1269970733-24681-1-git-send-email-daniel@caiaq.de>
-References: <1269970733-24681-1-git-send-email-daniel@caiaq.de>
-Date: Wed, 31 Mar 2010 11:07:06 +0200
-Message-ID: <x2ve2d7436a1003310207t16a7d1d6r7853de2dfa647c6c@mail.gmail.com>
-Subject: Re: [PATCH] libertas/sdio: set ECSI and SCSI bits for 1-bit transfers
-From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
-To: Daniel Mack <daniel@caiaq.de>
+	Wed, 31 Mar 2010 05:08:42 -0400
+Date: Wed, 31 Mar 2010 11:08:36 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>
 Cc: linux-kernel@vger.kernel.org, Alagu Sankar <alagusankar@embwise.com>,
        Volker Ernst <volker.ernst@txtr.com>, Dan Williams <dcbw@redhat.com>,
        "John W. Linville" <linville@tuxdriver.com>,
        Holger Schurig <hs4233@mail.mn-solutions.de>,
        Bing Zhao <bzhao@marvell.com>, libertas-dev@lists.infradead.org,
        linux-wireless@vger.kernel.org, linux-mmc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH] libertas/sdio: set ECSI and SCSI bits for 1-bit
+ transfers
+Message-ID: <20100331090836.GA30801@buzzloop.caiaq.de>
+References: <1269970733-24681-1-git-send-email-daniel@caiaq.de>
+ <x2ve2d7436a1003310207t16a7d1d6r7853de2dfa647c6c@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <x2ve2d7436a1003310207t16a7d1d6r7853de2dfa647c6c@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/3/30 Daniel Mack <daniel@caiaq.de>:
-[...]
-> @@ -1022,6 +1025,27 @@ static int if_sdio_probe(struct sdio_func *func,
->        if (ret)
->                goto disable;
->
-> +       /* For 1-bit transfers, we need to enable the interrupt flags in
-> +        * the CCCR register. Temporarily set the function number to 0
-> +        * for that. */
-> +       if ((host->caps & MMC_CAP_SDIO_IRQ) &&
-> +           (host->ios.bus_width == MMC_BUS_WIDTH_1)) {
-> +               unsigned int num = func->num;
-> +               u8 reg;
-> +
-> +               func->num = 0;
-> +               reg = sdio_readb(func, SDIO_CCCR_IF, &ret);
-> +               if (ret)
-> +                       goto release_int;
-> +
-> +               reg |= SDIO_BUS_ECSI | SDIO_BUS_SCSI;
-> +               sdio_writeb(func, reg, SDIO_CCCR_IF, &ret);
-> +               if (ret)
-> +                       goto release_int;
-> +
-> +               func->num = num;
-> +       }
-> +
->        card->ioport = sdio_readb(func, IF_SDIO_IOPORT, &ret);
->        if (ret)
->                goto release_int;
+On Wed, Mar 31, 2010 at 11:07:06AM +0200, MichaÅ‚ MirosÅ‚aw wrote:
+> 2010/3/30 Daniel Mack <daniel@caiaq.de>:
+> [...]
+> > @@ -1022,6 +1025,27 @@ static int if_sdio_probe(struct sdio_func *func,
+> > Â  Â  Â  Â if (ret)
+> > Â  Â  Â  Â  Â  Â  Â  Â goto disable;
+> >
+> > + Â  Â  Â  /* For 1-bit transfers, we need to enable the interrupt flags in
+> > + Â  Â  Â  Â * the CCCR register. Temporarily set the function number to 0
+> > + Â  Â  Â  Â * for that. */
+> > + Â  Â  Â  if ((host->caps & MMC_CAP_SDIO_IRQ) &&
+> > + Â  Â  Â  Â  Â  (host->ios.bus_width == MMC_BUS_WIDTH_1)) {
+> > + Â  Â  Â  Â  Â  Â  Â  unsigned int num = func->num;
+> > + Â  Â  Â  Â  Â  Â  Â  u8 reg;
+> > +
+> > + Â  Â  Â  Â  Â  Â  Â  func->num = 0;
+> > + Â  Â  Â  Â  Â  Â  Â  reg = sdio_readb(func, SDIO_CCCR_IF, &ret);
+> > + Â  Â  Â  Â  Â  Â  Â  if (ret)
+> > + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  goto release_int;
+> > +
+> > + Â  Â  Â  Â  Â  Â  Â  reg |= SDIO_BUS_ECSI | SDIO_BUS_SCSI;
+> > + Â  Â  Â  Â  Â  Â  Â  sdio_writeb(func, reg, SDIO_CCCR_IF, &ret);
+> > + Â  Â  Â  Â  Â  Â  Â  if (ret)
+> > + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  goto release_int;
+> > +
+> > + Â  Â  Â  Â  Â  Â  Â  func->num = num;
+> > + Â  Â  Â  }
+> > +
+> > Â  Â  Â  Â card->ioport = sdio_readb(func, IF_SDIO_IOPORT, &ret);
+> > Â  Â  Â  Â if (ret)
+> > Â  Â  Â  Â  Â  Â  Â  Â goto release_int;
+> 
+> You should probably just use mmc_io_rw_direct() in this case instead
+> of abusing func->num.
 
-You should probably just use mmc_io_rw_direct() in this case instead
-of abusing func->num.
+Hmm, that function isn't exported, and I didn't want to change this. You
+say you'd prefer that? I can cook up something that does it, no problem.
 
-Best Regards,
-Micha³ Miros³aw
+
+Daniel
