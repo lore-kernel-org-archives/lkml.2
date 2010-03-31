@@ -1,79 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932596Ab0CaXCv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 19:02:51 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:54712 "EHLO mx2.mail.elte.hu"
+	id S932668Ab0CaXDO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 19:03:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5302 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932330Ab0CaXCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 19:02:47 -0400
-Date: Thu, 1 Apr 2010 01:02:37 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: James Morris <jmorris@namei.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-       linux-kernel@vger.kernel.org, airlied@linux.ie,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: Config NO_BOOTMEM breaks my amd64 box
-Message-ID: <20100331230237.GA31279@elte.hu>
-References: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org>
- <4BB2EB1B.8090303@zytor.com>
- <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org>
- <20100331185916.GA12306@elte.hu>
- <alpine.LRH.2.00.1004010952080.31957@tundra.namei.org>
+	id S932330Ab0CaXDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 19:03:09 -0400
+Date: Thu, 1 Apr 2010 01:00:32 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm] proc: don't take ->siglock for /proc/pid/oom_adj
+Message-ID: <20100331230032.GB4025@redhat.com>
+References: <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330163909.GA16884@redhat.com> <20100330174337.GA21663@redhat.com> <alpine.DEB.2.00.1003301329420.5234@chino.kir.corp.google.com> <20100331185950.GB11635@redhat.com> <alpine.DEB.2.00.1003311408520.31252@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1004010952080.31957@tundra.namei.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <alpine.DEB.2.00.1003311408520.31252@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/31, David Rientjes wrote:
+>
+> On Wed, 31 Mar 2010, Oleg Nesterov wrote:
+>
+> > David, I just can't understand why
+> > 	oom-badness-heuristic-rewrite.patch
+> > duplicates the related code in fs/proc/base.c and why it preserves
+> > the deprecated signal->oom_adj.
+>
+> You could combine the two write functions together and then two read
+> functions together if you'd like.
 
-* James Morris <jmorris@namei.org> wrote:
+Yes,
 
-> On Wed, 31 Mar 2010, Ingo Molnar wrote:
-> 
-> > > 
-> > > Yes, it was happening with -rc3.
-> > 
-> > Could you please send the bootlog that Yinghai asked for, plus also one that 
-> > you get with NO_BOOTMEM turned off (for comparison)?
-> 
-> I don't have the old boot logs, and have since upgraded the system 
-> further.  
+> > 	static ssize_t oom_any_adj_write(struct file *file, const char __user *buf,
+> > 						size_t count, bool deprecated_mode)
+> > 	{
+> >
+> > 		if (depraceted_mode) {
+> > 			 if (oom_score_adj == OOM_ADJUST_MAX)
+> > 				oom_score_adj = OOM_SCORE_ADJ_MAX;
+>
+> ???
 
-Please, could you send any bootlog then that we could work from? That way we 
-could check the memory layout and guess the rough shape of the early 
-allocations, etc.
+What?
 
-> IIRC, the boot was failing after not being able to find the root fs 
-> (ext3/lvm/raid0).  I thought it was a dracut issue, but it seemed to be 
-> fixed by enabling bootmem.
+> > 			 else
+> > 				oom_score_adj = (oom_score_adj * OOM_SCORE_ADJ_MAX) /
+> > 						-OOM_DISABLE;
+> > 		}
+> >
+> > 		if (oom_score_adj < OOM_SCORE_ADJ_MIN ||
+> > 				oom_score_adj > OOM_SCORE_ADJ_MAX)
+>
+> That doesn't work for depraceted_mode (sic), you'd need to test for
+> OOM_ADJUST_MIN and OOM_ADJUST_MAX in that case.
 
-Ok - initrd unpack failing or initial mount failing is consistent with the 
-initrd getting corrupted by overlapping early reservations due to allocator 
-bug.
+Yes, probably "if (depraceted_mode)" should do more checks, I didn't try
+to verify that MIN/MAX are correctly converted. I showed this code to explain
+what I mean.
 
-> > Also, when did you first hit this bug? This code has been upstream for 
-> > almost a month, and it was in linux-next before that - so you should have 
-> > hit this much sooner. A rough timeframe would suffice. I suppose you were 
-> > booting upstream kernels during the merge window as well?
-> 
-> In this case, in the last few days (also when I first saw or noticed the 
-> bootmem option).  I was booting relatively recent linus kernels during the 
-> merge window, although my main work was being done on an older upstream 
-> kernel.
+> There have been efforts to reuse as much of this code as possible for
+> other sysctl handlers as well, you might be better off looking for
 
-Ok, so it's not an old regression but possibly a bug in one of the fixes. Not 
-good.
+David, sorry ;) Right now I'd better try to stop the overloading of
+->siglock. And, I'd like to shrink struct_signal if possible, but this
+is minor.
 
-	Ingo
+Oleg.
+
