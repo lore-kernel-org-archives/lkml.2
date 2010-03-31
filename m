@@ -1,151 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758378Ab0CaWwm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 18:52:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61928 "EHLO mx1.redhat.com"
+	id S1758390Ab0CaWx6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 18:53:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22191 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758337Ab0CaWwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 18:52:41 -0400
-Date: Thu, 1 Apr 2010 00:50:11 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       nishimura@mxp.nes.nec.co.jp,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+	id S1758340Ab0CaWx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 18:53:57 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1270060366.1931.19.camel@edumazet-laptop>
+References: <1270060366.1931.19.camel@edumazet-laptop> <20100331151604.GC2461@linux.vnet.ibm.com> <20100319022527.GC2894@linux.vnet.ibm.com> <20100318133302.29754.1584.stgit@warthog.procyon.org.uk> <19192.1269889348@redhat.com> <23274.1269893706@redhat.com> <25276.1269901350@redhat.com> <26760.1269903543@redhat.com> <20100329232636.GT2569@linux.vnet.ibm.com> <2440.1269967151@redhat.com> <21972.1269993064@redhat.com> <10818.1270044273@redhat.com> <15371.1270057054@redhat.com> 
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: dhowells@redhat.com, paulmck@linux.vnet.ibm.com,
+       Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: Re: [patch] oom: give current access to memory reserves if it has
-	been killed
-Message-ID: <20100331224904.GA4025@redhat.com>
-References: <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330154659.GA12416@redhat.com> <alpine.DEB.2.00.1003301320020.5234@chino.kir.corp.google.com> <20100331175836.GA11635@redhat.com> <alpine.DEB.2.00.1003311342410.25284@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1003311342410.25284@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Subject: Re: [PATCH] NFS: Fix RCU warnings in nfs_inode_return_delegation_noreclaim() [ver #2]
+Date: Wed, 31 Mar 2010 23:53:28 +0100
+Message-ID: <19556.1270076008@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31, David Rientjes wrote:
->
-> On Wed, 31 Mar 2010, Oleg Nesterov wrote:
->
-> > On 03/30, David Rientjes wrote:
-> > >
-> > > On Tue, 30 Mar 2010, Oleg Nesterov wrote:
-> > >
-> > > > Note that __oom_kill_task() does force_sig(SIGKILL) which assumes that
-> > > > ->sighand != NULL. This is not true if out_of_memory() is called after
-> > > > current has already passed exit_notify().
-> > >
-> > > We have an even bigger problem if current is in the oom killer at
-> > > exit_notify() since it has already detached its ->mm in exit_mm() :)
-> >
-> > Can't understand... I thought that in theory even kmalloc(1) can trigger
-> > oom.
->
-> __oom_kill_task() cannot be called on a task without an ->mm.
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-Why? You ignored this part:
+> If you dont own a lock, and test a pointer, what guarantee do you have
+> this pointer doesnt change right after you tested it ?
 
-	Say, right after exit_mm() we are doing acct_process(), and f_op->write()
-	needs a page. So, you are saying that in this case __page_cache_alloc()
-	can never trigger out_of_memory() ?
+There are five possibilities:
 
-why this is not possible?
+ (1) A pointer points to something when you check, and still points to the
+     same thing after you've gained the lock.
 
-David, I am not arguing, I am asking.
+ (2) A pointer points to something when you check, and points to something
+     else after you've gained the lock.
 
-> > > The check for !p->mm was moved in the -mm tree (and the oom killer was
-> > > entirely rewritten in that tree, so I encourage you to work off of it
-> > > instead
-> >
-> > OK, but I guess this !p->mm check is still wrong for the same reason.
-> > In fact I do not understand why it is needed in select_bad_process()
-> > right before oom_badness() which checks ->mm too (and this check is
-> > equally wrong).
->
-> It prevents kthreads from being killed.
+ (3) A pointer points to something when you check, and is NULL after you've
+     gained the lock.
 
-No it doesn't, see use_mm(). See also another email I sent.
+ (4) A pointer points to NULL when you check, and points to something after
+     you've gained the lock.
 
-> > > so if the oom killer finds an already exiting task,
-> > > it will become a no-op since it should eventually free memory and avoids a
-> > > needless oom kill.
-> >
-> > No, afaics, And this reminds that I already complained about this
-> > PF_EXITING check.
-> >
-> > Once again, p is the group leader. It can be dead (no ->mm, PF_EXITING
-> > is set) but it can have sub-threads. This means, unless I missed something,
-> > any user can trivially disable select_bad_process() forever.
-> >
->
-> The task is in the process of exiting and will do so if its not current,
-> otherwise it will get access to memory reserves since we're obviously oom
-> in the exit path.  Thus, we'll be freeing that memory soon or recalling
-> the oom killer to kill additional tasks once those children have been
-> reparented (or one of its children was sacrificed).
+ (5) A pointer points to NULL when you check, and points to NULL after you've
+     gained the lock.
 
-Just can't understand.
+However, what if you _know_ that the pointer can only ever be made non-NULL
+during initialisation, and may even be left unset?  That means possibility (4)
+can never happen, and that possibility (5) can be detected by testing before
+taking the lock.  Now, what if (5) is a common occurrence?  It might make
+sense to make the test.
 
-OK, a bad user does
+And what matter if the pointer _does_ change after you test it.  If it was
+NULL before, it can only be NULL now - by the semantics defined for that
+particular pointer.
 
-	int sleep_forever(void *)
-	{
-		pause();
+> If *something* protects the pointer from being changed, then how can be
+> expressed this fact ?
+> 
+> If nothing protects the pointer, why test it then, as result of test is
+> unreliable ?
+
+I think you may be misunderstanding the purpose of rcu_dereference().  It is
+to make sure the reading and dereferencing of the pointer are correctly
+ordered with respect to the setting up of the pointed to record and the
+changing of the pointer.
+
+There must be two memory accesses for the barrier implied to be of use.  In
+nfs_inode_return_delegation() there aren't two memory accesses to order,
+therefore the barrier is pointless.
+
+> If NFS was using rcu_dereference(), it probably was for a reason, but if
+> nobody can recall it, it was a wrong reason ?
+
+I think it is incorrectly used.  Given that the rcu_dereference() in:
+
+	if (rcu_dereference(nfsi->delegation) != NULL) {
+		spin_lock(&clp->cl_lock);
+		delegation = nfs_detach_delegation_locked(nfsi, NULL);
+		spin_unlock(&clp->cl_lock);
+		if (delegation != NULL)
+			nfs_do_return_delegation(inode, delegation, 0);
 	}
 
-	int main(void)
-	{
-		pthread_create(sleep_forever);
-		syscall(__NR_exit);
+resolves to:
+
+	_________p1 = nfsi->delegation;
+	smp_read_barrier_depends();
+	if (_________p1) {
+		spin_lock(&clp->cl_lock); // implicit LOCK-class barrier
+		==>nfs_detach_delegation_locked(nfsi, NULL);
+		  [dereference nfsi->delegation]
+		...
 	}
 
-Now, every time select_bad_process() is called it will find this process
-and PF_EXITING is true, so it just returns ERR_PTR(-1UL). And note that
-this process is not going to exit.
+do you actually need the smp_read_barrier_depends()?  You _have_ a barrier in
+the form of the spin_lock().  In fact, the spin_lock() is avowedly sufficient
+to protect accesses to and dereferences of nfsi->delegation, which means that:
 
-> > Say, oom_forkbomb_penalty() does list_for_each_entry(tsk->children).
-> > Again, this is not right even if we forget about !child->mm check.
-> > This list_for_each_entry() can only see the processes forked by the
-> > main thread.
-> >
->
-> That's the intention.
+	static struct nfs_delegation *nfs_detach_delegation_locked(struct nfs_inode *nfsi, const nfs4_stateid *stateid)
+	{
+		struct nfs_delegation *delegation = rcu_dereference(nfsi->delegation);
+		...
+	}
 
-Why? shouldn't oom_badness() return the same result for any thread
-in thread group? We should take all childs into account.
+has no need of the internal barrier provided by rcu_dereference() either.
 
-> > Likewise, oom_kill_process()->list_for_each_entry() is not right too.
-> >
->
-> Why?
->
-> > Hmm. Why oom_forkbomb_penalty() does thread_group_cputime() under
-> > task_lock() ? It seems, ->alloc_lock() is only needed for get_mm_rss().
-> >
->
-> Right, but we need to ensure that the check for !child->mm || child->mm ==
-> tsk->mm fails before adding in get_mm_rss(child->mm).  It can race and
-> detach its mm prior to the dereference.
-
-Oh, yes sure, I mentioned get_mm_rss() above.
-
-> It would be possible to move the
-> thread_group_cputime() out of this critical section,
-
-Yes, this is what I meant.
-
-> but I felt it was
-> better to do filter all tasks with child->mm == tsk->mm first before
-> unnecessarily finding the cputime for them.
-
-Yes, but we can check child->mm == tsk->mm, call get_mm_counter() and drop
-task_lock().
-
-Oleg.
-
-
+David
