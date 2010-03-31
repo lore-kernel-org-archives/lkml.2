@@ -1,92 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553Ab0CaOto (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 10:49:44 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:51760 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab0CaOtm (ORCPT
+	id S1752799Ab0CaOzk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 10:55:40 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:64233 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751755Ab0CaOzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 10:49:42 -0400
-Date: Wed, 31 Mar 2010 16:50:22 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: [PATCH] x86, cacheinfo: Unify AMD L3 cache index disable checking
-Message-ID: <20100331145022.GA32440@aftab>
+	Wed, 31 Mar 2010 10:55:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alessio Igor Bogani <abogani@texware.it>
+Subject: Re: [PATCH] USB: Remove BKL from remount() function in usbfs
+Date: Wed, 31 Mar 2010 15:54:37 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       Al Viro <viro@zeniv.linux.org.uk>, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Jan Blunck <jblunck@suse.de>
+References: <1270044578-4291-1-git-send-email-abogani@texware.it>
+In-Reply-To: <1270044578-4291-1-git-send-email-abogani@texware.it>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003311654.38020.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1/9kgndiXX/z4HyzgozBbRmES5G0AIBV2MFrKO
+ MtQghU4d3XMn2OFpuYz0dUyeOYzI5mTBOnHa/3kZpG68qGuwza
+ eOhHAyjwsy+o/DNoXAGLQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All F10h CPUs starting with model 8 resp. 9, stepping 1, support L3
-cache index disable. Concentrate the family, model, stepping checking at
-one place and enable the feature implicitly on upcoming Fam10h models.
+On Wednesday 31 March 2010, Alessio Igor Bogani wrote:
+> 
+> The BKL was used into remount_fs pointed function for serialized access to
+> super_block from the others super_operations functions.
+> 
+> The function update_sb(), invoked by remount(), seems already well serialized
+> with &root->d_inode->i_mutex. Moreover don't seems there are others
+> super_operations functions in USB core for usbfs that should access to
+> super_block in a way which require BKL.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/cpu/intel_cacheinfo.c |   17 ++++++++++-------
- 1 files changed, 10 insertions(+), 7 deletions(-)
+There is a patch from Jan Blunck pending in the bkl-removal tree that pushes
+down the BKL into usbfs_fill_super. Can you confirm that this BKL usage does
+not interfere with the one you just removed, and that it can go the same way?
 
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index b3eeb66..acfb083 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -328,18 +328,22 @@ static unsigned int __cpuinit amd_calc_l3_indices(void)
- static void __cpuinit
- amd_check_l3_disable(int index, struct _cpuid4_info_regs *this_leaf)
- {
--	if (index < 3)
-+	if (boot_cpu_data.x86 != 0x10)
- 		return;
- 
--	if (boot_cpu_data.x86 == 0x11)
-+	if (index < 3)
- 		return;
- 
- 	/* see errata #382 and #388 */
--	if ((boot_cpu_data.x86 == 0x10) &&
--	    ((boot_cpu_data.x86_model < 0x8) ||
--	     (boot_cpu_data.x86_mask  < 0x1)))
-+	if (boot_cpu_data.x86_model < 0x8)
- 		return;
- 
-+	if ((boot_cpu_data.x86_model == 0x8 ||
-+	     boot_cpu_data.x86_model == 0x9)
-+		&&
-+	     boot_cpu_data.x86_mask < 0x1)
-+			return;
-+
- 	this_leaf->can_disable = true;
- 	this_leaf->l3_indices  = amd_calc_l3_indices();
- }
-@@ -443,8 +447,7 @@ __cpuinit cpuid4_cache_lookup_regs(int index,
- 
- 	if (boot_cpu_data.x86_vendor == X86_VENDOR_AMD) {
- 		amd_cpuid4(index, &eax, &ebx, &ecx);
--		if (boot_cpu_data.x86 >= 0x10)
--			amd_check_l3_disable(index, this_leaf);
-+		amd_check_l3_disable(index, this_leaf);
- 	} else {
- 		cpuid_count(4, index, &eax.full, &ebx.full, &ecx.full, &edx);
- 	}
--- 
-1.7.0.2
-
-
--- 
-Regards/Gruss,
-Boris.
-
---
-Advanced Micro Devices, Inc.
-Operating Systems Research Center
+	Arnd
