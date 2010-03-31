@@ -1,142 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344Ab0CaTpf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 15:45:35 -0400
-Received: from fieldses.org ([174.143.236.118]:38073 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756585Ab0CaTpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 15:45:33 -0400
-Date: Wed, 31 Mar 2010 15:47:41 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Greg KH <greg@kroah.com>
-Cc: stable@kernel.org, linux-nfs@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] nfsd4: don't try to map gid's in generic rpc code
-Message-ID: <20100331194741.GA5355@fieldses.org>
-References: <20100306175212.GB22650@fieldses.org> <20100324142414.GE12057@fieldses.org> <20100329182443.GC3778@kroah.com> <20100330144054.GD11545@fieldses.org> <20100330200320.GB1693@kroah.com> <20100331193029.GC4937@fieldses.org>
+	id S1757091Ab0CaTrX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 15:47:23 -0400
+Received: from capside.net ([81.19.98.74]:51601 "EHLO eul0600410.eu.verio.net"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755841Ab0CaTrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 15:47:21 -0400
+Message-ID: <4BB3A6C2.6040603@sysvalve.es>
+Date: Wed, 31 Mar 2010 21:47:14 +0200
+From: =?ISO-8859-1?Q?=22L=2E_Alberto_Gim=E9nez=22?= 
+	<agimenez@sysvalve.es>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100331193029.GC4937@fieldses.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Pavel Machek <pavel@ucw.cz>
+CC: Greg KH <gregkh@suse.de>, bzolnier@gmail.com, linux-kernel@vger.kernel.org,
+       devel@driverdev.osuosl.org, alan@linux.intel.com
+Subject: Re: [PATCH] Staging: Add new driver ipheth
+References: <1269984864-28159-1-git-send-email-agimenez@sysvalve.es> <1269984864-28159-2-git-send-email-agimenez@sysvalve.es> <20100330214509.GA1388@suse.de> <4BB273FE.8010004@sysvalve.es> <20100331143326.GA1843@ucw.cz>
+In-Reply-To: <20100331143326.GA1843@ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: J. Bruce Fields <bfields@citi.umich.edu>
+On 03/31/2010 04:33 PM, Pavel Machek wrote:
+> On Tue 2010-03-30 23:58:22, "L. Alberto Gim?nez" wrote:
+>> On 03/30/2010 11:45 PM, Greg KH wrote:
+>>> On Tue, Mar 30, 2010 at 11:34:24PM +0200, L. Alberto Gim??nez wrote:
+>>>> Add new driver to use tethering with an iPhone device to the staging tree.
+> 
+> Does it work out of the box, or is it some kind of driver for
+> jailbroken iphones?
 
-For nfsd we provide users the option of mapping uid's to server-side
-supplementary group lists.  That makes sense for nfsd, but not
-necessarily for other rpc users (such as the callback client).
+Hi Pavel, it works out of the box. You need some userspace tools used
+also to access jailbroken devices, but this one does not need
+specifically that your iPhone is jailbroken (mine is not, and it works
+perfectly).
 
-So move that lookup to svcauth_unix_set_client, which is a
-program-specific method.
-
-Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
----
- net/sunrpc/svcauth_unix.c |   53 +++++++++++++++++++++++++-------------------
- 1 files changed, 30 insertions(+), 23 deletions(-)
-
-On Wed, Mar 31, 2010 at 03:30:29PM -0400, J. Bruce Fields wrote:
-> In any case, I'll follow up with patches generated against 2.6.32.10.
-
-Also, while testing those patches on 2.6.32, I noticed that 2.6.32.y
-doesn't include the following (unrelated) patch.  Could you apply it as
-well?  Thanks!
-
-diff --git a/net/sunrpc/svcauth_unix.c b/net/sunrpc/svcauth_unix.c
-index 117f68a..97cc3de 100644
---- a/net/sunrpc/svcauth_unix.c
-+++ b/net/sunrpc/svcauth_unix.c
-@@ -655,23 +655,25 @@ static struct unix_gid *unix_gid_lookup(uid_t uid)
- 		return NULL;
- }
- 
--static int unix_gid_find(uid_t uid, struct group_info **gip,
--			 struct svc_rqst *rqstp)
-+static struct group_info *unix_gid_find(uid_t uid, struct svc_rqst *rqstp)
- {
--	struct unix_gid *ug = unix_gid_lookup(uid);
-+	struct unix_gid *ug;
-+	struct group_info *gi;
-+	int ret;
-+
-+	ug = unix_gid_lookup(uid);
- 	if (!ug)
--		return -EAGAIN;
--	switch (cache_check(&unix_gid_cache, &ug->h, &rqstp->rq_chandle)) {
-+		return ERR_PTR(-EAGAIN);
-+	ret = cache_check(&unix_gid_cache, &ug->h, &rqstp->rq_chandle);
-+	switch (ret) {
- 	case -ENOENT:
--		*gip = NULL;
--		return 0;
-+		return ERR_PTR(-ENOENT);
- 	case 0:
--		*gip = ug->gi;
--		get_group_info(*gip);
-+		gi = get_group_info(ug->gi);
- 		cache_put(&ug->h, &unix_gid_cache);
--		return 0;
-+		return gi;
- 	default:
--		return -EAGAIN;
-+		return ERR_PTR(-EAGAIN);
- 	}
- }
- 
-@@ -681,6 +683,8 @@ svcauth_unix_set_client(struct svc_rqst *rqstp)
- 	struct sockaddr_in *sin;
- 	struct sockaddr_in6 *sin6, sin6_storage;
- 	struct ip_map *ipm;
-+	struct group_info *gi;
-+	struct svc_cred *cred = &rqstp->rq_cred;
- 
- 	switch (rqstp->rq_addr.ss_family) {
- 	case AF_INET:
-@@ -722,6 +726,17 @@ svcauth_unix_set_client(struct svc_rqst *rqstp)
- 			ip_map_cached_put(rqstp, ipm);
- 			break;
- 	}
-+
-+	gi = unix_gid_find(cred->cr_uid, rqstp);
-+	switch (PTR_ERR(gi)) {
-+	case -EAGAIN:
-+		return SVC_DROP;
-+	case -ENOENT:
-+		break;
-+	default:
-+		put_group_info(cred->cr_group_info);
-+		cred->cr_group_info = gi;
-+	}
- 	return SVC_OK;
- }
- 
-@@ -818,19 +833,11 @@ svcauth_unix_accept(struct svc_rqst *rqstp, __be32 *authp)
- 	slen = svc_getnl(argv);			/* gids length */
- 	if (slen > 16 || (len -= (slen + 2)*4) < 0)
- 		goto badcred;
--	if (unix_gid_find(cred->cr_uid, &cred->cr_group_info, rqstp)
--	    == -EAGAIN)
-+	cred->cr_group_info = groups_alloc(slen);
-+	if (cred->cr_group_info == NULL)
- 		return SVC_DROP;
--	if (cred->cr_group_info == NULL) {
--		cred->cr_group_info = groups_alloc(slen);
--		if (cred->cr_group_info == NULL)
--			return SVC_DROP;
--		for (i = 0; i < slen; i++)
--			GROUP_AT(cred->cr_group_info, i) = svc_getnl(argv);
--	} else {
--		for (i = 0; i < slen ; i++)
--			svc_getnl(argv);
--	}
-+	for (i = 0; i < slen; i++)
-+		GROUP_AT(cred->cr_group_info, i) = svc_getnl(argv);
- 	if (svc_getu32(argv) != htonl(RPC_AUTH_NULL) || svc_getu32(argv) != 0) {
- 		*authp = rpc_autherr_badverf;
- 		return SVC_DENIED;
+Regards,
 -- 
-1.6.3.3
-
+L. Alberto Giménez
+JabberID agimenez@jabber.sysvalve.es
+GnuPG key ID 0x3BAABDE1
