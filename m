@@ -1,45 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757784Ab0CaQ1J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 12:27:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40303 "EHLO hera.kernel.org"
+	id S932458Ab0CaQhe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 12:37:34 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38745 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757754Ab0CaQ1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 12:27:06 -0400
-Message-ID: <4BB3777F.8030804@kernel.org>
-Date: Wed, 31 Mar 2010 09:25:35 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S932271Ab0CaQha convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 12:37:30 -0400
+From: "Madhusudhan" <madhu.cr@ti.com>
+To: "'kishore kadiyala'" <kishorek.kadiyala@gmail.com>,
+       "'Vimal Singh'" <vimal.newwork@gmail.com>
+Cc: <tony@atomide.com>, <svenkatr@ti.com>, <linux-omap@vger.kernel.org>,
+       <linux-kernel@vger.kernel.org>, <jarkko.lavinen@nokia.com>
+References: <35697.192.168.10.89.1265898023.squirrel@dbdmail.itg.ti.com> <004701caab40$68b576e0$544ff780@am.dhcp.ti.com> <x2q7f9d1ffb1003302307nb8e91be0o55da59c3375f1720@mail.gmail.com> <v2yce9ab5791003302327hc67deb3akc7d18146534038f9@mail.gmail.com> <h2p7f9d1ffb1003310003z508e21dbqe37b6e1cad425866@mail.gmail.com>
+Subject: RE: [PATCH-V2] OMAP: Fix for bus width which improves SD card's peformance.
+Date: Wed, 31 Mar 2010 11:37:19 -0500
+Message-ID: <003b01cad0f0$6ea78040$544ff780@am.dhcp.ti.com>
 MIME-Version: 1.0
-To: James Morris <jmorris@namei.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org, airlied@linux.ie
-Subject: Re: Config NO_BOOTMEM breaks my amd64 box
-References: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org> <4BB2EB1B.8090303@zytor.com> <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org>
-In-Reply-To: <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: AcrQoDZtgS7R9HtfT3y08FTZG85QpAAT81gg
+In-Reply-To: <h2p7f9d1ffb1003310003z508e21dbqe37b6e1cad425866@mail.gmail.com>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3198
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2010 11:47 PM, James Morris wrote:
-> On Tue, 30 Mar 2010, H. Peter Anvin wrote:
+
+
+> -----Original Message-----
+> From: kishore kadiyala [mailto:kishorek.kadiyala@gmail.com]
+> Sent: Wednesday, March 31, 2010 2:03 AM
+> To: Vimal Singh
+> Cc: Madhusudhan; tony@atomide.com; svenkatr@ti.com; linux-
+> omap@vger.kernel.org; linux-kernel@vger.kernel.org;
+> jarkko.lavinen@nokia.com
+> Subject: Re: [PATCH-V2] OMAP: Fix for bus width which improves SD card's
+> peformance.
 > 
->> On 03/30/2010 09:49 PM, James Morris wrote:
->>> Please make NO_BOOTMEM default to n, at least for amd64, where I've found 
->>> that it leads to all kinds of strange, undebuggable boot hangs and errors 
->>> (with relatively current Fedora development userland).
->>
->> Have you tested it with the latest fixes that are now in Linus' tree (-rc3)?
+> Sorry for that and here's the Updated one.
 > 
-> Yes, it was happening with -rc3.
+> From: Kishore Kadiyala <kishore.kadiyala@ti.com>
+> 
+> This patch improves low speeds for SD cards.
+> OMAP-MMC controller's can support maximum bus width of '8'.
+> when bus width is mentioned as "8" in controller data,the SD
+> stack will check whether bus width is "4" and if not it will
+> set bus width to "1" and there by degrading performance.
+> This patch fixes the issue and improves the performance of
+> SD cards.
+> 
+> Signed-off-by: Kishore Kadiyala <kishore.kadiyala@ti.com>
+> Signed-off-by: Venkatraman S <svenkatr@ti.com>
+> Acked-by: Madhusudhan Chikkature <madhu.cr@ti.com>
+> 
+> ---
+> In V2 : Appended Signed-off by Venkat and Ack by Madhu
+> 
+>  Here are my experiment numbers, on a Class 6 SDHC card:
+>  Read peformance is increased by 220%
+>  Write Performance is increased by 52%
+> 
+>  drivers/mmc/host/omap_hsmmc.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+> index 83f0aff..8c97c22 100644
+> --- a/drivers/mmc/host/omap_hsmmc.c
+> +++ b/drivers/mmc/host/omap_hsmmc.c
+> @@ -2092,7 +2092,7 @@ static int __init omap_hsmmc_probe(struct
+>  		     MMC_CAP_WAIT_WHILE_BUSY;
+> 
+>  	if (mmc_slot(host).wires >= 8)
+> -		mmc->caps |= MMC_CAP_8_BIT_DATA;
+> +		mmc->caps |= (MMC_CAP_8_BIT_DATA | MMC_CAP_4_BIT_DATA);
+>  	else if (mmc_slot(host).wires >= 4)
+>  		mmc->caps |= MMC_CAP_4_BIT_DATA;
+> 
+Kishore,
 
-please send out bootlog if possible.
+Since this patch is not yet pushed it makes sense to fix the readability
+issue.
 
-BTW please try
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-2.6-yinghai.git
+Since 8-bit is the max how about:
 
-Thanks
+        if (mmc_slot(host).wires == 8)
+                mmc->caps |= MMC_CAP_8_BIT_DATA | MMC_CAP_4_BIT_DATA;
+        if (mmc_slot(host).wires == 4)
+                mmc->caps |= MMC_CAP_4_BIT_DATA;
 
-Yinghai
+This would be little easy to read the code.
+
+Can you please repost the patch??
+
+Regards,
+Madhu
+
+> --
+> 1.6.3.3
+
