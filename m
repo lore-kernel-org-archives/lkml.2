@@ -1,89 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933381Ab0CaNnd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 09:43:33 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:34761 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933349Ab0CaNnb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 09:43:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=eHJz3yMAGAGdbTgm7fJLWKwLHpTcHnLIs6rkYnKI28xEiEjX5V79DtM69ZvCNYQQFw
-         rst6F/ji+FBNqcTBvNPG40SsBSTzKLcs86WI71PG1522pSAIXsIHbDFooPHigNuQOiwd
-         C7meRglA8niz/PmkNgK+ZvMXcF9rki/9XXfjE=
+	id S933388Ab0CaNpX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 09:45:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58234 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933349Ab0CaNpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 09:45:21 -0400
+Date: Wed, 31 Mar 2010 15:45:19 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Andre Przywara <andre.przywara@amd.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+       Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+       Joerg Roedel <joerg.roedel@amd.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org
+Subject: Re: KVM warning about uncertified CPU for SMP for AMD model 2,
+ stepping 3
+In-Reply-To: <4BB33C0D.9090808@amd.com>
+Message-ID: <alpine.LNX.2.00.1003311531000.24576@pobox.suse.cz>
+References: <alpine.LNX.2.00.1003310047470.24576@pobox.suse.cz> <20100331024213.GV20695@one.firstfloor.org> <4BB33C0D.9090808@amd.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Reply-To: eranian@gmail.com
-In-Reply-To: <4BB28537.2060003@linux.vnet.ibm.com>
-References: <4B560ACD.4040206@linux.vnet.ibm.com>
-	 <d3f22a1003290213x7d7904an59d50eb6a8616133@mail.gmail.com>
-	 <1269934931.8575.6.camel@minggr.sh.intel.com>
-	 <4BB22BB0.8030208@linux.vnet.ibm.com>
-	 <u2h7c86c4471003301428v9189ccbesec68ee149dfe9f@mail.gmail.com>
-	 <4BB28537.2060003@linux.vnet.ibm.com>
-Date: Wed, 31 Mar 2010 15:43:30 +0200
-Message-ID: <y2y7c86c4471003310643u227256b2t62219a4ac2393e35@mail.gmail.com>
-Subject: Re: [RFC] perf_events: support for uncore a.k.a. nest units
-From: stephane eranian <eranian@googlemail.com>
-To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <peterz@infradead.org>,
-       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Andi Kleen <andi@firstfloor.org>, Paul Mackerras <paulus@samba.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-       Dan Terpstra <terpstra@eecs.utk.edu>, Philip Mucci <mucci@eecs.utk.edu>,
-       Maynard Johnson <mpjohn@us.ibm.com>, Carl Love <cel@us.ibm.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 1:11 AM, Corey Ashford
-<cjashfor@linux.vnet.ibm.com> wrote:
-> On 3/30/2010 2:28 PM, stephane eranian wrote:
->>
->> On Tue, Mar 30, 2010 at 6:49 PM, Corey Ashford
->> <cjashfor@linux.vnet.ibm.com>  wrote:
->>>
->>> 4) How do we choose a CPU to do the housekeeping work for a particular
->>> nest
->>> PMU.  Peter thought that user space should still specify the it via
->>> open_perf_event() cpu parameter, but there's also an argument to be made
->>> for
->>> the kernel choosing the best CPU to handle the job, or at least make it
->>> optional for the user to choose the CPU.
->>>
->> One of the housekeeping task is to handle uncore PMU interrupts, for
->> instance.
->> That is not a trivial task given that events are managed independently and
->> that you could be monitoring per-thread or system-wide. It may be that
->> some uncore PMU can only interrupt one core. Intel Nehalem can interrupt
->> many at once.
->
-> That's a good point, and I think it's unreasonable to expect that the user
-> knows exactly how the interrupts are connected from the uncore/nest PMU to
-> which CPU(s).
->
-> Perhaps one way around this would be to return an error if the chosen CPU
-> wasn't fully capable of performing the housekeeping functions for the
-> requested PMU. But this certainly isn't ideal, because relying on this
-> mechanism would require that the user (or user tool) figure out which CPU is
-> fully capable by trial-and-error.
->
+On Wed, 31 Mar 2010, Andre Przywara wrote:
 
-I think users should not have to worry about all of this. It is also
-fine to restrict
-any uncore monitoring to system-wide mode, i.e., not per-thread. But I have
-also seen people requesting just that hoping they could draw correlations
-between core and uncore events in one run. I think this is less critical though.
+> But the far better solution is to instruct QEMU/KVM to inject a better CPU
+> model (as it was suggested by some people two weeks ago). I am about to test
+> various guests with respect to their behavior regarding different
+> family/model/stepping settings (one issue is already fixed). If this goes
+> well, I will send out the patch to inject the host's CPUID F/M/S into the
+> guest by default (which has other advantages, but denies migration mostly).
+> 
+> BTW.: I encourage people to test their KVM guests with "-cpu host" (on newer
+> QEMUs) and send me any crash logs.
 
-In the specific case of CPU-uncore (e.g., Nehalem uncore), you could simply
-identify the uncore PMU with the CPU. For anything else, you would definitively
-need the file descriptor. The more uniform approach would have been to use
-the file descriptor all along, except for per-thread. But that's fine, I think.
+I just quickly checked ...
+
+[    0.048001] Pid: 0, comm: swapper Not tainted (2.6.32.9-0.5-pae #1) Bochs
+[    0.048001] EIP: 0060:[<c0528a80>] EFLAGS: 00010246 CPU: 0
+[    0.048001] EIP is at init_amd+0x249/0x279
+[    0.048001] EAX: 00000000 EBX: 00000000 ECX: 00a21000 EDX: 00000000
+[    0.048001] ESI: c077de80 EDI: c077de98 EBP: c07e1a14 ESP: c0749f8c
+[    0.048001]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+[    0.048001] Process swapper (pid: 0, ti=c0748000 task=c074fca0 task.ti=c0748000)
+[    0.048001] Stack:
+[    0.048001]  000000e8 00000000 00000000 c07b9720 c077de80 c077debc c077de98 c0527d74
+[    0.048001] <0> de816448 de816440 00000000 00000000 de840580 000080d0 c07b9720 00099d00
+[    0.048001] <0> c074c000 00bfc003 c078822d c07882c8 c028e762 c07b9720 c0781a05 00000062
+[    0.048001] Call Trace:
+[    0.048001]  [<c0527d74>] identify_cpu+0xc2/0x223
+[    0.048001]  [<c078822d>] identify_boot_cpu+0xa/0x22
+[    0.048001]  [<c07882c8>] check_bugs+0x8/0xd2
+[    0.048001]  [<c0781a05>] start_kernel+0x32e/0x3a9
+[    0.048001] Code: 00 00 39 44 24 08 0f 96 c0 0f b6 d0 0f b7 86 b6 00 00 00 8b 0c 9d 80 e4 77 c0 8d 04 42 31 d2 66 89 44 0d 00 0f b7 86 b8 00 00 00 <f7> 74 24 08 66 89 96 b8 00 00 00 e9 77 fe ff ff 66 c7 05 00 1d 
+[    0.048001] EIP: [<c0528a80>] init_amd+0x249/0x279 SS:ESP 0068:c0749f8c
+[    0.116025] ---[ end trace 4eaa2a86a8e2da22 ]---
+[    0.117661] Kernel panic - not syncing: Attempted to kill the idle task!
+[    0.120008] Pid: 0, comm: swapper Tainted: G      D      2.6.32.9-0.5-pae #1
+[    0.122115] Call Trace:
+[    0.124032]  [<c02069a1>] try_stack_unwind+0x1b1/0x1f0
+[    0.125821]  [<c020596f>] dump_trace+0x3f/0xe0
+[    0.132019]  [<c02065ab>] show_trace_log_lvl+0x4b/0x60
+[    0.136012]  [<c02065d8>] show_trace+0x18/0x20
+[    0.137572]  [<c052dc19>] dump_stack+0x6d/0x74
+[    0.139120]  [<c052dc62>] panic+0x42/0x145
+[    0.140018]  [<c0242936>] do_exit+0x236/0x310
+[    0.141550]  [<c0531063>] oops_end+0xc3/0xd0
+[    0.144012]  [<c020455c>] do_divide_error+0x7c/0x90
+[    0.145643]  [<c05304ee>] error_code+0x66/0x6c
+[    0.147235]  [<c0528a80>] init_amd+0x249/0x279
+[    0.148011]  [<c0527d74>] identify_cpu+0xc2/0x223
+[    0.149649]  [<c078822d>] identify_boot_cpu+0xa/0x22
+[    0.152010]  [<c07882c8>] check_bugs+0x8/0xd2
+[    0.153573]  [<c0781a05>] start_kernel+0x32e/0x3a9
+
+But I admit that this isn't the most up-to-date version, so perhaps it's 
+already fixed ...
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
