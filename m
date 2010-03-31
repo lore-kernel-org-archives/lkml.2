@@ -1,87 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757041Ab0CaCyl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 22:54:41 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:65237 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756383Ab0CaCyj convert rfc822-to-8bit (ORCPT
+	id S1757021Ab0CaC4y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 22:56:54 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46763 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755428Ab0CaC4w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 22:54:39 -0400
+	Tue, 30 Mar 2010 22:56:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=fMR78S1/ZhmmfkCQYry6NKd391qLF7HFgLppRKla+hZ7qeonlv0/pjeVMuOfXjT89i
-         QMj4O06P6u9NkSzHFPMMFaxo3RiFMVaLgdiIU8z6jfY0wrdhyviRLqt00ZtoRsGdyFzK
-         pjB+7OsszX69op9xnsE1V9k5TjPokhcRI0R2g=
+        b=uRqibr40QjA/fV9rhvFgU9r4K64WsWwEBg8S/qssQudRqfnlz/gxb1nigcdTRvnBBV
+         z/QQVgPP+8nePxYpYQP2CQFHK1wx2SHklawoA3Gyq5vvtkaHaY6ntxdN7LY/sJ1Weug2
+         akAk9kC16yETff9bijAIKMYsqj/h97UXCJ2fM=
 MIME-Version: 1.0
-In-Reply-To: <20100331111202.a94b233a.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100316170808.GA29400@redhat.com>
-	 <20100330135634.09e6b045.akpm@linux-foundation.org>
-	 <20100331092815.c8b9d89c.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20100330173721.cbd442cb.akpm@linux-foundation.org>
-	 <20100331094124.43c49290.kamezawa.hiroyu@jp.fujitsu.com>
-	 <z2t28c262361003301857l77db88dbv7d025b5c5947ad72@mail.gmail.com>
-	 <20100331111202.a94b233a.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Wed, 31 Mar 2010 11:48:20 +0900
-Message-ID: <z2z28c262361003301948h64378b8bkbbd29ed810862ce5@mail.gmail.com>
-Subject: Re: [PATCH] exit: fix oops in sync_mm_rss
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <0D753D10438DA54287A00B027084269763691C3440@AUSP01VMBX24.collaborationhost.net>
+References: <90b950fc1003252024i5ba8989bg95f0a81e8e5e708e@mail.gmail.com>
+	 <20100330160257.e5f978a9.akpm@linux-foundation.org>
+	 <0D753D10438DA54287A00B027084269763691C3440@AUSP01VMBX24.collaborationhost.net>
+Date: Wed, 31 Mar 2010 11:56:50 +0900
+Message-ID: <90b950fc1003301956mf8246f4sd060852dbead1407@mail.gmail.com>
+Subject: Re: [Linux-fbdev-devel] [PATCH] added S6E63M0 AMOLED LCD Panel 
+	driver.
+From: InKi Dae <daeinki@gmail.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
-       "Michael S. Tsirkin" <mst@redhat.com>, cl@linux-foundation.org,
-       lee.schermerhorn@hp.com, rientjes@google.com,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-       "David S. Miller" <davem@davemloft.net>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, Troels Liebe Bentsen <tlb@rapanden.dk>,
-       linux-bluetooth@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+       "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+       "linux-fbdev-devel@lists.sourceforge.net" 
+	<linux-fbdev-devel@lists.sourceforge.net>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Pavel Machek <pavel@ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 11:12 AM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Wed, 31 Mar 2010 10:57:18 +0900
-> Minchan Kim <minchan.kim@gmail.com> wrote:
->
->> On Wed, Mar 31, 2010 at 9:41 AM, KAMEZAWA Hiroyuki
->
->> > Doesn't make sense ?
->> >
+Hi Hertley,
+
+it's a good way.
+this way is more clear and also Andrew's concern could be solved.
+
+I'd like to apply it to local repository and then I will send the patch
+in the near future.
+
+and Andrew, If you think that Hertley's way is clear then I would make
+the patch. maybe it would become second patch.
+
+Thank you.
+
+2010/3/31 H Hartley Sweeten <hartleys@visionengravers.com>:
+> On Tuesday, March 30, 2010 4:03 PM, Andrew Morton wrote:
+>> On Fri, 26 Mar 2010 12:24:24 +0900
+>> InKi Dae <daeinki@gmail.com> wrote:
 >>
->> Nitpick.
->> How about moving sync_mm_rss into after check !mm of exit_mm?
+>>> +static int s6e63m0_ldi_init(struct s6e63m0 *lcd)
+>>> +{
+>>> +    int ret;
+>>> +
+>>> +    ret = s6e63m0_panel_send_sequence(lcd, SEQ_PANEL_CONDITION_SET);
+>>> +    ret |= s6e63m0_panel_send_sequence(lcd, SEQ_DISPLAY_CONDITION_SET);
+>>> +    ret |= s6e63m0_panel_send_sequence(lcd, SEQ_GAMMA_SETTING);
+>>> +    ret |= s6e63m0_panel_send_sequence(lcd, SEQ_ETC_CONDITION_SET);
+>>> +    ret |= s6e63m0_panel_send_sequence(lcd, SEQ_ACL_ON);
+>>> +    ret |= s6e63m0_panel_send_sequence(lcd, SEQ_ELVSS_ON);
+>>> +
+>>> +    return ret;
+>>> +}
 >>
-> Hmm.
-> ==
-> Â  Â  Â  Â sync_mm_rss(tsk, tsk->mm);
-> Â  Â  Â  Â group_dead = atomic_dec_and_test(&tsk->signal->live);
-> Â  Â  Â  Â if (group_dead) {
-> Â  Â  Â  Â  Â  Â  Â  Â hrtimer_cancel(&tsk->signal->real_timer);
-> Â  Â  Â  Â  Â  Â  Â  Â exit_itimers(tsk->signal);
-> Â  Â  Â  Â  Â  Â  Â  Â if (tsk->mm)
-> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â setmax_mm_hiwater_rss(&tsk->signal->maxrss, tsk->mm); ---(**)
-> Â  Â  Â  Â }
-> Â  Â  Â  Â acct_collect(code, group_dead);
-> Â  Â  Â  Â if (group_dead)
-> Â  Â  Â  Â  Â  Â  Â  Â tty_audit_exit();
-> Â  Â  Â  Â if (unlikely(tsk->audit_context))
-> Â  Â  Â  Â  Â  Â  Â  Â audit_free(tsk);
+>> Well.  If one call to s6e63m0_panel_send_sequence() returns -ENOMEM and
+>> another call returns -EIO (for example), this function will return some
+>> other, incorrect errno.
+>>
+>> Which is a rather minor problem, unless some caller is explicitly
+>> looking for some particular error code, which doesn't happen often.
 >
-> Â  Â  Â  Â tsk->exit_code = code;
-> Â  Â  Â  Â taskstats_exit(tsk, group_dead); --------(*)
+> Why not handle the calls with a loop?
 >
-> Â  Â  Â  Â exit_mm(tsk);
-> ==
-> task_acct routine has to handle mm information (*).
-
-Indeed. I missed that.
-Thanks, Kame.
-
-
--- 
-Kind regards,
-Minchan Kim
+> +static int s6e63m0_ldi_init(struct s6e63m0 *lcd)
+> +{
+> +       const unsigned short *init_seq[] = {
+> +               SEQ_PANEL_CONDITION_SET,
+> +               SEQ_DISPLAY_CONDITION_SET,
+> +               SEQ_GAMMA_SETTING,
+> +               SEQ_ETC_CONDITION_SET,
+> +               SEQ_ACL_ON,
+> +               SEQ_ELVSS_ON,
+> +       };
+> +       int i, ret;
+> +
+> +       for (i = 0; i < ARRAY_SIZE(init_seq); i++) {
+> +               ret = s6e63m0_panel_send_sequence(lcd, init_seq[i]);
+> +               if (ret)
+> +                       break;
+> +       }
+> +       return ret;
+> +}
+>
+> Note that _s6e63m0_gamma_ctl has the same issue.  Actually, the whole
+> driver has issues with returning errors properly.
+>
+> Regards,
+> Hartley
