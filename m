@@ -1,103 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab0CaUtl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 16:49:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41325 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758168Ab0CaUtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 16:49:25 -0400
-Date: Wed, 31 Mar 2010 22:47:18 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       nishimura@mxp.nes.nec.co.jp,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [patch] oom: give current access to memory reserves if it has
-	been killed
-Message-ID: <20100331204718.GD11635@redhat.com>
-References: <20100326150805.f5853d1c.akpm@linux-foundation.org> <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330154659.GA12416@redhat.com> <alpine.DEB.2.00.1003301320020.5234@chino.kir.corp.google.com> <20100331175836.GA11635@redhat.com>
+	id S932302Ab0CaU54 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 16:57:56 -0400
+Received: from mail-pz0-f179.google.com ([209.85.222.179]:44416 "EHLO
+	mail-pz0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932141Ab0CaU5y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 16:57:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=GAEpG/v/lif5KCilPDuVf9AOSt8Kk34s4COjQIUtpld86LXJrdgpe29w/CO7lSrMsX
+         gFEr6oCIU9srOj0J0HN1w2WwH4M4rxVdLZ97baah470Am6eaXSwdauqDVtkveoi/S0MR
+         P5buHXVifZqj8VVcOf3WUf24cdlfCGJJF1/1w=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100331175836.GA11635@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100331185916.GA12306@elte.hu>
+References: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org>
+	 <4BB2EB1B.8090303@zytor.com>
+	 <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org>
+	 <20100331185916.GA12306@elte.hu>
+Date: Thu, 1 Apr 2010 06:57:53 +1000
+Message-ID: <v2m21d7e9971003311357ga4626e41h535ae733933fdc84@mail.gmail.com>
+Subject: Re: Config NO_BOOTMEM breaks my amd64 box
+From: Dave Airlie <airlied@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: James Morris <jmorris@namei.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
+       airlied@linux.ie, Thomas Gleixner <tglx@linutronix.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31, Oleg Nesterov wrote:
+On Thu, Apr 1, 2010 at 4:59 AM, Ingo Molnar <mingo@elte.hu> wrote:
 >
-> OK, but I guess this !p->mm check is still wrong for the same reason.
-> In fact I do not understand why it is needed in select_bad_process()
-> right before oom_badness() which checks ->mm too (and this check is
-> equally wrong).
+> * James Morris <jmorris@namei.org> wrote:
+>
+>> On Tue, 30 Mar 2010, H. Peter Anvin wrote:
+>>
+>> > On 03/30/2010 09:49 PM, James Morris wrote:
+>> > >
+>> > > Please make NO_BOOTMEM default to n, at least for amd64, where I've found
+>> > > that it leads to all kinds of strange, undebuggable boot hangs and errors
+>> > > (with relatively current Fedora development userland).
+>> >
+>> > Have you tested it with the latest fixes that are now in Linus' tree (-rc3)?
+>>
+>> Yes, it was happening with -rc3.
+>
+> Could you please send the bootlog that Yinghai asked for, plus also one that
+> you get with NO_BOOTMEM turned off (for comparison)?
+>
+> Also, when did you first hit this bug? This code has been upstream for almost
+> a month, and it was in linux-next before that - so you should have hit this
+> much sooner. A rough timeframe would suffice. I suppose you were booting
+> upstream kernels during the merge window as well?
 
-Probably something like the patch below makes sense. Note that
-"skip kernel threads" logic is wrong too, we should check PF_KTHREAD.
-Probably it is better to check it in select_bad_process() instead,
-near is_global_init().
+A default y config option causing regressions still at rc3? and you guys
+keep going? This is the sort of shit Linus would flame me for a day or two for,
 
-The new helper, find_lock_task_mm(), should be used by
-oom_forkbomb_penalty() too.
+Can we get some f'ing consistency here?
 
-dump_tasks() doesn't need it, it does do_each_thread(). Cough,
-__out_of_memory() and out_of_memory() call it without tasklist.
-We are going to panic() anyway, but still.
+Dave.
 
-Oleg.
-
---- x/mm/oom_kill.c
-+++ x/mm/oom_kill.c
-@@ -129,6 +129,19 @@ static unsigned long oom_forkbomb_penalt
- 				(child_rss / sysctl_oom_forkbomb_thres) : 0;
- }
- 
-+static find_lock_task_mm(struct task_struct *p)
-+{
-+	struct task_struct *t = p;
-+	do {
-+		task_lock(t);
-+		if (likely(t->mm && !(t->flags & PF_KTHREAD)))
-+			return t;
-+		task_unlock(t);
-+	} while_each_thred(p, t);
-+
-+	return NULL;
-+}
-+
- /**
-  * oom_badness - heuristic function to determine which candidate task to kill
-  * @p: task struct of which task we should calculate
-@@ -159,13 +172,9 @@ unsigned int oom_badness(struct task_str
- 	if (p->flags & PF_OOM_ORIGIN)
- 		return 1000;
- 
--	task_lock(p);
--	mm = p->mm;
--	if (!mm) {
--		task_unlock(p);
-+	p = find_lock_task_mm(p);
-+	if (!p)
- 		return 0;
--	}
--
- 	/*
- 	 * The baseline for the badness score is the proportion of RAM that each
- 	 * task's rss and swap space use.
-@@ -330,12 +339,6 @@ static struct task_struct *select_bad_pr
- 			*ppoints = 1000;
- 		}
- 
--		/*
--		 * skip kernel threads and tasks which have already released
--		 * their mm.
--		 */
--		if (!p->mm)
--			continue;
- 		if (p->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
- 			continue;
- 
-
+>
+> We can flip the default around if there's no fix available based on the
+> bootlogs. (Plus the help text should definitely be improved.)
+>
+> Thanks,
+>
+>        Ingo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
