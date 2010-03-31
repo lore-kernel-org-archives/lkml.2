@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758019Ab0CaCQb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 22:16:31 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56739 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758002Ab0CaCQ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 22:16:28 -0400
-Date: Wed, 31 Mar 2010 04:16:26 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.34-rc3
-Message-ID: <20100331021626.GB3520@pengutronix.de>
-References: <4BB24E5F.3030703@lwfinger.net>
+	id S1758027Ab0CaCRF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 22:17:05 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48241 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758002Ab0CaCRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 22:17:01 -0400
+Message-ID: <4BB2B055.1020807@kernel.org>
+Date: Wed, 31 Mar 2010 11:15:49 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="s2ZSL+KKDSLx8OML"
-Content-Disposition: inline
-In-Reply-To: <4BB24E5F.3030703@lwfinger.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: rostedt@goodmis.org
+CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       Eric Dumazet <dada1@cosmosbay.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>, stable <stable@kernel.org>
+Subject: Re: [PATCH] modules fix incorrect percpu usage
+References: <20100330135208.GC20673@Krystal>	 <20100330125304.53f079db.akpm@linux-foundation.org>	 <20100330202421.GA28800@Krystal> <1270001013.19685.6677.camel@gandalf.stny.rr.com>
+In-Reply-To: <1270001013.19685.6677.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 31 Mar 2010 02:15:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/31/2010 11:03 AM, Steven Rostedt wrote:
+> I don't know. A possible "NULL pointer dereference" seems to me to be a
+> pretty big user visible impact.
+> 
+> I guess the question is, what's the risk of adding this change?
 
---s2ZSL+KKDSLx8OML
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+AFAICS, the risk is fairly low.  per_cpu_ptr(pcpudest, cpu) is
+SHIFT_PERCPU_PTR((ptr), per_cpu_offset((cpu))) which is just a fancy
+way of saying "typeof(ptr)((unsigned long)(ptr) + per_cpu_offset(cpu))"
+with enough obfuscation to prevent gcc from optimizing it incorrectly.
 
+Thanks.
 
-> Remember our old friend? See also
-> http://lkml.indiana.edu/hypermail/linux/kernel/1003.1/02769.html and a lo=
-ng
-
-There is a patch available:
-
-https://patchwork.kernel.org/patch/87436/
-(or https://bugzilla.kernel.org/show_bug.cgi?id=3D15548)
-
-Seems it was jussed missed.
-
-> related discussion at
-> http://lkml.indiana.edu/hypermail/linux/kernel/1003.1/02772.html.
-
-The firmware bug should be gone, but there is also
-
-https://patchwork.kernel.org/patch/87359/
-
-pointing out a few more potential issues. I will resend it without the
-thermal_sys-part and hope I'll get some comments.
-
-Kind regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---s2ZSL+KKDSLx8OML
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkuysHoACgkQD27XaX1/VRsAUwCfdKkA8JF7NyN90SB+Fy4pQnbw
-5fEAn3OAs1xtskqESV3jdq536o1u0xRH
-=vzUP
------END PGP SIGNATURE-----
-
---s2ZSL+KKDSLx8OML--
+-- 
+tejun
