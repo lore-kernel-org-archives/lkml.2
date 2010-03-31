@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab0CaSag (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 14:30:36 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:48412 "EHLO e5.ny.us.ibm.com"
+	id S1756806Ab0CaScH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 14:32:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50116 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756059Ab0CaSae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 14:30:34 -0400
-Date: Wed, 31 Mar 2010 11:30:22 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Trond.Myklebust@netapp.com,
-       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS: Fix RCU warnings in
- nfs_inode_return_delegation_noreclaim() [ver #2]
-Message-ID: <20100331183022.GH2461@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100318133302.29754.1584.stgit@warthog.procyon.org.uk>
- <19192.1269889348@redhat.com>
- <23274.1269893706@redhat.com>
- <25276.1269901350@redhat.com>
- <26760.1269903543@redhat.com>
- <20100329232636.GT2569@linux.vnet.ibm.com>
- <2440.1269967151@redhat.com>
- <21972.1269993064@redhat.com>
- <10818.1270044273@redhat.com>
- <15371.1270057054@redhat.com>
+	id S1756059Ab0CaScD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 14:32:03 -0400
+Message-ID: <4BB39518.2020200@zytor.com>
+Date: Wed, 31 Mar 2010 11:31:52 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <15371.1270057054@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com
+Subject: Re: [PATCH][RESEND] x86: Do not write to VGA memory space if CONFIG_VGA_CONSOLE
+ is undefined
+References: <1270046479-4486-1-git-send-email-guenter.roeck@ericsson.com>
+In-Reply-To: <1270046479-4486-1-git-send-email-guenter.roeck@ericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 06:37:34PM +0100, David Howells wrote:
-> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+On 03/31/2010 07:41 AM, Guenter Roeck wrote:
+> Current early_printk code writes into VGA memory space even
+> if CONFIG_VGA_CONSOLE is undefined. This can cause problems
+> if there is no VGA device in the system, especially if the memory
+> is used by another device.
 > 
-> > Protected by something that the caller did, be it holding the the correct
-> > lock, operating on it during initialization before other CPUs have access
-> > to it, operating on it during cleanup after other CPUs' access has been
-> > revoked, or whatever.
+> Fix problem by redirecting output to early_serial_console
+> if CONFIG_VGA_CONSOLE is undefined.
 > 
-> But the point I made very early this morning still stands:  What if someone
-> simply wants to test the pointer, not actually to dereference it?
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+>  
+>  asmlinkage void early_printk(const char *fmt, ...)
+> @@ -216,7 +224,7 @@ static int __init setup_early_printk(char *buf)
+>  			early_serial_init(buf + 4);
+>  			early_console_register(&early_serial_console, keep);
+>  		}
+> -		if (!strncmp(buf, "vga", 3) &&
+> +		if (have_vga_console && !strncmp(buf, "vga", 3) &&
+>  		    boot_params.screen_info.orig_video_isVGA == 1) {
+>  			max_xpos = boot_params.screen_info.orig_video_cols;
+>  			max_ypos = boot_params.screen_info.orig_video_lines;
 
-OK, I was missing your point.  And this is what you were proposing
-rcu_pointer_not_null() for.
+I'm confused in a big way about how you could end up with a system where:
 
-> NFS was using rcu_dereference() for this in a couple of places - which is
-> overkill.  I suggested stripping this off and you countered with the
-> suggestion that it should be using rcu_dereference_check().
-> 
-> Why do I need anything at all?
+a) there is no VGA;
+b) VGA memory is used by another device(!!!);
+c) boot_params.screen_info.orig_video_isVGA == 1?
 
-Right now you don't.  We will need something as part of Arnd's patches to
-shut sparse up, and I was hoping not to have to go through the find/fix
-cycle twice.  But that turned out to be kind of pointless, since we
-have burned far more time discussing than it would have taken to fix
-it twice.  ;-)
-
-But the discussion has been helpful, as I was previously just fine with
-sprinkling otherwise-unneed rcu_dereference_whatever() calls thoughout
-the kernel!
-
-							Thanx, Paul
+	-hpa
