@@ -1,88 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab0CaAPI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:15:08 -0400
-Received: from kroah.org ([198.145.64.141]:51835 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756777Ab0C3XRl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:17:41 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:13 2010
-Message-Id: <20100330225613.110154017@linux.site>
-User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:02 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Marcin Slusarz <marcin.slusarz@gmail.com>,
-       Peter Jones <pjones@redhat.com>, Huang Ying <ying.huang@intel.com>,
-       Dave Airlie <airlied@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       maximilian attems <max@stro.at>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [024/116] efifb: fix framebuffer handoff
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+	id S932856Ab0CaATM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:19:12 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41566 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756641Ab0CaATH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 20:19:07 -0400
+Date: Tue, 30 Mar 2010 17:13:13 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Greg KH <gregkh@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       stable@kernel.org, stable-review@kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>, alan@lxorguk.ukuu.org.uk,
+       Clemens Ladisch <clemens@ladisch.de>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [087/116] PCI quirk: RS780/RS880: work around missing MSI
+ initialization
+In-Reply-To: <20100330225656.136257690@linux.site>
+Message-ID: <alpine.LFD.2.00.1003301711330.3707@i5.linux-foundation.org>
+References: <20100330225656.136257690@linux.site>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
-
-------------------
-
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-
-commit 89f3f2199084a160a3a45fa6d9af235696321758 upstream.
-
-Commit 4410f3910947dcea8672280b3adecd53cec4e85e ("fbdev: add support for
-handoff from firmware to hw framebuffers") didn't add fb_destroy
-operation to efifb.  Fix it and change aperture_size to match size
-passed to request_mem_region.
-
-Addresses http://bugzilla.kernel.org/show_bug.cgi?id=15151
-
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Reported-by: Alex Zhavnerchik <alex.vizor@gmail.com>
-Tested-by: Alex Zhavnerchik <alex.vizor@gmail.com>
-Acked-by: Peter Jones <pjones@redhat.com>
-Cc: Huang Ying <ying.huang@intel.com>
-Cc: Dave Airlie <airlied@redhat.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: maximilian attems <max@stro.at>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/video/efifb.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
---- a/drivers/video/efifb.c
-+++ b/drivers/video/efifb.c
-@@ -161,8 +161,17 @@ static int efifb_setcolreg(unsigned regn
- 	return 0;
- }
- 
-+static void efifb_destroy(struct fb_info *info)
-+{
-+	if (info->screen_base)
-+		iounmap(info->screen_base);
-+	release_mem_region(info->aperture_base, info->aperture_size);
-+	framebuffer_release(info);
-+}
-+
- static struct fb_ops efifb_ops = {
- 	.owner		= THIS_MODULE,
-+	.fb_destroy	= efifb_destroy,
- 	.fb_setcolreg	= efifb_setcolreg,
- 	.fb_fillrect	= cfb_fillrect,
- 	.fb_copyarea	= cfb_copyarea,
-@@ -281,7 +290,7 @@ static int __init efifb_probe(struct pla
- 	info->par = NULL;
- 
- 	info->aperture_base = efifb_fix.smem_start;
--	info->aperture_size = size_total;
-+	info->aperture_size = size_remap;
- 
- 	info->screen_base = ioremap(efifb_fix.smem_start, efifb_fix.smem_len);
- 	if (!info->screen_base) {
 
 
+
+On Tue, 30 Mar 2010, Greg KH wrote:
+>
+> 2.6.32-stable review patch.  If anyone has any objections, please let us know.
+> 
+> ------------------
+> 
+> From: Clemens Ladisch <clemens@ladisch.de>
+> 
+> commit a5ee4eb75413c145334c30e43f1af9875dad6fd7 upstream.
+
+NAK. 
+
+Rafael reports this causes a regression. I don't think we know why, but 
+more importantly, that definitely means this is not stable material.
+
+		Linus
