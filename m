@@ -1,100 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932730Ab0CaIe0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 04:34:26 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:50635 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932638Ab0CaIeX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 04:34:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=qfzmUqbUoywbOoK6bAE7ASbWjIb4xrci1lqP3EMTSG8v3VQY52sGk8K4WPC7nHYjLt
-         Zyc6K6YsaD+eIA5+8QYywp5SoKLhBKgp79md+pdI0Kkg7eXtWzIOvZMLusenma5ZJW83
-         7ZrdXwpAxG4PxK3N8QZy2qwh2UIa6I09Jp+nA=
-MIME-Version: 1.0
-In-Reply-To: <1269982719.1507.71.camel@Joe-Laptop.home>
-References: <1269979872-14677-1-git-send-email-soerenmoeller2001@gmail.com>
-	 <1269982719.1507.71.camel@Joe-Laptop.home>
-Date: Wed, 31 Mar 2010 10:34:20 +0200
-Message-ID: <6797ac6e1003310134y9c333y1fc6811032b2f174@mail.gmail.com>
-Subject: Re: [PATCH] Staging: quatech_usb2: fix coding style issues
-From: =?ISO-8859-1?B?U/hyZW4gTfhsbGVy?= <soerenmoeller2001@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: gregkh@suse.de, richard@audacityteam.org, andre.goddard@gmail.com,
-       nm127@freemail.hu, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932818Ab0CaIgB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 04:36:01 -0400
+Received: from sh.osrg.net ([192.16.179.4]:34555 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932439Ab0CaIf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 04:35:58 -0400
+Date: Wed, 31 Mar 2010 17:35:50 +0900
+To: davem@davemloft.net
+Cc: fujita.tomonori@lab.ntt.co.jp, hancockrwd@gmail.com,
+       linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       linux-usb@vger.kernel.org, bzolnier@gmail.com
+Subject: Re: [PATCH RFC] fix problems with NETIF_F_HIGHDMA in networking
+ drivers v2
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100325.203520.234306178.davem@davemloft.net>
+References: <51f3faa71003251803q7ccec5d5x82bc277c590e2848@mail.gmail.com>
+	<20100326123250A.fujita.tomonori@lab.ntt.co.jp>
+	<20100325.203520.234306178.davem@davemloft.net>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100331173507I.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 31 Mar 2010 17:35:50 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/3/30 Joe Perches <joe@perches.com>
->
-> On Tue, 2010-03-30 at 20:11 +0000, Soeren Moeller wrote:
-> > This is a patch to the file quatech_usb2.c that fixes two space before tabular and one line of more than 80 characters warnings found by checkpatch.pl
-> > -                             tty_insert_flip_string(tty_st,
-> > -                                     &((unsigned char *)(urb->transfer_buffer)
-> > -                                             )[i],
-> > -                                     1);
-> > +                             tty_insert_flip_string(tty_st, &(
-> > +                                             (unsigned char *)
-> > +                                             (urb->transfer_buffer)
-> > +                                     )[i], 1);
->
-> I think this is unsightly.
-> Perhaps a macro instead?
->
+On Thu, 25 Mar 2010 20:35:20 -0700 (PDT)
+David Miller <davem@davemloft.net> wrote:
 
-The macro seems like a good idea, it makes the code a lot more readable.
-Thanks for your response
+> From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> Date: Fri, 26 Mar 2010 12:33:12 +0900
+> 
+> > On Thu, 25 Mar 2010 19:03:37 -0600
+> > Robert Hancock <hancockrwd@gmail.com> wrote:
+> > 
+> >> This seems like it could be a reasonable approach. The only thing is
+> >> that in this code you're returning 1 if the parent device has no DMA
+> >> mask set. Wouldn't it make more sense to return 0 in this case? I'm
+> >> assuming that in that situation it's a virtual device not backed by
+> >> any hardware and there should be no DMA mask restriction...
+> > 
+> > I chose the safer option because I don't know enough how net_device
+> > structure is used. If returning zero in such case is always safe, it's
+> > fine by me. any example of such virtual device driver?
+> 
+> Like Fujita I'd rather play it safe here.
+> 
+> Even for virtual devices, DMA information up to the root bus
+> ought to be sane.
 
-Regards
-Sören Möller
+Agreed. 
 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/staging/quatech_usb2/quatech_usb2.c |   17 +++++++++--------
->  1 files changed, 9 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/staging/quatech_usb2/quatech_usb2.c b/drivers/staging/quatech_usb2/quatech_usb2.c
-> index 1561f74..d14792a 100644
-> --- a/drivers/staging/quatech_usb2/quatech_usb2.c
-> +++ b/drivers/staging/quatech_usb2/quatech_usb2.c
-> @@ -109,12 +109,15 @@ static int debug;
->  #define  QT2_LINE_STATUS_REGISTER       0x05
->  #define  QT2_MODEM_STATUS_REGISTER      0x06
->
-> +/* handy macro for extracting a byte from a data read transfer buffer */
-> +#define URB_TBUF(urb, pos) (((unsigned char *)(urb->transfer_buffer))[pos])
-> +
->  /* handy macros for doing escape sequence parsing on data reads */
-> -#define THISCHAR       ((unsigned char *)(urb->transfer_buffer))[i]
-> -#define NEXTCHAR       ((unsigned char *)(urb->transfer_buffer))[i + 1]
-> -#define THIRDCHAR      ((unsigned char *)(urb->transfer_buffer))[i + 2]
-> -#define FOURTHCHAR     ((unsigned char *)(urb->transfer_buffer))[i + 3]
-> -#define FIFTHCHAR      ((unsigned char *)(urb->transfer_buffer))[i + 4]
-> +#define THISCHAR       URB_TBUF(urb, i + 0)
-> +#define NEXTCHAR       URB_TBUF(urb, i + 1)
-> +#define THIRDCHAR      URB_TBUF(urb, i + 2)
-> +#define FOURTHCHAR     URB_TBUF(urb, i + 3)
-> +#define FIFTHCHAR      URB_TBUF(urb, i + 4)
->
->  static const struct usb_device_id quausb2_id_table[] = {
->        {USB_DEVICE(USB_VENDOR_ID_QUATECH, QUATECH_SSU2_100)},
-> @@ -1649,9 +1652,7 @@ __func__);
->                        if (tty_st && urb->actual_length) {
->                                tty_buffer_request_room(tty_st, 1);
->                                tty_insert_flip_string(tty_st,
-> -                                       &((unsigned char *)(urb->transfer_buffer)
-> -                                               )[i],
-> -                                       1);
-> +                                                      &URB_TBUF(urb, i), 1);
->                        }
->                } /*endfor*/
->                tty_flip_buffer_push(tty_st);
->
->
+Here's the patch in the proper format.
+
+Probably, PCI_DMA_BUS_IS_PHYS should be renamed to something like
+DMA_BUS_IS_PHYS and moved to the better place. Then we can avoid
+including linux/pci.h.
+
+=
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: [PATCH] net: change illegal_highdma to use dma_mask
+
+Robert Hancock pointed out two problems about NETIF_F_HIGHDMA:
+
+-Many drivers only set the flag when they detect they can use 64-bit DMA,
+since otherwise they could receive DMA addresses that they can't handle
+(which on platforms without IOMMU/SWIOTLB support is fatal). This means that if
+64-bit support isn't available, even buffers located below 4GB will get copied
+unnecessarily.
+
+-Some drivers set the flag even though they can't actually handle 64-bit DMA,
+which would mean that on platforms without IOMMU/SWIOTLB they would get a DMA
+mapping error if the memory they received happened to be located above 4GB.
+
+http://lkml.org/lkml/2010/3/3/530
+
+
+We can use the dma_mask if we need bouncing or not here. Then we can
+safely fix drivers that misuse NETIF_F_HIGHDMA.
+
+Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+---
+ net/core/dev.c |   20 ++++++++++++++------
+ 1 files changed, 14 insertions(+), 6 deletions(-)
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 5e3dc28..3a09f76 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -129,6 +129,7 @@
+ #include <linux/jhash.h>
+ #include <linux/random.h>
+ #include <trace/events/napi.h>
++#include <linux/pci.h>
+ 
+ #include "net-sysfs.h"
+ 
+@@ -1790,14 +1791,21 @@ static inline int illegal_highdma(struct net_device *dev, struct sk_buff *skb)
+ {
+ #ifdef CONFIG_HIGHMEM
+ 	int i;
++	if (!(dev->features & NETIF_F_HIGHDMA)) {
++		for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
++			if (PageHighMem(skb_shinfo(skb)->frags[i].page))
++				return 1;
++	}
+ 
+-	if (dev->features & NETIF_F_HIGHDMA)
+-		return 0;
+-
+-	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
+-		if (PageHighMem(skb_shinfo(skb)->frags[i].page))
+-			return 1;
++	if (PCI_DMA_BUS_IS_PHYS) {
++		struct device *pdev = dev->dev.parent;
+ 
++		for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
++			dma_addr_t addr = page_to_phys(skb_shinfo(skb)->frags[i].page);
++			if (!pdev->dma_mask || addr + PAGE_SIZE - 1 > *pdev->dma_mask)
++				return 1;
++		}
++	}
+ #endif
+ 	return 0;
+ }
+-- 
+1.7.0
+
