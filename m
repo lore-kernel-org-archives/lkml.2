@@ -1,81 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757740Ab0CaOCy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 10:02:54 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:49475 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755048Ab0CaOCw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 10:02:52 -0400
-To: "Serge E. Hallyn" <serue@us.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, linux-fsdevel@vger.kernel.org,
-       Eric Dumazet <eric.dumazet@gmail.com>, Benjamin LaHaise <bcrl@lhnet.ca>,
-       netdev@vger.kernel.org
-Subject: Re: [PATCH 1/6] sysfs: Basic support for multiple super blocks
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
-	<1269973889-25260-1-git-send-email-ebiederm@xmission.com>
-	<4BB2E098.7030202@kernel.org> <m1634d82e0.fsf@fess.ebiederm.org>
-	<20100331134757.GA6132@us.ibm.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Wed, 31 Mar 2010 07:02:39 -0700
-In-Reply-To: <20100331134757.GA6132@us.ibm.com> (Serge E. Hallyn's message of "Wed\, 31 Mar 2010 08\:47\:57 -0500")
-Message-ID: <m1mxxoy4g0.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: serue@us.ibm.com, netdev@vger.kernel.org, bcrl@lhnet.ca, eric.dumazet@gmail.com, linux-fsdevel@vger.kernel.org, cornelia.huck@de.ibm.com, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, gregkh@suse.de, tj@kernel.org
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+	id S1756294Ab0CaOEn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 10:04:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65526 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752453Ab0CaOEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 10:04:41 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100331000832.GQ2513@linux.vnet.ibm.com>
+References: <20100331000832.GQ2513@linux.vnet.ibm.com> <20100329192159.GM2569@linux.vnet.ibm.com> <20100319022527.GC2894@linux.vnet.ibm.com> <20100318133302.29754.1584.stgit@warthog.procyon.org.uk> <19192.1269889348@redhat.com> <23274.1269893706@redhat.com> <25276.1269901350@redhat.com> <26760.1269903543@redhat.com> <20100329232636.GT2569@linux.vnet.ibm.com> <2440.1269967151@redhat.com> <21972.1269993064@redhat.com> 
+To: paulmck@linux.vnet.ibm.com
+Cc: dhowells@redhat.com, Eric Dumazet <eric.dumazet@gmail.com>,
+       Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFS: Fix RCU warnings in nfs_inode_return_delegation_noreclaim() [ver #2]
+Date: Wed, 31 Mar 2010 15:04:33 +0100
+Message-ID: <10818.1270044273@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serue@us.ibm.com> writes:
+Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-> Quoting Eric W. Biederman (ebiederm@xmission.com):
->> Tejun Heo <tj@kernel.org> writes:
->> >> index 30f5a44..030a39d 100644
->> >> --- a/fs/sysfs/sysfs.h
->> >> +++ b/fs/sysfs/sysfs.h
->> >> @@ -114,6 +114,9 @@ struct sysfs_addrm_cxt {
->> >>  /*
->> >>   * mount.c
->> >>   */
->> >> +struct sysfs_super_info {
->> >> +};
->> >> +#define sysfs_info(SB) ((struct sysfs_super_info *)(SB->s_fs_info))
->> >
->> > Another nit picking.  It would be better to wrap SB in the macro
->> > definition.  Also, wouldn't an inline function be better?
->> 
->> Good spotting.  That doesn't bite today but it will certainly bite
->> someday if it isn't fixed.
->> 
->> I wonder how that has slipped through the review all of this time.
->
-> (let me demonstrate how: )
->
-> WTH are you talking about?  Unless you mean doing (SB) inside
-> the definition?
->
-> I actually was going to suggest dropping the #define as it obscures
-> the code, but I figured it would get more complicated later.
+> How about Eric's suggestion of rcu_dereference_protected()?  That name
+> doesn't imply a lock, which as you say above, isn't always needed to
+> keep the structure from changing.
 
-I believe the discuss change was to make the define:
-#define sysfs_info(SB) ((struct sysfs_super_info *)((SB)->s_fs_info))
+But 'protected' from what or by what?
 
-As for dropping the define and using s_fs_info raw.  I rather like
-a light weight type safe wrapper.  Maybe I just think s_fs_info
-is an ugly name.
-
-In practice I never call sysfs_info() with any expression that has
-a side effect, so it doesn't matter.
-
-Eric
-
-
-
+David
