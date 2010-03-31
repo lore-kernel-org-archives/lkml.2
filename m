@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932660Ab0CaVlI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 17:41:08 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60417 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932625Ab0CaVlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 17:41:03 -0400
-Date: Wed, 31 Mar 2010 23:40:47 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Airlie <airlied@gmail.com>, James Morris <jmorris@namei.org>,
-       "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-       linux-kernel@vger.kernel.org, airlied@linux.ie,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: Config NO_BOOTMEM breaks my amd64 box
-Message-ID: <20100331214047.GA5353@elte.hu>
-References: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org>
- <4BB2EB1B.8090303@zytor.com>
- <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org>
- <20100331185916.GA12306@elte.hu>
- <v2m21d7e9971003311357ga4626e41h535ae733933fdc84@mail.gmail.com>
- <alpine.LFD.2.00.1003311401480.3707@i5.linux-foundation.org>
+	id S932559Ab0CaVn4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 17:43:56 -0400
+Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:51081 "EHLO
+	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758136Ab0CaVny (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 17:43:54 -0400
+Date: Wed, 31 Mar 2010 16:42:25 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Matthew Wilcox <matthew@wil.cx>
+cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Rabin Vincent <rabin@rab.in>,
+       lkml <linux-kernel@vger.kernel.org>, penberg@cs.helsinki.fi,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       linux-arch@vger.kernel.org
+Subject: Re: start_kernel(): bug: interrupts were enabled early
+In-Reply-To: <20100331211754.GC32165@parisc-linux.org>
+Message-ID: <alpine.DEB.2.00.1003311640410.30456@router.home>
+References: <20100325194100.GA2364@debian> <20100331134048.da4e35a7.akpm@linux-foundation.org> <4BB3B4DB.7040904@kernel.org> <20100331210145.GB32165@parisc-linux.org> <4BB3B8FC.1020608@zytor.com> <20100331211754.GC32165@parisc-linux.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1003311401480.3707@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 31 Mar 2010, Matthew Wilcox wrote:
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Thu, 1 Apr 2010, Dave Airlie wrote:
+> On Wed, Mar 31, 2010 at 02:05:00PM -0700, H. Peter Anvin wrote:
+> > What I note is that lib/rwsem-spinlock.c seems to be rather inconsistent
+> > in its use of spin_lock_irqsave/spin_lock_irqrestore versus
+> > spin_lock_irq/spin_unlock_irq... in fact, __down_read is the *only*
+> > place where we use the latter as opposed to the former.
 > >
-> > A default y config option causing regressions still at rc3? [...]
-> >
-> > [...] and you guys keep going? This is the sort of shit Linus would flame 
-> > me for a day or two for,
-> > 
-> > Can we get some f'ing consistency here?
-> 
-> Yeah. I think we need to remove the crap.
+> > Is that a bug?  If so, it would certainly explain this behavior.
 >
-> I thought the problems were known, and fixed in -rc3. Clearly they weren't.
+> It's based on down_read() and down_write() not being callable from
+> interrupt context, or with interrupts disabled (since they can sleep).
+> up_read(), up_write(), down_read_trylock(), down_write_trylock(),
+> downgrade_write() can all be called from interrupt context since they
+> cannot sleep.
 
-Yeah.
+Do not run the checks while we are in a single threaded context?
 
-It would still be nice to get the before/after bootlogs, because we'd like to 
-map out any remaining bugs.
+I thought we had some dynamic code patching thingamy that could change
+those when we go to smp mode?
 
-> And by now it's not about changing the default any more - by now it's about 
-> removing the known-crap code.
-
-Ok, we can certainly do that too.
-
-Should we scrap the whole x86 bootmem conversion to begin with? I'm not sure 
-there's any fundamentally less risky way to it so if we try this again in .35 
-we might run into similar regressions and i'd like to avoid that. I wouldnt 
-mind not having to do that at all, it's been a lot of pain to pull it off and 
-the lmb conversion looks even more intrusive.
-
-Thanks,
-
-	Ingo
