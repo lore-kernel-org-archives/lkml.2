@@ -1,71 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756288Ab0CaOnU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 10:43:20 -0400
-Received: from imr2.ericy.com ([198.24.6.3]:48993 "EHLO imr2.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755907Ab0CaOnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 10:43:19 -0400
-X-Greylist: delayed 33169 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Mar 2010 10:43:19 EDT
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: linux-kernel@vger.kernel.org
-CC: mingo@redhat.com, Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [PATCH][RESEND] x86: Do not write to VGA memory space if CONFIG_VGA_CONSOLE is undefined
-Date: Wed, 31 Mar 2010 07:41:19 -0700
-Message-ID: <1270046479-4486-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: git-send-email 1.7.0.87.g0901d
+	id S1756456Ab0CaOof (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 10:44:35 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:39956 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755275Ab0CaOoe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 10:44:34 -0400
+Date: Wed, 31 Mar 2010 15:44:23 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "L. Alberto Gim?nez" <agimenez@sysvalve.es>, Greg KH <gregkh@suse.de>,
+       bzolnier@gmail.com, linux-kernel@vger.kernel.org,
+       devel@driverdev.osuosl.org, alan@linux.intel.com
+Subject: Re: [PATCH] Staging: Add new driver ipheth
+Message-ID: <20100331144423.GA18193@srcf.ucam.org>
+References: <1269984864-28159-1-git-send-email-agimenez@sysvalve.es> <1269984864-28159-2-git-send-email-agimenez@sysvalve.es> <20100330214509.GA1388@suse.de> <4BB273FE.8010004@sysvalve.es> <20100331143326.GA1843@ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100331143326.GA1843@ucw.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current early_printk code writes into VGA memory space even
-if CONFIG_VGA_CONSOLE is undefined. This can cause problems
-if there is no VGA device in the system, especially if the memory
-is used by another device.
+On Wed, Mar 31, 2010 at 04:33:27PM +0200, Pavel Machek wrote:
 
-Fix problem by redirecting output to early_serial_console
-if CONFIG_VGA_CONSOLE is undefined.
+> Does it work out of the box, or is it some kind of driver for
+> jailbroken iphones?
 
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
----
-Sorry if you have seen this before. I seem to have trouble with our mailer.
+Works out of the box.
 
- arch/x86/kernel/early_printk.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
-index b9c830c..1942039 100644
---- a/arch/x86/kernel/early_printk.c
-+++ b/arch/x86/kernel/early_printk.c
-@@ -160,8 +160,16 @@ static struct console early_serial_console = {
- 	.index =	-1,
- };
- 
-+#ifdef CONFIG_VGA_CONSOLE
-+#define EARLY_CONSOLE	early_vga_console
-+static const int have_vga_console = 1;
-+#else
-+#define EARLY_CONSOLE	early_serial_console
-+static const int have_vga_console;
-+#endif
-+
- /* Direct interface for emergencies */
--static struct console *early_console = &early_vga_console;
-+static struct console *early_console = &EARLY_CONSOLE;
- static int __initdata early_console_initialized;
- 
- asmlinkage void early_printk(const char *fmt, ...)
-@@ -216,7 +224,7 @@ static int __init setup_early_printk(char *buf)
- 			early_serial_init(buf + 4);
- 			early_console_register(&early_serial_console, keep);
- 		}
--		if (!strncmp(buf, "vga", 3) &&
-+		if (have_vga_console && !strncmp(buf, "vga", 3) &&
- 		    boot_params.screen_info.orig_video_isVGA == 1) {
- 			max_xpos = boot_params.screen_info.orig_video_cols;
- 			max_ypos = boot_params.screen_info.orig_video_lines;
 -- 
-1.7.0.87.g0901d
-
+Matthew Garrett | mjg59@srcf.ucam.org
