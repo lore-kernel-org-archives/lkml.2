@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab0CaWM7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 18:12:59 -0400
-Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:51725 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753518Ab0CaWM6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 18:12:58 -0400
-Date: Thu, 1 Apr 2010 09:12:54 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Denys Fedorysychenko <nuclearcat@nuclearcat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: endless sync on bdi_sched_wait()? 2.6.33.1
-Message-ID: <20100331221254.GI7671@dastard>
-References: <201003311907.31342.nuclearcat@nuclearcat.com>
+	id S1757170Ab0CaWNx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 18:13:53 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:41444 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755161Ab0CaWNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 18:13:52 -0400
+Date: Thu, 1 Apr 2010 00:13:41 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: James Morris <jmorris@namei.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       linux-kernel@vger.kernel.org, airlied@linux.ie
+Subject: Re: Config NO_BOOTMEM breaks my amd64 box
+Message-ID: <20100331221341.GA20441@elte.hu>
+References: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org>
+ <4BB2EB1B.8090303@zytor.com>
+ <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org>
+ <4BB3C739.2020106@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201003311907.31342.nuclearcat@nuclearcat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4BB3C739.2020106@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 07:07:31PM +0300, Denys Fedorysychenko wrote:
-> I have a proxy server with "loaded" squid. On some moment i did sync, and 
-> expecting it to finish in reasonable time. Waited more than 30 minutes, still 
-> "sync". Can be reproduced easily.
-> 
-> Here is some stats and info:
-> 
-> Linux SUPERPROXY 2.6.33.1-build-0051 #16 SMP Wed Mar 31 17:23:28 EEST 2010 
-> i686 GNU/Linux
-> 
-> SUPERPROXY ~ # iostat -k -x -d 30
-> Linux 2.6.33.1-build-0051 (SUPERPROXY)  03/31/10        _i686_  (4 CPU)
-> 
-> Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s avgrq-sz 
-> avgqu-sz   await  svctm  %util
-> sda               0.16     0.01    0.08    0.03     3.62     1.33    88.94     
-> 0.15 1389.89  59.15   0.66
-> sdb               4.14    61.25    6.22   25.55    44.52   347.21    24.66     
-> 2.24   70.60   2.36   7.49
-> sdc               4.37   421.28    9.95   98.31   318.27  2081.95    44.34    
-> 20.93  193.21   2.31  24.96
-> sdd               2.34   339.90    3.97  117.47    95.48  1829.52    31.70     
-> 1.73   14.23   8.09  98.20
-                 ^^^^  ^^^^^
 
-/dev/sdd is IO bound doing small random writeback IO. A service time
-of 8ms implies that it is doing lots of large seeks. If you've got
-GBs of data to sync and that's the writeback pattern, then sync will
-most definitely take a long, long time.
+* Yinghai Lu <yinghai@kernel.org> wrote:
 
-it may be that ext4 is allocating blocks far apart rather than close
-together (as appears to be the case for /dev/sdc), so maybe this is
-is related to how the filesytems are aging or how full they are...
+> --- linux-2.6.orig/arch/x86/mm/init_32.c
+> +++ linux-2.6/arch/x86/mm/init_32.c
+> @@ -875,7 +875,12 @@ void __init mem_init(void)
+>  	BUG_ON(!mem_map);
+>  #endif
+>  	/* this will put all low memory onto the freelists */
+> +#if defined(CONFIG_NO_BOOTMEM) && defined(MAX_NUMNODES)
+> +	/* In case some 32bit systems don't have RAM installed on node0 */
+> +        totalram_pages += free_all_memory_core_early(MAX_NUMNODES);
 
-Cheers,
+(Note: tab whitespace damage)
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+> +#else
+>  	totalram_pages += free_all_bootmem();
+
+So we get into this branch if CONFIG_NO_BOOTMEM is enabled but MAX_NUMNODES is 
+not defined? Doesnt look right.
+
+> +#endif
+
+Btw., and i said this before, i absolutely hate the CONFIG_NO_BOOTMEM naming 
+as well (a negative in the option), but it is was what expresses the 'this is 
+where we want to go' state better and thus CONFIG_NO_BOOTMEM removal will be a 
+straight removal instead of a removal of the inverse.
+
+Thanks,
+
+	Ingo
