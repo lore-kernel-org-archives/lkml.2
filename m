@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932908Ab0CaGqs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 02:46:48 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42787 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757341Ab0CaGqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 02:46:46 -0400
-Message-ID: <4BB2F083.1050803@kernel.org>
-Date: Wed, 31 Mar 2010 15:49:39 +0900
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	id S932928Ab0CaGrN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 02:47:13 -0400
+Received: from isilmar.linta.de ([213.133.102.198]:60069 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932768Ab0CaGrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 02:47:10 -0400
+Date: Wed, 31 Mar 2010 08:47:07 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Cc: Russell King <linux@arm.linux.org.uk>, Ralf Baechle <ralf@linux-mips.org>,
+       Eric Miao <eric.y.miao@gmail.com>, Wolfram Sang <w.sang@pengutronix.de>,
+       Manuel Lauss <manuel.lauss@gmail.com>,
+       Dmitry Artamonow <mad_soft@inbox.ru>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       linux-pcmcia@lists.infradead.org
+Subject: Re: [PATCH] ARM: pcmcia: Adds nanoEngine PCMCIA support.
+Message-ID: <20100331064707.GA11428@isilmar.linta.de>
+Mail-Followup-To: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
+	Russell King <linux@arm.linux.org.uk>,
+	Ralf Baechle <ralf@linux-mips.org>,
+	Eric Miao <eric.y.miao@gmail.com>,
+	Wolfram Sang <w.sang@pengutronix.de>,
+	Manuel Lauss <manuel.lauss@gmail.com>,
+	Dmitry Artamonow <mad_soft@inbox.ru>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+	linux-pcmcia@lists.infradead.org
+References: <1269972879-27400-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
-       linux-kernel@vger.kernel.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
-       linux-fsdevel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-       Benjamin LaHaise <bcrl@lhnet.ca>, Serge Hallyn <serue@us.ibm.com>,
-       netdev@vger.kernel.org, Benjamin Thery <benjamin.thery@bull.net>
-Subject: Re: [PATCH 3/6] sysfs: Implement sysfs tagged directory support.
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org> <1269973889-25260-3-git-send-email-ebiederm@xmission.com>
-In-Reply-To: <1269973889-25260-3-git-send-email-ebiederm@xmission.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 31 Mar 2010 06:46:26 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269972879-27400-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Eric.
+On Tue, Mar 30, 2010 at 03:14:39PM -0300, Marcelo Roberto Jimenez wrote:
+> This patch adds nanoEngine PCMCIA support, with support for two sockets.
+> 
+> In order to have a fully functional pcmcia subsystem in a BSE nanoEngine board
+> you should carefully read this:
+> 
+> http://cambuca.ldhs.cetuc.puc-rio.br/nanoengine/
 
-On 03/31/2010 03:31 AM, Eric W. Biederman wrote:
-> What this patch does is to add an additional tag field to the
-> sysfs dirent structure.  For directories that should show different
-> contents depending on the context such as /sys/class/net/, and
-> /sys/devices/virtual/net/ this tag field is used to specify the
-> context in which those directories should be visible.  Effectively
-> this is the same as creating multiple distinct directories with
-> the same name but internally to sysfs the result is nicer.
+That website still talks about pcmcia-cs ... which was superseded by
+pcmciautils.
 
-This has become a long running project. :-)
+The patch gets an
 
-The way to implement partial visibility seems much cleaner now and I
-don't have any objection.  Thanks for cleaning up the whole sysfs and
-implementing this properly.  Unfortunately, I still feel quite
-uncomfortable about how the scope of visibility is determined and how
-deep knowledge about specific namespace implementation seeps down to
-kobject / sysfs layer.  It almost looks like a gross layering
-violation.
+	Acked-by: Dominik Brodowski <linux@dominikbrodowski.net>
 
-Is it at all possible to implement it in properly layered manner?
-ie. sysfs providing mechanisms for selective visibility, driver model
-wraps it and exports it and namespace implements namespaces on top of
-those mechanisms?  I can see that there should be some interaction
-between the driver model and namespaces but I can't see why that
-information should be visible deep down in kobject and sysfs.
+as I assume that Russell prefers to take it into his tree?
 
-Thanks.
-
--- 
-tejun
+Best,
+	Dominik
