@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757213Ab0CaLTv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 07:19:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17919 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757148Ab0CaLTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 07:19:49 -0400
-Date: Wed, 31 Mar 2010 07:19:42 -0400
-From: Neil Horman <nhorman@redhat.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: netdev@vger.kernel.org, Francois Romieu <romieu@fr.zoreil.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [r8169] WARNING: at net/sched/sch_generic.c
-Message-ID: <20100331111942.GB13963@hmsreliant.think-freely.org>
-References: <20100331102142.GA3294@swordfish.minsk.epam.com>
+	id S932300Ab0CaLU6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 07:20:58 -0400
+Received: from mail-ew0-f220.google.com ([209.85.219.220]:45990 "EHLO
+	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932159Ab0CaLU4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 07:20:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=NVof22xcgceK/KawxFurXNWsaQYcTRiR3MNJS5sTJTSJLxLXIpvkBkpstw4HF3QW8h
+         gfzDTk+kYF4sCsOF4ZQMcEskbzm6xeu4+3w0GXFOMYV158H92H6LbKUOp8TSwhl1dBk+
+         X69FE/RynKzGvY4P+BSQXzvDPVssg522r65Yc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100331102142.GA3294@swordfish.minsk.epam.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <1269897740.15895.82.camel@localhost.localdomain>
+References: <6278d2221003291136p6481fe8emfb039403343c082@mail.gmail.com>
+	 <20100329190307.GJ30031@ZenIV.linux.org.uk>
+	 <1269897740.15895.82.camel@localhost.localdomain>
+Date: Wed, 31 Mar 2010 12:20:54 +0100
+Message-ID: <w2s6278d2221003310420xd36fa9ey92b781fb9f4d1a10@mail.gmail.com>
+Subject: Re: [2.6.34-rc2 NFS4 oops] open error path failure...
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-nfs@vger.kernel.org,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 01:21:42PM +0300, Sergey Senozhatsky wrote:
-> Hello,
-> I have the following problem:
-> 
-> [  296.337510] ------------[ cut here ]------------
-> [  296.337523] WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0xc1/0x125()
-> [  296.337527] Hardware name: F3JC                
-> [  296.337530] NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
-> [  296.337533] Modules linked in: pktgen ipv6 snd_hwdep snd_hda_codec_si3054 snd_hda_codec_realtek sdhci_pci sdhci asus_laptop sparse_keymap mmc_core led_class snd_hda_intel
-> snd_hda_codec psmouse snd_pcm snd_timer snd soundcore snd_page_alloc serio_raw i2c_i801 rng_core evdev sg r8169 mii usbhid hid uhci_hcd ehci_hcd sr_mod cdrom sd_mod usbcore
-> ata_piix
-> [  296.337586] Pid: 0, comm: swapper Not tainted 2.6.34-rc3-dbg #74
-> [  296.337589] Call Trace:
-> [  296.337597]  [<c102e71f>] warn_slowpath_common+0x65/0x7c
-> [  296.337603]  [<c126e30c>] ? dev_watchdog+0xc1/0x125
-> [  296.337608]  [<c102e76a>] warn_slowpath_fmt+0x24/0x27
-> [  296.337613]  [<c126e30c>] dev_watchdog+0xc1/0x125
-> [  296.337620]  [<c1040039>] ? prepare_to_wait_exclusive+0x52/0x5b
-> [  296.337627]  [<c1037053>] ? run_timer_softirq+0x120/0x1eb
-> [  296.337632]  [<c10370a9>] run_timer_softirq+0x176/0x1eb
-> [  296.337637]  [<c1037053>] ? run_timer_softirq+0x120/0x1eb
-> [  296.337643]  [<c126e24b>] ? dev_watchdog+0x0/0x125
-> [  296.337650]  [<c10331c9>] __do_softirq+0x8d/0x117
-> [  296.337655]  [<c103327e>] do_softirq+0x2b/0x43
-> [  296.337660]  [<c10333a3>] irq_exit+0x38/0x75
-> [  296.337667]  [<c1015138>] smp_apic_timer_interrupt+0x6d/0x7b
-> [  296.337673]  [<c12cbada>] apic_timer_interrupt+0x36/0x3c
-> [  296.337679]  [<c104007b>] ? prepare_to_wait+0x39/0x57
-> [  296.337685]  [<c11dd835>] ? acpi_idle_enter_simple+0x119/0x144
-> [  296.337692]  [<c124d358>] cpuidle_idle_call+0x6d/0xa5
-> [  296.337697]  [<c1001b51>] cpu_idle+0x92/0xc1
-> [  296.337704]  [<c12c63d0>] start_secondary+0x1f3/0x1fa
-> [  296.337708] ---[ end trace cd4a1b50139837df ]---
-> 
-> 
-> Reproducing 100% with pktgen tests.
-> 
-What kind of packets are you sending with pktgen?
-Neil
+On Mon, Mar 29, 2010 at 10:22 PM, Trond Myklebust
+<trond.myklebust@fys.uio.no> wrote:
+> On Mon, 2010-03-29 at 20:03 +0100, Al Viro wrote:
+>> On Mon, Mar 29, 2010 at 07:36:45PM +0100, Daniel J Blueman wrote:
+>> > Hi Trond,
+>> >
+>> > When open fails and should return EPERM [1], instead we see an oops
+>> > [2]. I see this on 2.6.34-rc1 and -rc2 mainline; NFS4 server is
+>> > mainline 2.6.33.1.
+>> >
+>> > Let me know if you can't reproduce it and I'll provide some analysis
+>> > from this end.
+>>
+>> Joy...  ERR_PTR(-EPERM) in nd.intent.file, and whoever had called
+>> lookup_instantiate_filp() hadn't bothered to check the return value.
+>>
+>> OK, I think I see what's going on.  Replace
+>>                                 lookup_instantiate_filp(nd, (struct dentry *)state, NULL);
+>>                                 return 1;
+>> with
+>>                                 lookup_instantiate_filp(nd, (struct dentry *)state, NULL);
+>>                                 return state;
+>> in fs/nfs/nfs4proc.c:nfs4_open_revalidate() and see if everything works
+>> properly (or just lose the lookup_instantiate_filp() in there and simply
+>> return state).
+>
+> So this raises a point. Originally, the d_revalidate() call was required
+> to return a boolean 0 or 1. Nowadays it allows the filesystem to return
+> an error value instead.
+>
+> Should we therefore rewrite the NFS implementation to propagate errors
+> like ESTALE (when it means the parent directory is gone), EACCES, EPERM
+> and EIO instead of the current behaviour of just dropping the dentry and
+> hence forcing a lookup?
 
-> 
-> 	Sergey
+Passing the error back without forcing a lookup sounds like a good
+win, if it can avoid a comparatively expensive roundtrip to the server
+(iff the dentry is fresh enough). Is this possible?
 
+Talking of expensive, I see latencytop show >16000ms latency for
+writing pages when I have a workload that does large buffered I/O to
+an otherwise uncongested server. The gigabit network is saturated, and
+reads often stall for 1000-4000ms (!). Client has the default 16 TCP
+request slots, and server has 8 nfsds - the server is far from disk or
+processor-saturated. I'll see if there is any useful debugging I can
+get about this.
 
+Thanks,
+  Daniel
+-- 
+Daniel J Blueman
