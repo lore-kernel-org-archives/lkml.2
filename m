@@ -1,244 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932217Ab0CaFvN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 01:51:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:8826 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757049Ab0CaFvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 01:51:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,339,1267430400"; 
-   d="scan'208";a="553695007"
-Date: Wed, 31 Mar 2010 13:51:08 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: "Li, Shaohua" <shaohua.li@intel.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
-Message-ID: <20100331055108.GA21963@localhost>
-References: <20100330150453.8E9F.A69D9226@jp.fujitsu.com> <20100331045348.GA3396@sli10-desk.sh.intel.com> <20100331142708.039E.A69D9226@jp.fujitsu.com>
+	id S932337Ab0CaFvo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 01:51:44 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:36935 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272Ab0CaFvm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 01:51:42 -0400
+To: Tejun Heo <tj@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
+       linux-kernel@vger.kernel.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
+       linux-fsdevel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+       Benjamin LaHaise <bcrl@lhnet.ca>, Serge Hallyn <serue@us.ibm.com>,
+       netdev@vger.kernel.org
+Subject: Re: [PATCH 1/6] sysfs: Basic support for multiple super blocks
+References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
+	<1269973889-25260-1-git-send-email-ebiederm@xmission.com>
+	<4BB2E098.7030202@kernel.org>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Tue, 30 Mar 2010 22:51:35 -0700
+In-Reply-To: <4BB2E098.7030202@kernel.org> (Tejun Heo's message of "Wed\, 31 Mar 2010 14\:41\:44 +0900")
+Message-ID: <m1634d82e0.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100331142708.039E.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 76.21.114.89
+X-SA-Exim-Rcpt-To: tj@kernel.org, netdev@vger.kernel.org, serue@us.ibm.com, bcrl@lhnet.ca, eric.dumazet@gmail.com, linux-fsdevel@vger.kernel.org, cornelia.huck@de.ibm.com, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, gregkh@suse.de
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KOSAKI-san,
+Tejun Heo <tj@kernel.org> writes:
 
-On Wed, Mar 31, 2010 at 01:38:12PM +0800, KOSAKI Motohiro wrote:
-> > On Tue, Mar 30, 2010 at 02:08:53PM +0800, KOSAKI Motohiro wrote:
-> > > Hi
-> > > 
-> > > > Commit 84b18490d1f1bc7ed5095c929f78bc002eb70f26 introduces a regression.
-> > > > With it, our tmpfs test always oom. The test has a lot of rotated anon
-> > > > pages and cause percent[0] zero. Actually the percent[0] is a very small
-> > > > value, but our calculation round it to zero. The commit makes vmscan
-> > > > completely skip anon pages and cause oops.
-> > > > An option is if percent[x] is zero in get_scan_ratio(), forces it
-> > > > to 1. See below patch.
-> > > > But the offending commit still changes behavior. Without the commit, we scan
-> > > > all pages if priority is zero, below patch doesn't fix this. Don't know if
-> > > > It's required to fix this too.
-> > > 
-> > > Can you please post your /proc/meminfo and reproduce program? I'll digg it.
-> > > 
-> > > Very unfortunately, this patch isn't acceptable. In past time, vmscan 
-> > > had similar logic, but 1% swap-out made lots bug reports. 
-> > if 1% is still big, how about below patch?
-> 
-> This patch makes a lot of sense than previous. however I think <1% anon ratio
-> shouldn't happen anyway because file lru doesn't have reclaimable pages.
-> <1% seems no good reclaim rate.
-> 
-> perhaps I'll take your patch for stable tree. but we need to attack the root
-> cause. iow, I guess we need to fix scan ratio equation itself.
+> Hello, Eric.
+>
+> On 03/31/2010 03:31 AM, Eric W. Biederman wrote:
+>> From: Eric W. Biederman <ebiederm@xmission.com>
+>> 
+>> Add all of the necessary bioler plate to support
+>                            boiler :-)
+>
+>> +static int sysfs_test_super(struct super_block *sb, void *data)
+>> +{
+>> +	struct sysfs_super_info *sb_info = sysfs_info(sb);
+>> +	struct sysfs_super_info *info = data;
+>> +	int found = 1;
+>> +	return found;
+>> +}
+>
+> Can you please make it return bool?
 
-I tend to regard this patch as a general improvement for both
-.33-stable and .34. 
+Nope.  That would mean I could not use it with sget.
 
-I do agree with you that it's desirable to do more test&analyze and
-check further for possibly hidden problems.
+>>  static int sysfs_get_sb(struct file_system_type *fs_type,
+>>  	int flags, const char *dev_name, void *data, struct vfsmount *mnt)
+>>  {
+>> -	return get_sb_single(fs_type, flags, data, sysfs_fill_super, mnt);
+>> +	struct sysfs_super_info *info;
+>> +	struct super_block *sb;
+>> +	int error;
+>> +
+>> +	error = -ENOMEM;
+>> +	info = kzalloc(sizeof(*info), GFP_KERNEL);
+>> +	if (!info)
+>> +		goto out;
+>> +	sb = sget(fs_type, sysfs_test_super, sysfs_set_super, info);
+>> +	if (IS_ERR(sb) || sb->s_fs_info != info)
+>> +		kfree(info);
+>> +	if (IS_ERR(sb)) {
+>> +		kfree(info);
+>> +		error = PTR_ERR(sb);
+>> +		goto out;
+>> +	}
+>> +	if (!sb->s_root) {
+>> +		sb->s_flags = flags;
+>> +		error = sysfs_fill_super(sb, data, flags & MS_SILENT ? 1 : 0);
+>> +		if (error) {
+>> +			deactivate_locked_super(sb);
+>> +			goto out;
+>> +		}
+>> +		sb->s_flags |= MS_ACTIVE;
+>> +	}
+>> +
+>> +	simple_set_mnt(mnt, sb);
+>> +	error = 0;
+>> +out:
+>> +	return error;
+>> +}
+>
+> I haven't looked at later patches but I suppose this is gonna be
+> filled with more meaningful stuff later. 
 
-Thanks,
-Fengguang
+Yes it will.
 
+> One (possibly silly) thing
+> that stands out compared to get_sb_single() is missing remount
+> handling.  Is it intended?
 
-> 
-> 
-> > Commit 84b18490d1f1bc7ed5095c929f78bc002eb70f26 introduces a regression.
-> > With it, our tmpfs test always oom. The test has a lot of rotated anon
-> > pages and cause percent[0] zero. Actually the percent[0] is a very small
-> > value, but our calculation round it to zero. The commit makes vmscan
-> > completely skip anon pages and cause oops.
-> > To avoid underflow, we don't use percentage, instead we directly calculate
-> > how many pages should be scaned.
-> > 
-> > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 79c8098..80a7ed5 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -1519,27 +1519,50 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
-> >  }
-> >  
-> >  /*
-> > + * Smallish @nr_to_scan's are deposited in @nr_saved_scan,
-> > + * until we collected @swap_cluster_max pages to scan.
-> > + */
-> > +static unsigned long nr_scan_try_batch(unsigned long nr_to_scan,
-> > +				       unsigned long *nr_saved_scan)
-> > +{
-> > +	unsigned long nr;
-> > +
-> > +	*nr_saved_scan += nr_to_scan;
-> > +	nr = *nr_saved_scan;
-> > +
-> > +	if (nr >= SWAP_CLUSTER_MAX)
-> > +		*nr_saved_scan = 0;
-> > +	else
-> > +		nr = 0;
-> > +
-> > +	return nr;
-> > +}
-> > +
-> > +/*
-> >   * Determine how aggressively the anon and file LRU lists should be
-> >   * scanned.  The relative value of each set of LRU lists is determined
-> >   * by looking at the fraction of the pages scanned we did rotate back
-> >   * onto the active list instead of evict.
-> >   *
-> > - * percent[0] specifies how much pressure to put on ram/swap backed
-> > - * memory, while percent[1] determines pressure on the file LRUs.
-> > + * nr[x] specifies how many pages should be scaned
-> >   */
-> > -static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
-> > -					unsigned long *percent)
-> > +static void get_scan_count(struct zone *zone, struct scan_control *sc,
-> > +				unsigned long *nr, int priority)
-> >  {
-> >  	unsigned long anon, file, free;
-> >  	unsigned long anon_prio, file_prio;
-> >  	unsigned long ap, fp;
-> >  	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
-> > +	unsigned long fraction[2], denominator[2];
-> > +	enum lru_list l;
-> >  
-> >  	/* If we have no swap space, do not bother scanning anon pages. */
-> >  	if (!sc->may_swap || (nr_swap_pages <= 0)) {
-> > -		percent[0] = 0;
-> > -		percent[1] = 100;
-> > -		return;
-> > +		fraction[0] = 0;
-> > +		denominator[0] = 1;
-> > +		fraction[1] = 1;
-> > +		denominator[1] = 1;
-> > +		goto out;
-> >  	}
-> >  
-> >  	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
-> > @@ -1552,9 +1575,11 @@ static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
-> >  		/* If we have very few page cache pages,
-> >  		   force-scan anon pages. */
-> >  		if (unlikely(file + free <= high_wmark_pages(zone))) {
-> > -			percent[0] = 100;
-> > -			percent[1] = 0;
-> > -			return;
-> > +			fraction[0] = 1;
-> > +			denominator[0] = 1;
-> > +			fraction[1] = 0;
-> > +			denominator[1] = 1;
-> > +			goto out;
-> >  		}
-> >  	}
-> >  
-> > @@ -1601,29 +1626,29 @@ static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
-> >  	fp = (file_prio + 1) * (reclaim_stat->recent_scanned[1] + 1);
-> >  	fp /= reclaim_stat->recent_rotated[1] + 1;
-> >  
-> > -	/* Normalize to percentages */
-> > -	percent[0] = 100 * ap / (ap + fp + 1);
-> > -	percent[1] = 100 - percent[0];
-> > -}
-> > -
-> > -/*
-> > - * Smallish @nr_to_scan's are deposited in @nr_saved_scan,
-> > - * until we collected @swap_cluster_max pages to scan.
-> > - */
-> > -static unsigned long nr_scan_try_batch(unsigned long nr_to_scan,
-> > -				       unsigned long *nr_saved_scan)
-> > -{
-> > -	unsigned long nr;
-> > +	fraction[0] = ap;
-> > +	denominator[0] = ap + fp + 1;
-> > +	fraction[1] = fp;
-> > +	denominator[1] = ap + fp + 1;
-> >  
-> > -	*nr_saved_scan += nr_to_scan;
-> > -	nr = *nr_saved_scan;
-> > +out:
-> > +	for_each_evictable_lru(l) {
-> > +		int file = is_file_lru(l);
-> > +		unsigned long scan;
-> >  
-> > -	if (nr >= SWAP_CLUSTER_MAX)
-> > -		*nr_saved_scan = 0;
-> > -	else
-> > -		nr = 0;
-> > +		if (fraction[file] == 0) {
-> > +			nr[l] = 0;
-> > +			continue;
-> > +		}
-> >  
-> > -	return nr;
-> > +		scan = zone_nr_lru_pages(zone, sc, l);
-> > +		if (priority) {
-> > +			scan >>= priority;
-> > +			scan = (scan * fraction[file] / denominator[file]);
-> > +		}
-> > +		nr[l] = nr_scan_try_batch(scan,
-> > +					  &reclaim_stat->nr_saved_scan[l]);
-> > +	}
-> >  }
-> >  
-> >  /*
-> > @@ -1634,31 +1659,11 @@ static void shrink_zone(int priority, struct zone *zone,
-> >  {
-> >  	unsigned long nr[NR_LRU_LISTS];
-> >  	unsigned long nr_to_scan;
-> > -	unsigned long percent[2];	/* anon @ 0; file @ 1 */
-> >  	enum lru_list l;
-> >  	unsigned long nr_reclaimed = sc->nr_reclaimed;
-> >  	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
-> > -	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
-> > -
-> > -	get_scan_ratio(zone, sc, percent);
-> >  
-> > -	for_each_evictable_lru(l) {
-> > -		int file = is_file_lru(l);
-> > -		unsigned long scan;
-> > -
-> > -		if (percent[file] == 0) {
-> > -			nr[l] = 0;
-> > -			continue;
-> > -		}
-> > -
-> > -		scan = zone_nr_lru_pages(zone, sc, l);
-> > -		if (priority) {
-> > -			scan >>= priority;
-> > -			scan = (scan * percent[file]) / 100;
-> > -		}
-> > -		nr[l] = nr_scan_try_batch(scan,
-> > -					  &reclaim_stat->nr_saved_scan[l]);
-> > -	}
-> > +	get_scan_count(zone, sc, nr, priority);
-> >  
-> >  	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
-> >  					nr[LRU_INACTIVE_FILE]) {
-> 
-> 
+There is nothing for a remount to do so I ignore it.   The only
+thing that would possibly be meaningful is a read-only mount,
+and nothing I know of sysfs suggests read-only mounts of sysfs
+work, or make any sense.
+
+>> index 30f5a44..030a39d 100644
+>> --- a/fs/sysfs/sysfs.h
+>> +++ b/fs/sysfs/sysfs.h
+>> @@ -114,6 +114,9 @@ struct sysfs_addrm_cxt {
+>>  /*
+>>   * mount.c
+>>   */
+>> +struct sysfs_super_info {
+>> +};
+>> +#define sysfs_info(SB) ((struct sysfs_super_info *)(SB->s_fs_info))
+>
+> Another nit picking.  It would be better to wrap SB in the macro
+> definition.  Also, wouldn't an inline function be better?
+
+Good spotting.  That doesn't bite today but it will certainly bite
+someday if it isn't fixed.
+
+I wonder how that has slipped through the review all of this time.
+
+Eric
