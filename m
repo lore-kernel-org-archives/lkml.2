@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770Ab0CaTSz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 15:18:55 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:53311 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756510Ab0CaTSy (ORCPT
+	id S1756829Ab0CaT1J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 15:27:09 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:27384 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754905Ab0CaT1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 15:18:54 -0400
-Date: Wed, 31 Mar 2010 15:18:11 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, iommu@lists.linux-foundation.org,
-       joerg.roedel@amd.com, hbabu@us.ibm.com, kexec@lists.infradead.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] amd iommu: force flush of iommu prior during shutdown
-Message-ID: <20100331191811.GD13406@hmsreliant.think-freely.org>
-References: <20100331152417.GB13406@hmsreliant.think-freely.org>
- <20100331155430.GF14011@redhat.com>
- <20100331182824.GC13406@hmsreliant.think-freely.org>
- <m1wrwsuxn9.fsf@fess.ebiederm.org>
+	Wed, 31 Mar 2010 15:27:07 -0400
+X-SpamScore: -34
+X-BigFish: VPS-34(zz1432R98dN936eM9371Pzz1202hz4fhz2ba5Mz2fh2a8h6bh61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 5,
+Message-ID: <4BB3A1F5.1050902@am.sony.com>
+Date: Wed, 31 Mar 2010 12:26:45 -0700
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1wrwsuxn9.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-Spam-Score: -2.9 (--)
+To: "swb6@aber.ac.uk" <swb6@aber.ac.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Ftrace and Systemtap
+References: <40fe3da502608d32ff82523c57a62da1.squirrel@webmail.aber.ac.uk>
+In-Reply-To: <40fe3da502608d32ff82523c57a62da1.squirrel@webmail.aber.ac.uk>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Reverse-DNS: mail7.fw-bc.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 11:57:46AM -0700, Eric W. Biederman wrote:
-> Neil Horman <nhorman@tuxdriver.com> writes:
+On 03/31/2010 10:36 AM, swb6@aber.ac.uk wrote:
+> Hi,
+> I am currently writing up my
+> dissertation based on dynamic tracing and reducing the learning curve to
+> understanding the UNIX kernel. I used two dynamic tracing technologies
+> (Systemtap and Dtrace) to monitor some virtual machines on a network.
+> Whilst going over my initial review of technologies in the area of dynamic
+> tracing I realised I had underestimated ftrace, and even dismissed it as
+> not being dynamic. However I read hear (http://lwn.net/Articles/343766/)
+> that you were as of July last year trying to introduce a patch that would
+> allow ftrace the ability to dynamically trace. Also it would be completely
+> instrumented from the command line without the need to compile a kernel
+> module al la Systemtap.
 > 
-> > On Wed, Mar 31, 2010 at 11:54:30AM -0400, Vivek Goyal wrote:
-> 
-> >> So this call amd_iommu_flush_all_devices() will be able to tell devices
-> >> that don't do any more DMAs and hence it is safe to reprogram iommu
-> >> mapping entries.
-> >> 
-> > It blocks the cpu until any pending DMA operations are complete.  Hmm, as I
-> > think about it, there is still a small possibility that a device like a NIC
-> > which has several buffers pre-dma-mapped could start a new dma before we
-> > completely disabled the iommu, althought thats small.  I never saw that in my
-> > testing, but hitting that would be fairly difficult I think, since its literally
-> > just a few hundred cycles between the flush and the actual hardware disable
-> > operation.
-> >
-> > According to this though:
-> > http://support.amd.com/us/Processor_TechDocs/34434-IOMMU-Rev_1.26_2-11-09.pdf
-> > That window could be closed fairly easily, but simply disabling read and write
-> > permissions for each device table entry prior to calling flush.  If we do that,
-> > then flush the device table, any subsequently started dma operation would just
-> > get noted in the error log, which we could ignore, since we're abot to boot to
-> > the kdump kernel anyway.
-> >
-> > Would you like me to respin w/ that modification?
-> 
-> Disabling permissions on all devices sounds good for the new virtualization
-> capable iommus.  I think older iommus will still be challenged.  I think
-> on x86 we have simply been able to avoid using those older iommus.
-> 
-> I like the direction you are going but please let's put this in a
-> paranoid iommu enable routine.
-> 
-You mean like initialize the device table so that all devices are default
-disabled on boot, and then selectively enable them (perhaps during a
-device_attach)?  I can give that a spin.
-Neil
+> My question is do you think Systemtap will be replaced by ftrace in the
+> future if so I feel I may need to include this fact in my updated
+> technology review.
 
-> Eric
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Systemtap addresses a different set of needs than ftrace.
+Ftrace has been dynamic for some time, but in a different way
+than Systemtap.
+
+I don't see either system going away soon.
+
+=============================
+Tim Bird
+Architecture Group Chair, CE Linux Forum
+Senior Staff Engineer, Sony Corporation of America
+=============================
+
