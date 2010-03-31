@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758321Ab0CaWlX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 18:41:23 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:38539 "EHLO mx2.mail.elte.hu"
+	id S1758343Ab0CaWro (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 18:47:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48629 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755213Ab0CaWlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 18:41:22 -0400
-Date: Thu, 1 Apr 2010 00:41:08 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: James Morris <jmorris@namei.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       linux-kernel@vger.kernel.org, airlied@linux.ie
-Subject: Re: Config NO_BOOTMEM breaks my amd64 box
-Message-ID: <20100331224108.GA11284@elte.hu>
-References: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org>
- <4BB2EB1B.8090303@zytor.com>
- <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org>
- <4BB3C739.2020106@kernel.org>
- <20100331221341.GA20441@elte.hu>
- <4BB3C9B0.4000205@kernel.org>
+	id S1755744Ab0CaWrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 18:47:43 -0400
+Date: Wed, 31 Mar 2010 15:47:55 -0700
+From: Greg KH <gregkh@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk
+Subject: Re: 4 stable kernel review cycles starting
+Message-ID: <20100331224755.GA23284@suse.de>
+References: <20100330230338.GA28642@kroah.com> <20100331044445.GU3335@dastard> <20100331173831.GA9180@suse.de> <20100331215332.GH7671@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BB3C9B0.4000205@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
-	_SUMMARY_
+In-Reply-To: <20100331215332.GH7671@dastard>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Yinghai Lu <yinghai@kernel.org> wrote:
-
-> On 03/31/2010 03:13 PM, Ingo Molnar wrote:
+On Thu, Apr 01, 2010 at 08:53:32AM +1100, Dave Chinner wrote:
+> On Wed, Mar 31, 2010 at 10:38:31AM -0700, Greg KH wrote:
+> > On Wed, Mar 31, 2010 at 03:44:45PM +1100, Dave Chinner wrote:
+> > > On Tue, Mar 30, 2010 at 04:03:38PM -0700, Greg KH wrote:
+> > > > Hi all,
+> > > > 
+> > > > Well, I up and moved cities and caused a bunch of stable patches to be
+> > > > backlogged.  I've caught up with all of the ones that were marked as
+> > > > being wished to be applied to the stable trees, and still have a bunch
+> > > > of pending requests still queued up in my mailbox.
+> > > > 
+> > > > But, due to the number of the current patches already applied, it is
+> > > > time to just let these go and work on the other pending stuff after
+> > > > this.
+> > > 
+> > > Greg, I send a series of 19 patches for XFS updates to stable@kernel.org
+> > > back on the 12th March for 2.6.32 (subject was "[PATCH 0/19] xfs:
+> > > 2.6.32.y stable tree updates").
+> > > 
+> > > The patches were cc'd to the XFS list and they made it there:
+> > > 
+> > > http://oss.sgi.com/archives/xfs/2010-03/msg00125.html
+> > > 
+> > > so I'm wondering if you've got them queued up or not or whether
+> > > I need to resend them to you....
+> > > 
+> > > > So don't worry, if anyone has asked for some patches to be applied to
+> > > > some stable trees, and you don't see it here, just give it some time,
+> > > > I'm still catching up on things (hey, I'm just happy I have an internet
+> > > > connection again...)
+> > > 
+> > > I sent these prior to the last stable release that had this same
+> > > comment, so I didn't get worried that they had been missed. Now they
+> > > are missing from the next stable release, I'm getting worried. :/
 > > 
-> > * Yinghai Lu <yinghai@kernel.org> wrote:
-> > 
-> >> --- linux-2.6.orig/arch/x86/mm/init_32.c
-> >> +++ linux-2.6/arch/x86/mm/init_32.c
-> >> @@ -875,7 +875,12 @@ void __init mem_init(void)
-> >>  	BUG_ON(!mem_map);
-> >>  #endif
-> >>  	/* this will put all low memory onto the freelists */
-> >> +#if defined(CONFIG_NO_BOOTMEM) && defined(MAX_NUMNODES)
-> >> +	/* In case some 32bit systems don't have RAM installed on node0 */
-> >> +        totalram_pages += free_all_memory_core_early(MAX_NUMNODES);
-> > 
-> > (Note: tab whitespace damage)
-> > 
-> >> +#else
-> >>  	totalram_pages += free_all_bootmem();
-> > 
-> > So we get into this branch if CONFIG_NO_BOOTMEM is enabled but MAX_NUMNODES is 
-> > not defined? Doesnt look right.
+> > Yes, they are still in my "to-apply" queue.  I also have a series of
+> > ext4 and kvm patches as well as a mess of wireless patches to wade
+> > through, so you are in good company.
 > 
-> yes. 
+> Ok, I just wanted to make sure they were in the queue and not some
+> bit bucket somewhere.
 > 
-> free_all_bootmem() will call
-> free_all_memory_core_early(NODE_DATA(0)->node_id);
+> > The issue is that applying individual patches like this is more
+> > "difficult" than just handling patches that are already marked in
+> > Linus's kernel tree as to be added to the stable queues.  So it
+> > takes a bit more time and effort to get to those patches, while
+> > still keeping up with the series like you, and other developers,
+> > sent.
 > 
-> Thanks
+> Understood. Would providing a git tree to pull from for large series
+> like the XFS one make this easier for you in future? I can do that
+> bit of extra work if that makes things easier for you...
 
-Well and that whole #ifdeffery is disgusting as well - even if the goal was to 
-remove CONFIG_NO_BOOTMEM ASAP.
+No, patches are still easier, I would have to convert the git tree to
+patches anyway, so for now, this is fine.
 
-Please learn to use proper intermediate helper functions and at minimum put 
-the conversion ugliness somewhere that doesnt intrude our daily flow in .c 
-files. The best rule is to _never ever_ put an #ifdef construct into a .c 
-file. It doesnt matter what the goal if the #ifdef is - such ugliness in code 
-is never justified.
+thanks,
 
-Thanks,
-
-	Ingo
+greg k-h
