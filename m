@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758202Ab0CaVIz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 17:08:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46216 "EHLO mx2.suse.de"
+	id S932283Ab0CaVKK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 17:10:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33646 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752990Ab0CaVIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 17:08:53 -0400
-Date: Wed, 31 Mar 2010 13:39:26 -0700
-From: Greg KH <gregkh@suse.de>
-To: Chuck Ebbert <cebbert@redhat.com>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, mcarlson@broadcom.com,
-       "David S. Miller" <davem@davemloft.net>,
-       Mike Pagano <mpagano@gentoo.org>, Michael Chan <mchan@broadcom.com>,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [Stable-review] [007/116] tg3: Fix 5906 transmit hangs
-Message-ID: <20100331203926.GA15418@suse.de>
-References: <20100330230600.GA28802@kroah.com> <20100330225600.398306625@linux.site> <20100330211522.2f1658fe@redhat.com>
+	id S1758173Ab0CaVKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 17:10:07 -0400
+Message-ID: <4BB3B8FC.1020608@zytor.com>
+Date: Wed, 31 Mar 2010 14:05:00 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100330211522.2f1658fe@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Matthew Wilcox <matthew@wil.cx>
+CC: Yinghai Lu <yinghai@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+       Rabin Vincent <rabin@rab.in>, lkml <linux-kernel@vger.kernel.org>,
+       penberg@cs.helsinki.fi, cl@linux-foundation.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       linux-arch@vger.kernel.org
+Subject: Re: start_kernel(): bug: interrupts were enabled early
+References: <20100325194100.GA2364@debian> <20100331134048.da4e35a7.akpm@linux-foundation.org> <4BB3B4DB.7040904@kernel.org> <20100331210145.GB32165@parisc-linux.org>
+In-Reply-To: <20100331210145.GB32165@parisc-linux.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 09:15:22PM -0400, Chuck Ebbert wrote:
-> On Tue, 30 Mar 2010 15:54:45 -0700
-> Greg KH <gregkh@suse.de> wrote:
+On 03/31/2010 02:01 PM, Matthew Wilcox wrote:
+> On Wed, Mar 31, 2010 at 01:47:23PM -0700, Yinghai Lu wrote:
+>>>>> This appears to be caused by:
+>>>>>
+>>>>>   start_kernel -> radix_tree_init -> kmem_cache_create (slub) ->
+>>>>>    down_write -> __down_write (lib/rwsem-spinlock.c) -> spin_unlock_irq
+>>>>>
+>>> That's going to be hard to fix.
+>>>
+>> spin_unlock_irq from arm is different from other archs?
 > 
-> > 2.6.32-stable review patch.  If anyone has any objections, please let
-> > us know.
-> > 
-> > ------------------
-> > 
-> > From: Matt Carlson <mcarlson@broadcom.com>
-> > 
-> > This is a resubmit backport of commit
-> > 92c6b8d16a36df3f28b2537bed2a56491fb08f11 to kernel version 2.6.32.
-> > The gentoo bug report can be found at
-> > https://bugs.gentoo.org/show_bug.cgi?id=301091. Thanks to Matt
-> > Carlson for his assistance and working me to fix a regression caused
-> > by the initial patch.  The original description is as follows:
-> > 
+> Not all arches use lib/rwsem-spinlock.c.  In particular, x86 doesn't
+> when X86_XADD is set.
 > 
-> I think these two patches should be used instead, as they fix the
-> bug without needing backports and keep the driver closer to upstream:
-> 
-> 0e1406dd404ce55dbe8d68b4b5e2aed7e5c75fdb
-> "tg3: Assign flags to fixes in start_xmit_dma_bug"
-> 
-> 92c6b8d16a36df3f28b2537bed2a56491fb08f11
-> "tg3: Fix 5906 transmit hangs"
 
-I don't know, I'll defer to Matt here, this patch has gone in and out of
-the stable queue for a while now as he and some users have tested and
-had problems lots of times...
+What I note is that lib/rwsem-spinlock.c seems to be rather inconsistent
+in its use of spin_lock_irqsave/spin_lock_irqrestore versus
+spin_lock_irq/spin_unlock_irq... in fact, __down_read is the *only*
+place where we use the latter as opposed to the former.
 
-Matt?
+Is that a bug?  If so, it would certainly explain this behavior.
 
+	-hpa
