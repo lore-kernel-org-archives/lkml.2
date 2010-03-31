@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144Ab0CaHlM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 03:41:12 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42501 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756700Ab0CaHlJ (ORCPT
+	id S1757149Ab0CaHn0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 03:43:26 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:45133 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757030Ab0CaHnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 03:41:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:x-operating-system:user-agent;
-        b=k4mj9UKdoxExfScMdiFHqgOQrvlZX2MioTYKi3kXFP4cefP3DCGgIsRlGyOOkLcE8Z
-         Tf7dItWRKzVJ382XqE7wmhqaanQ0i+wp5Qga2dP66LbP+RmPBqCMXW4KuJRVnSTXiusB
-         Npu5uKlngQU3XN2IMAypE8SkVIQ0WeKohZOtM=
-Date: Wed, 31 Mar 2010 15:41:00 +0800
-From: Li Hong <lihong.hi@gmail.com>
-To: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
-       linux-nilfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] nilfs2: fix a wrong type conversion in nilfs_ioctl()
-Message-ID: <20100331074100.GA11787@xhl>
-Mail-Followup-To: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
-	linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org
+	Wed, 31 Mar 2010 03:43:24 -0400
+To: Tejun Heo <tj@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
+       linux-kernel@vger.kernel.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
+       linux-fsdevel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+       Benjamin LaHaise <bcrl@lhnet.ca>, Serge Hallyn <serue@us.ibm.com>,
+       netdev@vger.kernel.org, Benjamin Thery <benjamin.thery@bull.net>
+Subject: Re: [PATCH 3/6] sysfs: Implement sysfs tagged directory support.
+References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
+	<1269973889-25260-3-git-send-email-ebiederm@xmission.com>
+	<4BB2F083.1050803@kernel.org>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Wed, 31 Mar 2010 00:43:08 -0700
+In-Reply-To: <4BB2F083.1050803@kernel.org> (Tejun Heo's message of "Wed\, 31 Mar 2010 15\:49\:39 +0900")
+Message-ID: <m11vf12ayb.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Operating-System: Linux xhl 2.6.31-14-generic
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 76.21.114.89
+X-SA-Exim-Rcpt-To: tj@kernel.org, benjamin.thery@bull.net, netdev@vger.kernel.org, serue@us.ibm.com, bcrl@lhnet.ca, eric.dumazet@gmail.com, linux-fsdevel@vger.kernel.org, cornelia.huck@de.ibm.com, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, gregkh@suse.de
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(void * __user *) should be (void __user *)
+Tejun Heo <tj@kernel.org> writes:
 
-Signed-off-by: Li Hong <lihong.hi@gmail.com>
----
- fs/nilfs2/ioctl.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Hello, Eric.
+>
+> On 03/31/2010 03:31 AM, Eric W. Biederman wrote:
+>> What this patch does is to add an additional tag field to the
+>> sysfs dirent structure.  For directories that should show different
+>> contents depending on the context such as /sys/class/net/, and
+>> /sys/devices/virtual/net/ this tag field is used to specify the
+>> context in which those directories should be visible.  Effectively
+>> this is the same as creating multiple distinct directories with
+>> the same name but internally to sysfs the result is nicer.
+>
+> This has become a long running project. :-)
+>
+> The way to implement partial visibility seems much cleaner now and I
+> don't have any objection.  Thanks for cleaning up the whole sysfs and
+> implementing this properly.  Unfortunately, I still feel quite
+> uncomfortable about how the scope of visibility is determined and how
+> deep knowledge about specific namespace implementation seeps down to
+> kobject / sysfs layer.  It almost looks like a gross layering
+> violation.
 
-diff --git a/fs/nilfs2/ioctl.c b/fs/nilfs2/ioctl.c
-index 313d0a2..c446017 100644
---- a/fs/nilfs2/ioctl.c
-+++ b/fs/nilfs2/ioctl.c
-@@ -648,7 +648,7 @@ static int nilfs_ioctl_get_info(struct inode *inode, struct file *filp,
- long nilfs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- {
- 	struct inode *inode = filp->f_dentry->d_inode;
--	void __user *argp = (void * __user *)arg;
-+	void __user *argp = (void __user *)arg;
- 
- 	switch (cmd) {
- 	case NILFS_IOCTL_CHANGE_CPMODE:
--- 
-1.6.3.3
+The problem is how sysfs and the kobject layer expose things to
+userspace.  Maintaining backwards compatibility to userspace in sysfs
+while making changes in the rest of the kernel is hard.
 
+Having been through the rest of the kernel and changed every other
+significant interface I think I can say that without bias.  
+
+> Is it at all possible to implement it in properly layered manner?
+> ie. sysfs providing mechanisms for selective visibility, driver model
+> wraps it and exports it and namespace implements namespaces on top of
+> those mechanisms?
+
+I think that is roughly what I have.
+
+> I can see that there should be some interaction
+> between the driver model and namespaces but I can't see why that
+> information should be visible deep down in kobject and sysfs.
+
+At this point you seem to be asking for perfection instead of something
+that is merely good enough.  I am open to suggestions for something
+better but overall the code is as good as I can get it.  The code
+does not impose any real maintenance problems.  The code does not
+impose any real performance problems.  The code works.  It is time to
+use this stuff, and stop keeping devices out of the kobject layer
+because sysfs and the kobject layer can not cope with the reality
+of the rest of the kernel.
+
+As for the layering itself.  Down in sysfs there are only two bits
+visible.  A void * pointer that in addition to the name is what we use
+to define selective visibility.  A context that we capture when we
+mount sysfs.  Those bits are fundamental things sysfs needs to do.
+
+Capturing the namespaces of interest when mounting sysfs allows us to
+display with different mounts of sysfs what a single mount of sysfs
+can not show.
+
+Eric
