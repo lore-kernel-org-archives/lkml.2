@@ -1,97 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933230Ab0CaKVe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 06:21:34 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:37485 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933171Ab0CaKVc (ORCPT
+	id S933235Ab0CaKZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 06:25:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50497 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933075Ab0CaKZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 06:21:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=QtdJo6MEyk88ljvywn1zrOeQqDqVG9C0MPJ9aJRIblYlAAm24ucu0qH/i8wH7N3lpD
-         aUeAqHuxto8YPAeXFZ43z42ma7hzmMHmtju4a2QOBj8lL/rkP88WQorozSDcAjkG/X9i
-         55Nat3l/eLeg0w/OaEEL2A3e1ND8+38HGPkkk=
-Date: Wed, 31 Mar 2010 13:21:42 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: netdev@vger.kernel.org
-Cc: Francois Romieu <romieu@fr.zoreil.com>, Neil Horman <nhorman@redhat.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: [r8169] WARNING: at net/sched/sch_generic.c
-Message-ID: <20100331102142.GA3294@swordfish.minsk.epam.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LQksG6bCIzRHxTLp"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 31 Mar 2010 06:25:24 -0400
+Subject: Re: [patch v2 1/2] sched: check for prev_cpu == this_cpu before
+ calling wake_affine()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>,
+       Arjan van de Ven <arjan@linux.jf.intel.com>,
+       linux-kernel@vger.kernel.org,
+       Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+       Yanmin Zhang <yanmin_zhang@linux.jf.intel.com>,
+       Gautham R Shenoy <ego@in.ibm.com>
+In-Reply-To: <20100308221946.842728363@sbs-t61.sc.intel.com>
+References: <20100308221946.842728363@sbs-t61.sc.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 31 Mar 2010 12:25:19 +0200
+Message-ID: <1270031119.5003.93.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2010-03-08 at 14:19 -0800, Suresh Siddha wrote:
+> plain text document attachment (fix_wake_affine.patch)
+> On a single cpu system with SMT, in the scenario of one SMT thread being
+> idle with another SMT thread running a task and doing a non sync wakeup of
+> another task, we see (from the traces) that the woken up task ends up running
+> on the busy thread instead of the idle thread. Idle balancing that comes
+> in little bit later is fixing the scernaio.
+> 
+> But fixing this wake balance and running the woken up task directly on the
+> idle SMT thread improved the performance (phoronix 7zip compression workload)
+> by ~9% on an atom platform.
+> 
+> During the process wakeup, select_task_rq_fair() and wake_affine() makes
+> the decision to wakeup the task either on the previous cpu that the task
+> ran or the cpu that the task is currently woken up.
+> 
+> select_task_rq_fair() also goes through to see if there are any idle siblings
+> for the cpu that the task is woken up on. This is to ensure that we select
+> any idle sibling rather than choose a busy cpu.
+> 
+> In the above load scenario, it so happens that the prev_cpu (that the
+> task ran before) and this_cpu (where it is woken up currently) are the same. And
+> in this case, it looks like wake_affine() returns 0 and ultimately not selecting
+> the idle sibling chosen by select_idle_sibling() in select_task_rq_fair().
+> Further down the path of select_task_rq_fair(), we ultimately select
+> the currently running cpu (busy SMT thread instead of the idle SMT thread).
+> 
+> Check for prev_cpu == this_cpu before calling wake_affine() and no need to do
+> any fancy stuff(and ultimately taking wrong decisions) in this case.
+> 
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> ---
+> Changes from v1:
+>    Move the "this_cpu == prev_cpu" check before calling wake_affine()
+> ---
+>  kernel/sched_fair.c |    7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
+> 
+> Index: tip/kernel/sched_fair.c
+> ===================================================================
+> --- tip.orig/kernel/sched_fair.c
+> +++ tip/kernel/sched_fair.c
+> @@ -1454,6 +1454,7 @@ static int select_task_rq_fair(struct ta
+>  	int want_affine = 0;
+>  	int want_sd = 1;
+>  	int sync = wake_flags & WF_SYNC;
+> +	int this_cpu = cpu;
+>  
+>  	if (sd_flag & SD_BALANCE_WAKE) {
+>  		if (sched_feat(AFFINE_WAKEUPS) &&
+> @@ -1545,8 +1546,10 @@ static int select_task_rq_fair(struct ta
+>  			update_shares(tmp);
+>  	}
+>  
+> -	if (affine_sd && wake_affine(affine_sd, p, sync))
+> -		return cpu;
+> +	if (affine_sd) {
+> +		if (this_cpu == prev_cpu || wake_affine(affine_sd, p, sync))
+> +			return cpu;
+> +	}
+>  
+>  	while (sd) {
+>  		int load_idx = sd->forkexec_idx;
+> 
 
---LQksG6bCIzRHxTLp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Right, so we since merged 8b911acd, in which Mike did almost this but
+not quite, the question is over: cpu == prev_cpu vs this_cpu ==
+prev_cpu.
 
-Hello,
-I have the following problem:
+Mike seems to see some workloads regress with the this_cpu check, does
+your workload work with the cpu == prev_cpu one?
 
-[  296.337510] ------------[ cut here ]------------
-[  296.337523] WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0xc1/0x=
-125()
-[  296.337527] Hardware name: F3JC               =20
-[  296.337530] NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
-[  296.337533] Modules linked in: pktgen ipv6 snd_hwdep snd_hda_codec_si305=
-4 snd_hda_codec_realtek sdhci_pci sdhci asus_laptop sparse_keymap mmc_core =
-led_class snd_hda_intel
-snd_hda_codec psmouse snd_pcm snd_timer snd soundcore snd_page_alloc serio_=
-raw i2c_i801 rng_core evdev sg r8169 mii usbhid hid uhci_hcd ehci_hcd sr_mo=
-d cdrom sd_mod usbcore
-ata_piix
-[  296.337586] Pid: 0, comm: swapper Not tainted 2.6.34-rc3-dbg #74
-[  296.337589] Call Trace:
-[  296.337597]  [<c102e71f>] warn_slowpath_common+0x65/0x7c
-[  296.337603]  [<c126e30c>] ? dev_watchdog+0xc1/0x125
-[  296.337608]  [<c102e76a>] warn_slowpath_fmt+0x24/0x27
-[  296.337613]  [<c126e30c>] dev_watchdog+0xc1/0x125
-[  296.337620]  [<c1040039>] ? prepare_to_wait_exclusive+0x52/0x5b
-[  296.337627]  [<c1037053>] ? run_timer_softirq+0x120/0x1eb
-[  296.337632]  [<c10370a9>] run_timer_softirq+0x176/0x1eb
-[  296.337637]  [<c1037053>] ? run_timer_softirq+0x120/0x1eb
-[  296.337643]  [<c126e24b>] ? dev_watchdog+0x0/0x125
-[  296.337650]  [<c10331c9>] __do_softirq+0x8d/0x117
-[  296.337655]  [<c103327e>] do_softirq+0x2b/0x43
-[  296.337660]  [<c10333a3>] irq_exit+0x38/0x75
-[  296.337667]  [<c1015138>] smp_apic_timer_interrupt+0x6d/0x7b
-[  296.337673]  [<c12cbada>] apic_timer_interrupt+0x36/0x3c
-[  296.337679]  [<c104007b>] ? prepare_to_wait+0x39/0x57
-[  296.337685]  [<c11dd835>] ? acpi_idle_enter_simple+0x119/0x144
-[  296.337692]  [<c124d358>] cpuidle_idle_call+0x6d/0xa5
-[  296.337697]  [<c1001b51>] cpu_idle+0x92/0xc1
-[  296.337704]  [<c12c63d0>] start_secondary+0x1f3/0x1fa
-[  296.337708] ---[ end trace cd4a1b50139837df ]---
-
-
-Reproducing 100% with pktgen tests.
-
-
-	Sergey
---LQksG6bCIzRHxTLp
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iJwEAQECAAYFAkuzIjYACgkQfKHnntdSXjS2/AP+PHupP2NnzZsfU8bY+hFoy20+
-vYJboanObqL61qlx20DlbhJzpSn162lH6Vb95OfdlmwEFIKo8lXdPBGWChVpHPCa
-ILCV+6f6Ba0FXII/Y12Z/MvG5TzRZxCaj7hWSy6XKvi0kRU22lM3FqeIUsm93e0i
-//pbHjiEhKQorFzzV44=
-=y3A6
------END PGP SIGNATURE-----
-
---LQksG6bCIzRHxTLp--
