@@ -1,78 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932681Ab0CaI3G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 04:29:06 -0400
-Received: from stinky.trash.net ([213.144.137.162]:56897 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755619Ab0CaI3A (ORCPT
+	id S932730Ab0CaIe0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 04:34:26 -0400
+Received: from mail-ew0-f220.google.com ([209.85.219.220]:50635 "EHLO
+	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932638Ab0CaIeX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 04:29:00 -0400
-Message-ID: <4BB307CA.9080305@trash.net>
-Date: Wed, 31 Mar 2010 10:28:58 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090701)
+	Wed, 31 Mar 2010 04:34:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=qfzmUqbUoywbOoK6bAE7ASbWjIb4xrci1lqP3EMTSG8v3VQY52sGk8K4WPC7nHYjLt
+         Zyc6K6YsaD+eIA5+8QYywp5SoKLhBKgp79md+pdI0Kkg7eXtWzIOvZMLusenma5ZJW83
+         7ZrdXwpAxG4PxK3N8QZy2qwh2UIa6I09Jp+nA=
 MIME-Version: 1.0
-To: Anders Darander <anders.darander@gmail.com>
-CC: Haavard Skinnemoen <hskinnemoen@atmel.com>,
-       "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jpirko@redhat.com>,
-       Erik Waling <erik.waling@konftel.com>,
-       Anders Darander <ad@datarespons.se>,
-       Grant Likely <grant.likely@secretlab.ca>, netdev@vger.kernel.org,
+In-Reply-To: <1269982719.1507.71.camel@Joe-Laptop.home>
+References: <1269979872-14677-1-git-send-email-soerenmoeller2001@gmail.com>
+	 <1269982719.1507.71.camel@Joe-Laptop.home>
+Date: Wed, 31 Mar 2010 10:34:20 +0200
+Message-ID: <6797ac6e1003310134y9c333y1fc6811032b2f174@mail.gmail.com>
+Subject: Re: [PATCH] Staging: quatech_usb2: fix coding style issues
+From: =?ISO-8859-1?B?U/hyZW4gTfhsbGVy?= <soerenmoeller2001@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: gregkh@suse.de, richard@audacityteam.org, andre.goddard@gmail.com,
+       nm127@freemail.hu, devel@driverdev.osuosl.org,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MACB: Set PHY address in kernel parameters
-References: <1270021902-6556-1-git-send-email-anders.darander@gmail.com>
-In-Reply-To: <1270021902-6556-1-git-send-email-anders.darander@gmail.com>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anders Darander wrote:
-> From: Anders Darander <ad@datarespons.se>
-> 
-> Add the possibility to set the phy address. This is needed if an integrated
-> switch is connected to the MAC, as it is often the case that the highest port
-> is the one connected to the MAC of the MCU.
-> 
-> E.g. in the case of the Micrel KSZ8873, port 3 is the one to connect to the
-> MCU, thus, the MAC needs to connect to phy address 0x03, instead of the first
-> phy found.
-> 
-> Signed-off-by: Anders Darander <ad@datarespons.se>
-> ---
->  drivers/net/macb.c |   14 +++++++++++++-
->  1 files changed, 13 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/net/macb.c b/drivers/net/macb.c
-> index c8a18a6..9b4e301 100644
-> --- a/drivers/net/macb.c
-> +++ b/drivers/net/macb.c
-> @@ -53,6 +53,14 @@
->  #define MACB_RX_INT_FLAGS	(MACB_BIT(RCOMP) | MACB_BIT(RXUBR)	\
->  				 | MACB_BIT(ISR_ROVR))
->  
-> +/*
-> + * Setup PHY probeing
-> + */
-> +
-> +static int phy_addr = PHY_MAX_ADDR;
-> +module_param(phy_addr, ushort, 0);
-> +MODULE_PARAM_DESC(phy_addr, "PHY address connected to the MACB");
-> +
->  static void __macb_set_hwaddr(struct macb *bp)
->  {
->  	u32 bottom;
-> @@ -193,7 +201,11 @@ static int macb_mii_probe(struct net_device *dev)
->  	struct eth_platform_data *pdata;
->  	int ret;
->  
-> -	phydev = phy_find_first(bp->mii_bus);
-> +	if (phy_addr >= PHY_MAX_ADDRESS)
-> +		phydev = phy_find_first(bp->mii_bus);
-> +	else
-> +		phydev = bp->mii_bus->phy_map[phy_addr];
+2010/3/30 Joe Perches <joe@perches.com>
+>
+> On Tue, 2010-03-30 at 20:11 +0000, Soeren Moeller wrote:
+> > This is a patch to the file quatech_usb2.c that fixes two space before tabular and one line of more than 80 characters warnings found by checkpatch.pl
+> > -                             tty_insert_flip_string(tty_st,
+> > -                                     &((unsigned char *)(urb->transfer_buffer)
+> > -                                             )[i],
+> > -                                     1);
+> > +                             tty_insert_flip_string(tty_st, &(
+> > +                                             (unsigned char *)
+> > +                                             (urb->transfer_buffer)
+> > +                                     )[i], 1);
+>
+> I think this is unsightly.
+> Perhaps a macro instead?
+>
 
-This looks like you need to use an unsigned to avoid negative
-indices.
+The macro seems like a good idea, it makes the code a lot more readable.
+Thanks for your response
+
+Regards
+Sören Möller
+
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/staging/quatech_usb2/quatech_usb2.c |   17 +++++++++--------
+>  1 files changed, 9 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/staging/quatech_usb2/quatech_usb2.c b/drivers/staging/quatech_usb2/quatech_usb2.c
+> index 1561f74..d14792a 100644
+> --- a/drivers/staging/quatech_usb2/quatech_usb2.c
+> +++ b/drivers/staging/quatech_usb2/quatech_usb2.c
+> @@ -109,12 +109,15 @@ static int debug;
+>  #define  QT2_LINE_STATUS_REGISTER       0x05
+>  #define  QT2_MODEM_STATUS_REGISTER      0x06
+>
+> +/* handy macro for extracting a byte from a data read transfer buffer */
+> +#define URB_TBUF(urb, pos) (((unsigned char *)(urb->transfer_buffer))[pos])
+> +
+>  /* handy macros for doing escape sequence parsing on data reads */
+> -#define THISCHAR       ((unsigned char *)(urb->transfer_buffer))[i]
+> -#define NEXTCHAR       ((unsigned char *)(urb->transfer_buffer))[i + 1]
+> -#define THIRDCHAR      ((unsigned char *)(urb->transfer_buffer))[i + 2]
+> -#define FOURTHCHAR     ((unsigned char *)(urb->transfer_buffer))[i + 3]
+> -#define FIFTHCHAR      ((unsigned char *)(urb->transfer_buffer))[i + 4]
+> +#define THISCHAR       URB_TBUF(urb, i + 0)
+> +#define NEXTCHAR       URB_TBUF(urb, i + 1)
+> +#define THIRDCHAR      URB_TBUF(urb, i + 2)
+> +#define FOURTHCHAR     URB_TBUF(urb, i + 3)
+> +#define FIFTHCHAR      URB_TBUF(urb, i + 4)
+>
+>  static const struct usb_device_id quausb2_id_table[] = {
+>        {USB_DEVICE(USB_VENDOR_ID_QUATECH, QUATECH_SSU2_100)},
+> @@ -1649,9 +1652,7 @@ __func__);
+>                        if (tty_st && urb->actual_length) {
+>                                tty_buffer_request_room(tty_st, 1);
+>                                tty_insert_flip_string(tty_st,
+> -                                       &((unsigned char *)(urb->transfer_buffer)
+> -                                               )[i],
+> -                                       1);
+> +                                                      &URB_TBUF(urb, i), 1);
+>                        }
+>                } /*endfor*/
+>                tty_flip_buffer_push(tty_st);
+>
+>
