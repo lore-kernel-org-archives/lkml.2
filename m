@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757957Ab0CaBwX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 21:52:23 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46205 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756498Ab0CaBwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 21:52:21 -0400
-Message-ID: <4BB2AA47.2030906@kernel.org>
-Date: Wed, 31 Mar 2010 10:49:59 +0900
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	id S1757965Ab0CaBz4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 21:55:56 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55339 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755353Ab0CaBzx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 21:55:53 -0400
+Date: Wed, 31 Mar 2010 03:55:44 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Ben Gamari <bgamari.foss@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       James Bottomley <James.Bottomley@HansenPartnership.com>,
+       Greg KH <gregkh@suse.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linux-Scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH] scsi: fix lockdep warning
+Message-ID: <20100331015544.GA3520@pengutronix.de>
+References: <a4423d671003081547v5c955d58t248db945c06d2a7f@mail.gmail.com> <86802c441003081612r2f44efd6n9664b4b7c98a636a@mail.gmail.com> <m1d3zel4b4.fsf@fess.ebiederm.org> <4B95F37E.6060309@kernel.org> <m14okqnczd.fsf@fess.ebiederm.org> <4B99A6F0.4080203@kernel.org> <4BA47692.7040401@kernel.org> <4bb21338.0d0db80a.1685.ffffb9e1@mx.google.com>
 MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: linux-kernel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
-       Eric Dumazet <dada1@cosmosbay.com>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Steven Rostedt <rostedt@goodmis.org>, stable <stable@kernel.org>
-Subject: Re: [PATCH] modules fix incorrect percpu usage
-References: <20100330135208.GC20673@Krystal>
-In-Reply-To: <20100330135208.GC20673@Krystal>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 31 Mar 2010 01:50:11 +0000 (UTC)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="X1bOJ3K7DJ5YkBrT"
+Content-Disposition: inline
+In-Reply-To: <4bb21338.0d0db80a.1685.ffffb9e1@mx.google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2010 10:52 PM, Mathieu Desnoyers wrote:
-> Should use per_cpu_ptr() to obfuscate the per cpu pointers (RELOC_HIDE is needed
-> for per cpu pointers).
-> 
-> Introduced by commit:
-> 
-> module.c: commit 6b588c18f8dacfa6d7957c33c5ff832096e752d3
-> 
-> It applies to mainline as of 2.6.34-rc2. This patch should be queued for the
-> stable branch, for kernels 2.6.29.x to 2.6.33.x.
-> (based on 2.6.33.1, also applies to 2.6.34-rc2 -tip)
-> 
-> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> CC: Randy Dunlap <randy.dunlap@oracle.com>
-> CC: Eric Dumazet <dada1@cosmosbay.com>
-> CC: Rusty Russell <rusty@rustcorp.com.au>
-> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> CC: Tejun Heo <tj@kernel.org>
-> CC: Ingo Molnar <mingo@elte.hu>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Linus Torvalds <torvalds@linux-foundation.org>
-> CC: Greg Kroah-Hartman <gregkh@suse.de>
-> CC: Steven Rostedt <rostedt@goodmis.org>
-> CC: stable <stable@kernel.org>
 
-Acked-by: Tejun Heo <tj@kernel.org>
+--X1bOJ3K7DJ5YkBrT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks.
+> Moreover, there are still failures in the ACPI thermal driver (at very le=
+ast)
+> on master (9623e5a23724d09283c238960946ec6f65733afe).
 
--- 
-tejun
+https://patchwork.kernel.org/patch/87436/
+(or https://bugzilla.kernel.org/show_bug.cgi?id=3D15548)
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--X1bOJ3K7DJ5YkBrT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkuyq6AACgkQD27XaX1/VRtgpACgqDUPeQ/SnYZHmiIgXYaLM69h
+5gUAnA2yXfIFLTll9DZqLbLwEXqT4CJF
+=jL77
+-----END PGP SIGNATURE-----
+
+--X1bOJ3K7DJ5YkBrT--
