@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757299Ab0CaMKt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 08:10:49 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:41155 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757037Ab0CaMKs (ORCPT
+	id S1757341Ab0CaMLE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 08:11:04 -0400
+Received: from darkstar.wilibox.com ([195.14.175.138]:50874 "EHLO
+	darkstar.wilibox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757316Ab0CaMK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 08:10:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=pGD2jHTGuVrX5mTuxqBNS3nSUC1iX/Vet7Aq0c1/YJWi8fldvO+n9J3bd+B1W4WWZI
-         uIljNgHhDXjoyqRfeLic1t0U7yRuUpwCR0tjN9m31i8/G68gHQbCNC41lVR9k3HfHP31
-         w0xb/Al3RMRjkFo9hyIzKGe5LzwnYSZL5yX0M=
+	Wed, 31 Mar 2010 08:10:59 -0400
+X-Greylist: delayed 581 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Mar 2010 08:10:59 EDT
+Message-ID: <4BB33988.9070608@gmail.com>
+Date: Wed, 31 Mar 2010 15:01:12 +0300
+From: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
 MIME-Version: 1.0
-In-Reply-To: <tnx7hosy9t2.fsf@e102109-lin.cambridge.arm.com>
-References: <n2m72cf309c1003310300k26b9aacbob7b49ff2f43f949d@mail.gmail.com> 
-	<tnx7hosy9t2.fsf@e102109-lin.cambridge.arm.com>
-From: Sachin Pandhare <sachinpandhare@gmail.com>
-Date: Wed, 31 Mar 2010 17:40:25 +0530
-Message-ID: <y2t72cf309c1003310510o87c33ebew5278758fe76556a9@mail.gmail.com>
-Subject: Re: kmemleak_scan_area
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: dwmw2@infradead.org
+CC: Nicolas Pitre <nico@fluxnic.net>, akpm@linux-foundation.org,
+       u.kleine-koenig@pengutronix.de, simon.kagstrom@netinsight.net,
+       linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
+       linux-kernel@vger.kernel.org, jamie@shareable.org
+Subject: Re: [PATCH v2] MTD: Fix Orion NAND driver compilation with ARM OABI
+References: <20100325152505.17612.40158.stgit@pauliusz> <alpine.LFD.2.00.1003251225500.694@xanadu.home>
+In-Reply-To: <alpine.LFD.2.00.1003251225500.694@xanadu.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 5:36 PM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> Sachin Pandhare <sachinpandhare@gmail.com> wrote:
->> In kmemleak.c file "kmemleak_scan_area" is appearing as a structure as
->> well as a function.
->> e.g.:
->> - struct kmemleak_scan_area {
->> - void __ref kmemleak_scan_area(const void *ptr, size_t size, gfp_t gfp)
+On 03/25/2010 06:26 PM, Nicolas Pitre wrote:
+> On Thu, 25 Mar 2010, Paulius Zaleckas wrote:
+>
+>> We must tell GCC to use even register for variable passed
+>> to ldrd instruction. Without this patch GCC 4.2.1 puts this
+>> variable to r2/r3 on EABI and r3/r4 on OABI, so force it to
+>> r2/r3. This does not change anything when EABI and OABI
+>> compilation works OK.
 >>
->> Do you think it is a good to have it like that?
+>> Without this patch and with OABI I get:
+>>    CC      drivers/mtd/nand/orion_nand.o
+>> /tmp/ccMkwOCs.s: Assembler messages:
+>> /tmp/ccMkwOCs.s:63: Error: first destination register must be even -- `ldrd r3,[ip]'
+>> make[5]: *** [drivers/mtd/nand/orion_nand.o] Error 1
+>>
+>> Signed-off-by: Paulius Zaleckas<paulius.zaleckas@gmail.com>
 >
-> Does it cause any problems? I think C has different namespaces for types
-> and functions, so they should not collide. I agree that from a
-> readability perspective, it would be better if they are named
-> differently (like kmemleak_scan_area_node :)).
+> Acked-by: Nicolas Pitre<nico@fluxnic.net>
 
-It has not caused any problem.
-Thanks,
+David,
+
+Will you take this patch?
+Or you are waiting till I will add all Cc as Jamie suggested?
 
 >
-> --
-> Catalin
+>> ---
+>>
+>>   drivers/mtd/nand/orion_nand.c |    8 +++++++-
+>>   1 files changed, 7 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/mtd/nand/orion_nand.c b/drivers/mtd/nand/orion_nand.c
+>> index f59c074..d60fc57 100644
+>> --- a/drivers/mtd/nand/orion_nand.c
+>> +++ b/drivers/mtd/nand/orion_nand.c
+>> @@ -60,7 +60,13 @@ static void orion_nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
+>>   	}
+>>   	buf64 = (uint64_t *)buf;
+>>   	while (i<  len/8) {
+>> -		uint64_t x;
+>> +		/*
+>> +		 * Since GCC has no proper constraint (PR 43518)
+>> +		 * force x variable to r2/r3 registers as ldrd instruction
+>> +		 * requires first register to be even.
+>> +		 */
+>> +		register uint64_t x asm ("r2");
+>> +
+>>   		asm volatile ("ldrd\t%0, [%1]" : "=&r" (x) : "r" (io_base));
+>>   		buf64[i++] = x;
+>>   	}
+>>
+
