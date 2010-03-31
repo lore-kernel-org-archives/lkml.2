@@ -1,117 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757404Ab0CaTms (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 15:42:48 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33488 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756585Ab0CaTmq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 15:42:46 -0400
-Date: Wed, 31 Mar 2010 12:42:01 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: miaox@cn.fujitsu.com
-Cc: Nick Piggin <npiggin@suse.de>, David Rientjes <rientjes@google.com>,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>,
-       Paul Menage <menage@google.com>,
-       Linux-Kernel <linux-kernel@vger.kernel.org>,
-       Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH] [PATCH -mmotm] cpuset,mm: use seqlock to protect
- task->mempolicy and mems_allowed (v2) (was: Re: [PATCH V2 4/4] cpuset,mm:
- update task's mems_allowed lazily)
-Message-Id: <20100331124201.8cb20a11.akpm@linux-foundation.org>
-In-Reply-To: <4BAB6646.7040302@cn.fujitsu.com>
-References: <4B94CD2D.8070401@cn.fujitsu.com>
-	<alpine.DEB.2.00.1003081330370.18502@chino.kir.corp.google.com>
-	<4B95F802.9020308@cn.fujitsu.com>
-	<20100311081548.GJ5812@laptop>
-	<4B98C6DE.3060602@cn.fujitsu.com>
-	<20100311110317.GL5812@laptop>
-	<4BAB6646.7040302@cn.fujitsu.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757344Ab0CaTpf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 15:45:35 -0400
+Received: from fieldses.org ([174.143.236.118]:38073 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756585Ab0CaTpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 15:45:33 -0400
+Date: Wed, 31 Mar 2010 15:47:41 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Greg KH <greg@kroah.com>
+Cc: stable@kernel.org, linux-nfs@vger.kernel.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] nfsd4: don't try to map gid's in generic rpc code
+Message-ID: <20100331194741.GA5355@fieldses.org>
+References: <20100306175212.GB22650@fieldses.org> <20100324142414.GE12057@fieldses.org> <20100329182443.GC3778@kroah.com> <20100330144054.GD11545@fieldses.org> <20100330200320.GB1693@kroah.com> <20100331193029.GC4937@fieldses.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100331193029.GC4937@fieldses.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Mar 2010 21:33:58 +0800
-Miao Xie <miaox@cn.fujitsu.com> wrote:
+From: J. Bruce Fields <bfields@citi.umich.edu>
 
-> on 2010-3-11 19:03, Nick Piggin wrote:
-> >> Ok, I try to make a new patch by using seqlock.
-> > 
-> > Well... I do think seqlocks would be a bit simpler because they don't
-> > require this checking and synchronizing of this patch.
-> Hi, Nick Piggin
-> 
-> I have made a new patch which uses seqlock to protect mems_allowed and mempolicy.
-> please review it.
+For nfsd we provide users the option of mapping uid's to server-side
+supplementary group lists.  That makes sense for nfsd, but not
+necessarily for other rpc users (such as the callback client).
 
-That's an awfully big patch for a pretty small bug?
+So move that lookup to svcauth_unix_set_client, which is a
+program-specific method.
 
-> Subject: [PATCH] [PATCH -mmotm] cpuset,mm: use seqlock to protect task->mempolicy and mems_allowed (v2)
-> 
-> Before applying this patch, cpuset updates task->mems_allowed by setting all
-> new bits in the nodemask first, and clearing all old unallowed bits later.
-> But in the way, the allocator can see an empty nodemask, though it is infrequent.
-> 
-> The problem is following:
-> The size of nodemask_t is greater than the size of long integer, so loading
-> and storing of nodemask_t are not atomic operations. If task->mems_allowed
-> don't intersect with new_mask, such as the first word of the mask is empty
-> and only the first word of new_mask is not empty. When the allocator
-> loads a word of the mask before
-> 
-> 	current->mems_allowed |= new_mask;
-> 
-> and then loads another word of the mask after
-> 
-> 	current->mems_allowed = new_mask;
-> 
-> the allocator gets an empty nodemask.
+Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
+---
+ net/sunrpc/svcauth_unix.c |   53 +++++++++++++++++++++++++-------------------
+ 1 files changed, 30 insertions(+), 23 deletions(-)
 
-Probably we could fix this via careful ordering of the updates,
-barriers and perhaps some avoicance action at the reader side.
+On Wed, Mar 31, 2010 at 03:30:29PM -0400, J. Bruce Fields wrote:
+> In any case, I'll follow up with patches generated against 2.6.32.10.
 
-> Besides that, if the size of nodemask_t is less than the size of long integer,
-> there is another problem. when the kernel allocater invokes the following function,
-> 
-> 	struct zoneref *next_zones_zonelist(struct zoneref *z,
-> 						enum zone_type highest_zoneidx,
-> 						nodemask_t *nodes,
-> 						struct zone **zone)
-> 	{
-> 		/*
-> 		 * Find the next suitable zone to use for the allocation.
-> 		 * Only filter based on nodemask if it's set
-> 		 */
-> 		if (likely(nodes == NULL))
-> 			......
->  	       else
-> 			while (zonelist_zone_idx(z) > highest_zoneidx ||
-> 					(z->zone && !zref_in_nodemask(z, nodes)))
-> 				z++;
-> 
-> 		*zone = zonelist_zone(z);
-> 		return z;
-> 	}
-> 
-> if we change nodemask between two calls of zref_in_nodemask(), such as
-> 	Task1						Task2
-> 	zref_in_nodemask(z = node0's z, nodes = 1-2)
-> 	zref_in_nodemask return 0
-> 							nodes = 0
-> 	zref_in_nodemask(z = node1's z, nodes = 0)
-> 	zref_in_nodemask return 0
-> z will overflow.
+Also, while testing those patches on 2.6.32, I noticed that 2.6.32.y
+doesn't include the following (unrelated) patch.  Could you apply it as
+well?  Thanks!
 
-And maybe we can fix this by taking a copy into a local.
-
-> when the kernel allocater accesses task->mempolicy, there is the same problem.
-
-And maybe we can fix those in a similar way.
-
-But it's all too much, and we'll just break it again in the future.  So
-yup, I guess locking is needed.
+diff --git a/net/sunrpc/svcauth_unix.c b/net/sunrpc/svcauth_unix.c
+index 117f68a..97cc3de 100644
+--- a/net/sunrpc/svcauth_unix.c
++++ b/net/sunrpc/svcauth_unix.c
+@@ -655,23 +655,25 @@ static struct unix_gid *unix_gid_lookup(uid_t uid)
+ 		return NULL;
+ }
+ 
+-static int unix_gid_find(uid_t uid, struct group_info **gip,
+-			 struct svc_rqst *rqstp)
++static struct group_info *unix_gid_find(uid_t uid, struct svc_rqst *rqstp)
+ {
+-	struct unix_gid *ug = unix_gid_lookup(uid);
++	struct unix_gid *ug;
++	struct group_info *gi;
++	int ret;
++
++	ug = unix_gid_lookup(uid);
+ 	if (!ug)
+-		return -EAGAIN;
+-	switch (cache_check(&unix_gid_cache, &ug->h, &rqstp->rq_chandle)) {
++		return ERR_PTR(-EAGAIN);
++	ret = cache_check(&unix_gid_cache, &ug->h, &rqstp->rq_chandle);
++	switch (ret) {
+ 	case -ENOENT:
+-		*gip = NULL;
+-		return 0;
++		return ERR_PTR(-ENOENT);
+ 	case 0:
+-		*gip = ug->gi;
+-		get_group_info(*gip);
++		gi = get_group_info(ug->gi);
+ 		cache_put(&ug->h, &unix_gid_cache);
+-		return 0;
++		return gi;
+ 	default:
+-		return -EAGAIN;
++		return ERR_PTR(-EAGAIN);
+ 	}
+ }
+ 
+@@ -681,6 +683,8 @@ svcauth_unix_set_client(struct svc_rqst *rqstp)
+ 	struct sockaddr_in *sin;
+ 	struct sockaddr_in6 *sin6, sin6_storage;
+ 	struct ip_map *ipm;
++	struct group_info *gi;
++	struct svc_cred *cred = &rqstp->rq_cred;
+ 
+ 	switch (rqstp->rq_addr.ss_family) {
+ 	case AF_INET:
+@@ -722,6 +726,17 @@ svcauth_unix_set_client(struct svc_rqst *rqstp)
+ 			ip_map_cached_put(rqstp, ipm);
+ 			break;
+ 	}
++
++	gi = unix_gid_find(cred->cr_uid, rqstp);
++	switch (PTR_ERR(gi)) {
++	case -EAGAIN:
++		return SVC_DROP;
++	case -ENOENT:
++		break;
++	default:
++		put_group_info(cred->cr_group_info);
++		cred->cr_group_info = gi;
++	}
+ 	return SVC_OK;
+ }
+ 
+@@ -818,19 +833,11 @@ svcauth_unix_accept(struct svc_rqst *rqstp, __be32 *authp)
+ 	slen = svc_getnl(argv);			/* gids length */
+ 	if (slen > 16 || (len -= (slen + 2)*4) < 0)
+ 		goto badcred;
+-	if (unix_gid_find(cred->cr_uid, &cred->cr_group_info, rqstp)
+-	    == -EAGAIN)
++	cred->cr_group_info = groups_alloc(slen);
++	if (cred->cr_group_info == NULL)
+ 		return SVC_DROP;
+-	if (cred->cr_group_info == NULL) {
+-		cred->cr_group_info = groups_alloc(slen);
+-		if (cred->cr_group_info == NULL)
+-			return SVC_DROP;
+-		for (i = 0; i < slen; i++)
+-			GROUP_AT(cred->cr_group_info, i) = svc_getnl(argv);
+-	} else {
+-		for (i = 0; i < slen ; i++)
+-			svc_getnl(argv);
+-	}
++	for (i = 0; i < slen; i++)
++		GROUP_AT(cred->cr_group_info, i) = svc_getnl(argv);
+ 	if (svc_getu32(argv) != htonl(RPC_AUTH_NULL) || svc_getu32(argv) != 0) {
+ 		*authp = rpc_autherr_badverf;
+ 		return SVC_DENIED;
+-- 
+1.6.3.3
 
