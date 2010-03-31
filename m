@@ -1,35 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756294Ab0CaOEn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 10:04:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65526 "EHLO mx1.redhat.com"
+	id S1756569Ab0CaOIF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 10:08:05 -0400
+Received: from londo.lunn.ch ([80.238.139.98]:48280 "EHLO londo.lunn.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752453Ab0CaOEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 10:04:41 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100331000832.GQ2513@linux.vnet.ibm.com>
-References: <20100331000832.GQ2513@linux.vnet.ibm.com> <20100329192159.GM2569@linux.vnet.ibm.com> <20100319022527.GC2894@linux.vnet.ibm.com> <20100318133302.29754.1584.stgit@warthog.procyon.org.uk> <19192.1269889348@redhat.com> <23274.1269893706@redhat.com> <25276.1269901350@redhat.com> <26760.1269903543@redhat.com> <20100329232636.GT2569@linux.vnet.ibm.com> <2440.1269967151@redhat.com> <21972.1269993064@redhat.com> 
-To: paulmck@linux.vnet.ibm.com
-Cc: dhowells@redhat.com, Eric Dumazet <eric.dumazet@gmail.com>,
-       Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS: Fix RCU warnings in nfs_inode_return_delegation_noreclaim() [ver #2]
-Date: Wed, 31 Mar 2010 15:04:33 +0100
-Message-ID: <10818.1270044273@redhat.com>
+	id S1754755Ab0CaOID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 10:08:03 -0400
+X-Greylist: delayed 1437 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Mar 2010 10:08:03 EDT
+Date: Wed, 31 Mar 2010 15:43:35 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Dan Milway <dan.milway@gmail.com>
+Cc: gregkh@suse.de, andrew@lunn.ch, lindner_marek@yahoo.de,
+       siwu@hrz.tu-chemnitz.de, linus.luessing@web.de,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: batman-adv: fix whitespace coding style issue
+ in proc.c This is a patch to the proc.c file that fixes several whitespace
+ warnings found by the checkpatch.pl tool Signed-off by: Dan Milway
+ <dan.milway@gmail.com>
+Message-ID: <20100331134335.GA10849@lunn.ch>
+References: <1270007019-12414-1-git-send-email-dan.milway@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1270007019-12414-1-git-send-email-dan.milway@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+Hi Dan
 
-> How about Eric's suggestion of rcu_dereference_protected()?  That name
-> doesn't imply a lock, which as you say above, isn't always needed to
-> keep the structure from changing.
+Thanks for the patch.
 
-But 'protected' from what or by what?
+I think all of these have already been fixed in a patch i sent to Greg
+for the next -rc kernel. There is a bug proc.c, and while fixing the
+bug i took the time to fix these white space things as well.
 
-David
+Please could you check this file again after the next -rc kernel is
+released?
+
+	Thanks
+		Andrew
