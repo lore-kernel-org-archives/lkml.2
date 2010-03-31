@@ -1,77 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757859Ab0CaQmG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 12:42:06 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:64240 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757826Ab0CaQmB (ORCPT
+	id S1757851Ab0CaRFZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 13:05:25 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:52648 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757811Ab0CaRFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 12:42:01 -0400
-Date: Wed, 31 Mar 2010 09:40:23 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Giridhar Malavali <giridhar.malavali@qlogic.com>, james.bottomley@suse.de
-Cc: Ferenc Wagner <wferi@niif.hu>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       LinuxSCSI <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH] qla2xxx: Fix documentation of ql2xfdmienable module
- parameter
-Message-Id: <20100331094023.933bc3e5.randy.dunlap@oracle.com>
-In-Reply-To: <C7CED2FA.5FEB%giridhar.malavali@qlogic.com>
-References: <87634n0xkc.fsf@tac.ki.iif.hu>
-	<C7CED2FA.5FEB%giridhar.malavali@qlogic.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4BB37B36.00E0:SCFMA4539814,ss=1,fgs=0
+	Wed, 31 Mar 2010 13:05:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=luBKVHAp38+lYXw8sO2NUUMfrzwTF1Pu7JyltOb6SEq0+FKzkcky5+RjKpd8ywBvkn
+         eL5JJqvtCWW3uuatwZ8nHHseJAtC/SslKoj5pR2mOt1brCQDYFHRhZTvIRyry30QIa8n
+         3QYYsiIdCTPHOBznp8CV8Mql9sNGbqpq4HpgM=
+Date: Wed, 31 Mar 2010 21:05:17 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Robert Richter <robert.richter@amd.com>,
+       Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>, Lin Ming <ming.m.lin@intel.com>
+Subject: Re: [PATCH 0/3] perf/core, x86: unify perfctr bitmasks
+Message-ID: <20100331170517.GB15288@lenovo>
+References: <bd4cb8901003300311l4178891dvf1e63293a0ac51fe@mail.gmail.com> <20100330134145.GI11907@erda.amd.com> <bd4cb8901003300653lc8e414bp3930b03fee2fffbf@mail.gmail.com> <1269961255.5258.221.camel@laptop> <20100330155949.GJ11907@erda.amd.com> <1269968113.5258.442.camel@laptop> <20100330182906.GD5211@lenovo> <1269975840.5258.609.camel@laptop> <20100331161523.GA9058@lenovo> <20100331162647.GA15288@lenovo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100331162647.GA15288@lenovo>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Mar 2010 20:20:10 -0700 Giridhar Malavali wrote:
-
+On Wed, Mar 31, 2010 at 08:26:47PM +0400, Cyrill Gorcunov wrote:
+> On Wed, Mar 31, 2010 at 08:15:23PM +0400, Cyrill Gorcunov wrote:
+> > On Tue, Mar 30, 2010 at 09:04:00PM +0200, Peter Zijlstra wrote:
+> > > On Tue, 2010-03-30 at 22:29 +0400, Cyrill Gorcunov wrote:
+> > [...]
+> > > > 
+> [...]
+> > +static inline bool p4_is_odd_cpl(u32 escr)
+> > +{
+> > +	unsigned int t0 = (escr & P4_ESCR_T0_ANY) << 0;
+> > +	unsigned int t1 = (escr & P4_ESCR_T1_ANY) << 2;
+> > +
+> > +	if ((t0 ^ t1) != t0)
+> > +		return true;
 > 
-> 
-> 
-> On 3/23/10 10:14 AM, "Ferenc Wagner" <wferi@niif.hu> wrote:
-> 
-> > The default is enabled since 7e47e5ca184548341a82eeb2238ee3622c43cae1.
-> > 
-> > Signed-off-by: Ferenc Wagner <wferi@niif.hu>
+> /me in shame: This is bogus, Peter don't take it yet.
+>
 
-Hi James,
-
-What is the best way for any interested party to tell if you have merged (applied,
-accepted) a patch in the scsi subsystem?
-
-Thanks.
-
-> > ---
-> >  drivers/scsi/qla2xxx/qla_os.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/scsi/qla2xxx/qla_os.c b/drivers/scsi/qla2xxx/qla_os.c
-> > index 46720b2..ac08397 100644
-> > --- a/drivers/scsi/qla2xxx/qla_os.c
-> > +++ b/drivers/scsi/qla2xxx/qla_os.c
-> > @@ -69,8 +69,8 @@ static void qla2x00_free_device(scsi_qla_host_t *);
-> >  int ql2xfdmienable=1;
-> >  module_param(ql2xfdmienable, int, S_IRUGO|S_IRUSR);
-> >  MODULE_PARM_DESC(ql2xfdmienable,
-> > -               "Enables FDMI registratons "
-> > -               "Default is 0 - no FDMI. 1 - perfom FDMI.");
-> > +               "Enables FDMI registrations. "
-> > +               "0 - no FDMI. Default is 1 - perform FDMI.");
-> > 
-> >  #define MAX_Q_DEPTH    32
-> >  static int ql2xmaxqdepth = MAX_Q_DEPTH;
-> > --
-> 
-> Acked-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
-
-
+Updated
+ 
+	-- Cyrill
 ---
-~Randy
+x86, perf: P4 PMU -- check for permission granted on ANY event v2
+
+In case if a caller (user) asked us to count events with
+some weird mask we should check if this priviledge has been
+granted since this could be a mix of bitmasks we not like
+which but allow if caller insist.
+
+By ANY event term the combination of USR/OS bits in ESCR
+register is assumed.
+
+CC: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
+ arch/x86/include/asm/perf_event_p4.h |   17 +++++++++++++++++
+ arch/x86/kernel/cpu/perf_event_p4.c  |   24 +++++++++++++++++++++---
+ 2 files changed, 38 insertions(+), 3 deletions(-)
+
+Index: linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/include/asm/perf_event_p4.h
++++ linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
+@@ -33,6 +33,9 @@
+ #define P4_ESCR_T1_OS		0x00000002U
+ #define P4_ESCR_T1_USR		0x00000001U
+ 
++#define P4_ESCR_T0_ANY		(P4_ESCR_T0_OS | P4_ESCR_T0_USR)
++#define P4_ESCR_T1_ANY		(P4_ESCR_T1_OS | P4_ESCR_T1_USR)
++
+ #define P4_ESCR_EVENT(v)	((v) << P4_ESCR_EVENT_SHIFT)
+ #define P4_ESCR_EMASK(v)	((v) << P4_ESCR_EVENTMASK_SHIFT)
+ #define P4_ESCR_TAG(v)		((v) << P4_ESCR_TAG_SHIFT)
+@@ -134,6 +137,20 @@
+ #define P4_CONFIG_HT_SHIFT		63
+ #define P4_CONFIG_HT			(1ULL << P4_CONFIG_HT_SHIFT)
+ 
++/*
++ * typically we set USR or/and OS bits for one of the
++ * threads only at once, any other option is treated
++ * as "any"
++ */
++static inline bool p4_is_any_cpl(u32 escr)
++{
++	if ((escr & P4_ESCR_T0_ANY) &&
++	    (escr & P4_ESCR_T1_ANY))
++		return true;
++
++	return false;
++}
++
+ static inline bool p4_is_event_cascaded(u64 config)
+ {
+ 	u32 cccr = p4_config_unpack_cccr(config);
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -443,13 +443,18 @@ static int p4_hw_config(struct perf_even
+ 		return 0;
+ 
+ 	/*
++	 * a caller may ask for something definitely weird and
++	 * screwed, sigh...
++	 */
++	escr = p4_config_unpack_escr(event->attr.config);
++	if (p4_is_any_cpl(escr) && perf_paranoid_cpu() && !capable(CAP_SYS_ADMIN))
++		return -EACCES;
++
++	/*
+ 	 * We don't control raw events so it's up to the caller
+ 	 * to pass sane values (and we don't count the thread number
+ 	 * on HT machine but allow HT-compatible specifics to be
+ 	 * passed on)
+-	 *
+-	 * XXX: HT wide things should check perf_paranoid_cpu() &&
+-	 *      CAP_SYS_ADMIN
+ 	 */
+ 	event->hw.config |= event->attr.config &
+ 		(p4_config_pack_escr(P4_ESCR_MASK_HT) |
+@@ -630,6 +635,19 @@ static void p4_pmu_swap_config_ts(struct
+ 	escr = p4_config_unpack_escr(hwc->config);
+ 	cccr = p4_config_unpack_cccr(hwc->config);
+ 
++	/*
++	 * for non-standart configs we don't clobber cpl
++	 * related bits so it's preferred the caller don't
++	 * use this mode
++	 */
++	if (unlikely(p4_is_any_cpl(escr))) {
++		if (p4_ht_thread(cpu))
++			hwc->config |= P4_CONFIG_HT;
++		else
++			hwc->config &= ~P4_CONFIG_HT;
++		return;
++	}
++
+ 	if (p4_ht_thread(cpu)) {
+ 		cccr &= ~P4_CCCR_OVF_PMI_T0;
+ 		cccr |= P4_CCCR_OVF_PMI_T1;
