@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758228Ab0CaVIK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 17:08:10 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34594 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752990Ab0CaVID (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 17:08:03 -0400
-Date: Wed, 31 Mar 2010 14:02:55 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Airlie <airlied@gmail.com>
-cc: Ingo Molnar <mingo@elte.hu>, James Morris <jmorris@namei.org>,
-       "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-       linux-kernel@vger.kernel.org, airlied@linux.ie,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: Config NO_BOOTMEM breaks my amd64 box
-In-Reply-To: <v2m21d7e9971003311357ga4626e41h535ae733933fdc84@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1003311401480.3707@i5.linux-foundation.org>
-References: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org>  <4BB2EB1B.8090303@zytor.com>  <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org>  <20100331185916.GA12306@elte.hu> <v2m21d7e9971003311357ga4626e41h535ae733933fdc84@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1758202Ab0CaVIz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 17:08:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46216 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752990Ab0CaVIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 17:08:53 -0400
+Date: Wed, 31 Mar 2010 13:39:26 -0700
+From: Greg KH <gregkh@suse.de>
+To: Chuck Ebbert <cebbert@redhat.com>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, mcarlson@broadcom.com,
+       "David S. Miller" <davem@davemloft.net>,
+       Mike Pagano <mpagano@gentoo.org>, Michael Chan <mchan@broadcom.com>,
+       akpm@linux-foundation.org, torvalds@linux-foundation.org,
+       stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [Stable-review] [007/116] tg3: Fix 5906 transmit hangs
+Message-ID: <20100331203926.GA15418@suse.de>
+References: <20100330230600.GA28802@kroah.com> <20100330225600.398306625@linux.site> <20100330211522.2f1658fe@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100330211522.2f1658fe@redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thu, 1 Apr 2010, Dave Airlie wrote:
->
-> A default y config option causing regressions still at rc3? and you guys
-> keep going? This is the sort of shit Linus would flame me for a day or two for,
+On Tue, Mar 30, 2010 at 09:15:22PM -0400, Chuck Ebbert wrote:
+> On Tue, 30 Mar 2010 15:54:45 -0700
+> Greg KH <gregkh@suse.de> wrote:
 > 
-> Can we get some f'ing consistency here?
+> > 2.6.32-stable review patch.  If anyone has any objections, please let
+> > us know.
+> > 
+> > ------------------
+> > 
+> > From: Matt Carlson <mcarlson@broadcom.com>
+> > 
+> > This is a resubmit backport of commit
+> > 92c6b8d16a36df3f28b2537bed2a56491fb08f11 to kernel version 2.6.32.
+> > The gentoo bug report can be found at
+> > https://bugs.gentoo.org/show_bug.cgi?id=301091. Thanks to Matt
+> > Carlson for his assistance and working me to fix a regression caused
+> > by the initial patch.  The original description is as follows:
+> > 
+> 
+> I think these two patches should be used instead, as they fix the
+> bug without needing backports and keep the driver closer to upstream:
+> 
+> 0e1406dd404ce55dbe8d68b4b5e2aed7e5c75fdb
+> "tg3: Assign flags to fixes in start_xmit_dma_bug"
+> 
+> 92c6b8d16a36df3f28b2537bed2a56491fb08f11
+> "tg3: Fix 5906 transmit hangs"
 
-Yeah. I think we need to remove the crap.
+I don't know, I'll defer to Matt here, this patch has gone in and out of
+the stable queue for a while now as he and some users have tested and
+had problems lots of times...
 
-I thought the problems were known, and fixed in -rc3. Clearly they 
-weren't. And by now it's not about changing the default any more - by now 
-it's about removing the known-crap code.
+Matt?
 
-		Linus
