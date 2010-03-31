@@ -1,77 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933244Ab0CaKeS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 06:34:18 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:21945 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933184Ab0CaKeQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 06:34:16 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=mOi4BaB+ECbkYdaVRLKEGgEe+6otNg1WDZVo2vvzuzOFcYxFo39W8jr+6uUrtpdNg
-	BG76g8CenERQDV8jqYyMQ==
-Date: Wed, 31 Mar 2010 03:34:08 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Miao Xie <miaox@cn.fujitsu.com>
-cc: Nick Piggin <npiggin@suse.de>, Lee Schermerhorn <lee.schermerhorn@hp.com>,
-       Paul Menage <menage@google.com>,
-       Linux-Kernel <linux-kernel@vger.kernel.org>,
-       Linux-MM <linux-mm@kvack.org>, Li Zefan <lizf@cn.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH V2 4/4] cpuset,mm: update task's mems_allowed lazily
-In-Reply-To: <4BB31BDA.8080203@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1003310324550.17661@chino.kir.corp.google.com>
-References: <4B94CD2D.8070401@cn.fujitsu.com> <alpine.DEB.2.00.1003081330370.18502@chino.kir.corp.google.com> <4B95F802.9020308@cn.fujitsu.com> <20100311081548.GJ5812@laptop> <4B98C6DE.3060602@cn.fujitsu.com> <20100311110317.GL5812@laptop>
- <4BB31BDA.8080203@cn.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1757680Ab0CaKhV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 06:37:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3526 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752003Ab0CaKhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 06:37:19 -0400
+Date: Wed, 31 Mar 2010 12:36:54 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCHv3 0/2] tracing: function graph output for
+ preempt/irqs-off tracers
+Message-ID: <20100331103654.GB2152@jolsa.lab.eng.brq.redhat.com>
+References: <1269606723-12439-1-git-send-email-jolsa@redhat.com>
+ <1269615239.19685.78.camel@gandalf.stny.rr.com>
+ <20100329111701.GC1715@jolsa>
+ <1269875347.19685.4492.camel@gandalf.stny.rr.com>
+ <20100329152154.GF1715@jolsa>
+ <1269877299.19685.4527.camel@gandalf.stny.rr.com>
+ <20100331073738.GA2152@jolsa.lab.eng.brq.redhat.com>
+ <20100331080154.GA5229@nowhere>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100331080154.GA5229@nowhere>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Mar 2010, Miao Xie wrote:
+On Wed, Mar 31, 2010 at 10:01:57AM +0200, Frederic Weisbecker wrote:
+> On Wed, Mar 31, 2010 at 09:37:38AM +0200, Jiri Olsa wrote:
+> > On Mon, Mar 29, 2010 at 11:41:39AM -0400, Steven Rostedt wrote:
+> > > On Mon, 2010-03-29 at 17:21 +0200, Jiri Olsa wrote:
+> > > 
+> > > > > Understand what I'm trying to ask?
+> > > > 
+> > > > ok, so what you mean is:
+> > > > - dont clear the max_tr and 
+> > > > - add function graph events.
+> > > > 
+> > > > So when the tracing_enabled and display-graph are disabled we will
+> > > > get events output rather than 'unknown event' output... right?
+> > > 
+> > > Right, although when the display-graph is disabled, we lose the /* */
+> > > but that's fine.
+> > 
+> > ok, I have it done, but found another issue..
+> > 
+> > It's the tracer_flags which governs the tracer output. As I'm using
+> > the function_graph tracer output functions, they follow function_graph
+> > tracer's flags settings..
+> > 
+> > My first idea was a change that would allow tracer using flags
+> > of other tracers.. so, when enabling irqsoff tracer the function_graph
+> > tracer's options would become available.
+> > 
+> > I made the patch but got to the set_flag function which can be overloaded
+> > by tracer. So I'd need to remember the flags's tracer, and it does
+> > not seem right.. :)
+> > 
+> > any ideas?
+> > 
+> > thanks,
+> > jirka
+> 
+> 
+> Hehe :)
+> 
+> I don't think we need such a feature. I doubt anybody
+> is going to play with the options granularity of the function
+> graph tracer there.
+> 
+> We should rather focus on what is useful to display for irqsoff
+> tracing, which means we need every function graph options set except
+> funcgraph-overrun that is only there to debug the tracer
+> itself (I haven't tried it for a while BTW).
+> 
+> What you can do is to save the function graph tracer options
+> when the irqsoff tracer starts, then overwrite them, and eventually
+> restore the previous values when the irqsoff reset callback is called.
+> 
+> Or preferably...
+> 
+> Another solution, a bit more proper, is to sanitize a bit the function
+> graph tracer printing helpers by pushing the options as a parameter to
+> them.
+> 
+> So the function graph tracer can call them by passing the function graph
+> tracer options, and the irqsoff tracer or any other tracer can call them
+> with its own options.
 
-> diff --git a/mm/mmzone.c b/mm/mmzone.c
-> index f5b7d17..43ac21b 100644
-> --- a/mm/mmzone.c
-> +++ b/mm/mmzone.c
-> @@ -58,6 +58,7 @@ struct zoneref *next_zones_zonelist(struct zoneref *z,
->  					nodemask_t *nodes,
->  					struct zone **zone)
->  {
-> +	nodemask_t tmp_nodes;
->  	/*
->  	 * Find the next suitable zone to use for the allocation.
->  	 * Only filter based on nodemask if it's set
-> @@ -65,10 +66,16 @@ struct zoneref *next_zones_zonelist(struct zoneref *z,
->  	if (likely(nodes == NULL))
->  		while (zonelist_zone_idx(z) > highest_zoneidx)
->  			z++;
-> -	else
-> -		while (zonelist_zone_idx(z) > highest_zoneidx ||
-> -				(z->zone && !zref_in_nodemask(z, nodes)))
-> -			z++;
-> +	else {
-> +		tmp_nodes = *nodes;
-> +		if (nodes_empty(tmp_nodes))
-> +			while (zonelist_zone_idx(z) > highest_zoneidx)
-> +				z++;
-> +		else
-> +			while (zonelist_zone_idx(z) > highest_zoneidx ||
-> +				(z->zone && !zref_in_nodemask(z, &tmp_nodes)))
-> +				z++;
-> +	}
->  
->  	*zone = zonelist_zone(z);
->  	return z;
+ok, this one looks good :) thanks
 
-Unfortunately, you can't allocate a nodemask_t on the stack here because 
-this is used in the iteration for get_page_from_freelist() which can occur 
-very deep in the stack already and there's a probability of overflow.  
-Dynamically allocating a nodemask_t simply wouldn't scale here, either, 
-since it would allocate on every iteration of a zonelist.
+jirka
