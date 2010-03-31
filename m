@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758033Ab0CaCUM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 22:20:12 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:21927 "EHLO
+	id S1758045Ab0CaCVG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 22:21:06 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:26437 "EHLO
 	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757921Ab0CaCUJ (ORCPT
+	with ESMTP id S1755338Ab0CaCVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 22:20:09 -0400
+	Tue, 30 Mar 2010 22:21:01 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,153 +16,88 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 29/33] x86: Use wake_system_ram_range instead of e820_any_mapped in agp path
-Date: Tue, 30 Mar 2010 19:17:14 -0700
-Message-Id: <1270001838-15857-30-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 16/33] lmb: Add lmb_reserve_area_overlap_ok()
+Date: Tue, 30 Mar 2010 19:17:01 -0700
+Message-Id: <1270001838-15857-17-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1270001838-15857-1-git-send-email-yinghai@kernel.org>
 References: <1270001838-15857-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4BB2B11E.0154,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090207.4BB2B121.0014,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move apterture_valid back to .c
+Some areas from firmware could be reserved several times from different callers.
 
-and early path still use e820_any_mapped()
+If these area are overlapped, We may have overlapped entries in lmb.reserved.
 
-so later we can make e820_any_mapped() to _init
+Try to free the area at first, before rerserve them again.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/gart.h   |   22 ----------------------
- arch/x86/kernel/aperture_64.c |   22 ++++++++++++++++++++++
- drivers/char/agp/amd64-agp.c  |   39 ++++++++++++++++++++++++++++++++++++++-
- 3 files changed, 60 insertions(+), 23 deletions(-)
+ include/linux/lmb.h |    1 +
+ mm/lmb.c            |   27 +++++++++++++++++++++++++--
+ 2 files changed, 26 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/gart.h b/arch/x86/include/asm/gart.h
-index 4ac5b0f..2b63a91 100644
---- a/arch/x86/include/asm/gart.h
-+++ b/arch/x86/include/asm/gart.h
-@@ -74,26 +74,4 @@ static inline void enable_gart_translation(struct pci_dev *dev, u64 addr)
-         pci_write_config_dword(dev, AMD64_GARTAPERTURECTL, ctl);
+diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+index 8332934..3c8095f 100644
+--- a/include/linux/lmb.h
++++ b/include/linux/lmb.h
+@@ -86,6 +86,7 @@ lmb_end_pfn(struct lmb_region *type, unsigned long region_nr)
  }
  
--static inline int aperture_valid(u64 aper_base, u32 aper_size, u32 min_size)
--{
--	if (!aper_base)
--		return 0;
--
--	if (aper_base + aper_size > 0x100000000ULL) {
--		printk(KERN_INFO "Aperture beyond 4GB. Ignoring.\n");
--		return 0;
--	}
--	if (e820_any_mapped(aper_base, aper_base + aper_size, E820_RAM)) {
--		printk(KERN_INFO "Aperture pointing to e820 RAM. Ignoring.\n");
--		return 0;
--	}
--	if (aper_size < min_size) {
--		printk(KERN_INFO "Aperture too small (%d MB) than (%d MB)\n",
--				 aper_size>>20, min_size>>20);
--		return 0;
--	}
--
--	return 1;
--}
--
- #endif /* _ASM_X86_GART_H */
-diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
-index 3704997..f6e6270 100644
---- a/arch/x86/kernel/aperture_64.c
-+++ b/arch/x86/kernel/aperture_64.c
-@@ -145,6 +145,28 @@ static u32 __init find_cap(int bus, int slot, int func, int cap)
- 	return 0;
+ void lmb_reserve_area(u64 start, u64 end, char *name);
++void lmb_reserve_area_overlap_ok(u64 start, u64 end, char *name);
+ void lmb_free_area(u64 start, u64 end);
+ void lmb_add_memory(u64 start, u64 end);
+ u64 __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
+diff --git a/mm/lmb.c b/mm/lmb.c
+index e88ac58..38d4aef 100644
+--- a/mm/lmb.c
++++ b/mm/lmb.c
+@@ -605,6 +605,12 @@ void __init lmb_add_memory(u64 start, u64 end)
+ 	__check_and_double_region_array(&lmb.memory, &lmb_memory_region[0]);
  }
  
-+static int __init aperture_valid(u64 aper_base, u32 aper_size, u32 min_size)
++static void __init __lmb_reserve_area(u64 start, u64 end, char *name)
 +{
-+	if (!aper_base)
-+		return 0;
-+
-+	if (aper_base + aper_size > 0x100000000ULL) {
-+		printk(KERN_INFO "Aperture beyond 4GB. Ignoring.\n");
-+		return 0;
-+	}
-+	if (e820_any_mapped(aper_base, aper_base + aper_size, E820_RAM)) {
-+		printk(KERN_INFO "Aperture pointing to e820 RAM. Ignoring.\n");
-+		return 0;
-+	}
-+	if (aper_size < min_size) {
-+		printk(KERN_INFO "Aperture too small (%d MB) than (%d MB)\n",
-+				 aper_size>>20, min_size>>20);
-+		return 0;
-+	}
-+
-+	return 1;
++	lmb_add_region(&lmb.reserved, start, end - start);
++	__check_and_double_region_array(&lmb.reserved, &lmb_reserved_region[0]);
 +}
 +
- /* Read a standard AGPv3 bridge header */
- static u32 __init read_agp(int bus, int slot, int func, int cap, u32 *order)
+ void __init lmb_reserve_area(u64 start, u64 end, char *name)
  {
-diff --git a/drivers/char/agp/amd64-agp.c b/drivers/char/agp/amd64-agp.c
-index fd50ead..85cabd0 100644
---- a/drivers/char/agp/amd64-agp.c
-+++ b/drivers/char/agp/amd64-agp.c
-@@ -14,7 +14,6 @@
- #include <linux/agp_backend.h>
- #include <linux/mmzone.h>
- #include <asm/page.h>		/* PAGE_SIZE */
--#include <asm/e820.h>
- #include <asm/k8.h>
- #include <asm/gart.h>
- #include "agp.h"
-@@ -231,6 +230,44 @@ static const struct agp_bridge_driver amd_8151_driver = {
- 	.agp_type_to_mask_type  = agp_generic_type_to_mask_type,
- };
+ 	if (start == end)
+@@ -613,8 +619,25 @@ void __init lmb_reserve_area(u64 start, u64 end, char *name)
+ 	if (WARN_ONCE(start > end, "lmb_reserve_area: wrong range [%#llx, %#llx]\n", start, end))
+ 		return;
  
-+static int __devinit
-+__is_ram(unsigned long pfn, unsigned long nr_pages, void *arg)
-+{
-+	return 1;
+-	lmb_add_region(&lmb.reserved, start, end - start);
+-	__check_and_double_region_array(&lmb.reserved, &lmb_reserved_region[0]);
++	__lmb_reserve_area(start, end, name);
 +}
 +
-+static int __devinit any_ram_in_range(u64 base, u64 size)
++/*
++ * Could be used to avoid having overlap entries in lmb.reserved.region.
++ *  Don't need to use it with area that is from lmb_find_area()
++ *  Only use it for the area that fw hidden area.
++ */
++void __init lmb_reserve_area_overlap_ok(u64 start, u64 end, char *name)
 +{
-+	unsigned long pfn, nr_pages;
++	if (start == end)
++		return;
 +
-+	pfn = base >> PAGE_SHIFT;
-+	nr_pages = size >> PAGE_SHIFT;
++	if (WARN_ONCE(start > end, "lmb_reserve_area_overlap_ok: wrong range [%#llx, %#llx]\n", start, end))
++		return;
 +
-+	return walk_system_ram_range(pfn, nr_pages, NULL, __is_ram) == 1;
-+}
-+
-+static int __devinit aperture_valid(u64 aper_base, u32 aper_size, u32 min_size)
-+{
-+	if (!aper_base)
-+		return 0;
-+
-+	if (aper_base + aper_size > 0x100000000ULL) {
-+		printk(KERN_INFO "Aperture beyond 4GB. Ignoring.\n");
-+		return 0;
-+	}
-+	if (any_ram_in_range(aper_base, aper_size)) {
-+		printk(KERN_INFO "Aperture pointing to E820 RAM. Ignoring.\n");
-+		return 0;
-+	}
-+	if (aper_size < min_size) {
-+		printk(KERN_INFO "Aperture too small (%d MB) than (%d MB)\n",
-+				 aper_size>>20, min_size>>20);
-+		return 0;
-+	}
-+
-+	return 1;
-+}
-+
- /* Some basic sanity checks for the aperture. */
- static int __devinit agp_aperture_valid(u64 aper, u32 size)
- {
++	/* Free that region at first */
++	lmb_free(start, end - start);
++	__lmb_reserve_area(start, end, name);
+ }
+ 
+ void __init lmb_free_area(u64 start, u64 end)
 -- 
 1.6.4.2
 
