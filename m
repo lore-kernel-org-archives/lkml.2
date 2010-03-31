@@ -1,71 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713Ab0CaG1m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 02:27:42 -0400
-Received: from mail-yw0-f172.google.com ([209.85.211.172]:62994 "EHLO
-	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757670Ab0CaG1l convert rfc822-to-8bit (ORCPT
+	id S932719Ab0CaGaU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 02:30:20 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:39313 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756637Ab0CaGaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 02:27:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=UJWWCeSIyNfv2mk7wh8Ozm5VZ2z3zRObL+3oxv9xMhxl3EY83O96mbMfDuRGQlxNr5
-         DDjcNLb1UCkIoRfX8Ov9SkSnW/wGDvP492mFR9eiz9glhAAcYMQUf/O3TfF9BTba3zoX
-         oqXLK+Uv9+X/w+Rj+BcVGMCYLH/3JpXkDoCIQ=
+	Wed, 31 Mar 2010 02:30:17 -0400
+Date: Wed, 31 Mar 2010 12:00:07 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>, anfei <anfei.zhou@gmail.com>,
+       Oleg Nesterov <oleg@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp, Mel Gorman <mel@csn.ul.ie>,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] oom killer: break from infinite loop
+Message-ID: <20100331063007.GN3308@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100328145528.GA14622@desktop>
+ <20100328162821.GA16765@redhat.com>
+ <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com>
+ <20100329140633.GA26464@desktop>
+ <alpine.DEB.2.00.1003291259400.14859@chino.kir.corp.google.com>
+ <20100330142923.GA10099@desktop>
+ <alpine.DEB.2.00.1003301326490.5234@chino.kir.corp.google.com>
+ <20100331095714.9137caab.kamezawa.hiroyu@jp.fujitsu.com>
+ <alpine.DEB.2.00.1003302302420.22316@chino.kir.corp.google.com>
+ <20100331151356.673c16c0.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <x2q7f9d1ffb1003302307nb8e91be0o55da59c3375f1720@mail.gmail.com>
-References: <35697.192.168.10.89.1265898023.squirrel@dbdmail.itg.ti.com> 
-	<004701caab40$68b576e0$544ff780@am.dhcp.ti.com> <x2q7f9d1ffb1003302307nb8e91be0o55da59c3375f1720@mail.gmail.com>
-From: Vimal Singh <vimal.newwork@gmail.com>
-Date: Wed, 31 Mar 2010 11:57:20 +0530
-Message-ID: <v2yce9ab5791003302327hc67deb3akc7d18146534038f9@mail.gmail.com>
-Subject: Re: [PATCH-V2] OMAP: Fix for bus width which improves SD card's 
-	peformance.
-To: kishore kadiyala <kishorek.kadiyala@gmail.com>
-Cc: Madhusudhan <madhu.cr@ti.com>, tony@atomide.com, svenkatr@ti.com,
-       linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-       jarkko.lavinen@nokia.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100331151356.673c16c0.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  drivers/mmc/host/omap_hsmmc.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-> index 83f0aff..8c97c22 100644
-> --- a/drivers/mmc/host/omap_hsmmc.c
-> +++ b/drivers/mmc/host/omap_hsmmc.c
-> @@ -2092,7 +2092,7 @@ static int __init omap_hsmmc_probe(struct
->                   MMC_CAP_WAIT_WHILE_BUSY;
->
->      if (mmc_slot(host).wires >= 8)
-> -               mmc->caps |= MMC_CAP_8_BIT_DATA;
-> +               mmc->caps |= (MMC_CAP_8_BIT_DATA | MMC_CAP_4_BIT_DATA);
->      else if (mmc_slot(host).wires >= 4)
->              mmc->caps |= MMC_CAP_4_BIT_DATA;
->
-Your mailer has some issue, 'tabs' got replaced by 'spaces' in this
-patch. Please fix it and repost.
+* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-31 15:13:56]:
 
-Also take care off deleting below unrelated content.
-
--
-Regards,
-Vimal
-
+> On Tue, 30 Mar 2010 23:07:08 -0700 (PDT)
+> David Rientjes <rientjes@google.com> wrote:
+> 
+> > On Wed, 31 Mar 2010, KAMEZAWA Hiroyuki wrote:
+> > 
+> > > > > diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> > > > > index 0cb1ca4..9e89a29 100644
+> > > > > --- a/mm/oom_kill.c
+> > > > > +++ b/mm/oom_kill.c
+> > > > > @@ -510,8 +510,10 @@ retry:
+> > > > >  	if (PTR_ERR(p) == -1UL)
+> > > > >  		goto out;
+> > > > >  
+> > > > > -	if (!p)
+> > > > > -		p = current;
+> > > > > +	if (!p) {
+> > > > > +		read_unlock(&tasklist_lock);
+> > > > > +		panic("Out of memory and no killable processes...\n");
+> > > > > +	}
+> > > > >  
+> > > > >  	if (oom_kill_process(p, gfp_mask, 0, points, limit, mem,
+> > > > >  				"Memory cgroup out of memory"))
+> > > > > 
+> > > > 
+> > > > This actually does appear to be necessary but for a different reason: if 
+> > > > current is unkillable because it has OOM_DISABLE, for example, then 
+> > > > oom_kill_process() will repeatedly fail and mem_cgroup_out_of_memory() 
+> > > > will infinitely loop.
+> > > > 
+> > > > Kame-san?
+> > > > 
+> > > 
+> > > When a memcg goes into OOM and it only has unkillable processes (OOM_DISABLE),
+> > > we can do nothing. (we can't panic because container's death != system death.)
+> > > 
+> > > Because memcg itself has mutex+waitqueue for mutual execusion of OOM killer, 
+> > > I think infinite-loop will not be critical probelm for the whole system.
+> > > 
+> > > And, now, memcg has oom-kill-disable + oom-kill-notifier features.
+> > > So, If a memcg goes into OOM and there is no killable process, but oom-kill is
+> > > not disabled by memcg.....it means system admin's mis-configuraton.
+> > > 
+> > > He can stop inifite loop by hand, anyway.
+> > > # echo 1 > ..../group_A/memory.oom_control
+> > > 
+> > 
+> > Then we should be able to do this since current is by definition 
+> > unkillable since it was not found in select_bad_process(), right?
+> 
+> To me, this patch is acceptable and seems reasnoable.
+> 
+> But I didn't joined to memcg development when this check was added
+> and don't know why kill current..
 >
-> On Thu, Feb 11, 2010 at 11:04 PM, Madhusudhan <madhu.cr@ti.com> wrote:
->>
->>
->>> -----Original Message-----
->>> From: kishore kadiyala [mailto:kishore.kadiyala@ti.com]
->>> Sent: Thursday, February 11, 2010 8:20 AM
->>> To: linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org
->>> Cc: jarkko.lavinen@nokia.com; madhu.cr@ti.com
->>> Subject: [PATCH] OMAP: Fix for bus width which improves SD card's
->>> peformance.
+
+The reason for adding current was that we did not want to loop
+forever, since it stops forward progress - no error/no forward
+progress. It made sense to oom kill the current process, so that the
+cgroup admin could look at what went wrong.
+ 
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=c7ba5c9e8176704bfac0729875fa62798037584d
+> 
+> Addinc Balbir to CC. Maybe situation is changed now.
+> Because we can stop inifinite loop (by hand) and there is no rushing oom-kill
+> callers, this change is acceptable.
+>
+
+By hand is not always possible if we have a large number of cgroups
+(I've seen a setup with 2000 cgroups on libcgroup ML). 2000 cgroups *
+number of processes make the situation complex. I think using OOM
+notifier is now another way of handling such a situation.
+ 
+-- 
+	Three Cheers,
+	Balbir
