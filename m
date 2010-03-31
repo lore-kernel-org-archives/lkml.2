@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932311Ab0CaH55 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 03:57:57 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58778 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757238Ab0CaH5u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 03:57:50 -0400
-Date: Wed, 31 Mar 2010 09:57:46 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Bryan Wu <bryan.wu@canonical.com>
-Cc: gerg@uclinux.org, amit.kucheria@canonical.com,
-       kernel-team@lists.ubuntu.com, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       w.sang@pengutronix.de
-Subject: Re: [PATCH] netdev/fec.c: add phylib supporting to enable carrier
-	detection
-Message-ID: <20100331075746.GO2241@pengutronix.de>
-References: <1269597052-10104-1-git-send-email-bryan.wu@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269597052-10104-1-git-send-email-bryan.wu@canonical.com>
-X-Sent-From: Pengutronix Entwicklungszentrum Nord - Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Impressum: Pengutronix - Industrial Linux Solutions Handelsregister:
-	Amtsgericht Hildesheim, HRA 2686 Peiner Strasse 6-8, 31137
-	Hildesheim, Germany Phone: +49-5121-206917-0 |  Fax:
-	+49-5121-206917-5555 Inhaber: Dipl.-Ing. Robert Schwebel
-X-Message-Flag: See Message Headers for Impressum
-X-Uptime: 09:37:12 up 10 days, 20:26, 20 users,  load average: 0.24, 0.42,
-	0.50
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S932350Ab0CaH6n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 03:58:43 -0400
+Received: from sh.osrg.net ([192.16.179.4]:50068 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756139Ab0CaH6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 03:58:40 -0400
+Date: Wed, 31 Mar 2010 16:58:35 +0900 (JST)
+Message-Id: <20100331.165835.212698315.ryusuke@osrg.net>
+To: lihong.hi@gmail.com
+Cc: konishi.ryusuke@lab.ntt.co.jp, linux-nilfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] nilfs2: fix a wrong type conversion in nilfs_ioctl()
+From: Ryusuke Konishi <konishi.ryusukelab.ntt.co.jp@osrg.net>
+In-Reply-To: <20100331074100.GA11787@xhl>
+References: <20100331074100.GA11787@xhl>
+X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 31 Mar 2010 16:58:36 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 05:50:52PM +0800, Bryan Wu wrote:
-> BugLink: http://bugs.launchpad.net/bugs/457878
+On Wed, 31 Mar 2010 15:41:00 +0800, Li Hong <lihong.hi@gmail.com> wrote:
+> (void * __user *) should be (void __user *)
 > 
->  - removed old MII phy control code
->  - add phylib supporting
->  - add ethtool interface to make user space NetworkManager works
+> Signed-off-by: Li Hong <lihong.hi@gmail.com>
+
+Applied.  Thank you.
+
+Ryusuke Konishi
+
+> ---
+>  fs/nilfs2/ioctl.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> Tested on Freescale i.MX51 Babbage board.
+> diff --git a/fs/nilfs2/ioctl.c b/fs/nilfs2/ioctl.c
+> index 313d0a2..c446017 100644
+> --- a/fs/nilfs2/ioctl.c
+> +++ b/fs/nilfs2/ioctl.c
+> @@ -648,7 +648,7 @@ static int nilfs_ioctl_get_info(struct inode *inode, struct file *filp,
+>  long nilfs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>  {
+>  	struct inode *inode = filp->f_dentry->d_inode;
+> -	void __user *argp = (void * __user *)arg;
+> +	void __user *argp = (void __user *)arg;
+>  
+>  	switch (cmd) {
+>  	case NILFS_IOCTL_CHANGE_CPMODE:
+> -- 
+> 1.6.3.3
 > 
-> This patch is based on a patch from Frederic Rodo <fred.rodo@gmail.com>
-> 
-
-
-Hi Bryan,
-
-The MII speed is calculated twice with this patch applied, one time
-in fec_enet_mii_init and one time in fec_enet_init.
-
-The patch didn't work for me because the calculation is wrong (which of
-course is not your fault, it was wrong before).
-According to the Datasheet the MII clock is clk_get_rate() / (MII * 2).
-When we want to have a clock of 2.5MHz we have to do:
-
-clk_get_rate() / 5000000
-
-With rounding this would be:
-
-(clk_get_rate() + 4999999) / 5000000
-
-So you might want to add the following to your patch:
-
-	fep->phy_speed = ((clk_get_rate(fep->clk) + 4999999) / 5000000) << 1;
-
-Otherwise the patch looks good to me.
-
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
