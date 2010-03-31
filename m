@@ -1,43 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757651Ab0CaGWK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 02:22:10 -0400
-Received: from hera.kernel.org ([140.211.167.34]:45421 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756156Ab0CaGWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 02:22:08 -0400
-Message-ID: <4BB2EAC5.30900@kernel.org>
-Date: Wed, 31 Mar 2010 15:25:09 +0900
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	id S1757709Ab0CaGXi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 02:23:38 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:63819 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757328Ab0CaGXg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 02:23:36 -0400
 MIME-Version: 1.0
-To: Kay Sievers <kay.sievers@vrfy.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>, Greg KH <greg@kroah.com>,
-       linux-kernel@vger.kernel.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
-       linux-fsdevel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-       Benjamin LaHaise <bcrl@lhnet.ca>, Serge Hallyn <serue@us.ibm.com>,
-       netdev@vger.kernel.org
-Subject: Re: [PATCH 0/6] tagged sysfs support
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org> <ac3eb2511003301153i43a60720hb015071e2c992199@mail.gmail.com> 	<m14ojxh0mz.fsf@fess.ebiederm.org> <s2hac3eb2511003302251rcbae8767ne21e9daf1546c849@mail.gmail.com>
-In-Reply-To: <s2hac3eb2511003302251rcbae8767ne21e9daf1546c849@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 31 Mar 2010 00:18:03 -0600
+X-Google-Sender-Auth: 0b4639c896a5bee9
+Message-ID: <p2ifa686aa41003302318n934b8908v295ccf5c1ae44edc@mail.gmail.com>
+Subject: [git pull] Device tree and PowerPC bug fixes
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Roman Fietze <roman.fietze@telemotive.de>,
+       Timur Tabi <timur@freescale.com>,
+       Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 31 Mar 2010 06:21:56 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2010 02:51 PM, Kay Sievers wrote:
-> Another problem to solve is that sysfs does not allow us to symlink
-> regular files, only directories, so we can currently not create the
-> class-wide attributes as symlinks to the proper file in
-> /sys/subsystem/.
+Hi Linus,
 
-Making sysfs allow symlinks to attributes shouldn't be too hard if
-it's gonna help make things more logical overall.
+Can you please pull the following branch?  It contains two simple bug
+fixes that should go into 2.6.34, plus a zero-risk documentation
+update.
 
-Thanks.
+Thanks,
+g.
+
+The following changes since commit b72c40949b0f04728f2993a1434598d3bad094ea:
+  Linus Torvalds (1):
+        Merge branch 'for-linus' of git://git.kernel.org/.../jbarnes/pci-2.6
+
+are available in the git repository at:
+
+  git://git.secretlab.ca/git/linux-2.6 merge
+
+Jason Gunthorpe (1):
+      of/flattree: Fix unhandled OF_DT_NOP tag when unflattening the device tree
+
+Roman Fietze (1):
+      powerpc/5200: in lpbfifo, flag DMA irqs as enabled after requesting them
+
+Timur Tabi (1):
+      powerpc/fsl: add device tree binding for QE firmware
+
+ .../powerpc/dts-bindings/fsl/cpm_qe/qe.txt         |   54 ++++++++++++++++++++
+ arch/powerpc/platforms/52xx/mpc52xx_lpbfifo.c      |    2 +
+ drivers/of/fdt.c                                   |    7 ++-
+ 3 files changed, 61 insertions(+), 2 deletions(-)
+
 
 -- 
-tejun
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
