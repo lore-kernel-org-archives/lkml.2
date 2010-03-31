@@ -1,87 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757823Ab0CaAbs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:31:48 -0400
-Received: from kroah.org ([198.145.64.141]:48816 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756346Ab0C3XMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:12:06 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:58:18 2010
-Message-Id: <20100330225818.114100995@linux.site>
-User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:57:18 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Christian Schuerer-Waldheim <csw@xray.at>,
-       Jiri Kosina <jkosina@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [16/89] HID: add device IDs for new model of Apple Wireless Keyboard
-In-Reply-To: <20100330230520.GA28779@kroah.com>
+	id S1756374Ab0CaAcL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:32:11 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48259 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757649Ab0CaAcG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 20:32:06 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 31 Mar 2010 09:28:15 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, cl@linux-foundation.org,
+       lee.schermerhorn@hp.com, rientjes@google.com,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       "David S. Miller" <davem@davemloft.net>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org, Troels Liebe Bentsen <tlb@rapanden.dk>,
+       linux-bluetooth@vger.kernel.org
+Subject: Re: [PATCH] exit: fix oops in sync_mm_rss
+Message-Id: <20100331092815.c8b9d89c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100330135634.09e6b045.akpm@linux-foundation.org>
+References: <20100316170808.GA29400@redhat.com>
+	<20100330135634.09e6b045.akpm@linux-foundation.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.31-stable review patch.  If anyone has any objections, please let us know.
+On Tue, 30 Mar 2010 13:56:34 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-------------------
+> That new BUG_ON() is triggering in Troels's machine when a bluetooth
+> keyboard is enabled or disabled.  See
+> (https://bugzilla.kernel.org/show_bug.cgi?id=15648.
+> 
+> I guess the question is: how did a kernel thread get a non-zero
+> task->rss_stat.count[i]?  If that's expected and OK then we will need
+> to take some kernel-thread-avoidance action there.
+> 
+It seems my fault that it's not initialized to be 0 at do_fork(), copy_process.
 
-From: Christian Schuerer-Waldheim <csw@xray.at>
+About do_exit, do_exit() does this check. So, tsk->mm can be NULL.
 
-commit 23aeb61e7e1f02fb0f3b8f9e798e75537ca1731d upstream.
+ 949         if (group_dead) {
+ 950                 hrtimer_cancel(&tsk->signal->real_timer);
+ 951                 exit_itimers(tsk->signal);
+ 952                 if (tsk->mm)
+ 953                         setmax_mm_hiwater_rss(&tsk->signal->maxrss, tsk->mm);
+ 954         }
 
-Added device IDs for the new model of the Apple Wireless Keyboard
-(November 2009).
+> Could whoever fixes this please also make __sync_task_rss_stat()
+> static.
+> 
+Ah, yes. I should do so.
 
-Signed-off-by: Christian Schuerer-Waldheim <csw@xray.at>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> I'll toss this over to Rafael/Maciej for tracking as a post-2.6.33
+> regression.
+> 
+> Thanks.
+> 
 
+
+==
+
+task->rss_stat wasn't initialized to 0 at copy_process().
+at exit, tsk->mm may be NULL.
+And __sync_task_rss_stat() should be static.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- drivers/hid/hid-apple.c |    7 +++++++
- drivers/hid/hid-core.c  |    3 +++
- drivers/hid/hid-ids.h   |    3 +++
- 3 files changed, 13 insertions(+)
+ kernel/exit.c |    3 ++-
+ kernel/fork.c |    3 +++
+ mm/memory.c   |    2 +-
+ 3 files changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/hid/hid-apple.c
-+++ b/drivers/hid/hid-apple.c
-@@ -431,6 +431,13 @@ static const struct hid_device_id apple_
- 		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING3_JIS),
- 		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
-+	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI),
-+		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
-+	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO),
-+		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN |
-+			APPLE_ISO_KEYBOARD },
-+	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS),
-+		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY),
- 		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY),
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1259,6 +1259,9 @@ static const struct hid_device_id hid_bl
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING3_ANSI) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING3_ISO) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING3_JIS) },
-+	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI) },
-+	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO) },
-+	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_BELKIN, USB_DEVICE_ID_FLIP_KVM) },
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -88,6 +88,9 @@
- #define USB_DEVICE_ID_APPLE_WELLSPRING3_ANSI	0x0236
- #define USB_DEVICE_ID_APPLE_WELLSPRING3_ISO	0x0237
- #define USB_DEVICE_ID_APPLE_WELLSPRING3_JIS	0x0238
-+#define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI  0x0239
-+#define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO   0x023a
-+#define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS   0x023b
- #define USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY	0x030a
- #define USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY	0x030b
- #define USB_DEVICE_ID_APPLE_ATV_IRCONTROL	0x8241
-
+Index: mmotm-2.6.34-Mar24/kernel/exit.c
+===================================================================
+--- mmotm-2.6.34-Mar24.orig/kernel/exit.c
++++ mmotm-2.6.34-Mar24/kernel/exit.c
+@@ -950,7 +950,8 @@ NORET_TYPE void do_exit(long code)
+ 
+ 	acct_update_integrals(tsk);
+ 	/* sync mm's RSS info before statistics gathering */
+-	sync_mm_rss(tsk, tsk->mm);
++	if (tsk->mm)
++		sync_mm_rss(tsk, tsk->mm);
+ 	group_dead = atomic_dec_and_test(&tsk->signal->live);
+ 	if (group_dead) {
+ 		hrtimer_cancel(&tsk->signal->real_timer);
+Index: mmotm-2.6.34-Mar24/mm/memory.c
+===================================================================
+--- mmotm-2.6.34-Mar24.orig/mm/memory.c
++++ mmotm-2.6.34-Mar24/mm/memory.c
+@@ -124,7 +124,7 @@ core_initcall(init_zero_pfn);
+ 
+ #if defined(SPLIT_RSS_COUNTING)
+ 
+-void __sync_task_rss_stat(struct task_struct *task, struct mm_struct *mm)
++static void __sync_task_rss_stat(struct task_struct *task, struct mm_struct *mm)
+ {
+ 	int i;
+ 
+Index: mmotm-2.6.34-Mar24/kernel/fork.c
+===================================================================
+--- mmotm-2.6.34-Mar24.orig/kernel/fork.c
++++ mmotm-2.6.34-Mar24/kernel/fork.c
+@@ -1060,6 +1060,9 @@ static struct task_struct *copy_process(
+ 	p->prev_utime = cputime_zero;
+ 	p->prev_stime = cputime_zero;
+ #endif
++#if defined(SPLIT_RSS_COUNTING)
++	memset(&p->rss_stat, 0, sizeof(p->rss_stat));
++#endif
+ 
+ 	p->default_timer_slack_ns = current->timer_slack_ns;
+ 
 
