@@ -1,106 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab0CaExM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 00:53:12 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:41095 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755172Ab0CaExJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 00:53:09 -0400
-Date: Tue, 30 Mar 2010 23:53:11 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
-       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, linux-fsdevel@vger.kernel.org,
-       Eric Dumazet <eric.dumazet@gmail.com>, Benjamin LaHaise <bcrl@lhnet.ca>,
-       netdev@vger.kernel.org, Benjamin Thery <benjamin.thery@bull.net>
-Subject: Re: [PATCH 3/6] sysfs: Implement sysfs tagged directory support.
-Message-ID: <20100331045311.GA10144@us.ibm.com>
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
- <1269973889-25260-3-git-send-email-ebiederm@xmission.com>
- <20100331024346.GB27001@us.ibm.com>
- <m1zl1prwie.fsf@fess.ebiederm.org>
- <20100331040234.GA7184@us.ibm.com>
- <m1eij1rued.fsf@fess.ebiederm.org>
+	id S932173Ab0CaExx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 00:53:53 -0400
+Received: from mga02.intel.com ([134.134.136.20]:10221 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932100Ab0CaExv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 00:53:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,339,1267430400"; 
+   d="scan'208";a="609028382"
+Date: Wed, 31 Mar 2010 12:53:48 +0800
+From: Shaohua Li <shaohua.li@intel.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "Wu, Fengguang" <fengguang.wu@intel.com>
+Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
+Message-ID: <20100331045348.GA3396@sli10-desk.sh.intel.com>
+References: <20100330055304.GA2983@sli10-desk.sh.intel.com>
+ <20100330150453.8E9F.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m1eij1rued.fsf@fess.ebiederm.org>
+In-Reply-To: <20100330150453.8E9F.A69D9226@jp.fujitsu.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> "Serge E. Hallyn" <serue@us.ibm.com> writes:
+On Tue, Mar 30, 2010 at 02:08:53PM +0800, KOSAKI Motohiro wrote:
+> Hi
 > 
-> >> > This is a huge patch, and for the most part I haven't found any problems,
-> >> > except potentially this one.  It looks like sysfs_rename_link() checks
-> >> > old_ns and new_ns before calling sysfs_rename().  But sysfs_mutex isn't
-> >> > taken until sysfs_rename().  sysfs_rename() will then proceed to do
-> >> > the rename, and unconditionally set sd->ns = new_ns.
-> >> >
-> >> > In the meantime, it seems as though new_ns might have exited, and
-> >> > sysfs_exit_ns() unset new_ns on the new parent dir.  This means that
-> >> > we'll end up with the namespace code having thought that it cleared
-> >> > all new_ns's, but this file will have snuck by.  Meaning an action on
-> >> > the renamed file might dereference a freed namespace.
-> >> >
-> >> > Or am I way off base?
-> >> 
-> >> There are a couple of reasons why this is not a concern.
-> >> 
-> >> The only new_ns we clear is on the super block.
-> >
-> > Oops, yeah - I failed to note that.
-> >
-> >> sysfs itself never dereferences namespace arguments and only uses them
-> >> for comparison purposes.  They are just cookies that cause comparisons
-> >> to differ from a sysfs perspective.
-> >> 
-> >> The upper levels are responsible for taking care of them selves
-> >> sysfs_mutex does not protect them.  If you compile out sysfs the sysfs
-> >> mutex is not even present.
-> >> 
-> >> In the worst case if the upper levels mess up we will have a stale
-> >> token that we never dereference on a sysfs dirent, which in a pathological
-> >> case will happen to be the same as a new namespace and we will have
-> >> a spurious directory entry that we have leaked.
-> >> 
-> >> In practice we move all network devices (and thus sysfs files) out of
-> >> a network namespace before allowing it to exit.
-> >
-> > Ok, that makes sense too - so any tagged sysfs file created for some object
-> > in a ns must be deleted at netns exit.  I could imagine someone expecting
-> > that if the ns exits, the tasks in the ns will exit, causing the sysfs
-> > mount to be umounted and auto-deleting the files?  (which of course would
-> > get buggered if task in other ns was examining the mount which it got
-> > through mounts propagation)  We'll have to make sure noone does that.  Should
-> > it be documented somewhere, or is that obvious enough?
+> > Commit 84b18490d1f1bc7ed5095c929f78bc002eb70f26 introduces a regression.
+> > With it, our tmpfs test always oom. The test has a lot of rotated anon
+> > pages and cause percent[0] zero. Actually the percent[0] is a very small
+> > value, but our calculation round it to zero. The commit makes vmscan
+> > completely skip anon pages and cause oops.
+> > An option is if percent[x] is zero in get_scan_ratio(), forces it
+> > to 1. See below patch.
+> > But the offending commit still changes behavior. Without the commit, we scan
+> > all pages if priority is zero, below patch doesn't fix this. Don't know if
+> > It's required to fix this too.
 > 
-> In general it is simply true.  An object in a namespace either keeps
-> the namespace alive, or it is destroyed when the namespace exits
-> because the object is unreachable.
+> Can you please post your /proc/meminfo and reproduce program? I'll digg it.
+> 
+> Very unfortunately, this patch isn't acceptable. In past time, vmscan 
+> had similar logic, but 1% swap-out made lots bug reports. 
+if 1% is still big, how about below patch?
 
-I guess you'd hope so :)
+Commit 84b18490d1f1bc7ed5095c929f78bc002eb70f26 introduces a regression.
+With it, our tmpfs test always oom. The test has a lot of rotated anon
+pages and cause percent[0] zero. Actually the percent[0] is a very small
+value, but our calculation round it to zero. The commit makes vmscan
+completely skip anon pages and cause oops.
+To avoid underflow, we don't use percentage, instead we directly calculate
+how many pages should be scaned.
 
-> So the only possible problem I can think of is of ordering the object
-> destruction and calling sysfs_exit_ns.    So for the moment I am going
-> to vote that this is simply obvious enough not to worry about in detail.
-> 
-> It is also pretty obvious if you trace the code and ask how does sysfs
-> dirent X get destroyed.
-> 
-> Today there is just a wee bit of automatic file destruction at the sysfs
-> level.    The device layer does not take advantage of it, and in hierarchical
-> situation it leads to bugs.  So even I think if we document anything it
-> should be that sysfs can not safely automatically delete anything, for
-> you.
-> 
-> Eric
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 
-Ok.  I'm convinced.
-
-thanks,
--serge
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 79c8098..80a7ed5 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1519,27 +1519,50 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
+ }
+ 
+ /*
++ * Smallish @nr_to_scan's are deposited in @nr_saved_scan,
++ * until we collected @swap_cluster_max pages to scan.
++ */
++static unsigned long nr_scan_try_batch(unsigned long nr_to_scan,
++				       unsigned long *nr_saved_scan)
++{
++	unsigned long nr;
++
++	*nr_saved_scan += nr_to_scan;
++	nr = *nr_saved_scan;
++
++	if (nr >= SWAP_CLUSTER_MAX)
++		*nr_saved_scan = 0;
++	else
++		nr = 0;
++
++	return nr;
++}
++
++/*
+  * Determine how aggressively the anon and file LRU lists should be
+  * scanned.  The relative value of each set of LRU lists is determined
+  * by looking at the fraction of the pages scanned we did rotate back
+  * onto the active list instead of evict.
+  *
+- * percent[0] specifies how much pressure to put on ram/swap backed
+- * memory, while percent[1] determines pressure on the file LRUs.
++ * nr[x] specifies how many pages should be scaned
+  */
+-static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
+-					unsigned long *percent)
++static void get_scan_count(struct zone *zone, struct scan_control *sc,
++				unsigned long *nr, int priority)
+ {
+ 	unsigned long anon, file, free;
+ 	unsigned long anon_prio, file_prio;
+ 	unsigned long ap, fp;
+ 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
++	unsigned long fraction[2], denominator[2];
++	enum lru_list l;
+ 
+ 	/* If we have no swap space, do not bother scanning anon pages. */
+ 	if (!sc->may_swap || (nr_swap_pages <= 0)) {
+-		percent[0] = 0;
+-		percent[1] = 100;
+-		return;
++		fraction[0] = 0;
++		denominator[0] = 1;
++		fraction[1] = 1;
++		denominator[1] = 1;
++		goto out;
+ 	}
+ 
+ 	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
+@@ -1552,9 +1575,11 @@ static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
+ 		/* If we have very few page cache pages,
+ 		   force-scan anon pages. */
+ 		if (unlikely(file + free <= high_wmark_pages(zone))) {
+-			percent[0] = 100;
+-			percent[1] = 0;
+-			return;
++			fraction[0] = 1;
++			denominator[0] = 1;
++			fraction[1] = 0;
++			denominator[1] = 1;
++			goto out;
+ 		}
+ 	}
+ 
+@@ -1601,29 +1626,29 @@ static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
+ 	fp = (file_prio + 1) * (reclaim_stat->recent_scanned[1] + 1);
+ 	fp /= reclaim_stat->recent_rotated[1] + 1;
+ 
+-	/* Normalize to percentages */
+-	percent[0] = 100 * ap / (ap + fp + 1);
+-	percent[1] = 100 - percent[0];
+-}
+-
+-/*
+- * Smallish @nr_to_scan's are deposited in @nr_saved_scan,
+- * until we collected @swap_cluster_max pages to scan.
+- */
+-static unsigned long nr_scan_try_batch(unsigned long nr_to_scan,
+-				       unsigned long *nr_saved_scan)
+-{
+-	unsigned long nr;
++	fraction[0] = ap;
++	denominator[0] = ap + fp + 1;
++	fraction[1] = fp;
++	denominator[1] = ap + fp + 1;
+ 
+-	*nr_saved_scan += nr_to_scan;
+-	nr = *nr_saved_scan;
++out:
++	for_each_evictable_lru(l) {
++		int file = is_file_lru(l);
++		unsigned long scan;
+ 
+-	if (nr >= SWAP_CLUSTER_MAX)
+-		*nr_saved_scan = 0;
+-	else
+-		nr = 0;
++		if (fraction[file] == 0) {
++			nr[l] = 0;
++			continue;
++		}
+ 
+-	return nr;
++		scan = zone_nr_lru_pages(zone, sc, l);
++		if (priority) {
++			scan >>= priority;
++			scan = (scan * fraction[file] / denominator[file]);
++		}
++		nr[l] = nr_scan_try_batch(scan,
++					  &reclaim_stat->nr_saved_scan[l]);
++	}
+ }
+ 
+ /*
+@@ -1634,31 +1659,11 @@ static void shrink_zone(int priority, struct zone *zone,
+ {
+ 	unsigned long nr[NR_LRU_LISTS];
+ 	unsigned long nr_to_scan;
+-	unsigned long percent[2];	/* anon @ 0; file @ 1 */
+ 	enum lru_list l;
+ 	unsigned long nr_reclaimed = sc->nr_reclaimed;
+ 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
+-	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
+-
+-	get_scan_ratio(zone, sc, percent);
+ 
+-	for_each_evictable_lru(l) {
+-		int file = is_file_lru(l);
+-		unsigned long scan;
+-
+-		if (percent[file] == 0) {
+-			nr[l] = 0;
+-			continue;
+-		}
+-
+-		scan = zone_nr_lru_pages(zone, sc, l);
+-		if (priority) {
+-			scan >>= priority;
+-			scan = (scan * percent[file]) / 100;
+-		}
+-		nr[l] = nr_scan_try_batch(scan,
+-					  &reclaim_stat->nr_saved_scan[l]);
+-	}
++	get_scan_count(zone, sc, nr, priority);
+ 
+ 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
+ 					nr[LRU_INACTIVE_FILE]) {
