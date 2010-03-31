@@ -1,94 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655Ab0CaGDy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 02:03:54 -0400
-Received: from mailgw01.datarespons.com ([81.0.189.39]:1538 "EHLO
-	mailgw01.datarespons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932247Ab0CaGDt (ORCPT
+	id S932548Ab0CaGHT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 02:07:19 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:13485 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932129Ab0CaGHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 02:03:49 -0400
-X-Greylist: delayed 632 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Mar 2010 02:03:49 EDT
-Date: Wed, 31 Mar 2010 07:53:06 +0200
-From: Anders Darander <anders.darander@datarespons.se>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: "David S. Miller" <davem@davemloft.net>,
-       Ralf Baechle <ralf@linux-mips.org>, Maxime Bizon <mbizon@freebox.fr>,
-       David Daney <ddaney@caviumnetworks.com>, Sekhar Nori <nsekhar@ti.com>,
-       Anton Vorontsov <avorontsov@ru.mvista.com>,
-       Andy Fleming <afleming@freescale.com>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Allow MACB to connect to a higher addresses PHY.
-Message-ID: <20100331055306.GC4837@datarespons.se>
-References: <1269943112-6975-1-git-send-email-anders.darander@gmail.com>
- <fa686aa41003300741x5ef9bdbpf56133304fe4d6e6@mail.gmail.com>
+	Wed, 31 Mar 2010 02:07:17 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=suH1TAJuyqZ4oyOm/5v7+gRxIzdlZez/IZgUifk9IH+4uqlJBebPmG2qUqGY8NgD2
+	il2dZrPekDH3QAPeSGYfw==
+Date: Tue, 30 Mar 2010 23:07:08 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: anfei <anfei.zhou@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp, Mel Gorman <mel@csn.ul.ie>,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] oom killer: break from infinite loop
+In-Reply-To: <20100331095714.9137caab.kamezawa.hiroyu@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1003302302420.22316@chino.kir.corp.google.com>
+References: <1269447905-5939-1-git-send-email-anfei.zhou@gmail.com> <20100326150805.f5853d1c.akpm@linux-foundation.org> <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com>
+ <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329140633.GA26464@desktop> <alpine.DEB.2.00.1003291259400.14859@chino.kir.corp.google.com> <20100330142923.GA10099@desktop> <alpine.DEB.2.00.1003301326490.5234@chino.kir.corp.google.com>
+ <20100331095714.9137caab.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <fa686aa41003300741x5ef9bdbpf56133304fe4d6e6@mail.gmail.com>
-X-Accept-Language: sv, en, de
-X-GPG-Fingerprint: A8FE 0294 BA4B 6981 DD9A  2900 C5C7 016C B47B AE60
-X-GPG-Key-Id: 0xB47BAE60
-X-GPG-Keyserver: hkp://keys.gnupg.net
-Organization: Data Respons AB
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 31 Mar 2010 05:53:12.0165 (UTC) FILETIME=[72B58150:01CAD096]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On Wed, 31 Mar 2010, KAMEZAWA Hiroyuki wrote:
 
-Thanks for the feedback!
+> > > diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> > > index 0cb1ca4..9e89a29 100644
+> > > --- a/mm/oom_kill.c
+> > > +++ b/mm/oom_kill.c
+> > > @@ -510,8 +510,10 @@ retry:
+> > >  	if (PTR_ERR(p) == -1UL)
+> > >  		goto out;
+> > >  
+> > > -	if (!p)
+> > > -		p = current;
+> > > +	if (!p) {
+> > > +		read_unlock(&tasklist_lock);
+> > > +		panic("Out of memory and no killable processes...\n");
+> > > +	}
+> > >  
+> > >  	if (oom_kill_process(p, gfp_mask, 0, points, limit, mem,
+> > >  				"Memory cgroup out of memory"))
+> > > 
+> > 
+> > This actually does appear to be necessary but for a different reason: if 
+> > current is unkillable because it has OOM_DISABLE, for example, then 
+> > oom_kill_process() will repeatedly fail and mem_cgroup_out_of_memory() 
+> > will infinitely loop.
+> > 
+> > Kame-san?
+> > 
+> 
+> When a memcg goes into OOM and it only has unkillable processes (OOM_DISABLE),
+> we can do nothing. (we can't panic because container's death != system death.)
+> 
+> Because memcg itself has mutex+waitqueue for mutual execusion of OOM killer, 
+> I think infinite-loop will not be critical probelm for the whole system.
+> 
+> And, now, memcg has oom-kill-disable + oom-kill-notifier features.
+> So, If a memcg goes into OOM and there is no killable process, but oom-kill is
+> not disabled by memcg.....it means system admin's mis-configuraton.
+> 
+> He can stop inifite loop by hand, anyway.
+> # echo 1 > ..../group_A/memory.oom_control
+> 
 
-* Grant Likely <grant.likely@secretlab.ca> [100330 16:42]:
-> On Tue, Mar 30, 2010 at 3:58 AM, Anders Darander
-> <anders.darander@gmail.com> wrote:
-> > Using the Atmel MACB together with an integrated switch, can make only port 1
-> > work. This is caused by macb_mii_probe trying to attach the MAC to the first
-> > PHY, which often is on one of the external ports.
-> >
-> > E.g. the Micrel KSZ8873 connects to the MAC on port 3, thus phy_addr should be
-> > set to 3.
-
-> I understand what you are trying to do, but this is the wrong way to
-> go about it.  Hard coding it into Kconfig breaks multiplatform
-> kernels.  Besides, systems may have more than one physical MDIO bus.
-> This patch would make CONFIG_SWITCHING_PHY_ADDR the only address
-> accessible on all MDIO busses.
-
-True, it would at least make all addresses < CONFIG_SWITCHING_PHY_ADDR
-non-accessible.
-
-We developed the patch to solve this problem on a 2.6.29-kernel, in
-which the loop in question is directly in the macb_mii_probe() in the
-macb.c, thus, the original patch is at least a _little_ bit less ugly...
-
-> Nak.
-
-I fully agree on the nak; I completely forgot that the functions in
-phy_devices should be used from more interfaces than only the macb.
-
-> The right thing to do is to add a runtime configuration option (ie.
-> kernel parameter or platform data) to the mac driver to specify
-> exactly which PHY address it is supposed to use.
-
-I'll see if I can get some time to do such a thing. Unfortunately, it'll
-probably have to be dealt with on my sparetime (the customer is quite
-unlikely to let me work on that).
-
-One question, if I add such an kernel parameter, would it be OK to
-implement something like this in the macb-driver:
-
-if parameter == SOME_DEFAULT
-	phydev = phy_find_first(bp->mii_bus);
-else
-	phydev = bp->mii_bus->phy_map[parameter];
-
-I.e. if the parameter is set to some default value, the old behaviour is
-retained, otherwise the specified parameter is used for the phy_addr?
-
-I'd appreciate your input on such a design.
-
-Best regards,
-Anders Darander
-
+Then we should be able to do this since current is by definition 
+unkillable since it was not found in select_bad_process(), right?
+---
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -500,12 +500,9 @@ void mem_cgroup_out_of_memory(struct mem_cgroup *mem, gfp_t gfp_mask)
+ 	read_lock(&tasklist_lock);
+ retry:
+ 	p = select_bad_process(&points, limit, mem, CONSTRAINT_NONE, NULL);
+-	if (PTR_ERR(p) == -1UL)
++	if (!p || PTR_ERR(p) == -1UL)
+ 		goto out;
+ 
+-	if (!p)
+-		p = current;
+-
+ 	if (oom_kill_process(p, gfp_mask, 0, points, limit, mem,
+ 				"Memory cgroup out of memory"))
+ 		goto retry;
