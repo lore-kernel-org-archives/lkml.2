@@ -1,63 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757908Ab0CaRJm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 13:09:42 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:59631 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757769Ab0CaRJj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 13:09:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=lnTfuncnVCXIqAinG0mJIKOwbFv4iknemM4YPv474PqYKN45x/vDNiPxr4DCyxNh8B
-         H3M7LqvZAFlrUj2yOqPUZLxW/cr71l/ugtvDDnDyBX4Uj/gvHFoRFOSO0sO4HXoIgJkz
-         0JA0L5NCNaOwEcZIDTXn/VMkpZ6zc0gXDGOo0=
-Date: Wed, 31 Mar 2010 20:09:17 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Zhang Rui <rui.zhang@intel.com>, casteyde.christian@free.fr
-Cc: Andrew Morton <akpm@linux-foundation.org>, Len Brown <len.brown@intel.com>,
-       Matthew Garrett <mjg@redhat.com>, Frans Pop <elendil@planet.nl>,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] thermal: make lockdep happy
-Message-ID: <20100331170916.GA13784@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Zhang Rui <rui.zhang@intel.com>, casteyde.christian@free.fr,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Len Brown <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>,
-	Frans Pop <elendil@planet.nl>, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757915Ab0CaRLs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 13:11:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10301 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751950Ab0CaRLq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 13:11:46 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1268151081-28307-1-git-send-email-vapier@gentoo.org>
+References: <1268151081-28307-1-git-send-email-vapier@gentoo.org> <1261413866-30634-1-git-send-email-vapier@gentoo.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: dhowells@redhat.com, uclinux-dev@uclinux.org,
+       David McCullough <davidm@snapgear.com>, Greg Ungerer <gerg@uclinux.org>,
+       Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+       uclinux-dist-devel@blackfin.uclinux.org
+Subject: Re: [PATCH v2] NOMMU: implement vmap/vunmap with kmalloc
+Date: Wed, 31 Mar 2010 18:11:24 +0100
+Message-ID: <14998.1270055484@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christian,
 
-Can you test this patch?
+How about the attached patch instead?  I'd rather not make vmap() generally
+available in NOMMU mode since it can't be implemented in NOMMU mode.  Yes,
+vmap() can take a copy of the pages it is given, but you can't guarantee
+that's the right thing to do.  It's like a shared-writable mmap.
 
-I wrote this to address bugzilla bug:
-	https://bugzilla.kernel.org/show_bug.cgi?id=15504
-	BUG: key ffff88004c3811e0 not in .data! occured in lockdep.c
+Instead, why not just override vmap() in firmware_class.c for the one instance
+where we know we're happy with this behaviour?
 
-We now have to call sysfs_attr_init() for dynamically allocated sysfs 
-attributes or lockdep complains.
+David
+---
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] NOMMU: Work around the lack of vmap()/vunmap() in firmware_loading_store()
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+Work around the lack of vmap()/vunmap() in firmware_loading_store() when
+operating in NOMMU mode.  vmap() cannot be implemented as there's no virtual
+mapping available.
 
-diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-index 5066de5..d4fec47 100644
---- a/drivers/thermal/thermal_sys.c
-+++ b/drivers/thermal/thermal_sys.c
-@@ -725,6 +725,7 @@ int thermal_zone_bind_cooling_device(struct thermal_zone_device *tz,
- 		goto release_idr;
+Instead, in NOMMU mode, coalesce the data into one big buffer and store as the
+address vmap() would've returned.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ drivers/base/firmware_class.c |   27 +++++++++++++++++++++++++++
+ 1 files changed, 27 insertions(+), 0 deletions(-)
+
+
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 18518ba..e33c2cb 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -59,6 +59,33 @@ static struct builtin_fw *__start_builtin_fw;
+ static struct builtin_fw *__end_builtin_fw;
+ #endif
  
- 	sprintf(dev->attr_name, "cdev%d_trip_point", dev->id);
-+	sysfs_attr_init(&dev->attr.attr);
- 	dev->attr.attr.name = dev->attr_name;
- 	dev->attr.attr.mode = 0444;
- 	dev->attr.show = thermal_cooling_device_trip_point_show;
++/*
++ * NOMMU mode can't provide vmap() as there's no MMU to do the virtual mapping.
++ * Coalesce the data into a big buffer instead.
++ */
++#ifndef CONFIG_MMU
++static void *__pretend_vmap(struct page **pages, unsigned int count,
++			    unsigned long flags, pgprot_t prot)
++{
++	unsigned int i;
++	void *new_map, *page_data;
++
++	new_map = kmalloc(count << PAGE_SHIFT, GFP_KERNEL);
++	if (!new_map)
++		return NULL;
++
++	for (i = 0; i < count; ++i) {
++		page_data = kmap(pages[i]);
++		memcpy(new_map + (i << PAGE_SHIFT), page_data, PAGE_SIZE);
++		kunmap(page_data);
++	}
++
++	return new_map;
++}
++
++#define vmap(pg, c, f, pr)	__pretend_vmap(pg, c, f, pr)
++#endif /* !CONFIG_MMU */
++
+ static void
+ fw_load_abort(struct firmware_priv *fw_priv)
+ {
