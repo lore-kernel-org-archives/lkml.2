@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758092Ab0CaCXL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 22:23:11 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:27904 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932943Ab0CaCWK (ORCPT
+	id S1758106Ab0CaCXb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 22:23:31 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:24594 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932941Ab0CaCWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 22:22:10 -0400
+	Tue, 30 Mar 2010 22:22:09 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,48 +16,107 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 11/33] lmb: Prepare to include linux/lmb.h in core file
-Date: Tue, 30 Mar 2010 19:16:56 -0700
-Message-Id: <1270001838-15857-12-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 14/33] lmb: Add lmb_free_memory_size()
+Date: Tue, 30 Mar 2010 19:16:59 -0700
+Message-Id: <1270001838-15857-15-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1270001838-15857-1-git-send-email-yinghai@kernel.org>
 References: <1270001838-15857-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4BB2B16B.004F,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090203.4BB2B16A.00DD,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need to add protection in linux/lmb.h, to prepare to include it in
- mm/page_alloc.c and mm/bootmem.c etc.
+It will return free memory size in specified range.
+
+We can not use memory_size - reserved_size here, because some reserved area
+may not be in the scope of lmb.memory.region.
+
+Use lmb.memory.region subtracting lmb.reserved.region to get free range array.
+then count size of all free ranges.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/lmb.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ include/linux/lmb.h |    1 +
+ mm/lmb.c            |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 52 insertions(+), 0 deletions(-)
 
 diff --git a/include/linux/lmb.h b/include/linux/lmb.h
-index cf8f7ca..5dbc4ef 100644
+index 4078825..b874dc0 100644
 --- a/include/linux/lmb.h
 +++ b/include/linux/lmb.h
-@@ -2,6 +2,7 @@
- #define _LINUX_LMB_H
- #ifdef __KERNEL__
- 
-+#ifdef CONFIG_HAVE_LMB
- /*
-  * Logical memory blocks.
-  *
-@@ -101,6 +102,8 @@ u64 lmb_hole_size(u64 start, u64 end);
+@@ -100,6 +100,7 @@ int get_free_all_memory_range(struct range **rangep, int nodeid);
+ void lmb_register_active_regions(int nid, unsigned long start_pfn,
+ 					 unsigned long last_pfn);
+ u64 lmb_hole_size(u64 start, u64 end);
++u64 lmb_free_memory_size(u64 addr, u64 limit);
  
  #include <asm/lmb.h>
  
-+#endif /* CONFIG_HAVE_LMB */
-+
- #endif /* __KERNEL__ */
+diff --git a/mm/lmb.c b/mm/lmb.c
+index 868886f..ae7388e 100644
+--- a/mm/lmb.c
++++ b/mm/lmb.c
+@@ -746,6 +746,57 @@ void __init lmb_to_bootmem(u64 start, u64 end)
+ }
+ #endif
  
- #endif /* _LINUX_LMB_H */
++u64 __init lmb_free_memory_size(u64 addr, u64 limit)
++{
++	int i, count;
++	struct range *range;
++	int nr_range;
++	u64 final_start, final_end;
++	u64 free_size;
++
++	count = lmb.reserved.cnt * 2;
++
++	range = find_range_array(count);
++	nr_range = 0;
++
++	addr = PFN_UP(addr);
++	limit = PFN_DOWN(limit);
++
++	for (i = 0; i < lmb.memory.cnt; i++) {
++		struct lmb_property *r = &lmb.memory.region[i];
++
++		final_start = PFN_UP(r->base);
++		final_end = PFN_DOWN(r->base + r->size);
++		if (final_start >= final_end)
++			continue;
++		if (final_start >= limit || final_end <= addr)
++			continue;
++
++		nr_range = add_range(range, count, nr_range, final_start, final_end);
++	}
++	subtract_range(range, count, 0, addr);
++	subtract_range(range, count, limit, -1ULL);
++	for (i = 0; i < lmb.reserved.cnt; i++) {
++		struct lmb_property *r = &lmb.reserved.region[i];
++
++		final_start = PFN_DOWN(r->base);
++		final_end = PFN_UP(r->base + r->size);
++		if (final_start >= final_end)
++			continue;
++		if (final_start >= limit || final_end <= addr)
++			continue;
++
++		subtract_range(range, count, final_start, final_end);
++	}
++	nr_range = clean_sort_range(range, count);
++
++	free_size = 0;
++	for (i = 0; i < nr_range; i++)
++		free_size += range[i].end - range[i].start;
++
++	return free_size << PAGE_SHIFT;
++}
++
+ u64 __init __weak __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
+ 				 u64 size, u64 align)
+ {
 -- 
 1.6.4.2
 
