@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933418Ab0CaNw6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 09:52:58 -0400
-Received: from www.tglx.de ([62.245.132.106]:34946 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933371Ab0CaNw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 09:52:56 -0400
-Date: Wed, 31 Mar 2010 15:51:27 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-cc: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
-       laijs@cn.fujitsu.com, dipankar@in.ibm.com, josh@joshtriplett.org,
-       dvhltc@us.ibm.com, niv@us.ibm.com, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       eric.dumazet@gmail.com, adobriyan@gmail.com,
-       "David S. Miller" <davem@davemloft.net>
-Subject: Re: [patch 1/5] Debugobjects transition check
-In-Reply-To: <20100331133100.GA25453@Krystal>
-Message-ID: <alpine.LFD.2.00.1003311549250.32352@localhost.localdomain>
-References: <20100329143405.252313609@efficios.com> <20100329143701.765545140@efficios.com> <alpine.LFD.2.00.1003301819060.32352@localhost.localdomain> <20100331133100.GA25453@Krystal>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S933435Ab0CaOCL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 10:02:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43806 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933284Ab0CaOCJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 10:02:09 -0400
+Subject: Re: [RFC] perf_events: support for uncore a.k.a. nest units
+From: Peter Zijlstra <peterz@infradead.org>
+To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Stephane Eranian <eranian@googlemail.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+       Dan Terpstra <terpstra@eecs.utk.edu>, Philip Mucci <mucci@eecs.utk.edu>,
+       Maynard Johnson <mpjohn@us.ibm.com>, Carl Love <cel@us.ibm.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>
+In-Reply-To: <4BB27764.2060802@linux.vnet.ibm.com>
+References: <4B560ACD.4040206@linux.vnet.ibm.com>
+	 <d3f22a1003290213x7d7904an59d50eb6a8616133@mail.gmail.com>
+	 <1269934931.8575.6.camel@minggr.sh.intel.com>
+	 <4BB22BB0.8030208@linux.vnet.ibm.com> <1269969305.5258.479.camel@laptop>
+	 <4BB27764.2060802@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 31 Mar 2010 16:01:56 +0200
+Message-ID: <1270044116.1616.26.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Mar 2010, Mathieu Desnoyers wrote:
+On Tue, 2010-03-30 at 15:12 -0700, Corey Ashford wrote:
+> 
+> > Initially I'd not allow per-pmu-per-task contexts
+> > because then things like perf_event_task_sched_out() would get rather
+> > complex.
+> 
+> Definitely.  I don't think it makes sense to have per-task context on 
+> nest/uncore PMUs.  At least we haven't found any justification for it.
 
-> * Thomas Gleixner (tglx@linutronix.de) wrote:
-> > On Mon, 29 Mar 2010, Mathieu Desnoyers wrote:
-> > 
-> > > Implement a basic state machine checker in the debugobjects.
-> > 
-> > Can you please add some real explanation how that checker works and
-> > why we want to have it ?
-> 
-> We can add this to the changelog. Is it worth it to create a Documentation file
-> for it ?
+For uncore no, but there is also the hw-breakpoint stuff that is being
+presented as a pmu, for those it would make sense to have a separate
+per-task context.
 
-I meant the changelog. The "Implement ...." line was not really helpful :)
- 
-> 
-> This state machine checker detects races and inconsistencies within the "active"
-> life of a debugobject. The checker only keeps track of the current state; all
-> the state machine logic is kept at the object instance level.
-> 
-> The checker works by adding a supplementary "unsigned int astate" field to the
-> debug_obj structure. It keeps track of the current "active state" of the object.
-> 
-> The only constraints that are imposed on the states by the debugobjects system
-> is that:
-> 
-> - activation of an object sets the current active state to 0,
-> - deactivation of an object expects the current active state to be 0.
-> 
-> For the rest of the states, the state mapping is determined by the specific
-> object instance. Therefore, the logic keeping track of the state machine is
-> within the specialized instance, without any need to know about it at the
-> debugobject level.
-> 
-> The current object active state is changed by calling:
-> 
-> debug_object_active_state(addr, descr, expect, next)
-> 
-> where "expect" is the expected state and "next" is the next state to move to if
-> the expected state is found. A warning is generated if the expected is not
-> found.
+But doing multiple per-task contexts is something for a next step
+indeed.
 
-Does it only warn or is there a callback to fixup things as well ?
+> > For RR we can move away from perf_event_task_tick and let the pmu
+> > install a (hr)timer for this on their own.
+> 
+> This is necessary I think, because of the access time for some of the PMU's.  I 
+> wonder though if it should, perhaps optionally, be off-loaded to a high-priority 
+> task to do the switching so that access latency to the PMU can be controlled.
+> 
+> As I mentioned when we met, some of the Wire-Speed processor nest PMU control 
+> registers are accessed via SCOM, which is an internal, 200 MHz serial bus.  We 
+> are being quoted ~525 SCOM bus ticks to do a PMU control register access, which 
+> comes out to about 2.5 microseconds.  If you figure 5 accesses to rotate the 
+> events on a PMU, that's a minimum of 12.5 microseconds. 
 
-Thanks,
+Yeah, you mentioned that.. for those things we need some changes anyway,
+since currently we install per-cpu counters using IPIs and expect the
+pmu::enable() method to be synchronous (it has a return value). It would
+be totally unacceptable to do 2.5ms pokes with IRQs disabled.
 
-	tglx
+The RR thing would be the easiest to solve, just let the timer wake up a
+thread instead of doing the work itself, that's fully isolated to how
+the pmu chooses to implement that. The above mentioned issue however
+would be much more challenging to fix nicely.
+
+
+
