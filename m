@@ -1,47 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933193Ab0CaKQl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 06:16:41 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47177
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933180Ab0CaKQh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 06:16:37 -0400
-Date: Wed, 31 Mar 2010 03:16:36 -0700 (PDT)
-Message-Id: <20100331.031636.04083770.davem@davemloft.net>
-To: mst@redhat.com
-Cc: mashirle@us.ibm.com, thomas@mathtm.de, netdev@vger.kernel.org,
+	id S933218Ab0CaKU5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 06:20:57 -0400
+Received: from mail.netservers.co.uk ([80.248.178.71]:59374 "EHLO
+	mail.netservers.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933171Ab0CaKUy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 06:20:54 -0400
+X-Greylist: delayed 1015 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Mar 2010 06:20:53 EDT
+X-Envelope-From: ben@netservers.co.uk
+Message-ID: <4BB31E00.8060204@netservers.co.uk>
+Date: Wed, 31 Mar 2010 11:03:44 +0100
+From: Ben McKeegan <ben@netservers.co.uk>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
+MIME-Version: 1.0
+To: netdev@vger.kernel.org, linux-ppp@vger.kernel.org
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       "Alexander E. Patrakov" <patrakov@gmail.com>,
+       Richard Hartmann <richih.mailinglist@gmail.com>,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH next-next-2.6 v2] virtio_net: missing sg_init_table
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100331092022.GA31911@redhat.com>
-References: <4BB10010.5060505@mathtm.de>
-	<1269911955.14013.4.camel@localhost.localdomain>
-	<20100331092022.GA31911@redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [Patch] fix packet loss and massive ping spikes with PPP multi-link
+References: <2d460de71003260850x7f90d04cy79ac853464108182@mail.gmail.com>	<20100326160226.0159ac3b@lxorguk.ukuu.org.uk>	<4BACE827.4070006@gmail.com> <20100326170428.6c1ad66c@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100326170428.6c1ad66c@lxorguk.ukuu.org.uk>
+Content-Type: multipart/mixed;
+ boundary="------------090600080204040506070408"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Wed, 31 Mar 2010 12:20:22 +0300
+This is a multi-part message in MIME format.
+--------------090600080204040506070408
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-> On Mon, Mar 29, 2010 at 06:19:15PM -0700, Shirley Ma wrote:
->> Add missing sg_init_table for sg_set_buf in virtio_net which
->> induced in defer skb patch.
->> 
->> Reported-by: Thomas Müller <thomas@mathtm.de>
->> Tested-by: Thomas Müller <thomas@mathtm.de>
->> Signed-off-by: Shirley Ma <xma@us.ibm.com>
+>>> Making it runtime per link selectable would be nicer but thats a bit more
+>>> work.
+>> Doesn't it work already via echoing values to 
+>> /sys/module/ppp/generic/parameters/ml_explode in the above code?
 > 
-> I'm concerned that the 'big' path might cause a performance regression.
-> Let's move sg into virtnet_info so that this needs to be only called
-> once?
+> Thats runtime (and why I set 0600 in the permissions for the example) but
+> not per link.
+> 
 
-Yeah that might improve things.
+I needed to do something similar a while back and I took a very 
+different approach, which I think is more flexible.   Rather than 
+implement a new round-robin scheduler I simply introduced a target 
+minimum fragment size into the fragment size calculation, as a per 
+bundle parameter that can be configured via a new ioctl.  This modifies 
+the algorithm so that it tries to limit the number of fragments such 
+that each fragment is at least the minimum size.  If the minimum size is 
+greater than the packet size it will not be fragmented all but will 
+instead just get sent down the next available channel.
 
-Shirley's change is already in net-next-2.6 so anything implementing
-this would need to be submitted relative to that.
+A pppd plugin generates the ioctl call allowing this to be tweaked per 
+connection.  It is more flexible in that you can still have the larger 
+packets fragmented if you wish.
+
+We've used a variant of this patch on our ADSL LNS pool for a few years 
+now with varying results.  We originally did it to save bandwidth as we 
+have a per packet overhead and fragmenting tiny packets such as VoIP 
+across a bundle of 4 lines made no sense at all.  We've experimented 
+with higher minimum settings up to and above the link MTU, thus 
+achieving the equivalent of Richard's patch.
+
+In some cases this has improved performance, others it makes it worse. 
+It depends a lot on the lines and traffic patterns, and it is certainly 
+not a change we would wish to have on by default.  Any solution going 
+into mainline kernel would need to be tunable per connection.  One of 
+the issues seems to be with poor recovery from packet loss on low 
+volume, highly delay sensitive traffic on large bundles of lines.  With 
+Linux at both ends you are relying on received sequence numbers to 
+detect loss.  When packets are being fragmented across all channels and 
+a fragment is lost, the receiving system is able to spot the lost 
+fragment fairly quickly.  Once you start sending some multilink frames 
+down individual channels, it takes a lot longer for the receiver to 
+notice the packet loss on an individual channel.  Until another fragment 
+is successfully received on the lossy channel, the fragments of the 
+incomplete frame sit in the queue clogging up the other channels (the 
+receiver is attempting to preserve the original packet order and is 
+still waiting for the lost fragment).
+
+Original patch attached.   This almost certainly needs updating to take 
+account of other more recent changes in multi link algorithm but it may 
+provide some inspiration.
+
+Regards,
+Ben.
+
+
+--------------090600080204040506070408
+Content-Type: text/x-diff;
+ name="mppp-min-frag-size.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename="mppp-min-frag-size.patch"
+
+diff -ubdr linux-2.6.16.16-l2tp/drivers/net/ppp_generic.c linux-2.6.16.16-l2tp-mppp/drivers/net/ppp_generic.c
+--- linux-2.6.16.16-l2tp/drivers/net/ppp_generic.c	2006-05-11 02:56:24.000000000 +0100
++++ linux-2.6.16.16-l2tp-mppp/drivers/net/ppp_generic.c	2007-07-03 18:23:35.000000000 +0100
+@@ -64,7 +64,7 @@
+ 
+ #define MPHDRLEN	6	/* multilink protocol header length */
+ #define MPHDRLEN_SSN	4	/* ditto with short sequence numbers */
+-#define MIN_FRAG_SIZE	64
++#define MIN_FRAG_SIZE	256
+ 
+ /*
+  * An instance of /dev/ppp can be associated with either a ppp
+@@ -120,6 +120,7 @@
+ 	unsigned long	last_recv;	/* jiffies when last pkt rcvd a0 */
+ 	struct net_device *dev;		/* network interface device a4 */
+ #ifdef CONFIG_PPP_MULTILINK
++        int             minfragsize;    /* minimum size for a fragment */
+ 	int		nxchan;		/* next channel to send something on */
+ 	u32		nxseq;		/* next sequence number to send */
+ 	int		mrru;		/* MP: max reconst. receive unit */
+@@ -767,6 +768,15 @@
+ 		ppp_recv_unlock(ppp);
+ 		err = 0;
+ 		break;
++
++	case PPPIOCSMINFRAG:
++	        if (get_user(val, p))
++	                break;
++	        ppp_recv_lock(ppp);
++	        ppp->minfragsize = val < 0 ? 0 : val;
++	        ppp_recv_unlock(ppp);
++	        err = 0;
++	        break;
+ #endif /* CONFIG_PPP_MULTILINK */
+ 
+ 	default:
+@@ -1254,7 +1264,7 @@
+ 	int len, fragsize;
+ 	int i, bits, hdrlen, mtu;
+ 	int flen;
+-	int navail, nfree;
++	int navail, nfree, nfrag;
+ 	int nbigger;
+ 	unsigned char *p, *q;
+ 	struct list_head *list;
+@@ -1285,7 +1295,7 @@
+ 	 * the channels are free.  This gives much better TCP
+ 	 * performance if we have a lot of channels.
+ 	 */
+-	if (nfree == 0 || nfree < navail / 2)
++	if (nfree == 0 || (nfree < navail / 2 && ppp->minfragsize == 0))
+ 		return 0;	/* can't take now, leave it in xmit_pending */
+ 
+ 	/* Do protocol field compression (XXX this should be optional) */
+@@ -1302,13 +1312,24 @@
+ 	 * how small they are (i.e. even 0 length) in order to minimize
+ 	 * the time that it will take to detect when a channel drops
+ 	 * a fragment.
++         * However, if ppp->minfragsize > 0 we try to avoid creating
++         * fragments smaller than ppp->minfragsize and thus do not
++         * always use all free channels
+ 	 */
++	if (ppp->minfragsize > 0) {
++	  nfrag= len / ppp->minfragsize;
++	  if (nfrag < 1)
++	        nfrag = 1;
++	  else if (nfrag > nfree)
++	        nfrag = nfree;
++	} else
++	        nfrag = nfree;
+ 	fragsize = len;
+-	if (nfree > 1)
+-		fragsize = DIV_ROUND_UP(fragsize, nfree);
++	if (nfrag > 1)
++	        fragsize = DIV_ROUND_UP(fragsize, nfrag);
+ 	/* nbigger channels get fragsize bytes, the rest get fragsize-1,
+ 	   except if nbigger==0, then they all get fragsize. */
+-	nbigger = len % nfree;
++	nbigger = len % nfrag;
+ 
+ 	/* skip to the channel after the one we last used
+ 	   and start at that one */
+@@ -1323,7 +1344,7 @@
+ 
+ 	/* create a fragment for each channel */
+ 	bits = B;
+-	while (nfree > 0 || len > 0) {
++	while (len > 0 || (nfree > 0 && ppp->minfragsize == 0)) {
+ 		list = list->next;
+ 		if (list == &ppp->channels) {
+ 			i = 0;
+@@ -1371,7 +1392,7 @@
+ 			mtu = 4;
+ 		if (flen > mtu)
+ 			flen = mtu;
+-		if (flen == len && nfree == 0)
++		if (flen == len && (nfree == 0 || ppp->minfragsize != 0))
+ 			bits |= E;
+ 		frag = alloc_skb(flen + hdrlen + (flen == 0), GFP_ATOMIC);
+ 		if (frag == 0)
+@@ -2435,6 +2456,7 @@
+ 	spin_lock_init(&ppp->rlock);
+ 	spin_lock_init(&ppp->wlock);
+ #ifdef CONFIG_PPP_MULTILINK
++	ppp->minfragsize = MIN_FRAG_SIZE;
+ 	ppp->minseq = -1;
+ 	skb_queue_head_init(&ppp->mrq);
+ #endif /* CONFIG_PPP_MULTILINK */
+diff -ubdr linux-2.6.16.16-l2tp/include/linux/if_ppp.h linux-2.6.16.16-l2tp-mppp/include/linux/if_ppp.h
+--- linux-2.6.16.16-l2tp/include/linux/if_ppp.h	2006-05-12 13:45:00.000000000 +0100
++++ linux-2.6.16.16-l2tp-mppp/include/linux/if_ppp.h	2007-07-03 18:15:27.000000000 +0100
+@@ -162,6 +162,7 @@
+ #define PPPIOCATTCHAN	_IOW('t', 56, int)	/* attach to ppp channel */
+ #define PPPIOCGCHAN	_IOR('t', 55, int)	/* get ppp channel number */
+ #define PPPIOCGL2TPSTATS _IOR('t', 54, struct pppol2tp_ioc_stats)
++#define PPPIOCSMINFRAG  _IOW('t', 53, int)  /* minimum fragment size */
+ 
+ #define SIOCGPPPSTATS   (SIOCDEVPRIVATE + 0)
+ #define SIOCGPPPVER     (SIOCDEVPRIVATE + 1)	/* NEVER change this!! */
+
+--------------090600080204040506070408--
