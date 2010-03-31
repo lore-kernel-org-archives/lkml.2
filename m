@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757634Ab0CaAZq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:25:46 -0400
-Received: from anchor-post-1.mail.demon.net ([195.173.77.132]:61340 "EHLO
-	anchor-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756571Ab0CaAZl (ORCPT
+	id S1757624Ab0CaAZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:25:56 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:57689 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757641Ab0CaAZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 20:25:41 -0400
-Message-ID: <4BB29675.9050507@lougher.demon.co.uk>
-Date: Wed, 31 Mar 2010 01:25:25 +0100
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Tue, 30 Mar 2010 20:25:52 -0400
+X-Sasl-enc: Ju5KNaOoy6AVADSpkHfhoqRsTJHILpLgLfyXPf1D6LbM 1269995151
+Date: Tue, 30 Mar 2010 21:25:49 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Thomas Pilarski <Thomas.Pilarski@arcor.de>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Jens Axboe <jens.axboe@oracle.com>
+Subject: Re: [Bug 12309] Large I/O operations result in slow performance
+ and high iowait times
+Message-ID: <20100331002549.GB9925@khazad-dum.debian.net>
+References: <bug-12309-14043@http.bugzilla.kernel.org/>
+ <201003162357.o2GNvkNF024562@demeter.kernel.org>
+ <1269935094.2481.23.camel@localhost>
 MIME-Version: 1.0
-To: Ferenc Wagner <wferi@niif.hu>
-CC: Alain Knaff <alain@knaff.lu>, linux-kernel@vger.kernel.org,
-       "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: kernel decompressor interface
-References: <877hotu6x9.fsf@tac.ki.iif.hu>
-In-Reply-To: <877hotu6x9.fsf@tac.ki.iif.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269935094.2481.23.camel@localhost>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ferenc Wagner wrote:
-> Hi,
-> 
-> While  working with SquashFS code recently, I got the impression that the
-> current decompress_fn interface isn't best suited for general use: it
-> rules out real scatter/gather operation, which -- one hopes -- is a
-> general feature of stream decompressors.  For example, if one has to
-> decompress data from a series of buffer_heads into a bunch of (cache)
-> pages (typical operation in compressed file systems), the inflate
-> interface in zlib.h provides the possibility of changing input and
-> output buffer addresses, but decompress_fn does not, necessitating extra
-> memory copying.  On the other hand, the latter is admittedly simpler.
-> 
+On Tue, 30 Mar 2010, Thomas Pilarski wrote:
+> This problem is enormous increased, while the ultra bay disc is acceded
+> with udma2 instead of udma6 (caused by another bug), 
 
-The decompress_fn interface is rather limited, however, it must
-be borne in mind that it was adequate for the original intended
-users (initramfs/initrd decompression). Squashfs (and other filesystems) on
-the other hand can certainly make use of a much better multi-call interface.
-My strategy in adding LZMA support to Squashfs has been to get an implementation
-using the current interface mainlined, and one this has been done to look at
-improving the decompress_fn interface.
+There is a thinkpad BIOS bug that could cause that: it will not signal a
+80-wire cable when you hot-add an HD on a PATA ultrabay.  Exists at least on
+all T4x, including the T43.
 
-> However, I feel like their advantages could be combined by making the
-> fill() and flush() callbacks able to change the buffer addresses, like
-> int fill(void **, unsigned int) for example.  Even better, some context
-> could also be passed around, so that they can easily carry private state.
-> 
-> A cursory look at the LZMA decompressor implementation suggests that
-> this would be straightforward change (although I haven't done it).  
+The fix is to whitelist these thinkpads for high-speed UDMA even on 40-wire
+cables.  The workaround is to add a kernel command line parameter (I forget
+which).
 
-LZMA decompressors have a quirk in that they use the output buffer
-as the history buffer (e.g. look for peek_old_byte() in decompress_unlzma.c).
-This means any multi-call interface such as zlib which modifies the output
-buffer pointer dynamically (without allowing the decompressor to look back at
-previously passed in buffers) won't work.   A multi-call interface that
-passes the output buffers in an iovec style array should work though
-(incidentally this is why Squashfs passes the output buffers as an array
-to the decompressor wrapper even though LZMA cannot as yet make use of it)
+Does that match your udma2 instead of udma6 problem?
 
-The following original thread about inclusion of LZMA into the kernel
-has some relevant information.
-
-http://www.mail-archive.com/linux-embedded@vger.kernel.org/msg01371.html
-
-Phillip
-
-> Do
-> you think that
-> 1. it could be done for other decompressors (lzo, bunzip) as well, and
-> 2. it should be done in any form (interface replacement or extension)?
-
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
