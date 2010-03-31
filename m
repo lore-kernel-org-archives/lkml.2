@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932788Ab0CaGai (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 02:30:38 -0400
-Received: from helios.rbi.informatik.uni-frankfurt.de ([141.2.1.4]:48534 "EHLO
-	helios.rbi.informatik.uni-frankfurt.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932744Ab0CaGa3 (ORCPT
+	id S1757874Ab0CaGcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 02:32:47 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:17655 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757341Ab0CaGcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 02:30:29 -0400
-X-Greylist: delayed 5760 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Mar 2010 02:30:29 EDT
-Date: Wed, 31 Mar 2010 06:54:14 +0200
-From: Martin Teufel <teufel@informatik.uni-frankfurt.de>
-To: linux-kernel@vger.kernel.org
-Subject: AMD Geode LX WDT (geode-mfgpt)
-Message-ID: <20100331045414.GA3241@hekate.rbi.informatik.uni-frankfurt.de>
+	Wed, 31 Mar 2010 02:32:46 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=YQWgy026pWms2xfsXtOc5uUjq5a4XBLGXB1Nf9Oz771GMI5OXB4RD4wy8QDqpmpGj
+	9WjawT5BQZ0JeaFtVTCGA==
+Date: Tue, 30 Mar 2010 23:32:35 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Balbir Singh <balbir@linux.vnet.ibm.com>
+cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       anfei <anfei.zhou@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp, Mel Gorman <mel@csn.ul.ie>,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] oom killer: break from infinite loop
+In-Reply-To: <20100331063007.GN3308@balbir.in.ibm.com>
+Message-ID: <alpine.DEB.2.00.1003302331001.839@chino.kir.corp.google.com>
+References: <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329140633.GA26464@desktop> <alpine.DEB.2.00.1003291259400.14859@chino.kir.corp.google.com>
+ <20100330142923.GA10099@desktop> <alpine.DEB.2.00.1003301326490.5234@chino.kir.corp.google.com> <20100331095714.9137caab.kamezawa.hiroyu@jp.fujitsu.com> <alpine.DEB.2.00.1003302302420.22316@chino.kir.corp.google.com> <20100331151356.673c16c0.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100331063007.GN3308@balbir.in.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EVF5PPMfhYS0aIcm"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 31 Mar 2010, Balbir Singh wrote:
 
---EVF5PPMfhYS0aIcm
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+> > To me, this patch is acceptable and seems reasnoable.
+> > 
+> > But I didn't joined to memcg development when this check was added
+> > and don't know why kill current..
+> >
+> 
+> The reason for adding current was that we did not want to loop
+> forever, since it stops forward progress - no error/no forward
+> progress. It made sense to oom kill the current process, so that the
+> cgroup admin could look at what went wrong.
+>  
 
-Hi,
-
-I have some ALIX boards (SBC) with AMD Geode LX CPUs and their companion
-device CS5536 and am using Debian on them. I didn't care about the
-integrated watchdog timer (in the CS5536) so far. Recently I did, but
-neither the CONFIG_GEODE_WDT was set in the debian kernel (2.6.26), nor
-the CONFIG_GEODE_MFGPT_TIMER. So I compiled my own debian 2.6.26 geode
-kernel (CONFIG_MGEODE_LX=y, CONFIG_GEODE_WDT=y,
-CONFIG_GEODE_MFGPT_TIMER=y, CONFIG_CRYPTO_DEV_GEODE=y etc.).
-
-My problem is that the geode-mfgpt doesn't find any timers:
-
-[    0.204012] geode-mfgpt:  0 MFGPT timers available.
-[    0.208013] mfgpt-timer:  Could not allocate a MFPGT timer
-...
-[    2.284029] geodewdt:  No timers were available
-
-My question is: Why doesn't it? Is this a known bug? If so, is it
-already fixed in a newer kernel version?
-
-BTW: There are two typing errors in the mfgpt_32.c (line 232 and 342).
-It should be MFGPT but is MFPGT. :)
-
-Please note that I'm *not* on the mailing list, so please send me a CC
-of your answer(s) - thanks.
-Since I'm relatively new to kernel issues maybe I'm just missing
-something. If so, please forgive me and don't objurgate me too much. ;-)
-
-Regards,
-Martin
-
---EVF5PPMfhYS0aIcm
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.7 (GNU/Linux)
-
-iD8DBQFLstV2OHuQTha1HuYRAlN5AJ9MQoYuyY7pwyQczJdlpC6BvTwz0wCeJ5Ah
-UFS4QXHAoTVP7llcaGWstLQ=
-=yDBf
------END PGP SIGNATURE-----
-
---EVF5PPMfhYS0aIcm--
+oom_kill_process() will fail on current since it wasn't selected as an 
+eligible task to kill in select_bad_process() and we know it to be a 
+member of the memcg, so there's no point in trying to kill it.
