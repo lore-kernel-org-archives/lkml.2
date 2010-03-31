@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933435Ab0CaOCL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 10:02:11 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43806 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933284Ab0CaOCJ (ORCPT
+	id S1757740Ab0CaOCy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 10:02:54 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:49475 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755048Ab0CaOCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 10:02:09 -0400
-Subject: Re: [RFC] perf_events: support for uncore a.k.a. nest units
-From: Peter Zijlstra <peterz@infradead.org>
-To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-       Paul Mackerras <paulus@samba.org>,
-       Stephane Eranian <eranian@googlemail.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-       Dan Terpstra <terpstra@eecs.utk.edu>, Philip Mucci <mucci@eecs.utk.edu>,
-       Maynard Johnson <mpjohn@us.ibm.com>, Carl Love <cel@us.ibm.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>
-In-Reply-To: <4BB27764.2060802@linux.vnet.ibm.com>
-References: <4B560ACD.4040206@linux.vnet.ibm.com>
-	 <d3f22a1003290213x7d7904an59d50eb6a8616133@mail.gmail.com>
-	 <1269934931.8575.6.camel@minggr.sh.intel.com>
-	 <4BB22BB0.8030208@linux.vnet.ibm.com> <1269969305.5258.479.camel@laptop>
-	 <4BB27764.2060802@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 31 Mar 2010 16:01:56 +0200
-Message-ID: <1270044116.1616.26.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 31 Mar 2010 10:02:52 -0400
+To: "Serge E. Hallyn" <serue@us.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, linux-fsdevel@vger.kernel.org,
+       Eric Dumazet <eric.dumazet@gmail.com>, Benjamin LaHaise <bcrl@lhnet.ca>,
+       netdev@vger.kernel.org
+Subject: Re: [PATCH 1/6] sysfs: Basic support for multiple super blocks
+References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
+	<1269973889-25260-1-git-send-email-ebiederm@xmission.com>
+	<4BB2E098.7030202@kernel.org> <m1634d82e0.fsf@fess.ebiederm.org>
+	<20100331134757.GA6132@us.ibm.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Wed, 31 Mar 2010 07:02:39 -0700
+In-Reply-To: <20100331134757.GA6132@us.ibm.com> (Serge E. Hallyn's message of "Wed\, 31 Mar 2010 08\:47\:57 -0500")
+Message-ID: <m1mxxoy4g0.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 76.21.114.89
+X-SA-Exim-Rcpt-To: serue@us.ibm.com, netdev@vger.kernel.org, bcrl@lhnet.ca, eric.dumazet@gmail.com, linux-fsdevel@vger.kernel.org, cornelia.huck@de.ibm.com, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, gregkh@suse.de, tj@kernel.org
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-30 at 15:12 -0700, Corey Ashford wrote:
-> 
-> > Initially I'd not allow per-pmu-per-task contexts
-> > because then things like perf_event_task_sched_out() would get rather
-> > complex.
-> 
-> Definitely.  I don't think it makes sense to have per-task context on 
-> nest/uncore PMUs.  At least we haven't found any justification for it.
+"Serge E. Hallyn" <serue@us.ibm.com> writes:
 
-For uncore no, but there is also the hw-breakpoint stuff that is being
-presented as a pmu, for those it would make sense to have a separate
-per-task context.
+> Quoting Eric W. Biederman (ebiederm@xmission.com):
+>> Tejun Heo <tj@kernel.org> writes:
+>> >> index 30f5a44..030a39d 100644
+>> >> --- a/fs/sysfs/sysfs.h
+>> >> +++ b/fs/sysfs/sysfs.h
+>> >> @@ -114,6 +114,9 @@ struct sysfs_addrm_cxt {
+>> >>  /*
+>> >>   * mount.c
+>> >>   */
+>> >> +struct sysfs_super_info {
+>> >> +};
+>> >> +#define sysfs_info(SB) ((struct sysfs_super_info *)(SB->s_fs_info))
+>> >
+>> > Another nit picking.  It would be better to wrap SB in the macro
+>> > definition.  Also, wouldn't an inline function be better?
+>> 
+>> Good spotting.  That doesn't bite today but it will certainly bite
+>> someday if it isn't fixed.
+>> 
+>> I wonder how that has slipped through the review all of this time.
+>
+> (let me demonstrate how: )
+>
+> WTH are you talking about?  Unless you mean doing (SB) inside
+> the definition?
+>
+> I actually was going to suggest dropping the #define as it obscures
+> the code, but I figured it would get more complicated later.
 
-But doing multiple per-task contexts is something for a next step
-indeed.
+I believe the discuss change was to make the define:
+#define sysfs_info(SB) ((struct sysfs_super_info *)((SB)->s_fs_info))
 
-> > For RR we can move away from perf_event_task_tick and let the pmu
-> > install a (hr)timer for this on their own.
-> 
-> This is necessary I think, because of the access time for some of the PMU's.  I 
-> wonder though if it should, perhaps optionally, be off-loaded to a high-priority 
-> task to do the switching so that access latency to the PMU can be controlled.
-> 
-> As I mentioned when we met, some of the Wire-Speed processor nest PMU control 
-> registers are accessed via SCOM, which is an internal, 200 MHz serial bus.  We 
-> are being quoted ~525 SCOM bus ticks to do a PMU control register access, which 
-> comes out to about 2.5 microseconds.  If you figure 5 accesses to rotate the 
-> events on a PMU, that's a minimum of 12.5 microseconds. 
+As for dropping the define and using s_fs_info raw.  I rather like
+a light weight type safe wrapper.  Maybe I just think s_fs_info
+is an ugly name.
 
-Yeah, you mentioned that.. for those things we need some changes anyway,
-since currently we install per-cpu counters using IPIs and expect the
-pmu::enable() method to be synchronous (it has a return value). It would
-be totally unacceptable to do 2.5ms pokes with IRQs disabled.
+In practice I never call sysfs_info() with any expression that has
+a side effect, so it doesn't matter.
 
-The RR thing would be the easiest to solve, just let the timer wake up a
-thread instead of doing the work itself, that's fully isolated to how
-the pmu chooses to implement that. The above mentioned issue however
-would be much more challenging to fix nicely.
+Eric
 
 
 
