@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758014Ab0CaCTT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 22:19:19 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:21593 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753673Ab0CaCTR (ORCPT
+	id S1758033Ab0CaCUM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 22:20:12 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:21927 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757921Ab0CaCUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 22:19:17 -0400
+	Tue, 30 Mar 2010 22:20:09 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,78 +16,153 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 03/33] lmb: Seperate region array from lmb_region struct
-Date: Tue, 30 Mar 2010 19:16:48 -0700
-Message-Id: <1270001838-15857-4-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 29/33] x86: Use wake_system_ram_range instead of e820_any_mapped in agp path
+Date: Tue, 30 Mar 2010 19:17:14 -0700
+Message-Id: <1270001838-15857-30-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1270001838-15857-1-git-send-email-yinghai@kernel.org>
 References: <1270001838-15857-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4BB2B0F5.0158,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090206.4BB2B11E.0154,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lmb_init() will connect them back.
-Add nr_regions in struct lmb_region to track region array size.
+Move apterture_valid back to .c
 
-So later We can install dynamically allocated region array to that pointer
+and early path still use e820_any_mapped()
+
+so later we can make e820_any_mapped() to _init
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/lmb.h |    3 ++-
- mm/lmb.c            |    9 ++++++++-
- 2 files changed, 10 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/gart.h   |   22 ----------------------
+ arch/x86/kernel/aperture_64.c |   22 ++++++++++++++++++++++
+ drivers/char/agp/amd64-agp.c  |   39 ++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 60 insertions(+), 23 deletions(-)
 
-diff --git a/include/linux/lmb.h b/include/linux/lmb.h
-index f3d1433..e14ea8d 100644
---- a/include/linux/lmb.h
-+++ b/include/linux/lmb.h
-@@ -26,7 +26,8 @@ struct lmb_property {
- struct lmb_region {
- 	unsigned long cnt;
- 	u64 size;
--	struct lmb_property region[MAX_LMB_REGIONS+1];
-+	struct lmb_property *region;
-+	unsigned long nr_regions;
+diff --git a/arch/x86/include/asm/gart.h b/arch/x86/include/asm/gart.h
+index 4ac5b0f..2b63a91 100644
+--- a/arch/x86/include/asm/gart.h
++++ b/arch/x86/include/asm/gart.h
+@@ -74,26 +74,4 @@ static inline void enable_gart_translation(struct pci_dev *dev, u64 addr)
+         pci_write_config_dword(dev, AMD64_GARTAPERTURECTL, ctl);
+ }
+ 
+-static inline int aperture_valid(u64 aper_base, u32 aper_size, u32 min_size)
+-{
+-	if (!aper_base)
+-		return 0;
+-
+-	if (aper_base + aper_size > 0x100000000ULL) {
+-		printk(KERN_INFO "Aperture beyond 4GB. Ignoring.\n");
+-		return 0;
+-	}
+-	if (e820_any_mapped(aper_base, aper_base + aper_size, E820_RAM)) {
+-		printk(KERN_INFO "Aperture pointing to e820 RAM. Ignoring.\n");
+-		return 0;
+-	}
+-	if (aper_size < min_size) {
+-		printk(KERN_INFO "Aperture too small (%d MB) than (%d MB)\n",
+-				 aper_size>>20, min_size>>20);
+-		return 0;
+-	}
+-
+-	return 1;
+-}
+-
+ #endif /* _ASM_X86_GART_H */
+diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
+index 3704997..f6e6270 100644
+--- a/arch/x86/kernel/aperture_64.c
++++ b/arch/x86/kernel/aperture_64.c
+@@ -145,6 +145,28 @@ static u32 __init find_cap(int bus, int slot, int func, int cap)
+ 	return 0;
+ }
+ 
++static int __init aperture_valid(u64 aper_base, u32 aper_size, u32 min_size)
++{
++	if (!aper_base)
++		return 0;
++
++	if (aper_base + aper_size > 0x100000000ULL) {
++		printk(KERN_INFO "Aperture beyond 4GB. Ignoring.\n");
++		return 0;
++	}
++	if (e820_any_mapped(aper_base, aper_base + aper_size, E820_RAM)) {
++		printk(KERN_INFO "Aperture pointing to e820 RAM. Ignoring.\n");
++		return 0;
++	}
++	if (aper_size < min_size) {
++		printk(KERN_INFO "Aperture too small (%d MB) than (%d MB)\n",
++				 aper_size>>20, min_size>>20);
++		return 0;
++	}
++
++	return 1;
++}
++
+ /* Read a standard AGPv3 bridge header */
+ static u32 __init read_agp(int bus, int slot, int func, int cap, u32 *order)
+ {
+diff --git a/drivers/char/agp/amd64-agp.c b/drivers/char/agp/amd64-agp.c
+index fd50ead..85cabd0 100644
+--- a/drivers/char/agp/amd64-agp.c
++++ b/drivers/char/agp/amd64-agp.c
+@@ -14,7 +14,6 @@
+ #include <linux/agp_backend.h>
+ #include <linux/mmzone.h>
+ #include <asm/page.h>		/* PAGE_SIZE */
+-#include <asm/e820.h>
+ #include <asm/k8.h>
+ #include <asm/gart.h>
+ #include "agp.h"
+@@ -231,6 +230,44 @@ static const struct agp_bridge_driver amd_8151_driver = {
+ 	.agp_type_to_mask_type  = agp_generic_type_to_mask_type,
  };
  
- struct lmb {
-diff --git a/mm/lmb.c b/mm/lmb.c
-index b1fc526..65b62dc 100644
---- a/mm/lmb.c
-+++ b/mm/lmb.c
-@@ -18,6 +18,8 @@
- #define LMB_ALLOC_ANYWHERE	0
- 
- struct lmb lmb;
-+static struct lmb_property lmb_memory_region[MAX_LMB_REGIONS + 1];
-+static struct lmb_property lmb_reserved_region[MAX_LMB_REGIONS + 1];
- 
- static int lmb_debug;
- 
-@@ -106,6 +108,11 @@ static void lmb_coalesce_regions(struct lmb_region *rgn,
- 
- void __init lmb_init(void)
- {
-+	lmb.memory.region   = lmb_memory_region;
-+	lmb.reserved.region = lmb_reserved_region;
-+	lmb.memory.nr_regions   = ARRAY_SIZE(lmb_memory_region);
-+	lmb.reserved.nr_regions = ARRAY_SIZE(lmb_reserved_region);
++static int __devinit
++__is_ram(unsigned long pfn, unsigned long nr_pages, void *arg)
++{
++	return 1;
++}
 +
- 	/* Create a dummy zero size LMB which will get coalesced away later.
- 	 * This simplifies the lmb_add() code below...
- 	 */
-@@ -169,7 +176,7 @@ static long lmb_add_region(struct lmb_region *rgn, u64 base, u64 size)
- 
- 	if (coalesced)
- 		return coalesced;
--	if (rgn->cnt >= MAX_LMB_REGIONS)
-+	if (rgn->cnt > rgn->nr_regions)
- 		return -1;
- 
- 	/* Couldn't coalesce the LMB, so add it to the sorted table. */
++static int __devinit any_ram_in_range(u64 base, u64 size)
++{
++	unsigned long pfn, nr_pages;
++
++	pfn = base >> PAGE_SHIFT;
++	nr_pages = size >> PAGE_SHIFT;
++
++	return walk_system_ram_range(pfn, nr_pages, NULL, __is_ram) == 1;
++}
++
++static int __devinit aperture_valid(u64 aper_base, u32 aper_size, u32 min_size)
++{
++	if (!aper_base)
++		return 0;
++
++	if (aper_base + aper_size > 0x100000000ULL) {
++		printk(KERN_INFO "Aperture beyond 4GB. Ignoring.\n");
++		return 0;
++	}
++	if (any_ram_in_range(aper_base, aper_size)) {
++		printk(KERN_INFO "Aperture pointing to E820 RAM. Ignoring.\n");
++		return 0;
++	}
++	if (aper_size < min_size) {
++		printk(KERN_INFO "Aperture too small (%d MB) than (%d MB)\n",
++				 aper_size>>20, min_size>>20);
++		return 0;
++	}
++
++	return 1;
++}
++
+ /* Some basic sanity checks for the aperture. */
+ static int __devinit agp_aperture_valid(u64 aper, u32 size)
+ {
 -- 
 1.6.4.2
 
