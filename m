@@ -1,76 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab0CaAEs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 20:04:48 -0400
-Received: from kroah.org ([198.145.64.141]:45287 "EHLO coco.kroah.org"
+	id S1757528Ab0CaAJB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 20:09:01 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:45897 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756823Ab0C3XSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 19:18:31 -0400
-X-Mailbox-Line: From linux@linux.site Tue Mar 30 15:56:46 2010
-Message-Id: <20100330225645.735196426@linux.site>
-User-Agent: quilt/0.47-14.9
-Date: Tue, 30 Mar 2010 15:55:51 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Grazvydas Ignotas <notasas@gmail.com>, Kalle Valo <kalle.valo@iki.fi>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [073/116] wl1251: fix potential crash
-In-Reply-To: <20100330230600.GA28802@kroah.com>
+	id S932249Ab0CaAIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 20:08:35 -0400
+Date: Tue, 30 Mar 2010 17:08:32 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Trond.Myklebust@netapp.com,
+       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFS: Fix RCU warnings in
+ nfs_inode_return_delegation_noreclaim() [ver #2]
+Message-ID: <20100331000832.GQ2513@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100329192159.GM2569@linux.vnet.ibm.com>
+ <20100319022527.GC2894@linux.vnet.ibm.com>
+ <20100318133302.29754.1584.stgit@warthog.procyon.org.uk>
+ <19192.1269889348@redhat.com>
+ <23274.1269893706@redhat.com>
+ <25276.1269901350@redhat.com>
+ <26760.1269903543@redhat.com>
+ <20100329232636.GT2569@linux.vnet.ibm.com>
+ <2440.1269967151@redhat.com>
+ <21972.1269993064@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <21972.1269993064@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+On Wed, Mar 31, 2010 at 12:51:04AM +0100, David Howells wrote:
+> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > Which it is, as long as the lock is held.
+> 
+> However, in one of the situations I'm thinking of, no lock is held.  All that
+> is being tested is whether the pointer to some RCU-protected data is either
+> NULL or non-NULL.  For example:
+> 
+> 	@@ -345,7 +346,7 @@ int nfs_inode_return_delegation(struct inode *inode)
+> 		struct nfs_delegation *delegation;
+> 		int err = 0;
+> 
+> 	-	if (rcu_dereference(nfsi->delegation) != NULL) {
+> 	+	if (nfsi->delegation != NULL) {
+> 			spin_lock(&clp->cl_lock);
+> 			delegation = nfs_detach_delegation_locked(nfsi, NULL);
+> 			spin_unlock(&clp->cl_lock);
+> 
+> No lock - RCU or spinlock - is held over the check of nfsi->delegation - which
+> causes lockdep to complain about an unguarded rcu_dereference().
+> 
+> However, the use of rcu_dereference() here is unnecessary with respect to the
+> interpolation (where appropriate) of a memory barrier because there is no
+> second memory access against which to order.
+> 
+> That said, the memory access is repeated inside nfs_detach_delegation_locked(),
+> which again was wrapped in an rcu_dereference():
+> 
+> 	 static struct nfs_delegation *nfs_detach_delegation_locked(struct nfs_inode *nfsi, const nfs4_stateid *stateid)
+> 	 {
+> 	-	struct nfs_delegation *delegation = rcu_dereference(nfsi->delegation);
+> 	+	struct nfs_delegation *delegation = nfsi->delegation;
+> 
+> 		if (delegation == NULL)
+> 			goto nomatch;
+> 
+> which was not necessary for its memory barrier interpolation properties in this
+> case because of the spin_lock() the caller now holds.
+> 
+> 
+> Your suggestion of using rcu_dereference_check() in both these places would
+> result in two unnecessary memory barriers on something like an Alpha CPU.
+> 
+> 
+> How about:
+> 
+> 	static struct nfs_delegation *nfs_detach_delegation_locked(struct nfs_inode *nfsi, const nfs4_stateid *stateid)
+> 	{
+> 		struct nfs_delegation *delegation =
+> 			rcu_locked_dereference(nfsi->delegation);
+> 		...
+> 	}
+> 
+> where rcu_locked_dereference() only does the lockdep magic and the dereference,
+> and does not include a memory barrier.  The documentation of such a function
+> would note this may only be used when the pointer is guarded by an exclusive
+> lock to prevent it from changing.
+> 
+> And then:
+> 
+> 	int nfs_inode_return_delegation(struct inode *inode)
+> 	{
+> 		struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
+> 		struct nfs_inode *nfsi = NFS_I(inode);
+> 		struct nfs_delegation *delegation;
+> 		int err = 0;
+> 
+> 		if (rcu_pointer_not_null(nfsi->delegation)) {
+> 			spin_lock(&clp->cl_lock);
+> 			delegation = nfs_detach_delegation_locked(nfsi, NULL);
+> 			spin_unlock(&clp->cl_lock);
+> 			if (delegation != NULL) {
+> 				nfs_msync_inode(inode);
+> 				err = __nfs_inode_return_delegation(inode, delegation, 1);
+> 			}
+> 		}
+> 		return err;
+> 	}
+> 
+> where rcu_pointer_not_null() simply tests the value of the pointer, casting
+> away the sparse RCU annotation and not doing the lockdep check and not
+> including a barrier.  It would not return the value of the pointer, thus
+> preventing you from needing the barrier as a result.
 
-------------------
+How about Eric's suggestion of rcu_dereference_protected()?  That name
+doesn't imply a lock, which as you say above, isn't always needed to
+keep the structure from changing.
 
-From: Grazvydas Ignotas <notasas@gmail.com>
-
-commit 3f60ebc9d6291863652d564bacc430629271e6a9 upstream.
-
-In case debugfs does not init for some reason (or is disabled
-on older kernels) driver does not allocate stats.fw_stats
-structure, but tries to clear it later and trips on a NULL
-pointer:
-
-Unable to handle kernel NULL pointer dereference at virtual address
-00000000
-PC is at __memzero+0x24/0x80
-Backtrace:
-[<bf0ddb88>] (wl1251_debugfs_reset+0x0/0x30 [wl1251])
-[<bf0d6a2c>] (wl1251_op_stop+0x0/0x12c [wl1251])
-[<bf0bc228>] (ieee80211_stop_device+0x0/0x74 [mac80211])
-[<bf0b0d10>] (ieee80211_stop+0x0/0x4ac [mac80211])
-[<c02deeac>] (dev_close+0x0/0xb4)
-[<c02deac0>] (dev_change_flags+0x0/0x184)
-[<c031f478>] (devinet_ioctl+0x0/0x704)
-[<c0320720>] (inet_ioctl+0x0/0x100)
-
-Add a NULL pointer check to fix this.
-
-Signed-off-by: Grazvydas Ignotas <notasas@gmail.com>
-Acked-by: Kalle Valo <kalle.valo@iki.fi>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/net/wireless/wl12xx/wl1251_debugfs.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/drivers/net/wireless/wl12xx/wl1251_debugfs.c
-+++ b/drivers/net/wireless/wl12xx/wl1251_debugfs.c
-@@ -443,7 +443,8 @@ out:
- 
- void wl1251_debugfs_reset(struct wl1251 *wl)
- {
--	memset(wl->stats.fw_stats, 0, sizeof(*wl->stats.fw_stats));
-+	if (wl->stats.fw_stats != NULL)
-+		memset(wl->stats.fw_stats, 0, sizeof(*wl->stats.fw_stats));
- 	wl->stats.retry_count = 0;
- 	wl->stats.excessive_retries = 0;
- }
-
-
+							Thanx, Paul
