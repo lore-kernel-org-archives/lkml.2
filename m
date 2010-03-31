@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381Ab0CaXK6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 19:10:58 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:41603 "EHLO smtp.gentoo.org"
+	id S1756608Ab0CaXQz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 19:16:55 -0400
+Received: from ozlabs.org ([203.10.76.45]:48813 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752590Ab0CaXK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 19:10:56 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH v2] NOMMU: implement vmap/vunmap with kmalloc
-Date: Wed, 31 Mar 2010 19:10:41 -0400
-User-Agent: KMail/1.13.1 (Linux/2.6.33.1; KDE/4.4.1; x86_64; ; )
-Cc: uclinux-dev@uclinux.org, David McCullough <davidm@snapgear.com>,
-       Greg Ungerer <gerg@uclinux.org>, Paul Mundt <lethal@linux-sh.org>,
-       linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
-References: <19891.1270076813@redhat.com> <14998.1270055484@redhat.com> <19923.1270076874@redhat.com>
-In-Reply-To: <19923.1270076874@redhat.com>
+	id S1754576Ab0CaXQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 19:16:54 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH] x86: Make e820_remove_range to handle all covered case
+Date: Thu, 1 Apr 2010 09:46:47 +1030
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; i686; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+References: <201003301238.43620.rusty@rustcorp.com.au> <4BB18E55.6090903@kernel.org>
+In-Reply-To: <4BB18E55.6090903@kernel.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart3294520.skhYGag6QH";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201003311910.43861.vapier@gentoo.org>
+Message-Id: <201004010946.47934.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart3294520.skhYGag6QH
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Tue, 30 Mar 2010 04:08:29 pm Yinghai Lu wrote:
+> 
+> Rusty found on lguest with trim_bios_range, max_pfn is not right anymore, and
+> looks e820_remove_range does not work right.
+> 
+> [    0.000000] BIOS-provided physical RAM map:
+> [    0.000000]  LGUEST: 0000000000000000 - 0000000004000000 (usable)
+> [    0.000000] Notice: NX (Execute Disable) protection missing in CPU or disabled in BIOS!
+> [    0.000000] DMI not present or invalid.
+> [    0.000000] last_pfn = 0x3fa0 max_arch_pfn = 0x100000
+> [    0.000000] init_memory_mapping: 0000000000000000-0000000003fa0000
+> 
+> root cause is: the e820_remove_range doesn't handle that all cover case.
+> e820_remove_range(BIOS_START, BIOS_END - BIOS_start, ,,)
+> get miss one left range.
+> 
+> Make that is corresponding to e820_update_range() to handle that case too.
 
-On Wednesday 31 March 2010 19:07:54 David Howells wrote:
-> David Howells wrote:
-> > > how about putting this implementation into like vmap_nommu() and only
-> > > rewriting vmap() to vmap_nommu() when we know it's safe ?  such as th=
-is
-> > > firmware case ?
-> >=20
-> > Well, I'd argue it's _not_ vmap(), so it doesn't really make sense to
-> > call it such.  Perhaps some better name?  Perhaps vcopy()?
+Tested-by: Rusty Russell <rusty@rustcorp.com.au>
 
-fair point
+Please put in -urgent...
 
-> How about vcoalesce()?
-
-WFM, as does something like vmerge() ...
-=2Dmike
-
---nextPart3294520.skhYGag6QH
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.14 (GNU/Linux)
-
-iQIcBAABAgAGBQJLs9ZzAAoJEEFjO5/oN/WBMa0QAMbHnOZ69NiuVAlbAuQu41x5
-ivbwf0E7muaaCy+7osv4TgNr3kXQUoGnYTXfQ7qQ/GFpd1zWnIP9lp2dMRs/FlEO
-he5HRTWkjVldiZF170adKif+bTfwmdNRwunqHgxBiyr0siL+vn2CBt4NGqiDq7/c
-5dtVeKy3zAQ9ghEwPKGMCrdYtDV3L5TwED9fNE6Vtxy5uS1tesAv2PAqqp5ktSv/
-ab7yjuvyridGWf0ahwWHUcUB9yaIDacoPL8COPwlBeGAUGbgImyJ1jm2MfPTJyMZ
-Dx4EvCj7Wk8bWAmBn8gO3vnXm11h519YDzaZAfnPUe0b1WdXMIxikV7H/PZQdkfT
-D4rRLhylJ1BEKsuLR+hxENG1ggQQTLzqpqwhMojzzTG1fEm2g8YYWs7bHa9a7l+U
-thRhA4iRBMdN8E/r48BEcDTqIq1RHbRVNnUZhpXtPr9+hVjZkChuNLbVQXWgoZ0d
-M67HXng2zjKVN2wdIKdVKP88Xx91/ChThAx8JhDL1BWCd6NQrDBqENwk+i0R2QdG
-kM8yAy3y5sLNzi+27eWzB0YyBC+qLJF7n4hDPaXNBHd2nThTWFlmxLaeC5nxnhmV
-1/r0nT6okyJM5d0UN0sDUeKNCdSLgoAiXwQBGujny4TilTGvbo9vzRVdzPwtNM6v
-mDIPMLcqKm8oR8gsgrFX
-=58A7
------END PGP SIGNATURE-----
-
---nextPart3294520.skhYGag6QH--
+Thanks,
+Rusty.
