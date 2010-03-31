@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab0CaWSP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 18:18:15 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56740 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754373Ab0CaWSN (ORCPT
+	id S1757300Ab0CaWUm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 18:20:42 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:51044 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756505Ab0CaWUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 18:18:13 -0400
-Date: Wed, 31 Mar 2010 15:17:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-       linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-       Serge Hallyn <serue@us.ibm.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Sukadev Bhattiprolu <sukadev@us.ibm.com>
-Subject: Re: [2.6.31 and later] "struct pid" leak.
-Message-Id: <20100331151719.8a92b302.akpm@linux-foundation.org>
-In-Reply-To: <tnxbpe5ygfy.fsf@e102109-lin.cambridge.arm.com>
-References: <201003272121.ADE39095.JLFHOOMtSVOFQF@I-love.SAKURA.ne.jp>
-	<tnxbpe5ygfy.fsf@e102109-lin.cambridge.arm.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 31 Mar 2010 18:20:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=sBTaS9LYjiFrRCeWf001s7OG8p2J76QokjNEtd/A1Sv33g/fKr+fW9ovT55fKgZpmD
+         U6OkLllHxDKVvdVwEFV7fOwpM2CABePtiZfNq6s3rd2kzjGWkSK1yo/dtUil5N9w0ohO
+         9S+P+d+B/mMzAjZtt8+8Gi1Ln8+c6iQAbweVc=
+Date: Thu, 1 Apr 2010 00:20:41 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Roland Dreier <rdreier@cisco.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+       Matthew Wilcox <matthew@wil.cx>, Thomas Gleixner <tglx@linutronix.de>,
+       jblunck@suse.de, Alan Cox <alan@linux.intel.com>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
+Message-ID: <20100331222040.GG5163@nowhere>
+References: <201003242240.54907.arnd@arndb.de> <adazl1ogn0o.fsf@roland-alpha.cisco.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <adazl1ogn0o.fsf@roland-alpha.cisco.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Mar 2010 16:31:13 +0100
-Catalin Marinas <catalin.marinas@arm.com> wrote:
+On Wed, Mar 31, 2010 at 03:11:03PM -0700, Roland Dreier wrote:
+> Hi Arnd,
+> 
+> Looking at your tree, I see you have commit 753dd249 ("perf_event: use
+> nonseekable_open") that does:
+> 
+>  > --- a/kernel/perf_event.c
+>  > +++ b/kernel/perf_event.c
+>  > @@ -2515,6 +2515,8 @@ static int perf_fasync(int fd, struct file *filp, int on)
+>  >  }
+>  >  
+>  >  static const struct file_operations perf_fops = {
+>  > +       .open                   = nonseekable_open,
+>  > +       .llseek                 = no_llseek,
+>  >         .release                = perf_release,
+>  >         .read                   = perf_read,
+>  >         .poll                   = perf_poll,
+> 
+> But if I understand this correctly, the assignment to .open is at best
+> useless -- these file_operations are only used via anon_inode_getfd()
+> and so there is no possible path that can call the .open method.  Or am
+> I missing something?
+> 
+> (The same applies to the kvm_main.c changes too)
 
-> Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> wrote:
-> > I got below report with 2.6.33.1 .
-> >
-> > unreferenced object 0xde144600 (size 64):
-> >   comm "init", pid 1, jiffies 4294678101 (age 291.508s)
-> >   hex dump (first 32 bytes):
-> >     02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> >     00 00 00 00 04 76 ae de d1 76 43 c0 d6 08 00 00  .....v...vC.....
-> >   backtrace:
-> >     [<c0481704>] create_object+0x121/0x1ef
-> >     [<c05f546b>] kmemleak_alloc+0x25/0x42
-> >     [<c047e326>] kmemleak_alloc_recursive+0x1c/0x22
-> >     [<c047e36e>] kmem_cache_alloc+0x42/0x68
-> >     [<c0437701>] alloc_pid+0x19/0x288
-> >     [<c0428acc>] copy_process+0x95a/0xdac
-> >     [<c04290d8>] do_fork+0x129/0x261
-> >     [<c0407de5>] sys_clone+0x1f/0x24
-> >     [<c040292d>] ptregs_clone+0x15/0x28
-> >     [<ffffffff>] 0xffffffff
-> > unreferenced object 0xdfa96a40 (size 64):
-> >   comm "login", pid 2259, jiffies 4294719437 (age 250.179s)
-> >   hex dump (first 32 bytes):
-> >     02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> >     00 00 00 00 60 39 ae de d1 76 43 c0 bb 09 00 00  ....`9...vC.....
-> >   backtrace:
-> >     [<c0481704>] create_object+0x121/0x1ef
-> >     [<c05f546b>] kmemleak_alloc+0x25/0x42
-> >     [<c047e326>] kmemleak_alloc_recursive+0x1c/0x22
-> >     [<c047e36e>] kmem_cache_alloc+0x42/0x68
-> >     [<c0437701>] alloc_pid+0x19/0x288
-> >     [<c0428acc>] copy_process+0x95a/0xdac
-> >     [<c04290d8>] do_fork+0x129/0x261
-> >     [<c0407de5>] sys_clone+0x1f/0x24
-> >     [<c040292d>] ptregs_clone+0x15/0x28
-> >     [<ffffffff>] 0xffffffff
-> 
-> I reported similar leaks last year -
-> http://lkml.org/lkml/2009/7/8/422. There is some analysis in the thread
-> above of the reference counting but I couldn't figure out where it goes
-> wrong. It looks to me like there isn't any reference to a struct pid
-> block but its reference count is 2.
-> 
-> There is a bugzilla entry as well -
-> https://bugzilla.kernel.org/show_bug.cgi?id=13868
-> 
 
-Let's bug some people by cc'ing them ;)
+Good point, I'll update that.
+
+Thanks.
+
