@@ -1,78 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757272Ab0CaTvc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 15:51:32 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:55294 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755628Ab0CaTvb (ORCPT
+	id S1757456Ab0CaTwd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 15:52:33 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:42357 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab0CaTwb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 15:51:31 -0400
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, iommu@lists.linux-foundation.org,
-       joerg.roedel@amd.com, hbabu@us.ibm.com, kexec@lists.infradead.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] amd iommu: force flush of iommu prior during shutdown
-References: <20100331152417.GB13406@hmsreliant.think-freely.org>
-	<20100331155430.GF14011@redhat.com>
-	<20100331182824.GC13406@hmsreliant.think-freely.org>
-	<m1wrwsuxn9.fsf@fess.ebiederm.org>
-	<20100331191811.GD13406@hmsreliant.think-freely.org>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Wed, 31 Mar 2010 12:51:25 -0700
-In-Reply-To: <20100331191811.GD13406@hmsreliant.think-freely.org> (Neil Horman's message of "Wed\, 31 Mar 2010 15\:18\:11 -0400")
-Message-ID: <m1sk7guv5u.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Wed, 31 Mar 2010 15:52:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=QqZQewf+fdbjOeA7v59/fcP81O5N+3fJ2fs+/fUBxX09pC6F93cjjBJBfd2uXPuFrq
+         J9k+U8xCyn8lWSIEgkFN/gu91I1KGpahu6zRUJKuflz8BmyEfr9ri1I5GhA+RgPgvCib
+         AtnpzTcwI/qM1RO2lehdN065E0xTt8vpHBcJY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: nhorman@tuxdriver.com, linux-kernel@vger.kernel.org, kexec@lists.infradead.org, hbabu@us.ibm.com, joerg.roedel@amd.com, iommu@lists.linux-foundation.org, vgoyal@redhat.com
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+In-Reply-To: <201003310125.26266.laurent.pinchart@ideasonboard.com>
+References: <45cc95261003301455u10e6ee24pfb66176bfb279d1@mail.gmail.com> 
+	<201003310125.26266.laurent.pinchart@ideasonboard.com>
+From: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>
+Date: Wed, 31 Mar 2010 21:51:59 +0200
+Message-ID: <v2x45cc95261003311251idfdc9b8anb7b2060618611d30@mail.gmail.com>
+Subject: Re: webcam problem after suspend/hibernate
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Neil Horman <nhorman@tuxdriver.com> writes:
+Hi,
 
-> On Wed, Mar 31, 2010 at 11:57:46AM -0700, Eric W. Biederman wrote:
->> Neil Horman <nhorman@tuxdriver.com> writes:
->> 
->> > On Wed, Mar 31, 2010 at 11:54:30AM -0400, Vivek Goyal wrote:
->> 
->> >> So this call amd_iommu_flush_all_devices() will be able to tell devices
->> >> that don't do any more DMAs and hence it is safe to reprogram iommu
->> >> mapping entries.
->> >> 
->> > It blocks the cpu until any pending DMA operations are complete.  Hmm, as I
->> > think about it, there is still a small possibility that a device like a NIC
->> > which has several buffers pre-dma-mapped could start a new dma before we
->> > completely disabled the iommu, althought thats small.  I never saw that in my
->> > testing, but hitting that would be fairly difficult I think, since its literally
->> > just a few hundred cycles between the flush and the actual hardware disable
->> > operation.
->> >
->> > According to this though:
->> > http://support.amd.com/us/Processor_TechDocs/34434-IOMMU-Rev_1.26_2-11-09.pdf
->> > That window could be closed fairly easily, but simply disabling read and write
->> > permissions for each device table entry prior to calling flush.  If we do that,
->> > then flush the device table, any subsequently started dma operation would just
->> > get noted in the error log, which we could ignore, since we're abot to boot to
->> > the kdump kernel anyway.
->> >
->> > Would you like me to respin w/ that modification?
->> 
->> Disabling permissions on all devices sounds good for the new virtualization
->> capable iommus.  I think older iommus will still be challenged.  I think
->> on x86 we have simply been able to avoid using those older iommus.
->> 
->> I like the direction you are going but please let's put this in a
->> paranoid iommu enable routine.
->> 
-> You mean like initialize the device table so that all devices are default
-> disabled on boot, and then selectively enable them (perhaps during a
-> device_attach)?  I can give that a spin.
+Do you mean the dmesg output ?
+A full dmesg is included in this address :
+http://pastebin.com/8XU619Uk
+Not in all suspend/hibernate the problem comes, only in some of them
+and this included dmesg output is just after a non working case of
+webcam fault.
 
-That sounds good.
 
-Eric
+I also have found this in `/var/log/messages | grep uvcvideo`
+Mar 31 00:31:16 linux-l365 kernel: [399905.714743] usbcore:
+deregistering interface driver uvcvideo
+Mar 31 00:31:24 linux-l365 kernel: [399914.121386] uvcvideo: Found UVC
+1.00 device LG Webcam (0c45:62c0)
+Mar 31 00:31:24 linux-l365 kernel: [399914.135661] usbcore: registered
+new interface driver uvcvideo
+
+and in `cat /proc/modules | grep uvcvideo`
+uvcvideo 65900 0 - Live 0xfa386000
+videodev 39168 1 uvcvideo, Live 0xf8244000
+v4l1_compat 16004 2 uvcvideo,videodev, Live 0xf822f000
+
+
+And thanks in advance for you help.
+
+
+
+On Wed, Mar 31, 2010 at 1:25 AM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> Hi Mohamed,
+>
+> On Tuesday 30 March 2010 23:55:38 Mohamed Ikbel Boulabiar wrote:
+>> Hi,
+>>
+>> After suspend/resume, I have my webcam no more working.
+>> The /dev/video0 file still exist, but the webcam won't be used until I do
+>> this : rmmod     uvcvideo
+>> modprobe uvcvideo
+>> (2.6.31.8-0.1)
+>>
+>> This is may be caused by a bug somewhere.
+>> These are more information about my hardware :
+>>
+>> I have Microdia webcam
+>> `lsusb`
+>> Bus 001 Device 004: ID 0c45:62c0 Microdia Sonix USB 2.0 Camera
+>>
+>> on openSUSE 11.2 `uname -a`
+>> Linux linux-l365 2.6.31.8-0.1-desktop #1 SMP PREEMPT 2009-12-15
+>> 23:55:40 +0100 i686 i686 i386 GNU/Linux
+>>
+>> `hwinfo --usb`
+>>
+>> : USB 00.0: 0000 Unclassified device
+>>
+>>   [Created at usb.122]
+>>   UDI:
+>> /org/freedesktop/Hal/devices/usb_device_c45_62c0_1_3_2_1_7_if0_logicaldev_
+>> input Unique ID: Uc5H.F0c0EBqBP10
+>>   Parent ID: k4bc.9T1GDCLyFd9
+>>   SysFS ID: /devices/pci0000:00/0000:00:1d.7/usb1/1-4/1-4:1.0
+>>   SysFS BusID: 1-4:1.0
+>>   Hardware Class: unknown
+>>   Model: "Microdia LG Webcam"
+>>   Hotplug: USB
+>>   Vendor: usb 0x0c45 "Microdia"
+>>   Device: usb 0x62c0 "LG Webcam"
+>>   Revision: "32.17"
+>>   Serial ID: "1.3.2.1.7"
+>>   Driver: "uvcvideo"
+>>   Driver Modules: "uvcvideo"
+>>   Device File: /dev/input/event8
+>>   Device Files: /dev/input/event8, /dev/char/13:72,
+>> /dev/input/by-id/usb-LG_Innotek_LG_Webcam_1.3.2.1.7-event-if00,
+>> /dev/input/by-path/pci-0000:00:1d.7-usb-0:4:1.0-event
+>>   Device Number: char 13:72
+>>   Speed: 480 Mbps
+>>   Module Alias: "usb:v0C45p62C0d3217dcEFdsc02dp01ic0Eisc01ip00"
+>>   Driver Info #0:
+>>     Driver Status: uvcvideo is active
+>>     Driver Activation Cmd: "modprobe uvcvideo"
+>>   Config Status: cfg=no, avail=yes, need=no, active=unknown
+>>   Attached to: #4 (Hub)
+>>
+>>
+>> If there is a scenario you propose me to do to detect from where comes
+>> the problem, I can apply it.
+>
+> Could you please post the messages printed by the uvcvideo driver and USB core
+> to the kernel log when you suspend and resume your system ? Thanks.
+>
+> --
+> Regards,
+>
+> Laurent Pinchart
+>
