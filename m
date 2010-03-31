@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932466Ab0CaVZv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 17:25:51 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:36939 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932413Ab0CaVZs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 17:25:48 -0400
-Date: Wed, 31 Mar 2010 22:25:45 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [git pull] x86 platform driver tree
-Message-ID: <20100331212545.GA25249@srcf.ucam.org>
+	id S932511Ab0CaV0Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 17:26:25 -0400
+Received: from sous-sol.org ([216.99.217.87]:56141 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932413Ab0CaV0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 17:26:22 -0400
+Date: Wed, 31 Mar 2010 14:25:35 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: iommu@lists.linux-foundation.org, joerg.roedel@amd.com, vgoyal@redhat.com,
+       hbabu@us.ibm.com, kexec@lists.infradead.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] amd iommu: force flush of iommu prior during shutdown
+Message-ID: <20100331212535.GR29241@sequoia.sous-sol.org>
+References: <20100331152417.GB13406@hmsreliant.think-freely.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20100331152417.GB13406@hmsreliant.think-freely.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minor fix to asus-laptop, along with a new driver that enables hotkeys 
-on newer Acer devices. It has no impact on any existing drivers, so I 
-think it's safe to include at this point.
+* Neil Horman (nhorman@tuxdriver.com) wrote:
+> Flush iommu during shutdown
+> 
+> When using an iommu, its possible, if a kdump kernel boot follows a primary
+> kernel crash, that dma operations might still be in flight from the previous
+> kernel during the kdump kernel boot.  This can lead to memory corruption,
+> crashes, and other erroneous behavior, specifically I've seen it manifest during
+> a kdump boot as endless iommu error log entries of the form:
+> AMD-Vi: Event logged [IO_PAGE_FAULT device=00:14.1 domain=0x000d
+> address=0x000000000245a0c0 flags=0x0070]
 
-The following changes since commit 2eaa9cfdf33b8d7fb7aff27792192e0019ae8fc6:
-  Linus Torvalds (1):
-        Linux 2.6.34-rc3
+We've already fixed this problem once before, so some code shift must
+have brought it back.  Personally, I prefer to do this on the bringup
+path than the teardown path.  Besides keeping the teardown path as
+simple as possible (goal is to get to kdump kernel asap), there's also
+reason to competely flush on startup in genernal in case BIOS has done
+anything unsavory.
 
-are available in the git repository at:
-
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.git for_linus
-
-Corentin Chary (1):
-      asus-laptop: fix warning in asus_handle_init
-
-Yong Wang (1):
-      eeepc-wmi: new driver for WMI based hotkeys on Eee PC laptops
-
- drivers/platform/x86/Kconfig       |   10 +++
- drivers/platform/x86/Makefile      |    1 +
- drivers/platform/x86/asus-laptop.c |    4 +-
- drivers/platform/x86/eeepc-wmi.c   |  157 ++++++++++++++++++++++++++++++++++++
- 4 files changed, 170 insertions(+), 2 deletions(-)
- create mode 100644 drivers/platform/x86/eeepc-wmi.c
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+thanks,
+-chris
