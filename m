@@ -1,108 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757100Ab0CaPhE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 11:37:04 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:33105 "EHLO e4.ny.us.ibm.com"
+	id S1756995Ab0CaPtS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 11:49:18 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:35787 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752199Ab0CaPg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 11:36:59 -0400
-Date: Wed, 31 Mar 2010 08:36:56 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rcu: don't call rcu_preempt_note_context_switch() in
- rcu_check_callbacks()
-Message-ID: <20100331153656.GA4623@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4BB014DF.9030905@cn.fujitsu.com>
- <20100329044236.GB2343@linux.vnet.ibm.com>
- <4BB1C7C5.5070700@cn.fujitsu.com>
- <20100330160339.GB2513@linux.vnet.ibm.com>
+	id S1753331Ab0CaPtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 11:49:17 -0400
+In-Reply-To: <1270044116.1616.26.camel@laptop>
+References: <4B560ACD.4040206@linux.vnet.ibm.com>	 <d3f22a1003290213x7d7904an59d50eb6a8616133@mail.gmail.com>
+	 <1269934931.8575.6.camel@minggr.sh.intel.com>	 <4BB22BB0.8030208@linux.vnet.ibm.com> <1269969305.5258.479.camel@laptop>
+	 <4BB27764.2060802@linux.vnet.ibm.com> <1270044116.1616.26.camel@laptop>
+Subject: Re: [RFC] perf_events: support for uncore a.k.a. nest units
+X-KeepSent: 10DAFDB7:4623FE5C-862576F7:00569322;
+ type=4; name=$KeepSent
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Andi Kleen <andi@firstfloor.org>, cel@linux.vnet.ibm.com,
+       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       Stephane Eranian <eranian@googlemail.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Lin Ming <ming.m.lin@intel.com>, Philip Mucci <mucci@eecs.utk.edu>,
+       Paul Mackerras <paulus@samba.org>, Steven Rostedt <rostedt@goodmis.org>,
+       Dan Terpstra <terpstra@eecs.utk.edu>,
+       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+X-Mailer: Lotus Notes Release 8.0.2 HF623 January 16, 2009
+Message-ID: <OF10DAFDB7.4623FE5C-ON862576F7.00569322-862576F7.0056F0E4@us.ibm.com>
+From: Maynard Johnson <mpjohn@us.ibm.com>
+Date: Wed, 31 Mar 2010 10:49:07 -0500
+X-MIMETrack: Serialize by Router on d27ml103/27/M/IBM(Release 8.5.1FP1|January 05, 2010) at
+ 03/31/2010 10:49:12 AM
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100330160339.GB2513@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 30, 2010 at 09:03:39AM -0700, Paul E. McKenney wrote:
-> On Tue, Mar 30, 2010 at 05:43:33PM +0800, Lai Jiangshan wrote:
-> > Paul E. McKenney wrote:
-> > > On Mon, Mar 29, 2010 at 10:47:59AM +0800, Lai Jiangshan wrote:
-> > >> Content-Type: text/plain; charset=UTF-8
-> > >> Content-Transfer-Encoding: 7bit
-> > >>
-> > >>
-> > >> Even though in user mode or idle mode, rcu_check_callbacks() is not
-> > >> context switch, so we don't call rcu_preempt_note_context_switch()
-> > >> in rcu_check_callbacks().
-> > >>
-> > >> Though there is no harm that calls rcu_preempt_note_context_switch()
-> > >> in rcu_check_callbacks(), but it is waste.
-> > >>
-> > >> rcu_check_callbacks()
-> > >>   rcu_sched_qs()
-> > >>     rcu_preempt_note_context_switch()
-> > >>        Now, ->rcu_read_lock_nesting == 0, so we just calls
-> > >>        rcu_preempt_qs(), but, rcu_preempt_check_callbacks()
-> > >>        will call it again and set the ->rcu_read_unlock_special
-> > >>        correct again.
-> > >>
-> > >> So let rcu_preempt_check_callbacks() handle things for us.
-> > > 
-> > > Nice!!!
-> > > 
-> > > But how about naming the new function that invokes
-> > > rcu_preempt_note_context_switch() something like
-> > > rcu_sched_note_context_switch(), and then leaving the
-> > > name of rcu_sched_qs() the same (rather than changing
-> > > it to __rcu_sched_qs(), as below)?
-> > > 
-> > > This way, the names clearly call out what the function
-> > > is doing.
-> > > 
-> > 
-> > If I understand right, it will become this:
-> > 
-> > schedule() / run_ksoftirqd() / rcu_needs_cpu()
-> >   rcu_sched_note_context_switch()
-> >     rcu_sched_qs()
-> >     rcu_preempt_note_context_switch()
-> 
-> Wow!!!  That was a scare!!!  I misread "run_ksoftirqd()" as
-> "do_softirq().  ;-)
-> 
-> And I am not seeing a call to rcu_sched_qs() in rcu_needs_cpu()...
-> 
-> Here is how I believe it needs to go:
-> 
-> 	schedule():
-> 		rcu_sched_note_context_switch()
-> 			rcu_sched_qs()
-> 			rcu_preempt_note_context_switch()
-> 
-> 	run_ksoftirqd():
-> 		rcu_sched_qs()
-> 
-> 	rcu_check_callbacks():
-> 		rcu_sched_qs() [if idle etc.]
-> 		rcu_bh_qs() [if not in softirq]
-> 
-> The reason we don't need rcu_bh_qs() from run_ksoftirqd() is that
-> __do_softirq() already calls rcu_bh_qs().
-> 
-> Make sense, or am I missing something?
+Peter Zijlstra <peterz@infradead.org> wrote on 03/31/2010 09:01:56 AM:
 
-And I was in fact missing something.  The rcu_preempt_note_context_switch()
-function currently combines some work that needs to happen only at
-context-switch time with work that needs to happen all the time.
+> [image removed]
+>
+> Re: [RFC] perf_events: support for uncore a.k.a. nest units
+>
+> Peter Zijlstra
+>
+> to:
+>
+> Corey Ashford
+>
+> 03/31/2010 09:02 AM
+>
+> Cc:
+>
+> Lin Ming, Ingo Molnar, LKML, Andi Kleen, Paul Mackerras, Stephane
+> Eranian, Frederic Weisbecker, Xiao Guangrong, Dan Terpstra, Philip
+> Mucci, Maynard Johnson, cel, Steven Rostedt, Arnaldo Carvalho de
+> Melo, Masami Hiramatsu
+>
+> On Tue, 2010-03-30 at 15:12 -0700, Corey Ashford wrote:
+> >
+> > > Initially I'd not allow per-pmu-per-task contexts
+> > > because then things like perf_event_task_sched_out() would get rather
+> > > complex.
+> >
+> > Definitely.  I don't think it makes sense to have per-task context on
+> > nest/uncore PMUs.  At least we haven't found any justification for it.
+>
+> For uncore no, but there is also the hw-breakpoint stuff that is being
+> presented as a pmu, for those it would make sense to have a separate
+> per-task context.
+hw-breakpoint presented as a pmu?  hmmmm.  IMHO, this is an example where
+shoehorning something into the perf_events subsystem that logically doesn't
+belong there just makes for more complexity in the code.
+>
+> But doing multiple per-task contexts is something for a next step
+> indeed.
+>
+[snip]
 
-At first glance, it appears that the big "if" statement in
-rcu_preempt_note_context_switch() need only happen for context switches.
-The remaining lines must happen unconditionally for context switches,
-and should be executed from rcu_check_callbacks() only if the current
-CPU is not in an RCU read-side critical section.
-
-							Thanx, Paul
