@@ -1,78 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214Ab0CaOlb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 10:41:31 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49151 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755209Ab0CaOl3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 10:41:29 -0400
+	id S1756288Ab0CaOnU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 10:43:20 -0400
+Received: from imr2.ericy.com ([198.24.6.3]:48993 "EHLO imr2.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755907Ab0CaOnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 10:43:19 -0400
+X-Greylist: delayed 33169 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Mar 2010 10:43:19 EDT
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: linux-kernel@vger.kernel.org
+CC: mingo@redhat.com, Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [PATCH][RESEND] x86: Do not write to VGA memory space if CONFIG_VGA_CONSOLE is undefined
+Date: Wed, 31 Mar 2010 07:41:19 -0700
+Message-ID: <1270046479-4486-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.0.87.g0901d
 MIME-Version: 1.0
-In-Reply-To: <20100331070648.GA23391@pengutronix.de>
-References: <1269972879-27400-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br> 
-	<20100331070648.GA23391@pengutronix.de>
-From: Marcelo Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-Date: Wed, 31 Mar 2010 11:41:07 -0300
-Message-ID: <q2ncecb6d8f1003310741g542debabs1fd8044983cc1c37@mail.gmail.com>
-Subject: Re: [PATCH] ARM: pcmcia: Adds nanoEngine PCMCIA support.
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Russell King <linux@arm.linux.org.uk>, Ralf Baechle <ralf@linux-mips.org>,
-       Eric Miao <eric.y.miao@gmail.com>,
-       Dominik Brodowski <linux@dominikbrodowski.net>,
-       Manuel Lauss <manuel.lauss@gmail.com>,
-       Dmitry Artamonow <mad_soft@inbox.ru>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolgram,
+Current early_printk code writes into VGA memory space even
+if CONFIG_VGA_CONSOLE is undefined. This can cause problems
+if there is no VGA device in the system, especially if the memory
+is used by another device.
 
-On Wed, Mar 31, 2010 at 04:06, Wolfram Sang <w.sang@pengutronix.de> wrote:
-> Hi Marcelo,
->
-> On Tue, Mar 30, 2010 at 03:14:39PM -0300, Marcelo Roberto Jimenez wrote:
->> This patch adds nanoEngine PCMCIA support, with support for two sockets.
->> ...
->> +
->> +     memset(state, 0, sizeof(struct pcmcia_state));
->> +     switch (i) {
->> +     case 0:
->> +             state->ready    =  (levels & GPIO_PC_READY0)    ? 1 : 0;
->> +             state->detect   = !(levels & GPIO_PC_CD0)       ? 1 : 0;
->
-> If lines are added at a later stage, all this indentation might have to be
-> redone. This breaks 'git blame'. Please just one space around operators as
-> suggested in CodingStyle, chapter 3.1.
+Fix problem by redirecting output to early_serial_console
+if CONFIG_VGA_CONSOLE is undefined.
 
-Sorry, I didn't know about that. I ran the patch through checkpatch.pl
-and it did not complain, so I thought it was ok. I will change that
-and resubmit.
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+---
+Sorry if you have seen this before. I seem to have trouble with our mailer.
 
->> +
->> +int pcmcia_nanoengine_init(struct device *dev)
->> +{
->> +     int ret = -ENODEV;
->> +
->> +     printk(KERN_INFO "BSE nanoEngine pcmcia support by "
->> +             "Miguel Freitas & Marcelo Jimenez.\n");
->
-> Is this really necessary? Log would get quite messy if all drivers do this.
-> I haven't checked, can't you just use MODULE_AUTHOR here?
+ arch/x86/kernel/early_printk.c |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
 
-I can remove it, in fact. It was there at the first version of the
-driver, so I just added my name. In this case, this file becomes part
-of another module, in this case the module is "sa1100_cs", so I don't
-think I could add MODULE_AUTHOR there, but I could use some advice
-here.
+diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
+index b9c830c..1942039 100644
+--- a/arch/x86/kernel/early_printk.c
++++ b/arch/x86/kernel/early_printk.c
+@@ -160,8 +160,16 @@ static struct console early_serial_console = {
+ 	.index =	-1,
+ };
+ 
++#ifdef CONFIG_VGA_CONSOLE
++#define EARLY_CONSOLE	early_vga_console
++static const int have_vga_console = 1;
++#else
++#define EARLY_CONSOLE	early_serial_console
++static const int have_vga_console;
++#endif
++
+ /* Direct interface for emergencies */
+-static struct console *early_console = &early_vga_console;
++static struct console *early_console = &EARLY_CONSOLE;
+ static int __initdata early_console_initialized;
+ 
+ asmlinkage void early_printk(const char *fmt, ...)
+@@ -216,7 +224,7 @@ static int __init setup_early_printk(char *buf)
+ 			early_serial_init(buf + 4);
+ 			early_console_register(&early_serial_console, keep);
+ 		}
+-		if (!strncmp(buf, "vga", 3) &&
++		if (have_vga_console && !strncmp(buf, "vga", 3) &&
+ 		    boot_params.screen_info.orig_video_isVGA == 1) {
+ 			max_xpos = boot_params.screen_info.orig_video_cols;
+ 			max_ypos = boot_params.screen_info.orig_video_lines;
+-- 
+1.7.0.87.g0901d
 
->
-> --
-> Pengutronix e.K.                           | Wolfram Sang                |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
-Thanks for your comments,
-Marcelo.
