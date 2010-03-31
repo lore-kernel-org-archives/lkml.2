@@ -1,101 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758024Ab0CaSAu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 14:00:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4881 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757808Ab0CaSAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 14:00:49 -0400
-Date: Wed, 31 Mar 2010 19:58:36 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       nishimura@mxp.nes.nec.co.jp,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+	id S1758045Ab0CaSCq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 14:02:46 -0400
+Received: from web94911.mail.in2.yahoo.com ([203.104.17.176]:44661 "HELO
+	web94911.mail.in2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757642Ab0CaSCn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 14:02:43 -0400
+Message-ID: <157465.85166.qm@web94911.mail.in2.yahoo.com>
+X-YMail-OSG: fhAI5AIVM1lyQXbX8nWfpf.n2rHBxNSrPBBPZ7gBwUE0qMy
+ df6c2aQfgm3sHK7Ts8xA1gsObbO5LyLqaG6SwqB21HPATu4jmnJJFbQdby6x
+ 3yIB0L3zKbJYwfzWegLKfpJ_.QdryoHgRB2ydk0vdTDPfixLjpjxE.Uh33xw
+ zCQc8sq_mO.PxSg_21i6QE6EbSf7EGZFHxLrMXSfh3nXhW2JNkwunbWR0p8j
+ Fvo0ShuLNPmYPPJkb2SALGp1nCDbN8HkeJICO9OmkEadrNJ6r9Wspg.ghJga
+ dPwQZp9rxpOMcScDQCEzehMc-
+X-RocketYMMF: pavan_savoy
+X-Mailer: YahooMailClassic/10.0.8 YahooMailWebService/0.8.100.260964
+Date: Wed, 31 Mar 2010 23:32:39 +0530 (IST)
+From: Pavan Savoy <pavan_savoy@ti.com>
+Reply-To: pavan_savoy@ti.com
+Subject: Re: [PATCH] drivers:staging: sources for ST core
+To: Greg KH <gregkh@suse.de>
+Cc: Marcel Holtmann <marcel@holtmann.org>, alan@lxorguk.ukuu.org.uk,
        linux-kernel@vger.kernel.org
-Subject: Re: [patch] oom: give current access to memory reserves if it has
-	been killed
-Message-ID: <20100331175836.GA11635@redhat.com>
-References: <1269447905-5939-1-git-send-email-anfei.zhou@gmail.com> <20100326150805.f5853d1c.akpm@linux-foundation.org> <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330154659.GA12416@redhat.com> <alpine.DEB.2.00.1003301320020.5234@chino.kir.corp.google.com>
+In-Reply-To: <20100331173049.GD8906@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1003301320020.5234@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30, David Rientjes wrote:
->
-> On Tue, 30 Mar 2010, Oleg Nesterov wrote:
->
-> > Note that __oom_kill_task() does force_sig(SIGKILL) which assumes that
-> > ->sighand != NULL. This is not true if out_of_memory() is called after
-> > current has already passed exit_notify().
->
-> We have an even bigger problem if current is in the oom killer at
-> exit_notify() since it has already detached its ->mm in exit_mm() :)
+--- On Wed, 31/3/10, Greg KH <gregkh@suse.de> wrote:
 
-Can't understand... I thought that in theory even kmalloc(1) can trigger
-oom.
+> From: Greg KH <gregkh@suse.de>
+> Subject: Re: [PATCH] drivers:staging: sources for ST core
+> To: "Pavan Savoy" <pavan_savoy@ti.com>
+> Cc: "Marcel Holtmann" <marcel@holtmann.org>, alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org
+> Date: Wednesday, 31 March, 2010, 11:00 PM
+> On Wed, Mar 31, 2010 at 04:20:22AM
+> +0530, Pavan Savoy wrote:
+> > 
+> > --- On Wed, 31/3/10, Pavan Savoy <pavan_savoy@ti.com>
+> wrote:
+> > 
+> > > From: Pavan Savoy <pavan_savoy@ti.com>
+> > > Subject: Re: [PATCH] drivers:staging: sources for
+> ST core
+> > > To: gregkh@suse.de
+> > > Cc: "Marcel Holtmann" <marcel@holtmann.org>,
+> alan@lxorguk.ukuu.org.uk
+> > > Date: Wednesday, 31 March, 2010, 4:11 AM
+> > > --- On Wed, 31/3/10, Pavan Savoy
+> > > <pavan_savoy@yahoo.co.in>
+> > > wrote:
+> > > 
+> > > > From: Pavan Savoy <pavan_savoy@yahoo.co.in>
+> > > > Subject: Re: [PATCH] drivers:staging:
+> sources for ST
+> > > core
+> > > > To: "pavan_savoy@yahoo.co.in"
+> > > <pavan_savoy@yahoo.co.in>
+> > > > Date: Wednesday, 31 March, 2010, 4:06 AM
+> > > > > From: Greg KH [gregkh@suse.de]
+> > > > > Sent: Wednesday, March 31, 2010 3:17
+> AM
+> > > > > To: Savoy, Pavan
+> > > > > Cc: Alan Cox; marcel@holtmann.org;
+> > > > > linux-kernel@vger.kernel.org
+> > > > > Subject: Re: [PATCH] drivers:staging:
+> sources for
+> > > ST
+> > > > core
+> > > > > 
+> > > > > On Wed, Mar 31, 2010 at 02:35:55AM
+> +0530, Pavan
+> > > Savoy
+> > > > > wrote:
+> > > > > > So, something like the below is
+> ok, I have
+> > > > defined my
+> > > > > own pr_fmt,
+> > > > > > however default log level on my
+> board is 7,
+> > > and
+> > > > hence
+> > > > > pr_info is a bit
+> > > > > > more annoying than usual.
+> > > > > 
+> > > > > No, a driver should use dev_dbg() and
+> other
+> > > > dev_printk()
+> > > > > calls, not
+> > > > > pr_debug() or anything like that.
+> > > > > 
+> > > > > Please don't roll your own formats, use
+> the ones
+> > > that
+> > > > are
+> > > > > well defined
+> > > > > and uniquely describe your driver and
+> device in
+> > > a
+> > > > format
+> > > > > that the whole
+> > > > > kernel uses.
+> > > > 
+> > > 
+> > 
+> > forgot lkml the last time..
+> > 
+> > Nope, I couldn't find any instance of struct device at
+> all,
+> > I need that to use dev_dbg right ? - None of the
+> tty_*
+> > structure accessible by ldiscs seems to have a
+> reference to
+> > it.
+> > Also I happened to look at other line discipline
+> driver, if
+> > they have a smarter way of doing this, Nope - n_tty,
+> n_hdlc,
+> > n_slip all seem to use plain old printks.
+> >  
+> > Any clues ??
+> 
+> Sorry, you are correct, we only have a struct kref right
+> now for tty
+> core objects, not a struct device.  So nevermind, this
+> should be fine.
 
-Say, right after exit_mm() we are doing acct_process(), and f_op->write()
-needs a page. So, you are saying that in this case __page_cache_alloc()
-can never trigger out_of_memory() ?
+Oh cool. Thanks, So that leaves me with 1 pending item from Alan which is to tie these 3 modules (KIM/Core/LL) up onto a TTY device specific context, and avoid all global ptrs.
 
-> > IOW, unless I missed something, it is very easy to hide the process
-> > from oom-kill:
-> >
-> > 	int main()
-> > 	{
-> > 		pthread_create(memory_hog_func);
-> > 		syscall(__NR_exit);
-> > 	}
-> >
->
-> The check for !p->mm was moved in the -mm tree (and the oom killer was
-> entirely rewritten in that tree, so I encourage you to work off of it
-> instead
+So without that is it good to go in ?
 
-OK, but I guess this !p->mm check is still wrong for the same reason.
-In fact I do not understand why it is needed in select_bad_process()
-right before oom_badness() which checks ->mm too (and this check is
-equally wrong).
-
-> with
-> oom-avoid-race-for-oom-killed-tasks-detaching-mm-prior-to-exit.patch to
-> even after the check for PF_EXITING.  This is set in the exit path before
-> the ->mm is detached
-
-Yes. Then I do not understand "if (!p->mm)" completely.
-
-> so if the oom killer finds an already exiting task,
-> it will become a no-op since it should eventually free memory and avoids a
-> needless oom kill.
-
-No, afaics, And this reminds that I already complained about this
-PF_EXITING check.
-
-Once again, p is the group leader. It can be dead (no ->mm, PF_EXITING
-is set) but it can have sub-threads. This means, unless I missed something,
-any user can trivially disable select_bad_process() forever.
+> thanks,
+> 
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe
+> linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
 
-Well. Looks like, -mm has a lot of changes in oom_kill.c. Perhaps it
-would be better to fix these mt bugs first...
-
-Say, oom_forkbomb_penalty() does list_for_each_entry(tsk->children).
-Again, this is not right even if we forget about !child->mm check.
-This list_for_each_entry() can only see the processes forked by the
-main thread.
-
-Likewise, oom_kill_process()->list_for_each_entry() is not right too.
-
-Hmm. Why oom_forkbomb_penalty() does thread_group_cputime() under
-task_lock() ? It seems, ->alloc_lock() is only needed for get_mm_rss().
-
-Oleg.
-
+      Your Mail works best with the New Yahoo Optimized IE8. Get it NOW! http://downloads.yahoo.com/in/internetexplorer/
