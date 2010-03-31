@@ -1,46 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932511Ab0CaV0Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 17:26:25 -0400
-Received: from sous-sol.org ([216.99.217.87]:56141 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932413Ab0CaV0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 17:26:22 -0400
-Date: Wed, 31 Mar 2010 14:25:35 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: iommu@lists.linux-foundation.org, joerg.roedel@amd.com, vgoyal@redhat.com,
-       hbabu@us.ibm.com, kexec@lists.infradead.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] amd iommu: force flush of iommu prior during shutdown
-Message-ID: <20100331212535.GR29241@sequoia.sous-sol.org>
-References: <20100331152417.GB13406@hmsreliant.think-freely.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100331152417.GB13406@hmsreliant.think-freely.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S932451Ab0CaV3a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 17:29:30 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40984 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753360Ab0CaV32 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 17:29:28 -0400
+Date: Wed, 31 Mar 2010 14:28:21 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Rabin Vincent <rabin@rab.in>,
+       lkml <linux-kernel@vger.kernel.org>, penberg@cs.helsinki.fi,
+       cl@linux-foundation.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       linux-arch@vger.kernel.org, David Howells <dhowells@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: start_kernel(): bug: interrupts were enabled early
+Message-Id: <20100331142821.425555e9.akpm@linux-foundation.org>
+In-Reply-To: <4BB3BAD6.50308@zytor.com>
+References: <20100325194100.GA2364@debian>
+	<20100331134048.da4e35a7.akpm@linux-foundation.org>
+	<4BB3B4DB.7040904@kernel.org>
+	<20100331135220.c6695a51.akpm@linux-foundation.org>
+	<4BB3BAD6.50308@zytor.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Neil Horman (nhorman@tuxdriver.com) wrote:
-> Flush iommu during shutdown
+On Wed, 31 Mar 2010 14:12:54 -0700
+"H. Peter Anvin" <hpa@zytor.com> wrote:
+
+> On 03/31/2010 01:52 PM, Andrew Morton wrote:
+> > On Wed, 31 Mar 2010 13:47:23 -0700
+> > Yinghai Lu <yinghai@kernel.org> wrote:
+> > 
+> >> spin_unlock_irq from arm is different from other archs?
+> > 
+> > No, spin_unlock_irq() unconditionally enables interrupts on all
+> > architectures.
 > 
-> When using an iommu, its possible, if a kdump kernel boot follows a primary
-> kernel crash, that dma operations might still be in flight from the previous
-> kernel during the kdump kernel boot.  This can lead to memory corruption,
-> crashes, and other erroneous behavior, specifically I've seen it manifest during
-> a kdump boot as endless iommu error log entries of the form:
-> AMD-Vi: Event logged [IO_PAGE_FAULT device=00:14.1 domain=0x000d
-> address=0x000000000245a0c0 flags=0x0070]
+> So I found checkin 60ba96e546da45d9e22bb04b84971a25684e4d46 in the
+> bk-historic git tree:
+> 
+> [PATCH] rwsem: Make rwsems use interrupt disabling spinlocks
+> 
+> The attached patch makes read/write semaphores use interrupt disabling
+> spinlocks in the slow path, thus rendering the up functions and trylock
+> functions available for use in interrupt context.  This matches the
+> regular semaphore behaviour.
+> 
+> I've assumed that the normal down functions must be called with
+> interrupts enabled (since they might schedule), and used the
+> irq-disabling spinlock variants that don't save the flags.
+> 
+> Signed-Off-By: David Howells <dhowells@redhat.com>
+> Tested-by: Badari Pulavarty <pbadari@us.ibm.com>
+> Signed-off-by: Linus Torvalds <torvalds@osdl.org>
+> 
+> What we have here is a case of this assumption being violated, because
+> the lock is taken with interrupts disabled on a path where contention
+> cannot happen (because the code is single-threaded at this point), but
+> the lock is taken due to reuse of generic code.
+> 
+> The obvious way to fix this would be to use
+> spin_lock_irqsave..spin_lock_irqrestore in __down_read as well as in the
+> other locations; I don't have a good feel for what the cost of doing so
+> would be, though.  On x86 it's fairly expensive simply because the only
+> way to save the state is to push it on the stack, which the compiler
+> doesn't deal well with, but this code isn't used on x86.
+> 
 
-We've already fixed this problem once before, so some code shift must
-have brought it back.  Personally, I prefer to do this on the bringup
-path than the teardown path.  Besides keeping the teardown path as
-simple as possible (goal is to get to kdump kernel asap), there's also
-reason to competely flush on startup in genernal in case BIOS has done
-anything unsavory.
+Well, it's all a bit nasty.  kmem_cache_create() does a lot of stuff,
+including calling into the page allocator with GFP_KERNEL - expecting
+kmem_cache_create() to preserve local_irq_disable() is a bit optimistic.
 
-thanks,
--chris
+radix_tree_init() calls hotcpu_notifier() which also does
+mutex_lock(&cpu_add_remove_lock);
+
+The easiest fix is to reposition the interrutps-are-now-enabled point
+in start_kernel().  But I have a feeling that some versions of
+early_irq_init() won't like that.
+
+
