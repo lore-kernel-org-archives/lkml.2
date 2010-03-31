@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416Ab0CaII6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 04:08:58 -0400
-Received: from mta-2.ms.rz.RWTH-Aachen.DE ([134.130.7.73]:56845 "EHLO
-	mta-2.ms.rz.rwth-aachen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932177Ab0CaIIy (ORCPT
+	id S932469Ab0CaIKM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 04:10:12 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43737 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932315Ab0CaIKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 04:08:54 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=ISO-8859-15
-X-IronPort-AV: E=Sophos;i="4.51,340,1267398000";   d="scan'208";a="51051660"
-Message-id: <4BB30304.7060300@nets.rwth-aachen.de>
-Date: Wed, 31 Mar 2010 10:08:36 +0200
-From: Arnd Hannemann <hannemann@nets.rwth-aachen.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8)
- Gecko/20100322 Lightning/1.0b2pre Thunderbird/3.0.3
-To: Martin Teufel <teufel@informatik.uni-frankfurt.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: AMD Geode LX WDT (geode-mfgpt)
-References: <20100331045414.GA3241@hekate.rbi.informatik.uni-frankfurt.de>
-In-reply-to: <20100331045414.GA3241@hekate.rbi.informatik.uni-frankfurt.de>
-X-Enigmail-Version: 1.0.1
+	Wed, 31 Mar 2010 04:10:08 -0400
+Date: Wed, 31 Mar 2010 10:10:04 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Bryan Wu <bryan.wu@canonical.com>, gerg@uclinux.org,
+       amit.kucheria@canonical.com, kernel-team@lists.ubuntu.com,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] netdev/fec.c: add phylib supporting to enable carrier
+	detection
+Message-ID: <20100331081004.GB23391@pengutronix.de>
+References: <1269597052-10104-1-git-send-email-bryan.wu@canonical.com> <20100331075746.GO2241@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KFztAG8eRSV9hGtP"
+Content-Disposition: inline
+In-Reply-To: <20100331075746.GO2241@pengutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 31.03.2010 06:54, schrieb Martin Teufel:
 
-> I have some ALIX boards (SBC) with AMD Geode LX CPUs and their companion
-> device CS5536 and am using Debian on them. I didn't care about the
-> integrated watchdog timer (in the CS5536) so far. Recently I did, but
-> neither the CONFIG_GEODE_WDT was set in the debian kernel (2.6.26), nor
-> the CONFIG_GEODE_MFGPT_TIMER. So I compiled my own debian 2.6.26 geode
-> kernel (CONFIG_MGEODE_LX=y, CONFIG_GEODE_WDT=y,
-> CONFIG_GEODE_MFGPT_TIMER=y, CONFIG_CRYPTO_DEV_GEODE=y etc.).
-> 
-> My problem is that the geode-mfgpt doesn't find any timers:
-> 
-> [    0.204012] geode-mfgpt:  0 MFGPT timers available.
-> [    0.208013] mfgpt-timer:  Could not allocate a MFPGT timer
-> ...
-> [    2.284029] geodewdt:  No timers were available
-> 
-> My question is: Why doesn't it? Is this a known bug? If so, is it
-> already fixed in a newer kernel version?
+--KFztAG8eRSV9hGtP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Your BIOS may already use all available timers.
-AFAIR only TinyBios with ALIX leaves timers for the OS.
-Award and CoreBoot both use them all.
+> With rounding this would be:
+>=20
+> (clk_get_rate() + 4999999) / 5000000
 
-Best regards,
-Arnd
+Better use DIV_ROUND_UP(clk_get_rate(), 5000000)?
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--KFztAG8eRSV9hGtP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkuzA1wACgkQD27XaX1/VRvefwCcD/QU+dlkXWFsDrjDTt7idHPQ
+/boAn3KKMX9GVpD2HgJpBU2YpElzNmPT
+=IK7w
+-----END PGP SIGNATURE-----
+
+--KFztAG8eRSV9hGtP--
