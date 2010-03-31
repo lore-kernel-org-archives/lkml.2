@@ -1,48 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933161Ab0CaKBG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 06:01:06 -0400
-Received: from mailservice.tudelft.nl ([130.161.131.5]:35937 "EHLO
-	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933136Ab0CaKBE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 06:01:04 -0400
-X-Greylist: delayed 1774 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Mar 2010 06:01:04 EDT
-X-Spam-Flag: NO
-X-Spam-Score: -14.389
-Message-ID: <4BB3166C.70408@tudelft.nl>
-Date: Wed, 31 Mar 2010 11:31:24 +0200
-From: =?ISO-8859-1?Q?=C9ric_Piel?= <E.A.B.Piel@tudelft.nl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100325 Mandriva/3.0.3-2mdv2010.1 (2010.1) Thunderbird/3.0.3
+	id S933156Ab0CaKDi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 06:03:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14642 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933112Ab0CaKDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 06:03:37 -0400
+Date: Wed, 31 Mar 2010 12:03:13 +0200
+From: Jiri Pirko <jpirko@redhat.com>
+To: Anders Darander <anders.darander@gmail.com>
+Cc: Haavard Skinnemoen <hskinnemoen@atmel.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       Erik Waling <erik.waling@konftel.com>,
+       Patrick McHardy <kaber@trash.net>, Anders Darander <ad@datarespons.se>,
+       Grant Likely <grant.likely@secretlab.ca>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MACB: Set PHY address in kernel parameters
+Message-ID: <20100331100313.GA4053@psychotron.lab.eng.brq.redhat.com>
+References: <1270021902-6556-1-git-send-email-anders.darander@gmail.com>
 MIME-Version: 1.0
-To: Zeno Davatz <zdavatz@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.34-rc3 - nvidia: module license 'NVIDIA' taints kernel.
-References: <y2r40a4ed591003310218he411c263p62915a3e0a5a8de3@mail.gmail.com>
-In-Reply-To: <y2r40a4ed591003310218he411c263p62915a3e0a5a8de3@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1270021902-6556-1-git-send-email-anders.darander@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/03/10 11:18, Zeno Davatz wrote:
-> Ok, I just booted into the new 2.6.34-rc3 Kernel. Looks Lovely!
-:
-> resource map sanity check conflict: 0x9f800 0xa07ff 0xa0000 0xbffff
-:
-> Info: mapping multiple BARs. Your kernel is fine.
-:
+Wed, Mar 31, 2010 at 09:51:42AM CEST, anders.darander@gmail.com wrote:
+>From: Anders Darander <ad@datarespons.se>
+>
+>Add the possibility to set the phy address. This is needed if an integrated
+>switch is connected to the MAC, as it is often the case that the highest port
+>is the one connected to the MAC of the MCU.
+>
+>E.g. in the case of the Micrel KSZ8873, port 3 is the one to connect to the
+>MCU, thus, the MAC needs to connect to phy address 0x03, instead of the first
+>phy found.
+>
+>Signed-off-by: Anders Darander <ad@datarespons.se>
+>---
+> drivers/net/macb.c |   14 +++++++++++++-
+> 1 files changed, 13 insertions(+), 1 deletions(-)
+>
+>diff --git a/drivers/net/macb.c b/drivers/net/macb.c
+>index c8a18a6..9b4e301 100644
+>--- a/drivers/net/macb.c
+>+++ b/drivers/net/macb.c
+>@@ -53,6 +53,14 @@
+> #define MACB_RX_INT_FLAGS	(MACB_BIT(RCOMP) | MACB_BIT(RXUBR)	\
+> 				 | MACB_BIT(ISR_ROVR))
 > 
-> Can I ignore this or is this of any use for the list and the Kernel improvement?
-Hi,
-This is not tainting, it's a resource conflict. That check has just been
-added to the kernel, that's why it did not happen before. As mentioned
-in the log, your kernel is fine.
+>+/*
+>+ * Setup PHY probeing
+>+ */
+>+
+>+static int phy_addr = PHY_MAX_ADDR;
+>+module_param(phy_addr, ushort, 0);
+>+MODULE_PARAM_DESC(phy_addr, "PHY address connected to the MACB");
+>+
+> static void __macb_set_hwaddr(struct macb *bp)
+> {
+> 	u32 bottom;
+>@@ -193,7 +201,11 @@ static int macb_mii_probe(struct net_device *dev)
+> 	struct eth_platform_data *pdata;
+> 	int ret;
+> 
+>-	phydev = phy_find_first(bp->mii_bus);
+>+	if (phy_addr >= PHY_MAX_ADDRESS)
+>+		phydev = phy_find_first(bp->mii_bus);
+>+	else
+>+		phydev = bp->mii_bus->phy_map[phy_addr];
+>+
+> 	if (!phydev) {
+> 		printk (KERN_ERR "%s: no PHY found\n", dev->name);
+> 		return -1;
+>-- 
+>1.7.0.3
+>
 
-As the conflict is happening with the proprietary driver, the only
-action you can do is to contact NVidia. Maybe they'll fix it in a later
-version...
+This is really ugly :( Should be done differently, more general. I've been
+thinking about this for a while. Maybe the solution is to integrate the switch
+into DSA subsystem. See net/dsa. Not sure though...
 
-See you,
-Eric
+Jirka
