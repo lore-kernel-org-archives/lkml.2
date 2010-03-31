@@ -1,80 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756286Ab0CaSS2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 14:18:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41198 "EHLO mx2.suse.de"
+	id S1755802Ab0CaSYw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 14:24:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41308 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755378Ab0CaSS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 14:18:27 -0400
-Date: Wed, 31 Mar 2010 10:38:31 -0700
+	id S1750962Ab0CaSYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 14:24:50 -0400
+Date: Wed, 31 Mar 2010 11:19:53 -0700
 From: Greg KH <gregkh@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk
-Subject: Re: 4 stable kernel review cycles starting
-Message-ID: <20100331173831.GA9180@suse.de>
-References: <20100330230338.GA28642@kroah.com> <20100331044445.GU3335@dastard>
+To: Pavan Savoy <pavan_savoy@ti.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>, alan@lxorguk.ukuu.org.uk,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers:staging: sources for ST core
+Message-ID: <20100331181953.GA10191@suse.de>
+References: <20100331173049.GD8906@suse.de> <157465.85166.qm@web94911.mail.in2.yahoo.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100331044445.GU3335@dastard>
+In-Reply-To: <157465.85166.qm@web94911.mail.in2.yahoo.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 03:44:45PM +1100, Dave Chinner wrote:
-> On Tue, Mar 30, 2010 at 04:03:38PM -0700, Greg KH wrote:
-> > Hi all,
+On Wed, Mar 31, 2010 at 11:32:39PM +0530, Pavan Savoy wrote:
+> --- On Wed, 31/3/10, Greg KH <gregkh@suse.de> wrote:
+> 
+> > From: Greg KH <gregkh@suse.de>
+> > Subject: Re: [PATCH] drivers:staging: sources for ST core
+> > To: "Pavan Savoy" <pavan_savoy@ti.com>
+> > Cc: "Marcel Holtmann" <marcel@holtmann.org>, alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org
+> > Date: Wednesday, 31 March, 2010, 11:00 PM
+> > On Wed, Mar 31, 2010 at 04:20:22AM
+> > +0530, Pavan Savoy wrote:
+> > > 
+> > > --- On Wed, 31/3/10, Pavan Savoy <pavan_savoy@ti.com>
+> > wrote:
+> > > 
+> > > > From: Pavan Savoy <pavan_savoy@ti.com>
+> > > > Subject: Re: [PATCH] drivers:staging: sources for
+> > ST core
+> > > > To: gregkh@suse.de
+> > > > Cc: "Marcel Holtmann" <marcel@holtmann.org>,
+> > alan@lxorguk.ukuu.org.uk
+> > > > Date: Wednesday, 31 March, 2010, 4:11 AM
+> > > > --- On Wed, 31/3/10, Pavan Savoy
+> > > > <pavan_savoy@yahoo.co.in>
+> > > > wrote:
+> > > > 
+> > > > > From: Pavan Savoy <pavan_savoy@yahoo.co.in>
+> > > > > Subject: Re: [PATCH] drivers:staging:
+> > sources for ST
+> > > > core
+> > > > > To: "pavan_savoy@yahoo.co.in"
+> > > > <pavan_savoy@yahoo.co.in>
+> > > > > Date: Wednesday, 31 March, 2010, 4:06 AM
+> > > > > > From: Greg KH [gregkh@suse.de]
+> > > > > > Sent: Wednesday, March 31, 2010 3:17
+> > AM
+> > > > > > To: Savoy, Pavan
+> > > > > > Cc: Alan Cox; marcel@holtmann.org;
+> > > > > > linux-kernel@vger.kernel.org
+> > > > > > Subject: Re: [PATCH] drivers:staging:
+> > sources for
+> > > > ST
+> > > > > core
+> > > > > > 
+> > > > > > On Wed, Mar 31, 2010 at 02:35:55AM
+> > +0530, Pavan
+> > > > Savoy
+> > > > > > wrote:
+> > > > > > > So, something like the below is
+> > ok, I have
+> > > > > defined my
+> > > > > > own pr_fmt,
+> > > > > > > however default log level on my
+> > board is 7,
+> > > > and
+> > > > > hence
+> > > > > > pr_info is a bit
+> > > > > > > more annoying than usual.
+> > > > > > 
+> > > > > > No, a driver should use dev_dbg() and
+> > other
+> > > > > dev_printk()
+> > > > > > calls, not
+> > > > > > pr_debug() or anything like that.
+> > > > > > 
+> > > > > > Please don't roll your own formats, use
+> > the ones
+> > > > that
+> > > > > are
+> > > > > > well defined
+> > > > > > and uniquely describe your driver and
+> > device in
+> > > > a
+> > > > > format
+> > > > > > that the whole
+> > > > > > kernel uses.
+> > > > > 
+> > > > 
+> > > 
+> > > forgot lkml the last time..
+> > > 
+> > > Nope, I couldn't find any instance of struct device at
+> > all,
+> > > I need that to use dev_dbg right ? - None of the
+> > tty_*
+> > > structure accessible by ldiscs seems to have a
+> > reference to
+> > > it.
+> > > Also I happened to look at other line discipline
+> > driver, if
+> > > they have a smarter way of doing this, Nope - n_tty,
+> > n_hdlc,
+> > > n_slip all seem to use plain old printks.
+> > >? 
+> > > Any clues ??
 > > 
-> > Well, I up and moved cities and caused a bunch of stable patches to be
-> > backlogged.  I've caught up with all of the ones that were marked as
-> > being wished to be applied to the stable trees, and still have a bunch
-> > of pending requests still queued up in my mailbox.
-> > 
-> > But, due to the number of the current patches already applied, it is
-> > time to just let these go and work on the other pending stuff after
-> > this.
+> > Sorry, you are correct, we only have a struct kref right
+> > now for tty
+> > core objects, not a struct device.? So nevermind, this
+> > should be fine.
 > 
-> Greg, I send a series of 19 patches for XFS updates to stable@kernel.org
-> back on the 12th March for 2.6.32 (subject was "[PATCH 0/19] xfs:
-> 2.6.32.y stable tree updates").
+> Oh cool. Thanks, So that leaves me with 1 pending item from Alan which is to tie these 3 modules (KIM/Core/LL) up onto a TTY device specific context, and avoid all global ptrs.
 > 
-> The patches were cc'd to the XFS list and they made it there:
-> 
-> http://oss.sgi.com/archives/xfs/2010-03/msg00125.html
-> 
-> so I'm wondering if you've got them queued up or not or whether
-> I need to resend them to you....
-> 
-> > So don't worry, if anyone has asked for some patches to be applied to
-> > some stable trees, and you don't see it here, just give it some time,
-> > I'm still catching up on things (hey, I'm just happy I have an internet
-> > connection again...)
-> 
-> I sent these prior to the last stable release that had this same
-> comment, so I didn't get worried that they had been missed. Now they
-> are missing from the next stable release, I'm getting worried. :/
+> So without that is it good to go in ?
 
-Yes, they are still in my "to-apply" queue.  I also have a series of
-ext4 and kvm patches as well as a mess of wireless patches to wade
-through, so you are in good company.
-
-The issue is that applying individual patches like this is more
-"difficult" than just handling patches that are already marked in
-Linus's kernel tree as to be added to the stable queues.  So it takes a
-bit more time and effort to get to those patches, while still keeping up
-with the series like you, and other developers, sent.
-
-Combine that with packing up my house and moving a few hundred miles
-away, loosing internet access for over a week, and trying to catch up
-with the patches that accumulated during that time, and we ended up with
-these already-large stable releases that I figured was better to get out
-now, than wait a few days to add a few hundred more patches to them.
-
-So I will get to these patches, don't worry, hopefully my self-inflicted
-mess of moving will calm down soon and I will catch up with the backlog.
+Yes, care to do that and resubmit?
 
 thanks,
 
