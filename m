@@ -1,47 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756394Ab0CaEwt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 00:52:49 -0400
-Received: from tundra.namei.org ([65.99.196.166]:43332 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755657Ab0CaEws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 00:52:48 -0400
-Date: Wed, 31 Mar 2010 15:49:06 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Ingo Molnar <mingo@elte.hu>
-cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-       linux-kernel@vger.kernel.org, airlied@linux.ie
-Subject: Config NO_BOOTMEM breaks my amd64 box
-Message-ID: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1756595Ab0CaExM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 00:53:12 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:41095 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755172Ab0CaExJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 00:53:09 -0400
+Date: Tue, 30 Mar 2010 23:53:11 -0500
+From: "Serge E. Hallyn" <serue@us.ibm.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
+       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, linux-fsdevel@vger.kernel.org,
+       Eric Dumazet <eric.dumazet@gmail.com>, Benjamin LaHaise <bcrl@lhnet.ca>,
+       netdev@vger.kernel.org, Benjamin Thery <benjamin.thery@bull.net>
+Subject: Re: [PATCH 3/6] sysfs: Implement sysfs tagged directory support.
+Message-ID: <20100331045311.GA10144@us.ibm.com>
+References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
+ <1269973889-25260-3-git-send-email-ebiederm@xmission.com>
+ <20100331024346.GB27001@us.ibm.com>
+ <m1zl1prwie.fsf@fess.ebiederm.org>
+ <20100331040234.GA7184@us.ibm.com>
+ <m1eij1rued.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1eij1rued.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please make NO_BOOTMEM default to n, at least for amd64, where I've found 
-that it leads to all kinds of strange, undebuggable boot hangs and errors 
-(with relatively current Fedora development userland).
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> "Serge E. Hallyn" <serue@us.ibm.com> writes:
+> 
+> >> > This is a huge patch, and for the most part I haven't found any problems,
+> >> > except potentially this one.  It looks like sysfs_rename_link() checks
+> >> > old_ns and new_ns before calling sysfs_rename().  But sysfs_mutex isn't
+> >> > taken until sysfs_rename().  sysfs_rename() will then proceed to do
+> >> > the rename, and unconditionally set sd->ns = new_ns.
+> >> >
+> >> > In the meantime, it seems as though new_ns might have exited, and
+> >> > sysfs_exit_ns() unset new_ns on the new parent dir.  This means that
+> >> > we'll end up with the namespace code having thought that it cleared
+> >> > all new_ns's, but this file will have snuck by.  Meaning an action on
+> >> > the renamed file might dereference a freed namespace.
+> >> >
+> >> > Or am I way off base?
+> >> 
+> >> There are a couple of reasons why this is not a concern.
+> >> 
+> >> The only new_ns we clear is on the super block.
+> >
+> > Oops, yeah - I failed to note that.
+> >
+> >> sysfs itself never dereferences namespace arguments and only uses them
+> >> for comparison purposes.  They are just cookies that cause comparisons
+> >> to differ from a sysfs perspective.
+> >> 
+> >> The upper levels are responsible for taking care of them selves
+> >> sysfs_mutex does not protect them.  If you compile out sysfs the sysfs
+> >> mutex is not even present.
+> >> 
+> >> In the worst case if the upper levels mess up we will have a stale
+> >> token that we never dereference on a sysfs dirent, which in a pathological
+> >> case will happen to be the same as a new namespace and we will have
+> >> a spurious directory entry that we have leaked.
+> >> 
+> >> In practice we move all network devices (and thus sysfs files) out of
+> >> a network namespace before allowing it to exit.
+> >
+> > Ok, that makes sense too - so any tagged sysfs file created for some object
+> > in a ns must be deleted at netns exit.  I could imagine someone expecting
+> > that if the ns exits, the tasks in the ns will exit, causing the sysfs
+> > mount to be umounted and auto-deleting the files?  (which of course would
+> > get buggered if task in other ns was examining the mount which it got
+> > through mounts propagation)  We'll have to make sure noone does that.  Should
+> > it be documented somewhere, or is that obvious enough?
+> 
+> In general it is simply true.  An object in a namespace either keeps
+> the namespace alive, or it is destroyed when the namespace exits
+> because the object is unreachable.
 
-Also, the help text for the item makes little sense to a non-expert in 
-this area:
+I guess you'd hope so :)
 
+> So the only possible problem I can think of is of ordering the object
+> destruction and calling sysfs_exit_ns.    So for the moment I am going
+> to vote that this is simply obvious enough not to worry about in detail.
+> 
+> It is also pretty obvious if you trace the code and ask how does sysfs
+> dirent X get destroyed.
+> 
+> Today there is just a wee bit of automatic file destruction at the sysfs
+> level.    The device layer does not take advantage of it, and in hierarchical
+> situation it leads to bugs.  So even I think if we document anything it
+> should be that sysfs can not safely automatically delete anything, for
+> you.
+> 
+> Eric
 
-" ---help---
-          Use early_res directly instead of bootmem before slab is ready.
-                - allocator (buddy) [generic]
-                - early allocator (bootmem) [generic]
-                - very early allocator (reserve_early*()) [x86]
-                - very very early allocator (early brk model) [x86]
-          So reduce one layer between early allocator to final allocator."
+Ok.  I'm convinced.
 
-I had no idea what all this meant, so trusted the default=y and then spent 
-several hours wondering why everything was breaking, and would likley not 
-have figured it out in linear time without a suggestion from Dave Airlie.
-
-
-- James
--- 
-James Morris
-<jmorris@namei.org>
+thanks,
+-serge
