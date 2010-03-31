@@ -1,83 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053Ab0CaCmm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 22:42:42 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54335 "EHLO hera.kernel.org"
+	id S1758063Ab0CaCnp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 22:43:45 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:35946 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756119Ab0CaCmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 22:42:38 -0400
-Message-ID: <4BB2B65E.5030905@kernel.org>
-Date: Wed, 31 Mar 2010 11:41:34 +0900
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	id S1755115Ab0CaCnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 22:43:43 -0400
+Date: Tue, 30 Mar 2010 21:43:46 -0500
+From: "Serge E. Hallyn" <serue@us.ibm.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
+       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, linux-fsdevel@vger.kernel.org,
+       Eric Dumazet <eric.dumazet@gmail.com>, Benjamin LaHaise <bcrl@lhnet.ca>,
+       netdev@vger.kernel.org, Benjamin Thery <benjamin.thery@bull.net>
+Subject: Re: [PATCH 3/6] sysfs: Implement sysfs tagged directory support.
+Message-ID: <20100331024346.GB27001@us.ibm.com>
+References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
+ <1269973889-25260-3-git-send-email-ebiederm@xmission.com>
 MIME-Version: 1.0
-To: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       linux-kernel@vger.kernel.org, cl@linux-foundation.org, mingo@elte.hu,
-       adobriyan@gmail.com, tglx@linutronix.de, hpa@zytor.com,
-       yi.zhu@intel.com, reinette.chatre@intel.com, ilw@linux.intel.com,
-       Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 3/4] include cleanup: Update gfp.h and slab.h includes
- to prepare for breaking implicit slab.h inclusion from percpu.h
-References: <1269420538-18039-1-git-send-email-tj@kernel.org>	 <1269420538-18039-4-git-send-email-tj@kernel.org> <1269959410.16298.20.camel@useless.americas.hpqcorp.net>
-In-Reply-To: <1269959410.16298.20.camel@useless.americas.hpqcorp.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 31 Mar 2010 02:41:36 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269973889-25260-3-git-send-email-ebiederm@xmission.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 03/30/2010 11:30 PM, Lee Schermerhorn wrote:
-> I rebased your series atop the mmotm dated 24march to test my "generic
-> percpu numa_*_id()" series.  This largish patch [3/4] threw a few [13]
-> rejects.  I'll list them below.  You've said that you're going to submit
-> this to linux-next where it might not see the same rejects.  I built,
-> booted and am using the resulting kernel on x86_64.
-
-This series is already in linux-next from next-20100329.  I forgot to
-run slabh-sweep.py script on new code in linux-next which led to
-various build breakages.  Stephen fixed the ones which cause build
-failures and I later ran the script on linux-next and sent out patches
-to subsystem trees.  The good news is there was only one build
-breakage from mainline code.  All else were new code in linux-next.
-So, the conversion seems quite comprehensive.
-
-> Building with allyesconfig, I found 15 additional files in the mmotm
-> tree that will need an explicit include of slab.h added.  I have
-> attached a patch that addresses these.
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+>  int sysfs_rename(struct sysfs_dirent *sd,
+> -	struct sysfs_dirent *new_parent_sd, const char *new_name)
+> +	struct sysfs_dirent *new_parent_sd, const void *new_ns,
+> +	const char *new_name)
+>  {
+>  	const char *dup_name = NULL;
+>  	int error;
+> @@ -743,12 +789,12 @@ int sysfs_rename(struct sysfs_dirent *sd,
+>  	mutex_lock(&sysfs_mutex);
 > 
-> I have rebased my numa_*_id() series atop this mmotm, less the
-> percpu.h/percpu-defs.h hack that led you down this path.  That kernel
-> builds and boots fine.  I'm currently testing with and without
-> memoryless nodes.  So far, this series looks good.
+>  	error = 0;
+> -	if ((sd->s_parent == new_parent_sd) &&
+> +	if ((sd->s_parent == new_parent_sd) && (sd->s_ns == new_ns) &&
+>  	    (strcmp(sd->s_name, new_name) == 0))
+>  		goto out;	/* nothing to rename */
+> 
+>  	error = -EEXIST;
+> -	if (sysfs_find_dirent(new_parent_sd, new_name))
+> +	if (sysfs_find_dirent(new_parent_sd, new_ns, new_name))
+>  		goto out;
+> 
+>  	/* rename sysfs_dirent */
+> @@ -770,6 +816,7 @@ int sysfs_rename(struct sysfs_dirent *sd,
+>  		sd->s_parent = new_parent_sd;
+>  		sysfs_link_sibling(sd);
+>  	}
+> +	sd->s_ns = new_ns;
+> 
+>  	error = 0;
+>   out:
 
-Great, can you please retry mm once it pulls in linux-next from
-20100401?  That should have most of necessary fixes.
+...
 
->  drivers/hwmon/tmp102.c              |    1 +
->  drivers/input/misc/ad714x.c         |    1 +
->  drivers/input/misc/pcf8574_keypad.c |    1 +
->  drivers/leds/leds-input.c           |    1 +
->  drivers/misc/hwlat_detector.c       |    1 +
->  drivers/mtd/sm_ftl.c                |    1 +
->  drivers/vbus/bus-proxy.c            |    1 +
->  kernel/debug/kdb/kdb_support.c      |    1 +
->  sound/soc/codecs/twl6040.c          |    1 +
->  sound/usb/endpoint.c                |    1 +
->  sound/usb/format.c                  |    1 +
->  sound/usb/helper.c                  |    1 +
->  sound/usb/mixer_quirks.c            |    1 +
->  sound/usb/pcm.c                     |    1 +
->  sound/usb/quirks.c                  |    1 +
->  15 files changed, 15 insertions(+)
+> +void sysfs_exit_ns(enum kobj_ns_type type, const void *ns)
+> +{
+> +	struct super_block *sb;
+> +
+> +	mutex_lock(&sysfs_mutex);
+> +	spin_lock(&sb_lock);
+> +	list_for_each_entry(sb, &sysfs_fs_type.fs_supers, s_instances) {
+> +		struct sysfs_super_info *info = sysfs_info(sb);
+> +		/* Ignore superblocks that are in the process of unmounting */
+> +		if (sb->s_count <= S_BIAS)
+> +			continue;
+> +		/* Ignore superblocks with the wrong ns */
+> +		if (info->ns[type] != ns)
+> +			continue;
+> +		info->ns[type] = NULL;
+> +	}
+> +	spin_unlock(&sb_lock);
+> +	mutex_unlock(&sysfs_mutex);
+> +}
+> +
 
-Most of the above are the ones already fixed in linux-next.  Can you
-please try out next-20100330?
+..
 
-Thanks.
+> @@ -136,6 +138,7 @@ int sysfs_rename_link(struct kobject *kobj, struct kobject *targ,
+>  			const char *old, const char *new)
+>  {
+>  	struct sysfs_dirent *parent_sd, *sd = NULL;
+> +	const void *old_ns = NULL, *new_ns = NULL;
+>  	int result;
+> 
+>  	if (!kobj)
+> @@ -143,8 +146,11 @@ int sysfs_rename_link(struct kobject *kobj, struct kobject *targ,
+>  	else
+>  		parent_sd = kobj->sd;
+> 
+> +	if (targ->sd)
+> +		old_ns = targ->sd->s_ns;
+> +
+>  	result = -ENOENT;
+> -	sd = sysfs_get_dirent(parent_sd, old);
+> +	sd = sysfs_get_dirent(parent_sd, old_ns, old);
+>  	if (!sd)
+>  		goto out;
+> 
+> @@ -154,7 +160,10 @@ int sysfs_rename_link(struct kobject *kobj, struct kobject *targ,
+>  	if (sd->s_symlink.target_sd->s_dir.kobj != targ)
+>  		goto out;
+> 
+> -	result = sysfs_rename(sd, parent_sd, new);
+> +	if (sysfs_ns_type(parent_sd))
+> +		new_ns = targ->ktype->namespace(targ);
+> +
+> +	result = sysfs_rename(sd, parent_sd, new_ns, new);
+> 
+>  out:
+>  	sysfs_put(sd);
 
--- 
-tejun
+This is a huge patch, and for the most part I haven't found any problems,
+except potentially this one.  It looks like sysfs_rename_link() checks
+old_ns and new_ns before calling sysfs_rename().  But sysfs_mutex isn't
+taken until sysfs_rename().  sysfs_rename() will then proceed to do
+the rename, and unconditionally set sd->ns = new_ns.
+
+In the meantime, it seems as though new_ns might have exited, and
+sysfs_exit_ns() unset new_ns on the new parent dir.  This means that
+we'll end up with the namespace code having thought that it cleared
+all new_ns's, but this file will have snuck by.  Meaning an action on
+the renamed file might dereference a freed namespace.
+
+Or am I way off base?
+
+-serge
