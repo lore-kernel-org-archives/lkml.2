@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757300Ab0CaWUm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 18:20:42 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:51044 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756505Ab0CaWUl (ORCPT
+	id S1757375Ab0CaWbL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 18:31:11 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40504 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756619Ab0CaWbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 18:20:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=sBTaS9LYjiFrRCeWf001s7OG8p2J76QokjNEtd/A1Sv33g/fKr+fW9ovT55fKgZpmD
-         U6OkLllHxDKVvdVwEFV7fOwpM2CABePtiZfNq6s3rd2kzjGWkSK1yo/dtUil5N9w0ohO
-         9S+P+d+B/mMzAjZtt8+8Gi1Ln8+c6iQAbweVc=
-Date: Thu, 1 Apr 2010 00:20:41 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Roland Dreier <rdreier@cisco.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-       Matthew Wilcox <matthew@wil.cx>, Thomas Gleixner <tglx@linutronix.de>,
-       jblunck@suse.de, Alan Cox <alan@linux.intel.com>,
-       Ingo Molnar <mingo@elte.hu>
-Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
-Message-ID: <20100331222040.GG5163@nowhere>
-References: <201003242240.54907.arnd@arndb.de> <adazl1ogn0o.fsf@roland-alpha.cisco.com>
+	Wed, 31 Mar 2010 18:31:08 -0400
+Date: Thu, 1 Apr 2010 00:31:06 +0200
+From: Michael Grzeschik <mgr@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: rsc@pengutronix.de
+Subject: Issues with Patch: "sched: Improve latencies and throughput"
+Message-ID: <20100331223106.GJ10342@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <adazl1ogn0o.fsf@roland-alpha.cisco.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 21:22:48 up 11 days,  8:12, 23 users,  load average: 1.72, 2.70,
+	2.49
 User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: mgr@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 03:11:03PM -0700, Roland Dreier wrote:
-> Hi Arnd,
-> 
-> Looking at your tree, I see you have commit 753dd249 ("perf_event: use
-> nonseekable_open") that does:
-> 
->  > --- a/kernel/perf_event.c
->  > +++ b/kernel/perf_event.c
->  > @@ -2515,6 +2515,8 @@ static int perf_fasync(int fd, struct file *filp, int on)
->  >  }
->  >  
->  >  static const struct file_operations perf_fops = {
->  > +       .open                   = nonseekable_open,
->  > +       .llseek                 = no_llseek,
->  >         .release                = perf_release,
->  >         .read                   = perf_read,
->  >         .poll                   = perf_poll,
-> 
-> But if I understand this correctly, the assignment to .open is at best
-> useless -- these file_operations are only used via anon_inode_getfd()
-> and so there is no possible path that can call the .open method.  Or am
-> I missing something?
-> 
-> (The same applies to the kvm_main.c changes too)
+We are using an arm mx31 embedded cpu with the v2.6.34 Kernelrelease and
+realized some issues with the scheduling behaviour the patch "sched:
+Improve latencies and throughput" [1] by Mike Galbraith introduced to
+the kernel.
 
+When we used the alsa utility aplay to pipe some audio through an
+usbaudio device and put some scheduling overhead on the device, the
+amount of underruns, due to the not fast enough refilled ring buffer,
+was noticable increased with that patch [1] applied. Until we reverse
+applied the patch the amount of underruns was appreciable lower.
 
-Good point, I'll update that.
+That in fact is the opposite behaviour to its actual meaning.
 
-Thanks.
+[1] 0ec9fab3d186d9cbb00c0f694d4a260d07c198d9
 
+mgr
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
