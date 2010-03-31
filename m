@@ -1,140 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284Ab0CaEq7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 00:46:59 -0400
-Received: from gate.crashing.org ([63.228.1.57]:46613 "EHLO gate.crashing.org"
+	id S1756394Ab0CaEwt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 00:52:49 -0400
+Received: from tundra.namei.org ([65.99.196.166]:43332 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755458Ab0CaEq5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 00:46:57 -0400
-Subject: Re: [RFC v3] net: add PCINet driver
-Mime-Version: 1.0 (Apple Message framework v1077)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <20081105212225.GA17821@ovro.caltech.edu>
-Date: Tue, 30 Mar 2010 23:46:29 -0500
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-       netdev@vger.kernel.org, Stephen Hemminger <shemminger@vyatta.com>,
-       Arnd Bergmann <arnd@arndb.de>, Jan-Bernd Themann <THEMANN@de.ibm.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E924DFE1-9569-4805-9269-480F2D128636@kernel.crashing.org>
-References: <20081105212225.GA17821@ovro.caltech.edu>
-To: Ira Snyder <iws@ovro.caltech.edu>
-X-Mailer: Apple Mail (2.1077)
+	id S1755657Ab0CaEws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 00:52:48 -0400
+Date: Wed, 31 Mar 2010 15:49:06 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Ingo Molnar <mingo@elte.hu>
+cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+       linux-kernel@vger.kernel.org, airlied@linux.ie
+Subject: Config NO_BOOTMEM breaks my amd64 box
+Message-ID: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Please make NO_BOOTMEM default to n, at least for amd64, where I've found 
+that it leads to all kinds of strange, undebuggable boot hangs and errors 
+(with relatively current Fedora development userland).
 
-On Nov 5, 2008, at 3:22 PM, Ira Snyder wrote:
+Also, the help text for the item makes little sense to a non-expert in 
+this area:
 
-> This adds support to Linux for a virtual ethernet interface which uses the
-> PCI bus as its transport mechanism. It creates a simple, familiar, and fast
-> method of communication for two devices connected by a PCI interface.
-> 
-> I have implemented client support for the Freescale MPC8349EMDS board,
-> which is capable of running in PCI Agent mode (It acts like a PCI card, but
-> is a complete PowerPC computer, running Linux). It is almost certainly
-> trivially ported to any MPC83xx system.
-> 
-> It was developed to work in a CompactPCI crate of computers, one of which
-> is a relatively standard x86 system (acting as the host) and many PowerPC
-> systems (acting as clients).
-> 
-> RFC v2 -> RFC v3:
->  * use inline functions for accessing struct circ_buf_desc
->  * use pointer dereferencing on PowerPC local memory instead of ioread32()
->  * move IMMR and buffer descriptor accessors inside drivers
->  * update for dma_mapping_error() API changes
->  * use minimal locking primitives (i.e. spin_lock() instead of _irqsave())
->  * always disable checksumming, PCI is reliable
->  * replace typedef cbd_t with struct circ_buf_desc
->  * use get_immrbase() to get IMMR register offsets
-> 
-> RFC v1 -> RFC v2:
->  * remove vim modelines
->  * use net_device->name in request_irq(), for irqbalance
->  * remove unneccesary wqt_get_stats(), use default get_stats() instead
->  * use dev_printk() and friends
->  * add message unit to MPC8349EMDS dts file
-> 
-> Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
-> ---
-> This is the third RFC posting of this driver. I got some feedback, and have
-> corrected the problems. Thanks to everyone who has done review! I have
-> gotten off-list feedback from several potential users, so there are
-> definitely many potential users.
-> 
-> I'll post up a revised version about once a week as long as the changes are
-> minor. If they are more substantial, I'll post them as needed.
-> 
-> The remaining issues I see in this driver:
-> 1) ==== Naming ====
->   The name wqt originally stood for "workqueue-test" and somewhat evolved
->   over time into the current driver. I'm looking for suggestions for a
->   better name. It should be the same between the host and client drivers,
->   to make porting the code between them easier. The drivers are /very/
->   similar other than the setup code.
-> 2) ==== IMMR Usage ====
->   In the Freescale client driver, I use the whole set of board control
->   registers (AKA IMMR registers). I only need a very small subset of them,
->   during startup to set up the DMA window. I used the full set of
->   registers so that I could share the register offsets between the drivers
->   (in pcinet_hw.h)
-> 3) ==== Hardcoded DMA Window Address ====
->   In the Freescale client driver, I just hardcoded the address of the
->   outbound PCI window into the DMA transfer code. It is 0x80000000.
->   Suggestions on how to get this value at runtime are welcome.
-> 
-> 
-> Rationale behind some decisions:
-> 1) ==== Usage of the PCINET_NET_REGISTERS_VALID bit ====
->   I want to be able to use this driver from U-Boot to tftp a kernel over
->   the PCI backplane, and then boot up the board. This means that the
->   device descriptor memory, which lives in the client RAM, becomes invalid
->   during boot.
-> 2) ==== Buffer Descriptors in client memory ====
->   I chose to put the buffer descriptors in client memory rather than host
->   memory. It seemed more logical to me at the time. In my application,
->   I'll have 19 boards + 1 host per cPCI chassis. The client -> host
->   direction will see most of the traffic, and so I thought I would cut
->   down on the number of PCI accesses needed. I'm willing to change this.
-> 3) ==== Usage of client DMA controller for all data transfer ====
->   This was done purely for speed. I tried using the CPU to transfer all
->   data, and it is very slow: ~3MB/sec. Using the DMA controller gets me to
->   ~40MB/sec (as tested with netperf).
-> 4) ==== Static 1GB DMA window ====
->   Maintaining a window while DMA's in flight, and then changing it seemed
->   too complicated. Also, testing showed that using a static window gave me
->   a ~10MB/sec speedup compared to moving the window for each skb.
-> 5) ==== The serial driver ====
->   Yes, there are two essentially separate drivers here. I needed a method
->   to communicate with the U-Boot bootloader on these boards without
->   plugging in a serial cable. With 19 clients + 1 host per chassis, the
->   cable clutter is worth avoiding. Since everything is connected via the
->   PCI bus anyway, I used that. A virtual serial port was simple to
->   implement using the messaging unit hardware that I used for the network
->   driver.
-> 
-> I'll post both U-Boot drivers to their mailing list once this driver is
-> finalized.
-> 
-> Thanks,
-> Ira
-> 
-> arch/powerpc/boot/dts/mpc834x_mds.dts |    7 +
-> drivers/net/Kconfig                   |   29 +
-> drivers/net/Makefile                  |    3 +
-> drivers/net/pcinet.h                  |   60 ++
-> drivers/net/pcinet_fsl.c              | 1358 ++++++++++++++++++++++++++++++++
-> drivers/net/pcinet_host.c             | 1388 +++++++++++++++++++++++++++++++++
-> drivers/net/pcinet_hw.h               |   77 ++
-> 7 files changed, 2922 insertions(+), 0 deletions(-)
-> create mode 100644 drivers/net/pcinet.h
-> create mode 100644 drivers/net/pcinet_fsl.c
-> create mode 100644 drivers/net/pcinet_host.c
-> create mode 100644 drivers/net/pcinet_hw.h
 
-What ever happened to this?
+" ---help---
+          Use early_res directly instead of bootmem before slab is ready.
+                - allocator (buddy) [generic]
+                - early allocator (bootmem) [generic]
+                - very early allocator (reserve_early*()) [x86]
+                - very very early allocator (early brk model) [x86]
+          So reduce one layer between early allocator to final allocator."
 
-- k
+I had no idea what all this meant, so trusted the default=y and then spent 
+several hours wondering why everything was breaking, and would likley not 
+have figured it out in linear time without a suggestion from Dave Airlie.
+
+
+- James
+-- 
+James Morris
+<jmorris@namei.org>
