@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932350Ab0CaH6n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 03:58:43 -0400
-Received: from sh.osrg.net ([192.16.179.4]:50068 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756139Ab0CaH6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 03:58:40 -0400
-Date: Wed, 31 Mar 2010 16:58:35 +0900 (JST)
-Message-Id: <20100331.165835.212698315.ryusuke@osrg.net>
-To: lihong.hi@gmail.com
-Cc: konishi.ryusuke@lab.ntt.co.jp, linux-nilfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nilfs2: fix a wrong type conversion in nilfs_ioctl()
-From: Ryusuke Konishi <konishi.ryusukelab.ntt.co.jp@osrg.net>
-In-Reply-To: <20100331074100.GA11787@xhl>
-References: <20100331074100.GA11787@xhl>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 31 Mar 2010 16:58:36 +0900 (JST)
+	id S1757295Ab0CaIB4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 04:01:56 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36843 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756139Ab0CaIBz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 04:01:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=DfPzgmrQASM1BKFF3JGR5gV0NYDYfWyybuQDKV3UJnvX2FQt8r8XrKTDHC/UDHG/na
+         cQhR5T6WH3dBOxFNT0reAs5pZKWZa+9jbCvn1HWNLMLQEaGxPev6P2H4OVkd0Reudj3O
+         QG1SZYQKrGwHGi1ekb6OnzXSyJlAO1xrAXUDk=
+Date: Wed, 31 Mar 2010 10:01:57 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCHv3 0/2] tracing: function graph output for
+	preempt/irqs-off tracers
+Message-ID: <20100331080154.GA5229@nowhere>
+References: <1269606723-12439-1-git-send-email-jolsa@redhat.com> <1269615239.19685.78.camel@gandalf.stny.rr.com> <20100329111701.GC1715@jolsa> <1269875347.19685.4492.camel@gandalf.stny.rr.com> <20100329152154.GF1715@jolsa> <1269877299.19685.4527.camel@gandalf.stny.rr.com> <20100331073738.GA2152@jolsa.lab.eng.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100331073738.GA2152@jolsa.lab.eng.brq.redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Mar 2010 15:41:00 +0800, Li Hong <lihong.hi@gmail.com> wrote:
-> (void * __user *) should be (void __user *)
+On Wed, Mar 31, 2010 at 09:37:38AM +0200, Jiri Olsa wrote:
+> On Mon, Mar 29, 2010 at 11:41:39AM -0400, Steven Rostedt wrote:
+> > On Mon, 2010-03-29 at 17:21 +0200, Jiri Olsa wrote:
+> > 
+> > > > Understand what I'm trying to ask?
+> > > 
+> > > ok, so what you mean is:
+> > > - dont clear the max_tr and 
+> > > - add function graph events.
+> > > 
+> > > So when the tracing_enabled and display-graph are disabled we will
+> > > get events output rather than 'unknown event' output... right?
+> > 
+> > Right, although when the display-graph is disabled, we lose the /* */
+> > but that's fine.
 > 
-> Signed-off-by: Li Hong <lihong.hi@gmail.com>
-
-Applied.  Thank you.
-
-Ryusuke Konishi
-
-> ---
->  fs/nilfs2/ioctl.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> ok, I have it done, but found another issue..
 > 
-> diff --git a/fs/nilfs2/ioctl.c b/fs/nilfs2/ioctl.c
-> index 313d0a2..c446017 100644
-> --- a/fs/nilfs2/ioctl.c
-> +++ b/fs/nilfs2/ioctl.c
-> @@ -648,7 +648,7 @@ static int nilfs_ioctl_get_info(struct inode *inode, struct file *filp,
->  long nilfs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
->  {
->  	struct inode *inode = filp->f_dentry->d_inode;
-> -	void __user *argp = (void * __user *)arg;
-> +	void __user *argp = (void __user *)arg;
->  
->  	switch (cmd) {
->  	case NILFS_IOCTL_CHANGE_CPMODE:
-> -- 
-> 1.6.3.3
+> It's the tracer_flags which governs the tracer output. As I'm using
+> the function_graph tracer output functions, they follow function_graph
+> tracer's flags settings..
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> My first idea was a change that would allow tracer using flags
+> of other tracers.. so, when enabling irqsoff tracer the function_graph
+> tracer's options would become available.
+> 
+> I made the patch but got to the set_flag function which can be overloaded
+> by tracer. So I'd need to remember the flags's tracer, and it does
+> not seem right.. :)
+> 
+> any ideas?
+> 
+> thanks,
+> jirka
+
+
+Hehe :)
+
+I don't think we need such a feature. I doubt anybody
+is going to play with the options granularity of the function
+graph tracer there.
+
+We should rather focus on what is useful to display for irqsoff
+tracing, which means we need every function graph options set except
+funcgraph-overrun that is only there to debug the tracer
+itself (I haven't tried it for a while BTW).
+
+What you can do is to save the function graph tracer options
+when the irqsoff tracer starts, then overwrite them, and eventually
+restore the previous values when the irqsoff reset callback is called.
+
+Or preferably...
+
+Another solution, a bit more proper, is to sanitize a bit the function
+graph tracer printing helpers by pushing the options as a parameter to
+them.
+
+So the function graph tracer can call them by passing the function graph
+tracer options, and the irqsoff tracer or any other tracer can call them
+with its own options.
+
