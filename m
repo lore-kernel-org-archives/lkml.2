@@ -1,96 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756409Ab0CaGxL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 02:53:11 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:45699 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360Ab0CaGxI (ORCPT
+	id S1756032Ab0CaHDG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 03:03:06 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:44941 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750962Ab0CaHDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 02:53:08 -0400
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Greg KH <greg@kroah.com>,
-       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, linux-fsdevel@vger.kernel.org,
-       Eric Dumazet <eric.dumazet@gmail.com>, Benjamin LaHaise <bcrl@lhnet.ca>,
-       Serge Hallyn <serue@us.ibm.com>, netdev@vger.kernel.org
-Subject: Re: [PATCH 0/6] tagged sysfs support
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
-	<ac3eb2511003301153i43a60720hb015071e2c992199@mail.gmail.com>
-	<m14ojxh0mz.fsf@fess.ebiederm.org>
-	<s2hac3eb2511003302251rcbae8767ne21e9daf1546c849@mail.gmail.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Tue, 30 Mar 2010 23:52:56 -0700
-In-Reply-To: <s2hac3eb2511003302251rcbae8767ne21e9daf1546c849@mail.gmail.com> (Kay Sievers's message of "Wed\, 31 Mar 2010 07\:51\:49 +0200")
-Message-ID: <m1d3yl6kzb.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Wed, 31 Mar 2010 03:03:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=whNnou/ZS7jGuAk6FmQIrmxUnKfxjO4AT3/YvjAbzKEimqlwu75UADaU1kHQxk0FXq
+         H4c3hwUzbpy0P50s+iSl2S6sghFlwIjxTYHtxFKYbFupZ6Z0F5TKZs+SV5ceid52FjQg
+         Ups97tRwTlPDLdtdFEnRSAG8grm41iXE9dXw0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: kay.sievers@vrfy.org, netdev@vger.kernel.org, serue@us.ibm.com, bcrl@lhnet.ca, eric.dumazet@gmail.com, linux-fsdevel@vger.kernel.org, cornelia.huck@de.ibm.com, tj@kernel.org, linux-kernel@vger.kernel.org, greg@kroah.com, gregkh@suse.de
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+In-Reply-To: <v2yce9ab5791003302327hc67deb3akc7d18146534038f9@mail.gmail.com>
+References: <35697.192.168.10.89.1265898023.squirrel@dbdmail.itg.ti.com>
+	 <004701caab40$68b576e0$544ff780@am.dhcp.ti.com>
+	 <x2q7f9d1ffb1003302307nb8e91be0o55da59c3375f1720@mail.gmail.com>
+	 <v2yce9ab5791003302327hc67deb3akc7d18146534038f9@mail.gmail.com>
+Date: Wed, 31 Mar 2010 12:33:01 +0530
+Message-ID: <h2p7f9d1ffb1003310003z508e21dbqe37b6e1cad425866@mail.gmail.com>
+Subject: Re: [PATCH-V2] OMAP: Fix for bus width which improves SD card's 
+	peformance.
+From: kishore kadiyala <kishorek.kadiyala@gmail.com>
+To: Vimal Singh <vimal.newwork@gmail.com>
+Cc: Madhusudhan <madhu.cr@ti.com>, tony@atomide.com, svenkatr@ti.com,
+       linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+       jarkko.lavinen@nokia.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kay Sievers <kay.sievers@vrfy.org> writes:
+Sorry for that and here's the Updated one.
 
-> On Wed, Mar 31, 2010 at 01:04, Eric W. Biederman <ebiederm@xmission.com> wrote:
->> Kay Sievers <kay.sievers@vrfy.org> writes:
->
-> Yeah, /sys/bus/, which is the only sane layout of the needlessly
-> different 3 versions of the same thing (bus, class, block).
->
-> /sys/bus/<subsys> can just be a plain symlinks to the
-> /sys/subsystem/<subsys> directories.
->
-> /sys/class/<subsys> *could* be a symlink to the
-> /sys/subsystem/<subsys>/devices/ directory, but we really don't want
-> to continue to stupidly mix subsystem-wide control files with device
-> lists anymore. The "devices" directory needs to be a strict list of
-> devices, not some collection of random stuff, that it is today. :)
->
-> So we either leave all the conceptually broken class attributes behind
-> us, and put them at the  /sys/subsystem/<subsys>/ level only, or we
-> need to create the /sys/class/<subsys>/* stuff all as symlinks like we
-> do today. I expect, we have to create /sys/class as we do today.
+From: Kishore Kadiyala <kishore.kadiyala@ti.com>
 
-Ideally we will keep new subsystem attributes from creeping into 
-/sys/class/xxxx/ directories.
+This patch improves low speeds for SD cards.
+OMAP-MMC controller's can support maximum bus width of '8'.
+when bus width is mentioned as "8" in controller data,the SD
+stack will check whether bus width is "4" and if not it will
+set bus width to "1" and there by degrading performance.
+This patch fixes the issue and improves the performance of
+SD cards.
 
-> Another problem to solve is that sysfs does not allow us to symlink
-> regular files, only directories, so we can currently not create the
-> class-wide attributes as symlinks to the proper file in
-> /sys/subsystem/.
+Signed-off-by: Kishore Kadiyala <kishore.kadiyala@ti.com>
+Signed-off-by: Venkatraman S <svenkatr@ti.com>
+Acked-by: Madhusudhan Chikkature <madhu.cr@ti.com>
 
-That seems to be part of the everything is a kobject interface, and
-all kobjects are directories.  I don't think supporting the symlinks
-will be particularly hard, although there are issues to consider with
-respect to making the symlinks come and go when the attributes do.
+---
+In V2 : Appended Signed-off by Venkat and Ack by Madhu
 
->>
->> I'm not entirely clear on what you are doing but it all sounds like it
->> will fit within what I am doing.
->
-> The goal is to unify the 3 needlessly different versions of "device
-> lists of the same subsystem". We have /sys/class, /sys/bus,
-> /sys/block, and all of them will be unified at /sys/subsystem/ leaving
-> the old names as compat links only. Unlike block and class, the
-> /sys/subsystem/<subsys> directory can be extended with custom
-> subdirectories and files, without mixing random files into device
-> lists.
+ Here are my experiment numbers, on a Class 6 SDHC card:
+ Read peformance is increased by 220%
+ Write Performance is increased by 52%
 
-That makes sense.  I took a quick look and /sys/block is already
-a compatibility define.   So I don't expect any issues there.
+ drivers/mmc/host/omap_hsmmc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-At a practical level there don't appear to be too many class attributes
-that will cause problems, but even a couple are enough to be a pain.
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index 83f0aff..8c97c22 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -2092,7 +2092,7 @@ static int __init omap_hsmmc_probe(struct
+ 		     MMC_CAP_WAIT_WHILE_BUSY;
 
-> Yeah, it did not makes sense it the first place to mix devices lists
-> with global attributes. It's a real mess what people do in sysfs.
+ 	if (mmc_slot(host).wires >= 8)
+-		mmc->caps |= MMC_CAP_8_BIT_DATA;
++		mmc->caps |= (MMC_CAP_8_BIT_DATA | MMC_CAP_4_BIT_DATA);
+ 	else if (mmc_slot(host).wires >= 4)
+ 		mmc->caps |= MMC_CAP_4_BIT_DATA;
 
-I was very disappointed in sysfs the first time I saw someone add writable
-attributes.  But sysfs is here now.
-
-Eric
+-- 
+1.6.3.3
