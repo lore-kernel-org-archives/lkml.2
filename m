@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756954Ab0CaHjd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 03:39:33 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:53068 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435Ab0CaHjc (ORCPT
+	id S932144Ab0CaHlM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 03:41:12 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42501 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756700Ab0CaHlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 03:39:32 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: =?utf-8?q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-Subject: Re: [RFC 7/9] ppp: use big tty mutex
-Date: Wed, 31 Mar 2010 09:39:14 +0200
-User-Agent: KMail/1.13.1 (Linux/2.6.33-00063-g0795fff; KDE/4.4.1; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Greg KH <gregkh@suse.de>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-       Ingo Molnar <mingo@elte.hu>
-References: <1269982580-9361-1-git-send-email-arnd@arndb.de> <1269982580-9361-8-git-send-email-arnd@arndb.de> <2375c9f91003302137x7753a744pb2d2f0655738c7e4@mail.gmail.com>
-In-Reply-To: <2375c9f91003302137x7753a744pb2d2f0655738c7e4@mail.gmail.com>
+	Wed, 31 Mar 2010 03:41:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:x-operating-system:user-agent;
+        b=k4mj9UKdoxExfScMdiFHqgOQrvlZX2MioTYKi3kXFP4cefP3DCGgIsRlGyOOkLcE8Z
+         Tf7dItWRKzVJ382XqE7wmhqaanQ0i+wp5Qga2dP66LbP+RmPBqCMXW4KuJRVnSTXiusB
+         Npu5uKlngQU3XN2IMAypE8SkVIQ0WeKohZOtM=
+Date: Wed, 31 Mar 2010 15:41:00 +0800
+From: Li Hong <lihong.hi@gmail.com>
+To: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
+       linux-nilfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] nilfs2: fix a wrong type conversion in nilfs_ioctl()
+Message-ID: <20100331074100.GA11787@xhl>
+Mail-Followup-To: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
+	linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201003310939.15324.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1/pOgDBpDkt+jq9r50ZX2LclL3ELCLdy15TGDe
- ApZCLXiinSCWarTbEOp3c+gFA3GvpPUSnDw5RYRB3+t1zz76bJ
- 75iToRmdH8gw+jbfjsq6w==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Operating-System: Linux xhl 2.6.31-14-generic
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 31 March 2010 06:37:12 Américo Wang wrote:
-> > @@ -362,7 +362,8 @@ static const int npindex_to_ethertype[NUM_NP] = {
-> >  */
-> >  static int ppp_open(struct inode *inode, struct file *file)
-> >  {
-> > -       cycle_kernel_lock();
-> > +       tty_lock();
-> > +       tty_unlock();
-> 
-> I don't really get your point here. :) Why do you do this?
+(void * __user *) should be (void __user *)
 
-This is a blind conversion of the API from the common BKL functions to
-the TTY lock functions. There is no cycle_tty_lock(), so I'm manually
-doing the cycle.
+Signed-off-by: Li Hong <lihong.hi@gmail.com>
+---
+ fs/nilfs2/ioctl.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-The reason why cycle_kernel_lock() was introduced in the first place
-is that some drivers may depend on the open() function not returning
-while another CPU holds the BKL. I did not feel qualified (or motivated)
-to determine if the ppp code has the behavior, so I left it at this.
+diff --git a/fs/nilfs2/ioctl.c b/fs/nilfs2/ioctl.c
+index 313d0a2..c446017 100644
+--- a/fs/nilfs2/ioctl.c
++++ b/fs/nilfs2/ioctl.c
+@@ -648,7 +648,7 @@ static int nilfs_ioctl_get_info(struct inode *inode, struct file *filp,
+ long nilfs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ {
+ 	struct inode *inode = filp->f_dentry->d_inode;
+-	void __user *argp = (void * __user *)arg;
++	void __user *argp = (void __user *)arg;
+ 
+ 	switch (cmd) {
+ 	case NILFS_IOCTL_CHANGE_CPMODE:
+-- 
+1.6.3.3
 
-	Arnd
