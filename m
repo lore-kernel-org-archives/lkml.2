@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932492Ab0CaRVV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 13:21:21 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:39205 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757829Ab0CaRVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 13:21:18 -0400
-Date: Wed, 31 Mar 2010 12:21:10 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
-       Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Cornelia Huck <cornelia.huck@de.ibm.com>,
-       linux-fsdevel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-       Benjamin LaHaise <bcrl@lhnet.ca>, netdev@vger.kernel.org
-Subject: Re: [PATCH 0/6] tagged sysfs support
-Message-ID: <20100331172110.GA18838@us.ibm.com>
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
+	id S932771Ab0CaRVz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 13:21:55 -0400
+Received: from mail-fx0-f227.google.com ([209.85.220.227]:52242 "EHLO
+	mail-fx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932393Ab0CaRVu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 13:21:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=AfvCsTnDBQuMJDgNMMVMhnQ0wqKaSCnx908KuzYiXkd+dB1eWr0a5yrOCYR7oOuLn6
+         vU3CyNxagjqSGeBC10u1M7cfZmU3Onl2kAZE/vOiB32ipY9Qa06JczOR53kT4afEfgZi
+         DHQgvXSK02clMQczxFwNdffOIpBcO33FJfYGI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1fx3hk6gw.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201003311654.38020.arnd@arndb.de>
+References: <1270044578-4291-1-git-send-email-abogani@texware.it>
+	 <201003311654.38020.arnd@arndb.de>
+Date: Wed, 31 Mar 2010 19:21:47 +0200
+X-Google-Sender-Auth: a6b3dbc2482bed99
+Message-ID: <63a49ef41003311021x4f73609bj7b4275f67914b3db@mail.gmail.com>
+Subject: Re: [PATCH] USB: Remove BKL from remount() function in usbfs
+From: Alessio Igor Bogani <abogani@texware.it>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       Al Viro <viro@zeniv.linux.org.uk>, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Jan Blunck <jblunck@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> 
-> The main short coming of using multiple network namespaces today
-> is that only network devices for the primary network namespaces
-> can be put in the kobject layer and sysfs.
-> 
-> This is essentially the earlier version of this patchset that was
-> reviewed before, just now on top of a version of sysfs that doesn't
-> need cleanup patches to support it.
-> 
-> I have been running these patches in some form for well over a
-> year so the basics should at least be solid.  
-> 
-> This patchset is currently against 2.6.34-rc1.
-> 
-> This patchset is just the basic infrastructure a couple of more pretty
-> trivial patches are needed to actually enable network namespaces to use this.
-> My current plan is to send those after these patches have made it through
-> review.
+Mr Bergmann,
 
-Thanks very much for keeping this going, Eric!  I'm going to keep
-looking through the code some more, but so far I see no problems.
+2010/3/31 Arnd Bergmann <arnd@arndb.de>:
+[...]
+>> The function update_sb(), invoked by remount(), seems already well serialized
+>> with &root->d_inode->i_mutex. Moreover don't seems there are others
+>> super_operations functions in USB core for usbfs that should access to
+>> super_block in a way which require BKL.
+>
+> There is a patch from Jan Blunck pending in the bkl-removal tree that pushes
+> down the BKL into usbfs_fill_super. Can you confirm that this BKL usage does
+> not interfere with the one you just removed, and that it can go the same way?
 
-Acked-by: Serge Hallyn <serue@us.ibm.com>
+I can confirm that this certainly interfere: So please ignore my patch.
 
-to the full patchset.  I'm really hoping you'll also include the
-patch to implement the netns support (i.e. basically commit
-fdc0adeaa8bfab9a179e1eb349cab400ddb70403 that you sent inline this
-morning to Tejun).
+I'll elaborate a new patch when Blunck's works is merged.
 
-thanks,
--serge
+Thanks!
+
+Ciao,
+Alessio
