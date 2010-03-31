@@ -1,97 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757989Ab0CaCKX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 22:10:23 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58587 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756018Ab0CaCKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 22:10:22 -0400
-Message-ID: <4BB2AF2F.6030406@cn.fujitsu.com>
-Date: Wed, 31 Mar 2010 10:10:55 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rcu: only raise softirq when need
-References: <4BB1CE6B.6030207@cn.fujitsu.com> <20100330163036.GC2513@linux.vnet.ibm.com>
-In-Reply-To: <20100330163036.GC2513@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1758009Ab0CaCP6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 22:15:58 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53332 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755972Ab0CaCP4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 22:15:56 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 31 Mar 2010 11:12:02 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       "Michael S. Tsirkin" <mst@redhat.com>, cl@linux-foundation.org,
+       lee.schermerhorn@hp.com, rientjes@google.com,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+       "David S. Miller" <davem@davemloft.net>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org, Troels Liebe Bentsen <tlb@rapanden.dk>,
+       linux-bluetooth@vger.kernel.org
+Subject: Re: [PATCH] exit: fix oops in sync_mm_rss
+Message-Id: <20100331111202.a94b233a.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <z2t28c262361003301857l77db88dbv7d025b5c5947ad72@mail.gmail.com>
+References: <20100316170808.GA29400@redhat.com>
+	<20100330135634.09e6b045.akpm@linux-foundation.org>
+	<20100331092815.c8b9d89c.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100330173721.cbd442cb.akpm@linux-foundation.org>
+	<20100331094124.43c49290.kamezawa.hiroyu@jp.fujitsu.com>
+	<z2t28c262361003301857l77db88dbv7d025b5c5947ad72@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney wrote:
-> On Tue, Mar 30, 2010 at 06:11:55PM +0800, Lai Jiangshan wrote:
->> I found something RCU_SOFTIRQ are called without do any thing.
->> (use function_graph to find it:
->>  1)               |  rcu_process_callbacks() {
->>  1)               |    __rcu_process_callbacks() {
->>  1)   0.634 us    |      rcu_process_gp_end();
->>  1)   0.487 us    |      check_for_new_grace_period();
->>  1)   2.672 us    |    }
->>  1)               |    __rcu_process_callbacks() {
->>  1)   0.633 us    |      rcu_process_gp_end();
->>  1)   0.491 us    |      check_for_new_grace_period();
->>  1)   2.672 us    |    }
->> )
->>
->> This patch make RCU_SOFTIRQ raised when need.
-> 
-> So this seems to have two effects:
-> 
-> 1.	Avoid checking for a quiescent state if RCU doesn't need one
-> 	from this CPU.
-> 
-> 2.	Avoid RCU_SOFTIRQ if RCU did need a quiescent state from
-> 	this CPU, and if rcu_check_callbacks() saw a quiescent state.
+On Wed, 31 Mar 2010 10:57:18 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-This RCU_SOFTIRQ is not avoided.
+> On Wed, Mar 31, 2010 at 9:41 AM, KAMEZAWA Hiroyuki
 
-+	if (rdp->qs_pending && rdp->passed_quiesc) {
-+		rdp->n_rp_report_qs++;
- 		return 1;
- 	}
-
-Old: raise RCU_SOFTIRQ when rdp->qs_pending is not zero
-New: raise RCU_SOFTIRQ when rdp->qs_pending && rdp->passed_quiesc
-
-So the different effects only happen when this state:
-rdp->qs_pending == 1 && rdp->passed_quiesc == 0,
-But this state will be changed after next rcu_sched_qs() or families.
-So it will not hang up.
-
+> > Doesn't make sense ?
+> >
 > 
-> Except that if rcu_check_callbacks() did see a quiescent state, then we
-> -need- RCU_SOFTIRQ to propagate this up the tree.  So I don't see how
-> this patch helps, and unless I am missing something, it can result in
-> grace-period hangs.  (This CPU is the last one to pass through a
-> quiescent state, and this call to rcu_check_callbacks() finds one,
-> and we fail to report it up the tree.)
+> Nitpick.
+> How about moving sync_mm_rss into after check !mm of exit_mm?
 > 
-> Please note that there are other possible causes for empty calls to
-> rcu_process_callbacks():
-> 
-> 1.	RCU needs a call to force_quiescent_state(), but some other
-> 	CPU beats us to it.  We raise RCU_SOFTIRQ, but by the time
-> 	we get there, our work is done.
-> 
-> 2.	RCU needs to check for CPU stalls, but some other CPU beats
-> 	us to it.
-> 
-> 3.	RCU is idle, and this CPU needs another grace period, but
-> 	some other CPU starts up a new grace period before our
-> 	softirq gets started.
+Hmm.
+==
+        sync_mm_rss(tsk, tsk->mm);
+        group_dead = atomic_dec_and_test(&tsk->signal->live);
+        if (group_dead) {
+                hrtimer_cancel(&tsk->signal->real_timer);
+                exit_itimers(tsk->signal);
+                if (tsk->mm)
+                        setmax_mm_hiwater_rss(&tsk->signal->maxrss, tsk->mm); ---(**)
+        }
+        acct_collect(code, group_dead);
+        if (group_dead)
+                tty_audit_exit();
+        if (unlikely(tsk->audit_context))
+                audit_free(tsk);
 
-These may happen, but I have not seen any empty call after patch applied.
+        tsk->exit_code = code;
+        taskstats_exit(tsk, group_dead); --------(*)
+	
+        exit_mm(tsk);
+==
+task_acct routine has to handle mm information (*).
+So, we have to sync somewhere before exit_mm() or tsk->mm goes to NULL.
 
-> 
-> So I do not believe that this patch is worthwhile even if it does turn
-> out to be safe.
+I think taskstat is an only acct hook which gatheres mm's rss information
+but I placed sync_mm_rss() before all accounting routine.
+Anyway, sync_mm_rss() should be before (**)
+setmax_mm_hiwater_rss(&tsk->signal->maxrss, tsk->mm);
 
-I accept that this patch is not worthwhile.
+Thanks,
+-Kame 
 
-Raising empty call is harmless, and it is a chance
-to progress RCU or detect problems.
+
+
 
