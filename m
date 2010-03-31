@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933067Ab0CaJ2g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 05:28:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49052 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932976Ab0CaJ2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 05:28:33 -0400
-Date: Wed, 31 Mar 2010 11:28:30 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-       linux-usb@vger.kernel.org, linux-fbdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>,
-       Nicu Pavel <npavel@ituner.com>, Oliver Neukum <oliver@neukum.org>,
-       Jaya Kumar <jayakumar.lkml@gmail.com>
-Subject: Re: [PATCH v6 0/8] hid: new driver for PicoLCD device
-In-Reply-To: <20100330223224.18fe4f3e@neptune.home>
-Message-ID: <alpine.LNX.2.00.1003311125090.24576@pobox.suse.cz>
-References: <20100324233707.7243b04d@neptune.home> <20100324234022.0361bd80@neptune.home> <20100326065656.GC26602@core.coreip.homeip.net> <20100326102951.3b9ecda1@neptune.home> <alpine.LNX.2.00.1003262156280.24576@pobox.suse.cz> <20100327012245.0ace6a09@neptune.home>
- <alpine.LNX.2.00.1003291144350.24576@pobox.suse.cz> <20100329121611.0c22dcaf@pluto.restena.lu> <alpine.LNX.2.00.1003301010410.24576@pobox.suse.cz> <20100330223224.18fe4f3e@neptune.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S933093Ab0CaJhM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 05:37:12 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:39424 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933035Ab0CaJhK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 05:37:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=PeFiFxSfw/LiD/CR+02vkCr+AtApU/ywXzIMMDKwz/tJ5chdX2Z+7qihSSrLTcXUvt
+         1hccnMz6yY+LA+07STbTEXpUh0pvy+xXSTgRaA4+/Jr7ciEM8s8TXP4Pcs8JuzbhzmtL
+         1ACVVPIXkfm0WTImH/hd3Dc8cxBNUmhSOrhgg=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
+In-Reply-To: <4BB3166C.70408@tudelft.nl>
+References: <y2r40a4ed591003310218he411c263p62915a3e0a5a8de3@mail.gmail.com>
+	 <4BB3166C.70408@tudelft.nl>
+Date: Wed, 31 Mar 2010 11:37:07 +0200
+Message-ID: <s2z40a4ed591003310237l6b4e85d4l99c97ae9602ea614@mail.gmail.com>
+Subject: Re: 2.6.34-rc3 - nvidia: module license 'NVIDIA' taints kernel.
+From: Zeno Davatz <zdavatz@gmail.com>
+To: =?ISO-8859-1?Q?=C9ric_Piel?= <E.A.B.Piel@tudelft.nl>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Mar 2010, Bruno Prémont wrote:
+On Wed, Mar 31, 2010 at 11:31 AM, �ric Piel <E.A.B.Piel@tudelft.nl> wrote:
+> On 31/03/10 11:18, Zeno Davatz wrote:
+>> Ok, I just booted into the new 2.6.34-rc3 Kernel. Looks Lovely!
+> :
+>> resource map sanity check conflict: 0x9f800 0xa07ff 0xa0000 0xbffff
+> :
+>> Info: mapping multiple BARs. Your kernel is fine.
+> :
+>>
+>> Can I ignore this or is this of any use for the list and the Kernel improvement?
+> Hi,
+> This is not tainting, it's a resource conflict. That check has just been
+> added to the kernel, that's why it did not happen before. As mentioned
+> in the log, your kernel is fine.
+>
+> As the conflict is happening with the proprietary driver, the only
+> action you can do is to contact NVidia. Maybe they'll fix it in a later
+> version...
 
-> > so please either remove the parts that depend on power management for
-> > now, or I'll wait on your respin of the generic HID-PM patch.
-> 
-> Here I respin the whole series, with PM moved to patch n°8 and
-> patch n°7 being my original generic HID-PM.
+Thank you for the quick response! Shall I contact any person that I
+find at Nvidia or do you have a specific person that you recommend?
 
-Thanks!
+If you do not reply I will, just try to find a person at Nvidia.
 
-> Without the PM part there is one compiler warning about defined but 
-> unused function (picolcd_resume_backlight), I hope this is not an issue. 
-> If it is that function can move over to the PM patch (with it's stub for 
-> !CONFIG_BACKLIGHT_CLASS_DEVICE case)
-
-It's actually picolcd_suspend_backlight(), the resume function is called 
-from debugfs-triggered reset write.
-
-I have removed it from the patch for now, it should better be added when 
-being used (i.e. when the proper PM support goes in as well).
-
-> So for now you can skip the last two patches during merge.
-
-I have applied patches 1-6 to my tree. So please base any further 
-additions to the driver on the version that's in my tree now (picolcd and 
-for-next branches).
-
-> Do you have any suggestions regarding generic HID-PM as to how much
-> and how it should be visible to the HID driver?
-
-I will look into the patch you have sent and comment on that shortly 
-separately.
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Best
+Zeno
