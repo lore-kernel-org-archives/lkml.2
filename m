@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757910Ab0CaBEl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 21:04:41 -0400
-Received: from trinity.fluff.org ([89.16.178.74]:39732 "EHLO trinity.fluff.org"
+	id S1757954Ab0CaBIF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 21:08:05 -0400
+Received: from trinity.fluff.org ([89.16.178.74]:39792 "EHLO trinity.fluff.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756906Ab0CaBEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 21:04:38 -0400
-Date: Wed, 31 Mar 2010 02:04:31 +0100
+	id S1757034Ab0CaBH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 21:07:59 -0400
+Date: Wed, 31 Mar 2010 02:07:44 +0100
 From: Ben Dooks <ben-linux@fluff.org>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Samsung SoCs: CPU detection support (v4)
-Message-ID: <20100331010431.GJ31126@trinity.fluff.org>
-References: <20100324070943.GA6779@july>
+To: jassi brar <jassisinghbrar@gmail.com>
+Cc: Joonyoung Shim <jy0922.shim@samsung.com>, linus.ml.walleij@gmail.com,
+       dan.j.williams@intel.com, kyungmin.park@samsung.com,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] PL330: Add PL330 DMA controller driver
+Message-ID: <20100331010744.GK31126@trinity.fluff.org>
+References: <4BAAD5BB.7050101@samsung.com> <1b68c6791003251908w299806cbm1443728ea08cfb72@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100324070943.GA6779@july>
+In-Reply-To: <1b68c6791003251908w299806cbm1443728ea08cfb72@mail.gmail.com>
 X-Disclaimer: These are my views alone.
 X-URL: http://www.fluff.org/
 User-Agent: Mutt/1.5.18 (2008-05-17)
@@ -27,299 +29,649 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 04:09:43PM +0900, Kyungmin Park wrote:
-> Store the CPU ID to cpu_id variable and use it to detect CPU
+On Fri, Mar 26, 2010 at 11:08:06AM +0900, jassi brar wrote:
+> On Thu, Mar 25, 2010 at 12:17 PM, Joonyoung Shim
+> <jy0922.shim@samsung.com> wrote:
+> > The PL330 is currently the dma controller using at the S5PC1XX arm SoC.
+> > This supports DMA_MEMCPY and DMA_SLAVE.
+> >
+> > The datasheet for the PL330 can find below url:
+> > http://infocenter.arm.com/help/topic/com.arm.doc.ddi0424a/DDI0424A_dmac_pl330_r0p0_trm.pdf
+> >
+> > Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
+> > ---
+> > Change log:
+> >
+> > v2: Convert into an amba_device driver.
+> >    Code clean and update from v1 patch review.
 > 
-> On S3C64XX, Some pheripherals such as OneNAND have different configuration
-> and handle it differently to do this it needs to detect CPU ID.
-
-Just do it like everything else on these platfroms do and use
-a rename-able platform device. I do not like the cpu_is macros, it
-makes it harder to deal with autoloading modules.
-
-It isn't as if there are plenty of drivers in the s3c/s5p series already
-doing this.
-
-> Also S5PC1XX is supported.
+> Here goes some quick technical feedback of the code.
+> Please remember that these issues are only secondary.
+> The primary drawback is the approach that this patch adopts,
+> as already explained in other posts.
 > 
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-> diff --git a/arch/arm/plat-samsung/include/plat/cpu.h b/arch/arm/plat-samsung/include/plat/cpu.h
-> index d316b4a..5fd5e1b 100644
-> --- a/arch/arm/plat-samsung/include/plat/cpu.h
-> +++ b/arch/arm/plat-samsung/include/plat/cpu.h
-> @@ -15,6 +15,8 @@
->  #ifndef __SAMSUNG_PLAT_CPU_H
->  #define __SAMSUNG_PLAT_CPU_H
->  
-> +#include <plat/cpuid.h>
-> +
->  #define IODESC_ENT(x) { (unsigned long)S3C24XX_VA_##x, __phys_to_pfn(S3C24XX_PA_##x), S3C24XX_SZ_##x, MT_DEVICE }
->  
->  #ifndef MHZ
-> diff --git a/arch/arm/plat-samsung/include/plat/cpuid.h b/arch/arm/plat-samsung/include/plat/cpuid.h
-> new file mode 100644
-> index 0000000..bd7162c
-> --- /dev/null
-> +++ b/arch/arm/plat-samsung/include/plat/cpuid.h
-> @@ -0,0 +1,199 @@
-> +/*
-> + * arch/arm/plat-samsung/include/mach/cpuid.h
-> + *
-> + *  Samsung cpu type detection
-> + *
-> + *  Copyright (C) 2008-2010 Samsung Electronics
-> + *  Kyungmin Park <kyungmin.park@samsung.com>
-> + *
-> + * Derived from OMAP cpu.h
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-> + */
-> +
-> +#ifndef __ASM_ARCH_SAMSUNG_CPU_H
-> +#define __ASM_ARCH_SAMSUNG_CPU_H
-> +
-> +extern unsigned long samsung_cpu_id(void);
-> +
-> +/*
-> + * cpu_is_s3c24xx():	True for s3c2400, s3c2410, s3c2440 and so on
-> + * cpu_is_s3c241x():	True fro s3c2410, s3c2412
-> + * cpu_is_s3c244x():	True fro s3c2440, s3c2442, s3c2443
-> + * cpu_is_s3c64xx():	True for s3c6400, s3c6410
-> + * cpu_is_s5pc1xx():	True for s5pc100, s5pc110
-> + * cpu_is_s5p64xx():	True for s5p6442
-> + */
-> +#define GET_SAMSUNG_CLASS	((samsung_cpu_id() >> 24) & 0xff)
-> +
-> +#define IS_SAMSUNG_CLASS(class, id)					\
-> +static inline int is_##class (void)					\
-> +{									\
-> +	return (GET_SAMSUNG_CLASS == (id)) ? 1 : 0;			\
-> +}
-> +
-> +#define GET_SAMSUNG_SUBCLASS	((samsung_cpu_id() >> 20) & 0xfff)
-> +
-> +#define IS_SAMSUNG_SUBCLASS(subclass, id)				\
-> +static inline int is_##subclass (void)					\
-> +{									\
-> +	return (GET_SAMSUNG_SUBCLASS == (id)) ? 1 : 0;			\
-> +}
-> +
-> +IS_SAMSUNG_CLASS(s3c24xx, 0x24)
-> +IS_SAMSUNG_CLASS(s3c64xx, 0x64)
-> +IS_SAMSUNG_CLASS(s5pc1xx, 0xc1)
-> +
-> +IS_SAMSUNG_SUBCLASS(s3c241x, 0x241)
-> +IS_SAMSUNG_SUBCLASS(s3c244x, 0x244)
-> +IS_SAMSUNG_SUBCLASS(s5p64xx, 0x644)
-> +
-> +#define cpu_is_s3c24xx()		0
-> +#define cpu_is_s3c241x()		0
-> +#define cpu_is_s3c244x()		0
-> +#define cpu_is_s3c64xx()		0
-> +#define cpu_is_s5pc1xx()		0
-> +#define cpu_is_s5p64xx()		0
-> +
-> +#if defined(CONFIG_ARCH_S3C2410)
-> +# undef  cpu_is_s3c24xx
-> +# undef  cpu_is_s3c241x
-> +# undef  cpu_is_s3c244x
-> +# define cpu_is_s3c24xx()		is_s3c24xx()
-> +# define cpu_is_s3c241x()		is_s3c241x()
-> +# define cpu_is_s3c244x()		is_s3c244x()
-> +#endif
-> +
-> +#if defined(CONFIG_ARCH_S3C64XX)
-> +# undef  cpu_is_s3c64xx
-> +# define cpu_is_s3c64xx()		is_s3c64xx()
-> +#endif
-> +
-> +#if defined(CONFIG_ARCH_S5PC1XX) || defined(CONFIG_ARCH_S5PC11X)
-> +# undef  cpu_is_s5pc1xx
-> +# define cpu_is_s5pc1xx()		is_s5pc1xx()
-> +#endif
-> +
-> +#if defined(CONFIG_ARCH_S5P64XX)
-> +# undef  cpu_is_s5p64xx
-> +# define cpu_is_s5p64xx()		is_s5p64xx()
-> +#endif
-> +
-> +/*
-> + * Macros to detect individual cpu types.
-> + * cpu_is_s3c2410():	True for s3c2410
-> + * cpu_is_s3c2440():	True for s3c2440
-> + * cpu_is_s3c6400():	True for s3c6400
-> + * cpu_is_s3c6410():	True for s3c6410
-> + * cpu_is_s5pc100():	True for s5pc100
-> + * cpu_is_s5pc110():	True for s5pc110
-> + * cpu_is_s5p6442():	True for s5p6442
-> + *
-> + * Exception:
-> + * Store Revision A to 1
-> + * s3c2410a -> s3c2411
-> + * s3c2440a -> s3c2441
-> + */
-> +
-> +#define GET_SAMSUNG_TYPE	((samsung_cpu_id() >> 16) & 0xffff)
-> +
-> +#define IS_SAMSUNG_TYPE(type, id)					\
-> +static inline int is_##type (void)					\
-> +{									\
-> +	return (GET_SAMSUNG_TYPE == (id)) ? 1 : 0;			\
-> +}
-> +
-> +IS_SAMSUNG_TYPE(s3c2400, 0x2400)
-> +IS_SAMSUNG_TYPE(s3c2410, 0x2410)
-> +IS_SAMSUNG_TYPE(s3c2410a, 0x2411)
-> +IS_SAMSUNG_TYPE(s3c2412, 0x2412)
-> +IS_SAMSUNG_TYPE(s3c2440, 0x2440)
-> +IS_SAMSUNG_TYPE(s3c2440a, 0x2441)
-> +IS_SAMSUNG_TYPE(s3c2442, 0x2442)
-> +IS_SAMSUNG_TYPE(s3c2443, 0x2443)
-> +IS_SAMSUNG_TYPE(s3c6400, 0x6400)
-> +IS_SAMSUNG_TYPE(s3c6410, 0x6410)
-> +IS_SAMSUNG_TYPE(s5pc100, 0xc100)
-> +IS_SAMSUNG_TYPE(s5pc110, 0xc110)
-> +IS_SAMSUNG_TYPE(s5p6442, 0x6442)
-> +
-> +#define cpu_is_s3c2400()		0
-> +#define cpu_is_s3c2410()		0
-> +#define cpu_is_s3c2410a()		0
-> +#define cpu_is_s3c2412()		0
-> +#define cpu_is_s3c2440()		0
-> +#define cpu_is_s3c2440a()		0
-> +#define cpu_is_s3c2442()		0
-> +#define cpu_is_s3c2443()		0
-> +#define cpu_is_s3c6400()		0
-> +#define cpu_is_s3c6410()		0
-> +#define cpu_is_s5pc100()		0
-> +#define cpu_is_s5pc110()		0
-> +#define cpu_is_s5p6442()		0
-> +
-> +#if defined(CONFIG_ARCH_S3C2410)
-> +# undef  cpu_is_s3c2400
-> +# define cpu_is_s3c2400()		is_s3c2400()
-> +#endif
-> +
-> +#if defined(CONFIG_CPU_S3C2410)
-> +# undef  cpu_is_s3c2410
-> +# undef  cpu_is_s3c2410a
-> +# define cpu_is_s3c2410()		is_s3c2410()
-> +# define cpu_is_s3c2410a()		is_s3c2410a()
-> +#endif
-> +
-> +#if defined(CONFIG_CPU_S3C2412)
-> +# undef  cpu_is_s3c2412
-> +# define cpu_is_s3c2412()		is_s3c2412()
-> +#endif
-> +
-> +#if defined(CONFIG_CPU_S3C2440)
-> +# undef  cpu_is_s3c2440
-> +# undef  cpu_is_s3c2440a
-> +# define cpu_is_s3c2440()		is_s3c2440()
-> +# define cpu_is_s3c2440a()		is_s3c2440a()
-> +#endif
-> +
-> +#if defined(CONFIG_CPU_S3C2442)
-> +# undef  cpu_is_s3c2442
-> +# define cpu_is_s3c2442()		is_s3c2442()
-> +#endif
-> +
-> +#if defined(CONFIG_CPU_S3C2443)
-> +# undef  cpu_is_s3c2443
-> +# define cpu_is_s3c2443()		is_s3c2443()
-> +#endif
-> +
-> +#if defined(CONFIG_ARCH_S3C64XX)
-> +# undef  cpu_is_s3c6400
-> +# undef  cpu_is_s3c6410
-> +# define cpu_is_s3c6400()		is_s3c6400()
-> +# define cpu_is_s3c6410()		is_s3c6410()
-> +#endif
-> +
-> +#if defined(CONFIG_ARCH_S5PC1XX) || defined(CONFIG_ARCH_S5PC11X)
-> +# undef  cpu_is_s5pc100
-> +# undef  cpu_is_s5pc110
-> +# define cpu_is_s5pc100()		is_s5pc100()
-> +# define cpu_is_s5pc110()		is_s5pc110()
-> +#endif
-> +
-> +#if defined(CONFIG_CPU_S5P6442)
-> +# undef  cpu_is_s5p6442
-> +# define cpu_is_s5p6442()		is_s5p6442()
-> +#endif
-> +
-> +#endif
-> diff --git a/arch/arm/plat-samsung/init.c b/arch/arm/plat-samsung/init.c
-> index 6790edf..cb3560d 100644
-> --- a/arch/arm/plat-samsung/init.c
-> +++ b/arch/arm/plat-samsung/init.c
-> @@ -30,6 +30,44 @@
->  #include <plat/regs-serial.h>
->  
->  static struct cpu_table *cpu;
-> +static unsigned long cpu_id;
-> +
-> +unsigned long samsung_cpu_id(void)
-> +{
-> +	return cpu_id;
-> +}
-> +EXPORT_SYMBOL(samsung_cpu_id);
-> +
-> +static void __init set_cpu_id(unsigned long idcode)
-> +{
-> +	/*
-> +	 * cpu_id encoding is as follows
-> +	 * cpu_id & 0xff000000 -> S3C Class (24xx/64xx/C1xx)
-> +	 * cpu_id & 0xfff00000 -> S3C Sub Class (241x/244x)
-> +	 * cpu_id & 0xffff0000 -> S3C Type (2410/2440/6400/6410/C100/C110)
-> +	 *
-> +	 * Remains[15:0] are reserved
-> +	 *
-> +	 * 24xx/64xx is started from 0x30000000
-> +	 * C1xx is started from 0x40000000
-> +	 *
-> +	 * Exception:
-> +	 *  Store Revision A to 1 such as
-> +	 *  s3c2410A to s3c2411
-> +	 *  s3c2440A to s3c2441
-> +	 */
-> +	if ((idcode >> 28) == 0x4)
-> +		cpu_id = 0xC0000000 | ((idcode & 0x00fff000) << 4);
-> +	else
-> +		cpu_id = (idcode & 0x0ffff000) << 4;
-> +
-> +	if (idcode == 0x32410002 || idcode == 0x32440001)
-> +		cpu_id |= (0x1 << 16);
-> +	if (idcode == 0x32440aaa)       /* s3c2442 */
-> +		cpu_id |= (0x2 << 16);
-> +	if (idcode == 0x0)              /* s3c2400 */
-> +		cpu_id |= (0x2400 << 16);
-> +}
->  
->  static struct cpu_table * __init s3c_lookup_cpu(unsigned long idcode,
->  						struct cpu_table *tab,
-> @@ -53,6 +91,8 @@ void __init s3c_init_cpu(unsigned long idcode,
->  		panic("Unknown S3C24XX CPU");
->  	}
->  
-> +	set_cpu_id(idcode);
-> +
->  	printk("CPU %s (id 0x%08lx)\n", cpu->name, idcode);
->  
->  	if (cpu->map_io == NULL || cpu->init == NULL) {
+> [snip]
+> 
+> > +/* instruction set functions */
+> > +static inline int pl330_dmaaddh(u8 *desc_pool_virt, u16 imm, bool ra)
+> > +{
+> > +       u8 opcode = DMAADDH | (ra << 1);
+> > +
+> > +       writeb(opcode, desc_pool_virt++);
+> > +       writew(imm, desc_pool_virt);
+> > +       return 3;
+> > +}
+> > +
+> > +static inline int pl330_dmaend(u8 *desc_pool_virt)
+> > +{
+> > +       u8 opcode = DMAEND;
+> > +
+> > +       writeb(opcode, desc_pool_virt);
+> > +       return 1;
+> > +}
+> > +
+> > +static inline int pl330_dmaflushp(u8 *desc_pool_virt, u8 periph)
+> > +{
+> > +       u8 opcode = DMAFLUSHHP;
+> > +
+> > +       writeb(opcode, desc_pool_virt++);
+> > +       writeb(periph << 3, desc_pool_virt);
+> > +       return 2;
+> > +}
+> > +
+> > +static inline int pl330_dmald(u8 *desc_pool_virt)
+> > +{
+> > +       u8 opcode = DMALD;
+> > +
+> > +       writeb(opcode, desc_pool_virt);
+> > +       return 1;
+> > +}
+> > +
+> > +static inline int pl330_dmalds(u8 *desc_pool_virt)
+> > +{
+> > +       u8 opcode = DMALDS;
+> > +
+> > +       writeb(opcode, desc_pool_virt);
+> > +       return 1;
+> > +}
+> > +
+> > +static inline int pl330_dmaldb(u8 *desc_pool_virt)
+> > +{
+> > +       u8 opcode = DMALDB;
+> > +
+> > +       writeb(opcode, desc_pool_virt);
+> > +       return 1;
+> > +}
+> > +
+> > +static inline int pl330_dmaldps(u8 *desc_pool_virt, u8 periph)
+> > +{
+> > +       u8 opcode = DMALDPS;
+> > +
+> > +       writeb(opcode, desc_pool_virt++);
+> > +       writeb(periph << 3, desc_pool_virt);
+> > +       return 2;
+> > +}
+> > +
+> > +static inline int pl330_dmaldpb(u8 *desc_pool_virt, u8 periph)
+> > +{
+> > +       u8 opcode = DMALDPB;
+> > +
+> > +       writeb(opcode, desc_pool_virt++);
+> > +       writeb(periph << 3, desc_pool_virt);
+> > +       return 2;
+> > +}
+> > +
+> > +static inline int pl330_dmalp(u8 *desc_pool_virt, u8 iter, bool lc)
+> > +{
+> > +       u8 opcode = DMALP | (lc << 1);
+> > +
+> > +       writeb(opcode, desc_pool_virt++);
+> > +       writeb(iter, desc_pool_virt);
+> > +       return 2;
+> > +}
+> > +
+> > +static inline int pl330_dmalpend(u8 *desc_pool_virt, u8 backwards_jump, bool lc)
+> > +{
+> > +       u8 opcode = DMALPEND | (lc << 2);
+> > +
+> > +       writeb(opcode, desc_pool_virt++);
+> > +       writeb(backwards_jump, desc_pool_virt);
+> > +       return 2;
+> > +}
+> > +
+> > +static inline int pl330_dmalpends(u8 *desc_pool_virt, u8 backwards_jump,
+> > +               bool lc)
+> > +{
+> > +       u8 opcode = DMALPENDS | (lc << 2);
+> > +
+> > +       writeb(opcode, desc_pool_virt++);
+> > +       writeb(backwards_jump, desc_pool_virt);
+> > +       return 2;
+> > +}
+> > +
+> > +static inline int pl330_dmalpendb(u8 *desc_pool_virt, u8 backwards_jump,
+> > +               bool lc)
+> > +{
+> > +       u8 opcode = DMALPENDB | (lc << 2);
+> > +
+> > +       writeb(opcode, desc_pool_virt++);
+> > +       writeb(backwards_jump, desc_pool_virt);
+> > +       return 2;
+> > +}
+> > +
+> > +static inline int pl330_dmalpfe(u8 *desc_pool_virt, u8 backwards_jump, bool lc)
+> > +{
+> > +       u8 opcode = DMALPFE | (lc << 2);
+> > +
+> > +       writeb(opcode, desc_pool_virt++);
+> > +       writeb(backwards_jump, desc_pool_virt);
+> > +       return 2;
+> > +}
+> > +
+> > +static inline int pl330_dmakill(u8 *desc_pool_virt)
+> > +{
+> > +       u8 opcode = DMAKILL;
+> > +
+> > +       writeb(opcode, desc_pool_virt);
+> > +       return 1;
+> > +}
+> > +
+> > +static inline int pl330_dmamov(u8 *desc_pool_virt, u8 rd, u32 imm)
+> > +{
+> > +       u8 opcode = DMAMOV;
+> > +
+> > +       writeb(opcode, desc_pool_virt++);
+> > +       writeb(rd, desc_pool_virt++);
+> > +       writel(imm, desc_pool_virt);
+> > +       return 6;
+> > +}
+> > +
+> > +static inline int pl330_dmanop(u8 *desc_pool_virt)
+> > +{
+> > +       u8 opcode = DMANOP;
+> > +
+> > +       writeb(opcode, desc_pool_virt);
+> > +       return 1;
+> > +}
+> > +
+> > +static inline int pl330_dmarmb(u8 *desc_pool_virt)
+> > +{
+> > +       u8 opcode = DMARMB;
+> > +
+> > +       writeb(opcode, desc_pool_virt);
+> > +       return 1;
+> > +}
+> > +
+> > +static inline int pl330_dmasev(u8 *desc_pool_virt, u8 event_num)
+> > +{
+> > +       u8 opcode = DMASEV;
+> > +
+> > +       writeb(opcode, desc_pool_virt++);
+> > +       writeb(event_num << 3, desc_pool_virt);
+> > +       return 2;
+> > +}
+> > +
+> > +static inline int pl330_dmast(u8 *desc_pool_virt)
+> > +{
+> > +       u8 opcode = DMAST;
+> > +
+> > +       writeb(opcode, desc_pool_virt);
+> > +       return 1;
+> > +}
+> > +
+> > +static inline int pl330_dmasts(u8 *desc_pool_virt)
+> > +{
+> > +       u8 opcode = DMASTS;
+> > +
+> > +       writeb(opcode, desc_pool_virt);
+> > +       return 1;
+> > +}
+> > +
+> > +static inline int pl330_dmastb(u8 *desc_pool_virt)
+> > +{
+> > +       u8 opcode = DMASTB;
+> > +
+> > +       writeb(opcode, desc_pool_virt);
+> > +       return 1;
+> > +}
+> > +
+> > +static inline int pl330_dmastps(u8 *desc_pool_virt, u8 periph)
+> > +{
+> > +       u8 opcode = DMASTPS;
+> > +
+> > +       writeb(opcode, desc_pool_virt++);
+> > +       writeb(periph << 3, desc_pool_virt);
+> > +       return 2;
+> > +}
+> > +
+> > +static inline int pl330_dmastpb(u8 *desc_pool_virt, u8 periph)
+> > +{
+> > +       u8 opcode = DMASTPB;
+> > +
+> > +       writeb(opcode, desc_pool_virt++);
+> > +       writeb(periph << 3, desc_pool_virt);
+> > +       return 2;
+> > +}
+> > +
+> > +static inline int pl330_dmastz(u8 *desc_pool_virt)
+> > +{
+> > +       u8 opcode = DMASTZ;
+> > +
+> > +       writeb(opcode, desc_pool_virt);
+> > +       return 1;
+> > +}
+> > +
+> > +static inline int pl330_dmawfe(u8 *desc_pool_virt, u8 event_num, bool invalid)
+> > +{
+> > +       u8 opcode = DMAWFE;
+> > +
+> > +       writeb(opcode, desc_pool_virt++);
+> > +       writeb((event_num << 3) | (invalid << 1), desc_pool_virt);
+> > +       return 2;
+
+writeb() is for peripherals. you can do 'desc_pool_virt[0] = ' here.
+
+> > +
+> > +static inline int pl330_dmawfps(u8 *desc_pool_virt, u8 periph)
+> > +{
+> > +       u8 opcode = DMAWFPS;
+> > +
+> > +       writeb(opcode, desc_pool_virt++);
+> > +       writeb(periph << 3, desc_pool_virt);
+> > +       return 2;
+> > +}
+> > +
+> > +static inline int pl330_dmawfpb(u8 *desc_pool_virt, u8 periph)
+> > +{
+> > +       u8 opcode = DMAWFPB;
+> > +
+> > +       writeb(opcode, desc_pool_virt++);
+> > +       writeb(periph << 3, desc_pool_virt);
+> > +       return 2;
+> > +}
+> > +
+> > +static inline int pl330_dmawfpp(u8 *desc_pool_virt, u8 periph)
+> > +{
+> > +       u8 opcode = DMAWFPP;
+> > +
+> > +       writeb(opcode, desc_pool_virt++);
+> > +       writeb(periph << 3, desc_pool_virt);
+> > +       return 2;
+> > +}
+> > +
+> > +static inline int pl330_dmawmb(u8 *desc_pool_virt)
+> > +{
+> > +       u8 opcode = DMAWMB;
+> > +
+> > +       writeb(opcode, desc_pool_virt);
+> > +       return 1;
+> > +}
+> > +
+> > +static void pl330_dmago(struct pl330_chan *pl330_ch, struct pl330_desc *desc,
+> > +               bool ns)
+> > +{
+> > +       unsigned int val;
+> > +       u8 opcode = DMAGO | (ns << 1);
+> > +
+> > +       val = (pl330_ch->id << 24) | (opcode << 16) | (pl330_ch->id << 8);
+> > +       writel(val, pl330_ch->pl330_dev->reg_base + PL330_DBGINST0);
+> > +
+> > +       val = desc->async_tx.phys;
+> > +       writel(val, pl330_ch->pl330_dev->reg_base + PL330_DBGINST1);
+> > +
+> > +       writel(0, pl330_ch->pl330_dev->reg_base + PL330_DBGCMD);
+> > +}
+> As already mentioned by Marc, it doesn't have to be read/write.
+> PL330 specifies the microcode buffers to be on system memory and that
+> need not be treated like ioports.
+> 
+> [snip]
+> 
+> > +static struct pl330_desc *
+> > +pl330_alloc_descriptor(struct pl330_chan *pl330_ch, gfp_t flags)
+> > +{
+> > +       struct device *dev = pl330_ch->pl330_dev->common.dev;
+> > +       struct pl330_desc *desc;
+> > +       dma_addr_t phys;
+> > +
+> > +       desc = kzalloc(sizeof(*desc), flags);
+> > +       if (!desc)
+> > +               return NULL;
+> > +
+> > +       desc->desc_pool_virt = dma_alloc_coherent(dev, PL330_POOL_SIZE, &phys,
+> > +                       flags);
+> These allocations are inefficient and don't need to be done so often.
+> My implementation allocates a pool of such buffers(size specified by
+> DMA API driver)
+> and manage them by simple pointer manipulation.
+> Though the xfer requests for DMA API has to be managed in the DMA API driver.
+
+There's a dma pool implementation too in the kernel.
+
+> 
+> > +       if (!desc->desc_pool_virt) {
+> > +               kfree(desc);
+> > +               return NULL;
+> > +       }
+> > +
+> > +       dma_async_tx_descriptor_init(&desc->async_tx, &pl330_ch->common);
+> > +       desc->async_tx.tx_submit = pl330_tx_submit;
+> > +       desc->async_tx.phys = phys;
+> > +
+> > +       return desc;
+> > +}
+> > +
+> > +static struct pl330_desc *pl330_get_descriptor(struct pl330_chan *pl330_ch)
+> > +{
+> > +       struct device *dev = pl330_ch->pl330_dev->common.dev;
+> > +       struct pl330_desc *desc;
+> > +
+> > +       if (!list_empty(&pl330_ch->free_desc)) {
+> > +               desc = to_pl330_desc(pl330_ch->free_desc.next);
+> > +               list_del(&desc->desc_node);
+> > +       } else {
+> > +               /* try to get another desc */
+> > +               desc = pl330_alloc_descriptor(pl330_ch, GFP_ATOMIC);
+> > +               if (!desc) {
+> > +                       dev_err(dev, "descriptor alloc failed\n");
+> > +                       return NULL;
+> > +               }
+> > +       }
+> > +
+> > +       return desc;
+> > +}
+> > +
+> > +static int pl330_alloc_chan_resources(struct dma_chan *chan)
+> > +{
+> > +       struct pl330_chan *pl330_ch = to_pl330_chan(chan);
+> > +       struct device *dev = pl330_ch->pl330_dev->common.dev;
+> > +       struct pl330_desc *desc;
+> > +       int i;
+> > +       LIST_HEAD(tmp_list);
+> > +
+> > +       /* have we already been set up? */
+> > +       if (!list_empty(&pl330_ch->free_desc))
+> > +               return pl330_ch->desc_num;
+> > +
+> > +       for (i = 0; i < PL330_DESC_NUM; i++) {
+> > +               desc = pl330_alloc_descriptor(pl330_ch, GFP_KERNEL);
+> > +               if (!desc) {
+> > +                       dev_err(dev, "Only %d initial descriptors\n", i);
+> > +                       break;
+> > +               }
+> > +               list_add_tail(&desc->desc_node, &tmp_list);
+> > +       }
+> > +
+> > +       pl330_ch->completed = chan->cookie = 1;
+> > +       pl330_ch->desc_num = i;
+> > +       list_splice(&tmp_list, &pl330_ch->free_desc);
+> > +
+> > +       return pl330_ch->desc_num;
+> > +}
+> > +
+> 
+> [snip]
+> 
+> > +static unsigned int pl330_make_instructions(struct pl330_chan *pl330_ch,
+> > +               struct pl330_desc *desc, dma_addr_t dest, dma_addr_t src,
+> > +               size_t len, unsigned int inst_size,
+> > +               enum dma_data_direction direction)
+> > +{
+> > +       struct device *dev = pl330_ch->pl330_dev->common.dev;
+> > +       void *buf = desc->desc_pool_virt;
+> > +       u32 control = *(u32 *)&pl330_ch->pl330_reg_cc;
+> > +       unsigned int loop_size;
+> > +       unsigned int loop_size_rest;
+> > +       unsigned int loop_count0;
+> > +       unsigned int loop_count1 = 0;
+> > +       unsigned int loop_count0_rest = 0;
+> > +       unsigned int loop_start0 = 0;
+> > +       unsigned int loop_start1 = 0;
+> > +
+> > +       dev_dbg(dev, "desc_pool_phys: 0x%x\n", desc->async_tx.phys);
+> > +       dev_dbg(dev, "control: 0x%x\n", control);
+> > +       dev_dbg(dev, "dest: 0x%x\n", dest);
+> > +       dev_dbg(dev, "src: 0x%x\n", src);
+> > +       dev_dbg(dev, "len: 0x%x\n", len);
+> > +
+> > +       /* calculate loop count */
+> > +       loop_size = (pl330_ch->pl330_reg_cc.src_burst_len + 1) *
+> > +               (1 << pl330_ch->pl330_reg_cc.src_burst_size);
+> > +       loop_count0 = (len / loop_size) - 1;
+> > +       loop_size_rest = len % loop_size;
+> > +
+> > +       dev_dbg(dev, "loop_size: 0x%x\n", loop_size);
+> > +       dev_dbg(dev, "loop_count0: 0x%x\n", loop_count0);
+> > +       dev_dbg(dev, "loop_size_rest: 0x%x\n", loop_size_rest);
+> > +
+> > +       if (loop_size_rest) {
+> > +               dev_err(dev, "Transfer length must be aligned to loop_size\n");
+> > +               return -EINVAL;
+> > +       }
+> This limit, though not serious, is unconditionally imposed by your design.
+> There are ways to get around this situation by smarter generation of
+> microcode.
+> 
+> > +       if (loop_count0 >= PL330_MAX_LOOPS) {
+> > +               loop_count1 = (loop_count0 / PL330_MAX_LOOPS) - 1;
+> > +               loop_count0_rest = (loop_count0 % PL330_MAX_LOOPS) + 1;
+> > +               loop_count0 = PL330_MAX_LOOPS - 1;
+> > +               dev_dbg(dev, "loop_count0: 0x%x\n", loop_count0);
+> > +               dev_dbg(dev, "loop_count0_rest: 0x%x\n", loop_count0_rest);
+> > +               dev_dbg(dev, "loop_count1: 0x%x\n", loop_count1);
+> > +
+> > +               if (loop_count1 >= PL330_MAX_LOOPS)
+> > +                       dev_dbg(dev, "loop_count1 overflow\n");
+> Again, the DMA API drivers will suffer just because someone didn't care
+> to generate microcode efficiently.
+> The microcode template for xfer takes only about 50 bytes and despite
+> having PL330_POOL_SIZE buffer, you have to drop xfer requests just because
+> the template is not properly designed.
+> My implementation is limited only by the microcode buffer size, which in turn
+> can be specified at startup by the DMA API driver.
+> 
+> > +       }
+> > +
+> > +       /* write instruction sets on buffer */
+> > +       inst_size += pl330_dmamov(buf + inst_size, RD_DAR, dest);
+> > +       inst_size += pl330_dmamov(buf + inst_size, RD_SAR, src);
+> > +       inst_size += pl330_dmamov(buf + inst_size, RD_CCR, control);
+> > +
+> > +       if (loop_count1) {
+> > +               inst_size += pl330_dmalp(buf + inst_size, loop_count1, LC_1);
+> > +               loop_start1 = inst_size;
+> > +       }
+> > +
+> > +       if (loop_count0) {
+> > +               inst_size += pl330_dmalp(buf + inst_size, loop_count0, LC_0);
+> > +               loop_start0 = inst_size;
+> > +       }
+> > +
+> > +       if (direction == DMA_TO_DEVICE) {
+> > +               struct pl330_dma_slave *dma_slave = pl330_ch->common.private;
+> > +               u8 periph = dma_slave->peri_num;
+> > +               inst_size += pl330_dmawfps(buf + inst_size, periph);
+> > +               inst_size += pl330_dmald(buf + inst_size);
+> > +               inst_size += pl330_dmastps(buf + inst_size, periph);
+> > +               inst_size += pl330_dmaflushp(buf + inst_size, periph);
+> > +       } else if (direction == DMA_FROM_DEVICE) {
+> > +               struct pl330_dma_slave *dma_slave = pl330_ch->common.private;
+> > +               u8 periph = dma_slave->peri_num;
+> > +               inst_size += pl330_dmawfps(buf + inst_size, periph);
+> > +               inst_size += pl330_dmaldps(buf + inst_size, periph);
+> > +               inst_size += pl330_dmast(buf + inst_size);
+> > +               inst_size += pl330_dmaflushp(buf + inst_size, periph);
+> > +       } else {
+> > +               inst_size += pl330_dmald(buf + inst_size);
+> > +               inst_size += pl330_dmarmb(buf + inst_size);
+> > +               inst_size += pl330_dmast(buf + inst_size);
+> > +               inst_size += pl330_dmawmb(buf + inst_size);
+> > +       }
+> > +
+> > +       if (loop_count0)
+> > +               inst_size += pl330_dmalpend(buf + inst_size,
+> > +                               inst_size - loop_start0, LC_0);
+> > +
+> > +       if (loop_count1)
+> > +               inst_size += pl330_dmalpend(buf + inst_size,
+> > +                               inst_size - loop_start1, LC_1);
+> > +
+> > +       if (loop_count0_rest) {
+> > +               inst_size += pl330_dmalp(buf + inst_size, loop_count0_rest - 1,
+> > +                               LC_0);
+> > +               loop_start0 = inst_size;
+> > +
+> > +               if (direction == DMA_TO_DEVICE) {
+> > +                       struct pl330_dma_slave *dma_slave =
+> > +                               pl330_ch->common.private;
+> > +                       u8 periph = dma_slave->peri_num;
+> > +                       inst_size += pl330_dmawfps(buf + inst_size, periph);
+> > +                       inst_size += pl330_dmald(buf + inst_size);
+> > +                       inst_size += pl330_dmastps(buf + inst_size, periph);
+> > +                       inst_size += pl330_dmaflushp(buf + inst_size, periph);
+> > +               } else if (direction == DMA_FROM_DEVICE) {
+> > +                       struct pl330_dma_slave *dma_slave =
+> > +                               pl330_ch->common.private;
+> > +                       u8 periph = dma_slave->peri_num;
+> > +                       inst_size += pl330_dmawfps(buf + inst_size, periph);
+> > +                       inst_size += pl330_dmaldps(buf + inst_size, periph);
+> > +                       inst_size += pl330_dmast(buf + inst_size);
+> > +                       inst_size += pl330_dmaflushp(buf + inst_size, periph);
+> > +               } else {
+> > +                       inst_size += pl330_dmald(buf + inst_size);
+> > +                       inst_size += pl330_dmarmb(buf + inst_size);
+> > +                       inst_size += pl330_dmast(buf + inst_size);
+> > +                       inst_size += pl330_dmawmb(buf + inst_size);
+> > +               }
+> > +
+> > +               inst_size += pl330_dmalpend(buf + inst_size,
+> > +                               inst_size - loop_start0, LC_0);
+> > +       }
+> > +
+> > +       inst_size += pl330_dmasev(buf + inst_size, pl330_ch->id);
+> > +       inst_size += pl330_dmaend(buf + inst_size);
+> > +
+> > +       return inst_size;
+> > +}
+> This instruction generation leaves no scope for Security permissions for xfers,
+> that is a feature of PL330.
+> 
+> [snip]
+> 
+> > +static void pl330_xfer_complete(struct pl330_chan *pl330_ch)
+> > +{
+> > +       struct pl330_desc *desc;
+> > +       dma_async_tx_callback callback;
+> > +       void *callback_param;
+> > +
+> > +       /* execute next desc */
+> > +       pl330_issue_pending(&pl330_ch->common);
+> > +
+> > +       if (list_empty(&pl330_ch->complete_desc))
+> > +               return;
+> > +
+> > +       desc = to_pl330_desc(pl330_ch->complete_desc.next);
+> > +       list_move_tail(&desc->desc_node, &pl330_ch->free_desc);
+> > +
+> > +       pl330_ch->completed = desc->async_tx.cookie;
+> > +
+> > +       callback = desc->async_tx.callback;
+> > +       callback_param = desc->async_tx.callback_param;
+> > +       if (callback)
+> > +               callback(callback_param);
+> > +}
+> > +
+> > +static void pl330_ch_tasklet(unsigned long data)
+> > +{
+> > +       struct pl330_chan *pl330_ch = (struct pl330_chan *)data;
+> > +       unsigned int val;
+> > +
+> > +       pl330_xfer_complete(pl330_ch);
+> > +
+> > +       /* enable channel interrupt */
+> > +       val = readl(pl330_ch->pl330_dev->reg_base + PL330_INTEN);
+> > +       val |= (1 << pl330_ch->id);
+> > +       writel(val, pl330_ch->pl330_dev->reg_base + PL330_INTEN);
+> > +}
+> > +
+> > +static irqreturn_t pl330_irq_handler(int irq, void *data)
+> > +{
+> > +       struct pl330_device *pl330_dev = data;
+> > +       struct pl330_chan *pl330_ch;
+> > +       unsigned int intstatus;
+> > +       unsigned int inten;
+> > +       int i;
+> > +
+> > +       intstatus = readl(pl330_dev->reg_base + PL330_INTSTATUS);
+> > +
+> > +       if (intstatus == 0)
+> > +               return IRQ_HANDLED;
+> > +
+> > +       inten = readl(pl330_dev->reg_base + PL330_INTEN);
+> > +       for (i = 0; i < PL330_MAX_CHANS; i++) {
+> > +               if (intstatus & (1 << i)) {
+> > +                       pl330_ch = &pl330_dev->pl330_ch[i];
+> > +                       writel(1 << i, pl330_dev->reg_base + PL330_INTCLR);
+> > +
+> > +                       /* disable channel interrupt */
+> > +                       inten &= ~(1 << i);
+> > +                       writel(inten, pl330_dev->reg_base + PL330_INTEN);
+> > +
+> > +                       tasklet_schedule(&pl330_ch->tasklet);
+> I think the DMA API already prohibits doing non-irq-context things(like enqueue)
+> in the callbacks, so why implement tasklets here?
+> This may still get you "audio working fine" with Samsung I2S controller,
+> but is likely to cause problems with more demanding peripherals like SPDIF
+> if they operate at best QOS(even 24bits/sample Stereo at 96000Hz) and has
+> shallow FIFO(8 samples deep and hence 84 usecs acceptable latency).
+> Remember that SPDIF usually goes with other system load like HDMI HD
+> playaback which only increases the interrupt latency.
+> 
+> Not to forget, the overall throughput hit taken by other dma clients,
+> like MMC over SPI that use 256/512 bytes DMA xfers, due to delayed
+> DMA-DONE notifications.
+> 
+> Also, using tasklet here may break any protocol that involves _time-bound_ ACK
+> via some register after the xfer has been done.
+> 
+> If some client needs to do sleepable-context stuff after DMA-Xfer-Done,
+> let that driver implement tasklet in it's callback rather than have every
+> client pay the price.
+> 
+> > +               }
+> > +       }
+> > +
+> > +       return IRQ_HANDLED;
+> > +}
+> > +
+> 
+>   [snip]
+> 
+> > +
+> > +static int __devinit pl330_probe(struct amba_device *adev, struct amba_id *id)
+> > +{
+> > +       struct pl330_device *pl330_dev;
+> 
+>   [snip]
+> 
+> > +
+> > +       for (i = 0; i < PL330_MAX_CHANS; i++) {
+> This whole code is designed around the assumption of every DMAC having
+> PL330_MAX_CHANS channels. That is dangerous, since PL330 is highly
+> configurable and some implementation may choose to implement less than
+> PL330_MAX_CHANS(i.e 8) channels.
+> As the PL330 spec says, most operations for non-existing channel result in
+> DMA Abort. Further, the IRQ handler assumes utopia and doesn't even
+> care to check
+> such conditions, as a result on non-s3c like implementations there are many
+> chances the system will just hang looping in DMA Abort irq or no irq at all
+> depending upon the cause.
+> Not to mention the unnecessary allocation for MAX possible resources, though
+> not very serious.
+
+ditto.
+ 
+> regards
 > 
 > _______________________________________________
 > linux-arm-kernel mailing list
