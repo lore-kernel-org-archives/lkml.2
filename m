@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab0CaWbL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 18:31:11 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40504 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756619Ab0CaWbI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 18:31:08 -0400
-Date: Thu, 1 Apr 2010 00:31:06 +0200
-From: Michael Grzeschik <mgr@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: rsc@pengutronix.de
-Subject: Issues with Patch: "sched: Improve latencies and throughput"
-Message-ID: <20100331223106.GJ10342@pengutronix.de>
+	id S1757639Ab0CaWbw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 18:31:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48684 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757241Ab0CaWbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 18:31:50 -0400
+Message-ID: <4BB3CC80.3030303@zytor.com>
+Date: Wed, 31 Mar 2010 15:28:16 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 21:22:48 up 11 days,  8:12, 23 users,  load average: 1.72, 2.70,
-	2.49
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: mgr@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Dave Airlie <airlied@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, James Morris <jmorris@namei.org>,
+       Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
+       airlied@linux.ie, Thomas Gleixner <tglx@linutronix.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: Config NO_BOOTMEM breaks my amd64 box
+References: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org>	 <4BB2EB1B.8090303@zytor.com>	 <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org>	 <20100331185916.GA12306@elte.hu> <r2h21d7e9971003311414pc38f5bebk1778a01872657395@mail.gmail.com>
+In-Reply-To: <r2h21d7e9971003311414pc38f5bebk1778a01872657395@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are using an arm mx31 embedded cpu with the v2.6.34 Kernelrelease and
-realized some issues with the scheduling behaviour the patch "sched:
-Improve latencies and throughput" [1] by Mike Galbraith introduced to
-the kernel.
+On 03/31/2010 02:14 PM, Dave Airlie wrote:
+> Are you testing this btw with initramfs/initrds? I suspect lots of testing
+> is being done by people on monolithic kernels, this is just a misc guess,
+> considering I couldn't boot from when this landed until rc3 with this option
+> on a basic 32-bit install on a dual-core 64-bit CPU, it suggested a
+> hole of some sort
+> in the test coverage.
 
-When we used the alsa utility aplay to pipe some audio through an
-usbaudio device and put some scheduling overhead on the device, the
-amount of underruns, due to the not fast enough refilled ring buffer,
-was noticable increased with that patch [1] applied. Until we reverse
-applied the patch the amount of underruns was appreciable lower.
+Hi Dave,
 
-That in fact is the opposite behaviour to its actual meaning.
+The only bug report I remember getting from you had no details and was
+in reply to another bug report which was, indeed, addressed, so we had
+every reason to believe it was being dealt with with the patchset which
+did indeed go into -rc3 (and does address a problem with initramfs in
+particular cases.)
 
-[1] 0ec9fab3d186d9cbb00c0f694d4a260d07c198d9
+Clearly James Morris' problem is something unrelated, and regardless of
+course of action we need to track it down.
 
-mgr
+If you also are having problems with -rc3 we would really appreciate as
+much detail as possible -- boot logs at the very minimum -- so we have
+a chance to at all track down the problems that do exist.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+	-hpa
