@@ -1,40 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932825Ab0CaM7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 08:59:14 -0400
-Received: from ozlabs.org ([203.10.76.45]:40618 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757348Ab0CaM7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 08:59:12 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [PATCH -next] module.h: add stub for is_module_percpu_address
-Date: Wed, 31 Mar 2010 23:29:09 +1030
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; i686; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-References: <20100330191834.f2009292.sfr@canb.auug.org.au> <4BB2358B.3090800@oracle.com>
-In-Reply-To: <4BB2358B.3090800@oracle.com>
+	id S933296Ab0CaNJB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 09:09:01 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:52535 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933277Ab0CaNI7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 09:08:59 -0400
+Date: Wed, 31 Mar 2010 15:08:55 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Alagu Sankar <alagusankar@embwise.com>,
+       Volker Ernst <volker.ernst@txtr.com>, Dan Williams <dcbw@redhat.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Holger Schurig <hs4233@mail.mn-solutions.de>,
+       Bing Zhao <bzhao@marvell.com>, libertas-dev@lists.infradead.org,
+       linux-wireless@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: Re: [PATCH] libertas/sdio: set ECSI and SCSI bits for 1-bit
+ transfers
+Message-ID: <20100331130855.GG30807@buzzloop.caiaq.de>
+References: <1269970733-24681-1-git-send-email-daniel@caiaq.de>
+ <x2ve2d7436a1003310207t16a7d1d6r7853de2dfa647c6c@mail.gmail.com>
+ <20100331090836.GA30801@buzzloop.caiaq.de>
+ <k2he2d7436a1003310249v63878e0ahe1b398401937a225@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201003312329.09722.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <k2he2d7436a1003310249v63878e0ahe1b398401937a225@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Mar 2010 04:01:55 am Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
+On Wed, Mar 31, 2010 at 11:49:49AM +0200, Michał Mirosław wrote:
+> W dniu 31 marca 2010 11:08 użytkownik Daniel Mack <daniel@caiaq.de> napisał:
+> > Hmm, that function isn't exported, and I didn't want to change this. You
+> > say you'd prefer that? I can cook up something that does it, no problem.
 > 
-> Fix build for CONFIG_MODULES not enabled by providing a stub
-> for is_module_percpu_address().
-> 
-> kernel/lockdep.c:605: error: implicit declaration of function 'is_module_percpu_address'
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> BTW, I can't see any exported functions to access fn#0 directly from
+> drivers. Maybe it's time to introduce them now - at least CCCR has
+> some vendor-defined parts that drivers may want to access and there is
+> a lot of place in CIS area that can be (ab)used by devices.
 
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+In fact, there is sdio_f0_{read,write}b() - I overlooked them. Will
+resend a new patch.
 
-Thanks!
-Rusty.
+Thanks for checking,
+Daniel
