@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932878Ab0CaCVi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 22:21:38 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:27064 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932065Ab0CaCV3 (ORCPT
+	id S932911Ab0CaCV6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 22:21:58 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:23857 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932545Ab0CaCVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 22:21:29 -0400
+	Tue, 30 Mar 2010 22:21:34 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,74 +16,136 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 32/33] x86: Use walk_system_ream_range() instead of referring e820.map directly for tboot
-Date: Tue, 30 Mar 2010 19:17:17 -0700
-Message-Id: <1270001838-15857-33-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 20/33] x86, lmb: Add lmb_find_area_size()
+Date: Tue, 30 Mar 2010 19:17:05 -0700
+Message-Id: <1270001838-15857-21-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1270001838-15857-1-git-send-email-yinghai@kernel.org>
 References: <1270001838-15857-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4BB2B120.00EE,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090202.4BB2B123.00AF,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So we can make e820 to be __initdata
+size is returned according free range.
+Will be used to find free ranges for early_memtest and memory corruption check
+
+Do not mess it up with mm/lmb.c yet.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/kernel/tboot.c |   22 +++++++++-------------
- 1 files changed, 9 insertions(+), 13 deletions(-)
+ arch/x86/mm/Makefile |    2 +
+ arch/x86/mm/lmb.c    |   88 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 90 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/mm/lmb.c
 
-diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
-index cc2c604..cf27d64 100644
---- a/arch/x86/kernel/tboot.c
-+++ b/arch/x86/kernel/tboot.c
-@@ -170,34 +170,30 @@ static void tboot_create_trampoline(void)
+diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
+index a4c7683..8ab0505 100644
+--- a/arch/x86/mm/Makefile
++++ b/arch/x86/mm/Makefile
+@@ -26,4 +26,6 @@ obj-$(CONFIG_NUMA)		+= numa.o numa_$(BITS).o
+ obj-$(CONFIG_K8_NUMA)		+= k8topology_64.o
+ obj-$(CONFIG_ACPI_NUMA)		+= srat_$(BITS).o
  
- #ifdef CONFIG_ACPI_SLEEP
- 
--static void add_mac_region(phys_addr_t start, unsigned long size)
-+static int
-+add_mac_region(unsigned long start_pfn, unsigned long nr_pages, void  *arg)
- {
-+	u64 start = start_pfn;
-+	u64 size = nr_pages;
- 	struct tboot_mac_region *mr;
--	phys_addr_t end = start + size;
- 
- 	if (tboot->num_mac_regions >= MAX_TB_MAC_REGIONS)
- 		panic("tboot: Too many MAC regions\n");
- 
- 	if (start && size) {
- 		mr = &tboot->mac_regions[tboot->num_mac_regions++];
--		mr->start = round_down(start, PAGE_SIZE);
--		mr->size  = round_up(end, PAGE_SIZE) - mr->start;
-+		mr->start = start << PAGE_SHIFT;
-+		mr->size  = (u32) (size << PAGE_SHIFT);
- 	}
++obj-$(CONFIG_HAVE_LMB)		+= lmb.o
 +
-+	return 0;
- }
- 
- static int tboot_setup_sleep(void)
- {
--	int i;
--
- 	tboot->num_mac_regions = 0;
- 
--	for (i = 0; i < e820.nr_map; i++) {
--		if ((e820.map[i].type != E820_RAM)
--		 && (e820.map[i].type != E820_RESERVED_KERN))
--			continue;
--
--		add_mac_region(e820.map[i].addr, e820.map[i].size);
--	}
-+	walk_system_ram_range(0, max_pfn, NULL, add_mac_region);
- 
- 	tboot->acpi_sinfo.kernel_s3_resume_vector = acpi_wakeup_address;
- 
+ obj-$(CONFIG_MEMTEST)		+= memtest.o
+diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
+new file mode 100644
+index 0000000..3229e9e
+--- /dev/null
++++ b/arch/x86/mm/lmb.c
+@@ -0,0 +1,88 @@
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/init.h>
++#include <linux/bitops.h>
++#include <linux/lmb.h>
++#include <linux/bootmem.h>
++#include <linux/mm.h>
++#include <linux/range.h>
++
++/* Check for already reserved areas */
++static inline bool __init bad_addr_size(u64 *addrp, u64 *sizep, u64 align)
++{
++	int i;
++	u64 addr = *addrp, last;
++	u64 size = *sizep;
++	bool changed = false;
++again:
++	last = addr + size;
++	for (i = 0; i < lmb.reserved.cnt && lmb.reserved.region[i].size; i++) {
++		struct lmb_property *r = &lmb.reserved.region[i];
++		if (last > r->base && addr < r->base) {
++			size = r->base - addr;
++			changed = true;
++			goto again;
++		}
++		if (last > (r->base + r->size) && addr < (r->base + r->size)) {
++			addr = round_up(r->base + r->size, align);
++			size = last - addr;
++			changed = true;
++			goto again;
++		}
++		if (last <= (r->base + r->size) && addr >= r->base) {
++			(*sizep)++;
++			return false;
++		}
++	}
++	if (changed) {
++		*addrp = addr;
++		*sizep = size;
++	}
++	return changed;
++}
++
++static u64 __init __lmb_find_area_size(u64 ei_start, u64 ei_last, u64 start,
++			 u64 *sizep, u64 align)
++{
++	u64 addr, last;
++
++	addr = round_up(ei_start, align);
++	if (addr < start)
++		addr = round_up(start, align);
++	if (addr >= ei_last)
++		goto out;
++	*sizep = ei_last - addr;
++	while (bad_addr_size(&addr, sizep, align) && addr + *sizep <= ei_last)
++		;
++	last = addr + *sizep;
++	if (last > ei_last)
++		goto out;
++
++	return addr;
++
++out:
++	return -1ULL;
++}
++
++/*
++ * Find next free range after *start
++ */
++u64 __init lmb_find_area_size(u64 start, u64 *sizep, u64 align)
++{
++	int i;
++
++	for (i = 0; i < lmb.memory.cnt; i++) {
++		u64 ei_start = lmb.memory.region[i].base;
++		u64 ei_last = ei_start + lmb.memory.region[i].size;
++		u64 addr;
++
++		addr = __lmb_find_area_size(ei_start, ei_last, start,
++					 sizep, align);
++
++		if (addr != -1ULL)
++			return addr;
++	}
++
++	return -1ULL;
++}
++
 -- 
 1.6.4.2
 
