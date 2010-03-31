@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757277Ab0CaMIW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 08:08:22 -0400
-Received: from fmmailgate01.web.de ([217.72.192.221]:60641 "EHLO
-	fmmailgate01.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757037Ab0CaMIV (ORCPT
+	id S1757299Ab0CaMKt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 08:10:49 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:41155 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757037Ab0CaMKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 08:08:21 -0400
-Date: Wed, 31 Mar 2010 14:08:16 +0200
-From: Nikolaus Schulz <microschulz@web.de>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Marton Balint <cus@fazekas.hu>,
-       Alexey Dobriyan <adobriyan@gmail.com>,
-       Kevin Dankwardt <k@kcomputing.com>, Christoph Hellwig <hch@lst.de>,
-       linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH] fat: fix buffer overflow in vfat_create_shortname()
-Message-ID: <20100331120816.GA3430@penelope.zusammrottung.local>
-References: <20100325035010.GA3242@penelope.zusammrottung.local>
- <8739zp6k9s.fsf@devron.myhome.or.jp>
- <20100325122419.GA8896@luigi.zusammrottung.local>
- <87y6hg60nw.fsf@devron.myhome.or.jp>
- <87bpec4l8j.fsf@devron.myhome.or.jp>
+	Wed, 31 Mar 2010 08:10:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=pGD2jHTGuVrX5mTuxqBNS3nSUC1iX/Vet7Aq0c1/YJWi8fldvO+n9J3bd+B1W4WWZI
+         uIljNgHhDXjoyqRfeLic1t0U7yRuUpwCR0tjN9m31i8/G68gHQbCNC41lVR9k3HfHP31
+         w0xb/Al3RMRjkFo9hyIzKGe5LzwnYSZL5yX0M=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87bpec4l8j.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Provags-ID: V01U2FsdGVkX1/otLYPCbs/LYaGVFxtDlFpQxezqd/54sRsosge
-	5r0Xo+PVvRhyoxAcnwzeLWKZNzbRxleL2Ahh7yn18IFh+jmMVf
-	xIZ7MYLUE=
+In-Reply-To: <tnx7hosy9t2.fsf@e102109-lin.cambridge.arm.com>
+References: <n2m72cf309c1003310300k26b9aacbob7b49ff2f43f949d@mail.gmail.com> 
+	<tnx7hosy9t2.fsf@e102109-lin.cambridge.arm.com>
+From: Sachin Pandhare <sachinpandhare@gmail.com>
+Date: Wed, 31 Mar 2010 17:40:25 +0530
+Message-ID: <y2t72cf309c1003310510o87c33ebew5278758fe76556a9@mail.gmail.com>
+Subject: Re: kmemleak_scan_area
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 09:52:12PM +0900, OGAWA Hirofumi wrote:
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
-> > Nikolaus Schulz <microschulz@web.de> writes:
-> >
-> >>> However, anyway, your patch is much better off than current one. So,
-> >>> I'll apply this in the next merge window.
-> >>> 
-> >>> Or should we apply this immediately?
-> >>> 
-> >>> Thanks.
-> >>
-> >> Given that this fixes a stack corruption which triggers the gcc stack
-> >> smashing protection and thus basically a crash, I vote for not
-> >> postponing it, but applying it immediately.
-> >
-> > Um..., where is a stack corruption? sprintf() overflow? But, it's
-> > actually snprintf(), not sprintf()...
-> 
-> Whoops, it was really sprintf().
+On Wed, Mar 31, 2010 at 5:36 PM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+> Sachin Pandhare <sachinpandhare@gmail.com> wrote:
+>> In kmemleak.c file "kmemleak_scan_area" is appearing as a structure as
+>> well as a function.
+>> e.g.:
+>> - struct kmemleak_scan_area {
+>> - void __ref kmemleak_scan_area(const void *ptr, size_t size, gfp_t gfp)
+>>
+>> Do you think it is a good to have it like that?
+>
+> Does it cause any problems? I think C has different namespaces for types
+> and functions, so they should not collide. I agree that from a
+> readability perspective, it would be better if they are named
+> differently (like kmemleak_scan_area_node :)).
 
-Ping?
+It has not caused any problem.
+Thanks,
 
-I really think this should go into 2.6.34 and the next stable kernel
-updates.
-
-Nikolaus
+>
+> --
+> Catalin
