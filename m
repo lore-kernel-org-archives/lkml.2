@@ -1,103 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933081Ab0CaC2U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 22:28:20 -0400
-Received: from acsinet11.oracle.com ([141.146.126.233]:38036 "EHLO
-	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758067Ab0CaCVV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 22:21:21 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 28/33] x86: Align e820 ram range to page
-Date: Tue, 30 Mar 2010 19:17:13 -0700
-Message-Id: <1270001838-15857-29-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1270001838-15857-1-git-send-email-yinghai@kernel.org>
-References: <1270001838-15857-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4BB2B11E.0106,ss=1,fgs=0
+	id S1758042Ab0CaCez (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 22:34:55 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43924 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755972Ab0CaCex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Mar 2010 22:34:53 -0400
+Message-ID: <4BB2B4C1.5040603@kernel.org>
+Date: Wed, 31 Mar 2010 11:34:41 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>,
+       Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH -next] module.h: add stub for is_module_percpu_address
+References: <20100330191834.f2009292.sfr@canb.auug.org.au> <4BB2358B.3090800@oracle.com>
+In-Reply-To: <4BB2358B.3090800@oracle.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 31 Mar 2010 02:34:44 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-to workaround wrong BIOS memory map.
+On 03/31/2010 02:31 AM, Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> Fix build for CONFIG_MODULES not enabled by providing a stub
+> for is_module_percpu_address().
+> 
+> kernel/lockdep.c:605: error: implicit declaration of function 'is_module_percpu_address'
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/kernel/e820.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 44 insertions(+), 0 deletions(-)
+Thanks.  Applied to percpu tree.
 
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index e2a0b02..57c938a 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -910,6 +910,47 @@ static int __init parse_memmap_opt(char *p)
- }
- early_param("memmap", parse_memmap_opt);
- 
-+static void __init e820_align_ram_page(void)
-+{
-+	int i;
-+	bool changed = false;;
-+
-+	for (i = 0; i < e820.nr_map; i++) {
-+		struct e820entry *entry = &e820.map[i];
-+		u64 start, end;
-+		u64 start_aligned, end_aligned;
-+
-+		if (entry->type != E820_RAM)
-+			continue;
-+
-+		start = entry->addr;
-+		end = start + entry->size;
-+
-+		start_aligned = round_up(start, PAGE_SIZE);
-+		end_aligned = round_down(end, PAGE_SIZE);
-+
-+		if (end_aligned <= start_aligned) {
-+			e820_update_range(start, end - start, E820_RAM, E820_RESERVED);
-+			changed = true;
-+			continue;
-+		}
-+		if (start < start_aligned) {
-+			e820_update_range(start, start_aligned - start, E820_RAM, E820_RESERVED);
-+			changed = true;
-+		}
-+		if (end_aligned < end) {
-+			e820_update_range(end_aligned, end - end_aligned, E820_RAM, E820_RESERVED);
-+			changed = true;
-+		}
-+	}
-+
-+	if (changed) {
-+		sanitize_e820_map();
-+		printk(KERN_INFO "aligned physical RAM map:\n");
-+		e820_print_map("aligned");
-+	}
-+}
-+
- void __init finish_e820_parsing(void)
- {
- 	if (userdef) {
-@@ -922,6 +963,9 @@ void __init finish_e820_parsing(void)
- 		printk(KERN_INFO "user-defined physical RAM map:\n");
- 		e820_print_map("user");
- 	}
-+
-+	/* In case, We have RAM entres that are not PAGE aligned */
-+	e820_align_ram_page();
- }
- 
- static inline const char *e820_type_to_string(int e820_type)
 -- 
-1.6.4.2
-
+tejun
