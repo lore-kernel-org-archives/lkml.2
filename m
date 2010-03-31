@@ -1,128 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757685Ab0CaTCw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 15:02:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60540 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757250Ab0CaTCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 15:02:51 -0400
-Date: Wed, 31 Mar 2010 20:59:50 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       nishimura@mxp.nes.nec.co.jp,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm] proc: don't take ->siglock for /proc/pid/oom_adj
-Message-ID: <20100331185950.GB11635@redhat.com>
-References: <20100326150805.f5853d1c.akpm@linux-foundation.org> <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330163909.GA16884@redhat.com> <20100330174337.GA21663@redhat.com> <alpine.DEB.2.00.1003301329420.5234@chino.kir.corp.google.com>
+	id S1757622Ab0CaTK3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 15:10:29 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:51020 "EHLO
+	mx01.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756588Ab0CaTK1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 15:10:27 -0400
+X-Greylist: delayed 2058 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Mar 2010 15:10:27 EDT
+Date: Wed, 31 Mar 2010 14:36:05 -0400 (EDT)
+From: Miloslav Trmac <mitr@redhat.com>
+To: Juraj Hlista <juro.hlista@gmail.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+       viro@zeniv.linux.org.uk, sgrubb@redhat.com
+Message-ID: <1870478057.299001270060565969.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <1844882650.298781270060487513.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+Subject: Re: [PATCH] audit: Reactive rules
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1003301329420.5234@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.5.72]
+X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30, David Rientjes wrote:
->
-> On Tue, 30 Mar 2010, Oleg Nesterov wrote:
->
-> > ->siglock is no longer needed to access task->signal, change
-> > oom_adjust_read() and oom_adjust_write() to read/write oom_adj
-> > lockless.
-> >
-> > Yes, this means that "echo 2 >oom_adj" and "echo 1 >oom_adj"
-> > can race and the second write can win, but I hope this is OK.
->
-> Ok, but could you base this on -mm at
-> http://userweb.kernel.org/~akpm/mmotm/ since an additional tunable has
-> been added (oom_score_adj), which does the same thing?
-
-David, I just can't understand why
-	oom-badness-heuristic-rewrite.patch
-duplicates the related code in fs/proc/base.c and why it preserves
-the deprecated signal->oom_adj.
-
-OK. Please forget about lock_task_sighand/signal issues. Can't we kill
-signal->oom_adj and create a single helper for both
-/proc/pid/{oom_adj,oom_score_adj} ?
-
-	static ssize_t oom_any_adj_write(struct file *file, const char __user *buf,
-						size_t count, bool deprecated_mode)
-	{
-		struct task_struct *task;
-		char buffer[PROC_NUMBUF];
-		unsigned long flags;
-		long oom_score_adj;
-		int err;
-
-		memset(buffer, 0, sizeof(buffer));
-		if (count > sizeof(buffer) - 1)
-			count = sizeof(buffer) - 1;
-		if (copy_from_user(buffer, buf, count))
-			return -EFAULT;
-
-		err = strict_strtol(strstrip(buffer), 0, &oom_score_adj);
-		if (err)
-			return -EINVAL;
-
-		if (depraceted_mode) {
-			 if (oom_score_adj == OOM_ADJUST_MAX)
-				oom_score_adj = OOM_SCORE_ADJ_MAX;
-			 else
-				oom_score_adj = (oom_score_adj * OOM_SCORE_ADJ_MAX) /
-						-OOM_DISABLE;
-		}
-
-		if (oom_score_adj < OOM_SCORE_ADJ_MIN ||
-				oom_score_adj > OOM_SCORE_ADJ_MAX)
-			return -EINVAL;
-
-		task = get_proc_task(file->f_path.dentry->d_inode);
-		if (!task)
-			return -ESRCH;
-		if (!lock_task_sighand(task, &flags)) {
-			put_task_struct(task);
-			return -ESRCH;
-		}
-		if (oom_score_adj < task->signal->oom_score_adj &&
-				!capable(CAP_SYS_RESOURCE)) {
-			unlock_task_sighand(task, &flags);
-			put_task_struct(task);
-			return -EACCES;
-		}
-
-		task->signal->oom_score_adj = oom_score_adj;
-
-		unlock_task_sighand(task, &flags);
-		put_task_struct(task);
-		return count;
-	}
-
-This is just the current oom_score_adj_read() + "if (depraceted_mode)"
-which does oom_adj -> oom_score_adj conversion.
-
-Now,
-
-	static ssize_t oom_adjust_write(...)
-	{
-		printk_once(KERN_WARNING "... deprecated ...\n");
-
-		return oom_any_adj_write(..., true);
-	}
-
-	static ssize_t oom_score_adj_write(...)
-	{
-		return oom_any_adj_write(..., false);
-	}
-
-The same for oom_xxx_read().
-
-What is the point to keep signal->oom_adj ?
-
-Oleg.
+Hello,
+----- "Juraj Hlista" <juro.hlista@gmail.com> wrote:
+> diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+> @@ -415,7 +424,8 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
+> -	int i;
+> +	int i, j = 0;
+> +	int k;
+> @@ -425,7 +435,7 @@ static struct audit_entry
+> *audit_data_to_entry(struct audit_rule_data *data,
+>  	for (i = 0; i < data->field_count; i++) {
+> -		struct audit_field *f = &entry->rule.fields[i];
+> +		struct audit_field *f = &entry->rule.fields[i - j];
+It would be more clear to have a "source index" (used for "data"), and a "destination index" (used for entry->rule.fields); "j" is currently a difference between the two.
 
