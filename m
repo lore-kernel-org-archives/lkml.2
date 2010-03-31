@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932912Ab0CaSJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 14:09:57 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:35526 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757910Ab0CaSJz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 14:09:55 -0400
-To: "Serge E. Hallyn" <serue@us.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
-       Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Cornelia Huck <cornelia.huck@de.ibm.com>,
-       linux-fsdevel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-       Benjamin LaHaise <bcrl@lhnet.ca>, netdev@vger.kernel.org
-Subject: Re: [PATCH 0/6] tagged sysfs support
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
-	<20100331172110.GA18838@us.ibm.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Wed, 31 Mar 2010 11:09:46 -0700
-In-Reply-To: <20100331172110.GA18838@us.ibm.com> (Serge E. Hallyn's message of "Wed\, 31 Mar 2010 12\:21\:10 -0500")
-Message-ID: <m1vdccwefp.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S1756286Ab0CaSS2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 14:18:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41198 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755378Ab0CaSS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 14:18:27 -0400
+Date: Wed, 31 Mar 2010 10:38:31 -0700
+From: Greg KH <gregkh@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk
+Subject: Re: 4 stable kernel review cycles starting
+Message-ID: <20100331173831.GA9180@suse.de>
+References: <20100330230338.GA28642@kroah.com> <20100331044445.GU3335@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: serue@us.ibm.com, netdev@vger.kernel.org, bcrl@lhnet.ca, eric.dumazet@gmail.com, linux-fsdevel@vger.kernel.org, cornelia.huck@de.ibm.com, tj@kernel.org, linux-kernel@vger.kernel.org, greg@kroah.com, kay.sievers@vrfy.org, gregkh@suse.de
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+Content-Disposition: inline
+In-Reply-To: <20100331044445.GU3335@dastard>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serue@us.ibm.com> writes:
+On Wed, Mar 31, 2010 at 03:44:45PM +1100, Dave Chinner wrote:
+> On Tue, Mar 30, 2010 at 04:03:38PM -0700, Greg KH wrote:
+> > Hi all,
+> > 
+> > Well, I up and moved cities and caused a bunch of stable patches to be
+> > backlogged.  I've caught up with all of the ones that were marked as
+> > being wished to be applied to the stable trees, and still have a bunch
+> > of pending requests still queued up in my mailbox.
+> > 
+> > But, due to the number of the current patches already applied, it is
+> > time to just let these go and work on the other pending stuff after
+> > this.
+> 
+> Greg, I send a series of 19 patches for XFS updates to stable@kernel.org
+> back on the 12th March for 2.6.32 (subject was "[PATCH 0/19] xfs:
+> 2.6.32.y stable tree updates").
+> 
+> The patches were cc'd to the XFS list and they made it there:
+> 
+> http://oss.sgi.com/archives/xfs/2010-03/msg00125.html
+> 
+> so I'm wondering if you've got them queued up or not or whether
+> I need to resend them to you....
+> 
+> > So don't worry, if anyone has asked for some patches to be applied to
+> > some stable trees, and you don't see it here, just give it some time,
+> > I'm still catching up on things (hey, I'm just happy I have an internet
+> > connection again...)
+> 
+> I sent these prior to the last stable release that had this same
+> comment, so I didn't get worried that they had been missed. Now they
+> are missing from the next stable release, I'm getting worried. :/
 
-> Quoting Eric W. Biederman (ebiederm@xmission.com):
->> 
->> The main short coming of using multiple network namespaces today
->> is that only network devices for the primary network namespaces
->> can be put in the kobject layer and sysfs.
->> 
->> This is essentially the earlier version of this patchset that was
->> reviewed before, just now on top of a version of sysfs that doesn't
->> need cleanup patches to support it.
->> 
->> I have been running these patches in some form for well over a
->> year so the basics should at least be solid.  
->> 
->> This patchset is currently against 2.6.34-rc1.
->> 
->> This patchset is just the basic infrastructure a couple of more pretty
->> trivial patches are needed to actually enable network namespaces to use this.
->> My current plan is to send those after these patches have made it through
->> review.
->
-> Thanks very much for keeping this going, Eric!  I'm going to keep
-> looking through the code some more, but so far I see no problems.
->
-> Acked-by: Serge Hallyn <serue@us.ibm.com>
->
-> to the full patchset.  I'm really hoping you'll also include the
-> patch to implement the netns support (i.e. basically commit
-> fdc0adeaa8bfab9a179e1eb349cab400ddb70403 that you sent inline this
-> morning to Tejun).
+Yes, they are still in my "to-apply" queue.  I also have a series of
+ext4 and kvm patches as well as a mess of wireless patches to wade
+through, so you are in good company.
 
-One step at a time.  My goal is to have it all send out and reviewed
-in time for 2.6.35.
+The issue is that applying individual patches like this is more
+"difficult" than just handling patches that are already marked in
+Linus's kernel tree as to be added to the stable queues.  So it takes a
+bit more time and effort to get to those patches, while still keeping up
+with the series like you, and other developers, sent.
 
-Eric
+Combine that with packing up my house and moving a few hundred miles
+away, loosing internet access for over a week, and trying to catch up
+with the patches that accumulated during that time, and we ended up with
+these already-large stable releases that I figured was better to get out
+now, than wait a few days to add a few hundred more patches to them.
+
+So I will get to these patches, don't worry, hopefully my self-inflicted
+mess of moving will calm down soon and I will catch up with the backlog.
+
+thanks,
+
+greg k-h
