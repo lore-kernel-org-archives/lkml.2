@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758264Ab0CaV40 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 17:56:26 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:41530 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758241Ab0CaV4Y (ORCPT
+	id S1758272Ab0CaV5Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 17:57:16 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41085 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756750Ab0CaV5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 17:56:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Fy12BTyCY+AEw35HkSKVcr5Z456KYqJW6BgAjE+7mSgJ7ZqEMukKcw6pqOZAYWMSTz
-         ZDrYK7uyrcYfUDlDw0Ucr3bvPqrxPK/EVER2rFrzGPnPtQg4mow4AI7d9tFct+1ylGfh
-         ZaPMlJUoScTOrOq/giD7uNu/XwFn9T0lI/5BQ=
-Date: Wed, 31 Mar 2010 23:56:25 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 6/6] procfs: Kill the bkl in ioctl
-Message-ID: <20100331215624.GF5163@nowhere>
-References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <20100331172208.GB5163@nowhere> <201003312221.23953.arnd@arndb.de> <201003312304.30917.arnd@arndb.de>
+	Wed, 31 Mar 2010 17:57:14 -0400
+Date: Wed, 31 Mar 2010 22:54:11 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: Matthew Wilcox <matthew@wil.cx>, "H. Peter Anvin" <hpa@zytor.com>,
+       Yinghai Lu <yinghai@kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Rabin Vincent <rabin@rab.in>,
+       lkml <linux-kernel@vger.kernel.org>, penberg@cs.helsinki.fi,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       linux-arch@vger.kernel.org
+Subject: Re: start_kernel(): bug: interrupts were enabled early
+Message-ID: <20100331215411.GB17715@flint.arm.linux.org.uk>
+Mail-Followup-To: Christoph Lameter <cl@linux-foundation.org>,
+	Matthew Wilcox <matthew@wil.cx>, "H. Peter Anvin" <hpa@zytor.com>,
+	Yinghai Lu <yinghai@kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Rabin Vincent <rabin@rab.in>, lkml <linux-kernel@vger.kernel.org>,
+	penberg@cs.helsinki.fi,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	linux-arch@vger.kernel.org
+References: <20100325194100.GA2364@debian> <20100331134048.da4e35a7.akpm@linux-foundation.org> <4BB3B4DB.7040904@kernel.org> <20100331210145.GB32165@parisc-linux.org> <4BB3B8FC.1020608@zytor.com> <20100331211754.GC32165@parisc-linux.org> <alpine.DEB.2.00.1003311640410.30456@router.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201003312304.30917.arnd@arndb.de>
+In-Reply-To: <alpine.DEB.2.00.1003311640410.30456@router.home>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 11:04:30PM +0200, Arnd Bergmann wrote:
-> On Wednesday 31 March 2010 22:21:23 Arnd Bergmann wrote:
-> > Another crazy idea I had was to simply turn the BKL into a regular mutex
-> > as soon as we can show that all remaining users are of the non-recursive
-> > kind and don't rely on the autorelease-on-sleep. Doing that would be
-> > much easier without the pushdown into .unlocked_ioctl than it would be
-> > with it.
+On Wed, Mar 31, 2010 at 04:42:25PM -0500, Christoph Lameter wrote:
+> Do not run the checks while we are in a single threaded context?
 > 
-> I just looked at all the users of lock_kernel remaining with my patch
-> series. For 90% of them, it is completely obvious that they don't rely
-> on nested locking, and they very much look like they don't need the
-> autorelease either, because the BKL was simply pushed down into the
-> open, ioctl and llseek functions.
-> 
-> There are a few file systems (udf, ncpfs, autofs, coda, ...) and some
-> network protocols (appletalk, ipx, irnet and x25) for which it is not
-> obviously, though still quite likely, the case.
-> 
-> So we could actually remove the BKL recursion code soon, or even turn
-> all of it into a regular mutex, at least as an experimental option.
-> 
-> The recursive users that I've removed in my series are the block, tty,
-> input and sound subsystems, as well as the init code.
+> I thought we had some dynamic code patching thingamy that could change
+> those when we go to smp mode?
 
+You have to remember that on embedded architectures, such as ARM,
+where XIP is supported we can't change the text segment at run time -
+which means dynamic code patching won't work.
 
-This is a solution that has been tried more than once already. But Linus
-has told he wouldn't pull something that turns the bkl into a mutex or a
-semaphore.
+However, the kernel should still work in such situations.
 
-Plus it's quite hard to tell that it does or not auto-release somewhere
-This is often something you can really spot on runtime or on small path
-only.
-
-The simple fact the bkl is not always a leaf lock makes it need the
-auto-release, otherwise you experience very bad unexpected lock
-dependencies.
-
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
