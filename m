@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab0CaRhm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 13:37:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9394 "EHLO mx1.redhat.com"
+	id S932566Ab0CaRtK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 13:49:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37200 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753236Ab0CaRhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 13:37:40 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100331151604.GC2461@linux.vnet.ibm.com>
-References: <20100331151604.GC2461@linux.vnet.ibm.com> <20100319022527.GC2894@linux.vnet.ibm.com> <20100318133302.29754.1584.stgit@warthog.procyon.org.uk> <19192.1269889348@redhat.com> <23274.1269893706@redhat.com> <25276.1269901350@redhat.com> <26760.1269903543@redhat.com> <20100329232636.GT2569@linux.vnet.ibm.com> <2440.1269967151@redhat.com> <21972.1269993064@redhat.com> <10818.1270044273@redhat.com> 
-To: paulmck@linux.vnet.ibm.com
-Cc: dhowells@redhat.com, Eric Dumazet <eric.dumazet@gmail.com>,
-       Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+	id S1757924Ab0CaRtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 13:49:07 -0400
+Message-ID: <4BB38A26.4070903@zytor.com>
+Date: Wed, 31 Mar 2010 10:45:10 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Phillip Lougher <phillip@lougher.demon.co.uk>
+CC: Ferenc Wagner <wferi@niif.hu>, Alain Knaff <alain@knaff.lu>,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS: Fix RCU warnings in nfs_inode_return_delegation_noreclaim() [ver #2]
-Date: Wed, 31 Mar 2010 18:37:34 +0100
-Message-ID: <15371.1270057054@redhat.com>
+Subject: Re: kernel decompressor interface
+References: <877hotu6x9.fsf@tac.ki.iif.hu> <4BB29675.9050507@lougher.demon.co.uk>
+In-Reply-To: <4BB29675.9050507@lougher.demon.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+On 03/30/2010 05:25 PM, Phillip Lougher wrote:
+> Ferenc Wagner wrote:
+>> Hi,
+>>
+>> While  working with SquashFS code recently, I got the impression that the
+>> current decompress_fn interface isn't best suited for general use: it
+>> rules out real scatter/gather operation, which -- one hopes -- is a
+>> general feature of stream decompressors.  For example, if one has to
+>> decompress data from a series of buffer_heads into a bunch of (cache)
+>> pages (typical operation in compressed file systems), the inflate
+>> interface in zlib.h provides the possibility of changing input and
+>> output buffer addresses, but decompress_fn does not, necessitating extra
+>> memory copying.  On the other hand, the latter is admittedly simpler.
+> 
+> The decompress_fn interface is rather limited, however, it must
+> be borne in mind that it was adequate for the original intended
+> users (initramfs/initrd decompression). Squashfs (and other filesystems) on
+> the other hand can certainly make use of a much better multi-call interface.
+> My strategy in adding LZMA support to Squashfs has been to get an implementation
+> using the current interface mainlined, and one this has been done to look at
+> improving the decompress_fn interface.
 
-> Protected by something that the caller did, be it holding the the correct
-> lock, operating on it during initialization before other CPUs have access
-> to it, operating on it during cleanup after other CPUs' access has been
-> revoked, or whatever.
+Well, it's adequate for the *current form* of initramfs decompression,
+which is rather crippled: we fail to progressively free the memory used,
+simply because we have no way to track it.
 
-But the point I made very early this morning still stands:  What if someone
-simply wants to test the pointer, not actually to dereference it?
+This is, in my opinion, a major shortcoming of the current implementation.
 
-NFS was using rcu_dereference() for this in a couple of places - which is
-overkill.  I suggested stripping this off and you countered with the
-suggestion that it should be using rcu_dereference_check().
+> LZMA decompressors have a quirk in that they use the output buffer
+> as the history buffer (e.g. look for peek_old_byte() in decompress_unlzma.c).
+> This means any multi-call interface such as zlib which modifies the output
+> buffer pointer dynamically (without allowing the decompressor to look back at
+> previously passed in buffers) won't work.   A multi-call interface that
+> passes the output buffers in an iovec style array should work though
+> (incidentally this is why Squashfs passes the output buffers as an array
+> to the decompressor wrapper even though LZMA cannot as yet make use of it)
 
-Why do I need anything at all?
+inflate has exactly the same behavior, except for the fact that the
+standard zlib implementation maintains this state internally instead of
+relying on being able to peek in the output buffer.  It's thus not an
+inherent property of the compression algorithm.
 
-David
+The requirement that the output can't be processed incrementally is
+another major disadvantage, which I'm not sure how to address (LZMA
+requires insane amounts of memory if you don't let it use its output as
+its look-behind buffer, which means that either for small or large
+outputs we're wasting tons of memory -- in the former case with a
+separate buffer and in the latter case with a "decompress all at once"
+buffer.)
+
+	-hpa
