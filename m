@@ -1,57 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694Ab0CaITX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 04:19:23 -0400
-Received: from mail-yw0-f172.google.com ([209.85.211.172]:37271 "EHLO
-	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932315Ab0CaITT (ORCPT
+	id S1757365Ab0CaIX0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 04:23:26 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55817 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756251Ab0CaIXW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 04:19:19 -0400
+	Wed, 31 Mar 2010 04:23:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=i24VahmQmrlDnaoJblLSTHQWZiIHH3UconIDv4A8EMoIq1Juhm356GBvqsfvldBS4E
-         IM0al+OLfymgpaE0qpKSN5VoBfjH2r0LFtneXbHDYh4XIRyg+87TAhxmwWcCrSSCjE0i
-         fEIZZAoY1+yt69gi9EnEOl1Wmf6LgQEMy58aY=
-Message-ID: <4BB30644.9090809@gmail.com>
-Date: Wed, 31 Mar 2010 17:22:28 +0900
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Ca9HSxzS4UyQHzoynUIRqy0ScdBd+VLCvHtj3dZwW+SXisFlOtogIuSRATdJAlg2Zz
+         iNiJjTWEgw6rmoZdWpdshXtdgLg2LVRmsfAu/ZfATWQRPDXGkq9PkmfJarvdgTsaWSXN
+         7D3hCj0EswHPBq80yeQRur1U8wtpj7qdupJQo=
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
-       linux-kernel@vger.kernel.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
-       linux-fsdevel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-       Benjamin LaHaise <bcrl@lhnet.ca>, Serge Hallyn <serue@us.ibm.com>,
-       netdev@vger.kernel.org, Benjamin Thery <benjamin.thery@bull.net>
-Subject: Re: [PATCH 3/6] sysfs: Implement sysfs tagged directory support.
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org>	<1269973889-25260-3-git-send-email-ebiederm@xmission.com>	<4BB2F083.1050803@kernel.org> <m11vf12ayb.fsf@fess.ebiederm.org> <4BB30520.2030100@kernel.org>
-In-Reply-To: <4BB30520.2030100@kernel.org>
+In-Reply-To: <1269970733-24681-1-git-send-email-daniel@caiaq.de>
+References: <1269970733-24681-1-git-send-email-daniel@caiaq.de>
+Date: Wed, 31 Mar 2010 13:53:21 +0530
+Message-ID: <y2q703729f11003310123w505134f8y61efb0c9f7168a30@mail.gmail.com>
+Subject: Re: [PATCH] libertas/sdio: set ECSI and SCSI bits for 1-bit transfers
+From: Alagu Sankar Vellaichamy <alagusankar@gmail.com>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: linux-kernel@vger.kernel.org, Volker Ernst <volker.ernst@txtr.com>,
+       Dan Williams <dcbw@redhat.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Holger Schurig <hs4233@mail.mn-solutions.de>,
+       Bing Zhao <bzhao@marvell.com>, libertas-dev@lists.infradead.org,
+       linux-wireless@vger.kernel.org, linux-mmc@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just wanna add a bit more.
+SCSI is read-only.  We ideally should be checking this bit and then
+set the ECSI accordingly, rather than setting both ECSI and SCSI.
 
-On 03/31/2010 05:17 PM, Tejun Heo wrote:
-> If you think all those callbacks are absolute necessities, can you
-> please at least add boatload of comments around them explaning what
-> they're meant to do and how they're gonna be used?  It's probably
-> because I don't have any experience with namespaces but I really can't
-> wrap my head around it as it currently stands.
+- Alagu Sankar
 
-The reason why I talked about proper layering is the same reason.
-It's very difficult to review your code because I have no idea how
-those callbacks are meant to be used and gonna behave and that lowers
-maintainability significantly in the long run.  If at all possible,
-please make it implement a discrete function which is used to
-implement something higher up.  If it's already done like that and I'm
-just being stupid, please feel free to enlighten me.
-
-Thanks.
-
--- 
-tejun
+On Tue, Mar 30, 2010 at 11:08 PM, Daniel Mack <daniel@caiaq.de> wrote:
+> When operating in 1-bit mode, SDAT1 is used as dedicated interrupt line.
+> However, the 8686 will only drive this line when the ECSI and SCSI bits
+> are set in the CCCR_IF register.
+>
+> Thanks to Alagu Sankar for pointing me in the right direction.
+>
+> Signed-off-by: Daniel Mack <daniel@caiaq.de>
+> Cc: Alagu Sankar <alagusankar@embwise.com>
+> Cc: Volker Ernst <volker.ernst@txtr.com>
+> Cc: Dan Williams <dcbw@redhat.com>
+> Cc: John W. Linville <linville@tuxdriver.com>
+> Cc: Holger Schurig <hs4233@mail.mn-solutions.de>
+> Cc: Bing Zhao <bzhao@marvell.com>
+> Cc: libertas-dev@lists.infradead.org
+> Cc: linux-wireless@vger.kernel.org
+> Cc: linux-mmc@vger.kernel.org
+> ---
+>  drivers/net/wireless/libertas/if_sdio.c |   24 ++++++++++++++++++++++++
+>  include/linux/mmc/sdio.h                |    2 ++
+>  2 files changed, 26 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/net/wireless/libertas/if_sdio.c b/drivers/net/wireless/libertas/if_sdio.c
+> index 7a73f62..d3170f2 100644
+> --- a/drivers/net/wireless/libertas/if_sdio.c
+> +++ b/drivers/net/wireless/libertas/if_sdio.c
+> @@ -34,6 +34,8 @@
+>  #include <linux/mmc/card.h>
+>  #include <linux/mmc/sdio_func.h>
+>  #include <linux/mmc/sdio_ids.h>
+> +#include <linux/mmc/sdio.h>
+> +#include <linux/mmc/host.h>
+>
+>  #include "host.h"
+>  #include "decl.h"
+> @@ -942,6 +944,7 @@ static int if_sdio_probe(struct sdio_func *func,
+>        int ret, i;
+>        unsigned int model;
+>        struct if_sdio_packet *packet;
+> +       struct mmc_host *host = func->card->host;
+>
+>        lbs_deb_enter(LBS_DEB_SDIO);
+>
+> @@ -1022,6 +1025,27 @@ static int if_sdio_probe(struct sdio_func *func,
+>        if (ret)
+>                goto disable;
+>
+> +       /* For 1-bit transfers, we need to enable the interrupt flags in
+> +        * the CCCR register. Temporarily set the function number to 0
+> +        * for that. */
+> +       if ((host->caps & MMC_CAP_SDIO_IRQ) &&
+> +           (host->ios.bus_width == MMC_BUS_WIDTH_1)) {
+> +               unsigned int num = func->num;
+> +               u8 reg;
+> +
+> +               func->num = 0;
+> +               reg = sdio_readb(func, SDIO_CCCR_IF, &ret);
+> +               if (ret)
+> +                       goto release_int;
+> +
+> +               reg |= SDIO_BUS_ECSI | SDIO_BUS_SCSI;
+> +               sdio_writeb(func, reg, SDIO_CCCR_IF, &ret);
+> +               if (ret)
+> +                       goto release_int;
+> +
+> +               func->num = num;
+> +       }
+> +
+>        card->ioport = sdio_readb(func, IF_SDIO_IOPORT, &ret);
+>        if (ret)
+>                goto release_int;
+> diff --git a/include/linux/mmc/sdio.h b/include/linux/mmc/sdio.h
+> index 0ebaef5..329a8fa 100644
+> --- a/include/linux/mmc/sdio.h
+> +++ b/include/linux/mmc/sdio.h
+> @@ -94,6 +94,8 @@
+>
+>  #define  SDIO_BUS_WIDTH_1BIT   0x00
+>  #define  SDIO_BUS_WIDTH_4BIT   0x02
+> +#define  SDIO_BUS_ECSI         0x20    /* Enable continuous SPI interrupt */
+> +#define  SDIO_BUS_SCSI         0x40    /* Support continuous SPI interrupt */
+>
+>  #define  SDIO_BUS_ASYNC_INT    0x20
+>
+> --
+> 1.7.0
+>
+>
