@@ -1,92 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933024Ab0CaJSZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 05:18:25 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53532 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933002Ab0CaJSW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 05:18:22 -0400
-Message-ID: <4BB31345.5050101@pengutronix.de>
-Date: Wed, 31 Mar 2010 11:17:57 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
-MIME-Version: 1.0
-To: Anders Darander <anders.darander@gmail.com>
-CC: Haavard Skinnemoen <hskinnemoen@atmel.com>,
-       "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jpirko@redhat.com>,
-       Erik Waling <erik.waling@konftel.com>,
-       Patrick McHardy <kaber@trash.net>, Anders Darander <ad@datarespons.se>,
-       Grant Likely <grant.likely@secretlab.ca>, netdev@vger.kernel.org,
+	id S933040Ab0CaJSp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 05:18:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26238 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932980Ab0CaJSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 05:18:40 -0400
+Date: Wed, 31 Mar 2010 11:16:28 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
        linux-kernel@vger.kernel.org
-References: <1270025218-7245-1-git-send-email-anders.darander@gmail.com>
-In-Reply-To: <1270025218-7245-1-git-send-email-anders.darander@gmail.com>
-X-Enigmail-Version: 0.95.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig859552936876718C43367115"
-X-SA-Exim-Connect-IP: 92.198.50.58
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-Subject: Re: [PATCH][V2] MACB: Set PHY address in kernel parameters
-X-SA-Exim-Version: 4.2.1 (built Sat, 01 Aug 2009 12:09:26 +0000)
-X-SA-Exim-Scanned: Yes (on metis.ext.pengutronix.de)
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] oom: fix the unsafe proc_oom_score()->badness() call
+Message-ID: <20100331091628.GA11438@redhat.com>
+References: <1269447905-5939-1-git-send-email-anfei.zhou@gmail.com> <20100326150805.f5853d1c.akpm@linux-foundation.org> <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330163909.GA16884@redhat.com> <alpine.DEB.2.00.1003301331110.5234@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1003301331110.5234@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig859552936876718C43367115
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 03/30, David Rientjes wrote:
+>
+> On Tue, 30 Mar 2010, Oleg Nesterov wrote:
+>
+> > proc_oom_score(task) have a reference to task_struct, but that is all.
+> > If this task was already released before we take tasklist_lock
+> >
+> > 	- we can't use task->group_leader, it points to nowhere
+> >
+> > 	- it is not safe to call badness() even if this task is
+> > 	  ->group_leader, has_intersects_mems_allowed() assumes
+> > 	  it is safe to iterate over ->thread_group list.
+> >
+> > Add the pid_alive() check to ensure __unhash_process() was not called.
+> >
+> > Note: I think we shouldn't use ->group_leader, badness() should return
+> > the same result for any sub-thread. However this is not true currently,
+> > and I think that ->mm check and list_for_each_entry(p->children) in
+> > badness are not right.
+> >
+>
+> I think it would be better to just use task and not task->group_leader.
 
-Anders Darander wrote:
-> From: Anders Darander <ad@datarespons.se>
->=20
-> Add the possibility to set the phy address. This is needed if an integr=
-ated
-> switch is connected to the MAC, as it is often the case that the highes=
-t port
-> is the one connected to the MAC of the MCU.
->=20
-> E.g. in the case of the Micrel KSZ8873, port 3 is the one to connect to=
- the
-> MCU, thus, the MAC needs to connect to phy address 0x03, instead of the=
- first
-> phy found.
+Sure, agreed. I preserved ->group_leader just because I didn't understand
+why the current code doesn't use task. But note that pid_alive() is still
+needed.
 
-We're using phy_mask in one of our projects, it's still using 2.6.29,
-though. I think it's worth testing if it's still working.
+I'll check the code in -mm and resend.
 
-static struct at91_eth_data __initdata p298_macb_data =3D {
-       .is_rmii        =3D 0,
-       .phy_mask       =3D ~(1 << 8),
-};
+Oleg.
 
-at91_add_device_eth(&p298_macb_data);
-
-cheers, Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enig859552936876718C43367115
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org
-
-iEYEARECAAYFAkuzE0kACgkQjTAFq1RaXHOWSwCfe4KjEgh3Cfju3ikZySkBoHHq
-iOoAnRZE7V1ztWR2kSVXUs9ThmqjMpqh
-=TZD2
------END PGP SIGNATURE-----
-
---------------enig859552936876718C43367115--
