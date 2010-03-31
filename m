@@ -1,167 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563Ab0CaDib (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 23:38:31 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:37137 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755577Ab0CaDi3 (ORCPT
+	id S1756603Ab0CaDoR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 23:44:17 -0400
+Received: from qw-out-2122.google.com ([74.125.92.27]:26524 "EHLO
+	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756205Ab0CaDoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 23:38:29 -0400
-To: "Serge E. Hallyn" <serue@us.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
-       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, linux-fsdevel@vger.kernel.org,
-       Eric Dumazet <eric.dumazet@gmail.com>, Benjamin LaHaise <bcrl@lhnet.ca>,
-       netdev@vger.kernel.org, Benjamin Thery <benjamin.thery@bull.net>
-Subject: Re: [PATCH 3/6] sysfs: Implement sysfs tagged directory support.
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
-	<1269973889-25260-3-git-send-email-ebiederm@xmission.com>
-	<20100331024346.GB27001@us.ibm.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Tue, 30 Mar 2010 20:38:17 -0700
-In-Reply-To: <20100331024346.GB27001@us.ibm.com> (Serge E. Hallyn's message of "Tue\, 30 Mar 2010 21\:43\:46 -0500")
-Message-ID: <m1zl1prwie.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: serue@us.ibm.com, benjamin.thery@bull.net, netdev@vger.kernel.org, bcrl@lhnet.ca, eric.dumazet@gmail.com, linux-fsdevel@vger.kernel.org, cornelia.huck@de.ibm.com, tj@kernel.org, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, gregkh@suse.de
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+	Tue, 30 Mar 2010 23:44:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ldSqjxO7gcZOTiqTvbuawITy3YDBtHktwnfSke9OBFEEYfYTgpbsSN76cW/UrYYwuP
+         AvxrkieYSpdVbPSMUFjjWE6BL/3ICLwG3OjOSJc8NNsCprC7CZgH2yl4JxxPVNA3e8fX
+         egyFg50azdEoCePYvLCltnHmHbGqw2nSeGFtc=
+From: Dan Milway <dan.milway@gmail.com>
+To: gregkh@suse.de, andrew@lunn.ch, lindner_marek@yahoo.de,
+       siwu@hrz.tu-chemnitz.de, linus.luessing@web.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Dan Milway <dan.milway@gmail.com>
+Subject: [PATCH] Staging: batman-adv: fix whitespace coding style issue in proc.c This is a patch to the proc.c file that fixes several whitespace warnings found by the checkpatch.pl tool Signed-off by: Dan Milway <dan.milway@gmail.com>
+Date: Tue, 30 Mar 2010 23:43:39 -0400
+Message-Id: <1270007019-12414-1-git-send-email-dan.milway@gmail.com>
+X-Mailer: git-send-email 1.7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serue@us.ibm.com> writes:
+---
+ drivers/staging/batman-adv/proc.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-> Quoting Eric W. Biederman (ebiederm@xmission.com):
->>  int sysfs_rename(struct sysfs_dirent *sd,
->> -	struct sysfs_dirent *new_parent_sd, const char *new_name)
->> +	struct sysfs_dirent *new_parent_sd, const void *new_ns,
->> +	const char *new_name)
->>  {
->>  	const char *dup_name = NULL;
->>  	int error;
->> @@ -743,12 +789,12 @@ int sysfs_rename(struct sysfs_dirent *sd,
->>  	mutex_lock(&sysfs_mutex);
->> 
->>  	error = 0;
->> -	if ((sd->s_parent == new_parent_sd) &&
->> +	if ((sd->s_parent == new_parent_sd) && (sd->s_ns == new_ns) &&
->>  	    (strcmp(sd->s_name, new_name) == 0))
->>  		goto out;	/* nothing to rename */
->> 
->>  	error = -EEXIST;
->> -	if (sysfs_find_dirent(new_parent_sd, new_name))
->> +	if (sysfs_find_dirent(new_parent_sd, new_ns, new_name))
->>  		goto out;
->> 
->>  	/* rename sysfs_dirent */
->> @@ -770,6 +816,7 @@ int sysfs_rename(struct sysfs_dirent *sd,
->>  		sd->s_parent = new_parent_sd;
->>  		sysfs_link_sibling(sd);
->>  	}
->> +	sd->s_ns = new_ns;
->> 
->>  	error = 0;
->>   out:
->
-> ...
->
->> +void sysfs_exit_ns(enum kobj_ns_type type, const void *ns)
->> +{
->> +	struct super_block *sb;
->> +
->> +	mutex_lock(&sysfs_mutex);
->> +	spin_lock(&sb_lock);
->> +	list_for_each_entry(sb, &sysfs_fs_type.fs_supers, s_instances) {
->> +		struct sysfs_super_info *info = sysfs_info(sb);
->> +		/* Ignore superblocks that are in the process of unmounting */
->> +		if (sb->s_count <= S_BIAS)
->> +			continue;
->> +		/* Ignore superblocks with the wrong ns */
->> +		if (info->ns[type] != ns)
->> +			continue;
->> +		info->ns[type] = NULL;
->> +	}
->> +	spin_unlock(&sb_lock);
->> +	mutex_unlock(&sysfs_mutex);
->> +}
->> +
->
-> ..
->
->> @@ -136,6 +138,7 @@ int sysfs_rename_link(struct kobject *kobj, struct kobject *targ,
->>  			const char *old, const char *new)
->>  {
->>  	struct sysfs_dirent *parent_sd, *sd = NULL;
->> +	const void *old_ns = NULL, *new_ns = NULL;
->>  	int result;
->> 
->>  	if (!kobj)
->> @@ -143,8 +146,11 @@ int sysfs_rename_link(struct kobject *kobj, struct kobject *targ,
->>  	else
->>  		parent_sd = kobj->sd;
->> 
->> +	if (targ->sd)
->> +		old_ns = targ->sd->s_ns;
->> +
->>  	result = -ENOENT;
->> -	sd = sysfs_get_dirent(parent_sd, old);
->> +	sd = sysfs_get_dirent(parent_sd, old_ns, old);
->>  	if (!sd)
->>  		goto out;
->> 
->> @@ -154,7 +160,10 @@ int sysfs_rename_link(struct kobject *kobj, struct kobject *targ,
->>  	if (sd->s_symlink.target_sd->s_dir.kobj != targ)
->>  		goto out;
->> 
->> -	result = sysfs_rename(sd, parent_sd, new);
->> +	if (sysfs_ns_type(parent_sd))
->> +		new_ns = targ->ktype->namespace(targ);
->> +
->> +	result = sysfs_rename(sd, parent_sd, new_ns, new);
->> 
->>  out:
->>  	sysfs_put(sd);
->
-> This is a huge patch, and for the most part I haven't found any problems,
-> except potentially this one.  It looks like sysfs_rename_link() checks
-> old_ns and new_ns before calling sysfs_rename().  But sysfs_mutex isn't
-> taken until sysfs_rename().  sysfs_rename() will then proceed to do
-> the rename, and unconditionally set sd->ns = new_ns.
->
-> In the meantime, it seems as though new_ns might have exited, and
-> sysfs_exit_ns() unset new_ns on the new parent dir.  This means that
-> we'll end up with the namespace code having thought that it cleared
-> all new_ns's, but this file will have snuck by.  Meaning an action on
-> the renamed file might dereference a freed namespace.
->
-> Or am I way off base?
+diff --git a/drivers/staging/batman-adv/proc.c b/drivers/staging/batman-adv/proc.c
+index 7de60e8..1c51a05 100644
+--- a/drivers/staging/batman-adv/proc.c
++++ b/drivers/staging/batman-adv/proc.c
+@@ -41,7 +41,7 @@ static int proc_interfaces_read(struct seq_file *seq, void *offset)
+ 
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(batman_if, &if_list, list) {
+-		seq_printf(seq, "[%8s] %s %s \n",
++		seq_printf(seq, "[%8s] %s %s\n",
+ 			   (batman_if->if_active == IF_ACTIVE ?
+ 			    "active" : "inactive"),
+ 			   batman_if->dev,
+@@ -188,18 +188,18 @@ static int proc_originators_read(struct seq_file *seq, void *offset)
+ 	rcu_read_lock();
+ 	if (list_empty(&if_list)) {
+ 		rcu_read_unlock();
+-		seq_printf(seq, "BATMAN disabled - please specify interfaces to enable it \n");
++		seq_printf(seq, "BATMAN disabled - please specify interfaces to enable it\n");
+ 		goto end;
+ 	}
+ 
+ 	if (((struct batman_if *)if_list.next)->if_active != IF_ACTIVE) {
+ 		rcu_read_unlock();
+-		seq_printf(seq, "BATMAN disabled - primary interface not active \n");
++		seq_printf(seq, "BATMAN disabled - primary interface not active\n");
+ 		goto end;
+ 	}
+ 
+ 	seq_printf(seq,
+-		   "  %-14s (%s/%i) %17s [%10s]: %20s ... [B.A.T.M.A.N. adv %s%s, MainIF/MAC: %s/%s] \n",
++		   "  %-14s (%s/%i) %17s [%10s]: %20s ... [B.A.T.M.A.N. adv %s%s, MainIF/MAC: %s/%s]\n",
+ 		   "Originator", "#", TQ_MAX_VALUE, "Nexthop", "outgoingIF",
+ 		   "Potential nexthops", SOURCE_VERSION, REVISION_VERSION_STR,
+ 		   ((struct batman_if *)if_list.next)->dev,
+@@ -240,7 +240,7 @@ static int proc_originators_read(struct seq_file *seq, void *offset)
+ 	spin_unlock_irqrestore(&orig_hash_lock, flags);
+ 
+ 	if (batman_count == 0)
+-		seq_printf(seq, "No batman nodes in range ... \n");
++		seq_printf(seq, "No batman nodes in range ...\n");
+ 
+ end:
+ 	return 0;
+@@ -262,7 +262,7 @@ static int proc_transt_local_read(struct seq_file *seq, void *offset)
+ 	rcu_read_lock();
+ 	if (list_empty(&if_list)) {
+ 		rcu_read_unlock();
+-		seq_printf(seq, "BATMAN disabled - please specify interfaces to enable it \n");
++		seq_printf(seq, "BATMAN disabled - please specify interfaces to enable it\n");
+ 		goto end;
+ 	}
+ 
+@@ -294,7 +294,7 @@ static int proc_transt_global_read(struct seq_file *seq, void *offset)
+ 	rcu_read_lock();
+ 	if (list_empty(&if_list)) {
+ 		rcu_read_unlock();
+-		seq_printf(seq, "BATMAN disabled - please specify interfaces to enable it \n");
++		seq_printf(seq, "BATMAN disabled - please specify interfaces to enable it\n");
+ 		goto end;
+ 	}
+ 	rcu_read_unlock();
+@@ -350,9 +350,9 @@ static int proc_vis_srv_read(struct seq_file *seq, void *offset)
+ {
+ 	int vis_server = atomic_read(&vis_mode);
+ 
+-	seq_printf(seq, "[%c] client mode (server disabled) \n",
++	seq_printf(seq, "[%c] client mode (server disabled)\n",
+ 			(vis_server == VIS_TYPE_CLIENT_UPDATE) ? 'x' : ' ');
+-	seq_printf(seq, "[%c] server mode (server enabled) \n",
++	seq_printf(seq, "[%c] server mode (server enabled)\n",
+ 			(vis_server == VIS_TYPE_SERVER_SYNC) ? 'x' : ' ');
+ 
+ 	return 0;
+-- 
+1.7.0
 
-There are a couple of reasons why this is not a concern.
-
-The only new_ns we clear is on the super block.
-
-sysfs itself never dereferences namespace arguments and only uses them
-for comparison purposes.  They are just cookies that cause comparisons
-to differ from a sysfs perspective.
-
-The upper levels are responsible for taking care of them selves
-sysfs_mutex does not protect them.  If you compile out sysfs the sysfs
-mutex is not even present.
-
-In the worst case if the upper levels mess up we will have a stale
-token that we never dereference on a sysfs dirent, which in a pathological
-case will happen to be the same as a new namespace and we will have
-a spurious directory entry that we have leaked.
-
-In practice we move all network devices (and thus sysfs files) out of
-a network namespace before allowing it to exit.  The network namespace
-is not listed so it is invisible to anyone wanting to poke a network
-device into an exiting network namespace.  The unlisting of the
-network namespace and the device_rename both happen under the
-rtnl_lock which guarantees they are serialized.
-
-Eric
