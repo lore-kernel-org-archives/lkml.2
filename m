@@ -1,82 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932302Ab0CaU54 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 16:57:56 -0400
-Received: from mail-pz0-f179.google.com ([209.85.222.179]:44416 "EHLO
-	mail-pz0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932141Ab0CaU5y convert rfc822-to-8bit (ORCPT
+	id S1758179Ab0CaVBt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 17:01:49 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:52780 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753207Ab0CaVBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 16:57:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=GAEpG/v/lif5KCilPDuVf9AOSt8Kk34s4COjQIUtpld86LXJrdgpe29w/CO7lSrMsX
-         gFEr6oCIU9srOj0J0HN1w2WwH4M4rxVdLZ97baah470Am6eaXSwdauqDVtkveoi/S0MR
-         P5buHXVifZqj8VVcOf3WUf24cdlfCGJJF1/1w=
+	Wed, 31 Mar 2010 17:01:47 -0400
+Date: Wed, 31 Mar 2010 15:01:45 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rabin Vincent <rabin@rab.in>,
+       lkml <linux-kernel@vger.kernel.org>, hpa@zytor.com,
+       penberg@cs.helsinki.fi, cl@linux-foundation.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       linux-arch@vger.kernel.org
+Subject: Re: start_kernel(): bug: interrupts were enabled early
+Message-ID: <20100331210145.GB32165@parisc-linux.org>
+References: <20100325194100.GA2364@debian> <20100331134048.da4e35a7.akpm@linux-foundation.org> <4BB3B4DB.7040904@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20100331185916.GA12306@elte.hu>
-References: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org>
-	 <4BB2EB1B.8090303@zytor.com>
-	 <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org>
-	 <20100331185916.GA12306@elte.hu>
-Date: Thu, 1 Apr 2010 06:57:53 +1000
-Message-ID: <v2m21d7e9971003311357ga4626e41h535ae733933fdc84@mail.gmail.com>
-Subject: Re: Config NO_BOOTMEM breaks my amd64 box
-From: Dave Airlie <airlied@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: James Morris <jmorris@namei.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-       airlied@linux.ie, Thomas Gleixner <tglx@linutronix.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BB3B4DB.7040904@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 1, 2010 at 4:59 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * James Morris <jmorris@namei.org> wrote:
->
->> On Tue, 30 Mar 2010, H. Peter Anvin wrote:
->>
->> > On 03/30/2010 09:49 PM, James Morris wrote:
->> > >
->> > > Please make NO_BOOTMEM default to n, at least for amd64, where I've found
->> > > that it leads to all kinds of strange, undebuggable boot hangs and errors
->> > > (with relatively current Fedora development userland).
->> >
->> > Have you tested it with the latest fixes that are now in Linus' tree (-rc3)?
->>
->> Yes, it was happening with -rc3.
->
-> Could you please send the bootlog that Yinghai asked for, plus also one that
-> you get with NO_BOOTMEM turned off (for comparison)?
->
-> Also, when did you first hit this bug? This code has been upstream for almost
-> a month, and it was in linux-next before that - so you should have hit this
-> much sooner. A rough timeframe would suffice. I suppose you were booting
-> upstream kernels during the merge window as well?
+On Wed, Mar 31, 2010 at 01:47:23PM -0700, Yinghai Lu wrote:
+> >> > This appears to be caused by:
+> >> > 
+> >> >   start_kernel -> radix_tree_init -> kmem_cache_create (slub) ->
+> >> >    down_write -> __down_write (lib/rwsem-spinlock.c) -> spin_unlock_irq
+> >> > 
+> > That's going to be hard to fix.
+> > 
+> spin_unlock_irq from arm is different from other archs?
 
-A default y config option causing regressions still at rc3? and you guys
-keep going? This is the sort of shit Linus would flame me for a day or two for,
+Not all arches use lib/rwsem-spinlock.c.  In particular, x86 doesn't
+when X86_XADD is set.
 
-Can we get some f'ing consistency here?
-
-Dave.
-
->
-> We can flip the default around if there's no fix available based on the
-> bootlogs. (Plus the help text should definitely be improved.)
->
-> Thanks,
->
->        Ingo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+-- 
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
