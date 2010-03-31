@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab0CaHhx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 03:37:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39381 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751125Ab0CaHhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 03:37:52 -0400
-Date: Wed, 31 Mar 2010 09:37:38 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+	id S1756954Ab0CaHjd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 03:39:33 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:53068 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435Ab0CaHjc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 03:39:32 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: =?utf-8?q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+Subject: Re: [RFC 7/9] ppp: use big tty mutex
+Date: Wed, 31 Mar 2010 09:39:14 +0200
+User-Agent: KMail/1.13.1 (Linux/2.6.33-00063-g0795fff; KDE/4.4.1; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Greg KH <gregkh@suse.de>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCHv3 0/2] tracing: function graph output for
- preempt/irqs-off tracers
-Message-ID: <20100331073738.GA2152@jolsa.lab.eng.brq.redhat.com>
-References: <1269606723-12439-1-git-send-email-jolsa@redhat.com>
- <1269615239.19685.78.camel@gandalf.stny.rr.com>
- <20100329111701.GC1715@jolsa>
- <1269875347.19685.4492.camel@gandalf.stny.rr.com>
- <20100329152154.GF1715@jolsa>
- <1269877299.19685.4527.camel@gandalf.stny.rr.com>
+References: <1269982580-9361-1-git-send-email-arnd@arndb.de> <1269982580-9361-8-git-send-email-arnd@arndb.de> <2375c9f91003302137x7753a744pb2d2f0655738c7e4@mail.gmail.com>
+In-Reply-To: <2375c9f91003302137x7753a744pb2d2f0655738c7e4@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269877299.19685.4527.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201003310939.15324.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1/pOgDBpDkt+jq9r50ZX2LclL3ELCLdy15TGDe
+ ApZCLXiinSCWarTbEOp3c+gFA3GvpPUSnDw5RYRB3+t1zz76bJ
+ 75iToRmdH8gw+jbfjsq6w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 11:41:39AM -0400, Steven Rostedt wrote:
-> On Mon, 2010-03-29 at 17:21 +0200, Jiri Olsa wrote:
+On Wednesday 31 March 2010 06:37:12 Américo Wang wrote:
+> > @@ -362,7 +362,8 @@ static const int npindex_to_ethertype[NUM_NP] = {
+> >  */
+> >  static int ppp_open(struct inode *inode, struct file *file)
+> >  {
+> > -       cycle_kernel_lock();
+> > +       tty_lock();
+> > +       tty_unlock();
 > 
-> > > Understand what I'm trying to ask?
-> > 
-> > ok, so what you mean is:
-> > - dont clear the max_tr and 
-> > - add function graph events.
-> > 
-> > So when the tracing_enabled and display-graph are disabled we will
-> > get events output rather than 'unknown event' output... right?
-> 
-> Right, although when the display-graph is disabled, we lose the /* */
-> but that's fine.
+> I don't really get your point here. :) Why do you do this?
 
-ok, I have it done, but found another issue..
+This is a blind conversion of the API from the common BKL functions to
+the TTY lock functions. There is no cycle_tty_lock(), so I'm manually
+doing the cycle.
 
-It's the tracer_flags which governs the tracer output. As I'm using
-the function_graph tracer output functions, they follow function_graph
-tracer's flags settings..
+The reason why cycle_kernel_lock() was introduced in the first place
+is that some drivers may depend on the open() function not returning
+while another CPU holds the BKL. I did not feel qualified (or motivated)
+to determine if the ppp code has the behavior, so I left it at this.
 
-My first idea was a change that would allow tracer using flags
-of other tracers.. so, when enabling irqsoff tracer the function_graph
-tracer's options would become available.
-
-I made the patch but got to the set_flag function which can be overloaded
-by tracer. So I'd need to remember the flags's tracer, and it does
-not seem right.. :)
-
-any ideas?
-
-thanks,
-jirka
+	Arnd
