@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932184Ab0CaUMA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 16:12:00 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:60373 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932107Ab0CaUL6 convert rfc822-to-8bit (ORCPT
+	id S1758103Ab0CaUPH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 16:15:07 -0400
+Received: from 55.58.140-88.rev.gaoland.net ([88.140.58.55]:39867 "EHLO
+	electric-eye.fr.zoreil.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757954Ab0CaUPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 16:11:58 -0400
-From: Christian Casteyde <casteyde.christian@free.fr>
-To: Dan Carpenter <error27@gmail.com>, Zhang Rui <rui.zhang@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Len Brown <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>,
-       Frans Pop <elendil@planet.nl>, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [patch] thermal: make lockdep happy
-Date: Wed, 31 Mar 2010 22:17:32 +0200
-User-Agent: KMail/1.9.10
-References: <20100331170916.GA13784@bicker>
-In-Reply-To: <20100331170916.GA13784@bicker>
+	Wed, 31 Mar 2010 16:15:05 -0400
+Date: Wed, 31 Mar 2010 22:14:26 +0200
+From: =?unknown-8bit?B?RnJhbsOnb2lz?= Romieu <romieu@fr.zoreil.com>
+To: Neil Horman <nhorman@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+       Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+       netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [r8169] WARNING: at net/sched/sch_generic.c
+Message-ID: <20100331201426.GA3228@electric-eye.fr.zoreil.com>
+References: <20100331102142.GA3294@swordfish.minsk.epam.com>
+ <20100331111942.GB13963@hmsreliant.think-freely.org>
+ <20100331121426.GB3294@swordfish.minsk.epam.com>
+ <1270038569.2103.24.camel@edumazet-laptop>
+ <20100331133533.GD13963@hmsreliant.think-freely.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201003312217.33392.casteyde.christian@free.fr>
+In-Reply-To: <20100331133533.GD13963@hmsreliant.think-freely.org>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seems to fix it, at least when applied on -rc3.
-I'm updating the bugzilla entry.
+Neil Horman <nhorman@redhat.com> :
+[...]
+> +1 I wouldn't be suprised if using something over the nominal 1522 byte frame
+> length on r8169 caused tx errors.  The driver doesn't seem to support Jumbo
+> frames, so my guess is you have to keep the packet size below 1522 bytes.
 
-Thanks.
+-1
 
-Le mercredi 31 mars 2010, Dan Carpenter a écrit :
-> Hi Christian,
->
-> Can you test this patch?
->
-> I wrote this to address bugzilla bug:
-> 	https://bugzilla.kernel.org/show_bug.cgi?id=15504
-> 	BUG: key ffff88004c3811e0 not in .data! occured in lockdep.c
->
-> We now have to call sysfs_attr_init() for dynamically allocated sysfs
-> attributes or lockdep complains.
->
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
->
-> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-> index 5066de5..d4fec47 100644
-> --- a/drivers/thermal/thermal_sys.c
-> +++ b/drivers/thermal/thermal_sys.c
-> @@ -725,6 +725,7 @@ int thermal_zone_bind_cooling_device(struct
-> thermal_zone_device *tz, goto release_idr;
->
->  	sprintf(dev->attr_name, "cdev%d_trip_point", dev->id);
-> +	sysfs_attr_init(&dev->attr.attr);
->  	dev->attr.attr.name = dev->attr_name;
->  	dev->attr.attr.mode = 0444;
->  	dev->attr.show = thermal_cooling_device_trip_point_show;
+The driver does not support Jumbo frames because the original 8169 will not
+go much beyond 7200 (see r8169.c::SafeMtu and netdev circa 2004 december 7).
 
+/me checks... Apparently it still works a bit.
 
+Sergey, can you 'dmesg | grep XID' and send the output of a lspci as
+well as the MTU used during the test ?
+
+-- 
+Ueimor
