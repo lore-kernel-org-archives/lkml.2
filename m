@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932558Ab0CaGDr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 02:03:47 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36859 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932247Ab0CaGDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 02:03:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,340,1267430400"; 
-   d="scan'208";a="609040639"
-Date: Wed, 31 Mar 2010 14:03:44 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: "Li, Shaohua" <shaohua.li@intel.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
-Message-ID: <20100331060343.GA22223@localhost>
-References: <20100331142708.039E.A69D9226@jp.fujitsu.com> <20100331055108.GA21963@localhost> <20100331145602.03A7.A69D9226@jp.fujitsu.com>
+	id S932655Ab0CaGDy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 02:03:54 -0400
+Received: from mailgw01.datarespons.com ([81.0.189.39]:1538 "EHLO
+	mailgw01.datarespons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932247Ab0CaGDt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 02:03:49 -0400
+X-Greylist: delayed 632 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Mar 2010 02:03:49 EDT
+Date: Wed, 31 Mar 2010 07:53:06 +0200
+From: Anders Darander <anders.darander@datarespons.se>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: "David S. Miller" <davem@davemloft.net>,
+       Ralf Baechle <ralf@linux-mips.org>, Maxime Bizon <mbizon@freebox.fr>,
+       David Daney <ddaney@caviumnetworks.com>, Sekhar Nori <nsekhar@ti.com>,
+       Anton Vorontsov <avorontsov@ru.mvista.com>,
+       Andy Fleming <afleming@freescale.com>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Allow MACB to connect to a higher addresses PHY.
+Message-ID: <20100331055306.GC4837@datarespons.se>
+References: <1269943112-6975-1-git-send-email-anders.darander@gmail.com>
+ <fa686aa41003300741x5ef9bdbpf56133304fe4d6e6@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100331145602.03A7.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <fa686aa41003300741x5ef9bdbpf56133304fe4d6e6@mail.gmail.com>
+X-Accept-Language: sv, en, de
+X-GPG-Fingerprint: A8FE 0294 BA4B 6981 DD9A  2900 C5C7 016C B47B AE60
+X-GPG-Key-Id: 0xB47BAE60
+X-GPG-Keyserver: hkp://keys.gnupg.net
+Organization: Data Respons AB
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 31 Mar 2010 05:53:12.0165 (UTC) FILETIME=[72B58150:01CAD096]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 02:00:52PM +0800, KOSAKI Motohiro wrote:
-> > KOSAKI-san,
-> > 
-> > On Wed, Mar 31, 2010 at 01:38:12PM +0800, KOSAKI Motohiro wrote:
-> > > > On Tue, Mar 30, 2010 at 02:08:53PM +0800, KOSAKI Motohiro wrote:
-> > > > > Hi
-> > > > > 
-> > > > > > Commit 84b18490d1f1bc7ed5095c929f78bc002eb70f26 introduces a regression.
-> > > > > > With it, our tmpfs test always oom. The test has a lot of rotated anon
-> > > > > > pages and cause percent[0] zero. Actually the percent[0] is a very small
-> > > > > > value, but our calculation round it to zero. The commit makes vmscan
-> > > > > > completely skip anon pages and cause oops.
-> > > > > > An option is if percent[x] is zero in get_scan_ratio(), forces it
-> > > > > > to 1. See below patch.
-> > > > > > But the offending commit still changes behavior. Without the commit, we scan
-> > > > > > all pages if priority is zero, below patch doesn't fix this. Don't know if
-> > > > > > It's required to fix this too.
-> > > > > 
-> > > > > Can you please post your /proc/meminfo and reproduce program? I'll digg it.
-> > > > > 
-> > > > > Very unfortunately, this patch isn't acceptable. In past time, vmscan 
-> > > > > had similar logic, but 1% swap-out made lots bug reports. 
-> > > > if 1% is still big, how about below patch?
-> > > 
-> > > This patch makes a lot of sense than previous. however I think <1% anon ratio
-> > > shouldn't happen anyway because file lru doesn't have reclaimable pages.
-> > > <1% seems no good reclaim rate.
-> > > 
-> > > perhaps I'll take your patch for stable tree. but we need to attack the root
-> > > cause. iow, I guess we need to fix scan ratio equation itself.
-> > 
-> > I tend to regard this patch as a general improvement for both
-> > .33-stable and .34. 
-> > 
-> > I do agree with you that it's desirable to do more test&analyze and
-> > check further for possibly hidden problems.
-> 
-> Yeah, I don't want ignore .33-stable too. if I can't find the root cause
-> in 2-3 days, I'll revert guilty patch anyway.
+Hi Grant,
 
-OK, thank you!
+Thanks for the feedback!
+
+* Grant Likely <grant.likely@secretlab.ca> [100330 16:42]:
+> On Tue, Mar 30, 2010 at 3:58 AM, Anders Darander
+> <anders.darander@gmail.com> wrote:
+> > Using the Atmel MACB together with an integrated switch, can make only port 1
+> > work. This is caused by macb_mii_probe trying to attach the MAC to the first
+> > PHY, which often is on one of the external ports.
+> >
+> > E.g. the Micrel KSZ8873 connects to the MAC on port 3, thus phy_addr should be
+> > set to 3.
+
+> I understand what you are trying to do, but this is the wrong way to
+> go about it.  Hard coding it into Kconfig breaks multiplatform
+> kernels.  Besides, systems may have more than one physical MDIO bus.
+> This patch would make CONFIG_SWITCHING_PHY_ADDR the only address
+> accessible on all MDIO busses.
+
+True, it would at least make all addresses < CONFIG_SWITCHING_PHY_ADDR
+non-accessible.
+
+We developed the patch to solve this problem on a 2.6.29-kernel, in
+which the loop in question is directly in the macb_mii_probe() in the
+macb.c, thus, the original patch is at least a _little_ bit less ugly...
+
+> Nak.
+
+I fully agree on the nak; I completely forgot that the functions in
+phy_devices should be used from more interfaces than only the macb.
+
+> The right thing to do is to add a runtime configuration option (ie.
+> kernel parameter or platform data) to the mac driver to specify
+> exactly which PHY address it is supposed to use.
+
+I'll see if I can get some time to do such a thing. Unfortunately, it'll
+probably have to be dealt with on my sparetime (the customer is quite
+unlikely to let me work on that).
+
+One question, if I add such an kernel parameter, would it be OK to
+implement something like this in the macb-driver:
+
+if parameter == SOME_DEFAULT
+	phydev = phy_find_first(bp->mii_bus);
+else
+	phydev = bp->mii_bus->phy_map[parameter];
+
+I.e. if the parameter is set to some default value, the old behaviour is
+retained, otherwise the specified parameter is used for the phy_addr?
+
+I'd appreciate your input on such a design.
+
+Best regards,
+Anders Darander
+
