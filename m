@@ -1,131 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756668Ab0DAN54 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 09:57:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:34826 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756602Ab0DAN5r (ORCPT
+	id S1756681Ab0DAN7k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 09:59:40 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:36470 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756643Ab0DAN7e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 09:57:47 -0400
-X-Authority-Analysis: v=1.1 cv=pKw63bS+wPQ6BxbjPFuXko/1Hb8f7lpGL8zfzHecwYY= c=1 sm=0 a=j_jVqYyEI08A:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=omOdbC7AAAAA:8 a=xhv7BQFhl0MnHogk4fQA:9 a=mFbYfFqLqGjkeTEi4wzIsqQ0BVYA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 1/2 v4] scsi: add __print_hex() to ftrace
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>
-Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Ingo Molnar <mingo@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>,
-       lkml <linux-kernel@vger.kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-In-Reply-To: <4BB4864A.3060406@jp.fujitsu.com>
-References: <4BB4855E.7030509@jp.fujitsu.com>
-	 <4BB4864A.3060406@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Thu, 01 Apr 2010 09:57:45 -0400
-Message-ID: <1270130265.19685.8933.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Apr 2010 09:59:34 -0400
+Date: Thu, 1 Apr 2010 16:00:16 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Marvin <marvin24@gmx.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] cpufreq: Add APERF/MPERF support for AMD processors
+Message-ID: <20100401140015.GC5893@aftab>
+References: <1270065406-1814-1-git-send-email-bp@amd64.org>
+ <201004011101.04420.marvin24@gmx.de>
+ <20100401103659.GB5893@aftab>
+ <201004011346.10860.marvin24@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004011346.10860.marvin24@gmx.de>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-01 at 20:40 +0900, Kei Tokunaga wrote:
-> This is the same patch from v1.
-> 
-> __print_hex() prints values in an array in hex (w/o '0x') (space separated)
-> EX) 92 33 32 f3 ee 4d
-> 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> Signed-off-by: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>
-> Signed-off-by: Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>
-> 
-> ---
-> 
->  linux-2.6.34-rc3-trace-kei/include/linux/ftrace_event.h |    3 +++
->  linux-2.6.34-rc3-trace-kei/include/trace/ftrace.h       |    3 +++
->  linux-2.6.34-rc3-trace-kei/kernel/trace/trace_output.c  |   15 +++++++++++++++
->  3 files changed, 21 insertions(+)
-> 
-> diff -puN include/linux/ftrace_event.h~add__print_hex_to_ftrace include/linux/ftrace_event.h
-> --- linux-2.6.34-rc3-trace/include/linux/ftrace_event.h~add__print_hex_to_ftrace	2010-03-31 10:03:14.000000000 +0900
-> +++ linux-2.6.34-rc3-trace-kei/include/linux/ftrace_event.h	2010-03-31 10:03:14.000000000 +0900
-> @@ -25,6 +25,9 @@ const char *ftrace_print_flags_seq(struc
->  const char *ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
->  				     const struct trace_print_flags *symbol_array);
->  
-> +const char *ftrace_print_hex_seq(struct trace_seq *p,
-> +				 const unsigned char *buf, int len);
-> +
->  /*
->   * The trace entry - the most basic unit of tracing. This is what
->   * is printed in the end as a single line in the trace output, such as:
-> diff -puN include/trace/ftrace.h~add__print_hex_to_ftrace include/trace/ftrace.h
-> --- linux-2.6.34-rc3-trace/include/trace/ftrace.h~add__print_hex_to_ftrace	2010-03-31 10:03:14.000000000 +0900
-> +++ linux-2.6.34-rc3-trace-kei/include/trace/ftrace.h	2010-03-31 10:03:14.000000000 +0900
-> @@ -198,6 +198,9 @@
->  		ftrace_print_symbols_seq(p, value, symbols);		\
->  	})
->  
-> +#undef __print_hex
-> +#define __print_hex(buf, buf_len) ftrace_print_hex_seq(p, buf, buf_len)
-> +
->  #undef DECLARE_EVENT_CLASS
->  #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
->  static notrace enum print_line_t					\
-> diff -puN kernel/trace/trace_output.c~add__print_hex_to_ftrace kernel/trace/trace_output.c
-> --- linux-2.6.34-rc3-trace/kernel/trace/trace_output.c~add__print_hex_to_ftrace	2010-03-31 10:03:14.000000000 +0900
-> +++ linux-2.6.34-rc3-trace-kei/kernel/trace/trace_output.c	2010-04-01 20:38:30.000000000 +0900
-> @@ -355,6 +355,21 @@ ftrace_print_symbols_seq(struct trace_se
->  }
->  EXPORT_SYMBOL(ftrace_print_symbols_seq);
->  
-> +const char *
-> +ftrace_print_hex_seq(struct trace_seq *p, const unsigned char *buf, int buf_len)
-> +{
-> +	int i;
-> +	const char *ret = p->buffer + p->len;
-> +
-> +	for (i = 0; i < buf_len; i++)
-> +		trace_seq_printf(p, "%s%2.2x", i == 0 ? "" : " ", buf[i]);
-> +
-> +	trace_seq_putc(p, 0);
+From: Marvin <marvin24@gmx.de>
+Date: Thu, Apr 01, 2010 at 01:46:10PM +0200
 
-I would not put the putc(p, 0) into a helper function. This terminates
-the buffer, and strings added to the trace_seq will go after the '\0'.
+Yep, I could reproduce it, thanks for reporting.
 
-What we need is this in trace_seq.h:
+> I think compiling powernow_k8 as a module is sufficient.
 
-static inline trace_seq_terminate(struct trace_seq *s)
-{
-	if (!s->full)
-		s->buffer[s->len] = 0;
-}
+Almost, you need acpi-cpufreq (CONFIG_X86_ACPI_CPUFREQ) also as module
+so that mperf.ko gets compiled as a module too since its being shared
+between the two. Otherwise it is statically linked into whichever of the
+two (apci-cpufreq or powernow-k8) are built-in.
 
-This will add a '0' to the buffer after the last string, but will not
-increment length while doing it. Thus, new data added to the buffer
-would still be appended correctly.
+Fix follows.
 
--- Steve
+-- 
+Regards/Gruss,
+Boris.
 
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(ftrace_print_hex_seq);
-> +
->  #ifdef CONFIG_KRETPROBES
->  static inline const char *kretprobed(const char *name)
->  {
-> 
-> _
-> 
-> 
-> 
-
-
+--
+Advanced Micro Devices, Inc.
+Operating Systems Research Center
