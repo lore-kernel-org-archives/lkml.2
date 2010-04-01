@@ -1,71 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab0DAIGi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 04:06:38 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:45590 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754129Ab0DAIGJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 04:06:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=MAbdZZuoJHk/ClwoWpVo0t2fazUYE3sPkS5O1qDfaKMLdFgb2lCpB0jsZDvEoBC+Sj
-         iuFozrENiM2yOMB3OFPEC/tdyGKo1BMrCdL3Uy1TcQ34kUaBc4TK6Ifhqzeih9ABMvkl
-         2wjoFEmKqm9A5cerKNfqEqXrbpl6hqTDZfYKw=
-Date: Thu, 1 Apr 2010 11:06:11 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [BUG] fault while using perf callchains in sparc64
-Message-ID: <20100401090608.GD5207@nowhere>
-References: <20100329212839.GA12254@nowhere> <20100329.150253.11262563.davem@davemloft.net> <20100329222132.GB12254@nowhere> <20100329.153208.190256896.davem@davemloft.net>
+	id S1754167Ab0DAIIr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 04:08:47 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:43282 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754136Ab0DAIIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 04:08:39 -0400
+Date: Thu, 1 Apr 2010 10:11:26 +0200
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+       Henrik Kretzschmar <henne@nachtwindheim.de>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] padata: section cleanup
+Message-ID: <20100401081126.GC23247@secunet.com>
+References: <1269672826-1102-1-git-send-email-henne@nachtwindheim.de>
+ <20100329081550.GA22334@gondor.apana.org.au>
+ <20100331145817.bd0a1a08.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100329.153208.190256896.davem@davemloft.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100331145817.bd0a1a08.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 01 Apr 2010 08:08:37.0002 (UTC) FILETIME=[87E6FEA0:01CAD172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 03:32:08PM -0700, David Miller wrote:
-> From: Frederic Weisbecker <fweisbec@gmail.com>
-> Date: Tue, 30 Mar 2010 00:21:34 +0200
+On Wed, Mar 31, 2010 at 02:58:17PM -0700, Andrew Morton wrote:
 > 
-> > $ ldd /usr/bin/as
-> > 	libopcodes-2.18.0.20080103.so => /usr/lib/libopcodes-2.18.0.20080103.so (0xf7ec4000)
-> > 	libbfd-2.18.0.20080103.so => /usr/lib/libbfd-2.18.0.20080103.so (0xf7e14000)
-> > 	libc.so.6 => /lib/libc.so.6 (0xf7ca0000)
-> > 	/lib/ld-linux.so.2 (0xf7efc000)
+> What is it for, how does it work, where might it otherwise be used,
+> what are the dynamics, why does it use softirqs rather than (say)
+> kernel threads and how do we stop it from using yield()?
 > 
-> Ok, same here.
-> 
-> > The last kernel I know that don't have such problems is 2.6.31-rc6
-> > May be I should bisect?
-> 
-> Hmmm, since you know a good and bad point, yes a bisect
-> might be the best way to proceed here.
-> 
-> It might be quicker if you first test 2.6.32 and 2.6.33
-> and then use the results of that to guide your bisect.
-> 
-> Anyways, if you narrow it down to a commit I should be
-> able to fix this quickly.
-> 
-> Thanks!
 
+padata can be used to spread cpu intensive work over multiple cpus. It came
+into being with the idea to parallelize IPsec. We separated the generic
+parts out to padata in the hope it can be useful to others too.
+So padata is used to parallelize cpu intensive codepaths, like crypto
+operations. As soon as the cpu intensive work is done, it is possible to
+serialize again without getting reorder of the parallelized objects.
+This is in particular important for IPsec to keep the network packets
+in the right order.
 
-I actually can't. It works well on a backup 2.6.31-rc6 kernel
-but when I build a new one of this same version, the problem
-happens again. And I don't have the config of the one that works
-(and no /proc/config.gz as well).
+To achieve a parallelization of the cpu intensive parts of IPsec, we
+created the pcrypt parallel crypto template (crypto/pcrypt.c). This
+wraps around an existing crypto algorithm and does the
+parallelization/serialization by using padata. So pcrypt is an example on
+how to use padata.
 
-So I suspect this is something that happens with some specific
-configs only.
+I'm about to write some documentation for padata/pcrypt. The big picture
+is as follows. A user can allocate a padata instance by using padata_alloc().
+The user can specify the cpumask of the cpus and the workqueue he wants to
+use for the parallel codepath on allocation time. After allocation it is
+possible to start/stop the padata instance with padata_start() padata_stop().
+The actual parallel codepath is entered by calling padata_do_parallel().
+The parallelized objects, in case of pcrypt the crypto requests, need to
+embed padata's control structure of type struct padata_priv. This structure
+is the anchor for padata to handle the object. padata_do_parallel() takes
+three parameters, the padata instance on which to parallelize, the control
+structure that is embedded in the object and a callback cpu on which the
+object will appear after serialization. Once the cpu intensive work is done,
+it is possible to serialize by calling padata_do_serial(). This function
+takes the padata control structure as parameter. It brings the parallelized
+objects back to the order they were before the parallelization and sends
+them to the cpu which was specified as the callback cpu.
 
-Anyway, once I get more clues about this, I'll tell you.
+Internally padata uses a workqueue to do the parallelization/serialization,
+not softirqs (some earlier versions used softirqs).
 
-Thanks.
+I was not aware that using yield() is considered to be a bad thing, it is
+of course possible to do it without yield() if this is wanted.
 
+Steffen
