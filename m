@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757246Ab0DAQNt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:13:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36462 "EHLO mx1.redhat.com"
+	id S1757486Ab0DAQOb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:14:31 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:45546 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750879Ab0DAQNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:13:43 -0400
-Date: Thu, 1 Apr 2010 18:12:43 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
+	id S1755565Ab0DAQOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 12:14:25 -0400
+Date: Thu, 1 Apr 2010 09:14:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Avi Kivity <avi@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
        Kent Overstreet <kent.overstreet@gmail.com>,
        Ingo Molnar <mingo@elte.hu>
 Subject: Re: [COUNTERPATCH] mm: avoid overflowing preempt_count() in
  mmu_take_all_locks()
-Message-ID: <20100401161243.GW5825@random.random>
+Message-ID: <20100401161418.GD2472@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 References: <1270117906.1653.139.camel@laptop>
  <alpine.LFD.2.00.1004011300550.32352@localhost.localdomain>
  <4BB47FC3.1020606@redhat.com>
- <1270120592.1653.192.camel@laptop>
- <20100401153645.GP5825@random.random>
- <4BB4BE44.5070507@redhat.com>
- <20100401155456.GR5825@random.random>
- <4BB4C3AB.1060100@redhat.com>
+ <4BB480CC.2060503@redhat.com>
+ <1270121264.1653.205.camel@laptop>
+ <1270122194.1653.223.camel@laptop>
+ <20100401154249.GQ5825@random.random>
+ <4BB4C0F5.3070204@redhat.com>
+ <1270137406.1598.78.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BB4C3AB.1060100@redhat.com>
+In-Reply-To: <1270137406.1598.78.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 01, 2010 at 07:02:51PM +0300, Avi Kivity wrote:
-> Not these locks, but if we go all the way and make mmu notifiers 
-> sleepable, we can convert mmu_lock to a mutex.
+On Thu, Apr 01, 2010 at 05:56:46PM +0200, Peter Zijlstra wrote:
+> On Thu, 2010-04-01 at 18:51 +0300, Avi Kivity wrote:
+> > On 04/01/2010 06:42 PM, Andrea Arcangeli wrote:
+> > > On Thu, Apr 01, 2010 at 01:43:14PM +0200, Peter Zijlstra wrote:
+> > >    
+> > >> On Thu, 2010-04-01 at 13:27 +0200, Peter Zijlstra wrote:
+> > >>      
+> > >>> I've almost got a patch done that converts those two, still need to look
+> > >>> where that tasklist_lock muck happens.
+> > >>>        
+> > >> OK, so the below builds and boots, only need to track down that
+> > >> tasklist_lock nesting, but I got to run an errand first.
+> > >>      
+> > > You should have a look at my old patchset where Christoph already
+> > > implemented this (and not for decreasing latency but to allow
+> > > scheduling in mmu notifier handlers, only needed by XPMEM):
+> > >
+> > > http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.26-rc7/mmu-notifier-v18/
+> > >
+> > > The ugliest part of it (that I think you missed below) is the breakage
+> > > of the RCU locking in the anon-vma which requires adding refcounting
+> > > to it. That was the worst part of the conversion as far as I can tell.
+> > >
+> > > http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.26-rc7/mmu-notifier-v18/anon-vma
+> > >    
+> > 
+> > Can we use srcu now instead?
+> 
+> I would much rather we make call_rcu_preempt() available at all times.
 
-Ah yes, sure! I didn't get the objective was to convert the kvm
-mmu_lock to mutex too, I thought you were talking about the linux VM
-locks, and of course with rmap walks you meant the kvm rmaps, not the
-linux rmaps. It's all clear now sorry.
+Even in !CONFIG_PREEMPT kernels?  Or am I missing your point?
 
-I guess I was biased because I see mmu_lock like the page_table_lock
-and in linux we never had mutex protecting pagetable access, because
-pagetable mangling is so quick and never blocks. But there are the
-rmap walks too protected by the same mmu_lock in kvm (not the case for
-the page_table_lock that only protects pagetable access), so I agree
-it may be worth converting it to mutex, agreed.
+							Thanx, Paul
