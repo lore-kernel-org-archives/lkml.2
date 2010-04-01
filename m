@@ -1,164 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758556Ab0DABRa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 21:17:30 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:60703 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758479Ab0DABR2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 21:17:28 -0400
-Date: Thu, 1 Apr 2010 03:17:25 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: robert.richter@amd.com, oprofile-list@lists.sf.net,
-       linux-kernel@vger.kernel.org, rostedt@goodmis.org
-Cc: stable@kernel.org
-Subject: [PATCH] oprofile: remove double ring buffering
-Message-ID: <20100401011725.GA27567@basil.fritz.box>
+	id S1758567Ab0DABRw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 21:17:52 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:40423 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758499Ab0DABRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 21:17:50 -0400
+Date: Wed, 31 Mar 2010 18:17:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] rcu: don't call rcu_preempt_note_context_switch() in
+ rcu_check_callbacks()
+Message-ID: <20100401011747.GJ2461@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4BB014DF.9030905@cn.fujitsu.com>
+ <20100329044236.GB2343@linux.vnet.ibm.com>
+ <4BB1C7C5.5070700@cn.fujitsu.com>
+ <20100330160339.GB2513@linux.vnet.ibm.com>
+ <20100331153656.GA4623@linux.vnet.ibm.com>
+ <4BB3EF25.1040804@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <4BB3EF25.1040804@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Got confirmation now this patch fixes most of the dropped oprofile
-samples problem on a particular intensive test on a large system.
-So now submitting the previous RFC formally.
-.34 / Stable candidate.
+On Thu, Apr 01, 2010 at 08:56:05AM +0800, Lai Jiangshan wrote:
+> Paul E. McKenney wrote:
+> > On Tue, Mar 30, 2010 at 09:03:39AM -0700, Paul E. McKenney wrote:
+> >> On Tue, Mar 30, 2010 at 05:43:33PM +0800, Lai Jiangshan wrote:
+> >>> Paul E. McKenney wrote:
+> >>>> On Mon, Mar 29, 2010 at 10:47:59AM +0800, Lai Jiangshan wrote:
+> >>>>> Content-Type: text/plain; charset=UTF-8
+> >>>>> Content-Transfer-Encoding: 7bit
+> >>>>>
+> >>>>>
+> >>>>> Even though in user mode or idle mode, rcu_check_callbacks() is not
+> >>>>> context switch, so we don't call rcu_preempt_note_context_switch()
+> >>>>> in rcu_check_callbacks().
+> >>>>>
+> >>>>> Though there is no harm that calls rcu_preempt_note_context_switch()
+> >>>>> in rcu_check_callbacks(), but it is waste.
+> >>>>>
+> >>>>> rcu_check_callbacks()
+> >>>>>   rcu_sched_qs()
+> >>>>>     rcu_preempt_note_context_switch()
+> >>>>>        Now, ->rcu_read_lock_nesting == 0, so we just calls
+> >>>>>        rcu_preempt_qs(), but, rcu_preempt_check_callbacks()
+> >>>>>        will call it again and set the ->rcu_read_unlock_special
+> >>>>>        correct again.
+> >>>>>
+> >>>>> So let rcu_preempt_check_callbacks() handle things for us.
+> >>>> Nice!!!
+> >>>>
+> >>>> But how about naming the new function that invokes
+> >>>> rcu_preempt_note_context_switch() something like
+> >>>> rcu_sched_note_context_switch(), and then leaving the
+> >>>> name of rcu_sched_qs() the same (rather than changing
+> >>>> it to __rcu_sched_qs(), as below)?
+> >>>>
+> >>>> This way, the names clearly call out what the function
+> >>>> is doing.
+> >>>>
+> >>> If I understand right, it will become this:
+> >>>
+> >>> schedule() / run_ksoftirqd() / rcu_needs_cpu()
+> >>>   rcu_sched_note_context_switch()
+> >>>     rcu_sched_qs()
+> >>>     rcu_preempt_note_context_switch()
+> >> Wow!!!  That was a scare!!!  I misread "run_ksoftirqd()" as
+> >> "do_softirq().  ;-)
+> >>
+> >> And I am not seeing a call to rcu_sched_qs() in rcu_needs_cpu()...
+> >>
+> >> Here is how I believe it needs to go:
+> >>
+> >> 	schedule():
+> >> 		rcu_sched_note_context_switch()
+> >> 			rcu_sched_qs()
+> >> 			rcu_preempt_note_context_switch()
+> >>
+> >> 	run_ksoftirqd():
+> >> 		rcu_sched_qs()
+> >>
+> >> 	rcu_check_callbacks():
+> >> 		rcu_sched_qs() [if idle etc.]
+> >> 		rcu_bh_qs() [if not in softirq]
+> >>
+> >> The reason we don't need rcu_bh_qs() from run_ksoftirqd() is that
+> >> __do_softirq() already calls rcu_bh_qs().
+> >>
+> >> Make sense, or am I missing something?
+> > 
+> > And I was in fact missing something.  The rcu_preempt_note_context_switch()
+> > function currently combines some work that needs to happen only at
+> > context-switch time with work that needs to happen all the time.
+> > 
+> > At first glance, it appears that the big "if" statement in
+> > rcu_preempt_note_context_switch() need only happen for context switches.
+> 
+> > The remaining lines must happen unconditionally for context switches,
+> > and should be executed from rcu_check_callbacks() only if the current
+> > CPU is not in an RCU read-side critical section.
+> 
+> I think rcu_preempt_check_callbacks() will do this work better
+> in rcu_check_callbacks().
 
--Andi
+Possibly by moving the clearing of RCU_READ_UNLOCK_NEED_QS to
+rcu_preempt_check_callbacks() -- or to rcu_preempt_qs().  The latter is in
+some sense cleaner, but higher overhead and probably unnecessary.  Hmmm...
+Alternatively, require that all callers to rcu_preempt_qs() disable
+irqs.  This affects only one callsite, which has a local_irq_disable()
+immediately following anyway.  ;-)
 
----
-
-oprofile: remove double ring buffering
-    
-oprofile used a double buffer scheme for its cpu event buffer
-to avoid races on reading with the old locked ring buffer.
-    
-But that is obsolete now with the new ring buffer, so simply
-use a single buffer. This greatly simplifies the code and avoids
-a lot of sample drops on large runs, especially with call graph.
-    
-Based on suggestions from Steven Rostedt
-    
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
-diff --git a/drivers/oprofile/cpu_buffer.c b/drivers/oprofile/cpu_buffer.c
-index 166b67e..de82183 100644
---- a/drivers/oprofile/cpu_buffer.c
-+++ b/drivers/oprofile/cpu_buffer.c
-@@ -30,23 +30,7 @@
- 
- #define OP_BUFFER_FLAGS	0
- 
--/*
-- * Read and write access is using spin locking. Thus, writing to the
-- * buffer by NMI handler (x86) could occur also during critical
-- * sections when reading the buffer. To avoid this, there are 2
-- * buffers for independent read and write access. Read access is in
-- * process context only, write access only in the NMI handler. If the
-- * read buffer runs empty, both buffers are swapped atomically. There
-- * is potentially a small window during swapping where the buffers are
-- * disabled and samples could be lost.
-- *
-- * Using 2 buffers is a little bit overhead, but the solution is clear
-- * and does not require changes in the ring buffer implementation. It
-- * can be changed to a single buffer solution when the ring buffer
-- * access is implemented as non-locking atomic code.
-- */
--static struct ring_buffer *op_ring_buffer_read;
--static struct ring_buffer *op_ring_buffer_write;
-+static struct ring_buffer *op_ring_buffer;
- DEFINE_PER_CPU(struct oprofile_cpu_buffer, op_cpu_buffer);
- 
- static void wq_sync_buffer(struct work_struct *work);
-@@ -68,12 +52,9 @@ void oprofile_cpu_buffer_inc_smpl_lost(void)
- 
- void free_cpu_buffers(void)
- {
--	if (op_ring_buffer_read)
--		ring_buffer_free(op_ring_buffer_read);
--	op_ring_buffer_read = NULL;
--	if (op_ring_buffer_write)
--		ring_buffer_free(op_ring_buffer_write);
--	op_ring_buffer_write = NULL;
-+	if (op_ring_buffer)
-+		ring_buffer_free(op_ring_buffer);
-+	op_ring_buffer = NULL;
- }
- 
- #define RB_EVENT_HDR_SIZE 4
-@@ -86,11 +67,8 @@ int alloc_cpu_buffers(void)
- 	unsigned long byte_size = buffer_size * (sizeof(struct op_sample) +
- 						 RB_EVENT_HDR_SIZE);
- 
--	op_ring_buffer_read = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
--	if (!op_ring_buffer_read)
--		goto fail;
--	op_ring_buffer_write = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
--	if (!op_ring_buffer_write)
-+	op_ring_buffer = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
-+	if (!op_ring_buffer)
- 		goto fail;
- 
- 	for_each_possible_cpu(i) {
-@@ -162,16 +140,11 @@ struct op_sample
- *op_cpu_buffer_write_reserve(struct op_entry *entry, unsigned long size)
- {
- 	entry->event = ring_buffer_lock_reserve
--		(op_ring_buffer_write, sizeof(struct op_sample) +
-+		(op_ring_buffer, sizeof(struct op_sample) +
- 		 size * sizeof(entry->sample->data[0]));
--	if (entry->event)
--		entry->sample = ring_buffer_event_data(entry->event);
--	else
--		entry->sample = NULL;
--
--	if (!entry->sample)
-+	if (!entry->event)
- 		return NULL;
--
-+	entry->sample = ring_buffer_event_data(entry->event);
- 	entry->size = size;
- 	entry->data = entry->sample->data;
- 
-@@ -180,25 +153,16 @@ struct op_sample
- 
- int op_cpu_buffer_write_commit(struct op_entry *entry)
- {
--	return ring_buffer_unlock_commit(op_ring_buffer_write, entry->event);
-+	return ring_buffer_unlock_commit(op_ring_buffer, entry->event);
- }
- 
- struct op_sample *op_cpu_buffer_read_entry(struct op_entry *entry, int cpu)
- {
- 	struct ring_buffer_event *e;
--	e = ring_buffer_consume(op_ring_buffer_read, cpu, NULL);
--	if (e)
--		goto event;
--	if (ring_buffer_swap_cpu(op_ring_buffer_read,
--				 op_ring_buffer_write,
--				 cpu))
-+	e = ring_buffer_consume(op_ring_buffer, cpu, NULL);
-+	if (!e)
- 		return NULL;
--	e = ring_buffer_consume(op_ring_buffer_read, cpu, NULL);
--	if (e)
--		goto event;
--	return NULL;
- 
--event:
- 	entry->event = e;
- 	entry->sample = ring_buffer_event_data(e);
- 	entry->size = (ring_buffer_event_length(e) - sizeof(struct op_sample))
-@@ -209,8 +173,7 @@ event:
- 
- unsigned long op_cpu_buffer_entries(int cpu)
- {
--	return ring_buffer_entries_cpu(op_ring_buffer_read, cpu)
--		+ ring_buffer_entries_cpu(op_ring_buffer_write, cpu);
-+	return ring_buffer_entries_cpu(op_ring_buffer, cpu);
- }
- 
- static int
+							Thanx, Paul
