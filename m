@@ -1,39 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab0DAJCc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 05:02:32 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58376
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754360Ab0DAJCZ (ORCPT
+	id S1754631Ab0DAJHp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 05:07:45 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:52559 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754193Ab0DAJHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 05:02:25 -0400
-Date: Thu, 01 Apr 2010 02:02:26 -0700 (PDT)
-Message-Id: <20100401.020226.94730746.davem@davemloft.net>
-To: fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [BUG] fault while using perf callchains in sparc64
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100401093831.GE5207@nowhere>
-References: <20100401090608.GD5207@nowhere>
-	<20100401.010903.05627158.davem@davemloft.net>
-	<20100401093831.GE5207@nowhere>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 1 Apr 2010 05:07:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 6/6] procfs: Kill the bkl in ioctl
+Date: Thu, 1 Apr 2010 11:07:13 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
+References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <201003312304.30917.arnd@arndb.de> <20100331225500.3ed98c1f@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100331225500.3ed98c1f@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201004011107.13774.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX19ame5gnyeT5wVW2P4c37tJEZnM+frN72oVoFC
+ 9a6xDkSIjhSQZxl8OfsZs2K1ylxi6YshJigQ3TeS/gInFvuOJf
+ fRTfiYYMKkCRpv0JkSZLw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
-Date: Thu, 1 Apr 2010 11:38:33 +0200
-
-> It seems to happen with ld as well btw (not sure this is related
-> though):
+On Wednesday 31 March 2010, Alan Cox wrote:
+> > The recursive users that I've removed in my series are the block, tty,
+> > input and sound subsystems, as well as the init code.
 > 
-> [ 3366.005962] ld[19041]: segfault at 10 ip 000000007010248c (rpc 00000000701023f8) sp 00000000ffda87c8 error 30001 
-> in libbfd-2.18.0.20080103.so[700d8000+a0000]
+> There are some very subtle recursive cases in the tty code - hangup
+> triggered close and consoles being an absolute gem I've just had to debug
+> in my lock removal bits so far...
 
-It's data corruption coming either from the kernel or something
-malfunctioning in libc is my guess, more likely the kernel.
+Yes, I've seen some of them. What I meant above is that with
+CONFIG_TTY_MUTEX=y, the TTY code no longer uses the BKL in a
+nested way, and quite likely no either code does either.
 
+The TTY code with my patch now has tty_lock() for all cases that
+I concluded are never nested in another tty_lock, and tty_lock_nested()
+for those I did not understand or that I know they are nested (the
+latter type usually comes with a comment). The only difference
+between the two is a WARN_ON(tty_locked()) in tty_lock, so we can
+see where the analysis was wrong.
+
+	Arnd
