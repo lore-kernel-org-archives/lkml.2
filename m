@@ -1,61 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab0DALiN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 07:38:13 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:51603 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755471Ab0DALiF (ORCPT
+	id S1755454Ab0DALhz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 07:37:55 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:46474 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754684Ab0DALhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 07:38:05 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 6/6] procfs: Kill the bkl in ioctl
-Date: Thu, 1 Apr 2010 13:37:57 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Alexey Dobriyan <adobriyan@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
-References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <201003312304.30917.arnd@arndb.de> <20100331215624.GF5163@nowhere>
-In-Reply-To: <20100331215624.GF5163@nowhere>
+	Thu, 1 Apr 2010 07:37:47 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
+Message-ID: <4BB4855E.7030509@jp.fujitsu.com>
+Date: Thu, 01 Apr 2010 20:37:02 +0900
+From: Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.23 (Windows/20090812)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>,
+       lkml <linux-kernel@vger.kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+       Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>
+Subject: [PATCH 0/2 v4] scsi: ftrace based scsi tracer
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004011337.58506.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1+wcN4+mLn4YecjNnI7hshyxPzF+dLMyaEiyvU
- Iij07v5M0Qiufti6YZ3x9vd8Y4tghokzhSFBC2N4We6XCYkuUj
- Ub5mo1pBnwA9fphRUjg1w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 31 March 2010, Frederic Weisbecker wrote:
-> This is a solution that has been tried more than once already. But Linus
-> has told he wouldn't pull something that turns the bkl into a mutex or a
-> semaphore.
+Hi,
 
-Ok. Starting from the same observation of simplicity in the remaining code,
-we should also be able to find a semi-automatic way of turning the BKL usage
-in these drivers into a per-module mutex.
+This is v4 patch series of SCSI trace.  Only a cosmetic change
+from v3.
 
-> Plus it's quite hard to tell that it does or not auto-release somewhere
-> This is often something you can really spot on runtime or on small path
-> only.
+Because it's been a while since the first posting, I'll put brief
+descriptions of the patchset.
 
-Well, the autorelease by itself is not needed anywhere. What is needed
-is the consequence of autorelease avoiding AB-BA type deadlocks.
+  Basically, this is a ftrace based SCSI tracer.  It prints the
+  following information for scsi-3 commands.
 
-> The simple fact the bkl is not always a leaf lock makes it need the
-> auto-release, otherwise you experience very bad unexpected lock
-> dependencies.
+    o scsi bus number ("host")
+    o scsi channel number ("channel")
+    o scsi id ("id")
+    o LUN ("lun")
+    o command info
+      - op name (ex. "WRITE_10")
+      - LBA ("lba") (for certain commands only)
+      - transfer length ("txlen") (for certain commands only)
+      - CDB (ex. "raw=28 00 03 60 a2 cb 00 00 08 00")
+    o result of the command
+      (ex. "result=(driver=DRIVER_OK host=DID_OK
+message=COMMAND_COMPLETE status=SAM_STAT_GOOD")
 
-I'm arguing that we can probably show the BKL to be the outermost
-lock for the majority of the remaining drivers, which only get it
-from their open(), ioctl() or llseek() functions, which are all
-called without any locks held. If the BKL is a regular mutex, lockdep
-should warn of the other cases.
+  Those information are printed either at a time:
 
-	Arnd
+    o when a command is to be dispatched,
+    o when a command dispatched returns in error,
+    o when a command is done,
+    o when an error handler is to waken up, or
+    o when timeout of a command is deteced.
+
+  To use it quickly, try these steps:
+
+    1) Build a kernel with the patchset applied
+       (ftrace related kernel configs need to be enabled.)
+    2) Boot the kernel
+    3) Mount debugfs
+       ex. mount -t debugfs none /sys/kernel/debug/
+    4) Indicate events to trace
+       ex. echo "scsi:*" > /sys/kernel/debug/tracing/set_event
+    5) Make some I/Os on your scsi devices
+       ex. ls
+    6) Retrieve trace log
+       ex. cat /sys/kernel/debug/tracing/trace
+
+  Here is an outputs example:
+
+    # tracer: nop
+    #
+    #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
+    #              | |       |          |         |
+           flush-8:0-3746  [001]  1374.517152:
+scsi_dispatch_cmd_start: host_no=0 channel=0 id=0 lun=0
+cmnd=(WRITE_10 lba=32267539 txlen=8 raw=2a 00 01 ec 5d 13 00 00
+08 00)
+              <idle>-0     [000]  1374.524964:
+scsi_dispatch_cmd_done: host_no=0 channel=0 id=0 lun=0
+cmnd=(WRITE_10 lba=32267539 txlen=8 raw=2a 00 01 ec 5d 13 00 00
+08 00) result=(driver=DRIVER_OK host=DID_OK
+message=COMMAND_COMPLETE status=SAM_STAT_GOOD)
+
+This patchset applies to 2.6.34-rc3.
+
+Thanks,
+Kei
+
