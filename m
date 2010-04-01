@@ -1,108 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431Ab0DARVe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 13:21:34 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:50183 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751117Ab0DARV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 13:21:29 -0400
-Date: Thu, 1 Apr 2010 12:21:20 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Catalin Marinas <catalin.marinas@arm.com>,
-       Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-       linux-kernel@vger.kernel.org,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Sukadev Bhattiprolu <sukadev@us.ibm.com>
-Subject: Re: [2.6.31 and later] "struct pid" leak.
-Message-ID: <20100401172120.GA3111@us.ibm.com>
-References: <201003272121.ADE39095.JLFHOOMtSVOFQF@I-love.SAKURA.ne.jp>
- <tnxbpe5ygfy.fsf@e102109-lin.cambridge.arm.com>
- <20100331151719.8a92b302.akpm@linux-foundation.org>
- <20100401165247.GB19551@redhat.com>
+	id S1754958Ab0DARWG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 13:22:06 -0400
+Received: from old-tantale.fifi.org ([64.81.30.200]:32804 "EHLO
+	old-tantale.fifi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755429Ab0DARV4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 13:21:56 -0400
+X-Greylist: delayed 957 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Apr 2010 13:21:55 EDT
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>,
+       Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+       linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: webcam problem after suspend/hibernate
+References: <45cc95261003301455u10e6ee24pfb66176bfb279d1@mail.gmail.com>
+	<201003310125.26266.laurent.pinchart@ideasonboard.com>
+	<v2x45cc95261003311251idfdc9b8anb7b2060618611d30@mail.gmail.com>
+	<20100401165606.GA1677@ucw.cz>
+Mail-Copies-To: nobody
+From: Philippe Troin <phil@fifi.org>
+Date: 01 Apr 2010 10:05:52 -0700
+In-Reply-To: <20100401165606.GA1677@ucw.cz>
+Message-ID: <87aatn9k7j.fsf@old-tantale.fifi.org>
+User-Agent: Gnus/5.09 (Gnus v5.9.0) Emacs/21.2
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100401165247.GB19551@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Oleg Nesterov (oleg@redhat.com):
-> On 03/31, Andrew Morton wrote:
-> >
-> > On Tue, 30 Mar 2010 16:31:13 +0100
-> > Catalin Marinas <catalin.marinas@arm.com> wrote:
-> >
-> > > Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> wrote:
-> > > > I got below report with 2.6.33.1 .
-> > > >
-> > > > unreferenced object 0xde144600 (size 64):
-> > > >   comm "init", pid 1, jiffies 4294678101 (age 291.508s)
-> > > >   hex dump (first 32 bytes):
-> > > >     02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> > > >     00 00 00 00 04 76 ae de d1 76 43 c0 d6 08 00 00  .....v...vC.....
-> > > >   backtrace:
-> > > >     [<c0481704>] create_object+0x121/0x1ef
-> > > >     [<c05f546b>] kmemleak_alloc+0x25/0x42
-> > > >     [<c047e326>] kmemleak_alloc_recursive+0x1c/0x22
-> > > >     [<c047e36e>] kmem_cache_alloc+0x42/0x68
-> > > >     [<c0437701>] alloc_pid+0x19/0x288
-> > > >     [<c0428acc>] copy_process+0x95a/0xdac
-> > > >     [<c04290d8>] do_fork+0x129/0x261
-> > > >     [<c0407de5>] sys_clone+0x1f/0x24
-> > > >     [<c040292d>] ptregs_clone+0x15/0x28
-> > > >     [<ffffffff>] 0xffffffff
-> > > > unreferenced object 0xdfa96a40 (size 64):
-> > > >   comm "login", pid 2259, jiffies 4294719437 (age 250.179s)
-> > > >   hex dump (first 32 bytes):
-> > > >     02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> > > >     00 00 00 00 60 39 ae de d1 76 43 c0 bb 09 00 00  ....`9...vC.....
-> > > >   backtrace:
-> > > >     [<c0481704>] create_object+0x121/0x1ef
-> > > >     [<c05f546b>] kmemleak_alloc+0x25/0x42
-> > > >     [<c047e326>] kmemleak_alloc_recursive+0x1c/0x22
-> > > >     [<c047e36e>] kmem_cache_alloc+0x42/0x68
-> > > >     [<c0437701>] alloc_pid+0x19/0x288
-> > > >     [<c0428acc>] copy_process+0x95a/0xdac
-> > > >     [<c04290d8>] do_fork+0x129/0x261
-> > > >     [<c0407de5>] sys_clone+0x1f/0x24
-> > > >     [<c040292d>] ptregs_clone+0x15/0x28
-> > > >     [<ffffffff>] 0xffffffff
-> > >
-> > > I reported similar leaks last year -
-> > > http://lkml.org/lkml/2009/7/8/422. There is some analysis in the thread
-> > > above of the reference counting but I couldn't figure out where it goes
-> > > wrong. It looks to me like there isn't any reference to a struct pid
-> > > block but its reference count is 2.
-> > >
-> > > There is a bugzilla entry as well -
-> > > https://bugzilla.kernel.org/show_bug.cgi?id=13868
-> > >
-> >
-> > Let's bug some people by cc'ing them ;)
-> 
-> Oh. It is hardly possibly to find the unbalanced get_pid() via grep.
-> 
-> IIRC, I sent the debugging patch which tracks get/put pid, but I can't
-> recall if anybody tried this patch. Hmm, and I can't find that patch
-> or the previous discussion in my maildir...
-> 
-> Catalin, Tetsuo, any chance you can remind me if this patch was used?
-> 
-> Oleg.
+Pavel Machek <pavel@ucw.cz> writes:
 
-[ probably sounding like a moron, but... ]
+> > Do you mean the dmesg output ?
+> > A full dmesg is included in this address :
+> > http://pastebin.com/8XU619Uk
+> > Not in all suspend/hibernate the problem comes, only in some of them
+> > and this included dmesg output is just after a non working case of
+> > webcam fault.
+> > 
+> > 
+> > I also have found this in `/var/log/messages | grep uvcvideo`
+> > Mar 31 00:31:16 linux-l365 kernel: [399905.714743] usbcore:
+> > deregistering interface driver uvcvideo
+> > Mar 31 00:31:24 linux-l365 kernel: [399914.121386] uvcvideo: Found UVC
+> > 1.00 device LG Webcam (0c45:62c0)
+> > Mar 31 00:31:24 linux-l365 kernel: [399914.135661] usbcore: registered
+> > new interface driver uvcvideo
+> 
+> Also try unloading uvcvideo before suspend and reloading it after
+> resume...
 
-Looking through vt_ioctl.c, I get the feeling that the ttys will
-hang onto vc->vt_pid until either getting a SAK or until someone
-new logs in.  I don't see where logging out will cause a reset_vc().
-So when the logged in task logs out, does vt_pid keep a ref to the
-pid which now no longer exists?
+I have a similar problem with a Creative Optia webcam.
 
-Came to mind bc I notice that every trace you've sent has included
-/bin/login or X...
+I have found that removing the ehci_hcd module and reinserting it
+fixes the problem.
 
--serge
+If your kernel ships with ehci_hcd built-in (F11 and later), the
+script included also fixes the problem (it rebind the device).
+
+Of course, I'd love to see this issue fixed.
+
+Phil.
+
+Script: /etc/pm/sleep.d/50kickuvc
+
+#!/bin/sh
+
+case "$1" in
+  resume|thaw)
+    cd /sys/bus/usb/drivers/uvcvideo || exit 1
+    devices=''
+    for i in [0-9]*-[0-9]*:*
+    do
+      [ -L "$i" ] || break
+      saved_IFS="$IFS"
+      IFS=:
+      set -- $i
+      IFS="$saved_IFS"
+      found=no
+      for j in $devices
+      do
+        if [ "$j" = "$1" ]
+        then
+          found=yes
+        fi
+      done
+      if [ "$found" = no ]
+      then
+        devices="$devices $1"
+      fi
+    done
+    if [ "$devices" != "" ]
+    then
+      cd /sys/bus/usb/drivers/usb || exit 1
+      for i in $devices
+      do
+        echo $i > unbind
+        sleep 1
+        echo $i > bind
+      done
+    fi
+    ;;
+esac
