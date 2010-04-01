@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339Ab0DANrB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 09:47:01 -0400
-Received: from ppsw-1.csi.cam.ac.uk ([131.111.8.131]:41539 "EHLO
-	ppsw-1.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755815Ab0DANqy (ORCPT
+	id S1756540Ab0DANsZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 09:48:25 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:48056 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755817Ab0DANsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 09:46:54 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4BB4A465.3050305@cam.ac.uk>
-Date: Thu, 01 Apr 2010 14:49:25 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20100109 Thunderbird/3.0
+	Thu, 1 Apr 2010 09:48:16 -0400
+Date: Thu, 1 Apr 2010 15:34:55 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+       Linux Input <linux-input@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [RFC] Input: implement sysrq as an input handler
+Message-ID: <20100401133454.GA1291@ucw.cz>
+References: <20100317061952.GA19789@core.coreip.homeip.net> <20100319000043.GC12017@khazad-dum.debian.net> <20100319000931.GA5671@core.coreip.homeip.net> <20100319160641.GC16743@khazad-dum.debian.net> <20100319180314.GB12143@core.coreip.homeip.net> <20100320025329.GA2468@khazad-dum.debian.net> <20100322045910.GE31621@core.coreip.homeip.net>
 MIME-Version: 1.0
-To: Jerome Oufella <jerome.oufella@savoirfairelinux.com>
-CC: Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [lm-sensors] [PATCH] hwmon: sht15: Fix sht15_calc_temp  interpolation
- function
-References: <1732720040.861270126460533.JavaMail.root@mail.savoirfairelinux.com>
-In-Reply-To: <1732720040.861270126460533.JavaMail.root@mail.savoirfairelinux.com>
-X-Enigmail-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100322045910.GE31621@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/10 13:54, Jerome Oufella wrote:
-> ----- "Jean Delvare" <khali@linux-fr.org> wrote :
->> May I suggest the more simple fix below?
->>
->> ---
->>  drivers/hwmon/sht15.c |    4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> --- linux-2.6.34-rc3.orig/drivers/hwmon/sht15.c	2010-04-01
->> 13:41:15.000000000 +0200
->> +++ linux-2.6.34-rc3/drivers/hwmon/sht15.c	2010-04-01
->> 13:41:55.000000000 +0200
->> @@ -305,10 +305,10 @@ static inline int sht15_calc_temp(struct
->>  	int d1 = 0;
->>  	int i;
->>  
->> -	for (i = 1; i < ARRAY_SIZE(temppoints); i++)
->> +	for (i = ARRAY_SIZE(temppoints) - 1; i > 0 ;i--)
->>  		/* Find pointer to interpolate */
->>  		if (data->supply_uV > temppoints[i - 1].vdd) {
->> -			d1 = (data->supply_uV/1000 - temppoints[i - 1].vdd)
->> +			d1 = (data->supply_uV - temppoints[i - 1].vdd)
->>  				* (temppoints[i].d1 - temppoints[i - 1].d1)
->>  				/ (temppoints[i].vdd - temppoints[i - 1].vdd)
->>  				+ temppoints[i - 1].d1;
->>
->> It leads to the same numbers as with Jerome's patch, with the
->> advantages that 1* it is a much smaller change, more suitable for
->> applying to stable kernels and 2* it avoids the magic constant number
->> 10000.
->>
->> The "/1000" seems to be a relict of former times when
->> temppoints[*].vdd
->> was probably expressed in millivolt instead of microvolt. And the
->> inverted loop iteration is obviously a bug.
->>
->> Note that in both cases, something should be done about values which
->> are outside of the temppoints array. I don't know how likely these
->> are,
->> but they are seriously mishandled. For supply_uV values below
->> temppoints[0].vdd, d1 defaults to 0, so no adjustment is done at all.
->> temppoints[0].d1 would seem to be a much better default, if we don't
->> want to do any interpolation in that case. For supply_uV values above
->> temppoints[4].vdd, we do interpolate, which seems reasonable.
->>
->> Opinions?
->>
->> -- 
->> Jean Delvare
+Hi!
+
+> > root isn't really a problem from a security PoV (well, maybe it is if the
+> > operation isn't constrained by capabilities).  SAK can't protect you from
+> > root.
+> > 
+> > _Normal_ userspace behaviour running a root process is a problem if it
+> > blocks these handles, though, both for SAK and regular SysRQ.  I have lost
+> > count of how many times SysRQ+SUB delivered me from filesystem corruption
+> > and very annoying problems, both at home and at work.
+> > 
+> > We are sort of trusting userspace to not break the one way out from severly
+> > hung systems while doing its normal day-to-day operations (as opposed to
+> > deliberately disabling SysRQ or remapping SAK, etc).
+
+If userspace disables sysrq during normal operation, that makes it
+useless.
+
+If normal user could do that, that's a security problem.
+
+> > > That would require moving "these things", including their state
+> > > machines, into input core otherwise it would not know what events can be
+> > > trappable and which should be passed through. Or we should get rid of
+> > > EVIOCGRAB.
+> > 
+> > Maybe we can add a flags field to input devices and input handlers, to be
+> > able to have the core behave differently when needed, without moving
+> > everything into the input core?  Would that work, or would it need too much
+> > churn in the core?
 > 
-> That's fine, it does a good job for me, in the expected voltage range.
+> The problem is that device does not know what SysRq and especially SAK are.
+> User can reassign key codes and key symbols easily.
 
-Seems sensible.  I'm not quite sure but I think the code in question predates
-my involvement with the driver, so I'm guessing I never actually looked
-closely enough at it.
+That was not case in original implementation; it had hardcoded keymap.
 
-Jonathan
+> I don't think we had any issues like this since 2.5 so I would not worry
+> about userspace too much. If anything we just need to review what stuff
+> we run as root (we do that anyway, right?).
+
+Hehe. If X can break sysrq, that's both X and sysrq problem.
+								Pavel
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
