@@ -1,98 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758272Ab0DAQhQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:37:16 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44886 "EHLO
-	bob.linux.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757847Ab0DAQdt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:33:49 -0400
-From: Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 04/14] vc: Locking clean up
-To: linux-kernel@vger.kernel.org
-Date: Thu, 01 Apr 2010 17:04:59 +0100
-Message-ID: <20100401160451.8882.30559.stgit@localhost.localdomain>
-In-Reply-To: <20100401155513.8882.54006.stgit@localhost.localdomain>
-References: <20100401155513.8882.54006.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	id S1758287Ab0DAQhj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:37:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12531 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758036Ab0DAQdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 12:33:44 -0400
+Message-ID: <4BB487D5.7010803@redhat.com>
+Date: Thu, 01 Apr 2010 14:47:33 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       linux-kernel@vger.kernel.org, aarcange@redhat.com,
+       akpm@linux-foundation.org, Kent Overstreet <kent.overstreet@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: [COUNTERPATCH] mm: avoid overflowing preempt_count() in mmu_take_all_locks()
+References: <1270117906.1653.139.camel@laptop>	 <alpine.LFD.2.00.1004011300550.32352@localhost.localdomain>	 <4BB47FC3.1020606@redhat.com>  <4BB480CC.2060503@redhat.com>	 <1270121264.1653.205.camel@laptop> <1270122194.1653.223.camel@laptop>
+In-Reply-To: <1270122194.1653.223.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The virtual console layer uses the BKL for various things that don't really
-need it. Clean them out.
+On 04/01/2010 02:43 PM, Peter Zijlstra wrote:
+> On Thu, 2010-04-01 at 13:27 +0200, Peter Zijlstra wrote:
+>    
+>> I've almost got a patch done that converts those two, still need to look
+>> where that tasklist_lock muck happens.
+>>      
+> OK, so the below builds and boots, only need to track down that
+> tasklist_lock nesting, but I got to run an errand first.
+>
+> --- a/mm/ksm.c
+> +++ b/mm/ksm.c
+> @@ -327,7 +327,7 @@ static void drop_anon_vma(struct rmap_item *rmap_item)
+>
+>   	if (atomic_dec_and_lock(&anon_vma->ksm_refcount,&anon_vma->lock)) {
+>   		int empty = list_empty(&anon_vma->head);
+> -		spin_unlock(&anon_vma->lock);
+> +		mutex_unlock(&anon_vma->lock);
+>   		if (empty)
+>   			anon_vma_free(anon_vma);
+>   	}
+>    
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
-
- drivers/char/selection.c |    4 ++++
- drivers/char/vt.c        |    8 +++++---
- 2 files changed, 9 insertions(+), 3 deletions(-)
+You need to convert the atomic_dec_and_lock() as well.
 
 
-diff --git a/drivers/char/selection.c b/drivers/char/selection.c
-index f97b9e8..6e79340 100644
---- a/drivers/char/selection.c
-+++ b/drivers/char/selection.c
-@@ -26,6 +26,7 @@
- #include <linux/selection.h>
- #include <linux/tiocl.h>
- #include <linux/console.h>
-+#include <linux/smp_lock.h>
- 
- /* Don't take this from <ctype.h>: 011-015 on the screen aren't spaces */
- #define isspace(c)	((c) == ' ')
-@@ -312,6 +313,8 @@ int paste_selection(struct tty_struct *tty)
- 	struct  tty_ldisc *ld;
- 	DECLARE_WAITQUEUE(wait, current);
- 
-+	lock_kernel();
-+
- 	acquire_console_sem();
- 	poke_blanked_console();
- 	release_console_sem();
-@@ -335,5 +338,6 @@ int paste_selection(struct tty_struct *tty)
- 	__set_current_state(TASK_RUNNING);
- 
- 	tty_ldisc_deref(ld);
-+	unlock_kernel();
- 	return 0;
- }
-diff --git a/drivers/char/vt.c b/drivers/char/vt.c
-index bd1d116..501ca9e 100644
---- a/drivers/char/vt.c
-+++ b/drivers/char/vt.c
-@@ -282,7 +282,12 @@ static inline unsigned short *screenpos(struct vc_data *vc, int offset, int view
- 
- static inline void scrolldelta(int lines)
- {
-+	lock_kernel();
-+	/* FIXME */
-+	/* scrolldelta needs some kind of consistency lock, but the BKL was
-+	   and still is not protecting versus the scheduled back end */
- 	scrollback_delta += lines;
-+	unlock_kernel();
- 	schedule_console_callback();
- }
- 
-@@ -2604,8 +2609,6 @@ int tioclinux(struct tty_struct *tty, unsigned long arg)
- 		return -EFAULT;
- 	ret = 0;
- 
--	lock_kernel();
--
- 	switch (type)
- 	{
- 		case TIOCL_SETSEL:
-@@ -2680,7 +2683,6 @@ int tioclinux(struct tty_struct *tty, unsigned long arg)
- 			ret = -EINVAL;
- 			break;
- 	}
--	unlock_kernel();
- 	return ret;
- }
- 
+-- 
+error compiling committee.c: too many arguments to function
 
