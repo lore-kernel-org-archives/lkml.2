@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758561Ab0DAQkK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:40:10 -0400
+	id S1758584Ab0DAQkQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:40:16 -0400
 Received: from mx1.redhat.com ([209.132.183.28]:64426 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758462Ab0DAQj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:39:57 -0400
-Date: Thu, 1 Apr 2010 18:08:51 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, Kent Overstreet <kent.overstreet@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [COUNTERPATCH] mm: avoid overflowing preempt_count() in
- mmu_take_all_locks()
-Message-ID: <20100401160851.GV5825@random.random>
-References: <1270117906.1653.139.camel@laptop>
- <alpine.LFD.2.00.1004011300550.32352@localhost.localdomain>
- <4BB47FC3.1020606@redhat.com>
- <4BB480CC.2060503@redhat.com>
- <1270121264.1653.205.camel@laptop>
- <1270122194.1653.223.camel@laptop>
- <20100401154249.GQ5825@random.random>
- <4BB4C0F5.3070204@redhat.com>
- <1270137406.1598.78.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1270137406.1598.78.camel@laptop>
+	id S1758470Ab0DAQj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 12:39:59 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: mingo@elte.hu, rostedt@goodmis.org, fweisbec@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCHv5 0/4] tracing: function graph output for preempt/irqs-off tracers
+Date: Thu,  1 Apr 2010 17:37:05 +0200
+Message-Id: <1270136229-15263-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 01, 2010 at 05:56:46PM +0200, Peter Zijlstra wrote:
-> I would much rather we make call_rcu_preempt() available at all times.
+hi,
 
-srcu is needed only for XPMEM to make the mmu notifier handlers
-sleepable. Ignore it for now, it can be done later. The locks you're
-changing are always taken _before_ the mmu notifier_range_start and
-always after the mmu_notifier_range_end, so srcu can be done later...
+ok, saga continues ;)
 
-It's orthogonal issue, but the moment these locks are sleepable it
-simply worth to switch mmu notifiers to srcu to accommodate XPMEM.
+I'm sending reworked version of the graph output support for
+preemptirqsoff/preemptoff/irqsoff tracers.
+
+v5:
+- function graph events are back in game
+- changed function graph tracer interface to be able to
+  pass custom tracer flags
+- changed calls to trace_function to trace graph records
+  when the display-graph otion is enabled.  As function tracer
+  and graph tracer have different spacing during the record
+  output, this way it looks better, and the info stays.
+
+  This could be also done via TRACE_PRINT, then it'd be displayed
+  as comment.. I chose the first way, though it could be easily
+  changed.
+
+v4:
+- fixed header to display all the info as for
+  current irqsoff tracer
+- fixed reset of the max_tr buffer during the
+  display-graph switch
+
+v3:
+- the function_graph tracer should have the same output
+  as current version even with events enabled,
+  unless I missed something again ;)
+- I gave up the idea of function_graph events,
+  since it was unsuitable for outputing other
+  events as comments "/* */"
+- I'm not including the raw function_graph for now
+
+
+attached patches:
+- 1/4 adding ftrace events for graph tracer
+- 2/4 graph tracer - adding support for passing flags to ouput functions
+- 3/4 graph output support for irqsoff tracer
+- 4/4 graph output support for preemptirqsoff/preemptoff tracers
+
+
+plz let me know what you think
+
+wbr,
+jirka
+---
+ kernel/trace/trace.c                 |   35 +++--
+ kernel/trace/trace.h                 |   27 +++-
+ kernel/trace/trace_functions_graph.c |  164 +++++++++++++--------
+ kernel/trace/trace_irqsoff.c         |  267 ++++++++++++++++++++++++++++++++--
+ 4 files changed, 408 insertions(+), 85 deletions(-)
