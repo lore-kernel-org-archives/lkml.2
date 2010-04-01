@@ -1,172 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100Ab0DAFrC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 01:47:02 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:58099 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716Ab0DAFq4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 01:46:56 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 1 Apr 2010 14:42:34 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 14/14] mm,migration: Allow the migration of
- PageSwapCache  pages
-Message-Id: <20100401144234.e3848876.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <n2k28c262361003312144k3a1a725aj1eb22efe6d360118@mail.gmail.com>
-References: <1269940489-5776-1-git-send-email-mel@csn.ul.ie>
-	<1269940489-5776-15-git-send-email-mel@csn.ul.ie>
-	<20100331142623.62ac9175.kamezawa.hiroyu@jp.fujitsu.com>
-	<j2s28c262361003311943ke6d39007of3861743cef3733a@mail.gmail.com>
-	<20100401120123.f9f9e872.kamezawa.hiroyu@jp.fujitsu.com>
-	<n2k28c262361003312144k3a1a725aj1eb22efe6d360118@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1753041Ab0DAFt4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 01:49:56 -0400
+Received: from mail.gmx.net ([213.165.64.20]:50796 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751209Ab0DAFtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 01:49:49 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18ogSsrVjwoZdPiGIu99eAZos+ioUMqLuBu8Hd5cT
+	3uOTPluE774hTp
+Subject: Re: Issues with Patch: "sched: Improve latencies and throughput"
+From: Mike Galbraith <efault@gmx.de>
+To: Michael Grzeschik <mgr@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, rsc@pengutronix.de
+In-Reply-To: <20100331223106.GJ10342@pengutronix.de>
+References: <20100331223106.GJ10342@pengutronix.de>
+Content-Type: text/plain
+Date: Thu, 01 Apr 2010 07:49:46 +0200
+Message-Id: <1270100986.6707.156.camel@marge.simson.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.57999999999999996
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Apr 2010 13:44:29 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
-
-> On Thu, Apr 1, 2010 at 12:01 PM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Thu, 1 Apr 2010 11:43:18 +0900
-> > Minchan Kim <minchan.kim@gmail.com> wrote:
-> >
-> >> On Wed, Mar 31, 2010 at 2:26 PM, KAMEZAWA Hiroyuki       /*
-> >> >> diff --git a/mm/rmap.c b/mm/rmap.c
-> >> >> index af35b75..d5ea1f2 100644
-> >> >> --- a/mm/rmap.c
-> >> >> +++ b/mm/rmap.c
-> >> >> @@ -1394,9 +1394,11 @@ int rmap_walk(struct page *page, int (*rmap_one)(struct page *,
-> >> >>
-> >> >>       if (unlikely(PageKsm(page)))
-> >> >>               return rmap_walk_ksm(page, rmap_one, arg);
-> >> >> -     else if (PageAnon(page))
-> >> >> +     else if (PageAnon(page)) {
-> >> >> +             if (PageSwapCache(page))
-> >> >> +                     return SWAP_AGAIN;
-> >> >>               return rmap_walk_anon(page, rmap_one, arg);
-> >> >
-> >> > SwapCache has a condition as (PageSwapCache(page) && page_mapped(page) == true.
-> >> >
-> >>
-> >> In case of tmpfs, page has swapcache but not mapped.
-> >>
-> >> > Please see do_swap_page(), PageSwapCache bit is cleared only when
-> >> >
-> >> > do_swap_page()...
-> >> >       swap_free(entry);
-> >> >        if (vm_swap_full() || (vma->vm_flags & VM_LOCKED) || PageMlocked(page))
-> >> >                try_to_free_swap(page);
-> >> >
-> >> > Then, PageSwapCache is cleared only when swap is freeable even if mapped.
-> >> >
-> >> > rmap_walk_anon() should be called and the check is not necessary.
-> >>
-> >> Frankly speaking, I don't understand what is Mel's problem, why he added
-> >> Swapcache check in rmap_walk, and why do you said we don't need it.
-> >>
-> >> Could you explain more detail if you don't mind?
-> >>
-> > I may miss something.
-> >
-> > unmap_and_move()
-> >  1. try_to_unmap(TTU_MIGRATION)
-> >  2. move_to_newpage
-> >  3. remove_migration_ptes
-> >        -> rmap_walk()
-> >
-> > Then, to map a page back we unmapped we call rmap_walk().
-> >
-> > Assume a SwapCache which is mapped, then, PageAnon(page) == true.
-> >
-> >  At 1. try_to_unmap() will rewrite pte with swp_entry of SwapCache.
-> >       mapcount goes to 0.
-> >  At 2. SwapCache is copied to a new page.
-> >  At 3. The new page is mapped back to the place. Now, newpage's mapcount is 0.
-> >       Before patch, the new page is mapped back to all ptes.
-> >       After patch, the new page is not mapped back because its mapcount is 0.
-> >
-> > I don't think shared SwapCache of anon is not an usual behavior, so, the logic
-> > before patch is more attractive.
-> >
-> > If SwapCache is not mapped before "1", we skip "1" and rmap_walk will do nothing
-> > because page->mapping is NULL.
-> >
+On Thu, 2010-04-01 at 00:31 +0200, Michael Grzeschik wrote:
+> We are using an arm mx31 embedded cpu with the v2.6.34 Kernelrelease and
+> realized some issues with the scheduling behaviour the patch "sched:
+> Improve latencies and throughput" [1] by Mike Galbraith introduced to
+> the kernel.
 > 
-> Thanks. I agree. We don't need the check.
-> Then, my question is why Mel added the check in rmap_walk.
-> He mentioned some BUG trigger and fixed things after this patch.
-> What's it?
-> Is it really related to this logic?
-> I don't think so or we are missing something.
+> When we used the alsa utility aplay to pipe some audio through an
+> usbaudio device and put some scheduling overhead on the device, the
+> amount of underruns, due to the not fast enough refilled ring buffer,
+> was noticable increased with that patch [1] applied. Until we reverse
+> applied the patch the amount of underruns was appreciable lower.
+
+Testcase?
+
+> That in fact is the opposite behaviour to its actual meaning.
+
+Not necessarily.  NEXT_BUDDY can increase latency for waiters, as can
+_not_ pulling a waiter to an idle CPU. 
+
+
+> [1] 0ec9fab3d186d9cbb00c0f694d4a260d07c198d9
 > 
-Hmm. Consiering again.
+> mgr
 
-Now.
-	if (PageAnon(page)) {
-		rcu_locked = 1;
-		rcu_read_lock();
-		if (!page_mapped(page)) {
-			if (!PageSwapCache(page))
-				goto rcu_unlock;
-		} else {
-			anon_vma = page_anon_vma(page);
-			atomic_inc(&anon_vma->external_refcount);
-		}
-
-
-Maybe this is a fix.
-
-==
-	skip_remap = 0;
-	if (PageAnon(page)) {
-		rcu_read_lock();
-		if (!page_mapped(page)) {
-			if (!PageSwapCache(page))
-				goto rcu_unlock;
-			/*
-			 * We can't convice this anon_vma is valid or not because
-			 * !page_mapped(page). Then, we do migration(radix-tree replacement)
-			 * but don't remap it which touches anon_vma in page->mapping.
-			 */
-			skip_remap = 1;
-			goto skip_unmap;
-		} else {
-			anon_vma = page_anon_vma(page);
-			atomic_inc(&anon_vma->external_refcount);
-		}
-	}	
-	.....copy page, radix-tree replacement,....
-
-	if (!rc && !skip_remap)
-		 remove_migration_ptes(page, page);
-==
-
-Thanks,
--Kame
-
-
-
-
-
-
-
-
-
-
+	-Mike
 
