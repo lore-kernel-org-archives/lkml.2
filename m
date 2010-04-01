@@ -1,36 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758826Ab0DAR7v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 13:59:51 -0400
-Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:58985 "EHLO
-	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758705Ab0DAR7p (ORCPT
+	id S1755232Ab0DASPo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 14:15:44 -0400
+Received: from smtp-grey.Stanford.EDU ([171.67.219.80]:50861 "EHLO
+	smtp-grey.stanford.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755006Ab0DASPl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 13:59:45 -0400
-Date: Thu, 1 Apr 2010 12:59:38 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: linux-kernel@vger.kernel.org
-cc: Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
-       linux-mm@kvack.org
-Subject: Re: 2.6.34-rc3, BUG at mm/slab.c:2989
-In-Reply-To: <20100401175225.GA6581@fancy-poultry.org>
-Message-ID: <alpine.DEB.2.00.1004011257470.17168@router.home>
-References: <20100401175225.GA6581@fancy-poultry.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 1 Apr 2010 14:15:41 -0400
+X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Apr 2010 14:15:41 EDT
+Date: Thu, 1 Apr 2010 11:09:25 -0700 (PDT)
+From: MOTOROLA COMPANY UK <lmferrer@stanford.edu>
+Reply-To: MOTOROLA COMPANY UK <mheadofficeuk@yahoo.com.hk>
+Message-ID: <150830593.4812871270145365268.JavaMail.root@zm09.stanford.edu>
+Subject: Lucky Winner!!!
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [212.116.219.150]
+X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (zclient/5.0.21_GA_3150.RHEL4_64)
+X-Authenticated-User: lmferrer@stanford.edu
+To: undisclosed-recipients:;
+X-Grey: yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Apr 2010, Heinz Diehl wrote:
-
-> Apr  1 18:20:33 liesel kernel: kernel BUG at mm/slab.c:2989!
-
-Typical for slab metadata corruption. You need to run with debugging on.
-
-Switch to SLUB and set SLUB_DEBUG_ON. Reboot and reproduce situation.
-Check the syslog after while. SLUB will repair the situation and continue
-if possible. There may not be failure.
-
+Your e-mail have won £600,000.00 GBP. Contact with your name,country,telephone number,sex and age
