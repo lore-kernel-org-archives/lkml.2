@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758705Ab0DATKY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 15:10:24 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:52725 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753634Ab0DATKV (ORCPT
+	id S1758726Ab0DATLb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 15:11:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:41488 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758691Ab0DATL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 15:10:21 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [RFC 0/9] BKL conversion in TTY drivers
-Date: Thu, 1 Apr 2010 21:10:15 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-       Ingo Molnar <mingo@elte.hu>
-References: <1269982580-9361-1-git-send-email-arnd@arndb.de> <201004011451.59712.arnd@arndb.de> <20100401151756.5e329014@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100401151756.5e329014@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Thu, 1 Apr 2010 15:11:27 -0400
+X-Authority-Analysis: v=1.1 cv=3DUlJUu7qWFNpNttJVwyA1nQS84iC7EN/BDLX6qJweI= c=1 sm=0 a=EQ1AM5h6K_EA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=7wNUE91lC8_5-q4jRMQA:9 a=FHrOf3uE8p9U79rGa8WZmiDVqlYA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH] oprofile: remove double ring buffering
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Robert Richter <robert.richter@amd.com>
+Cc: Andi Kleen <andi@firstfloor.org>, oprofile-list@lists.sf.net,
+       linux-kernel@vger.kernel.org, stable@kernel.org
+In-Reply-To: <20100401190205.GD6027@erda.amd.com>
+References: <20100401011725.GA27567@basil.fritz.box>
+	 <20100401190205.GD6027@erda.amd.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Thu, 01 Apr 2010 15:11:24 -0400
+Message-ID: <1270149084.19685.9249.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004012110.15209.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX18BXueOAaNy9/lFLTQmQDLGWF3itzWozMlhrXc
- hxuyb3SF10UgKbQzfEBSbuVX49Unm8BMzn5XHGvjnI3w+JmM8n
- h5Bl1iDHBJhlE3ozM4WjQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 April 2010, Alan Cox wrote:
-> > Greg, are you ok with merging these TTY patches in your tree for 2.6.35
-> > then? There will be at least one more respin of it for minor changes
-> > and anything that comes up during testing, but it's essentially what I
-> > posted here.
+On Thu, 2010-04-01 at 21:02 +0200, Robert Richter wrote:
+> On 01.04.10 03:17:25, Andi Kleen wrote:
+> > Got confirmation now this patch fixes most of the dropped oprofile
+> > samples problem on a particular intensive test on a large system.
+> > So now submitting the previous RFC formally.
+> > .34 / Stable candidate.
 > 
-> Can we please wait a bit with the tty bits. I'm slowing picking through
-> the job properly and there are a lot of low hanging fruit to clean up at
-> the driver end of things that is best done before we complicate the core
-> stuff.
+> Thanks Andi, will take a look at this next week.
 
-Ok, sure thing. I tried to make the patches in a way that is helpful to your
-goals, not hurting, but anything you are already working on should go in
-first because it's more important in the long run.
+Note, I just sent out a patch set yesterday which will conflict with
+this change.
 
-> Arnd there is another problem I noticed in your changes - the ppp stuff
-> is not tty locking, its some kind of driver/network locking and I don't
-> claim to understand what is going on.
+I Cc'd both you and Andi on that patch.
 
-Ok. This was just me being conservative and assuming that it interacts
-with TTY in ways I don't understand. The network layer does not use the
-BKL at all, except for a few protocols (appletalk, ipx, ...), so I'm fairly
-certain the ppp locking does not interact with that. I'll have a closer look
-to see if there's any chance it could lock against TTY code at all and
-do a patch to use a private lock if not.
+-- Steve
 
-	Arnd
+
