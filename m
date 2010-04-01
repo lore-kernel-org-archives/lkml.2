@@ -1,120 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab0DAEog (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 00:44:36 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:52694 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752431Ab0DAEoa convert rfc822-to-8bit (ORCPT
+	id S1752609Ab0DAEvC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 00:51:02 -0400
+Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:56392 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752483Ab0DAEuy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 00:44:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=HzhMBnwfaSDxdjiWXiBopBWjvRizffJhL1C5TE3Te513LOamGGBMTjU9SAxOCBww8b
-         rvjb6Pg6oLXaCcjsMioh/1MI32MPblFvImW602OoVeYPheazVs893SHY1J7XctSX2X2Y
-         XmH/4noWBM6QGjpYnlR2wopzHhoKbD3T3jiMQ=
+	Thu, 1 Apr 2010 00:50:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
+	:date:message-id:mime-version:content-type
+	:content-transfer-encoding; q=dns; s=sasl; b=vpr25Src2lzvmSocmnD
+	JnXSA1EkakEG3pa8OtAIQu7plI4Qr9INGGIpWnrdX5Iz476cOQzcgc51PagpeRPu
+	IbEdXrBPS3YQERKJR5Ync2qCENVYGpjQn0iZ2Sx+YeoL96aFjxPZ7JsH5cgBfUDx
+	YdbukGfPmmzzqHaebRTw0D1w=
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.0.4
+From: Junio C Hamano <gitster@pobox.com>
+Date: Wed, 31 Mar 2010 21:50:43 -0700
+Message-ID: <7vljd7srmk.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20100401120123.f9f9e872.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1269940489-5776-1-git-send-email-mel@csn.ul.ie>
-	 <1269940489-5776-15-git-send-email-mel@csn.ul.ie>
-	 <20100331142623.62ac9175.kamezawa.hiroyu@jp.fujitsu.com>
-	 <j2s28c262361003311943ke6d39007of3861743cef3733a@mail.gmail.com>
-	 <20100401120123.f9f9e872.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 1 Apr 2010 13:44:29 +0900
-Message-ID: <n2k28c262361003312144k3a1a725aj1eb22efe6d360118@mail.gmail.com>
-Subject: Re: [PATCH 14/14] mm,migration: Allow the migration of PageSwapCache 
-	pages
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: 2424AE96-3D4A-11DF-A05A-D033EE7EF46B-77302942!a-pb-sasl-quonix.pobox.com
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 1, 2010 at 12:01 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Thu, 1 Apr 2010 11:43:18 +0900
-> Minchan Kim <minchan.kim@gmail.com> wrote:
->
->> On Wed, Mar 31, 2010 at 2:26 PM, KAMEZAWA Hiroyuki       /*
->> >> diff --git a/mm/rmap.c b/mm/rmap.c
->> >> index af35b75..d5ea1f2 100644
->> >> --- a/mm/rmap.c
->> >> +++ b/mm/rmap.c
->> >> @@ -1394,9 +1394,11 @@ int rmap_walk(struct page *page, int (*rmap_one)(struct page *,
->> >>
->> >>       if (unlikely(PageKsm(page)))
->> >>               return rmap_walk_ksm(page, rmap_one, arg);
->> >> -     else if (PageAnon(page))
->> >> +     else if (PageAnon(page)) {
->> >> +             if (PageSwapCache(page))
->> >> +                     return SWAP_AGAIN;
->> >>               return rmap_walk_anon(page, rmap_one, arg);
->> >
->> > SwapCache has a condition as (PageSwapCache(page) && page_mapped(page) == true.
->> >
->>
->> In case of tmpfs, page has swapcache but not mapped.
->>
->> > Please see do_swap_page(), PageSwapCache bit is cleared only when
->> >
->> > do_swap_page()...
->> >       swap_free(entry);
->> >        if (vm_swap_full() || (vma->vm_flags & VM_LOCKED) || PageMlocked(page))
->> >                try_to_free_swap(page);
->> >
->> > Then, PageSwapCache is cleared only when swap is freeable even if mapped.
->> >
->> > rmap_walk_anon() should be called and the check is not necessary.
->>
->> Frankly speaking, I don't understand what is Mel's problem, why he added
->> Swapcache check in rmap_walk, and why do you said we don't need it.
->>
->> Could you explain more detail if you don't mind?
->>
-> I may miss something.
->
-> unmap_and_move()
->  1. try_to_unmap(TTU_MIGRATION)
->  2. move_to_newpage
->  3. remove_migration_ptes
->        -> rmap_walk()
->
-> Then, to map a page back we unmapped we call rmap_walk().
->
-> Assume a SwapCache which is mapped, then, PageAnon(page) == true.
->
->  At 1. try_to_unmap() will rewrite pte with swp_entry of SwapCache.
->       mapcount goes to 0.
->  At 2. SwapCache is copied to a new page.
->  At 3. The new page is mapped back to the place. Now, newpage's mapcount is 0.
->       Before patch, the new page is mapped back to all ptes.
->       After patch, the new page is not mapped back because its mapcount is 0.
->
-> I don't think shared SwapCache of anon is not an usual behavior, so, the logic
-> before patch is more attractive.
->
-> If SwapCache is not mapped before "1", we skip "1" and rmap_walk will do nothing
-> because page->mapping is NULL.
->
+The latest maintenance release Git 1.7.0.4 is available at the
+usual places:
 
-Thanks. I agree. We don't need the check.
-Then, my question is why Mel added the check in rmap_walk.
-He mentioned some BUG trigger and fixed things after this patch.
-What's it?
-Is it really related to this logic?
-I don't think so or we are missing something.
+  http://www.kernel.org/pub/software/scm/git/
 
--- 
-Kind regards,
-Minchan Kim
+  git-1.7.0.4.tar.{gz,bz2}			(source tarball)
+  git-htmldocs-1.7.0.4.tar.{gz,bz2}		(preformatted docs)
+  git-manpages-1.7.0.4.tar.{gz,bz2}		(preformatted docs)
+
+The RPM binary packages for a few architectures are found in:
+
+  RPMS/$arch/git-*-1.7.0.4-1.fc11.$arch.rpm	(RPM)
+
+Git v1.7.0.4 Release Notes
+==========================
+
+Fixes since v1.7.0.3
+--------------------
+
+ * Optimized ntohl/htonl on big-endian machines were broken.
+
+ * Color values given to "color.<cmd>.<slot>" configuration can now have
+   more than one attributes (e.g. "bold ul").
+
+ * "git add -u nonexistent-path" did not complain.
+
+ * "git apply --whitespace=fix" didn't work well when an early patch in
+   a patch series adds trailing blank lines and a later one depended on
+   such a block of blank lines at the end.
+
+ * "git fast-export" didn't check error status and stop when marks file
+   cannot be opened.
+
+ * "git format-patch --ignore-if-in-upstream" gave unwarranted errors
+   when the range was empty, instead of silently finishing.
+
+ * "git remote prune" did not detect remote tracking refs that became
+   dangling correctly.
+
+And other minor fixes and documentation updates.
+
+----------------------------------------------------------------
+
+Changes since v1.7.0.3 are as follows:
+
+Björn Gustavsson (5):
+      apply: Don't unnecessarily update line lengths in the preimage
+      apply: Remove the quick rejection test
+      apply: Allow blank context lines to match beyond EOF
+      t4124: Add additional tests of --whitespace=fix
+      t3417: Add test cases for "rebase --whitespace=fix"
+
+Chris Packham (1):
+      test for add with non-existent pathspec
+
+David Aguilar (1):
+      difftool: Fix '--gui' when diff.guitool is unconfigured
+
+Greg Bacon (1):
+      Documentation: Clarify support for smart HTTP backend
+
+Holger Weiß (3):
+      Don't redefine htonl and ntohl on big-endian
+      Link against libiconv on IRIX
+      Documentation: show-ref <pattern>s are optional
+
+Jakub Narebski (1):
+      gitweb: git_get_project_config requires only $git_dir, not also $project
+
+Jan Stępień (1):
+      Updated the usage string of git reset
+
+Jeff King (1):
+      dir: fix COLLECT_IGNORED on excluded prefixes
+
+Johannes Sixt (2):
+      diff: fix textconv error zombies
+      Windows: fix utime() for read-only files
+
+Junio C Hamano (8):
+      git add -u: die on unmatched pathspec
+      color: allow multiple attributes
+      t0050: mark non-working test as such
+      tests for "git add ignored-dir/file" without -f
+      refs: ref entry with NULL sha1 is can be a dangling symref
+      t9350: fix careless use of "cd"
+      Prepare for 1.7.0.4
+      Git 1.7.0.4
+
+Kevin Ballard (1):
+      format-patch: Squelch 'fatal: Not a range." error
+
+Markus Heidelberg (1):
+      Documentation: explain the meaning of "-g" in git-describe output
+
+Sverre Rabbelier (1):
+      fast-export: don't segfault when marks file cannot be opened
+
