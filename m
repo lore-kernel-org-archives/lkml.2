@@ -1,131 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab0DAPY0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 11:24:26 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:7180 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756747Ab0DAPYT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 11:24:19 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzab9bhzz1202hzzz32i6bh2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-SS: 5,
-X-WSS-ID: 0L07ES1-02-N3M-02
-X-M-MSG: 
-Subject: [PATCH] x86, cacheinfo: Turn off L3 cache index disable feature in
- virtualized environments
-From: Frank Arnold <frank.arnold@amd.com>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-       tglx@linutronix.de
-CC: linux-kernel@vger.kernel.org, x86@kernel.org, bp@amd64.org
-Content-Type: text/plain
-Date: Thu, 1 Apr 2010 17:23:59 +0200
-Message-ID: <1270135439.3768.7.camel@mendozza.osrc.amd.com>
+	id S1756753Ab0DAPfh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 11:35:37 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52965 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751222Ab0DAPfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 11:35:31 -0400
+Date: Thu, 1 Apr 2010 08:35:23 -0700
+From: Greg KH <gregkh@suse.de>
+To: David Miller <davem@davemloft.net>
+Cc: w@1wt.eu, david@fromorbit.com, linux-kernel@vger.kernel.org,
+       stable@kernel.org, akpm@linux-foundation.org,
+       torvalds@linux-foundation.org, stable-review@kernel.org,
+       alan@lxorguk.ukuu.org.uk
+Subject: Re: [Stable-review] 4 stable kernel review cycles starting
+Message-ID: <20100401153523.GA12944@suse.de>
+References: <20100331215332.GH7671@dastard> <20100331224755.GA23284@suse.de> <20100401044048.GD16238@1wt.eu> <20100401.002622.179174704.davem@davemloft.net>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.24.5 (2.24.5-2.fc10) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Apr 2010 15:24:00.0253 (UTC) FILETIME=[5A92C2D0:01CAD1AF]
-X-Reverse-DNS: unknown
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100401.002622.179174704.davem@davemloft.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Apr 01, 2010 at 12:26:22AM -0700, David Miller wrote:
+> From: Willy Tarreau <w@1wt.eu>
+> Date: Thu, 1 Apr 2010 06:40:48 +0200
+> 
+> > For this reason, IMHO it helps when submitters can indicate in each
+> > patch the mainline equivalent ID, or alternatively that it's pointless
+> > to look for it because the fix is much different.
+> 
+> I put this at the top of every networking/ide/sparc commit message
+> for -stable submissions I make.
+> 
+> In fact I thought that was a requirement for -stable submissions?
 
-This fixes an issue seen when booting a current kernel as a guest on Xen:
+It is.  Unfortunatly not everyone remembers it, and I have to go dig
+through the git tree to find the commit ids, which slows down the
+ability for their patches to get accepted.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
-IP: [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x2ca/0x3df
-PGD 0 
-Oops: 0000 [#1] SMP 
-last sysfs file: 
-CPU 0 
-Modules linked in:
+The patches that include the git commit ids are trivial to get added to
+the tree, almost no extra work on my part.
 
-Pid: 0, comm: swapper Tainted: G        W  2.6.34-rc3 #1 /HVM domU
-RIP: 0010:[<ffffffff8142f2fb>]  [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x
-2ca/0x3df
-RSP: 0018:ffff880002203e08  EFLAGS: 00010046
-RAX: 0000000000000000 RBX: 0000000000000003 RCX: 0000000000000060
-RDX: 0000000000000000 RSI: 0000000000000040 RDI: 0000000000000000
-RBP: ffff880002203ed8 R08: 00000000000017c0 R09: ffff880002203e38
-R10: ffff8800023d5d40 R11: ffffffff81a01e28 R12: ffff880187e6f5c0
-R13: ffff880002203e34 R14: ffff880002203e58 R15: ffff880002203e68
-FS:  0000000000000000(0000) GS:ffff880002200000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000038 CR3: 0000000001a3c000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process swapper (pid: 0, threadinfo ffffffff81a00000, task ffffffff81a44020)
-Stack:
- ffffffff810d7ecb ffff880002203e20 ffffffff81059140 ffff880002203e30
-<0> ffffffff810d7ec9 0000000002203e40 000000000050d140 ffff880002203e70
-<0> 0000000002008140 0000000000000086 ffff880040020140 ffffffff81068b8b
-Call Trace:
- <IRQ> 
- [<ffffffff810d7ecb>] ? sync_supers_timer_fn+0x0/0x1c
- [<ffffffff81059140>] ? mod_timer+0x23/0x25
- [<ffffffff810d7ec9>] ? arm_supers_timer+0x34/0x36
- [<ffffffff81068b8b>] ? hrtimer_get_next_event+0xa7/0xc3
- [<ffffffff81058e85>] ? get_next_timer_interrupt+0x19a/0x20d
- [<ffffffff8142fa23>] get_cpu_leaves+0x5c/0x232
- [<ffffffff8106a7b1>] ? sched_clock_local+0x1c/0x82
- [<ffffffff8106a9a0>] ? sched_clock_tick+0x75/0x7a
- [<ffffffff8107748c>] generic_smp_call_function_single_interrupt+0xae/0xd0
- [<ffffffff8101f6ef>] smp_call_function_single_interrupt+0x18/0x27
- [<ffffffff8100a773>] call_function_single_interrupt+0x13/0x20
- <EOI> 
- [<ffffffff8143c468>] ? notifier_call_chain+0x14/0x63
- [<ffffffff810295c6>] ? native_safe_halt+0xc/0xd
- [<ffffffff810114eb>] ? default_idle+0x36/0x53
- [<ffffffff81008c22>] cpu_idle+0xaa/0xe4
- [<ffffffff81423a9a>] rest_init+0x7e/0x80
- [<ffffffff81b10dd2>] start_kernel+0x40e/0x419
- [<ffffffff81b102c8>] x86_64_start_reservations+0xb3/0xb7
- [<ffffffff81b103c4>] x86_64_start_kernel+0xf8/0x107
-Code: 14 d5 40 ff ae 81 8b 14 02 31 c0 3b 15 47 1c 8b 00 7d 0e 48 8b 05 36 1c 8b
- 00 48 63 d2 48 8b 04 d0 c7 85 5c ff ff ff 00 00 00 00 <8b> 70 38 48 8d 8d 5c ff
- ff ff 48 8b 78 10 ba c4 01 00 00 e8 eb 
-RIP  [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x2ca/0x3df
- RSP <ffff880002203e08>
-CR2: 0000000000000038
----[ end trace a7919e7f17c0a726 ]---
+thanks,
 
-Here's a fix:
-
---
-The L3 cache index disable feature of AMD CPUs has to be disabled
-if the kernel is running as guest on top of a hypervisor because
-northbridge devices are not available to the guest. Currently,
-this fixes a boot crash on top of Xen. In the future this will
-become an issue on KVM as well.
-
-Check if northbridge devices are present and do not enable the
-feature if there are none.
-
-Signed-off-by: Frank Arnold <frank.arnold@amd.com>
-Acked-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/cpu/intel_cacheinfo.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index b3eeb66..95962a9 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -340,6 +340,10 @@ amd_check_l3_disable(int index, struct _cpuid4_info_regs *this_leaf)
- 	     (boot_cpu_data.x86_mask  < 0x1)))
- 		return;
- 
-+	/* not in virtualized environments */
-+	if (num_k8_northbridges == 0)
-+		return;
-+
- 	this_leaf->can_disable = true;
- 	this_leaf->l3_indices  = amd_calc_l3_indices();
- }
--- 
-1.6.0.6
-
-
+greg k-h
