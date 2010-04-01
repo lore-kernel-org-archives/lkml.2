@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab0DAQdF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:33:05 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:60534 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757905Ab0DAQc5 (ORCPT
+	id S932086Ab0DAQdR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:33:17 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42109 "EHLO
+	bob.linux.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757954Ab0DAQc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:32:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=sQ8LvoALeRACBVh1vp5Q6ABiM7WUou18DVFkpg63tNlbBj6d/DCFbhXDPytvYBCSQ8
-         JvgP07Sa+3o2yGd6qvjSleXosD867fpL+fxgvxOO+rMZHIQ3G8HyyNruegjZhMhS9LaM
-         RE68TRSWv1jUkFXQpNtLt5Tm2G16SmmiEHTc4=
-Date: Thu, 1 Apr 2010 19:32:58 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: mingo@elte.hu, rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv5 3/4] tracing: graph output support for irqsoff tracer
-Message-ID: <20100401173251.GC5153@nowhere>
-References: <1270136229-15263-1-git-send-email-jolsa@redhat.com> <1270136229-15263-4-git-send-email-jolsa@redhat.com>
+	Thu, 1 Apr 2010 12:32:59 -0400
+From: Alan Cox <alan@linux.intel.com>
+Subject: [RFC PATCH 00/14] Some BKL killing in the serial drivers
+To: linux-kernel@vger.kernel.org
+Date: Thu, 01 Apr 2010 17:04:08 +0100
+Message-ID: <20100401155513.8882.54006.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1270136229-15263-4-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 01, 2010 at 05:37:08PM +0200, Jiri Olsa wrote:
-> +static int start_irqsoff_tracer(struct trace_array *tr, int graph)
->  {
-> -	register_ftrace_function(&trace_ops);
-> -	if (tracing_is_enabled())
-> +	int ret = 0;
-> +
-> +	if (!graph)
-> +		ret = register_ftrace_function(&trace_ops);
-> +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-> +	else
-> +		ret = register_ftrace_graph(&irqsoff_graph_return,
-> +					    &irqsoff_graph_entry);
-> +#endif
+
+---
+
+Alan Cox (14):
+      synclink: reworking locking a bit
+      specialix; Kill the BKL
+      epca: Kill the big kernel lock
+      cyclades: Kill off BKL usage
+      synclink: kill the big kernel lock
+      rocket: kill BKL
+      isicom: kill off the BKL
+      riscom8: kill use of lock_kernel
+      istallion: use bit ops for the board flags
+      stallion: prune lock_kernel calls
+      vc: Locking clean up
+      tty: serial - fix various misuses/mishandlings of port->tty
+      tty: serial - fix tty back references in termios
+      tty: serial - fix tty referencing in set_ldisc
 
 
+ drivers/char/cyclades.c      |   20 +++-----
+ drivers/char/epca.c          |    4 --
+ drivers/char/isicom.c        |   12 ++---
+ drivers/char/istallion.c     |   59 ++++++++++++----------
+ drivers/char/riscom8.c       |   14 +++--
+ drivers/char/rocket.c        |   28 +++++++----
+ drivers/char/selection.c     |    4 ++
+ drivers/char/specialix.c     |   11 ++--
+ drivers/char/stallion.c      |   20 +++++---
+ drivers/char/synclink.c      |   19 ++++---
+ drivers/char/synclink_gt.c   |   90 +++++++++++++++++-----------------
+ drivers/char/synclinkmp.c    |   41 ++++++++--------
+ drivers/char/vt.c            |    8 ++-
+ drivers/serial/21285.c       |   10 +---
+ drivers/serial/bfin_5xx.c    |    7 +--
+ drivers/serial/imx.c         |   10 ++--
+ drivers/serial/ioc3_serial.c |    9 ++-
+ drivers/serial/ioc4_serial.c |    9 ++-
+ drivers/serial/max3100.c     |    3 -
+ drivers/serial/serial_core.c |  111 +++++++++++++++++++++++-------------------
+ include/linux/serial_core.h  |    2 -
+ 21 files changed, 258 insertions(+), 233 deletions(-)
 
-Please rather define static inline stubs for register_ftrace_graph
-in linux/ftrace.h if !CONFIG_FUNCTION_GRAPH_TRACER
-
-
-
-> +
-> +	if (!ret && tracing_is_enabled())
->  		tracer_enabled = 1;
->  	else
->  		tracer_enabled = 0;
-> +
-> +	return ret;
->  }
->  
-> -static void stop_irqsoff_tracer(struct trace_array *tr)
-> +static void stop_irqsoff_tracer(struct trace_array *tr, int graph)
->  {
->  	tracer_enabled = 0;
-> -	unregister_ftrace_function(&trace_ops);
-> +
-> +	if (!graph)
-> +		unregister_ftrace_function(&trace_ops);
-> +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-> +	else
-> +		unregister_ftrace_graph();
-> +#endif
-
-
-
-Same here.
-
-Thanks.
+-- 
 
