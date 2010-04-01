@@ -1,112 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079Ab0DAQVR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:21:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11081 "EHLO mx1.redhat.com"
+	id S932107Ab0DAQV2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:21:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58282 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757673Ab0DAQUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:20:47 -0400
-Date: Thu, 1 Apr 2010 11:13:22 -0400
-From: Neil Horman <nhorman@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>, joerg.roedel@amd.com,
-       kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-       Chris Wright <chrisw@sous-sol.org>, hbabu@us.ibm.com,
-       iommu@lists.linux-foundation.org
-Subject: Re: [PATCH] amd iommu: force flush of iommu prior during shutdown
-Message-ID: <20100401151322.GG13603@shamino.rdu.redhat.com>
-References: <20100331152417.GB13406@hmsreliant.think-freely.org>
- <20100331212535.GR29241@sequoia.sous-sol.org>
- <20100401011311.GC2069@localhost.localdomain>
- <20100401022418.GA1983@redhat.com>
- <20100401125304.GA13603@shamino.rdu.redhat.com>
- <20100401150203.GD6844@redhat.com>
+	id S1757855Ab0DAQVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 12:21:08 -0400
+Message-ID: <4BB4C6B7.40302@zytor.com>
+Date: Thu, 01 Apr 2010 09:15:51 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100401150203.GD6844@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Matthew Wilcox <matthew@wil.cx>, Yinghai Lu <yinghai@kernel.org>,
+       Rabin Vincent <rabin@rab.in>, lkml <linux-kernel@vger.kernel.org>,
+       penberg@cs.helsinki.fi, linux-arch@vger.kernel.org
+Subject: Re: start_kernel(): bug: interrupts were enabled early
+References: <20100325194100.GA2364@debian>	 <20100331134048.da4e35a7.akpm@linux-foundation.org>	 <4BB3B4DB.7040904@kernel.org> <20100331210145.GB32165@parisc-linux.org>	 <4BB3B8FC.1020608@zytor.com> <20100331211754.GC32165@parisc-linux.org>	 <alpine.DEB.2.00.1003311640410.30456@router.home>	 <20100331215411.GB17715@flint.arm.linux.org.uk>	 <4BB3C540.9000405@zytor.com> <1270075071.7101.79.camel@pasglop>	 <20100331154955.54176e5e.akpm@linux-foundation.org>	 <1270084631.7101.81.camel@pasglop>	 <20100331182654.d36c87ff.akpm@linux-foundation.org>	 <4BB43CAC.3080102@zytor.com>	 <20100331233330.1a7357e4.akpm@linux-foundation.org> <1270104536.7101.114.camel@pasglop>
+In-Reply-To: <1270104536.7101.114.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 01, 2010 at 11:02:03AM -0400, Vivek Goyal wrote:
-> On Thu, Apr 01, 2010 at 08:53:04AM -0400, Neil Horman wrote:
-> > On Wed, Mar 31, 2010 at 10:24:18PM -0400, Vivek Goyal wrote:
-> > > On Wed, Mar 31, 2010 at 09:13:11PM -0400, Neil Horman wrote:
-> > > > On Wed, Mar 31, 2010 at 02:25:35PM -0700, Chris Wright wrote:
-> > > > > * Neil Horman (nhorman@tuxdriver.com) wrote:
-> > > > > > Flush iommu during shutdown
-> > > > > > 
-> > > > > > When using an iommu, its possible, if a kdump kernel boot follows a primary
-> > > > > > kernel crash, that dma operations might still be in flight from the previous
-> > > > > > kernel during the kdump kernel boot.  This can lead to memory corruption,
-> > > > > > crashes, and other erroneous behavior, specifically I've seen it manifest during
-> > > > > > a kdump boot as endless iommu error log entries of the form:
-> > > > > > AMD-Vi: Event logged [IO_PAGE_FAULT device=00:14.1 domain=0x000d
-> > > > > > address=0x000000000245a0c0 flags=0x0070]
-> > > > > 
-> > > > > We've already fixed this problem once before, so some code shift must
-> > > > > have brought it back.  Personally, I prefer to do this on the bringup
-> > > > > path than the teardown path.  Besides keeping the teardown path as
-> > > > > simple as possible (goal is to get to kdump kernel asap), there's also
-> > > > > reason to competely flush on startup in genernal in case BIOS has done
-> > > > > anything unsavory.
-> > > > > 
-> > > > Chris,
-> > > > 	Can you elaborate on what you did with the iommu to make this safe?  It
-> > > > will save me time digging through the history on this code, and help me
-> > > > understand better whats going on here.
-> > > > 
-> > > > I was starting to think that we should just leave the iommu on through a kdump,
-> > > > and re-construct a new page table based on the old table (filtered by the error
-> > > > log) on kdump boot, but it sounds like a better solution might be in place.
-> > > > 
-> > > 
-> > > Hi Neil,
-> > > 
-> > > Is following sequence possible.
-> > > 
-> > > - In crashed kernel, take away the write permission from all the devices.
-> > >   Mark bit 62 zero for all devices in device table.
-> > > 
-> > > - Leave the iommu on and let the device entries be valid in kdump kernel
-> > >   so that any in-flight dma does not become pass through (which can cause
-> > >   more damage and corrupt kdump kernel).
-> > > 
-> > > - During kdump kernel initialization, load a new device table where again
-> > >   all the devices don't have write permission. looks like by default
-> > >   we create a device table with all bits zero except DEV_ENTRY_VALID
-> > >   and DEV_ENTRY_TRANSLATION bit.
-> > > 
-> > > - Reset the device where we want to setup any dma or operate on.
-> > > 
-> > > - Allow device to do DMA/write.
-> > > 
-> > > So by default all the devices will not be able to do write to memory 
-> > > and selective devices are given access only after a reset.
-> > > 
-> > > I am not sure what are the dependencies for loading a new device table
-> > > in second kernel. If it requires disabling the IOMMU, then we leave a
-> > > window where in-flight dma will become passthrough and has the potential
-> > > to corrupt kdump kernel.
-> > > 
-> > I think this is possible, but I'm a bit concerned with how some devices will
-> > handle a reset.  For instance, what will happen to an HBA or a disk, if we reset
-> > it as the module is loading?  Is that safe?
+On 03/31/2010 11:48 PM, Benjamin Herrenschmidt wrote:
+> On Wed, 2010-03-31 at 23:33 -0400, Andrew Morton wrote:
+>> Just a few instructions, I guess.   But we can do it with zero.
+>>
+>> And from a design POV, pretending that down_read()/down_write() can be
+>> called with interrupts disabled is daft - they cannot!  Why muck up
+>> the
+>> usual code paths with this startup-specific hack? 
 > 
-> I think we need to reset devices in driver if "reset_devices" is set. So
-> we will not reset these during normal boot.
+> Because we the problem of when interrupts are enabled for the first time
+> is a nasty one, and having entire layer of things not usable at the
+> right level of init because somewhere something might do an irq enable
+> due to calling generic code that down's a semaphore is a PITA.
 > 
-> Regarding being safe, I don't know. I am assuming that driver knows (or
-> need to know), how to reset device safely while driver is initializing.
-> That's the whole assumption kdump is built on, that once driver is
-> initializing, it will first reset the device (if reset_devices is set), so
-> that chances of device working properly in second kernel increase.
+> Seriously, Andrew, I don't see a clean solution... Something -somewhere-
+> will have to be ugly.
 > 
-Yes, I agree, I was more just asking is it safe to unilaterally reset devices
-during boot?  I suppose it is, but I'm not entirely sure
-Neil
+> Allocation is a pretty basic service that a lot of stuff expect
+> especially when booting.
+> 
+> We went through that discussion before when we moved the SLAB init
+> earlier during boot, because it makes no sense to have tons of code to
+> have to figure out what allocator to call depending on what phase of the
+> moon it's called from (especially when said code can also be called
+> later during boot, say for hotplug reasons).
+> 
+> So we moved sl*b init earlier, thus we ought to be able to also
+> kmem_cache_alloc() earlier. We -fixed- that problem already afaik.
 
-> Vivek
-> 
+I would like to point out that initialization is a particular subcase of
+a more general rule:
+
+- It is safe to call a semaphore/rwlock down with IRQ disabled *if and
+only if* the caller can guarantee non-contention.
+
+Initialization is an obvious subcase, but there might be others.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
