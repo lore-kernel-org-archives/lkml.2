@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092Ab0DADnb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 23:43:31 -0400
-Received: from mail-fx0-f227.google.com ([209.85.220.227]:50654 "EHLO
-	mail-fx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919Ab0DADnZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 23:43:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=XDnDEcr+AC0MHI5kw+k+NK17bY2K1pzzHT3Lr4uxWh0QUB3ozWKiM4ne9qetjMkl1t
-         BkXIBw62kWpg7gHFppoAAPFkFthHaqMxng8kjofI8bzfpo+RAYZc6/XNy3a+V8hf8FYt
-         Z+7AKsXD9I/5qDSnYhyKWD7FMg/vOuXLB2/GE=
+	id S1752176Ab0DADrW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 23:47:22 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51261 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751691Ab0DADrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 23:47:16 -0400
+Message-ID: <4BB416D7.6090203@kernel.org>
+Date: Wed, 31 Mar 2010 20:45:27 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-In-Reply-To: <20100328112309.GJ5069@bicker>
-References: <20100328112309.GJ5069@bicker>
-Date: Wed, 31 Mar 2010 23:43:23 -0400
-Message-ID: <g2ga728f9f91003312043z40b3dfb4ud6699b468860cb60@mail.gmail.com>
-Subject: Re: [patch] radeon: range check issues
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Dan Carpenter <error27@gmail.com>, Dave Airlie <airlied@redhat.com>,
-       Alex Deucher <alexdeucher@gmail.com>,
-       Jerome Glisse <jglisse@redhat.com>,
-       =?ISO-8859-2?Q?Rafa=B3_Mi=B3ecki?= <zajec5@gmail.com>,
-       dri-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -v4 2/2] bootmem, x86: Fix 32bit numa system without RAM on
+ Node0
+References: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org> <4BB2EB1B.8090303@zytor.com> <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org> <4BB3C739.2020106@kernel.org> <20100331221341.GA20441@elte.hu> <4BB3C9B0.4000205@kernel.org> <20100331224108.GA11284@elte.hu> <4BB3D0F4.902@kernel.org> <4BB3DC23.50005@zytor.com> <4BB3E0CA.5060405@kernel.org> <4BB3EA55.50505@zytor.com> <4BB3FEA6.8030309@kernel.org> <ca9eedfe-479e-4ccf-9663-66afcd2bbd69@email.android.com> <4BB41689.9090502@kernel.org>
+In-Reply-To: <4BB41689.9090502@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 28, 2010 at 7:23 AM, Dan Carpenter <error27@gmail.com> wrote:
-> This change makes the array larger, "MAX_SUPPORTED_TV_TIMING_V1_2" is 3
-> and the original size "MAX_SUPPORTED_TV_TIMING" is 2.
->
-> Also there were checks that were off by one.
->
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
-> ---
-> Compile tested only.  Changing the array size seemed like the right
-> thing to do, in the context, but please review carefully.
 
-That patch is correct and corresponds to the actual table sizes in the vbios.
+When 32bit numa is used, free_all_bootmem() will still only go over with
+node id 0.
 
-Alex
+If node 0 doesn't have RAM installed, We need to go with node1
+because early_node_map still use 1 for all ranges, and ram from node1
+become low ram.
 
+this one fixes BOOTMEM path by loop bdata_list.
 
->
-> diff --git a/drivers/gpu/drm/radeon/atombios.h b/drivers/gpu/drm/radeon/atombios.h
-> index 6732b5d..27e2c71 100644
-> --- a/drivers/gpu/drm/radeon/atombios.h
-> +++ b/drivers/gpu/drm/radeon/atombios.h
-> @@ -2912,7 +2912,7 @@ typedef struct _ATOM_ANALOG_TV_INFO_V1_2
->   UCHAR                    ucTV_BootUpDefaultStandard;
->   UCHAR                    ucExt_TV_ASIC_ID;
->   UCHAR                    ucExt_TV_ASIC_SlaveAddr;
-> -  ATOM_DTD_FORMAT          aModeTimings[MAX_SUPPORTED_TV_TIMING];
-> +  ATOM_DTD_FORMAT          aModeTimings[MAX_SUPPORTED_TV_TIMING_V1_2];
->  }ATOM_ANALOG_TV_INFO_V1_2;
->
->  typedef struct _ATOM_DPCD_INFO
-> diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
-> index 93783b1..bdc0ab3 100644
-> --- a/drivers/gpu/drm/radeon/radeon_atombios.c
-> +++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-> @@ -1275,7 +1275,7 @@ bool radeon_atom_get_tv_timings(struct radeon_device *rdev, int index,
->        switch (crev) {
->        case 1:
->                tv_info = (ATOM_ANALOG_TV_INFO *)(mode_info->atom_context->bios + data_offset);
-> -               if (index > MAX_SUPPORTED_TV_TIMING)
-> +               if (index >= MAX_SUPPORTED_TV_TIMING)
->                        return false;
->
->                mode->crtc_htotal = le16_to_cpu(tv_info->aModeTimings[index].usCRTC_H_Total);
-> @@ -1313,7 +1313,7 @@ bool radeon_atom_get_tv_timings(struct radeon_device *rdev, int index,
->                break;
->        case 2:
->                tv_info_v1_2 = (ATOM_ANALOG_TV_INFO_V1_2 *)(mode_info->atom_context->bios + data_offset);
-> -               if (index > MAX_SUPPORTED_TV_TIMING_V1_2)
-> +               if (index >= MAX_SUPPORTED_TV_TIMING_V1_2)
->                        return false;
->
->                dtd_timings = &tv_info_v1_2->aModeTimings[index];
->
->
+-v3: add more comments, and fix bootmem path too.
+-v4: seperate from one big patch
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ mm/bootmem.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+Index: linux-2.6/mm/bootmem.c
+===================================================================
+--- linux-2.6.orig/mm/bootmem.c
++++ linux-2.6/mm/bootmem.c
+@@ -312,7 +312,13 @@ unsigned long __init free_all_bootmem(vo
+ 	 */
+ 	return free_all_memory_core_early(MAX_NUMNODES);
+ #else
+-	return free_all_bootmem_core(NODE_DATA(0)->bdata);
++	unsigned long total_pages = 0;
++	bootmem_data_t *bdata;
++
++	list_for_each_entry(bdata, &bdata_list, list)
++		total_pages += free_all_bootmem_core(bdata);
++
++	return total_pages;
+ #endif
+ }
+ 
