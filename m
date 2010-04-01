@@ -1,65 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab0DAGHI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 02:07:08 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:60321 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753343Ab0DAGGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 02:06:48 -0400
-Date: Thu, 1 Apr 2010 17:06:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jikos@jikos.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       =?UTF-8?B?IkJydW5vIFByw6ltb250Ig==?= <bonbons@linux-vserver.org>
-Subject: linux-next: build failure after merge of the final tree (hid tree
- related)
-Message-Id: <20100401170639.9f2fe605.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__1_Apr_2010_17_06_39_+1100_NCsV.QWPQe6Bg5gy"
+	id S1753370Ab0DAGI7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 02:08:59 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:42095 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753198Ab0DAGIx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 02:08:53 -0400
+Date: Thu, 1 Apr 2010 08:08:44 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: dave b <db.pub.mail@gmail.com>
+Cc: Jamie Lokier <jamie@shareable.org>,
+       Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       Mikael Pettersson <mikpe@it.uu.se>, linux-kernel@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: weirdness with compiling a 2.6.33 kernel on arm debian
+Message-ID: <20100401060844.GB1329@ucw.cz>
+References: <25ae2d691003051958x72040b47g29d842f1d389a6cf@mail.gmail.com> <19346.6765.457769.167118@pilspetsen.it.uu.se> <25ae2d691003060224x67ab1c9au5102c8a22518aff@mail.gmail.com> <20100311133353.GC25011@n2100.arm.linux.org.uk> <20100315010238.GJ6491@shareable.org> <25ae2d691003260312h62b7f853s99a2fa483a6a0847@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <25ae2d691003260312h62b7f853s99a2fa483a6a0847@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__1_Apr_2010_17_06_39_+1100_NCsV.QWPQe6Bg5gy
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri 2010-03-26 21:12:34, dave b wrote:
+> I believe that the 2.6.32.7 kernel I compiled and was using on the
+> device while compiling the 2.6.33 kernel had *issues* (although most
+> likely not kernel related). In particular various issues (apt-get not
+> working) including on one piece of hardware using the kernel binary as
+> produced by others.
 
-Hi Jiri,
+Interesting. I remember apt-get failing recently; I thought my
+databases went corrupt, but then it started to work magically...
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
-
-drivers/hid/hid-picolcd.c: In function 'picolcd_debug_reset_write':
-drivers/hid/hid-picolcd.c:1343: error: implicit declaration of function 'co=
-py_from_user'
-drivers/hid/hid-picolcd.c: In function 'picolcd_debug_eeprom_read':
-drivers/hid/hid-picolcd.c:1407: error: implicit declaration of function 'co=
-py_to_user'
-
-Caused by commit 9bbf2b98ba11d00bd73e3254e15cfe17ccaff6ba ("HID: add
-experimental access to PicoLCD device's EEPROM and FLASH").  Using copy_
-{to,from}_user requires the include of linux/uaccess.h.
-
-I have reverted that commit for today.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__1_Apr_2010_17_06_39_+1100_NCsV.QWPQe6Bg5gy
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAku0N+8ACgkQjjKRsyhoI8wvWACeOaOufsE4iYe1kUAzZ4wEpAjN
-45YAn3Oy3v52hLTgB/njOsVMNjSB+g1z
-=8Djm
------END PGP SIGNATURE-----
-
---Signature=_Thu__1_Apr_2010_17_06_39_+1100_NCsV.QWPQe6Bg5gy--
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
