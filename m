@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672Ab0DAExi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 00:53:38 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:59151 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483Ab0DAExb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 00:53:31 -0400
-Date: Thu, 1 Apr 2010 10:23:10 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Rik van Riel <riel@redhat.com>, Larry Woodman <lwoodman@redhat.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: RFC [Patch] Remove "please try 'cgroup_disable=memory' option if
- you don't want memory cgroups" printk at boot time.
-Message-ID: <20100401045310.GB6337@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <1270049283.3551.281.camel@dhcp-100-19-198.bos.redhat.com>
- <1270050899.3551.283.camel@dhcp-100-19-198.bos.redhat.com>
- <4BB38D1A.7050204@redhat.com>
- <20100401104859.e0deeca8.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1752731Ab0DAFBw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 01:01:52 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56831 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752574Ab0DAFBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 01:01:45 -0400
+Message-ID: <4BB42822.30607@kernel.org>
+Date: Thu, 01 Apr 2010 13:59:14 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100401104859.e0deeca8.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Cong Wang <amwang@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+       Rusty Russell <rusty@rustcorp.com.au>, akpm@linux-foundation.org,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: [Patch] workqueue: move lockdep annotations up to	destroy_workqueue()
+References: <20100331105534.5601.50813.sendpatchset@localhost.localdomain> <20100331112559.GA17747@redhat.com> <4BB408AF.4080908@redhat.com> <4BB41988.1030400@kernel.org> <4BB41C72.3090909@redhat.com> <4BB41DAE.3010605@kernel.org> <4BB420D6.7050401@redhat.com>
+In-Reply-To: <4BB420D6.7050401@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 01 Apr 2010 04:59:16 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-04-01 10:48:59]:
+Hello,
 
-> On Wed, 31 Mar 2010 13:57:46 -0400
-> Rik van Riel <riel@redhat.com> wrote:
+On 04/01/2010 01:28 PM, Cong Wang wrote:
+>> Hmmm... can you please try to see whether this circular locking
+>> warning involving wq->lockdep_map is reproducible w/ the bonding
+>> locking fixed?  I still can't see where wq -> cpu_add_remove_lock
+>> dependency is created.
+>>
 > 
-> > On 03/31/2010 11:54 AM, Larry Woodman wrote:
-> > > On Wed, 2010-03-31 at 11:28 -0400, Larry Woodman wrote:
-> > >> We are considering removing this printk at boot time from RHEL because
-> > >> it will confuse customers, encourage them to change the boot parameters
-> > >> and generate extraneous support calls.  Its documented in
-> > >> Documentation/kernel-parameters.txt anyway.  Any thoughts???
-> > 
-> > Yeah, that is a strange boot message...
-> > 
-> > Acked-by: Rik van Riel <riel@redhat.com>
-> > 
-> please CC linux-mm and maintainers.
+> I thought this is obvious.
 > 
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Here it is:
 > 
-> It have been there for a year and I think memory usage by page_cgroup
-> will not surprise linux kernel users, more.
+> void destroy_workqueue(struct workqueue_struct *wq)
+> {
+>         const struct cpumask *cpu_map = wq_cpu_map(wq);
+>         int cpu;
 > 
-> Assume x86-32.
+>         cpu_maps_update_begin();        <----------------- Hold
+> cpu_add_remove_lock here
+>         spin_lock(&workqueue_lock);
+>         list_del(&wq->list);
+>         spin_unlock(&workqueue_lock);
 > 
-> RHEL allows amount of memory up to 16G, right?
+>         for_each_cpu(cpu, cpu_map)
+>                 cleanup_workqueue_thread(per_cpu_ptr(wq->cpu_wq, cpu)); 
+> <------ See below
+>         cpu_maps_update_done();        <----------------- Release
+> cpu_add_remove_lock here
 > 
-> without memcg: memmap uses 32bytes * 16G/4k = 128M.
-> with memcg:    memmap+page_cgroup uses (32+20) bytes * 16G/4k = 208M.
+> ...
+> static void cleanup_workqueue_thread(struct cpu_workqueue_struct *cwq)
+> {
+>         /*
+>          * Our caller is either destroy_workqueue() or CPU_POST_DEAD,
+>          * cpu_add_remove_lock protects cwq->thread.
+>          */
+>         if (cwq->thread == NULL)
+>                 return;
 > 
-> I thought this may cause OOM in ZONE_NORMAL. Then, I added it when I wrote
-> original patch. This kind of memory eater can cause trouble when it pops
-> up suddenly. But I think 'one year' can be an excuse.
->
+>         lock_map_acquire(&cwq->wq->lockdep_map); <-------------- Lockdep
+> complains here.
+>         lock_map_release(&cwq->wq->lockdep_map);
+> ...
 
-I've seen this issue come up on multiple machines, I think the printk
-is useful. However, we might need to change the panic() to a big fat
-warning and disable the memcg controller if we fail to allocate memory
-in page_cgroup_init_flatmem(). 
+Yeap, the above is cpu_add_remove_lock -> wq->lockdep_map dependency.
+I can see that but I'm failing to see where the dependency the other
+direction is created.
+
+Thanks.
 
 -- 
-	Three Cheers,
-	Balbir
+tejun
