@@ -1,99 +1,379 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab0DAJzD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 05:55:03 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:49032 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754707Ab0DAJyy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 05:54:54 -0400
-X-Greylist: delayed 549 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Apr 2010 05:54:54 EDT
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       hsweeten@visionengravers.com, hpa@zytor.com, eric.piel@tremplin-utc.net
-Cc: aaro.koskinen@iki.fi, stable <stable@kernel.org>
-Subject: [PATCH] initramfs: prevent buffer overflow when unpacking to rootfs
-Date: Thu,  1 Apr 2010 12:45:46 +0300
-Message-Id: <1270115146-25342-1-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.5.6.5
+	id S1754865Ab0DAKIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 06:08:13 -0400
+Received: from ns.netcenter.hu ([195.228.254.57]:44474 "EHLO mail.netcenter.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751287Ab0DAKIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 06:08:04 -0400
+Message-ID: <179901cad182$5f87f620$0400a8c0@dcccs>
+From: "Janos Haar" <janos.haar@netcenter.hu>
+To: <linux-kernel@vger.kernel.org>
+Cc: "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, <linux-mm@kvack.org>,
+       <xiyou.wangcong@gmail.com>
+References: <03ca01cacb92$195adf50$0400a8c0@dcccs><2375c9f91003242029p1efbbea1v8e313e460b118f14@mail.gmail.com> <20100325153110.6be9a3df.kamezawa.hiroyu@jp.fujitsu.com> <02c101cacbf8$d21d1650$0400a8c0@dcccs>
+Subject: Re: Somebody take a look please! (some kind of kernel bug?)
+Date: Thu, 1 Apr 2010 12:01:57 +0200
+MIME-Version: 1.0
+Content-Type: text/plain;
+	format=flowed;
+	charset="UTF-8";
+	reply-type=response
+Content-Transfer-Encoding: 8bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.3598
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Garbage in the initrd memory area may result in the unpack routine
-accessing memory outside the buffer. The patch adds a check that the
-specified area size is not exceeded.
+Hello,
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: stable <stable@kernel.org>
----
+Another issue with this productive server:
+Can somebody point me to the rigth direction?
+Or support that this is a hw problem or not?
 
-The patch prevents the following kernel panic on Amstrad E3:
+The messages file are here: 
+http://download.netcenter.hu/bughunt/20100324/marc30
 
-	Unpacking initramfs...
-	Unable to handle kernel paging request at virtual address c20121a7
-	pgd = c0004000
-	[c20121a7] *pgd=00000000
-	Internal error: Oops: 75 [#1] PREEMPT
-	last sysfs file: 
-	Modules linked in:
-	CPU: 0    Not tainted  (2.6.34-rc2-00052-gae6be51 #19)
-	PC is at unpack_to_rootfs+0xac/0x33c
-	LR is at decompress_method+0x28/0x64
-	pc : [<c0009858>]    lr : [<c015fcc4>]    psr: 20000013
-	sp : c1819f68  ip : 00000000  fp : c0023b88
-	r10: c20121a7  r9 : c0023b98  r8 : 00000000
-	r7 : 00300000  r6 : fffede59  r5 : c0023ad8  r4 : 00000000
-	r3 : 00000000  r2 : 00000001  r1 : c0303034  r0 : 00000000
-	Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-	Control: 0000317f  Table: 10004000  DAC: 00000017
-	Process swapper (pid: 1, stack limit = 0xc1818270)
-	Stack: (0xc1819f68 to 0xc181a000)
-	9f60:                   00000000 c03f77ec c00092f8 c03f68fc 00000000 c03f77e0
-	9f80: c00228fc 00000000 c000a3c8 00000000 00000000 c03f77e0 c00228fc 00000000
-	9fa0: c000a3c8 00000001 00000000 00000000 00000000 c000a410 c002263c c00283b0
-	9fc0: 00000000 00000170 c03da678 00000000 c002263c c00228fc 00000000 00000000
-	9fe0: 00000000 c0008594 00000000 00000000 00000000 c0029f74 8d7cf20a a7ca85e0
-	[<c0009858>] (unpack_to_rootfs+0xac/0x33c) from [<c000a410>] (populate_rootfs+0x48/0xb0)
-	[<c000a410>] (populate_rootfs+0x48/0xb0) from [<c00283b0>] (do_one_initcall+0x60/0x1c0)
-	[<c00283b0>] (do_one_initcall+0x60/0x1c0) from [<c0008594>] (kernel_init+0xa8/0x15c)
-	[<c0008594>] (kernel_init+0xa8/0x15c) from [<c0029f74>] (kernel_thread_exit+0x0/0x8)
-	Code: e1a05001 e1a09000 e1a0b00c ea000059 (e5da3000) 
-	---[ end trace da227214a82491b7 ]---
-	Kernel panic - not syncing: Attempted to kill init!
-	[<c002e56c>] (unwind_backtrace+0x0/0xec) from [<c02f1a40>] (panic+0x40/0xcc)
-	[<c02f1a40>] (panic+0x40/0xcc) from [<c004af64>] (do_exit+0x60/0x608)
-	[<c004af64>] (do_exit+0x60/0x608) from [<c002c8d4>] (die+0x1b4/0x1e4)
-	[<c002c8d4>] (die+0x1b4/0x1e4) from [<c002f7d8>] (__do_kernel_fault+0x64/0x84)
-	[<c002f7d8>] (__do_kernel_fault+0x64/0x84) from [<c002fac8>] (do_translation_fault+0x70/0x80)
-	[<c002fac8>] (do_translation_fault+0x70/0x80) from [<c00282f0>] (do_DataAbort+0x34/0x94)
-	[<c00282f0>] (do_DataAbort+0x34/0x94) from [<c0028ac0>] (__dabt_svc+0x40/0x60)
-	Exception stack(0xc1819f20 to 0xc1819f68)
-	9f20: 00000000 c0303034 00000001 00000000 00000000 c0023ad8 fffede59 00300000
-	9f40: 00000000 c0023b98 c20121a7 c0023b88 00000000 c1819f68 c015fcc4 c0009858
-	9f60: 20000013 ffffffff
-	[<c0028ac0>] (__dabt_svc+0x40/0x60) from [<c0009858>] (unpack_to_rootfs+0xac/0x33c)
-	[<c0009858>] (unpack_to_rootfs+0xac/0x33c) from [<c000a410>] (populate_rootfs+0x48/0xb0)
-	[<c000a410>] (populate_rootfs+0x48/0xb0) from [<c00283b0>] (do_one_initcall+0x60/0x1c0)
-	[<c00283b0>] (do_one_initcall+0x60/0x1c0) from [<c0008594>] (kernel_init+0xa8/0x15c)
-	[<c0008594>] (kernel_init+0xa8/0x15c) from [<c0029f74>] (kernel_thread_exit+0x0/0x8)
+Thanks,
+Janos Haar
 
- init/initramfs.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Mar 30 18:51:43 alfa kernel: BUG: unable to handle kernel paging request at 
+000000320000008c
+Mar 30 18:51:43 alfa kernel: IP: [<ffffffff811d755b>] 
+xfs_iflush_cluster+0x148/0x35a
+Mar 30 18:51:43 alfa kernel: PGD 102d7a067 PUD 0
+Mar 30 18:51:43 alfa kernel: Oops: 0000 [#1] SMP
+Mar 30 18:51:43 alfa kernel: last sysfs file: /sys/class/misc/rfkill/dev
+Mar 30 18:51:43 alfa kernel: CPU 0
+Mar 30 18:51:43 alfa kernel: Modules linked in: hidp l2cap crc16 bluetooth 
+rfkill ipv6 video output sbs sbshc battery ac parport_pc lp parport 
+serio_raw 8250_
+pnp 8250 serial_core shpchp button i2c_i801 i2c_core pcspkr
+Mar 30 18:51:43 alfa kernel: Pid: 3242, comm: flush-8:16 Not tainted 
+2.6.32.10 #2
+Mar 30 18:51:43 alfa kernel: RIP: 0010:[<ffffffff811d755b>] 
+[<ffffffff811d755b>] xfs_iflush_cluster+0x148/0x35a
+Mar 30 18:51:43 alfa kernel: RSP: 0000:ffff880228ce5b60  EFLAGS: 00010206
+Mar 30 18:51:43 alfa kernel: RAX: 0000003200000000 RBX: ffff8801537947d0 
+RCX: 000000000000001a
+Mar 30 18:51:43 alfa kernel: RDX: 0000000000000020 RSI: 00000000000c6cc2 
+RDI: 0000000000000001
+Mar 30 18:51:43 alfa kernel: RBP: ffff880228ce5bd0 R08: ffff880228ce5b20 
+R09: ffff8801ea436928
+Mar 30 18:51:43 alfa kernel: R10: 00000000000c6cc2 R11: 0000000000000001 
+R12: ffff8800b630b11a
+Mar 30 18:51:43 alfa kernel: R13: ffff8801bd54ab30 R14: ffff88022962d2b8 
+R15: 00000000000c6ca0
+Mar 30 18:51:43 alfa kernel: FS:  0000000000000000(0000) 
+GS:ffff880028200000(0000) knlGS:0000000000000000
+Mar 30 18:51:43 alfa kernel: CS:  0010 DS: 0018 ES: 0018 CR0: 
+000000008005003b
+Mar 30 18:51:43 alfa kernel: CR2: 000000320000008c CR3: 0000000168e75000 
+CR4: 00000000000006f0
+Mar 30 18:51:43 alfa kernel: DR0: 0000000000000000 DR1: 0000000000000000 
+DR2: 0000000000000000
+Mar 30 18:51:43 alfa kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 
+DR7: 0000000000000400
+Mar 30 18:51:43 alfa kernel: Process flush-8:16 (pid: 3242, threadinfo 
+ffff880228ce4000, task ffff880228ea4040)
+Mar 30 18:51:43 alfa kernel: Stack:
+Mar 30 18:51:43 alfa kernel:  ffff8801bd54ab30 ffff8800b630b140 
+ffff88022a2d99d0 ffffffffffffffe0
+Mar 30 18:51:43 alfa kernel: <0> 0000000000000020 ffff880218e3db60 
+0000002028ce5bd0 0000000200000000
+Mar 30 18:51:43 alfa kernel: <0> ffff880218e3db70 ffff8801bd54ab30 
+ffff8800b630b140 0000000000000002
+Mar 30 18:51:43 alfa kernel: Call Trace:
+Mar 30 18:51:43 alfa kernel:  [<ffffffff811d7931>] xfs_iflush+0x1c4/0x272
+Mar 30 18:51:43 alfa kernel:  [<ffffffff8103458e>] ? 
+try_wait_for_completion+0x24/0x45
+Mar 30 18:51:43 alfa kernel:  [<ffffffff811f819c>] 
+xfs_fs_write_inode+0xe0/0x11e
+Mar 30 18:51:43 alfa kernel:  [<ffffffff810f7bcf>] 
+writeback_single_inode+0x109/0x215
+Mar 30 18:51:43 alfa kernel:  [<ffffffff810f84bd>] 
+writeback_inodes_wb+0x33a/0x3cc
+Mar 30 18:51:43 alfa kernel:  [<ffffffff810f8686>] wb_writeback+0x137/0x1c7
+Mar 30 18:51:43 alfa kernel:  [<ffffffff810f8830>] ? 
+wb_do_writeback+0x7d/0x1ae
+Mar 30 18:51:43 alfa kernel:  [<ffffffff810f892c>] 
+wb_do_writeback+0x179/0x1ae
+Mar 30 18:51:43 alfa kernel:  [<ffffffff810f8830>] ? 
+wb_do_writeback+0x7d/0x1ae
+Mar 30 18:51:43 alfa kernel:  [<ffffffff8105064c>] ? 
+process_timeout+0x0/0x10
+Mar 30 18:51:43 alfa kernel:  [<ffffffff810c10ed>] ? bdi_start_fn+0x0/0xd1
+Mar 30 18:51:43 alfa kernel:  [<ffffffff810f898d>] 
+bdi_writeback_task+0x2c/0xa2
+Mar 30 18:51:43 alfa kernel:  [<ffffffff810c1163>] bdi_start_fn+0x76/0xd1
+Mar 30 18:51:43 alfa kernel:  [<ffffffff810c10ed>] ? bdi_start_fn+0x0/0xd1
+Mar 30 18:51:43 alfa kernel:  [<ffffffff8105dda1>] kthread+0x82/0x8d
+Mar 30 18:51:43 alfa kernel:  [<ffffffff8100c15a>] child_rip+0xa/0x20
+Mar 30 18:51:43 alfa kernel:  [<ffffffff8100bafc>] ? restore_args+0x0/0x30
+Mar 30 18:51:43 alfa kernel:  [<ffffffff81038596>] ? 
+finish_task_switch+0x0/0xbc
+Mar 30 18:51:43 alfa kernel:  [<ffffffff8105dd1f>] ? kthread+0x0/0x8d
+Mar 30 18:51:43 alfa kernel:  [<ffffffff8100c150>] ? child_rip+0x0/0x20
+Mar 30 18:51:43 alfa kernel: Code: 8e eb 01 00 00 b8 01 00 00 00 48 d3 e0 ff 
+c8 23 43 18 48 23 45 a8 4c 39 f8 0f 85 ae 00 00 00 48 8b 83 80 00 00 00 48 
+85 c0
+74 0b <66> f7 80 8c 00 00 00 ff 01 75 13 80 bb 0a 02 00 00 00 75 0a 8b
+Mar 30 18:51:43 alfa kernel: RIP  [<ffffffff811d755b>] 
+xfs_iflush_cluster+0x148/0x35a
+Mar 30 18:51:43 alfa kernel:  RSP <ffff880228ce5b60>
+Mar 30 18:51:43 alfa kernel: CR2: 000000320000008c
+Mar 30 18:51:43 alfa kernel: ---[ end trace e6c8391ea76602f4 ]---
+Mar 30 18:51:43 alfa kernel: flush-8:16 used greatest stack depth: 2464 
+bytes left
+Mar 30 19:09:39 alfa syslogd 1.4.1: restart.
 
-diff --git a/init/initramfs.c b/init/initramfs.c
-index 37d3859..223bdaa 100644
---- a/init/initramfs.c
-+++ b/init/initramfs.c
-@@ -460,6 +460,8 @@ static char * __init unpack_to_rootfs(char *buf, unsigned len)
- 		}
- 		if (state != Reset)
- 			error("junk in compressed archive");
-+		if (my_inptr >= len)
-+			break;
- 		this_header = saved_offset + my_inptr;
- 		buf += my_inptr;
- 		len -= my_inptr;
--- 
-1.5.6.5
+----- Original Message ----- 
+From: "Janos Haar" <janos.haar@netcenter.hu>
+To: "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: <xiyou.wangcong@gmail.com>; <linux-kernel@vger.kernel.org>; 
+<linux-mm@kvack.org>
+Sent: Thursday, March 25, 2010 10:54 AM
+Subject: Re: Somebody take a look please! (some kind of kernel bug?)
+
+
+>
+> ----- Original Message ----- 
+> From: "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
+> To: "Américo Wang" <xiyou.wangcong@gmail.com>
+> Cc: "Janos Haar" <janos.haar@netcenter.hu>; 
+> <linux-kernel@vger.kernel.org>; <linux-mm@kvack.org>
+> Sent: Thursday, March 25, 2010 7:31 AM
+> Subject: Re: Somebody take a look please! (some kind of kernel bug?)
+>
+>
+>> On Thu, 25 Mar 2010 11:29:25 +0800
+>> Américo Wang <xiyou.wangcong@gmail.com> wrote:
+>>
+>>> (Cc'ing linux-mm)
+>>>
+>> Hmm..here is summary of corruption (from log), but no idea.
+>>
+>> ==
+>> process's address pte       pnf->pte->page
+>>
+>> 00000037b4008000   2bf1e025 -> PG_reserved
+>> 00000037b400a000 d900000000 -> bad swap
+>> 00000037b400c000   2bfe8025 -> PG_reserved
+>> 00000037b400d000  12bfe9025 -> belongs to some other files' page cache
+>> 00000037b400e000 ff00000000 -> bad swap
+>> 00000037b400f000 5400000000 -> bad swap
+>> ...
+>> 00000037b4019000 ff00000000 -> bad swap
+>> ==
+>> All ptes are on the same pmd 1535b5067.
+>> .
+>> I doubt some kind of buffer overflow bug overwrites page table...
+>> Because ptes for adddress of 00000037b4008000...00000037b400f000 are on 
+>> head of
+>
+> This is only one bit, right? :-)
+>
+>> a page (used for pmd), some data on page [0x1535b4000..0x1535b5000) 
+>> caused buffer
+>> overflow and broke page table in [0x1535b5000...0x1535b6000)
+>>
+>> Is this bug found from 2.6.28.10 ?
+>
+> No, the bug, what i have sent was from 2.6.32.10. (you can check it from 
+> the messages file in the link)
+> The story begins about marc 9-10 but unfortunately the system not all the 
+> time was able to write down the messages file.
+> (At Mar 13 11:20:09 i have triggered the sysreq's process and memory 
+> information, you can see it in the link below.)
+> We have more crashes with the 2.6.28.10 in the next some day and the 
+> server is removed for testing (7 days hole in the log), but looks stable
+>
+> Here is more serious crashes from the 2.6.28.10:
+>
+> http://download.netcenter.hu/bughunt/20100324/marc11-14
+>
+> For me looks like all memory, swap and xfs related.
+> I have tested/repaired all the filesystems offline, corrected the errors 
+> wich was left by the previous crashes, than disabled the swap, but nothing 
+> helps. :(
+>
+> Finally in marc 21, i have replaced the kernel to the 32.10, and the 
+> crashes looks gone but only for 4 days. (you can see the first dump in my 
+> first mail)
+>
+> Thanks for all the help,
+>
+> Janos Haar
+>
+>
+>>
+>> If I investigate this issue, I'll check the owner of page 0x1535b4000 by
+>> crash dump.
+>>
+>> Thanks,
+>> -Kame
+>>
+>>
+>>
+>>> 2010/3/25 Janos Haar <janos.haar@netcenter.hu>:
+>>> > Dear developers,
+>>> >
+>>> > This is one of my productive servers, wich suddenly starts to freeze 
+>>> > (crash)
+>>> > some weeks before.
+>>> > I have done all what i can, (i think) please somebody give to me some
+>>> > suggestion:
+>>> >
+>>> > Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd 
+>>> > pte:2bf1e025
+>>> > pmd:1535b5067
+>>> > Mar 24 19:22:28 alfa kernel: page:ffffea0000f1b250 
+>>> > flags:4000000000000404
+>>> > count:1 mapcount:-1 mapping:(null) index:0
+>>> > Mar 24 19:22:28 alfa kernel: addr:00000037b4008000 vm_flags:08000875
+>>> > anon_vma:(null) mapping:ffff88022b5d25a8 index:8
+>>> > Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: 
+>>> > filemap_fault+0x0/0x34d
+>>> > Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap:
+>>> > xfs_file_mmap+0x0/0x33
+>>> > Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Not tainted 
+>>> > 2.6.32.10 #2
+>>> > Mar 24 19:22:28 alfa kernel: Call Trace:
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c2ea3>] 
+>>> > print_bad_pte+0x210/0x229
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c3c98>] 
+>>> > unmap_vmas+0x44b/0x787
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81041f83>] mmput+0x48/0xb9
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810463b0>] exit_mm+0x105/0x110
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81371287>] ?
+>>> > tty_audit_exit+0x28/0x85
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810477a0>] do_exit+0x1e9/0x6d2
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81053c37>] ?
+>>> > __dequeue_signal+0xf1/0x127
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81047d00>] 
+>>> > do_group_exit+0x77/0xa1
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810560f7>]
+>>> > get_signal_to_deliver+0x32c/0x37f
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff8100a484>]
+>>> > do_notify_resume+0x90/0x740
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff8102724b>] ?
+>>> > __bad_area_nosemaphore+0x178/0x1a2
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810272b9>] ? 
+>>> > __bad_area+0x44/0x4d
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff8100bba2>] 
+>>> > retint_signal+0x46/0x84
+>>> > Mar 24 19:22:28 alfa kernel: Disabling lock debugging due to kernel 
+>>> > taint
+>>> > Mar 24 19:22:28 alfa kernel: swap_free: Bad swap file entry 6c800000
+>>> > Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd
+>>> > pte:d900000000 pmd:1535b5067
+>>> > Mar 24 19:22:28 alfa kernel: addr:00000037b400a000 vm_flags:08000875
+>>> > anon_vma:(null) mapping:ffff88022b5d25a8 index:a
+>>> > Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: 
+>>> > filemap_fault+0x0/0x34d
+>>> > Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap:
+>>> > xfs_file_mmap+0x0/0x33
+>>> > Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Tainted: G B
+>>> > 2.6.32.10 #2
+>>> > Mar 24 19:22:28 alfa kernel: Call Trace:
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81044551>] ? 
+>>> > add_taint+0x32/0x3e
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c2ea3>] 
+>>> > print_bad_pte+0x210/0x229
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c3d47>] 
+>>> > unmap_vmas+0x4fa/0x787
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81041f83>] mmput+0x48/0xb9
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810463b0>] exit_mm+0x105/0x110
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81371287>] ?
+>>> > tty_audit_exit+0x28/0x85
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810477a0>] do_exit+0x1e9/0x6d2
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81053c37>] ?
+>>> > __dequeue_signal+0xf1/0x127
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81047d00>] 
+>>> > do_group_exit+0x77/0xa1
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810560f7>]
+>>> > get_signal_to_deliver+0x32c/0x37f
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff8100a484>]
+>>> > do_notify_resume+0x90/0x740
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff8102724b>] ?
+>>> > __bad_area_nosemaphore+0x178/0x1a2
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810272b9>] ? 
+>>> > __bad_area+0x44/0x4d
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff8100bba2>] 
+>>> > retint_signal+0x46/0x84
+>>> > Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd 
+>>> > pte:2bfe8025
+>>> > pmd:1535b5067
+>>> > Mar 24 19:22:28 alfa kernel: page:ffffea0000f1f7c0 
+>>> > flags:4000000000000404
+>>> > count:1 mapcount:-1 mapping:(null) index:0
+>>> > Mar 24 19:22:28 alfa kernel: addr:00000037b400c000 vm_flags:08000875
+>>> > anon_vma:(null) mapping:ffff88022b5d25a8 index:c
+>>> > Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: 
+>>> > filemap_fault+0x0/0x34d
+>>> > Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap:
+>>> > xfs_file_mmap+0x0/0x33
+>>> > Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Tainted: G B
+>>> > 2.6.32.10 #2
+>>> > Mar 24 19:22:28 alfa kernel: Call Trace:
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81044551>] ? 
+>>> > add_taint+0x32/0x3e
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c2ea3>] 
+>>> > print_bad_pte+0x210/0x229
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c3c98>] 
+>>> > unmap_vmas+0x44b/0x787
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81041f83>] mmput+0x48/0xb9
+>>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810463b0>] exit_mm+0x105/0x110
+>>> > .....
+>>> >
+>>> > The entire log is here:
+>>> > http://download.netcenter.hu/bughunt/20100324/messages
+>>> >
+>>> > The actual kernel is 2.6.32.10, but the crash-series started @ 
+>>> > 2.6.28.10.
+>>> >
+>>> > I have forwarded the tasks to another server, removed this from the 
+>>> > room,
+>>> > and the hw survived memtest86 in >7 days continously + i have tested 
+>>> > the
+>>> > HDDs one by one with badblocks -vvw, all is good.
+>>> > For me looks like this is not a hw problem.
+>>> >
+>>> > Somebody have any idea?
+>>> >
+>>> > Thanks a lot,
+>>> > Janos Haar
+>>> > --
+>>> > To unsubscribe from this list: send the line "unsubscribe 
+>>> > linux-kernel" in
+>>> > the body of a message to majordomo@vger.kernel.org
+>>> > More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>> > Please read the FAQ at http://www.tux.org/lkml/
+>>> >
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" 
+>>> in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" 
+>> in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/ 
 
