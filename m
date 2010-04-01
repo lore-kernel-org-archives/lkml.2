@@ -1,379 +1,1307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865Ab0DAKIN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 06:08:13 -0400
-Received: from ns.netcenter.hu ([195.228.254.57]:44474 "EHLO mail.netcenter.hu"
+	id S1754891Ab0DAKVF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 06:21:05 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41172 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751287Ab0DAKIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 06:08:04 -0400
-Message-ID: <179901cad182$5f87f620$0400a8c0@dcccs>
-From: "Janos Haar" <janos.haar@netcenter.hu>
-To: <linux-kernel@vger.kernel.org>
-Cc: "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, <linux-mm@kvack.org>,
-       <xiyou.wangcong@gmail.com>
-References: <03ca01cacb92$195adf50$0400a8c0@dcccs><2375c9f91003242029p1efbbea1v8e313e460b118f14@mail.gmail.com> <20100325153110.6be9a3df.kamezawa.hiroyu@jp.fujitsu.com> <02c101cacbf8$d21d1650$0400a8c0@dcccs>
-Subject: Re: Somebody take a look please! (some kind of kernel bug?)
-Date: Thu, 1 Apr 2010 12:01:57 +0200
+	id S1754043Ab0DAKUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 06:20:54 -0400
+Message-ID: <4BB47367.8030305@kernel.org>
+Date: Thu, 01 Apr 2010 19:20:23 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="UTF-8";
-	reply-type=response
-Content-Transfer-Encoding: 8bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.3598
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
+To: graff yang <graff.yang@gmail.com>
+CC: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, uclinux-dist-devel@blackfin.uclinux.org
+Subject: Re: [PATCH] mm/nommu.c:Dynamic alloc/free percpu area for nommu
+References: <1268989324-7575-1-git-send-email-graff.yang@gmail.com>	 <4BA449E2.3080707@kernel.org> <7d86d44a1003211933h6628ae04vc9d1c393e1733ce5@mail.gmail.com>
+In-Reply-To: <7d86d44a1003211933h6628ae04vc9d1c393e1733ce5@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 01 Apr 2010 10:20:26 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello,
 
-Another issue with this productive server:
-Can somebody point me to the rigth direction?
-Or support that this is a hw problem or not?
+On 03/22/2010 11:33 AM, graff yang wrote:
+> I understand the complexity of percpu allocation code. As a nommu
+> arch, we have to allocate a bulk of memory in one time to insure its
+> contiguous.  And in my implementation, many pages are wasted.  It
+> would be better, if the percpu allocation code provide some hooks
+> for us.  Thanks for your feedback.
 
-The messages file are here: 
-http://download.netcenter.hu/bughunt/20100324/marc30
+Can you please test the following patch?  You'll need to do the
+followings,
 
-Thanks,
-Janos Haar
+* define CONFIG_NEED_PER_CPU_KM from the arch Kconfig.
 
-Mar 30 18:51:43 alfa kernel: BUG: unable to handle kernel paging request at 
-000000320000008c
-Mar 30 18:51:43 alfa kernel: IP: [<ffffffff811d755b>] 
-xfs_iflush_cluster+0x148/0x35a
-Mar 30 18:51:43 alfa kernel: PGD 102d7a067 PUD 0
-Mar 30 18:51:43 alfa kernel: Oops: 0000 [#1] SMP
-Mar 30 18:51:43 alfa kernel: last sysfs file: /sys/class/misc/rfkill/dev
-Mar 30 18:51:43 alfa kernel: CPU 0
-Mar 30 18:51:43 alfa kernel: Modules linked in: hidp l2cap crc16 bluetooth 
-rfkill ipv6 video output sbs sbshc battery ac parport_pc lp parport 
-serio_raw 8250_
-pnp 8250 serial_core shpchp button i2c_i801 i2c_core pcspkr
-Mar 30 18:51:43 alfa kernel: Pid: 3242, comm: flush-8:16 Not tainted 
-2.6.32.10 #2
-Mar 30 18:51:43 alfa kernel: RIP: 0010:[<ffffffff811d755b>] 
-[<ffffffff811d755b>] xfs_iflush_cluster+0x148/0x35a
-Mar 30 18:51:43 alfa kernel: RSP: 0000:ffff880228ce5b60  EFLAGS: 00010206
-Mar 30 18:51:43 alfa kernel: RAX: 0000003200000000 RBX: ffff8801537947d0 
-RCX: 000000000000001a
-Mar 30 18:51:43 alfa kernel: RDX: 0000000000000020 RSI: 00000000000c6cc2 
-RDI: 0000000000000001
-Mar 30 18:51:43 alfa kernel: RBP: ffff880228ce5bd0 R08: ffff880228ce5b20 
-R09: ffff8801ea436928
-Mar 30 18:51:43 alfa kernel: R10: 00000000000c6cc2 R11: 0000000000000001 
-R12: ffff8800b630b11a
-Mar 30 18:51:43 alfa kernel: R13: ffff8801bd54ab30 R14: ffff88022962d2b8 
-R15: 00000000000c6ca0
-Mar 30 18:51:43 alfa kernel: FS:  0000000000000000(0000) 
-GS:ffff880028200000(0000) knlGS:0000000000000000
-Mar 30 18:51:43 alfa kernel: CS:  0010 DS: 0018 ES: 0018 CR0: 
-000000008005003b
-Mar 30 18:51:43 alfa kernel: CR2: 000000320000008c CR3: 0000000168e75000 
-CR4: 00000000000006f0
-Mar 30 18:51:43 alfa kernel: DR0: 0000000000000000 DR1: 0000000000000000 
-DR2: 0000000000000000
-Mar 30 18:51:43 alfa kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 
-DR7: 0000000000000400
-Mar 30 18:51:43 alfa kernel: Process flush-8:16 (pid: 3242, threadinfo 
-ffff880228ce4000, task ffff880228ea4040)
-Mar 30 18:51:43 alfa kernel: Stack:
-Mar 30 18:51:43 alfa kernel:  ffff8801bd54ab30 ffff8800b630b140 
-ffff88022a2d99d0 ffffffffffffffe0
-Mar 30 18:51:43 alfa kernel: <0> 0000000000000020 ffff880218e3db60 
-0000002028ce5bd0 0000000200000000
-Mar 30 18:51:43 alfa kernel: <0> ffff880218e3db70 ffff8801bd54ab30 
-ffff8800b630b140 0000000000000002
-Mar 30 18:51:43 alfa kernel: Call Trace:
-Mar 30 18:51:43 alfa kernel:  [<ffffffff811d7931>] xfs_iflush+0x1c4/0x272
-Mar 30 18:51:43 alfa kernel:  [<ffffffff8103458e>] ? 
-try_wait_for_completion+0x24/0x45
-Mar 30 18:51:43 alfa kernel:  [<ffffffff811f819c>] 
-xfs_fs_write_inode+0xe0/0x11e
-Mar 30 18:51:43 alfa kernel:  [<ffffffff810f7bcf>] 
-writeback_single_inode+0x109/0x215
-Mar 30 18:51:43 alfa kernel:  [<ffffffff810f84bd>] 
-writeback_inodes_wb+0x33a/0x3cc
-Mar 30 18:51:43 alfa kernel:  [<ffffffff810f8686>] wb_writeback+0x137/0x1c7
-Mar 30 18:51:43 alfa kernel:  [<ffffffff810f8830>] ? 
-wb_do_writeback+0x7d/0x1ae
-Mar 30 18:51:43 alfa kernel:  [<ffffffff810f892c>] 
-wb_do_writeback+0x179/0x1ae
-Mar 30 18:51:43 alfa kernel:  [<ffffffff810f8830>] ? 
-wb_do_writeback+0x7d/0x1ae
-Mar 30 18:51:43 alfa kernel:  [<ffffffff8105064c>] ? 
-process_timeout+0x0/0x10
-Mar 30 18:51:43 alfa kernel:  [<ffffffff810c10ed>] ? bdi_start_fn+0x0/0xd1
-Mar 30 18:51:43 alfa kernel:  [<ffffffff810f898d>] 
-bdi_writeback_task+0x2c/0xa2
-Mar 30 18:51:43 alfa kernel:  [<ffffffff810c1163>] bdi_start_fn+0x76/0xd1
-Mar 30 18:51:43 alfa kernel:  [<ffffffff810c10ed>] ? bdi_start_fn+0x0/0xd1
-Mar 30 18:51:43 alfa kernel:  [<ffffffff8105dda1>] kthread+0x82/0x8d
-Mar 30 18:51:43 alfa kernel:  [<ffffffff8100c15a>] child_rip+0xa/0x20
-Mar 30 18:51:43 alfa kernel:  [<ffffffff8100bafc>] ? restore_args+0x0/0x30
-Mar 30 18:51:43 alfa kernel:  [<ffffffff81038596>] ? 
-finish_task_switch+0x0/0xbc
-Mar 30 18:51:43 alfa kernel:  [<ffffffff8105dd1f>] ? kthread+0x0/0x8d
-Mar 30 18:51:43 alfa kernel:  [<ffffffff8100c150>] ? child_rip+0x0/0x20
-Mar 30 18:51:43 alfa kernel: Code: 8e eb 01 00 00 b8 01 00 00 00 48 d3 e0 ff 
-c8 23 43 18 48 23 45 a8 4c 39 f8 0f 85 ae 00 00 00 48 8b 83 80 00 00 00 48 
-85 c0
-74 0b <66> f7 80 8c 00 00 00 ff 01 75 13 80 bb 0a 02 00 00 00 75 0a 8b
-Mar 30 18:51:43 alfa kernel: RIP  [<ffffffff811d755b>] 
-xfs_iflush_cluster+0x148/0x35a
-Mar 30 18:51:43 alfa kernel:  RSP <ffff880228ce5b60>
-Mar 30 18:51:43 alfa kernel: CR2: 000000320000008c
-Mar 30 18:51:43 alfa kernel: ---[ end trace e6c8391ea76602f4 ]---
-Mar 30 18:51:43 alfa kernel: flush-8:16 used greatest stack depth: 2464 
-bytes left
-Mar 30 19:09:39 alfa syslogd 1.4.1: restart.
+* CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK must not be defined.  It's not
+  compatible with PER_CPU_KM.  EMBED_FIRST_CHUNK should work fine.
 
------ Original Message ----- 
-From: "Janos Haar" <janos.haar@netcenter.hu>
-To: "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: <xiyou.wangcong@gmail.com>; <linux-kernel@vger.kernel.org>; 
-<linux-mm@kvack.org>
-Sent: Thursday, March 25, 2010 10:54 AM
-Subject: Re: Somebody take a look please! (some kind of kernel bug?)
+* NUMA is not supported.  When setting up the first chunk,
+  @cpu_distance_fn should be NULL or report all CPUs to be nearer than
+  or at LOCAL_DISTANCE.
 
+* It's best if the chunk size is power of two multiple of PAGE_SIZE.
+  Because each chunk is allocated as a contiguous kernel memory block
+  using alloc_pages(), memory will be wasted if chunk size is not
+  aligned.  percpu code will whine about it.
 
->
-> ----- Original Message ----- 
-> From: "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
-> To: "Américo Wang" <xiyou.wangcong@gmail.com>
-> Cc: "Janos Haar" <janos.haar@netcenter.hu>; 
-> <linux-kernel@vger.kernel.org>; <linux-mm@kvack.org>
-> Sent: Thursday, March 25, 2010 7:31 AM
-> Subject: Re: Somebody take a look please! (some kind of kernel bug?)
->
->
->> On Thu, 25 Mar 2010 11:29:25 +0800
->> Américo Wang <xiyou.wangcong@gmail.com> wrote:
->>
->>> (Cc'ing linux-mm)
->>>
->> Hmm..here is summary of corruption (from log), but no idea.
->>
->> ==
->> process's address pte       pnf->pte->page
->>
->> 00000037b4008000   2bf1e025 -> PG_reserved
->> 00000037b400a000 d900000000 -> bad swap
->> 00000037b400c000   2bfe8025 -> PG_reserved
->> 00000037b400d000  12bfe9025 -> belongs to some other files' page cache
->> 00000037b400e000 ff00000000 -> bad swap
->> 00000037b400f000 5400000000 -> bad swap
->> ...
->> 00000037b4019000 ff00000000 -> bad swap
->> ==
->> All ptes are on the same pmd 1535b5067.
->> .
->> I doubt some kind of buffer overflow bug overwrites page table...
->> Because ptes for adddress of 00000037b4008000...00000037b400f000 are on 
->> head of
->
-> This is only one bit, right? :-)
->
->> a page (used for pmd), some data on page [0x1535b4000..0x1535b5000) 
->> caused buffer
->> overflow and broke page table in [0x1535b5000...0x1535b6000)
->>
->> Is this bug found from 2.6.28.10 ?
->
-> No, the bug, what i have sent was from 2.6.32.10. (you can check it from 
-> the messages file in the link)
-> The story begins about marc 9-10 but unfortunately the system not all the 
-> time was able to write down the messages file.
-> (At Mar 13 11:20:09 i have triggered the sysreq's process and memory 
-> information, you can see it in the link below.)
-> We have more crashes with the 2.6.28.10 in the next some day and the 
-> server is removed for testing (7 days hole in the log), but looks stable
->
-> Here is more serious crashes from the 2.6.28.10:
->
-> http://download.netcenter.hu/bughunt/20100324/marc11-14
->
-> For me looks like all memory, swap and xfs related.
-> I have tested/repaired all the filesystems offline, corrected the errors 
-> wich was left by the previous crashes, than disabled the swap, but nothing 
-> helps. :(
->
-> Finally in marc 21, i have replaced the kernel to the 32.10, and the 
-> crashes looks gone but only for 4 days. (you can see the first dump in my 
-> first mail)
->
-> Thanks for all the help,
->
-> Janos Haar
->
->
->>
->> If I investigate this issue, I'll check the owner of page 0x1535b4000 by
->> crash dump.
->>
->> Thanks,
->> -Kame
->>
->>
->>
->>> 2010/3/25 Janos Haar <janos.haar@netcenter.hu>:
->>> > Dear developers,
->>> >
->>> > This is one of my productive servers, wich suddenly starts to freeze 
->>> > (crash)
->>> > some weeks before.
->>> > I have done all what i can, (i think) please somebody give to me some
->>> > suggestion:
->>> >
->>> > Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd 
->>> > pte:2bf1e025
->>> > pmd:1535b5067
->>> > Mar 24 19:22:28 alfa kernel: page:ffffea0000f1b250 
->>> > flags:4000000000000404
->>> > count:1 mapcount:-1 mapping:(null) index:0
->>> > Mar 24 19:22:28 alfa kernel: addr:00000037b4008000 vm_flags:08000875
->>> > anon_vma:(null) mapping:ffff88022b5d25a8 index:8
->>> > Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: 
->>> > filemap_fault+0x0/0x34d
->>> > Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap:
->>> > xfs_file_mmap+0x0/0x33
->>> > Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Not tainted 
->>> > 2.6.32.10 #2
->>> > Mar 24 19:22:28 alfa kernel: Call Trace:
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c2ea3>] 
->>> > print_bad_pte+0x210/0x229
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c3c98>] 
->>> > unmap_vmas+0x44b/0x787
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81041f83>] mmput+0x48/0xb9
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810463b0>] exit_mm+0x105/0x110
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81371287>] ?
->>> > tty_audit_exit+0x28/0x85
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810477a0>] do_exit+0x1e9/0x6d2
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81053c37>] ?
->>> > __dequeue_signal+0xf1/0x127
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81047d00>] 
->>> > do_group_exit+0x77/0xa1
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810560f7>]
->>> > get_signal_to_deliver+0x32c/0x37f
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff8100a484>]
->>> > do_notify_resume+0x90/0x740
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff8102724b>] ?
->>> > __bad_area_nosemaphore+0x178/0x1a2
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810272b9>] ? 
->>> > __bad_area+0x44/0x4d
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff8100bba2>] 
->>> > retint_signal+0x46/0x84
->>> > Mar 24 19:22:28 alfa kernel: Disabling lock debugging due to kernel 
->>> > taint
->>> > Mar 24 19:22:28 alfa kernel: swap_free: Bad swap file entry 6c800000
->>> > Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd
->>> > pte:d900000000 pmd:1535b5067
->>> > Mar 24 19:22:28 alfa kernel: addr:00000037b400a000 vm_flags:08000875
->>> > anon_vma:(null) mapping:ffff88022b5d25a8 index:a
->>> > Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: 
->>> > filemap_fault+0x0/0x34d
->>> > Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap:
->>> > xfs_file_mmap+0x0/0x33
->>> > Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Tainted: G B
->>> > 2.6.32.10 #2
->>> > Mar 24 19:22:28 alfa kernel: Call Trace:
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81044551>] ? 
->>> > add_taint+0x32/0x3e
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c2ea3>] 
->>> > print_bad_pte+0x210/0x229
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c3d47>] 
->>> > unmap_vmas+0x4fa/0x787
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81041f83>] mmput+0x48/0xb9
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810463b0>] exit_mm+0x105/0x110
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81371287>] ?
->>> > tty_audit_exit+0x28/0x85
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810477a0>] do_exit+0x1e9/0x6d2
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81053c37>] ?
->>> > __dequeue_signal+0xf1/0x127
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81047d00>] 
->>> > do_group_exit+0x77/0xa1
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810560f7>]
->>> > get_signal_to_deliver+0x32c/0x37f
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff8100a484>]
->>> > do_notify_resume+0x90/0x740
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff8102724b>] ?
->>> > __bad_area_nosemaphore+0x178/0x1a2
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810272b9>] ? 
->>> > __bad_area+0x44/0x4d
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff8100bba2>] 
->>> > retint_signal+0x46/0x84
->>> > Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd 
->>> > pte:2bfe8025
->>> > pmd:1535b5067
->>> > Mar 24 19:22:28 alfa kernel: page:ffffea0000f1f7c0 
->>> > flags:4000000000000404
->>> > count:1 mapcount:-1 mapping:(null) index:0
->>> > Mar 24 19:22:28 alfa kernel: addr:00000037b400c000 vm_flags:08000875
->>> > anon_vma:(null) mapping:ffff88022b5d25a8 index:c
->>> > Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: 
->>> > filemap_fault+0x0/0x34d
->>> > Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap:
->>> > xfs_file_mmap+0x0/0x33
->>> > Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Tainted: G B
->>> > 2.6.32.10 #2
->>> > Mar 24 19:22:28 alfa kernel: Call Trace:
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81044551>] ? 
->>> > add_taint+0x32/0x3e
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c2ea3>] 
->>> > print_bad_pte+0x210/0x229
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c3c98>] 
->>> > unmap_vmas+0x44b/0x787
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81041f83>] mmput+0x48/0xb9
->>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810463b0>] exit_mm+0x105/0x110
->>> > .....
->>> >
->>> > The entire log is here:
->>> > http://download.netcenter.hu/bughunt/20100324/messages
->>> >
->>> > The actual kernel is 2.6.32.10, but the crash-series started @ 
->>> > 2.6.28.10.
->>> >
->>> > I have forwarded the tasks to another server, removed this from the 
->>> > room,
->>> > and the hw survived memtest86 in >7 days continously + i have tested 
->>> > the
->>> > HDDs one by one with badblocks -vvw, all is good.
->>> > For me looks like this is not a hw problem.
->>> >
->>> > Somebody have any idea?
->>> >
->>> > Thanks a lot,
->>> > Janos Haar
->>> > --
->>> > To unsubscribe from this list: send the line "unsubscribe 
->>> > linux-kernel" in
->>> > the body of a message to majordomo@vger.kernel.org
->>> > More majordomo info at http://vger.kernel.org/majordomo-info.html
->>> > Please read the FAQ at http://www.tux.org/lkml/
->>> >
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" 
->>> in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" 
->> in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/ 
+I've tested it on x86 and it seems to work pretty well.  If this is
+acceptable for bfin smp configurations, I'll post properly split patch
+series.
 
+Thanks.
+
+Index: work/mm/percpu.c
+===================================================================
+--- work.orig/mm/percpu.c
++++ work/mm/percpu.c
+@@ -1,5 +1,5 @@
+ /*
+- * linux/mm/percpu.c - percpu memory allocator
++ * mm/percpu.c - percpu memory allocator
+  *
+  * Copyright (C) 2009		SUSE Linux Products GmbH
+  * Copyright (C) 2009		Tejun Heo <tj@kernel.org>
+@@ -7,14 +7,13 @@
+  * This file is released under the GPLv2.
+  *
+  * This is percpu allocator which can handle both static and dynamic
+- * areas.  Percpu areas are allocated in chunks in vmalloc area.  Each
+- * chunk is consisted of boot-time determined number of units and the
+- * first chunk is used for static percpu variables in the kernel image
++ * areas.  Percpu areas are allocated in chunks.  Each chunk is
++ * consisted of boot-time determined number of units and the first
++ * chunk is used for static percpu variables in the kernel image
+  * (special boot time alloc/init handling necessary as these areas
+  * need to be brought up before allocation services are running).
+  * Unit grows as necessary and all units grow or shrink in unison.
+- * When a chunk is filled up, another chunk is allocated.  ie. in
+- * vmalloc area
++ * When a chunk is filled up, another chunk is allocated.
+  *
+  *  c0                           c1                         c2
+  *  -------------------          -------------------        ------------
+@@ -99,7 +98,7 @@ struct pcpu_chunk {
+ 	int			map_used;	/* # of map entries used */
+ 	int			map_alloc;	/* # of map entries allocated */
+ 	int			*map;		/* allocation map */
+-	struct vm_struct	**vms;		/* mapped vmalloc regions */
++	void			*data;		/* chunk data */
+ 	bool			immutable;	/* no [de]population allowed */
+ 	unsigned long		populated[];	/* populated bitmap */
+ };
+@@ -177,6 +176,21 @@ static struct list_head *pcpu_slot __rea
+ static void pcpu_reclaim(struct work_struct *work);
+ static DECLARE_WORK(pcpu_reclaim_work, pcpu_reclaim);
+
++static bool pcpu_addr_in_first_chunk(void *addr)
++{
++	void *first_start = pcpu_first_chunk->base_addr;
++
++	return addr >= first_start && addr < first_start + pcpu_unit_size;
++}
++
++static bool pcpu_addr_in_reserved_chunk(void *addr)
++{
++	void *first_start = pcpu_first_chunk->base_addr;
++
++	return addr >= first_start &&
++		addr < first_start + pcpu_reserved_chunk_limit;
++}
++
+ static int __pcpu_size_to_slot(int size)
+ {
+ 	int highbit = fls(size);	/* size is in bytes */
+@@ -198,27 +212,6 @@ static int pcpu_chunk_slot(const struct
+ 	return pcpu_size_to_slot(chunk->free_size);
+ }
+
+-static int pcpu_page_idx(unsigned int cpu, int page_idx)
+-{
+-	return pcpu_unit_map[cpu] * pcpu_unit_pages + page_idx;
+-}
+-
+-static unsigned long pcpu_chunk_addr(struct pcpu_chunk *chunk,
+-				     unsigned int cpu, int page_idx)
+-{
+-	return (unsigned long)chunk->base_addr + pcpu_unit_offsets[cpu] +
+-		(page_idx << PAGE_SHIFT);
+-}
+-
+-static struct page *pcpu_chunk_page(struct pcpu_chunk *chunk,
+-				    unsigned int cpu, int page_idx)
+-{
+-	/* must not be used on pre-mapped chunk */
+-	WARN_ON(chunk->immutable);
+-
+-	return vmalloc_to_page((void *)pcpu_chunk_addr(chunk, cpu, page_idx));
+-}
+-
+ /* set the pointer to a chunk in a page struct */
+ static void pcpu_set_page_chunk(struct page *page, struct pcpu_chunk *pcpu)
+ {
+@@ -231,13 +224,27 @@ static struct pcpu_chunk *pcpu_get_page_
+ 	return (struct pcpu_chunk *)page->index;
+ }
+
+-static void pcpu_next_unpop(struct pcpu_chunk *chunk, int *rs, int *re, int end)
++static int __maybe_unused pcpu_page_idx(unsigned int cpu, int page_idx)
++{
++	return pcpu_unit_map[cpu] * pcpu_unit_pages + page_idx;
++}
++
++static unsigned long __maybe_unused pcpu_chunk_addr(struct pcpu_chunk *chunk,
++						unsigned int cpu, int page_idx)
++{
++	return (unsigned long)chunk->base_addr + pcpu_unit_offsets[cpu] +
++		(page_idx << PAGE_SHIFT);
++}
++
++static void __maybe_unused pcpu_next_unpop(struct pcpu_chunk *chunk,
++					   int *rs, int *re, int end)
+ {
+ 	*rs = find_next_zero_bit(chunk->populated, end, *rs);
+ 	*re = find_next_bit(chunk->populated, end, *rs + 1);
+ }
+
+-static void pcpu_next_pop(struct pcpu_chunk *chunk, int *rs, int *re, int end)
++static void __maybe_unused pcpu_next_pop(struct pcpu_chunk *chunk,
++					 int *rs, int *re, int end)
+ {
+ 	*rs = find_next_bit(chunk->populated, end, *rs);
+ 	*re = find_next_zero_bit(chunk->populated, end, *rs + 1);
+@@ -326,36 +333,6 @@ static void pcpu_chunk_relocate(struct p
+ }
+
+ /**
+- * pcpu_chunk_addr_search - determine chunk containing specified address
+- * @addr: address for which the chunk needs to be determined.
+- *
+- * RETURNS:
+- * The address of the found chunk.
+- */
+-static struct pcpu_chunk *pcpu_chunk_addr_search(void *addr)
+-{
+-	void *first_start = pcpu_first_chunk->base_addr;
+-
+-	/* is it in the first chunk? */
+-	if (addr >= first_start && addr < first_start + pcpu_unit_size) {
+-		/* is it in the reserved area? */
+-		if (addr < first_start + pcpu_reserved_chunk_limit)
+-			return pcpu_reserved_chunk;
+-		return pcpu_first_chunk;
+-	}
+-
+-	/*
+-	 * The address is relative to unit0 which might be unused and
+-	 * thus unmapped.  Offset the address to the unit space of the
+-	 * current processor before looking it up in the vmalloc
+-	 * space.  Note that any possible cpu id can be used here, so
+-	 * there's no need to worry about preemption or cpu hotplug.
+-	 */
+-	addr += pcpu_unit_offsets[raw_smp_processor_id()];
+-	return pcpu_get_page_chunk(vmalloc_to_page(addr));
+-}
+-
+-/**
+  * pcpu_need_to_extend - determine whether chunk area map needs to be extended
+  * @chunk: chunk of interest
+  *
+@@ -623,434 +600,87 @@ static void pcpu_free_area(struct pcpu_c
+ 	pcpu_chunk_relocate(chunk, oslot);
+ }
+
+-/**
+- * pcpu_get_pages_and_bitmap - get temp pages array and bitmap
+- * @chunk: chunk of interest
+- * @bitmapp: output parameter for bitmap
+- * @may_alloc: may allocate the array
+- *
+- * Returns pointer to array of pointers to struct page and bitmap,
+- * both of which can be indexed with pcpu_page_idx().  The returned
+- * array is cleared to zero and *@bitmapp is copied from
+- * @chunk->populated.  Note that there is only one array and bitmap
+- * and access exclusion is the caller's responsibility.
+- *
+- * CONTEXT:
+- * pcpu_alloc_mutex and does GFP_KERNEL allocation if @may_alloc.
+- * Otherwise, don't care.
+- *
+- * RETURNS:
+- * Pointer to temp pages array on success, NULL on failure.
+- */
+-static struct page **pcpu_get_pages_and_bitmap(struct pcpu_chunk *chunk,
+-					       unsigned long **bitmapp,
+-					       bool may_alloc)
++static struct pcpu_chunk *pcpu_alloc_chunk(void)
+ {
+-	static struct page **pages;
+-	static unsigned long *bitmap;
+-	size_t pages_size = pcpu_nr_units * pcpu_unit_pages * sizeof(pages[0]);
+-	size_t bitmap_size = BITS_TO_LONGS(pcpu_unit_pages) *
+-			     sizeof(unsigned long);
+-
+-	if (!pages || !bitmap) {
+-		if (may_alloc && !pages)
+-			pages = pcpu_mem_alloc(pages_size);
+-		if (may_alloc && !bitmap)
+-			bitmap = pcpu_mem_alloc(bitmap_size);
+-		if (!pages || !bitmap)
+-			return NULL;
+-	}
+-
+-	memset(pages, 0, pages_size);
+-	bitmap_copy(bitmap, chunk->populated, pcpu_unit_pages);
++	struct pcpu_chunk *chunk;
+
+-	*bitmapp = bitmap;
+-	return pages;
+-}
++	chunk = kzalloc(pcpu_chunk_struct_size, GFP_KERNEL);
++	if (!chunk)
++		return NULL;
+
+-/**
+- * pcpu_free_pages - free pages which were allocated for @chunk
+- * @chunk: chunk pages were allocated for
+- * @pages: array of pages to be freed, indexed by pcpu_page_idx()
+- * @populated: populated bitmap
+- * @page_start: page index of the first page to be freed
+- * @page_end: page index of the last page to be freed + 1
+- *
+- * Free pages [@page_start and @page_end) in @pages for all units.
+- * The pages were allocated for @chunk.
+- */
+-static void pcpu_free_pages(struct pcpu_chunk *chunk,
+-			    struct page **pages, unsigned long *populated,
+-			    int page_start, int page_end)
+-{
+-	unsigned int cpu;
+-	int i;
++	chunk->map = pcpu_mem_alloc(PCPU_DFL_MAP_ALLOC * sizeof(chunk->map[0]));
++	chunk->map_alloc = PCPU_DFL_MAP_ALLOC;
++	chunk->map[chunk->map_used++] = pcpu_unit_size;
+
+-	for_each_possible_cpu(cpu) {
+-		for (i = page_start; i < page_end; i++) {
+-			struct page *page = pages[pcpu_page_idx(cpu, i)];
++	INIT_LIST_HEAD(&chunk->list);
++	chunk->free_size = pcpu_unit_size;
++	chunk->contig_hint = pcpu_unit_size;
+
+-			if (page)
+-				__free_page(page);
+-		}
+-	}
++	return chunk;
+ }
+
+-/**
+- * pcpu_alloc_pages - allocates pages for @chunk
+- * @chunk: target chunk
+- * @pages: array to put the allocated pages into, indexed by pcpu_page_idx()
+- * @populated: populated bitmap
+- * @page_start: page index of the first page to be allocated
+- * @page_end: page index of the last page to be allocated + 1
+- *
+- * Allocate pages [@page_start,@page_end) into @pages for all units.
+- * The allocation is for @chunk.  Percpu core doesn't care about the
+- * content of @pages and will pass it verbatim to pcpu_map_pages().
+- */
+-static int pcpu_alloc_pages(struct pcpu_chunk *chunk,
+-			    struct page **pages, unsigned long *populated,
+-			    int page_start, int page_end)
++static void pcpu_free_chunk(struct pcpu_chunk *chunk)
+ {
+-	const gfp_t gfp = GFP_KERNEL | __GFP_HIGHMEM | __GFP_COLD;
+-	unsigned int cpu;
+-	int i;
+-
+-	for_each_possible_cpu(cpu) {
+-		for (i = page_start; i < page_end; i++) {
+-			struct page **pagep = &pages[pcpu_page_idx(cpu, i)];
+-
+-			*pagep = alloc_pages_node(cpu_to_node(cpu), gfp, 0);
+-			if (!*pagep) {
+-				pcpu_free_pages(chunk, pages, populated,
+-						page_start, page_end);
+-				return -ENOMEM;
+-			}
+-		}
+-	}
+-	return 0;
++	if (!chunk)
++		return;
++	pcpu_mem_free(chunk->map, chunk->map_alloc * sizeof(chunk->map[0]));
++	kfree(chunk);
+ }
+
+-/**
+- * pcpu_pre_unmap_flush - flush cache prior to unmapping
+- * @chunk: chunk the regions to be flushed belongs to
+- * @page_start: page index of the first page to be flushed
+- * @page_end: page index of the last page to be flushed + 1
++/*
++ * Chunk management implementation.
+  *
+- * Pages in [@page_start,@page_end) of @chunk are about to be
+- * unmapped.  Flush cache.  As each flushing trial can be very
+- * expensive, issue flush on the whole region at once rather than
+- * doing it for each cpu.  This could be an overkill but is more
+- * scalable.
+- */
+-static void pcpu_pre_unmap_flush(struct pcpu_chunk *chunk,
+-				 int page_start, int page_end)
+-{
+-	flush_cache_vunmap(
+-		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
+-		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
+-}
+-
+-static void __pcpu_unmap_pages(unsigned long addr, int nr_pages)
+-{
+-	unmap_kernel_range_noflush(addr, nr_pages << PAGE_SHIFT);
+-}
+-
+-/**
+- * pcpu_unmap_pages - unmap pages out of a pcpu_chunk
+- * @chunk: chunk of interest
+- * @pages: pages array which can be used to pass information to free
+- * @populated: populated bitmap
+- * @page_start: page index of the first page to unmap
+- * @page_end: page index of the last page to unmap + 1
+- *
+- * For each cpu, unmap pages [@page_start,@page_end) out of @chunk.
+- * Corresponding elements in @pages were cleared by the caller and can
+- * be used to carry information to pcpu_free_pages() which will be
+- * called after all unmaps are finished.  The caller should call
+- * proper pre/post flush functions.
+- */
+-static void pcpu_unmap_pages(struct pcpu_chunk *chunk,
+-			     struct page **pages, unsigned long *populated,
+-			     int page_start, int page_end)
+-{
+-	unsigned int cpu;
+-	int i;
+-
+-	for_each_possible_cpu(cpu) {
+-		for (i = page_start; i < page_end; i++) {
+-			struct page *page;
+-
+-			page = pcpu_chunk_page(chunk, cpu, i);
+-			WARN_ON(!page);
+-			pages[pcpu_page_idx(cpu, i)] = page;
+-		}
+-		__pcpu_unmap_pages(pcpu_chunk_addr(chunk, cpu, page_start),
+-				   page_end - page_start);
+-	}
+-
+-	for (i = page_start; i < page_end; i++)
+-		__clear_bit(i, populated);
+-}
++ * To allow different implementations, chunk alloc/free and
++ * [de]population are implemented in a separate file which is pulled
++ * into this file and compiled together.  The following functions
++ * should be implemented.
++ *
++ * pcpu_populate_chunk		- populate the specified range of a chunk
++ * pcpu_depopulate_chunk	- depopulate the specified range of a chunk
++ * pcpu_create_chunk		- create a new chunk
++ * pcpu_destroy_chunk		- destroy a chunk, always preceded by full depop
++ * pcpu_addr_to_page		- translate address to physical address
++ * pcpu_verify_alloc_info	- check alloc_info is acceptable during init
++ */
++static int pcpu_populate_chunk(struct pcpu_chunk *chunk, int off, int size);
++static void pcpu_depopulate_chunk(struct pcpu_chunk *chunk, int off, int size);
++static struct pcpu_chunk *pcpu_create_chunk(void);
++static void pcpu_destroy_chunk(struct pcpu_chunk *chunk);
++static struct page *pcpu_addr_to_page(void *addr);
++static int __init pcpu_verify_alloc_info(const struct pcpu_alloc_info *ai);
++
++#ifdef CONFIG_NEED_PER_CPU_KM
++#include "percpu-km.c"
++#else
++#include "percpu-vm.c"
++#endif
+
+ /**
+- * pcpu_post_unmap_tlb_flush - flush TLB after unmapping
+- * @chunk: pcpu_chunk the regions to be flushed belong to
+- * @page_start: page index of the first page to be flushed
+- * @page_end: page index of the last page to be flushed + 1
+- *
+- * Pages [@page_start,@page_end) of @chunk have been unmapped.  Flush
+- * TLB for the regions.  This can be skipped if the area is to be
+- * returned to vmalloc as vmalloc will handle TLB flushing lazily.
++ * pcpu_chunk_addr_search - determine chunk containing specified address
++ * @addr: address for which the chunk needs to be determined.
+  *
+- * As with pcpu_pre_unmap_flush(), TLB flushing also is done at once
+- * for the whole region.
++ * RETURNS:
++ * The address of the found chunk.
+  */
+-static void pcpu_post_unmap_tlb_flush(struct pcpu_chunk *chunk,
+-				      int page_start, int page_end)
+-{
+-	flush_tlb_kernel_range(
+-		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
+-		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
+-}
+-
+-static int __pcpu_map_pages(unsigned long addr, struct page **pages,
+-			    int nr_pages)
+-{
+-	return map_kernel_range_noflush(addr, nr_pages << PAGE_SHIFT,
+-					PAGE_KERNEL, pages);
+-}
+-
+-/**
+- * pcpu_map_pages - map pages into a pcpu_chunk
+- * @chunk: chunk of interest
+- * @pages: pages array containing pages to be mapped
+- * @populated: populated bitmap
+- * @page_start: page index of the first page to map
+- * @page_end: page index of the last page to map + 1
+- *
+- * For each cpu, map pages [@page_start,@page_end) into @chunk.  The
+- * caller is responsible for calling pcpu_post_map_flush() after all
+- * mappings are complete.
+- *
+- * This function is responsible for setting corresponding bits in
+- * @chunk->populated bitmap and whatever is necessary for reverse
+- * lookup (addr -> chunk).
+- */
+-static int pcpu_map_pages(struct pcpu_chunk *chunk,
+-			  struct page **pages, unsigned long *populated,
+-			  int page_start, int page_end)
++static struct pcpu_chunk *pcpu_chunk_addr_search(void *addr)
+ {
+-	unsigned int cpu, tcpu;
+-	int i, err;
+-
+-	for_each_possible_cpu(cpu) {
+-		err = __pcpu_map_pages(pcpu_chunk_addr(chunk, cpu, page_start),
+-				       &pages[pcpu_page_idx(cpu, page_start)],
+-				       page_end - page_start);
+-		if (err < 0)
+-			goto err;
+-	}
+-
+-	/* mapping successful, link chunk and mark populated */
+-	for (i = page_start; i < page_end; i++) {
+-		for_each_possible_cpu(cpu)
+-			pcpu_set_page_chunk(pages[pcpu_page_idx(cpu, i)],
+-					    chunk);
+-		__set_bit(i, populated);
+-	}
+-
+-	return 0;
+-
+-err:
+-	for_each_possible_cpu(tcpu) {
+-		if (tcpu == cpu)
+-			break;
+-		__pcpu_unmap_pages(pcpu_chunk_addr(chunk, tcpu, page_start),
+-				   page_end - page_start);
++	/* is it in the first chunk? */
++	if (pcpu_addr_in_first_chunk(addr)) {
++		/* is it in the reserved area? */
++		if (pcpu_addr_in_reserved_chunk(addr))
++			return pcpu_reserved_chunk;
++		return pcpu_first_chunk;
+ 	}
+-	return err;
+-}
+-
+-/**
+- * pcpu_post_map_flush - flush cache after mapping
+- * @chunk: pcpu_chunk the regions to be flushed belong to
+- * @page_start: page index of the first page to be flushed
+- * @page_end: page index of the last page to be flushed + 1
+- *
+- * Pages [@page_start,@page_end) of @chunk have been mapped.  Flush
+- * cache.
+- *
+- * As with pcpu_pre_unmap_flush(), TLB flushing also is done at once
+- * for the whole region.
+- */
+-static void pcpu_post_map_flush(struct pcpu_chunk *chunk,
+-				int page_start, int page_end)
+-{
+-	flush_cache_vmap(
+-		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
+-		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
+-}
+-
+-/**
+- * pcpu_depopulate_chunk - depopulate and unmap an area of a pcpu_chunk
+- * @chunk: chunk to depopulate
+- * @off: offset to the area to depopulate
+- * @size: size of the area to depopulate in bytes
+- * @flush: whether to flush cache and tlb or not
+- *
+- * For each cpu, depopulate and unmap pages [@page_start,@page_end)
+- * from @chunk.  If @flush is true, vcache is flushed before unmapping
+- * and tlb after.
+- *
+- * CONTEXT:
+- * pcpu_alloc_mutex.
+- */
+-static void pcpu_depopulate_chunk(struct pcpu_chunk *chunk, int off, int size)
+-{
+-	int page_start = PFN_DOWN(off);
+-	int page_end = PFN_UP(off + size);
+-	struct page **pages;
+-	unsigned long *populated;
+-	int rs, re;
+-
+-	/* quick path, check whether it's empty already */
+-	rs = page_start;
+-	pcpu_next_unpop(chunk, &rs, &re, page_end);
+-	if (rs == page_start && re == page_end)
+-		return;
+-
+-	/* immutable chunks can't be depopulated */
+-	WARN_ON(chunk->immutable);
+
+ 	/*
+-	 * If control reaches here, there must have been at least one
+-	 * successful population attempt so the temp pages array must
+-	 * be available now.
++	 * The address is relative to unit0 which might be unused and
++	 * thus unmapped.  Offset the address to the unit space of the
++	 * current processor before looking it up in the vmalloc
++	 * space.  Note that any possible cpu id can be used here, so
++	 * there's no need to worry about preemption or cpu hotplug.
+ 	 */
+-	pages = pcpu_get_pages_and_bitmap(chunk, &populated, false);
+-	BUG_ON(!pages);
+-
+-	/* unmap and free */
+-	pcpu_pre_unmap_flush(chunk, page_start, page_end);
+-
+-	pcpu_for_each_pop_region(chunk, rs, re, page_start, page_end)
+-		pcpu_unmap_pages(chunk, pages, populated, rs, re);
+-
+-	/* no need to flush tlb, vmalloc will handle it lazily */
+-
+-	pcpu_for_each_pop_region(chunk, rs, re, page_start, page_end)
+-		pcpu_free_pages(chunk, pages, populated, rs, re);
+-
+-	/* commit new bitmap */
+-	bitmap_copy(chunk->populated, populated, pcpu_unit_pages);
+-}
+-
+-/**
+- * pcpu_populate_chunk - populate and map an area of a pcpu_chunk
+- * @chunk: chunk of interest
+- * @off: offset to the area to populate
+- * @size: size of the area to populate in bytes
+- *
+- * For each cpu, populate and map pages [@page_start,@page_end) into
+- * @chunk.  The area is cleared on return.
+- *
+- * CONTEXT:
+- * pcpu_alloc_mutex, does GFP_KERNEL allocation.
+- */
+-static int pcpu_populate_chunk(struct pcpu_chunk *chunk, int off, int size)
+-{
+-	int page_start = PFN_DOWN(off);
+-	int page_end = PFN_UP(off + size);
+-	int free_end = page_start, unmap_end = page_start;
+-	struct page **pages;
+-	unsigned long *populated;
+-	unsigned int cpu;
+-	int rs, re, rc;
+-
+-	/* quick path, check whether all pages are already there */
+-	rs = page_start;
+-	pcpu_next_pop(chunk, &rs, &re, page_end);
+-	if (rs == page_start && re == page_end)
+-		goto clear;
+-
+-	/* need to allocate and map pages, this chunk can't be immutable */
+-	WARN_ON(chunk->immutable);
+-
+-	pages = pcpu_get_pages_and_bitmap(chunk, &populated, true);
+-	if (!pages)
+-		return -ENOMEM;
+-
+-	/* alloc and map */
+-	pcpu_for_each_unpop_region(chunk, rs, re, page_start, page_end) {
+-		rc = pcpu_alloc_pages(chunk, pages, populated, rs, re);
+-		if (rc)
+-			goto err_free;
+-		free_end = re;
+-	}
+-
+-	pcpu_for_each_unpop_region(chunk, rs, re, page_start, page_end) {
+-		rc = pcpu_map_pages(chunk, pages, populated, rs, re);
+-		if (rc)
+-			goto err_unmap;
+-		unmap_end = re;
+-	}
+-	pcpu_post_map_flush(chunk, page_start, page_end);
+-
+-	/* commit new bitmap */
+-	bitmap_copy(chunk->populated, populated, pcpu_unit_pages);
+-clear:
+-	for_each_possible_cpu(cpu)
+-		memset((void *)pcpu_chunk_addr(chunk, cpu, 0) + off, 0, size);
+-	return 0;
+-
+-err_unmap:
+-	pcpu_pre_unmap_flush(chunk, page_start, unmap_end);
+-	pcpu_for_each_unpop_region(chunk, rs, re, page_start, unmap_end)
+-		pcpu_unmap_pages(chunk, pages, populated, rs, re);
+-	pcpu_post_unmap_tlb_flush(chunk, page_start, unmap_end);
+-err_free:
+-	pcpu_for_each_unpop_region(chunk, rs, re, page_start, free_end)
+-		pcpu_free_pages(chunk, pages, populated, rs, re);
+-	return rc;
+-}
+-
+-static void free_pcpu_chunk(struct pcpu_chunk *chunk)
+-{
+-	if (!chunk)
+-		return;
+-	if (chunk->vms)
+-		pcpu_free_vm_areas(chunk->vms, pcpu_nr_groups);
+-	pcpu_mem_free(chunk->map, chunk->map_alloc * sizeof(chunk->map[0]));
+-	kfree(chunk);
+-}
+-
+-static struct pcpu_chunk *alloc_pcpu_chunk(void)
+-{
+-	struct pcpu_chunk *chunk;
+-
+-	chunk = kzalloc(pcpu_chunk_struct_size, GFP_KERNEL);
+-	if (!chunk)
+-		return NULL;
+-
+-	chunk->map = pcpu_mem_alloc(PCPU_DFL_MAP_ALLOC * sizeof(chunk->map[0]));
+-	chunk->map_alloc = PCPU_DFL_MAP_ALLOC;
+-	chunk->map[chunk->map_used++] = pcpu_unit_size;
+-
+-	chunk->vms = pcpu_get_vm_areas(pcpu_group_offsets, pcpu_group_sizes,
+-				       pcpu_nr_groups, pcpu_atom_size,
+-				       GFP_KERNEL);
+-	if (!chunk->vms) {
+-		free_pcpu_chunk(chunk);
+-		return NULL;
+-	}
+-
+-	INIT_LIST_HEAD(&chunk->list);
+-	chunk->free_size = pcpu_unit_size;
+-	chunk->contig_hint = pcpu_unit_size;
+-	chunk->base_addr = chunk->vms[0]->addr - pcpu_group_offsets[0];
+-
+-	return chunk;
++	addr += pcpu_unit_offsets[raw_smp_processor_id()];
++	return pcpu_get_page_chunk(pcpu_addr_to_page(addr));
+ }
+
+ /**
+@@ -1142,7 +772,7 @@ restart:
+ 	/* hmmm... no space left, create a new chunk */
+ 	spin_unlock_irqrestore(&pcpu_lock, flags);
+
+-	chunk = alloc_pcpu_chunk();
++	chunk = pcpu_create_chunk();
+ 	if (!chunk) {
+ 		err = "failed to allocate new chunk";
+ 		goto fail_unlock_mutex;
+@@ -1254,7 +884,7 @@ static void pcpu_reclaim(struct work_str
+
+ 	list_for_each_entry_safe(chunk, next, &todo, list) {
+ 		pcpu_depopulate_chunk(chunk, 0, pcpu_unit_size);
+-		free_pcpu_chunk(chunk);
++		pcpu_destroy_chunk(chunk);
+ 	}
+
+ 	mutex_unlock(&pcpu_alloc_mutex);
+@@ -1343,11 +973,14 @@ bool is_kernel_percpu_address(unsigned l
+  */
+ phys_addr_t per_cpu_ptr_to_phys(void *addr)
+ {
+-	if ((unsigned long)addr < VMALLOC_START ||
+-			(unsigned long)addr >= VMALLOC_END)
+-		return __pa(addr);
+-	else
+-		return page_to_phys(vmalloc_to_page(addr));
++	if (pcpu_addr_in_first_chunk(addr)) {
++		if ((unsigned long)addr < VMALLOC_START ||
++		    (unsigned long)addr >= VMALLOC_END)
++			return __pa(addr);
++		else
++			return page_to_phys(vmalloc_to_page(addr));
++	} else
++		return page_to_phys(pcpu_addr_to_page(addr));
+ }
+
+ static inline size_t pcpu_calc_fc_sizes(size_t static_size,
+@@ -1719,6 +1352,7 @@ int __init pcpu_setup_first_chunk(const
+ 	PCPU_SETUP_BUG_ON(ai->unit_size < size_sum);
+ 	PCPU_SETUP_BUG_ON(ai->unit_size & ~PAGE_MASK);
+ 	PCPU_SETUP_BUG_ON(ai->unit_size < PCPU_MIN_UNIT_SIZE);
++	PCPU_SETUP_BUG_ON(pcpu_verify_alloc_info(ai) < 0);
+
+ 	/* process group information and build config tables accordingly */
+ 	group_offsets = alloc_bootmem(ai->nr_groups * sizeof(group_offsets[0]));
+Index: work/mm/percpu-vm.c
+===================================================================
+--- /dev/null
++++ work/mm/percpu-vm.c
+@@ -0,0 +1,451 @@
++/*
++ * mm/percpu-vm.c - vmalloc area based chunk allocation
++ *
++ * Copyright (C) 2010		SUSE Linux Products GmbH
++ * Copyright (C) 2010		Tejun Heo <tj@kernel.org>
++ *
++ * This file is released under the GPLv2.
++ *
++ * Chunks are mapped into vmalloc areas and populated page by page.
++ * This is the default chunk allocator.
++ */
++
++static struct page *pcpu_chunk_page(struct pcpu_chunk *chunk,
++				    unsigned int cpu, int page_idx)
++{
++	/* must not be used on pre-mapped chunk */
++	WARN_ON(chunk->immutable);
++
++	return vmalloc_to_page((void *)pcpu_chunk_addr(chunk, cpu, page_idx));
++}
++
++/**
++ * pcpu_get_pages_and_bitmap - get temp pages array and bitmap
++ * @chunk: chunk of interest
++ * @bitmapp: output parameter for bitmap
++ * @may_alloc: may allocate the array
++ *
++ * Returns pointer to array of pointers to struct page and bitmap,
++ * both of which can be indexed with pcpu_page_idx().  The returned
++ * array is cleared to zero and *@bitmapp is copied from
++ * @chunk->populated.  Note that there is only one array and bitmap
++ * and access exclusion is the caller's responsibility.
++ *
++ * CONTEXT:
++ * pcpu_alloc_mutex and does GFP_KERNEL allocation if @may_alloc.
++ * Otherwise, don't care.
++ *
++ * RETURNS:
++ * Pointer to temp pages array on success, NULL on failure.
++ */
++static struct page **pcpu_get_pages_and_bitmap(struct pcpu_chunk *chunk,
++					       unsigned long **bitmapp,
++					       bool may_alloc)
++{
++	static struct page **pages;
++	static unsigned long *bitmap;
++	size_t pages_size = pcpu_nr_units * pcpu_unit_pages * sizeof(pages[0]);
++	size_t bitmap_size = BITS_TO_LONGS(pcpu_unit_pages) *
++			     sizeof(unsigned long);
++
++	if (!pages || !bitmap) {
++		if (may_alloc && !pages)
++			pages = pcpu_mem_alloc(pages_size);
++		if (may_alloc && !bitmap)
++			bitmap = pcpu_mem_alloc(bitmap_size);
++		if (!pages || !bitmap)
++			return NULL;
++	}
++
++	memset(pages, 0, pages_size);
++	bitmap_copy(bitmap, chunk->populated, pcpu_unit_pages);
++
++	*bitmapp = bitmap;
++	return pages;
++}
++
++/**
++ * pcpu_free_pages - free pages which were allocated for @chunk
++ * @chunk: chunk pages were allocated for
++ * @pages: array of pages to be freed, indexed by pcpu_page_idx()
++ * @populated: populated bitmap
++ * @page_start: page index of the first page to be freed
++ * @page_end: page index of the last page to be freed + 1
++ *
++ * Free pages [@page_start and @page_end) in @pages for all units.
++ * The pages were allocated for @chunk.
++ */
++static void pcpu_free_pages(struct pcpu_chunk *chunk,
++			    struct page **pages, unsigned long *populated,
++			    int page_start, int page_end)
++{
++	unsigned int cpu;
++	int i;
++
++	for_each_possible_cpu(cpu) {
++		for (i = page_start; i < page_end; i++) {
++			struct page *page = pages[pcpu_page_idx(cpu, i)];
++
++			if (page)
++				__free_page(page);
++		}
++	}
++}
++
++/**
++ * pcpu_alloc_pages - allocates pages for @chunk
++ * @chunk: target chunk
++ * @pages: array to put the allocated pages into, indexed by pcpu_page_idx()
++ * @populated: populated bitmap
++ * @page_start: page index of the first page to be allocated
++ * @page_end: page index of the last page to be allocated + 1
++ *
++ * Allocate pages [@page_start,@page_end) into @pages for all units.
++ * The allocation is for @chunk.  Percpu core doesn't care about the
++ * content of @pages and will pass it verbatim to pcpu_map_pages().
++ */
++static int pcpu_alloc_pages(struct pcpu_chunk *chunk,
++			    struct page **pages, unsigned long *populated,
++			    int page_start, int page_end)
++{
++	const gfp_t gfp = GFP_KERNEL | __GFP_HIGHMEM | __GFP_COLD;
++	unsigned int cpu;
++	int i;
++
++	for_each_possible_cpu(cpu) {
++		for (i = page_start; i < page_end; i++) {
++			struct page **pagep = &pages[pcpu_page_idx(cpu, i)];
++
++			*pagep = alloc_pages_node(cpu_to_node(cpu), gfp, 0);
++			if (!*pagep) {
++				pcpu_free_pages(chunk, pages, populated,
++						page_start, page_end);
++				return -ENOMEM;
++			}
++		}
++	}
++	return 0;
++}
++
++/**
++ * pcpu_pre_unmap_flush - flush cache prior to unmapping
++ * @chunk: chunk the regions to be flushed belongs to
++ * @page_start: page index of the first page to be flushed
++ * @page_end: page index of the last page to be flushed + 1
++ *
++ * Pages in [@page_start,@page_end) of @chunk are about to be
++ * unmapped.  Flush cache.  As each flushing trial can be very
++ * expensive, issue flush on the whole region at once rather than
++ * doing it for each cpu.  This could be an overkill but is more
++ * scalable.
++ */
++static void pcpu_pre_unmap_flush(struct pcpu_chunk *chunk,
++				 int page_start, int page_end)
++{
++	flush_cache_vunmap(
++		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
++		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
++}
++
++static void __pcpu_unmap_pages(unsigned long addr, int nr_pages)
++{
++	unmap_kernel_range_noflush(addr, nr_pages << PAGE_SHIFT);
++}
++
++/**
++ * pcpu_unmap_pages - unmap pages out of a pcpu_chunk
++ * @chunk: chunk of interest
++ * @pages: pages array which can be used to pass information to free
++ * @populated: populated bitmap
++ * @page_start: page index of the first page to unmap
++ * @page_end: page index of the last page to unmap + 1
++ *
++ * For each cpu, unmap pages [@page_start,@page_end) out of @chunk.
++ * Corresponding elements in @pages were cleared by the caller and can
++ * be used to carry information to pcpu_free_pages() which will be
++ * called after all unmaps are finished.  The caller should call
++ * proper pre/post flush functions.
++ */
++static void pcpu_unmap_pages(struct pcpu_chunk *chunk,
++			     struct page **pages, unsigned long *populated,
++			     int page_start, int page_end)
++{
++	unsigned int cpu;
++	int i;
++
++	for_each_possible_cpu(cpu) {
++		for (i = page_start; i < page_end; i++) {
++			struct page *page;
++
++			page = pcpu_chunk_page(chunk, cpu, i);
++			WARN_ON(!page);
++			pages[pcpu_page_idx(cpu, i)] = page;
++		}
++		__pcpu_unmap_pages(pcpu_chunk_addr(chunk, cpu, page_start),
++				   page_end - page_start);
++	}
++
++	for (i = page_start; i < page_end; i++)
++		__clear_bit(i, populated);
++}
++
++/**
++ * pcpu_post_unmap_tlb_flush - flush TLB after unmapping
++ * @chunk: pcpu_chunk the regions to be flushed belong to
++ * @page_start: page index of the first page to be flushed
++ * @page_end: page index of the last page to be flushed + 1
++ *
++ * Pages [@page_start,@page_end) of @chunk have been unmapped.  Flush
++ * TLB for the regions.  This can be skipped if the area is to be
++ * returned to vmalloc as vmalloc will handle TLB flushing lazily.
++ *
++ * As with pcpu_pre_unmap_flush(), TLB flushing also is done at once
++ * for the whole region.
++ */
++static void pcpu_post_unmap_tlb_flush(struct pcpu_chunk *chunk,
++				      int page_start, int page_end)
++{
++	flush_tlb_kernel_range(
++		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
++		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
++}
++
++static int __pcpu_map_pages(unsigned long addr, struct page **pages,
++			    int nr_pages)
++{
++	return map_kernel_range_noflush(addr, nr_pages << PAGE_SHIFT,
++					PAGE_KERNEL, pages);
++}
++
++/**
++ * pcpu_map_pages - map pages into a pcpu_chunk
++ * @chunk: chunk of interest
++ * @pages: pages array containing pages to be mapped
++ * @populated: populated bitmap
++ * @page_start: page index of the first page to map
++ * @page_end: page index of the last page to map + 1
++ *
++ * For each cpu, map pages [@page_start,@page_end) into @chunk.  The
++ * caller is responsible for calling pcpu_post_map_flush() after all
++ * mappings are complete.
++ *
++ * This function is responsible for setting corresponding bits in
++ * @chunk->populated bitmap and whatever is necessary for reverse
++ * lookup (addr -> chunk).
++ */
++static int pcpu_map_pages(struct pcpu_chunk *chunk,
++			  struct page **pages, unsigned long *populated,
++			  int page_start, int page_end)
++{
++	unsigned int cpu, tcpu;
++	int i, err;
++
++	for_each_possible_cpu(cpu) {
++		err = __pcpu_map_pages(pcpu_chunk_addr(chunk, cpu, page_start),
++				       &pages[pcpu_page_idx(cpu, page_start)],
++				       page_end - page_start);
++		if (err < 0)
++			goto err;
++	}
++
++	/* mapping successful, link chunk and mark populated */
++	for (i = page_start; i < page_end; i++) {
++		for_each_possible_cpu(cpu)
++			pcpu_set_page_chunk(pages[pcpu_page_idx(cpu, i)],
++					    chunk);
++		__set_bit(i, populated);
++	}
++
++	return 0;
++
++err:
++	for_each_possible_cpu(tcpu) {
++		if (tcpu == cpu)
++			break;
++		__pcpu_unmap_pages(pcpu_chunk_addr(chunk, tcpu, page_start),
++				   page_end - page_start);
++	}
++	return err;
++}
++
++/**
++ * pcpu_post_map_flush - flush cache after mapping
++ * @chunk: pcpu_chunk the regions to be flushed belong to
++ * @page_start: page index of the first page to be flushed
++ * @page_end: page index of the last page to be flushed + 1
++ *
++ * Pages [@page_start,@page_end) of @chunk have been mapped.  Flush
++ * cache.
++ *
++ * As with pcpu_pre_unmap_flush(), TLB flushing also is done at once
++ * for the whole region.
++ */
++static void pcpu_post_map_flush(struct pcpu_chunk *chunk,
++				int page_start, int page_end)
++{
++	flush_cache_vmap(
++		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
++		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
++}
++
++/**
++ * pcpu_populate_chunk - populate and map an area of a pcpu_chunk
++ * @chunk: chunk of interest
++ * @off: offset to the area to populate
++ * @size: size of the area to populate in bytes
++ *
++ * For each cpu, populate and map pages [@page_start,@page_end) into
++ * @chunk.  The area is cleared on return.
++ *
++ * CONTEXT:
++ * pcpu_alloc_mutex, does GFP_KERNEL allocation.
++ */
++static int pcpu_populate_chunk(struct pcpu_chunk *chunk, int off, int size)
++{
++	int page_start = PFN_DOWN(off);
++	int page_end = PFN_UP(off + size);
++	int free_end = page_start, unmap_end = page_start;
++	struct page **pages;
++	unsigned long *populated;
++	unsigned int cpu;
++	int rs, re, rc;
++
++	/* quick path, check whether all pages are already there */
++	rs = page_start;
++	pcpu_next_pop(chunk, &rs, &re, page_end);
++	if (rs == page_start && re == page_end)
++		goto clear;
++
++	/* need to allocate and map pages, this chunk can't be immutable */
++	WARN_ON(chunk->immutable);
++
++	pages = pcpu_get_pages_and_bitmap(chunk, &populated, true);
++	if (!pages)
++		return -ENOMEM;
++
++	/* alloc and map */
++	pcpu_for_each_unpop_region(chunk, rs, re, page_start, page_end) {
++		rc = pcpu_alloc_pages(chunk, pages, populated, rs, re);
++		if (rc)
++			goto err_free;
++		free_end = re;
++	}
++
++	pcpu_for_each_unpop_region(chunk, rs, re, page_start, page_end) {
++		rc = pcpu_map_pages(chunk, pages, populated, rs, re);
++		if (rc)
++			goto err_unmap;
++		unmap_end = re;
++	}
++	pcpu_post_map_flush(chunk, page_start, page_end);
++
++	/* commit new bitmap */
++	bitmap_copy(chunk->populated, populated, pcpu_unit_pages);
++clear:
++	for_each_possible_cpu(cpu)
++		memset((void *)pcpu_chunk_addr(chunk, cpu, 0) + off, 0, size);
++	return 0;
++
++err_unmap:
++	pcpu_pre_unmap_flush(chunk, page_start, unmap_end);
++	pcpu_for_each_unpop_region(chunk, rs, re, page_start, unmap_end)
++		pcpu_unmap_pages(chunk, pages, populated, rs, re);
++	pcpu_post_unmap_tlb_flush(chunk, page_start, unmap_end);
++err_free:
++	pcpu_for_each_unpop_region(chunk, rs, re, page_start, free_end)
++		pcpu_free_pages(chunk, pages, populated, rs, re);
++	return rc;
++}
++
++/**
++ * pcpu_depopulate_chunk - depopulate and unmap an area of a pcpu_chunk
++ * @chunk: chunk to depopulate
++ * @off: offset to the area to depopulate
++ * @size: size of the area to depopulate in bytes
++ * @flush: whether to flush cache and tlb or not
++ *
++ * For each cpu, depopulate and unmap pages [@page_start,@page_end)
++ * from @chunk.  If @flush is true, vcache is flushed before unmapping
++ * and tlb after.
++ *
++ * CONTEXT:
++ * pcpu_alloc_mutex.
++ */
++static void pcpu_depopulate_chunk(struct pcpu_chunk *chunk, int off, int size)
++{
++	int page_start = PFN_DOWN(off);
++	int page_end = PFN_UP(off + size);
++	struct page **pages;
++	unsigned long *populated;
++	int rs, re;
++
++	/* quick path, check whether it's empty already */
++	rs = page_start;
++	pcpu_next_unpop(chunk, &rs, &re, page_end);
++	if (rs == page_start && re == page_end)
++		return;
++
++	/* immutable chunks can't be depopulated */
++	WARN_ON(chunk->immutable);
++
++	/*
++	 * If control reaches here, there must have been at least one
++	 * successful population attempt so the temp pages array must
++	 * be available now.
++	 */
++	pages = pcpu_get_pages_and_bitmap(chunk, &populated, false);
++	BUG_ON(!pages);
++
++	/* unmap and free */
++	pcpu_pre_unmap_flush(chunk, page_start, page_end);
++
++	pcpu_for_each_pop_region(chunk, rs, re, page_start, page_end)
++		pcpu_unmap_pages(chunk, pages, populated, rs, re);
++
++	/* no need to flush tlb, vmalloc will handle it lazily */
++
++	pcpu_for_each_pop_region(chunk, rs, re, page_start, page_end)
++		pcpu_free_pages(chunk, pages, populated, rs, re);
++
++	/* commit new bitmap */
++	bitmap_copy(chunk->populated, populated, pcpu_unit_pages);
++}
++
++static struct pcpu_chunk *pcpu_create_chunk(void)
++{
++	struct pcpu_chunk *chunk;
++	struct vm_struct **vms;
++
++	chunk = pcpu_alloc_chunk();
++	if (!chunk)
++		return NULL;
++
++	vms = pcpu_get_vm_areas(pcpu_group_offsets, pcpu_group_sizes,
++				pcpu_nr_groups, pcpu_atom_size, GFP_KERNEL);
++	if (!vms) {
++		pcpu_free_chunk(chunk);
++		return NULL;
++	}
++
++	chunk->data = vms;
++	chunk->base_addr = vms[0]->addr - pcpu_group_offsets[0];
++	return chunk;
++}
++
++static void pcpu_destroy_chunk(struct pcpu_chunk *chunk)
++{
++	if (chunk && chunk->data)
++		pcpu_free_vm_areas(chunk->data, pcpu_nr_groups);
++	pcpu_free_chunk(chunk);
++}
++
++static struct page *pcpu_addr_to_page(void *addr)
++{
++	return vmalloc_to_page(addr);
++}
++
++static int __init pcpu_verify_alloc_info(const struct pcpu_alloc_info *ai)
++{
++	/* no extra restriction */
++	return 0;
++}
+Index: work/mm/percpu-km.c
+===================================================================
+--- /dev/null
++++ work/mm/percpu-km.c
+@@ -0,0 +1,87 @@
++/*
++ * mm/percpu-km.c - kernel memory based chunk allocation
++ *
++ * Copyright (C) 2010		SUSE Linux Products GmbH
++ * Copyright (C) 2010		Tejun Heo <tj@kernel.org>
++ *
++ * This file is released under the GPLv2.
++ *
++ * Chunks are allocated as a contiguous kernel memory using gfp
++ * allocation.  This is to be used on nommu architectures.
++ */
++
++#ifdef CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK
++#error "contiguous percpu allocation is incompatible with paged first chunk"
++#endif
++
++#include <linux/log2.h>
++
++static int pcpu_populate_chunk(struct pcpu_chunk *chunk, int off, int size)
++{
++	/* noop */
++	return 0;
++}
++
++static void pcpu_depopulate_chunk(struct pcpu_chunk *chunk, int off, int size)
++{
++	/* nada */
++}
++
++static struct pcpu_chunk *pcpu_create_chunk(void)
++{
++	const int nr_pages = pcpu_group_sizes[0] >> PAGE_SHIFT;
++	struct pcpu_chunk *chunk;
++	struct page *pages;
++	int i;
++
++	chunk = pcpu_alloc_chunk();
++	if (!chunk)
++		return NULL;
++
++	pages = alloc_pages(GFP_KERNEL, order_base_2(nr_pages));
++	if (!pages) {
++		pcpu_free_chunk(chunk);
++		return NULL;
++	}
++
++	for (i = 0; i < nr_pages; i++)
++		pcpu_set_page_chunk(nth_page(pages, i), chunk);
++
++	chunk->data = pages;
++	chunk->base_addr = page_address(pages) - pcpu_group_offsets[0];
++	return chunk;
++}
++
++static void pcpu_destroy_chunk(struct pcpu_chunk *chunk)
++{
++	const int nr_pages = pcpu_group_sizes[0] >> PAGE_SHIFT;
++
++	if (chunk && chunk->data)
++		__free_pages(chunk->data, order_base_2(nr_pages));
++	kfree(chunk);
++}
++
++static struct page *pcpu_addr_to_page(void *addr)
++{
++	return virt_to_page(addr);
++}
++
++static int __init pcpu_verify_alloc_info(const struct pcpu_alloc_info *ai)
++{
++	size_t nr_pages, alloc_pages;
++
++	/* all units must be in a single group */
++	if (ai->nr_groups != 1) {
++		printk(KERN_CRIT "percpu: can't handle more than one groups\n");
++		return -EINVAL;
++	}
++
++	nr_pages = (ai->groups[0].nr_units * ai->unit_size) >> PAGE_SHIFT;
++	alloc_pages = roundup_pow_of_two(nr_pages);
++
++	if (alloc_pages > nr_pages)
++		printk(KERN_WARNING "percpu: wasting %zu pages per chunk\n",
++		       alloc_pages - nr_pages);
++
++	return 0;
++}
+
+-- 
+tejun
