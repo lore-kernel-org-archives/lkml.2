@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757762Ab0DAS6h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 14:58:37 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:8875 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577Ab0DAS6d (ORCPT
+	id S1758626Ab0DAS6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 14:58:50 -0400
+Received: from mail-fx0-f227.google.com ([209.85.220.227]:56837 "EHLO
+	mail-fx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758116Ab0DAS6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 14:58:33 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=igSjqgv+5vSOGssvtbG5Iuhte5/w4kmmEeol9xncoMIiskunhqhdqUTlrjlHdwkU2
-	PGZz7HxY9RpENaX5Qp1jg==
-Date: Thu, 1 Apr 2010 11:58:20 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       nishimura@mxp.nes.nec.co.jp,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [patch] oom: give current access to memory reserves if it has
- been killed
-In-Reply-To: <20100401143910.GB14603@redhat.com>
-Message-ID: <alpine.DEB.2.00.1004011156040.30661@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330154659.GA12416@redhat.com> <alpine.DEB.2.00.1003301320020.5234@chino.kir.corp.google.com>
- <20100331175836.GA11635@redhat.com> <alpine.DEB.2.00.1003311342410.25284@chino.kir.corp.google.com> <20100331224904.GA4025@redhat.com> <20100331233058.GA6081@redhat.com> <alpine.DEB.2.00.1003311641470.2150@chino.kir.corp.google.com>
- <20100401143910.GB14603@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 1 Apr 2010 14:58:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=vboMP6O2+76WML8/LmF6Eu5mZqoj61Vlo6cNdlrbuBFbFmP4GbLr/yt7XEli0jA5o7
+         G5LWCL8TdwtKnzPSMbIPYcqm/dGvNzkNnR26lDXNsFlwLgzev1mT5gHqeW5Xne2IROLf
+         eGbiOexWcNDUxw0PXcwVry4AQqUzF4FuJYVhs=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Subject: Re: KVM bug, git bisected
+Date: Thu, 1 Apr 2010 20:58:43 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2; KDE/4.3.4; i686; ; )
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com
+References: <4BADFD74.8060904@gmail.com>
+In-Reply-To: <4BADFD74.8060904@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004012058.43449.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Apr 2010, Oleg Nesterov wrote:
-
-> > --- a/mm/oom_kill.c
-> > +++ b/mm/oom_kill.c
-> > @@ -459,7 +459,7 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
-> >  	 * its children or threads, just set TIF_MEMDIE so it can die quickly
-> >  	 */
-> >  	if (p->flags & PF_EXITING) {
-> > -		__oom_kill_task(p);
-> > +		set_tsk_thread_flag(p, TIF_MEMDIE);
+On sobota, 27 marca 2010 o 13:43:32 Kent Overstreet wrote:
+> commit 5beb49305251e5669852ed541e8e2f2f7696c53e
+> Author: Rik van Riel <riel@redhat.com>
+> Date:   Fri Mar 5 13:42:07 2010 -0800
 > 
-> So, probably this makes sense anyway but not strictly necessary, up to you.
+>      mm: change anon_vma linking to fix multi-process server scalability
+> issue
 > 
-
-It matches the already-existing comment that only says we need to set 
-TIF_MEMDIE so it can quickly exit rather than call __oom_kill_task(), so 
-it seems worthwhile.
-
-> >  	if (fatal_signal_pending(current)) {
-> > -		__oom_kill_task(current);
-> > +		set_tsk_thread_flag(current, TIF_MEMDIE);
-> 
-> Yes, I think this fix is needed.
-> 
-
-Ok, I'll add your acked-by and send this to Andrew with a follow-up that 
-consolidates __oom_kill_task() into oom_kill_task(), thanks.
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=15672
+for your bug report, please add your address to the CC list in there, thanks!
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
