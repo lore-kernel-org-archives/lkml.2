@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756764Ab0DACLL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 22:11:11 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:55894 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755428Ab0DACLI (ORCPT
+	id S1756667Ab0DACNZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 22:13:25 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:44626 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755834Ab0DACNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 22:11:08 -0400
-Message-ID: <4BB400AA.7090408@us.ibm.com>
-Date: Wed, 31 Mar 2010 19:10:50 -0700
+	Wed, 31 Mar 2010 22:13:24 -0400
+Message-ID: <4BB40140.20109@us.ibm.com>
+Date: Wed, 31 Mar 2010 19:13:20 -0700
 From: Darren Hart <dvhltc@us.ibm.com>
 User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-To: "lkml, " <linux-kernel@vger.kernel.org>,
-       Steven Rostedt <rostedt@goodmis.org>,
+To: rostedt@goodmis.org
+CC: "lkml," <linux-kernel@vger.kernel.org>,
        Peter Zijlstra <peterz@infradead.org>,
        Gregory Haskins <ghaskins@novell.com>,
        Sven-Thorsten Dietrich <sdietrich@novell.com>,
@@ -22,61 +22,69 @@ To: "lkml, " <linux-kernel@vger.kernel.org>,
        Eric Dumazet <eric.dumazet@gmail.com>,
        Chris Mason <chris.mason@oracle.com>
 Subject: Re: RFC: Ideal Adaptive Spinning Conditions
-References: <4BB3D90C.3030108@us.ibm.com>
-In-Reply-To: <4BB3D90C.3030108@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+References: <4BB3D90C.3030108@us.ibm.com> <1270078689.19685.8040.camel@gandalf.stny.rr.com>
+In-Reply-To: <1270078689.19685.8040.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC'ing the right Chris this time.
+Steven Rostedt wrote:
+> On Wed, 2010-03-31 at 16:21 -0700, Darren Hart wrote:
+> 
+>> o What type of lock hold times do we expect to benefit?
+> 
+> 0 (that's a zero) :-p
+> 
+> I haven't seen your patches but you are not doing a heuristic approach,
+> are you? That is, do not "spin" hoping the lock will suddenly become
+> free. I was against that for -rt and I would be against that for futex
+> too.
 
-Darren Hart wrote:
-> I'm looking at some adaptive spinning with futexes as a way to help 
-> reduce the dependence on sched_yield() to implement userspace spinlocks. 
-> Chris, I included you in the CC after reading your comments regarding 
-> sched_yield() at kernel summit and I thought you might be interested.
+I'm not sure what you're getting at here. Adaptive spinning is indeed 
+hoping the lock will become free while you are spinning and checking 
+it's owner...
+
 > 
-> I have an experimental patchset that implements FUTEX_LOCK and 
-> FUTEX_LOCK_ADAPTIVE in the kernel and use something akin to 
-> mutex_spin_on_owner() for the first waiter to spin. What I'm finding is 
-> that adaptive spinning actually hurts my particular test case, so I was 
-> hoping to poll people for context regarding the existing adaptive 
-> spinning implementations in the kernel as to where we see benefit. Under 
-> which conditions does adaptive spinning help?
+>> o How much contention is a good match for adaptive spinning?
+>>    - this is related to the number of threads to run in the test
+>> o How many spinners should be allowed?
+>>
+>> I can share the kernel patches if people are interested, but they are 
+>> really early, and I'm not sure they are of much value until I better 
+>> understand the conditions where this is expected to be useful.
 > 
-> I presume locks with a short average hold time stand to gain the most as 
-> the longer the lock is held the more likely the spinner will expire its 
-> timeslice or that the scheduling gain becomes noise in the acquisition 
-> time. My test case simple calls "lock();unlock()" for a fixed number of 
-> iterations and reports the iterations per second at the end of the run. 
-> It can run with an arbitrary number of threads as well. I typically run 
-> with 256 threads for 10M iterations.
-> 
->          futex_lock: Result: 635 Kiter/s
-> futex_lock_adaptive: Result: 542 Kiter/s
-> 
-> I've limited the number of spinners to 1 but feel that perhaps this 
-> should be configurable as locks with very short hold times could benefit 
-> from up to NR_CPUS-1 spinners.
-> 
-> I'd really appreciate any data, just general insight, you may have 
-> acquired while implementing adaptive spinning for rt-mutexes and 
-> mutexes. Open questions for me regarding conditions where adaptive 
-> spinning helps are:
-> 
-> o What type of lock hold times do we expect to benefit?
-> o How much contention is a good match for adaptive spinning?
->   - this is related to the number of threads to run in the test
-> o How many spinners should be allowed?
-> 
-> I can share the kernel patches if people are interested, but they are 
-> really early, and I'm not sure they are of much value until I better 
-> understand the conditions where this is expected to be useful.
-> 
-> Thanks,
-> 
+> Again, I don't know how you implemented your adaptive spinners, but the
+> trick to it in -rt was that it would only spin while the owner of the
+> lock was actually running. If it was not running, it would sleep. No
+> point waiting for a sleeping task to release its lock.
+
+It does exactly this.
+
+> Is this what you did? Because, IIRC, this only benefited spinlocks
+> converted to mutexes. It did not help with semaphores, because
+> semaphores could be held for a long time. Thus, it was good for short
+> held locks, but hurt performance on long held locks.
+
+Trouble is, I'm still seeing performance penalties even on the shortest 
+critical section possible (lock();unlock();)
+
+> If userspace is going to do this, I guess the blocked task would need to
+> go into kernel, and spin there (with preempt enabled) if the task is
+> still active and holding the lock.
+
+It is currently under preempt_disable() just like mutexes. I asked Peter 
+why it was done that way for mutexes, but didn't really get an answer. 
+He did point out that since we check need_resched() at every iteration 
+that we won't run longer than our timeslice anyway, so it shouldn't be a 
+  problem.
+
+> Then the application would need to determine which to use. An adaptive
+> spinner for short held locks, and a normal futex for long held locks.
+
+Yes, this was intended to be an optional thing (and certainly not the 
+default).
 
 
 -- 
