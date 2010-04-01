@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab0DAHnq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 03:43:46 -0400
-Received: from mail-iw0-f202.google.com ([209.85.223.202]:55560 "EHLO
-	mail-iw0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752522Ab0DAHnk convert rfc822-to-8bit (ORCPT
+	id S1754065Ab0DAHof (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 03:44:35 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47286 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522Ab0DAHo2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 03:43:40 -0400
+	Thu, 1 Apr 2010 03:44:28 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=IoOtlFPdKC/2YRs60J1T19Fyutya5o8VgUlFGqcOwE9S03KeW1JlaF7CSrbHQxXaZj
-         U8oY5TTx284/TleIr0fp0DLDzSyvwWMOyI9tN/T5pZDa5yy2Vis7T4f2715liZsKtGcZ
-         iECn7yTcqBlE91tyeFWCxx3lrtaERgSQd9yR8=
+        b=Jew67+vfWsM5cT+FoRjMIU4PNKaTdq+Tmo4B9zdhnKl0ewRJ5uIxk+Yp4iXd8GAHv9
+         4tkbZG9yQW2eMGk/2mMkY5rHuSEIrOOXIJ1IEfMWIc40t0JiKg1EeUhxDDB1HnDJLJGK
+         xV7enGWzQlQqeeNhTWrSiV6ASdqvo9aVAu8As=
 MIME-Version: 1.0
-In-Reply-To: <i2tb170af451003312236m27fbe450k6c3b955808f13247@mail.gmail.com>
-References: <alpine.DEB.2.00.1003300530150.5127@skynet.skynet.ie>
-	 <21d7e9971003300007re486f22jbd2e98fcc104ac92@mail.gmail.com>
-	 <i2tb170af451003312236m27fbe450k6c3b955808f13247@mail.gmail.com>
-Date: Thu, 1 Apr 2010 17:43:39 +1000
-Message-ID: <k2i21d7e9971004010043n6bbf8f0fv7bf2f9f2233e195d@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-From: Dave Airlie <airlied@gmail.com>
-To: =?ISO-8859-2?Q?Rafa=B3_Mi=B3ecki?= <zajec5@gmail.com>
-Cc: Dave Airlie <airlied@linux.ie>, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, dri-devel@lists.sf.net
-Content-Type: text/plain; charset=ISO-8859-2
+In-Reply-To: <alpine.DEB.2.00.1004010827500.26841@skynet.skynet.ie>
+References: <alpine.DEB.2.00.1004010827500.26841@skynet.skynet.ie>
+Date: Thu, 1 Apr 2010 09:44:26 +0200
+Message-ID: <g2ob170af451004010044k1d9b8ae2n61f444f1b162abb4@mail.gmail.com>
+Subject: Re: [git pull] drm tree
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Dave Airlie <airlied@linux.ie>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+       dri-devel@lists.sf.net
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/4/1 Rafa≥ Mi≥ecki <zajec5@gmail.com>:
-> W dniu 30 marca 2010 09:07 uøytkownik Dave Airlie <airlied@gmail.com> napisa≥:
->> 2010/3/30 Dave Airlie <airlied@linux.ie>:
->>>
->>> [re-pull request]
->>
->> Actually Linus, don't bother, consider this revoked, I'm going to kill
->> the GPU reset code
->> and re-send this tomorrow, its just a mess to get it back out of the
->> tree at this point,
+W dniu 1 kwietnia 2010 09:32 u≈ºytkownik Dave Airlie <airlied@linux.ie> napisa≈Ç:
+> a pull from nouveau + minor drm core fixes,
 >
-> Ping? Are you waiting for Jerome or something? Please do not stop
-> pulling whole stuff because Jerome is preparing some patch for last
-> moment.
->
-> I believe I'll be much better to pull most stuff ASAP to let ppl test
-> it, and later eventually ask Linus to get some one-two additional
-> small patches.
+> Lots of radeon fixes from Alex@AMD, main thing is turning off the use of
+> the hw i2c engine by default again, it was causing problems for some
+> people, we now have a module option. Lots of misc radeon fixes from Alex
+> also, along with RV7xx HDMI audio enabling fixes. No GPU reset or
+> placement patches. Hopefully this doesn't contain either an April Fools
+> joke or an Easter Egg.
 
-Rebasing out Jerome's patches and reverifying stuff works isn't
-something that takes 5 minutes. Since the rebase pretty much
-negates all the testing I'd done.
+Hey, thanks :)
 
-Dave.
+-- 
+Rafa≈Ç
