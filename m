@@ -1,97 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754502Ab0DAInU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 04:43:20 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40138 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754331Ab0DAInN (ORCPT
+	id S1754517Ab0DAIq7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 04:46:59 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60499 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754331Ab0DAIqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 04:43:13 -0400
-Date: Thu, 1 Apr 2010 10:43:11 +0200
-From: Michael Grzeschik <mgr@pengutronix.de>
-To: Mike Galbraith <efault@gmx.de>
-Cc: linux-kernel@vger.kernel.org, rsc@pengutronix.de
-Subject: Re: Issues with Patch: "sched: Improve latencies and throughput"
-Message-ID: <20100401084311.GL10342@pengutronix.de>
-References: <20100331223106.GJ10342@pengutronix.de> <1270100986.6707.156.camel@marge.simson.net>
+	Thu, 1 Apr 2010 04:46:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=EDDmW5TRhvM9LGGR0EbvPBobd+jRsWRZ460SEFcivePaCg5uNWSA+ycLG1yvYpZzs+
+         gajdfYVDGd8ShuhX5JIqi2zJAnr/3rXL2xq/MkT20E+v6SGXB0THrtJCzNBv/FL3ZJD8
+         wruS6JlZfVMwXoA9Swu79rEh/coHkZ5VsEcCA=
+Date: Thu, 1 Apr 2010 11:38:33 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [BUG] fault while using perf callchains in sparc64
+Message-ID: <20100401093831.GE5207@nowhere>
+References: <20100329222132.GB12254@nowhere> <20100329.153208.190256896.davem@davemloft.net> <20100401090608.GD5207@nowhere> <20100401.010903.05627158.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1270100986.6707.156.camel@marge.simson.net>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:25:29 up 11 days, 21:15, 30 users,  load average: 0.95, 0.77,
-	0.95
+In-Reply-To: <20100401.010903.05627158.davem@davemloft.net>
 User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: mgr@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 01, 2010 at 07:49:46AM +0200, Mike Galbraith wrote:
-> On Thu, 2010-04-01 at 00:31 +0200, Michael Grzeschik wrote:
-> > We are using an arm mx31 embedded cpu with the v2.6.34 Kernelrelease and
-> > realized some issues with the scheduling behaviour the patch "sched:
-> > Improve latencies and throughput" [1] by Mike Galbraith introduced to
-> > the kernel.
-> > 
-> > When we used the alsa utility aplay to pipe some audio through an
-> > usbaudio device and put some scheduling overhead on the device, the
-> > amount of underruns, due to the not fast enough refilled ring buffer,
-> > was noticable increased with that patch [1] applied. Until we reverse
-> > applied the patch the amount of underruns was appreciable lower.
+On Thu, Apr 01, 2010 at 01:09:03AM -0700, David Miller wrote:
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Date: Thu, 1 Apr 2010 11:06:11 +0200
 > 
-> Testcase?
+> > I actually can't. It works well on a backup 2.6.31-rc6 kernel
+> > but when I build a new one of this same version, the problem
+> > happens again. And I don't have the config of the one that works
+> > (and no /proc/config.gz as well).
+> > 
+> > So I suspect this is something that happens with some specific
+> > configs only.
+> > 
+> > Anyway, once I get more clues about this, I'll tell you.
+> 
+> I was going to ask you if any of your compiler tools changed
+> recently...
+> 
+> Check the gcc version printed by the working kernel at the top of the
+> dmesg logs and compare to what you end up using now.
 
-What we did was:
 
-# Copy some audiofile to /dev/shm
-$ cp audiofile.wav /dev/shm
+They are exactly the same :)
 
-# Play that file with aplay in background
-$ aplay /dev/shm/auduifile.wav &
+gcc version 4.3.2 (Debian 4.3.2-1.1)
 
-# Put some scheduling load on the system
-$ hackbench 6
+Really I think I need to dig further as I don't have useful
+clues to provide. I need to check if the segfault always happen
+in the same place, etc...
 
-We did use this on an MX31 from Freescale running with about 500 MHz and
-the generic usbaudio driver to play the audio throgh an C-Media USB
-audiodongle.
+It seems to happen with ld as well btw (not sure this is related
+though):
 
-Expected results with that patch:
+[ 3366.005962] ld[19041]: segfault at 10 ip 000000007010248c (rpc 00000000701023f8) sp 00000000ffda87c8 error 30001 
+in libbfd-2.18.0.20080103.so[700d8000+a0000]
 
-underrun!!! (at least 323.946 ms long) < -- aplay
-underrun!!! (at least 59.477 ms long)  < --     "
-underrun!!! (at least 194.873 ms long) < --     "
-Time: 7.048                            < -- hackbench
-Time: 6.841                            < --     "
-underrun!!! (at least 115.456 ms long) < -- aplay
-underrun!!! (at least 37.849 ms long)  < --     "
-underrun!!! (at least 588.637 ms long) < --     "
-Time: 7.23                             < -- hackbench
-
-results without the patch:
-
-Time: 3.728                            < -- hackbench
-underrun!!! (at least 58.557 ms long)  < -- aplay
-Time: 3.771                            < -- hackbench
-underrun!!! (at least 97.538 ms long)  < -- aplay
-Time: 3.732                            < -- hackbench
-Time: 3.630                            < --  ....
-Time: 3.636
-Time: 3.643
-
-Thanks,
-mgr
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
