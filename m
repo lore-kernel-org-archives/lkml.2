@@ -1,114 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316Ab0DADsA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 23:48:00 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51277 "EHLO hera.kernel.org"
+	id S1752340Ab0DAD5c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 23:57:32 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57087 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751691Ab0DADry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 23:47:54 -0400
-Message-ID: <4BB41689.9090502@kernel.org>
-Date: Wed, 31 Mar 2010 20:44:09 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S1752090Ab0DAD5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 23:57:25 -0400
+Message-ID: <4BB41988.1030400@kernel.org>
+Date: Thu, 01 Apr 2010 12:56:56 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH -v4 1/2] nobootmem, x86: Fix 32bit numa system without RAM
- on Node0
-References: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org> <4BB2EB1B.8090303@zytor.com> <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org> <4BB3C739.2020106@kernel.org> <20100331221341.GA20441@elte.hu> <4BB3C9B0.4000205@kernel.org> <20100331224108.GA11284@elte.hu> <4BB3D0F4.902@kernel.org> <4BB3DC23.50005@zytor.com> <4BB3E0CA.5060405@kernel.org> <4BB3EA55.50505@zytor.com> <4BB3FEA6.8030309@kernel.org> <ca9eedfe-479e-4ccf-9663-66afcd2bbd69@email.android.com>
-In-Reply-To: <ca9eedfe-479e-4ccf-9663-66afcd2bbd69@email.android.com>
-Content-Type: text/plain; charset=UTF-8
+To: Cong Wang <amwang@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+       Rusty Russell <rusty@rustcorp.com.au>, akpm@linux-foundation.org,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: [Patch] workqueue: move lockdep annotations up to	destroy_workqueue()
+References: <20100331105534.5601.50813.sendpatchset@localhost.localdomain> <20100331112559.GA17747@redhat.com> <4BB408AF.4080908@redhat.com>
+In-Reply-To: <4BB408AF.4080908@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 01 Apr 2010 03:56:59 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, guys.
 
+On 04/01/2010 11:45 AM, Cong Wang wrote:
+>> OK, but nobody should take cpu_maps_update_begin() under wq->lockdep_map,
+>> in particular work->func() must not.
+>>
+>> I must have missed something, but it seems to me this patch tries to
+>> supress the valid warning.
+>>
+>> Could you please clarify?
+> 
+> Sure, below is the whole warning. Please teach me how this is valid.
 
-on one system without RAM on nod0, got following dump with 32bit numa kernel
+I still have some trouble interpreting lockdep warnings.  Please
+correct me if I get something wrong.
 
-early_node_map[4] active PFN ranges
-    1: 0x00000010 -> 0x00000099
-    1: 0x00000100 -> 0x0007da00
-    1: 0x0007e800 -> 0x0007ffa0
-    1: 0x0007ffae -> 0x0007ffb0
-...
-Subtract (29 early reservations)
-  #000 [0000001000 - 0000002000]
-  #001 [0000089000 - 000008f000]
-  #002 [0000091000 - 0000093500]
-...
-  #027 [007cbfef40 - 007e800000]
-  #028 [007e9ca000 - 007ff95000]
-(0 free memory ranges)
-Initializing HighMem for node 0 (00000000:00000000)
-Initializing HighMem for node 1 (00000000:00000000)
-Memory: 0k/2096832k available (6662k kernel code, 2096300k reserved, 4829k data, 484k init, 0k highmem)
-...
-Checking if this processor honours the WP bit even in supervisor mode...Ok.
-swapper: page allocation failure. order:0, mode:0x0
-Pid: 0, comm: swapper Not tainted 2.6.34-rc3-tip-03818-g4b1ea6c-dirty #35
-Call Trace:
- [<4087a5dc>] ? printk+0xf/0x11
- [<40286728>] __alloc_pages_nodemask+0x417/0x487
- [<402a9ce1>] new_slab+0xe2/0x1fe
- [<402aa5b2>] kmem_cache_open+0x185/0x358
- [<402abbc0>] T.954+0x1c/0x60
- [<40d52a29>] kmem_cache_init+0x24/0x113
- [<40d39738>] start_kernel+0x166/0x2e4
- [<40d3940e>] ? unknown_bootoption+0x0/0x18e
- [<40d390ce>] i386_start_kernel+0xce/0xd5
-Mem-Info:
-Node 1 DMA per-cpu:
-CPU    0: hi:    0, btch:   1 usd:   0
-Node 1 Normal per-cpu:
-CPU    0: hi:    0, btch:   1 usd:   0
-active_anon:0 inactive_anon:0 isolated_anon:0
- active_file:0 inactive_file:0 isolated_file:0
- unevictable:0 dirty:0 writeback:0 unstable:0
- free:0 slab_reclaimable:0 slab_unreclaimable:0
- mapped:0 shmem:0 pagetables:0 bounce:0
+> modprobe/5264 is trying to acquire lock:
+>  ((bond_dev->name)){+.+...}, at: [<ffffffff8108524a>] cleanup_workqueue_thread+0x2b/0x10b
+>
+> but task is already holding lock:
+>  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff810631d1>] cpu_maps_update_begin+0x1e/0x27
 
-When 32bit numa is used, free_all_bootmem() will still only go over with
-node id 0.
+This (cpu hotplug -> wq) is the expected sequence.  Plug cpu
+hotplugging and then flush cpu workqueues.
 
-If node 0 doesn't have RAM installed, We need to go with node1
-because early_node_map still use 1 for all ranges, and ram from node1
-become low ram.
+> which lock already depends on the new lock.
 
-Try to use MAX_NUMNODES like 64 numa does.
+But lockdep says the other way around has already happened.
 
-Note: BOOTMEM path has the same problem.
-      this bug exist before We have NO_BOOTMEM support.
+> the existing dependency chain (in reverse order) is:
+>
+> -> #3 (cpu_add_remove_lock){+.+.+.}:
+>        [<ffffffff810a6bc1>] validate_chain+0x1019/0x1540
+>        [<ffffffff810a7e75>] __lock_acquire+0xd8d/0xe55
+>        [<ffffffff810aa3a4>] lock_acquire+0x160/0x1af
+>        [<ffffffff815523f8>] mutex_lock_nested+0x64/0x4e9
+>        [<ffffffff810631d1>] cpu_maps_update_begin+0x1e/0x27
+>        [<ffffffff810853cd>] destroy_workqueue+0x41/0x107
+>        [<ffffffffa0839d32>] bond_uninit+0x524/0x58a [bonding]
+>        [<ffffffff8146967b>] rollback_registered_many+0x205/0x2e3
+>        [<ffffffff81469783>] unregister_netdevice_many+0x2a/0x75
+>        [<ffffffff8147ada3>] __rtnl_kill_links+0x8b/0x9d
+>        [<ffffffff8147adea>] __rtnl_link_unregister+0x35/0x72
+>        [<ffffffff8147b293>] rtnl_link_unregister+0x2c/0x43
+>        [<ffffffffa0845ca6>] bonding_exit+0x5a/0x76 [bonding]
+>        [<ffffffff810b7749>] sys_delete_module+0x306/0x3b1
+>        [<ffffffff81003a5b>] system_call_fastpath+0x16/0x1b
 
--v3: add more comments, and fix bootmem path too.
--v4: seperate bootmem path fix
+This is bond_uninit() calling destroy_workqueue() but I don't get how
+this thread would be already holding wq lock.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> -> #2 (rtnl_mutex){+.+.+.}:
+>        [<ffffffff810a6bc1>] validate_chain+0x1019/0x1540
+>        [<ffffffff810a7e75>] __lock_acquire+0xd8d/0xe55
+>        [<ffffffff810aa3a4>] lock_acquire+0x160/0x1af
+>        [<ffffffff815523f8>] mutex_lock_nested+0x64/0x4e9
+>        [<ffffffff8147af16>] rtnl_lock+0x1e/0x27
+>        [<ffffffffa0836779>] bond_mii_monitor+0x39f/0x74b [bonding]
+>        [<ffffffff8108654f>] worker_thread+0x2da/0x46c
+>        [<ffffffff8108b1ea>] kthread+0xdd/0xec
+>        [<ffffffff81004894>] kernel_thread_helper+0x4/0x10
+>
+> -> #1 ((&(&bond->mii_work)->work)){+.+...}:
+>        [<ffffffff810a6bc1>] validate_chain+0x1019/0x1540
+>        [<ffffffff810a7e75>] __lock_acquire+0xd8d/0xe55
+>        [<ffffffff810aa3a4>] lock_acquire+0x160/0x1af
+>        [<ffffffff81086542>] worker_thread+0x2cd/0x46c
+>        [<ffffffff8108b1ea>] kthread+0xdd/0xec
+>        [<ffffffff81004894>] kernel_thread_helper+0x4/0x10
 
----
- mm/bootmem.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+These two are form a workqueue worker thread and I don't quite
+understand why they are here.
 
-Index: linux-2.6/mm/bootmem.c
-===================================================================
---- linux-2.6.orig/mm/bootmem.c
-+++ linux-2.6/mm/bootmem.c
-@@ -303,7 +303,14 @@ unsigned long __init free_all_bootmem_no
- unsigned long __init free_all_bootmem(void)
- {
- #ifdef CONFIG_NO_BOOTMEM
--	return free_all_memory_core_early(NODE_DATA(0)->node_id);
-+	/*
-+	 * We need to use MAX_NUMNODES instead of NODE_DATA(0)->node_id
-+	 *  because in some case like Node0 doesnt have RAM installed
-+	 *  low ram will be on Node1
-+	 * Use MAX_NUMNODES will make sure all ranges in early_node_map[]
-+	 *  will be used instead of only Node0 related
-+	 */
-+	return free_all_memory_core_early(MAX_NUMNODES);
- #else
- 	return free_all_bootmem_core(NODE_DATA(0)->bdata);
- #endif
+> -> #0 ((bond_dev->name)){+.+...}:
+>        [<ffffffff810a6696>] validate_chain+0xaee/0x1540
+>        [<ffffffff810a7e75>] __lock_acquire+0xd8d/0xe55
+>        [<ffffffff810aa3a4>] lock_acquire+0x160/0x1af
+>        [<ffffffff81085278>] cleanup_workqueue_thread+0x59/0x10b
+>        [<ffffffff81085428>] destroy_workqueue+0x9c/0x107
+>        [<ffffffffa0839d32>] bond_uninit+0x524/0x58a [bonding]
+>        [<ffffffff8146967b>] rollback_registered_many+0x205/0x2e3
+>        [<ffffffff81469783>] unregister_netdevice_many+0x2a/0x75
+>        [<ffffffff8147ada3>] __rtnl_kill_links+0x8b/0x9d
+>        [<ffffffff8147adea>] __rtnl_link_unregister+0x35/0x72
+>        [<ffffffff8147b293>] rtnl_link_unregister+0x2c/0x43
+>        [<ffffffffa0845ca6>] bonding_exit+0x5a/0x76 [bonding]
+>        [<ffffffff810b7749>] sys_delete_module+0x306/0x3b1
+>        [<ffffffff81003a5b>] system_call_fastpath+0x16/0x1b
+
+This seems to be from the original thread of frame#3.  It's grabbing
+wq lock here but the problem is that the lock will be released
+immediately, so bond_dev->name (the wq) can't be held by the time it
+reaches frame#3.  How is this dependency chain completed?  Is it
+somehow transitive through rtnl_mutex?
+
+> other info that might help us debug this:
+>
+> 2 locks held by modprobe/5264:
+>  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff8147af16>] rtnl_lock+0x1e/0x27
+>  #1:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff810631d1>] cpu_maps_update_begin+0x1e/0x27
+
+Isn't there a circular dependency here?  bonding_exit() calls
+destroy_workqueue() under rtnl_mutex but destroy_workqueue() should
+flush works which could be trying to grab rtnl_lock.  Or am I
+completely misunderstanding locking here?
+
+Thanks.
+
+-- 
+tejun
