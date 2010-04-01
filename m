@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab0DALNh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 07:13:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60755 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755165Ab0DALNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 07:13:30 -0400
-Message-ID: <4BB47FC3.1020606@redhat.com>
-Date: Thu, 01 Apr 2010 14:13:07 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1755368Ab0DALOG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 07:14:06 -0400
+Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:43769 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755165Ab0DALOB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 07:14:01 -0400
+Date: Thu, 1 Apr 2010 22:13:57 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Denys Fedorysychenko <nuclearcat@nuclearcat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: endless sync on bdi_sched_wait()? 2.6.33.1
+Message-ID: <20100401111357.GA6601@dastard>
+References: <201003311907.31342.nuclearcat@nuclearcat.com>
+ <20100331221254.GI7671@dastard>
+ <201004011342.42467.nuclearcat@nuclearcat.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, aarcange@redhat.com,
-       akpm@linux-foundation.org, Kent Overstreet <kent.overstreet@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>
-Subject: Re: [COUNTERPATCH] mm: avoid overflowing preempt_count() in mmu_take_all_locks()
-References: <1270117906.1653.139.camel@laptop> <alpine.LFD.2.00.1004011300550.32352@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1004011300550.32352@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004011342.42467.nuclearcat@nuclearcat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2010 02:04 PM, Thomas Gleixner wrote:
->>
->>> mmu_take_all_locks() takes a spinlock for each vma, which means we increase
->>> the preempt count by the number of vmas in an address space.  Since the user
->>> controls the number of vmas, they can cause preempt_count to overflow.
->>>
->>> Fix by making mmu_take_all_locks() only disable preemption once by making
->>> the spinlocks preempt-neutral.
->>>        
->> Right, so while this will get rid of the warning it doesn't make the
->> code any nicer, its still a massive !preempt latency spot.
->>      
-> I'm not sure whether this is a real well done April 1st joke or if there
-> is someone trying to secure the "bad taste patch of the month" price.
->    
+On Thu, Apr 01, 2010 at 01:42:42PM +0300, Denys Fedorysychenko wrote:
+> Thats correct, it is quite busy cache server.
+> 
+> Well, if i stop squid(cache) sync will finish enough fast.
+> If i don't - it took more than hour. Actually i left that PC after 1 hour, and 
+> it didn't finish yet. I don't think it is normal.
+> Probably sync taking new data and trying to flush it too, and till he finish 
+> that, more data comes. 
+> Actually all what i need - to sync config directory. I cannot use fsync, 
+> because it is multiple files opened before by other processes, and sync is 
+> doing trick like this. I got dead process, and only fast way to recover system 
+> - kill the cache process, so I/O pumping will stop for a while, and sync() 
+> will have chance to finish.
+> Sure there is way just to "remount" config partition to ro, but i guess just 
+> sync must flush only current buffer cache pages.
+> 
+> I will do more tests now and will give exact numbers, how much time it needs 
+> with running squid and if i kill it shortly after running sync.
 
-I don't think a spin_lock_nested_while_preempt_disabled() is worthwhile 
-for this.
+Ok. What would be interesting is regular output from /proc/meminfo
+to see how the dirty memory is changing over the time the sync is
+running....
 
-> Anyway, I don't see a reason why we can't convert those locks to
-> mutexes and get rid of the whole preempt disabled region.
->    
+Cheers,
 
-If someone is willing to audit all code paths to make sure these locks 
-are always taken in schedulable context I agree that's a better fix.
-
+Dave.
 -- 
-error compiling committee.c: too many arguments to function
-
+Dave Chinner
+david@fromorbit.com
