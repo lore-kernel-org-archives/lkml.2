@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758572Ab0DABTL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 21:19:11 -0400
-Received: from gate.crashing.org ([63.228.1.57]:46792 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758499Ab0DABTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 21:19:08 -0400
-Subject: Re: start_kernel(): bug: interrupts were enabled early
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Matthew Wilcox <matthew@wil.cx>, Yinghai Lu <yinghai@kernel.org>,
-       Rabin Vincent <rabin@rab.in>, lkml <linux-kernel@vger.kernel.org>,
-       penberg@cs.helsinki.fi, linux-arch@vger.kernel.org
-In-Reply-To: <20100331154955.54176e5e.akpm@linux-foundation.org>
-References: <20100325194100.GA2364@debian>
-	 <20100331134048.da4e35a7.akpm@linux-foundation.org>
-	 <4BB3B4DB.7040904@kernel.org> <20100331210145.GB32165@parisc-linux.org>
-	 <4BB3B8FC.1020608@zytor.com> <20100331211754.GC32165@parisc-linux.org>
-	 <alpine.DEB.2.00.1003311640410.30456@router.home>
-	 <20100331215411.GB17715@flint.arm.linux.org.uk>
-	 <4BB3C540.9000405@zytor.com> <1270075071.7101.79.camel@pasglop>
-	 <20100331154955.54176e5e.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Apr 2010 12:17:11 +1100
-Message-ID: <1270084631.7101.81.camel@pasglop>
+	id S1758563Ab0DABXG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 21:23:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:53240 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758474Ab0DABXF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 21:23:05 -0400
+X-Authority-Analysis: v=1.1 cv=W8jVbnnOFeMnsvu+vJfVVAGaiNyfzTaRLlU2b8ifu+8= c=1 sm=0 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=sWLtxSyDz3GxUzZ78asA:9 a=vVWEVvZEbgN-5ghdzGgA:7 a=QMAUNiPzLjmkOl2P2_mdWs0QeKwA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: lockup in rb_get_reader_page
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Jiaying Zhang <jiayingz@google.com>
+Cc: Steven Rostedt <srostedt@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <p2t5df78e1d1003311814q1f270e41o4ebdc1f48659c034@mail.gmail.com>
+References: <m2u5df78e1d1003301627ya1f621f7qaf0ad099f62d787e@mail.gmail.com>
+	 <1269995724.22564.58.camel@localhost.localdomain>
+	 <q2o5df78e1d1003302101q585143aan32e8872fcdb05c8a@mail.gmail.com>
+	 <1270081707.19685.8095.camel@gandalf.stny.rr.com>
+	 <p2t5df78e1d1003311814q1f270e41o4ebdc1f48659c034@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Wed, 31 Mar 2010 21:23:02 -0400
+Message-ID: <1270084982.19685.8151.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-31 at 15:49 -0700, Andrew Morton wrote:
-> 
-> But these things are all utterly gross.  The bottom line is that
-> radix_tree_init() is manifestly unsuited to being called with local
-> interrupts disabled.  773e3eb7b81e5ba13b5155dfb3bb75b8ce37f8f9 was
-> just a wrong patch. 
+On Wed, 2010-03-31 at 18:14 -0700, Jiaying Zhang wrote:
+> On Wed, Mar 31, 2010 at 5:28 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >
+> > Are you doing reads from interrupt context?
+> >
+> No. We are using a user-space reader that reads ring buffer via syscall
+> or ioctl. But even though we don't read from interrupt context, as I
+> understand, we can still have a reader on another cpuB reads cpuA's
+> buffer when the writer on cpuA moves the head page. Will we have
+> any problem in that case?
 
-Except that powerpc (and now it seems x86) both want to use radix trees
-for interrupt handling... At least on powerpc, we trick and use a linear
-search until the radix trees are initialized, which we do later during
-boot, but that somewhat sucks.
+Nope, unless that write hangs for some reason ;-)
 
-I believe sherry picking things like not calling radix_tree_init() is
-going to fix one case today, until we have another one, and another one,
-and etc...
+The read may spin waiting for a writer to finish, hence it just can not
+preempt a writer in an interrupt context, because then it may spin
+forever, because it is blocking the writer. But if a writer is on
+another CPU, then all is well. In fact, the ring buffer was designed
+with that in mind.
 
-I suspect we're better off fixing the root of the problem in down/up.
-
-Cheers,
-Ben.
-
+-- Steve
 
