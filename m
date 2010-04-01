@@ -1,101 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab0DAH6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 03:58:46 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:39194 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796Ab0DAH6l (ORCPT
+	id S1754150Ab0DAIGi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 04:06:38 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:45590 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754129Ab0DAIGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 03:58:41 -0400
-Date: Thu, 1 Apr 2010 13:28:24 +0530
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       Ingo Molnar <mingo@redhat.com>, Venkatesh Pallipadi <venki@google.com>,
-       Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, ego@in.ibm.com
-Subject: [patch repost] sched: Fix group_capacity for
- sched_smt_powersavings=1
-Message-ID: <20100401075824.GU5300@dirshya.in.ibm.com>
-Reply-To: svaidy@linux.vnet.ibm.com
+	Thu, 1 Apr 2010 04:06:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=MAbdZZuoJHk/ClwoWpVo0t2fazUYE3sPkS5O1qDfaKMLdFgb2lCpB0jsZDvEoBC+Sj
+         iuFozrENiM2yOMB3OFPEC/tdyGKo1BMrCdL3Uy1TcQ34kUaBc4TK6Ifhqzeih9ABMvkl
+         2wjoFEmKqm9A5cerKNfqEqXrbpl6hqTDZfYKw=
+Date: Thu, 1 Apr 2010 11:06:11 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [BUG] fault while using perf callchains in sparc64
+Message-ID: <20100401090608.GD5207@nowhere>
+References: <20100329212839.GA12254@nowhere> <20100329.150253.11262563.davem@davemloft.net> <20100329222132.GB12254@nowhere> <20100329.153208.190256896.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100329.153208.190256896.davem@davemloft.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Mon, Mar 29, 2010 at 03:32:08PM -0700, David Miller wrote:
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Date: Tue, 30 Mar 2010 00:21:34 +0200
+> 
+> > $ ldd /usr/bin/as
+> > 	libopcodes-2.18.0.20080103.so => /usr/lib/libopcodes-2.18.0.20080103.so (0xf7ec4000)
+> > 	libbfd-2.18.0.20080103.so => /usr/lib/libbfd-2.18.0.20080103.so (0xf7e14000)
+> > 	libc.so.6 => /lib/libc.so.6 (0xf7ca0000)
+> > 	/lib/ld-linux.so.2 (0xf7efc000)
+> 
+> Ok, same here.
+> 
+> > The last kernel I know that don't have such problems is 2.6.31-rc6
+> > May be I should bisect?
+> 
+> Hmmm, since you know a good and bad point, yes a bisect
+> might be the best way to proceed here.
+> 
+> It might be quicker if you first test 2.6.32 and 2.6.33
+> and then use the results of that to guide your bisect.
+> 
+> Anyways, if you narrow it down to a commit I should be
+> able to fix this quickly.
+> 
+> Thanks!
 
-This is repost of the same patch http://lkml.org/lkml/2010/3/22/275
-(and http://lkml.org/lkml/2010/3/2/216)
 
-After applying Suresh's fixes from discussion thread
-http://lkml.org/lkml/2010/2/12/352, we still need the attached patch
-to restore sched_smt_powersavings=1 functionality where tasks prefer
-sibling threads and keep more cores idle.
+I actually can't. It works well on a backup 2.6.31-rc6 kernel
+but when I build a new one of this same version, the problem
+happens again. And I don't have the config of the one that works
+(and no /proc/config.gz as well).
 
-Please apply to sched-tip, the patch is rebased and tested on today's
-sched-tip master.
+So I suspect this is something that happens with some specific
+configs only.
 
-The attached patch will run 4 while(1) loops in two cores when
-sched_smt_power_savings=1.  Tested on two socket, quad core, hyper
-threaded system.
+Anyway, once I get more clues about this, I'll tell you.
 
-Additional testing was done on POWER platform where
-sched_smt_powersavings was able to consolidate tasks on sibling
-threads leaving more idle cores.
+Thanks.
 
-Thanks,
-Vaidy
----
-        sched: Fix group_capacity for sched_smt_powersavings=1
-
-        sched_smt_powersavings for threaded systems need this fix for
-        consolidation to sibling threads to work.  Since threads have 
-        fractional capacity, group_capacity will turn out to be one 
-        always and not accommodate another task in the sibling thread.
-        
-        This fix makes group_capacity a function of cpumask_weight that
-        will enable the power saving load balancer to pack tasks among
-        sibling threads and keep more cores idle.
-
-Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 5a5ea2c..7c0a29a 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -2538,6 +2538,21 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
- 		 */
- 		if (prefer_sibling)
- 			sgs.group_capacity = min(sgs.group_capacity, 1UL);
-+		/*
-+		 * If power savings balance is set at this domain, then
-+		 * make capacity equal to number of hardware threads to
-+		 * accommodate more tasks until capacity is reached.
-+		 */
-+		else if (sd->flags & SD_POWERSAVINGS_BALANCE)
-+			sgs.group_capacity =
-+				cpumask_weight(sched_group_cpus(group));
-+
-+			/*
-+			 * The default group_capacity is rounded from sum of
-+			 * fractional cpu_powers of sibling hardware threads
-+			 * in order to enable fair use of available hardware
-+			 * resources.
-+			 */
- 
- 		if (local_group) {
- 			sds->this_load = sgs.avg_load;
-@@ -2863,7 +2878,8 @@ static int need_active_balance(struct sched_domain *sd, int sd_idle, int idle)
- 		    !test_sd_parent(sd, SD_POWERSAVINGS_BALANCE))
- 			return 0;
- 
--		if (sched_mc_power_savings < POWERSAVINGS_BALANCE_WAKEUP)
-+		if (sched_mc_power_savings < POWERSAVINGS_BALANCE_WAKEUP &&
-+		    sched_smt_power_savings < POWERSAVINGS_BALANCE_WAKEUP)
- 			return 0;
- 	}
- 
