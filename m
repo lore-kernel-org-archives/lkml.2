@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab0DALjr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 07:39:47 -0400
-Received: from hp3.statik.tu-cottbus.de ([141.43.120.68]:44863 "EHLO
-	hp3.statik.tu-cottbus.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755500Ab0DALjj (ORCPT
+	id S1755521Ab0DALle (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 07:41:34 -0400
+Received: from mailgate02.web.de ([217.72.192.252]:48987 "EHLO
+	mailgate02.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754713Ab0DALl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 07:39:39 -0400
-Message-ID: <4BB485ED.80806@s5r6.in-berlin.de>
-Date: Thu, 01 Apr 2010 13:39:25 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.8.1.23) Gecko/20090825 SeaMonkey/1.1.18
+	Thu, 1 Apr 2010 07:41:28 -0400
+X-Greylist: delayed 1383 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Apr 2010 07:41:28 EDT
+Date: Thu, 1 Apr 2010 13:18:26 +0200 (CEST)
+From: maxmax2010@web.de
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, w.sang@pengutronix.de, ryan@bluewatersys.com,
+       hverkuil@xs4all.nl, cbouatmailru@gmail.com, khali@linux-fr.org
+Message-ID: <9945954.711270120706653.JavaMail.fmail@mobilprefe03>
+Subject: Aw: [PATCH] power/ds2782: fix clientdata on removal
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Alexey Dobriyan <adobriyan@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 6/6] procfs: Kill the bkl in ioctl
-References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <b6fcc0a1003292338yafeb3d3k37fb3fa79af5340c@mail.gmail.com> <20100330070733.GC22419@nowhere> <201003301233.40461.arnd@arndb.de> <20100331172208.GB5163@nowhere>
-In-Reply-To: <20100331172208.GB5163@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-15"
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V01U2FsdGVkX1/I2P6gLQFVAadVH8z3aS14Esu8ZWPst8SakN5a+uxHIFH19kYcs98n
+ bWA3alNukZ9xXYXy+sj2jJnj83r5d/xhQQ+urrr4vjjUOWVOL+R3K7h/+pdaxdYX
+ 5kFJLT5ng2Ms5cCK+Ry5pbczhEKdrHgFVvPfV/hUHa73+tGt9HF/LHsWVdxNKAkl
+ 0El6MPMbS+2v5ks2vA2/H91jPos3f/xxRULbmIVFoXzu0l+OJIzgKzd42dQVIOf2
+ ZjbpUL0+L+vFLMwxMnh93yLs16MROfjyenjzKrPIzD4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frederic Weisbecker wrote:
-> On Tue, Mar 30, 2010 at 11:33:40AM +0100, Arnd Bergmann wrote:
->> I believe we can actually remove ioctl from file_operations. The patch I did
->> to convert all users to ".unlocked_ioctl = default_ioctl," should really catch
->> all cases, and I think we can enforce this by renaming fops->ioctl to locked_ioctl
->> or old_ioctl to make sure we didn't miss any, and then mandate that this one
->> is only used when unlocked_ioctl is set to default_ioctl.
-> 
-> 
-> I just looked at the patch in question and noted that the changelog
-> is pretty high, but how could it be else.
-> Actually it's not that large, but highly spread:
-> 
-[Documentation/ arch/, drivers/, drivers/, and more drivers/, fs/,
-include/, lib/, net/, sound/, virt/]
->  157 files changed, 372 insertions(+), 80 deletions(-)
-> 
-> 
-> I wonder if we should actually just turn all these into unlocked_ioctl
-> directly. And then bring a warn on ioctl, and finally schedule the removal
-> of this callback.
+Testamtwort
 
-A side note:  A considerable portion of this particular commit in Arnd's
-git actually does not deal with .ioctl->.unlocked_ioctl at all, but
-purely with .llseek.  Many(?) of these changes deal with .ioctl and
-.llseek together.  (Arnd also says so in the last paragraph of his
-changelog.)
 
-IOW there are less .ioctl implementations left than one could think from
-a look at the diffstat.
--- 
-Stefan Richter
--=====-==-=- -=-- ----=
-http://arcgraph.de/sr/
+-----Ursprüngliche Nachricht-----
+Von: maxmax2010@web.de
+Gesendet: 01.04.2010 12:27:44
+An: linux-i2c@vger.kernel.org
+Betreff: [PATCH] power/ds2782: fix clientdata on removal
+
+>Probably due to a copy & paste bug, clientdata was set again to the data
+>structure (which is freed immediately afterwards) when it should be
+>NULLed. Just remove the calls as the i2c-core does this automatically
+>now.
+>
+>Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+>Cc: Ryan Mallon <ryan@bluewatersys.com>
+>Cc: Hans Verkuil <hverkuil@xs4all.nl>
+>Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+>Cc: Jean Delvare <khali@linux-fr.org>
+>---
+>
+>Anton: If it is okay with you, I think this should go via the I2C-tree to
+>ensure it comes after the needed modification of the i2c-core.
+>
+> drivers/power/ds2782_battery.c |    3 ---
+> 1 files changed, 0 insertions(+), 3 deletions(-)
+>
+>diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
+>index da14f37..305d463 100644
+>--- a/drivers/power/ds2782_battery.c
+>+++ b/drivers/power/ds2782_battery.c
+>@@ -236,8 +236,6 @@ static int ds2782_battery_remove(struct i2c_client *client)
+> 	idr_remove(&battery_id, info->id);
+> 	mutex_unlock(&battery_lock);
+> 
+>-	i2c_set_clientdata(client, info);
+>-
+> 	kfree(info);
+> 	return 0;
+> }
+>@@ -289,7 +287,6 @@ static int ds2782_battery_probe(struct i2c_client *client,
+> fail_register:
+> 	kfree(info->battery.name);
+> fail_name:
+>-	i2c_set_clientdata(client, info);
+> 	kfree(info);
+> fail_info:
+> 	mutex_lock(&battery_lock);
+>-- 
+>1.7.0
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>Please read the FAQ at  http://www.tux.org/lkml/
