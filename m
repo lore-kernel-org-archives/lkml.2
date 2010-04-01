@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410Ab0DANbB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 09:31:01 -0400
+	id S1752757Ab0DANbN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 09:31:13 -0400
 Received: from mx1.redhat.com ([209.132.183.28]:4030 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751744Ab0DANav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 09:30:51 -0400
-Date: Thu, 1 Apr 2010 08:56:48 -0400
-From: Neil Horman <nhorman@redhat.com>
-To: Chris Wright <chrisw@sous-sol.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-       joerg.roedel@amd.com, kexec@lists.infradead.org,
-       linux-kernel@vger.kernel.org, hbabu@us.ibm.com,
-       iommu@lists.linux-foundation.org
-Subject: Re: [PATCH] amd iommu: force flush of iommu prior during shutdown
-Message-ID: <20100401125648.GB13603@shamino.rdu.redhat.com>
-References: <20100331152417.GB13406@hmsreliant.think-freely.org>
- <20100331212535.GR29241@sequoia.sous-sol.org>
- <20100401024421.GA5877@redhat.com>
- <20100401071040.GU29241@sequoia.sous-sol.org>
+	id S1752018Ab0DANaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 09:30:55 -0400
+Date: Thu, 1 Apr 2010 15:13:21 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Rientjes <rientjes@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Cc: anfei <anfei.zhou@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH 0/1] oom: fix the unsafe usage of badness() in
+	proc_oom_score()
+Message-ID: <20100401131321.GA11291@redhat.com>
+References: <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330163909.GA16884@redhat.com> <alpine.DEB.2.00.1003301331110.5234@chino.kir.corp.google.com> <20100331091628.GA11438@redhat.com> <20100331201746.GC11635@redhat.com> <alpine.DEB.2.00.1004010029260.6285@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100401071040.GU29241@sequoia.sous-sol.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <alpine.DEB.2.00.1004010029260.6285@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 01, 2010 at 12:10:40AM -0700, Chris Wright wrote:
-> * Vivek Goyal (vgoyal@redhat.com) wrote:
-> > On Wed, Mar 31, 2010 at 02:25:35PM -0700, Chris Wright wrote:
-> > > * Neil Horman (nhorman@tuxdriver.com) wrote:
-> > > > Flush iommu during shutdown
-> > > > 
-> > > > When using an iommu, its possible, if a kdump kernel boot follows a primary
-> > > > kernel crash, that dma operations might still be in flight from the previous
-> > > > kernel during the kdump kernel boot.  This can lead to memory corruption,
-> > > > crashes, and other erroneous behavior, specifically I've seen it manifest during
-> > > > a kdump boot as endless iommu error log entries of the form:
-> > > > AMD-Vi: Event logged [IO_PAGE_FAULT device=00:14.1 domain=0x000d
-> > > > address=0x000000000245a0c0 flags=0x0070]
-> > > 
-> > > We've already fixed this problem once before, so some code shift must
-> > > have brought it back.  Personally, I prefer to do this on the bringup
-> > > path than the teardown path.  Besides keeping the teardown path as
-> > > simple as possible (goal is to get to kdump kernel asap), there's also
-> > > reason to competely flush on startup in genernal in case BIOS has done
-> > > anything unsavory.
-> > 
-> > Can we flush domains (all the I/O TLBs assciated with each domain), during
-> > initialization? I think all the domain data built by previous kernel will
-> > be lost and new kernel will have no idea about. 
-> 
-> We first invalidate the device table entry, so new translation requests
-> will see the new domainid for a given BDF.  Then we invalidate the
-> whole set of page tables associated w/ the new domainid.  Now all dma
-> transactions will need page table walk (page tables will be empty excpet
-> for any 1:1 mappings).  Any old domainid's from previous kernel that
-> aren't found in new device table entries are effectively moot.  Just so
-> happens that in kexec/kdump case, they'll be the same domainid's, but
-> that doesn't matter.
-> 
-> thanks,
-> -chris
-> 
-Additionally chris (this is just for my own education here), what happens when
-we disable the iommu while dma's are in flight?  I ask because from what I read,
-my assumption is that the iommu effectively enters a passive mode where bus
-accesses from devices holding dma addresses that were previously provided by an
-iommu translation will just get strobed onto the bus without being translated
-back to physical addresses.  Won't that result in bus errors causing master
-aborts?  If so, it would seem that it would be further cause to leave the iommu
-on during a crash/kdump boot.
+On 04/01, David Rientjes wrote:
+>
+> On Wed, 31 Mar 2010, Oleg Nesterov wrote:
+>
+> > But. Oh well. David, oom-badness-heuristic-rewrite.patch changed badness()
+> > to consult p->signal->oom_score_adj. Until recently this was wrong when it
+> > is called from proc_oom_score().
+> >
+> > This means oom-badness-heuristic-rewrite.patch depends on
+> > signals-make-task_struct-signal-immutable-refcountable.patch, or we
+> > need the pid_alive() check again.
+> >
+>
+> oom-badness-heuristic-rewrite.patch didn't change anything, Linus' tree
+> currently dereferences p->signal->oom_adj
 
-Neil
+Yes, I wrongly blaimed oom-badness-heuristic-rewrite.patch, vanilla does
+the same.
 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+Now this is really bad, and I am resending my patch.
+
+David, Andrew, I understand it (textually) conflicts with
+oom-badness-heuristic-rewrite.patch, but this bug should be fixed imho
+before other changes. I hope it will be easy to fixup this chunk
+
+	@@ -447,7 +447,13 @@ static int proc_oom_score(struct task_st
+
+		do_posix_clock_monotonic_gettime(&uptime);
+		read_lock(&tasklist_lock);
+	-       points = badness(task->group_leader, uptime.tv_sec);
+	+       points = oom_badness(task->group_leader,
+
+in that patch.
+
+> >  	do_posix_clock_monotonic_gettime(&uptime);
+> >  	read_lock(&tasklist_lock);
+> > -	points = oom_badness(task->group_leader,
+> > +	if (pid_alive(task))
+> > +		points = oom_badness(task,
+> >  				global_page_state(NR_INACTIVE_ANON) +
+> >  				global_page_state(NR_ACTIVE_ANON) +
+> >  				global_page_state(NR_INACTIVE_FILE) +
+>
+> This should be protected by the get_proc_task() on the inode before
+> this function is called from proc_info_read().
+
+No, get_proc_task() shouldn't (and can't) do this. To clarify,
+get_proc_task() does check the task wasn't unhashed, but nothing can
+prevent from release_task() after that. Once again, only task_struct
+itself is protected by get_task_struct(), nothing more.
+
+Oleg.
+
