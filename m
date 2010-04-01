@@ -1,98 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab0DALhz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 07:37:55 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:46474 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754684Ab0DALhr (ORCPT
+	id S1755532Ab0DALjr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 07:39:47 -0400
+Received: from hp3.statik.tu-cottbus.de ([141.43.120.68]:44863 "EHLO
+	hp3.statik.tu-cottbus.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755500Ab0DALjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 07:37:47 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
-Message-ID: <4BB4855E.7030509@jp.fujitsu.com>
-Date: Thu, 01 Apr 2010 20:37:02 +0900
-From: Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.23 (Windows/20090812)
+	Thu, 1 Apr 2010 07:39:39 -0400
+Message-ID: <4BB485ED.80806@s5r6.in-berlin.de>
+Date: Thu, 01 Apr 2010 13:39:25 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.8.1.23) Gecko/20090825 SeaMonkey/1.1.18
 MIME-Version: 1.0
-To: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>,
-       lkml <linux-kernel@vger.kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-       Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>
-Subject: [PATCH 0/2 v4] scsi: ftrace based scsi tracer
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Alexey Dobriyan <adobriyan@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 6/6] procfs: Kill the bkl in ioctl
+References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <b6fcc0a1003292338yafeb3d3k37fb3fa79af5340c@mail.gmail.com> <20100330070733.GC22419@nowhere> <201003301233.40461.arnd@arndb.de> <20100331172208.GB5163@nowhere>
+In-Reply-To: <20100331172208.GB5163@nowhere>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Frederic Weisbecker wrote:
+> On Tue, Mar 30, 2010 at 11:33:40AM +0100, Arnd Bergmann wrote:
+>> I believe we can actually remove ioctl from file_operations. The patch I did
+>> to convert all users to ".unlocked_ioctl = default_ioctl," should really catch
+>> all cases, and I think we can enforce this by renaming fops->ioctl to locked_ioctl
+>> or old_ioctl to make sure we didn't miss any, and then mandate that this one
+>> is only used when unlocked_ioctl is set to default_ioctl.
+> 
+> 
+> I just looked at the patch in question and noted that the changelog
+> is pretty high, but how could it be else.
+> Actually it's not that large, but highly spread:
+> 
+[Documentation/ arch/, drivers/, drivers/, and more drivers/, fs/,
+include/, lib/, net/, sound/, virt/]
+>  157 files changed, 372 insertions(+), 80 deletions(-)
+> 
+> 
+> I wonder if we should actually just turn all these into unlocked_ioctl
+> directly. And then bring a warn on ioctl, and finally schedule the removal
+> of this callback.
 
-This is v4 patch series of SCSI trace.  Only a cosmetic change
-from v3.
+A side note:  A considerable portion of this particular commit in Arnd's
+git actually does not deal with .ioctl->.unlocked_ioctl at all, but
+purely with .llseek.  Many(?) of these changes deal with .ioctl and
+.llseek together.  (Arnd also says so in the last paragraph of his
+changelog.)
 
-Because it's been a while since the first posting, I'll put brief
-descriptions of the patchset.
-
-  Basically, this is a ftrace based SCSI tracer.  It prints the
-  following information for scsi-3 commands.
-
-    o scsi bus number ("host")
-    o scsi channel number ("channel")
-    o scsi id ("id")
-    o LUN ("lun")
-    o command info
-      - op name (ex. "WRITE_10")
-      - LBA ("lba") (for certain commands only)
-      - transfer length ("txlen") (for certain commands only)
-      - CDB (ex. "raw=28 00 03 60 a2 cb 00 00 08 00")
-    o result of the command
-      (ex. "result=(driver=DRIVER_OK host=DID_OK
-message=COMMAND_COMPLETE status=SAM_STAT_GOOD")
-
-  Those information are printed either at a time:
-
-    o when a command is to be dispatched,
-    o when a command dispatched returns in error,
-    o when a command is done,
-    o when an error handler is to waken up, or
-    o when timeout of a command is deteced.
-
-  To use it quickly, try these steps:
-
-    1) Build a kernel with the patchset applied
-       (ftrace related kernel configs need to be enabled.)
-    2) Boot the kernel
-    3) Mount debugfs
-       ex. mount -t debugfs none /sys/kernel/debug/
-    4) Indicate events to trace
-       ex. echo "scsi:*" > /sys/kernel/debug/tracing/set_event
-    5) Make some I/Os on your scsi devices
-       ex. ls
-    6) Retrieve trace log
-       ex. cat /sys/kernel/debug/tracing/trace
-
-  Here is an outputs example:
-
-    # tracer: nop
-    #
-    #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
-    #              | |       |          |         |
-           flush-8:0-3746  [001]  1374.517152:
-scsi_dispatch_cmd_start: host_no=0 channel=0 id=0 lun=0
-cmnd=(WRITE_10 lba=32267539 txlen=8 raw=2a 00 01 ec 5d 13 00 00
-08 00)
-              <idle>-0     [000]  1374.524964:
-scsi_dispatch_cmd_done: host_no=0 channel=0 id=0 lun=0
-cmnd=(WRITE_10 lba=32267539 txlen=8 raw=2a 00 01 ec 5d 13 00 00
-08 00) result=(driver=DRIVER_OK host=DID_OK
-message=COMMAND_COMPLETE status=SAM_STAT_GOOD)
-
-This patchset applies to 2.6.34-rc3.
-
-Thanks,
-Kei
-
+IOW there are less .ioctl implementations left than one could think from
+a look at the diffstat.
+-- 
+Stefan Richter
+-=====-==-=- -=-- ----=
+http://arcgraph.de/sr/
