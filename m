@@ -1,87 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758934Ab0DAUpv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 16:45:51 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:50369 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752731Ab0DAUpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 16:45:46 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alex Deucher <alexdeucher@gmail.com>
-Subject: Re: [Regression, post-rc2] Commit a5ee4eb7541 breaks OpenGL on RS780 (was: Re: Linux 2.6.34-rc3)
-Date: Thu, 1 Apr 2010 22:48:38 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Clemens Ladisch <clemens@ladisch.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Linux PCI <linux-pci@vger.kernel.org>, Greg KH <gregkh@suse.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       dri-devel@lists.sourceforge.net, stable@kernel.org,
-       Dave Airlie <airlied@gmail.com>
-References: <alpine.LFD.2.00.1003301029250.3707@i5.linux-foundation.org> <201004012228.06938.rjw@sisk.pl> <g2ka728f9f91004011339o49bfe665od525acc1464cbdb@mail.gmail.com>
-In-Reply-To: <g2ka728f9f91004011339o49bfe665od525acc1464cbdb@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1758938Ab0DAUsV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 16:48:21 -0400
+Received: from smtp1.rdslink.ro ([81.196.12.70]:47308 "EHLO smtp.rdslink.ro"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750968Ab0DAUsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 16:48:19 -0400
+X-Mail-Scanner: Scanned by qSheff-II-2.1-r3 (http://www.enderunix.org/qsheff/)
+Subject: [PATCH 9/9] Staging: rtl8187se: fixed checkpatch.pl warnings and
+ errors in r8180_rtl8225z2.c
+From: Olimpiu Pascariu <olimpiu.pascariu@gmail.com>
+To: gregkh@suse.de, bzolnier@gmail.com, Larry.Finger@lwfinger.net,
+       bernhard@schiffner-limbach.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Thu, 01 Apr 2010 23:48:14 +0300
+Message-ID: <1270154894.7996.5.camel@tuxtm-linux>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004012248.38794.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 April 2010, Alex Deucher wrote:
-> On Thu, Apr 1, 2010 at 4:28 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Thursday 01 April 2010, Alex Deucher wrote:
-> >> On Thu, Apr 1, 2010 at 2:36 AM, Clemens Ladisch <clemens@ladisch.de> wrote:
-> >> > Alex Deucher wrote:
-> >> >> On Wed, Mar 31, 2010 at 9:13 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> >>> On Tuesday 30 March 2010, Rafael J. Wysocki wrote:
-> >> >>>> >       PCI quirk: RS780/RS880: work around missing MSI initialization
-> >> >>>>
-> >> >>>> This one (commit a5ee4eb7541) broke OpenGL acceleration on my new test box
-> >> >>>> which happens to have a RS780.
-> >> >
-> >> > So it's better to disable MSI unconditionally.
-> >> >
-> >> > Rafael, can you check if MSI works for the HDMI audio device?
-> >> > (I'd guess it doesn't.)
-> >> >
-> >> >> I also have the attached patch queued in via Dave's tree to disable
-> >> >> MSI on all IGP chips for the time being.
-> >> >
-> >> > This disables MSI only for the graphics device.  I'd prefer to have
-> >> > the quirk on its bridge so that MSI gets disabled for the HDMI audio
-> >> > device too, to avoid having to duplicate this quirk in the snd-hda-intel
-> >> > driver.
-> >> >
-> >> > ==========
-> >> >
-> >> > PCI quirk: RS780/RS880: disable MSI completely
-> >> >
-> >> > The missing initialization of the nb_cntl.strap_msi_enable does not seem
-> >> > to be the only problem that prevents MSI, so that quirk is not
-> >> > sufficient to enable MSI on all machines.  To be safe, unconditionally
-> >> > disable MSI for the internal graphics and HDMI audio on these chipsets.
-> >> >
-> >> > Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-> >>
-> >> Works fine here.
-> >>
-> >> Tested-by: Alex Deucher <alexdeucher@gmail.com>
-> >
-> > Unfortunately it doesn't work for me without the
-> >
-> > if ((rdev->family >= CHIP_RV380) &&
-> >            (!(rdev->flags & RADEON_IS_IGP)))
-> >
-> > radeon quirk.
-> 
-> what are your pci ids?
+>From 4c8c7092988f8d692a606f10d334a83fcc213657 Mon Sep 17 00:00:00 2001
+From: Olimpiu Pascariu <olimpiu.pascariu@gmail.com>
+Date: Thu, 1 Apr 2010 23:37:13 +0300
+Subject: [PATCH 9/9] Staging: rtl8187se: fixed checkpatch.pl warnings and errors in r8180_rtl8225z2.c
+ This is a patch to the r8180_rtl8225z2.c file that fixes up errors and warnings found by the checkpatch.pl tool
+ Signed-off-by: Olimpiu Pascariu <olimpiu.pascariu@gmail.com>
 
-1022:960b
+---
+ drivers/staging/rtl8187se/r8180_rtl8225z2.c |  129 ++++++++++++++++-----------
+ 1 files changed, 78 insertions(+), 51 deletions(-)
 
-I guess 1022 is AMD.
+diff --git a/drivers/staging/rtl8187se/r8180_rtl8225z2.c b/drivers/staging/rtl8187se/r8180_rtl8225z2.c
+index 6edf5a4..2a2afd5 100644
+--- a/drivers/staging/rtl8187se/r8180_rtl8225z2.c
++++ b/drivers/staging/rtl8187se/r8180_rtl8225z2.c
+@@ -1,14 +1,13 @@
+ /*
+-  This is part of the rtl8180-sa2400 driver
+-  released under the GPL (See file COPYING for details).
+-  Copyright (c) 2005 Andrea Merello <andreamrl@tiscali.it>
+-
+-  This files contains programming code for the rtl8225
+-  radio frontend.
+-
+-  *Many* thanks to Realtek Corp. for their great support!
+-
+-*/
++ * This is part of the rtl8180-sa2400 driver
++ * released under the GPL (See file COPYING for details).
++ * Copyright (c) 2005 Andrea Merello <andreamrl@tiscali.it>
++ *
++ * This files contains programming code for the rtl8225
++ * radio frontend.
++ *
++ * *Many* thanks to Realtek Corp. for their great support!
++ */
+ 
+ #include "r8180_hw.h"
+ #include "r8180_rtl8225.h"
+@@ -225,7 +224,7 @@ static void rtl8225_SetTXPowerLevel(struct net_device *dev, short ch)
+ }
+ 
+ static const u8 rtl8225z2_threshold[] = {
+-        0x8d, 0x8d, 0x8d, 0x8d, 0x9d, 0xad, 0xbd,
++	0x8d, 0x8d, 0x8d, 0x8d, 0x9d, 0xad, 0xbd,
+ };
+ 
+ static const u8 rtl8225z2_gain_bg[] = {
+@@ -307,7 +306,7 @@ static u32 read_rtl8225(struct net_device *dev, u8 adr)
+ 	u32 data2Write = ((u32)(adr & 0x1f)) << 27;
+ 	u32 dataRead;
+ 	u32 mask;
+-	u16 oval,oval2,oval3,tmp;
++	u16 oval, oval2, oval3, tmp;
+ 	int i;
+ 	short bit, rw;
+ 	u8 wLength = 6;
+@@ -325,9 +324,11 @@ static u32 read_rtl8225(struct net_device *dev, u8 adr)
+ 
+ 	oval &= ~0xf;
+ 
+-	write_nic_word(dev, RFPinsOutput, oval | BB_HOST_BANG_EN ); udelay(4);
++	write_nic_word(dev, RFPinsOutput, oval | BB_HOST_BANG_EN);
++	udelay(4);
+ 
+-	write_nic_word(dev, RFPinsOutput, oval ); udelay(5);
++	write_nic_word(dev, RFPinsOutput, oval);
++	udelay(5);
+ 
+ 	rw = 0;
+ 
+@@ -335,31 +336,45 @@ static u32 read_rtl8225(struct net_device *dev, u8 adr)
+ 
+ 	for (i = 0; i < wLength/2; i++) {
+ 		bit = ((data2Write&mask) != 0) ? 1 : 0;
+-		write_nic_word(dev, RFPinsOutput, bit|oval | rw); udelay(1);
++		write_nic_word(dev, RFPinsOutput, bit | oval | rw);
++		udelay(1);
+ 
+-		write_nic_word(dev, RFPinsOutput, bit|oval | BB_HOST_BANG_CLK | rw); udelay(2);
+-		write_nic_word(dev, RFPinsOutput, bit|oval | BB_HOST_BANG_CLK | rw); udelay(2);
++		write_nic_word(dev, RFPinsOutput,
++				bit | oval | BB_HOST_BANG_CLK | rw);
++		udelay(2);
++		write_nic_word(dev, RFPinsOutput,
++				bit | oval | BB_HOST_BANG_CLK | rw);
++		udelay(2);
+ 
+-		mask = (low2high) ? (mask<<1): (mask>>1);
++		mask = (low2high) ? (mask<<1) : (mask>>1);
+ 
+ 		if (i == 2) {
+ 			rw = BB_HOST_BANG_RW;
+-			write_nic_word(dev, RFPinsOutput, bit|oval | BB_HOST_BANG_CLK | rw); udelay(2);
+-			write_nic_word(dev, RFPinsOutput, bit|oval | rw); udelay(2);
++			write_nic_word(dev, RFPinsOutput,
++					bit | oval | BB_HOST_BANG_CLK | rw);
++			udelay(2);
++			write_nic_word(dev, RFPinsOutput, bit | oval | rw);
++			udelay(2);
+ 			break;
+ 		}
+ 
+-		bit = ((data2Write&mask) != 0) ? 1: 0;
++		bit = ((data2Write&mask) != 0) ? 1 : 0;
+ 
+-		write_nic_word(dev, RFPinsOutput, oval|bit|rw| BB_HOST_BANG_CLK); udelay(2);
+-		write_nic_word(dev, RFPinsOutput, oval|bit|rw| BB_HOST_BANG_CLK); udelay(2);
++		write_nic_word(dev, RFPinsOutput,
++				oval | bit | rw | BB_HOST_BANG_CLK);
++		udelay(2);
++		write_nic_word(dev, RFPinsOutput,
++				oval | bit | rw | BB_HOST_BANG_CLK);
++		udelay(2);
+ 
+-		write_nic_word(dev, RFPinsOutput, oval| bit |rw); udelay(1);
++		write_nic_word(dev, RFPinsOutput, oval | bit | rw);
++		udelay(1);
+ 
+ 		mask = (low2high) ? (mask<<1) : (mask>>1);
+ 	}
+ 
+-	write_nic_word(dev, RFPinsOutput, rw|oval); udelay(2);
++	write_nic_word(dev, RFPinsOutput, rw|oval);
++	udelay(2);
+ 	mask = (low2high) ? 0x01 : (((u32)0x01) << (12-1));
+ 
+ 	/*
+@@ -371,9 +386,12 @@ static u32 read_rtl8225(struct net_device *dev, u8 adr)
+ 	for (i = 0; i < rLength; i++) {
+ 		write_nic_word(dev, RFPinsOutput, rw|oval); udelay(1);
+ 
+-		write_nic_word(dev, RFPinsOutput, rw|oval|BB_HOST_BANG_CLK); udelay(2);
+-		write_nic_word(dev, RFPinsOutput, rw|oval|BB_HOST_BANG_CLK); udelay(2);
+-		write_nic_word(dev, RFPinsOutput, rw|oval|BB_HOST_BANG_CLK); udelay(2);
++		write_nic_word(dev, RFPinsOutput, rw|oval|BB_HOST_BANG_CLK);
++		udelay(2);
++		write_nic_word(dev, RFPinsOutput, rw|oval|BB_HOST_BANG_CLK);
++		udelay(2);
++		write_nic_word(dev, RFPinsOutput, rw|oval|BB_HOST_BANG_CLK);
++		udelay(2);
+ 		tmp = read_nic_word(dev, RFPinsInput);
+ 
+ 		dataRead |= (tmp & BB_HOST_BANG_CLK ? mask : 0);
+@@ -383,7 +401,9 @@ static u32 read_rtl8225(struct net_device *dev, u8 adr)
+ 		mask = (low2high) ? (mask<<1) : (mask>>1);
+ 	}
+ 
+-	write_nic_word(dev, RFPinsOutput, BB_HOST_BANG_EN|BB_HOST_BANG_RW|oval); udelay(2);
++	write_nic_word(dev, RFPinsOutput,
++			BB_HOST_BANG_EN | BB_HOST_BANG_RW | oval);
++	udelay(2);
+ 
+ 	write_nic_word(dev, RFPinsEnable, oval2);
+ 	write_nic_word(dev, RFPinsSelect, oval3); /* Set To SW Switch */
+@@ -426,7 +446,7 @@ void rtl8225z2_rf_close(struct net_device *dev)
+ s8 DbmToTxPwrIdx(struct r8180_priv *priv, WIRELESS_MODE WirelessMode,
+ 		 s32 PowerInDbm)
+ {
+- 	bool bUseDefault = true;
++	bool bUseDefault = true;
+ 	s8 TxPwrIdx = 0;
+ 
+ 	/*
+@@ -486,8 +506,10 @@ void rtl8225z2_SetTXPowerLevel(struct net_device *dev, short ch)
+ 	if (IS_DOT11D_ENABLE(priv->ieee80211) &&
+ 	    IS_DOT11D_STATE_DONE(priv->ieee80211)) {
+ 		u8 MaxTxPwrInDbm = DOT11D_GetMaxTxPwrInDbm(priv->ieee80211, ch);
+-		u8 CckMaxPwrIdx = DbmToTxPwrIdx(priv, WIRELESS_MODE_B, MaxTxPwrInDbm);
+-		u8 OfdmMaxPwrIdx = DbmToTxPwrIdx(priv, WIRELESS_MODE_G, MaxTxPwrInDbm);
++		u8 CckMaxPwrIdx = DbmToTxPwrIdx(priv, WIRELESS_MODE_B,
++							MaxTxPwrInDbm);
++		u8 OfdmMaxPwrIdx = DbmToTxPwrIdx(priv, WIRELESS_MODE_G,
++							MaxTxPwrInDbm);
+ 
+ 		if (cck_power_level > CckMaxPwrIdx)
+ 			cck_power_level = CckMaxPwrIdx;
+@@ -524,7 +546,7 @@ void rtl8225z2_SetTXPowerLevel(struct net_device *dev, short ch)
+ 	if (ofdm_power_level <= 11) {
+ 		write_phy_ofdm(dev, 0x07, 0x5c);
+ 		write_phy_ofdm(dev, 0x09, 0x5c);
+-        }
++	}
+ 
+ 	if (ofdm_power_level <= 17) {
+ 		write_phy_ofdm(dev, 0x07, 0x54);
+@@ -613,7 +635,7 @@ void rtl8225z2_rf_init(struct net_device *dev)
+ 	int i;
+ 	short channel = 1;
+ 	u16	brsr;
+-	u32	data,addr;
++	u32	data, addr;
+ 
+ 	priv->chan = channel;
+ 
+@@ -740,7 +762,7 @@ void rtl8225z2_rf_init(struct net_device *dev)
+ 	write_phy_ofdm(dev, 0x26, 0x90); mdelay(1);
+ 	write_phy_ofdm(dev, 0x27, 0x88); mdelay(1);
+ 
+-	rtl8225z2_set_gain(dev,4);
++	rtl8225z2_set_gain(dev, 4);
+ 
+ 	write_phy_cck(dev, 0x0, 0x98); mdelay(1);
+ 	write_phy_cck(dev, 0x3, 0x20); mdelay(1);
+@@ -803,12 +825,12 @@ void rtl8225z2_rf_set_mode(struct net_device *dev)
+ 		write_phy_ofdm(dev, 0xf, 0x20);
+ 		write_phy_ofdm(dev, 0x11, 0x7);
+ 
+-		rtl8225z2_set_gain(dev,4);
++		rtl8225z2_set_gain(dev, 4);
+ 
+-		write_phy_ofdm(dev,0x15, 0x40);
+-		write_phy_ofdm(dev,0x17, 0x40);
++		write_phy_ofdm(dev, 0x15, 0x40);
++		write_phy_ofdm(dev, 0x17, 0x40);
+ 
+-		write_nic_dword(dev, 0x94,0x10000000);
++		write_nic_dword(dev, 0x94, 0x10000000);
+ 	} else {
+ 		write_rtl8225(dev, 0x5, 0x1864);
+ 		write_nic_dword(dev, RF_PARA, 0x10044);
+@@ -819,18 +841,18 @@ void rtl8225z2_rf_set_mode(struct net_device *dev)
+ 		write_phy_ofdm(dev, 0xf, 0x20);
+ 		write_phy_ofdm(dev, 0x11, 0x7);
+ 
+-		rtl8225z2_set_gain(dev,4);
++		rtl8225z2_set_gain(dev, 4);
+ 
+-		write_phy_ofdm(dev,0x15, 0x40);
+-		write_phy_ofdm(dev,0x17, 0x40);
++		write_phy_ofdm(dev, 0x15, 0x40);
++		write_phy_ofdm(dev, 0x17, 0x40);
+ 
+-		write_nic_dword(dev, 0x94,0x04000002);
++		write_nic_dword(dev, 0x94, 0x04000002);
+ 	}
+ }
+ 
+-#define MAX_DOZE_WAITING_TIMES_85B 		20
+-#define MAX_POLLING_24F_TIMES_87SE 		10
+-#define LPS_MAX_SLEEP_WAITING_TIMES_87SE 	5
++#define MAX_DOZE_WAITING_TIMES_85B		20
++#define MAX_POLLING_24F_TIMES_87SE		10
++#define LPS_MAX_SLEEP_WAITING_TIMES_87SE	5
+ 
+ bool SetZebraRFPowerState8185(struct net_device *dev,
+ 			      RT_RF_POWER_STATE eRFPowerState)
+@@ -882,12 +904,14 @@ bool SetZebraRFPowerState8185(struct net_device *dev,
+ 		break;
+ 	case eRfSleep:
+ 		for (QueueID = 0, i = 0; QueueID < 6;) {
+-			if (get_curr_tx_free_desc(dev, QueueID) == priv->txringcount) {
++			if (get_curr_tx_free_desc(dev, QueueID) ==
++							priv->txringcount) {
+ 				QueueID++;
+ 				continue;
+ 			} else {
+ 				priv->TxPollingTimes++;
+-				if (priv->TxPollingTimes >= LPS_MAX_SLEEP_WAITING_TIMES_87SE) {
++				if (priv->TxPollingTimes >=
++					LPS_MAX_SLEEP_WAITING_TIMES_87SE) {
+ 					bActionAllowed = false;
+ 					break;
+ 				} else
+@@ -915,7 +939,8 @@ bool SetZebraRFPowerState8185(struct net_device *dev,
+ 				while (true) {
+ 					u8 tmp24F = read_nic_byte(dev, 0x24f);
+ 
+-					if ((tmp24F == 0x01) || (tmp24F == 0x09)) {
++					if ((tmp24F == 0x01) ||
++							(tmp24F == 0x09)) {
+ 						bTurnOffBB = true;
+ 						break;
+ 					} else {
+@@ -935,7 +960,8 @@ bool SetZebraRFPowerState8185(struct net_device *dev,
+ 			if (bTurnOffBB) {
+ 				/* turn off BB */
+ 				u1bTmp = read_nic_byte(dev, 0x24E);
+-				write_nic_byte(dev, 0x24E, (u1bTmp | BIT5 | BIT6));
++				write_nic_byte(dev, 0x24E,
++						(u1bTmp | BIT5 | BIT6));
+ 
+ 				/* turn off AFE PLL */
+ 				write_nic_byte(dev, 0x54, 0xFC);
+@@ -945,7 +971,8 @@ bool SetZebraRFPowerState8185(struct net_device *dev,
+ 		break;
+ 	case eRfOff:
+ 		for (QueueID = 0, i = 0; QueueID < 6;) {
+-			if (get_curr_tx_free_desc(dev, QueueID) == priv->txringcount) {
++			if (get_curr_tx_free_desc(dev, QueueID) ==
++					priv->txringcount) {
+ 				QueueID++;
+ 				continue;
+ 			} else {
+-- 
+1.7.0
 
-OK, I'll try to add that.
 
-Rafael
+
