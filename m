@@ -1,101 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373Ab0DAQFZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:05:25 -0400
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:3533 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756697Ab0DAQFU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:05:20 -0400
-Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAM5gtEurRN+J/2dsb2JhbACbPnGcbZkaglWCLASDIw
-X-IronPort-AV: E=Sophos;i="4.51,349,1267401600"; 
-   d="scan'208";a="506946411"
-From: Tom Lyon <pugs@lyon-about.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH 0/1] uio_pci_generic: extensions to allow access for non-privileged processes
-Date: Thu, 1 Apr 2010 09:02:41 -0700
-User-Agent: KMail/1.9.9
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201003311708.38961.pugs@lyon-about.com> <20100401142504.GA6338@redhat.com>
-In-Reply-To: <20100401142504.GA6338@redhat.com>
+	id S1757341Ab0DAQHq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:07:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38221 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754601Ab0DAQHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 12:07:40 -0400
+Message-ID: <4BB4C48C.5000005@redhat.com>
+Date: Thu, 01 Apr 2010 19:06:36 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       Kent Overstreet <kent.overstreet@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [COUNTERPATCH] mm: avoid overflowing preempt_count() in mmu_take_all_locks()
+References: <1270117906.1653.139.camel@laptop>	 <alpine.LFD.2.00.1004011300550.32352@localhost.localdomain>	 <4BB47FC3.1020606@redhat.com> <4BB480CC.2060503@redhat.com>	 <1270121264.1653.205.camel@laptop> <1270122194.1653.223.camel@laptop>	 <20100401154249.GQ5825@random.random>  <4BB4C0F5.3070204@redhat.com> <1270137406.1598.78.camel@laptop>
+In-Reply-To: <1270137406.1598.78.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201004010902.42002.pugs@lyon-about.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 April 2010 07:25:04 am Michael S. Tsirkin wrote:
-> On Wed, Mar 31, 2010 at 05:08:38PM -0700, Tom Lyon wrote:
-> > uio_pci_generic has previously been discussed on the KVM list, but this
-> > patch has nothing to do with KVM, so it is also going to LKML.
-> >
-> > The point of this patch is to beef up the uio_pci_generic driver so that
-> > a non-privileged user process can run a user level driver for most PCIe
-> > devices. This can only be safe if there is an IOMMU in the system with
-> > per-device domains.
->
-> Why? Per-guest domain should be safe enough.
-I'm not sure what 'per-guest' means in an ordinary process context.
->
-> >  Privileged users (CAP_SYS_RAWIO) are allowed if there is
-> > no IOMMU.
->
-> qemu does not support it, I doubt this last option is worth having.
-This is extremely useful in non IOMMU systems - again, we're talking ordinary 
-processes, nothing to do with VMs. As long as the program can be trusted, 
-e.g., in embedded apps.
+On 04/01/2010 06:56 PM, Peter Zijlstra wrote:
+> On Thu, 2010-04-01 at 18:51 +0300, Avi Kivity wrote:
+>    
+>> On 04/01/2010 06:42 PM, Andrea Arcangeli wrote:
+>>      
+>>> On Thu, Apr 01, 2010 at 01:43:14PM +0200, Peter Zijlstra wrote:
+>>>
+>>>        
+>>>> On Thu, 2010-04-01 at 13:27 +0200, Peter Zijlstra wrote:
+>>>>
+>>>>          
+>>>>> I've almost got a patch done that converts those two, still need to look
+>>>>> where that tasklist_lock muck happens.
+>>>>>
+>>>>>            
+>>>> OK, so the below builds and boots, only need to track down that
+>>>> tasklist_lock nesting, but I got to run an errand first.
+>>>>
+>>>>          
+>>> You should have a look at my old patchset where Christoph already
+>>> implemented this (and not for decreasing latency but to allow
+>>> scheduling in mmu notifier handlers, only needed by XPMEM):
+>>>
+>>> http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.26-rc7/mmu-notifier-v18/
+>>>
+>>> The ugliest part of it (that I think you missed below) is the breakage
+>>> of the RCU locking in the anon-vma which requires adding refcounting
+>>> to it. That was the worst part of the conversion as far as I can tell.
+>>>
+>>> http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.26-rc7/mmu-notifier-v18/anon-vma
+>>>
+>>>        
+>> Can we use srcu now instead?
+>>      
+> I would much rather we make call_rcu_preempt() available at all times.
+>    
 
->
-> > Specifically, I seek to allow low-latency user level network drivers (non
-> > tcp/ip) which directly access SR-IOV style virtual network adapters, for
-> > use with packages such as OpenMPI.
-> >
-> > Key areas of change:
-> > - ioctl extensions to allow registration and dma mapping of memory
-> > regions, with lock accounting
-> > - support for mmu notifier driven de-mapping
-> > - support for MSI and MSI-X interrupts (the intel 82599 VFs support only
-> > MSI-X)
-> > - allowing interrupt enabling and device register mapping all
-> > through /dev/uio* so that  permissions may be granted just by chmod
-> > on /dev/uio*
->
-> For non-priveledged users, we need a way to enforce that
-> device is bound to an iommu.
-Right now I just use iommu_found - assuming that if we have one, it is in use. 
-Something better would be nice.
+I don't understand.  I thought the problem was that the locks were taken 
+inside an rcu critical section; switching to srcu would fix that.  But 
+how is call_rcu_preempt() related?  Grepping a bit, what is 
+call_rcu_preempt()?  my tree doesn't have it.
 
-> Further, locking really needs to be scoped with iommu domain existance
-> and with iommu mappings: as long as a page is mapped in iommu,
-> it must be locked. This patch does not seem to enforce that.
-Sure it does. The DMA API - get_user_pages and dma_map_sg lock pages into the 
-MMU and the IOMMU. The MMU notifier unlocks if the user forgets to do it 
-explicitly.
-
-> Also note that what we really want is a single iommu domain per guest,
-> not per device.
-For my networking applications, I will need the ability to talk to multiple 
-devices on potentially separate IOMMUs. What would per-guest mean then?
->
-
-> For this reason, I think we should address the problem somwwhat
-> differently:
-> - Create a character device to represent the iommu
-> - This device will handle memory locking etc
-> - Allow binding this device to iommu
-> - Allow other operations only after iommu is bound
-There are still per-device issues with locking - in particular the size of the 
-device's DMA address space. The DMA API already handles this - why not use 
-it? It would be nice to have a way to test whether a device is truly covered 
-by an IOMMU, but today it appears that if an IOMMU exists, then it covers all 
-devices (at least as far as I can see for x86).
-
-
-
+-- 
+error compiling committee.c: too many arguments to function
 
