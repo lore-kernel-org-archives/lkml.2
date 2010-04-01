@@ -1,92 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304Ab0DARPv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 13:15:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13016 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753331Ab0DARPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 13:15:44 -0400
-Message-ID: <4BB4D4A1.7040905@redhat.com>
-Date: Thu, 01 Apr 2010 20:15:13 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1754862Ab0DARVG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 13:21:06 -0400
+Received: from web94909.mail.in2.yahoo.com ([203.104.17.168]:31147 "HELO
+	web94909.mail.in2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751117Ab0DARVA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 13:21:00 -0400
+Message-ID: <488000.27888.qm@web94909.mail.in2.yahoo.com>
+X-YMail-OSG: m_z64j0VM1nSElVUH4t3CEDJS4Jd157Gfcl53GHnZDGidcY
+ zoi4Sj8TDPoR9qjADXyIzmxl_7HHwTvrVXKygldStb_2Yqk9EKw49wtv6oNm
+ 2PT24LPA9bwEcoVU8PmmubGZW.t9B6FMARsQldPLQjzY23eaFBV5VbxkVLSb
+ 4jcBY1Qi3AW.eA8OFTZuPwIuJaYpK6R4B5xqEqR0TrQHQZnw783w1NCS2rIi
+ 6t_dwtCMfRX2gC8a_Qsf0u81pCRxIg2y1_h7c7kdac81IoDwU2BY0MCGquzo
+ s57.vAyTaQVFjzIWNt4xZO74-
+X-RocketYMMF: pavan_savoy
+X-Mailer: YahooMailClassic/10.0.8 YahooMailWebService/0.8.100.260964
+Date: Thu, 1 Apr 2010 22:50:57 +0530 (IST)
+From: Pavan Savoy <pavan_savoy@ti.com>
+Reply-To: pavan_savoy@ti.com
+Subject: Re: [PATCH] drivers:staging: sources for ST core
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg KH <gregkh@suse.de>, Marcel Holtmann <marcel@holtmann.org>,
+       linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Darren Hart <dvhltc@us.ibm.com>
-CC: "lkml, " <linux-kernel@vger.kernel.org>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Gregory Haskins <ghaskins@novell.com>,
-       Sven-Thorsten Dietrich <sdietrich@novell.com>,
-       Peter Morreale <pmorreale@novell.com>,
-       Chris Wright <chrisw@sous-sol.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Chris Mason <chris.mason@oracle.com>
-Subject: Re: RFC: Ideal Adaptive Spinning Conditions
-References: <4BB3D90C.3030108@us.ibm.com> <4BB4ABBB.4000909@redhat.com> <4BB4C1C4.2090208@us.ibm.com> <4BB4C566.8060308@redhat.com> <4BB4D36A.5080204@us.ibm.com>
-In-Reply-To: <4BB4D36A.5080204@us.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2010 08:10 PM, Darren Hart wrote:
-> Avi Kivity wrote:
->> On 04/01/2010 06:54 PM, Darren Hart wrote:
->>>> A lock(); unlock(); loop spends most of its time with the lock held 
->>>> or contended.  Can you something like this:
->>>>
->>>>
->>>>    lock();
->>>>    for (i = 0; i < 1000; ++i)
->>>>         asm volatile ("" : : : "memory");
->>>>    unlock();
->>>>    for (i = 0; i < 10000; ++i)
->>>>         asm volatile ("" : : : "memory");
->>>
->>>
->>>
->>> Great idea. I'll be doing a more rigorous investigation on this of 
->>> course, but I thought I'd share the results of just dumping this 
->>> into the testcase:
->>>
->>> # ./futex_lock -i10000000
->>> futex_lock: Measure FUTEX_LOCK operations per second
->>>     Arguments: iterations=10000000 threads=256 adaptive=0
->>> Result: 420 Kiter/s
->>> lock calls:      9999872
->>> lock syscalls:   665824 (6.66%)
->>> unlock calls:    9999872
->>> unlock syscalls: 861240 (8.61%)
->>>
->>> # ./futex_lock -a -i10000000
->>> futex_lock: Measure FUTEX_LOCK operations per second
->>>     Arguments: iterations=10000000 threads=256 adaptive=1
->>> Result: 426 Kiter/s
->>> lock calls:      9999872
->>> lock syscalls:   558787 (5.59%)
->>> unlock calls:    9999872
->>> unlock syscalls: 603412 (6.03%)
->>>
->>> This is the first time I've seen adaptive locking have an advantage! 
->>> The second set of runs showed a slightly greater advantage. Note 
->>> that this was still with spinners being limited to one.
->>
->> Question - do all threads finish at the same time, or wildly 
->> different times?
+--- On Thu, 1/4/10, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+
+> From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> Subject: Re: [PATCH] drivers:staging: sources for ST core
+> To: pavan_savoy@ti.com
+> Cc: "Greg KH" <gregkh@suse.de>, "Marcel Holtmann" <marcel@holtmann.org>, linux-kernel@vger.kernel.org
+> Date: Thursday, 1 April, 2010, 2:50 PM
+> > +/*
+> > + * function to return whether the firmware response
+> was proper
+> > + * in case of error don't complete so that waiting
+> for proper
+> > + * response times out
+> > + */
+> > +void validate_firmware_response(struct sk_buff *skb)
+> > +{
+> > +    if (unlikely(skb->data[5] !=
+> 0)) {
+> > +        pr_err("no
+> proper response during fw download");
+> > +        pr_err("data6
+> %x", skb->data[5]);
+> 
+> In this driver you do know the device so you need to be
+> using dev_ and
+> passing around dev (or something that gives you dev).
+> 
+> > +static int kim_probe(struct platform_device *pdev)
+> > +{
+> > +    long status;
+> > +    long proto;
+> > +    long *gpios =
+> pdev->dev.platform_data;
+> > +
+> > +    status =
+> st_core_init(&kim_gdata->core_data);
+> 
+> I would expect any truely global data to be configured in
+> the module init
+> and then device specific data you want to do something like
+> this
+> 
+>     kim_data = kzalloc(sizeof(something),
+> GFP_KERNEL);
+> 
+>     ..
+> 
+>     kim_data_init(&pdev->dev,
+> kim_data);
+>     dev_set_drvdata(&pdev->dev,
+> kim_data);
+> 
+> Elsewhere you can now do
+> 
+>     kim_data =
+> dev_get_drvdata(&pdev->dev);
+> 
+> to get it back
+
+There are 2 sets of data structures here (after removing the un-necessary 3rd one),
+1. st_gdata - which I would want to tie to tty
+2. kim_gdata - which I "would" like to tie to the pdev.
+
+Now the problem being, I have reference of st_gdata in kim_gdata, and there are about 4 functions in the st_core where I would need the st_gdata, as in,
+
+EXPORTED symbol st_register - because I need to add in entries as to who registered,
++long st_register(struct st_proto_s *new_proto)
++{
++    struct st_data_s    *st_gdata;
++    long err = ST_SUCCESS;
++    unsigned long flags = 0;
++
++    st_kim_ref(&st_gdata);
++    pr_info("%s(%d) ", __func__, new_proto->type);
++    if (st_gdata == NULL || new_proto == NULL || new_proto->recv == NULL
++        || new_proto->reg_complete_cb == NULL) {
++        pr_err("gdata/new_proto/recv or reg_complete_cb not ready");
++        return ST_ERR_FAILURE;
++    }
+Also in st_unregister and st_write for similar purposes,
+But I also need it in tty_open, to link it to the disc_data,
+
++static int st_tty_open(struct tty_struct *tty)
++{
++    int err = ST_SUCCESS;
++    struct st_data_s *st_gdata;
++    pr_info("%s ", __func__);
++
++    st_kim_ref(&st_gdata);
++    st_gdata->tty = tty;
++    tty->disc_data = st_gdata;
+
+So, shouldn't some function like st_kim_ref be enough ?
+
++void st_kim_ref(struct st_data_s **core_data)
++{
++    *core_data = kim_gdata->core_data;
++}
+
+So Now st_gdata is tied to tty, and kim_gdata being purely global, as in only 1 platform device of such kind can exist.
+
+Suppose 2 platform devices want to exist - then who's EXPORT of st_register is considered ? 
+And If bluetooth or FM wants to use this transport then, how would it tell onto which platform device it wants to attach to ?
+
+Why should I tie kim_gdata to a pdev ?
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe
+> linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 >
-> I'm not sure, I can add some fairness metrics to the test that will 
-> help characterize how that's working. My suspicion is that there will 
-> be several threads that don't make any progress until the very end - 
-> since adaptive spinning is an "unfair" locking technique.
->
 
-Well, if the amount of unfairness differs between the tests (unfair 
-unfairness?) then you may see results that are not directly related to 
-spin vs yield.  You need to make the test more self-regulating so the 
-results are more repeatable (yet not make it a round-robin test).
 
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
 
+      The INTERNET now has a personality. YOURS! See your Yahoo! Homepage. http://in.yahoo.com/
