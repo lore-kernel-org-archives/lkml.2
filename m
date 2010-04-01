@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510Ab0DAAY7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 20:24:59 -0400
-Received: from ringil.hengli.com.au ([216.59.3.182]:46573 "EHLO
-	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755628Ab0DAAY6 (ORCPT
+	id S1756979Ab0DAAZV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 20:25:21 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34620 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756598Ab0DAAZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 20:24:58 -0400
-Date: Thu, 1 Apr 2010 08:24:40 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Henrik Kretzschmar <henne@nachtwindheim.de>, steffen.klassert@secunet.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] padata: section cleanup
-Message-ID: <20100401002440.GB18893@gondor.apana.org.au>
-References: <1269672826-1102-1-git-send-email-henne@nachtwindheim.de> <20100329081550.GA22334@gondor.apana.org.au> <20100331145817.bd0a1a08.akpm@linux-foundation.org>
+	Wed, 31 Mar 2010 20:25:18 -0400
+Date: Wed, 31 Mar 2010 17:24:50 -0700
+From: Brandon Philips <brandon@ifup.org>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       michael.s.gilbert@gmail.com, davem@davemeloft.net, romieu@fr.zoreil.com,
+       eric.dumazet@gmail.com
+Subject: Re: [PATCH] r8169: offical fix for CVE-2009-4537 (overlength frame
+ DMAs)
+Message-ID: <20100401002450.GA19117@jenkins.home.ifup.org>
+References: <20100329160356.GC22733@hmsreliant.think-freely.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100331145817.bd0a1a08.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100329160356.GC22733@hmsreliant.think-freely.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 02:58:17PM -0700, Andrew Morton wrote:
->
-> (wtf?)
-> 
-> OK, on behalf of thousands I ask: what the heck is kernel/padata.c? 
-> 
-> Seems to have popped up in 2.6.34, positioned as generic kernel-wide
-> code only it has been secreted away on the linux-crypto list.  Please
-> don't do this.
+On 12:03 Mon 29 Mar 2010, Neil Horman wrote:
+> Signed-off-by: Neil Horman <nhorman@redhat.com>
 
-It was posted to linux-kernel multiple times.
+Cc: stable@kernel.org?
+Tested-by: Brandon Philips <bphilips@suse.de>
+
+> +	if (max_frame != 16383)
+> +		printk(KERN_WARNING "WARNING! Changing of MTU on this NIC"
+> +			"May lead to frame reception errors!\n");
+
+This needs a space to look right. You might as well add the PFX too:
+
+		printk(KERN_WARNING PFX "WARNING! Changing of MTU on this "
+			"NIC may lead to frame reception errors!\n");
+
+Thanks Neil.
 
 Cheers,
--- 
-Visit Openswan at http://www.openswan.org/
-Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+
+	Brandon
