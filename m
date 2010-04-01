@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab0DAFP7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 01:15:59 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:46002 "EHLO e8.ny.us.ibm.com"
+	id S1752814Ab0DAFQs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 01:16:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44256 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752632Ab0DAFPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 01:15:53 -0400
-Message-ID: <4BB42C04.7090308@us.ibm.com>
-Date: Wed, 31 Mar 2010 22:15:48 -0700
-From: Darren Hart <dvhltc@us.ibm.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	id S1752695Ab0DAFQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 01:16:42 -0400
+Message-ID: <4BB42D05.4060207@redhat.com>
+Date: Thu, 01 Apr 2010 13:20:05 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
 MIME-Version: 1.0
-To: rostedt@goodmis.org
-CC: "lkml," <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Gregory Haskins <ghaskins@novell.com>,
-       Sven-Thorsten Dietrich <sdietrich@novell.com>,
-       Peter Morreale <pmorreale@novell.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Chris Mason <chris.mason@oracle.com>
-Subject: Re: RFC: Ideal Adaptive Spinning Conditions
-References: <4BB3D90C.3030108@us.ibm.com> <1270078689.19685.8040.camel@gandalf.stny.rr.com> <4BB40140.20109@us.ibm.com> <1270088753.19685.8218.camel@gandalf.stny.rr.com>
-In-Reply-To: <1270088753.19685.8218.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Tejun Heo <tj@kernel.org>
+CC: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+       Rusty Russell <rusty@rustcorp.com.au>, akpm@linux-foundation.org,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: [Patch] workqueue: move lockdep annotations up to	destroy_workqueue()
+References: <20100331105534.5601.50813.sendpatchset@localhost.localdomain> <20100331112559.GA17747@redhat.com> <4BB408AF.4080908@redhat.com> <4BB41988.1030400@kernel.org> <4BB41C72.3090909@redhat.com> <4BB41DAE.3010605@kernel.org> <4BB420D6.7050401@redhat.com> <4BB42822.30607@kernel.org>
+In-Reply-To: <4BB42822.30607@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt wrote:
-> On Wed, 2010-03-31 at 19:13 -0700, Darren Hart wrote:
->> Steven Rostedt wrote:
->>> On Wed, 2010-03-31 at 16:21 -0700, Darren Hart wrote:
+Tejun Heo wrote:
+> Hello,
+> 
+> On 04/01/2010 01:28 PM, Cong Wang wrote:
+>>> Hmmm... can you please try to see whether this circular locking
+>>> warning involving wq->lockdep_map is reproducible w/ the bonding
+>>> locking fixed?  I still can't see where wq -> cpu_add_remove_lock
+>>> dependency is created.
 >>>
->>>> o What type of lock hold times do we expect to benefit?
->>> 0 (that's a zero) :-p
->>>
->>> I haven't seen your patches but you are not doing a heuristic approach,
->>> are you? That is, do not "spin" hoping the lock will suddenly become
->>> free. I was against that for -rt and I would be against that for futex
->>> too.
->> I'm not sure what you're getting at here. Adaptive spinning is indeed 
->> hoping the lock will become free while you are spinning and checking 
->> it's owner...
+>> I thought this is obvious.
+>>
+>> Here it is:
+>>
+>> void destroy_workqueue(struct workqueue_struct *wq)
+>> {
+>>         const struct cpumask *cpu_map = wq_cpu_map(wq);
+>>         int cpu;
+>>
+>>         cpu_maps_update_begin();        <----------------- Hold
+>> cpu_add_remove_lock here
+>>         spin_lock(&workqueue_lock);
+>>         list_del(&wq->list);
+>>         spin_unlock(&workqueue_lock);
+>>
+>>         for_each_cpu(cpu, cpu_map)
+>>                 cleanup_workqueue_thread(per_cpu_ptr(wq->cpu_wq, cpu)); 
+>> <------ See below
+>>         cpu_maps_update_done();        <----------------- Release
+>> cpu_add_remove_lock here
+>>
+>> ...
+>> static void cleanup_workqueue_thread(struct cpu_workqueue_struct *cwq)
+>> {
+>>         /*
+>>          * Our caller is either destroy_workqueue() or CPU_POST_DEAD,
+>>          * cpu_add_remove_lock protects cwq->thread.
+>>          */
+>>         if (cwq->thread == NULL)
+>>                 return;
+>>
+>>         lock_map_acquire(&cwq->wq->lockdep_map); <-------------- Lockdep
+>> complains here.
+>>         lock_map_release(&cwq->wq->lockdep_map);
+>> ...
 > 
-> I'm talking about the original idea people had of "lets spin for 50us
-> and hope it is unlocked before then", which I thought was not a good
-> idea.
+> Yeap, the above is cpu_add_remove_lock -> wq->lockdep_map dependency.
+> I can see that but I'm failing to see where the dependency the other
+> direction is created.
 > 
-> 
->>>> o How much contention is a good match for adaptive spinning?
->>>>    - this is related to the number of threads to run in the test
->>>> o How many spinners should be allowed?
->>>>
->>>> I can share the kernel patches if people are interested, but they are 
->>>> really early, and I'm not sure they are of much value until I better 
->>>> understand the conditions where this is expected to be useful.
->>> Again, I don't know how you implemented your adaptive spinners, but the
->>> trick to it in -rt was that it would only spin while the owner of the
->>> lock was actually running. If it was not running, it would sleep. No
->>> point waiting for a sleeping task to release its lock.
->> It does exactly this.
-> 
-> OK, that's good.
-> 
->>> Is this what you did? Because, IIRC, this only benefited spinlocks
->>> converted to mutexes. It did not help with semaphores, because
->>> semaphores could be held for a long time. Thus, it was good for short
->>> held locks, but hurt performance on long held locks.
->> Trouble is, I'm still seeing performance penalties even on the shortest 
->> critical section possible (lock();unlock();)
-> 
-> performance penalties compared to what? not having adaptive at all?
 
-Right. See the data in the original mail:
+Hmm, it looks like I misunderstand lock_map_acquire()? From the changelog,
+I thought it was added to complain its caller is holding a lock when invoking
+it, thus cpu_add_remove_lock is not an exception.
 
-
-          futex_lock: Result: 635 Kiter/s
-futex_lock_adaptive: Result: 542 Kiter/s
-
-So 15% fewer lock/unlock iterations per second with in kernel adaptive 
-spinning enabled for a critical section approaching 0 in length. But If 
-we agree I'm taking the right approach, then it's time for me to polish 
-things up a bit and send them out for review.
-
--- 
-Darren Hart
-IBM Linux Technology Center
-Real-Time Linux Team
+Thanks!
