@@ -1,150 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758341Ab0DAQgT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:36:19 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44916 "EHLO
-	bob.linux.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758306Ab0DAQgI (ORCPT
+	id S1758373Ab0DAQgb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:36:31 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51351 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758334Ab0DAQgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:36:08 -0400
-From: Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 14/14] synclink: reworking locking a bit
-To: linux-kernel@vger.kernel.org
-Date: Thu, 01 Apr 2010 17:07:18 +0100
-Message-ID: <20100401160708.8882.46631.stgit@localhost.localdomain>
-In-Reply-To: <20100401155513.8882.54006.stgit@localhost.localdomain>
-References: <20100401155513.8882.54006.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Thu, 1 Apr 2010 12:36:17 -0400
+Subject: Re: [COUNTERPATCH] mm: avoid overflowing preempt_count() in
+ mmu_take_all_locks()
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Avi Kivity <avi@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       Kent Overstreet <kent.overstreet@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20100401161551.GE2472@linux.vnet.ibm.com>
+References: <1270117906.1653.139.camel@laptop>
+	 <alpine.LFD.2.00.1004011300550.32352@localhost.localdomain>
+	 <4BB47FC3.1020606@redhat.com> <4BB480CC.2060503@redhat.com>
+	 <1270121264.1653.205.camel@laptop> <1270122194.1653.223.camel@laptop>
+	 <20100401154249.GQ5825@random.random> <4BB4C0F5.3070204@redhat.com>
+	 <1270137406.1598.78.camel@laptop> <4BB4C48C.5000005@redhat.com>
+	 <20100401161551.GE2472@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Apr 2010 18:36:14 +0200
+Message-ID: <1270139774.1598.130.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the port mutex and port lock to fix the various races. The locking
-still isn't totally consistent but its better than before. Wants switching
-to the port helpers.
+On Thu, 2010-04-01 at 09:15 -0700, Paul E. McKenney wrote:
+> > I don't understand.  I thought the problem was that the locks were
+> > taken inside an rcu critical section; switching to srcu would fix
+> > that.  But how is call_rcu_preempt() related?  Grepping a bit, what
+> > is call_rcu_preempt()?  my tree doesn't have it.
+> 
+> I believe that Peter is referring to the RCU implementation you get
+> with CONFIG_TREE_PREEMPT_RCU, which currently depends on CONFIG_PREEMPT.
+> The other implementation is CONFIG_TREE_RCU, which is usually called
+> "classic RCU". 
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+Right, so I've been nudging Paul a while to make it so that we always
+have preemptible rcu available and that only the default interface
+switches between sched/classic and preempt.
 
- drivers/char/synclink_gt.c |   12 +++++++++++-
- drivers/char/synclinkmp.c  |    9 ++++++++-
- 2 files changed, 19 insertions(+), 2 deletions(-)
+Currently we already have:
+
+call_rcu_sched()
+call_rcu_bh()
+call_rcu()	(depends on CONFIG_PREEMPT_RCU)
+
+I'm saying it would be nice to also have:
+
+call_rcu_preempt()
 
 
-diff --git a/drivers/char/synclink_gt.c b/drivers/char/synclink_gt.c
-index d0f81f5..c56b70a 100644
---- a/drivers/char/synclink_gt.c
-+++ b/drivers/char/synclink_gt.c
-@@ -675,12 +675,14 @@ static int open(struct tty_struct *tty, struct file *filp)
- 		goto cleanup;
- 	}
- 
-+	mutex_lock(&info->port.mutex);
- 	info->port.tty->low_latency = (info->port.flags & ASYNC_LOW_LATENCY) ? 1 : 0;
- 
- 	spin_lock_irqsave(&info->netlock, flags);
- 	if (info->netcount) {
- 		retval = -EBUSY;
- 		spin_unlock_irqrestore(&info->netlock, flags);
-+		mutex_unlock(&info->port.mutex);
- 		goto cleanup;
- 	}
- 	info->port.count++;
-@@ -692,7 +694,7 @@ static int open(struct tty_struct *tty, struct file *filp)
- 		if (retval < 0)
- 			goto cleanup;
- 	}
--
-+	mutex_unlock(&info->port.mutex);
- 	retval = block_til_ready(tty, filp, info);
- 	if (retval) {
- 		DBGINFO(("%s block_til_ready rc=%d\n", info->device_name, retval));
-@@ -724,12 +726,14 @@ static void close(struct tty_struct *tty, struct file *filp)
- 	if (tty_port_close_start(&info->port, tty, filp) == 0)
- 		goto cleanup;
- 
-+	mutex_lock(&info->port.mutex);
-  	if (info->port.flags & ASYNC_INITIALIZED)
-  		wait_until_sent(tty, info->timeout);
- 	flush_buffer(tty);
- 	tty_ldisc_flush(tty);
- 
- 	shutdown(info);
-+	mutex_unlock(&info->port.mutex);
- 
- 	tty_port_close_end(&info->port, tty);
- 	info->port.tty = NULL;
-@@ -740,17 +744,23 @@ cleanup:
- static void hangup(struct tty_struct *tty)
- {
- 	struct slgt_info *info = tty->driver_data;
-+	unsigned long flags;
- 
- 	if (sanity_check(info, tty->name, "hangup"))
- 		return;
- 	DBGINFO(("%s hangup\n", info->device_name));
- 
- 	flush_buffer(tty);
-+
-+	mutex_lock(&info->port.mutex);
- 	shutdown(info);
- 
-+	spin_lock_irqsave(&info->port.lock, flags);
- 	info->port.count = 0;
- 	info->port.flags &= ~ASYNC_NORMAL_ACTIVE;
- 	info->port.tty = NULL;
-+	spin_unlock_irqrestore(&info->port.lock, flags);
-+	mutex_unlock(&info->port.mutex);
- 
- 	wake_up_interruptible(&info->port.open_wait);
- }
-diff --git a/drivers/char/synclinkmp.c b/drivers/char/synclinkmp.c
-index 8da976b..cfa581e 100644
---- a/drivers/char/synclinkmp.c
-+++ b/drivers/char/synclinkmp.c
-@@ -812,13 +812,15 @@ static void close(struct tty_struct *tty, struct file *filp)
- 
- 	if (tty_port_close_start(&info->port, tty, filp) == 0)
- 		goto cleanup;
--		
-+
-+	mutex_lock(&info->port.mutex);		
-  	if (info->port.flags & ASYNC_INITIALIZED)
-  		wait_until_sent(tty, info->timeout);
- 
- 	flush_buffer(tty);
- 	tty_ldisc_flush(tty);
- 	shutdown(info);
-+	mutex_unlock(&info->port.mutex);		
- 
- 	tty_port_close_end(&info->port, tty);
- 	info->port.tty = NULL;
-@@ -834,6 +836,7 @@ cleanup:
- static void hangup(struct tty_struct *tty)
- {
- 	SLMP_INFO *info = tty->driver_data;
-+	unsigned long flags;
- 
- 	if (debug_level >= DEBUG_LEVEL_INFO)
- 		printk("%s(%d):%s hangup()\n",
-@@ -842,12 +845,16 @@ static void hangup(struct tty_struct *tty)
- 	if (sanity_check(info, tty->name, "hangup"))
- 		return;
- 
-+	mutex_lock(&info->port.mutex);		
- 	flush_buffer(tty);
- 	shutdown(info);
- 
-+	spin_lock_irqsave(&info->port.lock, flags);
- 	info->port.count = 0;
- 	info->port.flags &= ~ASYNC_NORMAL_ACTIVE;
- 	info->port.tty = NULL;
-+	spin_unlock_irqrestore(&info->port.lock, flags);
-+	mutex_unlock(&info->port.mutex);		
- 
- 	wake_up_interruptible(&info->port.open_wait);
- }
 
