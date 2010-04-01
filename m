@@ -1,112 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754572Ab0DAIz1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 04:55:27 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56214 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754484Ab0DAIzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 04:55:18 -0400
-Message-ID: <4BB45EE2.3010000@cn.fujitsu.com>
-Date: Thu, 01 Apr 2010 16:52:50 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] KVM MMU: record reverse mapping for spte only if it's
- writable
-References: <4BB45E65.2040006@cn.fujitsu.com>
-In-Reply-To: <4BB45E65.2040006@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754621Ab0DAI5O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 04:57:14 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:39174 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754331Ab0DAI5A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 04:57:00 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Lars Ellenberg <lars.ellenberg@linbit.com>,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Philipp Reisner <philipp.reisner@linbit.com>, drbd-dev@lists.linbit.com,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] drbd: potential null dereference
+Date: Thu,  1 Apr 2010 10:56:39 +0200
+Message-Id: <9736574BB1380E.7050404@linbit.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <20100327145950.GG5069@bicker>
+References: <20100327145950.GG5069@bicker>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The read only spte mapping can't hurt shadow page cache,
-so, no need to record it.
+Hi Dan, 
 
-Using bit9 to record whether the spte is re-mapped
+Thanks for the work with the static analyzer, but the patch is
+bogus. The lc_element_by_index() function causes a BUG_ON before
+returning a NULL. The next mail contains a patch that removes
+the unnecessary conditional expression operator.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/kvm/mmu.c |   17 +++++++++++++++--
- arch/x86/kvm/mmu.h |    1 +
- 2 files changed, 16 insertions(+), 2 deletions(-)
+Philipp Reisner (1):
+  drbd: lc_element_by_index() never returns NULL
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 5de92ae..999f572 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -259,7 +259,17 @@ static int is_dirty_gpte(unsigned long pte)
- 
- static int is_rmap_spte(u64 pte)
- {
--	return is_shadow_present_pte(pte);
-+	return pte & PT_RMAP_MASK;
-+}
-+
-+static void spte_set_rmap(u64 *spte)
-+{
-+	*spte |= PT_RMAP_MASK;
-+}
-+
-+static void spte_clear_rmap(u64 *spte)
-+{
-+	*spte &= ~PT_RMAP_MASK;
- }
- 
- static int is_last_spte(u64 pte, int level)
-@@ -543,7 +553,7 @@ static int rmap_add(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn)
- 	unsigned long *rmapp;
- 	int i, count = 0;
- 
--	if (!is_rmap_spte(*spte))
-+	if (!is_shadow_present_pte(*spte) || !is_writable_pte(*spte))
- 		return count;
- 	gfn = unalias_gfn(vcpu->kvm, gfn);
- 	sp = page_header(__pa(spte));
-@@ -573,6 +583,7 @@ static int rmap_add(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn)
- 			;
- 		desc->sptes[i] = spte;
- 	}
-+	spte_set_rmap(spte);
- 	return count;
- }
- 
-@@ -610,6 +621,7 @@ static void rmap_remove(struct kvm *kvm, u64 *spte)
- 
- 	if (!is_rmap_spte(*spte))
- 		return;
-+	spte_clear_rmap(spte);
- 	sp = page_header(__pa(spte));
- 	pfn = spte_to_pfn(*spte);
- 	if (*spte & shadow_accessed_mask)
-@@ -646,6 +658,7 @@ static void rmap_remove(struct kvm *kvm, u64 *spte)
- 		pr_err("rmap_remove: %p %llx many->many\n", spte, *spte);
- 		BUG();
- 	}
-+
- }
- 
- static u64 *rmap_next(struct kvm *kvm, unsigned long *rmapp, u64 *spte)
-diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
-index be66759..166b9b5 100644
---- a/arch/x86/kvm/mmu.h
-+++ b/arch/x86/kvm/mmu.h
-@@ -22,6 +22,7 @@
- #define PT_PAGE_SIZE_MASK (1ULL << 7)
- #define PT_PAT_MASK (1ULL << 7)
- #define PT_GLOBAL_MASK (1ULL << 8)
-+#define PT_RMAP_MASK (1ULL << 9)
- #define PT64_NX_SHIFT 63
- #define PT64_NX_MASK (1ULL << PT64_NX_SHIFT)
- 
--- 
-1.6.1.2
-
-
-
-
+ drivers/block/drbd/drbd_actlog.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
