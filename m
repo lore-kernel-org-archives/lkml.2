@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab0DAV3s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 17:29:48 -0400
-Received: from sj-iport-5.cisco.com ([171.68.10.87]:29059 "EHLO
-	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752787Ab0DAV3q (ORCPT
+	id S1754808Ab0DAVaW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 17:30:22 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:38877 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514Ab0DAVaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 17:29:46 -0400
-Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAPqstEurR7Hu/2dsb2JhbACDEpg4cZ05iEOQSIErgmtrBIMj
-X-IronPort-AV: E=Sophos;i="4.51,350,1267401600"; 
-   d="scan'208";a="176176999"
-From: Tom Lyon <pugs@lyon-about.com>
-To: Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH 0/1] uio_pci_generic: extensions to allow access for non-privileged processes
-Date: Thu, 1 Apr 2010 14:27:07 -0700
-User-Agent: KMail/1.9.9
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201003311708.38961.pugs@lyon-about.com> <201004010839.07451.pugs@lyon-about.com> <4BB4C1A6.8050904@redhat.com>
-In-Reply-To: <4BB4C1A6.8050904@redhat.com>
+	Thu, 1 Apr 2010 17:30:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=V76ZqqCa6ZorlF08LN6jqDb2RK0zPmJZuLle6MXyo/N6oixquuXGu/gGzCZW95DmYo
+         npd0gqGq0KDqMmcjqOQIU8RhknyjVigEFwv88VFB3/1Z1/QS5zmb7uZMAkEByCWYUkLp
+         uNuptQQ9DARP6CguuIqUSIDPHlkNVqi6AOX4Y=
+Date: Thu, 1 Apr 2010 17:30:10 -0400 (EDT)
+From: Parag Warudkar <parag.lkml@gmail.com>
+X-X-Sender: paragw@parag-laptop
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Parag Warudkar <parag.lkml@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: S2RAM broken on HP 8530p
+In-Reply-To: <201004012208.37540.rjw@sisk.pl>
+Message-ID: <alpine.DEB.2.00.1004011725540.2043@parag-laptop>
+References: <alpine.DEB.2.00.1003312050370.1876@parag-laptop> <201004010316.17898.rjw@sisk.pl> <alpine.DEB.2.00.1003312136220.1726@parag-laptop> <201004012208.37540.rjw@sisk.pl>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201004011427.07353.pugs@lyon-about.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 April 2010 08:54:14 am Avi Kivity wrote:
-> On 04/01/2010 06:39 PM, Tom Lyon wrote:
-> >>> - support for MSI and MSI-X interrupts (the intel 82599 VFs support
-> >>> only MSI-X)
-> >>
-> >> How does a userspace program receive those interrupts?
-> >
-> > Same as other UIO drivers - by read()ing an event counter.
->
-> IIRC the usual event counter is /dev/uioX, what's your event counter now?
->
-> kvm really wants the event counter to be an eventfd, that allows hooking
-> it directly to kvm (which can inject an interrupt on an eventfd_signal),
-> can you adapt your patch to do this?
 
-I looked further into eventfds - they seem the perfect solution for the 
-MSI/MSI-X interrupts. Will include in V2.
+
+On Thu, 1 Apr 2010, Rafael J. Wysocki wrote:
+
+> Please try:
+> 
+> # echo devices > /sys/power/pm_test
+> # echo mem > /sys/power/state
+> 
+> and see if that breaks too (it should get back to the command line in about
+> 5-10 seconds).
+
+That breaks too - hangs similarly during suspend. I enabled RTC tracing 
+and every time it prints out different hash matches after reboot - 
+tty/tty21, pcie04  and latest is 
+
+[    0.865296] pcieport 0000:00:1c.1: hash matches
+
+Also when the suspend fails the immediate boot after that I get a USB 
+error on startup - unable to enumerate usb device on port 1. This error is 
+not present on normal boots.
+
+Parag
