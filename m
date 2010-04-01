@@ -1,102 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab0DAQbg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:31:36 -0400
+	id S932118Ab0DAQbV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:31:21 -0400
 Received: from mx1.redhat.com ([209.132.183.28]:17543 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757955Ab0DAQbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757663Ab0DAQbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 1 Apr 2010 12:31:05 -0400
-Date: Thu, 1 Apr 2010 11:02:03 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Neil Horman <nhorman@redhat.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>, joerg.roedel@amd.com,
-       kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-       Chris Wright <chrisw@sous-sol.org>, hbabu@us.ibm.com,
-       iommu@lists.linux-foundation.org
-Subject: Re: [PATCH] amd iommu: force flush of iommu prior during shutdown
-Message-ID: <20100401150203.GD6844@redhat.com>
-References: <20100331152417.GB13406@hmsreliant.think-freely.org> <20100331212535.GR29241@sequoia.sous-sol.org> <20100401011311.GC2069@localhost.localdomain> <20100401022418.GA1983@redhat.com> <20100401125304.GA13603@shamino.rdu.redhat.com>
+Message-ID: <4BB4ABBB.4000909@redhat.com>
+Date: Thu, 01 Apr 2010 17:20:43 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100401125304.GA13603@shamino.rdu.redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Darren Hart <dvhltc@us.ibm.com>
+CC: "lkml, " <linux-kernel@vger.kernel.org>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Peter Morreale <pmorreale@novell.com>,
+       Chris Wright <chrisw@sous-sol.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: RFC: Ideal Adaptive Spinning Conditions
+References: <4BB3D90C.3030108@us.ibm.com>
+In-Reply-To: <4BB3D90C.3030108@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 01, 2010 at 08:53:04AM -0400, Neil Horman wrote:
-> On Wed, Mar 31, 2010 at 10:24:18PM -0400, Vivek Goyal wrote:
-> > On Wed, Mar 31, 2010 at 09:13:11PM -0400, Neil Horman wrote:
-> > > On Wed, Mar 31, 2010 at 02:25:35PM -0700, Chris Wright wrote:
-> > > > * Neil Horman (nhorman@tuxdriver.com) wrote:
-> > > > > Flush iommu during shutdown
-> > > > > 
-> > > > > When using an iommu, its possible, if a kdump kernel boot follows a primary
-> > > > > kernel crash, that dma operations might still be in flight from the previous
-> > > > > kernel during the kdump kernel boot.  This can lead to memory corruption,
-> > > > > crashes, and other erroneous behavior, specifically I've seen it manifest during
-> > > > > a kdump boot as endless iommu error log entries of the form:
-> > > > > AMD-Vi: Event logged [IO_PAGE_FAULT device=00:14.1 domain=0x000d
-> > > > > address=0x000000000245a0c0 flags=0x0070]
-> > > > 
-> > > > We've already fixed this problem once before, so some code shift must
-> > > > have brought it back.  Personally, I prefer to do this on the bringup
-> > > > path than the teardown path.  Besides keeping the teardown path as
-> > > > simple as possible (goal is to get to kdump kernel asap), there's also
-> > > > reason to competely flush on startup in genernal in case BIOS has done
-> > > > anything unsavory.
-> > > > 
-> > > Chris,
-> > > 	Can you elaborate on what you did with the iommu to make this safe?  It
-> > > will save me time digging through the history on this code, and help me
-> > > understand better whats going on here.
-> > > 
-> > > I was starting to think that we should just leave the iommu on through a kdump,
-> > > and re-construct a new page table based on the old table (filtered by the error
-> > > log) on kdump boot, but it sounds like a better solution might be in place.
-> > > 
-> > 
-> > Hi Neil,
-> > 
-> > Is following sequence possible.
-> > 
-> > - In crashed kernel, take away the write permission from all the devices.
-> >   Mark bit 62 zero for all devices in device table.
-> > 
-> > - Leave the iommu on and let the device entries be valid in kdump kernel
-> >   so that any in-flight dma does not become pass through (which can cause
-> >   more damage and corrupt kdump kernel).
-> > 
-> > - During kdump kernel initialization, load a new device table where again
-> >   all the devices don't have write permission. looks like by default
-> >   we create a device table with all bits zero except DEV_ENTRY_VALID
-> >   and DEV_ENTRY_TRANSLATION bit.
-> > 
-> > - Reset the device where we want to setup any dma or operate on.
-> > 
-> > - Allow device to do DMA/write.
-> > 
-> > So by default all the devices will not be able to do write to memory 
-> > and selective devices are given access only after a reset.
-> > 
-> > I am not sure what are the dependencies for loading a new device table
-> > in second kernel. If it requires disabling the IOMMU, then we leave a
-> > window where in-flight dma will become passthrough and has the potential
-> > to corrupt kdump kernel.
-> > 
-> I think this is possible, but I'm a bit concerned with how some devices will
-> handle a reset.  For instance, what will happen to an HBA or a disk, if we reset
-> it as the module is loading?  Is that safe?
+On 04/01/2010 02:21 AM, Darren Hart wrote:
+> I'm looking at some adaptive spinning with futexes as a way to help 
+> reduce the dependence on sched_yield() to implement userspace 
+> spinlocks. Chris, I included you in the CC after reading your comments 
+> regarding sched_yield() at kernel summit and I thought you might be 
+> interested.
+>
+> I have an experimental patchset that implements FUTEX_LOCK and 
+> FUTEX_LOCK_ADAPTIVE in the kernel and use something akin to 
+> mutex_spin_on_owner() for the first waiter to spin. What I'm finding 
+> is that adaptive spinning actually hurts my particular test case, so I 
+> was hoping to poll people for context regarding the existing adaptive 
+> spinning implementations in the kernel as to where we see benefit. 
+> Under which conditions does adaptive spinning help?
+>
+> I presume locks with a short average hold time stand to gain the most 
+> as the longer the lock is held the more likely the spinner will expire 
+> its timeslice or that the scheduling gain becomes noise in the 
+> acquisition time. My test case simple calls "lock();unlock()" for a 
+> fixed number of iterations and reports the iterations per second at 
+> the end of the run. It can run with an arbitrary number of threads as 
+> well. I typically run with 256 threads for 10M iterations.
+>
+>          futex_lock: Result: 635 Kiter/s
+> futex_lock_adaptive: Result: 542 Kiter/s
 
-I think we need to reset devices in driver if "reset_devices" is set. So
-we will not reset these during normal boot.
+A lock(); unlock(); loop spends most of its time with the lock held or 
+contended.  Can you something like this:
 
-Regarding being safe, I don't know. I am assuming that driver knows (or
-need to know), how to reset device safely while driver is initializing.
-That's the whole assumption kdump is built on, that once driver is
-initializing, it will first reset the device (if reset_devices is set), so
-that chances of device working properly in second kernel increase.
 
-Vivek
+    lock();
+    for (i = 0; i < 1000; ++i)
+         asm volatile ("" : : : "memory");
+    unlock();
+    for (i = 0; i < 10000; ++i)
+         asm volatile ("" : : : "memory");
+
+This simulates a lock hold ratio of 10% with the lock hold time 
+exceeding the acquisition time.  Will be interesting to lower both loop 
+bounds as well.
+
+-- 
+error compiling committee.c: too many arguments to function
 
