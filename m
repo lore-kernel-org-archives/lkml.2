@@ -1,85 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757Ab0DANbN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 09:31:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4030 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752018Ab0DANaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 09:30:55 -0400
-Date: Thu, 1 Apr 2010 15:13:21 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Cc: anfei <anfei.zhou@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       nishimura@mxp.nes.nec.co.jp,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH 0/1] oom: fix the unsafe usage of badness() in
-	proc_oom_score()
-Message-ID: <20100401131321.GA11291@redhat.com>
-References: <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330163909.GA16884@redhat.com> <alpine.DEB.2.00.1003301331110.5234@chino.kir.corp.google.com> <20100331091628.GA11438@redhat.com> <20100331201746.GC11635@redhat.com> <alpine.DEB.2.00.1004010029260.6285@chino.kir.corp.google.com>
+	id S1753031Ab0DANgO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 09:36:14 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:34626 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab0DANgI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 09:36:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=iKkDReFTYraAkAXxSaGAP07hVLauwgThl+lsS5snSLgGCvxghrLXg48IBu++rno1Ty
+         MQivamX79LrRVsVrrMJ4BMDg5q9IylRie+ugfhZut23viqQZSp/a9vAMHNBpd4YjsvCw
+         Y8xHt/GA8zVGoFaMzSijoTSQuhrcqQsXMcVDo=
+From: Karsten Wiese <fzuuzf@googlemail.com>
+To: Andy Lutomirski <luto@myrealbox.com>
+Subject: Re: i915 lockup / extreme delay
+Date: Thu, 1 Apr 2010 14:35:59 +0100
+User-Agent: KMail/1.12.3 (Linux/2.6.27.41-170.2.117.fc10.x86_64; KDE/4.3.3; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Eric Anholt <eric@anholt.net>
+References: <ho2jal$oqs$1@dough.gmane.org> <bad735c81003270254i5e1cdb3dv26c1566e5d005e9f@mail.gmail.com> <4BB49B04.2000303@myrealbox.com>
+In-Reply-To: <4BB49B04.2000303@myrealbox.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1004010029260.6285@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004011535.59629.fzuuzf@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01, David Rientjes wrote:
->
-> On Wed, 31 Mar 2010, Oleg Nesterov wrote:
->
-> > But. Oh well. David, oom-badness-heuristic-rewrite.patch changed badness()
-> > to consult p->signal->oom_score_adj. Until recently this was wrong when it
-> > is called from proc_oom_score().
-> >
-> > This means oom-badness-heuristic-rewrite.patch depends on
-> > signals-make-task_struct-signal-immutable-refcountable.patch, or we
-> > need the pid_alive() check again.
-> >
->
-> oom-badness-heuristic-rewrite.patch didn't change anything, Linus' tree
-> currently dereferences p->signal->oom_adj
+Am Donnerstag 01 April 2010 schrieb Andy Lutomirski:
+> Karl Vogel wrote:
+> > On Mon, Mar 22, 2010 at 4:34 PM, Eric Anholt <eric@anholt.net> wrote:
+> >> On Mon, 22 Mar 2010 09:11:06 +0100, Karl Vogel <karl.vogel@gmail.com> wrote:
+> >>> On Mon, Mar 22, 2010 at 5:20 AM, Eric Anholt <eric@anholt.net> wrote:
+> >>>> On Sat, 20 Mar 2010 14:41:41 +0100, Karl Vogel <karl.vogel@gmail.com> wrote:
+> >>>>> The 'effect' is that only the mouse pointer works in the X server. The
+> >>>>> cpu usage on the laptop during the sluggishness is minimal. When I
+> >>>>> suspend the game with winedbg, the X server slowly becomes responsive again.
+> >>>>>
+> >>>>> The output from latencytop seems to point to i915 being the culprit:
+> >>>> If there's some code doing glFlush()es, it's probably that code at
+> >>>> fault.  You don't need to do that unless you're doing frontbuffer
+> >>>> rendering, and if you're doing frontbuffer rendering you should really
+> >>>> be doing backbuffer rendering.  I don't see a kernel issue here.
+> >>> That doesnt explain why the box completely locks up on 2.6.34-rc2
+> >>> though, where only a cold reboot works.
+> >> Missed that part of the message.  If there's a regression, bisect
+> >> please.
+> > 
+> > Apparently the crash was caused by a hardware bug in the intel chipset
+> > which is 8086:2a40 rev 07. While doing the bisect I got an error:
+> > 
+> > DRHD: handling fault status reg 2
+> > DMAR:[DMA Write] Request device [00:02.0] fault addr dd69a000
+> > DMAR:[fault reason 05] PTE Write access is not set
+> > 
+> > After some googling around, I found this bugzilla entry which explains it:
+> > 
+> > https://bugzilla.redhat.com/show_bug.cgi?id=538163#c58
+> > 
+> > The issue appears that the graphics chip is corrupting memory:
+> > 
+> > "Unfortunately, this particular chipset sometimes reads from the GTT, does the
+> > translation, then writes the translated address back to the _original_ GTT
+> > instead of to the shadow GTT. That's why you're seeing real physical addresses
+> > where you should have 'virtual DMA addresses', and you get the faults.   "
+> > 
+> > Adding "intel_iommu=igfx_off" to the kernel command line resolved the issue.
+> > The fedora kernel automatically disables this when it detects this particular
+> > chipset revision.
+> > 
+> > As for the freeze/slowdown right after booting, sysprof shows that more than 77%
+> > of the time is spent inside: drm_mode_getconnector
+> 
+> http://lists.freedesktop.org/archives/intel-gfx/2010-February/005922.html
+> 
+> I'm waiting for the encoder/connector stuff to get merged before I 
+> either pester people about that bug again or try to fix it myself.
+> 
+> You can try the same hack I use (comment out the initialization of all 
+> digital outputs) if you don't use them -- that completely fixes it for me.
 
-Yes, I wrongly blaimed oom-badness-heuristic-rewrite.patch, vanilla does
-the same.
+Andy, please try this patch.
+Eric, please review.
 
-Now this is really bad, and I am resending my patch.
+Thanks,
+Karsten
 
-David, Andrew, I understand it (textually) conflicts with
-oom-badness-heuristic-rewrite.patch, but this bug should be fixed imho
-before other changes. I hope it will be easy to fixup this chunk
+[RFC PATCH] drm/i915: Don't touch PORT_HOTPLUG_EN in intel_dp_detect()
+ Von: Karsten Wiese <fzuuzf@googlemail.com>
+ An: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>, Eric Anholt <eric@anholt.net>
+ 
+PORT_HOTPLUG_EN has allready been setup in i915_driver_irq_postinstall(),
+when intel_dp_detect() runs.
 
-	@@ -447,7 +447,13 @@ static int proc_oom_score(struct task_st
+Delete the DP[BCD]_HOTPLUG_INT_EN defines, they are not referenced anymore.
 
-		do_posix_clock_monotonic_gettime(&uptime);
-		read_lock(&tasklist_lock);
-	-       points = badness(task->group_leader, uptime.tv_sec);
-	+       points = oom_badness(task->group_leader,
+I found this while searching for a fix for
+        https://bugzilla.redhat.com/show_bug.cgi?id=528312
 
-in that patch.
+Signed-off-by: Karsten Wiese <fzu@wemgehoertderstaat.de>
+---
+See also 
+"drm/i915: only enable hotplug for detected outputs"
+b01f2c3a4a37d09a47ad73ccbb46d554d21cfeb0
 
-> >  	do_posix_clock_monotonic_gettime(&uptime);
-> >  	read_lock(&tasklist_lock);
-> > -	points = oom_badness(task->group_leader,
-> > +	if (pid_alive(task))
-> > +		points = oom_badness(task,
-> >  				global_page_state(NR_INACTIVE_ANON) +
-> >  				global_page_state(NR_ACTIVE_ANON) +
-> >  				global_page_state(NR_INACTIVE_FILE) +
->
-> This should be protected by the get_proc_task() on the inode before
-> this function is called from proc_info_read().
+ drivers/gpu/drm/i915/i915_reg.h |    3 ---
+ drivers/gpu/drm/i915/intel_dp.c |   10 ----------
+ 2 files changed, 0 insertions(+), 13 deletions(-)
 
-No, get_proc_task() shouldn't (and can't) do this. To clarify,
-get_proc_task() does check the task wasn't unhashed, but nothing can
-prevent from release_task() after that. Once again, only task_struct
-itself is protected by get_task_struct(), nothing more.
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+index ab1bd2d..92f440d 100644
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -854,11 +854,8 @@
+ /* Hotplug control (945+ only) */
+ #define PORT_HOTPLUG_EN                0x61110
+ #define   HDMIB_HOTPLUG_INT_EN                 (1 << 29)
+-#define   DPB_HOTPLUG_INT_EN                   (1 << 29)
+ #define   HDMIC_HOTPLUG_INT_EN                 (1 << 28)
+-#define   DPC_HOTPLUG_INT_EN                   (1 << 28)
+ #define   HDMID_HOTPLUG_INT_EN                 (1 << 27)
+-#define   DPD_HOTPLUG_INT_EN                   (1 << 27)
+ #define   SDVOB_HOTPLUG_INT_EN                 (1 << 26)
+ #define   SDVOC_HOTPLUG_INT_EN                 (1 << 25)
+ #define   TV_HOTPLUG_INT_EN                    (1 << 18)
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+index 439506c..7a3b5c8 100644
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -1179,16 +1179,6 @@ intel_dp_detect(struct drm_connector *connector)
+        if (IS_IRONLAKE(dev))
+                return ironlake_dp_detect(connector);
 
-Oleg.
-
+-       temp = I915_READ(PORT_HOTPLUG_EN);
+-
+-       I915_WRITE(PORT_HOTPLUG_EN,
+-              temp |
+-              DPB_HOTPLUG_INT_EN |
+-              DPC_HOTPLUG_INT_EN |
+-              DPD_HOTPLUG_INT_EN);
+-
+-       POSTING_READ(PORT_HOTPLUG_EN);
+-
+        switch (dp_priv->output_reg) {
+        case DP_B:
+                bit = DPB_HOTPLUG_INT_STATUS;
+--
