@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab0DAFNt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 01:13:49 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:38045 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752632Ab0DAFNn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 01:13:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=RNlbG4Twz7tGLAICX6vVaxcqOg9bKjZIW71TKUe+urRjZm0LLiIZ8BCOcA+jprVF2q
-         ELQEpl6aFpQOUmwadiTw0lK7VyRsicZoCMDzZdDMq0b0dqsCAmqwj0Tc8KoJgFRTg11/
-         3ehdPpDGIB23Sze76T7NSTwbJH742JF+4bRO0=
-Date: Thu, 1 Apr 2010 08:13:46 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 7/7] ring-buffer: Add lost event count to end of sub
-	buffer
-Message-ID: <20100401061343.GA5207@nowhere>
-References: <20100401031735.683626160@goodmis.org> <20100401031820.590115556@goodmis.org>
+	id S1752796Ab0DAFP7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 01:15:59 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:46002 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752632Ab0DAFPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 01:15:53 -0400
+Message-ID: <4BB42C04.7090308@us.ibm.com>
+Date: Wed, 31 Mar 2010 22:15:48 -0700
+From: Darren Hart <dvhltc@us.ibm.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100401031820.590115556@goodmis.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: rostedt@goodmis.org
+CC: "lkml," <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Peter Morreale <pmorreale@novell.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       Chris Mason <chris.mason@oracle.com>
+Subject: Re: RFC: Ideal Adaptive Spinning Conditions
+References: <4BB3D90C.3030108@us.ibm.com> <1270078689.19685.8040.camel@gandalf.stny.rr.com> <4BB40140.20109@us.ibm.com> <1270088753.19685.8218.camel@gandalf.stny.rr.com>
+In-Reply-To: <1270088753.19685.8218.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 11:17:42PM -0400, Steven Rostedt wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
+Steven Rostedt wrote:
+> On Wed, 2010-03-31 at 19:13 -0700, Darren Hart wrote:
+>> Steven Rostedt wrote:
+>>> On Wed, 2010-03-31 at 16:21 -0700, Darren Hart wrote:
+>>>
+>>>> o What type of lock hold times do we expect to benefit?
+>>> 0 (that's a zero) :-p
+>>>
+>>> I haven't seen your patches but you are not doing a heuristic approach,
+>>> are you? That is, do not "spin" hoping the lock will suddenly become
+>>> free. I was against that for -rt and I would be against that for futex
+>>> too.
+>> I'm not sure what you're getting at here. Adaptive spinning is indeed 
+>> hoping the lock will become free while you are spinning and checking 
+>> it's owner...
 > 
-> Currently, binary readers of the ring buffer only know where events were
-> lost, but not how many events were lost at that location.
-> This information is available, but it would require adding another
-> field to the sub buffer header to include it.
+> I'm talking about the original idea people had of "lets spin for 50us
+> and hope it is unlocked before then", which I thought was not a good
+> idea.
 > 
-> But when a event can not fit at the end of a sub buffer, it is written
-> to the next sub buffer. This means there is a good chance that the
-> buffer may have room to hold this counter. If it does, write
-> the counter at the end of the sub buffer and set another flag
-> in the data size field that states that this information exists.
+> 
+>>>> o How much contention is a good match for adaptive spinning?
+>>>>    - this is related to the number of threads to run in the test
+>>>> o How many spinners should be allowed?
+>>>>
+>>>> I can share the kernel patches if people are interested, but they are 
+>>>> really early, and I'm not sure they are of much value until I better 
+>>>> understand the conditions where this is expected to be useful.
+>>> Again, I don't know how you implemented your adaptive spinners, but the
+>>> trick to it in -rt was that it would only spin while the owner of the
+>>> lock was actually running. If it was not running, it would sleep. No
+>>> point waiting for a sleeping task to release its lock.
+>> It does exactly this.
+> 
+> OK, that's good.
+> 
+>>> Is this what you did? Because, IIRC, this only benefited spinlocks
+>>> converted to mutexes. It did not help with semaphores, because
+>>> semaphores could be held for a long time. Thus, it was good for short
+>>> held locks, but hurt performance on long held locks.
+>> Trouble is, I'm still seeing performance penalties even on the shortest 
+>> critical section possible (lock();unlock();)
+> 
+> performance penalties compared to what? not having adaptive at all?
+
+Right. See the data in the original mail:
 
 
-Since you can not ensure you have a room for that,
-is there no way to delay the update of cpu_buffer->last_overrun
-until you find a large enough end of page for that?
+          futex_lock: Result: 635 Kiter/s
+futex_lock_adaptive: Result: 542 Kiter/s
 
-I mean, you do this in rb_get_page():
+So 15% fewer lock/unlock iterations per second with in kernel adaptive 
+spinning enabled for a critical section approaching 0 in length. But If 
+we agree I'm taking the right approach, then it's time for me to polish 
+things up a bit and send them out for review.
 
-       if (overwrite != cpu_buffer->last_overrun) {
-               cpu_buffer->lost_events = overwrite - cpu_buffer->last_overrun;
-               cpu_buffer->last_overrun = overwrite;
-       }
-
-If you don't have enough room to put lost_events in the end of
-the buffer, you could keep as is cpu_buffer->last_overrun,
-so the next time you swap the reader page, the new delta
-will be added to the previous that you couldn't transmit.
-
-That way you ensure the user always know when you lose events.
-
+-- 
+Darren Hart
+IBM Linux Technology Center
+Real-Time Linux Team
