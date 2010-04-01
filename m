@@ -1,42 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755696Ab0DARaQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 13:30:16 -0400
-Received: from ernst.netinsight.se ([194.16.221.21]:64348 "HELO
-	ernst.netinsight.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755148Ab0DARaI (ORCPT
+	id S1757569Ab0DARaZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 13:30:25 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60799 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756145Ab0DARaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 13:30:08 -0400
-Message-ID: <4BB4D817.1050603@users.sourceforge.net>
-Date: Thu, 01 Apr 2010 19:29:59 +0200
-From: =?ISO-8859-1?Q?Anders_Grafstr=F6m?= <grfstrm@users.sourceforge.net>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
-MIME-Version: 1.0
-To: Daniel Mack <daniel@caiaq.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-       AKML <linux-arm-kernel@lists.infradead.org>,
-       linux-wireless@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-       Sven Neumann <s.neumann@raumfeld.com>, stable@kernel.org
-Subject: Re: Memory corruption with 2.6.32.10, but not with 2.6.34-rc3
-References: <20100401132156.GJ30807@buzzloop.caiaq.de>
-In-Reply-To: <20100401132156.GJ30807@buzzloop.caiaq.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 1 Apr 2010 13:30:09 -0400
+Date: Thu, 1 Apr 2010 10:27:44 -0400
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+       Rabin Vincent <rabin@rab.in>, lkml <linux-kernel@vger.kernel.org>,
+       penberg@cs.helsinki.fi, cl@linux-foundation.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       linux-arch@vger.kernel.org, David Howells <dhowells@redhat.com>
+Subject: Re: start_kernel(): bug: interrupts were enabled early
+Message-Id: <20100401102744.a4e6f24d.akpm@linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1004010904540.3707@i5.linux-foundation.org>
+References: <20100325194100.GA2364@debian>
+	<20100331134048.da4e35a7.akpm@linux-foundation.org>
+	<4BB3B4DB.7040904@kernel.org>
+	<20100331135220.c6695a51.akpm@linux-foundation.org>
+	<4BB3BAD6.50308@zytor.com>
+	<alpine.LFD.2.00.1004010904540.3707@i5.linux-foundation.org>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Mack wrote:
-> We would like to have a fix for this annoying bug in the stable series
-> (especially 2.6.32.x) as well, but I don't have much ideas about where
-> to search for it. Hence, I would appreciate if maintainers could think
-> about any possible commits in the described time window which haven't
-> reached stable. Does the description ring anyone's bell?
+On Thu, 1 Apr 2010 09:13:31 -0700 (PDT) Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
 > 
-> I can cherry-pick things if anyone pin-points something and run
-> lont-time tests again. Any pointer appreciated.
+> 
+> On Wed, 31 Mar 2010, H. Peter Anvin wrote:
+> > 
+> > The obvious way to fix this would be to use
+> > spin_lock_irqsave..spin_lock_irqrestore in __down_read as well as in the
+> > other locations; I don't have a good feel for what the cost of doing so
+> > would be, though.  On x86 it's fairly expensive simply because the only
+> > way to save the state is to push it on the stack, which the compiler
+> > doesn't deal well with, but this code isn't used on x86.
+> 
+> I think that's what we should just do, with a good comment both in the 
+> code and the changelog. I'm not entirely happy with it, because obviously 
+> it's conceptually kind of dubious to take a lock with interrupts disabled 
+> in the first place, but this is not a new issue per se.
+> 
+> The whole bootup code is special, and we already make similar guarantees 
+> about memory allocators and friends - just because it's too dang painful 
+> to have some special code that does GFP_ATOMIC for early bootup when the 
+> same code is often shared and used at run-time too.
+> 
+> So we've accepted that people can do GFP_KERNEL allocations and we won't 
+> care about them if we're in the boot phase (and suspend/resume), and we 
+> have that whole 'gfp_allowed_mask' thing for that.
+> 
+> I think this probably falls under exactly the same heading of "not pretty, 
+> but let's not blow up".
+> 
+> So making the slow-path do the spin_[un]lock_irq{save,restore}() versions 
+> sounds like the right thing. It won't be a performance issue: it _is_ the 
+> slow-path, and we're already doing the expensive part (the spinlock itself 
+> and the irq thing).
 
-You could try this one:
+It's actually on the fastpath for lib/rwsem-spinlock.c.
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=8e4971f2fb2380ce66196136e113d04196b80fcd
-
+> So ACK on the idea. Who wants to write the trivial patch and test it? 
+> Preferably somebody who sees the problem in the first place - x86 should 
+> not be impacted, since the irq-disabling slow-path should never be hit 
+> without contention anyway (and contention cannot/mustnot happen for this 
+> case).
+> 
+> 			Linus
