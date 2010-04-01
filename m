@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab0DALYD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 07:24:03 -0400
-Received: from palinux.external.hp.com ([192.25.206.14]:44579 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755122Ab0DALXy (ORCPT
+	id S1755395Ab0DALYX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 07:24:23 -0400
+Received: from hp3.statik.tu-cottbus.de ([141.43.120.68]:44785 "EHLO
+	hp3.statik.tu-cottbus.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755356Ab0DALX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 07:23:54 -0400
-Date: Thu, 1 Apr 2010 05:23:52 -0600
-From: Matthew Wilcox <matthew@wil.cx>
-To: Jamie Lokier <jamie@shareable.org>
-Cc: David Howells <dhowells@redhat.com>, Russell King <rmk@arm.linux.org.uk>,
-       Yinghai Lu <yinghai@kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Rabin Vincent <rabin@rab.in>,
-       lkml <linux-kernel@vger.kernel.org>, hpa@zytor.com,
-       penberg@cs.helsinki.fi, cl@linux-foundation.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       linux-arch@vger.kernel.org
-Subject: Re: start_kernel(): bug: interrupts were enabled early
-Message-ID: <20100401112352.GB20577@parisc-linux.org>
-References: <20100331210555.GA17715@flint.arm.linux.org.uk> <20100325194100.GA2364@debian> <20100331134048.da4e35a7.akpm@linux-foundation.org> <4BB3B4DB.7040904@kernel.org> <19680.1270076318@redhat.com> <20100401094111.GB29433@shareable.org>
+	Thu, 1 Apr 2010 07:23:58 -0400
+Message-ID: <4BB4823F.7040408@s5r6.in-berlin.de>
+Date: Thu, 01 Apr 2010 13:23:43 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.8.1.23) Gecko/20090825 SeaMonkey/1.1.18
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100401094111.GB29433@shareable.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: David Miller <davem@davemloft.net>
+CC: w@1wt.eu, gregkh@suse.de, david@fromorbit.com,
+       linux-kernel@vger.kernel.org, stable@kernel.org,
+       akpm@linux-foundation.org, torvalds@linux-foundation.org,
+       stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [Stable-review] 4 stable kernel review cycles starting
+References: <20100331215332.GH7671@dastard>	<20100331224755.GA23284@suse.de>	<20100401044048.GD16238@1wt.eu> <20100401.002622.179174704.davem@davemloft.net>
+In-Reply-To: <20100401.002622.179174704.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 01, 2010 at 10:41:11AM +0100, Jamie Lokier wrote:
-> David Howells wrote:
-> > Russell King <rmk@arm.linux.org.uk> wrote:
-> > > We use the standard generic kernel implementation.  Is x86 different? ;)
-> > 
-> > The optimised fast paths used on x86 rwsems don't disable interrupts.
+David Miller wrote:
+> From: Willy Tarreau <w@1wt.eu>
+> Date: Thu, 1 Apr 2010 06:40:48 +0200
 > 
-> Any reason not to use the same technique for all the archs - plus the
-> trick used in arch/armkernel/entry-armv.S:__kuser_cmpxchg for those
-> archs which don't have atomic instructions or ll/sc?
+>> For this reason, IMHO it helps when submitters can indicate in each
+>> patch the mainline equivalent ID, or alternatively that it's pointless
+>> to look for it because the fix is much different.
+> 
+> I put this at the top of every networking/ide/sparc commit message
+> for -stable submissions I make.
+> 
+> In fact I thought that was a requirement for -stable submissions?
 
-Assuming you're talking about the __LINUX_ARM_ARCH__ < 6 + CONFIG_MMU
-case, then this only works for uniprocessor machines.
-
-> If the problem here is _only_ semaphores, and the above might make
-> semaphores faster anyway, perhaps it's a solution.
-
-You trade off a bit of overhead in the semaphore path for a bit of
-overhead in the interrupt path.  We probably take more sempahores than
-we do interrupts, so it's probably worthwhile.  Still, cmpxchg() needs
-to be SMP-safe.
-
-Realistically, this isn't something that can be done in generic code.
-It has to be done in arch-specific code.
-
+It is a documented requirement, perhaps not very clearly worded in The
+Submitter's Guide To Stable...
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=46cdf871d9970b9252469531f9efd4a17243bb0b
 -- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+Stefan Richter
+-=====-==-=- -=-- ----=
+http://arcgraph.de/sr/
