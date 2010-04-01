@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352Ab0DAIcl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 04:32:41 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:37235 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754289Ab0DAIcb (ORCPT
+	id S1754408Ab0DAIct (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 04:32:49 -0400
+Received: from smtp-vbr4.xs4all.nl ([194.109.24.24]:4981 "EHLO
+	smtp-vbr4.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754290Ab0DAIcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 04:32:31 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=LmChHhrQ8l3JMpZELY6gj2rNerU9w7frfJsXC3wkETpGxIaAyak9kBuO0v3SeTVM7
-	ULHlEiF0CcMJi0ZQH5eUw==
-Date: Thu, 1 Apr 2010 01:32:13 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       nishimura@mxp.nes.nec.co.jp,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm] proc: don't take ->siglock for /proc/pid/oom_adj
-In-Reply-To: <20100331230032.GB4025@redhat.com>
-Message-ID: <alpine.DEB.2.00.1004010128050.6285@chino.kir.corp.google.com>
-References: <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com>
- <20100330163909.GA16884@redhat.com> <20100330174337.GA21663@redhat.com> <alpine.DEB.2.00.1003301329420.5234@chino.kir.corp.google.com> <20100331185950.GB11635@redhat.com> <alpine.DEB.2.00.1003311408520.31252@chino.kir.corp.google.com>
- <20100331230032.GB4025@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 1 Apr 2010 04:32:32 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH 12/24] media/video: fix dangling pointers
+Date: Thu, 1 Apr 2010 10:32:50 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.33-tschai; KDE/4.3.5; x86_64; ; )
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Jean Delvare <khali@linux-fr.org>, kernel-janitors@vger.kernel.org,
+       linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Mauro Carvalho Chehab <mchehab@infradead.org>,
+       linux-media@vger.kernel.org
+References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de> <201003211709.56319.hverkuil@xs4all.nl> <20100330123912.GI29472@pengutronix.de>
+In-Reply-To: <20100330123912.GI29472@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-6"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004011032.50117.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Apr 2010, Oleg Nesterov wrote:
-
-> > That doesn't work for depraceted_mode (sic), you'd need to test for
-> > OOM_ADJUST_MIN and OOM_ADJUST_MAX in that case.
+On Tuesday 30 March 2010 14:39:12 Wolfram Sang wrote:
+> Hans,
 > 
-> Yes, probably "if (depraceted_mode)" should do more checks, I didn't try
-> to verify that MIN/MAX are correctly converted. I showed this code to explain
-> what I mean.
+> > But this just feels like an i2c core thing to me. After remove() is called
+> > the core should just set the client data to NULL. If there are drivers that
+> > rely on the current behavior, then those drivers should be reviewed first as
+> > to the reason why they need it.
+> 
+> It will be done this way now. As you have taken part in the discussion, I guess
+> the media-subsystem never really considered picking those patches up ;)
+
+I remember that there was one patch in your patch series where the client data
+was set after it was freed.
+
+That should still be fixed (by just removing the i2c_set_clientdata).
+
+Can you post that one again?
+
+Regards,
+
+	Hans
+
+
+> 
+> Regards,
+> 
+>    Wolfram
+> 
 > 
 
-Ok, please cc me on the patch, it will be good to get rid of the duplicate 
-code and remove oom_adj from struct signal_struct.
-
-> > There have been efforts to reuse as much of this code as possible for
-> > other sysctl handlers as well, you might be better off looking for
-> 
-> David, sorry ;) Right now I'd better try to stop the overloading of
-> ->siglock. And, I'd like to shrink struct_signal if possible, but this
-> is minor.
-> 
-
-Do we need ->siglock?  Why can't we just do
-
-	struct sighand_struct *sighand;
-	struct signal_struct *sig;
-
-	rcu_read_lock();
-	sighand = rcu_dereference(task->sighand);
-	if (!sighand) {
-		rcu_read_unlock();
-		return;
-	}
-	sig = task->signal;
-
-	... load/store to sig ...
-
-	rcu_read_unlock();
-
-instead?
+-- 
+Hans Verkuil - video4linux developer - sponsored by TANDBERG
