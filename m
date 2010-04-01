@@ -1,134 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755015Ab0DAKb6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 06:31:58 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:38658 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753536Ab0DAKbw (ORCPT
+	id S1755059Ab0DAKgY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 06:36:24 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:35478 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755003Ab0DAKgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 06:31:52 -0400
-Subject: Re: [COUNTERPATCH] mm: avoid overflowing preempt_count() in 
- mmu_take_all_locks()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       aarcange@redhat.com, akpm@linux-foundation.org,
-       Kent Overstreet <kent.overstreet@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, tglx <tglx@linutronix.de>
-In-Reply-To: <1270114817-28896-1-git-send-email-avi@redhat.com>
-References: <20100330133634.2f1bf3d6@cuia.bos.redhat.com>
-	 <1270114817-28896-1-git-send-email-avi@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Apr 2010 12:31:46 +0200
-Message-ID: <1270117906.1653.139.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Apr 2010 06:36:17 -0400
+Date: Thu, 1 Apr 2010 12:36:59 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Marvin <marvin24@gmx.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] cpufreq: Add APERF/MPERF support for AMD processors
+Message-ID: <20100401103659.GB5893@aftab>
+References: <1270065406-1814-1-git-send-email-bp@amd64.org>
+ <1270065406-1814-5-git-send-email-bp@amd64.org>
+ <201004011101.04420.marvin24@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004011101.04420.marvin24@gmx.de>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm sure you dropped Ingo and Thomas by accident.
+From: Marvin <marvin24@gmx.de>
+Date: Thu, Apr 01, 2010 at 11:01:04AM +0200
 
-On Thu, 2010-04-01 at 12:40 +0300, Avi Kivity wrote:
-> mmu_take_all_locks() takes a spinlock for each vma, which means we increase
-> the preempt count by the number of vmas in an address space.  Since the user
-> controls the number of vmas, they can cause preempt_count to overflow.
+> > From: Mark Langsdorf <mark.langsdorf@amd.com>
+> > 
+> > Starting with model 10 of Family 0x10, AMD processors may have
+> > support for APERF/MPERF.  Add support for identifying it and using
+> > it within cpufreq.  Move the APERF/MPERF functions out of the
+> > acpi-cpufreq code and into their own file so they can easily be
+> > shared.
 > 
-> Fix by making mmu_take_all_locks() only disable preemption once by making
-> the spinlocks preempt-neutral.
+> just out of interest: what are the realnames of these processors (>= Mangy-Core) ?
 
-Right, so while this will get rid of the warning it doesn't make the
-code any nicer, its still a massive !preempt latency spot.
+Well, you're going to have to wait and see. Or search the net :)
 
-> Signed-off-by: Avi Kivity <avi@redhat.com>
-> ---
->  mm/mmap.c |   37 +++++++++++++++++++++++++++++++++++++
->  1 files changed, 37 insertions(+), 0 deletions(-)
+> > Signed-off-by: Mark Langsdorf <mark.langsdorf@amd.com>
+> > Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> > Reviewed-by: Thomas Renninger <trenn@suse.de>
+> > ---
+> >  arch/x86/kernel/cpu/cpufreq/Makefile       |    4 +-
+> >  arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c |   44 +-----------------------
+> >  arch/x86/kernel/cpu/cpufreq/mperf.c        |   50
+> > ++++++++++++++++++++++++++++ arch/x86/kernel/cpu/cpufreq/mperf.h        | 
+> >   9 +++++
+> >  arch/x86/kernel/cpu/cpufreq/powernow-k8.c  |    8 ++++
+> >  5 files changed, 71 insertions(+), 44 deletions(-)
+> >  create mode 100644 arch/x86/kernel/cpu/cpufreq/mperf.c
 > 
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index 75557c6..7305510 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -2442,6 +2442,12 @@ static void vm_lock_anon_vma(struct mm_struct *mm, struct anon_vma *anon_vma)
->  		 */
->  		spin_lock_nest_lock(&anon_vma->lock, &mm->mmap_sem);
->  		/*
-> +		 * To avoid O(nr_vmas) preempt_disable()s, we keep each
-> +		 * vma preemp_count neutral and instead disable preempt
-> +		 * once per mmu_take_all_lock().
-> +		 */
-> +		preempt_enable();
-> +		/*
->  		 * We can safely modify head.next after taking the
->  		 * anon_vma->lock. If some other vma in this mm shares
->  		 * the same anon_vma we won't take it again.
-> @@ -2471,6 +2477,12 @@ static void vm_lock_mapping(struct mm_struct *mm, struct address_space *mapping)
->  		if (test_and_set_bit(AS_MM_ALL_LOCKS, &mapping->flags))
->  			BUG();
->  		spin_lock_nest_lock(&mapping->i_mmap_lock, &mm->mmap_sem);
-> +		/*
-> +		 * To avoid O(nr_vmas) preempt_disable()s, we keep each
-> +		 * vma preemp_count neutral and instead disable preempt
-> +		 * once per mmu_take_all_lock().
-> +		 */
-> +		preempt_enable();
->  	}
->  }
->  
-> @@ -2516,6 +2528,13 @@ int mm_take_all_locks(struct mm_struct *mm)
->  
->  	mutex_lock(&mm_all_locks_mutex);
->  
-> +	/*
-> +	 * To avoid O(nr_vmas) preempt_disable()s, we keep each
-> +	 * vma preemp_count neutral and instead disable preempt
-> +	 * once per mmu_take_all_lock().
-> +	 */
-> +	preempt_disable();
-> +
->  	for (vma = mm->mmap; vma; vma = vma->vm_next) {
->  		if (signal_pending(current))
->  			goto out_unlock;
-> @@ -2558,6 +2577,12 @@ static void vm_unlock_anon_vma(struct anon_vma *anon_vma)
->  		if (!__test_and_clear_bit(0, (unsigned long *)
->  					  &anon_vma->head.next))
->  			BUG();
-> +		/*
-> +		 * To avoid O(nr_vmas) preempt_disable()s, we keep each
-> +		 * vma preemp_count neutral and instead disable preempt
-> +		 * once per mmu_take_all_lock().
-> +		 */
-> +		preempt_disable();
->  		spin_unlock(&anon_vma->lock);
->  	}
->  }
-> @@ -2569,6 +2594,12 @@ static void vm_unlock_mapping(struct address_space *mapping)
->  		 * AS_MM_ALL_LOCKS can't change to 0 from under us
->  		 * because we hold the mm_all_locks_mutex.
->  		 */
-> +		/*
-> +		 * To avoid O(nr_vmas) preempt_disable()s, we keep each
-> +		 * vma preemp_count neutral and instead disable preempt
-> +		 * once per mmu_take_all_lock().
-> +		 */
-> +		preempt_disable();
->  		spin_unlock(&mapping->i_mmap_lock);
->  		if (!test_and_clear_bit(AS_MM_ALL_LOCKS,
->  					&mapping->flags))
-> @@ -2596,6 +2627,12 @@ void mm_drop_all_locks(struct mm_struct *mm)
->  			vm_unlock_mapping(vma->vm_file->f_mapping);
->  	}
->  
-> +	/*
-> +	 * To avoid O(nr_vmas) preempt_disable()s, we keep each
-> +	 * vma preemp_count neutral and instead disable preempt
-> +	 * once per mmu_take_all_lock().
-> +	 */
-> +	preempt_enable();
->  	mutex_unlock(&mm_all_locks_mutex);
->  }
->  
+> this file has no copyright or module license, thus tainting my kernel...
 
+This is not a standalone module but only an auxiliary. How does that
+taint your kernel? dmesg, .config please.
 
+-- 
+Regards/Gruss,
+Boris.
 
+--
+Advanced Micro Devices, Inc.
+Operating Systems Research Center
