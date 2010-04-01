@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758584Ab0DAQkQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:40:16 -0400
+	id S1758618Ab0DAQkX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:40:23 -0400
 Received: from mx1.redhat.com ([209.132.183.28]:64426 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758470Ab0DAQj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:39:59 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: mingo@elte.hu, rostedt@goodmis.org, fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCHv5 0/4] tracing: function graph output for preempt/irqs-off tracers
-Date: Thu,  1 Apr 2010 17:37:05 +0200
-Message-Id: <1270136229-15263-1-git-send-email-jolsa@redhat.com>
+	id S1757867Ab0DAQkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 12:40:15 -0400
+Date: Thu, 1 Apr 2010 08:53:04 -0400
+From: Neil Horman <nhorman@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>, joerg.roedel@amd.com,
+       kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+       Chris Wright <chrisw@sous-sol.org>, hbabu@us.ibm.com,
+       iommu@lists.linux-foundation.org
+Subject: Re: [PATCH] amd iommu: force flush of iommu prior during shutdown
+Message-ID: <20100401125304.GA13603@shamino.rdu.redhat.com>
+References: <20100331152417.GB13406@hmsreliant.think-freely.org>
+ <20100331212535.GR29241@sequoia.sous-sol.org>
+ <20100401011311.GC2069@localhost.localdomain>
+ <20100401022418.GA1983@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100401022418.GA1983@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
+On Wed, Mar 31, 2010 at 10:24:18PM -0400, Vivek Goyal wrote:
+> On Wed, Mar 31, 2010 at 09:13:11PM -0400, Neil Horman wrote:
+> > On Wed, Mar 31, 2010 at 02:25:35PM -0700, Chris Wright wrote:
+> > > * Neil Horman (nhorman@tuxdriver.com) wrote:
+> > > > Flush iommu during shutdown
+> > > > 
+> > > > When using an iommu, its possible, if a kdump kernel boot follows a primary
+> > > > kernel crash, that dma operations might still be in flight from the previous
+> > > > kernel during the kdump kernel boot.  This can lead to memory corruption,
+> > > > crashes, and other erroneous behavior, specifically I've seen it manifest during
+> > > > a kdump boot as endless iommu error log entries of the form:
+> > > > AMD-Vi: Event logged [IO_PAGE_FAULT device=00:14.1 domain=0x000d
+> > > > address=0x000000000245a0c0 flags=0x0070]
+> > > 
+> > > We've already fixed this problem once before, so some code shift must
+> > > have brought it back.  Personally, I prefer to do this on the bringup
+> > > path than the teardown path.  Besides keeping the teardown path as
+> > > simple as possible (goal is to get to kdump kernel asap), there's also
+> > > reason to competely flush on startup in genernal in case BIOS has done
+> > > anything unsavory.
+> > > 
+> > Chris,
+> > 	Can you elaborate on what you did with the iommu to make this safe?  It
+> > will save me time digging through the history on this code, and help me
+> > understand better whats going on here.
+> > 
+> > I was starting to think that we should just leave the iommu on through a kdump,
+> > and re-construct a new page table based on the old table (filtered by the error
+> > log) on kdump boot, but it sounds like a better solution might be in place.
+> > 
+> 
+> Hi Neil,
+> 
+> Is following sequence possible.
+> 
+> - In crashed kernel, take away the write permission from all the devices.
+>   Mark bit 62 zero for all devices in device table.
+> 
+> - Leave the iommu on and let the device entries be valid in kdump kernel
+>   so that any in-flight dma does not become pass through (which can cause
+>   more damage and corrupt kdump kernel).
+> 
+> - During kdump kernel initialization, load a new device table where again
+>   all the devices don't have write permission. looks like by default
+>   we create a device table with all bits zero except DEV_ENTRY_VALID
+>   and DEV_ENTRY_TRANSLATION bit.
+> 
+> - Reset the device where we want to setup any dma or operate on.
+> 
+> - Allow device to do DMA/write.
+> 
+> So by default all the devices will not be able to do write to memory 
+> and selective devices are given access only after a reset.
+> 
+> I am not sure what are the dependencies for loading a new device table
+> in second kernel. If it requires disabling the IOMMU, then we leave a
+> window where in-flight dma will become passthrough and has the potential
+> to corrupt kdump kernel.
+> 
+I think this is possible, but I'm a bit concerned with how some devices will
+handle a reset.  For instance, what will happen to an HBA or a disk, if we reset
+it as the module is loading?  Is that safe?
 
-ok, saga continues ;)
+Neil
 
-I'm sending reworked version of the graph output support for
-preemptirqsoff/preemptoff/irqsoff tracers.
-
-v5:
-- function graph events are back in game
-- changed function graph tracer interface to be able to
-  pass custom tracer flags
-- changed calls to trace_function to trace graph records
-  when the display-graph otion is enabled.  As function tracer
-  and graph tracer have different spacing during the record
-  output, this way it looks better, and the info stays.
-
-  This could be also done via TRACE_PRINT, then it'd be displayed
-  as comment.. I chose the first way, though it could be easily
-  changed.
-
-v4:
-- fixed header to display all the info as for
-  current irqsoff tracer
-- fixed reset of the max_tr buffer during the
-  display-graph switch
-
-v3:
-- the function_graph tracer should have the same output
-  as current version even with events enabled,
-  unless I missed something again ;)
-- I gave up the idea of function_graph events,
-  since it was unsuitable for outputing other
-  events as comments "/* */"
-- I'm not including the raw function_graph for now
-
-
-attached patches:
-- 1/4 adding ftrace events for graph tracer
-- 2/4 graph tracer - adding support for passing flags to ouput functions
-- 3/4 graph output support for irqsoff tracer
-- 4/4 graph output support for preemptirqsoff/preemptoff tracers
-
-
-plz let me know what you think
-
-wbr,
-jirka
----
- kernel/trace/trace.c                 |   35 +++--
- kernel/trace/trace.h                 |   27 +++-
- kernel/trace/trace_functions_graph.c |  164 +++++++++++++--------
- kernel/trace/trace_irqsoff.c         |  267 ++++++++++++++++++++++++++++++++--
- 4 files changed, 408 insertions(+), 85 deletions(-)
+> Thanks
+> Vivek 
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
