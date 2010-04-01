@@ -1,217 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab0DAIKE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 04:10:04 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37981 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754051Ab0DAIJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 04:09:56 -0400
-Date: Thu, 1 Apr 2010 19:09:40 +1100
-From: Nick Piggin <npiggin@suse.de>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Nick Piggin <npiggin@gmail.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, Jon Masters <jonathan@jonmasters.org>
-Subject: Re: Is module refcounting racy?
-Message-ID: <20100401080940.GA8356@laptop>
-References: <20100318105533.GE25636@laptop>
- <201003291942.56706.rusty@rustcorp.com.au>
- <e619185d1003290958w23037176uc869c7dbc0a48bcc@mail.gmail.com>
- <201003311414.49364.rusty@rustcorp.com.au>
+	id S1754260Ab0DAIZx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 04:25:53 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:52911 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753979Ab0DAIZp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 04:25:45 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=wMxtvuA/NKH98yqRMhE4HSlcFyyPp10T6D2wm1OsRZWktRegdFS4XXxNjjLJHMsrJ
+	ROjthXjbqm1tl5+fPBC4g==
+Date: Thu, 1 Apr 2010 01:25:38 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [patch] oom: give current access to memory reserves if it has
+ been killed
+In-Reply-To: <20100331224904.GA4025@redhat.com>
+Message-ID: <alpine.DEB.2.00.1004010044320.6285@chino.kir.corp.google.com>
+References: <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com>
+ <20100330154659.GA12416@redhat.com> <alpine.DEB.2.00.1003301320020.5234@chino.kir.corp.google.com> <20100331175836.GA11635@redhat.com> <alpine.DEB.2.00.1003311342410.25284@chino.kir.corp.google.com> <20100331224904.GA4025@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201003311414.49364.rusty@rustcorp.com.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 02:14:49PM +1030, Rusty Russell wrote:
-> On Tue, 30 Mar 2010 03:28:49 am Nick Piggin wrote:
-> > On Mon, Mar 29, 2010 at 8:12 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> > > On Thu, 18 Mar 2010 09:25:34 pm Nick Piggin wrote:
-> > >> Hey,
-> > >>
-> > >> I've been looking at weird and wonderful ways to do scalable refcounting,
-> > >> for the vfs...
-> > >>
-> > >> Sadly, module refcounting doesn't fit my bill. But as far as I could see,
-> > >> it is racy.
+On Thu, 1 Apr 2010, Oleg Nesterov wrote:
+
+> Why? You ignored this part:
+> 
+> 	Say, right after exit_mm() we are doing acct_process(), and f_op->write()
+> 	needs a page. So, you are saying that in this case __page_cache_alloc()
+> 	can never trigger out_of_memory() ?
+> 
+> why this is not possible?
+> 
+
+It can, but the check for p->mm is sufficient since exit_notify() takes 
+write_lock_irq(&tasklist_lock) that the oom killer holds for read, so the 
+rule is that whenever we have a valid p->mm, we have a valid p->sighand 
+and can do force_sig() while under tasklist_lock.  The only time we call 
+oom_kill_process() without holding a readlock on tasklist_lock is for 
+current during pagefault ooms and we know it's not exiting because it's in 
+the oom killer.
+
+> > > OK, but I guess this !p->mm check is still wrong for the same reason.
+> > > In fact I do not understand why it is needed in select_bad_process()
+> > > right before oom_badness() which checks ->mm too (and this check is
+> > > equally wrong).
+> >
+> > It prevents kthreads from being killed.
+> 
+> No it doesn't, see use_mm(). See also another email I sent.
+> 
+
+We cannot rely on oom_badness() to filter this task because we still 
+select it as our chosen task even with a badness score of 0 if !chosen, so 
+we must filter these threads ahead of time:
+
+	if (points > *ppoints || !chosen) {
+		chosen = p;
+		*ppoints = points;
+	}
+
+Filtering on !p->mm prevents us from doing "if (points > *ppoints || 
+(!chosen && p->mm))" because it's just cleaner and makes this rule 
+explicit.
+
+Your point about p->mm being non-NULL for kthreads using use_mm() is 
+taken, we should probably just change the is_global_init() check in 
+select_bad_process() to p->flags & PF_KTHREAD and ensure we reject 
+oom_kill_process() for them.
+
+> > The task is in the process of exiting and will do so if its not current,
+> > otherwise it will get access to memory reserves since we're obviously oom
+> > in the exit path.  Thus, we'll be freeing that memory soon or recalling
+> > the oom killer to kill additional tasks once those children have been
+> > reparented (or one of its children was sacrificed).
+> 
+> Just can't understand.
+> 
+> OK, a bad user does
+> 
+> 	int sleep_forever(void *)
+> 	{
+> 		pause();
+> 	}
+> 
+> 	int main(void)
+> 	{
+> 		pthread_create(sleep_forever);
+> 		syscall(__NR_exit);
+> 	}
+> 
+> Now, every time select_bad_process() is called it will find this process
+> and PF_EXITING is true, so it just returns ERR_PTR(-1UL). And note that
+> this process is not going to exit.
+> 
+
+Hmm, so it looks like we need to filter on !p->mm before checking for 
+PF_EXITING so that tasks that are EXIT_ZOMBIE won't make the oom killer 
+into a no-op.
+
+> > > Say, oom_forkbomb_penalty() does list_for_each_entry(tsk->children).
+> > > Again, this is not right even if we forget about !child->mm check.
+> > > This list_for_each_entry() can only see the processes forked by the
+> > > main thread.
 > > >
-> > > Other than for advisory purposes, the refcount is only checked against zero
-> > > under stop_machine.  For exactly this reason.
-> > 
-> > There definitely looks to me like there is code that checks the refcount
-> > *without* stop_machine. module_refcount is an exported function, and you
-> > expect drivers to get this right (scsi_device_put for a trivial example)
+> >
+> > That's the intention.
 > 
-> No, but there's a lot of history of crap drivers which wanted to poke at it.
-> And it's cute for debugging.
+> Why? shouldn't oom_badness() return the same result for any thread
+> in thread group? We should take all childs into account.
 > 
-> The scsi code is simply wrong.  But noone cares, since module removal is
-> so rare.
 
-Well maybe true (and I'm sure we have more important and frequently hit
-bugs), but if we offer a feature it should be without bugs IMO.
+oom_forkbomb_penalty() only cares about first-descendant children that 
+do not share the same memory, so we purposely penalize the parent so that 
+it is more biased to select for oom kill and then it will sacrifice these 
+threads in oom_kill_process().
 
-
-> > , but
-> > it even looks like it is used in a racy way in kernel/module.c code.
+> > > Hmm. Why oom_forkbomb_penalty() does thread_group_cputime() under
+> > > task_lock() ? It seems, ->alloc_lock() is only needed for get_mm_rss().
+> > >
+> >
+> > Right, but we need to ensure that the check for !child->mm || child->mm ==
+> > tsk->mm fails before adding in get_mm_rss(child->mm).  It can race and
+> > detach its mm prior to the dereference.
 > 
-> Yep, though I don't know if anyone uses waiting module removal AFAICT
-> though; there's not even a modprobe option for it.
+> Oh, yes sure, I mentioned get_mm_rss() above.
 > 
-> > Either we need to take my patch, or audit t, and put a WARN_ON
-> > if it is called while not under stop_machine.
+> > It would be possible to move the
+> > thread_group_cputime() out of this critical section,
 > 
-> So can you send me a proper annotated signed-off patch to queue?
-
-Sure.
-
-
-> Note that years ago it was decided that module reference counting would be
-> best effort, rather than perfect.  I disagreed, but we've lived with it
-> surprisingly well.
+> Yes, this is what I meant.
 > 
-> I wonder if by caring even *less*, we can lose a lot of complexity without
-> noticeably increasing the bug count.  Make modules run their own reference
-> counts and just sleep for a while to see if the reference count changes.
-> If not, assume it's good to be removed.  If reference count still hasn't
-> moved after another minute or so, actually free the memory.
 
-I think it can be done racelessly with my patch, which is not really too
-much overhead. I think if this is considered too much, then we should
-either fix code and preferably de-export and remove module_refcount from
-drivers, or remove module removal completely.
+You could, but then you'd be calling thread_group_cputime() for all 
+threads even though they may not share the same ->mm as tsk.
 
---
-Module refcounting is implemented with a per-cpu counter for speed. However
-there is a race when tallying the counter where a reference may be taken
-by one CPU and released by another. Reference count summation may then see
-the decrement without having seen the previous increment, leading to lower
-than expected count. A module which never has its actual reference drop below
-1 may return a reference count of 0 due to this race.
+> > but I felt it was
+> > better to do filter all tasks with child->mm == tsk->mm first before
+> > unnecessarily finding the cputime for them.
+> 
+> Yes, but we can check child->mm == tsk->mm, call get_mm_counter() and drop
+> task_lock().
+> 
 
-Module removal generally runs under stop_machine, which prevents this race
-causing bugs due to removal of in-use modules. However there are other real
-bugs in module.c code and driver code (module_refcount is exported) where the
-callers do not run under stop_machine.
-
-Fix this by maintaining running per-cpu counters for the number of module
-refcount increments and the number of refcount decrements. The increments
-are tallied after the decrements, so any decrement seen will always have its
-corresponding increment counted. The final refcount is the difference of the
-total increments and decrements, preventing a low-refcount from being
-returned.
-
-Signed-off-by: Nick Piggin <npiggin@suse.de>
----
-Index: linux-2.6/include/linux/module.h
-===================================================================
---- linux-2.6.orig/include/linux/module.h
-+++ linux-2.6/include/linux/module.h
-@@ -365,7 +365,8 @@ struct module
- 	void (*exit)(void);
- 
- 	struct module_ref {
--		int count;
-+		unsigned int incs;
-+		unsigned int decs;
- 	} __percpu *refptr;
- #endif
- 
-@@ -459,9 +460,9 @@ static inline void __module_get(struct m
- {
- 	if (module) {
- 		preempt_disable();
--		__this_cpu_inc(module->refptr->count);
-+		__this_cpu_inc(module->refptr->incs);
- 		trace_module_get(module, _THIS_IP_,
--				 __this_cpu_read(module->refptr->count));
-+				 __this_cpu_read(module->refptr->incs));
- 		preempt_enable();
- 	}
- }
-@@ -474,11 +475,10 @@ static inline int try_module_get(struct
- 		preempt_disable();
- 
- 		if (likely(module_is_live(module))) {
--			__this_cpu_inc(module->refptr->count);
-+			__this_cpu_inc(module->refptr->incs);
- 			trace_module_get(module, _THIS_IP_,
--				__this_cpu_read(module->refptr->count));
--		}
--		else
-+				__this_cpu_read(module->refptr->incs));
-+		} else
- 			ret = 0;
- 
- 		preempt_enable();
-Index: linux-2.6/kernel/module.c
-===================================================================
---- linux-2.6.orig/kernel/module.c
-+++ linux-2.6/kernel/module.c
-@@ -473,11 +473,13 @@ static void module_unload_init(struct mo
- 	int cpu;
- 
- 	INIT_LIST_HEAD(&mod->modules_which_use_me);
--	for_each_possible_cpu(cpu)
--		per_cpu_ptr(mod->refptr, cpu)->count = 0;
-+	for_each_possible_cpu(cpu) {
-+		per_cpu_ptr(mod->refptr, cpu)->incs = 0;
-+		per_cpu_ptr(mod->refptr, cpu)->decs = 0;
-+	}
- 
- 	/* Hold reference count during initialization. */
--	__this_cpu_write(mod->refptr->count, 1);
-+	__this_cpu_write(mod->refptr->incs, 1);
- 	/* Backwards compatibility macros put refcount during init. */
- 	mod->waiter = current;
- }
-@@ -616,12 +618,28 @@ static int try_stop_module(struct module
- 
- unsigned int module_refcount(struct module *mod)
- {
--	unsigned int total = 0;
-+	unsigned int incs = 0, decs = 0;
- 	int cpu;
- 
- 	for_each_possible_cpu(cpu)
--		total += per_cpu_ptr(mod->refptr, cpu)->count;
--	return total;
-+		decs += per_cpu_ptr(mod->refptr, cpu)->decs;
-+	/*
-+	 * ensure the incs are added up after the decs.
-+	 * module_put ensures incs are visible before decs with smp_wmb.
-+	 *
-+	 * This 2-count scheme avoids the situation where the refcount
-+	 * for CPU0 is read, then CPU0 increments the module refcount,
-+	 * then CPU1 drops that refcount, then the refcount for CPU1 is
-+	 * read. We would record a decrement but not its corresponding
-+	 * increment so we would see a low count (disaster).
-+	 *
-+	 * Rare situation? But module_refcount can be preempted, and we
-+	 * might be tallying up 4096+ CPUs. So it is not impossible.
-+	 */
-+	smp_rmb();
-+	for_each_possible_cpu(cpu)
-+		incs += per_cpu_ptr(mod->refptr, cpu)->incs;
-+	return incs - decs;
- }
- EXPORT_SYMBOL(module_refcount);
- 
-@@ -798,10 +816,11 @@ void module_put(struct module *module)
- {
- 	if (module) {
- 		preempt_disable();
--		__this_cpu_dec(module->refptr->count);
-+		smp_wmb(); /* see comment in module_refcount */
-+		__this_cpu_inc(module->refptr->decs);
- 
- 		trace_module_put(module, _RET_IP_,
--				 __this_cpu_read(module->refptr->count));
-+				 __this_cpu_read(module->refptr->decs));
- 		/* Maybe they're waiting for us to drop reference? */
- 		if (unlikely(!module_is_live(module)))
- 			wake_up_process(module->waiter);
+We need task_lock() to ensure child->mm hasn't detached between the check 
+for child->mm == tsk->mm and get_mm_rss(child->mm).  So I'm not sure what 
+you're trying to improve with this variation, it's a tradeoff between 
+calling thread_group_cputime() under task_lock() for a subset of a task's 
+threads when we already need to hold task_lock() anyway vs. calling it for 
+all threads unconditionally.
