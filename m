@@ -1,58 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757065Ab0DAPwA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 11:52:00 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:43056 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756658Ab0DAPvw (ORCPT
+	id S1757096Ab0DAPxm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 11:53:42 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:56233 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756658Ab0DAPxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 11:51:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=fver0owcdV/2jvLkG2U6rO2IWorKrDJPo7ydB+vENjpUQybTNrS2MOMkTOi89Ae/Ox
-         y1NWdtRHXH3+XRhe0uITd/Hgbk/iKRnhSDCxhg2ZSjqrbChPPJ2H6XdDIUYLqiygrvt2
-         m2TiEC9Cdu9m2S41p0Fgg4QX1uj0pvDfdjb5Y=
-Date: Thu, 1 Apr 2010 18:51:43 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alexey Dobriyan <adobriyan@gmail.com>, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [patch] mxser: spin_lock() => spin_lock_irq()
-Message-ID: <20100401155143.GC5265@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Jiri Slaby <jirislaby@gmail.com>, Alan Cox <alan@linux.intel.com>,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Alexey Dobriyan <adobriyan@gmail.com>, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
+	Thu, 1 Apr 2010 11:53:36 -0400
+Date: Thu, 1 Apr 2010 10:53:21 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+cc: alex.shi@intel.com,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
+       "Tim C <tim.c.chen"@intel.com, Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
+In-Reply-To: <1270114166.2078.107.camel@ymzhang.sh.intel.com>
+Message-ID: <alpine.DEB.2.00.1004011050340.16531@router.home>
+References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>  <alpine.DEB.2.00.1003250942080.2670@router.home>  <1269570902.9614.92.camel@alexs-hp.sh.intel.com> <1270114166.2078.107.camel@ymzhang.sh.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This should be spin_lock_irq() to match the spin_unlock_irq().
-Originally it was a lock_kernel() but we switched everything to
-spin_lock_irq() last November.
+On Thu, 1 Apr 2010, Zhang, Yanmin wrote:
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+> I suspect the moving of place of cpu_slab in kmem_cache causes the new cache
+> miss. But when I move it to the tail of the structure, kernel always panic when
+> booting. Perhaps there is another potential bug?
 
-diff --git a/drivers/char/mxser.c b/drivers/char/mxser.c
-index e0c5d2a..ecb2d8b 100644
---- a/drivers/char/mxser.c
-+++ b/drivers/char/mxser.c
-@@ -1768,7 +1768,7 @@ static int mxser_ioctl(struct tty_struct *tty, struct file *file,
- 		int len, lsr;
- 
- 		len = mxser_chars_in_buffer(tty);
--		spin_lock(&info->slock);
-+		spin_lock_irq(&info->slock);
- 		lsr = inb(info->ioaddr + UART_LSR) & UART_LSR_THRE;
- 		spin_unlock_irq(&info->slock);
- 		len += (lsr ? 0 : 1);
+Why would that cause an additional cache miss?
+
+
+The node array is following at the end of the structure. If you want to
+move it down then it needs to be placed before the node field.
