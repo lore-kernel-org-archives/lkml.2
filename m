@@ -1,100 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756956Ab0DAPma (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 11:42:30 -0400
-Received: from mail-pz0-f201.google.com ([209.85.222.201]:64951 "EHLO
-	mail-pz0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756799Ab0DAPmW (ORCPT
+	id S1756965Ab0DAPnW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 11:43:22 -0400
+Received: from sj-iport-5.cisco.com ([171.68.10.87]:35541 "EHLO
+	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756804Ab0DAPnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 11:42:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ppl4DDp0UacN0ScQn+Z62Y+p7n9C5Av0Eafu2RwbMj6JOL1sXO5lQI/cJg9ZU6osdS
-         0DUTF+8596VXkgX0KLLdlnxwOyYFFd9Ih+0JvY/fUVHCZ3nmuQAcuy5+KIMfZA+hHNwr
-         lUERmP+zfH9YW98ZcErT3ZUKo05+/bIyCkDoA=
-Date: Thu, 1 Apr 2010 08:42:12 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-       Linux Input <linux-input@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [RFC] Input: implement sysrq as an input handler
-Message-ID: <20100401154212.GA7900@core.coreip.homeip.net>
-References: <20100317061952.GA19789@core.coreip.homeip.net>
- <20100319000043.GC12017@khazad-dum.debian.net>
- <20100319000931.GA5671@core.coreip.homeip.net>
- <20100319160641.GC16743@khazad-dum.debian.net>
- <20100319180314.GB12143@core.coreip.homeip.net>
- <20100320025329.GA2468@khazad-dum.debian.net>
- <20100322045910.GE31621@core.coreip.homeip.net>
- <20100401133454.GA1291@ucw.cz>
+	Thu, 1 Apr 2010 11:43:15 -0400
+Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAB9ctEurRN+K/2dsb2JhbACbPnGcaZkZhQEEgyM
+X-IronPort-AV: E=Sophos;i="4.51,349,1267401600"; 
+   d="scan'208";a="175977927"
+From: Tom Lyon <pugs@lyon-about.com>
+To: Joerg Roedel <joro@8bytes.org>
+Subject: Re: [PATCH 0/1] uio_pci_generic: extensions to allow access for non-privileged processes
+Date: Thu, 1 Apr 2010 08:40:34 -0700
+User-Agent: KMail/1.9.9
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <201003311708.38961.pugs@lyon-about.com> <20100401125218.GE24846@8bytes.org>
+In-Reply-To: <20100401125218.GE24846@8bytes.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20100401133454.GA1291@ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Message-Id: <201004010840.34574.pugs@lyon-about.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
+On Thursday 01 April 2010 05:52:18 am Joerg Roedel wrote:
+> On Wed, Mar 31, 2010 at 05:08:38PM -0700, Tom Lyon wrote:
+> > uio_pci_generic has previously been discussed on the KVM list, but this
+> > patch has nothing to do with KVM, so it is also going to LKML.
+>
+> But since you send it to the KVM list it should be suitable for KVM too,
+> no?
+I know not.
 
-On Thu, Apr 01, 2010 at 03:34:55PM +0200, Pavel Machek wrote:
-> Hi!
-> 
-> > > root isn't really a problem from a security PoV (well, maybe it is if the
-> > > operation isn't constrained by capabilities).  SAK can't protect you from
-> > > root.
-> > > 
-> > > _Normal_ userspace behaviour running a root process is a problem if it
-> > > blocks these handles, though, both for SAK and regular SysRQ.  I have lost
-> > > count of how many times SysRQ+SUB delivered me from filesystem corruption
-> > > and very annoying problems, both at home and at work.
-> > > 
-> > > We are sort of trusting userspace to not break the one way out from severly
-> > > hung systems while doing its normal day-to-day operations (as opposed to
-> > > deliberately disabling SysRQ or remapping SAK, etc).
-> 
-> If userspace disables sysrq during normal operation, that makes it
-> useless.
-> 
-> If normal user could do that, that's a security problem.
-> 
+>
+> > The point of this patch is to beef up the uio_pci_generic driver so that
+> > a non-privileged user process can run a user level driver for most PCIe
+> > devices. This can only be safe if there is an IOMMU in the system with
+> > per-device domains.  Privileged users (CAP_SYS_RAWIO) are allowed if
+> > there is no IOMMU.
+>
+> If you rely on an IOMMU you can use the IOMMU-API instead of the DMA-API
+> for dma mappings. This change makes this driver suitable for KVM use
+> too. If the interface is designed clever enough we can even use it for
+> IOMMU emulation for pass-through devices.
+The use with privileged processes and no IOMMUs is still quite useful, so I'd 
+rather stick with the DMA interface.
 
-Yes, and...? This patch does not change the way one enables, disables,
-intercepts, etc. SysRq and SAK compared to how it was handled when SysRq
-was part of keyboard _input handler_. The only thisng this patch does is
-moving the code into a _separate_ input handler.
-
-> > > > That would require moving "these things", including their state
-> > > > machines, into input core otherwise it would not know what events can be
-> > > > trappable and which should be passed through. Or we should get rid of
-> > > > EVIOCGRAB.
-> > > 
-> > > Maybe we can add a flags field to input devices and input handlers, to be
-> > > able to have the core behave differently when needed, without moving
-> > > everything into the input core?  Would that work, or would it need too much
-> > > churn in the core?
-> > 
-> > The problem is that device does not know what SysRq and especially SAK are.
-> > User can reassign key codes and key symbols easily.
-> 
-> That was not case in original implementation; it had hardcoded keymap.
-
-The earth was also flat back then and the only keyboard was AT one. SAK
-was always part of keymap so could be reassinged at any time.
-
-> 
-> > I don't think we had any issues like this since 2.5 so I would not worry
-> > about userspace too much. If anything we just need to review what stuff
-> > we run as root (we do that anyway, right?).
-> 
-> Hehe. If X can break sysrq, that's both X and sysrq problem.
-
-Root can disable Sysrq... News at 11.
-
--- 
-Dmitry
