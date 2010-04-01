@@ -1,68 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758694Ab0DATf7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 15:35:59 -0400
-Received: from mail.gmx.net ([213.165.64.20]:40438 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755154Ab0DATfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 15:35:53 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18LfaEKoq8LfbFmU2fySUGPBsvOAovtI3VkqrnFvt
-	UduWPkASg5Eq3p
-Subject: Re: Issues with Patch: "sched: Improve latencies and throughput"
-From: Mike Galbraith <efault@gmx.de>
-To: Michael Grzeschik <mgr@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, rsc@pengutronix.de
-In-Reply-To: <20100401084311.GL10342@pengutronix.de>
-References: <20100331223106.GJ10342@pengutronix.de>
-	 <1270100986.6707.156.camel@marge.simson.net>
-	 <20100401084311.GL10342@pengutronix.de>
-Content-Type: text/plain
-Date: Thu, 01 Apr 2010 21:35:50 +0200
-Message-Id: <1270150550.6413.27.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.54000000000000004
+	id S1758745Ab0DATjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 15:39:08 -0400
+Received: from www.tglx.de ([62.245.132.106]:43424 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754773Ab0DATjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 15:39:05 -0400
+Date: Thu, 1 Apr 2010 21:37:58 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Chase Douglas <chase.douglas@canonical.com>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [REGRESSION 2.6.30][PATCH 1/1] sched: defer idle accounting till
+ after load update period
+In-Reply-To: <20100401122740.a1ae80a7.akpm@linux-foundation.org>
+Message-ID: <alpine.LFD.2.00.1004012133570.32352@localhost.localdomain>
+References: <1269870072-22449-1-git-send-email-chase.douglas@canonical.com> <1269870072-22449-2-git-send-email-chase.douglas@canonical.com> <20100401122740.a1ae80a7.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-01 at 10:43 +0200, Michael Grzeschik wrote:
-> On Thu, Apr 01, 2010 at 07:49:46AM +0200, Mike Galbraith wrote:
-> > On Thu, 2010-04-01 at 00:31 +0200, Michael Grzeschik wrote:
-> > > We are using an arm mx31 embedded cpu with the v2.6.34 Kernelrelease and
-> > > realized some issues with the scheduling behaviour the patch "sched:
-> > > Improve latencies and throughput" [1] by Mike Galbraith introduced to
-> > > the kernel.
-> > > 
-> > > When we used the alsa utility aplay to pipe some audio through an
-> > > usbaudio device and put some scheduling overhead on the device, the
-> > > amount of underruns, due to the not fast enough refilled ring buffer,
-> > > was noticable increased with that patch [1] applied. Until we reverse
-> > > applied the patch the amount of underruns was appreciable lower.
+On Thu, 1 Apr 2010, Andrew Morton wrote:
+> On Mon, 29 Mar 2010 09:41:12 -0400
+> Chase Douglas <chase.douglas@canonical.com> wrote:
+> 
+> > There's a period of 10 ticks where calc_load_tasks is updated by all the
+> > cpus for the load avg. Usually all the cpus do this during the first
+> > tick. If any cpus go idle, calc_load_tasks is decremented accordingly.
+> > However, if they wake up calc_load_tasks is not incremented. Thus, if
+> > cpus go idle during the 10 tick period, calc_load_tasks may be
+> > decremented to a non-representative value. This issue can lead to
+> > systems having a load avg of exactly 0, even though the real load avg
+> > could theoretically be up to NR_CPUS.
 > > 
-> > Testcase?
+> > This change defers calc_load_tasks accounting after each cpu updates the
+> > count until after the 10 tick period.
+> > 
+> > BugLink: http://bugs.launchpad.net/bugs/513848
+> > 
 > 
-> What we did was:
+> There was useful information in the [patch 0/1] email, such as the
+> offending commit ID.  If possible, it's best to avoid the [patch 0/n]
+> thing altogether - that information either has to be moved into the
+> [patch 1/n] changelog by someone (ie: me), or it just gets ommitted and
+> lost.
 > 
-> # Copy some audiofile to /dev/shm
-> $ cp audiofile.wav /dev/shm
 > 
-> # Play that file with aplay in background
-> $ aplay /dev/shm/auduifile.wav &
+> > ---
+> >  kernel/sched.c |   16 ++++++++++++++--
+> >  1 files changed, 14 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/kernel/sched.c b/kernel/sched.c
+> > index 9ab3cd7..c0aedac 100644
+> > --- a/kernel/sched.c
+> > +++ b/kernel/sched.c
+> > @@ -3064,7 +3064,8 @@ void calc_global_load(void)
+> >   */
+> >  static void calc_load_account_active(struct rq *this_rq)
+> >  {
+> > -	long nr_active, delta;
+> > +	static atomic_long_t deferred;
+> > +	long nr_active, delta, deferred_delta;
+> >  
+> >  	nr_active = this_rq->nr_running;
+> >  	nr_active += (long) this_rq->nr_uninterruptible;
+> > @@ -3072,6 +3073,17 @@ static void calc_load_account_active(struct rq *this_rq)
+> >  	if (nr_active != this_rq->calc_load_active) {
+> >  		delta = nr_active - this_rq->calc_load_active;
+> >  		this_rq->calc_load_active = nr_active;
+> > +
+> > +		/* Need to defer idle accounting during load update period: */
+> > +		if (unlikely(time_before(jiffies, this_rq->calc_load_update) &&
+> > +			     time_after_eq(jiffies, calc_load_update))) {
+> > +			atomic_long_add(delta, &deferred);
+> > +			return;
+> > +		}
 > 
-> # Put some scheduling load on the system
-> $ hackbench 6
+> That seems a sensible way to avoid the gross-looking "10 ticks" thing.
 > 
-> We did use this on an MX31 from Freescale running with about 500 MHz and
-> the generic usbaudio driver to play the audio throgh an C-Media USB
-> audiodongle.
+> What was the reason for "update the avenrun load estimates 10 ticks
+> after the CPUs have updated calc_load_tasks"?  Can we do something
+> smarter there to fix this?
 
-Hm.  I don't _think_ you've demonstrated a clear problem yet.
+The reason was to make sure that all cpus have updated their stuff
+halfways before we start to calculate and we spread out stuff among
+cpus to avoid contention on those global atomic variables.
 
-Q: how much CPU is aplay routinely using on this platform?
+Yes, we can do something smarter. First thing is to fix the
+nr_uninterruptible accounting which can become negative. Peter looked
+into that already and we really need to fix this first before doing
+anything smart about that load avg stuff.
 
-	-Mike
+Thanks,
+
+	tglx
 
