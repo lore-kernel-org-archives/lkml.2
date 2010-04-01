@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143Ab0DAMpu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 08:45:50 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:25307 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755875Ab0DAMpo (ORCPT
+	id S1756225Ab0DAMqE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 08:46:04 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:53296 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756145Ab0DAMpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 08:45:44 -0400
-Subject: Re: [PATCH] [mtd, nand] Remove stray endchoice from help text
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Ferenc Wagner <wferi@niif.hu>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <8763591d3w.fsf@tac.ki.iif.hu>
-References: <8763591d3w.fsf@tac.ki.iif.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Apr 2010 15:43:00 +0300
-Message-ID: <1270125780.15073.62.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 01 Apr 2010 12:45:17.0698 (UTC) FILETIME=[2EB02E20:01CAD199]
-X-Nokia-AV: Clean
+	Thu, 1 Apr 2010 08:45:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: Re: [PATCH 6/6] procfs: Kill the bkl in ioctl
+Date: Thu, 1 Apr 2010 14:45:32 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
+References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <20100331172208.GB5163@nowhere> <4BB485ED.80806@s5r6.in-berlin.de>
+In-Reply-To: <4BB485ED.80806@s5r6.in-berlin.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004011445.32657.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX19r89Tl0kB2/0SKHjW+clrq6OTK7Sm9SdCSJiO
+ C4S5XNGcZ11vN/dWAh6aFMWs0f2GcxU67diAcXXoLH5MyIbyTR
+ FmxcDXxO7YbQABrP5pS1w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-03-06 at 20:09 +0100, Ferenc Wagner wrote:
-> Signed-off-by: Ferenc Wagner <wferi@niif.hu>
-> ---
->  drivers/mtd/nand/Kconfig |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
+On Thursday 01 April 2010, Stefan Richter wrote:
+> > 
+> > I wonder if we should actually just turn all these into unlocked_ioctl
+> > directly. And then bring a warn on ioctl, and finally schedule the removal
+> > of this callback.
 > 
-> diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
-> index 677cd53..d68bd6e 100644
-> --- a/drivers/mtd/nand/Kconfig
-> +++ b/drivers/mtd/nand/Kconfig
-> @@ -358,8 +358,6 @@ config MTD_NAND_ATMEL_ECC_NONE
->  
->  	  If unsure, say N
->  
-> -	  endchoice
-> -
->  endchoice
->  
->  config MTD_NAND_PXA3xx
+> A side note:  A considerable portion of this particular commit in Arnd's
+> git actually does not deal with .ioctl->.unlocked_ioctl at all, but
+> purely with .llseek.  Many(?) of these changes deal with .ioctl and
+> .llseek together.  (Arnd also says so in the last paragraph of his
+> changelog.)
+> 
+> IOW there are less .ioctl implementations left than one could think from
+> a look at the diffstat.
 
-Pushed to l2-mtd-2.6.git / master, thanks.
+Given our recent discussions on the llseek topic, it's probably better to
+revert most of the changes that purely deal with llseek. My current idea
+is to use an explicit default_llseek only if one of the following is given:
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+- we convert ioctl to unlocked_ioctl in the same file_operations, or
+- the module uses the big kernel lock explicitly elsewhere.
 
+Even then, there may be a number of cases where we can show it not
+to be necessary, e.g. when the driver does not care about f_pos.
+Concurrent llseek is racy by nature, so in most drivers, using the
+BKL in llseek does not gain anything over using i_mutex.
+
+	Arnd
