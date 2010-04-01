@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758177Ab0DAQfa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:35:30 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44901 "EHLO
+	id S1758261Ab0DAQfn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:35:43 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44907 "EHLO
 	bob.linux.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758147Ab0DAQfD (ORCPT
+	with ESMTP id S1757954Ab0DAQfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:35:03 -0400
+	Thu, 1 Apr 2010 12:35:32 -0400
 From: Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 09/14] rocket: kill BKL
+Subject: [PATCH 11/14] cyclades: Kill off BKL usage
 To: linux-kernel@vger.kernel.org
-Date: Thu, 01 Apr 2010 17:06:13 +0100
-Message-ID: <20100401160556.8882.27340.stgit@localhost.localdomain>
+Date: Thu, 01 Apr 2010 17:06:43 +0100
+Message-ID: <20100401160637.8882.86239.stgit@localhost.localdomain>
 In-Reply-To: <20100401155513.8882.54006.stgit@localhost.localdomain>
 References: <20100401155513.8882.54006.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -22,156 +22,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can use the port mutex for this and also for the hangup path so removing
-the problematic use of the BKL in this driver. Fix up the locking
-on the various port flags while we are at it.
-
-Ultimately this driver needs to be using tty_port_ helpers which would sort
-this out far better.
+Use the port mutext for config setting, the rest is locked sufficiently
+anyway that the BKL makes no odds.
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/char/rocket.c |   28 +++++++++++++++++++---------
- 1 files changed, 19 insertions(+), 9 deletions(-)
+ drivers/char/cyclades.c |   20 +++++++++-----------
+ 1 files changed, 9 insertions(+), 11 deletions(-)
 
 
-diff --git a/drivers/char/rocket.c b/drivers/char/rocket.c
-index 0e29a23..79c3bc6 100644
---- a/drivers/char/rocket.c
-+++ b/drivers/char/rocket.c
-@@ -73,7 +73,6 @@
- #include <linux/tty_driver.h>
+diff --git a/drivers/char/cyclades.c b/drivers/char/cyclades.c
+index 9824b41..51acfe3 100644
+--- a/drivers/char/cyclades.c
++++ b/drivers/char/cyclades.c
+@@ -65,7 +65,6 @@
+ #include <linux/tty.h>
  #include <linux/tty_flip.h>
  #include <linux/serial.h>
 -#include <linux/smp_lock.h>
+ #include <linux/major.h>
  #include <linux/string.h>
  #include <linux/fcntl.h>
- #include <linux/ptrace.h>
-@@ -1017,6 +1016,7 @@ static void rp_close(struct tty_struct *tty, struct file *filp)
- 	if (tty_port_close_start(port, tty, filp) == 0)
- 		return;
+@@ -1655,7 +1654,6 @@ static void cy_wait_until_sent(struct tty_struct *tty, int timeout)
+ 		return;		/* Just in case.... */
  
-+	mutex_lock(&port->mutex);
- 	cp = &info->channel;
+ 	orig_jiffies = jiffies;
+-	lock_kernel();
  	/*
- 	 * Before we drop DTR, make sure the UART transmitter
-@@ -1060,9 +1060,13 @@ static void rp_close(struct tty_struct *tty, struct file *filp)
- 			info->xmit_buf = NULL;
- 		}
+ 	 * Set the check interval to be 1/5 of the estimated time to
+ 	 * send a single character, and make it at least 1.  The check
+@@ -1702,7 +1700,6 @@ static void cy_wait_until_sent(struct tty_struct *tty, int timeout)
  	}
-+	spin_lock_irq(&port->lock);
- 	info->port.flags &= ~(ASYNC_INITIALIZED | ASYNC_CLOSING | ASYNC_NORMAL_ACTIVE);
- 	tty->closing = 0;
-+	spin_unlock_irq(&port->lock);
-+	mutex_unlock(&port->mutex);
- 	tty_port_tty_set(port, NULL);
-+
- 	wake_up_interruptible(&port->close_wait);
- 	complete_all(&info->close_wait);
- 	atomic_dec(&rp_num_ports_open);
-@@ -1210,11 +1214,13 @@ static int get_config(struct r_port *info, struct rocket_config __user *retinfo)
- 	if (!retinfo)
- 		return -EFAULT;
- 	memset(&tmp, 0, sizeof (tmp));
-+	mutex_lock(&info->port.mutex);
- 	tmp.line = info->line;
- 	tmp.flags = info->flags;
- 	tmp.close_delay = info->port.close_delay;
- 	tmp.closing_wait = info->port.closing_wait;
- 	tmp.port = rcktpt_io_addr[(info->line >> 5) & 3];
-+	mutex_unlock(&info->port.mutex);
+ 	/* Run one more char cycle */
+ 	msleep_interruptible(jiffies_to_msecs(char_time * 5));
+-	unlock_kernel();
+ #ifdef CY_DEBUG_WAIT_UNTIL_SENT
+ 	printk(KERN_DEBUG "Clean (jiff=%lu)...done\n", jiffies);
+ #endif
+@@ -1959,7 +1956,6 @@ static int cy_chars_in_buffer(struct tty_struct *tty)
+ 		int char_count;
+ 		__u32 tx_put, tx_get, tx_bufsize;
  
- 	if (copy_to_user(retinfo, &tmp, sizeof (*retinfo)))
- 		return -EFAULT;
-@@ -1229,10 +1235,13 @@ static int set_config(struct tty_struct *tty, struct r_port *info,
- 	if (copy_from_user(&new_serial, new_info, sizeof (new_serial)))
+-		lock_kernel();
+ 		tx_get = readl(&buf_ctrl->tx_get);
+ 		tx_put = readl(&buf_ctrl->tx_put);
+ 		tx_bufsize = readl(&buf_ctrl->tx_bufsize);
+@@ -1971,7 +1967,6 @@ static int cy_chars_in_buffer(struct tty_struct *tty)
+ 		printk(KERN_DEBUG "cyc:cy_chars_in_buffer ttyC%d %d\n",
+ 			info->line, info->xmit_cnt + char_count);
+ #endif
+-		unlock_kernel();
+ 		return info->xmit_cnt + char_count;
+ 	}
+ #endif				/* Z_EXT_CHARS_IN_BUFFER */
+@@ -2359,17 +2354,22 @@ cy_set_serial_info(struct cyclades_port *info, struct tty_struct *tty,
+ 		struct serial_struct __user *new_info)
+ {
+ 	struct serial_struct new_serial;
++	int ret;
+ 
+ 	if (copy_from_user(&new_serial, new_info, sizeof(new_serial)))
  		return -EFAULT;
  
 +	mutex_lock(&info->port.mutex);
- 	if (!capable(CAP_SYS_ADMIN))
- 	{
--		if ((new_serial.flags & ~ROCKET_USR_MASK) != (info->flags & ~ROCKET_USR_MASK))
-+		if ((new_serial.flags & ~ROCKET_USR_MASK) != (info->flags & ~ROCKET_USR_MASK)) {
+ 	if (!capable(CAP_SYS_ADMIN)) {
+ 		if (new_serial.close_delay != info->port.close_delay ||
+ 				new_serial.baud_base != info->baud ||
+ 				(new_serial.flags & ASYNC_FLAGS &
+ 					~ASYNC_USR_MASK) !=
+ 				(info->port.flags & ASYNC_FLAGS & ~ASYNC_USR_MASK))
++		{
 +			mutex_unlock(&info->port.mutex);
  			return -EPERM;
 +		}
- 		info->flags = ((info->flags & ~ROCKET_USR_MASK) | (new_serial.flags & ROCKET_USR_MASK));
- 		configure_r_port(tty, info, NULL);
- 		return 0;
-@@ -1250,6 +1259,7 @@ static int set_config(struct tty_struct *tty, struct r_port *info,
- 		tty->alt_speed = 230400;
- 	if ((info->flags & ROCKET_SPD_MASK) == ROCKET_SPD_WARP)
- 		tty->alt_speed = 460800;
+ 		info->port.flags = (info->port.flags & ~ASYNC_USR_MASK) |
+ 				(new_serial.flags & ASYNC_USR_MASK);
+ 		info->baud = new_serial.baud_base;
+@@ -2392,10 +2392,12 @@ cy_set_serial_info(struct cyclades_port *info, struct tty_struct *tty,
+ check_and_exit:
+ 	if (info->port.flags & ASYNC_INITIALIZED) {
+ 		cy_set_line_char(info, tty);
+-		return 0;
++		ret = 0;
+ 	} else {
+-		return cy_startup(info, tty);
++		ret = cy_startup(info, tty);
+ 	}
 +	mutex_unlock(&info->port.mutex);
++	return ret;
+ }				/* set_serial_info */
  
- 	configure_r_port(tty, info, NULL);
- 	return 0;
-@@ -1325,8 +1335,6 @@ static int rp_ioctl(struct tty_struct *tty, struct file *file,
- 	if (cmd != RCKP_GET_PORTS && rocket_paranoia_check(info, "rp_ioctl"))
- 		return -ENXIO;
+ /*
+@@ -2438,7 +2440,6 @@ static int cy_tiocmget(struct tty_struct *tty, struct file *file)
+ 
+ 	card = info->card;
  
 -	lock_kernel();
--
+ 	if (!cy_is_Z(card)) {
+ 		unsigned long flags;
+ 		int channel = info->line - card->first_line;
+@@ -2478,7 +2479,6 @@ static int cy_tiocmget(struct tty_struct *tty, struct file *file)
+ 			((lstatus & C_RS_CTS) ? TIOCM_CTS : 0);
+ 	}
+ end:
+-	unlock_kernel();
+ 	return result;
+ }				/* cy_tiomget */
+ 
+@@ -2696,7 +2696,6 @@ cy_ioctl(struct tty_struct *tty, struct file *file,
+ 	printk(KERN_DEBUG "cyc:cy_ioctl ttyC%d, cmd = %x arg = %lx\n",
+ 		info->line, cmd, arg);
+ #endif
+-	lock_kernel();
+ 
  	switch (cmd) {
- 	case RCKP_GET_STRUCT:
- 		if (copy_to_user(argp, info, sizeof (struct r_port)))
-@@ -1350,7 +1358,6 @@ static int rp_ioctl(struct tty_struct *tty, struct file *file,
+ 	case CYGETMON:
+@@ -2817,7 +2816,6 @@ cy_ioctl(struct tty_struct *tty, struct file *file,
  	default:
- 		ret = -ENOIOCTLCMD;
+ 		ret_val = -ENOIOCTLCMD;
  	}
 -	unlock_kernel();
- 	return ret;
- }
  
-@@ -1471,7 +1478,6 @@ static void rp_wait_until_sent(struct tty_struct *tty, int timeout)
- 	       jiffies);
- 	printk(KERN_INFO "cps=%d...\n", info->cps);
- #endif
--	lock_kernel();
- 	while (1) {
- 		txcnt = sGetTxCnt(cp);
- 		if (!txcnt) {
-@@ -1499,7 +1505,6 @@ static void rp_wait_until_sent(struct tty_struct *tty, int timeout)
- 			break;
- 	}
- 	__set_current_state(TASK_RUNNING);
--	unlock_kernel();
- #ifdef ROCKET_DEBUG_WAIT_UNTIL_SENT
- 	printk(KERN_INFO "txcnt = %d (jiff=%lu)...done\n", txcnt, jiffies);
- #endif
-@@ -1512,6 +1517,7 @@ static void rp_hangup(struct tty_struct *tty)
- {
- 	CHANNEL_t *cp;
- 	struct r_port *info = tty->driver_data;
-+	unsigned long flags;
- 
- 	if (rocket_paranoia_check(info, "rp_hangup"))
- 		return;
-@@ -1520,11 +1526,15 @@ static void rp_hangup(struct tty_struct *tty)
- 	printk(KERN_INFO "rp_hangup of ttyR%d...\n", info->line);
- #endif
- 	rp_flush_buffer(tty);
--	if (info->port.flags & ASYNC_CLOSING)
-+	spin_lock_irqsave(&info->port.lock, flags);
-+	if (info->port.flags & ASYNC_CLOSING) {
-+		spin_unlock_irqrestore(&info->port.lock, flags);
- 		return;
-+	}
- 	if (info->port.count)
- 		atomic_dec(&rp_num_ports_open);
- 	clear_bit((info->aiop * 8) + info->chan, (void *) &xmit_flags[info->board]);
-+	spin_unlock_irqrestore(&info->port.lock, flags);
- 
- 	tty_port_hangup(&info->port);
- 
-@@ -1535,7 +1545,7 @@ static void rp_hangup(struct tty_struct *tty)
- 	sDisCTSFlowCtl(cp);
- 	sDisTxSoftFlowCtl(cp);
- 	sClrTxXOFF(cp);
--	info->port.flags &= ~ASYNC_INITIALIZED;
-+	clear_bit(ASYNCB_INITIALIZED, &info->port.flags);
- 
- 	wake_up_interruptible(&info->port.open_wait);
- }
+ #ifdef CY_DEBUG_OTHER
+ 	printk(KERN_DEBUG "cyc:cy_ioctl done\n");
 
