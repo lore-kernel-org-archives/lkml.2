@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757698Ab0DACAF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 22:00:05 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46524 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755237Ab0DAB76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 21:59:58 -0400
-Date: Thu, 1 Apr 2010 12:59:44 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       "Wey-Yi Guy" <wey-yi.w.guy@intel.com>,
-       Reinette Chatre <reinette.chatre@intel.com>
-Subject: linux-next: manual merge of the wireless tree with the
- wireless-current tree
-Message-Id: <20100401125944.54adc73c.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__1_Apr_2010_12_59_44_+1100_q7vlz+m6A.SGxWbA"
+	id S1755115Ab0DACCz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 22:02:55 -0400
+Received: from vms173017pub.verizon.net ([206.46.173.17]:57202 "EHLO
+	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714Ab0DACCx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 22:02:53 -0400
+Date: Wed, 31 Mar 2010 22:02:33 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+       Thomas Renninger <trenn@suse.de>,
+       Suresh Siddha <suresh.b.siddha@intel.com>, len.brown@intel.com,
+       Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+       linux-acpi@vger.kernel.org, Iranna D Ankad <iranna.ankad@in.ibm.com>,
+       Gary Hade <garyhade@us.ibm.com>,
+       Natalie Protasevich <protasnb@gmail.com>
+Subject: Re: [PATCH 0/14] Start coping gsis < 16 that are not isa irqs.
+In-reply-to: <m1r5n2wwah.fsf_-_@fess.ebiederm.org>
+Message-id: <alpine.LFD.2.00.1003312154180.13993@localhost.localdomain>
+References: <1269221770-9667-1-git-send-email-yinghai@kernel.org>
+ <1269221770-9667-3-git-send-email-yinghai@kernel.org>
+ <alpine.LFD.2.00.1003221131470.3147@localhost.localdomain>
+ <m1iq8f1c1f.fsf@fess.ebiederm.org> <4BB0EA22.7000004@zytor.com>
+ <m1r5n2wwah.fsf_-_@fess.ebiederm.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__1_Apr_2010_12_59_44_+1100_q7vlz+m6A.SGxWbA
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> It appears there are a few systems in the wild that use acpi
+> interrupt source overrides to report a gsi > 16 is an isa irq.
+> 
+> This breaks all kinds of assumptions I figure any BIOS doing that
+> probably should be shot as that is very much not a conservative position.
 
-Hi John,
+You might run into trouble here on the ES7000 -- though I don't know
+if anybody is booting a modern kernel on one of those these days.
 
-Today's linux-next merge of the wireless tree got a conflict in
-drivers/net/wireless/iwlwifi/iwl-4965.c between commit
-be6b38bcb175613f239e0b302607db346472c6b6 ("iwlwifi: counting number of
-tfds can be free for 4965") from the wireless-current tree and commit
-74bcdb33e99f49ef5202dd2f8109945b4570edc2 ("iwlwifi: move agn only tx
-functions from iwlcore to iwlagn") from the wireless tree.
+IIR, ES7000 treated the bottom 16 as a special case.
+When there was an irq shortage, I think they used overrides
+to map higher PCI irqs into the empty spots below 16,
+but I think to make room for them they may have mapped
+some of the ISA irqs to high numbers.  Fuzzy memory
+on this at the moment...
 
-I fixed it up (see below) and can carry the fix for a while.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+cheers,
+Len Brown, Intel Open Source Technology Center
 
-diff --cc drivers/net/wireless/iwlwifi/iwl-4965.c
-index 3297fc7,1808c97..0000000
---- a/drivers/net/wireless/iwlwifi/iwl-4965.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-4965.c
-@@@ -2046,15 -2047,17 +2047,15 @@@ static void iwl4965_rx_reply_tx(struct=20
-  				   le32_to_cpu(tx_resp->rate_n_flags),
-  				   tx_resp->failure_frame);
- =20
-- 		freed =3D iwl_tx_queue_reclaim(priv, txq_id, index);
-+ 		freed =3D iwlagn_tx_queue_reclaim(priv, txq_id, index);
- -		if (qc && likely(sta_id !=3D IWL_INVALID_STATION))
- -			priv->stations[sta_id].tid[tid].tfds_in_queue -=3D freed;
- +		iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
- =20
-  		if (priv->mac80211_registered &&
-  		    (iwl_queue_space(&txq->q) > txq->q.low_mark))
-  			iwl_wake_queue(priv, txq_id);
-  	}
- =20
-- 	iwl_txq_check_empty(priv, sta_id, tid, txq_id);
- -	if (qc && likely(sta_id !=3D IWL_INVALID_STATION))
- -		iwlagn_txq_check_empty(priv, sta_id, tid, txq_id);
-++	iwlagn_txq_check_empty(priv, sta_id, tid, txq_id);
- =20
-  	if (iwl_check_bits(status, TX_ABORT_REQUIRED_MSK))
-  		IWL_ERR(priv, "TODO:  Implement Tx ABORT REQUIRED!!!\n");
-
---Signature=_Thu__1_Apr_2010_12_59_44_+1100_q7vlz+m6A.SGxWbA
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkuz/hAACgkQjjKRsyhoI8zkHgCfWFXTe2M3wqP7RXu0M7wj7jsY
-9H8An2FeqmaXXGccU9BLGExDjwfghmoa
-=NHeM
------END PGP SIGNATURE-----
-
---Signature=_Thu__1_Apr_2010_12_59_44_+1100_q7vlz+m6A.SGxWbA--
