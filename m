@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757341Ab0DAQHq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:07:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38221 "EHLO mx1.redhat.com"
+	id S1757403Ab0DAQHy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:07:54 -0400
+Received: from 8bytes.org ([88.198.83.132]:58224 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754601Ab0DAQHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:07:40 -0400
-Message-ID: <4BB4C48C.5000005@redhat.com>
-Date: Thu, 01 Apr 2010 19:06:36 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1754601Ab0DAQHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 12:07:48 -0400
+Date: Thu, 1 Apr 2010 18:07:47 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Tom Lyon <pugs@lyon-about.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/1] uio_pci_generic: extensions to allow access for
+	non-privileged processes
+Message-ID: <20100401160746.GH24846@8bytes.org>
+References: <201003311708.38961.pugs@lyon-about.com> <20100401125218.GE24846@8bytes.org> <201004010840.34574.pugs@lyon-about.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       Kent Overstreet <kent.overstreet@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [COUNTERPATCH] mm: avoid overflowing preempt_count() in mmu_take_all_locks()
-References: <1270117906.1653.139.camel@laptop>	 <alpine.LFD.2.00.1004011300550.32352@localhost.localdomain>	 <4BB47FC3.1020606@redhat.com> <4BB480CC.2060503@redhat.com>	 <1270121264.1653.205.camel@laptop> <1270122194.1653.223.camel@laptop>	 <20100401154249.GQ5825@random.random>  <4BB4C0F5.3070204@redhat.com> <1270137406.1598.78.camel@laptop>
-In-Reply-To: <1270137406.1598.78.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004010840.34574.pugs@lyon-about.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2010 06:56 PM, Peter Zijlstra wrote:
-> On Thu, 2010-04-01 at 18:51 +0300, Avi Kivity wrote:
->    
->> On 04/01/2010 06:42 PM, Andrea Arcangeli wrote:
->>      
->>> On Thu, Apr 01, 2010 at 01:43:14PM +0200, Peter Zijlstra wrote:
->>>
->>>        
->>>> On Thu, 2010-04-01 at 13:27 +0200, Peter Zijlstra wrote:
->>>>
->>>>          
->>>>> I've almost got a patch done that converts those two, still need to look
->>>>> where that tasklist_lock muck happens.
->>>>>
->>>>>            
->>>> OK, so the below builds and boots, only need to track down that
->>>> tasklist_lock nesting, but I got to run an errand first.
->>>>
->>>>          
->>> You should have a look at my old patchset where Christoph already
->>> implemented this (and not for decreasing latency but to allow
->>> scheduling in mmu notifier handlers, only needed by XPMEM):
->>>
->>> http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.26-rc7/mmu-notifier-v18/
->>>
->>> The ugliest part of it (that I think you missed below) is the breakage
->>> of the RCU locking in the anon-vma which requires adding refcounting
->>> to it. That was the worst part of the conversion as far as I can tell.
->>>
->>> http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.26-rc7/mmu-notifier-v18/anon-vma
->>>
->>>        
->> Can we use srcu now instead?
->>      
-> I would much rather we make call_rcu_preempt() available at all times.
->    
+On Thu, Apr 01, 2010 at 08:40:34AM -0700, Tom Lyon wrote:
+> On Thursday 01 April 2010 05:52:18 am Joerg Roedel wrote:
 
-I don't understand.  I thought the problem was that the locks were taken 
-inside an rcu critical section; switching to srcu would fix that.  But 
-how is call_rcu_preempt() related?  Grepping a bit, what is 
-call_rcu_preempt()?  my tree doesn't have it.
+> > > The point of this patch is to beef up the uio_pci_generic driver so that
+> > > a non-privileged user process can run a user level driver for most PCIe
+> > > devices. This can only be safe if there is an IOMMU in the system with
+> > > per-device domains.  Privileged users (CAP_SYS_RAWIO) are allowed if
+> > > there is no IOMMU.
+> >
+> > If you rely on an IOMMU you can use the IOMMU-API instead of the DMA-API
+> > for dma mappings. This change makes this driver suitable for KVM use
+> > too. If the interface is designed clever enough we can even use it for
+> > IOMMU emulation for pass-through devices.
 
--- 
-error compiling committee.c: too many arguments to function
+> The use with privileged processes and no IOMMUs is still quite useful, so I'd 
+> rather stick with the DMA interface.
+
+For the KVM use-case we need to be able to specify the io virtual
+address for a given process virtual address. This is not possible with
+the dma-api interface. So if we want to have uio-dma without an hardware
+iommu we need two distinct interfaces for userspace to cover all
+use-cases. I don't think its worth it to have two interfaces.
+
+	Joerg
 
