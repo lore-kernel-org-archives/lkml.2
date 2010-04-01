@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345Ab0DAB7b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 21:59:31 -0400
+	id S1757605Ab0DAB7d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 21:59:33 -0400
 Received: from mail-vw0-f46.google.com ([209.85.212.46]:51105 "EHLO
 	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756507Ab0DAB7L (ORCPT
+	with ESMTP id S1756620Ab0DAB7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 21:59:11 -0400
+	Wed, 31 Mar 2010 21:59:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=RASS1RArQWQFVU/OvCg29WH9ttVHfIRXYYMaYciGPg4sJunrXiB6MD/TPftYYNCveG
-         kVTLoaULdBvDw+NniJFxIrinIKFSEpnBa657PY1RWH4Jy4j0fTCYVmM/fHHYHU/+9n3o
-         DjSQbKYqlsxGP2UR+1ArMhiM724Y88IdJ5gQA=
+        b=qoLoNy8etj9qQ6q1jTvqksZ5YyCMS6n6Hp8KKRKG0HJ/vGnhoDYnryorsC5qE2WrIX
+         8ukrKSqE4cVghEjMVcEHtvntRXkGUvMR6PcMf2FYLqwfz1+eDjF3k2SqaSB5AVxH8OOD
+         wIgJ51pozWDyPZig/EsuLM5T3S3WOiDGtqtnQ=
 MIME-Version: 1.0
-Date: Wed, 31 Mar 2010 21:59:09 -0400
-Message-ID: <n2u817ecb6f1003311859i1e1eff1id11a8cff6cd06f4a@mail.gmail.com>
-Subject: [PATCH 2/4] [tip:x86/mm] Set first MB as RW+NX
+Date: Wed, 31 Mar 2010 21:59:15 -0400
+Message-ID: <t2r817ecb6f1003311859me67dd181qf85a1d4f667cc43c@mail.gmail.com>
+Subject: [PATCH 3/4] [tip:x86/mm] NX protection for kernel data
 From: Siarhei Liakh <sliakh.lkml@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
        linux-next@vger.kernel.org
@@ -30,182 +30,146 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch ensures that there are no mixed (RW+X) pages mapped within
-first megabyte of kernel space (from PAGE_OFFSET up to beginning of .text).
-This is achieved through introduction of new compile-time option
-CONFIG_DEBUG_SET_1ST_MB_RWNX which controls how is_kernel_text()
-and static_protections() view the memory area in question.
+Note: this patch depends on "Correct improper large page preservation" patch
 
-Special accommodations have been made for BIOS32/PCI BIOS services:
-according to BIOS32 specification
-(http://members.datafast.net.au/dft0802/specs/bios32.pdf), at most two
-pages per BIOS32 service should be set executable and no pages need to
-be writeable. This patch modifies bios32_service() to set proper page
-access permissions at time of service discovery, as described in the
-specification. Further, hardcoded protection of memory area between 640k
-to 1Mb have been removed from static_protections(), since only pages
-mentioned above need to be executable, not whole BIOS region.
+This patch expands functionality of CONFIG_DEBUG_RODATA to set main
+(static) kernel data area as NX.
+The following steps are taken to achieve this:
+1. Linker script is adjusted so .text always starts and ends on a page boundary
+2. Linker script is adjusted so .rodata and .data always start and
+end on a page boundary
+3. void mark_nxdata_nx(void) added to arch/x86/mm/init.c with actual
+functionality: NX is set for all pages from _etext through _end.
+4. mark_nxdata_nx() called from free_initmem() (after init has been released)
+5. free_init_pages() sets released memory NX in arch/x86/mm/init.c
 
-The net result of the patch application is as follows:
-========== BEFORE ==========
-0xc0000000-0xc0100000           1M     RW             GLB x  pte
-0xc0100000-0xc04b6000        3800K     ro             GLB x  pte
-...
+The results of patch application may be observed in the diff of kernel page
+table dumps:
+--- data_nx_pt_before.txt       2009-10-13 07:48:59.000000000 -0400
++++ data_nx_pt_after.txt        2009-10-13 07:26:46.000000000 -0400
+@@ -2,8 +2,9 @@
+ 0x00000000-0xc0000000           3G                           pmd
+ ---[ Kernel Mapping ]---
+ 0xc0000000-0xc0100000           1M     RW             GLB x  pte
+-0xc0100000-0xc048d000        3636K     ro             GLB x  pte
+-0xc048d000-0xc0600000        1484K     RW             GLB x  pte
++0xc0100000-0xc0381000        2564K     ro             GLB x  pte
++0xc0381000-0xc048d000        1072K     ro             GLB NX pte
++0xc048d000-0xc0600000        1484K     RW             GLB NX pte
+ 0xc0600000-0xf7800000         882M     RW         PSE GLB NX pmd
+ 0xf7800000-0xf79fe000        2040K     RW             GLB NX pte
+ 0xf79fe000-0xf7a00000           8K                           pte
 
-=========== AFTER ===========
-0xc0000000-0xc00fb000        1004K     RW             GLB NX pte
-0xc00fb000-0xc00fd000           8K     ro             GLB x  pte
-0xc00fd000-0xc0100000          12K     RW             GLB NX pte
-0xc0100000-0xc04b6000        3800K     ro             GLB x  pte
-...
 
-Note that first MB is now RW+NX, except for 8K of RO+X used by BIOS32.
-
-The patch have been developed for Linux 2.6.33-rc5 x86 by Siarhei Liakh
+The patch have been developed for Linux 2.6.34-rc2 x86 by Siarhei Liakh
 <sliakh.lkml@gmail.com> and Xuxian Jiang <jiang@cs.ncsu.edu>.
 
-V1: original patch "Reducing footprint of BIOS32 service mappings"
-V2: Set first MB as RW+NX for linux 2.6.33-rc5
-V3: minor adjustments for -tip
+V1:  initial patch for 2.6.30
+V2:  patch for 2.6.31-rc7
+V3:  moved all code into arch/x86, adjusted credits
+V4:  fixed ifdef, removed credits from CREDITS
+V5:  fixed an address calculation bug in mark_nxdata_nx()
+V6:  added acked-by and PT dump diff to commit log
+V7:  minor adjustments for -tip
 
 Signed-off-by: Siarhei Liakh <sliakh.lkml@gmail.com>
 Signed-off-by: Xuxian Jiang <jiang@cs.ncsu.edu>
+Acked-by: Arjan van de Ven <arjan@linux.intel.com>
+Reviewed-by: James Morris <jmorris@namei.org>
 ---
 
-diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-index 4814d35..6dbcb6f 100644
---- a/arch/x86/Kconfig.debug
-+++ b/arch/x86/Kconfig.debug
-@@ -123,6 +123,17 @@ config DEBUG_NX_TEST
- 	  and the software setup of this feature.
- 	  If in doubt, say "N"
+diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+index 2cc2497..7f82438 100644
+--- a/arch/x86/kernel/vmlinux.lds.S
++++ b/arch/x86/kernel/vmlinux.lds.S
+@@ -69,7 +69,7 @@ jiffies_64 = jiffies;
 
-+config DEBUG_SET_1ST_MB_RWNX
-+       bool "Set 1st MB of kernel space mapping as RW+NX"
-+       default n
-+       depends on X86
-+       ---help---
-+         This option helps to catch unintended modifications/execution of
-+         1st megabyte of kernel address space. Such protection may interfere
-+         with run-time code patching and legacy BIOS services residing within
-+         the 1st MB of physical address space.
-+         If in doubt, say "N".
-+
- config 4KSTACKS
- 	bool "Use 4Kb for kernel stacks instead of 8Kb"
- 	depends on X86_32
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 5cb3f0f..22ccf08 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -52,6 +52,12 @@
- #include <asm/page_types.h>
- #include <asm/init.h>
+ PHDRS {
+ 	text PT_LOAD FLAGS(5);          /* R_E */
+-	data PT_LOAD FLAGS(7);          /* RWE */
++	data PT_LOAD FLAGS(6);          /* RW_ */
+ #ifdef CONFIG_X86_64
+ 	user PT_LOAD FLAGS(5);          /* R_E */
+ #ifdef CONFIG_SMP
+@@ -108,6 +108,8 @@ SECTIONS
+ 		IRQENTRY_TEXT
+ 		*(.fixup)
+ 		*(.gnu.warning)
++		/* .text should occupy whole number of pages */
++		. = ALIGN(PAGE_SIZE);
+ 		/* End of text section */
+ 		_etext = .;
+ 	} :text = 0x9090
+@@ -121,6 +123,7 @@ SECTIONS
+ 	X64_ALIGN_DEBUG_RODATA_END
 
-+#ifdef CONFIG_DEBUG_SET_1ST_MB_RWNX
-+#define TEXT_START _text
-+#else
-+#define TEXT_START PAGE_OFFSET
-+#endif
-+
- unsigned long highstart_pfn, highend_pfn;
+ 	/* Data */
++	. = ALIGN(PAGE_SIZE);
+ 	.data : AT(ADDR(.data) - LOAD_OFFSET) {
+ 		/* Start of data section */
+ 		_sdata = .;
+@@ -143,6 +146,8 @@ SECTIONS
+ 		/* rarely changed data like cpu maps */
+ 		READ_MOSTLY_DATA(INTERNODE_CACHE_BYTES)
 
- static noinline int do_test_wp_bit(void);
-@@ -225,7 +231,8 @@ page_table_range_init(unsigned long start,
-unsigned long end, pgd_t *pgd_base)
++		/* .data should occupy whole number of pages */
++		. = ALIGN(PAGE_SIZE);
+ 		/* End of data section */
+ 		_edata = .;
+ 	} :data
+@@ -307,7 +312,7 @@ SECTIONS
+ 		__bss_start = .;
+ 		*(.bss.page_aligned)
+ 		*(.bss)
+-		. = ALIGN(4);
++		. = ALIGN(PAGE_SIZE);
+ 		__bss_stop = .;
+ 	}
 
- static inline int is_kernel_text(unsigned long addr)
- {
--	if (addr >= PAGE_OFFSET && addr <= (unsigned long)__init_end)
-+	if (addr >= (unsigned long)TEXT_START
-+		&& addr <= (unsigned long)__init_end)
- 		return 1;
- 	return 0;
- }
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index cf07c26..595398e 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -256,13 +256,14 @@ static inline pgprot_t
-static_protections(pgprot_t prot, unsigned long address,
- {
- 	pgprot_t forbidden = __pgprot(0);
-
-+#ifndef CONFIG_DEBUG_SET_1ST_MB_RWNX
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 452ee5b..240dcb0 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -361,8 +361,9 @@ void free_init_pages(char *what, unsigned long
+begin, unsigned long end)
  	/*
- 	 * The BIOS area between 640k and 1Mb needs to be executable for
- 	 * PCI BIOS based config access (CONFIG_PCI_GOBIOS) support.
+ 	 * We just marked the kernel text read only above, now that
+ 	 * we are going to free part of that, we need to make that
+-	 * writeable first.
++	 * writeable and non-executable first.
  	 */
- 	if (within(pfn, BIOS_BEGIN >> PAGE_SHIFT, BIOS_END >> PAGE_SHIFT))
- 		pgprot_val(forbidden) |= _PAGE_NX;
--
-+#endif
- 	/*
- 	 * The kernel text needs to be executable for obvious reasons
- 	 * Does not cover __inittext since that is gone later on. On
-diff --git a/arch/x86/pci/pcbios.c b/arch/x86/pci/pcbios.c
-index 1c975cc..ec3b3db 100644
---- a/arch/x86/pci/pcbios.c
-+++ b/arch/x86/pci/pcbios.c
-@@ -8,6 +8,7 @@
- #include <linux/uaccess.h>
- #include <asm/pci_x86.h>
- #include <asm/pci-functions.h>
-+#include <asm/cacheflush.h>
++	set_memory_nx(begin, (end - begin) >> PAGE_SHIFT);
+ 	set_memory_rw(begin, (end - begin) >> PAGE_SHIFT);
 
- /* BIOS32 signature: "_32_" */
- #define BIOS32_SIGNATURE	(('_' << 0) + ('3' << 8) + ('2' << 16) + ('_' << 24))
-@@ -58,6 +59,16 @@ static struct {
- 	unsigned short segment;
- } bios32_indirect = { 0, __KERNEL_CS };
+ 	printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
+@@ -377,11 +378,29 @@ void free_init_pages(char *what, unsigned long
+begin, unsigned long end)
+ #endif
+ }
 
-+/* Set two consecutive pages as read-only and executable */
-+void set_2_pages_rox(unsigned long addr)
++void mark_nxdata_nx(void)
 +{
-+#ifdef CONFIG_DEBUG_SET_1ST_MB_RWNX
-+	unsigned long pg_address = PFN_DOWN(addr + PAGE_OFFSET) << PAGE_SHIFT;
-+	set_memory_ro(pg_address, 2);
-+	set_memory_x(pg_address, 2);
++#ifdef CONFIG_DEBUG_RODATA
++	/*
++	 * When this called, init has already been executed and released,
++	 * so everything past _etext sould be NX.
++	 */
++	unsigned long start = PAGE_ALIGN((unsigned long)(&_etext));
++	unsigned long size = PAGE_ALIGN((unsigned long)(&_end)) - start;
++
++	printk(KERN_INFO "NX-protecting the kernel data: %lx, %lu pages\n",
++		start, size >> PAGE_SHIFT);
++	set_memory_nx(start, size >> PAGE_SHIFT);
 +#endif
 +}
 +
- /*
-  * Returns the entry point for the given service, NULL on error
-  */
-@@ -82,15 +93,19 @@ static unsigned long bios32_service(unsigned long service)
- 	local_irq_restore(flags);
-
- 	switch (return_code) {
--		case 0:
--			return address + entry;
--		case 0x80:	/* Not present */
--			printk(KERN_WARNING "bios32_service(0x%lx): not present\n", service);
--			return 0;
--		default: /* Shouldn't happen */
--			printk(KERN_WARNING "bios32_service(0x%lx): returned 0x%x -- BIOS bug!\n",
--				service, return_code);
--			return 0;
-+	case 0:	/* Service present, set proper page access */
-+		address += entry;
-+		set_2_pages_rox(address);
-+		return address;
-+	case 0x80: /* Not present */
-+		printk(KERN_WARNING "bios32_service(0x%lx): not present\n",
-+			service);
-+		return 0;
-+	default: /* Shouldn't happen */
-+		printk(KERN_WARNING "bios32_service(0x%lx): "
-+			"returned 0x%x -- BIOS bug!\n",
-+			service, return_code);
-+		return 0;
- 	}
+ void free_initmem(void)
+ {
+ 	free_init_pages("unused kernel memory",
+ 			(unsigned long)(&__init_begin),
+ 			(unsigned long)(&__init_end));
++	/* Set kernel's data as NX */
++	mark_nxdata_nx();
  }
 
-@@ -331,6 +346,7 @@ static struct pci_raw_ops * __devinit pci_find_bios(void)
- 			DBG("PCI: BIOS32 Service Directory entry at 0x%lx\n",
- 					bios32_entry);
- 			bios32_indirect.address = bios32_entry + PAGE_OFFSET;
-+			set_2_pages_rox(bios32_entry);
- 			if (check_pcibios())
- 				return &pci_bios_access;
- 		}
+ #ifdef CONFIG_BLK_DEV_INITRD
