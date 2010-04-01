@@ -1,60 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab0DAGfx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 02:35:53 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54552 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752586Ab0DAGfq (ORCPT
+	id S1753731Ab0DAGge (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 02:36:34 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:37501 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752633Ab0DAGg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 02:35:46 -0400
-Date: Wed, 31 Mar 2010 23:33:30 -0400
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Matthew Wilcox <matthew@wil.cx>, Yinghai Lu <yinghai@kernel.org>,
-       Rabin Vincent <rabin@rab.in>, lkml <linux-kernel@vger.kernel.org>,
-       penberg@cs.helsinki.fi, linux-arch@vger.kernel.org
-Subject: Re: start_kernel(): bug: interrupts were enabled early
-Message-Id: <20100331233330.1a7357e4.akpm@linux-foundation.org>
-In-Reply-To: <4BB43CAC.3080102@zytor.com>
-References: <20100325194100.GA2364@debian>
-	<20100331134048.da4e35a7.akpm@linux-foundation.org>
-	<4BB3B4DB.7040904@kernel.org>
-	<20100331210145.GB32165@parisc-linux.org>
-	<4BB3B8FC.1020608@zytor.com>
-	<20100331211754.GC32165@parisc-linux.org>
-	<alpine.DEB.2.00.1003311640410.30456@router.home>
-	<20100331215411.GB17715@flint.arm.linux.org.uk>
-	<4BB3C540.9000405@zytor.com>
-	<1270075071.7101.79.camel@pasglop>
-	<20100331154955.54176e5e.akpm@linux-foundation.org>
-	<1270084631.7101.81.camel@pasglop>
-	<20100331182654.d36c87ff.akpm@linux-foundation.org>
-	<4BB43CAC.3080102@zytor.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 1 Apr 2010 02:36:27 -0400
+X-Sasl-enc: prZGezZS/WECzV/YA9L7OOKv9RpDN9YwLxgtsJ4sB6dB 1270103785
+Message-ID: <4BB43EE6.5040003@ladisch.de>
+Date: Thu, 01 Apr 2010 08:36:22 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Alex Deucher <alexdeucher@gmail.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux PCI <linux-pci@vger.kernel.org>, Greg KH <gregkh@suse.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       dri-devel@lists.sourceforge.net, stable@kernel.org,
+       Dave Airlie <airlied@gmail.com>
+Subject: Re: [Regression, post-rc2] Commit a5ee4eb7541 breaks OpenGL on RS780
+ (was: Re: Linux 2.6.34-rc3)
+References: <alpine.LFD.2.00.1003301029250.3707@i5.linux-foundation.org>	 <201003302316.45651.rjw@sisk.pl> <201004010313.32920.rjw@sisk.pl> <u2ta728f9f91003311919lef17adc1s4ee009c7d18454e9@mail.gmail.com>
+In-Reply-To: <u2ta728f9f91003311919lef17adc1s4ee009c7d18454e9@mail.gmail.com>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Mar 2010 23:26:52 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
+Alex Deucher wrote:
+> On Wed, Mar 31, 2010 at 9:13 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> On Tuesday 30 March 2010, Rafael J. Wysocki wrote:
+>>> >       PCI quirk: RS780/RS880: work around missing MSI initialization
+>>>
+>>> This one (commit a5ee4eb7541) broke OpenGL acceleration on my new test box
+>>> which happens to have a RS780.
 
-> On 03/31/2010 03:26 PM, Andrew Morton wrote:
-> > 
-> > Not by adding overhead to every single down_read()/down_write() just to
-> > fix a once-off startup problem - that's taking laziness way too far.
-> > 
-> 
-> How much overhead is this on non-x86 architectures (keep in mind x86
-> doesn't use this?)
-> 
+So it's better to disable MSI unconditionally.
 
-Just a few instructions, I guess.   But we can do it with zero.
+Rafael, can you check if MSI works for the HDMI audio device?
+(I'd guess it doesn't.)
 
-And from a design POV, pretending that down_read()/down_write() can be
-called with interrupts disabled is daft - they cannot!  Why muck up the
-usual code paths with this startup-specific hack?
+> I also have the attached patch queued in via Dave's tree to disable
+> MSI on all IGP chips for the time being.
 
+This disables MSI only for the graphics device.  I'd prefer to have
+the quirk on its bridge so that MSI gets disabled for the HDMI audio
+device too, to avoid having to duplicate this quirk in the snd-hda-intel
+driver.
+
+==========
+
+PCI quirk: RS780/RS880: disable MSI completely
+
+The missing initialization of the nb_cntl.strap_msi_enable does not seem
+to be the only problem that prevents MSI, so that quirk is not
+sufficient to enable MSI on all machines.  To be safe, unconditionally
+disable MSI for the internal graphics and HDMI audio on these chipsets.
+
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2123,6 +2123,8 @@ static void __devinit quirk_disable_msi(struct pci_dev *dev)
+ 	}
+ }
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_8131_BRIDGE, quirk_disable_msi);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, 0x9602, quirk_disable_msi);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ASUSTEK, 0x9602, quirk_disable_msi);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, 0xa238, quirk_disable_msi);
+ 
+ /* Go through the list of Hypertransport capabilities and
+@@ -2495,39 +2497,6 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, 0x4374,
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, 0x4375,
+ 			quirk_msi_intx_disable_bug);
+ 
+-/*
+- * MSI does not work with the AMD RS780/RS880 internal graphics and HDMI audio
+- * devices unless the BIOS has initialized the nb_cntl.strap_msi_enable bit.
+- */
+-static void __init rs780_int_gfx_disable_msi(struct pci_dev *int_gfx_bridge)
+-{
+-	u32 nb_cntl;
+-
+-	if (!int_gfx_bridge->subordinate)
+-		return;
+-
+-	pci_bus_write_config_dword(int_gfx_bridge->bus, PCI_DEVFN(0, 0),
+-				   0x60, 0);
+-	pci_bus_read_config_dword(int_gfx_bridge->bus, PCI_DEVFN(0, 0),
+-				  0x64, &nb_cntl);
+-
+-	if (!(nb_cntl & BIT(10))) {
+-		dev_warn(&int_gfx_bridge->dev,
+-			 FW_WARN "RS780: MSI for internal graphics disabled\n");
+-		int_gfx_bridge->subordinate->bus_flags |= PCI_BUS_FLAGS_NO_MSI;
+-	}
+-}
+-
+-#define PCI_DEVICE_ID_AMD_RS780_P2P_INT_GFX	0x9602
+-
+-DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD,
+-			PCI_DEVICE_ID_AMD_RS780_P2P_INT_GFX,
+-			rs780_int_gfx_disable_msi);
+-/* wrong vendor ID on M4A785TD motherboard: */
+-DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ASUSTEK,
+-			PCI_DEVICE_ID_AMD_RS780_P2P_INT_GFX,
+-			rs780_int_gfx_disable_msi);
+-
+ #endif /* CONFIG_PCI_MSI */
+ 
+ #ifdef CONFIG_PCI_IOV
