@@ -1,304 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757627Ab0DARhL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 13:37:11 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:44843 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754136Ab0DARhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 13:37:01 -0400
-Date: Thu, 1 Apr 2010 18:36:41 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	id S1757805Ab0DARtB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 13:49:01 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:51570 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754242Ab0DARsy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 13:48:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=uZM8rJjehL3lSk08+O2nFoG8rRlBto+OD9ynphmIn01ejJN28aErbu9G+KtUb1MPhE
+         fukVE36Zwc11BcTWyxoAY/BRF50UO50zBrTNeR4UhmqcwmA9rbO/4zFIfYBgQ1Cv3VDK
+         QxT5CArFps7/M385u3UGT52dCo8Y2eln7UikI=
+Date: Thu, 1 Apr 2010 20:48:58 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: John Kacur <jkacur@gmail.com>, Roland McGrath <roland@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 14/14] mm,migration: Allow the migration of
-	PageSwapCache pages
-Message-ID: <20100401173640.GB621@csn.ul.ie>
-References: <1269940489-5776-1-git-send-email-mel@csn.ul.ie> <1269940489-5776-15-git-send-email-mel@csn.ul.ie> <20100331142623.62ac9175.kamezawa.hiroyu@jp.fujitsu.com> <j2s28c262361003311943ke6d39007of3861743cef3733a@mail.gmail.com> <20100401120123.f9f9e872.kamezawa.hiroyu@jp.fujitsu.com> <n2k28c262361003312144k3a1a725aj1eb22efe6d360118@mail.gmail.com> <20100401144234.e3848876.kamezawa.hiroyu@jp.fujitsu.com> <w2i28c262361004010351r605c897dzd2bdccac149dcc6b@mail.gmail.com>
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] ptrace: kill BKL in ptrace syscall
+Message-ID: <20100401184855.GB6142@nowhere>
+References: <1269812331-8511-1-git-send-regression-fweisbec@gmail.com> <20100329114046.GB16971@redhat.com> <520f0cf11003290506o629c9ab6n95c94c48ba24acf4@mail.gmail.com> <20100329130526.GA23201@redhat.com> <520f0cf11003290626q2e74c5d1r1eebb07a75e25dd5@mail.gmail.com> <20100329182204.GE5101@nowhere> <20100329183502.GA17842@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <w2i28c262361004010351r605c897dzd2bdccac149dcc6b@mail.gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20100329183502.GA17842@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 01, 2010 at 07:51:31PM +0900, Minchan Kim wrote:
-> On Thu, Apr 1, 2010 at 2:42 PM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Thu, 1 Apr 2010 13:44:29 +0900
-> > Minchan Kim <minchan.kim@gmail.com> wrote:
+On Mon, Mar 29, 2010 at 08:35:02PM +0200, Oleg Nesterov wrote:
+> On 03/29, Frederic Weisbecker wrote:
 > >
-> >> On Thu, Apr 1, 2010 at 12:01 PM, KAMEZAWA Hiroyuki
-> >> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> >> > On Thu, 1 Apr 2010 11:43:18 +0900
-> >> > Minchan Kim <minchan.kim@gmail.com> wrote:
-> >> >
-> >> >> On Wed, Mar 31, 2010 at 2:26 PM, KAMEZAWA Hiroyuki       /*
-> >> >> >> diff --git a/mm/rmap.c b/mm/rmap.c
-> >> >> >> index af35b75..d5ea1f2 100644
-> >> >> >> --- a/mm/rmap.c
-> >> >> >> +++ b/mm/rmap.c
-> >> >> >> @@ -1394,9 +1394,11 @@ int rmap_walk(struct page *page, int (*rmap_one)(struct page *,
-> >> >> >>
-> >> >> >>       if (unlikely(PageKsm(page)))
-> >> >> >>               return rmap_walk_ksm(page, rmap_one, arg);
-> >> >> >> -     else if (PageAnon(page))
-> >> >> >> +     else if (PageAnon(page)) {
-> >> >> >> +             if (PageSwapCache(page))
-> >> >> >> +                     return SWAP_AGAIN;
-> >> >> >>               return rmap_walk_anon(page, rmap_one, arg);
-> >> >> >
-> >> >> > SwapCache has a condition as (PageSwapCache(page) && page_mapped(page) == true.
-> >> >> >
-> >> >>
-> >> >> In case of tmpfs, page has swapcache but not mapped.
-> >> >>
-> >> >> > Please see do_swap_page(), PageSwapCache bit is cleared only when
-> >> >> >
-> >> >> > do_swap_page()...
-> >> >> >       swap_free(entry);
-> >> >> >        if (vm_swap_full() || (vma->vm_flags & VM_LOCKED) || PageMlocked(page))
-> >> >> >                try_to_free_swap(page);
-> >> >> >
-> >> >> > Then, PageSwapCache is cleared only when swap is freeable even if mapped.
-> >> >> >
-> >> >> > rmap_walk_anon() should be called and the check is not necessary.
-> >> >>
-> >> >> Frankly speaking, I don't understand what is Mel's problem, why he added
-> >> >> Swapcache check in rmap_walk, and why do you said we don't need it.
-> >> >>
-> >> >> Could you explain more detail if you don't mind?
-> >> >>
-> >> > I may miss something.
-> >> >
-> >> > unmap_and_move()
-> >> >  1. try_to_unmap(TTU_MIGRATION)
-> >> >  2. move_to_newpage
-> >> >  3. remove_migration_ptes
-> >> >        -> rmap_walk()
-> >> >
-> >> > Then, to map a page back we unmapped we call rmap_walk().
-> >> >
-> >> > Assume a SwapCache which is mapped, then, PageAnon(page) == true.
-> >> >
-> >> >  At 1. try_to_unmap() will rewrite pte with swp_entry of SwapCache.
-> >> >       mapcount goes to 0.
-> >> >  At 2. SwapCache is copied to a new page.
-> >> >  At 3. The new page is mapped back to the place. Now, newpage's mapcount is 0.
-> >> >       Before patch, the new page is mapped back to all ptes.
-> >> >       After patch, the new page is not mapped back because its mapcount is 0.
-> >> >
-> >> > I don't think shared SwapCache of anon is not an usual behavior, so, the logic
-> >> > before patch is more attractive.
-> >> >
-> >> > If SwapCache is not mapped before "1", we skip "1" and rmap_walk will do nothing
-> >> > because page->mapping is NULL.
-> >> >
-> >>
-> >> Thanks. I agree. We don't need the check.
-> >> Then, my question is why Mel added the check in rmap_walk.
-> >> He mentioned some BUG trigger and fixed things after this patch.
-> >> What's it?
-> >> Is it really related to this logic?
-> >> I don't think so or we are missing something.
-> >>
-> > Hmm. Consiering again.
-> >
-> > Now.
-> >        if (PageAnon(page)) {
-> >                rcu_locked = 1;
-> >                rcu_read_lock();
-> >                if (!page_mapped(page)) {
-> >                        if (!PageSwapCache(page))
-> >                                goto rcu_unlock;
-> >                } else {
-> >                        anon_vma = page_anon_vma(page);
-> >                        atomic_inc(&anon_vma->external_refcount);
-> >                }
+> > On Mon, Mar 29, 2010 at 03:26:26PM +0200, John Kacur wrote:
+> > > On Mon, Mar 29, 2010 at 3:05 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > > >
+> > > > Cough. I must admit, apart from "urgent" bugfixes the only way I know
+> > > > is to send the patch to Andrew.
+> > > >
+> > > > So I'd suggest to send this patch to akpm. Of course, if you wish I can
+> > > > forward it, but doesn't matter.
+> > > >
+> > > I know that in the past, Thomas was keeping a BKL tree in tip, but not sure if
+> > > he is still doing so. It seems that Arnd's tree is at least partially
+> > > experimental,
+> > > so I wonder if we need to maintain another BKL tree somewhere of fixes
+> > > that have no
+> > > obvious maintainer, but are ready to send to Linus for inclusion?
 > >
 > >
-> > Maybe this is a fix.
-> >
-> > ==
-> >        skip_remap = 0;
-> >        if (PageAnon(page)) {
-> >                rcu_read_lock();
-> >                if (!page_mapped(page)) {
-> >                        if (!PageSwapCache(page))
-> >                                goto rcu_unlock;
-> >                        /*
-> >                         * We can't convice this anon_vma is valid or not because
-> >                         * !page_mapped(page). Then, we do migration(radix-tree replacement)
-> >                         * but don't remap it which touches anon_vma in page->mapping.
-> >                         */
-> >                        skip_remap = 1;
-> >                        goto skip_unmap;
-> >                } else {
-> >                        anon_vma = page_anon_vma(page);
-> >                        atomic_inc(&anon_vma->external_refcount);
-> >                }
-> >        }
-> >        .....copy page, radix-tree replacement,....
-> >
+> > I have cc'ed Andrew for this patch, partly for that purpose, so that he
+> > can take it if he wants to.
 > 
-> It's not enough.
-> we uses remove_migration_ptes in  move_to_new_page, too.
-> We have to prevent it.
-> We can check PageSwapCache(page) in move_to_new_page and then
-> skip remove_migration_ptes.
+> Ah, good, I didn't notice.
 > 
-> ex)
-> static int move_to_new_page(....)
-> {
->      int swapcache = PageSwapCache(page);
->      ...
->      if (!swapcache)
->          if(!rc)
->              remove_migration_ptes
->          else
->              newpage->mapping = NULL;
-> }
+> If he doesn't pick this patch now, I'll forward it to him later again ;)
+> 
+> > But in the worst case these patches are never lost. We don't want to lose
+> > them. For those that can't go in someone else .35 targeted tree for any reason,
+> > I can queue them up in mine in a dedicated branch that I'll propose to Linus.
+> 
+> Frederic, whatever is more convenient to you.
+> 
+> Oleg.
 > 
 
-This I agree with.
 
-> And we have to close race between PageAnon(page) and rcu_read_lock.
+I have applied it to:
 
-Not so sure on this. The page is locked at this point and that should
-prevent it from becoming !PageAnon
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	bkl/core
 
-> If we don't do it, anon_vma could be free in the middle of operation.
-> I means
-> 
->          * of migration. File cache pages are no problem because of page_lock()
->          * File Caches may use write_page() or lock_page() in migration, then,
->          * just care Anon page here.
->          */
->         if (PageAnon(page)) {
->                 !!! RACE !!!!
->                 rcu_read_lock();
->                 rcu_locked = 1;
-> 
-> +
-> +               /*
-> +                * If the page has no mappings any more, just bail. An
-> +                * unmapped anon page is likely to be freed soon but worse,
-> 
+Thanks.
 
-I am not sure this race exists because the page is locked but a key
-observation has been made - A page that is unmapped can be migrated if
-it's PageSwapCache but it may not have a valid anon_vma. Hence, in the
-!page_mapped case, the key is to not use anon_vma. How about the
-following patch?
-
-==== CUT HERE ====
-
-mm,migration: Allow the migration of PageSwapCache pages
-
-PageAnon pages that are unmapped may or may not have an anon_vma so are
-not currently migrated. However, a swap cache page can be migrated and
-fits this description. This patch identifies page swap caches and allows
-them to be migrated but ensures that no attempt to made to remap the pages
-would would potentially try to access an already freed anon_vma.
-
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 35aad2a..5d0218b 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -484,7 +484,8 @@ static int fallback_migrate_page(struct address_space *mapping,
-  *   < 0 - error code
-  *  == 0 - success
-  */
--static int move_to_new_page(struct page *newpage, struct page *page)
-+static int move_to_new_page(struct page *newpage, struct page *page,
-+						int safe_to_remap)
- {
- 	struct address_space *mapping;
- 	int rc;
-@@ -519,10 +520,12 @@ static int move_to_new_page(struct page *newpage, struct page *page)
- 	else
- 		rc = fallback_migrate_page(mapping, newpage, page);
- 
--	if (!rc)
--		remove_migration_ptes(page, newpage);
--	else
--		newpage->mapping = NULL;
-+	if (safe_to_remap) {
-+		if (!rc)
-+			remove_migration_ptes(page, newpage);
-+		else
-+			newpage->mapping = NULL;
-+	}
- 
- 	unlock_page(newpage);
- 
-@@ -539,6 +542,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 	int rc = 0;
- 	int *result = NULL;
- 	struct page *newpage = get_new_page(page, private, &result);
-+	int safe_to_remap = 1;
- 	int rcu_locked = 0;
- 	int charge = 0;
- 	struct mem_cgroup *mem = NULL;
-@@ -600,18 +604,26 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 		rcu_read_lock();
- 		rcu_locked = 1;
- 
--		/*
--		 * If the page has no mappings any more, just bail. An
--		 * unmapped anon page is likely to be freed soon but worse,
--		 * it's possible its anon_vma disappeared between when
--		 * the page was isolated and when we reached here while
--		 * the RCU lock was not held
--		 */
--		if (!page_mapped(page))
--			goto rcu_unlock;
-+		/* Determine how to safely use anon_vma */
-+		if (!page_mapped(page)) {
-+			if (!PageSwapCache(page))
-+				goto rcu_unlock;
- 
--		anon_vma = page_anon_vma(page);
--		atomic_inc(&anon_vma->external_refcount);
-+			/*
-+			 * We cannot be sure that the anon_vma of an unmapped
-+			 * page is safe to use. In this case, the page still
-+			 * gets migrated but the pages are not remapped as
-+			 */
-+			safe_to_remap = 0;
-+		} else { 
-+			/*
-+			 * Take a reference count on the anon_vma if the
-+			 * page is mapped so that it is guaranteed to
-+			 * exist when the page is remapped later
-+			 */
-+			anon_vma = page_anon_vma(page);
-+			atomic_inc(&anon_vma->external_refcount);
-+		}
- 	}
- 
- 	/*
-@@ -646,9 +658,9 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 
- skip_unmap:
- 	if (!page_mapped(page))
--		rc = move_to_new_page(newpage, page);
-+		rc = move_to_new_page(newpage, page, safe_to_remap);
- 
--	if (rc)
-+	if (rc && safe_to_remap)
- 		remove_migration_ptes(page, page);
- rcu_unlock:
- 
