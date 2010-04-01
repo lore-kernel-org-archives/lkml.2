@@ -1,93 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756667Ab0DACNZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 22:13:25 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:44626 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755834Ab0DACNY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 22:13:24 -0400
-Message-ID: <4BB40140.20109@us.ibm.com>
-Date: Wed, 31 Mar 2010 19:13:20 -0700
-From: Darren Hart <dvhltc@us.ibm.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	id S1756800Ab0DACQP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 22:16:15 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53791 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755834Ab0DACQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 22:16:13 -0400
+Message-ID: <4BB40208.4010904@cn.fujitsu.com>
+Date: Thu, 01 Apr 2010 10:16:40 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: rostedt@goodmis.org
-CC: "lkml," <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Gregory Haskins <ghaskins@novell.com>,
-       Sven-Thorsten Dietrich <sdietrich@novell.com>,
-       Peter Morreale <pmorreale@novell.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Chris Mason <chris.mason@oracle.com>
-Subject: Re: RFC: Ideal Adaptive Spinning Conditions
-References: <4BB3D90C.3030108@us.ibm.com> <1270078689.19685.8040.camel@gandalf.stny.rr.com>
-In-Reply-To: <1270078689.19685.8040.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: David Rientjes <rientjes@google.com>
+CC: Nick Piggin <npiggin@suse.de>, Lee Schermerhorn <lee.schermerhorn@hp.com>,
+       Paul Menage <menage@google.com>,
+       Linux-Kernel <linux-kernel@vger.kernel.org>,
+       Linux-MM <linux-mm@kvack.org>, Li Zefan <lizf@cn.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH V2 4/4] cpuset,mm: update task's mems_allowed lazily
+References: <4B94CD2D.8070401@cn.fujitsu.com> <alpine.DEB.2.00.1003081330370.18502@chino.kir.corp.google.com> <4B95F802.9020308@cn.fujitsu.com> <20100311081548.GJ5812@laptop> <4B98C6DE.3060602@cn.fujitsu.com> <20100311110317.GL5812@laptop> <4BB31BDA.8080203@cn.fujitsu.com> <alpine.DEB.2.00.1003310324550.17661@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1003310324550.17661@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt wrote:
-> On Wed, 2010-03-31 at 16:21 -0700, Darren Hart wrote:
+on 2010-3-31 18:34, David Rientjes wrote:
+> On Wed, 31 Mar 2010, Miao Xie wrote:
 > 
->> o What type of lock hold times do we expect to benefit?
+>> diff --git a/mm/mmzone.c b/mm/mmzone.c
+>> index f5b7d17..43ac21b 100644
+>> --- a/mm/mmzone.c
+>> +++ b/mm/mmzone.c
+>> @@ -58,6 +58,7 @@ struct zoneref *next_zones_zonelist(struct zoneref *z,
+>>  					nodemask_t *nodes,
+>>  					struct zone **zone)
+>>  {
+>> +	nodemask_t tmp_nodes;
+>>  	/*
+>>  	 * Find the next suitable zone to use for the allocation.
+>>  	 * Only filter based on nodemask if it's set
+>> @@ -65,10 +66,16 @@ struct zoneref *next_zones_zonelist(struct zoneref *z,
+>>  	if (likely(nodes == NULL))
+>>  		while (zonelist_zone_idx(z) > highest_zoneidx)
+>>  			z++;
+>> -	else
+>> -		while (zonelist_zone_idx(z) > highest_zoneidx ||
+>> -				(z->zone && !zref_in_nodemask(z, nodes)))
+>> -			z++;
+>> +	else {
+>> +		tmp_nodes = *nodes;
+>> +		if (nodes_empty(tmp_nodes))
+>> +			while (zonelist_zone_idx(z) > highest_zoneidx)
+>> +				z++;
+>> +		else
+>> +			while (zonelist_zone_idx(z) > highest_zoneidx ||
+>> +				(z->zone && !zref_in_nodemask(z, &tmp_nodes)))
+>> +				z++;
+>> +	}
+>>  
+>>  	*zone = zonelist_zone(z);
+>>  	return z;
 > 
-> 0 (that's a zero) :-p
+> Unfortunately, you can't allocate a nodemask_t on the stack here because 
+> this is used in the iteration for get_page_from_freelist() which can occur 
+> very deep in the stack already and there's a probability of overflow.  
+> Dynamically allocating a nodemask_t simply wouldn't scale here, either, 
+> since it would allocate on every iteration of a zonelist.
 > 
-> I haven't seen your patches but you are not doing a heuristic approach,
-> are you? That is, do not "spin" hoping the lock will suddenly become
-> free. I was against that for -rt and I would be against that for futex
-> too.
 
-I'm not sure what you're getting at here. Adaptive spinning is indeed 
-hoping the lock will become free while you are spinning and checking 
-it's owner...
+Maybe it is better to fix this problem by checking this function's return
+value, because this function will return NULL if seeing an empty nodemask.
 
-> 
->> o How much contention is a good match for adaptive spinning?
->>    - this is related to the number of threads to run in the test
->> o How many spinners should be allowed?
->>
->> I can share the kernel patches if people are interested, but they are 
->> really early, and I'm not sure they are of much value until I better 
->> understand the conditions where this is expected to be useful.
-> 
-> Again, I don't know how you implemented your adaptive spinners, but the
-> trick to it in -rt was that it would only spin while the owner of the
-> lock was actually running. If it was not running, it would sleep. No
-> point waiting for a sleeping task to release its lock.
+The new patch is attached below.
+---
+ kernel/cpuset.c |   11 +++++++++--
+ mm/mempolicy.c  |   28 +++++++++++++++++++++++++++-
+ 2 files changed, 36 insertions(+), 3 deletions(-)
 
-It does exactly this.
-
-> Is this what you did? Because, IIRC, this only benefited spinlocks
-> converted to mutexes. It did not help with semaphores, because
-> semaphores could be held for a long time. Thus, it was good for short
-> held locks, but hurt performance on long held locks.
-
-Trouble is, I'm still seeing performance penalties even on the shortest 
-critical section possible (lock();unlock();)
-
-> If userspace is going to do this, I guess the blocked task would need to
-> go into kernel, and spin there (with preempt enabled) if the task is
-> still active and holding the lock.
-
-It is currently under preempt_disable() just like mutexes. I asked Peter 
-why it was done that way for mutexes, but didn't really get an answer. 
-He did point out that since we check need_resched() at every iteration 
-that we won't run longer than our timeslice anyway, so it shouldn't be a 
-  problem.
-
-> Then the application would need to determine which to use. An adaptive
-> spinner for short held locks, and a normal futex for long held locks.
-
-Yes, this was intended to be an optional thing (and certainly not the 
-default).
-
-
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index d109467..fbb1f1c 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -952,8 +952,6 @@ static void cpuset_migrate_mm(struct mm_struct *mm, const nodemask_t *from,
+ static void cpuset_change_task_nodemask(struct task_struct *tsk,
+ 					nodemask_t *newmems)
+ {
+-	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
+-	mpol_rebind_task(tsk, &tsk->mems_allowed);
+ 	mpol_rebind_task(tsk, newmems);
+ 	tsk->mems_allowed = *newmems;
+ }
+@@ -2442,6 +2440,15 @@ int cpuset_mem_spread_node(void)
+ 	node = next_node(current->cpuset_mem_spread_rotor, current->mems_allowed);
+ 	if (node == MAX_NUMNODES)
+ 		node = first_node(current->mems_allowed);
++
++	/*
++	 * if node is still MAX_NUMNODES, that means the kernel allocator saw
++	 * an empty nodemask. In that case, the kernel allocator allocate
++	 * memory on the current node.
++	 */
++	if (unlikely(node == MAX_NUMNODES))
++		node = numa_node_id();
++
+ 	current->cpuset_mem_spread_rotor = node;
+ 	return node;
+ }
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 8034abd..0905b84 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1449,8 +1449,16 @@ static struct zonelist *policy_zonelist(gfp_t gfp, struct mempolicy *policy)
+ 		 * the first node in the mask instead.
+ 		 */
+ 		if (unlikely(gfp & __GFP_THISNODE) &&
+-				unlikely(!node_isset(nd, policy->v.nodes)))
++				unlikely(!node_isset(nd, policy->v.nodes))) {
+ 			nd = first_node(policy->v.nodes);
++			/*
++			 * When rebinding task->mempolicy, th kernel allocator
++			 * may see an empty nodemask, and first_node() returns
++			 * MAX_NUMNODES, In that case, we will use current node.
++			 */
++			if (unlikely(nd == MAX_NUMNODES))
++				nd = numa_node_id();
++		}
+ 		break;
+ 	case MPOL_INTERLEAVE: /* should not happen */
+ 		break;
+@@ -1510,6 +1518,14 @@ unsigned slab_node(struct mempolicy *policy)
+ 		(void)first_zones_zonelist(zonelist, highest_zoneidx,
+ 							&policy->v.nodes,
+ 							&zone);
++		/*
++		 * When rebinding task->mempolicy, th kernel allocator
++		 * may see an empty nodemask, and first_zones_zonelist()
++		 * returns a NULL zone, In that case, we will use current
++		 * node.
++		 */
++		if (unlikely(zone == NULL))
++			return numa_node_id();
+ 		return zone->node;
+ 	}
+ 
+@@ -1529,10 +1545,18 @@ static unsigned offset_il_node(struct mempolicy *pol,
+ 
+ 	if (!nnodes)
+ 		return numa_node_id();
++
+ 	target = (unsigned int)off % nnodes;
+ 	c = 0;
+ 	do {
+ 		nid = next_node(nid, pol->v.nodes);
++		/*
++		 * When rebinding task->mempolicy, th kernel allocator
++		 * may see an empty nodemask, and next_node() returns
++		 * MAX_NUMNODES, In that case, we will use current node.
++		 */
++		if (unlikely(nid == MAX_NUMNODES))
++			return numa_node_id();
+ 		c++;
+ 	} while (c <= target);
+ 	return nid;
+@@ -1631,7 +1655,9 @@ bool init_nodemask_of_mempolicy(nodemask_t *mask)
+ 	case MPOL_BIND:
+ 		/* Fall through */
+ 	case MPOL_INTERLEAVE:
++		task_lock(current);
+ 		*mask =  mempolicy->v.nodes;
++		task_unlock(current);
+ 		break;
+ 
+ 	default:
 -- 
-Darren Hart
-IBM Linux Technology Center
-Real-Time Linux Team
+1.6.5.2
+
+
