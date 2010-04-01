@@ -1,89 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758715Ab0DATFI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 15:05:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49131 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758680Ab0DATFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 15:05:02 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: linux-ext4@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, jens.axboe@oracle.com, esandeen@redhat.com
-Subject: [patch/rft] jbd2: tag journal writes as metadata I/O
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 01 Apr 2010 15:04:54 -0400
-Message-ID: <x49iq8b9ep5.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1758721Ab0DATFe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 15:05:34 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:59848 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758683Ab0DATF3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 15:05:29 -0400
+Date: Thu, 1 Apr 2010 21:05:19 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Jiri Kosina <jkosina@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (hid
+ tree related)
+Message-ID: <20100401210519.2ac3f3a5@neptune.home>
+In-Reply-To: <20100401095304.487fffb4@pluto.restena.lu>
+References: <20100401170639.9f2fe605.sfr@canb.auug.org.au>
+	<alpine.LNX.2.00.1004010817420.8345@pobox.suse.cz>
+	<20100401183530.516bbca6.sfr@canb.auug.org.au>
+	<20100401095304.487fffb4@pluto.restena.lu>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 01 April 2010 Bruno Prémont <bonbons@linux-vserver.org> wrote:
+> Hi Jiri, Stephen,
+> 
+> Wondering why x86 (32bit and 64bit) does not need to include the
+> header but other arches (at least powerpc) need it.
+> 
+> Any idea via which header linux/uaccess.h gets included on x86?
+> If nobody has checked by the time I get home I will determine that.
 
-In running iozone for writes to small files, we noticed a pretty big
-discrepency between the performance of the deadline and cfq I/O
-schedulers.  Investigation showed that I/O was being issued from 2
-different contexts: the iozone process itself, and the jbd2/sdh-8 thread
-(as expected).  Because of the way cfq performs slice idling, the delays
-introduced between the metadata and data I/Os were significant.  For
-example, cfq would see about 7MB/s versus deadline's 35 for the same
-workload.  I also tested fs_mark with writing and fsyncing 1000 64k
-files, and a similar 5x performance difference was observed.  Eric
-Sandeen suggested that I flag the journal writes as metadata, and once I
-did that, the performance difference went away completely (cfq has
-special logic to prioritize metadata I/O).
+Here is the include path for x86:
+included arch/x86/include/asm/uaccess.h
+    from arch/x86/include/asm/sections.h:5,
+    from arch/x86/include/asm/hw_irq.h:26,
+    from include/linux/irq.h:233,
+    from arch/x86/include/asm/hardirq.h:5,
+    from include/linux/hardirq.h:10,
+    from include/linux/interrupt.h:12,
+    from include/linux/usb.h:15,
+    from drivers/hid/hid-picolcd.c:26:
 
-So, I'm submitting this patch for comments and testing.  I have a
-similar patch for jbd that I will submit if folks agree that this is a
-good idea.
+Wondering why there is such a difference for powerpc!
 
-Cheers,
-Jeff
+Thanks,
+Bruno
 
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
 
-diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
-index 671da7f..1998265 100644
---- a/fs/jbd2/commit.c
-+++ b/fs/jbd2/commit.c
-@@ -139,7 +139,7 @@ static int journal_submit_commit_record(journal_t *journal,
- 		set_buffer_ordered(bh);
- 		barrier_done = 1;
- 	}
--	ret = submit_bh(WRITE_SYNC_PLUG, bh);
-+	ret = submit_bh(WRITE_SYNC_PLUG | (1<<BIO_RW_META), bh);
- 	if (barrier_done)
- 		clear_buffer_ordered(bh);
- 
-@@ -160,7 +160,7 @@ static int journal_submit_commit_record(journal_t *journal,
- 		lock_buffer(bh);
- 		set_buffer_uptodate(bh);
- 		clear_buffer_dirty(bh);
--		ret = submit_bh(WRITE_SYNC_PLUG, bh);
-+		ret = submit_bh(WRITE_SYNC_PLUG | (1<<BIO_RW_META), bh);
- 	}
- 	*cbh = bh;
- 	return ret;
-@@ -369,7 +369,7 @@ void jbd2_journal_commit_transaction(journal_t *journal)
- 	int tag_bytes = journal_tag_bytes(journal);
- 	struct buffer_head *cbh = NULL; /* For transactional checksums */
- 	__u32 crc32_sum = ~0;
--	int write_op = WRITE;
-+	int write_op = WRITE_META;
- 
- 	/*
- 	 * First job: lock down the current transaction and wait for
-@@ -409,7 +409,7 @@ void jbd2_journal_commit_transaction(journal_t *journal)
- 	 * instead we rely on sync_buffer() doing the unplug for us.
- 	 */
- 	if (commit_transaction->t_synchronous_commit)
--		write_op = WRITE_SYNC_PLUG;
-+		write_op = WRITE_SYNC_PLUG | (1<<BIO_RW_META);
- 	trace_jbd2_commit_locking(journal, commit_transaction);
- 	stats.run.rs_wait = commit_transaction->t_max_wait;
- 	stats.run.rs_locked = jiffies;
-
+> On Thu, 1 Apr 2010 18:35:30 Stephen Rothwell wrote:
+> > Hi Jiri,
+> > 
+> > On Thu, 1 Apr 2010 08:18:43 +0200 (CEST) Jiri Kosina
+> > <jkosina@suse.cz> wrote:
+> > >
+> > > On Thu, 1 Apr 2010, Stephen Rothwell wrote:
+> > > 
+> > > > After merging the final tree, today's linux-next build (powerpc
+> > > > allyesconfig) failed like this:
+> > > > 
+> > > > drivers/hid/hid-picolcd.c: In function
+> > > > 'picolcd_debug_reset_write': drivers/hid/hid-picolcd.c:1343:
+> > > > error: implicit declaration of function 'copy_from_user'
+> > > > drivers/hid/hid-picolcd.c: In function
+> > > > 'picolcd_debug_eeprom_read': drivers/hid/hid-picolcd.c:1407:
+> > > > error: implicit declaration of function 'copy_to_user'
+> > > > 
+> > > > Caused by commit 9bbf2b98ba11d00bd73e3254e15cfe17ccaff6ba ("HID:
+> > > > add experimental access to PicoLCD device's EEPROM and FLASH").
+> > > > Using copy_ {to,from}_user requires the include of
+> > > > linux/uaccess.h.
+> > > > 
+> > > > I have reverted that commit for today.
+> > > 
+> > > Hmm, on which arch did this bomb out? I wonder why it is building
+> > > fine for me.
+> > 
+> > PowerPC (see above).  It could also be some interaction with another
+> > tree in linux-next.
+> > 
+> > > Anyway, I have added the include, as it is obviously correct(tm),
+> > > thanks for reporting it.
+> > 
+> > Thanks.
+> > 
