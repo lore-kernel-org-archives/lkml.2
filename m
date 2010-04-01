@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab0DAQbV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:31:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17543 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757663Ab0DAQbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:31:05 -0400
-Message-ID: <4BB4ABBB.4000909@redhat.com>
-Date: Thu, 01 Apr 2010 17:20:43 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Darren Hart <dvhltc@us.ibm.com>
-CC: "lkml, " <linux-kernel@vger.kernel.org>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Gregory Haskins <ghaskins@novell.com>,
-       Sven-Thorsten Dietrich <sdietrich@novell.com>,
-       Peter Morreale <pmorreale@novell.com>,
-       Chris Wright <chrisw@sous-sol.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: RFC: Ideal Adaptive Spinning Conditions
-References: <4BB3D90C.3030108@us.ibm.com>
-In-Reply-To: <4BB3D90C.3030108@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1757930Ab0DAQcw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:32:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40124 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757571Ab0DAQcp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 12:32:45 -0400
+Subject: Re: [COUNTERPATCH] mm: avoid overflowing preempt_count() in
+ mmu_take_all_locks()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, Kent Overstreet <kent.overstreet@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20100401160703.GU5825@random.random>
+References: <1270117906.1653.139.camel@laptop>
+	 <alpine.LFD.2.00.1004011300550.32352@localhost.localdomain>
+	 <4BB47FC3.1020606@redhat.com> <4BB480CC.2060503@redhat.com>
+	 <1270121264.1653.205.camel@laptop> <1270122194.1653.223.camel@laptop>
+	 <20100401154249.GQ5825@random.random> <1270137002.1598.65.camel@laptop>
+	 <1270137362.1598.77.camel@laptop>  <20100401160703.GU5825@random.random>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Apr 2010 18:32:42 +0200
+Message-ID: <1270139562.1598.122.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2010 02:21 AM, Darren Hart wrote:
-> I'm looking at some adaptive spinning with futexes as a way to help 
-> reduce the dependence on sched_yield() to implement userspace 
-> spinlocks. Chris, I included you in the CC after reading your comments 
-> regarding sched_yield() at kernel summit and I thought you might be 
-> interested.
->
-> I have an experimental patchset that implements FUTEX_LOCK and 
-> FUTEX_LOCK_ADAPTIVE in the kernel and use something akin to 
-> mutex_spin_on_owner() for the first waiter to spin. What I'm finding 
-> is that adaptive spinning actually hurts my particular test case, so I 
-> was hoping to poll people for context regarding the existing adaptive 
-> spinning implementations in the kernel as to where we see benefit. 
-> Under which conditions does adaptive spinning help?
->
-> I presume locks with a short average hold time stand to gain the most 
-> as the longer the lock is held the more likely the spinner will expire 
-> its timeslice or that the scheduling gain becomes noise in the 
-> acquisition time. My test case simple calls "lock();unlock()" for a 
-> fixed number of iterations and reports the iterations per second at 
-> the end of the run. It can run with an arbitrary number of threads as 
-> well. I typically run with 256 threads for 10M iterations.
->
->          futex_lock: Result: 635 Kiter/s
-> futex_lock_adaptive: Result: 542 Kiter/s
+On Thu, 2010-04-01 at 18:07 +0200, Andrea Arcangeli wrote:
+> On Thu, Apr 01, 2010 at 05:56:02PM +0200, Peter Zijlstra wrote:
+> > Another thing is mm->nr_ptes, that doens't appear to be properly
+> > serialized, __pte_alloc() does ++ under mm->page_table_lock, but
+> > free_pte_range() does -- which afaict isn't always with page_table_lock
+> > held, it does however always seem to have mmap_sem for writing.
+> 
+> Not saying this is necessarily safe, but how can be that relevant with
+> spinlock->mutex/rwsem conversion? 
 
-A lock(); unlock(); loop spends most of its time with the lock held or 
-contended.  Can you something like this:
+Not directly, but I keep running into that BUG_ON() at the end up
+exit_mmap() with my conversion patch, and I though that maybe I widened
+the race window.
 
+But I guess I simply messed something up.
 
-    lock();
-    for (i = 0; i < 1000; ++i)
-         asm volatile ("" : : : "memory");
-    unlock();
-    for (i = 0; i < 10000; ++i)
-         asm volatile ("" : : : "memory");
+> Only thing that breaks with that
+> conversion would be RCU (the very anon_vma rcu breaks because it
+> rcu_read_lock disabling preempt and then takes the anon_vma->lock,
+> that falls apart because taking the anon_vma->lock will imply a
+> schedule), but nr_ptes is a write operation so it can't be protected
+> by RCU.
+> 
+> > However __pte_alloc() callers do not in fact hold mmap_sem for writing.
+> 
+> As long as the mmap_sem readers always also take the page_table_lock
+> we're safe.
 
-This simulates a lock hold ratio of 10% with the lock hold time 
-exceeding the acquisition time.  Will be interesting to lower both loop 
-bounds as well.
-
--- 
-error compiling committee.c: too many arguments to function
+Ah, I see so its: down_read(mmap_sem) + page_table_lock that's exclusive
+against down_write(mmap_sem), nifty, should be a comment somewhere.
 
