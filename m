@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab0DAHkq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 03:40:46 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34326 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750796Ab0DAHki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 03:40:38 -0400
-Date: Thu, 1 Apr 2010 18:40:30 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: tj@kernel.org, linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       sjur.brandeland@stericsson.com, netdev@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the slabh tree
-Message-Id: <20100401184030.804c8eb3.sfr@canb.auug.org.au>
-In-Reply-To: <20100401.002908.267643090.davem@davemloft.net>
-References: <20100401164110.80e3b18f.sfr@canb.auug.org.au>
-	<20100401.002908.267643090.davem@davemloft.net>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__1_Apr_2010_18_40_30_+1100_tXNwSJsUQpDL1QHo"
+	id S1753989Ab0DAHmB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 03:42:01 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:22046 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796Ab0DAHly (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 03:41:54 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=cg6aNri/OhkS1rvx9j9QykeYj+MKm9fEixDbK5DxUp5txX7wR/78Ox+DTY6n9GIt9
+	4OimgjWs6OAdvBBwoepmQ==
+Date: Thu, 1 Apr 2010 00:41:47 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] oom: fix the unsafe proc_oom_score()->badness() call
+In-Reply-To: <20100331201746.GC11635@redhat.com>
+Message-ID: <alpine.DEB.2.00.1004010029260.6285@chino.kir.corp.google.com>
+References: <20100326150805.f5853d1c.akpm@linux-foundation.org> <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com>
+ <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330163909.GA16884@redhat.com> <alpine.DEB.2.00.1003301331110.5234@chino.kir.corp.google.com> <20100331091628.GA11438@redhat.com> <20100331201746.GC11635@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__1_Apr_2010_18_40_30_+1100_tXNwSJsUQpDL1QHo
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 31 Mar 2010, Oleg Nesterov wrote:
 
-Hi Dave,
+> But. Oh well. David, oom-badness-heuristic-rewrite.patch changed badness()
+> to consult p->signal->oom_score_adj. Until recently this was wrong when it
+> is called from proc_oom_score().
+> 
+> This means oom-badness-heuristic-rewrite.patch depends on
+> signals-make-task_struct-signal-immutable-refcountable.patch, or we
+> need the pid_alive() check again.
+> 
 
-On Thu, 01 Apr 2010 00:29:08 -0700 (PDT) David Miller <davem@davemloft.net>=
- wrote:
->
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Thu, 1 Apr 2010 16:41:10 +1100
->=20
-> > I have applied the following patch for today.  Dave, could you apply th=
-is
-> > to the net tree please?
->=20
-> Done.
+oom-badness-heuristic-rewrite.patch didn't change anything, Linus' tree 
+currently dereferences p->signal->oom_adj which is no different from 
+dereferencing p->signal->oom_score_adj without a refcount on the 
+signal_struct in -mm.  oom_adj was moved to struct signal_struct in 
+2.6.32, see 28b83c5.
 
-Thanks.
+> oom_badness() gets the new argument, long totalpages, and the callers
+> were updated. However, long uptime is not used any longer, probably
+> it make sense to kill this arg and simplify the callers? Unless you
+> are going to take run-time into account later.
+> 
+> So, I think -mm needs the patch below, but I have no idea how to
+> write the changelog ;)
+> 
+> Oleg.
+> 
+> --- x/fs/proc/base.c
+> +++ x/fs/proc/base.c
+> @@ -430,12 +430,13 @@ static const struct file_operations proc
+>  /* The badness from the OOM killer */
+>  static int proc_oom_score(struct task_struct *task, char *buffer)
+>  {
+> -	unsigned long points;
+> +	unsigned long points = 0;
+>  	struct timespec uptime;
+>  
+>  	do_posix_clock_monotonic_gettime(&uptime);
+>  	read_lock(&tasklist_lock);
+> -	points = oom_badness(task->group_leader,
+> +	if (pid_alive(task))
+> +		points = oom_badness(task,
+>  				global_page_state(NR_INACTIVE_ANON) +
+>  				global_page_state(NR_ACTIVE_ANON) +
+>  				global_page_state(NR_INACTIVE_FILE) +
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__1_Apr_2010_18_40_30_+1100_tXNwSJsUQpDL1QHo
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAku0Te4ACgkQjjKRsyhoI8wPYQCgi3e1/yxTzF+fFvf/+A7kfhfp
-bVYAoJZw8trXY8josG4ceyKRjw0eBsJL
-=lGff
------END PGP SIGNATURE-----
-
---Signature=_Thu__1_Apr_2010_18_40_30_+1100_tXNwSJsUQpDL1QHo--
+This should be protected by the get_proc_task() on the inode before 
+this function is called from proc_info_read().
