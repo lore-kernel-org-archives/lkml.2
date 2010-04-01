@@ -1,130 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758593Ab0DAB30 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 21:29:26 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:46910 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758582Ab0DAB3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 21:29:23 -0400
-Date: Wed, 31 Mar 2010 18:29:19 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Trond.Myklebust@netapp.com,
-       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS: Fix RCU warnings in
- nfs_inode_return_delegation_noreclaim() [ver #2]
-Message-ID: <20100401012919.GK2461@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <19192.1269889348@redhat.com>
- <23274.1269893706@redhat.com>
- <25276.1269901350@redhat.com>
- <26760.1269903543@redhat.com>
- <20100329232636.GT2569@linux.vnet.ibm.com>
- <2440.1269967151@redhat.com>
- <21972.1269993064@redhat.com>
- <10818.1270044273@redhat.com>
- <15371.1270057054@redhat.com>
- <19556.1270076008@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <19556.1270076008@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758603Ab0DAB3g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 21:29:36 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:42742 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758521Ab0DAB3c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 21:29:32 -0400
+Date: Thu, 1 Apr 2010 10:12:27 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Larry Woodman <lwoodman@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: RFC [Patch] Remove
+ "please try 'cgroup_disable=memory' option if you don't want memory cgroups"
+ printk at boot time.
+Message-Id: <20100401101227.4e9c017d.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <1270050899.3551.283.camel@dhcp-100-19-198.bos.redhat.com>
+References: <1270049283.3551.281.camel@dhcp-100-19-198.bos.redhat.com>
+	<1270050899.3551.283.camel@dhcp-100-19-198.bos.redhat.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 2.6.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 11:53:28PM +0100, David Howells wrote:
-> Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> 
-> > If you dont own a lock, and test a pointer, what guarantee do you have
-> > this pointer doesnt change right after you tested it ?
-> 
-> There are five possibilities:
-> 
->  (1) A pointer points to something when you check, and still points to the
->      same thing after you've gained the lock.
-> 
->  (2) A pointer points to something when you check, and points to something
->      else after you've gained the lock.
-> 
->  (3) A pointer points to something when you check, and is NULL after you've
->      gained the lock.
-> 
->  (4) A pointer points to NULL when you check, and points to something after
->      you've gained the lock.
-> 
->  (5) A pointer points to NULL when you check, and points to NULL after you've
->      gained the lock.
-> 
-> However, what if you _know_ that the pointer can only ever be made non-NULL
-> during initialisation, and may even be left unset?  That means possibility (4)
-> can never happen, and that possibility (5) can be detected by testing before
-> taking the lock.  Now, what if (5) is a common occurrence?  It might make
-> sense to make the test.
-> 
-> And what matter if the pointer _does_ change after you test it.  If it was
-> NULL before, it can only be NULL now - by the semantics defined for that
-> particular pointer.
-> 
-> > If *something* protects the pointer from being changed, then how can be
-> > expressed this fact ?
+(Added related people to Cc list.)
+
+On Wed, 31 Mar 2010 11:54:59 -0400, Larry Woodman <lwoodman@redhat.com> wrote:
+> On Wed, 2010-03-31 at 11:28 -0400, Larry Woodman wrote:
+> > We are considering removing this printk at boot time from RHEL because
+> > it will confuse customers, encourage them to change the boot parameters
+> > and generate extraneous support calls.  Its documented in
+> > Documentation/kernel-parameters.txt anyway.  Any thoughts???
 > > 
-> > If nothing protects the pointer, why test it then, as result of test is
-> > unreliable ?
+> > Larry Woodman
+> > 
 > 
-> I think you may be misunderstanding the purpose of rcu_dereference().  It is
-> to make sure the reading and dereferencing of the pointer are correctly
-> ordered with respect to the setting up of the pointed to record and the
-> changing of the pointer.
-> 
-> There must be two memory accesses for the barrier implied to be of use.  In
-> nfs_inode_return_delegation() there aren't two memory accesses to order,
-> therefore the barrier is pointless.
-> 
-> > If NFS was using rcu_dereference(), it probably was for a reason, but if
-> > nobody can recall it, it was a wrong reason ?
-> 
-> I think it is incorrectly used.  Given that the rcu_dereference() in:
-> 
-> 	if (rcu_dereference(nfsi->delegation) != NULL) {
-> 		spin_lock(&clp->cl_lock);
-> 		delegation = nfs_detach_delegation_locked(nfsi, NULL);
-> 		spin_unlock(&clp->cl_lock);
-> 		if (delegation != NULL)
-> 			nfs_do_return_delegation(inode, delegation, 0);
-> 	}
+I agree to removing this message.
+We've already removed similar message about swap_cgroup in commit 627991a2.
 
-And nfs_detach_delegation_locked() rechecks nfsi->delegation() under
-the lock, so this is a legitimate use.
+	Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-The pointer is not held constant, but any changes will be accounted
-for and handled correctly.  So I would argue that the pointer value is
-in fact protected by the recheck-under-lock algorithm used here.
-
-							Thanx, Paul
-
-> resolves to:
-> 
-> 	_________p1 = nfsi->delegation;
-> 	smp_read_barrier_depends();
-> 	if (_________p1) {
-> 		spin_lock(&clp->cl_lock); // implicit LOCK-class barrier
-> 		==>nfs_detach_delegation_locked(nfsi, NULL);
-> 		  [dereference nfsi->delegation]
-> 		...
-> 	}
-> 
-> do you actually need the smp_read_barrier_depends()?  You _have_ a barrier in
-> the form of the spin_lock().  In fact, the spin_lock() is avowedly sufficient
-> to protect accesses to and dereferences of nfsi->delegation, which means that:
-> 
-> 	static struct nfs_delegation *nfs_detach_delegation_locked(struct nfs_inode *nfsi, const nfs4_stateid *stateid)
-> 	{
-> 		struct nfs_delegation *delegation = rcu_dereference(nfsi->delegation);
-> 		...
-> 	}
-> 
-> has no need of the internal barrier provided by rcu_dereference() either.
-> 
-> David
+Thanks,
+Daisuke Nishimura.
