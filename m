@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758480Ab0DAQjF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:39:05 -0400
+	id S1758280Ab0DAQjR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:39:17 -0400
 Received: from mx1.redhat.com ([209.132.183.28]:24405 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758436Ab0DAQi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:38:57 -0400
-Message-ID: <4BB4C566.8060308@redhat.com>
-Date: Thu, 01 Apr 2010 19:10:14 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1758328Ab0DAQi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 12:38:58 -0400
+Date: Thu, 1 Apr 2010 16:00:11 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [patch] oom: give current access to memory reserves if it has
+	been killed
+Message-ID: <20100401135927.GA12460@redhat.com>
+References: <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330154659.GA12416@redhat.com> <alpine.DEB.2.00.1003301320020.5234@chino.kir.corp.google.com> <20100331175836.GA11635@redhat.com> <20100331204718.GD11635@redhat.com> <alpine.DEB.2.00.1004010133190.6285@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Darren Hart <dvhltc@us.ibm.com>
-CC: "lkml, " <linux-kernel@vger.kernel.org>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Gregory Haskins <ghaskins@novell.com>,
-       Sven-Thorsten Dietrich <sdietrich@novell.com>,
-       Peter Morreale <pmorreale@novell.com>,
-       Chris Wright <chrisw@sous-sol.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Chris Mason <chris.mason@oracle.com>
-Subject: Re: RFC: Ideal Adaptive Spinning Conditions
-References: <4BB3D90C.3030108@us.ibm.com> <4BB4ABBB.4000909@redhat.com> <4BB4C1C4.2090208@us.ibm.com>
-In-Reply-To: <4BB4C1C4.2090208@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1004010133190.6285@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2010 06:54 PM, Darren Hart wrote:
->> A lock(); unlock(); loop spends most of its time with the lock held 
->> or contended.  Can you something like this:
->>
->>
->>    lock();
->>    for (i = 0; i < 1000; ++i)
->>         asm volatile ("" : : : "memory");
->>    unlock();
->>    for (i = 0; i < 10000; ++i)
->>         asm volatile ("" : : : "memory");
+On 04/01, David Rientjes wrote:
 >
+> On Wed, 31 Mar 2010, Oleg Nesterov wrote:
 >
+> > Probably something like the patch below makes sense. Note that
+> > "skip kernel threads" logic is wrong too, we should check PF_KTHREAD.
+> > Probably it is better to check it in select_bad_process() instead,
+> > near is_global_init().
 >
-> Great idea. I'll be doing a more rigorous investigation on this of 
-> course, but I thought I'd share the results of just dumping this into 
-> the testcase:
->
-> # ./futex_lock -i10000000
-> futex_lock: Measure FUTEX_LOCK operations per second
->     Arguments: iterations=10000000 threads=256 adaptive=0
-> Result: 420 Kiter/s
-> lock calls:      9999872
-> lock syscalls:   665824 (6.66%)
-> unlock calls:    9999872
-> unlock syscalls: 861240 (8.61%)
->
-> # ./futex_lock -a -i10000000
-> futex_lock: Measure FUTEX_LOCK operations per second
->     Arguments: iterations=10000000 threads=256 adaptive=1
-> Result: 426 Kiter/s
-> lock calls:      9999872
-> lock syscalls:   558787 (5.59%)
-> unlock calls:    9999872
-> unlock syscalls: 603412 (6.03%)
->
-> This is the first time I've seen adaptive locking have an advantage! 
-> The second set of runs showed a slightly greater advantage. Note that 
-> this was still with spinners being limited to one.
+> is_global_init() will be true for p->flags & PF_KTHREAD.
 
-Question - do all threads finish at the same time, or wildly different 
-times?
+No, is_global_init() && PF_KTHREAD have nothing to do with each other.
 
--- 
-error compiling committee.c: too many arguments to function
+> > @@ -159,13 +172,9 @@ unsigned int oom_badness(struct task_str
+> >  	if (p->flags & PF_OOM_ORIGIN)
+> >  		return 1000;
+> >
+> > -	task_lock(p);
+> > -	mm = p->mm;
+> > -	if (!mm) {
+> > -		task_unlock(p);
+> > +	p = find_lock_task_mm(p);
+> > +	if (!p)
+> >  		return 0;
+> > -	}
+> > -
+> >  	/*
+> >  	 * The baseline for the badness score is the proportion of RAM that each
+> >  	 * task's rss and swap space use.
+> > @@ -330,12 +339,6 @@ static struct task_struct *select_bad_pr
+> >  			*ppoints = 1000;
+> >  		}
+> >
+> > -		/*
+> > -		 * skip kernel threads and tasks which have already released
+> > -		 * their mm.
+> > -		 */
+> > -		if (!p->mm)
+> > -			continue;
+> >  		if (p->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
+> >  			continue;
+>
+> You can't do this for the reason I cited in another email, oom_badness()
+> returning 0 does not exclude a task from being chosen by
+> selcet_bad_process(), it will use that task if nothing else has been found
+> yet.  We must explicitly filter it from consideration by checking for
+> !p->mm.
+
+Yes, you are right. OK, oom_badness() can never return points < 0,
+we can make it int and oom_badness() can return -1 if !mm. IOW,
+
+	- unsigned int points;
+	+ int points;
+	...
+
+	points = oom_badness(...);
+	if (points >= 0 && (points > *ppoints || !chosen))
+		chosen = p;
+
+Oleg.
 
