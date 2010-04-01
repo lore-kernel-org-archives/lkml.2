@@ -1,70 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990Ab0DAK2z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 06:28:55 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37932 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754607Ab0DAK2t (ORCPT
+	id S1755015Ab0DAKb6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 06:31:58 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:38658 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753536Ab0DAKbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 06:28:49 -0400
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: linux-i2c@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>,
-       Ryan Mallon <ryan@bluewatersys.com>, Hans Verkuil <hverkuil@xs4all.nl>,
-       Anton Vorontsov <cbouatmailru@gmail.com>,
-       Jean Delvare <khali@linux-fr.org>
-Date: Thu,  1 Apr 2010 12:27:44 +0200
-Message-Id: <1270117664-29099-1-git-send-email-w.sang@pengutronix.de>
-X-Mailer: git-send-email 1.7.0
-X-SA-Exim-Connect-IP: 92.198.50.58
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-Subject: [PATCH] power/ds2782: fix clientdata on removal
-X-SA-Exim-Version: 4.2.1 (built Sat, 01 Aug 2009 12:09:26 +0000)
-X-SA-Exim-Scanned: Yes (on metis.ext.pengutronix.de)
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 1 Apr 2010 06:31:52 -0400
+Subject: Re: [COUNTERPATCH] mm: avoid overflowing preempt_count() in 
+ mmu_take_all_locks()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       aarcange@redhat.com, akpm@linux-foundation.org,
+       Kent Overstreet <kent.overstreet@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>, tglx <tglx@linutronix.de>
+In-Reply-To: <1270114817-28896-1-git-send-email-avi@redhat.com>
+References: <20100330133634.2f1bf3d6@cuia.bos.redhat.com>
+	 <1270114817-28896-1-git-send-email-avi@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Apr 2010 12:31:46 +0200
+Message-ID: <1270117906.1653.139.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Probably due to a copy & paste bug, clientdata was set again to the data
-structure (which is freed immediately afterwards) when it should be
-NULLed. Just remove the calls as the i2c-core does this automatically
-now.
+I'm sure you dropped Ingo and Thomas by accident.
 
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Ryan Mallon <ryan@bluewatersys.com>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Jean Delvare <khali@linux-fr.org>
----
+On Thu, 2010-04-01 at 12:40 +0300, Avi Kivity wrote:
+> mmu_take_all_locks() takes a spinlock for each vma, which means we increase
+> the preempt count by the number of vmas in an address space.  Since the user
+> controls the number of vmas, they can cause preempt_count to overflow.
+> 
+> Fix by making mmu_take_all_locks() only disable preemption once by making
+> the spinlocks preempt-neutral.
 
-Anton: If it is okay with you, I think this should go via the I2C-tree to
-ensure it comes after the needed modification of the i2c-core.
+Right, so while this will get rid of the warning it doesn't make the
+code any nicer, its still a massive !preempt latency spot.
 
- drivers/power/ds2782_battery.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+> Signed-off-by: Avi Kivity <avi@redhat.com>
+> ---
+>  mm/mmap.c |   37 +++++++++++++++++++++++++++++++++++++
+>  1 files changed, 37 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index 75557c6..7305510 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -2442,6 +2442,12 @@ static void vm_lock_anon_vma(struct mm_struct *mm, struct anon_vma *anon_vma)
+>  		 */
+>  		spin_lock_nest_lock(&anon_vma->lock, &mm->mmap_sem);
+>  		/*
+> +		 * To avoid O(nr_vmas) preempt_disable()s, we keep each
+> +		 * vma preemp_count neutral and instead disable preempt
+> +		 * once per mmu_take_all_lock().
+> +		 */
+> +		preempt_enable();
+> +		/*
+>  		 * We can safely modify head.next after taking the
+>  		 * anon_vma->lock. If some other vma in this mm shares
+>  		 * the same anon_vma we won't take it again.
+> @@ -2471,6 +2477,12 @@ static void vm_lock_mapping(struct mm_struct *mm, struct address_space *mapping)
+>  		if (test_and_set_bit(AS_MM_ALL_LOCKS, &mapping->flags))
+>  			BUG();
+>  		spin_lock_nest_lock(&mapping->i_mmap_lock, &mm->mmap_sem);
+> +		/*
+> +		 * To avoid O(nr_vmas) preempt_disable()s, we keep each
+> +		 * vma preemp_count neutral and instead disable preempt
+> +		 * once per mmu_take_all_lock().
+> +		 */
+> +		preempt_enable();
+>  	}
+>  }
+>  
+> @@ -2516,6 +2528,13 @@ int mm_take_all_locks(struct mm_struct *mm)
+>  
+>  	mutex_lock(&mm_all_locks_mutex);
+>  
+> +	/*
+> +	 * To avoid O(nr_vmas) preempt_disable()s, we keep each
+> +	 * vma preemp_count neutral and instead disable preempt
+> +	 * once per mmu_take_all_lock().
+> +	 */
+> +	preempt_disable();
+> +
+>  	for (vma = mm->mmap; vma; vma = vma->vm_next) {
+>  		if (signal_pending(current))
+>  			goto out_unlock;
+> @@ -2558,6 +2577,12 @@ static void vm_unlock_anon_vma(struct anon_vma *anon_vma)
+>  		if (!__test_and_clear_bit(0, (unsigned long *)
+>  					  &anon_vma->head.next))
+>  			BUG();
+> +		/*
+> +		 * To avoid O(nr_vmas) preempt_disable()s, we keep each
+> +		 * vma preemp_count neutral and instead disable preempt
+> +		 * once per mmu_take_all_lock().
+> +		 */
+> +		preempt_disable();
+>  		spin_unlock(&anon_vma->lock);
+>  	}
+>  }
+> @@ -2569,6 +2594,12 @@ static void vm_unlock_mapping(struct address_space *mapping)
+>  		 * AS_MM_ALL_LOCKS can't change to 0 from under us
+>  		 * because we hold the mm_all_locks_mutex.
+>  		 */
+> +		/*
+> +		 * To avoid O(nr_vmas) preempt_disable()s, we keep each
+> +		 * vma preemp_count neutral and instead disable preempt
+> +		 * once per mmu_take_all_lock().
+> +		 */
+> +		preempt_disable();
+>  		spin_unlock(&mapping->i_mmap_lock);
+>  		if (!test_and_clear_bit(AS_MM_ALL_LOCKS,
+>  					&mapping->flags))
+> @@ -2596,6 +2627,12 @@ void mm_drop_all_locks(struct mm_struct *mm)
+>  			vm_unlock_mapping(vma->vm_file->f_mapping);
+>  	}
+>  
+> +	/*
+> +	 * To avoid O(nr_vmas) preempt_disable()s, we keep each
+> +	 * vma preemp_count neutral and instead disable preempt
+> +	 * once per mmu_take_all_lock().
+> +	 */
+> +	preempt_enable();
+>  	mutex_unlock(&mm_all_locks_mutex);
+>  }
+>  
 
-diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
-index da14f37..305d463 100644
---- a/drivers/power/ds2782_battery.c
-+++ b/drivers/power/ds2782_battery.c
-@@ -236,8 +236,6 @@ static int ds2782_battery_remove(struct i2c_client *client)
- 	idr_remove(&battery_id, info->id);
- 	mutex_unlock(&battery_lock);
- 
--	i2c_set_clientdata(client, info);
--
- 	kfree(info);
- 	return 0;
- }
-@@ -289,7 +287,6 @@ static int ds2782_battery_probe(struct i2c_client *client,
- fail_register:
- 	kfree(info->battery.name);
- fail_name:
--	i2c_set_clientdata(client, info);
- 	kfree(info);
- fail_info:
- 	mutex_lock(&battery_lock);
--- 
-1.7.0
+
 
