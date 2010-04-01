@@ -1,127 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609Ab0DAEvC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 00:51:02 -0400
-Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:56392 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483Ab0DAEuy convert rfc822-to-8bit (ORCPT
+	id S1752672Ab0DAExi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 00:53:38 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:59151 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752483Ab0DAExb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 00:50:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
-	:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=vpr25Src2lzvmSocmnD
-	JnXSA1EkakEG3pa8OtAIQu7plI4Qr9INGGIpWnrdX5Iz476cOQzcgc51PagpeRPu
-	IbEdXrBPS3YQERKJR5Ync2qCENVYGpjQn0iZ2Sx+YeoL96aFjxPZ7JsH5cgBfUDx
-	YdbukGfPmmzzqHaebRTw0D1w=
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.0.4
-From: Junio C Hamano <gitster@pobox.com>
-Date: Wed, 31 Mar 2010 21:50:43 -0700
-Message-ID: <7vljd7srmk.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Thu, 1 Apr 2010 00:53:31 -0400
+Date: Thu, 1 Apr 2010 10:23:10 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Rik van Riel <riel@redhat.com>, Larry Woodman <lwoodman@redhat.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: RFC [Patch] Remove "please try 'cgroup_disable=memory' option if
+ you don't want memory cgroups" printk at boot time.
+Message-ID: <20100401045310.GB6337@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <1270049283.3551.281.camel@dhcp-100-19-198.bos.redhat.com>
+ <1270050899.3551.283.camel@dhcp-100-19-198.bos.redhat.com>
+ <4BB38D1A.7050204@redhat.com>
+ <20100401104859.e0deeca8.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: 2424AE96-3D4A-11DF-A05A-D033EE7EF46B-77302942!a-pb-sasl-quonix.pobox.com
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100401104859.e0deeca8.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git 1.7.0.4 is available at the
-usual places:
+* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-04-01 10:48:59]:
 
-  http://www.kernel.org/pub/software/scm/git/
+> On Wed, 31 Mar 2010 13:57:46 -0400
+> Rik van Riel <riel@redhat.com> wrote:
+> 
+> > On 03/31/2010 11:54 AM, Larry Woodman wrote:
+> > > On Wed, 2010-03-31 at 11:28 -0400, Larry Woodman wrote:
+> > >> We are considering removing this printk at boot time from RHEL because
+> > >> it will confuse customers, encourage them to change the boot parameters
+> > >> and generate extraneous support calls.  Its documented in
+> > >> Documentation/kernel-parameters.txt anyway.  Any thoughts???
+> > 
+> > Yeah, that is a strange boot message...
+> > 
+> > Acked-by: Rik van Riel <riel@redhat.com>
+> > 
+> please CC linux-mm and maintainers.
+> 
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> It have been there for a year and I think memory usage by page_cgroup
+> will not surprise linux kernel users, more.
+> 
+> Assume x86-32.
+> 
+> RHEL allows amount of memory up to 16G, right?
+> 
+> without memcg: memmap uses 32bytes * 16G/4k = 128M.
+> with memcg:    memmap+page_cgroup uses (32+20) bytes * 16G/4k = 208M.
+> 
+> I thought this may cause OOM in ZONE_NORMAL. Then, I added it when I wrote
+> original patch. This kind of memory eater can cause trouble when it pops
+> up suddenly. But I think 'one year' can be an excuse.
+>
 
-  git-1.7.0.4.tar.{gz,bz2}			(source tarball)
-  git-htmldocs-1.7.0.4.tar.{gz,bz2}		(preformatted docs)
-  git-manpages-1.7.0.4.tar.{gz,bz2}		(preformatted docs)
+I've seen this issue come up on multiple machines, I think the printk
+is useful. However, we might need to change the panic() to a big fat
+warning and disable the memcg controller if we fail to allocate memory
+in page_cgroup_init_flatmem(). 
 
-The RPM binary packages for a few architectures are found in:
-
-  RPMS/$arch/git-*-1.7.0.4-1.fc11.$arch.rpm	(RPM)
-
-Git v1.7.0.4 Release Notes
-==========================
-
-Fixes since v1.7.0.3
---------------------
-
- * Optimized ntohl/htonl on big-endian machines were broken.
-
- * Color values given to "color.<cmd>.<slot>" configuration can now have
-   more than one attributes (e.g. "bold ul").
-
- * "git add -u nonexistent-path" did not complain.
-
- * "git apply --whitespace=fix" didn't work well when an early patch in
-   a patch series adds trailing blank lines and a later one depended on
-   such a block of blank lines at the end.
-
- * "git fast-export" didn't check error status and stop when marks file
-   cannot be opened.
-
- * "git format-patch --ignore-if-in-upstream" gave unwarranted errors
-   when the range was empty, instead of silently finishing.
-
- * "git remote prune" did not detect remote tracking refs that became
-   dangling correctly.
-
-And other minor fixes and documentation updates.
-
-----------------------------------------------------------------
-
-Changes since v1.7.0.3 are as follows:
-
-Björn Gustavsson (5):
-      apply: Don't unnecessarily update line lengths in the preimage
-      apply: Remove the quick rejection test
-      apply: Allow blank context lines to match beyond EOF
-      t4124: Add additional tests of --whitespace=fix
-      t3417: Add test cases for "rebase --whitespace=fix"
-
-Chris Packham (1):
-      test for add with non-existent pathspec
-
-David Aguilar (1):
-      difftool: Fix '--gui' when diff.guitool is unconfigured
-
-Greg Bacon (1):
-      Documentation: Clarify support for smart HTTP backend
-
-Holger Weiß (3):
-      Don't redefine htonl and ntohl on big-endian
-      Link against libiconv on IRIX
-      Documentation: show-ref <pattern>s are optional
-
-Jakub Narebski (1):
-      gitweb: git_get_project_config requires only $git_dir, not also $project
-
-Jan Stępień (1):
-      Updated the usage string of git reset
-
-Jeff King (1):
-      dir: fix COLLECT_IGNORED on excluded prefixes
-
-Johannes Sixt (2):
-      diff: fix textconv error zombies
-      Windows: fix utime() for read-only files
-
-Junio C Hamano (8):
-      git add -u: die on unmatched pathspec
-      color: allow multiple attributes
-      t0050: mark non-working test as such
-      tests for "git add ignored-dir/file" without -f
-      refs: ref entry with NULL sha1 is can be a dangling symref
-      t9350: fix careless use of "cd"
-      Prepare for 1.7.0.4
-      Git 1.7.0.4
-
-Kevin Ballard (1):
-      format-patch: Squelch 'fatal: Not a range." error
-
-Markus Heidelberg (1):
-      Documentation: explain the meaning of "-g" in git-describe output
-
-Sverre Rabbelier (1):
-      fast-export: don't segfault when marks file cannot be opened
-
+-- 
+	Three Cheers,
+	Balbir
