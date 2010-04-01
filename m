@@ -1,96 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757461Ab0DARFU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 13:05:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40686 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752780Ab0DARFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 13:05:12 -0400
-Date: Thu, 1 Apr 2010 19:04:41 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, Kent Overstreet <kent.overstreet@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>
-Subject: Re: [COUNTERPATCH] mm: avoid overflowing preempt_count() in
- mmu_take_all_locks()
-Message-ID: <20100401170441.GA5825@random.random>
-References: <alpine.LFD.2.00.1004011300550.32352@localhost.localdomain>
- <4BB47FC3.1020606@redhat.com>
- <4BB480CC.2060503@redhat.com>
- <1270121264.1653.205.camel@laptop>
- <1270122194.1653.223.camel@laptop>
- <20100401154249.GQ5825@random.random>
- <1270138354.1598.99.camel@laptop>
- <20100401161840.GX5825@random.random>
- <1270140300.1598.148.camel@laptop>
- <1270140592.1598.153.camel@laptop>
+	id S1757186Ab0DARII (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 13:08:08 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:46860 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754847Ab0DARIC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 13:08:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=pJ6emsHz66vhHtaWkkAsM0vkqJjHNjJFEwob9ABPAXS5fQ48hW7B166wgBb3viFQOF
+         Qu6YzihogUM3tqaY/ThE17+1CgkG8SZPO/S3GwcX8OeTB9fa/C25yvcHcWoYui4lDGkQ
+         6bW9UGseg4LwuW+wC9VZ6la+9ZixGkobWtKKo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1270140592.1598.153.camel@laptop>
+In-Reply-To: <alpine.LFD.2.00.1004010921550.3707@i5.linux-foundation.org>
+References: <alpine.LFD.2.00.1003301029250.3707@i5.linux-foundation.org>
+	 <201003302316.45651.rjw@sisk.pl> <201004010313.32920.rjw@sisk.pl>
+	 <alpine.LFD.2.00.1004010921550.3707@i5.linux-foundation.org>
+Date: Thu, 1 Apr 2010 13:07:59 -0400
+Message-ID: <o2ma728f9f91004011007l4c3aee18p14daae06cda71e68@mail.gmail.com>
+Subject: Re: [Regression, post-rc2] Commit a5ee4eb7541 breaks OpenGL on RS780 
+	(was: Re: Linux 2.6.34-rc3)
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Linux PCI <linux-pci@vger.kernel.org>,
+       Greg KH <gregkh@suse.de>, Clemens Ladisch <clemens@ladisch.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Alex Deucher <alexdeucher@gamil.com>, dri-devel@lists.sourceforge.net,
+       stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 01, 2010 at 06:49:52PM +0200, Peter Zijlstra wrote:
-> On Thu, 2010-04-01 at 18:45 +0200, Peter Zijlstra wrote:
-> > On Thu, 2010-04-01 at 18:18 +0200, Andrea Arcangeli wrote:
-> > > On Thu, Apr 01, 2010 at 06:12:34PM +0200, Peter Zijlstra wrote:
-> > > > One thing we can do there is to mutex_trylock() if we get the lock, see
-> > > > if we've got the right object, if the trylock fails we can do the
-> > > > refcount thing and sleep. That would allow the fast-path to remain a
-> > > > single atomic.
-> > > 
-> > > But then how do you know which anon_vma_unlink has to decrease the
-> > > refcount and which not? That info should need to be stored in the
-> > > kernel stack, can't be stored in the vma. I guess it's feasible but
-> > > passing that info around sounds more tricky than the trylock itself
-> > > (adding params to those functions with int &refcount). 
-> > 
-> > I was thinking of something like:
-> > 
-> > struct anon_vma *page_lock_anon_vma(struct page *page)
-> > {
-> > 	struct anon_vma *anon_vma = NULL;
-> > 	unsigned long anon_mapping;
-> > 
-> > 	rcu_read_lock();
-> > 	anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
-> >         if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)              
-> >                 goto out;                                                          
-> >         if (!page_mapped(page))                                                    
-> >                 goto out;                                                          
-> > 
-> >         anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);         
-> >         if (!mutex_trylock(&anon_vma->lock)) {
-> > 		if (atomic_inc_unless_zero(&anon_vma->ref)) {
-> > 			rcu_read_unlock();
-> > 			mutex_lock(&anon_vma->lock);
-> > 			atomic_dec(&anon_vma->ref); /* ensure the lock pins it */
-> > 		} else
-> > 			anon_vma = NULL;
-> > 	}
-> > 	rcu_read_unlock();
-> > 	
-> >         return anon_vma;
-> > }
-> > 
-> > void page_unlock_anon_vma(struct anon_vma *anon_vma)
-> > {
-> > 	mutex_unlock(&anon_vma->lock);	
-> > }
-> > 
-> > Then anybody reaching ref==0 would only need to sync against the lock
-> > before freeing.
-> 
-> Ah, there is a race where the dec after lock makes it 0, we could catch
-> that by making it -1 and free in unlock_anon_vma().
+On Thu, Apr 1, 2010 at 12:29 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+>
+> On Thu, 1 Apr 2010, Rafael J. Wysocki wrote:
+>>
+>> OK, I've verified that partial revert (below) is sufficient.
+>
+> Hmm. Through the DRM merge I just did, this area actually conflicted, and
+> the resolved version is now
+>
+>        if ((rdev->family >= CHIP_RV380) &&
+>            (!(rdev->flags & RADEON_IS_IGP))) {
+>
+> which presumably also fixes your issue?
+>
+> [ Side note: somebody in the DRM tree seems to be way too used to LISP,
+>  and thinks that adding parenthesis always improves the code ;-]
+>
 
-You'd simply need to atomic_dec_and_test instead of atomic_dec above,
-then you free it there above and return NULL.
+heh, that's me.  habit I guess, just to be sure.
 
-The bug is to ever call atomic_dec instead of always
-atomic_dec_and_test all over the place. I doubt you could fix it with
-a -1.
+> However, I do suspect that we should probably revert the quirk regardless
+> as being useless (ie it probably was related to those IGP chips that
+> apparently don't do MSI anyway).
+>
+> So the patch that reverts the quirk by Clemens (to replace it with
+> disabling MSI entirely when the AMD NB doesn't accept them) seems to be a
+> good idea regardless, since it's apparently not just about gfx. Jesse?
+
+Clemems' "PCI quirk: RS780/RS880: disable MSI completely" patch is the
+right approach I think.  Note that it's only devices hung off the int
+gfx pci to pci bridge that have broken MSI (gfx and audio).  MSI works
+fine on the PCIE slots.  I have a similar patch for rs400 chips on bug
+15626:
+https://bugzilla.kernel.org/show_bug.cgi?id=15626
+
+Alex
+
+>
+>                        Linus
+>
+> ------------------------------------------------------------------------------
+> Download Intel&#174; Parallel Studio Eval
+> Try the new software tools for yourself. Speed compiling, find bugs
+> proactively, and fine-tune applications for parallel performance.
+> See why Intel Parallel Studio got high marks during beta.
+> http://p.sf.net/sfu/intel-sw-dev
+> --
+> _______________________________________________
+> Dri-devel mailing list
+> Dri-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/dri-devel
+>
