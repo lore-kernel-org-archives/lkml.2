@@ -1,97 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840Ab0DAPjG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 11:39:06 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:49247 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754705Ab0DAPi6 (ORCPT
+	id S1756860Ab0DAPly (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 11:41:54 -0400
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:26968 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754705Ab0DAPlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 11:38:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=HXM2dB3PdYtq3829P+rfEjTcd+JRZp7FpY4zqsdJrtlp1qbv26enxfBmVZzOfziqEj
-         yK5MN9PDpbh072AjqQQWav3mgUx2QC4jRm4s6egIQZWOxJ3rW1798hiDgNV8udyMpUEv
-         LmbTR3Stnq2fx/mSoEHXWjazm7tqa+eQ6stfU=
-Date: Thu, 1 Apr 2010 18:38:40 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Roland Dreier <rdreier@cisco.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-       jirislaby@gmail.com, Or Gerlitz <ogerlitz@voltaire.com>
-Subject: Re: [PATCH 1/1] infiniband: ulp/iser, fix error retval in
-	iser_create_ib_conn_res
-Message-ID: <20100401153839.GA5265@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Roland Dreier <rdreier@cisco.com>, Jiri Slaby <jslaby@suse.cz>,
-	linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-	Or Gerlitz <ogerlitz@voltaire.com>
-References: <1268750962-13547-1-git-send-email-jslaby@suse.cz> <ada634v9644.fsf@roland-alpha.cisco.com> <20100317151122.GF5331@bicker> <adak4ssi4ky.fsf@roland-alpha.cisco.com>
+	Thu, 1 Apr 2010 11:41:46 -0400
+Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAC9btEurR7Ht/2dsb2JhbACDEpgscZxviEOQV4ErgSqBQWsEgyM
+X-IronPort-AV: E=Sophos;i="4.51,349,1267401600"; 
+   d="scan'208";a="506934398"
+From: Tom Lyon <pugs@lyon-about.com>
+To: Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH 0/1] uio_pci_generic: extensions to allow access for non-privileged processes
+Date: Thu, 1 Apr 2010 08:39:07 -0700
+User-Agent: KMail/1.9.9
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <201003311708.38961.pugs@lyon-about.com> <4BB462B5.1030402@redhat.com>
+In-Reply-To: <4BB462B5.1030402@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <adak4ssi4ky.fsf@roland-alpha.cisco.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Message-Id: <201004010839.07451.pugs@lyon-about.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 02:06:21PM -0700, Roland Dreier wrote:
-> So looking at merging this finally, I think I see one problem with the
-> proposed patch.  We have:
-> 
->  > @@ -183,7 +180,7 @@  static int iser_create_ib_conn_res(struct iser_conn *ib_conn)
->  >  	ib_conn->fmr_pool = ib_create_fmr_pool(device->pd, &params);
->  >  	if (IS_ERR(ib_conn->fmr_pool)) {
->  >  		ret = PTR_ERR(ib_conn->fmr_pool);
->  > -		goto fmr_pool_err;
->  > +		goto out_err;
->  >  	}
-> 
-> and
-> 
->  > @@ -209,12 +206,7 @@  static int iser_create_ib_conn_res(struct iser_conn *ib_conn)
->  >  		 ib_conn->fmr_pool, ib_conn->cma_id->qp);
->  >  	return ret;
->  >  
->  > -qp_err:
->  > -	(void)ib_destroy_fmr_pool(ib_conn->fmr_pool);
->  > -fmr_pool_err:
->  > -	kfree(ib_conn->page_vec);
->  > -	kfree(ib_conn->login_buf);
->  > -alloc_err:
->  > +out_err:
->  >  	iser_err("unable to alloc mem or create resource, err %d\n", ret);
->  >  	return ret;
->  >  }
-> 
-> so if ib_create_fmr_pool() fails, we're left with ib_conn->fmr_pool
-> holding an error pointer, right?  But we're relying on
-> iser_free_ib_conn_res() to clean up after us, and that has:
-> 
-> 	if (ib_conn->fmr_pool != NULL)
-> 		ib_destroy_fmr_pool(ib_conn->fmr_pool);
-> 
-> so we're going to end up trying to free an error pointer, which will
-> probably crash.
-> 
-> I think.
-> 
-> Dan or Or, am I wrong here or do we need another iteration of this
-> patch? (the login_buf and page_vec changes do look correct to me, since
-> a failed kmalloc() will leave us with a NULL pointer that it is safe to
-> kfree() later)
+On Thursday 01 April 2010 02:09:09 am Avi Kivity wrote:
+> On 04/01/2010 03:08 AM, Tom Lyon wrote:
+> > uio_pci_generic has previously been discussed on the KVM list, but this
+> > patch has nothing to do with KVM, so it is also going to LKML.
+>
+> (needs to go to lkml even if it was for kvm)
+>
+> > The point of this patch is to beef up the uio_pci_generic driver so that
+> > a non-privileged user process can run a user level driver for most PCIe
+> > devices. This can only be safe if there is an IOMMU in the system with
+> > per-device domains.  Privileged users (CAP_SYS_RAWIO) are allowed if
+> > there is no IOMMU.
+> >
+> > Specifically, I seek to allow low-latency user level network drivers (non
+> > tcp/ip) which directly access SR-IOV style virtual network adapters, for
+> > use with packages such as OpenMPI.
+> >
+> > Key areas of change:
+> > - ioctl extensions to allow registration and dma mapping of memory
+> > regions, with lock accounting
+> > - support for mmu notifier driven de-mapping
+>
+> Note that current iommus/devices don't support restart-on-fault dma, so
+> userspace drivers will have to lock memory so that it is not swapped
+> out.  I don't think this prevents page migration, though.
+The driver provides a way to lock memory for DMA; the mmu notifier support is 
+to catch things when the user accidentally frees locked pages.
 
-You're right.  I missed that.
-
-I will send an updated patch tomorrow.
-
-regards,
-dan carpenter
-
-> 
->  - R.
-> -- 
-> Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
-> http://www.cisco.com/web/about/doing_business/legal/cri/index.html
+> > - support for MSI and MSI-X interrupts (the intel 82599 VFs support only
+> > MSI-X)
+>
+> How does a userspace program receive those interrupts?
+Same as other UIO drivers - by read()ing an event counter.
