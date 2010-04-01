@@ -1,83 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932240Ab0DAQpW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:45:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56059 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758669Ab0DAQpF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:45:05 -0400
-Subject: Re: [COUNTERPATCH] mm: avoid overflowing preempt_count() in
- mmu_take_all_locks()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, Kent Overstreet <kent.overstreet@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <20100401161840.GX5825@random.random>
-References: <1270117906.1653.139.camel@laptop>
-	 <alpine.LFD.2.00.1004011300550.32352@localhost.localdomain>
-	 <4BB47FC3.1020606@redhat.com> <4BB480CC.2060503@redhat.com>
-	 <1270121264.1653.205.camel@laptop> <1270122194.1653.223.camel@laptop>
-	 <20100401154249.GQ5825@random.random> <1270138354.1598.99.camel@laptop>
-	 <20100401161840.GX5825@random.random>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Apr 2010 18:45:00 +0200
-Message-ID: <1270140300.1598.148.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S932263Ab0DAQpr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:45:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8082 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758636Ab0DAQot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 12:44:49 -0400
+Message-ID: <4BB46365.7020400@redhat.com>
+Date: Thu, 01 Apr 2010 12:12:05 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Ingo Molnar <mingo@elte.hu>, Marcelo Tosatti <mtosatti@redhat.com>,
+       Sheng Yang <sheng@linux.intel.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] KVM MMU: thinking of shadow page cache
+References: <4BB15B1A.7090901@cn.fujitsu.com> <4BB1FD69.6040409@redhat.com> <4BB461E7.9000109@cn.fujitsu.com>
+In-Reply-To: <4BB461E7.9000109@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-01 at 18:18 +0200, Andrea Arcangeli wrote:
-> On Thu, Apr 01, 2010 at 06:12:34PM +0200, Peter Zijlstra wrote:
-> > One thing we can do there is to mutex_trylock() if we get the lock, see
-> > if we've got the right object, if the trylock fails we can do the
-> > refcount thing and sleep. That would allow the fast-path to remain a
-> > single atomic.
-> 
-> But then how do you know which anon_vma_unlink has to decrease the
-> refcount and which not? That info should need to be stored in the
-> kernel stack, can't be stored in the vma. I guess it's feasible but
-> passing that info around sounds more tricky than the trylock itself
-> (adding params to those functions with int &refcount). 
+On 04/01/2010 12:05 PM, Xiao Guangrong wrote:
+>
+>> We've considered this in the past, it makes sense.  The big question is
+>> whether any guests actually map the same page table through PDEs with
+>> different permissions (mapping the same page table through multiple PDEs
+>> is very common, but always with the same permissions).  Do you know of
+>> any such guest?
+>>      
+> I also don't know whether have such guest.
+> Maybe my idea is no good for current OS, thanks for your comments.
+>    
 
-I was thinking of something like:
+In fact there are plans to make kvm such a guest (when running in nested 
+mode) - when we perform live migration we write-protect all guest pages, 
+and it's reasonable to use the top-level shadow page to write protect 
+all memory at once instead of iterating over all mmu pages.  When that 
+goes in, we should also implement your idea.
 
-struct anon_vma *page_lock_anon_vma(struct page *page)
-{
-	struct anon_vma *anon_vma = NULL;
-	unsigned long anon_mapping;
-
-	rcu_read_lock();
-	anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
-        if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)              
-                goto out;                                                          
-        if (!page_mapped(page))                                                    
-                goto out;                                                          
-
-        anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);         
-        if (!mutex_trylock(&anon_vma->lock)) {
-		if (atomic_inc_unless_zero(&anon_vma->ref)) {
-			rcu_read_unlock();
-			mutex_lock(&anon_vma->lock);
-			atomic_dec(&anon_vma->ref); /* ensure the lock pins it */
-		} else
-			anon_vma = NULL;
-	}
-	rcu_read_unlock();
-	
-        return anon_vma;
-}
-
-void page_unlock_anon_vma(struct anon_vma *anon_vma)
-{
-	mutex_unlock(&anon_vma->lock);	
-}
-
-Then anybody reaching ref==0 would only need to sync against the lock
-before freeing.
+-- 
+error compiling committee.c: too many arguments to function
 
