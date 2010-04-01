@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab0DASRX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 14:17:23 -0400
-Received: from www17.your-server.de ([213.133.104.17]:49230 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755013Ab0DASRR (ORCPT
+	id S1755501Ab0DASWV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 14:22:21 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:56689 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755111Ab0DASWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 14:17:17 -0400
-References: <1269775909.5301.4.camel@localhost.localdomain> <20100331163234.8e875ae8.akpm@linux-foundation.org> <1270089696.2941.217.camel@dhcp235-240.rdu.redhat.com>
-Message-Id: <25D576C5-F4E5-49BF-A20C-361214155BBA@m3y3r.de>
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Eric Paris <eparis@redhat.com>
-In-Reply-To: <1270089696.2941.217.camel@dhcp235-240.rdu.redhat.com>
-Content-Type: text/plain;
-	charset=us-ascii;
-	format=flowed;
-	delsp=yes
-Content-Transfer-Encoding: 7bit
-X-Mailer: iPod Mail (7E18)
-Mime-Version: 1.0 (iPod Mail 7E18)
-Subject: Re: 2.6.34-rc2: "ima_dec_counts: open/free imbalance"?
-Date: Thu, 1 Apr 2010 20:17:40 +0200
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Mimi Zohar <zohar@us.ibm.com>, James Morris <jmorris@namei.org>,
-       "dri-devel@lists.sourceforge.net" <dri-devel@lists.sourceforge.net>
-X-Authenticated-Sender: thomas@m3y3r.de
+	Thu, 1 Apr 2010 14:22:19 -0400
+Date: Thu, 1 Apr 2010 20:22:17 +0200
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: linux-kernel@vger.kernel.org
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
+       linux-mm@kvack.org
+Subject: Re: 2.6.34-rc3, BUG at mm/slab.c:2989
+Message-ID: <20100401182217.GA23177@fancy-poultry.org>
+Reply-To: linux-kernel@vger.kernel.org
+Mail-Followup-To: linux-kernel@vger.kernel.org,
+	Pekka Enberg <penberg@cs.helsinki.fi>,
+	Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org
+References: <20100401175225.GA6581@fancy-poultry.org>
+ <alpine.DEB.2.00.1004011257470.17168@router.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1004011257470.17168@router.home>
+X-Accept-Language: no,dk,se,en,de
+Organization: private site
+X-OpenPGP-KeyID: 0xA9353F12
+X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
+X-OpenPGP-URL: http://www.fritha.org/htd.asc
+User-Agent: Wanderlust/2.15.7 (Almost =?utf-8?Q?Unreal?=
+ =?utf-8?B?KSBTRU1JLzEuMTQuNiAoTWFydW9rYSkgRkxJTS8xLjE0LjkgKEdvasWNKSBB?=
+ =?utf-8?Q?PEL=2F10=2E7?= Emacs/22.3 (x86_64-pc-linux-gnu) MULE/5.0 (SAKAKI)
+X-Provags-ID: V01U2FsdGVkX1/PfaDEV+ExgV/9jpNWXtSlArH2FynDRgEhO+Q
+ sVcjBP3zezSQRnWksTVANYCDiWre6i5X9vPa9UXnN2Kn3xu/Gz
+ jPc+HhvvwofZVeXjsGWiw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 01.04.2010 um 04:41 schrieb Eric Paris <eparis@redhat.com>:
+On 01.04.2010, Christoph Lameter wrote: 
 
-> On Wed, 2010-03-31 at 16:32 -0700, Andrew Morton wrote:
->> On Sun, 28 Mar 2010 13:31:49 +0200
->> Thomas Meyer <thomas@m3y3r.de> wrote:
->>
->>> This warning/error/notice is new in 2.6.34-rc2+:
->>
->> Let's add some cc's.  It might be a DRM bug.
->>
->> I'll ask Rafael and Maciej to track this as a post-2.6.33 regression,
->> thanks.
->
-> The IMA code hasn't changed since .33 so my guess is something new the
-> drm code is doing with obj->filp.
->
-> Thomas, any idea what the newest kernel was that didn't show you this
-> problem?
+> Switch to SLUB and set SLUB_DEBUG_ON. Reboot and reproduce situation.
+> Check the syslog after while. SLUB will repair the situation and continue
+> if possible. There may not be failure.
 
-I first saw this message in 2.6.34-rc2 (+free_init_pages patch), but  
-that was also the first bootable kernel for me as I was hit by the  
-NO_BOOTMEM bug...
+Ok, will do immediately and try to reproduce. Thanks!
 
->  It might help cut down my search in the morning....
->
-> -Eric
->
+Heinz
