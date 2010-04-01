@@ -1,116 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793Ab0DADWI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 23:22:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52370 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751179Ab0DADV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 23:21:58 -0400
-X-User-Agent: K-9 Mail for Android
-In-Reply-To: <4BB3FEA6.8030309@kernel.org>
-References: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org> <4BB2EB1B.8090303@zytor.com> <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org> <4BB3C739.2020106@kernel.org> <20100331221341.GA20441@elte.hu> <4BB3C9B0.4000205@kernel.org> <20100331224108.GA11284@elte.hu> <4BB3D0F4.902@kernel.org> <4BB3DC23.50005@zytor.com> <4BB3E0CA.5060405@kernel.org> <4BB3EA55.50505@zytor.com> <4BB3FEA6.8030309@kernel.org>
-Content-Type: multipart/mixed; boundary="----L8GGBED54D9GQ27UAUKMSSWNTL0K5X"
-MIME-Version: 1.0
-Subject: Re: [PATCH -v3] nobootmem/bootmem, x86: Fix 32bit numa system without RAM on Node0
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 31 Mar 2010 20:18:00 -0700
-To: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Message-ID: <ca9eedfe-479e-4ccf-9663-66afcd2bbd69@email.android.com>
+	id S1751895Ab0DADbl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 23:31:41 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60390 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751239Ab0DADbe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 23:31:34 -0400
+Date: Wed, 31 Mar 2010 20:29:31 -0400
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Henrik Kretzschmar <henne@nachtwindheim.de>, steffen.klassert@secunet.com,
+       linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH] padata: section cleanup
+Message-Id: <20100331202931.146ef1b5.akpm@linux-foundation.org>
+In-Reply-To: <20100401013845.GA19580@gondor.apana.org.au>
+References: <1269672826-1102-1-git-send-email-henne@nachtwindheim.de>
+	<20100329081550.GA22334@gondor.apana.org.au>
+	<20100331145817.bd0a1a08.akpm@linux-foundation.org>
+	<20100401002440.GB18893@gondor.apana.org.au>
+	<20100331180445.98dbcb55.akpm@linux-foundation.org>
+	<20100401013845.GA19580@gondor.apana.org.au>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------L8GGBED54D9GQ27UAUKMSSWNTL0K5X
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: base64
+On Thu, 1 Apr 2010 09:38:45 +0800 Herbert Xu <herbert@gondor.apana.org.au> wrote:
 
-UGxlYXNlIGFkZHJlc3MgdGhlIHNlcGFyYXRlIGJ1ZyBmaXggaW4gYSBzZXBhcmF0ZSBwYXRjaC4K
-CiJZaW5naGFpIEx1IiA8eWluZ2hhaUBrZXJuZWwub3JnPiB3cm90ZToKCj4NCj5vbiBvbmUgc3lz
-dGVtIHdpdGhvdXQgUkFNIG9uIG5vZDAsIGdvdCBmb2xsb3dpbmcgZHVtcCB3aXRoIDMyYml0IG51
-bWEga2VybmVsDQo+DQo+ZWFybHlfbm9kZV9tYXBbNF0gYWN0aXZlIFBGTiByYW5nZXMNCj4gICAg
-MTogMHgwMDAwMDAxMCAtPiAweDAwMDAwMDk5DQo+ICAgIDE6IDB4MDAwMDAxMDAgLT4gMHgwMDA3
-ZGEwMA0KPiAgICAxOiAweDAwMDdlODAwIC0+IDB4MDAwN2ZmYTANCj4gICAgMTogMHgwMDA3ZmZh
-ZSAtPiAweDAwMDdmZmIwDQo+DQo+U3VidHJhY3QgKDI5IGVhcmx5IHJlc2VydmF0aW9ucykNCj4g
-ICMwMDAgWzAwMDAwMDEwMDAgLSAwMDAwMDAyMDAwXQ0KPiAgIzAwMSBbMDAwMDA4OTAwMCAtIDAw
-MDAwOGYwMDBdDQo+ICAjMDAyIFswMDAwMDkxMDAwIC0gMDAwMDA5MzUwMF0NCj4gICMwMDMgWzAw
-MDAwOTQwMDAgLSAwMDAwMDk5MDAwXQ0KPiAgIzAwNCBbMDAwMDA5OTQwMCAtIDAwMDAxMDAwMDBd
-DQo+ICAjMDA1IFswMDAwMjAwMDAwIC0gMDAwMGViNzY0NF0NCj4gICMwMDYgWzAwMDBlYjgwMDAg
-LSAwMDAwZWMzMjdjXQ0KPiAgIzAwNyBbMDA3YzQwMDAwMCAtIDAwN2M0MGUwMDBdDQo+ICAjMDA4
-IFswMDdjNDQwMDAwIC0gMDA3YzQ0ZTAwMF0NCj4gICMwMDkgWzAwN2M0ODAwMDAgLSAwMDdjNDhl
-MDAwXQ0KPiAgIzAxMCBbMDA3YzRjMDAwMCAtIDAwN2M0Y2UwMDBdDQo+ICAjMDExIFswMDdjNTAw
-MDAwIC0gMDA3YzUwZTAwMF0NCj4gICMwMTIgWzAwN2M1NDAwMDAgLSAwMDdjNTRlMDAwXQ0KPiAg
-IzAxMyBbMDA3YzU4MDAwMCAtIDAwN2M1OGUwMDBdDQo+ICAjMDE0IFswMDdjNWMwMDAwIC0gMDA3
-YzVjZTAwMF0NCj4gICMwMTUgWzAwN2M2NzQwMDAgLSAwMDdjYmZlMDAwXQ0KPiAgIzAxNiBbMDA3
-Y2JmZTUwMCAtIDAwN2NiZmU1MzBdDQo+ICAjMDE3IFswMDdjYmZlNTQwIC0gMDA3Y2JmZTVkMF0N
-Cj4gICMwMTggWzAwN2NiZmU2MDAgLSAwMDdjYmZlNjIwXQ0KPiAgIzAxOSBbMDA3Y2JmZTY0MCAt
-IDAwN2NiZmU2NjBdDQo+ICAjMDIwIFswMDdjYmZlNjgwIC0gMDA3Y2JmZTY4NF0NCj4gICMwMjEg
-WzAwN2NiZmU2YzAgLSAwMDdjYmZlNmM0XQ0KPiAgIzAyMiBbMDA3Y2JmZTcwMCAtIDAwN2NiZmU3
-N2VdDQo+ICAjMDIzIFswMDdjYmZlNzgwIC0gMDA3Y2JmZTdmZV0NCj4gICMwMjQgWzAwN2NiZmU4
-MDAgLSAwMDdjYmZlYzU0XQ0KPiAgIzAyNSBbMDA3Y2JmZWM4MCAtIDAwN2NiZmVlZGVdDQo+ICAj
-MDI2IFswMDdjYmZlZjAwIC0gMDA3Y2JmZWYyZF0NCj4gICMwMjcgWzAwN2NiZmVmNDAgLSAwMDdl
-ODAwMDAwXQ0KPiAgIzAyOCBbMDA3ZTljYTAwMCAtIDAwN2ZmOTUwMDBdDQo+KDAgZnJlZSBtZW1v
-cnkgcmFuZ2VzKQ0KPkluaXRpYWxpemluZyBIaWdoTWVtIGZvciBub2RlIDAgKDAwMDAwMDAwOjAw
-MDAwMDAwKQ0KPkluaXRpYWxpemluZyBIaWdoTWVtIGZvciBub2RlIDEgKDAwMDAwMDAwOjAwMDAw
-MDAwKQ0KPk1lbW9yeTogMGsvMjA5NjgzMmsgYXZhaWxhYmxlICg2NjYyayBrZXJuZWwgY29kZSwg
-MjA5NjMwMGsgcmVzZXJ2ZWQsIDQ4MjlrIGRhdGEsIDQ4NGsgaW5pdCwgMGsgaGlnaG1lbSkNCj52
-aXJ0dWFsIGtlcm5lbCBtZW1vcnkgbGF5b3V0Og0KPiAgICBmaXhtYXAgIDogMHhmZjYzNzAwMCAt
-IDB4ZmZmZmYwMDAgICAoMTAwMTYga0IpDQo+ICAgIHBrbWFwICAgOiAweGZmMjAwMDAwIC0gMHhm
-ZjQwMDAwMCAgICgyMDQ4IGtCKQ0KPiAgICB2bWFsbG9jIDogMHhjMDdiMDAwMCAtIDB4ZmYxZmUw
-MDAgICAoMTAwMiBNQikNCj4gICAgbG93bWVtICA6IDB4NDAwMDAwMDAgLSAweGJmZmIwMDAwICAg
-KDIwNDcgTUIpDQo+ICAgICAgLmluaXQgOiAweDQwZDM5MDAwIC0gMHg0MGRiMjAwMCAgICggNDg0
-IGtCKQ0KPiAgICAgIC5kYXRhIDogMHg0MDg4MTkyNCAtIDB4NDBkMzhlMWMgICAoNDgyOSBrQikN
-Cj4gICAgICAudGV4dCA6IDB4NDAyMDAwMDAgLSAweDQwODgxOTI0ICAgKDY2NjIga0IpDQo+Q2hl
-Y2tpbmcgaWYgdGhpcyBwcm9jZXNzb3IgaG9ub3VycyB0aGUgV1AgYml0IGV2ZW4gaW4gc3VwZXJ2
-aXNvciBtb2RlLi4uT2suDQo+c3dhcHBlcjogcGFnZSBhbGxvY2F0aW9uIGZhaWx1cmUuIG9yZGVy
-OjAsIG1vZGU6MHgwDQo+UGlkOiAwLCBjb21tOiBzd2FwcGVyIE5vdCB0YWludGVkIDIuNi4zNC1y
-YzMtdGlwLTAzODE4LWc0YjFlYTZjLWRpcnR5ICMzNQ0KPkNhbGwgVHJhY2U6DQo+IFs8NDA4N2E1
-ZGM+XSA/IHByaW50aysweGYvMHgxMQ0KPiBbPDQwMjg2NzI4Pl0gX19hbGxvY19wYWdlc19ub2Rl
-bWFzaysweDQxNy8weDQ4Nw0KPiBbPDQwMmE5Y2UxPl0gbmV3X3NsYWIrMHhlMi8weDFmZQ0KPiBb
-PDQwMmFhNWIyPl0ga21lbV9jYWNoZV9vcGVuKzB4MTg1LzB4MzU4DQo+IFs8NDAyYWJiYzA+XSBU
-Ljk1NCsweDFjLzB4NjANCj4gWzw0MGQ1MmEyOT5dIGttZW1fY2FjaGVfaW5pdCsweDI0LzB4MTEz
-DQo+IFs8NDBkMzk3Mzg+XSBzdGFydF9rZXJuZWwrMHgxNjYvMHgyZTQNCj4gWzw0MGQzOTQwZT5d
-ID8gdW5rbm93bl9ib290b3B0aW9uKzB4MC8weDE4ZQ0KPiBbPDQwZDM5MGNlPl0gaTM4Nl9zdGFy
-dF9rZXJuZWwrMHhjZS8weGQ1DQo+TWVtLUluZm86DQo+Tm9kZSAxIERNQSBwZXItY3B1Og0KPkNQ
-VSAgICAwOiBoaTogICAgMCwgYnRjaDogICAxIHVzZDogICAwDQo+Tm9kZSAxIE5vcm1hbCBwZXIt
-Y3B1Og0KPkNQVSAgICAwOiBoaTogICAgMCwgYnRjaDogICAxIHVzZDogICAwDQo+YWN0aXZlX2Fu
-b246MCBpbmFjdGl2ZV9hbm9uOjAgaXNvbGF0ZWRfYW5vbjowDQo+IGFjdGl2ZV9maWxlOjAgaW5h
-Y3RpdmVfZmlsZTowIGlzb2xhdGVkX2ZpbGU6MA0KPiB1bmV2aWN0YWJsZTowIGRpcnR5OjAgd3Jp
-dGViYWNrOjAgdW5zdGFibGU6MA0KPiBmcmVlOjAgc2xhYl9yZWNsYWltYWJsZTowIHNsYWJfdW5y
-ZWNsYWltYWJsZTowDQo+IG1hcHBlZDowIHNobWVtOjAgcGFnZXRhYmxlczowIGJvdW5jZTowDQo+
-DQo+V2hlbiAzMmJpdCBudW1hIGlzIHVzZWQsIGZyZWVfYWxsX2Jvb3RtZW0oKSB3aWxsIHN0aWxs
-IG9ubHkgZ28gb3ZlciB3aXRoDQo+bm9kZSBpZCAwLg0KPg0KPklmIG5vZGUgMCBkb2Vzbid0IGhh
-dmUgUkFNIGluc3RhbGxlZCwgV2UgbmVlZCB0byBnbyB3aXRoIG5vZGUxDQo+YmVjYXVzZSBlYXJs
-eV9ub2RlX21hcCBzdGlsbCB1c2UgMSBmb3IgYWxsIHJhbmdlcywgYW5kIHJhbSBmcm9tIG5vZGUx
-DQo+YmVjb21lIGxvdyByYW0uDQo+DQo+VHJ5IHRvIHVzZSBNQVhfTlVNTk9ERVMgbGlrZSA2NCBu
-dW1hIGRvZXMuDQo+DQo+QWxzbyBmaXhlcyBCT09UTUVNIHBhdGggYnkgbG9vcCBiZGF0YV9saXN0
-Lg0KPk5vdGU6IHRoaXMgYnVnIGV4aXN0IGJlZm9yZSBXZSBoYXZlIE5PX0JPT1RNRU0gc3VwcG9y
-dC4NCj4NCj4tdjM6IGFkZCBtb3JlIGNvbW1lbnRzLCBhbmQgZml4IGJvb3RtZW0gcGF0aCB0b28u
-DQo+DQo+U2lnbmVkLW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPg0KPg0K
-Pi0tLQ0KPiBtbS9ib290bWVtLmMgfCAgIDE3ICsrKysrKysrKysrKysrKy0tDQo+IDEgZmlsZSBj
-aGFuZ2VkLCAxNSBpbnNlcnRpb25zKCspLCAyIGRlbGV0aW9ucygtKQ0KPg0KPkluZGV4OiBsaW51
-eC0yLjYvbW0vYm9vdG1lbS5jDQo+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQ0KPi0tLSBsaW51eC0yLjYub3JpZy9tbS9i
-b290bWVtLmMNCj4rKysgbGludXgtMi42L21tL2Jvb3RtZW0uYw0KPkBAIC0zMDMsOSArMzAzLDIy
-IEBAIHVuc2lnbmVkIGxvbmcgX19pbml0IGZyZWVfYWxsX2Jvb3RtZW1fbm8NCj4gdW5zaWduZWQg
-bG9uZyBfX2luaXQgZnJlZV9hbGxfYm9vdG1lbSh2b2lkKQ0KPiB7DQo+ICNpZmRlZiBDT05GSUdf
-Tk9fQk9PVE1FTQ0KPi0JcmV0dXJuIGZyZWVfYWxsX21lbW9yeV9jb3JlX2Vhcmx5KE5PREVfREFU
-QSgwKS0+bm9kZV9pZCk7DQo+KwkvKg0KPisJICogV2UgbmVlZCB0byB1c2UgTUFYX05VTU5PREVT
-IGluc3RlYWQgb2YgTk9ERV9EQVRBKDApLT5ub2RlX2lkDQo+KwkgKiAgYmVjYXVzZSBpbiBzb21l
-IGNhc2UgbGlrZSBOb2RlMCBkb2VzbnQgaGF2ZSBSQU0gaW5zdGFsbGVkDQo+KwkgKiAgbG93IHJh
-bSB3aWxsIGJlIG9uIE5vZGUxDQo+KwkgKiBVc2UgTUFYX05VTU5PREVTIHdpbGwgbWFrZSBzdXJl
-IGFsbCByYW5nZXMgaW4gZWFybHlfbm9kZV9tYXBbXQ0KPisJICogIHdpbGwgYmUgdXNlZCBpbnN0
-ZWFkIG9mIG9ubHkgTm9kZTAgcmVsYXRlZA0KPisJICovDQo+KwlyZXR1cm4gZnJlZV9hbGxfbWVt
-b3J5X2NvcmVfZWFybHkoTUFYX05VTU5PREVTKTsNCj4gI2Vsc2UNCj4tCXJldHVybiBmcmVlX2Fs
-bF9ib290bWVtX2NvcmUoTk9ERV9EQVRBKDApLT5iZGF0YSk7DQo+Kwl1bnNpZ25lZCBsb25nIHRv
-dGFsX3BhZ2VzID0gMDsNCj4rCWJvb3RtZW1fZGF0YV90ICpiZGF0YTsNCj4rDQo+KwlsaXN0X2Zv
-cl9lYWNoX2VudHJ5KGJkYXRhLCAmYmRhdGFfbGlzdCwgbGlzdCkNCj4rCQl0b3RhbF9wYWdlcyA9
-IGZyZWVfYWxsX2Jvb3RtZW1fY29yZShiZGF0YSk7DQo+Kw0KPisJcmV0dXJuIHRvdGFsX3BhZ2Vz
-Ow0KPiAjZW5kaWYNCj4gfQ0KPiANCgotLQpTZW50IGZyb20gbXkgbW9iaWxlIHBob25lLCBwYXJk
-b24gYW55IGxhY2sgb2YgZm9ybWF0dGluZy4=
+> On Wed, Mar 31, 2010 at 06:04:45PM -0400, Andrew Morton wrote:
+> >
+> > I can find it once, in December 2009, in the middle of a massive thread
+> > called "workqueue thing".  It had no replies.
+> 
+> OK you're right.  It's only been posted to lkml once.  However,
+> this has been discussed on netdev since 2008 at least.  The patch
+> in its current form has also been acked by David Miller.
+> 
 
-------L8GGBED54D9GQ27UAUKMSSWNTL0K5X--
+Thing is, this isn't net code and it isn't crypto code - it's a
+kernel-wide utility.  Everyone needs to know at least a bit about it
+and code-reviewers such as myself need to know a lot about it, so we
+can tell people "hey dummy, shouldn't you use padata".
+
+So please, can we belatedly go through the process of educating the
+developers about this thing you guys have written for us?
 
