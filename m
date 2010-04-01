@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751Ab0DAHJl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 03:09:41 -0400
-Received: from waste.org ([173.11.57.241]:47876 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753019Ab0DAHJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 03:09:35 -0400
-Subject: Re: [PATCH] proc: pagemap: Hold mmap_sem during page walk
-From: Matt Mackall <mpm@selenic.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       San Mehat <san@google.com>, linux-kernel@vger.kernel.org,
-       Brian Swetland <swetland@google.com>, Dave Hansen <haveblue@us.ibm.com>,
-       Andrew Morton <akpm@linux-foundation.org>, n-horiguchi@ah.jp.nec.com
-In-Reply-To: <20100401153428.d49c6345.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100401144329.BE42.A69D9226@jp.fujitsu.com>
-	 <20100401145509.47f7f1c3.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20100401150128.BE45.A69D9226@jp.fujitsu.com>
-	 <20100401150956.4f6821c2.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20100401153428.d49c6345.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Apr 2010 02:09:31 -0500
-Message-ID: <1270105771.3552.1143.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1753723Ab0DAHMV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 03:12:21 -0400
+Received: from sous-sol.org ([216.99.217.87]:37382 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752774Ab0DAHMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 03:12:15 -0400
+Date: Thu, 1 Apr 2010 00:10:40 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Chris Wright <chrisw@sous-sol.org>, Neil Horman <nhorman@tuxdriver.com>,
+       iommu@lists.linux-foundation.org, joerg.roedel@amd.com,
+       hbabu@us.ibm.com, kexec@lists.infradead.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] amd iommu: force flush of iommu prior during shutdown
+Message-ID: <20100401071040.GU29241@sequoia.sous-sol.org>
+References: <20100331152417.GB13406@hmsreliant.think-freely.org> <20100331212535.GR29241@sequoia.sous-sol.org> <20100401024421.GA5877@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100401024421.GA5877@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-01 at 15:34 +0900, KAMEZAWA Hiroyuki wrote:
-> On Thu, 1 Apr 2010 15:09:56 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+* Vivek Goyal (vgoyal@redhat.com) wrote:
+> On Wed, Mar 31, 2010 at 02:25:35PM -0700, Chris Wright wrote:
+> > * Neil Horman (nhorman@tuxdriver.com) wrote:
+> > > Flush iommu during shutdown
+> > > 
+> > > When using an iommu, its possible, if a kdump kernel boot follows a primary
+> > > kernel crash, that dma operations might still be in flight from the previous
+> > > kernel during the kdump kernel boot.  This can lead to memory corruption,
+> > > crashes, and other erroneous behavior, specifically I've seen it manifest during
+> > > a kdump boot as endless iommu error log entries of the form:
+> > > AMD-Vi: Event logged [IO_PAGE_FAULT device=00:14.1 domain=0x000d
+> > > address=0x000000000245a0c0 flags=0x0070]
+> > 
+> > We've already fixed this problem once before, so some code shift must
+> > have brought it back.  Personally, I prefer to do this on the bringup
+> > path than the teardown path.  Besides keeping the teardown path as
+> > simple as possible (goal is to get to kdump kernel asap), there's also
+> > reason to competely flush on startup in genernal in case BIOS has done
+> > anything unsavory.
 > 
-> >
-> > +		pm.pos = 0;
-> > +		start_vaddr += PAGEMAP_WALK_SIZE;
-> > +		end = start_vaddr + PAGEMAP_WALK_SIZE;
-> 
-> Sigh...this is bad..
-> 
-> ==
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> In initial design, walk_page_range() was designed just for walking page table and
-> it didn't require mmap_sem. Now, find_vma() etc.. are used in walk_page_range()
-> and we need mmap_sem around it.
+> Can we flush domains (all the I/O TLBs assciated with each domain), during
+> initialization? I think all the domain data built by previous kernel will
+> be lost and new kernel will have no idea about. 
 
-This looks pretty reasonable. However, it also looks very similar to my
-first version of pagemap (which started with double-buffering). It's
-going to need re-testing to make sure it hasn't reintroduced any
-wrapping, alignment, or off-by-one bugs that have already been ironed
-out once or twice.
+We first invalidate the device table entry, so new translation requests
+will see the new domainid for a given BDF.  Then we invalidate the
+whole set of page tables associated w/ the new domainid.  Now all dma
+transactions will need page table walk (page tables will be empty excpet
+for any 1:1 mappings).  Any old domainid's from previous kernel that
+aren't found in new device table entries are effectively moot.  Just so
+happens that in kexec/kdump case, they'll be the same domainid's, but
+that doesn't matter.
 
--- 
-http://selenic.com : development and support for Mercurial and Linux
-
-
+thanks,
+-chris
