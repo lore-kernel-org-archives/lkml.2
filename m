@@ -1,90 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab0DAG3z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 02:29:55 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:53581 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753434Ab0DAG3q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 02:29:46 -0400
-Message-ID: <4BB43D58.5030801@cs.helsinki.fi>
-Date: Thu, 01 Apr 2010 09:29:44 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	id S1753623Ab0DAGbR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 02:31:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45244 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753337Ab0DAGbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 02:31:08 -0400
+Message-ID: <4BB43CAC.3080102@zytor.com>
+Date: Wed, 31 Mar 2010 23:26:52 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: ShiYong LI <a22381@motorola.com>
-CC: linux-kernel@vger.kernel.org, cl@linux-foundation.org, mpm@selenic.com,
-       linux-mm@kvack.org
-Subject: Re: [PATCH] Fix missing of last user info while getting DEBUG_SLAB
- config 	enabled
-References: <l2g4810ea571003312024jb883f2eet5b48a7fbb9ec340f@mail.gmail.com>
-In-Reply-To: <l2g4810ea571003312024jb883f2eet5b48a7fbb9ec340f@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Matthew Wilcox <matthew@wil.cx>, Yinghai Lu <yinghai@kernel.org>,
+       Rabin Vincent <rabin@rab.in>, lkml <linux-kernel@vger.kernel.org>,
+       penberg@cs.helsinki.fi, linux-arch@vger.kernel.org
+Subject: Re: start_kernel(): bug: interrupts were enabled early
+References: <20100325194100.GA2364@debian>	<20100331134048.da4e35a7.akpm@linux-foundation.org>	<4BB3B4DB.7040904@kernel.org>	<20100331210145.GB32165@parisc-linux.org>	<4BB3B8FC.1020608@zytor.com>	<20100331211754.GC32165@parisc-linux.org>	<alpine.DEB.2.00.1003311640410.30456@router.home>	<20100331215411.GB17715@flint.arm.linux.org.uk>	<4BB3C540.9000405@zytor.com>	<1270075071.7101.79.camel@pasglop>	<20100331154955.54176e5e.akpm@linux-foundation.org>	<1270084631.7101.81.camel@pasglop> <20100331182654.d36c87ff.akpm@linux-foundation.org>
+In-Reply-To: <20100331182654.d36c87ff.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ShiYong LI kirjoitti:
-> Hi all,
->  
-> For OMAP3430 chip, while getting DEBUG_SLAB config enabled, found a bug 
-> that last user information is missed in slab corruption log dumped by 
-> kernel. Actually, It's caused by ignorance of redzone and last user tag 
-> while calling kmem_cache_create() function if cache alignment > 16 bytes 
-> (unsigned long long). 
->  
-> Here is a patch to fix this problem. Already verified it on kernel 2.6.29.
+On 03/31/2010 03:26 PM, Andrew Morton wrote:
+> 
+> Not by adding overhead to every single down_read()/down_write() just to
+> fix a once-off startup problem - that's taking laziness way too far.
+> 
 
-The patch is badly whitespace damaged.
+How much overhead is this on non-x86 architectures (keep in mind x86
+doesn't use this?)
 
->  From 26a5a8ad2a1d7612929a91f6866cea9d1bea6077 Mon Sep 17 00:00:00 2001
-> From: Shiyong Li <shi-yong.li@motorola.com 
-> <mailto:shi-yong.li@motorola.com>>
-> Date: Wed, 31 Mar 2010 10:09:35 +0800
-> Subject: [PATCH] Fix missing of last user info while getting DEBUG_SLAB 
-> config enabled.
-> As OMAP3 cache line is 64 byte long, while calling kmem_cache_create()
-> funtion, some cases need 64 byte alignment of requested memory space.
-> But, if cache line > 16 bytes, current kernel ignore redzone
-> and last user debug head/trail tag to make sure this alignment is not
-> broken.
-> This fix removes codes that ignorance of redzone and last user tag.
-> Instead, use "align" argument value as object offset to guarantee the
-> alignment.
-> Signed-off-by: Shiyong Li <shi-yong.li@motorola.com 
-> <mailto:shi-yong.li@motorola.com>>
-> ---
->  mm/slab.c |    7 ++-----
->  1 files changed, 2 insertions(+), 5 deletions(-)
-> diff --git a/mm/slab.c b/mm/slab.c
-> index a8a38ca..84af997 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -2267,9 +2267,6 @@ kmem_cache_create (const char *name, size_t size, 
-> size_t align,
->   if (ralign < align) {
->    ralign = align;
->   }
-> - /* disable debug if necessary */
-> - if (ralign > __alignof__(unsigned long long))
-> -  flags &= ~(SLAB_RED_ZONE | SLAB_STORE_USER);
->   /*
->    * 4) Store it.
->    */
-> @@ -2289,8 +2286,8 @@ kmem_cache_create (const char *name, size_t size, 
-> size_t align,
->    */
->   if (flags & SLAB_RED_ZONE) {
->    /* add space for red zone words */
-> -  cachep->obj_offset += sizeof(unsigned long long);
-> -  size += 2 * sizeof(unsigned long long);
-> +  cachep->obj_offset += align;
-> +  size += align + sizeof(unsigned long long);
->   }
+	-hpa
 
-I don't understand what you're trying to do here. What if align is less 
-han sizeof(unsigned long long)? What if SLAB_RED_ZONE is not enabled but 
-  SLAB_STORE_USER is?
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-			Pekka
