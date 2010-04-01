@@ -1,50 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758645Ab0DAQsE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:48:04 -0400
-Received: from outgoing.selfhost.de ([82.98.87.70]:51948 "EHLO
-	outgoing.selfhost.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757663Ab0DAQrz (ORCPT
+	id S1758659Ab0DAQuD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:50:03 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45396 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757663Ab0DAQtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:47:55 -0400
-Message-ID: <4BB4CE36.7020807@afaics.de>
-Date: Thu, 01 Apr 2010 18:47:50 +0200
-From: Harald Dunkel <harri@afaics.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.33.1 regression: sound splutters
-References: <4BB1E34B.5030207@darkharri.de>	<s5hhbnx1xen.wl%tiwai@suse.de>	<4BB467AD.7070001@afaics.de>	<s5h1veza4vt.wl%tiwai@suse.de>	<4BB4B32C.8080501@afaics.de> <s5haatn8bej.wl%tiwai@suse.de>
-In-Reply-To: <s5haatn8bej.wl%tiwai@suse.de>
-X-Enigmail-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 1 Apr 2010 12:49:55 -0400
+Subject: Re: [COUNTERPATCH] mm: avoid overflowing preempt_count() in
+ mmu_take_all_locks()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, Kent Overstreet <kent.overstreet@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1270140300.1598.148.camel@laptop>
+References: <1270117906.1653.139.camel@laptop>
+	 <alpine.LFD.2.00.1004011300550.32352@localhost.localdomain>
+	 <4BB47FC3.1020606@redhat.com> <4BB480CC.2060503@redhat.com>
+	 <1270121264.1653.205.camel@laptop> <1270122194.1653.223.camel@laptop>
+	 <20100401154249.GQ5825@random.random> <1270138354.1598.99.camel@laptop>
+	 <20100401161840.GX5825@random.random>  <1270140300.1598.148.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Apr 2010 18:49:52 +0200
+Message-ID: <1270140592.1598.153.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 04/01/10 17:01, Takashi Iwai wrote:
+On Thu, 2010-04-01 at 18:45 +0200, Peter Zijlstra wrote:
+> On Thu, 2010-04-01 at 18:18 +0200, Andrea Arcangeli wrote:
+> > On Thu, Apr 01, 2010 at 06:12:34PM +0200, Peter Zijlstra wrote:
+> > > One thing we can do there is to mutex_trylock() if we get the lock, see
+> > > if we've got the right object, if the trylock fails we can do the
+> > > refcount thing and sleep. That would allow the fast-path to remain a
+> > > single atomic.
+> > 
+> > But then how do you know which anon_vma_unlink has to decrease the
+> > refcount and which not? That info should need to be stored in the
+> > kernel stack, can't be stored in the vma. I guess it's feasible but
+> > passing that info around sounds more tricky than the trylock itself
+> > (adding params to those functions with int &refcount). 
 > 
-> Could you tell more details about your machine, which vendor, product
-> name etc to fill there?  Then I'll commit the fix to the upstream.
+> I was thinking of something like:
 > 
+> struct anon_vma *page_lock_anon_vma(struct page *page)
+> {
+> 	struct anon_vma *anon_vma = NULL;
+> 	unsigned long anon_mapping;
+> 
+> 	rcu_read_lock();
+> 	anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
+>         if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)              
+>                 goto out;                                                          
+>         if (!page_mapped(page))                                                    
+>                 goto out;                                                          
+> 
+>         anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);         
+>         if (!mutex_trylock(&anon_vma->lock)) {
+> 		if (atomic_inc_unless_zero(&anon_vma->ref)) {
+> 			rcu_read_unlock();
+> 			mutex_lock(&anon_vma->lock);
+> 			atomic_dec(&anon_vma->ref); /* ensure the lock pins it */
+> 		} else
+> 			anon_vma = NULL;
+> 	}
+> 	rcu_read_unlock();
+> 	
+>         return anon_vma;
+> }
+> 
+> void page_unlock_anon_vma(struct anon_vma *anon_vma)
+> {
+> 	mutex_unlock(&anon_vma->lock);	
+> }
+> 
+> Then anybody reaching ref==0 would only need to sync against the lock
+> before freeing.
 
-The PC is a (pretty old) Aopen MZ915-M, made in 2006, AFAIR. See
-the specs on http://global.aopen.com/products_detail.aspx?Auno=2170 .
+Ah, there is a race where the dec after lock makes it 0, we could catch
+that by making it -1 and free in unlock_anon_vma().
 
-
-Many thanx for your help
-
-Harri
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAku0zjYACgkQUTlbRTxpHjdy/wCdG8PhFqQzVyGmiiDxDR4usitE
-wNsAn1nMYByvdkUFaV/KnLiscQZHm1sK
-=x78t
------END PGP SIGNATURE-----
