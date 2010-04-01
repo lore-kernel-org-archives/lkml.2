@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777Ab0DAR3J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 13:29:09 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35123 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752794Ab0DAR26 (ORCPT
+	id S1756117Ab0DARaD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 13:30:03 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:37003 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755075Ab0DAR34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 13:28:58 -0400
-Date: Thu, 1 Apr 2010 10:24:29 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Alex Deucher <alexdeucher@gmail.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Linux PCI <linux-pci@vger.kernel.org>,
-       Greg KH <gregkh@suse.de>, Clemens Ladisch <clemens@ladisch.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Alex Deucher <alexdeucher@gamil.com>, dri-devel@lists.sourceforge.net,
-       stable@kernel.org
-Subject: Re: [Regression, post-rc2] Commit a5ee4eb7541 breaks OpenGL on RS780
-  (was: Re: Linux 2.6.34-rc3)
-In-Reply-To: <o2ma728f9f91004011007l4c3aee18p14daae06cda71e68@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1004011019270.3707@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1003301029250.3707@i5.linux-foundation.org>  <201003302316.45651.rjw@sisk.pl> <201004010313.32920.rjw@sisk.pl>  <alpine.LFD.2.00.1004010921550.3707@i5.linux-foundation.org>
- <o2ma728f9f91004011007l4c3aee18p14daae06cda71e68@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Thu, 1 Apr 2010 13:29:56 -0400
+Date: Thu, 1 Apr 2010 19:29:49 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: Chihau Chau <chihau@gmail.com>, gregkh@suse.de, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: dream:  generic_gpio: Use linux instead of
+ asm uaccess.h
+Message-ID: <20100401172949.GA2049@elf.ucw.cz>
+References: <1268622355-9966-1-git-send-email-chihau@gmail.com>
+ <20100315053352.GC11552@elf.ucw.cz>
+ <1268690991.10000.24.camel@c-dwalke-linux.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1268690991.10000.24.camel@c-dwalke-linux.qualcomm.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thu, 1 Apr 2010, Alex Deucher wrote:
+On Mon 2010-03-15 15:09:51, Daniel Walker wrote:
+> On Mon, 2010-03-15 at 06:33 +0100, Pavel Machek wrote:
+> > On Mon 2010-03-15 00:05:55, Chihau Chau wrote:
+> > > From: Chihau Chau <chihau@gmail.com>
+> > > 
+> > > This is moving toward using <linux/uaccess.h> instead of the old
+> > > <asm/uaccess.h> file.
+> > 
+> > Changelog does not match the patch.
+> > 
+> > ...plus, was the patch actually tested?
+> >                                                                         Pavel
+> > 
+> > > --- a/drivers/staging/dream/generic_gpio.c
+> > > +++ b/drivers/staging/dream/generic_gpio.c 
 > 
-> Clemems' "PCI quirk: RS780/RS880: disable MSI completely" patch is the
-> right approach I think.  Note that it's only devices hung off the int
-> gfx pci to pci bridge that have broken MSI (gfx and audio).  MSI works
-> fine on the PCIE slots.  I have a similar patch for rs400 chips on bug
-> 15626:
-> https://bugzilla.kernel.org/show_bug.cgi?id=15626
+> We need to do some sort of staging re-sync .. This file for instance
+> doesn't exist in the Google's tree any longer .. They moved to gpiolib,
+> although they still need cleanups on top of that.
 
-Hmm. Does 'pci_msi_enable' only cover regular PCI devices? Or will that 
-pci_no_msi() quirk disable MSI for PCIE too? I think it will trigger for 
-PCIE drivers too.
+Yep. I hoped Google would just start using the stuff once it hit
+staging, but...
+									Pavel
 
-Put another way: it sounds like the quirk now disables MSI for all 
-devices. Maybe there would some more targeted mode?
-
-		Linus
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
