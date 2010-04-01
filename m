@@ -1,64 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758543Ab0DABPC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 21:15:02 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:35315 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758137Ab0DABPA (ORCPT
+	id S1758556Ab0DABRa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 21:17:30 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:60703 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758479Ab0DABR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 21:15:00 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=UwMQPZZpAN4ToMxEdDynW417NJJSjnWgSrMZTuzxH436tLb8J9oIZUS8l7RrnWVUL
-	W29srHQkgs5BapOvUpz5Q==
+	Wed, 31 Mar 2010 21:17:28 -0400
+Date: Thu, 1 Apr 2010 03:17:25 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: robert.richter@amd.com, oprofile-list@lists.sf.net,
+       linux-kernel@vger.kernel.org, rostedt@goodmis.org
+Cc: stable@kernel.org
+Subject: [PATCH] oprofile: remove double ring buffering
+Message-ID: <20100401011725.GA27567@basil.fritz.box>
 MIME-Version: 1.0
-In-Reply-To: <1270081707.19685.8095.camel@gandalf.stny.rr.com>
-References: <m2u5df78e1d1003301627ya1f621f7qaf0ad099f62d787e@mail.gmail.com>
-	 <1269995724.22564.58.camel@localhost.localdomain>
-	 <q2o5df78e1d1003302101q585143aan32e8872fcdb05c8a@mail.gmail.com>
-	 <1270081707.19685.8095.camel@gandalf.stny.rr.com>
-Date: Wed, 31 Mar 2010 18:14:57 -0700
-Message-ID: <p2t5df78e1d1003311814q1f270e41o4ebdc1f48659c034@mail.gmail.com>
-Subject: Re: lockup in rb_get_reader_page
-From: Jiaying Zhang <jiayingz@google.com>
-To: rostedt@goodmis.org
-Cc: Steven Rostedt <srostedt@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 5:28 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Tue, 2010-03-30 at 21:01 -0700, Jiaying Zhang wrote:
->
->> I am going to patch rb_get_reader_page() to print out some debugging
->> message when it enters into an infinitely loop. I will keep you updated
->> if I find any interesting info.
->
-> I was just thinking about this some more. One restriction to the
-> ring_buffer is that a reader can not preempt a writer, which means that
-> a read can not happen in an interrupt or NMI. If a read happens there
-> and preempts a writer as the writer was moving the head page, it will go
-> into an infinite loop waiting for the writer to finish its move.
->
-> You can only do reads from interrupt context if the writer disables
-> interrupts before reserving and committing the data.
->
-> Are you doing reads from interrupt context?
->
-No. We are using a user-space reader that reads ring buffer via syscall
-or ioctl. But even though we don't read from interrupt context, as I
-understand, we can still have a reader on another cpuB reads cpuA's
-buffer when the writer on cpuA moves the head page. Will we have
-any problem in that case?
+Got confirmation now this patch fixes most of the dropped oprofile
+samples problem on a particular intensive test on a large system.
+So now submitting the previous RFC formally.
+.34 / Stable candidate.
 
-Jiaying
+-Andi
 
-> -- Steve
->
->
->
+---
+
+oprofile: remove double ring buffering
+    
+oprofile used a double buffer scheme for its cpu event buffer
+to avoid races on reading with the old locked ring buffer.
+    
+But that is obsolete now with the new ring buffer, so simply
+use a single buffer. This greatly simplifies the code and avoids
+a lot of sample drops on large runs, especially with call graph.
+    
+Based on suggestions from Steven Rostedt
+    
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+diff --git a/drivers/oprofile/cpu_buffer.c b/drivers/oprofile/cpu_buffer.c
+index 166b67e..de82183 100644
+--- a/drivers/oprofile/cpu_buffer.c
++++ b/drivers/oprofile/cpu_buffer.c
+@@ -30,23 +30,7 @@
+ 
+ #define OP_BUFFER_FLAGS	0
+ 
+-/*
+- * Read and write access is using spin locking. Thus, writing to the
+- * buffer by NMI handler (x86) could occur also during critical
+- * sections when reading the buffer. To avoid this, there are 2
+- * buffers for independent read and write access. Read access is in
+- * process context only, write access only in the NMI handler. If the
+- * read buffer runs empty, both buffers are swapped atomically. There
+- * is potentially a small window during swapping where the buffers are
+- * disabled and samples could be lost.
+- *
+- * Using 2 buffers is a little bit overhead, but the solution is clear
+- * and does not require changes in the ring buffer implementation. It
+- * can be changed to a single buffer solution when the ring buffer
+- * access is implemented as non-locking atomic code.
+- */
+-static struct ring_buffer *op_ring_buffer_read;
+-static struct ring_buffer *op_ring_buffer_write;
++static struct ring_buffer *op_ring_buffer;
+ DEFINE_PER_CPU(struct oprofile_cpu_buffer, op_cpu_buffer);
+ 
+ static void wq_sync_buffer(struct work_struct *work);
+@@ -68,12 +52,9 @@ void oprofile_cpu_buffer_inc_smpl_lost(void)
+ 
+ void free_cpu_buffers(void)
+ {
+-	if (op_ring_buffer_read)
+-		ring_buffer_free(op_ring_buffer_read);
+-	op_ring_buffer_read = NULL;
+-	if (op_ring_buffer_write)
+-		ring_buffer_free(op_ring_buffer_write);
+-	op_ring_buffer_write = NULL;
++	if (op_ring_buffer)
++		ring_buffer_free(op_ring_buffer);
++	op_ring_buffer = NULL;
+ }
+ 
+ #define RB_EVENT_HDR_SIZE 4
+@@ -86,11 +67,8 @@ int alloc_cpu_buffers(void)
+ 	unsigned long byte_size = buffer_size * (sizeof(struct op_sample) +
+ 						 RB_EVENT_HDR_SIZE);
+ 
+-	op_ring_buffer_read = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
+-	if (!op_ring_buffer_read)
+-		goto fail;
+-	op_ring_buffer_write = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
+-	if (!op_ring_buffer_write)
++	op_ring_buffer = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
++	if (!op_ring_buffer)
+ 		goto fail;
+ 
+ 	for_each_possible_cpu(i) {
+@@ -162,16 +140,11 @@ struct op_sample
+ *op_cpu_buffer_write_reserve(struct op_entry *entry, unsigned long size)
+ {
+ 	entry->event = ring_buffer_lock_reserve
+-		(op_ring_buffer_write, sizeof(struct op_sample) +
++		(op_ring_buffer, sizeof(struct op_sample) +
+ 		 size * sizeof(entry->sample->data[0]));
+-	if (entry->event)
+-		entry->sample = ring_buffer_event_data(entry->event);
+-	else
+-		entry->sample = NULL;
+-
+-	if (!entry->sample)
++	if (!entry->event)
+ 		return NULL;
+-
++	entry->sample = ring_buffer_event_data(entry->event);
+ 	entry->size = size;
+ 	entry->data = entry->sample->data;
+ 
+@@ -180,25 +153,16 @@ struct op_sample
+ 
+ int op_cpu_buffer_write_commit(struct op_entry *entry)
+ {
+-	return ring_buffer_unlock_commit(op_ring_buffer_write, entry->event);
++	return ring_buffer_unlock_commit(op_ring_buffer, entry->event);
+ }
+ 
+ struct op_sample *op_cpu_buffer_read_entry(struct op_entry *entry, int cpu)
+ {
+ 	struct ring_buffer_event *e;
+-	e = ring_buffer_consume(op_ring_buffer_read, cpu, NULL);
+-	if (e)
+-		goto event;
+-	if (ring_buffer_swap_cpu(op_ring_buffer_read,
+-				 op_ring_buffer_write,
+-				 cpu))
++	e = ring_buffer_consume(op_ring_buffer, cpu, NULL);
++	if (!e)
+ 		return NULL;
+-	e = ring_buffer_consume(op_ring_buffer_read, cpu, NULL);
+-	if (e)
+-		goto event;
+-	return NULL;
+ 
+-event:
+ 	entry->event = e;
+ 	entry->sample = ring_buffer_event_data(e);
+ 	entry->size = (ring_buffer_event_length(e) - sizeof(struct op_sample))
+@@ -209,8 +173,7 @@ event:
+ 
+ unsigned long op_cpu_buffer_entries(int cpu)
+ {
+-	return ring_buffer_entries_cpu(op_ring_buffer_read, cpu)
+-		+ ring_buffer_entries_cpu(op_ring_buffer_write, cpu);
++	return ring_buffer_entries_cpu(op_ring_buffer, cpu);
+ }
+ 
+ static int
