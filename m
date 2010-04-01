@@ -1,76 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab0DAHxR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 03:53:17 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:37970 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796Ab0DAHxJ (ORCPT
+	id S1754112Ab0DAH6q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 03:58:46 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:39194 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796Ab0DAH6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 03:53:09 -0400
-Date: Thu, 1 Apr 2010 09:53:04 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Jiri Kosina <jkosina@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (hid
- tree related)
-Message-ID: <20100401095304.487fffb4@pluto.restena.lu>
-In-Reply-To: <20100401183530.516bbca6.sfr@canb.auug.org.au>
-References: <20100401170639.9f2fe605.sfr@canb.auug.org.au>
-	<alpine.LNX.2.00.1004010817420.8345@pobox.suse.cz>
-	<20100401183530.516bbca6.sfr@canb.auug.org.au>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.16.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Apr 2010 03:58:41 -0400
+Date: Thu, 1 Apr 2010 13:28:24 +0530
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Ingo Molnar <mingo@redhat.com>, Venkatesh Pallipadi <venki@google.com>,
+       Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, ego@in.ibm.com
+Subject: [patch repost] sched: Fix group_capacity for
+ sched_smt_powersavings=1
+Message-ID: <20100401075824.GU5300@dirshya.in.ibm.com>
+Reply-To: svaidy@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri, Stephen,
+Hi Peter,
 
-Wondering why x86 (32bit and 64bit) does not need to include the
-header but other arches (at least powerpc) need it.
+This is repost of the same patch http://lkml.org/lkml/2010/3/22/275
+(and http://lkml.org/lkml/2010/3/2/216)
 
-Any idea via which header linux/uaccess.h gets included on x86?
-If nobody has checked by the time I get home I will determine that.
+After applying Suresh's fixes from discussion thread
+http://lkml.org/lkml/2010/2/12/352, we still need the attached patch
+to restore sched_smt_powersavings=1 functionality where tasks prefer
+sibling threads and keep more cores idle.
+
+Please apply to sched-tip, the patch is rebased and tested on today's
+sched-tip master.
+
+The attached patch will run 4 while(1) loops in two cores when
+sched_smt_power_savings=1.  Tested on two socket, quad core, hyper
+threaded system.
+
+Additional testing was done on POWER platform where
+sched_smt_powersavings was able to consolidate tasks on sibling
+threads leaving more idle cores.
 
 Thanks,
-Bruno
+Vaidy
+---
+        sched: Fix group_capacity for sched_smt_powersavings=1
 
+        sched_smt_powersavings for threaded systems need this fix for
+        consolidation to sibling threads to work.  Since threads have 
+        fractional capacity, group_capacity will turn out to be one 
+        always and not accommodate another task in the sibling thread.
+        
+        This fix makes group_capacity a function of cpumask_weight that
+        will enable the power saving load balancer to pack tasks among
+        sibling threads and keep more cores idle.
 
-On Thu, 1 Apr 2010 18:35:30 Stephen Rothwell wrote:
-> Hi Jiri,
-> 
-> On Thu, 1 Apr 2010 08:18:43 +0200 (CEST) Jiri Kosina
-> <jkosina@suse.cz> wrote:
-> >
-> > On Thu, 1 Apr 2010, Stephen Rothwell wrote:
-> > 
-> > > After merging the final tree, today's linux-next build (powerpc
-> > > allyesconfig) failed like this:
-> > > 
-> > > drivers/hid/hid-picolcd.c: In function
-> > > 'picolcd_debug_reset_write': drivers/hid/hid-picolcd.c:1343:
-> > > error: implicit declaration of function 'copy_from_user'
-> > > drivers/hid/hid-picolcd.c: In function
-> > > 'picolcd_debug_eeprom_read': drivers/hid/hid-picolcd.c:1407:
-> > > error: implicit declaration of function 'copy_to_user'
-> > > 
-> > > Caused by commit 9bbf2b98ba11d00bd73e3254e15cfe17ccaff6ba ("HID:
-> > > add experimental access to PicoLCD device's EEPROM and FLASH").
-> > > Using copy_ {to,from}_user requires the include of
-> > > linux/uaccess.h.
-> > > 
-> > > I have reverted that commit for today.
-> > 
-> > Hmm, on which arch did this bomb out? I wonder why it is building
-> > fine for me.
-> 
-> PowerPC (see above).  It could also be some interaction with another
-> tree in linux-next.
-> 
-> > Anyway, I have added the include, as it is obviously correct(tm),
-> > thanks for reporting it.
-> 
-> Thanks.
-> 
+Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 5a5ea2c..7c0a29a 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2538,6 +2538,21 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
+ 		 */
+ 		if (prefer_sibling)
+ 			sgs.group_capacity = min(sgs.group_capacity, 1UL);
++		/*
++		 * If power savings balance is set at this domain, then
++		 * make capacity equal to number of hardware threads to
++		 * accommodate more tasks until capacity is reached.
++		 */
++		else if (sd->flags & SD_POWERSAVINGS_BALANCE)
++			sgs.group_capacity =
++				cpumask_weight(sched_group_cpus(group));
++
++			/*
++			 * The default group_capacity is rounded from sum of
++			 * fractional cpu_powers of sibling hardware threads
++			 * in order to enable fair use of available hardware
++			 * resources.
++			 */
+ 
+ 		if (local_group) {
+ 			sds->this_load = sgs.avg_load;
+@@ -2863,7 +2878,8 @@ static int need_active_balance(struct sched_domain *sd, int sd_idle, int idle)
+ 		    !test_sd_parent(sd, SD_POWERSAVINGS_BALANCE))
+ 			return 0;
+ 
+-		if (sched_mc_power_savings < POWERSAVINGS_BALANCE_WAKEUP)
++		if (sched_mc_power_savings < POWERSAVINGS_BALANCE_WAKEUP &&
++		    sched_smt_power_savings < POWERSAVINGS_BALANCE_WAKEUP)
+ 			return 0;
+ 	}
+ 
