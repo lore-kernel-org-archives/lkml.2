@@ -1,93 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab0DAGMg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 02:12:36 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:56815 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198Ab0DAGM2 (ORCPT
+	id S1753431Ab0DAGNz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 02:13:55 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:59456 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753345Ab0DAGNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 02:12:28 -0400
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jiri Pirko <jpirko@redhat.com>,
-       Stephen Hemminger <shemminger@vyatta.com>, netdev@vger.kernel.org,
-       "David S. Miller" <davem@davemloft.net>,
-       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>
-Subject: Re: [Patch V2] bonding: fix potential deadlock in bond_uninit()
-References: <20100401061014.4815.7341.sendpatchset@localhost.localdomain>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Wed, 31 Mar 2010 23:12:22 -0700
-In-Reply-To: <20100401061014.4815.7341.sendpatchset@localhost.localdomain> (Amerigo Wang's message of "Thu\, 1 Apr 2010 02\:06\:28 -0400")
-Message-ID: <m1r5mzsnuh.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: amwang@redhat.com, fubar@us.ibm.com, bonding-devel@lists.sourceforge.net, davem@davemloft.net, netdev@vger.kernel.org, shemminger@vyatta.com, jpirko@redhat.com, linux-kernel@vger.kernel.org
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+	Thu, 1 Apr 2010 02:13:49 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 1 Apr 2010 15:09:56 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Matt Mackall <mpm@selenic.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       San Mehat <san@google.com>, linux-kernel@vger.kernel.org,
+       Brian Swetland <swetland@google.com>, Dave Hansen <haveblue@us.ibm.com>,
+       Andrew Morton <akpm@linux-foundation.org>, n-horiguchi@ah.jp.nec.com
+Subject: Re: [PATCH] proc: pagemap: Hold mmap_sem during page walk
+Message-Id: <20100401150956.4f6821c2.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100401150128.BE45.A69D9226@jp.fujitsu.com>
+References: <20100401144329.BE42.A69D9226@jp.fujitsu.com>
+	<20100401145509.47f7f1c3.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100401150128.BE45.A69D9226@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Amerigo Wang <amwang@redhat.com> writes:
+On Thu,  1 Apr 2010 15:05:38 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+  	memset(&mss, 0, sizeof mss);
+> >  	mss.vma = vma;
+> > -	if (vma->vm_mm && !is_vm_hugetlb_page(vma))
+> > +	if (vma->vm_mm && !is_vm_hugetlb_page(vma)) {
+> > +		down_read(&vma->vm_mm->mmap_sem);
+> >  		walk_page_range(vma->vm_start, vma->vm_end, &smaps_walk);
+> > +		up_read(&vma->vm_mm->mmap_sem);
+> > +	}
+> 
+> m_start already take mmap_sem. then I don't think this part is necessary.
+> 
+Right.
+<snip>
 
-> bond_uninit() is invoked with rtnl_lock held, when it does destroy_workqueue()
-> which will potentially flush all works in this workqueue, if we hold rtnl_lock
-> again in the work function, it will deadlock.
->
-> So move destroy_workqueue() to destructor where rtnl_lock is not held any more,
-> suggested by Eric.
+ 
+> > -
+> > -	uaddr = (unsigned long)buf & PAGE_MASK;
+> > -	uend = (unsigned long)(buf + count);
+> > -	pagecount = (PAGE_ALIGN(uend) - uaddr) / PAGE_SIZE;
+> > -	ret = 0;
+> > -	if (pagecount == 0)
+> > +	pm.len = PM_ENTRY_BYTES * (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
+> > +	pm.buffer = kmalloc(pm.len, GFP_KERNEL);
+> 
+> In /proc interface, GFP_TEMPORARY is recommened rather than GFP_KERNEL.
+> it help to prevent unnecessary external fragmentation.
+> 
+Ok.
 
-The error handling on creating a bond device needs to be updated as well.
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Eric
+In initial design, walk_page_range() was designed just for walking page table and
+it didn't require mmap_sem. Now, find_vma() etc.. are used in walk_page_range()
+and we need mmap_sem around it.
 
+This patch adds mmap_sem around walk_page_range().
 
-> Signed-off-by: WANG Cong <amwang@redhat.com>
-> Cc: Jay Vosburgh <fubar@us.ibm.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Stephen Hemminger <shemminger@vyatta.com>
-> Cc: Jiri Pirko <jpirko@redhat.com>
-> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
->
-> ---
->
-> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-> index 5b92fbf..9f0aaa2 100644
-> --- a/drivers/net/bonding/bond_main.c
-> +++ b/drivers/net/bonding/bond_main.c
-> @@ -4450,6 +4450,14 @@ static const struct net_device_ops bond_netdev_ops = {
->  	.ndo_vlan_rx_kill_vid	= bond_vlan_rx_kill_vid,
->  };
->  
-> +static void bond_destructor(struct net_device *bond_dev)
-> +{
-> +	struct bonding *bond = netdev_priv(bond_dev);
-> +	if (bond->wq)
-> +		destroy_workqueue(bond->wq);
-> +	free_netdev(bond_dev);
-> +}
-> +
->  static void bond_setup(struct net_device *bond_dev)
->  {
->  	struct bonding *bond = netdev_priv(bond_dev);
-> @@ -4470,7 +4478,7 @@ static void bond_setup(struct net_device *bond_dev)
->  	bond_dev->ethtool_ops = &bond_ethtool_ops;
->  	bond_set_mode_ops(bond, bond->params.mode);
->  
-> -	bond_dev->destructor = free_netdev;
-> +	bond_dev->destructor = bond_destructor;
->  
->  	/* Initialize the device options */
->  	bond_dev->tx_queue_len = 0;
-> @@ -4542,9 +4550,6 @@ static void bond_uninit(struct net_device *bond_dev)
->  
->  	bond_remove_proc_entry(bond);
->  
-> -	if (bond->wq)
-> -		destroy_workqueue(bond->wq);
-> -
->  	netif_addr_lock_bh(bond_dev);
->  	bond_mc_list_destroy(bond);
->  	netif_addr_unlock_bh(bond_dev);
+Because /proc/<pid>/pagemap's callback routine use put_user(), we have to get
+rid of it to do sane fix.
+
+Changelog:
+ - removed unnecessary change in smaps.
+ - use GFP_TEMPORARY instead of GFP_KERNEL
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ fs/proc/task_mmu.c |   86 ++++++++++++++++++++++-------------------------------
+ 1 file changed, 36 insertions(+), 50 deletions(-)
+
+Index: linux-2.6.34-rc3/fs/proc/task_mmu.c
+===================================================================
+--- linux-2.6.34-rc3.orig/fs/proc/task_mmu.c
++++ linux-2.6.34-rc3/fs/proc/task_mmu.c
+@@ -406,6 +406,7 @@ static int show_smap(struct seq_file *m,
+ 
+ 	memset(&mss, 0, sizeof mss);
+ 	mss.vma = vma;
++	/* mmap_sem is held in m_start */
+ 	if (vma->vm_mm && !is_vm_hugetlb_page(vma))
+ 		walk_page_range(vma->vm_start, vma->vm_end, &smaps_walk);
+ 
+@@ -552,7 +553,8 @@ const struct file_operations proc_clear_
+ };
+ 
+ struct pagemapread {
+-	u64 __user *out, *end;
++	int pos, len;
++	u64 *buffer;
+ };
+ 
+ #define PM_ENTRY_BYTES      sizeof(u64)
+@@ -575,10 +577,8 @@ struct pagemapread {
+ static int add_to_pagemap(unsigned long addr, u64 pfn,
+ 			  struct pagemapread *pm)
+ {
+-	if (put_user(pfn, pm->out))
+-		return -EFAULT;
+-	pm->out++;
+-	if (pm->out >= pm->end)
++	pm->buffer[pm->pos++] = pfn;
++	if (pm->pos >= pm->len)
+ 		return PM_END_OF_BUFFER;
+ 	return 0;
+ }
+@@ -720,21 +720,20 @@ static int pagemap_hugetlb_range(pte_t *
+  * determine which areas of memory are actually mapped and llseek to
+  * skip over unmapped regions.
+  */
++#define PAGEMAP_WALK_SIZE	(PMD_SIZE)
+ static ssize_t pagemap_read(struct file *file, char __user *buf,
+ 			    size_t count, loff_t *ppos)
+ {
+ 	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
+-	struct page **pages, *page;
+-	unsigned long uaddr, uend;
+ 	struct mm_struct *mm;
+ 	struct pagemapread pm;
+-	int pagecount;
+ 	int ret = -ESRCH;
+ 	struct mm_walk pagemap_walk = {};
+ 	unsigned long src;
+ 	unsigned long svpfn;
+ 	unsigned long start_vaddr;
+ 	unsigned long end_vaddr;
++	int copied = 0;
+ 
+ 	if (!task)
+ 		goto out;
+@@ -757,34 +756,10 @@ static ssize_t pagemap_read(struct file 
+ 	if (!mm)
+ 		goto out_task;
+ 
+-
+-	uaddr = (unsigned long)buf & PAGE_MASK;
+-	uend = (unsigned long)(buf + count);
+-	pagecount = (PAGE_ALIGN(uend) - uaddr) / PAGE_SIZE;
+-	ret = 0;
+-	if (pagecount == 0)
++	pm.len = PM_ENTRY_BYTES * (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
++	pm.buffer = kmalloc(pm.len, GFP_TEMPORARY);
++	if (!pm.buffer)
+ 		goto out_mm;
+-	pages = kcalloc(pagecount, sizeof(struct page *), GFP_KERNEL);
+-	ret = -ENOMEM;
+-	if (!pages)
+-		goto out_mm;
+-
+-	down_read(&current->mm->mmap_sem);
+-	ret = get_user_pages(current, current->mm, uaddr, pagecount,
+-			     1, 0, pages, NULL);
+-	up_read(&current->mm->mmap_sem);
+-
+-	if (ret < 0)
+-		goto out_free;
+-
+-	if (ret != pagecount) {
+-		pagecount = ret;
+-		ret = -EFAULT;
+-		goto out_pages;
+-	}
+-
+-	pm.out = (u64 __user *)buf;
+-	pm.end = (u64 __user *)(buf + count);
+ 
+ 	pagemap_walk.pmd_entry = pagemap_pte_range;
+ 	pagemap_walk.pte_hole = pagemap_pte_hole;
+@@ -807,23 +782,34 @@ static ssize_t pagemap_read(struct file 
+ 	 * user buffer is tracked in "pm", and the walk
+ 	 * will stop when we hit the end of the buffer.
+ 	 */
+-	ret = walk_page_range(start_vaddr, end_vaddr, &pagemap_walk);
+-	if (ret == PM_END_OF_BUFFER)
+-		ret = 0;
+-	/* don't need mmap_sem for these, but this looks cleaner */
+-	*ppos += (char __user *)pm.out - buf;
+-	if (!ret)
+-		ret = (char __user *)pm.out - buf;
+-
+-out_pages:
+-	for (; pagecount; pagecount--) {
+-		page = pages[pagecount-1];
+-		if (!PageReserved(page))
+-			SetPageDirty(page);
+-		page_cache_release(page);
++	while (count && (start_vaddr < end_vaddr)) {
++		int len;
++		unsigned long end;
++
++		pm.pos = 0;
++		start_vaddr += PAGEMAP_WALK_SIZE;
++		end = start_vaddr + PAGEMAP_WALK_SIZE;
++		down_read(&mm->mmap_sem);
++		ret = walk_page_range(start_vaddr, end, &pagemap_walk);
++		up_read(&mm->mmap_sem);
++
++		len = PM_ENTRY_BYTES * pm.pos;
++		if (len > count)
++			len = count;
++		if (copy_to_user((char __user *)buf, pm.buffer, len) < 0) {
++			ret = -EFAULT;
++			goto out_free;
++		}
++		copied += len;
++		buf += len;
++		count -= len;
+ 	}
++	*ppos += copied;
++	if (!ret || ret == PM_END_OF_BUFFER)
++		ret = copied;
++
+ out_free:
+-	kfree(pages);
++	kfree(pm.buffer);
+ out_mm:
+ 	mmput(mm);
+ out_task:
+
