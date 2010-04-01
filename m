@@ -1,42 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301Ab0DAGGn (ORCPT <rfc822;w@1wt.eu>);
+	id S1753362Ab0DAGGx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 02:06:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9264 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753284Ab0DAGGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 1 Apr 2010 02:06:43 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:41748 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752843Ab0DAGGg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 02:06:36 -0400
-Date: Thu, 1 Apr 2010 08:06:25 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Cyril Hrubis <metan@ucw.cz>, rpurdie@rpsys.net, lenz@cs.wisc.edu,
-       kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
-       thommycheck@gmail.com,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-       utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
-       "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [regression] 2.6.34-rc1 to -rc3 on zaurus: no longer boots
-Message-ID: <20100401060624.GA1329@ucw.cz>
-References: <20100313122754.GD2192@elf.ucw.cz> <20100315102830.GA10288@atrey.karlin.mff.cuni.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100315102830.GA10288@atrey.karlin.mff.cuni.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Thu, 1 Apr 2010 02:06:28 -0400
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Pirko <jpirko@redhat.com>, Stephen Hemminger <shemminger@vyatta.com>,
+       netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Amerigo Wang <amwang@redhat.com>, bonding-devel@lists.sourceforge.net,
+       Jay Vosburgh <fubar@us.ibm.com>
+Message-Id: <20100401061014.4815.7341.sendpatchset@localhost.localdomain>
+Subject: [Patch V2] bonding: fix potential deadlock in bond_uninit()
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
 
-> > I tried compiling 2.6.34-rc1, and it does not boot :-(. It does not
-> > seem to even reset the framebuffer (I'm using kexec -- so it stays
-> > stuck on on previous screen).
+bond_uninit() is invoked with rtnl_lock held, when it does destroy_workqueue()
+which will potentially flush all works in this workqueue, if we hold rtnl_lock
+again in the work function, it will deadlock.
 
-Tried again with -rc2 and -rc3, and neither boots :-(. I did not have
-time to set up serial console, yet :-(. Any ideas?
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+So move destroy_workqueue() to destructor where rtnl_lock is not held any more,
+suggested by Eric.
+
+Signed-off-by: WANG Cong <amwang@redhat.com>
+Cc: Jay Vosburgh <fubar@us.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Jiri Pirko <jpirko@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+
+---
+
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 5b92fbf..9f0aaa2 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -4450,6 +4450,14 @@ static const struct net_device_ops bond_netdev_ops = {
+ 	.ndo_vlan_rx_kill_vid	= bond_vlan_rx_kill_vid,
+ };
+ 
++static void bond_destructor(struct net_device *bond_dev)
++{
++	struct bonding *bond = netdev_priv(bond_dev);
++	if (bond->wq)
++		destroy_workqueue(bond->wq);
++	free_netdev(bond_dev);
++}
++
+ static void bond_setup(struct net_device *bond_dev)
+ {
+ 	struct bonding *bond = netdev_priv(bond_dev);
+@@ -4470,7 +4478,7 @@ static void bond_setup(struct net_device *bond_dev)
+ 	bond_dev->ethtool_ops = &bond_ethtool_ops;
+ 	bond_set_mode_ops(bond, bond->params.mode);
+ 
+-	bond_dev->destructor = free_netdev;
++	bond_dev->destructor = bond_destructor;
+ 
+ 	/* Initialize the device options */
+ 	bond_dev->tx_queue_len = 0;
+@@ -4542,9 +4550,6 @@ static void bond_uninit(struct net_device *bond_dev)
+ 
+ 	bond_remove_proc_entry(bond);
+ 
+-	if (bond->wq)
+-		destroy_workqueue(bond->wq);
+-
+ 	netif_addr_lock_bh(bond_dev);
+ 	bond_mc_list_destroy(bond);
+ 	netif_addr_unlock_bh(bond_dev);
