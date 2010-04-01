@@ -1,34 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758046Ab0DAQdz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:33:55 -0400
+	id S1758152Ab0DAQeX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:34:23 -0400
 Received: from mx1.redhat.com ([209.132.183.28]:12531 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758007Ab0DAQdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:33:35 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100401143944.GA2472@linux.vnet.ibm.com>
-References: <20100401143944.GA2472@linux.vnet.ibm.com> <23274.1269893706@redhat.com> <25276.1269901350@redhat.com> <26760.1269903543@redhat.com> <20100329232636.GT2569@linux.vnet.ibm.com> <2440.1269967151@redhat.com> <21972.1269993064@redhat.com> <10818.1270044273@redhat.com> <15371.1270057054@redhat.com> <19556.1270076008@redhat.com> <14003.1270122314@redhat.com> 
-To: paulmck@linux.vnet.ibm.com
-Cc: dhowells@redhat.com, Eric Dumazet <eric.dumazet@gmail.com>,
-       Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS: Fix RCU warnings in nfs_inode_return_delegation_noreclaim() [ver #2]
-Date: Thu, 01 Apr 2010 15:46:51 +0100
-Message-ID: <4161.1270133211@redhat.com>
+	id S1757951Ab0DAQdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 12:33:45 -0400
+Message-ID: <4BB480CC.2060503@redhat.com>
+Date: Thu, 01 Apr 2010 14:17:32 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+       linux-kernel@vger.kernel.org, aarcange@redhat.com,
+       akpm@linux-foundation.org, Kent Overstreet <kent.overstreet@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: [COUNTERPATCH] mm: avoid overflowing preempt_count() in mmu_take_all_locks()
+References: <1270117906.1653.139.camel@laptop> <alpine.LFD.2.00.1004011300550.32352@localhost.localdomain> <4BB47FC3.1020606@redhat.com>
+In-Reply-To: <4BB47FC3.1020606@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+On 04/01/2010 02:13 PM, Avi Kivity wrote:
+>
+>> Anyway, I don't see a reason why we can't convert those locks to
+>> mutexes and get rid of the whole preempt disabled region.
+>
+> If someone is willing to audit all code paths to make sure these locks 
+> are always taken in schedulable context I agree that's a better fix.
+>
 
-> So you have objected to needless memory barriers.  How do you feel
-> about possibly needless ACCESS_ONCE() calls?
+ From mm/rmap.c:
 
-That would work here since it shouldn't emit any excess instructions.
+> /*
+>  * Lock ordering in mm:
+>  *
+>  * inode->i_mutex    (while writing or truncating, not reading or 
+> faulting)
+>  *   inode->i_alloc_sem (vmtruncate_range)
+>  *   mm->mmap_sem
+>  *     page->flags PG_locked (lock_page)
+>  *       mapping->i_mmap_lock
+>  *         anon_vma->lock
+...
+> *
+>  * (code doesn't rely on that order so it could be switched around)
+>  * ->tasklist_lock
+>  *   anon_vma->lock      (memory_failure, collect_procs_anon)
+>  *     pte map lock
+>  */
 
-David
+i_mmap_lock is a spinlock, and tasklist_lock is a rwlock, so some 
+changes will be needed.
+
+-- 
+error compiling committee.c: too many arguments to function
+
