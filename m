@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758600Ab0DABlh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 21:41:37 -0400
-Received: from sous-sol.org ([216.99.217.87]:33641 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758559Ab0DABlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 21:41:36 -0400
-Date: Wed, 31 Mar 2010 18:39:57 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Chris Wright <chrisw@sous-sol.org>, iommu@lists.linux-foundation.org,
-       joerg.roedel@amd.com, vgoyal@redhat.com, hbabu@us.ibm.com,
-       kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] amd iommu: force flush of iommu prior during shutdown
-Message-ID: <20100401013957.GS29241@sequoia.sous-sol.org>
-References: <20100331152417.GB13406@hmsreliant.think-freely.org> <20100331212535.GR29241@sequoia.sous-sol.org> <20100401011311.GC2069@localhost.localdomain>
+	id S1758615Ab0DABmj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 21:42:39 -0400
+Received: from mail-qy0-f173.google.com ([209.85.221.173]:62718 "EHLO
+	mail-qy0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758559Ab0DABmi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 21:42:38 -0400
+X-Greylist: delayed 359 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Mar 2010 21:42:38 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=RVeQm75WBLISMXqD1Z+s+bvtiuy4FEH5FNPYsILKtlG69rlvFAO/qbuA2Z4wDrwNFR
+         XXMGKuyNph8n66F41kgjj3vONjrXbHSG5kjpX0R1+GVznDJeqITPjszJHNmaLn/sbtnU
+         GQVg2vqpuIn2AhTDodCNlVY5c/6QcebE2NDu4=
+Date: Wed, 31 Mar 2010 21:36:29 -0400 (EDT)
+From: Parag Warudkar <parag.lkml@gmail.com>
+X-X-Sender: paragw@parag-laptop
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Parag Warudkar <parag.lkml@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: S2RAM broken on HP 8530p
+In-Reply-To: <201004010316.17898.rjw@sisk.pl>
+Message-ID: <alpine.DEB.2.00.1003312136220.1726@parag-laptop>
+References: <alpine.DEB.2.00.1003312050370.1876@parag-laptop> <201004010316.17898.rjw@sisk.pl>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100401011311.GC2069@localhost.localdomain>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Neil Horman (nhorman@tuxdriver.com) wrote:
-> On Wed, Mar 31, 2010 at 02:25:35PM -0700, Chris Wright wrote:
-> > * Neil Horman (nhorman@tuxdriver.com) wrote:
-> > > Flush iommu during shutdown
-> > > 
-> > > When using an iommu, its possible, if a kdump kernel boot follows a primary
-> > > kernel crash, that dma operations might still be in flight from the previous
-> > > kernel during the kdump kernel boot.  This can lead to memory corruption,
-> > > crashes, and other erroneous behavior, specifically I've seen it manifest during
-> > > a kdump boot as endless iommu error log entries of the form:
-> > > AMD-Vi: Event logged [IO_PAGE_FAULT device=00:14.1 domain=0x000d
-> > > address=0x000000000245a0c0 flags=0x0070]
+
+
+On Thu, 1 Apr 2010, Rafael J. Wysocki wrote:
+
+> On Thursday 01 April 2010, Parag Warudkar wrote:
 > > 
-> > We've already fixed this problem once before, so some code shift must
-> > have brought it back.  Personally, I prefer to do this on the bringup
-> > path than the teardown path.  Besides keeping the teardown path as
-> > simple as possible (goal is to get to kdump kernel asap), there's also
-> > reason to competely flush on startup in genernal in case BIOS has done
-> > anything unsavory.
+> > Running Ubuntu Lucid 64-bit I noticed suspending fails with current git. 
+> > Unsure since when it started - perhaps a while ago since the stock distro 
+> > kernel 2.6.32-18 also fails to suspend - albeit little differently - 
+> > git will fail before shutting off the display, distro one succeeds in 
+> > shutting off the display and then hangs.
 > > 
-> Chris,
-> 	Can you elaborate on what you did with the iommu to make this safe?  It
-> will save me time digging through the history on this code, and help me
-> understand better whats going on here.
+> > Any ideas how to go about debugging this? 
 > 
-> I was starting to think that we should just leave the iommu on through a kdump,
-> and re-construct a new page table based on the old table (filtered by the error
-> log) on kdump boot, but it sounds like a better solution might be in place.
+> Please first try to suspend after echoing 0 to /sys/power/pm_async.
 
-The code used to simply insure a clean slate on startup by flushing the
-relevant domain table entry and the cached translations as devices were
-attached (happens during init of the kernel either base kernel or kdump
-one).
+No change - hangs the same way as before.
 
-See here:
+I recall it used to work with prior kernels and so I tried 2.6.31 from 
+kernel.ubuntu.com/~kernel-ppa/
 
-42a49f965a8d24ed92af04f5b564d63f17fd9c56
-a8c485bb6857811807d42f9fd1fde2f5f89cc5c9
+mainline/v2.6.31/ but that fails similarly. 
 
-What's changed is the initialization doesn't appear to do the proper
-flushes anymore.  Your patch has the effect of puting the back, but
-during shtudown rather than initialization.
+May be I could try 2.6.30 but from a bisect stand point thats not all that 
+attractive even if we find it works..
 
-thanks,
--chris
+Thanks,
+
+Parag
