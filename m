@@ -1,120 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758567Ab0DABRw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 21:17:52 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:40423 "EHLO e1.ny.us.ibm.com"
+	id S1758572Ab0DABTL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 21:19:11 -0400
+Received: from gate.crashing.org ([63.228.1.57]:46792 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758499Ab0DABRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 21:17:50 -0400
-Date: Wed, 31 Mar 2010 18:17:47 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rcu: don't call rcu_preempt_note_context_switch() in
- rcu_check_callbacks()
-Message-ID: <20100401011747.GJ2461@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4BB014DF.9030905@cn.fujitsu.com>
- <20100329044236.GB2343@linux.vnet.ibm.com>
- <4BB1C7C5.5070700@cn.fujitsu.com>
- <20100330160339.GB2513@linux.vnet.ibm.com>
- <20100331153656.GA4623@linux.vnet.ibm.com>
- <4BB3EF25.1040804@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BB3EF25.1040804@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758499Ab0DABTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 21:19:08 -0400
+Subject: Re: start_kernel(): bug: interrupts were enabled early
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Matthew Wilcox <matthew@wil.cx>, Yinghai Lu <yinghai@kernel.org>,
+       Rabin Vincent <rabin@rab.in>, lkml <linux-kernel@vger.kernel.org>,
+       penberg@cs.helsinki.fi, linux-arch@vger.kernel.org
+In-Reply-To: <20100331154955.54176e5e.akpm@linux-foundation.org>
+References: <20100325194100.GA2364@debian>
+	 <20100331134048.da4e35a7.akpm@linux-foundation.org>
+	 <4BB3B4DB.7040904@kernel.org> <20100331210145.GB32165@parisc-linux.org>
+	 <4BB3B8FC.1020608@zytor.com> <20100331211754.GC32165@parisc-linux.org>
+	 <alpine.DEB.2.00.1003311640410.30456@router.home>
+	 <20100331215411.GB17715@flint.arm.linux.org.uk>
+	 <4BB3C540.9000405@zytor.com> <1270075071.7101.79.camel@pasglop>
+	 <20100331154955.54176e5e.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Apr 2010 12:17:11 +1100
+Message-ID: <1270084631.7101.81.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 01, 2010 at 08:56:05AM +0800, Lai Jiangshan wrote:
-> Paul E. McKenney wrote:
-> > On Tue, Mar 30, 2010 at 09:03:39AM -0700, Paul E. McKenney wrote:
-> >> On Tue, Mar 30, 2010 at 05:43:33PM +0800, Lai Jiangshan wrote:
-> >>> Paul E. McKenney wrote:
-> >>>> On Mon, Mar 29, 2010 at 10:47:59AM +0800, Lai Jiangshan wrote:
-> >>>>> Content-Type: text/plain; charset=UTF-8
-> >>>>> Content-Transfer-Encoding: 7bit
-> >>>>>
-> >>>>>
-> >>>>> Even though in user mode or idle mode, rcu_check_callbacks() is not
-> >>>>> context switch, so we don't call rcu_preempt_note_context_switch()
-> >>>>> in rcu_check_callbacks().
-> >>>>>
-> >>>>> Though there is no harm that calls rcu_preempt_note_context_switch()
-> >>>>> in rcu_check_callbacks(), but it is waste.
-> >>>>>
-> >>>>> rcu_check_callbacks()
-> >>>>>   rcu_sched_qs()
-> >>>>>     rcu_preempt_note_context_switch()
-> >>>>>        Now, ->rcu_read_lock_nesting == 0, so we just calls
-> >>>>>        rcu_preempt_qs(), but, rcu_preempt_check_callbacks()
-> >>>>>        will call it again and set the ->rcu_read_unlock_special
-> >>>>>        correct again.
-> >>>>>
-> >>>>> So let rcu_preempt_check_callbacks() handle things for us.
-> >>>> Nice!!!
-> >>>>
-> >>>> But how about naming the new function that invokes
-> >>>> rcu_preempt_note_context_switch() something like
-> >>>> rcu_sched_note_context_switch(), and then leaving the
-> >>>> name of rcu_sched_qs() the same (rather than changing
-> >>>> it to __rcu_sched_qs(), as below)?
-> >>>>
-> >>>> This way, the names clearly call out what the function
-> >>>> is doing.
-> >>>>
-> >>> If I understand right, it will become this:
-> >>>
-> >>> schedule() / run_ksoftirqd() / rcu_needs_cpu()
-> >>>   rcu_sched_note_context_switch()
-> >>>     rcu_sched_qs()
-> >>>     rcu_preempt_note_context_switch()
-> >> Wow!!!  That was a scare!!!  I misread "run_ksoftirqd()" as
-> >> "do_softirq().  ;-)
-> >>
-> >> And I am not seeing a call to rcu_sched_qs() in rcu_needs_cpu()...
-> >>
-> >> Here is how I believe it needs to go:
-> >>
-> >> 	schedule():
-> >> 		rcu_sched_note_context_switch()
-> >> 			rcu_sched_qs()
-> >> 			rcu_preempt_note_context_switch()
-> >>
-> >> 	run_ksoftirqd():
-> >> 		rcu_sched_qs()
-> >>
-> >> 	rcu_check_callbacks():
-> >> 		rcu_sched_qs() [if idle etc.]
-> >> 		rcu_bh_qs() [if not in softirq]
-> >>
-> >> The reason we don't need rcu_bh_qs() from run_ksoftirqd() is that
-> >> __do_softirq() already calls rcu_bh_qs().
-> >>
-> >> Make sense, or am I missing something?
-> > 
-> > And I was in fact missing something.  The rcu_preempt_note_context_switch()
-> > function currently combines some work that needs to happen only at
-> > context-switch time with work that needs to happen all the time.
-> > 
-> > At first glance, it appears that the big "if" statement in
-> > rcu_preempt_note_context_switch() need only happen for context switches.
+On Wed, 2010-03-31 at 15:49 -0700, Andrew Morton wrote:
 > 
-> > The remaining lines must happen unconditionally for context switches,
-> > and should be executed from rcu_check_callbacks() only if the current
-> > CPU is not in an RCU read-side critical section.
-> 
-> I think rcu_preempt_check_callbacks() will do this work better
-> in rcu_check_callbacks().
+> But these things are all utterly gross.  The bottom line is that
+> radix_tree_init() is manifestly unsuited to being called with local
+> interrupts disabled.  773e3eb7b81e5ba13b5155dfb3bb75b8ce37f8f9 was
+> just a wrong patch. 
 
-Possibly by moving the clearing of RCU_READ_UNLOCK_NEED_QS to
-rcu_preempt_check_callbacks() -- or to rcu_preempt_qs().  The latter is in
-some sense cleaner, but higher overhead and probably unnecessary.  Hmmm...
-Alternatively, require that all callers to rcu_preempt_qs() disable
-irqs.  This affects only one callsite, which has a local_irq_disable()
-immediately following anyway.  ;-)
+Except that powerpc (and now it seems x86) both want to use radix trees
+for interrupt handling... At least on powerpc, we trick and use a linear
+search until the radix trees are initialized, which we do later during
+boot, but that somewhat sucks.
 
-							Thanx, Paul
+I believe sherry picking things like not calling radix_tree_init() is
+going to fix one case today, until we have another one, and another one,
+and etc...
+
+I suspect we're better off fixing the root of the problem in down/up.
+
+Cheers,
+Ben.
+
+
