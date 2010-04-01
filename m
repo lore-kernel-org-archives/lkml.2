@@ -1,151 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759007Ab0DAXwu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 19:52:50 -0400
-Received: from hera.kernel.org ([140.211.167.34]:48090 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754342Ab0DAXws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 19:52:48 -0400
-Date: Thu, 1 Apr 2010 23:51:41 GMT
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Cc: konrad@kernel.org, pjones@redhat.com, linux-kernel@vger.kernel.org,
-       hpa@zytor.com, mingo@redhat.com, yinghai@kernel.org,
-       penberg@cs.helsinki.fi, jbeulich@novell.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       pjones@redhat.com, konrad@kernel.org, yinghai@kernel.org,
-       penberg@cs.helsinki.fi, jbeulich@novell.com, tglx@linutronix.de
-In-Reply-To: <4BB510FB.80601@kernel.org>
-References: <4BB510FB.80601@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] ibft, x86: Change reserve_ibft_region() to find_ibft_region()
-Message-ID: <tip-042be38e6106ed70b42d096ab4a1ed4187e510e6@git.kernel.org>
-Git-Commit-ID: 042be38e6106ed70b42d096ab4a1ed4187e510e6
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 01 Apr 2010 23:51:43 +0000 (UTC)
+	id S1759020Ab0DAX6X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 19:58:23 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54221 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754342Ab0DAX6T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 19:58:19 -0400
+Date: Thu, 1 Apr 2010 16:57:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Serge E. Hallyn" <serue@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
+       Oren Laadan <orenl@cs.columbia.edu>
+Subject: Re: [C/R v20][PATCH 00/96] Linux Checkpoint-Restart - v20
+Message-Id: <20100401165754.9fe93085.akpm@linux-foundation.org>
+In-Reply-To: <20100401233710.GA23711@us.ibm.com>
+References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
+	<20100401233710.GA23711@us.ibm.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  042be38e6106ed70b42d096ab4a1ed4187e510e6
-Gitweb:     http://git.kernel.org/tip/042be38e6106ed70b42d096ab4a1ed4187e510e6
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Thu, 1 Apr 2010 14:32:43 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Thu, 1 Apr 2010 16:12:48 -0700
+On Thu, 1 Apr 2010 18:37:10 -0500
+"Serge E. Hallyn" <serue@us.ibm.com> wrote:
 
-ibft, x86: Change reserve_ibft_region() to find_ibft_region()
+> Quoting Oren Laadan (orenl@cs.columbia.edu):
+> > Hi Andrew,
+> > 
+> > Following up on the thread on the checkpoint-restart patch set
+> > (http://lkml.org/lkml/2010/3/1/422), the following series is the
+> > latest checkpoint/restart, based on 2.6.33.
+> > 
+> > The first 20 patches are cleanups and prepartion for c/r; they
+> > are followed by the actual c/r code.
+> > 
+> > Please apply to -mm, and let us know if there is any way we can
+> > help.
+> 
+> Hi Andrew,
+> 
+> Oren sent v20 of the checkpoint/restart patchset out two weeks ago.
+> We've addressed some feedback from linux-fsdevel and added network and
+> pid namespace support.  So we could resend again now.  However we also
+> have a bigger patchset in the works which is feature-neutral, but moves
+> all the code out of linux-2.6/checkpoint/ and next to the code it
+> affects.  I ancitipate #ifdef clashes though, so we'll
+> need to do quite a bit of various-config-and-arch testing of the new
+> code layout.  If you're at a good point to pull it, we can resend the
+> code as is now so as to get some wider testing exposure. Or, if you prefer,
+> we can wait until after the code move in case that would be seen as more
+> amenable to meaningful review.
+> 
 
-This allows arch code could decide the way to reserve the ibft.
+I guess the final product would be better.  It sounds like it'll have
+the added benefit of making the various interested parties pay more
+attention, too ;)
 
-And we should reserve ibft as early as possible, instead of BOOTMEM
-stage, in case the table is in RAM range and is not reserved by BIOS
-(this will often be the case.)
-
-Move to just after find_smp_config().
-
-Also when CONFIG_NO_BOOTMEM=y, We will not have reserve_bootmem() anymore.
-
--v2: fix typo about ibft pointed by Konrad Rzeszutek Wilk <konrad@darnok.org>
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-LKML-Reference: <4BB510FB.80601@kernel.org>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Peter Jones <pjones@redhat.com>
-Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>
-CC: Jan Beulich <jbeulich@novell.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/setup.c            |   14 ++++++++++++--
- drivers/firmware/iscsi_ibft_find.c |   11 ++++++++---
- include/linux/iscsi_ibft.h         |    8 ++++++--
- 3 files changed, 26 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index d76e185..580e6b3 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -608,6 +608,16 @@ static int __init setup_elfcorehdr(char *arg)
- early_param("elfcorehdr", setup_elfcorehdr);
- #endif
- 
-+static __init void reserve_ibft_region(void)
-+{
-+	unsigned long addr, size = 0;
-+
-+	addr = find_ibft_region(&size);
-+
-+	if (size)
-+		reserve_early_overlap_ok(addr, addr + size, "ibft");
-+}
-+
- #ifdef CONFIG_X86_RESERVE_LOW_64K
- static int __init dmi_low_memory_corruption(const struct dmi_system_id *d)
- {
-@@ -910,6 +920,8 @@ void __init setup_arch(char **cmdline_p)
- 	 */
- 	find_smp_config();
- 
-+	reserve_ibft_region();
-+
- 	reserve_trampoline_memory();
- 
- #ifdef CONFIG_ACPI_SLEEP
-@@ -977,8 +989,6 @@ void __init setup_arch(char **cmdline_p)
- 
- 	dma32_reserve_bootmem();
- 
--	reserve_ibft_region();
--
- #ifdef CONFIG_KVM_CLOCK
- 	kvmclock_init();
- #endif
-diff --git a/drivers/firmware/iscsi_ibft_find.c b/drivers/firmware/iscsi_ibft_find.c
-index dfb15c0..8f5d9e2 100644
---- a/drivers/firmware/iscsi_ibft_find.c
-+++ b/drivers/firmware/iscsi_ibft_find.c
-@@ -52,7 +52,7 @@ EXPORT_SYMBOL_GPL(ibft_addr);
-  * Routine used to find the iSCSI Boot Format Table. The logical
-  * kernel address is set in the ibft_addr global variable.
-  */
--void __init reserve_ibft_region(void)
-+unsigned long __init find_ibft_region(unsigned long *sizep)
- {
- 	unsigned long pos;
- 	unsigned int len = 0;
-@@ -78,6 +78,11 @@ void __init reserve_ibft_region(void)
- 			}
- 		}
- 	}
--	if (ibft_addr)
--		reserve_bootmem(pos, PAGE_ALIGN(len), BOOTMEM_DEFAULT);
-+	if (ibft_addr) {
-+		*sizep = PAGE_ALIGN(len);
-+		return pos;
-+	}
-+
-+	*sizep = 0;
-+	return 0;
- }
-diff --git a/include/linux/iscsi_ibft.h b/include/linux/iscsi_ibft.h
-index 6092487..d2e4042 100644
---- a/include/linux/iscsi_ibft.h
-+++ b/include/linux/iscsi_ibft.h
-@@ -42,9 +42,13 @@ extern struct ibft_table_header *ibft_addr;
-  * mapped address is set in the ibft_addr variable.
-  */
- #ifdef CONFIG_ISCSI_IBFT_FIND
--extern void __init reserve_ibft_region(void);
-+unsigned long find_ibft_region(unsigned long *sizep);
- #else
--static inline void reserve_ibft_region(void) { }
-+static inline unsigned long find_ibft_region(unsigned long *sizep)
-+{
-+	*sizep = 0;
-+	return 0;
-+}
- #endif
- 
- #endif /* ISCSI_IBFT_H */
