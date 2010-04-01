@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab0DAJQN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 05:16:13 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55837 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754145Ab0DAJQJ (ORCPT
+	id S1754765Ab0DAJQd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 05:16:33 -0400
+Received: from mailout1.uni-giessen.de ([134.176.2.3]:51125 "EHLO
+	merkurneu.hrz.uni-giessen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754740Ab0DAJQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 05:16:09 -0400
-Date: Thu, 1 Apr 2010 10:20:05 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: pavan_savoy@ti.com
-Cc: Greg KH <gregkh@suse.de>, Marcel Holtmann <marcel@holtmann.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers:staging: sources for ST core
-Message-ID: <20100401102005.4fba7cc2@lxorguk.ukuu.org.uk>
-In-Reply-To: <836055.3581.qm@web94915.mail.in2.yahoo.com>
-References: <20100331202442.GC12995@suse.de>
-	<836055.3581.qm@web94915.mail.in2.yahoo.com>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 1 Apr 2010 05:16:24 -0400
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Apr 2010 05:16:24 EDT
+From: Marvin <marvin24@gmx.de>
+To: Borislav Petkov <bp@amd64.org>
+Subject: Re: [PATCH 4/6] cpufreq: Add APERF/MPERF support for AMD processors
+Date: Thu, 1 Apr 2010 11:01:04 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.34-rc3; KDE/4.4.2; x86_64; ; )
+References: <1270065406-1814-1-git-send-email-bp@amd64.org> <1270065406-1814-5-git-send-email-bp@amd64.org>
+In-Reply-To: <1270065406-1814-5-git-send-email-bp@amd64.org>
+Cc: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201004011101.04420.marvin24@gmx.de>
+X-HRZ-JLUG-MailScanner-Information: Passed JLUG virus check
+X-HRZ-JLUG-MailScanner: No virus found
+X-Envelope-From: marvin24@gmx.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +/*
-> + * function to return whether the firmware response was proper
-> + * in case of error don't complete so that waiting for proper
-> + * response times out
-> + */
-> +void validate_firmware_response(struct sk_buff *skb)
-> +{
-> +	if (unlikely(skb->data[5] != 0)) {
-> +		pr_err("no proper response during fw download");
-> +		pr_err("data6 %x", skb->data[5]);
+Hi,
 
-In this driver you do know the device so you need to be using dev_ and
-passing around dev (or something that gives you dev).
+> From: Mark Langsdorf <mark.langsdorf@amd.com>
+> 
+> Starting with model 10 of Family 0x10, AMD processors may have
+> support for APERF/MPERF.  Add support for identifying it and using
+> it within cpufreq.  Move the APERF/MPERF functions out of the
+> acpi-cpufreq code and into their own file so they can easily be
+> shared.
 
-> +static int kim_probe(struct platform_device *pdev)
-> +{
-> +	long status;
-> +	long proto;
-> +	long *gpios = pdev->dev.platform_data;
-> +
-> +	status = st_core_init(&kim_gdata->core_data);
+just out of interest: what are the realnames of these processors (>= Mangy-Core) ?
 
-I would expect any truely global data to be configured in the module init
-and then device specific data you want to do something like this
+> Signed-off-by: Mark Langsdorf <mark.langsdorf@amd.com>
+> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> Reviewed-by: Thomas Renninger <trenn@suse.de>
+> ---
+>  arch/x86/kernel/cpu/cpufreq/Makefile       |    4 +-
+>  arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c |   44 +-----------------------
+>  arch/x86/kernel/cpu/cpufreq/mperf.c        |   50
+> ++++++++++++++++++++++++++++ arch/x86/kernel/cpu/cpufreq/mperf.h        | 
+>   9 +++++
+>  arch/x86/kernel/cpu/cpufreq/powernow-k8.c  |    8 ++++
+>  5 files changed, 71 insertions(+), 44 deletions(-)
+>  create mode 100644 arch/x86/kernel/cpu/cpufreq/mperf.c
 
-	kim_data = kzalloc(sizeof(something), GFP_KERNEL);
+this file has no copyright or module license, thus tainting my kernel...
 
-	..
+>  create mode 100644 arch/x86/kernel/cpu/cpufreq/mperf.h
+> 
 
-	kim_data_init(&pdev->dev, kim_data);
-	dev_set_drvdata(&pdev->dev, kim_data);
-
-Elsewhere you can now do
-
-	kim_data = dev_get_drvdata(&pdev->dev);
-
-to get it back
+Marvin
