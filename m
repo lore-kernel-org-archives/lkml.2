@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758615Ab0DABmj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 21:42:39 -0400
-Received: from mail-qy0-f173.google.com ([209.85.221.173]:62718 "EHLO
-	mail-qy0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758559Ab0DABmi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 21:42:38 -0400
-X-Greylist: delayed 359 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Mar 2010 21:42:38 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=RVeQm75WBLISMXqD1Z+s+bvtiuy4FEH5FNPYsILKtlG69rlvFAO/qbuA2Z4wDrwNFR
-         XXMGKuyNph8n66F41kgjj3vONjrXbHSG5kjpX0R1+GVznDJeqITPjszJHNmaLn/sbtnU
-         GQVg2vqpuIn2AhTDodCNlVY5c/6QcebE2NDu4=
-Date: Wed, 31 Mar 2010 21:36:29 -0400 (EDT)
-From: Parag Warudkar <parag.lkml@gmail.com>
-X-X-Sender: paragw@parag-laptop
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Parag Warudkar <parag.lkml@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: S2RAM broken on HP 8530p
-In-Reply-To: <201004010316.17898.rjw@sisk.pl>
-Message-ID: <alpine.DEB.2.00.1003312136220.1726@parag-laptop>
-References: <alpine.DEB.2.00.1003312050370.1876@parag-laptop> <201004010316.17898.rjw@sisk.pl>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758624Ab0DABnu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 21:43:50 -0400
+Received: from mga01.intel.com ([192.55.52.88]:31445 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758577Ab0DABns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 21:43:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,344,1267430400"; 
+   d="scan'208";a="554011715"
+Subject: Re: [patch] thermal: make lockdep happy
+From: Zhang Rui <rui.zhang@intel.com>
+To: Dan Carpenter <error27@gmail.com>
+Cc: "casteyde.christian@free.fr" <casteyde.christian@free.fr>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Brown, Len" <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>,
+       Frans Pop <elendil@planet.nl>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+In-Reply-To: <20100331170916.GA13784@bicker>
+References: <20100331170916.GA13784@bicker>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Apr 2010 09:44:50 +0800
+Message-ID: <1270086290.24064.4466.camel@rzhang1-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thu, 1 Apr 2010, Rafael J. Wysocki wrote:
-
-> On Thursday 01 April 2010, Parag Warudkar wrote:
-> > 
-> > Running Ubuntu Lucid 64-bit I noticed suspending fails with current git. 
-> > Unsure since when it started - perhaps a while ago since the stock distro 
-> > kernel 2.6.32-18 also fails to suspend - albeit little differently - 
-> > git will fail before shutting off the display, distro one succeeds in 
-> > shutting off the display and then hangs.
-> > 
-> > Any ideas how to go about debugging this? 
+On Thu, 2010-04-01 at 01:09 +0800, Dan Carpenter wrote:
+> Hi Christian,
 > 
-> Please first try to suspend after echoing 0 to /sys/power/pm_async.
+> Can you test this patch?
+> 
+> I wrote this to address bugzilla bug:
+> 	https://bugzilla.kernel.org/show_bug.cgi?id=15504
+> 	BUG: key ffff88004c3811e0 not in .data! occured in lockdep.c
+> 
+> We now have to call sysfs_attr_init() for dynamically allocated sysfs 
+> attributes or lockdep complains.
+> 
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
+Acked-by: Zhang Rui <rui.zhang@intel.com>
 
-No change - hangs the same way as before.
+> 
+> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+> index 5066de5..d4fec47 100644
+> --- a/drivers/thermal/thermal_sys.c
+> +++ b/drivers/thermal/thermal_sys.c
+> @@ -725,6 +725,7 @@ int thermal_zone_bind_cooling_device(struct thermal_zone_device *tz,
+>  		goto release_idr;
+>  
+>  	sprintf(dev->attr_name, "cdev%d_trip_point", dev->id);
+> +	sysfs_attr_init(&dev->attr.attr);
+>  	dev->attr.attr.name = dev->attr_name;
+>  	dev->attr.attr.mode = 0444;
+>  	dev->attr.show = thermal_cooling_device_trip_point_show;
 
-I recall it used to work with prior kernels and so I tried 2.6.31 from 
-kernel.ubuntu.com/~kernel-ppa/
 
-mainline/v2.6.31/ but that fails similarly. 
-
-May be I could try 2.6.30 but from a bisect stand point thats not all that 
-attractive even if we find it works..
-
-Thanks,
-
-Parag
