@@ -1,123 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758894Ab0DAUXu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 16:23:50 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:33313 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752316Ab0DAUXr (ORCPT
+	id S1758907Ab0DAUYE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 16:24:04 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33086 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758896Ab0DAUX6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 16:23:47 -0400
-From: Chase Douglas <chase.douglas@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       kernel-team <kernel-team@lists.ubuntu.com>
-Subject: [REGRESSION 2.6.30][PATCH v2] sched: update load count only once per cpu in 10 tick update window
-Date: Thu,  1 Apr 2010 16:23:41 -0400
-Message-Id: <1270153421-9199-1-git-send-email-chase.douglas@canonical.com>
-X-Mailer: git-send-email 1.7.0
+	Thu, 1 Apr 2010 16:23:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=QHhZF5iHNoVsu60iJZuD/gc2FrdHTzKTCepcepuBcxHqy61lcdJkNlfSt+mmnz4BWo
+         jBqGdUULymYjpUNeRwMgsLTq39MU3f34ldEf2LWsGNnxSRzV4uv6/7LcP60pw8UqoMqh
+         9/dXYWx9gj7BGGXv9YnJ9jH22vgmylQRnkE5w=
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1004011313120.3707@i5.linux-foundation.org>
+References: <alpine.LFD.2.00.1003301029250.3707@i5.linux-foundation.org>
+	 <201003302316.45651.rjw@sisk.pl> <201004010313.32920.rjw@sisk.pl>
+	 <alpine.LFD.2.00.1004010921550.3707@i5.linux-foundation.org>
+	 <o2ma728f9f91004011007l4c3aee18p14daae06cda71e68@mail.gmail.com>
+	 <alpine.LFD.2.00.1004011019270.3707@i5.linux-foundation.org>
+	 <i2ga728f9f91004011053u75097a2n3706f946dfd8f6fb@mail.gmail.com>
+	 <alpine.LFD.2.00.1004011313120.3707@i5.linux-foundation.org>
+Date: Thu, 1 Apr 2010 16:23:56 -0400
+Message-ID: <t2qa728f9f91004011323j1c390b3du38f2e7ee3b9e45a2@mail.gmail.com>
+Subject: Re: [Regression, post-rc2] Commit a5ee4eb7541 breaks OpenGL on RS780 
+	(was: Re: Linux 2.6.34-rc3)
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Linux PCI <linux-pci@vger.kernel.org>,
+       Greg KH <gregkh@suse.de>, Clemens Ladisch <clemens@ladisch.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       dri-devel@lists.sourceforge.net, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A task that often runs for less than 10 ticks at a time is likely to be
-left out of the load avg calculation. It is possible to craft a task
-that is runnable 90% of the time, but sleeps at least once every 10
-ticks. When run on an otherwise idle system, the load avg will remain
-near 0.00, even though the cpu usage is 90%.
+On Thu, Apr 1, 2010 at 4:17 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+>
+> On Thu, 1 Apr 2010, Alex Deucher wrote:
+>>
+>> What I meant to say was MSI works fine on bridges other than the
+>> bridge the internal gfx lives on.  quirk_disable_msi() just disables
+>> MSI on the devices on that particular bridge as far as I understand
+>> it, but I'm by no means an expert on the PCI code.
+>
+> Yes, it disabled MSI only on devices under that bridge. But if it's the
+> northbridge, that would be everything, no?
+>
+> But I don't know what devices those
+>
+>        PCI_VENDOR_ID_AMD, 0x9602,
+>        PCI_VENDOR_ID_ASUSTEK, 0x9602,
+>
+> things are. If they are just a PCIE->PCI bridge rather than the root
+> bridge, then everything looks fine to me.
+>
 
-There's a period of 10 ticks where calc_load_tasks is updated by all the
-cpus for the load avg. Usually all the cpus do this during the first
-tick. If any cpus go idle, calc_load_tasks is decremented accordingly.
-However, if they wake up calc_load_tasks is not incremented. Thus, if
-cpus go idle during the 10 tick period, calc_load_tasks may be
-decremented to a non-representative value. This issue can lead to
-systems having a load avg of exactly 0, even though the real load avg
-could theoretically be up to NR_CPUS.
+Yup, those are just the pci to pci bridges used for the internal gfx.
+Really there's only one, 0x9602, but some asus oem boards have the
+vendor id wrong.
 
-This is a regression since 2.6.30. The offending commit is:
-dce48a84adf1806676319f6f480e30a6daa012f9.
-
-This change defers calc_load_tasks accounting after each cpu updates the
-count until after the 10 tick update window.
-
-A few points:
-
-* A global atomic deferral counter, and not per-cpu vars, is needed
-  because a cpu may go NOHZ idle and not be able to update the global
-  calc_load_tasks variable for subsequent load calculations.
-* It is not enough to add calls to account for the load when a cpu is
-  awakened:
-  - Load avg calculation must be independent of cpu load.
-  - If a cpu is awakend by one tasks, but then has more scheduled before
-    the end of the update window, only the first task will be accounted.
-
-BugLink: http://bugs.launchpad.net/bugs/513848
-
-Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
----
- kernel/sched.c |   24 ++++++++++++++++++++++--
- 1 files changed, 22 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 81ede13..bc5233f 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2967,6 +2967,7 @@ unsigned long nr_iowait(void)
- 
- /* Variables and functions for calc_load */
- static atomic_long_t calc_load_tasks;
-+static atomic_long_t calc_load_tasks_deferred;
- static unsigned long calc_load_update;
- unsigned long avenrun[3];
- EXPORT_SYMBOL(avenrun);
-@@ -3021,7 +3022,7 @@ void calc_global_load(void)
-  */
- static void calc_load_account_active(struct rq *this_rq)
- {
--	long nr_active, delta;
-+	long nr_active, delta, deferred;
- 
- 	nr_active = this_rq->nr_running;
- 	nr_active += (long) this_rq->nr_uninterruptible;
-@@ -3029,6 +3030,25 @@ static void calc_load_account_active(struct rq *this_rq)
- 	if (nr_active != this_rq->calc_load_active) {
- 		delta = nr_active - this_rq->calc_load_active;
- 		this_rq->calc_load_active = nr_active;
-+
-+		/*
-+		 * Update calc_load_tasks only once per cpu in 10 tick update
-+		 * window.
-+		 */
-+		if (unlikely(time_before(jiffies, this_rq->calc_load_update) &&
-+			     time_after_eq(jiffies, calc_load_update))) {
-+			if (delta)
-+				atomic_long_add(delta,
-+						&calc_load_tasks_deferred);
-+			return;
-+		}
-+
-+		if (calc_load_tasks_deferred.counter) {
-+			deferred = atomic_long_xchg(&calc_load_tasks_deferred,
-+						    0);
-+			delta += deferred;
-+		}
-+
- 		atomic_long_add(delta, &calc_load_tasks);
- 	}
- }
-@@ -3072,8 +3092,8 @@ static void update_cpu_load(struct rq *this_rq)
- 	}
- 
- 	if (time_after_eq(jiffies, this_rq->calc_load_update)) {
--		this_rq->calc_load_update += LOAD_FREQ;
- 		calc_load_account_active(this_rq);
-+		this_rq->calc_load_update += LOAD_FREQ;
- 	}
- }
- 
--- 
-1.7.0
-
+>                        Linus
+>
