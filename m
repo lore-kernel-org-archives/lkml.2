@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756387Ab0DAMwR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 08:52:17 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:59789 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756112Ab0DAMwI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 08:52:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [RFC 0/9] BKL conversion in TTY drivers
-Date: Thu, 1 Apr 2010 14:51:59 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-       Ingo Molnar <mingo@elte.hu>
-References: <1269982580-9361-1-git-send-email-arnd@arndb.de> <201003310957.03025.arnd@arndb.de> <20100331110228.2443ccd6@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100331110228.2443ccd6@lxorguk.ukuu.org.uk>
+	id S1756535Ab0DAMw1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 08:52:27 -0400
+Received: from 8bytes.org ([88.198.83.132]:41086 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756112Ab0DAMwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 08:52:20 -0400
+Date: Thu, 1 Apr 2010 14:52:18 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Tom Lyon <pugs@lyon-about.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, mst@redhat.com
+Subject: Re: [PATCH 0/1] uio_pci_generic: extensions to allow access for
+	non-privileged processes
+Message-ID: <20100401125218.GE24846@8bytes.org>
+References: <201003311708.38961.pugs@lyon-about.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004011451.59712.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1+7waWyOXj/sZhhveCJbR+5ptTrMmk1kEvaOgH
- kqVejFYHwgX1LxynrgTGuG7pypxZpxYAW6f7ANOEPtHnyWtBsy
- kUpCyFgsIZQM6wZkkIPgQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201003311708.38961.pugs@lyon-about.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 31 March 2010, Alan Cox wrote:
-> > Are you more worried that the interface conversion (patches 1-8)
-> > can introduce bugs and make your life harder, or that the mutex
-> > based implementation from patch 9 causes problems that were previously
-> > hidden by other bugs?
-> 
-> It doesn't really make any difference to me - I'm either removing the BKL
-> or the BKM.
+On Wed, Mar 31, 2010 at 05:08:38PM -0700, Tom Lyon wrote:
+> uio_pci_generic has previously been discussed on the KVM list, but this patch 
+> has nothing to do with KVM, so it is also going to LKML.
 
-Ok, great! 
+But since you send it to the KVM list it should be suitable for KVM too,
+no?
 
-Greg, are you ok with merging these TTY patches in your tree for 2.6.35
-then? There will be at least one more respin of it for minor changes
-and anything that comes up during testing, but it's essentially what I
-posted here.
+> The point of this patch is to beef up the uio_pci_generic driver so that a 
+> non-privileged user process can run a user level driver for most PCIe 
+> devices. This can only be safe if there is an IOMMU in the system with 
+> per-device domains.  Privileged users (CAP_SYS_RAWIO) are allowed if there is 
+> no IOMMU.
 
-	Arnd
+If you rely on an IOMMU you can use the IOMMU-API instead of the DMA-API
+for dma mappings. This change makes this driver suitable for KVM use
+too. If the interface is designed clever enough we can even use it for
+IOMMU emulation for pass-through devices.
+
+	Joerg
+
