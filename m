@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757290Ab0DAPzf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 11:55:35 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:39710 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757052Ab0DAPz1 (ORCPT
+	id S1757203Ab0DAP4R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 11:56:17 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:57509 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757049Ab0DAP4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 11:55:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=B5e2V+2HJc3oFBFKThJsS1xt6RadzhH5co7eU33VDqalzEh0e/4fISKnZiGSy7HuoX
-         Cluh6SxCjFt0VJKqFM3tMeOAz+z6XtDhnNyI8iSSxanNZuq642Ci+1Ju48JevkbIVzqC
-         ECxjK7PrsHAjLD95Apzd3Hadl+feaMgRUNAuI=
-Date: Thu, 1 Apr 2010 18:55:16 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Miroslav Zagorac <zaga@fly.cc.fer.hr>
-Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
-       Adam Buchbinder <adam.buchbinder@gmail.com>,
-       Jiri Kosina <jkosina@suse.cz>, jgarzik@pobox.com,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [patch] wd7000: typo spin_unlock_irq() => spin_lock_irq()
-Message-ID: <20100401155516.GF5265@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Miroslav Zagorac <zaga@fly.cc.fer.hr>,
-	"James E.J. Bottomley" <James.Bottomley@suse.de>,
-	Adam Buchbinder <adam.buchbinder@gmail.com>,
-	Jiri Kosina <jkosina@suse.cz>, jgarzik@pobox.com,
-	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 1 Apr 2010 11:56:07 -0400
+Subject: Re: [COUNTERPATCH] mm: avoid overflowing preempt_count() in
+ mmu_take_all_locks()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, Kent Overstreet <kent.overstreet@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1270137002.1598.65.camel@laptop>
+References: <1270117906.1653.139.camel@laptop>
+	 <alpine.LFD.2.00.1004011300550.32352@localhost.localdomain>
+	 <4BB47FC3.1020606@redhat.com> <4BB480CC.2060503@redhat.com>
+	 <1270121264.1653.205.camel@laptop> <1270122194.1653.223.camel@laptop>
+	 <20100401154249.GQ5825@random.random>  <1270137002.1598.65.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Apr 2010 17:56:02 +0200
+Message-ID: <1270137362.1598.77.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was introduced back in 2005 at the very start of the git era by:
-	df0ae2497ddefd72a87f3a3b34ff32455d7d4ae0
-	[SCSI] allow sleeping in ->eh_host_reset_handler()
+On Thu, 2010-04-01 at 17:50 +0200, Peter Zijlstra wrote:
+> On Thu, 2010-04-01 at 17:42 +0200, Andrea Arcangeli wrote:
+> > On Thu, Apr 01, 2010 at 01:43:14PM +0200, Peter Zijlstra wrote:
+> > > On Thu, 2010-04-01 at 13:27 +0200, Peter Zijlstra wrote:
+> > > > 
+> > > > I've almost got a patch done that converts those two, still need to look
+> > > > where that tasklist_lock muck happens.
+> > > 
+> > > OK, so the below builds and boots, only need to track down that
+> > > tasklist_lock nesting, but I got to run an errand first.
+> > 
+> > You should have a look at my old patchset where Christoph already
+> > implemented this (and not for decreasing latency but to allow
+> > scheduling in mmu notifier handlers, only needed by XPMEM):
+> > 
+> > http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.26-rc7/mmu-notifier-v18/
+> > 
+> > The ugliest part of it (that I think you missed below) is the breakage
+> > of the RCU locking in the anon-vma which requires adding refcounting
+> > to it. That was the worst part of the conversion as far as I can tell.
+> > 
+> > http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.26-rc7/mmu-notifier-v18/anon-vma
+> > 
+> > I personally prefer read-write locks that Christoph used for both of
+> > them, but I'm not against mutex either. Still the refcounting problem
+> > should be the same as it's introduced by allowing the critical
+> > sections under anon_vma->lock to schedule (no matter if it's mutex or
+> > read-write sem).
+> 
+> Right, so the problem with the rwsem is that, esp for very short hold
+> times, they introduce more pain than they're worth. Also the rwsem
+> doesn't do adaptive spinning nor allows for lock stealing, resulting in
+> a much much heavier sync. object than the mutex is.
+> 
+> You also seem to move the tlb_gather stuff around, we have patches in
+> -rt that make tlb_gather preemptible, once i_mmap_lock is preemptible we
+> can do in mainline too.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
----
-Also this driver was written before some of our youngest kernel hackers
-were born.  Neat.  :)
+Another thing is mm->nr_ptes, that doens't appear to be properly
+serialized, __pte_alloc() does ++ under mm->page_table_lock, but
+free_pte_range() does -- which afaict isn't always with page_table_lock
+held, it does however always seem to have mmap_sem for writing.
 
-diff --git a/drivers/scsi/wd7000.c b/drivers/scsi/wd7000.c
-index 2f6e9d8..bdfe59d 100644
---- a/drivers/scsi/wd7000.c
-+++ b/drivers/scsi/wd7000.c
-@@ -1588,7 +1588,7 @@ static int wd7000_host_reset(struct scsi_cmnd *SCpnt)
- {
- 	Adapter *host = (Adapter *) SCpnt->device->host->hostdata;
- 
--	spin_unlock_irq(SCpnt->device->host->host_lock);
-+	spin_lock_irq(SCpnt->device->host->host_lock);
- 
- 	if (wd7000_adapter_reset(host) < 0) {
- 		spin_unlock_irq(SCpnt->device->host->host_lock);
+However __pte_alloc() callers do not in fact hold mmap_sem for writing.
+
+
+
