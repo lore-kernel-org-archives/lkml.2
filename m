@@ -1,38 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758537Ab0DABNG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 21:13:06 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:46355 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758315Ab0DABND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 21:13:03 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Parag Warudkar <parag.lkml@gmail.com>
-Subject: Re: S2RAM broken on HP 8530p
-Date: Thu, 1 Apr 2010 03:16:17 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <alpine.DEB.2.00.1003312050370.1876@parag-laptop>
-In-Reply-To: <alpine.DEB.2.00.1003312050370.1876@parag-laptop>
+	id S1758550Ab0DABNe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 21:13:34 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:47587 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758137Ab0DABNc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 21:13:32 -0400
+Date: Wed, 31 Mar 2010 21:13:11 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Chris Wright <chrisw@sous-sol.org>
+Cc: iommu@lists.linux-foundation.org, joerg.roedel@amd.com, vgoyal@redhat.com,
+       hbabu@us.ibm.com, kexec@lists.infradead.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] amd iommu: force flush of iommu prior during shutdown
+Message-ID: <20100401011311.GC2069@localhost.localdomain>
+References: <20100331152417.GB13406@hmsreliant.think-freely.org>
+ <20100331212535.GR29241@sequoia.sous-sol.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004010316.17898.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100331212535.GR29241@sequoia.sous-sol.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 April 2010, Parag Warudkar wrote:
+On Wed, Mar 31, 2010 at 02:25:35PM -0700, Chris Wright wrote:
+> * Neil Horman (nhorman@tuxdriver.com) wrote:
+> > Flush iommu during shutdown
+> > 
+> > When using an iommu, its possible, if a kdump kernel boot follows a primary
+> > kernel crash, that dma operations might still be in flight from the previous
+> > kernel during the kdump kernel boot.  This can lead to memory corruption,
+> > crashes, and other erroneous behavior, specifically I've seen it manifest during
+> > a kdump boot as endless iommu error log entries of the form:
+> > AMD-Vi: Event logged [IO_PAGE_FAULT device=00:14.1 domain=0x000d
+> > address=0x000000000245a0c0 flags=0x0070]
 > 
-> Running Ubuntu Lucid 64-bit I noticed suspending fails with current git. 
-> Unsure since when it started - perhaps a while ago since the stock distro 
-> kernel 2.6.32-18 also fails to suspend - albeit little differently - 
-> git will fail before shutting off the display, distro one succeeds in 
-> shutting off the display and then hangs.
+> We've already fixed this problem once before, so some code shift must
+> have brought it back.  Personally, I prefer to do this on the bringup
+> path than the teardown path.  Besides keeping the teardown path as
+> simple as possible (goal is to get to kdump kernel asap), there's also
+> reason to competely flush on startup in genernal in case BIOS has done
+> anything unsavory.
 > 
-> Any ideas how to go about debugging this? 
+Chris,
+	Can you elaborate on what you did with the iommu to make this safe?  It
+will save me time digging through the history on this code, and help me
+understand better whats going on here.
 
-Please first try to suspend after echoing 0 to /sys/power/pm_async.
+I was starting to think that we should just leave the iommu on through a kdump,
+and re-construct a new page table based on the old table (filtered by the error
+log) on kdump boot, but it sounds like a better solution might be in place.
 
-Rafael
+Thanks
+Neil
+
+> thanks,
+> -chris
+> 
