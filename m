@@ -1,34 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758336Ab0DAQkd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:40:33 -0400
+	id S1757893Ab0DAQky (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:40:54 -0400
 Received: from mx1.redhat.com ([209.132.183.28]:64426 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758585Ab0DAQkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757943Ab0DAQkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 1 Apr 2010 12:40:16 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1270104536.7101.114.camel@pasglop>
-References: <1270104536.7101.114.camel@pasglop> <20100325194100.GA2364@debian> <20100331134048.da4e35a7.akpm@linux-foundation.org> <4BB3B4DB.7040904@kernel.org> <20100331210145.GB32165@parisc-linux.org> <4BB3B8FC.1020608@zytor.com> <20100331211754.GC32165@parisc-linux.org> <alpine.DEB.2.00.1003311640410.30456@router.home> <20100331215411.GB17715@flint.arm.linux.org.uk> <4BB3C540.9000405@zytor.com> <1270075071.7101.79.camel@pasglop> <20100331154955.54176e5e.akpm@linux-foundation.org> <1270084631.7101.81.camel@pasglop> <20100331182654.d36c87ff.akpm@linux-foundation.org> <4BB43CAC.3080102@zytor.com> <20100331233330.1a7357e4.akpm@linux-foundation.org> 
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: dhowells@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Matthew Wilcox <matthew@wil.cx>, Yinghai Lu <yinghai@kernel.org>,
-       Rabin Vincent <rabin@rab.in>, lkml <linux-kernel@vger.kernel.org>,
-       penberg@cs.helsinki.fi, linux-arch@vger.kernel.org
-Subject: Re: start_kernel(): bug: interrupts were enabled early
-Date: Thu, 01 Apr 2010 12:06:10 +0100
-Message-ID: <31829.1270119970@redhat.com>
+Message-ID: <4BB48127.9040709@redhat.com>
+Date: Thu, 01 Apr 2010 14:19:03 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       linux-kernel@vger.kernel.org, aarcange@redhat.com,
+       akpm@linux-foundation.org, Kent Overstreet <kent.overstreet@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: [COUNTERPATCH] mm: avoid overflowing preempt_count() in mmu_take_all_locks()
+References: <1270117906.1653.139.camel@laptop>	 <alpine.LFD.2.00.1004011300550.32352@localhost.localdomain>	 <4BB47FC3.1020606@redhat.com> <1270120592.1653.192.camel@laptop>
+In-Reply-To: <1270120592.1653.192.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/01/2010 02:16 PM, Peter Zijlstra wrote:
+> On Thu, 2010-04-01 at 14:13 +0300, Avi Kivity wrote:
+>
+>    
+>> If someone is willing to audit all code paths to make sure these locks
+>> are always taken in schedulable context I agree that's a better fix.
+>>      
+> They had better be, they're not irq-safe. Also that's what lockdep is
+> for.
+>    
 
-Can we provide a kmem_cache_create_early()?  One that takes no locks and gets
-cleaned up with the other __init stuff?
+I don't understand.  There are non-schedulable contexts (i.e. with a 
+spinlock held) that are not irq contexts.
 
-David
+-- 
+error compiling committee.c: too many arguments to function
+
