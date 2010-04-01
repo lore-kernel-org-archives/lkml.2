@@ -1,146 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758583Ab0DACnU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 22:43:20 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:41112 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752882Ab0DACnT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 22:43:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=xBv45LLgEumTfzGuuUYznK8s2NVPfuKHqnTFlb4xd+zJ06hOepL0nzHYYUhwUldGRx
-         h2PDmx4krJ+teMxCuEsFxD+VT2zmzCC8ElfcDQm3zovjaxtLoqyCFLXFHGIg4dBb06QE
-         T8EknOmaruIeXRn1c8fODy9SpqBSaBGRbEZVU=
+	id S1758003Ab0DACos (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 22:44:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23692 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752539Ab0DACor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 22:44:47 -0400
+Date: Wed, 31 Mar 2010 22:44:21 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Chris Wright <chrisw@sous-sol.org>
+Cc: Neil Horman <nhorman@tuxdriver.com>, iommu@lists.linux-foundation.org,
+       joerg.roedel@amd.com, hbabu@us.ibm.com, kexec@lists.infradead.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] amd iommu: force flush of iommu prior during shutdown
+Message-ID: <20100401024421.GA5877@redhat.com>
+References: <20100331152417.GB13406@hmsreliant.think-freely.org> <20100331212535.GR29241@sequoia.sous-sol.org>
 MIME-Version: 1.0
-In-Reply-To: <20100331142623.62ac9175.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1269940489-5776-1-git-send-email-mel@csn.ul.ie>
-	 <1269940489-5776-15-git-send-email-mel@csn.ul.ie>
-	 <20100331142623.62ac9175.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 1 Apr 2010 11:43:18 +0900
-Message-ID: <j2s28c262361003311943ke6d39007of3861743cef3733a@mail.gmail.com>
-Subject: Re: [PATCH 14/14] mm,migration: Allow the migration of PageSwapCache 
-	pages
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100331212535.GR29241@sequoia.sous-sol.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 2:26 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Tue, 30 Mar 2010 10:14:49 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
->
->> PageAnon pages that are unmapped may or may not have an anon_vma so
->> are not currently migrated. However, a swap cache page can be migrated
->> and fits this description. This patch identifies page swap caches and
->> allows them to be migrated.
->>
->
-> Some comments.
->
->> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
->> ---
->>  mm/migrate.c |   15 ++++++++++-----
->>  mm/rmap.c    |    6 ++++--
->>  2 files changed, 14 insertions(+), 7 deletions(-)
->>
->> diff --git a/mm/migrate.c b/mm/migrate.c
->> index 35aad2a..f9bf37e 100644
->> --- a/mm/migrate.c
->> +++ b/mm/migrate.c
->> @@ -203,6 +203,9 @@ static int migrate_page_move_mapping(struct address_space *mapping,
->>       void **pslot;
->>
->>       if (!mapping) {
->> +             if (PageSwapCache(page))
->> +                     SetPageSwapCache(newpage);
->> +
->
-> Migration of SwapCache requires radix-tree replacement, IOW,
->  mapping == NULL && PageSwapCache is BUG.
->
-> So, this never happens.
->
->
->>               /* Anonymous page without mapping */
->>               if (page_count(page) != 1)
->>                       return -EAGAIN;
->> @@ -607,11 +610,13 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
->>                * the page was isolated and when we reached here while
->>                * the RCU lock was not held
->>                */
->> -             if (!page_mapped(page))
->> -                     goto rcu_unlock;
->> -
->> -             anon_vma = page_anon_vma(page);
->> -             atomic_inc(&anon_vma->external_refcount);
->> +             if (!page_mapped(page)) {
->> +                     if (!PageSwapCache(page))
->> +                             goto rcu_unlock;
->> +             } else {
->> +                     anon_vma = page_anon_vma(page);
->> +                     atomic_inc(&anon_vma->external_refcount);
->> +             }
->>       }
->>
->>       /*
->> diff --git a/mm/rmap.c b/mm/rmap.c
->> index af35b75..d5ea1f2 100644
->> --- a/mm/rmap.c
->> +++ b/mm/rmap.c
->> @@ -1394,9 +1394,11 @@ int rmap_walk(struct page *page, int (*rmap_one)(struct page *,
->>
->>       if (unlikely(PageKsm(page)))
->>               return rmap_walk_ksm(page, rmap_one, arg);
->> -     else if (PageAnon(page))
->> +     else if (PageAnon(page)) {
->> +             if (PageSwapCache(page))
->> +                     return SWAP_AGAIN;
->>               return rmap_walk_anon(page, rmap_one, arg);
->
-> SwapCache has a condition as (PageSwapCache(page) && page_mapped(page) == true.
->
+On Wed, Mar 31, 2010 at 02:25:35PM -0700, Chris Wright wrote:
+> * Neil Horman (nhorman@tuxdriver.com) wrote:
+> > Flush iommu during shutdown
+> > 
+> > When using an iommu, its possible, if a kdump kernel boot follows a primary
+> > kernel crash, that dma operations might still be in flight from the previous
+> > kernel during the kdump kernel boot.  This can lead to memory corruption,
+> > crashes, and other erroneous behavior, specifically I've seen it manifest during
+> > a kdump boot as endless iommu error log entries of the form:
+> > AMD-Vi: Event logged [IO_PAGE_FAULT device=00:14.1 domain=0x000d
+> > address=0x000000000245a0c0 flags=0x0070]
+> 
+> We've already fixed this problem once before, so some code shift must
+> have brought it back.  Personally, I prefer to do this on the bringup
+> path than the teardown path.  Besides keeping the teardown path as
+> simple as possible (goal is to get to kdump kernel asap), there's also
+> reason to competely flush on startup in genernal in case BIOS has done
+> anything unsavory.
 
-In case of tmpfs, page has swapcache but not mapped.
+Can we flush domains (all the I/O TLBs assciated with each domain), during
+initialization? I think all the domain data built by previous kernel will
+be lost and new kernel will have no idea about. 
 
-> Please see do_swap_page(), PageSwapCache bit is cleared only when
->
-> do_swap_page()...
->       swap_free(entry);
->        if (vm_swap_full() || (vma->vm_flags & VM_LOCKED) || PageMlocked(page))
->                try_to_free_swap(page);
->
-> Then, PageSwapCache is cleared only when swap is freeable even if mapped.
->
-> rmap_walk_anon() should be called and the check is not necessary.
-
-Frankly speaking, I don't understand what is Mel's problem, why he added
-Swapcache check in rmap_walk, and why do you said we don't need it.
-
-Could you explain more detail if you don't mind?
-
->
-> Thanks,
-> -Kame
->
->
-
-
-
--- 
-Kind regards,
-Minchan Kim
+Thanks
+Vivek
