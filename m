@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584Ab0DADUd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 23:20:33 -0400
-Received: from waste.org ([173.11.57.241]:36843 "EHLO waste.org"
+	id S1751833Ab0DADVL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 23:21:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52357 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751286Ab0DADU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 23:20:28 -0400
-Subject: Re: [PATCH] proc: pagemap: Hold mmap_sem during page walk
-From: Matt Mackall <mpm@selenic.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: San Mehat <san@google.com>, linux-kernel@vger.kernel.org,
-       Brian Swetland <swetland@google.com>, Dave Hansen <haveblue@us.ibm.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1003311754110.3707@i5.linux-foundation.org>
-References: <1270056227-5442-1-git-send-email-san@google.com>
-	 <alpine.LFD.2.00.1003311036200.3707@i5.linux-foundation.org>
-	 <1270071636.3552.978.camel@calx>
-	 <alpine.LFD.2.00.1003311754110.3707@i5.linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 31 Mar 2010 22:20:23 -0500
-Message-ID: <1270092024.3552.1054.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1751239Ab0DADVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 23:21:04 -0400
+X-User-Agent: K-9 Mail for Android
+Content-Type: multipart/mixed; boundary="----GDKM6PFUURDMG868R5LT95HMQPLN3G"
+MIME-Version: 1.0
+Subject: Re: Config NO_BOOTMEM breaks my amd64 box
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 31 Mar 2010 20:16:05 -0700
+To: James Morris <jmorris@namei.org>
+CC: Ingo Molnar <mingo@elte.hu>, Yinghai Lu <yinghai@kernel.org>,
+       linux-kernel@vger.kernel.org, airlied@linux.ie,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>
+Message-ID: <95092268-54c9-4e22-8ccf-8f3f1eb266d0@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-31 at 18:33 -0700, Linus Torvalds wrote:
-> 
-> On Wed, 31 Mar 2010, Matt Mackall wrote:
-> >
-> > Linus, I must say your charm has really worn thin. I've just stuck a
-> > post-it on my monitor saying "don't be Linus" to remind me not to be
-> > rude to my contributors. 
-> 
-> You didn't actually answer the problem, though.
-> 
-> I'm rude, because I think the code is buggy.
+------GDKM6PFUURDMG868R5LT95HMQPLN3G
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: base64
 
-And what does that achieve? I've got plenty of other work I could be
-doing where people are nice to me when asking me to fix bugs.
+T0suLi4gSSB0aGluayBJJ20gZ29pbmcgdG8gd3JpdGUgdGhpcyB1cCBhcyB1bmNvbmZpcm1lZC4u
+LiB3aGljaCBtZWFucyB0aGUgb25seSBrbm93biBwcm9ibGVtIHRoYXQgd2FzIG5vdCBhZGRyZXNz
+ZWQgaW4gcmMzIGlzIHRoZSAzMi1iaXQgTlVNQSBpc3N1ZSwgd2hpY2ggd2UgaGF2ZSBhIGJ1ZyBm
+b3IuCgpMaW51czogZG9lcyB0aGlzIGFkZHJlc3MgeW91ciBjb25jZXJucyBmb3Igbm93LCBvciBk
+byB5b3Ugc3RpbGwgd2FudCB1cyB0byByZXZlcnQ/CgoiSmFtZXMgTW9ycmlzIiA8am1vcnJpc0Bu
+YW1laS5vcmc+IHdyb3RlOgoKPk9uIFdlZCwgMzEgTWFyIDIwMTAsIEguIFBldGVyIEFudmluIHdy
+b3RlOg0KPg0KPj4gT24gMDMvMzEvMjAxMCAwNDo0MyBQTSwgSmFtZXMgTW9ycmlzIHdyb3RlOg0K
+Pj4gPj4NCj4+ID4+IFVwZ3JhZGVkIGhvdz8gIFRoZSBwcm9ibGVtIG5vIGxvbmdlciBoYXBwZW5z
+Pw0KPj4gPiANCj4+ID4gVXBncmFkZWQgdG8gdGhlIGxhdGVzdCByYXdoaWRlIHVzZXJsYW5kIC0t
+IEkgaGF2ZSBub3Qgc2luY2UgdGVzdGVkIHdpdGggDQo+PiA+IGJvb3RtZW0gb2ZmLiAgSSdsbCB0
+cnkgYW5kIGRvIHNvIGFnYWluIHdoZW4gSSBnZXQgYSBjaGFuY2UuDQo+PiA+IA0KPj4gDQo+PiBU
+aGF0IHdvdWxkIGJlIGdyZWF0LiAgVGhlIHNvb25lciB0aGUgYmV0dGVyLCBvYnZpb3VzbHkuDQo+
+DQo+SSdtIG5vdCBzZWVpbmcgYW55IHByb2JsZW1zIG5vdywgd2l0aCBjdXJyZW50IExpbnVzIGFu
+ZCByYXdoaWRlLiAgSSdsbCANCj5sZWF2ZSBib290bWVtIG9mZiBhbmQgc2VlIGlmIGFueXRoaW5n
+IGNvbWVzIHVwIGFnYWluLg0KPg0KPg0KPi0tIA0KPkphbWVzIE1vcnJpcw0KPjxqbW9ycmlzQG5h
+bWVpLm9yZz4NCgotLQpTZW50IGZyb20gbXkgbW9iaWxlIHBob25lLCBwYXJkb24gYW55IGxhY2sg
+b2YgZm9ybWF0dGluZy4=
 
-> I pointed out how, and why I 
-> think it's pretty fundamental. You quoted it, but you didn't answer it.
-
-Yes, I was muddling the distinction between pinned in page cache and
-pinned in the mm, and you've just now re-clarified it for me. So I'll
-agree the current code is bogus.
-
-> So Matt, please actually address the _bug_ I pointed out rather than talk 
-> about other things. And yes, getting rid of the vma accesses sounds like 
-> it would fix it best. If that means that it doesn't work for hugepages, so 
-> be it.
-
-That'd actually take us back to where it was when it hit mainline, which
-would make a lot of people unhappy. I wouldn't be one of them as there
-thankfully aren't any huge pages in my world. But I'm convinced
-put_user() must go. In which case, get_user_pages() stays, and I've got
-to switch things to direct physical page access into that array. 
-
-Even if I fix that, I believe San's original bug can still be triggered
-though, as all the new callers to find_vma are run outside of the
-target's mm_sem. Fixing that should be reasonably straight-forward.
-
--- 
-http://selenic.com : development and support for Mercurial and Linux
-
+------GDKM6PFUURDMG868R5LT95HMQPLN3G--
 
