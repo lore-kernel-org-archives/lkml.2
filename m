@@ -1,216 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab0DAGiY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 02:38:24 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:32872 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753615Ab0DAGiR (ORCPT
+	id S1752296Ab0DAGt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 02:49:26 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:40623 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559Ab0DAGtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 02:38:17 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 1 Apr 2010 15:34:28 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Matt Mackall <mpm@selenic.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       San Mehat <san@google.com>, linux-kernel@vger.kernel.org,
-       Brian Swetland <swetland@google.com>, Dave Hansen <haveblue@us.ibm.com>,
-       Andrew Morton <akpm@linux-foundation.org>, n-horiguchi@ah.jp.nec.com
-Subject: Re: [PATCH] proc: pagemap: Hold mmap_sem during page walk
-Message-Id: <20100401153428.d49c6345.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100401150956.4f6821c2.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100401144329.BE42.A69D9226@jp.fujitsu.com>
-	<20100401145509.47f7f1c3.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100401150128.BE45.A69D9226@jp.fujitsu.com>
-	<20100401150956.4f6821c2.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 1 Apr 2010 02:49:20 -0400
+Message-ID: <4BB441EA.2050204@monstr.eu>
+Date: Thu, 01 Apr 2010 08:49:14 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+       John Williams <john.williams@petalogix.com>
+Subject: [GIT PULL] arch/microblaze fixes for 2.6.34-rc4
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Apr 2010 15:09:56 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+Hi Linus,
 
->
-> +		pm.pos = 0;
-> +		start_vaddr += PAGEMAP_WALK_SIZE;
-> +		end = start_vaddr + PAGEMAP_WALK_SIZE;
+please pull the following changes.
 
-Sigh...this is bad..
+Thanks,
+Michal
 
-==
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-In initial design, walk_page_range() was designed just for walking page table and
-it didn't require mmap_sem. Now, find_vma() etc.. are used in walk_page_range()
-and we need mmap_sem around it.
 
-This patch adds mmap_sem around walk_page_range().
+The following changes since commit 2eaa9cfdf33b8d7fb7aff27792192e0019ae8fc6:
+   Linus Torvalds (1):
+         Linux 2.6.34-rc3
 
-Because /proc/<pid>/pagemap's callback routine use put_user(), we have to get
-rid of it to do sane fix.
+are available in the git repository at:
 
-Changelog:
- - fixed start_vaddr calculation
- - removed unnecessary cast.
- - removed unnecessary change in smaps.
- - use GFP_TEMPORARY instead of GFP_KERNEL
- - use min().
+   git://git.monstr.eu/linux-2.6-microblaze.git for-linus
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- fs/proc/task_mmu.c |   84 +++++++++++++++++++++--------------------------------
- 1 file changed, 34 insertions(+), 50 deletions(-)
+Arun Bhanu (3):
+       microblaze: Add a missing single quote to make 'make help' happy
+       microblaze: Fix Makefile to delete build generated files
+       microblaze: Makefile cleanups
 
-Index: linux-2.6.34-rc3/fs/proc/task_mmu.c
-===================================================================
---- linux-2.6.34-rc3.orig/fs/proc/task_mmu.c
-+++ linux-2.6.34-rc3/fs/proc/task_mmu.c
-@@ -406,6 +406,7 @@ static int show_smap(struct seq_file *m,
- 
- 	memset(&mss, 0, sizeof mss);
- 	mss.vma = vma;
-+	/* mmap_sem is held in m_start */
- 	if (vma->vm_mm && !is_vm_hugetlb_page(vma))
- 		walk_page_range(vma->vm_start, vma->vm_end, &smaps_walk);
- 
-@@ -552,7 +553,8 @@ const struct file_operations proc_clear_
- };
- 
- struct pagemapread {
--	u64 __user *out, *end;
-+	int pos, len;
-+	u64 *buffer;
- };
- 
- #define PM_ENTRY_BYTES      sizeof(u64)
-@@ -575,10 +577,8 @@ struct pagemapread {
- static int add_to_pagemap(unsigned long addr, u64 pfn,
- 			  struct pagemapread *pm)
- {
--	if (put_user(pfn, pm->out))
--		return -EFAULT;
--	pm->out++;
--	if (pm->out >= pm->end)
-+	pm->buffer[pm->pos++] = pfn;
-+	if (pm->pos >= pm->len)
- 		return PM_END_OF_BUFFER;
- 	return 0;
- }
-@@ -720,21 +720,20 @@ static int pagemap_hugetlb_range(pte_t *
-  * determine which areas of memory are actually mapped and llseek to
-  * skip over unmapped regions.
-  */
-+#define PAGEMAP_WALK_SIZE	(PMD_SIZE)
- static ssize_t pagemap_read(struct file *file, char __user *buf,
- 			    size_t count, loff_t *ppos)
- {
- 	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
--	struct page **pages, *page;
--	unsigned long uaddr, uend;
- 	struct mm_struct *mm;
- 	struct pagemapread pm;
--	int pagecount;
- 	int ret = -ESRCH;
- 	struct mm_walk pagemap_walk = {};
- 	unsigned long src;
- 	unsigned long svpfn;
- 	unsigned long start_vaddr;
- 	unsigned long end_vaddr;
-+	int copied = 0;
- 
- 	if (!task)
- 		goto out;
-@@ -757,35 +756,11 @@ static ssize_t pagemap_read(struct file 
- 	if (!mm)
- 		goto out_task;
- 
--
--	uaddr = (unsigned long)buf & PAGE_MASK;
--	uend = (unsigned long)(buf + count);
--	pagecount = (PAGE_ALIGN(uend) - uaddr) / PAGE_SIZE;
--	ret = 0;
--	if (pagecount == 0)
--		goto out_mm;
--	pages = kcalloc(pagecount, sizeof(struct page *), GFP_KERNEL);
--	ret = -ENOMEM;
--	if (!pages)
-+	pm.len = PM_ENTRY_BYTES * (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
-+	pm.buffer = kmalloc(pm.len, GFP_TEMPORARY);
-+	if (!pm.buffer)
- 		goto out_mm;
- 
--	down_read(&current->mm->mmap_sem);
--	ret = get_user_pages(current, current->mm, uaddr, pagecount,
--			     1, 0, pages, NULL);
--	up_read(&current->mm->mmap_sem);
--
--	if (ret < 0)
--		goto out_free;
--
--	if (ret != pagecount) {
--		pagecount = ret;
--		ret = -EFAULT;
--		goto out_pages;
--	}
--
--	pm.out = (u64 __user *)buf;
--	pm.end = (u64 __user *)(buf + count);
--
- 	pagemap_walk.pmd_entry = pagemap_pte_range;
- 	pagemap_walk.pte_hole = pagemap_pte_hole;
- 	pagemap_walk.hugetlb_entry = pagemap_hugetlb_range;
-@@ -807,23 +782,32 @@ static ssize_t pagemap_read(struct file 
- 	 * user buffer is tracked in "pm", and the walk
- 	 * will stop when we hit the end of the buffer.
- 	 */
--	ret = walk_page_range(start_vaddr, end_vaddr, &pagemap_walk);
--	if (ret == PM_END_OF_BUFFER)
--		ret = 0;
--	/* don't need mmap_sem for these, but this looks cleaner */
--	*ppos += (char __user *)pm.out - buf;
--	if (!ret)
--		ret = (char __user *)pm.out - buf;
--
--out_pages:
--	for (; pagecount; pagecount--) {
--		page = pages[pagecount-1];
--		if (!PageReserved(page))
--			SetPageDirty(page);
--		page_cache_release(page);
-+	while (count && (start_vaddr < end_vaddr)) {
-+		int len;
-+		unsigned long end;
-+
-+		pm.pos = 0;
-+		end = min(start_vaddr + PAGEMAP_WALK_SIZE, end_vaddr);
-+		down_read(&mm->mmap_sem);
-+		ret = walk_page_range(start_vaddr, end, &pagemap_walk);
-+		up_read(&mm->mmap_sem);
-+		start_vaddr += PAGEMAP_WALK_SIZE;
-+
-+		len = min(count, PM_ENTRY_BYTES * pm.pos);
-+		if (copy_to_user(buf, pm.buffer, len) < 0) {
-+			ret = -EFAULT;
-+			goto out_free;
-+		}
-+		copied += len;
-+		buf += len;
-+		count -= len;
- 	}
-+	*ppos += copied;
-+	if (!ret || ret == PM_END_OF_BUFFER)
-+		ret = copied;
-+
- out_free:
--	kfree(pages);
-+	kfree(pm.buffer);
- out_mm:
- 	mmput(mm);
- out_task:
+Michal Simek (31):
+       microblaze: Remove memset in free_init_pages
+       microblaze: Remove segment.h
+       microblaze: Move exception_table_entry upward
+       microblaze: move noMMU __range_ok function to uaccess.h
+       microblaze: uaccess: fix clean user macro
+       microblaze: uaccess: fix __get_user_asm macro
+       microblaze: uaccess: fix put_user and get_user macros
+       microblaze: uaccess: sync put/get/clear_user macros
+       microblaze: uaccess: copy_to_user unification
+       microblaze: uaccess: fix copy_from_user macro
+       microblaze: uaccess: Fix strncpy_from_user function
+       microblaze: uaccess: fix clear_user for noMMU kernel
+       microblaze: uaccess: Fix get_user macro for noMMU
+       microblaze: uaccess: Fix put_user for noMMU
+       microblaze: uaccess: Move functions to generic location
+       microblaze: uaccess: Unify __copy_tofrom_user
+       microblaze: uaccess: Sync strlen, strnlen, copy_to/from_user
+       microblaze: Support systems without lmb bram
+       microblaze: Add DEBUG option
+       microblaze: Prepare work for optimization in exception code
+       microblaze: Change register usage for ESR and EAR
+       microblaze: Remove additional resr and rear loading
+       microblaze: Use instruction with delay slot
+       microblaze: Fix TLB macros
+       microblaze: Add .type and .size to ASM functions
+       microblaze: Adding likely macros
+       microblaze: Kconfig Fix - pci
+       microblaze: Use MICROBLAZE_TLB_SIZE in asm code
+       microblaze: head.S typo fix
+       microblaze: Print early printk information to log buffer
+       microblaze: Support word copying in copy_tofrom_user
 
+Steven J. Magnani (1):
+       microblaze: Fix "kstack=" parsing
+
+  arch/microblaze/Kconfig                       |    3 -
+  arch/microblaze/Makefile                      |    4 +-
+  arch/microblaze/boot/Makefile                 |    6 +-
+  arch/microblaze/include/asm/processor.h       |    1 -
+  arch/microblaze/include/asm/segment.h         |   49 ---
+  arch/microblaze/include/asm/thread_info.h     |    5 +-
+  arch/microblaze/include/asm/tlbflush.h        |    3 +-
+  arch/microblaze/include/asm/uaccess.h         |  447 
+++++++++++++++-----------
+  arch/microblaze/kernel/dma.c                  |    2 +-
+  arch/microblaze/kernel/head.S                 |   12 +-
+  arch/microblaze/kernel/hw_exception_handler.S |  112 +++----
+  arch/microblaze/kernel/misc.S                 |   15 +-
+  arch/microblaze/kernel/process.c              |   10 +-
+  arch/microblaze/kernel/setup.c                |   24 +-
+  arch/microblaze/kernel/traps.c                |    6 +-
+  arch/microblaze/lib/Makefile                  |    3 +-
+  arch/microblaze/lib/fastcopy.S                |    6 +-
+  arch/microblaze/lib/memcpy.c                  |    2 +-
+  arch/microblaze/lib/memset.c                  |   15 +-
+  arch/microblaze/lib/uaccess.c                 |   48 ---
+  arch/microblaze/lib/uaccess_old.S             |   45 ++-
+  arch/microblaze/mm/fault.c                    |   24 +-
+  arch/microblaze/mm/init.c                     |    9 -
+  arch/microblaze/mm/pgtable.c                  |    2 +-
+  24 files changed, 407 insertions(+), 446 deletions(-)
+  delete mode 100644 arch/microblaze/include/asm/segment.h
+  delete mode 100644 arch/microblaze/lib/uaccess.c
+
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
