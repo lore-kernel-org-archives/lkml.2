@@ -1,70 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164Ab0DAFlX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 01:41:23 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:47487 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753042Ab0DAFlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 01:41:14 -0400
-Date: Thu, 1 Apr 2010 16:41:10 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Sjur Braendeland <sjur.brandeland@stericsson.com>,
-       David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: linux-next: build failure after merge of the slabh tree
-Message-Id: <20100401164110.80e3b18f.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
+	id S1753100Ab0DAFrC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 01:47:02 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:58099 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716Ab0DAFq4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 01:46:56 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 1 Apr 2010 14:42:34 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 14/14] mm,migration: Allow the migration of
+ PageSwapCache  pages
+Message-Id: <20100401144234.e3848876.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <n2k28c262361003312144k3a1a725aj1eb22efe6d360118@mail.gmail.com>
+References: <1269940489-5776-1-git-send-email-mel@csn.ul.ie>
+	<1269940489-5776-15-git-send-email-mel@csn.ul.ie>
+	<20100331142623.62ac9175.kamezawa.hiroyu@jp.fujitsu.com>
+	<j2s28c262361003311943ke6d39007of3861743cef3733a@mail.gmail.com>
+	<20100401120123.f9f9e872.kamezawa.hiroyu@jp.fujitsu.com>
+	<n2k28c262361003312144k3a1a725aj1eb22efe6d360118@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On Thu, 1 Apr 2010 13:44:29 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-After merging the slabh tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+> On Thu, Apr 1, 2010 at 12:01 PM, KAMEZAWA Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > On Thu, 1 Apr 2010 11:43:18 +0900
+> > Minchan Kim <minchan.kim@gmail.com> wrote:
+> >
+> >> On Wed, Mar 31, 2010 at 2:26 PM, KAMEZAWA Hiroyuki       /*
+> >> >> diff --git a/mm/rmap.c b/mm/rmap.c
+> >> >> index af35b75..d5ea1f2 100644
+> >> >> --- a/mm/rmap.c
+> >> >> +++ b/mm/rmap.c
+> >> >> @@ -1394,9 +1394,11 @@ int rmap_walk(struct page *page, int (*rmap_one)(struct page *,
+> >> >>
+> >> >>       if (unlikely(PageKsm(page)))
+> >> >>               return rmap_walk_ksm(page, rmap_one, arg);
+> >> >> -     else if (PageAnon(page))
+> >> >> +     else if (PageAnon(page)) {
+> >> >> +             if (PageSwapCache(page))
+> >> >> +                     return SWAP_AGAIN;
+> >> >>               return rmap_walk_anon(page, rmap_one, arg);
+> >> >
+> >> > SwapCache has a condition as (PageSwapCache(page) && page_mapped(page) == true.
+> >> >
+> >>
+> >> In case of tmpfs, page has swapcache but not mapped.
+> >>
+> >> > Please see do_swap_page(), PageSwapCache bit is cleared only when
+> >> >
+> >> > do_swap_page()...
+> >> >       swap_free(entry);
+> >> >        if (vm_swap_full() || (vma->vm_flags & VM_LOCKED) || PageMlocked(page))
+> >> >                try_to_free_swap(page);
+> >> >
+> >> > Then, PageSwapCache is cleared only when swap is freeable even if mapped.
+> >> >
+> >> > rmap_walk_anon() should be called and the check is not necessary.
+> >>
+> >> Frankly speaking, I don't understand what is Mel's problem, why he added
+> >> Swapcache check in rmap_walk, and why do you said we don't need it.
+> >>
+> >> Could you explain more detail if you don't mind?
+> >>
+> > I may miss something.
+> >
+> > unmap_and_move()
+> >  1. try_to_unmap(TTU_MIGRATION)
+> >  2. move_to_newpage
+> >  3. remove_migration_ptes
+> >        -> rmap_walk()
+> >
+> > Then, to map a page back we unmapped we call rmap_walk().
+> >
+> > Assume a SwapCache which is mapped, then, PageAnon(page) == true.
+> >
+> >  At 1. try_to_unmap() will rewrite pte with swp_entry of SwapCache.
+> >       mapcount goes to 0.
+> >  At 2. SwapCache is copied to a new page.
+> >  At 3. The new page is mapped back to the place. Now, newpage's mapcount is 0.
+> >       Before patch, the new page is mapped back to all ptes.
+> >       After patch, the new page is not mapped back because its mapcount is 0.
+> >
+> > I don't think shared SwapCache of anon is not an usual behavior, so, the logic
+> > before patch is more attractive.
+> >
+> > If SwapCache is not mapped before "1", we skip "1" and rmap_walk will do nothing
+> > because page->mapping is NULL.
+> >
+> 
+> Thanks. I agree. We don't need the check.
+> Then, my question is why Mel added the check in rmap_walk.
+> He mentioned some BUG trigger and fixed things after this patch.
+> What's it?
+> Is it really related to this logic?
+> I don't think so or we are missing something.
+> 
+Hmm. Consiering again.
 
-net/caif/cfcnfg.c: In function 'cfcnfg_create':
-net/caif/cfcnfg.c:68: error: implicit declaration of function 'kmalloc'
-net/caif/cfcnfg.c:68: warning: assignment makes pointer from integer without a cast
-net/caif/cfcnfg.c:100: error: implicit declaration of function 'kfree'
+Now.
+	if (PageAnon(page)) {
+		rcu_locked = 1;
+		rcu_read_lock();
+		if (!page_mapped(page)) {
+			if (!PageSwapCache(page))
+				goto rcu_unlock;
+		} else {
+			anon_vma = page_anon_vma(page);
+			atomic_inc(&anon_vma->external_refcount);
+		}
 
-Caused by commit 15c9ac0c80e390df09ce5730a7b08b13e07a8dd5 ("net-caif: add
-CAIF generic caif support functions") from the net interacting with
-commit de380b55f92986c1a84198149cb71b7228d15fbd ("percpu: don't
-implicitly include slab.h from percpu.h") from the slabh tree.
 
-I have applied the following patch for today.  Dave, could you apply this
-to the net tree please?
+Maybe this is a fix.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 1 Apr 2010 16:31:50 +1100
-Subject: [PATCH] net-caif: using kmalloc/kfree requires the include of slab.h
+==
+	skip_remap = 0;
+	if (PageAnon(page)) {
+		rcu_read_lock();
+		if (!page_mapped(page)) {
+			if (!PageSwapCache(page))
+				goto rcu_unlock;
+			/*
+			 * We can't convice this anon_vma is valid or not because
+			 * !page_mapped(page). Then, we do migration(radix-tree replacement)
+			 * but don't remap it which touches anon_vma in page->mapping.
+			 */
+			skip_remap = 1;
+			goto skip_unmap;
+		} else {
+			anon_vma = page_anon_vma(page);
+			atomic_inc(&anon_vma->external_refcount);
+		}
+	}	
+	.....copy page, radix-tree replacement,....
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- net/caif/cfcnfg.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+	if (!rc && !skip_remap)
+		 remove_migration_ptes(page, page);
+==
 
-diff --git a/net/caif/cfcnfg.c b/net/caif/cfcnfg.c
-index 70a733d..c873e3d 100644
---- a/net/caif/cfcnfg.c
-+++ b/net/caif/cfcnfg.c
-@@ -5,6 +5,7 @@
-  */
- #include <linux/kernel.h>
- #include <linux/stddef.h>
-+#include <linux/slab.h>
- #include <net/caif/caif_layer.h>
- #include <net/caif/cfpkt.h>
- #include <net/caif/cfcnfg.h>
--- 
-1.7.0.3
+Thanks,
+-Kame
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+
+
+
+
+
+
+
+
+
+
