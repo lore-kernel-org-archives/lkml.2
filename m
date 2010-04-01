@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab0DAHMV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 03:12:21 -0400
-Received: from sous-sol.org ([216.99.217.87]:37382 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752774Ab0DAHMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 03:12:15 -0400
-Date: Thu, 1 Apr 2010 00:10:40 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Chris Wright <chrisw@sous-sol.org>, Neil Horman <nhorman@tuxdriver.com>,
-       iommu@lists.linux-foundation.org, joerg.roedel@amd.com,
-       hbabu@us.ibm.com, kexec@lists.infradead.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] amd iommu: force flush of iommu prior during shutdown
-Message-ID: <20100401071040.GU29241@sequoia.sous-sol.org>
-References: <20100331152417.GB13406@hmsreliant.think-freely.org> <20100331212535.GR29241@sequoia.sous-sol.org> <20100401024421.GA5877@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100401024421.GA5877@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1753796Ab0DAHQC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 03:16:02 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54814
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753039Ab0DAHPz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 03:15:55 -0400
+Date: Thu, 01 Apr 2010 00:15:56 -0700 (PDT)
+Message-Id: <20100401.001556.24588152.davem@davemloft.net>
+To: akpm@linux-foundation.org
+Cc: herbert@gondor.apana.org.au, henne@nachtwindheim.de,
+       steffen.klassert@secunet.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] padata: section cleanup
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100331202931.146ef1b5.akpm@linux-foundation.org>
+References: <20100331180445.98dbcb55.akpm@linux-foundation.org>
+	<20100401013845.GA19580@gondor.apana.org.au>
+	<20100331202931.146ef1b5.akpm@linux-foundation.org>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Vivek Goyal (vgoyal@redhat.com) wrote:
-> On Wed, Mar 31, 2010 at 02:25:35PM -0700, Chris Wright wrote:
-> > * Neil Horman (nhorman@tuxdriver.com) wrote:
-> > > Flush iommu during shutdown
-> > > 
-> > > When using an iommu, its possible, if a kdump kernel boot follows a primary
-> > > kernel crash, that dma operations might still be in flight from the previous
-> > > kernel during the kdump kernel boot.  This can lead to memory corruption,
-> > > crashes, and other erroneous behavior, specifically I've seen it manifest during
-> > > a kdump boot as endless iommu error log entries of the form:
-> > > AMD-Vi: Event logged [IO_PAGE_FAULT device=00:14.1 domain=0x000d
-> > > address=0x000000000245a0c0 flags=0x0070]
-> > 
-> > We've already fixed this problem once before, so some code shift must
-> > have brought it back.  Personally, I prefer to do this on the bringup
-> > path than the teardown path.  Besides keeping the teardown path as
-> > simple as possible (goal is to get to kdump kernel asap), there's also
-> > reason to competely flush on startup in genernal in case BIOS has done
-> > anything unsavory.
-> 
-> Can we flush domains (all the I/O TLBs assciated with each domain), during
-> initialization? I think all the domain data built by previous kernel will
-> be lost and new kernel will have no idea about. 
+From: Andrew Morton <akpm@linux-foundation.org>
+Date: Wed, 31 Mar 2010 20:29:31 -0400
 
-We first invalidate the device table entry, so new translation requests
-will see the new domainid for a given BDF.  Then we invalidate the
-whole set of page tables associated w/ the new domainid.  Now all dma
-transactions will need page table walk (page tables will be empty excpet
-for any 1:1 mappings).  Any old domainid's from previous kernel that
-aren't found in new device table entries are effectively moot.  Just so
-happens that in kexec/kdump case, they'll be the same domainid's, but
-that doesn't matter.
+> Thing is, this isn't net code and it isn't crypto code - it's a
+> kernel-wide utility.
 
-thanks,
--chris
+Thanks goodness, because if we had put a private copy in the
+networking or the crypto code someone would have given us a hard time.
+
+Wait a second... we're being given a hard time anyways. :-)
+
+Kidding aside, why didn't anyone show any interest in the patch when
+it was posted to lkml?  You can say it was smoothered together with
+some crypto stuff, but that was absolutely the logical thing to do
+because the follow-on crypto patches showed what the thing was going
+to be used for.
