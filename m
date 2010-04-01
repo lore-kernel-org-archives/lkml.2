@@ -1,83 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab0DAGRw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 02:17:52 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:59040 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab0DAGRp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 02:17:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=XtEa360nArHtYvmsvm/KHE2zKbheilv3BdwKyXBUWDInQyTTU4hmp8UjA5Ry9fSmZZ
-         6jrmKCuH+DxxmPfKDOuLdacTYV9jZ3TkPTUvvswUUXkQHGqwMEBXuYlkOU6uusS+A7Ya
-         Akd6iT+PsRx3BEv+mcwLp5I69AxxMCgADLXBQ=
-Date: Thu, 1 Apr 2010 09:17:49 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>
-Subject: [GIT PULL v3] perf fixes
-Message-ID: <20100401071742.GB5207@nowhere>
-References: <1270007927-6391-1-git-send-regression-fweisbec@gmail.com>
+	id S1753474Ab0DAGSz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 02:18:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57547 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753398Ab0DAGSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 02:18:51 -0400
+Date: Thu, 1 Apr 2010 08:18:43 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+Subject: Re: linux-next: build failure after merge of the final tree (hid
+ tree related)
+In-Reply-To: <20100401170639.9f2fe605.sfr@canb.auug.org.au>
+Message-ID: <alpine.LNX.2.00.1004010817420.8345@pobox.suse.cz>
+References: <20100401170639.9f2fe605.sfr@canb.auug.org.au>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1270007927-6391-1-git-send-regression-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 05:58:45AM +0200, Frederic Weisbecker wrote:
-> Ingo,
-> 
-> Please pull the perf/urgent branch that can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> 	perf/urgent
+On Thu, 1 Apr 2010, Stephen Rothwell wrote:
 
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> drivers/hid/hid-picolcd.c: In function 'picolcd_debug_reset_write':
+> drivers/hid/hid-picolcd.c:1343: error: implicit declaration of function 'copy_from_user'
+> drivers/hid/hid-picolcd.c: In function 'picolcd_debug_eeprom_read':
+> drivers/hid/hid-picolcd.c:1407: error: implicit declaration of function 'copy_to_user'
+> 
+> Caused by commit 9bbf2b98ba11d00bd73e3254e15cfe17ccaff6ba ("HID: add
+> experimental access to PicoLCD device's EEPROM and FLASH").  Using copy_
+> {to,from}_user requires the include of linux/uaccess.h.
+> 
+> I have reverted that commit for today.
 
-I have updated the tree. There was a leftover patch for perf/core
-inside (not listed here). Also, since you've merged linus tree in
-perf/urgent lately, I've zapped my merge commit. Other than that,
-the three fixes remain.
+Hmm, on which arch did this bomb out? I wonder why it is building fine for 
+me.
 
-Thanks.
+Anyway, I have added the include, as it is obviously correct(tm), thanks 
+for reporting it.
 
-
-
-> 
-> It fixes the conflict against latest linus's tree that raised
-> build errors (you can find a merge commit inside).
-> 
-> I am not yet totally sure about Peter's opinion concerning
-> the context switch event that is now captured from the kernel.
-> Our latest discussion on the strict exclude_kernel meaning
-> seems in favour of this change but I'd prefer to wait for his
-> final approval before you pull this.
-> 
-> (I'm not reposting the alignment fix as it is unchanged)
-> 
-> Thanks,
-> 	Frederic
-> ---
-> 
-> Frederic Weisbecker (2):
->       perf: Correctly align perf event tracing buffer
->       perf: Use hot regs with software sched switch/migrate events
-> 
-> Jason Wessel (1):
->       x86,kgdb: Always initialize the hw breakpoint attribute
-> 
-> 
->  arch/x86/kernel/cpu/perf_event.c |    2 --
->  arch/x86/kernel/kgdb.c           |    2 +-
->  include/linux/perf_event.h       |   21 ++++++++++++++-------
->  kernel/perf_event.c              |    4 +---
->  kernel/trace/trace_event_perf.c  |   11 +++++++++--
->  5 files changed, 25 insertions(+), 15 deletions(-)
-
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
