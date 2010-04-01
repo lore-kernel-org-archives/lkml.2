@@ -1,112 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758314Ab0DAW7E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 18:59:04 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55814 "EHLO hera.kernel.org"
+	id S1758545Ab0DAXCa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 19:02:30 -0400
+Received: from gate.crashing.org ([63.228.1.57]:41194 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab0DAW7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 18:59:00 -0400
-Date: Thu, 1 Apr 2010 22:58:33 GMT
-From: tip-bot for Alok Kataria <akataria@vmware.com>
-Cc: dhecht@vmware.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-       mingo@redhat.com, akpm@linux-foundation.org,
-       venkatesh.pallipadi@gmail.com, akataria@vmware.com, tglx@linutronix.de,
-       mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       dhecht@vmware.com, akpm@linux-foundation.org,
-       venkatesh.pallipadi@gmail.com, akataria@vmware.com, tglx@linutronix.de,
-       mingo@elte.hu
-In-Reply-To: <201003112200.o2BM0Hre012875@imap1.linux-foundation.org>
-References: <201003112200.o2BM0Hre012875@imap1.linux-foundation.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, hpet: Fix bug in RTC emulation
-Message-ID: <tip-b4a5e8a1deca7e61ebaffb37344766b0f0e9f327@git.kernel.org>
-Git-Commit-ID: b4a5e8a1deca7e61ebaffb37344766b0f0e9f327
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 01 Apr 2010 22:58:34 +0000 (UTC)
+	id S1756638Ab0DAXC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 19:02:27 -0400
+Subject: Re: start_kernel(): bug: interrupts were enabled early
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: David Howells <dhowells@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Matthew Wilcox <matthew@wil.cx>, Yinghai Lu <yinghai@kernel.org>,
+       Rabin Vincent <rabin@rab.in>, lkml <linux-kernel@vger.kernel.org>,
+       penberg@cs.helsinki.fi, linux-arch@vger.kernel.org
+In-Reply-To: <31829.1270119970@redhat.com>
+References: <1270104536.7101.114.camel@pasglop>
+	 <20100325194100.GA2364@debian>
+	 <20100331134048.da4e35a7.akpm@linux-foundation.org>
+	 <4BB3B4DB.7040904@kernel.org> <20100331210145.GB32165@parisc-linux.org>
+	 <4BB3B8FC.1020608@zytor.com> <20100331211754.GC32165@parisc-linux.org>
+	 <alpine.DEB.2.00.1003311640410.30456@router.home>
+	 <20100331215411.GB17715@flint.arm.linux.org.uk>
+	 <4BB3C540.9000405@zytor.com> <1270075071.7101.79.camel@pasglop>
+	 <20100331154955.54176e5e.akpm@linux-foundation.org>
+	 <1270084631.7101.81.camel@pasglop>
+	 <20100331182654.d36c87ff.akpm@linux-foundation.org>
+	 <4BB43CAC.3080102@zytor.com>
+	 <20100331233330.1a7357e4.akpm@linux-foundation.org>
+	 <31829.1270119970@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 Apr 2010 10:00:21 +1100
+Message-ID: <1270162821.7101.138.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b4a5e8a1deca7e61ebaffb37344766b0f0e9f327
-Gitweb:     http://git.kernel.org/tip/b4a5e8a1deca7e61ebaffb37344766b0f0e9f327
-Author:     Alok Kataria <akataria@vmware.com>
-AuthorDate: Thu, 11 Mar 2010 14:00:16 -0800
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Thu, 1 Apr 2010 15:21:48 -0700
+On Thu, 2010-04-01 at 12:06 +0100, David Howells wrote:
+> Can we provide a kmem_cache_create_early()?  One that takes no locks and gets
+> cleaned up with the other __init stuff?
 
-x86, hpet: Fix bug in RTC emulation
+Yuck. I hate having to expose more APIs. Also the problem with that is
+means callers have to know. So we need to propagate up all call chains
+etc... (ie, radix_tree_init_early(), etc...)
 
-We think there exists a bug in the HPET code that emulates the RTC.
+This is pretty much exactly the discussion we had when moving sl*b
+early, and back then, the final word from Linus (heh, for once he agreed
+with me :-) was that this made no sense.
 
-In the normal case, when the RTC frequency is set, the rtc driver tells
-the hpet code about it here:
+We can bury logic inside kmem_cache_create() though, it's not -that- a
+hot path.
 
-int hpet_set_periodic_freq(unsigned long freq)
-{
-        uint64_t clc;
+Cheers,
+Ben.
 
-        if (!is_hpet_enabled())
-                return 0;
-
-        if (freq <= DEFAULT_RTC_INT_FREQ)
-                hpet_pie_limit = DEFAULT_RTC_INT_FREQ / freq;
-        else {
-                clc = (uint64_t) hpet_clockevent.mult * NSEC_PER_SEC;
-                do_div(clc, freq);
-                clc >>= hpet_clockevent.shift;
-                hpet_pie_delta = (unsigned long) clc;
-        }
-        return 1;
-}
-
-If freq is set to 64Hz (DEFAULT_RTC_INT_FREQ) or lower, then
-hpet_pie_limit (a static) is set to non-zero.  Then, on every one-shot
-HPET interrupt, hpet_rtc_timer_reinit is called to compute the next
-timeout.  Well, that function has this logic:
-
-        if (!(hpet_rtc_flags & RTC_PIE) || hpet_pie_limit)
-                delta = hpet_default_delta;
-        else
-                delta = hpet_pie_delta;
-
-Since hpet_pie_limit is not 0, hpet_default_delta is used.  That
-corresponds to 64Hz.
-
-Now, if you set a different rtc frequency, you'll take the else path
-through hpet_set_periodic_freq, but unfortunately no one resets
-hpet_pie_limit back to 0.
-
-Boom....now you are stuck with 64Hz RTC interrupts forever.
-
-The patch below just resets the hpet_pie_limit value when requested freq
-is greater than DEFAULT_RTC_INT_FREQ, which we think fixes this problem.
-
-Signed-off-by: Alok N Kataria <akataria@vmware.com>
-LKML-Reference: <201003112200.o2BM0Hre012875@imap1.linux-foundation.org>
-Signed-off-by: Daniel Hecht <dhecht@vmware.com>
-Cc: Venkatesh Pallipadi <venkatesh.pallipadi@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/hpet.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index 3d422da..2bda5f0 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -1149,6 +1149,7 @@ int hpet_set_periodic_freq(unsigned long freq)
- 		do_div(clc, freq);
- 		clc >>= hpet_clockevent.shift;
- 		hpet_pie_delta = clc;
-+		hpet_pie_limit = 0;
- 	}
- 	return 1;
- }
