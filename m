@@ -1,120 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab0DADFR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 23:05:17 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:50882 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751591Ab0DADFO (ORCPT
+	id S1751598Ab0DADSZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 23:18:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:61807 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395Ab0DADSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 23:05:14 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 1 Apr 2010 12:01:23 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 14/14] mm,migration: Allow the migration of
- PageSwapCache  pages
-Message-Id: <20100401120123.f9f9e872.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <j2s28c262361003311943ke6d39007of3861743cef3733a@mail.gmail.com>
-References: <1269940489-5776-1-git-send-email-mel@csn.ul.ie>
-	<1269940489-5776-15-git-send-email-mel@csn.ul.ie>
-	<20100331142623.62ac9175.kamezawa.hiroyu@jp.fujitsu.com>
-	<j2s28c262361003311943ke6d39007of3861743cef3733a@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 31 Mar 2010 23:18:20 -0400
+X-Authority-Analysis: v=1.1 cv=3DUlJUu7qWFNpNttJVwyA1nQS84iC7EN/BDLX6qJweI= c=1 sm=0 a=vPnlRXC0CbEA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=xLu7a0G5PGjQgG6sOSIA:9 a=j3-Q1QEYcA1dO4EzX6I4X3_X4aEA:4 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Message-Id: <20100401031735.683626160@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 31 Mar 2010 23:17:35 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 0/7] [GIT PULL] tracing: updates
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Apr 2010 11:43:18 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
 
-> On Wed, Mar 31, 2010 at 2:26 PM, KAMEZAWA Hiroyuki       /*
-> >> diff --git a/mm/rmap.c b/mm/rmap.c
-> >> index af35b75..d5ea1f2 100644
-> >> --- a/mm/rmap.c
-> >> +++ b/mm/rmap.c
-> >> @@ -1394,9 +1394,11 @@ int rmap_walk(struct page *page, int (*rmap_one)(struct page *,
-> >>
-> >>       if (unlikely(PageKsm(page)))
-> >>               return rmap_walk_ksm(page, rmap_one, arg);
-> >> -     else if (PageAnon(page))
-> >> +     else if (PageAnon(page)) {
-> >> +             if (PageSwapCache(page))
-> >> +                     return SWAP_AGAIN;
-> >>               return rmap_walk_anon(page, rmap_one, arg);
-> >
-> > SwapCache has a condition as (PageSwapCache(page) && page_mapped(page) == true.
-> >
-> 
-> In case of tmpfs, page has swapcache but not mapped.
-> 
-> > Please see do_swap_page(), PageSwapCache bit is cleared only when
-> >
-> > do_swap_page()...
-> >       swap_free(entry);
-> >        if (vm_swap_full() || (vma->vm_flags & VM_LOCKED) || PageMlocked(page))
-> >                try_to_free_swap(page);
-> >
-> > Then, PageSwapCache is cleared only when swap is freeable even if mapped.
-> >
-> > rmap_walk_anon() should be called and the check is not necessary.
-> 
-> Frankly speaking, I don't understand what is Mel's problem, why he added
-> Swapcache check in rmap_walk, and why do you said we don't need it.
-> 
-> Could you explain more detail if you don't mind?
-> 
-I may miss something.
+Ingo,
 
-unmap_and_move()
- 1. try_to_unmap(TTU_MIGRATION)
- 2. move_to_newpage
- 3. remove_migration_ptes
-	-> rmap_walk()
+Please pull the latest tip/tracing/core tree, which can be found at:
 
-Then, to map a page back we unmapped we call rmap_walk().
-
-Assume a SwapCache which is mapped, then, PageAnon(page) == true.
-
- At 1. try_to_unmap() will rewrite pte with swp_entry of SwapCache.
-       mapcount goes to 0.
- At 2. SwapCache is copied to a new page.
- At 3. The new page is mapped back to the place. Now, newpage's mapcount is 0.
-       Before patch, the new page is mapped back to all ptes.
-       After patch, the new page is not mapped back because its mapcount is 0.
-
-I don't think shared SwapCache of anon is not an usual behavior, so, the logic
-before patch is more attractive.
-
-If SwapCache is not mapped before "1", we skip "1" and rmap_walk will do nothing
-because page->mapping is NULL.
-
-Thanks,
--Kame
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/tracing/core
 
 
+Li Zefan (3):
+      tracing: Convert some signal events to DEFINE_TRACE
+      tracing: Update comments
+      tracing: Remove side effect from module tracepoints that caused a GPF
 
+Steven Rostedt (4):
+      tracing: Fix compile error in module tracepoints when MODULE_UNLOAD not set
+      ring-buffer: Add place holder recording of dropped events
+      tracing: Show the lost events in the trace_pipe output
+      ring-buffer: Add lost event count to end of sub buffer
 
-
-
-
-
-
-
-
-
-
-
-
-
+----
+ drivers/oprofile/cpu_buffer.c        |    4 +-
+ include/linux/ftrace_event.h         |    1 +
+ include/linux/module.h               |    6 +-
+ include/linux/ring_buffer.h          |    6 +-
+ include/trace/events/module.h        |   18 ++++--
+ include/trace/events/signal.h        |   52 +++++++----------
+ include/trace/ftrace.h               |   33 ++++++-----
+ kernel/module.c                      |    8 +-
+ kernel/trace/ring_buffer.c           |  101 ++++++++++++++++++++++++++++++++--
+ kernel/trace/ring_buffer_benchmark.c |    2 +-
+ kernel/trace/trace.c                 |   30 +++++++---
+ kernel/trace/trace_functions_graph.c |    5 +-
+ kernel/trace/trace_selftest.c        |    2 +-
+ 13 files changed, 187 insertions(+), 81 deletions(-)
