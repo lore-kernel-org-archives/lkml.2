@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222Ab0DAQd3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:33:29 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42112 "EHLO
-	bob.linux.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932182Ab0DAQdO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:33:14 -0400
-From: Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 01/14] tty: serial - fix tty referencing in set_ldisc
-To: linux-kernel@vger.kernel.org
-Date: Thu, 01 Apr 2010 17:04:18 +0100
-Message-ID: <20100401160414.8882.51526.stgit@localhost.localdomain>
-In-Reply-To: <20100401155513.8882.54006.stgit@localhost.localdomain>
-References: <20100401155513.8882.54006.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	id S1758439Ab0DAQjz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:39:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64426 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757986Ab0DAQjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 12:39:48 -0400
+Message-ID: <4BB4C591.8000102@redhat.com>
+Date: Thu, 01 Apr 2010 19:10:57 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Tom Lyon <pugs@lyon-about.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/1] uio_pci_generic: extensions to allow access for non-privileged
+ processes
+References: <201003311708.38961.pugs@lyon-about.com> <201004010839.07451.pugs@lyon-about.com> <4BB4C1A6.8050904@redhat.com> <201004010906.47321.pugs@lyon-about.com>
+In-Reply-To: <201004010906.47321.pugs@lyon-about.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pass down the ldisc number so that the drivers don't have to peek into the
-tty object themselves. This lets us get rid of another case of back referencing
-port to tty which we don't want (because of races versus hangup/close).
+On 04/01/2010 07:06 PM, Tom Lyon wrote:
+> On Thursday 01 April 2010 08:54:14 am Avi Kivity wrote:
+>    
+>> On 04/01/2010 06:39 PM, Tom Lyon wrote:
+>>      
+>>>>> - support for MSI and MSI-X interrupts (the intel 82599 VFs support
+>>>>> only MSI-X)
+>>>>>            
+>>>> How does a userspace program receive those interrupts?
+>>>>          
+>>> Same as other UIO drivers - by read()ing an event counter.
+>>>        
+>> IIRC the usual event counter is /dev/uioX, what's your event counter now?
+>>      
+> Exact same mechanism.
+>    
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+But there are multiple msi-x interrupts, how do you know which one 
+triggered?
 
- drivers/serial/bfin_5xx.c    |    7 ++-----
- drivers/serial/serial_core.c |    2 +-
- include/linux/serial_core.h  |    2 +-
- 3 files changed, 4 insertions(+), 7 deletions(-)
+>> kvm really wants the event counter to be an eventfd, that allows hooking
+>> it directly to kvm (which can inject an interrupt on an eventfd_signal),
+>> can you adapt your patch to do this?
+>>      
+> My patch does not currently go anywhere near the read/fd logic of /dev/uioX.
+> I think a separate patch would be appropriate.
+>    
 
+Sure.
 
-diff --git a/drivers/serial/bfin_5xx.c b/drivers/serial/bfin_5xx.c
-index 96f7e74..e0d25ca 100644
---- a/drivers/serial/bfin_5xx.c
-+++ b/drivers/serial/bfin_5xx.c
-@@ -952,15 +952,12 @@ bfin_serial_verify_port(struct uart_port *port, struct serial_struct *ser)
-  * Enable the IrDA function if tty->ldisc.num is N_IRDA.
-  * In other cases, disable IrDA function.
-  */
--static void bfin_serial_set_ldisc(struct uart_port *port)
-+static void bfin_serial_set_ldisc(struct uart_port *port, int ld)
- {
- 	int line = port->line;
- 	unsigned short val;
- 
--	if (line >= port->state->port.tty->driver->num)
--		return;
--
--	switch (port->state->port.tty->termios->c_line) {
-+	switch (ld) {
- 	case N_IRDA:
- 		val = UART_GET_GCTL(&bfin_serial_ports[line]);
- 		val |= (IREN | RPOLC);
-diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
-index 7f28307..686ff6c 100644
---- a/drivers/serial/serial_core.c
-+++ b/drivers/serial/serial_core.c
-@@ -1194,7 +1194,7 @@ static void uart_set_ldisc(struct tty_struct *tty)
- 	struct uart_port *uport = state->uart_port;
- 
- 	if (uport->ops->set_ldisc)
--		uport->ops->set_ldisc(uport);
-+		uport->ops->set_ldisc(uport, tty->termios->c_line);
- }
- 
- static void uart_set_termios(struct tty_struct *tty,
-diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index ad83996..5c4cbe6 100644
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -216,7 +216,7 @@ struct uart_ops {
- 	void		(*flush_buffer)(struct uart_port *);
- 	void		(*set_termios)(struct uart_port *, struct ktermios *new,
- 				       struct ktermios *old);
--	void		(*set_ldisc)(struct uart_port *);
-+	void		(*set_ldisc)(struct uart_port *, int new);
- 	void		(*pm)(struct uart_port *, unsigned int state,
- 			      unsigned int oldstate);
- 	int		(*set_wake)(struct uart_port *, unsigned int state);
+-- 
+error compiling committee.c: too many arguments to function
 
