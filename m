@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab0DAVNY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 17:13:24 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59286 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754576Ab0DAVNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 17:13:20 -0400
-Date: Thu, 1 Apr 2010 21:12:52 GMT
-From: tip-bot for Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       andi@firstfloor.org, stable@kernel.org, ak@linux.intel.com,
-       trenn@suse.de, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       andi@firstfloor.org, stable@kernel.org, ak@linux.intel.com,
-       trenn@suse.de, tglx@linutronix.de
-In-Reply-To: <20100329074111.GA22821@basil.fritz.box>
-References: <20100329074111.GA22821@basil.fritz.box>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Handle overlapping mptables
-Message-ID: <tip-909fc87b32b3b9e3f0b87dcc5d98319c41900c58@git.kernel.org>
-Git-Commit-ID: 909fc87b32b3b9e3f0b87dcc5d98319c41900c58
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 01 Apr 2010 21:12:55 +0000 (UTC)
+	id S1756422Ab0DAVTI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 17:19:08 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:47633 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752316Ab0DAVTG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 17:19:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=wkmBGAR0QlbghHoww2qEWwfCj87pdokuEb3S/2aSSeVVV2Rpusamh1vFyMRbgC0JUn
+         uu5BaGnsLdOJhK7WQTYOFYq5wy/WOVB12O0C15bbYicpoH1b/Dw7l/hxkI+mDLqoek4q
+         8Agns5LjvU1KAWtWPXqXaQcVCmmyVa7+NF08w=
+Subject: Re: Increased Latencies when upgrading kernel version
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Taylor Lewick <taylor.lewick@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <o2vd585dc4f1004011212s65cc2beewed2f19321210a249@mail.gmail.com>
+References: <o2vd585dc4f1004011212s65cc2beewed2f19321210a249@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Apr 2010 23:19:01 +0200
+Message-ID: <1270156741.2192.14.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  909fc87b32b3b9e3f0b87dcc5d98319c41900c58
-Gitweb:     http://git.kernel.org/tip/909fc87b32b3b9e3f0b87dcc5d98319c41900c58
-Author:     Andi Kleen <andi@firstfloor.org>
-AuthorDate: Mon, 29 Mar 2010 09:41:11 +0200
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Thu, 1 Apr 2010 13:31:07 -0700
+Le jeudi 01 avril 2010 à 14:12 -0500, Taylor Lewick a écrit :
+> For some time now we've been running an older kernel, 2.6.16.60.  When
+> we tried to upgrade, first going to 2.6.27.19 and then to 2.6.32.1 and
+> 2.6.33.1 we noticed that latencies increased.  At first we noticed it
+> by doing network tests via udpping, netperf, etc.  We made some
+> tweaks, and were able to get network latency to within 1 to 2
+> microseconds of where we were previously on 2.6.16.60.  Then we did
+> some more testing, and noticed that system latency also seems higher.
+> 
+> We've done our tests on identical hardware servers, same NICs,
+> connected through same network gear.  Basically, we've tried to keep
+> everything identical except the kernel versions, and we are unable to
+> achieve the same performance for system latency on the newer kernels,
+> despite adjusting various kernel settings and recompiling.
+> 
+> The latency differences are about 15 microseconds per transaction.
+> 
+> At this point, I don't know what else to try.  I haven't played around
+> with the /proc/sys/kernel/sched_* paramaters under the newer kernels
+> yet.  Have tried changing pre-emption modes with little effect, in
+> fact, voluntary preemption seems to be peforming the best for us.
+> 
+> At this time the realtime patch isn't really an option for us to
+> consider, at least not yet.
+> 
+> Any suggestions?  Is this a known issue when upgrading to more recent
+> kernel versions?
+> 
 
-x86: Handle overlapping mptables
+Hi Taylor
 
-We found a system where the MP table MPC and MPF structures overlap.
+Well, this is bit difficult to generically answer to your generic
+question. 15 us more latency per transaction seems pretty bad.
 
-That doesn't really matter because the mptable is not used anyways with ACPI,
-but it leads to a panic in the early allocator due to the overlapping
-reservations in 2.6.33.
+Some inputs would be nice, describing your workload and
+software/hardware architecture.
 
-Earlier kernels handled this without problems.
+lspci
+cat /proc/cpuinfo
+cat /proc/interrupts
+dmesg
+ethtool -S eth0
+ethtool -c eth0
 
-Simply change these reservations to reserve_early_overlap_ok to avoid
-the panic.
 
-Reported-by: Thomas Renninger <trenn@suse.de>
-Tested-by: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-LKML-Reference: <20100329074111.GA22821@basil.fritz.box>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: <stable@kernel.org>
----
- arch/x86/kernel/mpparse.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
-index a2c1edd..e81030f 100644
---- a/arch/x86/kernel/mpparse.c
-+++ b/arch/x86/kernel/mpparse.c
-@@ -664,7 +664,7 @@ static void __init smp_reserve_memory(struct mpf_intel *mpf)
- {
- 	unsigned long size = get_mpc_size(mpf->physptr);
- 
--	reserve_early(mpf->physptr, mpf->physptr+size, "MP-table mpc");
-+	reserve_early_overlap_ok(mpf->physptr, mpf->physptr+size, "MP-table mpc");
- }
- 
- static int __init smp_scan_config(unsigned long base, unsigned long length)
-@@ -693,7 +693,7 @@ static int __init smp_scan_config(unsigned long base, unsigned long length)
- 			       mpf, (u64)virt_to_phys(mpf));
- 
- 			mem = virt_to_phys(mpf);
--			reserve_early(mem, mem + sizeof(*mpf), "MP-table mpf");
-+			reserve_early_overlap_ok(mem, mem + sizeof(*mpf), "MP-table mpf");
- 			if (mpf->physptr)
- 				smp_reserve_memory(mpf);
- 
