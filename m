@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757482Ab0DAVpJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 17:45:09 -0400
-Received: from lucidpixels.com ([75.144.35.66]:42911 "EHLO lucidpixels.com"
+	id S1757439Ab0DAVtF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 17:49:05 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:50508 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753437Ab0DAVpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 17:45:04 -0400
-Date: Thu, 1 Apr 2010 17:45:02 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org
-cc: Alan Piszcz <ap@solarrain.com>
-Subject: 2.6.33.1 pwc (quickcam pro 4000 is broken)
-Message-ID: <alpine.DEB.2.00.1004011743460.4845@p34.internal.lan>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753437Ab0DAVtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 17:49:03 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Parag Warudkar <parag.lkml@gmail.com>
+Subject: Re: S2RAM broken on HP 8530p
+Date: Thu, 1 Apr 2010 23:52:18 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <alpine.DEB.2.00.1003312050370.1876@parag-laptop> <201004012208.37540.rjw@sisk.pl> <alpine.DEB.2.00.1004011725540.2043@parag-laptop>
+In-Reply-To: <alpine.DEB.2.00.1004011725540.2043@parag-laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004012352.18149.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thursday 01 April 2010, Parag Warudkar wrote:
+> 
+> On Thu, 1 Apr 2010, Rafael J. Wysocki wrote:
+> 
+> > Please try:
+> > 
+> > # echo devices > /sys/power/pm_test
+> > # echo mem > /sys/power/state
+> > 
+> > and see if that breaks too (it should get back to the command line in about
+> > 5-10 seconds).
+> 
+> That breaks too - hangs similarly during suspend. I enabled RTC tracing 
+> and every time it prints out different hash matches after reboot - 
+> tty/tty21, pcie04  and latest is 
+> 
+> [    0.865296] pcieport 0000:00:1c.1: hash matches
+> 
+> Also when the suspend fails the immediate boot after that I get a USB 
+> error on startup - unable to enumerate usb device on port 1. This error is 
+> not present on normal boots.
 
-a long time ago I used to use the binary only pwc driver; I noticed
-support is in the kernel now for (pwc)-based Logitech Quickcam Pro 4000
-but, it doesn't work:
+Well, try the above with the USB controller drivers unloaded.
 
-[   78.866729] pwc: Wrong size (67108864) needed to be len_per_image=462848 or total_size=925696
-
-..
-
-[  182.914969] pwc: Philips webcam module removed.
-[  189.523289] pwc: Philips webcam module version 10.0.13 loaded.
-[  189.523290] pwc: Supports Philips PCA645/646, PCVC675/680/690, PCVC720[40]/730/740/750 & PCVC830/840.
-[  189.523292] pwc: Also supports the Askey VC010, various Logitech Quickcams, Samsung MPC-C10 and MPC-C30,
-[  189.523293] pwc: the Creative WebCam 5 & Pro Ex, SOTEC Afina Eye and Visionite VCS-UC300 and VCS-UM100.
-[  189.524403] pwc: Logitech QuickCam 4000 Pro USB webcam detected.
-[  189.524430] pwc: Registered as video0.
-[  189.532670] input: PWC snapshot button as /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/input/input8
-[  189.532742] usbcore: registered new interface driver Philips webcam
-[  196.540057] pwc: isoc_init() submit_urb 0 failed with error -28
-[  196.540067] pwc: isoc_init() submit_urb 1 failed with error -28
-
-Justin.
-
+Rafael
