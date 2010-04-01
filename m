@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab0DAMwk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 08:52:40 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:56600 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756402Ab0DAMw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 08:52:28 -0400
-Date: Thu, 1 Apr 2010 14:52:10 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: James Morris <jmorris@namei.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-       linux-kernel@vger.kernel.org, airlied@linux.ie,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: Config NO_BOOTMEM breaks my amd64 box
-Message-ID: <20100401125210.GA2445@elte.hu>
-References: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org>
- <4BB2EB1B.8090303@zytor.com>
- <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org>
- <20100331185916.GA12306@elte.hu>
- <alpine.LRH.2.00.1004010952080.31957@tundra.namei.org>
- <4BB3DC4E.7030504@zytor.com>
- <alpine.LRH.2.00.1004011042460.32618@tundra.namei.org>
- <4BB3DF46.8080008@zytor.com>
- <alpine.LRH.2.00.1004011200020.365@tundra.namei.org>
+	id S1754482Ab0DAMy3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 08:54:29 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:43490 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753022Ab0DAMyX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 08:54:23 -0400
+Date: Thu, 1 Apr 2010 08:54:20 -0400 (EDT)
+From: Jerome Oufella <jerome.oufella@savoirfairelinux.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+       Jonathan Cameron <jic23@cam.ac.uk>
+Message-ID: <1732720040.861270126460533.JavaMail.root@mail.savoirfairelinux.com>
+In-Reply-To: <20100401140152.3141b989@hyperion.delvare>
+Subject: Re: [lm-sensors] [PATCH] hwmon: sht15: Fix sht15_calc_temp
+  interpolation function
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1004011200020.365@tundra.namei.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [208.88.110.46]
+X-Mailer: Zimbra 5.0.19_GA_2995.UBUNTU8_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.19_GA_2995.UBUNTU8_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* James Morris <jmorris@namei.org> wrote:
-
-> On Wed, 31 Mar 2010, H. Peter Anvin wrote:
+----- "Jean Delvare" <khali@linux-fr.org> wrote :
+> May I suggest the more simple fix below?
 > 
-> > On 03/31/2010 04:43 PM, James Morris wrote:
-> > >>
-> > >> Upgraded how?  The problem no longer happens?
-> > > 
-> > > Upgraded to the latest rawhide userland -- I have not since tested with 
-> > > bootmem off.  I'll try and do so again when I get a chance.
-> > > 
-> > 
-> > That would be great.  The sooner the better, obviously.
+> ---
+>  drivers/hwmon/sht15.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> I'm not seeing any problems now, with current Linus and rawhide.  I'll leave 
-> bootmem off and see if anything comes up again.
+> --- linux-2.6.34-rc3.orig/drivers/hwmon/sht15.c	2010-04-01
+> 13:41:15.000000000 +0200
+> +++ linux-2.6.34-rc3/drivers/hwmon/sht15.c	2010-04-01
+> 13:41:55.000000000 +0200
+> @@ -305,10 +305,10 @@ static inline int sht15_calc_temp(struct
+>  	int d1 = 0;
+>  	int i;
+>  
+> -	for (i = 1; i < ARRAY_SIZE(temppoints); i++)
+> +	for (i = ARRAY_SIZE(temppoints) - 1; i > 0 ;i--)
+>  		/* Find pointer to interpolate */
+>  		if (data->supply_uV > temppoints[i - 1].vdd) {
+> -			d1 = (data->supply_uV/1000 - temppoints[i - 1].vdd)
+> +			d1 = (data->supply_uV - temppoints[i - 1].vdd)
+>  				* (temppoints[i].d1 - temppoints[i - 1].d1)
+>  				/ (temppoints[i].vdd - temppoints[i - 1].vdd)
+>  				+ temppoints[i - 1].d1;
+> 
+> It leads to the same numbers as with Jerome's patch, with the
+> advantages that 1* it is a much smaller change, more suitable for
+> applying to stable kernels and 2* it avoids the magic constant number
+> 10000.
+> 
+> The "/1000" seems to be a relict of former times when
+> temppoints[*].vdd
+> was probably expressed in millivolt instead of microvolt. And the
+> inverted loop iteration is obviously a bug.
+> 
+> Note that in both cases, something should be done about values which
+> are outside of the temppoints array. I don't know how likely these
+> are,
+> but they are seriously mishandled. For supply_uV values below
+> temppoints[0].vdd, d1 defaults to 0, so no adjustment is done at all.
+> temppoints[0].d1 would seem to be a much better default, if we don't
+> want to do any interpolation in that case. For supply_uV values above
+> temppoints[4].vdd, we do interpolate, which seems reasonable.
+> 
+> Opinions?
+> 
+> -- 
+> Jean Delvare
 
-(a current bootlog would still be nice)
+That's fine, it does a good job for me, in the expected voltage range.
 
-Dave, can you reproduce any of these problems with Linus's latest?
-
-	Ingo
+Jerome Oufella
