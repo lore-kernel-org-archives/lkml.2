@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab0DAWQw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 18:16:52 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46914 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753059Ab0DAWQr (ORCPT
+	id S1756827Ab0DAWSU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 18:18:20 -0400
+Received: from mail-qy0-f171.google.com ([209.85.221.171]:54286 "EHLO
+	mail-qy0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753524Ab0DAWSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 18:16:47 -0400
-Date: Thu, 1 Apr 2010 15:16:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-       "Li, Shaohua" <shaohua.li@intel.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
-Message-Id: <20100401151639.a030fb10.akpm@linux-foundation.org>
-In-Reply-To: <20100331145602.03A7.A69D9226@jp.fujitsu.com>
-References: <20100331142708.039E.A69D9226@jp.fujitsu.com>
-	<20100331055108.GA21963@localhost>
-	<20100331145602.03A7.A69D9226@jp.fujitsu.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Apr 2010 18:18:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=xBq+xV6iwESMuVEnLituj8rxXY+ASa1CQRLsy3GXOWDMbdQLbr6SM/u+3QxZebc//6
+         gPXWaeagVnlJzeIf6+m2XX9e2dQrqR/R4wqJLSXLhe7kyMu2PmRY9NpFCt3xYqyv73ir
+         PobwPfP1WloLKkzt2vyG7zqOjyLMIyL6w1hFI=
+Date: Thu, 1 Apr 2010 18:18:07 -0400 (EDT)
+From: Parag Warudkar <parag.lkml@gmail.com>
+X-X-Sender: paragw@parag-laptop
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Parag Warudkar <parag.lkml@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: S2RAM broken on HP 8530p
+In-Reply-To: <201004012352.18149.rjw@sisk.pl>
+Message-ID: <alpine.DEB.2.00.1004011814140.2792@parag-laptop>
+References: <alpine.DEB.2.00.1003312050370.1876@parag-laptop> <201004012208.37540.rjw@sisk.pl> <alpine.DEB.2.00.1004011725540.2043@parag-laptop> <201004012352.18149.rjw@sisk.pl>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Mar 2010 15:00:52 +0900 (JST)
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-> > KOSAKI-san,
+
+
+On Thu, 1 Apr 2010, Rafael J. Wysocki wrote:
+
+> On Thursday 01 April 2010, Parag Warudkar wrote:
 > > 
-> > On Wed, Mar 31, 2010 at 01:38:12PM +0800, KOSAKI Motohiro wrote:
-> > > > On Tue, Mar 30, 2010 at 02:08:53PM +0800, KOSAKI Motohiro wrote:
-> > > > > Hi
-> > > > > 
-> > > > > > Commit 84b18490d1f1bc7ed5095c929f78bc002eb70f26 introduces a regression.
-> > > > > > With it, our tmpfs test always oom. The test has a lot of rotated anon
-> > > > > > pages and cause percent[0] zero. Actually the percent[0] is a very small
-> > > > > > value, but our calculation round it to zero. The commit makes vmscan
-> > > > > > completely skip anon pages and cause oops.
-> > > > > > An option is if percent[x] is zero in get_scan_ratio(), forces it
-> > > > > > to 1. See below patch.
-> > > > > > But the offending commit still changes behavior. Without the commit, we scan
-> > > > > > all pages if priority is zero, below patch doesn't fix this. Don't know if
-> > > > > > It's required to fix this too.
-> > > > > 
-> > > > > Can you please post your /proc/meminfo and reproduce program? I'll digg it.
-> > > > > 
-> > > > > Very unfortunately, this patch isn't acceptable. In past time, vmscan 
-> > > > > had similar logic, but 1% swap-out made lots bug reports. 
-> > > > if 1% is still big, how about below patch?
+> > On Thu, 1 Apr 2010, Rafael J. Wysocki wrote:
+> > 
+> > > Please try:
 > > > 
-> > > This patch makes a lot of sense than previous. however I think <1% anon ratio
-> > > shouldn't happen anyway because file lru doesn't have reclaimable pages.
-> > > <1% seems no good reclaim rate.
+> > > # echo devices > /sys/power/pm_test
+> > > # echo mem > /sys/power/state
 > > > 
-> > > perhaps I'll take your patch for stable tree. but we need to attack the root
-> > > cause. iow, I guess we need to fix scan ratio equation itself.
+> > > and see if that breaks too (it should get back to the command line in about
+> > > 5-10 seconds).
 > > 
-> > I tend to regard this patch as a general improvement for both
-> > .33-stable and .34. 
+> > That breaks too - hangs similarly during suspend. I enabled RTC tracing 
+> > and every time it prints out different hash matches after reboot - 
+> > tty/tty21, pcie04  and latest is 
 > > 
-> > I do agree with you that it's desirable to do more test&analyze and
-> > check further for possibly hidden problems.
+> > [    0.865296] pcieport 0000:00:1c.1: hash matches
+> > 
+> > Also when the suspend fails the immediate boot after that I get a USB 
+> > error on startup - unable to enumerate usb device on port 1. This error is 
+> > not present on normal boots.
 > 
-> Yeah, I don't want ignore .33-stable too. if I can't find the root cause
-> in 2-3 days, I'll revert guilty patch anyway.
+> Well, try the above with the USB controller drivers unloaded.
 > 
 
-It's a good idea to avoid fixing a bug one-way-in-stable,
-other-way-in-mainline.  Because then we have new code in both trees
-which is different.  And the -stable guys sensibly like to see code get
-a bit of a shakedown in mainline before backporting it.
+Turns out its not the controller drivers but btusb and friends. Once I 
+removed btusb,sco,bnep,l2cap and family I was able to suspend resume just 
+like before.
 
-So it would be better to merge the "simple" patch into mainline, tagged
-for -stable backporting.  Then we can later implement the larger fix in
-mainline, perhaps starting by reverting the "simple" fix.
+For now I have disabled Bluetooth in BIOS as I don't need it - it is 
+likely that it was disabled earlier and so the suspend/resume was 
+working but looks like after a BIOS update/reset I left it enabled.
+
+So this does not seem to be a regression to me.
+
+But may be it should be possible to suspend/resume with bluetooth enabled? 
+:)
+
+Thanks,
+Parag 
