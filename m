@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758818Ab0DAUC4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 16:02:56 -0400
-Received: from www.tglx.de ([62.245.132.106]:53975 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758807Ab0DAUCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 16:02:52 -0400
-Date: Thu, 1 Apr 2010 22:01:59 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chase Douglas <chase.douglas@canonical.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       kernel-team <kernel-team@lists.ubuntu.com>
-Subject: Re: [REGRESSION 2.6.30][PATCH 1/1] sched: defer idle accounting till
- after load update period
-In-Reply-To: <z2i40ec3ea41004011256p281cc601t277c3191fef5f87b@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1004012200340.32352@localhost.localdomain>
-References: <1269870072-22449-1-git-send-email-chase.douglas@canonical.com>  <1269870072-22449-2-git-send-email-chase.douglas@canonical.com>  <20100401122740.a1ae80a7.akpm@linux-foundation.org>
- <z2i40ec3ea41004011256p281cc601t277c3191fef5f87b@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758794Ab0DAUEL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 16:04:11 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56143 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758769Ab0DAUEH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 16:04:07 -0400
+Date: Thu, 1 Apr 2010 13:03:59 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Ira W. Snyder" <iws@ovro.caltech.edu>
+Cc: linux-kernel@vger.kernel.org, socketcan-core@lists.berlios.de,
+       netdev@vger.kernel.org, sameo@linux.intel.com
+Subject: Re: [PATCH 2/3] can: add support for Janz VMOD-ICAN3 Intelligent
+ CAN module
+Message-Id: <20100401130359.9a9b5c7b.akpm@linux-foundation.org>
+In-Reply-To: <1269881932-3803-3-git-send-email-iws@ovro.caltech.edu>
+References: <1269881932-3803-3-git-send-email-iws@ovro.caltech.edu>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Apr 2010, Chase Douglas wrote:
-> On Thu, Apr 1, 2010 at 3:27 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+On Mon, 29 Mar 2010 09:58:51 -0700
+"Ira W. Snyder" <iws@ovro.caltech.edu> wrote:
+
+> The Janz VMOD-ICAN3 is a MODULbus daughterboard which fits onto any
+> MODULbus carrier board. It is an intelligent CAN controller with a
+> microcontroller and associated firmware.
 > 
-> Thomas Gleixner seems to think this isn't the best approach (later
-> email in this thread), so I'm deferring sending it unless someone is
-> still interested in this approach.
 
-Well, it's a good workaround for now I think, I just answered Andrews
-question whether we can't do any better :)
+A neat-looking driver.
 
-Thanks,
+> ...
+>
+> +	spin_lock_irqsave(&mod->lock, flags);
+>
+> ...
 
-	tglx
+It does this rather a lot.  it seems to be doing quite a lot of work
+under that lock, too - quite a lot of memcpy_toio(), other stuff.
+
+Is there potential here to disable interrupt for too long?  Not
+possible to use spin_lock_bh() here?
+
