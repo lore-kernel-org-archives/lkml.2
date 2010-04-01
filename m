@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758880Ab0DAUVG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 16:21:06 -0400
-Received: from 8bytes.org ([88.198.83.132]:60648 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758775Ab0DAUVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 16:21:01 -0400
-Date: Thu, 1 Apr 2010 22:21:00 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Tom Lyon <pugs@lyon-about.com>
-Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, "Hans J. Koch" <hjk@linutronix.de>,
-       gregkh@suse.de
-Subject: Re: [PATCH 0/1] uio_pci_generic: extensions to allow access for
-	non-privileged processes
-Message-ID: <20100401202100.GL24846@8bytes.org>
-References: <201003311708.38961.pugs@lyon-about.com> <201004010906.47321.pugs@lyon-about.com> <4BB4C591.8000102@redhat.com> <201004011224.45336.pugs@lyon-about.com>
+	id S1758891Ab0DAUWI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 16:22:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40895 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752316Ab0DAUWF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 16:22:05 -0400
+Date: Thu, 1 Apr 2010 13:17:45 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Alex Deucher <alexdeucher@gmail.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Linux PCI <linux-pci@vger.kernel.org>,
+       Greg KH <gregkh@suse.de>, Clemens Ladisch <clemens@ladisch.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       dri-devel@lists.sourceforge.net, stable@kernel.org
+Subject: Re: [Regression, post-rc2] Commit a5ee4eb7541 breaks OpenGL on RS780
+  (was: Re: Linux 2.6.34-rc3)
+In-Reply-To: <i2ga728f9f91004011053u75097a2n3706f946dfd8f6fb@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1004011313120.3707@i5.linux-foundation.org>
+References: <alpine.LFD.2.00.1003301029250.3707@i5.linux-foundation.org>  <201003302316.45651.rjw@sisk.pl> <201004010313.32920.rjw@sisk.pl>  <alpine.LFD.2.00.1004010921550.3707@i5.linux-foundation.org>  <o2ma728f9f91004011007l4c3aee18p14daae06cda71e68@mail.gmail.com>
+  <alpine.LFD.2.00.1004011019270.3707@i5.linux-foundation.org> <i2ga728f9f91004011053u75097a2n3706f946dfd8f6fb@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201004011224.45336.pugs@lyon-about.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 01, 2010 at 12:24:45PM -0700, Tom Lyon wrote:
 
-> For my purposes, collapsing all the MSI-Xs into one MSI-look-alike is fine, 
-> because I'd be using MSI anyways if I could. The weird Intel 82599 VF only 
-> supports MSI-X.
 
-For KVM this is not fine. The device should look in the guest as it
-looks in the host. Some devices might only support MSI-X and thus the
-drivers for it only search for MSI-X and get confused when they only
-find MSI.
+On Thu, 1 Apr 2010, Alex Deucher wrote:
+> 
+> What I meant to say was MSI works fine on bridges other than the
+> bridge the internal gfx lives on.  quirk_disable_msi() just disables
+> MSI on the devices on that particular bridge as far as I understand
+> it, but I'm by no means an expert on the PCI code.
 
-> So one big question is - do we expand the whole UIO framework for KVM 
-> requirements, or do we split off either KVM or non-VM into a separate driver?
-> Hans or Greg - care to opine?
+Yes, it disabled MSI only on devices under that bridge. But if it's the 
+northbridge, that would be everything, no?
 
-We should definitly work towards a single implementation. The KVM device
-passthrough requirements are not very different from that of userspace
-device access.
+But I don't know what devices those
 
-	Joerg
+	PCI_VENDOR_ID_AMD, 0x9602,
+	PCI_VENDOR_ID_ASUSTEK, 0x9602,
 
+things are. If they are just a PCIE->PCI bridge rather than the root 
+bridge, then everything looks fine to me.
+
+			Linus
