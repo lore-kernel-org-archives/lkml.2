@@ -1,200 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab0DAHFd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 03:05:33 -0400
-Received: from mga11.intel.com ([192.55.52.93]:30819 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752774Ab0DAHF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 03:05:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,346,1267430400"; 
-   d="scan'208";a="785683674"
-Subject: Re: [PATCH 0/3] perf/core, x86: unify perfctr bitmasks
-From: Lin Ming <ming.m.lin@intel.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Robert Richter <robert.richter@amd.com>,
-       Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1270088048.8575.38.camel@minggr.sh.intel.com>
-References: <bd4cb8901003300311l4178891dvf1e63293a0ac51fe@mail.gmail.com>
-	 <20100330134145.GI11907@erda.amd.com>
-	 <bd4cb8901003300653lc8e414bp3930b03fee2fffbf@mail.gmail.com>
-	 <1269961255.5258.221.camel@laptop> <20100330155949.GJ11907@erda.amd.com>
-	 <1269968113.5258.442.camel@laptop> <20100330182906.GD5211@lenovo>
-	 <1269975840.5258.609.camel@laptop> <20100331161523.GA9058@lenovo>
-	 <20100331162647.GA15288@lenovo>  <20100331170517.GB15288@lenovo>
-	 <1270088048.8575.38.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Apr 2010 14:47:22 +0800
-Message-Id: <1270104442.3456.11.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
-Content-Transfer-Encoding: 8bit
+	id S1753609Ab0DAHJE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 03:09:04 -0400
+Received: from exprod5og111.obsmtp.com ([64.18.0.22]:56142 "EHLO
+	exprod5og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752131Ab0DAHI5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 03:08:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <4BB43D58.5030801@cs.helsinki.fi>
+References: <l2g4810ea571003312024jb883f2eet5b48a7fbb9ec340f@mail.gmail.com>
+	 <4BB43D58.5030801@cs.helsinki.fi>
+Date: Thu, 1 Apr 2010 15:08:50 +0800
+Message-ID: <i2h5f4a33681004010008rdda5bf16g7a9beb9d115da4fb@mail.gmail.com>
+Subject: Re: [PATCH] Fix missing of last user info while getting DEBUG_SLAB 
+	config enabled
+From: TAO HU <tghk48@motorola.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: ShiYong LI <shi-yong.li@motorola.com>, linux-kernel@vger.kernel.org,
+       cl@linux-foundation.org, mpm@selenic.com, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-01 at 10:14 +0800, Lin Ming wrote:
-> On Thu, 2010-04-01 at 01:05 +0800, Cyrill Gorcunov wrote:
-> > On Wed, Mar 31, 2010 at 08:26:47PM +0400, Cyrill Gorcunov wrote:
-> > > On Wed, Mar 31, 2010 at 08:15:23PM +0400, Cyrill Gorcunov wrote:
-> > > > On Tue, Mar 30, 2010 at 09:04:00PM +0200, Peter Zijlstra wrote:
-> > > > > On Tue, 2010-03-30 at 22:29 +0400, Cyrill Gorcunov wrote:
-> > > > [...]
-> > > > > > 
-> > > [...]
-> > > > +static inline bool p4_is_odd_cpl(u32 escr)
-> > > > +{
-> > > > +	unsigned int t0 = (escr & P4_ESCR_T0_ANY) << 0;
-> > > > +	unsigned int t1 = (escr & P4_ESCR_T1_ANY) << 2;
-> > > > +
-> > > > +	if ((t0 ^ t1) != t0)
-> > > > +		return true;
-> > > 
-> > > /me in shame: This is bogus, Peter don't take it yet.
-> > >
-> > 
-> > Updated
-> >  
-> > 	-- Cyrill
-> > ---
-> > x86, perf: P4 PMU -- check for permission granted on ANY event v2
-> > 
-> > In case if a caller (user) asked us to count events with
-> > some weird mask we should check if this priviledge has been
-> > granted since this could be a mix of bitmasks we not like
-> > which but allow if caller insist.
-> > 
-> > By ANY event term the combination of USR/OS bits in ESCR
-> > register is assumed.
-> 
-> I'll test this patch.
-> Does it need to be applied on top of Robert's patch?
+Hi, Pekka
 
-I tested this patch on top of Peter's and Robert's patch.
-Works well on P4.
+Thanks for your feedback.
 
-Only some build error, fixed by below patch.
+The subject and comments are kind of misleading. Sorry about that.
+It intends to make  both Red-Zone and LastUser are available even the
+alignment is larger than sizeof(long long).
+The idea is to reserve certain room ("align") to let the obj's offset
+is aligned to cache-line-size to address requirement of kmalloc().
 
-In file included from arch/x86/kernel/cpu/perf_event.c:1326:
-arch/x86/kernel/cpu/perf_event_p6.c:94: error: â€˜x86_hw_configâ€™ undeclared here (not in a function)
-arch/x86/kernel/cpu/perf_event_p6.c:99: error: unknown field â€˜raw_eventâ€™ specified in initializer
-arch/x86/kernel/cpu/perf_event_p6.c:99: error: â€˜x86_pmu_raw_eventâ€™ undeclared here (not in a function)
-make[3]: *** [arch/x86/kernel/cpu/perf_event.o] Error 1
-
-diff --git a/arch/x86/kernel/cpu/perf_event_p6.c b/arch/x86/kernel/cpu/perf_event_p6.c
-index 626abc0..4ec9680 100644
---- a/arch/x86/kernel/cpu/perf_event_p6.c
-+++ b/arch/x86/kernel/cpu/perf_event_p6.c
-@@ -91,12 +91,11 @@ static __initconst struct x86_pmu p6_pmu = {
- 	.enable_all		= p6_pmu_enable_all,
- 	.enable			= p6_pmu_enable_event,
- 	.disable		= p6_pmu_disable_event,
--	.hw_config		= x86_hw_config,
-+	.hw_config		= x86_pmu_hw_config,
- 	.schedule_events	= x86_schedule_events,
- 	.eventsel		= MSR_P6_EVNTSEL0,
- 	.perfctr		= MSR_P6_PERFCTR0,
- 	.event_map		= p6_pmu_event_map,
--	.raw_event		= x86_pmu_raw_event,
- 	.max_events		= ARRAY_SIZE(p6_perfmon_event_map),
- 	.apic			= 1,
- 	.max_period		= (1ULL << 31) - 1,
+Regarding align is less than sizeof(unsigned long long), I thin it is
+handled in previous code.
+Or you still expect to explicitly let align is no less than
+sizeof(unsigned long long)?
+if (flags & SLAB_RED_ZONE) {
+                ralign = REDZONE_ALIGN;
+             ... ...
+        }
 
 
-Lin Ming
+-- 
+Best Regards
+Hu Tao
 
-> 
-> Lin Ming
-> 
-> > 
-> > CC: Peter Zijlstra <peterz@infradead.org>
-> > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> > ---
-> >  arch/x86/include/asm/perf_event_p4.h |   17 +++++++++++++++++
-> >  arch/x86/kernel/cpu/perf_event_p4.c  |   24 +++++++++++++++++++++---
-> >  2 files changed, 38 insertions(+), 3 deletions(-)
-> > 
-> > Index: linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
-> > =====================================================================
-> > --- linux-2.6.git.orig/arch/x86/include/asm/perf_event_p4.h
-> > +++ linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
-> > @@ -33,6 +33,9 @@
-> >  #define P4_ESCR_T1_OS		0x00000002U
-> >  #define P4_ESCR_T1_USR		0x00000001U
-> >  
-> > +#define P4_ESCR_T0_ANY		(P4_ESCR_T0_OS | P4_ESCR_T0_USR)
-> > +#define P4_ESCR_T1_ANY		(P4_ESCR_T1_OS | P4_ESCR_T1_USR)
-> > +
-> >  #define P4_ESCR_EVENT(v)	((v) << P4_ESCR_EVENT_SHIFT)
-> >  #define P4_ESCR_EMASK(v)	((v) << P4_ESCR_EVENTMASK_SHIFT)
-> >  #define P4_ESCR_TAG(v)		((v) << P4_ESCR_TAG_SHIFT)
-> > @@ -134,6 +137,20 @@
-> >  #define P4_CONFIG_HT_SHIFT		63
-> >  #define P4_CONFIG_HT			(1ULL << P4_CONFIG_HT_SHIFT)
-> >  
-> > +/*
-> > + * typically we set USR or/and OS bits for one of the
-> > + * threads only at once, any other option is treated
-> > + * as "any"
-> > + */
-> > +static inline bool p4_is_any_cpl(u32 escr)
-> > +{
-> > +	if ((escr & P4_ESCR_T0_ANY) &&
-> > +	    (escr & P4_ESCR_T1_ANY))
-> > +		return true;
-> > +
-> > +	return false;
-> > +}
-> > +
-> >  static inline bool p4_is_event_cascaded(u64 config)
-> >  {
-> >  	u32 cccr = p4_config_unpack_cccr(config);
-> > Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-> > =====================================================================
-> > --- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
-> > +++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-> > @@ -443,13 +443,18 @@ static int p4_hw_config(struct perf_even
-> >  		return 0;
-> >  
-> >  	/*
-> > +	 * a caller may ask for something definitely weird and
-> > +	 * screwed, sigh...
-> > +	 */
-> > +	escr = p4_config_unpack_escr(event->attr.config);
-> > +	if (p4_is_any_cpl(escr) && perf_paranoid_cpu() && !capable(CAP_SYS_ADMIN))
-> > +		return -EACCES;
-> > +
-> > +	/*
-> >  	 * We don't control raw events so it's up to the caller
-> >  	 * to pass sane values (and we don't count the thread number
-> >  	 * on HT machine but allow HT-compatible specifics to be
-> >  	 * passed on)
-> > -	 *
-> > -	 * XXX: HT wide things should check perf_paranoid_cpu() &&
-> > -	 *      CAP_SYS_ADMIN
-> >  	 */
-> >  	event->hw.config |= event->attr.config &
-> >  		(p4_config_pack_escr(P4_ESCR_MASK_HT) |
-> > @@ -630,6 +635,19 @@ static void p4_pmu_swap_config_ts(struct
-> >  	escr = p4_config_unpack_escr(hwc->config);
-> >  	cccr = p4_config_unpack_cccr(hwc->config);
-> >  
-> > +	/*
-> > +	 * for non-standart configs we don't clobber cpl
-> > +	 * related bits so it's preferred the caller don't
-> > +	 * use this mode
-> > +	 */
-> > +	if (unlikely(p4_is_any_cpl(escr))) {
-> > +		if (p4_ht_thread(cpu))
-> > +			hwc->config |= P4_CONFIG_HT;
-> > +		else
-> > +			hwc->config &= ~P4_CONFIG_HT;
-> > +		return;
-> > +	}
-> > +
-> >  	if (p4_ht_thread(cpu)) {
-> >  		cccr &= ~P4_CCCR_OVF_PMI_T0;
-> >  		cccr |= P4_CCCR_OVF_PMI_T1;
-
+On Thu, Apr 1, 2010 at 2:29 PM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
+> ShiYong LI kirjoitti:
+>>
+>> Hi all,
+>>  For OMAP3430 chip, while getting DEBUG_SLAB config enabled, found a bug
+>> that last user information is missed in slab corruption log dumped by
+>> kernel. Actually, It's caused by ignorance of redzone and last user tag
+>> while calling kmem_cache_create() function if cache alignment > 16 bytes
+>> (unsigned long long).  Here is a patch to fix this problem. Already verified
+>> it on kernel 2.6.29.
+>
+> The patch is badly whitespace damaged.
+>
+>>  From 26a5a8ad2a1d7612929a91f6866cea9d1bea6077 Mon Sep 17 00:00:00 2001
+>> From: Shiyong Li <shi-yong.li@motorola.com
+>> <mailto:shi-yong.li@motorola.com>>
+>> Date: Wed, 31 Mar 2010 10:09:35 +0800
+>> Subject: [PATCH] Fix missing of last user info while getting DEBUG_SLAB
+>> config enabled.
+>> As OMAP3 cache line is 64 byte long, while calling kmem_cache_create()
+>> funtion, some cases need 64 byte alignment of requested memory space.
+>> But, if cache line > 16 bytes, current kernel ignore redzone
+>> and last user debug head/trail tag to make sure this alignment is not
+>> broken.
+>> This fix removes codes that ignorance of redzone and last user tag.
+>> Instead, use "align" argument value as object offset to guarantee the
+>> alignment.
+>> Signed-off-by: Shiyong Li <shi-yong.li@motorola.com
+>> <mailto:shi-yong.li@motorola.com>>
+>> ---
+>>  mm/slab.c |    7 ++-----
+>>  1 files changed, 2 insertions(+), 5 deletions(-)
+>> diff --git a/mm/slab.c b/mm/slab.c
+>> index a8a38ca..84af997 100644
+>> --- a/mm/slab.c
+>> +++ b/mm/slab.c
+>> @@ -2267,9 +2267,6 @@ kmem_cache_create (const char *name, size_t size,
+>> size_t align,
+>>  if (ralign < align) {
+>>   ralign = align;
+>>  }
+>> - /* disable debug if necessary */
+>> - if (ralign > __alignof__(unsigned long long))
+>> -  flags &= ~(SLAB_RED_ZONE | SLAB_STORE_USER);
+>>  /*
+>>   * 4) Store it.
+>>   */
+>> @@ -2289,8 +2286,8 @@ kmem_cache_create (const char *name, size_t size,
+>> size_t align,
+>>   */
+>>  if (flags & SLAB_RED_ZONE) {
+>>   /* add space for red zone words */
+>> -  cachep->obj_offset += sizeof(unsigned long long);
+>> -  size += 2 * sizeof(unsigned long long);
+>> +  cachep->obj_offset += align;
+>> +  size += align + sizeof(unsigned long long);
+>>  }
+>
+> I don't understand what you're trying to do here. What if align is less han
+> sizeof(unsigned long long)? What if SLAB_RED_ZONE is not enabled but
+>  SLAB_STORE_USER is?
+>
+>                        Pekka
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
