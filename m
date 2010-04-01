@@ -1,77 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806Ab0DAVdH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 17:33:07 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:51567 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754022Ab0DAVdB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 17:33:01 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: linux-kernel@vger.kernel.org
-Subject: 2.6.31 regression: programs crashing after a couple of days of uptime with hibernation
-Date: Thu, 1 Apr 2010 23:32:47 +0200
-User-Agent: KMail/1.9.10
+	id S1756696Ab0DAVez (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 17:34:55 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35667 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754199Ab0DAVew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 17:34:52 -0400
+Message-ID: <4BB510FB.80601@kernel.org>
+Date: Thu, 01 Apr 2010 14:32:43 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>, Peter Jones <pjones@redhat.com>,
+       Konrad Rzeszutek Wilk <konrad@kernel.org>,
+       Jan Beulich <jbeulich@novell.com>
+Subject: [PATCH -v2] ibft, x86: Change reserve_ibft_region() to find_ibft_region()
+References: <4BB3FFE4.4010909@kernel.org>
+In-Reply-To: <4BB3FFE4.4010909@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201004012332.49454.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-with kernel 2.6.30, I can have uptime of more than a month on my desktop PC
-(with hibernation). It's impossible with 2.6.31. After 1 to 3 days, processes
-that were running during hibernation (e.g. konsole, kwin, kicker, xorg) start
-to crash randomly in very weird ways. The kernel itself does not seem to
-crash. When I run the crashed program again, it seems to work. Looks like
-some memory corruption.
-
-This bug is also present in 2.6.32 and 2.6.33.
-
-This is very hard to debug as the test case takes 3 days. I've been trying to
-bisect it anyway. And after long time, I failed. Got this, which is obviously
-wrong:
-187f81b3d8d315c35c73ac0d05b15a04a0ac3ce7 is first bad commit
-
-git bisect log
-git-bisect start
-# good: [07a2039b8eb0af4ff464efd3dfd95de5c02648c6] Linux 2.6.30
-git-bisect good 07a2039b8eb0af4ff464efd3dfd95de5c02648c6
-# bad: [74fca6a42863ffacaf7ba6f1936a9f228950f657] Linux 2.6.31
-git-bisect bad 74fca6a42863ffacaf7ba6f1936a9f228950f657
-# good: [925d74ae717c9a12d3618eb4b36b9fb632e2cef3] V4L/DVB (11736): videobuf: modify return value of VIDIOC_REQBUFS ioctl
-git-bisect good 925d74ae717c9a12d3618eb4b36b9fb632e2cef3
-# bad: [a380137900fca5c79e6daa9500bdb6ea5649188e] ixgbe: Fix device capabilities of 82599 single speed fiber NICs.
-git-bisect bad a380137900fca5c79e6daa9500bdb6ea5649188e
-# good: [1dbb5765acc7a6fe4bc1957c001037cc9d02ae03] Staging: android: lowmemorykiller: fix up remaining checkpatch warnings
-git-bisect good 1dbb5765acc7a6fe4bc1957c001037cc9d02ae03
-# good: [df36b439c5fedefe013d4449cb6a50d15e2f4d70] Merge branch 'for-2.6.31' of git://git.linux-nfs.org/projects/trondmy/nfs-2.6
-git-bisect good df36b439c5fedefe013d4449cb6a50d15e2f4d70
-# bad: [a800faec1b21d7133b5f0c8c6dac593b7c4e118d] Merge branch 'for-linus' of git://www.jni.nu/cris
-git-bisect bad a800faec1b21d7133b5f0c8c6dac593b7c4e118d
-# bad: [ac1b7c378ef26fba6694d5f118fe7fc16fee2fe2] Merge git://git.infradead.org/mtd-2.6
-git-bisect bad ac1b7c378ef26fba6694d5f118fe7fc16fee2fe2
-# bad: [9e268beb92ee3a853b3946e84b10358207e2085f] Merge branch 'devel' of master.kernel.org:/home/rmk/linux-2.6-arm
-git-bisect bad 9e268beb92ee3a853b3946e84b10358207e2085f
-# good: [ab52ae6db035fa425f90146327ab7d2c5d3e5654] nfsd41: Backchannel: minorversion support for the back channel
-git-bisect good ab52ae6db035fa425f90146327ab7d2c5d3e5654
-# bad: [c2860d43f5dfab599fc1308ab61b1d3e30801ceb] [ARM] 5540/1: 32-bit Thumb-2 {ld,st}{m,rd} alignment fault fixup support
-git-bisect bad c2860d43f5dfab599fc1308ab61b1d3e30801ceb
-# bad: [187f81b3d8d315c35c73ac0d05b15a04a0ac3ce7] Merge branch 'for-rmk' of git://git.kernel.org/pub/scm/linux/kernel/git/ycmiao/pxa-linux-2.6 into devel
-git-bisect bad 187f81b3d8d315c35c73ac0d05b15a04a0ac3ce7
-# good: [6ea0414fc748ab5b1d83a414c7ee3a60190363aa] [ARM] pxa/hx4700: add Maxim 1587A voltage regulator
-git-bisect good 6ea0414fc748ab5b1d83a414c7ee3a60190363aa
-# good: [8776b268c6b0b671c2c744b06fee021b6da3e45f] [ARM] pxa: register wm8731 explicitly for corgi and poodle
-git-bisect good 8776b268c6b0b671c2c744b06fee021b6da3e45f
-# good: [cafc22658e85f65df72bee31c31b1fb337e7e606] MAINTAINERS: Update entry with file and SCM for EZX
-git-bisect good cafc22658e85f65df72bee31c31b1fb337e7e606
-# good: [d78ff0a50aac6a1bfe445969dd963e6486e49f56] MAINTAINERS: add entry for Mitac Mio A701 board
-git-bisect good d78ff0a50aac6a1bfe445969dd963e6486e49f56
 
 
--- 
-Ondrej Zary
+So arch code could decide the way to reserve the ibft.
+
+And We should reserve ibft as early as possible, instead of BOOTMEM stage,
+in case the table is in RAM range and is not reserved by BIOS.
+
+move that just sfter find_smp_config()
+
+Also when CONFIG_NO_BOOTMEM=y, We will not have reserve_bootmem() anymorea
+
+-v2: fix typo about ibft pointed by Konrad Rzeszutek Wilk <konrad@darnok.org>
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Peter Jones <pjones@redhat.com>
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: Jan Beulich <jbeulich@novell.com>
+
+---
+ arch/x86/kernel/setup.c            |   14 ++++++++++++--
+ drivers/firmware/iscsi_ibft_find.c |   11 ++++++++---
+ include/linux/iscsi_ibft.h         |    8 ++++++--
+ 3 files changed, 26 insertions(+), 7 deletions(-)
+
+Index: linux-2.6/arch/x86/kernel/setup.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -608,6 +608,16 @@ static int __init setup_elfcorehdr(char
+ early_param("elfcorehdr", setup_elfcorehdr);
+ #endif
+ 
++static __init void reserve_ibft_region(void)
++{
++	unsigned long addr, size = 0;
++
++	addr = find_ibft_region(&size);
++
++	if (size)
++		reserve_early_overlap_ok(addr, addr + size, "ibft");
++}
++
+ #ifdef CONFIG_X86_RESERVE_LOW_64K
+ static int __init dmi_low_memory_corruption(const struct dmi_system_id *d)
+ {
+@@ -910,6 +920,8 @@ void __init setup_arch(char **cmdline_p)
+ 	 */
+ 	find_smp_config();
+ 
++	reserve_ibft_region();
++
+ 	reserve_trampoline_memory();
+ 
+ #ifdef CONFIG_ACPI_SLEEP
+@@ -977,8 +989,6 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	dma32_reserve_bootmem();
+ 
+-	reserve_ibft_region();
+-
+ #ifdef CONFIG_KVM_CLOCK
+ 	kvmclock_init();
+ #endif
+Index: linux-2.6/drivers/firmware/iscsi_ibft_find.c
+===================================================================
+--- linux-2.6.orig/drivers/firmware/iscsi_ibft_find.c
++++ linux-2.6/drivers/firmware/iscsi_ibft_find.c
+@@ -52,7 +52,7 @@ EXPORT_SYMBOL_GPL(ibft_addr);
+  * Routine used to find the iSCSI Boot Format Table. The logical
+  * kernel address is set in the ibft_addr global variable.
+  */
+-void __init reserve_ibft_region(void)
++unsigned long __init find_ibft_region(unsigned long *sizep)
+ {
+ 	unsigned long pos;
+ 	unsigned int len = 0;
+@@ -78,6 +78,11 @@ void __init reserve_ibft_region(void)
+ 			}
+ 		}
+ 	}
+-	if (ibft_addr)
+-		reserve_bootmem(pos, PAGE_ALIGN(len), BOOTMEM_DEFAULT);
++	if (ibft_addr) {
++		*sizep = PAGE_ALIGN(len);
++		return pos;
++	}
++
++	*sizep = 0;
++	return 0;
+ }
+Index: linux-2.6/include/linux/iscsi_ibft.h
+===================================================================
+--- linux-2.6.orig/include/linux/iscsi_ibft.h
++++ linux-2.6/include/linux/iscsi_ibft.h
+@@ -42,9 +42,13 @@ extern struct ibft_table_header *ibft_ad
+  * mapped address is set in the ibft_addr variable.
+  */
+ #ifdef CONFIG_ISCSI_IBFT_FIND
+-extern void __init reserve_ibft_region(void);
++unsigned long find_ibft_region(unsigned long *sizep);
+ #else
+-static inline void reserve_ibft_region(void) { }
++static inline unsigned long find_ibft_region(unsigned long *sizep)
++{
++	*sizep = 0;
++	return 0;
++}
+ #endif
+ 
+ #endif /* ISCSI_IBFT_H */
