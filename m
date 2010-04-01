@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757911Ab0DAQwy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:52:54 -0400
-Received: from mail-fx0-f227.google.com ([209.85.220.227]:51490 "EHLO
-	mail-fx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755223Ab0DAQwm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:52:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject:references
-         :in-reply-to:content-type:content-transfer-encoding;
-        b=WZtVGNpVHHZTkwjAOoRS9ucrbcG0+mKch9Z+gRSHxOgbaOtD/2iTwiPXmcaoH57hWY
-         9hCcLiK16cayg2dulvS/gpT6ZffqQ0kSmeiQbvrKSkSti3oro9udteM5FxLTd9X9GyTu
-         4F/RiR1V9PYLSvBqInZDW/Q8eodyW5gukAfqM=
-Message-ID: <4BB4CF55.8000400@gmail.com>
-Date: Thu, 01 Apr 2010 18:52:37 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.2pre) Gecko/20100308 SUSE/3.1b1-5.9 Thunderbird/3.1b1
+	id S1755720Ab0DAQyq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:54:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6146 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754453Ab0DAQyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 12:54:39 -0400
+Date: Thu, 1 Apr 2010 18:52:47 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+       Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+       linux-kernel@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Sukadev Bhattiprolu <sukadev@us.ibm.com>
+Subject: Re: [2.6.31 and later] "struct pid" leak.
+Message-ID: <20100401165247.GB19551@redhat.com>
+References: <201003272121.ADE39095.JLFHOOMtSVOFQF@I-love.SAKURA.ne.jp> <tnxbpe5ygfy.fsf@e102109-lin.cambridge.arm.com> <20100331151719.8a92b302.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Dan Carpenter <error27@gmail.com>, Alan Cox <alan@linux.intel.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alexey Dobriyan <adobriyan@gmail.com>, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [patch] mxser: spin_lock() => spin_lock_irq()
-References: <20100401155143.GC5265@bicker>
-In-Reply-To: <20100401155143.GC5265@bicker>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100331151719.8a92b302.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2010 05:51 PM, Dan Carpenter wrote:
-> This should be spin_lock_irq() to match the spin_unlock_irq().
-> Originally it was a lock_kernel() but we switched everything to
-> spin_lock_irq() last November.
+On 03/31, Andrew Morton wrote:
 >
-> Signed-off-by: Dan Carpenter<error27@gmail.com>
+> On Tue, 30 Mar 2010 16:31:13 +0100
+> Catalin Marinas <catalin.marinas@arm.com> wrote:
 >
-> diff --git a/drivers/char/mxser.c b/drivers/char/mxser.c
-> index e0c5d2a..ecb2d8b 100644
-> --- a/drivers/char/mxser.c
-> +++ b/drivers/char/mxser.c
-> @@ -1768,7 +1768,7 @@ static int mxser_ioctl(struct tty_struct *tty, struct file *file,
->   		int len, lsr;
+> > Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> wrote:
+> > > I got below report with 2.6.33.1 .
+> > >
+> > > unreferenced object 0xde144600 (size 64):
+> > >   comm "init", pid 1, jiffies 4294678101 (age 291.508s)
+> > >   hex dump (first 32 bytes):
+> > >     02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> > >     00 00 00 00 04 76 ae de d1 76 43 c0 d6 08 00 00  .....v...vC.....
+> > >   backtrace:
+> > >     [<c0481704>] create_object+0x121/0x1ef
+> > >     [<c05f546b>] kmemleak_alloc+0x25/0x42
+> > >     [<c047e326>] kmemleak_alloc_recursive+0x1c/0x22
+> > >     [<c047e36e>] kmem_cache_alloc+0x42/0x68
+> > >     [<c0437701>] alloc_pid+0x19/0x288
+> > >     [<c0428acc>] copy_process+0x95a/0xdac
+> > >     [<c04290d8>] do_fork+0x129/0x261
+> > >     [<c0407de5>] sys_clone+0x1f/0x24
+> > >     [<c040292d>] ptregs_clone+0x15/0x28
+> > >     [<ffffffff>] 0xffffffff
+> > > unreferenced object 0xdfa96a40 (size 64):
+> > >   comm "login", pid 2259, jiffies 4294719437 (age 250.179s)
+> > >   hex dump (first 32 bytes):
+> > >     02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> > >     00 00 00 00 60 39 ae de d1 76 43 c0 bb 09 00 00  ....`9...vC.....
+> > >   backtrace:
+> > >     [<c0481704>] create_object+0x121/0x1ef
+> > >     [<c05f546b>] kmemleak_alloc+0x25/0x42
+> > >     [<c047e326>] kmemleak_alloc_recursive+0x1c/0x22
+> > >     [<c047e36e>] kmem_cache_alloc+0x42/0x68
+> > >     [<c0437701>] alloc_pid+0x19/0x288
+> > >     [<c0428acc>] copy_process+0x95a/0xdac
+> > >     [<c04290d8>] do_fork+0x129/0x261
+> > >     [<c0407de5>] sys_clone+0x1f/0x24
+> > >     [<c040292d>] ptregs_clone+0x15/0x28
+> > >     [<ffffffff>] 0xffffffff
+> >
+> > I reported similar leaks last year -
+> > http://lkml.org/lkml/2009/7/8/422. There is some analysis in the thread
+> > above of the reference counting but I couldn't figure out where it goes
+> > wrong. It looks to me like there isn't any reference to a struct pid
+> > block but its reference count is 2.
+> >
+> > There is a bugzilla entry as well -
+> > https://bugzilla.kernel.org/show_bug.cgi?id=13868
+> >
 >
->   		len = mxser_chars_in_buffer(tty);
-> -		spin_lock(&info->slock);
-> +		spin_lock_irq(&info->slock);
+> Let's bug some people by cc'ing them ;)
 
-Hmm, and there is one more error in the MOXA_ASPP_MON case. Interrupts 
-are not disabled at all there. Could you fix that too?
+Oh. It is hardly possibly to find the unbalanced get_pid() via grep.
 
-Thanks.
+IIRC, I sent the debugging patch which tracks get/put pid, but I can't
+recall if anybody tried this patch. Hmm, and I can't find that patch
+or the previous discussion in my maildir...
+
+Catalin, Tetsuo, any chance you can remind me if this patch was used?
+
+Oleg.
+
