@@ -1,76 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432Ab0DKIAU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 04:00:20 -0400
-Received: from imr1.ericy.com ([198.24.6.9]:49063 "EHLO imr1.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751191Ab0DKIAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 04:00:18 -0400
-Subject: Re: [PATCH][RESEND] x86: Do not write to VGA memory space if
- CONFIG_VGA_CONSOLE is undefined
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "mingo@redhat.com" <mingo@redhat.com>
-In-Reply-To: <4BB39518.2020200@zytor.com>
-References: <1270046479-4486-1-git-send-email-guenter.roeck@ericsson.com>
-	 <4BB39518.2020200@zytor.com>
-Content-Type: text/plain
-Organization: Ericsson
-Date: Wed, 31 Mar 2010 12:08:15 -0700
-Message-ID: <1270062495.1477.404.camel@groeck-laptop>
+	id S1751589Ab0DAEEl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 00:04:41 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:59779 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735Ab0DAEEe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 00:04:34 -0400
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, iommu@lists.linux-foundation.org,
+       joerg.roedel@amd.com, hbabu@us.ibm.com, kexec@lists.infradead.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] amd iommu: force flush of iommu prior during shutdown
+References: <20100331152417.GB13406@hmsreliant.think-freely.org>
+	<20100331155430.GF14011@redhat.com>
+	<20100331182824.GC13406@hmsreliant.think-freely.org>
+	<m1wrwsuxn9.fsf@fess.ebiederm.org>
+	<20100331191811.GD13406@hmsreliant.think-freely.org>
+	<m1sk7guv5u.fsf@fess.ebiederm.org>
+	<20100331202745.GE13406@hmsreliant.think-freely.org>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Wed, 31 Mar 2010 21:04:27 -0700
+In-Reply-To: <20100331202745.GE13406@hmsreliant.think-freely.org> (Neil Horman's message of "Wed\, 31 Mar 2010 16\:27\:45 -0400")
+Message-ID: <m1vdcbstro.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-X-Mailer: Evolution 2.26.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 76.21.114.89
+X-SA-Exim-Rcpt-To: nhorman@tuxdriver.com, linux-kernel@vger.kernel.org, kexec@lists.infradead.org, hbabu@us.ibm.com, joerg.roedel@amd.com, iommu@lists.linux-foundation.org, vgoyal@redhat.com
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-31 at 14:31 -0400, H. Peter Anvin wrote:
-> On 03/31/2010 07:41 AM, Guenter Roeck wrote:
-> > Current early_printk code writes into VGA memory space even
-> > if CONFIG_VGA_CONSOLE is undefined. This can cause problems
-> > if there is no VGA device in the system, especially if the memory
-> > is used by another device.
-> > 
-> > Fix problem by redirecting output to early_serial_console
-> > if CONFIG_VGA_CONSOLE is undefined.
-> > 
-> > Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> >  
-> >  asmlinkage void early_printk(const char *fmt, ...)
-> > @@ -216,7 +224,7 @@ static int __init setup_early_printk(char *buf)
-> >  			early_serial_init(buf + 4);
-> >  			early_console_register(&early_serial_console, keep);
-> >  		}
-> > -		if (!strncmp(buf, "vga", 3) &&
-> > +		if (have_vga_console && !strncmp(buf, "vga", 3) &&
-> >  		    boot_params.screen_info.orig_video_isVGA == 1) {
-> >  			max_xpos = boot_params.screen_info.orig_video_cols;
-> >  			max_ypos = boot_params.screen_info.orig_video_lines;
-> 
-> I'm confused in a big way about how you could end up with a system where:
-> 
-> a) there is no VGA;
-> b) VGA memory is used by another device(!!!);
-> c) boot_params.screen_info.orig_video_isVGA == 1?
-> 
-> 	-hpa
+Neil Horman <nhorman@tuxdriver.com> writes:
 
-Look for
-	early_printk("Kernel alive");
+> On Wed, Mar 31, 2010 at 12:51:25PM -0700, Eric W. Biederman wrote:
+>> Neil Horman <nhorman@tuxdriver.com> writes:
+>> 
+>> > On Wed, Mar 31, 2010 at 11:57:46AM -0700, Eric W. Biederman wrote:
+>> >> Neil Horman <nhorman@tuxdriver.com> writes:
+>> >> 
+>> >> > On Wed, Mar 31, 2010 at 11:54:30AM -0400, Vivek Goyal wrote:
+>> >> 
+>> >> >> So this call amd_iommu_flush_all_devices() will be able to tell devices
+>> >> >> that don't do any more DMAs and hence it is safe to reprogram iommu
+>> >> >> mapping entries.
+>> >> >> 
+>> >> > It blocks the cpu until any pending DMA operations are complete.  Hmm, as I
+>> >> > think about it, there is still a small possibility that a device like a NIC
+>> >> > which has several buffers pre-dma-mapped could start a new dma before we
+>> >> > completely disabled the iommu, althought thats small.  I never saw that in my
+>> >> > testing, but hitting that would be fairly difficult I think, since its literally
+>> >> > just a few hundred cycles between the flush and the actual hardware disable
+>> >> > operation.
+>> >> >
+>> >> > According to this though:
+>> >> > http://support.amd.com/us/Processor_TechDocs/34434-IOMMU-Rev_1.26_2-11-09.pdf
+>> >> > That window could be closed fairly easily, but simply disabling read and write
+>> >> > permissions for each device table entry prior to calling flush.  If we do that,
+>> >> > then flush the device table, any subsequently started dma operation would just
+>> >> > get noted in the error log, which we could ignore, since we're abot to boot to
+>> >> > the kdump kernel anyway.
+>> >> >
+>> >> > Would you like me to respin w/ that modification?
+>> >> 
+>> >> Disabling permissions on all devices sounds good for the new virtualization
+>> >> capable iommus.  I think older iommus will still be challenged.  I think
+>> >> on x86 we have simply been able to avoid using those older iommus.
+>> >> 
+>> >> I like the direction you are going but please let's put this in a
+>> >> paranoid iommu enable routine.
+>> >> 
+>> > You mean like initialize the device table so that all devices are default
+>> > disabled on boot, and then selectively enable them (perhaps during a
+>> > device_attach)?  I can give that a spin.
+>> 
+>> That sounds good.
+>> 
+>
+> So I'm officially rescinding this patch.  It apparently just covered up the
+> problem, rather than solved it outright.  This is going to take some more
+> thought on my part.  I read the code a bit closer, and the amd iommu on boot up
+> currently marks all its entries as valid and having a valid translation (because
+> if they're marked as invalid they're passed through untranslated which strikes
+> me as dangerous, since it means a dma address treated as a bus address could
+> lead to memory corruption.  The saving grace is that they are marked as
+> non-readable and non-writeable, so any device doing a dma after the reinit
+> should get logged (which it does), and then target aborted (which should
+> effectively squash the translation)
+>
+> I'm starting to wonder if:
+>
+> 1) some dmas are so long lived they start aliasing new dmas that get mapped in
+> the kdump kernel leading to various erroneous behavior
 
-That function is called prior to early_console_register(). Even though
-the call is now conditional, it can still happen if the log level is
-high enough. There are a couple of other early_printk() calls which can
-be executed before early_console_register() as well. The value of isVGA
-is thus irrelevant.
+I do know things like arp refreshes used to cause me trouble.  I have
+a particular memory of kexec into memtest86 and a little while later 
+memory corruption.
 
-Regarding a) and b), we have hardware which does not have VGA and does
-use the same memory space for another device. This was actually how the
-problem was found.
 
-Guenter
+> 2) a slew of target aborts to some hardware results in them being in an
+> inconsistent state
+>
+> I'm going to try marking the dev table on shutdown such that all devices have no
+> read/write permissions to see if that changes the situation.  It should I think
+> give me a pointer as to weather (1) or (2) is the more likely problem.
+>
+> Lots more thinking to do....
 
+I guess I can see devices getting confused by target aborts.
+I'm wondering if (a) we can suppress these DMAs.  or (b) we can reset the pci
+devices before we use them.  With pcie that should be possible.
+
+We used to be able simply not to use the IOMMU in x86 and avoid this trouble.
+Now with per device enables it looks like we need to do something with it.
+
+Eric
 
