@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758626Ab0DAS6u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 14:58:50 -0400
-Received: from mail-fx0-f227.google.com ([209.85.220.227]:56837 "EHLO
-	mail-fx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758116Ab0DAS6s (ORCPT
+	id S1758460Ab0DATC1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 15:02:27 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:30595
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755486Ab0DATCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 14:58:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=vboMP6O2+76WML8/LmF6Eu5mZqoj61Vlo6cNdlrbuBFbFmP4GbLr/yt7XEli0jA5o7
-         G5LWCL8TdwtKnzPSMbIPYcqm/dGvNzkNnR26lDXNsFlwLgzev1mT5gHqeW5Xne2IROLf
-         eGbiOexWcNDUxw0PXcwVry4AQqUzF4FuJYVhs=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Kent Overstreet <kent.overstreet@gmail.com>
-Subject: Re: KVM bug, git bisected
-Date: Thu, 1 Apr 2010 20:58:43 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2; KDE/4.3.4; i686; ; )
-Cc: linux-kernel@vger.kernel.org, riel@redhat.com
-References: <4BADFD74.8060904@gmail.com>
-In-Reply-To: <4BADFD74.8060904@gmail.com>
+	Thu, 1 Apr 2010 15:02:23 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zz98dN936eM62a3L1315kzz1202hzzz32i6bh2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L07OVI-02-EHE-02
+X-M-MSG: 
+Date: Thu, 1 Apr 2010 21:02:05 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Andi Kleen <andi@firstfloor.org>
+CC: oprofile-list@lists.sf.net, linux-kernel@vger.kernel.org,
+       rostedt@goodmis.org, stable@kernel.org
+Subject: Re: [PATCH] oprofile: remove double ring buffering
+Message-ID: <20100401190205.GD6027@erda.amd.com>
+References: <20100401011725.GA27567@basil.fritz.box>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004012058.43449.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100401011725.GA27567@basil.fritz.box>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 01 Apr 2010 19:02:06.0299 (UTC) FILETIME=[D276EAB0:01CAD1CD]
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On sobota, 27 marca 2010 o 13:43:32 Kent Overstreet wrote:
-> commit 5beb49305251e5669852ed541e8e2f2f7696c53e
-> Author: Rik van Riel <riel@redhat.com>
-> Date:   Fri Mar 5 13:42:07 2010 -0800
-> 
->      mm: change anon_vma linking to fix multi-process server scalability
-> issue
-> 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=15672
-for your bug report, please add your address to the CC list in there, thanks!
+On 01.04.10 03:17:25, Andi Kleen wrote:
+> Got confirmation now this patch fixes most of the dropped oprofile
+> samples problem on a particular intensive test on a large system.
+> So now submitting the previous RFC formally.
+> .34 / Stable candidate.
+
+Thanks Andi, will take a look at this next week.
+
+-Robert
+
 -- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+Advanced Micro Devices, Inc.
+Operating System Research Center
+email: robert.richter@amd.com
+
