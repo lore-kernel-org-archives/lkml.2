@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757976Ab0DAQeu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:34:50 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44898 "EHLO
+	id S1758215Ab0DAQfJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:35:09 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44895 "EHLO
 	bob.linux.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758192Ab0DAQek (ORCPT
+	with ESMTP id S1758166Ab0DAQec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:34:40 -0400
+	Thu, 1 Apr 2010 12:34:32 -0400
 From: Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 08/14] isicom: kill off the BKL
+Subject: [PATCH 07/14] riscom8: kill use of lock_kernel
 To: linux-kernel@vger.kernel.org
-Date: Thu, 01 Apr 2010 17:05:50 +0100
-Message-ID: <20100401160548.8882.26940.stgit@localhost.localdomain>
+Date: Thu, 01 Apr 2010 17:05:42 +0100
+Message-ID: <20100401160533.8882.38905.stgit@localhost.localdomain>
 In-Reply-To: <20100401155513.8882.54006.stgit@localhost.localdomain>
 References: <20100401155513.8882.54006.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -22,72 +22,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As with the others we can use the port mutex to get the needed locking
-properties and fix the race with open.
+The riscom8 board uses lock_kernel to protect bits of the port setting
+ioctl logic. We can use the port mutex for this as the logic is internal
+and will also lock set versus open (a locking property that has been lost
+somewhere along the way)
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/char/isicom.c |   12 +++++-------
- 1 files changed, 5 insertions(+), 7 deletions(-)
+ drivers/char/riscom8.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
 
-diff --git a/drivers/char/isicom.c b/drivers/char/isicom.c
-index 0fa2e4a..989dd4b 100644
---- a/drivers/char/isicom.c
-+++ b/drivers/char/isicom.c
-@@ -124,7 +124,6 @@
- #include <linux/fs.h>
- #include <linux/sched.h>
- #include <linux/serial.h>
+diff --git a/drivers/char/riscom8.c b/drivers/char/riscom8.c
+index 0a8d1e5..9c00b7d 100644
+--- a/drivers/char/riscom8.c
++++ b/drivers/char/riscom8.c
+@@ -47,7 +47,6 @@
+ #include <linux/init.h>
+ #include <linux/delay.h>
+ #include <linux/tty_flip.h>
 -#include <linux/smp_lock.h>
- #include <linux/mm.h>
- #include <linux/interrupt.h>
- #include <linux/timer.h>
-@@ -1113,8 +1112,7 @@ static int isicom_set_serial_info(struct tty_struct *tty,
- 	if (copy_from_user(&newinfo, info, sizeof(newinfo)))
+ #include <linux/spinlock.h>
+ #include <linux/device.h>
+ 
+@@ -1183,6 +1182,7 @@ static int rc_set_serial_info(struct tty_struct *tty, struct riscom_port *port,
+ 	if (copy_from_user(&tmp, newinfo, sizeof(tmp)))
  		return -EFAULT;
  
--	lock_kernel();
--
 +	mutex_lock(&port->port.mutex);
- 	reconfig_port = ((port->port.flags & ASYNC_SPD_MASK) !=
- 		(newinfo.flags & ASYNC_SPD_MASK));
+ 	change_speed = ((port->port.flags & ASYNC_SPD_MASK) !=
+ 			(tmp.flags & ASYNC_SPD_MASK));
  
-@@ -1123,7 +1121,7 @@ static int isicom_set_serial_info(struct tty_struct *tty,
- 				(newinfo.closing_wait != port->port.closing_wait) ||
- 				((newinfo.flags & ~ASYNC_USR_MASK) !=
- 				(port->port.flags & ~ASYNC_USR_MASK))) {
--			unlock_kernel();
+@@ -1190,8 +1190,10 @@ static int rc_set_serial_info(struct tty_struct *tty, struct riscom_port *port,
+ 		if ((tmp.close_delay != port->port.close_delay) ||
+ 		    (tmp.closing_wait != port->port.closing_wait) ||
+ 		    ((tmp.flags & ~ASYNC_USR_MASK) !=
+-		     (port->port.flags & ~ASYNC_USR_MASK)))
++		     (port->port.flags & ~ASYNC_USR_MASK))) {
 +			mutex_unlock(&port->port.mutex);
  			return -EPERM;
- 		}
++		}
  		port->port.flags = ((port->port.flags & ~ASYNC_USR_MASK) |
-@@ -1140,7 +1138,7 @@ static int isicom_set_serial_info(struct tty_struct *tty,
- 		isicom_config_port(tty);
- 		spin_unlock_irqrestore(&port->card->card_lock, flags);
+ 			       (tmp.flags & ASYNC_USR_MASK));
+ 	} else  {
+@@ -1207,6 +1209,7 @@ static int rc_set_serial_info(struct tty_struct *tty, struct riscom_port *port,
+ 		rc_change_speed(tty, bp, port);
+ 		spin_unlock_irqrestore(&riscom_lock, flags);
  	}
--	unlock_kernel();
 +	mutex_unlock(&port->port.mutex);
  	return 0;
  }
  
-@@ -1149,7 +1147,7 @@ static int isicom_get_serial_info(struct isi_port *port,
- {
- 	struct serial_struct out_info;
- 
--	lock_kernel();
+@@ -1219,12 +1222,15 @@ static int rc_get_serial_info(struct riscom_port *port,
+ 	memset(&tmp, 0, sizeof(tmp));
+ 	tmp.type = PORT_CIRRUS;
+ 	tmp.line = port - rc_port;
++
 +	mutex_lock(&port->port.mutex);
- 	memset(&out_info, 0, sizeof(out_info));
- /*	out_info.type = ? */
- 	out_info.line = port - isi_ports;
-@@ -1159,7 +1157,7 @@ static int isicom_get_serial_info(struct isi_port *port,
- /*	out_info.baud_base = ? */
- 	out_info.close_delay = port->port.close_delay;
- 	out_info.closing_wait = port->port.closing_wait;
--	unlock_kernel();
+ 	tmp.port = bp->base;
+ 	tmp.irq  = bp->irq;
+ 	tmp.flags = port->port.flags;
+ 	tmp.baud_base = (RC_OSCFREQ + CD180_TPC/2) / CD180_TPC;
+ 	tmp.close_delay = port->port.close_delay * HZ/100;
+ 	tmp.closing_wait = port->port.closing_wait * HZ/100;
 +	mutex_unlock(&port->port.mutex);
- 	if (copy_to_user(info, &out_info, sizeof(out_info)))
- 		return -EFAULT;
- 	return 0;
+ 	tmp.xmit_fifo_size = CD180_NFIFO;
+ 	return copy_to_user(retinfo, &tmp, sizeof(tmp)) ? -EFAULT : 0;
+ }
+@@ -1241,14 +1247,10 @@ static int rc_ioctl(struct tty_struct *tty, struct file *filp,
+ 
+ 	switch (cmd) {
+ 	case TIOCGSERIAL:
+-		lock_kernel();
+ 		retval = rc_get_serial_info(port, argp);
+-		unlock_kernel();
+ 		break;
+ 	case TIOCSSERIAL:
+-		lock_kernel();
+ 		retval = rc_set_serial_info(tty, port, argp);
+-		unlock_kernel();
+ 		break;
+ 	default:
+ 		retval = -ENOIOCTLCMD;
 
