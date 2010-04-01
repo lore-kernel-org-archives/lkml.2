@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960Ab0DAFgg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 01:36:36 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:33981 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752909Ab0DAFga convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 01:36:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=HWzJyB2EqQifyQKwSXBH7NPoQh0wXE5Yt1xuduuPFuIqG1Lpp1AYMIb9N0C6oxsgoV
-         00NKsiceNc0yA1mmejjK0YVXxo522wrtVDTVn575jnHRDxjNlXB55Vm2lIJZNQlKMDro
-         K4lIKPesvue5fnGd+1WTJqKr2iuaDfwHuCcwc=
-MIME-Version: 1.0
-In-Reply-To: <21d7e9971003300007re486f22jbd2e98fcc104ac92@mail.gmail.com>
-References: <alpine.DEB.2.00.1003300530150.5127@skynet.skynet.ie>
-	 <21d7e9971003300007re486f22jbd2e98fcc104ac92@mail.gmail.com>
-Date: Thu, 1 Apr 2010 07:36:28 +0200
-Message-ID: <i2tb170af451003312236m27fbe450k6c3b955808f13247@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Dave Airlie <airlied@linux.ie>, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, dri-devel@lists.sf.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753164Ab0DAFlX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 01:41:23 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:47487 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753042Ab0DAFlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 01:41:14 -0400
+Date: Thu, 1 Apr 2010 16:41:10 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Sjur Braendeland <sjur.brandeland@stericsson.com>,
+       David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: build failure after merge of the slabh tree
+Message-Id: <20100401164110.80e3b18f.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 30 marca 2010 09:07 użytkownik Dave Airlie <airlied@gmail.com> napisał:
-> 2010/3/30 Dave Airlie <airlied@linux.ie>:
->>
->> [re-pull request]
->
-> Actually Linus, don't bother, consider this revoked, I'm going to kill
-> the GPU reset code
-> and re-send this tomorrow, its just a mess to get it back out of the
-> tree at this point,
+Hi Tejun,
 
-Ping? Are you waiting for Jerome or something? Please do not stop
-pulling whole stuff because Jerome is preparing some patch for last
-moment.
+After merging the slabh tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-I believe I'll be much better to pull most stuff ASAP to let ppl test
-it, and later eventually ask Linus to get some one-two additional
-small patches.
+net/caif/cfcnfg.c: In function 'cfcnfg_create':
+net/caif/cfcnfg.c:68: error: implicit declaration of function 'kmalloc'
+net/caif/cfcnfg.c:68: warning: assignment makes pointer from integer without a cast
+net/caif/cfcnfg.c:100: error: implicit declaration of function 'kfree'
+
+Caused by commit 15c9ac0c80e390df09ce5730a7b08b13e07a8dd5 ("net-caif: add
+CAIF generic caif support functions") from the net interacting with
+commit de380b55f92986c1a84198149cb71b7228d15fbd ("percpu: don't
+implicitly include slab.h from percpu.h") from the slabh tree.
+
+I have applied the following patch for today.  Dave, could you apply this
+to the net tree please?
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 1 Apr 2010 16:31:50 +1100
+Subject: [PATCH] net-caif: using kmalloc/kfree requires the include of slab.h
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ net/caif/cfcnfg.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/net/caif/cfcnfg.c b/net/caif/cfcnfg.c
+index 70a733d..c873e3d 100644
+--- a/net/caif/cfcnfg.c
++++ b/net/caif/cfcnfg.c
+@@ -5,6 +5,7 @@
+  */
+ #include <linux/kernel.h>
+ #include <linux/stddef.h>
++#include <linux/slab.h>
+ #include <net/caif/caif_layer.h>
+ #include <net/caif/cfpkt.h>
+ #include <net/caif/cfcnfg.h>
+-- 
+1.7.0.3
 
 -- 
-Rafał
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
