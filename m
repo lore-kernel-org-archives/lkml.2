@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757389Ab0DAQMn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:12:43 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:39564 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab0DAQMi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:12:38 -0400
+	id S1757246Ab0DAQNt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:13:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36462 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750879Ab0DAQNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 12:13:43 -0400
+Date: Thu, 1 Apr 2010 18:12:43 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       Kent Overstreet <kent.overstreet@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>
 Subject: Re: [COUNTERPATCH] mm: avoid overflowing preempt_count() in
  mmu_take_all_locks()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, Kent Overstreet <kent.overstreet@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <20100401154249.GQ5825@random.random>
+Message-ID: <20100401161243.GW5825@random.random>
 References: <1270117906.1653.139.camel@laptop>
-	 <alpine.LFD.2.00.1004011300550.32352@localhost.localdomain>
-	 <4BB47FC3.1020606@redhat.com> <4BB480CC.2060503@redhat.com>
-	 <1270121264.1653.205.camel@laptop> <1270122194.1653.223.camel@laptop>
-	 <20100401154249.GQ5825@random.random>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Apr 2010 18:12:34 +0200
-Message-ID: <1270138354.1598.99.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+ <alpine.LFD.2.00.1004011300550.32352@localhost.localdomain>
+ <4BB47FC3.1020606@redhat.com>
+ <1270120592.1653.192.camel@laptop>
+ <20100401153645.GP5825@random.random>
+ <4BB4BE44.5070507@redhat.com>
+ <20100401155456.GR5825@random.random>
+ <4BB4C3AB.1060100@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BB4C3AB.1060100@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-01 at 17:42 +0200, Andrea Arcangeli wrote:
-> The ugliest part of it (that I think you missed below) is the breakage
-> of the RCU locking in the anon-vma which requires adding refcounting
-> to it. That was the worst part of the conversion as far as I can tell.
-> 
-One thing we can do there is to mutex_trylock() if we get the lock, see
-if we've got the right object, if the trylock fails we can do the
-refcount thing and sleep. That would allow the fast-path to remain a
-single atomic.
+On Thu, Apr 01, 2010 at 07:02:51PM +0300, Avi Kivity wrote:
+> Not these locks, but if we go all the way and make mmu notifiers 
+> sleepable, we can convert mmu_lock to a mutex.
 
-The only thing is growing that anon_vma struct, but KSM seems to already
-do that for the most common .configs.
+Ah yes, sure! I didn't get the objective was to convert the kvm
+mmu_lock to mutex too, I thought you were talking about the linux VM
+locks, and of course with rmap walks you meant the kvm rmaps, not the
+linux rmaps. It's all clear now sorry.
 
-
-
+I guess I was biased because I see mmu_lock like the page_table_lock
+and in linux we never had mutex protecting pagetable access, because
+pagetable mangling is so quick and never blocks. But there are the
+rmap walks too protected by the same mmu_lock in kvm (not the case for
+the page_table_lock that only protects pagetable access), so I agree
+it may be worth converting it to mutex, agreed.
