@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758029Ab0DARzM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 13:55:12 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51346 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754331Ab0DARzF (ORCPT
+	id S1758751Ab0DAR6V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 13:58:21 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:51067 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753634Ab0DAR6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 13:55:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=HcxX1w8behSRmH0Zs0eDNZncgYeTdyr1I4Ye0lqDNnc3yfDBNXFFiZIugYdDUglL9R
-         Pl9I7YTDuGr9uepg7r0ufSIISHZA64S7jmtMnLSSmxCOKGlw4Mdohs9dAcx0qd1pv2jZ
-         D3Hebu9H6VHTs5X5UqfMrhepK/+sY2jRhzzr4=
+	Thu, 1 Apr 2010 13:58:04 -0400
+Date: Thu, 1 Apr 2010 19:57:58 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Anders =?iso-8859-1?Q?Grafstr=F6m?= 
+	<grfstrm@users.sourceforge.net>
+Cc: linux-wireless@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+       Sven Neumann <s.neumann@raumfeld.com>,
+       LKML <linux-kernel@vger.kernel.org>, stable@kernel.org,
+       AKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: Memory corruption with 2.6.32.10, but not with 2.6.34-rc3
+Message-ID: <20100401175758.GQ30801@buzzloop.caiaq.de>
+References: <20100401132156.GJ30807@buzzloop.caiaq.de>
+ <4BB4D817.1050603@users.sourceforge.net>
 MIME-Version: 1.0
-In-Reply-To: <l2me6bf505b1004011042oce87e64fn94bef56c78a1b10d@mail.gmail.com>
-References: <l2me6bf505b1004011042oce87e64fn94bef56c78a1b10d@mail.gmail.com>
-Date: Thu, 1 Apr 2010 11:55:04 -0600
-Message-ID: <v2se6bf505b1004011055pac588aaga825d3c674e075e1@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 2.6.33.1-rt11 - BUG?
-From: Xianghua Xiao <xiaoxianghua@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4BB4D817.1050603@users.sourceforge.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm testing 2.6.33.1 on ppc 834x with rt11 patch. After system is up I
-keep seeing this same message from dmesg:
+On Thu, Apr 01, 2010 at 07:29:59PM +0200, Anders Grafström wrote:
+> Daniel Mack wrote:
+> > We would like to have a fix for this annoying bug in the stable series
+> > (especially 2.6.32.x) as well, but I don't have much ideas about where
+> > to search for it. Hence, I would appreciate if maintainers could think
+> > about any possible commits in the described time window which haven't
+> > reached stable. Does the description ring anyone's bell?
+> > 
+> > I can cherry-pick things if anyone pin-points something and run
+> > lont-time tests again. Any pointer appreciated.
+> 
+> You could try this one:
+> 
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=8e4971f2fb2380ce66196136e113d04196b80fcd
 
-> BUG: sleeping function called from invalid context at kernel/rtmutex.c:684
-> pcnt: 0 0 in_atomic(): 0, irqs_disabled(): 1, pid: 16, name: events/0
-> Call Trace:
-> [cf85be80] [c00096cc] show_stack+0x6c/0x1a4 (unreliable)
-> [cf85beb0] [c001f928] __might_sleep+0x104/0x108
-> [cf85bec0] [c03cb444] rt_spin_lock+0xa0/0xa4
-> [cf85bed0] [c0270b6c] lock_tx_qs+0x40/0x68
-> [cf85bef0] [c02712cc] adjust_link+0x4c/0x240
-> [cf85bf20] [c026d5ec] phy_state_machine+0x3bc/0x628
-> [cf85bf40] [c003e69c] worker_thread+0x148/0x1f0
-> [cf85bfa0] [c0042ec0] kthread+0x84/0x88
-> [cf85bff0] [c00137f8] kernel_thread+0x4c/0x68
-> BUG: sleeping function called from invalid context at kernel/rtmutex.c:684
-> pcnt: 0 0 in_atomic(): 0, irqs_disabled(): 1, pid: 16, name: events/0
->
-> #uname -a
-> Linux 2.6.33.1-rt11 #3 PREEMPT RT Thu Apr 1 11:58:25 CDT 2010 ppc unknown
->
+Thanks. Unfortunately, that didn't fix it (this time, it crashed after a
+few minutes only). But shouldn't we have that in -stable anyway?
 
-This does not hang/lock the system yet...google reported similar 'bug'
-on older kernels. Is this a bug from 2.6.33.1-rt11 patch or I have to
-change phy.c somehow to avoid it? This traces back to a mutex lock in
-phy.c.
+Daniel
 
-Xianghua
