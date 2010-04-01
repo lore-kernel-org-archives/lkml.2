@@ -1,67 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758580Ab0DAB3N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 21:29:13 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42623 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758521Ab0DAB3J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 21:29:09 -0400
-Date: Wed, 31 Mar 2010 18:26:54 -0400
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Matthew Wilcox <matthew@wil.cx>, Yinghai Lu <yinghai@kernel.org>,
-       Rabin Vincent <rabin@rab.in>, lkml <linux-kernel@vger.kernel.org>,
-       penberg@cs.helsinki.fi, linux-arch@vger.kernel.org
-Subject: Re: start_kernel(): bug: interrupts were enabled early
-Message-Id: <20100331182654.d36c87ff.akpm@linux-foundation.org>
-In-Reply-To: <1270084631.7101.81.camel@pasglop>
-References: <20100325194100.GA2364@debian>
-	<20100331134048.da4e35a7.akpm@linux-foundation.org>
-	<4BB3B4DB.7040904@kernel.org>
-	<20100331210145.GB32165@parisc-linux.org>
-	<4BB3B8FC.1020608@zytor.com>
-	<20100331211754.GC32165@parisc-linux.org>
-	<alpine.DEB.2.00.1003311640410.30456@router.home>
-	<20100331215411.GB17715@flint.arm.linux.org.uk>
-	<4BB3C540.9000405@zytor.com>
-	<1270075071.7101.79.camel@pasglop>
-	<20100331154955.54176e5e.akpm@linux-foundation.org>
-	<1270084631.7101.81.camel@pasglop>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758593Ab0DAB30 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Mar 2010 21:29:26 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:46910 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758582Ab0DAB3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Mar 2010 21:29:23 -0400
+Date: Wed, 31 Mar 2010 18:29:19 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Trond.Myklebust@netapp.com,
+       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFS: Fix RCU warnings in
+ nfs_inode_return_delegation_noreclaim() [ver #2]
+Message-ID: <20100401012919.GK2461@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <19192.1269889348@redhat.com>
+ <23274.1269893706@redhat.com>
+ <25276.1269901350@redhat.com>
+ <26760.1269903543@redhat.com>
+ <20100329232636.GT2569@linux.vnet.ibm.com>
+ <2440.1269967151@redhat.com>
+ <21972.1269993064@redhat.com>
+ <10818.1270044273@redhat.com>
+ <15371.1270057054@redhat.com>
+ <19556.1270076008@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <19556.1270076008@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 01 Apr 2010 12:17:11 +1100 Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
-
-> On Wed, 2010-03-31 at 15:49 -0700, Andrew Morton wrote:
+On Wed, Mar 31, 2010 at 11:53:28PM +0100, David Howells wrote:
+> Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> 
+> > If you dont own a lock, and test a pointer, what guarantee do you have
+> > this pointer doesnt change right after you tested it ?
+> 
+> There are five possibilities:
+> 
+>  (1) A pointer points to something when you check, and still points to the
+>      same thing after you've gained the lock.
+> 
+>  (2) A pointer points to something when you check, and points to something
+>      else after you've gained the lock.
+> 
+>  (3) A pointer points to something when you check, and is NULL after you've
+>      gained the lock.
+> 
+>  (4) A pointer points to NULL when you check, and points to something after
+>      you've gained the lock.
+> 
+>  (5) A pointer points to NULL when you check, and points to NULL after you've
+>      gained the lock.
+> 
+> However, what if you _know_ that the pointer can only ever be made non-NULL
+> during initialisation, and may even be left unset?  That means possibility (4)
+> can never happen, and that possibility (5) can be detected by testing before
+> taking the lock.  Now, what if (5) is a common occurrence?  It might make
+> sense to make the test.
+> 
+> And what matter if the pointer _does_ change after you test it.  If it was
+> NULL before, it can only be NULL now - by the semantics defined for that
+> particular pointer.
+> 
+> > If *something* protects the pointer from being changed, then how can be
+> > expressed this fact ?
 > > 
-> > But these things are all utterly gross.  The bottom line is that
-> > radix_tree_init() is manifestly unsuited to being called with local
-> > interrupts disabled.  773e3eb7b81e5ba13b5155dfb3bb75b8ce37f8f9 was
-> > just a wrong patch. 
+> > If nothing protects the pointer, why test it then, as result of test is
+> > unreliable ?
 > 
-> Except that powerpc (and now it seems x86) both want to use radix trees
-> for interrupt handling... At least on powerpc, we trick and use a linear
-> search until the radix trees are initialized, which we do later during
-> boot, but that somewhat sucks.
+> I think you may be misunderstanding the purpose of rcu_dereference().  It is
+> to make sure the reading and dereferencing of the pointer are correctly
+> ordered with respect to the setting up of the pointed to record and the
+> changing of the pointer.
 > 
-> I believe sherry picking things like not calling radix_tree_init() is
-> going to fix one case today, until we have another one, and another one,
-> and etc...
+> There must be two memory accesses for the barrier implied to be of use.  In
+> nfs_inode_return_delegation() there aren't two memory accesses to order,
+> therefore the barrier is pointless.
 > 
-> I suspect we're better off fixing the root of the problem in down/up.
+> > If NFS was using rcu_dereference(), it probably was for a reason, but if
+> > nobody can recall it, it was a wrong reason ?
 > 
+> I think it is incorrectly used.  Given that the rcu_dereference() in:
+> 
+> 	if (rcu_dereference(nfsi->delegation) != NULL) {
+> 		spin_lock(&clp->cl_lock);
+> 		delegation = nfs_detach_delegation_locked(nfsi, NULL);
+> 		spin_unlock(&clp->cl_lock);
+> 		if (delegation != NULL)
+> 			nfs_do_return_delegation(inode, delegation, 0);
+> 	}
 
-Not by adding overhead to every single down_read()/down_write() just to
-fix a once-off startup problem - that's taking laziness way too far.
+And nfs_detach_delegation_locked() rechecks nfsi->delegation() under
+the lock, so this is a legitimate use.
 
-We'd be better off hacking a kmem_cache_create() special case to avoid
-taking the rwsem.  Add SLAB_I_SUCK to `flags' perhaps.
+The pointer is not held constant, but any changes will be accounted
+for and handled correctly.  So I would argue that the pointer value is
+in fact protected by the recheck-under-lock algorithm used here.
 
+							Thanx, Paul
+
+> resolves to:
+> 
+> 	_________p1 = nfsi->delegation;
+> 	smp_read_barrier_depends();
+> 	if (_________p1) {
+> 		spin_lock(&clp->cl_lock); // implicit LOCK-class barrier
+> 		==>nfs_detach_delegation_locked(nfsi, NULL);
+> 		  [dereference nfsi->delegation]
+> 		...
+> 	}
+> 
+> do you actually need the smp_read_barrier_depends()?  You _have_ a barrier in
+> the form of the spin_lock().  In fact, the spin_lock() is avowedly sufficient
+> to protect accesses to and dereferences of nfsi->delegation, which means that:
+> 
+> 	static struct nfs_delegation *nfs_detach_delegation_locked(struct nfs_inode *nfsi, const nfs4_stateid *stateid)
+> 	{
+> 		struct nfs_delegation *delegation = rcu_dereference(nfsi->delegation);
+> 		...
+> 	}
+> 
+> has no need of the internal barrier provided by rcu_dereference() either.
+> 
+> David
