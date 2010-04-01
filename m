@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362Ab0DAGGx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 02:06:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9264 "EHLO mx1.redhat.com"
+	id S1752843Ab0DAGHI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 02:07:08 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:60321 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753284Ab0DAGGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 02:06:43 -0400
-Date: Thu, 1 Apr 2010 02:06:28 -0400
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Pirko <jpirko@redhat.com>, Stephen Hemminger <shemminger@vyatta.com>,
-       netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Amerigo Wang <amwang@redhat.com>, bonding-devel@lists.sourceforge.net,
-       Jay Vosburgh <fubar@us.ibm.com>
-Message-Id: <20100401061014.4815.7341.sendpatchset@localhost.localdomain>
-Subject: [Patch V2] bonding: fix potential deadlock in bond_uninit()
+	id S1753343Ab0DAGGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 02:06:48 -0400
+Date: Thu, 1 Apr 2010 17:06:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jikos@jikos.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       =?UTF-8?B?IkJydW5vIFByw6ltb250Ig==?= <bonbons@linux-vserver.org>
+Subject: linux-next: build failure after merge of the final tree (hid tree
+ related)
+Message-Id: <20100401170639.9f2fe605.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__1_Apr_2010_17_06_39_+1100_NCsV.QWPQe6Bg5gy"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Thu__1_Apr_2010_17_06_39_+1100_NCsV.QWPQe6Bg5gy
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-bond_uninit() is invoked with rtnl_lock held, when it does destroy_workqueue()
-which will potentially flush all works in this workqueue, if we hold rtnl_lock
-again in the work function, it will deadlock.
+Hi Jiri,
 
-So move destroy_workqueue() to destructor where rtnl_lock is not held any more,
-suggested by Eric.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-Signed-off-by: WANG Cong <amwang@redhat.com>
-Cc: Jay Vosburgh <fubar@us.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Jiri Pirko <jpirko@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+drivers/hid/hid-picolcd.c: In function 'picolcd_debug_reset_write':
+drivers/hid/hid-picolcd.c:1343: error: implicit declaration of function 'co=
+py_from_user'
+drivers/hid/hid-picolcd.c: In function 'picolcd_debug_eeprom_read':
+drivers/hid/hid-picolcd.c:1407: error: implicit declaration of function 'co=
+py_to_user'
 
----
+Caused by commit 9bbf2b98ba11d00bd73e3254e15cfe17ccaff6ba ("HID: add
+experimental access to PicoLCD device's EEPROM and FLASH").  Using copy_
+{to,from}_user requires the include of linux/uaccess.h.
 
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 5b92fbf..9f0aaa2 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -4450,6 +4450,14 @@ static const struct net_device_ops bond_netdev_ops = {
- 	.ndo_vlan_rx_kill_vid	= bond_vlan_rx_kill_vid,
- };
- 
-+static void bond_destructor(struct net_device *bond_dev)
-+{
-+	struct bonding *bond = netdev_priv(bond_dev);
-+	if (bond->wq)
-+		destroy_workqueue(bond->wq);
-+	free_netdev(bond_dev);
-+}
-+
- static void bond_setup(struct net_device *bond_dev)
- {
- 	struct bonding *bond = netdev_priv(bond_dev);
-@@ -4470,7 +4478,7 @@ static void bond_setup(struct net_device *bond_dev)
- 	bond_dev->ethtool_ops = &bond_ethtool_ops;
- 	bond_set_mode_ops(bond, bond->params.mode);
- 
--	bond_dev->destructor = free_netdev;
-+	bond_dev->destructor = bond_destructor;
- 
- 	/* Initialize the device options */
- 	bond_dev->tx_queue_len = 0;
-@@ -4542,9 +4550,6 @@ static void bond_uninit(struct net_device *bond_dev)
- 
- 	bond_remove_proc_entry(bond);
- 
--	if (bond->wq)
--		destroy_workqueue(bond->wq);
--
- 	netif_addr_lock_bh(bond_dev);
- 	bond_mc_list_destroy(bond);
- 	netif_addr_unlock_bh(bond_dev);
+I have reverted that commit for today.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__1_Apr_2010_17_06_39_+1100_NCsV.QWPQe6Bg5gy
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAku0N+8ACgkQjjKRsyhoI8wvWACeOaOufsE4iYe1kUAzZ4wEpAjN
+45YAn3Oy3v52hLTgB/njOsVMNjSB+g1z
+=8Djm
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__1_Apr_2010_17_06_39_+1100_NCsV.QWPQe6Bg5gy--
