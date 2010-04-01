@@ -1,51 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758751Ab0DAR6V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 13:58:21 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:51067 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753634Ab0DAR6E (ORCPT
+	id S1758826Ab0DAR7v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 13:59:51 -0400
+Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:58985 "EHLO
+	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758705Ab0DAR7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 13:58:04 -0400
-Date: Thu, 1 Apr 2010 19:57:58 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Anders =?iso-8859-1?Q?Grafstr=F6m?= 
-	<grfstrm@users.sourceforge.net>
-Cc: linux-wireless@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-       Sven Neumann <s.neumann@raumfeld.com>,
-       LKML <linux-kernel@vger.kernel.org>, stable@kernel.org,
-       AKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: Memory corruption with 2.6.32.10, but not with 2.6.34-rc3
-Message-ID: <20100401175758.GQ30801@buzzloop.caiaq.de>
-References: <20100401132156.GJ30807@buzzloop.caiaq.de>
- <4BB4D817.1050603@users.sourceforge.net>
+	Thu, 1 Apr 2010 13:59:45 -0400
+Date: Thu, 1 Apr 2010 12:59:38 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: linux-kernel@vger.kernel.org
+cc: Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
+       linux-mm@kvack.org
+Subject: Re: 2.6.34-rc3, BUG at mm/slab.c:2989
+In-Reply-To: <20100401175225.GA6581@fancy-poultry.org>
+Message-ID: <alpine.DEB.2.00.1004011257470.17168@router.home>
+References: <20100401175225.GA6581@fancy-poultry.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4BB4D817.1050603@users.sourceforge.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 01, 2010 at 07:29:59PM +0200, Anders Grafström wrote:
-> Daniel Mack wrote:
-> > We would like to have a fix for this annoying bug in the stable series
-> > (especially 2.6.32.x) as well, but I don't have much ideas about where
-> > to search for it. Hence, I would appreciate if maintainers could think
-> > about any possible commits in the described time window which haven't
-> > reached stable. Does the description ring anyone's bell?
-> > 
-> > I can cherry-pick things if anyone pin-points something and run
-> > lont-time tests again. Any pointer appreciated.
-> 
-> You could try this one:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=8e4971f2fb2380ce66196136e113d04196b80fcd
+On Thu, 1 Apr 2010, Heinz Diehl wrote:
 
-Thanks. Unfortunately, that didn't fix it (this time, it crashed after a
-few minutes only). But shouldn't we have that in -stable anyway?
+> Apr  1 18:20:33 liesel kernel: kernel BUG at mm/slab.c:2989!
 
-Daniel
+Typical for slab metadata corruption. You need to run with debugging on.
+
+Switch to SLUB and set SLUB_DEBUG_ON. Reboot and reproduce situation.
+Check the syslog after while. SLUB will repair the situation and continue
+if possible. There may not be failure.
 
