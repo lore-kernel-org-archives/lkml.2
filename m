@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758877Ab0DAUSx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 16:18:53 -0400
-Received: from www.tglx.de ([62.245.132.106]:48885 "EHLO www.tglx.de"
+	id S1758880Ab0DAUVG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 16:21:06 -0400
+Received: from 8bytes.org ([88.198.83.132]:60648 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758775Ab0DAUSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 16:18:50 -0400
-Date: Thu, 1 Apr 2010 22:18:36 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chase Douglas <chase.douglas@canonical.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       kernel-team <kernel-team@lists.ubuntu.com>
-Subject: Re: [REGRESSION 2.6.30][PATCH 1/1] sched: defer idle accounting till
- after load update period
-In-Reply-To: <h2s40ec3ea41004011300zaa5699f0kcf07434fec9b1aab@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1004012203270.32352@localhost.localdomain>
-References: <1269870072-22449-1-git-send-email-chase.douglas@canonical.com>  <1269870072-22449-2-git-send-email-chase.douglas@canonical.com>  <20100401122740.a1ae80a7.akpm@linux-foundation.org>  <alpine.LFD.2.00.1004012133570.32352@localhost.localdomain>
- <h2s40ec3ea41004011300zaa5699f0kcf07434fec9b1aab@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1758775Ab0DAUVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 16:21:01 -0400
+Date: Thu, 1 Apr 2010 22:21:00 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Tom Lyon <pugs@lyon-about.com>
+Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, "Hans J. Koch" <hjk@linutronix.de>,
+       gregkh@suse.de
+Subject: Re: [PATCH 0/1] uio_pci_generic: extensions to allow access for
+	non-privileged processes
+Message-ID: <20100401202100.GL24846@8bytes.org>
+References: <201003311708.38961.pugs@lyon-about.com> <201004010906.47321.pugs@lyon-about.com> <4BB4C591.8000102@redhat.com> <201004011224.45336.pugs@lyon-about.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004011224.45336.pugs@lyon-about.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Apr 2010, Chase Douglas wrote:
-> On Thu, Apr 1, 2010 at 3:37 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > Yes, we can do something smarter. First thing is to fix the
-> > nr_uninterruptible accounting which can become negative. Peter looked
-> > into that already and we really need to fix this first before doing
-> > anything smart about that load avg stuff.
-> 
-> I noticed this too, and figured it was some clever accounting :). If
-> this is a real bug, I'd be happy to take a look at it as well.
-> 
-> What do you have in mind as a smarter way of fixing this issue, and
-> why is it dependent on fixing the absolute values of each runqueue's
-> nr_uninterruptible count?
+On Thu, Apr 01, 2010 at 12:24:45PM -0700, Tom Lyon wrote:
 
-Well, the uninterruptible count imbalance is preventing us to calc the
-load avg per cpu, which is something the power saving folks are
-interested in.
+> For my purposes, collapsing all the MSI-Xs into one MSI-look-alike is fine, 
+> because I'd be using MSI anyways if I could. The weird Intel 82599 VF only 
+> supports MSI-X.
 
-If that is fixed we probably have a good chance to collect the per cpu
-stuff and build a combined one - have not looked into the gory details
-of the math yet.
+For KVM this is not fine. The device should look in the guest as it
+looks in the host. Some devices might only support MSI-X and thus the
+drivers for it only search for MSI-X and get confused when they only
+find MSI.
 
-Also we need to think about a more clever way than just accounting the
-number of running and uninterruptible tasks. What we really want is to
-use the numbers which the scheduler has handy, i.e how many tasks did
-we run since we did the last loadavg calculation. It was always
-possible (even before the big loadavg changes) to create a task which
-consumes 50% of a CPU and never shows up in the loadavg calculations
-at all.
+> So one big question is - do we expand the whole UIO framework for KVM 
+> requirements, or do we split off either KVM or non-VM into a separate driver?
+> Hans or Greg - care to opine?
 
-Thanks,
+We should definitly work towards a single implementation. The KVM device
+passthrough requirements are not very different from that of userspace
+device access.
 
-	tglx
+	Joerg
+
