@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758280Ab0DAQjR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 12:39:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24405 "EHLO mx1.redhat.com"
+	id S1758356Ab0DAQjf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 12:39:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49597 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758328Ab0DAQi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 12:38:58 -0400
-Date: Thu, 1 Apr 2010 16:00:11 +0200
+	id S1758336Ab0DAQj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 12:39:28 -0400
+Date: Thu, 1 Apr 2010 18:36:42 +0200
 From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       nishimura@mxp.nes.nec.co.jp,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [patch] oom: give current access to memory reserves if it has
-	been killed
-Message-ID: <20100401135927.GA12460@redhat.com>
-References: <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100329112111.GA16971@redhat.com> <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330154659.GA12416@redhat.com> <alpine.DEB.2.00.1003301320020.5234@chino.kir.corp.google.com> <20100331175836.GA11635@redhat.com> <20100331204718.GD11635@redhat.com> <alpine.DEB.2.00.1004010133190.6285@chino.kir.corp.google.com>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+       Rusty Russell <rusty@rustcorp.com.au>, akpm@linux-foundation.org,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: [Patch] workqueue: move lockdep annotations up to
+	destroy_workqueue()
+Message-ID: <20100401163642.GA19551@redhat.com>
+References: <20100331105534.5601.50813.sendpatchset@localhost.localdomain> <20100331112559.GA17747@redhat.com> <4BB408AF.4080908@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1004010133190.6285@chino.kir.corp.google.com>
+In-Reply-To: <4BB408AF.4080908@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01, David Rientjes wrote:
+On 04/01, Cong Wang wrote:
 >
-> On Wed, 31 Mar 2010, Oleg Nesterov wrote:
+>> I must have missed something, but it seems to me this patch tries to
+>> supress the valid warning.
+>>
+>> Could you please clarify?
 >
-> > Probably something like the patch below makes sense. Note that
-> > "skip kernel threads" logic is wrong too, we should check PF_KTHREAD.
-> > Probably it is better to check it in select_bad_process() instead,
-> > near is_global_init().
->
-> is_global_init() will be true for p->flags & PF_KTHREAD.
+> Sure, below is the whole warning. Please teach me how this is valid.
 
-No, is_global_init() && PF_KTHREAD have nothing to do with each other.
+Oh, I can never understand the output from lockdep, it is much more
+clever than me ;)
 
-> > @@ -159,13 +172,9 @@ unsigned int oom_badness(struct task_str
-> >  	if (p->flags & PF_OOM_ORIGIN)
-> >  		return 1000;
-> >
-> > -	task_lock(p);
-> > -	mm = p->mm;
-> > -	if (!mm) {
-> > -		task_unlock(p);
-> > +	p = find_lock_task_mm(p);
-> > +	if (!p)
-> >  		return 0;
-> > -	}
-> > -
-> >  	/*
-> >  	 * The baseline for the badness score is the proportion of RAM that each
-> >  	 * task's rss and swap space use.
-> > @@ -330,12 +339,6 @@ static struct task_struct *select_bad_pr
-> >  			*ppoints = 1000;
-> >  		}
-> >
-> > -		/*
-> > -		 * skip kernel threads and tasks which have already released
-> > -		 * their mm.
-> > -		 */
-> > -		if (!p->mm)
-> > -			continue;
-> >  		if (p->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
-> >  			continue;
->
-> You can't do this for the reason I cited in another email, oom_badness()
-> returning 0 does not exclude a task from being chosen by
-> selcet_bad_process(), it will use that task if nothing else has been found
-> yet.  We must explicitly filter it from consideration by checking for
-> !p->mm.
+But at first glance,
 
-Yes, you are right. OK, oom_badness() can never return points < 0,
-we can make it int and oom_badness() can return -1 if !mm. IOW,
+> Mar 31 16:15:02 dhcp-66-70-5 kernel: -> #2 (rtnl_mutex){+.+.+.}:
+> Mar 31 16:15:02 dhcp-66-70-5 kernel:        [<ffffffff810a6bc1>] validate_chain+0x1019/0x1540
+> Mar 31 16:15:02 dhcp-66-70-5 kernel:        [<ffffffff810a7e75>] __lock_acquire+0xd8d/0xe55
+> Mar 31 16:15:02 dhcp-66-70-5 kernel:        [<ffffffff810aa3a4>] lock_acquire+0x160/0x1af
+> Mar 31 16:15:02 dhcp-66-70-5 kernel:        [<ffffffff815523f8>] mutex_lock_nested+0x64/0x4e9
+> Mar 31 16:15:02 dhcp-66-70-5 kernel:        [<ffffffff8147af16>] rtnl_lock+0x1e/0x27
+> Mar 31 16:15:02 dhcp-66-70-5 kernel:        [<ffffffffa0836779>] bond_mii_monitor+0x39f/0x74b [bonding]
+> Mar 31 16:15:02 dhcp-66-70-5 kernel:        [<ffffffff8108654f>] worker_thread+0x2da/0x46c
+> Mar 31 16:15:02 dhcp-66-70-5 kernel:        [<ffffffff8108b1ea>] kthread+0xdd/0xec
+> Mar 31 16:15:02 dhcp-66-70-5 kernel:        [<ffffffff81004894>] kernel_thread_helper+0x4/0x10
 
-	- unsigned int points;
-	+ int points;
-	...
+OK, so work->func() takes rtnl_mutex.
 
-	points = oom_badness(...);
-	if (points >= 0 && (points > *ppoints || !chosen))
-		chosen = p;
+This means it is not safe to do flush_workqueue() or destroy_workqueue()
+under rtnl_lock(). This is known fact.
+
+> Mar 31 16:15:03 dhcp-66-70-5 kernel: -> #0 ((bond_dev->name)){+.+...}:
+> Mar 31 16:15:03 dhcp-66-70-5 kernel:        [<ffffffff810a6696>] validate_chain+0xaee/0x1540
+> Mar 31 16:15:03 dhcp-66-70-5 kernel:        [<ffffffff810a7e75>] __lock_acquire+0xd8d/0xe55
+> Mar 31 16:15:03 dhcp-66-70-5 kernel:        [<ffffffff810aa3a4>] lock_acquire+0x160/0x1af
+> Mar 31 16:15:03 dhcp-66-70-5 kernel:        [<ffffffff81085278>] cleanup_workqueue_thread+0x59/0x10b
+> Mar 31 16:15:03 dhcp-66-70-5 kernel:        [<ffffffff81085428>] destroy_workqueue+0x9c/0x107
+> Mar 31 16:15:03 dhcp-66-70-5 kernel:        [<ffffffffa0839d32>] bond_uninit+0x524/0x58a [bonding]
+> Mar 31 16:15:03 dhcp-66-70-5 kernel:        [<ffffffff8146967b>] rollback_registered_many+0x205/0x2e3
+> Mar 31 16:15:03 dhcp-66-70-5 kernel:        [<ffffffff81469783>] unregister_netdevice_many+0x2a/0x75
+> Mar 31 16:15:03 dhcp-66-70-5 kernel:        [<ffffffff8147ada3>] __rtnl_kill_links+0x8b/0x9d
+> Mar 31 16:15:03 dhcp-66-70-5 kernel:        [<ffffffff8147adea>] __rtnl_link_unregister+0x35/0x72
+> Mar 31 16:15:03 dhcp-66-70-5 kernel:        [<ffffffff8147b293>] rtnl_link_unregister+0x2c/0x43
+
+However, rtnl_link_unregister() takes rtnl_mutex and then bond_uninit()
+does cleanup_workqueue_thread().
+
+So, looks like this warning is valid, this path can deadlock if
+destroy_workqueue() is called when bond->mii_work is queued.
+
+
+Lockdep decided to blaim cpu_add_remove_lock in this chain.
 
 Oleg.
 
