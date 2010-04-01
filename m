@@ -1,105 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757172Ab0DAPzH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 11:55:07 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:54407 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757219Ab0DAPy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 11:54:56 -0400
-Message-ID: <4BB4C1C4.2090208@us.ibm.com>
-Date: Thu, 01 Apr 2010 08:54:44 -0700
-From: Darren Hart <dvhltc@us.ibm.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	id S1757290Ab0DAPzf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 11:55:35 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:39710 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757052Ab0DAPz1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 11:55:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=B5e2V+2HJc3oFBFKThJsS1xt6RadzhH5co7eU33VDqalzEh0e/4fISKnZiGSy7HuoX
+         Cluh6SxCjFt0VJKqFM3tMeOAz+z6XtDhnNyI8iSSxanNZuq642Ci+1Ju48JevkbIVzqC
+         ECxjK7PrsHAjLD95Apzd3Hadl+feaMgRUNAuI=
+Date: Thu, 1 Apr 2010 18:55:16 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Miroslav Zagorac <zaga@fly.cc.fer.hr>
+Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+       Adam Buchbinder <adam.buchbinder@gmail.com>,
+       Jiri Kosina <jkosina@suse.cz>, jgarzik@pobox.com,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [patch] wd7000: typo spin_unlock_irq() => spin_lock_irq()
+Message-ID: <20100401155516.GF5265@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Miroslav Zagorac <zaga@fly.cc.fer.hr>,
+	"James E.J. Bottomley" <James.Bottomley@suse.de>,
+	Adam Buchbinder <adam.buchbinder@gmail.com>,
+	Jiri Kosina <jkosina@suse.cz>, jgarzik@pobox.com,
+	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: "lkml, " <linux-kernel@vger.kernel.org>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Gregory Haskins <ghaskins@novell.com>,
-       Sven-Thorsten Dietrich <sdietrich@novell.com>,
-       Peter Morreale <pmorreale@novell.com>,
-       Chris Wright <chrisw@sous-sol.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Chris Mason <chris.mason@oracle.com>
-Subject: Re: RFC: Ideal Adaptive Spinning Conditions
-References: <4BB3D90C.3030108@us.ibm.com> <4BB4ABBB.4000909@redhat.com>
-In-Reply-To: <4BB4ABBB.4000909@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avi Kivity wrote:
-> On 04/01/2010 02:21 AM, Darren Hart wrote:
->> I'm looking at some adaptive spinning with futexes as a way to help 
->> reduce the dependence on sched_yield() to implement userspace 
->> spinlocks. Chris, I included you in the CC after reading your comments 
->> regarding sched_yield() at kernel summit and I thought you might be 
->> interested.
->>
->> I have an experimental patchset that implements FUTEX_LOCK and 
->> FUTEX_LOCK_ADAPTIVE in the kernel and use something akin to 
->> mutex_spin_on_owner() for the first waiter to spin. What I'm finding 
->> is that adaptive spinning actually hurts my particular test case, so I 
->> was hoping to poll people for context regarding the existing adaptive 
->> spinning implementations in the kernel as to where we see benefit. 
->> Under which conditions does adaptive spinning help?
->>
->> I presume locks with a short average hold time stand to gain the most 
->> as the longer the lock is held the more likely the spinner will expire 
->> its timeslice or that the scheduling gain becomes noise in the 
->> acquisition time. My test case simple calls "lock();unlock()" for a 
->> fixed number of iterations and reports the iterations per second at 
->> the end of the run. It can run with an arbitrary number of threads as 
->> well. I typically run with 256 threads for 10M iterations.
->>
->>          futex_lock: Result: 635 Kiter/s
->> futex_lock_adaptive: Result: 542 Kiter/s
-> 
-> A lock(); unlock(); loop spends most of its time with the lock held or 
-> contended.  Can you something like this:
-> 
-> 
->    lock();
->    for (i = 0; i < 1000; ++i)
->         asm volatile ("" : : : "memory");
->    unlock();
->    for (i = 0; i < 10000; ++i)
->         asm volatile ("" : : : "memory");
+This was introduced back in 2005 at the very start of the git era by:
+	df0ae2497ddefd72a87f3a3b34ff32455d7d4ae0
+	[SCSI] allow sleeping in ->eh_host_reset_handler()
 
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+---
+Also this driver was written before some of our youngest kernel hackers
+were born.  Neat.  :)
 
-Great idea. I'll be doing a more rigorous investigation on this of 
-course, but I thought I'd share the results of just dumping this into 
-the testcase:
-
-# ./futex_lock -i10000000
-futex_lock: Measure FUTEX_LOCK operations per second
-	Arguments: iterations=10000000 threads=256 adaptive=0
-Result: 420 Kiter/s
-lock calls:      9999872
-lock syscalls:   665824 (6.66%)
-unlock calls:    9999872
-unlock syscalls: 861240 (8.61%)
-
-# ./futex_lock -a -i10000000
-futex_lock: Measure FUTEX_LOCK operations per second
-	Arguments: iterations=10000000 threads=256 adaptive=1
-Result: 426 Kiter/s
-lock calls:      9999872
-lock syscalls:   558787 (5.59%)
-unlock calls:    9999872
-unlock syscalls: 603412 (6.03%)
-
-This is the first time I've seen adaptive locking have an advantage! The 
-second set of runs showed a slightly greater advantage. Note that this 
-was still with spinners being limited to one.
-
-My thanks to everyone for their insight. I'll be preparing some result 
-matrices and will share the patches and testcases here shortly.
-
---
-Darren Hart
-IBM Linux Technology Center
-Real-Time Linux Team
+diff --git a/drivers/scsi/wd7000.c b/drivers/scsi/wd7000.c
+index 2f6e9d8..bdfe59d 100644
+--- a/drivers/scsi/wd7000.c
++++ b/drivers/scsi/wd7000.c
+@@ -1588,7 +1588,7 @@ static int wd7000_host_reset(struct scsi_cmnd *SCpnt)
+ {
+ 	Adapter *host = (Adapter *) SCpnt->device->host->hostdata;
+ 
+-	spin_unlock_irq(SCpnt->device->host->host_lock);
++	spin_lock_irq(SCpnt->device->host->host_lock);
+ 
+ 	if (wd7000_adapter_reset(host) < 0) {
+ 		spin_unlock_irq(SCpnt->device->host->host_lock);
