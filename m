@@ -1,177 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832Ab0DAPho (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 11:37:44 -0400
-Received: from darkcity.gna.ch ([195.226.6.51]:49218 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754705Ab0DAPhi convert rfc822-to-8bit (ORCPT
+	id S1756840Ab0DAPjG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 11:39:06 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:49247 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754705Ab0DAPi6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 11:37:38 -0400
-Subject: Re: AGP force use of scratch page
-From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-To: Jerome Glisse <glisse@freedesktop.org>
-Cc: airlied@gmail.com, linux-kernel@vger.kernel.org, dri-devel@lists.sf.net
-In-Reply-To: <20100401145442.GE2715@barney.localdomain>
-References: <20100401145442.GE2715@barney.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 01 Apr 2010 17:37:31 +0200
-Message-ID: <1270136251.25578.9.camel@thor.local>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.29.92.1 
+	Thu, 1 Apr 2010 11:38:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=HXM2dB3PdYtq3829P+rfEjTcd+JRZp7FpY4zqsdJrtlp1qbv26enxfBmVZzOfziqEj
+         yK5MN9PDpbh072AjqQQWav3mgUx2QC4jRm4s6egIQZWOxJ3rW1798hiDgNV8udyMpUEv
+         LmbTR3Stnq2fx/mSoEHXWjazm7tqa+eQ6stfU=
+Date: Thu, 1 Apr 2010 18:38:40 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Roland Dreier <rdreier@cisco.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+       jirislaby@gmail.com, Or Gerlitz <ogerlitz@voltaire.com>
+Subject: Re: [PATCH 1/1] infiniband: ulp/iser, fix error retval in
+	iser_create_ib_conn_res
+Message-ID: <20100401153839.GA5265@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Roland Dreier <rdreier@cisco.com>, Jiri Slaby <jslaby@suse.cz>,
+	linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+	Or Gerlitz <ogerlitz@voltaire.com>
+References: <1268750962-13547-1-git-send-email-jslaby@suse.cz> <ada634v9644.fsf@roland-alpha.cisco.com> <20100317151122.GF5331@bicker> <adak4ssi4ky.fsf@roland-alpha.cisco.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <adak4ssi4ky.fsf@roland-alpha.cisco.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-01 at 16:54 +0200, Jerome Glisse wrote: 
+On Wed, Mar 31, 2010 at 02:06:21PM -0700, Roland Dreier wrote:
+> So looking at merging this finally, I think I see one problem with the
+> proposed patch.  We have:
 > 
-> From: Jerome Glisse <jglisse@redhat.com>
-> Date: Thu, 1 Apr 2010 16:46:15 +0200
-> Subject: [PATCH] agp: force use of scratch page
+>  > @@ -183,7 +180,7 @@  static int iser_create_ib_conn_res(struct iser_conn *ib_conn)
+>  >  	ib_conn->fmr_pool = ib_create_fmr_pool(device->pd, &params);
+>  >  	if (IS_ERR(ib_conn->fmr_pool)) {
+>  >  		ret = PTR_ERR(ib_conn->fmr_pool);
+>  > -		goto fmr_pool_err;
+>  > +		goto out_err;
+>  >  	}
 > 
-> It seems that some AGP hardware can induce activity on bus
-> after reporting being idle with the memory (preteching maybe).
-> As new infrastructure for GPU is dynamicly binding/unbinding
-> memory this result in hardware possibly trying to access invalid
-> memory to avoid this situation the patch for the use of the
-> scratch page mecanism for all the AGP driver. It remove the
-> needs_scratch_page flags and fix the insert_memory/remove_memory
-> to deal properly with scratch_page.
+> and
 > 
-> Been tested on intel & sis agp bridges.
+>  > @@ -209,12 +206,7 @@  static int iser_create_ib_conn_res(struct iser_conn *ib_conn)
+>  >  		 ib_conn->fmr_pool, ib_conn->cma_id->qp);
+>  >  	return ret;
+>  >  
+>  > -qp_err:
+>  > -	(void)ib_destroy_fmr_pool(ib_conn->fmr_pool);
+>  > -fmr_pool_err:
+>  > -	kfree(ib_conn->page_vec);
+>  > -	kfree(ib_conn->login_buf);
+>  > -alloc_err:
+>  > +out_err:
+>  >  	iser_err("unable to alloc mem or create resource, err %d\n", ret);
+>  >  	return ret;
+>  >  }
 > 
-> Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-
-Please don't attach patches but use git send-email or so for easier review.
-
-
-> diff --git a/drivers/char/agp/backend.c b/drivers/char/agp/backend.c
-> index c3ab46d..fed5e46 100644
-> --- a/drivers/char/agp/backend.c
-> +++ b/drivers/char/agp/backend.c
-> @@ -136,35 +136,32 @@ static int agp_find_max(void)
->  static int agp_backend_initialize(struct agp_bridge_data *bridge)
->  {
->  	int size_value, rc, got_gatt=0, got_keylist=0;
-> +	struct page *page;
-> +	void *va;
->  
->  	bridge->max_memory_agp = agp_find_max();
->  	bridge->version = &agp_current_version;
->  
-> -	if (bridge->driver->needs_scratch_page) {
-> -		struct page *page = bridge->driver->agp_alloc_page(bridge);
-> -
-> -		if (!page) {
-> -			dev_err(&bridge->dev->dev,
-> +	page = bridge->driver->agp_alloc_page(bridge);
-> +	if (!page) {
-> +		dev_err(&bridge->dev->dev,
->  				"can't get memory for scratch page\n");
-> -			return -ENOMEM;
-> -		}
-> -
-> -		bridge->scratch_page_page = page;
-> -		if (bridge->driver->agp_map_page) {
-> -			if (bridge->driver->agp_map_page(page,
-> -							 &bridge->scratch_page_dma)) {
-> -				dev_err(&bridge->dev->dev,
-> +		return -ENOMEM;
-> +	}
-> +	bridge->scratch_page_page = page;
-> +	if (bridge->driver->agp_map_page) {
-> +		if (bridge->driver->agp_map_page(page,
-> +					&bridge->scratch_page_dma)) {
-> +			dev_err(&bridge->dev->dev,
->  					"unable to dma-map scratch page\n");
-> -				rc = -ENOMEM;
-> -				goto err_out_nounmap;
-> -			}
-> -		} else {
-> -			bridge->scratch_page_dma = page_to_phys(page);
-> +			rc = -ENOMEM;
-> +			goto err_out_nounmap;
->  		}
-> -
-> -		bridge->scratch_page = bridge->driver->mask_memory(bridge,
-> -						   bridge->scratch_page_dma, 0);
-> +	} else {
-> +		bridge->scratch_page_dma = page_to_phys(page);
->  	}
-> +	bridge->scratch_page = bridge->driver->mask_memory(bridge,
-> +			bridge->scratch_page_dma, 0);
->  
->  	size_value = bridge->driver->fetch_size();
->  	if (size_value == 0) {
-> @@ -203,18 +200,15 @@ static int agp_backend_initialize(struct agp_bridge_data *bridge)
->  	return 0;
->  
->  err_out:
-> -	if (bridge->driver->needs_scratch_page &&
-> -	    bridge->driver->agp_unmap_page) {
-> +	if (bridge->driver->agp_unmap_page) {
->  		bridge->driver->agp_unmap_page(bridge->scratch_page_page,
->  					       bridge->scratch_page_dma);
->  	}
->  err_out_nounmap:
-> -	if (bridge->driver->needs_scratch_page) {
-> -		void *va = page_address(bridge->scratch_page_page);
-> +	va = page_address(bridge->scratch_page_page);
-> +	bridge->driver->agp_destroy_page(va, AGP_PAGE_DESTROY_UNMAP);
-> +	bridge->driver->agp_destroy_page(va, AGP_PAGE_DESTROY_FREE);
->  
-> -		bridge->driver->agp_destroy_page(va, AGP_PAGE_DESTROY_UNMAP);
-> -		bridge->driver->agp_destroy_page(va, AGP_PAGE_DESTROY_FREE);
-> -	}
->  	if (got_gatt)
->  		bridge->driver->free_gatt_table(bridge);
->  	if (got_keylist) {
-> @@ -227,6 +221,8 @@ err_out_nounmap:
->  /* cannot be __exit b/c as it could be called from __init code */
->  static void agp_backend_cleanup(struct agp_bridge_data *bridge)
->  {
-> +	void *va;
-> +
->  	if (bridge->driver->cleanup)
->  		bridge->driver->cleanup();
->  	if (bridge->driver->free_gatt_table)
-> @@ -235,9 +231,8 @@ static void agp_backend_cleanup(struct agp_bridge_data *bridge)
->  	vfree(bridge->key_list);
->  	bridge->key_list = NULL;
->  
-> -	if (bridge->driver->agp_destroy_page &&
-> -	    bridge->driver->needs_scratch_page) {
-> -		void *va = page_address(bridge->scratch_page_page);
-> +	if (bridge->driver->agp_destroy_page) {
-> +		va = page_address(bridge->scratch_page_page);
->  
->  		if (bridge->driver->agp_unmap_page)
->  			bridge->driver->agp_unmap_page(bridge->scratch_page_page,
-
-AFAICT this just removes the needs_scratch_page flag but doesn't bind
-all table entries to the scratch page. Am I missing something? 
-
-
-> diff --git a/drivers/char/agp/uninorth-agp.c b/drivers/char/agp/uninorth-agp.c
-> index d89da4a..d54d674 100644
-> --- a/drivers/char/agp/uninorth-agp.c
-> +++ b/drivers/char/agp/uninorth-agp.c
-> @@ -171,7 +171,7 @@ static int uninorth_insert_memory(struct agp_memory *mem, off_t pg_start, int ty
->  
->  	gp = (u32 *) &agp_bridge->gatt_table[pg_start];
->  	for (i = 0; i < mem->page_count; ++i) {
-> -		if (gp[i]) {
-> +		if (!PGE_EMPTY(agp_bridge, gp[i])) {
->  			dev_info(&agp_bridge->dev->dev,
->  				 "uninorth_insert_memory: entry 0x%x occupied (%x)\n",
->  				 i, gp[i]);
+> so if ib_create_fmr_pool() fails, we're left with ib_conn->fmr_pool
+> holding an error pointer, right?  But we're relying on
+> iser_free_ib_conn_res() to clean up after us, and that has:
 > 
+> 	if (ib_conn->fmr_pool != NULL)
+> 		ib_destroy_fmr_pool(ib_conn->fmr_pool);
+> 
+> so we're going to end up trying to free an error pointer, which will
+> probably crash.
+> 
+> I think.
+> 
+> Dan or Or, am I wrong here or do we need another iteration of this
+> patch? (the login_buf and page_vec changes do look correct to me, since
+> a failed kmalloc() will leave us with a NULL pointer that it is safe to
+> kfree() later)
 
-This won't work for pre-U3 bridges, as bound table entries are marked by
-setting bit 0. (Maybe the driver just shouldn't use
-agp_generic_mask_memory?) 
+You're right.  I missed that.
 
+I will send an updated patch tomorrow.
 
--- 
-Earthling Michel Dänzer           |                http://www.vmware.com
-Libre software enthusiast         |          Debian, X and DRI developer
+regards,
+dan carpenter
+
+> 
+>  - R.
+> -- 
+> Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
+> http://www.cisco.com/web/about/doing_business/legal/cri/index.html
