@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab0DBVgv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 17:36:51 -0400
-Received: from fischerfamily.org ([71.216.156.246]:11490 "EHLO gw"
+	id S1755139Ab0DBVhB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 17:37:01 -0400
+Received: from fischerfamily.org ([71.216.156.246]:11487 "EHLO gw"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754253Ab0DBVgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754730Ab0DBVgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Apr 2010 17:36:45 -0400
 From: Todd Fischer <todd.fischer@ridgerun.com>
 To: linux-kernel@vger.kernel.org,
        davinci-linux-open-source@linux.davincidsp.com, sameo@linux.intel.com,
        lrg@slimlogic.co.uk, broonie@opensource.wolfsonmicro.com,
        todd.fischer@ridgerun.com
-Subject: [PATCH 0/4]-V2 TPS6507x MFD driver
-Date: Fri,  2 Apr 2010 15:37:29 -0600
-Message-Id: <1270244253-4234-1-git-send-email-todd.fischer@ridgerun.com>
+Subject: [PATCH 1/4]-V2 Move TPS6507x register definition to header file.
+Date: Fri,  2 Apr 2010 15:37:30 -0600
+Message-Id: <1270244253-4234-2-git-send-email-todd.fischer@ridgerun.com>
 X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1270244253-4234-1-git-send-email-todd.fischer@ridgerun.com>
+References: <1270244253-4234-1-git-send-email-todd.fischer@ridgerun.com>
+Organization: RidgeRun
 X-SA-Exim-Connect-IP: 10.0.0.3
 X-SA-Exim-Mail-From: todd.fischer@ridgerun.com
 X-SA-Exim-Scanned: No (on gw); SAEximRunCond expanded to false
@@ -22,22 +25,227 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Other sub-drivers for the TPS6507x chip will need to use register 
+definition so move it out of the source file and into a header file.
 
-This is the second posting of the TPS6507x driver set.  I have
-incorporated Mark Brown's feedback and retested.  Patches 3 and
-5 have been combined so there are only 4 patches in the series now.
+Signed-off-by: Todd Fischer <todd.fischer@ridgerun.com>
+---
+ drivers/regulator/tps6507x-regulator.c |   60 +--------------
+ include/linux/mfd/tps6507x.h           |  134 ++++++++++++++++++++++++++++++++
+ 2 files changed, 135 insertions(+), 59 deletions(-)
+ create mode 100644 include/linux/mfd/tps6507x.h
 
-The TPS6507x family of Texas Instruments power management ICs (pmic) are
-multi-function chips that include voltage regulation and touch screen
-controller capabilities.  This patch set adds a TPS6507x multi-function
-device driver and change the TPS6507x regulator driver to use the
-TPS6507x MFD driver instead of interacting with the chip directly.  The
-changes are needed before a touch screen driver can be added.
+diff --git a/drivers/regulator/tps6507x-regulator.c b/drivers/regulator/tps6507x-regulator.c
+index c2a9539..91172e3 100644
+--- a/drivers/regulator/tps6507x-regulator.c
++++ b/drivers/regulator/tps6507x-regulator.c
+@@ -24,65 +24,7 @@
+ #include <linux/regulator/machine.h>
+ #include <linux/i2c.h>
+ #include <linux/delay.h>
+-
+-/* Register definitions */
+-#define	TPS6507X_REG_PPATH1				0X01
+-#define	TPS6507X_REG_INT				0X02
+-#define	TPS6507X_REG_CHGCONFIG0				0X03
+-#define	TPS6507X_REG_CHGCONFIG1				0X04
+-#define	TPS6507X_REG_CHGCONFIG2				0X05
+-#define	TPS6507X_REG_CHGCONFIG3				0X06
+-#define	TPS6507X_REG_REG_ADCONFIG			0X07
+-#define	TPS6507X_REG_TSCMODE				0X08
+-#define	TPS6507X_REG_ADRESULT_1				0X09
+-#define	TPS6507X_REG_ADRESULT_2				0X0A
+-#define	TPS6507X_REG_PGOOD				0X0B
+-#define	TPS6507X_REG_PGOODMASK				0X0C
+-#define	TPS6507X_REG_CON_CTRL1				0X0D
+-#define	TPS6507X_REG_CON_CTRL2				0X0E
+-#define	TPS6507X_REG_CON_CTRL3				0X0F
+-#define	TPS6507X_REG_DEFDCDC1				0X10
+-#define	TPS6507X_REG_DEFDCDC2_LOW			0X11
+-#define	TPS6507X_REG_DEFDCDC2_HIGH			0X12
+-#define	TPS6507X_REG_DEFDCDC3_LOW			0X13
+-#define	TPS6507X_REG_DEFDCDC3_HIGH			0X14
+-#define	TPS6507X_REG_DEFSLEW				0X15
+-#define	TPS6507X_REG_LDO_CTRL1				0X16
+-#define	TPS6507X_REG_DEFLDO2				0X17
+-#define	TPS6507X_REG_WLED_CTRL1				0X18
+-#define	TPS6507X_REG_WLED_CTRL2				0X19
+-
+-/* CON_CTRL1 bitfields */
+-#define	TPS6507X_CON_CTRL1_DCDC1_ENABLE		BIT(4)
+-#define	TPS6507X_CON_CTRL1_DCDC2_ENABLE		BIT(3)
+-#define	TPS6507X_CON_CTRL1_DCDC3_ENABLE		BIT(2)
+-#define	TPS6507X_CON_CTRL1_LDO1_ENABLE		BIT(1)
+-#define	TPS6507X_CON_CTRL1_LDO2_ENABLE		BIT(0)
+-
+-/* DEFDCDC1 bitfields */
+-#define TPS6507X_DEFDCDC1_DCDC1_EXT_ADJ_EN	BIT(7)
+-#define TPS6507X_DEFDCDC1_DCDC1_MASK		0X3F
+-
+-/* DEFDCDC2_LOW bitfields */
+-#define TPS6507X_DEFDCDC2_LOW_DCDC2_MASK	0X3F
+-
+-/* DEFDCDC2_HIGH bitfields */
+-#define TPS6507X_DEFDCDC2_HIGH_DCDC2_MASK	0X3F
+-
+-/* DEFDCDC3_LOW bitfields */
+-#define TPS6507X_DEFDCDC3_LOW_DCDC3_MASK	0X3F
+-
+-/* DEFDCDC3_HIGH bitfields */
+-#define TPS6507X_DEFDCDC3_HIGH_DCDC3_MASK	0X3F
+-
+-/* TPS6507X_REG_LDO_CTRL1 bitfields */
+-#define TPS6507X_REG_LDO_CTRL1_LDO1_MASK	0X0F
+-
+-/* TPS6507X_REG_DEFLDO2 bitfields */
+-#define TPS6507X_REG_DEFLDO2_LDO2_MASK		0X3F
+-
+-/* VDCDC MASK */
+-#define TPS6507X_DEFDCDCX_DCDC_MASK		0X3F
++#include <linux/mfd/tps6507x.h>
+ 
+ /* DCDC's */
+ #define TPS6507X_DCDC_1				0
+diff --git a/include/linux/mfd/tps6507x.h b/include/linux/mfd/tps6507x.h
+new file mode 100644
+index 0000000..155bee1
+--- /dev/null
++++ b/include/linux/mfd/tps6507x.h
+@@ -0,0 +1,134 @@
++/* linux/mfd/tps6507x.h
++ *
++ * Functions to access TPS65070 power management chip.
++ *
++ * Copyright (c) 2009 RidgeRun (todd.fischer@ridgerun.com)
++ *
++ *
++ *  For licencing details see kernel-base/COPYING
++ */
++
++#ifndef __LINUX_MFD_TPS6507X_H
++#define __LINUX_MFD_TPS6507X_H
++
++/*
++ * ----------------------------------------------------------------------------
++ * Registers, all 8 bits
++ * ----------------------------------------------------------------------------
++ */
++
++
++/* Register definitions */
++#define	TPS6507X_REG_PPATH1			0X01
++#define	TPS6507X_CHG_USB			BIT(7)
++#define	TPS6507X_CHG_AC				BIT(6)
++#define	TPS6507X_CHG_USB_PW_ENABLE		BIT(5)
++#define	TPS6507X_CHG_AC_PW_ENABLE		BIT(4)
++#define	TPS6507X_CHG_AC_CURRENT			BIT(2)
++#define	TPS6507X_CHG_USB_CURRENT		BIT(0)
++
++#define	TPS6507X_REG_INT			0X02
++#define	TPS6507X_REG_MASK_AC_USB		BIT(7)
++#define	TPS6507X_REG_MASK_TSC			BIT(6)
++#define	TPS6507X_REG_MASK_PB_IN			BIT(5)
++#define	TPS6507X_REG_TSC_INT			BIT(3)
++#define	TPS6507X_REG_PB_IN_INT			BIT(2)
++#define	TPS6507X_REG_AC_USB_APPLIED		BIT(1)
++#define	TPS6507X_REG_AC_USB_REMOVED		BIT(0)
++
++#define	TPS6507X_REG_CHGCONFIG0			0X03
++
++#define	TPS6507X_REG_CHGCONFIG1			0X04
++#define	TPS6507X_CON_CTRL1_DCDC1_ENABLE		BIT(4)
++#define	TPS6507X_CON_CTRL1_DCDC2_ENABLE		BIT(3)
++#define	TPS6507X_CON_CTRL1_DCDC3_ENABLE		BIT(2)
++#define	TPS6507X_CON_CTRL1_LDO1_ENABLE		BIT(1)
++#define	TPS6507X_CON_CTRL1_LDO2_ENABLE		BIT(0)
++
++#define	TPS6507X_REG_CHGCONFIG2			0X05
++
++#define	TPS6507X_REG_CHGCONFIG3			0X06
++
++#define	TPS6507X_REG_ADCONFIG			0X07
++#define	TPS6507X_ADCONFIG_AD_ENABLE		BIT(7)
++#define	TPS6507X_ADCONFIG_START_CONVERSION	BIT(6)
++#define	TPS6507X_ADCONFIG_CONVERSION_DONE	BIT(5)
++#define	TPS6507X_ADCONFIG_VREF_ENABLE		BIT(4)
++#define	TPS6507X_ADCONFIG_INPUT_AD_IN1		0
++#define	TPS6507X_ADCONFIG_INPUT_AD_IN2		1
++#define	TPS6507X_ADCONFIG_INPUT_AD_IN3		2
++#define	TPS6507X_ADCONFIG_INPUT_AD_IN4		3
++#define	TPS6507X_ADCONFIG_INPUT_TS_PIN		4
++#define	TPS6507X_ADCONFIG_INPUT_BAT_CURRENT	5
++#define	TPS6507X_ADCONFIG_INPUT_AC_VOLTAGE	6
++#define	TPS6507X_ADCONFIG_INPUT_SYS_VOLTAGE	7
++#define	TPS6507X_ADCONFIG_INPUT_CHARGER_VOLTAGE 8
++#define	TPS6507X_ADCONFIG_INPUT_BAT_VOLTAGE	9
++#define	TPS6507X_ADCONFIG_INPUT_THRESHOLD_VOLTAGE 10
++#define	TPS6507X_ADCONFIG_INPUT_ISET1_VOLTAGE	11
++#define	TPS6507X_ADCONFIG_INPUT_ISET2_VOLTAGE	12
++#define	TPS6507X_ADCONFIG_INPUT_REAL_TSC	14
++#define	TPS6507X_ADCONFIG_INPUT_TSC		15
++
++#define	TPS6507X_REG_TSCMODE			0X08
++#define	TPS6507X_TSCMODE_X_POSITION		0
++#define	TPS6507X_TSCMODE_Y_POSITION		1
++#define	TPS6507X_TSCMODE_PRESSURE		2
++#define	TPS6507X_TSCMODE_X_PLATE		3
++#define	TPS6507X_TSCMODE_Y_PLATE		4
++#define	TPS6507X_TSCMODE_STANDBY		5
++#define	TPS6507X_TSCMODE_ADC_INPUT		6
++#define	TPS6507X_TSCMODE_DISABLE		7
++
++#define	TPS6507X_REG_ADRESULT_1			0X09
++
++#define	TPS6507X_REG_ADRESULT_2			0X0A
++#define	TPS6507X_REG_ADRESULT_2_MASK		(BIT(1) | BIT(0))
++
++#define	TPS6507X_REG_PGOOD			0X0B
++
++#define	TPS6507X_REG_PGOODMASK			0X0C
++
++#define	TPS6507X_REG_CON_CTRL1			0X0D
++#define	TPS6507X_CON_CTRL1_DCDC1_ENABLE		BIT(4)
++#define	TPS6507X_CON_CTRL1_DCDC2_ENABLE		BIT(3)
++#define	TPS6507X_CON_CTRL1_DCDC3_ENABLE		BIT(2)
++#define	TPS6507X_CON_CTRL1_LDO1_ENABLE		BIT(1)
++#define	TPS6507X_CON_CTRL1_LDO2_ENABLE		BIT(0)
++
++#define	TPS6507X_REG_CON_CTRL2			0X0E
++
++#define	TPS6507X_REG_CON_CTRL3			0X0F
++
++#define	TPS6507X_REG_DEFDCDC1			0X10
++#define TPS6507X_DEFDCDC1_DCDC1_EXT_ADJ_EN	BIT(7)
++#define TPS6507X_DEFDCDC1_DCDC1_MASK		0X3F
++
++#define	TPS6507X_REG_DEFDCDC2_LOW		0X11
++#define TPS6507X_DEFDCDC2_LOW_DCDC2_MASK	0X3F
++
++#define	TPS6507X_REG_DEFDCDC2_HIGH		0X12
++#define TPS6507X_DEFDCDC2_HIGH_DCDC2_MASK	0X3F
++
++#define	TPS6507X_REG_DEFDCDC3_LOW		0X13
++#define TPS6507X_DEFDCDC3_LOW_DCDC3_MASK	0X3F
++
++#define	TPS6507X_REG_DEFDCDC3_HIGH		0X14
++#define TPS6507X_DEFDCDC3_HIGH_DCDC3_MASK	0X3F
++
++#define	TPS6507X_REG_DEFSLEW			0X15
++
++#define	TPS6507X_REG_LDO_CTRL1			0X16
++#define TPS6507X_REG_LDO_CTRL1_LDO1_MASK	0X0F
++
++#define	TPS6507X_REG_DEFLDO2			0X17
++#define TPS6507X_REG_DEFLDO2_LDO2_MASK		0X3F
++
++#define	TPS6507X_REG_WLED_CTRL1			0X18
++
++#define	TPS6507X_REG_WLED_CTRL2			0X19
++
++/* VDCDC MASK */
++#define TPS6507X_DEFDCDCX_DCDC_MASK		0X3F
++
++#endif /*  __LINUX_MFD_TPS6507X_H */
+-- 
+1.6.0.4
 
-The patch set applies cleanly to the MFD repository:
-git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-2.6.git  If the
-MFD and voltage regulator maintainer would prefer I post patches for a
-different repository, please let me know.
-
-The TPS6507x touch screen input driver will be posted to
-linux-input@vger.kernel.org list.
