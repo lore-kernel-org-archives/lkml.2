@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472Ab0DBSat (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 14:30:49 -0400
-Received: from mail.digidescorp.com ([66.244.163.200]:51263 "EHLO
-	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab0DBSam (ORCPT
+	id S1752708Ab0DBSdM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 14:33:12 -0400
+Received: from mail.windriver.com ([147.11.1.11]:57252 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751858Ab0DBSdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 14:30:42 -0400
-X-Spam-Processed: digidescorp.com, Fri, 02 Apr 2010 13:30:40 -0500
-X-Authenticated-Sender: steve@digidescorp.com
-X-Return-Path: prvs=17085dc9e4=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-From: "Steven J. Magnani" <steve@digidescorp.com>
-To: microblaze-uclinux@itee.uq.edu.au
-Cc: monstr@monstr.eu, linux-kernel@vger.kernel.org,
-       "Steven J. Magnani" <steve@digidescorp.com>
-Subject: [PATCH] microblaze: Fix ftrace_update_ftrace_func panic
-Date: Fri,  2 Apr 2010 13:29:39 -0500
-Message-Id: <1270232979-12113-1-git-send-email-steve@digidescorp.com>
-X-Mailer: git-send-email 1.6.0.6
+	Fri, 2 Apr 2010 14:33:01 -0400
+From: Jason Wessel <jason.wessel@windriver.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net
+Subject: [PATCH 1/5] kgdb: have ebin2mem call probe_kernel_write once
+Date: Fri,  2 Apr 2010 13:32:21 -0500
+Message-Id: <1270233145-29335-2-git-send-email-jason.wessel@windriver.com>
+X-Mailer: git-send-email 1.6.3.1.9.g95405b
+In-Reply-To: <1270233145-29335-1-git-send-email-jason.wessel@windriver.com>
+References: <1270233145-29335-1-git-send-email-jason.wessel@windriver.com>
+X-OriginalArrivalTime: 02 Apr 2010 18:32:42.0896 (UTC) FILETIME=[E1CEB900:01CAD292]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Microblaze dynamic ftrace code assumes a call ordering that is not met
-in all scenarios. Specifically, executing a command similar to:
+Rather than call probe_kernel_write() one byte at a time, process the
+whole buffer locally and pass the entire result in one go.  This way,
+architectures that need to do special handling based on the length can
+do so, or we only end up calling memcpy() once.
 
-  echo 105 > /sys/kernel/debug/tracing/set_ftrace_pid
+[sonic.zhang@analog.com: Reported original problem and preliminary patch]
 
-before any other tracing-related commands results in a kernel panic:
-
-  BUG: failure at arch/microblaze/kernel/ftrace.c:198/ftrace_update_ftrace_func()!
-
-Recoding ftrace_update_ftrace_func() to use &ftrace_caller directly eliminates 
-the need to capture its address elsewhere (and thus rely on a particular call 
-sequence).
-
-Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
 ---
-diff -uprN a/arch/microblaze/kernel/ftrace.c b/arch/microblaze/kernel/ftrace.c
---- a/arch/microblaze/kernel/ftrace.c	2010-04-02 13:10:54.000000000 -0500
-+++ b/arch/microblaze/kernel/ftrace.c	2010-04-02 13:13:29.000000000 -0500
-@@ -151,13 +151,10 @@ int ftrace_make_nop(struct module *mod,
- 	return ret;
+ kernel/kgdb.c |   23 +++++++++--------------
+ 1 files changed, 9 insertions(+), 14 deletions(-)
+
+diff --git a/kernel/kgdb.c b/kernel/kgdb.c
+index 761fdd2..42fd128 100644
+--- a/kernel/kgdb.c
++++ b/kernel/kgdb.c
+@@ -391,27 +391,22 @@ int kgdb_mem2hex(char *mem, char *buf, int count)
+ 
+ /*
+  * Copy the binary array pointed to by buf into mem.  Fix $, #, and
+- * 0x7d escaped with 0x7d.  Return a pointer to the character after
+- * the last byte written.
++ * 0x7d escaped with 0x7d. Return -EFAULT on failure or 0 on success.
++ * The input buf is overwitten with the result to write to mem.
+  */
+ static int kgdb_ebin2mem(char *buf, char *mem, int count)
+ {
+-	int err = 0;
+-	char c;
++	int size = 0;
++	char *c = buf;
+ 
+ 	while (count-- > 0) {
+-		c = *buf++;
+-		if (c == 0x7d)
+-			c = *buf++ ^ 0x20;
+-
+-		err = probe_kernel_write(mem, &c, 1);
+-		if (err)
+-			break;
+-
+-		mem++;
++		c[size] = *buf++;
++		if (c[size] == 0x7d)
++			c[size] = *buf++ ^ 0x20;
++		size++;
+ 	}
+ 
+-	return err;
++	return probe_kernel_write(mem, c, size);
  }
  
--static int ret_addr; /* initialized as 0 by default */
--
- /* I believe that first is called ftrace_make_nop before this function */
- int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
- {
- 	int ret;
--	ret_addr = addr; /* saving where the barrier jump is */
- 	pr_debug("%s: addr:0x%x, rec->ip: 0x%x, imm:0x%x\n",
- 		__func__, (unsigned int)addr, (unsigned int)rec->ip, imm);
- 	ret = ftrace_modify_code(rec->ip, imm);
-@@ -194,12 +191,9 @@ int ftrace_update_ftrace_func(ftrace_fun
- 	ret = ftrace_modify_code(ip, upper);
- 	ret += ftrace_modify_code(ip + 4, lower);
- 
--	/* We just need to remove the rtsd r15, 8 by NOP */
--	BUG_ON(!ret_addr);
--	if (ret_addr)
--		ret += ftrace_modify_code(ret_addr, MICROBLAZE_NOP);
--	else
--		ret = 1; /* fault */
-+	/* We just need to replace the rtsd r15, 8 with NOP */
-+	ret += ftrace_modify_code((unsigned long)&ftrace_caller,
-+				  MICROBLAZE_NOP);
- 
- 	/* All changes are done - lets do caches consistent */
- 	flush_icache();
+ /*
+-- 
+1.6.3.1.9.g95405b
 
