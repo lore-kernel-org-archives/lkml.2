@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab0DBQyq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 12:54:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19235 "EHLO mx1.redhat.com"
+	id S1755420Ab0DBQzP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 12:55:15 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:52330 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754753Ab0DBQyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 12:54:39 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-Subject: [PATCH -tip 0/4] perf-probe bugfixes
-To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>
-Date: Fri, 02 Apr 2010 12:50:31 -0400
-Message-ID: <20100402165031.23551.14034.stgit@localhost6.localdomain6>
-User-Agent: StGIT/0.14.3
+	id S1755228Ab0DBQzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 12:55:12 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ondrej Zary <linux@rainbow-software.org>
+Subject: Re: 2.6.31 regression: programs crashing after a couple of days of uptime with hibernation
+Date: Fri, 2 Apr 2010 18:58:28 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+       pm list <linux-pm@lists.linux-foundation.org>
+References: <201004012332.49454.linux@rainbow-software.org> <201004020033.55994.rjw@sisk.pl> <201004021253.30668.linux@rainbow-software.org>
+In-Reply-To: <201004021253.30668.linux@rainbow-software.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201004021858.28611.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+On Friday 02 April 2010, Ondrej Zary wrote:
+> On Friday 02 April 2010 00:33:55 Rafael J. Wysocki wrote:
+> > On Friday 02 April 2010, Ondrej Zary wrote:
+> > > On Thursday 01 April 2010 23:45:33 you wrote:
+> > > > On Thursday 01 April 2010, Ondrej Zary wrote:
+> > > > > Hello,
+> > > > > with kernel 2.6.30, I can have uptime of more than a month on my
+> > > > > desktop PC (with hibernation). It's impossible with 2.6.31. After 1
+> > > > > to 3 days, processes that were running during hibernation (e.g.
+> > > > > konsole, kwin, kicker, xorg) start to crash randomly in very weird
+> > > > > ways. The kernel itself does not seem to crash. When I run the
+> > > > > crashed program again, it seems to work. Looks like some memory
+> > > > > corruption.
+> > > > >
+> > > > > This bug is also present in 2.6.32 and 2.6.33.
+> > > >
+> > > > Is the kernel 32-bit or 64-bit?  What kind of CPU is there in the box?
+> > >
+> > > It's old 32-bit i686 CPU - Cyrix MII.
+> >
+> > Please try with this patch applied:
+> > http://git.kernel.org/?p=linux/kernel/git/mingo/linux-2.6-x86.git;a=patch;h
+> >=8ae06d223f8203c72104e5c0c4ee49a000aedb42
+> 
+> Thanks, I'll try it. But I doubt that it will fix the problem. There were no 
+> changes in hibernate_asm_32.S between 2.6.30 and 2.6.31.
 
-Before introducing new patches, I'd like to push some bugfixes.
-(I'll update previous series and post again.)
+The change that exposed this issue was elsewhere in the x86 arch code.  I don't
+know where exactly, but we surely didn't need the above patch before.
 
-Thank you,
-
----
-
-Masami Hiramatsu (4):
-      [BUGFIX][RESEND] perf probe: Fix to close dwarf when failing to analyze it
-      [BUGFIX] perf probe: Correct error message for non-structure type
-      [BUGFIX] perf probe: Fix not to return non-matched file
-      [BUGFIX] perf probe: Fix --line syntax help and document
-
-
- tools/perf/Documentation/perf-probe.txt |    2 +-
- tools/perf/builtin-probe.c              |    2 +-
- tools/perf/util/probe-finder.c          |   20 ++++++++++++++------
- 3 files changed, 16 insertions(+), 8 deletions(-)
-
--- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+Rafael
