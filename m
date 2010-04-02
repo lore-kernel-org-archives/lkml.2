@@ -1,107 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590Ab0DBWjH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 18:39:07 -0400
-Received: from sous-sol.org ([216.99.217.87]:46160 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755515Ab0DBWjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 18:39:00 -0400
-Date: Fri, 2 Apr 2010 15:38:09 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Chris Wright <chrisw@sous-sol.org>, Joerg Roedel <joerg.roedel@amd.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Neil Horman <nhorman@redhat.com>,
-       kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-       hbabu@us.ibm.com, iommu@lists.linux-foundation.org,
-       "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH 1/2] x86/amd-iommu: enable iommu before attaching
-	devices
-Message-ID: <20100402223809.GB29241@sequoia.sous-sol.org>
-References: <20100331202745.GE13406@hmsreliant.think-freely.org> <20100401142902.GF24846@8bytes.org> <20100401144736.GA14069@shamino.rdu.redhat.com> <20100401155643.GG24846@8bytes.org> <20100401171149.GH13603@shamino.rdu.redhat.com> <20100401201433.GK24846@8bytes.org> <20100402000012.GA8930@hmsreliant.think-freely.org> <20100402003034.GX29241@sequoia.sous-sol.org> <20100402012353.GY29241@sequoia.sous-sol.org> <20100402155932.GA3516@redhat.com>
+	id S1755638Ab0DBWlj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 18:41:39 -0400
+Received: from p01c11o142.mxlogic.net ([208.65.144.65]:46586 "EHLO
+	p01c11o142.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755515Ab0DBWle convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 18:41:34 -0400
+X-MXL-Hash: 4bb6729e2988c40a-e4ed9ec2088395b57db8a0070e2fe71b8ff42056
+X-MXL-Hash: 4bb6729b257fb99d-d861baed7052832f35c4e552713b68ed9bacd068
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>,
+       lkml <linux-kernel@vger.kernel.org>
+CC: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+       David Woodhouse <dwmw2@infradead.org>
+Date: Fri, 2 Apr 2010 17:41:25 -0500
+Subject: RE: BUG: physmap modprobe & rmmod
+Thread-Topic: BUG: physmap modprobe & rmmod
+Thread-Index: AcrSrvrpGOM+Z0x0Rc25T1vnD0oVHAAAH+vgAAFOs2A=
+Message-ID: <0D753D10438DA54287A00B0270842697636A7E9D2C@AUSP01VMBX24.collaborationhost.net>
+References: <20100402134058.c4682716.randy.dunlap@oracle.com>
+	<20100402144727.2c80a6b2.randy.dunlap@oracle.com>
+ <0D753D10438DA54287A00B0270842697636A7E9CF1@AUSP01VMBX24.collaborationhost.net>
+In-Reply-To: <0D753D10438DA54287A00B0270842697636A7E9CF1@AUSP01VMBX24.collaborationhost.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100402155932.GA3516@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010040101)]
+X-MAIL-FROM: <hartleys@visionengravers.com>
+X-SOURCE-IP: [216.166.12.180]
+X-AnalysisOut: [v=1.0 c=1 a=VphdPIyG4kEA:10 a=kj9zAlcOel0A:10 a=38uLcFpo6n]
+X-AnalysisOut: [JaFUi5eYvXHw==:17 a=i00gxMtYAAAA:8 a=JfrnYn6hAAAA:8 a=C3wB]
+X-AnalysisOut: [KfkCCAMuZZXFDB8A:9 a=HlEF60PEM3inU4L1ln0A:7 a=iYgxBEknBRlQ]
+X-AnalysisOut: [KZNyK1L0AvFBIvQA:4 a=CjuIK1q_8ugA:10 a=x1WnkoZAwusA:10]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Vivek Goyal (vgoyal@redhat.com) wrote:
-> Following is just for my education purposes. Trying to understand better
-> the impact of in-flight DMAs. So IIUC, in kudmp context following seems to be
-> sequence of events.
-> 
-> 1. kernel crashes, we leave IOMMU enabled.
+On Friday, April 02, 2010 3:16 PM, H Hartley Sweeten wrote:
+> On Friday, April 02, 2010 2:47 PM, Randy Dunlap wrote:
+>>> 2.6.34-rc2 kernel:
+>>> 
+>>> Boot up on a common PC, then: modprobe physmap ; rmmod physmap
+>>> and bang.
+>
+> [snip]
+>
+>> This is with close to an allmodconfig on x86_64, including:
+>> 
+>> CONFIG_MTD_PHYSMAP=m
+>> CONFIG_MTD_PHYSMAP_COMPAT=y
+>> CONFIG_MTD_PHYSMAP_START=0x8000000
+>> CONFIG_MTD_PHYSMAP_LEN=0
+>> CONFIG_MTD_PHYSMAP_BANKWIDTH=2
+>
+> That's probably the cause of the BUG.
+>
+> If your not run-time calling physmap_configure(), your resource will
+> be created as:
+>
+> static struct physmap_flash_data physmap_flash_data = {
+>	.width		= CONFIG_MTD_PHYSMAP_BANKWIDTH,
+> };
+>
+> static struct resource physmap_flash_resource = {
+>	.start		= CONFIG_MTD_PHYSMAP_START,
+>	.end		= CONFIG_MTD_PHYSMAP_START + CONFIG_MTD_PHYSMAP_LEN - 1,
+>	.flags		= IORESOURCE_MEM,
+> };
+>
+> In other words:
+>
+> static struct physmap_flash_data physmap_flash_data = {
+>	.width		= 2,
+> };
+>
+> static struct resource physmap_flash_resource = {
+>	.start		= 0x8000000,
+>	.end		= 0x8000000 + 0 - 1,
+>	.flags		= IORESOURCE_MEM,
+> };
 
-No, we actually disable the IOMMU
+I traced this down to kernel/resource.c.  When __request_resource
+is finally called, because of the platform_device_register, it ends
+up returning a conflict due to:
 
-panic()
-  crash_exec()
-    machine_crash_shutdown()
-      native_machine_crash_shutdown()
-        x86_platform.iommu_shutdown() == amd_iommu_init.c::disable_iommus()
-  
-> 2. boot into capture kernel and we call enable_iommus(). This function
->    first disables iommu, sets up new device table and enables iommus
->    again.
-> 	a. So during this small window when iommu is disabled and we enable
-> 	   it back, any inflight DMA will passthrough possibly to an
-> 	   unintended physical address as translation is disabled and it
-> 	   can corrupt the kdump kenrel.
+	resource_size_t start = new->start;
+	resource_size_t end = new->end;
+	struct resource *tmp, **p;
 
-Yes, should be possible.
+	if (end < start)
+		return root;
 
-> 	b. Even after enabling the iommu, I guess we will continue to
-> 	   use cached DTE, and translation information to handle any
-> 	   in-flight DMA. The difference is that now iommus are enabled
-> 	   so any in-flight DMA should go to the address as intended in
-> 	   first kenrel and should not corrupt anything.
+This ends up causing an -EBUSY error code.  The patch below should
+be correct to fix this.
 
-Cached DTE only gets you domainID and pt root, so results depend upon
-other caches too.
+I changed the commit message a bit.
 
-> 3. Once iommus are enabled again, we allocated and initilize protection
->    domains. We attach devices to domains. In the process we flush the
->    DTE, PDE and IO TLBs.
+---
 
-Yes, but this is immediately after 2b above.  We can't send the invalidate
-commands until the iommu is enabled.
+mtd/maps/physmap: catch failure to register MTD_PHYSMAP_COMPAT device
 
-> 	c. Looks like do_attach->set_dte_entry(), by default gives write
-> 	   permission (IW) to all the devices. I am assuming that at
-> 	   this point of time translation is enabled and possibly unity
-> 	   mapped.
+If the default Kconfig values are used with MTD_PHYSMAP_COMPAT you end
+up with a resource where end < start.  This causes __request_resource to
+return a conflict which then returns an -EBUSY error code.  The current
+physmap.c code just assumes that the platfom_device_register will always
+succeed.
 
-Unlikely to have full unity map, it's typically just for a range,
-and this is also typically for devices that have interaction w/ BIOS
-(typical examples are usb/SMM for keyboard and integrated graphics).
-And the mapping is to reserved memory areas (BIOS regions).  On my test
-box, for example, there are none of the BIOS specified ranges.
+Catch this failure during the physmap_init and propogate the error.
 
->	   If that's the case, any in-flight DMA will not be
-> 	   allowed to happen at unity mapped address and this can possibly
-> 	   corrupt the kernel? 
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-I don't understand what you mean there.
+---
 
-> I understand this patch should fix the case when in second kernel a 
-> device is not doing DMA because of possibly cached DTE, and translation
-> information. But looks like in-flight DMA issues will still need a closer
-> look. But that is a separate issue and needs to be addressed in separate
-> set of patches.
+diff --git a/drivers/mtd/maps/physmap.c b/drivers/mtd/maps/physmap.c
+index d9603f7..426461a 100644
+--- a/drivers/mtd/maps/physmap.c
++++ b/drivers/mtd/maps/physmap.c
+@@ -264,8 +264,11 @@ static int __init physmap_init(void)
+ 
+ 	err = platform_driver_register(&physmap_flash_driver);
+ #ifdef CONFIG_MTD_PHYSMAP_COMPAT
+-	if (err == 0)
+-		platform_device_register(&physmap_flash);
++	if (err == 0) {
++		err = platform_device_register(&physmap_flash);
++		if (err)
++			platform_driver_unregister(&physmap_flash_driver);
++	}
+ #endif
+ 
+ 	return err;
 
-All of the in-flight DMA corrupts kdump kernel memory issues can exist
-w/out an IOMMU.  On the one hand, the IOMMU actually reduces the window
-of opportunity, but on the other it adds possible translation issue.
-
-About the only thing we can do here is modify the crashing kernel to
-update the DTE to disable dma, invalidate, and leave IOMMU enabled.
-This is all in the context of crashing, so any further errors here mean
-we probably won't get to kdump kernel.
-
-The kexec'd kernel will still need to defensively prepare things as it
-always does since it can't trust anything that came before it.
-
-thanks,
--chris
+______________________________________________________
+Linux MTD discussion mailing list
+http://lists.infradead.org/mailman/listinfo/linux-mtd/
