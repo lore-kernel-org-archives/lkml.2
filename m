@@ -1,145 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296Ab0DBPWU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 11:22:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59510 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753670Ab0DBPWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 11:22:13 -0400
-Message-ID: <4BB60BA9.20607@gmail.com>
-Date: Fri, 02 Apr 2010 17:22:17 +0200
-From: Edward Shishkin <edward.shishkin@gmail.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+	id S1754274Ab0DBPZK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 11:25:10 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:44240 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199Ab0DBPZD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 11:25:03 -0400
+X-Greylist: delayed 330 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Apr 2010 11:25:03 EDT
+To: linux-kernel@vger.kernel.org
+Cc: Neil Horman <nhorman@redhat.com>
+Subject: unhelpful and somewhat scary r8169 boot message in 2.6.33.2 regarding a security fix
+From: Nix <nix@esperi.org.uk>
+Emacs: a compelling argument for pencil and paper.
+Date: Fri, 02 Apr 2010 16:19:13 +0100
+Message-ID: <87iq89q3v2.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b29 (linux)
 MIME-Version: 1.0
-To: Jeff Mahoney <jeffm@suse.com>
-CC: ReiserFS Devel <reiserfs-devel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [patch 3/3] reiserfs: remove privroot hiding in lookup
-References: <20090505193014.926371851@suse.com> <20090505193206.968741619@suse.com>
-In-Reply-To: <20090505193206.968741619@suse.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-DCC-x.dcc-servers-Metrics: spindle 104; Body=2 Fuz1=2 Fuz2=2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Mahoney wrote:
->  With Al Viro's patch to move privroot lookup to fs mount, there's no need
->  to have special code to hide the privroot in reiserfs_lookup.
->   
+So I was doing a test-boot of 2.6.33.2 to see if my hang-on-suspend
+Radeon DRM regression (fdo bug 26872) was cured (it wasn't), when a
+new message appeared at bootup, the second of those below:
 
-Jeff, this implication looks strange. IMHO Viro's patch just pins this in
-the cache for mount session, while after your "cleanup" everyone can
-walk here (including non-privileged users) and do what they want. Um?
+[    8.766768] r8169: fastnet: link up
+[    8.791231] WARNING! Changing of MTU on this NICMay lead to frame reception errors!
 
-Edward.
+(which appeared when I set the MTU on my r8169 to 7200.)
 
->  I've also cleaned up the privroot hiding in reiserfs_readdir_dentry and
->  removed the last user of reiserfs_xattrs().
->
-> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-> ---
->  fs/reiserfs/dir.c              |   24 +++++++++++++-----------
->  fs/reiserfs/namei.c            |   17 ++---------------
->  fs/reiserfs/xattr.c            |    2 +-
->  include/linux/reiserfs_fs_sb.h |    1 -
->  4 files changed, 16 insertions(+), 28 deletions(-)
->
-> --- a/fs/reiserfs/dir.c
-> +++ b/fs/reiserfs/dir.c
-> @@ -41,6 +41,18 @@ static int reiserfs_dir_fsync(struct fil
->  
->  #define store_ih(where,what) copy_item_head (where, what)
->  
-> +static inline bool is_privroot_deh(struct dentry *dir,
-> +				   struct reiserfs_de_head *deh)
-> +{
-> +	int ret = 0;
-> +#ifdef CONFIG_REISERFS_FS_XATTR
-> +	struct dentry *privroot = REISERFS_SB(dir->d_sb)->priv_root;
-> +	ret = (dir == dir->d_parent && privroot->d_inode &&
-> +	       deh->deh_objectid == INODE_PKEY(privroot->d_inode)->k_objectid);
-> +#endif
-> +	return ret;
-> +}
-> +
->  int reiserfs_readdir_dentry(struct dentry *dentry, void *dirent,
->  			   filldir_t filldir, loff_t *pos)
->  {
-> @@ -138,18 +150,8 @@ int reiserfs_readdir_dentry(struct dentr
->  				}
->  
->  				/* Ignore the .reiserfs_priv entry */
-> -				if (reiserfs_xattrs(inode->i_sb) &&
-> -				    !old_format_only(inode->i_sb) &&
-> -				    dentry == inode->i_sb->s_root &&
-> -				    REISERFS_SB(inode->i_sb)->priv_root &&
-> -				    REISERFS_SB(inode->i_sb)->priv_root->d_inode
-> -				    && deh_objectid(deh) ==
-> -				    le32_to_cpu(INODE_PKEY
-> -						(REISERFS_SB(inode->i_sb)->
-> -						 priv_root->d_inode)->
-> -						k_objectid)) {
-> +				if (is_privroot_deh(dentry, deh))
->  					continue;
-> -				}
->  
->  				d_off = deh_offset(deh);
->  				*pos = d_off;
-> --- a/fs/reiserfs/namei.c
-> +++ b/fs/reiserfs/namei.c
-> @@ -338,21 +338,8 @@ static struct dentry *reiserfs_lookup(st
->  				&path_to_entry, &de);
->  	pathrelse(&path_to_entry);
->  	if (retval == NAME_FOUND) {
-> -		/* Hide the .reiserfs_priv directory */
-> -		if (reiserfs_xattrs(dir->i_sb) &&
-> -		    !old_format_only(dir->i_sb) &&
-> -		    REISERFS_SB(dir->i_sb)->priv_root &&
-> -		    REISERFS_SB(dir->i_sb)->priv_root->d_inode &&
-> -		    de.de_objectid ==
-> -		    le32_to_cpu(INODE_PKEY
-> -				(REISERFS_SB(dir->i_sb)->priv_root->d_inode)->
-> -				k_objectid)) {
-> -			reiserfs_write_unlock(dir->i_sb);
-> -			return ERR_PTR(-EACCES);
-> -		}
-> -
-> -		inode =
-> -		    reiserfs_iget(dir->i_sb, (struct cpu_key *)&(de.de_dir_id));
-> +		inode = reiserfs_iget(dir->i_sb,
-> +				      (struct cpu_key *)&(de.de_dir_id));
->  		if (!inode || IS_ERR(inode)) {
->  			reiserfs_write_unlock(dir->i_sb);
->  			return ERR_PTR(-EACCES);
-> --- a/fs/reiserfs/xattr.c
-> +++ b/fs/reiserfs/xattr.c
-> @@ -841,7 +841,7 @@ ssize_t reiserfs_listxattr(struct dentry
->  	if (!dentry->d_inode)
->  		return -EINVAL;
->  
-> -	if (!reiserfs_xattrs(dentry->d_sb) ||
-> +	if (!dentry->d_sb->s_xattr ||
->  	    get_inode_sd_version(dentry->d_inode) == STAT_DATA_V1)
->  		return -EOPNOTSUPP;
->  
-> --- a/include/linux/reiserfs_fs_sb.h
-> +++ b/include/linux/reiserfs_fs_sb.h
-> @@ -488,7 +488,6 @@ enum reiserfs_mount_options {
->  #define reiserfs_data_log(s) (REISERFS_SB(s)->s_mount_opt & (1 << REISERFS_DATA_LOG))
->  #define reiserfs_data_ordered(s) (REISERFS_SB(s)->s_mount_opt & (1 << REISERFS_DATA_ORDERED))
->  #define reiserfs_data_writeback(s) (REISERFS_SB(s)->s_mount_opt & (1 << REISERFS_DATA_WRITEBACK))
-> -#define reiserfs_xattrs(s) ((s)->s_xattr != NULL)
->  #define reiserfs_xattrs_user(s) (REISERFS_SB(s)->s_mount_opt & (1 << REISERFS_XATTRS_USER))
->  #define reiserfs_posixacl(s) (REISERFS_SB(s)->s_mount_opt & (1 << REISERFS_POSIXACL))
->  #define reiserfs_xattrs_optional(s) (reiserfs_xattrs_user(s) || reiserfs_posixacl(s))
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe reiserfs-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->   
+Not only is this message plainly misformatted :) but it does not explain
+*why* changing the MTU is suddenly so bad, when it's worked forever
+before now without flaw, with no sign of any sort of corruption. Why
+should we be confined to non-jumbo frames? What are the effects if we
+do change MTU?
 
+The guilty patch appears to be a security fix, which strongly suggests
+that 'frame reception errors' are not the only problem:
+
+commit 8c96206544955131f6d7cef09371950f34ebca5a
+Author: Neil Horman <nhorman@redhat.com>
+Date:   Mon Mar 29 13:16:02 2010 -0700
+
+Now the warning message above does *not* say 'if you change the MTU you
+bring a security problem back'. The commit message includes this
+statement (here wrapped for column width):
+
+  2) This patch only disables frame filtering initially (i.e., during
+  the NIC open), changing the MTU results in ring buffer allocation of a
+  size in relation to the new mtu (along with a warning indicating that
+  this is dangerous).
+
+  Because of item (2), individuals who can't cope with the performance
+  hit (or can otherwise filter frames to prevent the bug), or who have
+  hardware they are sure is unaffected by this issue, can manually lower
+  the copybreak and reset the mtu such that performance is restored
+  easily.
+
+Now this really should be in some documentation more easily accessible
+than a git changelog, but even failing this... what performance hit? Are
+we allocating 16K on every packet received, even if the packet is
+smaller? If so, that doesn't strike me as being a *performance* problem
+as much as a *reliability* problem, at least if this hardware requires
+the pages to be contiguous; and the bigger your MTU, the smaller the
+problem, so it's rather odd that it complains only when you change your
+MTU (which would make this problem less likely).
+
+Secondly, 'who can otherwise filter frames to prevent the bug' is all
+very well to say, but... how? The comments say that 'some subset' of
+r8169 hardware suffers from this problem: which subset? Does anyone
+know? The security PDF referred to in the commit log references (on page
+80) a problem in rev 10 adapters (and only them? what about earlier
+ones? later ones?) which *appears* to be problematic only if attackers
+can inject Ethernet frames larger than your MTU directly into your LAN:
+i.e., if you have a non-malicious router in the way and your local
+subnet is trusted, you are safe, because you can't get frames larger
+than your MTU. Anyone using domestic ADSL in e.g. the UK's BT network is
+probably safe, because Ethernet frames on this network are constructed
+ex nihilo by the ADSL router (which is presumably trusted). (I don't
+know enough about ADSL networks using PPPoE to know if the same is true
+of them, but I suspect it is: PPP doesn't carry raw Ethernet frames,
+after all, only IP.)
+
+
+So, the message should probably point to some documentation somewhere
+which should at least mention that this is only a problem on untrusted
+subnets (i.e. not for the vast majority of uses). Failing that, it
+should probably mention that this is allowing not just 'frame reception
+errors' but an outright security hole (as I understand it).
+
+(I'd be happy to write this documentation if I had any confidence that
+anything I'd written above was correct. Security patches which lead to
+vaguely disturbing messages being printed when you've changed nothing
+but your kernel are probably a bad idea from a don't-frighten-the-
+userbase perspective.)
