@@ -1,287 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab0DBTKQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 15:10:16 -0400
-Received: from hera.kernel.org ([140.211.167.34]:38620 "EHLO hera.kernel.org"
+	id S1754590Ab0DBTKY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 15:10:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64528 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754666Ab0DBTJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 15:09:51 -0400
-Date: Fri, 2 Apr 2010 19:09:27 GMT
-From: tip-bot for Robert Richter <robert.richter@amd.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-       mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-       mingo@elte.hu
-In-Reply-To: <20100330092821.GH11907@erda.amd.com>
-References: <20100330092821.GH11907@erda.amd.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf, x86: implement ARCH_PERFMON_EVENTSEL bit masks
-Message-ID: <tip-a098f4484bc7dae23f5b62360954007b99b64600@git.kernel.org>
-Git-Commit-ID: a098f4484bc7dae23f5b62360954007b99b64600
-X-Mailer: tip-git-log-daemon
+	id S1754666Ab0DBTKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 15:10:16 -0400
+Date: Fri, 2 Apr 2010 15:10:00 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Divyesh Shah <dpshah@google.com>
+Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
+       ctalbott@google.com
+Subject: Re: [PATCH 3/3] blkio: Increment the blkio cgroup stats for real
+	now
+Message-ID: <20100402191000.GD3516@redhat.com>
+References: <20100401215541.2843.79107.stgit@austin.mtv.corp.google.com> <20100401220129.2843.36193.stgit@austin.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 02 Apr 2010 19:09:27 +0000 (UTC)
+In-Reply-To: <20100401220129.2843.36193.stgit@austin.mtv.corp.google.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a098f4484bc7dae23f5b62360954007b99b64600
-Gitweb:     http://git.kernel.org/tip/a098f4484bc7dae23f5b62360954007b99b64600
-Author:     Robert Richter <robert.richter@amd.com>
-AuthorDate: Tue, 30 Mar 2010 11:28:21 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 2 Apr 2010 19:52:03 +0200
+On Thu, Apr 01, 2010 at 03:01:41PM -0700, Divyesh Shah wrote:
+> We also add start_time_ns and io_start_time_ns fields to struct request
+> here to record the time when a request is created and when it is
+> dispatched to device. We use ns uints here as ms and jiffies are
+> not very useful for non-rotational media.
+> 
+> Signed-off-by: Divyesh Shah<dpshah@google.com>
+> ---
+> 
+>  block/blk-cgroup.c     |   60 ++++++++++++++++++++++++++++++++++++++++++++++--
+>  block/blk-cgroup.h     |   14 +++++++++--
+>  block/blk-core.c       |    6 +++--
+>  block/cfq-iosched.c    |    4 ++-
+>  include/linux/blkdev.h |   20 +++++++++++++++-
+>  5 files changed, 95 insertions(+), 9 deletions(-)
+> 
+> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+> index ad6843f..9af7257 100644
+> --- a/block/blk-cgroup.c
+> +++ b/block/blk-cgroup.c
+> @@ -15,6 +15,7 @@
+>  #include <linux/kdev_t.h>
+>  #include <linux/module.h>
+>  #include <linux/err.h>
+> +#include <linux/blkdev.h>
+>  #include "blk-cgroup.h"
+>  
+>  static DEFINE_SPINLOCK(blkio_list_lock);
+> @@ -55,6 +56,26 @@ struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
+>  }
+>  EXPORT_SYMBOL_GPL(cgroup_to_blkio_cgroup);
+>  
+> +/*
+> + * Add to the appropriate stat variable depending on the request type.
+> + * This should be called with the blkg->stats_lock held.
+> + */
+> +void io_add_stat(uint64_t *stat, uint64_t add, unsigned int flags)
+> +{
+> +	if (flags & REQ_RW)
+> +		stat[IO_WRITE] += add;
+> +	else
+> +		stat[IO_READ] += add;
+> +	/*
+> +	 * Everywhere in the block layer, an IO is treated as sync if it is a
+> +	 * read or a SYNC write. We follow the same norm.
+> +	 */
+> +	if (!(flags & REQ_RW) || flags & REQ_RW_SYNC)
+> +		stat[IO_SYNC] += add;
+> +	else
+> +		stat[IO_ASYNC] += add;
+> +}
+> +
 
-perf, x86: implement ARCH_PERFMON_EVENTSEL bit masks
+Hi Divyesh,
 
-ARCH_PERFMON_EVENTSEL bit masks are often used in the kernel. This
-patch adds macros for the bit masks and removes local defines. The
-function intel_pmu_raw_event() becomes x86_pmu_raw_event() which is
-generic for x86 models and same also for p6. Duplicate code is
-removed.
+Can we have any request based information limited to cfq and not put that
+in blkio-cgroup. The reason being that I am expecting that some kind of
+max bw policy interface will not necessarily be implemented at CFQ
+level. We might have to implement it at higher level so that it can
+work with all dm/md devices. If that's the case, then it might very well
+be either a bio based interface also.
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <20100330092821.GH11907@erda.amd.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/perf_event.h      |   58 ++++++++++++++------------------
- arch/x86/kernel/cpu/perf_event.c       |   19 +++++++++--
- arch/x86/kernel/cpu/perf_event_amd.c   |   15 +--------
- arch/x86/kernel/cpu/perf_event_intel.c |   22 +-----------
- arch/x86/kernel/cpu/perf_event_p6.c    |   20 +----------
- 5 files changed, 45 insertions(+), 89 deletions(-)
+So just keeping that possibility in mind, can we keep blk-cgroup as
+generic as possible and not necessarily make it dependent on "struct
+request".
 
-diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index 987bf67..f6d43db 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -18,39 +18,31 @@
- #define MSR_ARCH_PERFMON_EVENTSEL0			     0x186
- #define MSR_ARCH_PERFMON_EVENTSEL1			     0x187
- 
--#define ARCH_PERFMON_EVENTSEL_ENABLE			  (1 << 22)
--#define ARCH_PERFMON_EVENTSEL_ANY			  (1 << 21)
--#define ARCH_PERFMON_EVENTSEL_INT			  (1 << 20)
--#define ARCH_PERFMON_EVENTSEL_OS			  (1 << 17)
--#define ARCH_PERFMON_EVENTSEL_USR			  (1 << 16)
--
--/*
-- * Includes eventsel and unit mask as well:
-- */
--
--
--#define INTEL_ARCH_EVTSEL_MASK		0x000000FFULL
--#define INTEL_ARCH_UNIT_MASK		0x0000FF00ULL
--#define INTEL_ARCH_EDGE_MASK		0x00040000ULL
--#define INTEL_ARCH_INV_MASK		0x00800000ULL
--#define INTEL_ARCH_CNT_MASK		0xFF000000ULL
--#define INTEL_ARCH_EVENT_MASK	(INTEL_ARCH_UNIT_MASK|INTEL_ARCH_EVTSEL_MASK)
--
--/*
-- * filter mask to validate fixed counter events.
-- * the following filters disqualify for fixed counters:
-- *  - inv
-- *  - edge
-- *  - cnt-mask
-- *  The other filters are supported by fixed counters.
-- *  The any-thread option is supported starting with v3.
-- */
--#define INTEL_ARCH_FIXED_MASK \
--	(INTEL_ARCH_CNT_MASK| \
--	 INTEL_ARCH_INV_MASK| \
--	 INTEL_ARCH_EDGE_MASK|\
--	 INTEL_ARCH_UNIT_MASK|\
--	 INTEL_ARCH_EVENT_MASK)
-+#define ARCH_PERFMON_EVENTSEL_EVENT			0x000000FFULL
-+#define ARCH_PERFMON_EVENTSEL_UMASK			0x0000FF00ULL
-+#define ARCH_PERFMON_EVENTSEL_USR			(1ULL << 16)
-+#define ARCH_PERFMON_EVENTSEL_OS			(1ULL << 17)
-+#define ARCH_PERFMON_EVENTSEL_EDGE			(1ULL << 18)
-+#define ARCH_PERFMON_EVENTSEL_INT			(1ULL << 20)
-+#define ARCH_PERFMON_EVENTSEL_ANY			(1ULL << 21)
-+#define ARCH_PERFMON_EVENTSEL_ENABLE			(1ULL << 22)
-+#define ARCH_PERFMON_EVENTSEL_INV			(1ULL << 23)
-+#define ARCH_PERFMON_EVENTSEL_CMASK			0xFF000000ULL
-+
-+#define AMD64_EVENTSEL_EVENT	\
-+	(ARCH_PERFMON_EVENTSEL_EVENT | (0x0FULL << 32))
-+#define INTEL_ARCH_EVENT_MASK	\
-+	(ARCH_PERFMON_EVENTSEL_UMASK | ARCH_PERFMON_EVENTSEL_EVENT)
-+
-+#define X86_RAW_EVENT_MASK		\
-+	(ARCH_PERFMON_EVENTSEL_EVENT |	\
-+	 ARCH_PERFMON_EVENTSEL_UMASK |	\
-+	 ARCH_PERFMON_EVENTSEL_EDGE  |	\
-+	 ARCH_PERFMON_EVENTSEL_INV   |	\
-+	 ARCH_PERFMON_EVENTSEL_CMASK)
-+#define AMD64_RAW_EVENT_MASK		\
-+	(X86_RAW_EVENT_MASK          |  \
-+	 AMD64_EVENTSEL_EVENT)
- 
- #define ARCH_PERFMON_UNHALTED_CORE_CYCLES_SEL		      0x3c
- #define ARCH_PERFMON_UNHALTED_CORE_CYCLES_UMASK		(0x00 << 8)
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 9daaa1e..1dd42c1 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -143,13 +143,21 @@ struct cpu_hw_events {
-  * Constraint on the Event code.
-  */
- #define INTEL_EVENT_CONSTRAINT(c, n)	\
--	EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVTSEL_MASK)
-+	EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT)
- 
- /*
-  * Constraint on the Event code + UMask + fixed-mask
-+ *
-+ * filter mask to validate fixed counter events.
-+ * the following filters disqualify for fixed counters:
-+ *  - inv
-+ *  - edge
-+ *  - cnt-mask
-+ *  The other filters are supported by fixed counters.
-+ *  The any-thread option is supported starting with v3.
-  */
- #define FIXED_EVENT_CONSTRAINT(c, n)	\
--	EVENT_CONSTRAINT(c, (1ULL << (32+n)), INTEL_ARCH_FIXED_MASK)
-+	EVENT_CONSTRAINT(c, (1ULL << (32+n)), X86_RAW_EVENT_MASK)
- 
- /*
-  * Constraint on the Event code + UMask
-@@ -437,6 +445,11 @@ static int x86_hw_config(struct perf_event_attr *attr, struct hw_perf_event *hwc
- 	return 0;
- }
- 
-+static u64 x86_pmu_raw_event(u64 hw_event)
-+{
-+	return hw_event & X86_RAW_EVENT_MASK;
-+}
-+
- /*
-  * Setup the hardware configuration for a given attr_type
-  */
-@@ -1427,7 +1440,7 @@ void __init init_hw_perf_events(void)
- 
- 	if (x86_pmu.event_constraints) {
- 		for_each_event_constraint(c, x86_pmu.event_constraints) {
--			if (c->cmask != INTEL_ARCH_FIXED_MASK)
-+			if (c->cmask != X86_RAW_EVENT_MASK)
- 				continue;
- 
- 			c->idxmsk64 |= (1ULL << x86_pmu.num_counters) - 1;
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index 7753a5c..37e9517 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -113,20 +113,7 @@ static u64 amd_pmu_event_map(int hw_event)
- 
- static u64 amd_pmu_raw_event(u64 hw_event)
- {
--#define K7_EVNTSEL_EVENT_MASK	0xF000000FFULL
--#define K7_EVNTSEL_UNIT_MASK	0x00000FF00ULL
--#define K7_EVNTSEL_EDGE_MASK	0x000040000ULL
--#define K7_EVNTSEL_INV_MASK	0x000800000ULL
--#define K7_EVNTSEL_REG_MASK	0x0FF000000ULL
--
--#define K7_EVNTSEL_MASK			\
--	(K7_EVNTSEL_EVENT_MASK |	\
--	 K7_EVNTSEL_UNIT_MASK  |	\
--	 K7_EVNTSEL_EDGE_MASK  |	\
--	 K7_EVNTSEL_INV_MASK   |	\
--	 K7_EVNTSEL_REG_MASK)
--
--	return hw_event & K7_EVNTSEL_MASK;
-+	return hw_event & AMD64_RAW_EVENT_MASK;
- }
- 
- /*
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index cc4d90a..dfdd6f9 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -452,24 +452,6 @@ static __initconst u64 atom_hw_cache_event_ids
-  },
- };
- 
--static u64 intel_pmu_raw_event(u64 hw_event)
--{
--#define CORE_EVNTSEL_EVENT_MASK		0x000000FFULL
--#define CORE_EVNTSEL_UNIT_MASK		0x0000FF00ULL
--#define CORE_EVNTSEL_EDGE_MASK		0x00040000ULL
--#define CORE_EVNTSEL_INV_MASK		0x00800000ULL
--#define CORE_EVNTSEL_REG_MASK		0xFF000000ULL
--
--#define CORE_EVNTSEL_MASK		\
--	(INTEL_ARCH_EVTSEL_MASK |	\
--	 INTEL_ARCH_UNIT_MASK   |	\
--	 INTEL_ARCH_EDGE_MASK   |	\
--	 INTEL_ARCH_INV_MASK    |	\
--	 INTEL_ARCH_CNT_MASK)
--
--	return hw_event & CORE_EVNTSEL_MASK;
--}
--
- static void intel_pmu_disable_all(void)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-@@ -788,7 +770,7 @@ static __initconst struct x86_pmu core_pmu = {
- 	.eventsel		= MSR_ARCH_PERFMON_EVENTSEL0,
- 	.perfctr		= MSR_ARCH_PERFMON_PERFCTR0,
- 	.event_map		= intel_pmu_event_map,
--	.raw_event		= intel_pmu_raw_event,
-+	.raw_event		= x86_pmu_raw_event,
- 	.max_events		= ARRAY_SIZE(intel_perfmon_event_map),
- 	.apic			= 1,
- 	/*
-@@ -827,7 +809,7 @@ static __initconst struct x86_pmu intel_pmu = {
- 	.eventsel		= MSR_ARCH_PERFMON_EVENTSEL0,
- 	.perfctr		= MSR_ARCH_PERFMON_PERFCTR0,
- 	.event_map		= intel_pmu_event_map,
--	.raw_event		= intel_pmu_raw_event,
-+	.raw_event		= x86_pmu_raw_event,
- 	.max_events		= ARRAY_SIZE(intel_perfmon_event_map),
- 	.apic			= 1,
- 	/*
-diff --git a/arch/x86/kernel/cpu/perf_event_p6.c b/arch/x86/kernel/cpu/perf_event_p6.c
-index b26fbc7..03c139a 100644
---- a/arch/x86/kernel/cpu/perf_event_p6.c
-+++ b/arch/x86/kernel/cpu/perf_event_p6.c
-@@ -27,24 +27,6 @@ static u64 p6_pmu_event_map(int hw_event)
-  */
- #define P6_NOP_EVENT			0x0000002EULL
- 
--static u64 p6_pmu_raw_event(u64 hw_event)
--{
--#define P6_EVNTSEL_EVENT_MASK		0x000000FFULL
--#define P6_EVNTSEL_UNIT_MASK		0x0000FF00ULL
--#define P6_EVNTSEL_EDGE_MASK		0x00040000ULL
--#define P6_EVNTSEL_INV_MASK		0x00800000ULL
--#define P6_EVNTSEL_REG_MASK		0xFF000000ULL
--
--#define P6_EVNTSEL_MASK			\
--	(P6_EVNTSEL_EVENT_MASK |	\
--	 P6_EVNTSEL_UNIT_MASK  |	\
--	 P6_EVNTSEL_EDGE_MASK  |	\
--	 P6_EVNTSEL_INV_MASK   |	\
--	 P6_EVNTSEL_REG_MASK)
--
--	return hw_event & P6_EVNTSEL_MASK;
--}
--
- static struct event_constraint p6_event_constraints[] =
- {
- 	INTEL_EVENT_CONSTRAINT(0xc1, 0x1),	/* FLOPS */
-@@ -114,7 +96,7 @@ static __initconst struct x86_pmu p6_pmu = {
- 	.eventsel		= MSR_P6_EVNTSEL0,
- 	.perfctr		= MSR_P6_PERFCTR0,
- 	.event_map		= p6_pmu_event_map,
--	.raw_event		= p6_pmu_raw_event,
-+	.raw_event		= x86_pmu_raw_event,
- 	.max_events		= ARRAY_SIZE(p6_perfmon_event_map),
- 	.apic			= 1,
- 	.max_period		= (1ULL << 31) - 1,
+If you implement, two dimensional arrays for stats then we can have
+following function.
+
+blkio_add_stat(enum stat_type var enum stat_sub_type var_type, u64 val)
+
+The idea is that let policy specify what is the type of IO completed,
+read, or write or sync, async and lets not make assumption in blkio-cgroup
+that it is request based interface and use flags like REQ_RW_SYNC etc.
+
+>  void blkiocg_update_timeslice_used(struct blkio_group *blkg, unsigned long time)
+>  {
+>  	unsigned long flags;
+> @@ -65,6 +86,41 @@ void blkiocg_update_timeslice_used(struct blkio_group *blkg, unsigned long time)
+>  }
+>  EXPORT_SYMBOL_GPL(blkiocg_update_timeslice_used);
+>  
+> +void blkiocg_update_request_dispatch_stats(struct blkio_group *blkg,
+> +						struct request *rq)
+> +{
+> +	struct blkio_group_stats *stats;
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&blkg->stats_lock, flags);
+> +	stats = &blkg->stats;
+> +	stats->sectors += blk_rq_sectors(rq);
+> +	io_add_stat(stats->io_serviced, 1, rq->cmd_flags);
+> +	io_add_stat(stats->io_service_bytes, blk_rq_sectors(rq) << 9,
+> +			rq->cmd_flags);
+
+io_service_bytes is esentially same as blkio.sectors but it is giving
+info in bytes instead of sectors and it is breaking down IO into subtypes.
+That's fine if it is helping you.
+
+instead of blk_rq_sectors(rq) << 9, you can probably use blk_rq_bytes().
+
+Again, can we keep rq information out of blk-cgroup.c.
+
+> +	spin_unlock_irqrestore(&blkg->stats_lock, flags);
+> +}
+> +
+> +void blkiocg_update_request_completion_stats(struct blkio_group *blkg,
+> +						struct request *rq)
+> +{
+> +	struct blkio_group_stats *stats;
+> +	unsigned long flags;
+> +	unsigned long long now = sched_clock();
+> +
+> +	spin_lock_irqsave(&blkg->stats_lock, flags);
+> +	stats = &blkg->stats;
+> +	if (time_after64(now, rq->io_start_time_ns))
+> +		io_add_stat(stats->io_service_time, now - rq->io_start_time_ns,
+> +				rq->cmd_flags);
+> +	if (time_after64(rq->io_start_time_ns, rq->start_time_ns))
+> +		io_add_stat(stats->io_wait_time,
+> +				rq->io_start_time_ns - rq->start_time_ns,
+> +				rq->cmd_flags);
+> +	spin_unlock_irqrestore(&blkg->stats_lock, flags);
+> +}
+> +EXPORT_SYMBOL_GPL(blkiocg_update_request_completion_stats);
+> +
+
+Same here that knowledge of rq, move into CFQ and keep blk-cgroup.c free
+of it.
+
+>  void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
+>  			struct blkio_group *blkg, void *key, dev_t dev)
+>  {
+> @@ -325,12 +381,12 @@ SHOW_FUNCTION_PER_GROUP(dequeue, get_stat, get_dequeue_stat, 0);
+>  #undef SHOW_FUNCTION_PER_GROUP
+>  
+>  #ifdef CONFIG_DEBUG_BLK_CGROUP
+> -void blkiocg_update_blkio_group_dequeue_stats(struct blkio_group *blkg,
+> +void blkiocg_update_dequeue_stats(struct blkio_group *blkg,
+>  			unsigned long dequeue)
+>  {
+>  	blkg->stats.dequeue += dequeue;
+>  }
+> -EXPORT_SYMBOL_GPL(blkiocg_update_blkio_group_dequeue_stats);
+> +EXPORT_SYMBOL_GPL(blkiocg_update_dequeue_stats);
+>  #endif
+>  
+>  struct cftype blkio_files[] = {
+> diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+> index 5c5e529..80010ef 100644
+> --- a/block/blk-cgroup.h
+> +++ b/block/blk-cgroup.h
+> @@ -112,12 +112,12 @@ static inline char *blkg_path(struct blkio_group *blkg)
+>  {
+>  	return blkg->path;
+>  }
+> -void blkiocg_update_blkio_group_dequeue_stats(struct blkio_group *blkg,
+> +void blkiocg_update_dequeue_stats(struct blkio_group *blkg,
+>  				unsigned long dequeue);
+>  #else
+>  static inline char *blkg_path(struct blkio_group *blkg) { return NULL; }
+> -static inline void blkiocg_update_blkio_group_dequeue_stats(
+> -			struct blkio_group *blkg, unsigned long dequeue) {}
+> +static inline void blkiocg_update_dequeue_stats(struct blkio_group *blkg,
+> +						unsigned long dequeue) {}
+>  #endif
+>  
+>  #if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
+> @@ -130,6 +130,10 @@ extern struct blkio_group *blkiocg_lookup_group(struct blkio_cgroup *blkcg,
+>  						void *key);
+>  void blkiocg_update_timeslice_used(struct blkio_group *blkg,
+>  					unsigned long time);
+> +void blkiocg_update_request_dispatch_stats(struct blkio_group *blkg,
+> +						struct request *rq);
+> +void blkiocg_update_request_completion_stats(struct blkio_group *blkg,
+> +						struct request *rq);
+>  #else
+>  struct cgroup;
+>  static inline struct blkio_cgroup *
+> @@ -147,5 +151,9 @@ static inline struct blkio_group *
+>  blkiocg_lookup_group(struct blkio_cgroup *blkcg, void *key) { return NULL; }
+>  static inline void blkiocg_update_timeslice_used(struct blkio_group *blkg,
+>  						unsigned long time) {}
+> +static inline void blkiocg_update_request_dispatch_stats(
+> +		struct blkio_group *blkg, struct request *rq) {}
+> +static inline void blkiocg_update_request_completion_stats(
+> +		struct blkio_group *blkg, struct request *rq) {}
+>  #endif
+>  #endif /* _BLK_CGROUP_H */
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 9fe174d..1d94f15 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -127,6 +127,7 @@ void blk_rq_init(struct request_queue *q, struct request *rq)
+>  	rq->tag = -1;
+>  	rq->ref_count = 1;
+>  	rq->start_time = jiffies;
+> +	set_start_time_ns(rq);
+>  }
+>  EXPORT_SYMBOL(blk_rq_init);
+>  
+> @@ -1855,8 +1856,10 @@ void blk_dequeue_request(struct request *rq)
+>  	 * and to it is freed is accounted as io that is in progress at
+>  	 * the driver side.
+>  	 */
+> -	if (blk_account_rq(rq))
+> +	if (blk_account_rq(rq)) {
+>  		q->in_flight[rq_is_sync(rq)]++;
+> +		set_io_start_time_ns(rq);
+> +	}
+>  }
+>  
+>  /**
+> @@ -2517,4 +2520,3 @@ int __init blk_dev_init(void)
+>  
+>  	return 0;
+>  }
+> -
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index d91df9f..5de0e54 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -854,7 +854,7 @@ cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>  	if (!RB_EMPTY_NODE(&cfqg->rb_node))
+>  		cfq_rb_erase(&cfqg->rb_node, st);
+>  	cfqg->saved_workload_slice = 0;
+> -	blkiocg_update_blkio_group_dequeue_stats(&cfqg->blkg, 1);
+> +	blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
+>  }
+>  
+>  static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
+> @@ -1864,6 +1864,7 @@ static void cfq_dispatch_insert(struct request_queue *q, struct request *rq)
+>  	elv_dispatch_sort(q, rq);
+>  
+>  	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
+> +	blkiocg_update_request_dispatch_stats(&cfqq->cfqg->blkg, rq);
+>  }
+>  
+>  /*
+> @@ -3284,6 +3285,7 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
+>  	WARN_ON(!cfqq->dispatched);
+>  	cfqd->rq_in_driver--;
+>  	cfqq->dispatched--;
+> +	blkiocg_update_request_completion_stats(&cfqq->cfqg->blkg, rq);
+>  
+>  	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]--;
+>  
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> index ebd22db..c793019 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -193,7 +193,10 @@ struct request {
+>  
+>  	struct gendisk *rq_disk;
+>  	unsigned long start_time;
+> -
+> +#ifdef CONFIG_BLK_CGROUP
+> +	unsigned long long start_time_ns;
+> +	unsigned long long io_start_time_ns;    /* when passed to hardware */
+> +#endif
+>  	/* Number of scatter-gather DMA addr+len pairs after
+>  	 * physical address coalescing is performed.
+>  	 */
+> @@ -1219,6 +1222,21 @@ static inline void put_dev_sector(Sector p)
+>  struct work_struct;
+>  int kblockd_schedule_work(struct request_queue *q, struct work_struct *work);
+>  
+> +#ifdef CONFIG_BLK_CGROUP
+> +static inline void set_start_time_ns(struct request *req)
+> +{
+> +	req->start_time_ns = sched_clock();
+> +}
+> +
+> +static inline void set_io_start_time_ns(struct request *req)
+> +{
+> +	req->io_start_time_ns = sched_clock();
+> +}
+> +#else
+> +static inline void set_start_time_ns(struct request *req) {}
+> +static inline void set_io_start_time_ns(struct request *req) {}
+> +#endif
+> +
+>  #define MODULE_ALIAS_BLOCKDEV(major,minor) \
+>  	MODULE_ALIAS("block-major-" __stringify(major) "-" __stringify(minor))
+>  #define MODULE_ALIAS_BLOCKDEV_MAJOR(major) \
