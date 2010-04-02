@@ -1,56 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab0DBPZU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 11:25:20 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:37377 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754443Ab0DBPZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 11:25:15 -0400
-Date: Fri, 2 Apr 2010 08:25:07 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rcu: don't call rcu_preempt_note_context_switch() in
- rcu_check_callbacks()
-Message-ID: <20100402152507.GA2549@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4BB014DF.9030905@cn.fujitsu.com>
- <20100329044236.GB2343@linux.vnet.ibm.com>
- <4BB1C7C5.5070700@cn.fujitsu.com>
- <20100330160339.GB2513@linux.vnet.ibm.com>
- <20100331153656.GA4623@linux.vnet.ibm.com>
- <4BB3EF25.1040804@cn.fujitsu.com>
- <20100401011747.GJ2461@linux.vnet.ibm.com>
- <4BB44A15.60306@cn.fujitsu.com>
- <20100402005317.GI2472@linux.vnet.ibm.com>
- <4BB5E2A3.3080105@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BB5E2A3.3080105@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754197Ab0DBPbP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 11:31:15 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47082 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751519Ab0DBPbI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 11:31:08 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Improve WM831x AUXADC completion handling
+Date: Fri,  2 Apr 2010 16:31:03 +0100
+Message-Id: <1270222263-14203-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 02, 2010 at 08:27:15PM +0800, Lai Jiangshan wrote:
-> Paul E. McKenney wrote:
-> > On Thu, Apr 01, 2010 at 03:24:05PM +0800, Lai Jiangshan wrote:
-> >> Paul E. McKenney wrote:
-> >>> Possibly by moving the clearing of RCU_READ_UNLOCK_NEED_QS to
-> >>> rcu_preempt_check_callbacks() 
-> >> current rcu_preempt_check_callbacks() already has code to
-> >> clear RCU_READ_UNLOCK_NEED_QS.
-> > 
-> > English is failing me. 
-> > How about the following patch instead?  Untested,
-> > probably does not even compile.
-> 
-> Very nice, thank you.
-> 
-> Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Currently completion of WM831x AUXADC conversions is monitored by
+checking for convertor enable. Due to the mechanism used to ensure
+data corruption is avoided when reading AUXADC data there may under
+heavy I/O be a window where this bit has cleared but the conversion
+results have not been updated. Data availability is only guaranteed
+after the AUXADC data interrupt has been asserted.
 
-Thank you!  It passed overnight testing, so I have queued this for 2.6.35
-with your Acked-by.
+Avoid this by always using the interrupt to detect completion. If the
+chip IRQ is not set up then we poll the IRQ status register for up to
+5ms. If it is set up then we rely on the data done interrupt with a
+vastly increased timeout, failing the conversion if the interrupt is
+not generated.
 
-							Thanx, Paul
+This also saves a register read when using interrupts.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm831x-core.c |   65 +++++++++++++++++++++++++++++++++------------
+ 1 files changed, 48 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
+index f2ab025..da00ca9 100644
+--- a/drivers/mfd/wm831x-core.c
++++ b/drivers/mfd/wm831x-core.c
+@@ -322,7 +322,11 @@ EXPORT_SYMBOL_GPL(wm831x_set_bits);
+  */
+ int wm831x_auxadc_read(struct wm831x *wm831x, enum wm831x_auxadc input)
+ {
+-	int ret, src;
++	int ret, src, irq_masked, timeout;
++
++	/* Are we using the interrupt? */
++	irq_masked = wm831x_reg_read(wm831x, WM831X_INTERRUPT_STATUS_1_MASK);
++	irq_masked &= WM831X_AUXADC_DATA_EINT;
+ 
+ 	mutex_lock(&wm831x->auxadc_lock);
+ 
+@@ -342,6 +346,9 @@ int wm831x_auxadc_read(struct wm831x *wm831x, enum wm831x_auxadc input)
+ 		goto out;
+ 	}
+ 
++	/* Clear any notification from a very late arriving interrupt */
++	try_wait_for_completion(&wm831x->auxadc_done);
++
+ 	ret = wm831x_set_bits(wm831x, WM831X_AUXADC_CONTROL,
+ 			      WM831X_AUX_CVT_ENA, WM831X_AUX_CVT_ENA);
+ 	if (ret < 0) {
+@@ -349,22 +356,46 @@ int wm831x_auxadc_read(struct wm831x *wm831x, enum wm831x_auxadc input)
+ 		goto disable;
+ 	}
+ 
+-	/* If an interrupt arrived late clean up after it */
+-	try_wait_for_completion(&wm831x->auxadc_done);
+-
+-	/* Ignore the result to allow us to soldier on without IRQ hookup */
+-	wait_for_completion_timeout(&wm831x->auxadc_done, msecs_to_jiffies(5));
+-
+-	ret = wm831x_reg_read(wm831x, WM831X_AUXADC_CONTROL);
+-	if (ret < 0) {
+-		dev_err(wm831x->dev, "AUXADC status read failed: %d\n", ret);
+-		goto disable;
+-	}
+-
+-	if (ret & WM831X_AUX_CVT_ENA) {
+-		dev_err(wm831x->dev, "Timed out reading AUXADC\n");
+-		ret = -EBUSY;
+-		goto disable;
++	if (irq_masked) {
++		/* If we're not using interrupts then poll the
++		 * interrupt status register */
++		timeout = 5;
++		while (timeout) {
++			msleep(1);
++
++			ret = wm831x_reg_read(wm831x,
++					      WM831X_INTERRUPT_STATUS_1);
++			if (ret < 0) {
++				dev_err(wm831x->dev,
++					"ISR 1 read failed: %d\n", ret);
++				goto disable;
++			}
++
++			/* Did it complete? */
++			if (ret & WM831X_AUXADC_DATA_EINT) {
++				wm831x_reg_write(wm831x,
++						 WM831X_INTERRUPT_STATUS_1,
++						 WM831X_AUXADC_DATA_EINT);
++				break;
++			} else {
++				dev_err(wm831x->dev,
++					"AUXADC conversion timeout\n");
++				ret = -EBUSY;
++				goto disable;
++			}
++		}
++	} else {
++		/* If we are using interrupts then wait for the
++		 * interrupt to complete.  Use an extremely long
++		 * timeout to handle situations with heavy load where
++		 * the notification of the interrupt may be delayed by
++		 * threaded IRQ handling. */
++		if (!wait_for_completion_timeout(&wm831x->auxadc_done,
++						 msecs_to_jiffies(500))) {
++			dev_err(wm831x->dev, "Timed out waiting for AUXADC\n");
++			ret = -EBUSY;
++			goto disable;
++		}
+ 	}
+ 
+ 	ret = wm831x_reg_read(wm831x, WM831X_AUXADC_DATA);
+-- 
+1.7.0.3
+
