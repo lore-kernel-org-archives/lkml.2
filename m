@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab0DBFAA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 01:00:00 -0400
+	id S1756533Ab0DBFAL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 01:00:11 -0400
 Received: from mail-gw0-f46.google.com ([74.125.83.46]:46092 "EHLO
 	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754710Ab0DBE7h (ORCPT
+	with ESMTP id S1754996Ab0DBE7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 00:59:37 -0400
+	Fri, 2 Apr 2010 00:59:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=QBo9Dc3v3NhB6fDG1rR1zK0vkIJSDwGEZrTOg0jhowRu0cJnfSawygxbUkK7BP6i25
-         TRU72NXF5n01LVZR9+wh5vuOSb9/MUgaWk8hqsTM7GnzDdt2tzUY2s6JQ60gZIfoR9yB
-         F5aOFU4cW9lm0Mq2agsKLzazwxMqJAmSIFaX4=
+        b=u3urQIqHyVd4Xiew/D6JHi740P8kNhC8K/u850r+aDsVyfABo1ZhvBTxrZZBFYed5k
+         OdLWd2rvOyCFikSYx4PXMrA6YA0CjedykLiIrPyMhdsjJcjf6QKsP2TAyK/wLiAbGe5N
+         XHOgbHWqLMUootbByYHO1Kz2804PDPQuMnF68=
 From: Tom Zanussi <tzanussi@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, fweisbec@gmail.com, rostedt@goodmis.org,
        k-keiichi@bx.jp.nec.com, acme@ghostprotocols.net
-Subject: [RFC v2][PATCH 05/11] perf: convert perf header attrs into attr events
-Date: Thu,  1 Apr 2010 23:59:19 -0500
-Message-Id: <1270184365-8281-6-git-send-email-tzanussi@gmail.com>
+Subject: [RFC v2][PATCH 08/11] perf: convert perf header build_ids into build_id events
+Date: Thu,  1 Apr 2010 23:59:22 -0500
+Message-Id: <1270184365-8281-9-git-send-email-tzanussi@gmail.com>
 X-Mailer: git-send-email 1.6.4.GIT
 In-Reply-To: <1270184365-8281-1-git-send-email-tzanussi@gmail.com>
 References: <1270184365-8281-1-git-send-email-tzanussi@gmail.com>
@@ -27,280 +27,256 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bypasses the attr perf header code and replaces it with a synthesized
-event and processing function that accomplishes the same thing, used
-when reading/writing perf data to/from a pipe.
-
-Making the attrs into events allows them to be streamed over a pipe
-along with the rest of the header data (in later patches).  It also
-paves the way to allowing events to be added and removed from perf
-sessions dynamically.
+Bypasses the build_id perf header code and replaces it with a
+synthesized event and processing function that accomplishes the same
+thing, used when reading/writing perf data to/from a pipe.
 
 Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
 ---
- tools/perf/builtin-record.c |   10 +++++
+ tools/perf/builtin-record.c |   15 ++++++-
  tools/perf/builtin-report.c |    1 +
  tools/perf/builtin-trace.c  |    1 +
- tools/perf/util/event.h     |   10 +++++-
- tools/perf/util/header.c    |   79 +++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/header.h    |    8 ++++
- tools/perf/util/session.c   |   26 ++++++++++++++
+ tools/perf/util/event.h     |    2 +
+ tools/perf/util/header.c    |   90 +++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/header.h    |    7 +++
+ tools/perf/util/session.c   |    6 +++
  tools/perf/util/session.h   |    3 +-
- 8 files changed, 136 insertions(+), 2 deletions(-)
+ 8 files changed, 121 insertions(+), 4 deletions(-)
 
 diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 0723fa1..1f0abe2 100644
+index 0c6a971..9a5be5d 100644
 --- a/tools/perf/builtin-record.c
 +++ b/tools/perf/builtin-record.c
-@@ -585,6 +585,16 @@ static int __cmd_record(int argc, const char **argv)
+@@ -427,10 +427,19 @@ static int process_buildids(void)
  
- 	post_processing_offset = lseek(output, 0, SEEK_CUR);
+ static void atexit_header(void)
+ {
+-	session->header.data_size += bytes_written;
++	if (!pipe_output) {
++		session->header.data_size += bytes_written;
  
-+	if (pipe_output) {
-+		err = event__synthesize_attrs(&session->header,
-+					      process_synthesized_event,
-+					      session);
-+		if (err < 0) {
-+			pr_err("Couldn't synthesize attrs.\n");
-+			return err;
-+		}
-+	}
+-	process_buildids();
+-	perf_header__write(&session->header, output, true);
++		process_buildids();
++		perf_header__write(&session->header, output, true);
++	} else {
++		int err;
 +
- 	err = event__synthesize_kernel_mmap(process_synthesized_event,
- 					    session, "_text");
- 	if (err < 0) {
++		err = event__synthesize_build_ids(process_synthesized_event,
++						  session);
++		if (err < 0)
++			pr_err("Couldn't synthesize build ids.\n");
++	}
+ }
+ 
+ static int __cmd_record(int argc, const char **argv)
 diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index a104121..0bb5d85 100644
+index 48a02a1..8f71ee7 100644
 --- a/tools/perf/builtin-report.c
 +++ b/tools/perf/builtin-report.c
-@@ -265,6 +265,7 @@ static struct perf_event_ops event_ops = {
- 	.fork	= event__process_task,
- 	.lost	= event__process_lost,
- 	.read	= process_read_event,
-+	.attr	= event__process_attr,
+@@ -268,6 +268,7 @@ static struct perf_event_ops event_ops = {
+ 	.attr	= event__process_attr,
+ 	.event_type = event__process_event_type,
+ 	.tracing_data = event__process_tracing_data,
++	.build_id = event__process_build_id,
  };
  
  extern volatile int session_done;
 diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 718fddd..bb28973 100644
+index 1863d7c..4a6ffb2 100644
 --- a/tools/perf/builtin-trace.c
 +++ b/tools/perf/builtin-trace.c
-@@ -104,6 +104,7 @@ static int process_sample_event(event_t *event, struct perf_session *session)
- static struct perf_event_ops event_ops = {
- 	.sample	= process_sample_event,
- 	.comm	= event__process_comm,
-+	.attr	= event__process_attr,
+@@ -107,6 +107,7 @@ static struct perf_event_ops event_ops = {
+ 	.attr	= event__process_attr,
+ 	.event_type = event__process_event_type,
+ 	.tracing_data = event__process_tracing_data,
++	.build_id = event__process_build_id,
  };
  
  extern volatile int session_done;
 diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 03cdfd9..8a2ded3 100644
+index e982e34..2dcef07 100644
 --- a/tools/perf/util/event.h
 +++ b/tools/perf/util/event.h
-@@ -84,7 +84,14 @@ struct build_id_event {
+@@ -87,6 +87,7 @@ enum perf_header_event_type { /* above any possible kernel type */
+ 	PERF_RECORD_HEADER_ATTR			= 64,
+ 	PERF_RECORD_HEADER_EVENT_TYPE		= 65,
+ 	PERF_RECORD_HEADER_TRACING_DATA		= 66,
++	PERF_RECORD_HEADER_BUILD_ID		= 67,
+ 	PERF_RECORD_HEADER_MAX
  };
  
- enum perf_header_event_type { /* above any possible kernel type */
--	PERF_RECORD_HEADER_MAX			= 64,
-+	PERF_RECORD_HEADER_ATTR			= 64,
-+	PERF_RECORD_HEADER_MAX
-+};
-+
-+struct attr_event {
-+	struct perf_event_header header;
-+	struct perf_event_attr attr;
-+	u64 id[];
- };
- 
- typedef union event_union {
-@@ -96,6 +103,7 @@ typedef union event_union {
- 	struct lost_event		lost;
- 	struct read_event		read;
- 	struct sample_event		sample;
-+	struct attr_event		attr;
+@@ -125,6 +126,7 @@ typedef union event_union {
+ 	struct attr_event		attr;
+ 	struct event_type_event		event_type;
+ 	struct tracing_data_event	tracing_data;
++	struct build_id_event		build_id;
  } event_t;
  
  struct events_stats {
 diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 8d05337..e361739 100644
+index c6874ec..628173b 100644
 --- a/tools/perf/util/header.c
 +++ b/tools/perf/util/header.c
-@@ -807,3 +807,82 @@ perf_header__find_attr(u64 id, struct perf_header *header)
+@@ -986,3 +986,93 @@ int event__process_tracing_data(event_t *self,
  
- 	return NULL;
+ 	return size_read + padding;
  }
 +
-+int event__synthesize_attr(struct perf_event_attr *attr, u16 ids, u64 *id,
-+			   event__handler_t process,
-+			   struct perf_session *session)
++int event__synthesize_build_id(struct dso *pos, u16 misc,
++			       event__handler_t process,
++			       struct perf_session *session)
 +{
-+	event_t *ev;
-+	size_t size;
++	event_t ev;
++	size_t len;
++	int err = 0;
++
++	if (!pos->hit)
++		return err;
++
++	memset(&ev, 0, sizeof(ev));
++
++	len = pos->long_name_len + 1;
++	len = ALIGN(len, NAME_ALIGN);
++	memcpy(&ev.build_id.build_id, pos->build_id, sizeof(pos->build_id));
++	ev.build_id.header.type = PERF_RECORD_HEADER_BUILD_ID;
++	ev.build_id.header.misc = misc;
++	ev.build_id.header.size = sizeof(ev.build_id) + len;
++	memcpy(&ev.build_id.filename, pos->long_name, pos->long_name_len);
++
++	err = process(&ev, session);
++
++	return err;
++}
++
++static int __event_synthesize_build_ids(struct list_head *head, u16 misc,
++					event__handler_t process,
++					struct perf_session *session)
++{
++	struct dso *pos;
++
++	dsos__for_each_with_build_id(pos, head) {
++		int err;
++		if (!pos->hit)
++			continue;
++
++		err = event__synthesize_build_id(pos, misc, process, session);
++		if (err < 0)
++			return err;
++	}
++
++	return 0;
++}
++
++int event__synthesize_build_ids(event__handler_t process,
++				struct perf_session *session)
++{
 +	int err;
 +
-+	size = sizeof(struct perf_event_attr);
-+	size = ALIGN(size, sizeof(u64));
-+	size += sizeof(struct perf_event_header);
-+	size += ids * sizeof(u64);
++	if (!dsos__read_build_ids(true))
++		return 0;
 +
-+	ev = malloc(size);
++	err = __event_synthesize_build_ids(&dsos__kernel,
++					   PERF_RECORD_MISC_KERNEL,
++					   process, session);
++	if (err == 0)
++		err = __event_synthesize_build_ids(&dsos__user,
++						   PERF_RECORD_MISC_USER,
++						   process, session);
 +
-+	ev->attr.attr = *attr;
-+	memcpy(ev->attr.id, id, ids * sizeof(u64));
++	if (err < 0) {
++		pr_debug("failed to synthesize build ids\n");
++		return err;
++	}
 +
-+	ev->attr.header.type = PERF_RECORD_HEADER_ATTR;
-+	ev->attr.header.size = size;
++	dsos__cache_build_ids();
 +
-+	err = process(ev, session);
-+
-+	free(ev);
-+
-+	return err;
++	return 0;
 +}
 +
-+int event__synthesize_attrs(struct perf_header *self,
-+			    event__handler_t process,
-+			    struct perf_session *session)
++int event__process_build_id(event_t *self,
++			    struct perf_session *session __unused)
 +{
-+	struct perf_header_attr	*attr;
-+	int i, err = 0;
++	struct list_head *head = &dsos__user;
++	struct dso *dso;
 +
-+	for (i = 0; i < self->attrs; i++) {
-+		attr = self->attr[i];
++	if (self->build_id.header.misc & PERF_RECORD_MISC_KERNEL)
++		head = &dsos__kernel;
 +
-+		err = event__synthesize_attr(&attr->attr, attr->ids, attr->id,
-+					     process, session);
-+		if (err) {
-+			pr_debug("failed to create perf header attribute\n");
-+			return err;
-+		}
++	dso = __dsos__findnew(head, self->build_id.filename);
++	if (dso != NULL) {
++		dso__set_build_id(dso, &self->build_id.build_id);
++		if (head == &dsos__kernel && self->build_id.filename[0] == '[')
++			dso->kernel = 1;
 +	}
-+
-+	return err;
-+}
-+
-+int event__process_attr(event_t *self, struct perf_session *session)
-+{
-+	struct perf_header_attr *attr;
-+	unsigned int i, ids, n_ids;
-+
-+	attr = perf_header_attr__new(&self->attr.attr);
-+	if (attr == NULL)
-+		return -ENOMEM;
-+
-+	ids = self->header.size;
-+	ids -= (void *)&self->attr.id - (void *)self;
-+	n_ids = ids / sizeof(u64);
-+
-+	for (i = 0; i < n_ids; i++) {
-+		if (perf_header_attr__add_id(attr, self->attr.id[i]) < 0) {
-+			perf_header_attr__delete(attr);
-+			return -ENOMEM;
-+		}
-+	}
-+
-+	if (perf_header__add_attr(&session->header, attr) < 0) {
-+		perf_header_attr__delete(attr);
-+		return -ENOMEM;
-+	}
-+
-+	perf_session__update_sample_type(session);
 +
 +	return 0;
 +}
 diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 0ce25cc..79ab267 100644
+index be758ca..f827ef2 100644
 --- a/tools/perf/util/header.h
 +++ b/tools/perf/util/header.h
-@@ -95,4 +95,12 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
- 			  const char *name, bool is_kallsyms);
- int build_id_cache__remove_s(const char *sbuild_id, const char *debugdir);
+@@ -118,4 +118,11 @@ int event__synthesize_tracing_data(int fd, struct perf_event_attr *pattrs,
+ int event__process_tracing_data(event_t *self,
+ 				struct perf_session *session);
  
-+int event__synthesize_attr(struct perf_event_attr *attr, u16 ids, u64 *id,
-+			   event__handler_t process,
-+			   struct perf_session *session);
-+int event__synthesize_attrs(struct perf_header *self,
-+			    event__handler_t process,
-+			    struct perf_session *session);
-+int event__process_attr(event_t *self, struct perf_session *session);
++int event__synthesize_build_id(struct dso *pos, u16 misc,
++			       event__handler_t process,
++			       struct perf_session *session);
++int event__synthesize_build_ids(event__handler_t process,
++				struct perf_session *session);
++int event__process_build_id(event_t *self, struct perf_session *session);
 +
  #endif /* __PERF_HEADER_H */
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index b767e95..2d977d1 100644
+index d5c2b3c..be16ea4 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -210,6 +210,8 @@ static void perf_event_ops__fill_defaults(struct perf_event_ops *handler)
- 		handler->throttle = process_event_stub;
- 	if (handler->unthrottle == NULL)
- 		handler->unthrottle = process_event_stub;
-+	if (handler->attr == NULL)
-+		handler->attr = process_event_stub;
+@@ -216,6 +216,8 @@ static void perf_event_ops__fill_defaults(struct perf_event_ops *handler)
+ 		handler->event_type = process_event_stub;
+ 	if (handler->tracing_data == NULL)
+ 		handler->tracing_data = process_event_stub;
++	if (handler->build_id == NULL)
++		handler->build_id = process_event_stub;
  }
  
  static const char *event__name[] = {
-@@ -223,6 +225,7 @@ static const char *event__name[] = {
- 	[PERF_RECORD_FORK]	 = "FORK",
- 	[PERF_RECORD_READ]	 = "READ",
- 	[PERF_RECORD_SAMPLE]	 = "SAMPLE",
-+	[PERF_RECORD_HEADER_ATTR]	 = "ATTR",
+@@ -232,6 +234,7 @@ static const char *event__name[] = {
+ 	[PERF_RECORD_HEADER_ATTR]	 = "ATTR",
+ 	[PERF_RECORD_HEADER_EVENT_TYPE]	 = "EVENT_TYPE",
+ 	[PERF_RECORD_HEADER_TRACING_DATA]	 = "TRACING_DATA",
++	[PERF_RECORD_HEADER_BUILD_ID]	 = "BUILD_ID",
  };
  
  unsigned long event__total[PERF_RECORD_HEADER_MAX];
-@@ -289,6 +292,26 @@ static void event__read_swap(event_t *self)
- 	self->read.id		= bswap_64(self->read.id);
- }
- 
-+static void event__attr_swap(event_t *self)
-+{
-+	size_t size;
-+
-+	self->attr.attr.type		= bswap_32(self->attr.attr.type);
-+	self->attr.attr.size		= bswap_32(self->attr.attr.size);
-+	self->attr.attr.config		= bswap_64(self->attr.attr.config);
-+	self->attr.attr.sample_period	= bswap_64(self->attr.attr.sample_period);
-+	self->attr.attr.sample_type	= bswap_64(self->attr.attr.sample_type);
-+	self->attr.attr.read_format	= bswap_64(self->attr.attr.read_format);
-+	self->attr.attr.wakeup_events	= bswap_32(self->attr.attr.wakeup_events);
-+	self->attr.attr.bp_type		= bswap_32(self->attr.attr.bp_type);
-+	self->attr.attr.bp_addr		= bswap_64(self->attr.attr.bp_addr);
-+	self->attr.attr.bp_len		= bswap_64(self->attr.attr.bp_len);
-+
-+	size = self->header.size;
-+	size -= (void *)&self->attr.id - (void *)self;
-+	mem_bswap_64(self->attr.id, size);
-+}
-+
- typedef void (*event__swap_op)(event_t *self);
- 
- static event__swap_op event__swap_ops[] = {
-@@ -299,6 +322,7 @@ static event__swap_op event__swap_ops[] = {
- 	[PERF_RECORD_LOST]   = event__all64_swap,
- 	[PERF_RECORD_READ]   = event__read_swap,
- 	[PERF_RECORD_SAMPLE] = event__all64_swap,
-+	[PERF_RECORD_HEADER_ATTR]   = event__attr_swap,
+@@ -342,6 +345,7 @@ static event__swap_op event__swap_ops[] = {
+ 	[PERF_RECORD_HEADER_ATTR]   = event__attr_swap,
+ 	[PERF_RECORD_HEADER_EVENT_TYPE]   = event__event_type_swap,
+ 	[PERF_RECORD_HEADER_TRACING_DATA]   = event__tracing_data_swap,
++	[PERF_RECORD_HEADER_BUILD_ID]   = NULL,
  	[PERF_RECORD_HEADER_MAX]    = NULL,
  };
  
-@@ -339,6 +363,8 @@ static int perf_session__process_event(struct perf_session *self,
- 		return ops->throttle(event, self);
- 	case PERF_RECORD_UNTHROTTLE:
- 		return ops->unthrottle(event, self);
-+	case PERF_RECORD_HEADER_ATTR:
-+		return ops->attr(event, self);
+@@ -390,6 +394,8 @@ static int perf_session__process_event(struct perf_session *self,
+ 		/* setup for reading amidst mmap */
+ 		lseek(self->fd, offset + head, SEEK_SET);
+ 		return ops->tracing_data(event, self);
++	case PERF_RECORD_HEADER_BUILD_ID:
++		return ops->build_id(event, self);
  	default:
  		self->unknown_events++;
  		return -1;
 diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 8385fb5..07ee8f2 100644
+index 88a2c35..4f925e6 100644
 --- a/tools/perf/util/session.h
 +++ b/tools/perf/util/session.h
-@@ -44,7 +44,8 @@ struct perf_event_ops {
- 		 lost,
- 		 read,
- 		 throttle,
--		 unthrottle;
-+		 unthrottle,
-+		 attr;
+@@ -47,7 +47,8 @@ struct perf_event_ops {
+ 		 unthrottle,
+ 		 attr,
+ 		 event_type,
+-		 tracing_data;
++		 tracing_data,
++		 build_id;
  };
  
  struct perf_session *perf_session__new(const char *filename, int mode, bool force);
