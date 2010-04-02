@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139Ab0DBVhB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 17:37:01 -0400
-Received: from fischerfamily.org ([71.216.156.246]:11487 "EHLO gw"
+	id S1755261Ab0DBVhK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 17:37:10 -0400
+Received: from fischerfamily.org ([71.216.156.246]:11499 "EHLO gw"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754730Ab0DBVgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754811Ab0DBVgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Apr 2010 17:36:45 -0400
 From: Todd Fischer <todd.fischer@ridgerun.com>
 To: linux-kernel@vger.kernel.org,
        davinci-linux-open-source@linux.davincidsp.com, sameo@linux.intel.com,
        lrg@slimlogic.co.uk, broonie@opensource.wolfsonmicro.com,
        todd.fischer@ridgerun.com
-Subject: [PATCH 1/4]-V2 Move TPS6507x register definition to header file.
-Date: Fri,  2 Apr 2010 15:37:30 -0600
-Message-Id: <1270244253-4234-2-git-send-email-todd.fischer@ridgerun.com>
+Subject: [PATCH 2/4]-V2 Make room for other tps6507x drivers to have board specific initialization data.
+Date: Fri,  2 Apr 2010 15:37:31 -0600
+Message-Id: <1270244253-4234-3-git-send-email-todd.fischer@ridgerun.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1270244253-4234-1-git-send-email-todd.fischer@ridgerun.com>
+In-Reply-To: <1270244253-4234-2-git-send-email-todd.fischer@ridgerun.com>
 References: <1270244253-4234-1-git-send-email-todd.fischer@ridgerun.com>
+ <1270244253-4234-2-git-send-email-todd.fischer@ridgerun.com>
 Organization: RidgeRun
 X-SA-Exim-Connect-IP: 10.0.0.3
 X-SA-Exim-Mail-From: todd.fischer@ridgerun.com
@@ -25,227 +26,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Other sub-drivers for the TPS6507x chip will need to use register 
-definition so move it out of the source file and into a header file.
+Add mfd structure which refrences sub-driver initialization data. For example,
+for a giving hardware implementation, the voltage regulator sub-driver
+initialization data provides the mapping betten a voltage regulator and what
+the output voltage is being used for.
 
 Signed-off-by: Todd Fischer <todd.fischer@ridgerun.com>
 ---
- drivers/regulator/tps6507x-regulator.c |   60 +--------------
- include/linux/mfd/tps6507x.h           |  134 ++++++++++++++++++++++++++++++++
- 2 files changed, 135 insertions(+), 59 deletions(-)
- create mode 100644 include/linux/mfd/tps6507x.h
+ arch/arm/mach-davinci/board-da850-evm.c |    7 ++++++-
+ drivers/regulator/tps6507x-regulator.c  |   14 ++++++++++++--
+ include/linux/mfd/tps6507x.h            |   11 +++++++++++
+ 3 files changed, 29 insertions(+), 3 deletions(-)
 
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index 411284d..d059924 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -17,6 +17,7 @@
+ #include <linux/i2c.h>
+ #include <linux/i2c/at24.h>
+ #include <linux/i2c/pca953x.h>
++#include <linux/mfd/tps6507x.h>
+ #include <linux/gpio.h>
+ #include <linux/platform_device.h>
+ #include <linux/mtd/mtd.h>
+@@ -533,10 +534,14 @@ struct regulator_init_data tps65070_regulator_data[] = {
+ 	},
+ };
+ 
++static struct tps6507x_board tps_board = {
++	.tps6507x_pmic_init_data = &tps65070_regulator_data[0],
++};
++
+ static struct i2c_board_info __initdata da850evm_tps65070_info[] = {
+ 	{
+ 		I2C_BOARD_INFO("tps6507x", 0x48),
+-		.platform_data = &tps65070_regulator_data[0],
++		.platform_data = &tps_board,
+ 	},
+ };
+ 
 diff --git a/drivers/regulator/tps6507x-regulator.c b/drivers/regulator/tps6507x-regulator.c
-index c2a9539..91172e3 100644
+index 91172e3..becf652 100644
 --- a/drivers/regulator/tps6507x-regulator.c
 +++ b/drivers/regulator/tps6507x-regulator.c
-@@ -24,65 +24,7 @@
- #include <linux/regulator/machine.h>
- #include <linux/i2c.h>
- #include <linux/delay.h>
--
--/* Register definitions */
--#define	TPS6507X_REG_PPATH1				0X01
--#define	TPS6507X_REG_INT				0X02
--#define	TPS6507X_REG_CHGCONFIG0				0X03
--#define	TPS6507X_REG_CHGCONFIG1				0X04
--#define	TPS6507X_REG_CHGCONFIG2				0X05
--#define	TPS6507X_REG_CHGCONFIG3				0X06
--#define	TPS6507X_REG_REG_ADCONFIG			0X07
--#define	TPS6507X_REG_TSCMODE				0X08
--#define	TPS6507X_REG_ADRESULT_1				0X09
--#define	TPS6507X_REG_ADRESULT_2				0X0A
--#define	TPS6507X_REG_PGOOD				0X0B
--#define	TPS6507X_REG_PGOODMASK				0X0C
--#define	TPS6507X_REG_CON_CTRL1				0X0D
--#define	TPS6507X_REG_CON_CTRL2				0X0E
--#define	TPS6507X_REG_CON_CTRL3				0X0F
--#define	TPS6507X_REG_DEFDCDC1				0X10
--#define	TPS6507X_REG_DEFDCDC2_LOW			0X11
--#define	TPS6507X_REG_DEFDCDC2_HIGH			0X12
--#define	TPS6507X_REG_DEFDCDC3_LOW			0X13
--#define	TPS6507X_REG_DEFDCDC3_HIGH			0X14
--#define	TPS6507X_REG_DEFSLEW				0X15
--#define	TPS6507X_REG_LDO_CTRL1				0X16
--#define	TPS6507X_REG_DEFLDO2				0X17
--#define	TPS6507X_REG_WLED_CTRL1				0X18
--#define	TPS6507X_REG_WLED_CTRL2				0X19
--
--/* CON_CTRL1 bitfields */
--#define	TPS6507X_CON_CTRL1_DCDC1_ENABLE		BIT(4)
--#define	TPS6507X_CON_CTRL1_DCDC2_ENABLE		BIT(3)
--#define	TPS6507X_CON_CTRL1_DCDC3_ENABLE		BIT(2)
--#define	TPS6507X_CON_CTRL1_LDO1_ENABLE		BIT(1)
--#define	TPS6507X_CON_CTRL1_LDO2_ENABLE		BIT(0)
--
--/* DEFDCDC1 bitfields */
--#define TPS6507X_DEFDCDC1_DCDC1_EXT_ADJ_EN	BIT(7)
--#define TPS6507X_DEFDCDC1_DCDC1_MASK		0X3F
--
--/* DEFDCDC2_LOW bitfields */
--#define TPS6507X_DEFDCDC2_LOW_DCDC2_MASK	0X3F
--
--/* DEFDCDC2_HIGH bitfields */
--#define TPS6507X_DEFDCDC2_HIGH_DCDC2_MASK	0X3F
--
--/* DEFDCDC3_LOW bitfields */
--#define TPS6507X_DEFDCDC3_LOW_DCDC3_MASK	0X3F
--
--/* DEFDCDC3_HIGH bitfields */
--#define TPS6507X_DEFDCDC3_HIGH_DCDC3_MASK	0X3F
--
--/* TPS6507X_REG_LDO_CTRL1 bitfields */
--#define TPS6507X_REG_LDO_CTRL1_LDO1_MASK	0X0F
--
--/* TPS6507X_REG_DEFLDO2 bitfields */
--#define TPS6507X_REG_DEFLDO2_LDO2_MASK		0X3F
--
--/* VDCDC MASK */
--#define TPS6507X_DEFDCDCX_DCDC_MASK		0X3F
-+#include <linux/mfd/tps6507x.h>
+@@ -488,6 +488,7 @@ static int __devinit tps_6507x_probe(struct i2c_client *client,
+ 	struct regulator_init_data *init_data;
+ 	struct regulator_dev *rdev;
+ 	struct tps_pmic *tps;
++	struct tps6507x_board *tps_board;
+ 	int i;
+ 	int error;
  
- /* DCDC's */
- #define TPS6507X_DCDC_1				0
+@@ -496,12 +497,21 @@ static int __devinit tps_6507x_probe(struct i2c_client *client,
+ 		return -EIO;
+ 
+ 	/**
++	 * tps_board points to pmic related constants
++	 * coming from the board-evm file.
++	 */
++
++	tps_board = dev_get_platdata(&client->dev);
++	if (!tps_board)
++		return -EINVAL;
++
++	/**
+ 	 * init_data points to array of regulator_init structures
+ 	 * coming from the board-evm file.
+ 	 */
+-	init_data = client->dev.platform_data;
++	init_data = tps_board->tps6507x_pmic_init_data;
+ 	if (!init_data)
+-		return -EIO;
++		return -EINVAL;
+ 
+ 	tps = kzalloc(sizeof(*tps), GFP_KERNEL);
+ 	if (!tps)
 diff --git a/include/linux/mfd/tps6507x.h b/include/linux/mfd/tps6507x.h
-new file mode 100644
-index 0000000..155bee1
---- /dev/null
+index 155bee1..fd73af5 100644
+--- a/include/linux/mfd/tps6507x.h
 +++ b/include/linux/mfd/tps6507x.h
-@@ -0,0 +1,134 @@
-+/* linux/mfd/tps6507x.h
+@@ -131,4 +131,15 @@
+ /* VDCDC MASK */
+ #define TPS6507X_DEFDCDCX_DCDC_MASK		0X3F
+ 
++/**
++ * struct tps6507x_board - packages regulator and touchscreen init data
++ * @tps6507x_regulator_data: regulator initialization values
 + *
-+ * Functions to access TPS65070 power management chip.
-+ *
-+ * Copyright (c) 2009 RidgeRun (todd.fischer@ridgerun.com)
-+ *
-+ *
-+ *  For licencing details see kernel-base/COPYING
++ * Board data may be used to initialize regulator and touchscreen.
 + */
 +
-+#ifndef __LINUX_MFD_TPS6507X_H
-+#define __LINUX_MFD_TPS6507X_H
++struct tps6507x_board {
++	struct regulator_init_data *tps6507x_pmic_init_data;
++};
 +
-+/*
-+ * ----------------------------------------------------------------------------
-+ * Registers, all 8 bits
-+ * ----------------------------------------------------------------------------
-+ */
-+
-+
-+/* Register definitions */
-+#define	TPS6507X_REG_PPATH1			0X01
-+#define	TPS6507X_CHG_USB			BIT(7)
-+#define	TPS6507X_CHG_AC				BIT(6)
-+#define	TPS6507X_CHG_USB_PW_ENABLE		BIT(5)
-+#define	TPS6507X_CHG_AC_PW_ENABLE		BIT(4)
-+#define	TPS6507X_CHG_AC_CURRENT			BIT(2)
-+#define	TPS6507X_CHG_USB_CURRENT		BIT(0)
-+
-+#define	TPS6507X_REG_INT			0X02
-+#define	TPS6507X_REG_MASK_AC_USB		BIT(7)
-+#define	TPS6507X_REG_MASK_TSC			BIT(6)
-+#define	TPS6507X_REG_MASK_PB_IN			BIT(5)
-+#define	TPS6507X_REG_TSC_INT			BIT(3)
-+#define	TPS6507X_REG_PB_IN_INT			BIT(2)
-+#define	TPS6507X_REG_AC_USB_APPLIED		BIT(1)
-+#define	TPS6507X_REG_AC_USB_REMOVED		BIT(0)
-+
-+#define	TPS6507X_REG_CHGCONFIG0			0X03
-+
-+#define	TPS6507X_REG_CHGCONFIG1			0X04
-+#define	TPS6507X_CON_CTRL1_DCDC1_ENABLE		BIT(4)
-+#define	TPS6507X_CON_CTRL1_DCDC2_ENABLE		BIT(3)
-+#define	TPS6507X_CON_CTRL1_DCDC3_ENABLE		BIT(2)
-+#define	TPS6507X_CON_CTRL1_LDO1_ENABLE		BIT(1)
-+#define	TPS6507X_CON_CTRL1_LDO2_ENABLE		BIT(0)
-+
-+#define	TPS6507X_REG_CHGCONFIG2			0X05
-+
-+#define	TPS6507X_REG_CHGCONFIG3			0X06
-+
-+#define	TPS6507X_REG_ADCONFIG			0X07
-+#define	TPS6507X_ADCONFIG_AD_ENABLE		BIT(7)
-+#define	TPS6507X_ADCONFIG_START_CONVERSION	BIT(6)
-+#define	TPS6507X_ADCONFIG_CONVERSION_DONE	BIT(5)
-+#define	TPS6507X_ADCONFIG_VREF_ENABLE		BIT(4)
-+#define	TPS6507X_ADCONFIG_INPUT_AD_IN1		0
-+#define	TPS6507X_ADCONFIG_INPUT_AD_IN2		1
-+#define	TPS6507X_ADCONFIG_INPUT_AD_IN3		2
-+#define	TPS6507X_ADCONFIG_INPUT_AD_IN4		3
-+#define	TPS6507X_ADCONFIG_INPUT_TS_PIN		4
-+#define	TPS6507X_ADCONFIG_INPUT_BAT_CURRENT	5
-+#define	TPS6507X_ADCONFIG_INPUT_AC_VOLTAGE	6
-+#define	TPS6507X_ADCONFIG_INPUT_SYS_VOLTAGE	7
-+#define	TPS6507X_ADCONFIG_INPUT_CHARGER_VOLTAGE 8
-+#define	TPS6507X_ADCONFIG_INPUT_BAT_VOLTAGE	9
-+#define	TPS6507X_ADCONFIG_INPUT_THRESHOLD_VOLTAGE 10
-+#define	TPS6507X_ADCONFIG_INPUT_ISET1_VOLTAGE	11
-+#define	TPS6507X_ADCONFIG_INPUT_ISET2_VOLTAGE	12
-+#define	TPS6507X_ADCONFIG_INPUT_REAL_TSC	14
-+#define	TPS6507X_ADCONFIG_INPUT_TSC		15
-+
-+#define	TPS6507X_REG_TSCMODE			0X08
-+#define	TPS6507X_TSCMODE_X_POSITION		0
-+#define	TPS6507X_TSCMODE_Y_POSITION		1
-+#define	TPS6507X_TSCMODE_PRESSURE		2
-+#define	TPS6507X_TSCMODE_X_PLATE		3
-+#define	TPS6507X_TSCMODE_Y_PLATE		4
-+#define	TPS6507X_TSCMODE_STANDBY		5
-+#define	TPS6507X_TSCMODE_ADC_INPUT		6
-+#define	TPS6507X_TSCMODE_DISABLE		7
-+
-+#define	TPS6507X_REG_ADRESULT_1			0X09
-+
-+#define	TPS6507X_REG_ADRESULT_2			0X0A
-+#define	TPS6507X_REG_ADRESULT_2_MASK		(BIT(1) | BIT(0))
-+
-+#define	TPS6507X_REG_PGOOD			0X0B
-+
-+#define	TPS6507X_REG_PGOODMASK			0X0C
-+
-+#define	TPS6507X_REG_CON_CTRL1			0X0D
-+#define	TPS6507X_CON_CTRL1_DCDC1_ENABLE		BIT(4)
-+#define	TPS6507X_CON_CTRL1_DCDC2_ENABLE		BIT(3)
-+#define	TPS6507X_CON_CTRL1_DCDC3_ENABLE		BIT(2)
-+#define	TPS6507X_CON_CTRL1_LDO1_ENABLE		BIT(1)
-+#define	TPS6507X_CON_CTRL1_LDO2_ENABLE		BIT(0)
-+
-+#define	TPS6507X_REG_CON_CTRL2			0X0E
-+
-+#define	TPS6507X_REG_CON_CTRL3			0X0F
-+
-+#define	TPS6507X_REG_DEFDCDC1			0X10
-+#define TPS6507X_DEFDCDC1_DCDC1_EXT_ADJ_EN	BIT(7)
-+#define TPS6507X_DEFDCDC1_DCDC1_MASK		0X3F
-+
-+#define	TPS6507X_REG_DEFDCDC2_LOW		0X11
-+#define TPS6507X_DEFDCDC2_LOW_DCDC2_MASK	0X3F
-+
-+#define	TPS6507X_REG_DEFDCDC2_HIGH		0X12
-+#define TPS6507X_DEFDCDC2_HIGH_DCDC2_MASK	0X3F
-+
-+#define	TPS6507X_REG_DEFDCDC3_LOW		0X13
-+#define TPS6507X_DEFDCDC3_LOW_DCDC3_MASK	0X3F
-+
-+#define	TPS6507X_REG_DEFDCDC3_HIGH		0X14
-+#define TPS6507X_DEFDCDC3_HIGH_DCDC3_MASK	0X3F
-+
-+#define	TPS6507X_REG_DEFSLEW			0X15
-+
-+#define	TPS6507X_REG_LDO_CTRL1			0X16
-+#define TPS6507X_REG_LDO_CTRL1_LDO1_MASK	0X0F
-+
-+#define	TPS6507X_REG_DEFLDO2			0X17
-+#define TPS6507X_REG_DEFLDO2_LDO2_MASK		0X3F
-+
-+#define	TPS6507X_REG_WLED_CTRL1			0X18
-+
-+#define	TPS6507X_REG_WLED_CTRL2			0X19
-+
-+/* VDCDC MASK */
-+#define TPS6507X_DEFDCDCX_DCDC_MASK		0X3F
-+
-+#endif /*  __LINUX_MFD_TPS6507X_H */
+ #endif /*  __LINUX_MFD_TPS6507X_H */
 -- 
 1.6.0.4
 
