@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759200Ab0DBGpV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 02:45:21 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:43483 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758761Ab0DBGpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 02:45:15 -0400
-Date: Fri, 2 Apr 2010 08:45:14 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: Divyesh Shah <dpshah@google.com>
-Cc: vgoyal@redhat.com, linux-kernel@vger.kernel.org, nauman@google.com,
-       ctalbott@google.com
-Subject: Re: [PATCH 0/3] blkio: IO controller stats
-Message-ID: <20100402064514.GW23510@kernel.dk>
-References: <20100401215541.2843.79107.stgit@austin.mtv.corp.google.com>
+	id S1759209Ab0DBGsO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 02:48:14 -0400
+Received: from exprod5og112.obsmtp.com ([64.18.0.24]:41984 "EHLO
+	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758193Ab0DBGsE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 02:48:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100401215541.2843.79107.stgit@austin.mtv.corp.google.com>
+In-Reply-To: <o2j28c262361004012213tc9fdebc7yc535f4130a86e644@mail.gmail.com>
+References: <i2i5f4a33681003312105m4cd42e9ayfe35cc0988c401b6@mail.gmail.com>
+	 <g2g5f4a33681004012051wedea9538w9da89e210b731422@mail.gmail.com>
+	 <o2j28c262361004012213tc9fdebc7yc535f4130a86e644@mail.gmail.com>
+Date: Fri, 2 Apr 2010 14:48:00 +0800
+Message-ID: <y2r5f4a33681004012348q2b613930o6fc3c9d7060d9107@mail.gmail.com>
+Subject: Re: [Question] race condition in mm/page_alloc.c regarding page->lru?
+From: TAO HU <tghk48@motorola.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       "Ye Yuan.Bo-A22116" <yuan-bo.ye@motorola.com>,
+       Chang Qing-A21550 <Qing.Chang@motorola.com>,
+       linux-arm-kernel@lists.infradead.org, Mel Gorman <mel@csn.ul.ie>
+Content-Type: text/plain; charset=ISO-8859-1
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 01 2010, Divyesh Shah wrote:
-> The following series implements some additional stats for IO controller.
-> 
-> These stats have helped us debug issues with earlier IO controller
-> versions and should be useful now as well.
-> We've been using these stats for monitoring and debugging problems after the
-> fact as these stats can be collected and stored for later use.
-> 
-> One might argue that most of this information can be exported using blktrace
-> when debugging. However, blktrace has non-trivial performance impact and
-> cannot be always turned on. These stats provide a way for continuous monitoring
-> without losing much performance on rotational disks. We've been able to look
-> at these stats and debug issues after problems have been reported in the wild
-> and understand the IO pattern of the affected workloads.
-> Some of these stats are also a good data source for high-level analysis and
-> capacity planning.
-> 
-> This patchset adds 4 stats and I will send out another patchset later for
-> stats like io_merged and some stats that can be turned on only for
-> debugging - idle_time (total time spent idling for this blkio_group),
-> wait_time (total time spent by the blkio_group waiting before any one of its
-> queues got a timeslice). I've tried to breakdown the stats and sent the most
-> basic ones here.
+Hi, Minchan Kim
 
-Thanks, I think this makes sense. I've applied it for 2.6.35.
+It is hard to reproduce the problem.
+We only observed it  twice in the past month.
+And it randomly occurred a few more times before.
 
--- 
-Jens Axboe
+So I'm afraid neither git-bisect nor QEMU-goldfish would help.
 
+On Fri, Apr 2, 2010 at 1:13 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> On Fri, Apr 2, 2010 at 12:51 PM, TAO HU <tghk48@motorola.com> wrote:
+>> 2 patches related to page_alloc.c were applied.
+>> Does anyone see a connection between the 2 patches and the panic?
+>
+> Seem to not related to the problem.
+> I don't have seen the problem before.
+>
+> Could you git-bisect to make sure which patch makes bug?
+> Is it reproducible?
+> Can I reproduce it in QEMU-goldfish?
+>
+> --
+> Kind regards,
+> Minchan Kim
+>
