@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758774Ab0DBKxr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 06:53:47 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:33513 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752909Ab0DBKxl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 06:53:41 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: 2.6.31 regression: programs crashing after a couple of days of uptime with hibernation
-Date: Fri, 2 Apr 2010 12:53:28 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-kernel@vger.kernel.org,
-       pm list <linux-pm@lists.linux-foundation.org>
-References: <201004012332.49454.linux@rainbow-software.org> <201004020003.37305.linux@rainbow-software.org> <201004020033.55994.rjw@sisk.pl>
-In-Reply-To: <201004020033.55994.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	id S932284Ab0DBLJf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 07:09:35 -0400
+Received: from sh.osrg.net ([192.16.179.4]:48051 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758798Ab0DBLJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 07:09:29 -0400
+Date: Fri, 02 Apr 2010 20:09:24 +0900 (JST)
+Message-Id: <20100402.200924.67912456.ryusuke@osrg.net>
+To: lihong.hi@gmail.com
+Cc: konishi.ryusuke@lab.ntt.co.jp, linux-nilfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] nilfs2: Remove an uninitialization warning in
+ nilfs_btree_propagate_v()
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+In-Reply-To: <20100402104039.GA9652@xhl>
+References: <20100402104039.GA9652@xhl>
+X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-2022-jp
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201004021253.30668.linux@rainbow-software.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 02 Apr 2010 20:09:24 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 02 April 2010 00:33:55 Rafael J. Wysocki wrote:
-> On Friday 02 April 2010, Ondrej Zary wrote:
-> > On Thursday 01 April 2010 23:45:33 you wrote:
-> > > On Thursday 01 April 2010, Ondrej Zary wrote:
-> > > > Hello,
-> > > > with kernel 2.6.30, I can have uptime of more than a month on my
-> > > > desktop PC (with hibernation). It's impossible with 2.6.31. After 1
-> > > > to 3 days, processes that were running during hibernation (e.g.
-> > > > konsole, kwin, kicker, xorg) start to crash randomly in very weird
-> > > > ways. The kernel itself does not seem to crash. When I run the
-> > > > crashed program again, it seems to work. Looks like some memory
-> > > > corruption.
-> > > >
-> > > > This bug is also present in 2.6.32 and 2.6.33.
-> > >
-> > > Is the kernel 32-bit or 64-bit?  What kind of CPU is there in the box?
-> >
-> > It's old 32-bit i686 CPU - Cyrix MII.
->
-> Please try with this patch applied:
-> http://git.kernel.org/?p=linux/kernel/git/mingo/linux-2.6-x86.git;a=patch;h
->=8ae06d223f8203c72104e5c0c4ee49a000aedb42
+On Fri, 2 Apr 2010 18:40:39 +0800, Li Hong <lihong.hi@gmail.com> wrote:
+> `make CONFIG_NILFS2_FS=m M=fs/nilfs2/` will give the following warnings:
+> 
+> fs/nilfs2/btree.c: In function ‘nilfs_btree_propagate’:
+> fs/nilfs2/btree.c:1882: warning: ‘maxlevel’ may be used uninitialized in this function
+> fs/nilfs2/btree.c:1882: note: ‘maxlevel’ was declared here
+> 
+> Set maxlevel = 0 to fix it.
+> 
+> Signed-off-by: Li Hong <lihong.hi@gmail.com>
 
-Thanks, I'll try it. But I doubt that it will fix the problem. There were no 
-changes in hibernate_asm_32.S between 2.6.30 and 2.6.31.
+Applied, thanks.
 
--- 
-Ondrej Zary
+Ryusuke Konishi
+
+> ---
+>  fs/nilfs2/btree.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/nilfs2/btree.c b/fs/nilfs2/btree.c
+> index 7cdd98b..76c38e3 100644
+> --- a/fs/nilfs2/btree.c
+> +++ b/fs/nilfs2/btree.c
+> @@ -1879,7 +1879,7 @@ static int nilfs_btree_propagate_v(struct nilfs_btree *btree,
+>  				   struct nilfs_btree_path *path,
+>  				   int level, struct buffer_head *bh)
+>  {
+> -	int maxlevel, ret;
+> +	int maxlevel = 0, ret;
+>  	struct nilfs_btree_node *parent;
+>  	struct inode *dat = nilfs_bmap_get_dat(&btree->bt_bmap);
+>  	__u64 ptr;
+> -- 
+> 1.6.3.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
