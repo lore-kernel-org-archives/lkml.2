@@ -1,77 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681Ab0DBWqr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 18:46:47 -0400
-Received: from p01c12o141.mxlogic.net ([208.65.145.64]:49265 "EHLO
-	p01c12o141.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755572Ab0DBWql (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 18:46:41 -0400
-X-MXL-Hash: 4bb673d1022d59af-53ddfacbb26e30d64b7f62ed169eb4c5ce54ef6d
-X-MXL-Hash: 4bb673ce2c89a5d4-d5fcbe37b48b398fa16a690914d4ef69d21e5d40
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-       lkml <linux-kernel@vger.kernel.org>
-CC: David Woodhouse <dwmw2@infradead.org>,
-       "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>
-Date: Fri, 2 Apr 2010 17:46:30 -0500
-Subject: [PATCH] mtd/maps/physmap: catch failure to register
- MTD_PHYSMAP_COMPAT device
-Thread-Topic: [PATCH] mtd/maps/physmap: catch failure to register
- MTD_PHYSMAP_COMPAT device
-Thread-Index: AcrStlYuoomRNasvSPyEISJe3+ZIrQ==
-Message-ID: <0D753D10438DA54287A00B0270842697636A7E9D36@AUSP01VMBX24.collaborationhost.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1755727Ab0DBWw3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 18:52:29 -0400
+Received: from www.tglx.de ([62.245.132.106]:54776 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755564Ab0DBWwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 18:52:23 -0400
+Date: Sat, 3 Apr 2010 00:51:20 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Pavel Machek <pavel@ucw.cz>
+cc: Andi Kleen <andi@firstfloor.org>, Linus Torvalds <torvalds@osdl.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, David Miller <davem@davemloft.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [patch 1/2] genirq: Run irq handlers with interrupts disabled
+In-Reply-To: <20100402210916.GA23339@elf.ucw.cz>
+Message-ID: <alpine.LFD.2.00.1004030046160.32352@localhost.localdomain>
+References: <20100326000325.917127328@linutronix.de> <20100326000405.758579387@linutronix.de> <20100326061310.GV20695@one.firstfloor.org> <alpine.LFD.2.00.1003261224070.3147@localhost.localdomain> <20100330053325.GL20695@one.firstfloor.org>
+ <alpine.LFD.2.00.1003311315520.32352@localhost.localdomain> <20100402093132.GA1360@ucw.cz> <alpine.LFD.2.00.1004022242170.32352@localhost.localdomain> <20100402210916.GA23339@elf.ucw.cz>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010040101)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [216.166.12.32]
-X-AnalysisOut: [v=1.0 c=1 a=oeBtjfINvzoA:10 a=VphdPIyG4kEA:10 a=IkcTkHD0fZ]
-X-AnalysisOut: [MA:10 a=zbe46bahRtDx8aUBN1lPzQ==:17 a=i00gxMtYAAAA:8 a=Jfr]
-X-AnalysisOut: [nYn6hAAAA:8 a=yPCof4ZbAAAA:8 a=PiArxPsHRB7F9zrSCacA:9 a=L6]
-X-AnalysisOut: [1zGsoZGOwhTTX9q0zvaYh45ZsA:4 a=QEXdDO2ut3YA:10 a=x1WnkoZAw]
-X-AnalysisOut: [usA:10 a=3Rfx1nUSh_UA:10 a=7DSvI1NPTFQA:10]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o32MkpmE001102
 
-If the default Kconfig values are used with MTD_PHYSMAP_COMPAT you end
-up with a resource where end < start.  This causes __request_resource to
-return a conflict which then returns an -EBUSY error code.  The current
-physmap.c code just assumes that the platfom_device_register will always
-succeed.
+Pavel,
 
-Catch this failure during the physmap_init and propogate the error.
+On Fri, 2 Apr 2010, Pavel Machek wrote:
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+> On Fri 2010-04-02 22:42:51, Thomas Gleixner wrote:
+> > On Fri, 2 Apr 2010, Pavel Machek wrote:
+> > 
+> > > On Wed 2010-03-31 13:16:37, Thomas Gleixner wrote:
+> > > > On Tue, 30 Mar 2010, Andi Kleen wrote:
+> > > > 
+> > > > > > Why not simply force IRQF_DISABLED for all MSI interrupts. That still
+> > > > > > allows nesting for non MSI ones, but it limits the chance of throwing
+> > > > > > up reasonably well. That's a two liner.
+> > > > > > 
+> > > > > > Can you please test whether it resolves the issue at hand ?
+> > > > > 
+> > > > > Sorry for the late answer. Got confirmation that this patch
+> > > > > fixes the test case. Thanks.
+> > > > 
+> > > > Ok, I'll push it linus wards and cc stable. I think thats the least
+> > > > intrusive safe bet we can have right now.
+> > > 
+> > > stable? I'd say thats way too intrusive for -stable...
+> > 
+> > So we better let the possible stack overruns unaddressed ?
+> 
+> -stable should have no regressions, first and foremost. And this is
+> pretty certain to introduce some, at least on low-powered system with
+> serial ports.
 
----
+I think you misunderstood what I'm going to push. The patch merily
+forces IRQF_DISABLED for MSI(X) based interrupts. So that does not
+affect low powered systems in any way.
 
-diff --git a/drivers/mtd/maps/physmap.c b/drivers/mtd/maps/physmap.c
-index d9603f7..426461a 100644
---- a/drivers/mtd/maps/physmap.c
-+++ b/drivers/mtd/maps/physmap.c
-@@ -264,8 +264,11 @@ static int __init physmap_init(void)
+It only affects high end systems where Dave Miller already said he did
+the IRQF_DISABLED magic already in some NIC drivers just to prevent
+that.
+
+So I think your fear of regressions for low-powered systems is
+completely unsubstantiated.
+
+Thanks,
+
+	tglx
+
  
- 	err = platform_driver_register(&physmap_flash_driver);
- #ifdef CONFIG_MTD_PHYSMAP_COMPAT
--	if (err == 0)
--		platform_device_register(&physmap_flash);
-+	if (err == 0) {
-+		err = platform_device_register(&physmap_flash);
-+		if (err)
-+			platform_driver_unregister(&physmap_flash_driver);
-+	}
- #endif
- 
- 	return err;
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
