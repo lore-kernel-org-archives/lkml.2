@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758380Ab0DBO2n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 10:28:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59572 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756958Ab0DBO2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 10:28:00 -0400
-Message-ID: <4BB5FED3.4020809@redhat.com>
-Date: Fri, 02 Apr 2010 10:27:31 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Tony Luck <tony.luck@intel.com>
-CC: Ingo Molnar <mingo@elte.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] "perf probe" updates, kprobes jump optimization, for
- 	v2.6.34
-References: <20100301194109.GA10847@elte.hu> <t2o12c511ca1004011450wf862bf81gcf714281be40ee4e@mail.gmail.com>
-In-Reply-To: <t2o12c511ca1004011450wf862bf81gcf714281be40ee4e@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	id S1757793Ab0DBO3u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 10:29:50 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:37204 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754374Ab0DBO3o convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 10:29:44 -0400
+Subject: Re: 2.6.34-rc3: Badness at kernel/lockdep.c:2706
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sachin Sant <sachinp@in.ibm.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@redhat.com>,
+       Linux/PPC Development <linuxppc-dev@ozlabs.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+In-Reply-To: <4BB588B5.1060309@in.ibm.com>
+References: <4BB588B5.1060309@in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 02 Apr 2010 16:28:53 +0200
+Message-ID: <1270218533.5109.525.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+On Fri, 2010-04-02 at 11:33 +0530, Sachin Sant wrote:
+> With 2.6.34-rc3 boot on a Power5 box :
+> 
+> loop: module loaded
+> BUG: key 6b6b6b6b6b6b6b6b not in .data!
+> ------------[ cut here ]------------
+> Badness at kernel/lockdep.c:2706
+> NIP: c00000000010a0a8 LR: c00000000010a08c CTR: c0000000000704a4
+> REGS: c0000001096d76f0 TRAP: 0700   Not tainted  (2.6.34-rc3)
+> MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 28000082  XER: 00000009
+> TASK = c0000001fa6f8000[1] 'swapper' THREAD: c0000001096d4000 CPU: 12
+> GPR00: 0000000000000000 c0000001096d7970 c000000001322e38 0000000000000001
+> GPR04: 0000000000000001 c0000000000c1ea8 0000000000000000 0000000000000002
+> GPR08: 0000000000000000 c000000001cc5a00 0000000000002422 c00000000137d768
+> GPR12: 0000000000000002 c00000000f66e400 0000000000d47940 0000000001c00000
+> GPR16: ffffffffffffffff 0000000002673148 00000000018ff984 0000000000000060
+> GPR20: 0000000000000000 ffffffffffffffff 000000000253a291 00000000018ff990
+> GPR24: 00000000018ff988 c000000001229ef0 0000000000000000 c00000010793a730
+> GPR28: 6b6b6b6b6b6b6b6b c00000010793afd8 c000000001299de0 c0000001096d7970
+> NIP [c00000000010a0a8] .lockdep_init_map+0x12c/0x538
+> LR [c00000000010a08c] .lockdep_init_map+0x110/0x538
+> Call Trace:
+> [c0000001096d7970] [c00000000010a074] .lockdep_init_map+0xf8/0x538 (unreliable)
+> [c0000001096d7a30] [c000000000274eac] .sysfs_add_file_mode+0x90/0x124
+> [c0000001096d7af0] [c000000000274f7c] .sysfs_add_file+0x3c/0x50
+> [c0000001096d7b90] [c0000000002750d8] .sysfs_create_file+0x5c/0x74
+> [c0000001096d7c30] [c0000000004b36a0] .device_create_file+0x40/0x5c
+> [c0000001096d7cd0] [c0000000004db384] .wf_register_control+0x108/0x178
+> [c0000001096d7d80] [c000000000a5f7cc] .wf_cpufreq_clamp_init+0x11c/0x16c
+> [c0000001096d7e20] [c00000000000a104] .do_one_initcall+0xb0/0x208
+> [c0000001096d7ed0] [c000000000a12568] .kernel_init+0x230/0x2f0
+> [c0000001096d7f90] [c000000000033b20] .kernel_thread+0x54/0x70
+> Instruction dump:
+> e93e8190 80090000 2f800000 409e03f8 48280539 60000000 2fa30000 419e03e8
+> e93e8198 80090000 2f800000 409e03d8 <0fe00000> 480003d0 e93e8140 fb9d0000
+> Uniform Multi-Platform E-IDE driver
 
-Tony Luck wrote:
-> On Mon, Mar 1, 2010 at 11:41 AM, Ingo Molnar <mingo@elte.hu> wrote:
->> Please pull the latest perf-probes-for-linus git tree from:
-> 
-> Since this went in I'm seeing:
-> 
-> kernel/kprobes.c:719: warning: ‘arm_kprobe’ defined but not used
-> 
-> from the arch/ia64/configs/zx1_defconfig build on ia64
-> 
-> Looks to be because that config ends up with:
-> 
-> CONFIG_KPROBES=y
-> 
-> together with
-> 
-> # CONFIG_DEBUG_FS is not set
-
-Ah, thank you for reporting!
-Hmm, it seems that the place of definitions of enable_kprobe/disable_kprobe
-which call arm_kprobe/disarm_kprobe, are incorrect, because those functions
-are just API and don't depend on debugfs.
-I'll fix that.
-
-
-Thank you,
-
-> 
-> -Tony
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+0x6b is POISON_FREE, so it seems to me sysfs made a boo-boo.
