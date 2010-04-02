@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab0DBRhq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 13:37:46 -0400
-Received: from mail.atheros.com ([12.36.123.2]:11926 "EHLO mail.atheros.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755369Ab0DBRhj convert rfc822-to-8bit (ORCPT
+	id S1755947Ab0DBRny (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 13:43:54 -0400
+Received: from mail-pz0-f201.google.com ([209.85.222.201]:63922 "EHLO
+	mail-pz0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755789Ab0DBRnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 13:37:39 -0400
-Date: Fri, 2 Apr 2010 10:37:37 -0700
-From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-To: Greg KH <greg@kroah.com>
-CC: Luis Rodriguez <Luis.Rodriguez@atheros.com>, Greg KH <gregkh@suse.de>,
-       Peter Stuge <peter@stuge.se>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Kristoffer Ericson <kristoffer.ericson@gmail.com>,
-       "stable-review@kernel.org" <stable-review@kernel.org>,
-       "Justin P. Mattock" <justinmattock@gmail.com>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-       "stable@kernel.org" <stable@kernel.org>,
-       "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-       Senthil Balasubramanian <senthilkumar@atheros.com>
-Subject: Re: [stable] [Stable-review] [patch 070/123] ath9k: re-enable ps
- by default for new single chip families
-Message-ID: <20100402173737.GB2220@tux>
-References: <20100313001618.GA9811@kroah.com>
- <20100313001511.285517122@kvm.kroah.org>
- <43e72e891003151804s617659f8o6dcbf0b5ab63cb5d@mail.gmail.com>
- <20100319000438.GV5454@kroah.com>
+	Fri, 2 Apr 2010 13:43:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=RC6NgZ6GsiSTqyIyphrqie7GnQOf0FjIyoo2NeqOV6UOySPN6zzSuSfLckzw3sxx4k
+         G1CP1yJbnrCgrkNYR2yWTdLFVGpUnSfpLR5xOKTzHInmBbzfuJrHpCueNBIrkjQemFj1
+         CeDuhIQ/D3+CGIV9ecV5y8po7WtIvhWGXLfuQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20100319000438.GV5454@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Fri, 2 Apr 2010 10:36:34 -0700
+Message-ID: <j2m43e72e891004021036j8304f62byc2ec08415b3e6ce7@mail.gmail.com>
+Subject: Pending patches for 802.11 not marked stable or which requires a 
+	manual backport
+To: Greg KH <greg@kroah.com>, "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless <linux-wireless@vger.kernel.org>,
+       stable-review@linux.kernel.org, linux-kernel@vger.kernel.org,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 18, 2010 at 05:04:38PM -0700, Greg KH wrote:
-> On Mon, Mar 15, 2010 at 06:04:15PM -0700, Luis R. Rodriguez wrote:
-> > On Fri, Mar 12, 2010 at 5:12 PM, Greg KH <gregkh@suse.de> wrote:
-> > > 2.6.33-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > This was intended for 2.6.32 as well. Thanks
-> 
-> Great, but it didn't apply there, so I didn't try to force it :)
-> 
-> Care to provide a backport?
+It is no coincidence that the 802.11 subsystem now has had no
+regressions for 2.6.33 and 2.6.34 (thanks to Rafael for keeping track
+of these). I don't think its that we haven't been doing a lot of
+development, instead I think a lot of it has to do with the fact that
+we have been aggressively engaged with stable after we were slapped
+about this at our last wireless summit. There's a few patches which I
+realize still do fall through the crack or due to time we haven't yet
+backported. I have been subscribed the stable-review list [1] for a
+few kernel releases and I think the process for review for stable is a
+bit overwhelming and I can only thank you so much for the great work
+you guys do at juggling all these patches together.
 
-Sorry, been, busy, I've put together a page to keep track of these sort of things:
+The main reason I see some patches still fall through the cracks is
+due to some patches not being marked stable on the commit log entry or
+the patch requiring some manual backport for the latest stable or for
+other older stable series. To aid with this for the 802.11 subsystem
+I've created a wiki page we can use for this purpose:
 
 http://wireless.kernel.org/en/developers/stable-pending
 
-  Luis
+If you are either a user or developer and you feel a patch is
+important for stable which meet the above criteria please be sure to
+mark it there. Help with manual backports are also appreciated as we
+sometimes cannot address these due to time.
+
+[1] http://linux.kernel.org/mailman/listinfo/stable-review
+
+ Luis
