@@ -1,160 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461Ab0DBXvR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 19:51:17 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:37754 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab0DBXvP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 19:51:15 -0400
-Subject: Re: [RFC][PATCH v2 0/3] Provide a zero-copy method on KVM
- virtio-net.
-From: Sridhar Samudrala <sri@us.ibm.com>
-To: xiaohui.xin@intel.com
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, mst@redhat.com, jdike@c2.user-mode-linux.org,
-       davem@davemloft.net
-In-Reply-To: <1270193100-6769-1-git-send-email-xiaohui.xin@intel.com>
-References: <1270193100-6769-1-git-send-email-xiaohui.xin@intel.com>
-Content-Type: text/plain
-Date: Fri, 02 Apr 2010 16:51:08 -0700
-Message-Id: <1270252268.13897.14.camel@w-sridhar.beaverton.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1752672Ab0DBX6J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 19:58:09 -0400
+Received: from sous-sol.org ([216.99.217.87]:53675 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751387Ab0DBX6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 19:58:04 -0400
+Date: Fri, 2 Apr 2010 16:57:20 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Chris Wright <chrisw@sous-sol.org>, Vivek Goyal <vgoyal@redhat.com>,
+       Joerg Roedel <joerg.roedel@amd.com>,
+       Neil Horman <nhorman@tuxdriver.com>, Neil Horman <nhorman@redhat.com>,
+       kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+       hbabu@us.ibm.com, iommu@lists.linux-foundation.org
+Subject: Re: [PATCH 1/2] x86/amd-iommu: enable iommu before attaching
+	devices
+Message-ID: <20100402235720.GC29241@sequoia.sous-sol.org>
+References: <20100401144736.GA14069@shamino.rdu.redhat.com> <20100401155643.GG24846@8bytes.org> <20100401171149.GH13603@shamino.rdu.redhat.com> <20100401201433.GK24846@8bytes.org> <20100402000012.GA8930@hmsreliant.think-freely.org> <20100402003034.GX29241@sequoia.sous-sol.org> <20100402012353.GY29241@sequoia.sous-sol.org> <20100402155932.GA3516@redhat.com> <20100402223809.GB29241@sequoia.sous-sol.org> <m1pr2hmplu.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1pr2hmplu.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-04-02 at 15:25 +0800, xiaohui.xin@intel.com wrote:
-> The idea is simple, just to pin the guest VM user space and then
-> let host NIC driver has the chance to directly DMA to it. 
-> The patches are based on vhost-net backend driver. We add a device
-> which provides proto_ops as sendmsg/recvmsg to vhost-net to
-> send/recv directly to/from the NIC driver. KVM guest who use the
-> vhost-net backend may bind any ethX interface in the host side to
-> get copyless data transfer thru guest virtio-net frontend.
+* Eric W. Biederman (ebiederm@xmission.com) wrote:
+> Chris Wright <chrisw@sous-sol.org> writes:
+> 
+> > * Vivek Goyal (vgoyal@redhat.com) wrote:
+> >> Following is just for my education purposes. Trying to understand better
+> >> the impact of in-flight DMAs. So IIUC, in kudmp context following seems to be
+> >> sequence of events.
+> >> 
+> >> 1. kernel crashes, we leave IOMMU enabled.
+> >
+> > No, we actually disable the IOMMU
+> >
+> > panic()
+> >   crash_exec()
+> >     machine_crash_shutdown()
+> >       native_machine_crash_shutdown()
+> >         x86_platform.iommu_shutdown() == amd_iommu_init.c::disable_iommus()
+> 
+> That call exists but is there any good reason for it?
 
-What is the advantage of this approach compared to PCI-passthrough
-of the host NIC to the guest?
-Does this require pinning of the entire guest memory? Or only the
-send/receive buffers?
+It was originally added it for this very case, although I don't think it
+should be there.  I too am a proponent of removing it, because I think
+all work should be done in the newly kexec'd kernel.
 
-Thanks
-Sridhar
+> Nothing should be on that can be reasonably done anywhere else.
+> This round of bug fixing and testing would be a good time to remove
+> that extraneous call.
 > 
-> The scenario is like this:
+> >> 2. boot into capture kernel and we call enable_iommus(). This function
+> >>    first disables iommu, sets up new device table and enables iommus
+> >>    again.
+> >> 	a. So during this small window when iommu is disabled and we enable
+> >> 	   it back, any inflight DMA will passthrough possibly to an
+> >> 	   unintended physical address as translation is disabled and it
+> >> 	   can corrupt the kdump kenrel.
+> >
+> > Yes, should be possible.
+> >
+> >> 	b. Even after enabling the iommu, I guess we will continue to
+> >> 	   use cached DTE, and translation information to handle any
+> >> 	   in-flight DMA. The difference is that now iommus are enabled
+> >> 	   so any in-flight DMA should go to the address as intended in
+> >> 	   first kenrel and should not corrupt anything.
+> >
+> > Cached DTE only gets you domainID and pt root, so results depend upon
+> > other caches too.
+> >
+> >> 3. Once iommus are enabled again, we allocated and initilize protection
+> >>    domains. We attach devices to domains. In the process we flush the
+> >>    DTE, PDE and IO TLBs.
+> >
+> > Yes, but this is immediately after 2b above.  We can't send the invalidate
+> > commands until the iommu is enabled.
+> >
+> >> 	c. Looks like do_attach->set_dte_entry(), by default gives write
+> >> 	   permission (IW) to all the devices. I am assuming that at
+> >> 	   this point of time translation is enabled and possibly unity
+> >> 	   mapped.
+> >
+> > Unlikely to have full unity map, it's typically just for a range,
+> > and this is also typically for devices that have interaction w/ BIOS
+> > (typical examples are usb/SMM for keyboard and integrated graphics).
+> > And the mapping is to reserved memory areas (BIOS regions).  On my test
+> > box, for example, there are none of the BIOS specified ranges.
+> >
+> >>	   If that's the case, any in-flight DMA will not be
+> >> 	   allowed to happen at unity mapped address and this can possibly
+> >> 	   corrupt the kernel? 
+> >
+> > I don't understand what you mean there.
+> >
+> >> I understand this patch should fix the case when in second kernel a 
+> >> device is not doing DMA because of possibly cached DTE, and translation
+> >> information. But looks like in-flight DMA issues will still need a closer
+> >> look. But that is a separate issue and needs to be addressed in separate
+> >> set of patches.
+> >
+> > All of the in-flight DMA corrupts kdump kernel memory issues can exist
+> > w/out an IOMMU.  On the one hand, the IOMMU actually reduces the window
+> > of opportunity, but on the other it adds possible translation issue.
 > 
-> The guest virtio-net driver submits multiple requests thru vhost-net
-> backend driver to the kernel. And the requests are queued and then
-> completed after corresponding actions in h/w are done.
+> ?
+> If disabling the IOMMU changes the destination in RAM of in-flight DMA
+> the issues are not at all the same.
 > 
-> For read, user space buffers are dispensed to NIC driver for rx when
-> a page constructor API is invoked. Means NICs can allocate user buffers
-> from a page constructor. We add a hook in netif_receive_skb() function
-> to intercept the incoming packets, and notify the zero-copy device.
+> > About the only thing we can do here is modify the crashing kernel to
+> > update the DTE to disable dma, invalidate, and leave IOMMU enabled.
+> > This is all in the context of crashing, so any further errors here mean
+> > we probably won't get to kdump kernel.
 > 
-> For write, the zero-copy deivce may allocates a new host skb and puts
-> payload on the skb_shinfo(skb)->frags, and copied the header to skb->data.
-> The request remains pending until the skb is transmitted by h/w.
-> 
-> Here, we have ever considered 2 ways to utilize the page constructor
-> API to dispense the user buffers.
-> 
-> One:	Modify __alloc_skb() function a bit, it can only allocate a 
-> 	structure of sk_buff, and the data pointer is pointing to a 
-> 	user buffer which is coming from a page constructor API.
-> 	Then the shinfo of the skb is also from guest.
-> 	When packet is received from hardware, the skb->data is filled
-> 	directly by h/w. What we have done is in this way.
-> 
-> 	Pros:	We can avoid any copy here.
-> 	Cons:	Guest virtio-net driver needs to allocate skb as almost
-> 		the same method with the host NIC drivers, say the size
-> 		of netdev_alloc_skb() and the same reserved space in the
-> 		head of skb. Many NIC drivers are the same with guest and
-> 		ok for this. But some lastest NIC drivers reserves special
-> 		room in skb head. To deal with it, we suggest to provide
-> 		a method in guest virtio-net driver to ask for parameter
-> 		we interest from the NIC driver when we know which device 
-> 		we have bind to do zero-copy. Then we ask guest to do so.
-> 		Is that reasonable?
-> 
-> Two:	Modify driver to get user buffer allocated from a page constructor
-> 	API(to substitute alloc_page()), the user buffer are used as payload
-> 	buffers and filled by h/w directly when packet is received. Driver
-> 	should associate the pages with skb (skb_shinfo(skb)->frags). For 
-> 	the head buffer side, let host allocates skb, and h/w fills it. 
-> 	After that, the data filled in host skb header will be copied into
-> 	guest header buffer which is submitted together with the payload buffer.
-> 
-> 	Pros:	We could less care the way how guest or host allocates their
-> 		buffers.
-> 	Cons:	We still need a bit copy here for the skb header.
-> 
-> We are not sure which way is the better here. This is the first thing we want
-> to get comments from the community. We wish the modification to the network
-> part will be generic which not used by vhost-net backend only, but a user
-> application may use it as well when the zero-copy device may provides async
-> read/write operations later.
-> 
-> Please give comments especially for the network part modifications.
-> 
-> 
-> We provide multiple submits and asynchronous notifiicaton to 
-> vhost-net too.
-> 
-> Our goal is to improve the bandwidth and reduce the CPU usage.
-> Exact performance data will be provided later. But for simple
-> test with netperf, we found bindwidth up and CPU % up too,
-> but the bindwidth up ratio is much more than CPU % up ratio.
-> 
-> What we have not done yet:
-> 	packet split support
-> 	To support GRO
-> 	Performance tuning
-> 
-> what we have done in v1:
-> 	polish the RCU usage
-> 	deal with write logging in asynchroush mode in vhost
-> 	add notifier block for mp device
-> 	rename page_ctor to mp_port in netdevice.h to make it looks generic
-> 	add mp_dev_change_flags() for mp device to change NIC state
-> 	add CONIFG_VHOST_MPASSTHRU to limit the usage when module is not load
-> 	a small fix for missing dev_put when fail
-> 	using dynamic minor instead of static minor number
-> 	a __KERNEL__ protect to mp_get_sock()
-> 
-> what we have done in v2:
-> 	
-> 	remove most of the RCU usage, since the ctor pointer is only
-> 	changed by BIND/UNBIND ioctl, and during that time, NIC will be
-> 	stopped to get good cleanup(all outstanding requests are finished),
-> 	so the ctor pointer cannot be raced into wrong situation.
-> 
-> 	Remove the struct vhost_notifier with struct kiocb.
-> 	Let vhost-net backend to alloc/free the kiocb and transfer them
-> 	via sendmsg/recvmsg.
-> 
-> 	use get_user_pages_fast() and set_page_dirty_lock() when read.
-> 
-> 	Add some comments for netdev_mp_port_prep() and handle_mpassthru().
-> 
-> 
-> Comments not addressed yet in this time:
-> 	the async write logging is not satified by vhost-net
-> 	Qemu needs a sync write
-> 	a limit for locked pages from get_user_pages_fast()
-> 	
-> 		
-> performance:
-> 	using netperf with GSO/TSO disabled, 10G NIC, 
-> 	disabled packet split mode, with raw socket case compared to vhost.
-> 
-> 	bindwidth will be from 1.1Gbps to 1.7Gbps
-> 	CPU % from 120%-140% to 140%-160%
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Why even touch the IOMMU?
 
+I agree, and was trying to show that it's risky to do that while crashing.
+
+Removing the IOMMU disable may still allow some DMA to succeed.
+To actually close that off, you have to force all DMA transactions
+to fail.  Personally, I'm skeptical that the tradeoff is worth it.
+
+thanks,
+-chris
