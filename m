@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932254Ab0DBH2S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 03:28:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:39778 "EHLO mga09.intel.com"
+	id S932301Ab0DBHch (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 03:32:37 -0400
+Received: from ozlabs.org ([203.10.76.45]:33531 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932173Ab0DBH2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 03:28:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,352,1267430400"; 
-   d="scan'208";a="505779870"
-Date: Fri, 2 Apr 2010 15:27:50 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org
-Cc: "Yan, Zheng " <yanzheng@21cn.com>,
-       "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-       "kirill@shutemov.name" <kirill@shutemov.name>,
-       LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jens.axboe@oracle.com>
-Subject: [PATCH][BUGFIX] readahead: fix NULL filp dereference
-Message-ID: <20100402072750.GA22952@localhost>
-References: <cc557aab1003250606g6b4e3e7dgb1adfd46adc89124@mail.gmail.com> <3d0408631003252040r70c54b2fm24d64b819c59c9c@mail.gmail.com> <20100326040114.GA20717@localhost>
+	id S932278Ab0DBHcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 03:32:31 -0400
+Date: Fri, 2 Apr 2010 18:29:20 +1100
+From: Anton Blanchard <anton@samba.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>, Andi Kleen <ak@linux.intel.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] devmem: Handle class_create() failure
+Message-ID: <20100402072920.GH5594@kryten>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100326040114.GA20717@localhost>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The btrfs relocate_file_extent_cluster() calls us with NULL filp:
 
-  [ 4005.426805] BUG: unable to handle kernel NULL pointer dereference at 00000021
-  [ 4005.426818] IP: [<c109a130>] page_cache_sync_readahead+0x18/0x3e
+I hit this when we had a bug in IDR for a few days. Basically sysfs would
+fail to create new inodes since it uses an IDR and therefore class_create would
+fail.
 
-CC: Yan Zheng <yanzheng@21cn.com>
-Reported-by: Kirill A. Shutemov <kirill@shutemov.name>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+While we are unlikely to see this fail we may as well handle it instead of
+oopsing.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
 ---
 
-Andrew and Greg:
-
-This is an obvious correct bug fix for .34 and .33-stable,
-so I'm resending it directly to you without Kirill's confirmation.
-
-
---- sound-2.6.orig/mm/readahead.c	2010-03-26 11:51:57.000000000 +0800
-+++ sound-2.6/mm/readahead.c	2010-03-26 11:52:11.000000000 +0800
-@@ -502,7 +502,7 @@ void page_cache_sync_readahead(struct ad
- 		return;
+Index: linux-2.6/drivers/char/mem.c
+===================================================================
+--- linux-2.6.orig/drivers/char/mem.c	2010-02-02 22:18:02.000000000 -0600
++++ linux-2.6/drivers/char/mem.c	2010-02-02 22:18:15.000000000 -0600
+@@ -901,6 +901,9 @@ static int __init chr_dev_init(void)
+ 		printk("unable to get major %d for memory devs\n", MEM_MAJOR);
  
- 	/* be dumb */
--	if (filp->f_mode & FMODE_RANDOM) {
-+	if (filp && (filp->f_mode & FMODE_RANDOM)) {
- 		force_page_cache_readahead(mapping, filp, offset, req_size);
- 		return;
- 	}
+ 	mem_class = class_create(THIS_MODULE, "mem");
++	if (IS_ERR(mem_class))
++		return PTR_ERR(mem_class);
++
+ 	mem_class->devnode = mem_devnode;
+ 	for (minor = 1; minor < ARRAY_SIZE(devlist); minor++) {
+ 		if (!devlist[minor].name)
