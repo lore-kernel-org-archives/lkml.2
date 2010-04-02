@@ -1,112 +1,467 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032Ab0DBSH7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 14:07:59 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60229 "EHLO mail.skyhub.de"
+	id S1751919Ab0DBSLH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 14:11:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9975 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755908Ab0DBSHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 14:07:52 -0400
-X-Greylist: delayed 488 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Apr 2010 14:07:52 EDT
-Date: Fri, 2 Apr 2010 19:59:37 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux 2.6.34-rc3)
-Message-ID: <20100402175937.GA19690@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <alpine.LFD.2.00.1003301029250.3707@i5.linux-foundation.org>
+	id S1751236Ab0DBSK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 14:10:57 -0400
+Date: Fri, 2 Apr 2010 14:10:50 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Divyesh Shah <dpshah@google.com>
+Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
+       ctalbott@google.com
+Subject: Re: [PATCH 2/3] blkio: Add io controller stats like
+Message-ID: <20100402181049.GB3516@redhat.com>
+References: <20100401215541.2843.79107.stgit@austin.mtv.corp.google.com> <20100401220109.2843.36040.stgit@austin.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1003301029250.3707@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100401220109.2843.36040.stgit@austin.mtv.corp.google.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Apr 01, 2010 at 03:01:24PM -0700, Divyesh Shah wrote:
+> - io_service_time
+> - io_wait_time
+> - io_serviced
+> - io_service_bytes
+> 
 
-I've got the following oopsie two times now when hibernating - this
-means, I don't get it everytime I hibernate but only sometimes, say once
-in a blue moon.
+Hi Divyesh,
 
-And yeah, I couldn't catch it over serial console so I had to make ugly
-pictures. By the way, the numbers in the filenames increment as I scroll
-down the whole oops (yep, it hadn't completely frozen and I still could
-do Shift->PgUp or Shift->PgDn on the console):
+Some more description what exactly these stats are will be helpful. Please
+also update Documentation/cgroup/blkio-controller.txt file appropriately.
+Especially, "Details of cgroup files" section.
 
-http://www.kernel.org/pub/linux/kernel/people/bp/
+> These stats are accumulated per operation type helping us to distinguish between
+> read and write, and sync and async IO. This patch does not increment any of
+> these stats.
+> 
+> Signed-off-by: Divyesh Shah<dpshah@google.com>
+> ---
+> 
+>  block/blk-cgroup.c  |  178 ++++++++++++++++++++++++++++++++++++++++++++++-----
+>  block/blk-cgroup.h  |   39 +++++++++--
+>  block/cfq-iosched.c |    2 -
+>  3 files changed, 194 insertions(+), 25 deletions(-)
+> 
+> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+> index 5be3981..ad6843f 100644
+> --- a/block/blk-cgroup.c
+> +++ b/block/blk-cgroup.c
+> @@ -55,12 +55,15 @@ struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
+>  }
+>  EXPORT_SYMBOL_GPL(cgroup_to_blkio_cgroup);
+>  
+> -void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
+> -						unsigned long time)
+> +void blkiocg_update_timeslice_used(struct blkio_group *blkg, unsigned long time)
+>  {
+> -	blkg->time += time;
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&blkg->stats_lock, flags);
+> +	blkg->stats.time += time;
+> +	spin_unlock_irqrestore(&blkg->stats_lock, flags);
+>  }
+> -EXPORT_SYMBOL_GPL(blkiocg_update_blkio_group_stats);
+> +EXPORT_SYMBOL_GPL(blkiocg_update_timeslice_used);
+>  
+>  void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
+>  			struct blkio_group *blkg, void *key, dev_t dev)
+> @@ -170,13 +173,121 @@ blkiocg_weight_write(struct cgroup *cgroup, struct cftype *cftype, u64 val)
+>  	return 0;
+>  }
+>  
+> -#define SHOW_FUNCTION_PER_GROUP(__VAR)					\
+> +static int
+> +blkiocg_reset_write(struct cgroup *cgroup, struct cftype *cftype, u64 val)
+> +{
+> +	struct blkio_cgroup *blkcg;
+> +	struct blkio_group *blkg;
+> +	struct hlist_node *n;
+> +	struct blkio_group_stats *stats;
+> +
+> +	blkcg = cgroup_to_blkio_cgroup(cgroup);
+> +	spin_lock_irq(&blkcg->lock);
+> +	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
+> +		spin_lock(&blkg->stats_lock);
+> +		stats = &blkg->stats;
+> +		memset(stats, 0, sizeof(struct blkio_group_stats));
+> +		spin_unlock(&blkg->stats_lock);
+> +	}
+> +	spin_unlock_irq(&blkcg->lock);
+> +	return 0;
+> +}
+> +
+> +void get_key_name(int type, char *disk_id, char *str, int chars_left)
+> +{
 
-So, here's what I could decipher from the oopsie, someone else who's
-more knowledgeable in mm, rmap and anon_vma's list traversal should be
-able to tell what goes wrong there.
+get_key_name() should be static? Can we prefix all these internal function
+names with blkio? 
 
-EIP is at page_referenced+0xee
+Do we have to introduce this separate notion of char *disk_id. Can we
+simply stick to dev_t and do the sprintf like functions to convert that
+into key. For me personally it is just less confusion while reading code. 
 
-which is
+> +	strlcpy(str, disk_id, chars_left);
+> +	chars_left -= strlen(str);
+> +	if (chars_left <= 0) {
+> +		printk(KERN_WARNING
+> +			"Possibly incorrect cgroup stat display format");
+> +		return;
+> +	}
+> +	switch (type) {
+> +	case IO_READ:
+> +		strlcat(str, " Read", chars_left);
+> +		break;
+> +	case IO_WRITE:
+> +		strlcat(str, " Write", chars_left);
+> +		break;
+> +	case IO_SYNC:
+> +		strlcat(str, " Sync", chars_left);
+> +		break;
+> +	case IO_ASYNC:
+> +		strlcat(str, " Async", chars_left);
+> +		break;
+> +	case IO_TYPE_MAX:
+> +		strlcat(str, " Total", chars_left);
+> +		break;
 
-<disasm>
-    10c4:	41 01 c4             	add    %eax,%r12d
-    10c7:	83 7d cc 00          	cmpl   $0x0,-0x34(%rbp)
-    10cb:	74 19                	je     10e6 <page_referenced+0xff>
-    10cd:	4d 8b 6d 20          	mov    0x20(%r13),%r13
-    10d1:	49 83 ed 20          	sub    $0x20,%r13
+Should we use IO_TYPE_TOTAL for "Total" stats.
 
-    10d5:	49 8b 45 20          	mov    0x20(%r13),%rax		    <--------------
+> +	default:
+> +		strlcat(str, " Invalid", chars_left);
+> +	}
+> +}
+> +
+> +typedef uint64_t (get_var) (struct blkio_group *, int);
+> +
+> +#define MAX_KEY_LEN 100
 
-    10d9:	0f 18 08             	prefetcht0 (%rax)
-    10dc:	49 8d 45 20          	lea    0x20(%r13),%rax
-    10e0:	48 39 45 80          	cmp    %rax,-0x80(%rbp)
-</disasm>
+Can we move above define to the beginning of the file. So that it is
+easily visible.
+
+> +uint64_t get_typed_stat(struct blkio_group *blkg, struct cgroup_map_cb *cb,
+> +		get_var *getvar, char *disk_id)
+> +{
+
+static function? blkio_get_typed_stat()?
+
+Again, can we use dev_t instead of char *disk_id.
+
+> +	uint64_t disk_total;
+> +	char key_str[MAX_KEY_LEN];
+> +	int type;
+> +
+> +	for (type = 0; type < IO_TYPE_MAX; type++) {
+> +		get_key_name(type, disk_id, key_str, MAX_KEY_LEN);
+> +		cb->fill(cb, key_str, getvar(blkg, type));
+> +	}
+> +	disk_total = getvar(blkg, IO_READ) + getvar(blkg, IO_WRITE);
+> +	get_key_name(IO_TYPE_MAX, disk_id, key_str, MAX_KEY_LEN);
+> +	cb->fill(cb, key_str, disk_total);
+> +	return disk_total;
+> +}
+> +
+> +uint64_t get_stat(struct blkio_group *blkg, struct cgroup_map_cb *cb,
+> +		get_var *getvar, char *disk_id)
+> +{
+> +	uint64_t var = getvar(blkg, 0);
+> +	cb->fill(cb, disk_id, var);
+> +	return var;
+> +}
+> +
+> +#define GET_STAT_INDEXED(__VAR)						\
+> +uint64_t get_##__VAR##_stat(struct blkio_group *blkg, int type)		\
+> +{									\
+> +	return blkg->stats.__VAR[type];					\
+> +}									\
+> +
+> +GET_STAT_INDEXED(io_service_bytes);
+> +GET_STAT_INDEXED(io_serviced);
+> +GET_STAT_INDEXED(io_service_time);
+> +GET_STAT_INDEXED(io_wait_time);
+> +#undef GET_STAT_INDEXED
+> +
+> +#define GET_STAT(__VAR, __CONV)						\
+> +uint64_t get_##__VAR##_stat(struct blkio_group *blkg, int dummy)	\
+> +{									\
+> +	uint64_t data = blkg->stats.__VAR;				\
+> +	if (__CONV)							\
+> +		data = (uint64_t)jiffies_to_msecs(data) * NSEC_PER_MSEC;\
+> +	return data;							\
+> +}
+> +
+> +GET_STAT(time, 1);
+> +GET_STAT(sectors, 0);
+> +#ifdef CONFIG_DEBUG_BLK_CGROUP
+> +GET_STAT(dequeue, 0);
+> +#endif
+> +#undef GET_STAT
+> +
+
+I think now so many macros to define different kind of functions is
+becoming really confusing. How about creating a two dimensional stat
+array which is indexed by type of io stat like "io_service_time" and
+then indexed by sub io type that is "READ, WRITE, SYNC" etc. And we
+can define a single function to read all kind of stats.
+
+That way we will not have to define one GET_STAT_INDEXED() and GET_STAT()
+for each unindexed variable. If there are not multiple functions then,
+then everywhere we don't have to pass around a function pointer to read
+the variable stat and code should become much simpler. Example, code
+follows.
 
 
-Corresponding asm:
+enum stat_type {
+	BLKIO_STAT_TIME
+	BLKIO_STAT_SECTORS
+	BLKIO_STAT_WAIT_TIME
+	BLKIO_STAT_SERVICE_TIME
+}
 
-<asm>
-	.loc 1 496 0
-	movq	32(%r13), %r13	# <variable>.same_anon_vma.next, __mptr.451
-.LVL295:
-	subq	$32, %r13	#, avc
-.LVL296:
-.L184:
-.LBE1278:
-	movq	32(%r13), %rax	# <variable>.same_anon_vma.next, <variable>.same_anon_vma.next			<----------------
-	prefetcht0	(%rax)	# <variable>.same_anon_vma.next
-	leaq	32(%r13), %rax	#, tmp97
-	cmpq	%rax, -128(%rbp)	# tmp97, %sfp
-	jne	.L187	#,
-.L186:
-	.loc 1 514 0
-	movq	%r14, %rdi	# anon_vma,
-	call	page_unlock_anon_vma	#
-</asm>
+enum stat_sub_type {
+	BLKIO_STAT_READ
+	BLKIO_STAT_WRITE
+	BLKIO_STAT_SYNC
+}
 
+blkio_get_stat_var(enum stat_type var, enum stat_sub_type var_type) {
 
-and the NULL pointer in question is being written into %r13 and then 32
-is subtracted from it (I'm guessing container_of()). This is consistent
-with the register snapshot - %r13 contains 0xffffffffffffffe0 which is
--32 and with the code dump in the oops, in CIMG1640.JPG code points to
-opcode 49 8b 45 20.
+	if (var == BLKIO_STAT_TIME)
+		reutrn blkg->stat.time
 
-Which is the following piece of code in <mm/rmap.c:page_referenced_anon()>.
+	/* Same as above for sectors */
 
-<source>
+	return blkg->stat[var][var_type];
+}
 
-	mapcount = page_mapcount(page);
-	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
-		struct vm_area_struct *vma = avc->vma;
-		unsigned long address = vma_address(page, vma);
-		if (address == -EFAULT)
-			continue;
+Also all these get_* function needs to be static.
 
-</source>
+> +#define SHOW_FUNCTION_PER_GROUP(__VAR, get_stats, getvar, show_total)	\
+>  static int blkiocg_##__VAR##_read(struct cgroup *cgroup,		\
+> -			struct cftype *cftype, struct seq_file *m)	\
+> +		struct cftype *cftype, struct cgroup_map_cb *cb)	\
+>  {									\
+>  	struct blkio_cgroup *blkcg;					\
+>  	struct blkio_group *blkg;					\
+>  	struct hlist_node *n;						\
+> +	uint64_t cgroup_total = 0;					\
+> +	char disk_id[10];						\
+>  									\
+>  	if (!cgroup_lock_live_group(cgroup))				\
+>  		return -ENODEV;						\
+> @@ -184,19 +295,32 @@ static int blkiocg_##__VAR##_read(struct cgroup *cgroup,		\
+>  	blkcg = cgroup_to_blkio_cgroup(cgroup);				\
+>  	rcu_read_lock();						\
+>  	hlist_for_each_entry_rcu(blkg, n, &blkcg->blkg_list, blkcg_node) {\
+> -		if (blkg->dev)						\
+> -			seq_printf(m, "%u:%u %lu\n", MAJOR(blkg->dev),	\
+> -				 MINOR(blkg->dev), blkg->__VAR);	\
+> +		if (blkg->dev) {					\
+> +			spin_lock_irq(&blkg->stats_lock);		\
+> +			snprintf(disk_id, 10, "%u:%u", MAJOR(blkg->dev),\
+> +					MINOR(blkg->dev));		\
+> +			cgroup_total += get_stats(blkg, cb, getvar,	\
+> +						disk_id);		\
+> +			spin_unlock_irq(&blkg->stats_lock);		\
+> +		}							\
+>  	}								\
+> +	if (show_total)							\
+> +		cb->fill(cb, "Total", cgroup_total);			\
+>  	rcu_read_unlock();						\
+>  	cgroup_unlock();						\
+>  	return 0;							\
+>  }
+>  
+> -SHOW_FUNCTION_PER_GROUP(time);
+> -SHOW_FUNCTION_PER_GROUP(sectors);
+> +SHOW_FUNCTION_PER_GROUP(time, get_stat, get_time_stat, 0);
+> +SHOW_FUNCTION_PER_GROUP(sectors, get_stat, get_sectors_stat, 0);
+> +SHOW_FUNCTION_PER_GROUP(io_service_bytes, get_typed_stat,
+> +			get_io_service_bytes_stat, 1);
+> +SHOW_FUNCTION_PER_GROUP(io_serviced, get_typed_stat, get_io_serviced_stat, 1);
+> +SHOW_FUNCTION_PER_GROUP(io_service_time, get_typed_stat,
+> +			get_io_service_time_stat, 1);
+> +SHOW_FUNCTION_PER_GROUP(io_wait_time, get_typed_stat, get_io_wait_time_stat, 1);
+>  #ifdef CONFIG_DEBUG_BLK_CGROUP
+> -SHOW_FUNCTION_PER_GROUP(dequeue);
+> +SHOW_FUNCTION_PER_GROUP(dequeue, get_stat, get_dequeue_stat, 0);
+>  #endif
+>  #undef SHOW_FUNCTION_PER_GROUP
+>  
+> @@ -204,7 +328,7 @@ SHOW_FUNCTION_PER_GROUP(dequeue);
+>  void blkiocg_update_blkio_group_dequeue_stats(struct blkio_group *blkg,
+>  			unsigned long dequeue)
+>  {
+> -	blkg->dequeue += dequeue;
+> +	blkg->stats.dequeue += dequeue;
+>  }
+>  EXPORT_SYMBOL_GPL(blkiocg_update_blkio_group_dequeue_stats);
+>  #endif
+> @@ -217,16 +341,38 @@ struct cftype blkio_files[] = {
+>  	},
+>  	{
+>  		.name = "time",
+> -		.read_seq_string = blkiocg_time_read,
+> +		.read_map = blkiocg_time_read,
+> +		.write_u64 = blkiocg_reset_write,
+>  	},
+>  	{
+>  		.name = "sectors",
+> -		.read_seq_string = blkiocg_sectors_read,
+> +		.read_map = blkiocg_sectors_read,
+> +		.write_u64 = blkiocg_reset_write,
+> +	},
+> +	{
+> +		.name = "io_service_bytes",
+> +		.read_map = blkiocg_io_service_bytes_read,
+> +		.write_u64 = blkiocg_reset_write,
+> +	},
+> +	{
+> +		.name = "io_serviced",
+> +		.read_map = blkiocg_io_serviced_read,
+> +		.write_u64 = blkiocg_reset_write,
+> +	},
+> +	{
+> +		.name = "io_service_time",
+> +		.read_map = blkiocg_io_service_time_read,
+> +		.write_u64 = blkiocg_reset_write,
+> +	},
+> +	{
+> +		.name = "io_wait_time",
+> +		.read_map = blkiocg_io_wait_time_read,
+> +		.write_u64 = blkiocg_reset_write,
+>  	},
 
-which tells us that same_anon_vma.next is NULL. Hmm...
+blkiocg_reset_write() is invoked if a user does some write on any of the
+above files. This will reset all the stats. So if I do echo x >
+blkio.time, I will see all other files being reset? I think this is
+little counter intutive.
 
--- 
-Regards/Gruss,
-    Boris.
+Either we need to reset only those specific stats (the file being written
+to) or may be we can provide a separate file "blkio.reset_stats" to reset
+all the stats?
+
+Secondly, instead of providing separate files for all the stats
+"io_service_bytes, io_serviced...." do you think it makes sense to put
+these in a single file "blkio.stat". Something like what memory controller
+does for providing stats in a single file. I think number of files per
+cgroup will be little less overwhelming that way.
+
+Thinking loud, Hm.., but these stats are per device (unlink memory cgroup)
+that too each stat has been broken down by type (READ, WRITE, SYNC..etc), so it
+might be too much of info in a single file. That way, keeping these in
+separate files makese sense. I guess, per stat file is ok, given the
+fact that stats are per device.
+
+Thanks
+Vivek 
+
+>  #ifdef CONFIG_DEBUG_BLK_CGROUP
+>         {
+>  		.name = "dequeue",
+> -		.read_seq_string = blkiocg_dequeue_read,
+> +		.read_map = blkiocg_dequeue_read,
+>         },
+>  #endif
+>  };
+> diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+> index fe44517..5c5e529 100644
+> --- a/block/blk-cgroup.h
+> +++ b/block/blk-cgroup.h
+> @@ -23,6 +23,14 @@ extern struct cgroup_subsys blkio_subsys;
+>  #define blkio_subsys_id blkio_subsys.subsys_id
+>  #endif
+>  
+> +enum io_type {
+> +	IO_READ = 0,
+> +	IO_WRITE,
+> +	IO_SYNC,
+> +	IO_ASYNC,
+> +	IO_TYPE_MAX
+> +};
+> +
+>  struct blkio_cgroup {
+>  	struct cgroup_subsys_state css;
+>  	unsigned int weight;
+> @@ -30,6 +38,23 @@ struct blkio_cgroup {
+>  	struct hlist_head blkg_list;
+>  };
+>  
+> +struct blkio_group_stats {
+> +	/* total disk time and nr sectors dispatched by this group */
+> +	uint64_t time;
+> +	uint64_t sectors;
+> +	/* Total disk time used by IOs in ns */
+> +	uint64_t io_service_time[IO_TYPE_MAX];
+> +	uint64_t io_service_bytes[IO_TYPE_MAX]; /* Total bytes transferred */
+> +	/* Total IOs serviced, post merge */
+> +	uint64_t io_serviced[IO_TYPE_MAX];
+> +	/* Total time spent waiting in scheduler queue in ns */
+> +	uint64_t io_wait_time[IO_TYPE_MAX];
+> +#ifdef CONFIG_DEBUG_BLK_CGROUP
+> +	/* How many times this group has been removed from service tree */
+> +	unsigned long dequeue;
+> +#endif
+> +};
+> +
+>  struct blkio_group {
+>  	/* An rcu protected unique identifier for the group */
+>  	void *key;
+> @@ -38,15 +63,13 @@ struct blkio_group {
+>  #ifdef CONFIG_DEBUG_BLK_CGROUP
+>  	/* Store cgroup path */
+>  	char path[128];
+> -	/* How many times this group has been removed from service tree */
+> -	unsigned long dequeue;
+>  #endif
+>  	/* The device MKDEV(major, minor), this group has been created for */
+>  	dev_t   dev;
+>  
+> -	/* total disk time and nr sectors dispatched by this group */
+> -	unsigned long time;
+> -	unsigned long sectors;
+> +	/* Need to serialize the stats in the case of reset/update */
+> +	spinlock_t stats_lock;
+> +	struct blkio_group_stats stats;
+>  };
+>  
+>  typedef void (blkio_unlink_group_fn) (void *key, struct blkio_group *blkg);
+> @@ -105,8 +128,8 @@ extern void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
+>  extern int blkiocg_del_blkio_group(struct blkio_group *blkg);
+>  extern struct blkio_group *blkiocg_lookup_group(struct blkio_cgroup *blkcg,
+>  						void *key);
+> -void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
+> -						unsigned long time);
+> +void blkiocg_update_timeslice_used(struct blkio_group *blkg,
+> +					unsigned long time);
+>  #else
+>  struct cgroup;
+>  static inline struct blkio_cgroup *
+> @@ -122,7 +145,7 @@ blkiocg_del_blkio_group(struct blkio_group *blkg) { return 0; }
+>  
+>  static inline struct blkio_group *
+>  blkiocg_lookup_group(struct blkio_cgroup *blkcg, void *key) { return NULL; }
+> -static inline void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
+> +static inline void blkiocg_update_timeslice_used(struct blkio_group *blkg,
+>  						unsigned long time) {}
+>  #endif
+>  #endif /* _BLK_CGROUP_H */
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index c18e348..d91df9f 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -914,7 +914,7 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+>  
+>  	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
+>  					st->min_vdisktime);
+> -	blkiocg_update_blkio_group_stats(&cfqg->blkg, used_sl);
+> +	blkiocg_update_timeslice_used(&cfqg->blkg, used_sl);
+>  }
+>  
+>  #ifdef CONFIG_CFQ_GROUP_IOSCHED
