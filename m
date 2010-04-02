@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024Ab0DBUAz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 16:00:55 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36968 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750842Ab0DBUAv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 16:00:51 -0400
-Message-ID: <4BB64CDA.4000405@windriver.com>
-Date: Fri, 02 Apr 2010 15:00:26 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: kgdb-bugreport@lists.sourceforge.net, Will Deacon <will.deacon@arm.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       linux-arm@vger.kernel.org
-Subject: Re: [Kgdb-bugreport] [PATCH 4/5] kgdb: Use atomic operators whichuse
- barriers
-References: <1270233145-29335-1-git-send-email-jason.wessel@windriver.com><1270233145-29335-2-git-send-email-jason.wessel@windriver.com><1270233145-29335-3-git-send-email-jason.wessel@windriver.com><1270233145-29335-4-git-send-email-jason.wessel@windriver.com><1270233145-29335-5-git-send-email-jason.wessel@windriver.com><alpine.LFD.2.00.1004021205080.3634@i5.linux-foundation.org> <4BB64762.6040806@windriver.com> <4BB649E3.5060606@windriver.com> <alpine.LFD.2.00.1004021246470.3634@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1004021246470.3634@i5.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 02 Apr 2010 20:00:26.0641 (UTC) FILETIME=[233E7810:01CAD29F]
+	id S1753823Ab0DBUFe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 16:05:34 -0400
+Received: from outbound-mail-01.bluehost.com ([69.89.21.11]:44393 "HELO
+	outbound-mail-01.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751286Ab0DBUF1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 16:05:27 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=nffY1vjrUJYn2PgVFV44j710/+sigEJdh3BYRN5LN2FcPYhMErYdmFLWwM2TiW1Hlw46+zBgIpUnq7Mxwh/aIMRLfIk2tqOn0ZyvbpIXD8fKxkhi4y8ECw/pViTzQcji;
+Date: Fri, 2 Apr 2010 13:03:47 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Norbert Preining <preining@logic.at>
+Cc: dri-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: intel graphic card hanging (Hangcheck timer elapsed... GPU
+ hung)
+Message-ID: <20100402130347.4950c63e@jbarnes-piketon>
+In-Reply-To: <20100330135706.GA27958@gamma.logic.tuwien.ac.at>
+References: <20100327161104.GA12043@gamma.logic.tuwien.ac.at>
+	<20100329093702.65a2f1f9@jbarnes-piketon>
+	<20100330135706.GA27958@gamma.logic.tuwien.ac.at>
+X-Mailer: Claws Mail 3.7.2 (GTK+ 2.18.3; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2010 02:47 PM, Linus Torvalds wrote:
->
->> From: Jason Wessel <jason.wessel@windriver.com>
->> Subject: [PATCH] kgdb: Use atomic operators which use barriers
->>
->> The cpu_relax() does not mandate that there is an smp memory barrier.
->> As a result on the arm smp architecture the kernel debugger can hang
->> on entry from time to time, as shown by the kgdb regression tests.
->>     
->
-> Now your changelog makes no sense any more.
->   
+On Tue, 30 Mar 2010 22:57:06 +0900
+Norbert Preining <preining@logic.at> wrote:
 
-It is revised now and pushed.  Regression testing on the HW I have has
-passed as well now.
+> On Mo, 29 Mär 2010, Jesse Barnes wrote:
+> > I was seeing something similar on my 945, can you try this patchset?
+> 
+> Tried it with git kernel commit b72c409 and your patches, but
+> didn't change anything. Starting d2x-xl killed the X server:
+> [ 1067.920246] render error detected, EIR: 0x00000000
+> [ 1067.920293] [drm:i915_do_wait_request] *ERROR* i915_do_wait_request returns -5 (awaiting 48294 at 48216)
+> [ 1068.412095] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
+> [ 1068.412107] render error detected, EIR: 0x00000000
+> [ 1068.412135] [drm:i915_do_wait_request] *ERROR* i915_do_wait_request returns -5 (awaiting 48299 at 48216)
+> [ 1068.776229] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
+> 
+> Anything else I could try?
 
-For the series the pull looks like:
+One of my 945 machines became pretty stable after increasing the
+hancheck timeout from 75 to 750 jiffies in i915_drv.h.  But I have
+reports that it doesn't work on all machines, so it's probably just
+covering up a bug somewhere else.
 
- drivers/misc/kgdbts.c |    6 ++
- kernel/kgdb.c         |  205
-+++++++++++++++++++++++++------------------------
- 2 files changed, 109 insertions(+), 102 deletions(-)
-
-
-Thanks,
-Jason.
-
-
----
-From: Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCH] kgdb: use atomic_inc and atomic_dec instead of atomic_set
-
-Memory barriers should be used for the kgdb cpu synchronization.  The
-atomic_set() does not imply a memory barrier.
-
-Reported-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+-- 
+Jesse Barnes, Intel Open Source Technology Center
