@@ -1,131 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756715Ab0DBJNO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 05:13:14 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33804 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753014Ab0DBJNI convert rfc822-to-8bit (ORCPT
+	id S1757282Ab0DBJN2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 05:13:28 -0400
+Received: from web81102.mail.mud.yahoo.com ([68.142.199.94]:39736 "HELO
+	web81102.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755527Ab0DBJNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 05:13:08 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
-Cc: kosaki.motohiro@jp.fujitsu.com, Wu Fengguang <fengguang.wu@intel.com>,
-       "Li, Shaohua" <shaohua.li@intel.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100401151639.a030fb10.akpm@linux-foundation.org>
-References: <20100331145602.03A7.A69D9226@jp.fujitsu.com> <20100401151639.a030fb10.akpm@linux-foundation.org>
-Message-Id: <20100402180812.646D.A69D9226@jp.fujitsu.com>
+	Fri, 2 Apr 2010 05:13:20 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=sbcglobal.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:To:MIME-Version:Content-Type;
+  b=ELBxLD/pF9NNa1Fk5hJKzzYAGUDw1h5MAeCLSmGAhGEixgkcalVA9it3zZHYbjs+4VIpv0N4w9j0GTPXppwo4ah/hVsRINoNI2DSYGit7hUG7JOMrd2zOdmJukvo/HtNKY699BLPda4qJZb4yExqRuaOjhOkfb97FgRe/YCELsY=;
+Message-ID: <420137.80667.qm@web81102.mail.mud.yahoo.com>
+X-YMail-OSG: 2f6m_1AVM1kvUsTN92_Yz27Ti.YMuMJT5WmSlpJSKq9nIld
+ dlCO2tVObLftB1X2Iw3lucPsNzYUVMe4Y9Dxos1TYXWtuPpX_orhmcTj_5SA
+ kDls1H8NZlcpczdZYux8LyHSSzTWYhaiwVmRiVOXaXmUWDQQ8rsSlt3AAFNb
+ vCh6hDa6nfJEaZWkvpCXTishv8N3SLiy2Fm0YRmovy4O_g_0MeBuJnCWCa3H
+ VkHQs33.l51sOsJg6oyydeHKapIOcXrkIFjHe4Ai6iukzfovDpMZhE3woazL
+ _.qfkF2lJUQBdGwK4_.obxcYCaoKm39WtsX8fzHN8.3.rpbf6jIGwlAqXYxf
+ dL5.Hb8GhsYWjGFMa1Vq1yKozr0_MfIYq19C0k4P5az6Pazl3igW9wN1OjxF
+ RpFqQ7g0frjAjcdZ6S7nVnnkMH1jgmgE4PwTY_HC3GRNMHjGJfQilOjDKc.O
+ J0OGUN8_tIAyLKzT0mz80gJ9WB5wBXhVafICWz1ygA0NiDvfUJ38bLqxMSOk
+ 8mgf1P81y5z9qdnLZNMe0gKdYeO9t2p3yOYLybTOPqOicg1uRcCqjgR6iBx3
+ 2tYCOmSIFYiBnHcxcH2tiHT6MFdQqSn3YYIzkwCWEMvsDj0N_rtijZ0sWs5u
+ G2aUAuvioEsVw_yzt1_vX1LU5aanq3W3U6QJPYh3cxB04NTnDJDEOWQ_2Q9D
+ gZUQZvZJs.dzdamMaqye8z1eIgKkN0rbGWTlXtxV7azsN.YGZsX2Uk9Tdn1D
+ 6eJLj1S9vnO8.QqkIzyOMRPl8ix9w0iD_Mw6fniYyl.7a92ha04HHhhpspaB
+ JML69WE6sH6C4k2gBg21Z1B90FCnTMAVB6lYZ.yFJalXC9WCc8hb.mi1NRlJ
+ S13fic7dSMsX6l9QZ7rBBcDZT4Gn620P9IiyjO9ljg45k58niS8XiXC7HRWA
+ Yu5Nf9khyhKyiWnd1qaVzGdQVSbc.lt_djcrjgxzUtruxRFsR_mFvdtdV2nc
+ dgDHjp2EKTcjWdcDrv51WJzXLDCdWHD26ZgnBAth2ZnbjeRl6qKbtCNI.4PO
+ C4XUBnpMJ9A4OXI_g.rqM5cZ_ITR3qDmtVmnQq6JR7h0VfnGdiUgqZCmjZMJ
+ e9v1FiBSTQiPwo5JpRBtTIiA.9Dk1oeZqVm_z_SgC1LAJ9O3QUqh47mAPX05
+ 5f2tsxCffdpOBebFpMxMs8W7iIuolvZC5AM_68ofNFMuXLqeewE0GU_ByO.N
+ J9qgM_1W13L4sS1nIK.jXqKNETwXhe35C2LHblmZO7bvCHQXSQNz_4x8mBPd
+ KFhoe6RRMQfYT1e_lN7n0nwZ_Uy8hSPTeq.dt0timKD2y8CQNUzcyZkXDRPA
+ xL6VaulEKofkeam0ydIFW7Q4bNUUxF7CBw3D3KxZp23_5Z02Cb7CKZHNE7pO
+ rZFmovUPaLxRstczPtkzaqsr.auqmi14kXr2LweV1X9E4kkS7qgkC3JGSGi2
+ 4LWRhZPBW7mhx35qqaS6MF.Hki.qTGO4ytjcSO76HB5s5feuJbnKaten1Efo
+ jJsVeSuLcbIM07qLEhiCWGWS7tPL2TpG1gLIWRYvGL5GnTPHzuf2pnpCadf6
+ 1eEnzVfYNLOOytsJCOGh5dckE8apoF5TyeZwXqjSBn3kZwm2d9bMAOQK1MuS
+ 7b44udrCLatXDs0TK751TfpvbJlIJIXClGKdHGvm1aOHYOPvM7my.UiWiu9B
+ a5psbONC.MW3AKTIrzg53PvB1NE_zJ6bXyNXLv4iv.iMUIf0cUyAoDxI9cS1
+ FQ089ujqvrMhr.Pj7cR9R67Dtn8OBfz2YumLpuezxNWFhQ09S3Q7V2.VJn3b
+ i0avNm9OJIvfTM5Iw5Ybp2iv_4b2RlaQrwaI4bufP7Ym6YE8WYiWrbcaQhG5
+ vHx2xbq7_K39A70MkuOTt
+X-Mailer: YahooMailClassic/10.0.8 YahooMailWebService/0.8.100.260964
+Date: Fri, 2 Apr 2010 02:13:19 -0700 (PDT)
+From: Irish Online News <apurplehaze52@sbcglobal.net>
+Reply-To: rsm.claim.offic@9.cn
+To: undisclosed recipients:;
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri,  2 Apr 2010 18:13:04 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Yeah, I don't want ignore .33-stable too. if I can't find the root cause
-> > in 2-3 days, I'll revert guilty patch anyway.
-> > 
-> 
-> It's a good idea to avoid fixing a bug one-way-in-stable,
-> other-way-in-mainline.  Because then we have new code in both trees
-> which is different.  And the -stable guys sensibly like to see code get
-> a bit of a shakedown in mainline before backporting it.
-> 
-> So it would be better to merge the "simple" patch into mainline, tagged
-> for -stable backporting.  Then we can later implement the larger fix in
-> mainline, perhaps starting by reverting the "simple" fix.
-
-.....ok. I don't have to prevent your code maintainship. although I still 
-think we need to fix the issue completely.
-
-
-===================================================================
->From 52358cbccdfe94e0381974cd6e937bcc6b1c608b Mon Sep 17 00:00:00 2001
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Fri, 2 Apr 2010 17:13:48 +0900
-Subject: [PATCH] Revert "vmscan: get_scan_ratio() cleanup"
-
-Shaohua Li reported his tmpfs streaming I/O test can lead to make oom.
-The test uses a 6G tmpfs in a system with 3G memory. In the tmpfs,
-there are 6 copies of kernel source and the test does kbuild for each
-copy. His investigation shows the test has a lot of rotated anon
-pages and quite few file pages, so get_scan_ratio calculates percent[0]
-(i.e. scanning percent for anon)  to be zero. Actually the percent[0]
-shoule be a big value, but our calculation round it to zero.
-
-Although before commit 84b18490, we have the same sick too. but the old
-logic can rescue percent[0]==0 case only when priority==0. It had hided
-the real issue. I didn't think merely streaming io can makes percent[0]==0
-&& priority==0 situation. but I was wrong.
-
-So, definitely we have to fix such tmpfs streaming io issue. but anyway
-I revert the regression commit at first.
-
-This reverts commit 84b18490d1f1bc7ed5095c929f78bc002eb70f26.
-
-Reported-by: Shaohua Li <shaohua.li@intel.com>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/vmscan.c |   23 +++++++++--------------
- 1 files changed, 9 insertions(+), 14 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 79c8098..cb3947e 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1535,13 +1535,6 @@ static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
- 	unsigned long ap, fp;
- 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
- 
--	/* If we have no swap space, do not bother scanning anon pages. */
--	if (!sc->may_swap || (nr_swap_pages <= 0)) {
--		percent[0] = 0;
--		percent[1] = 100;
--		return;
--	}
--
- 	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
- 		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
- 	file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
-@@ -1639,20 +1632,22 @@ static void shrink_zone(int priority, struct zone *zone,
- 	unsigned long nr_reclaimed = sc->nr_reclaimed;
- 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
- 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
-+	int noswap = 0;
- 
--	get_scan_ratio(zone, sc, percent);
-+	/* If we have no swap space, do not bother scanning anon pages. */
-+	if (!sc->may_swap || (nr_swap_pages <= 0)) {
-+		noswap = 1;
-+		percent[0] = 0;
-+		percent[1] = 100;
-+	} else
-+		get_scan_ratio(zone, sc, percent);
- 
- 	for_each_evictable_lru(l) {
- 		int file = is_file_lru(l);
- 		unsigned long scan;
- 
--		if (percent[file] == 0) {
--			nr[l] = 0;
--			continue;
--		}
--
- 		scan = zone_nr_lru_pages(zone, sc, l);
--		if (priority) {
-+		if (priority || noswap) {
- 			scan >>= priority;
- 			scan = (scan * percent[file]) / 100;
- 		}
--- 
-1.6.5.2
-
-
-
-
-
+<br><br>You have won 891,934.00 pounds Send Necessary :name,age,occupation, country
