@@ -1,102 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757875Ab0DBICb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 04:02:31 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:51176 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756568Ab0DBICU (ORCPT
+	id S1757920Ab0DBIFS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 04:05:18 -0400
+Received: from mga10.intel.com ([192.55.52.92]:6468 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754426Ab0DBIFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 04:02:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=oVWCC3mgr03UKnEJQRDUYUhyxr1fruUm4D3cIM+rrCP8BQdn+WLDxpWtlWjwh1P4qf
-         Hd0WmB9qFs/Dg8g6Dz7J+bDff5nX8tK5KMPqrG24Rs+6e3qBOWDncIYm55KuEMpxh3DE
-         KdF3WWwppLwFDVuFlz4OOsQxMhRXKz6O+oW0M=
-MIME-Version: 1.0
-In-Reply-To: <m2v100eff551003311324tdc2e567atd2a48e35520e8601@mail.gmail.com>
-References: <m2v100eff551003311324tdc2e567atd2a48e35520e8601@mail.gmail.com>
-Date: Fri, 2 Apr 2010 10:02:16 +0200
-Message-ID: <x2h4e5e476b1004020102gaf301a69oc4e0ffda85c2ce39@mail.gmail.com>
-Subject: Re: Questions about RAID and I/O scheduler
-From: Corrado Zoccolo <czoccolo@gmail.com>
-To: Yuehai Xu <yuehaixu@gmail.com>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org, yhxu@wayne.edu,
-       neilb@suse.de, jens.axboe@oracle.com
-Content-Type: text/plain; charset=UTF-8
+	Fri, 2 Apr 2010 04:05:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,352,1267430400"; 
+   d="scan'208";a="785992858"
+Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: alex.shi@intel.com,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
+       Tim C <tim.c.chen@intel.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1004011050340.16531@router.home>
+References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
+	 <alpine.DEB.2.00.1003250942080.2670@router.home>
+	 <1269570902.9614.92.camel@alexs-hp.sh.intel.com>
+	 <1270114166.2078.107.camel@ymzhang.sh.intel.com>
+	 <alpine.DEB.2.00.1004011050340.16531@router.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Fri, 02 Apr 2010 16:06:29 +0800
+Message-Id: <1270195589.2078.116.camel@ymzhang.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 10:24 PM, Yuehai Xu <yuehaixu@gmail.com> wrote:
-> Hi,
->
-> I noticed that some one said NOOP is usually the default I/O scheduler
-> for hardware RAID. Why not CFQ? Suppose there are just several
-> sequential read processes, as I know CFQ will keep all the disk heads
-> of hard raid to serve a process for a while(a time slice), in that
-> case, CFQ should be the best of all I/O schedulers. Am I right?
-> Generally, hard raid should have its own I/O scheduler in their
-> firmware, in that case, the I/O scheduler of OS should do nothing
-> except dispatch the requests as soon as possible, it is the hard raid
-> itself to decide how to schedule these requests. From this point of
-> view, NOOP should be the default one. I am really confused here.
-Even single ncq disks have an I/O scheduler nowadays.
-To clear the confusion, we should make a distinction between
-work-conserving and non-work-conserving I/O schedulers.
-    * A work-conserving scheduler (e.g. deadline, noop) is idle only
-when there is no request pending
-    * A non-work-conserving scheduler (e.g. CFQ, AS) may be idle at
-any time, in an effort to improve request pattern locality or to
-provide fairness.
-A non-work-conserving scheduler in the host computer will generally
-perform bad if the RAID also has a non-work-conserving scheduler,
-because the decision to idle taken by the two schedulers could
-conflict, causing disk utilization to drop needlessly. In that case,
-NOOP or even better, deadline, could perform much better.
+On Thu, 2010-04-01 at 10:53 -0500, Christoph Lameter wrote:
+> On Thu, 1 Apr 2010, Zhang, Yanmin wrote:
+> 
+> > I suspect the moving of place of cpu_slab in kmem_cache causes the new cache
+> > miss. But when I move it to the tail of the structure, kernel always panic when
+> > booting. Perhaps there is another potential bug?
+> 
+> Why would that cause an additional cache miss?
+> 
+> 
+> The node array is following at the end of the structure. If you want to
+> move it down then it needs to be placed before the node field
 
-If the raid controller has a work-conserving I/O scheduler, instead
-(single NCQ disks and cheap RAID cards typically have this kind of
-schedulers), CFQ can effectively control the access pattern (by
-queuing only the requests pertinent to the pattern and delaying the
-others), and will take advantage when possible of the better
-understanding of disk geometry by the lower level scheduler for some
-kind of patterns (the ones for which we can submit multiple requests
-in parallel, namely random access patterns).
-In this case, we suggest to try CFQ and report if you see regressions
-w.r.t. NOOP or deadline on some workloads, so we can tune it better.
->
-> The next question is about the maximal number of disks in disk array,
-> the fault tolerance should be one limitation because the more the
-> number of disks, the higher chance of failure. However, may throughput
-> also be one limitation? Do you know anyone use disk array which
-> contains large number of disks to handle small requests? Such as 256
-> disks to handle 4K requests?
-You can use multiple disks to handle many parallel random requests.
-You should check, though, the queue depth of your raid card, that
-limits the actual number of requests issued in parallel.
-If it is lower than the number of disks (e.g. it is 31 on SATA), then
-the additional disks are wasted for random access patterns.
+Thanks. The moving cpu_slab to tail doesn't improve it. 
 
-Thanks,
-Corrado
->
-> Thanks!
->
-> Yuehai
->
+I used perf to collect statistics. Only data cache miss has a little difference.
+My testing command on my 2 socket machine:
+#hackbench 100 process 20000
+
+With 2.6.33, it takes for about 96 seconds while 2.6.34-rc2 (or the latest tip tree)
+takes for about 101 seconds.
+
+perf shows some functions around SLUB have more cpu utilization, while some other
+SLUB functions have less cpu utilization.
 
 
-
--- 
-__________________________________________________________________________
-
-dott. Corrado Zoccolo                          mailto:czoccolo@gmail.com
-PhD - Department of Computer Science - University of Pisa, Italy
---------------------------------------------------------------------------
-The self-confidence of a warrior is not the self-confidence of the average
-man. The average man seeks certainty in the eyes of the onlooker and calls
-that self-confidence. The warrior seeks impeccability in his own eyes and
-calls that humbleness.
-                               Tales of Power - C. Castaneda
