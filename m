@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759253Ab0DBHGo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 03:06:44 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:49057 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759227Ab0DBHGi (ORCPT
+	id S1759267Ab0DBHOz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 03:14:55 -0400
+Received: from mail-qy0-f189.google.com ([209.85.221.189]:40779 "EHLO
+	mail-qy0-f189.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759227Ab0DBHOu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 03:06:38 -0400
-Date: Fri, 2 Apr 2010 09:06:29 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: TAO HU <tghk48@motorola.com>
-Cc: linux-mm@kvack.org, Chang Qing-A21550 <Qing.Chang@motorola.com>,
-       "Ye Yuan.Bo-A22116" <yuan-bo.ye@motorola.com>,
-       linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [Question] race condition in mm/page_alloc.c regarding
- page->lru?
-Message-ID: <20100402070629.GT30801@buzzloop.caiaq.de>
-References: <i2i5f4a33681003312105m4cd42e9ayfe35cc0988c401b6@mail.gmail.com>
- <g2g5f4a33681004012051wedea9538w9da89e210b731422@mail.gmail.com>
+	Fri, 2 Apr 2010 03:14:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=PEiOcSmzRZHRQKW1xkeDg3hbUdjJAo2Wa2BO2YG2f0Hyr391AWrM4FYg1/Q/Mu+6Hi
+         PsNYd6jjixb/pwx19TqftrF9Zrmb8yUyBVAXPp2Kq+a3jWliStlK6ykUC+Qeb7r8zJja
+         kMJUpeNpSLbGBzDOTAmJHO5l+1aSDlGpsg5L0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <g2g5f4a33681004012051wedea9538w9da89e210b731422@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100330092132.GB2713@localhost.localdomain>
+References: <20100330092132.GB2713@localhost.localdomain>
+Date: Fri, 2 Apr 2010 15:14:42 +0800
+Message-ID: <x2o7b6bb4a51004020014xb9ce0784ifdb255c28c6aa02d@mail.gmail.com>
+Subject: Re: [PATCH] Block: Fix block/elevator.c elevator_get() off-by-one 
+	error
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: wzt.wzt@gmail.com
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 02, 2010 at 11:51:33AM +0800, TAO HU wrote:
-> On Thu, Apr 1, 2010 at 12:05 PM, TAO HU <tghk48@motorola.com> wrote:
-> > We got a panic on our ARM (OMAP) based HW.
-> > Our code is based on 2.6.29 kernel (last commit for mm/page_alloc.c is
-> > cc2559bccc72767cb446f79b071d96c30c26439b)
-> >
-> > It appears to crash while going through pcp->list in
-> > buffered_rmqueue() of mm/page_alloc.c after checking vmlinux.
-> > "00100100" implies LIST_POISON1 that suggests a race condition between
-> > list_add() and list_del() in my personal view.
-> > However we not yet figure out locking problem regarding page.lru.
+On Tue, Mar 30, 2010 at 5:21 PM,  <wzt.wzt@gmail.com> wrote:
+> elevator_get() not check the name length, if the name length > sizeof(elv),
+> elv will miss the '\0'. And elv buffer will be replace "-iosched" as something
+> like aaaaaaaaa, then call request_module() can load an not trust module.
+>
+> Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
+>
+> ---
+>  block/elevator.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/block/elevator.c b/block/elevator.c
+> index df75676..76e3702 100644
+> --- a/block/elevator.c
+> +++ b/block/elevator.c
+> @@ -154,7 +154,7 @@ static struct elevator_type *elevator_get(const char *name)
+>
+>                spin_unlock(&elv_list_lock);
+>
+> -               sprintf(elv, "%s-iosched", name);
+> +               snprintf(elv, sizeof(elv), "%s-iosched", name);
+>
 
-I'm sure this is just a memory corruption which is unrelated to code in
-the the memory management area. The code there just happens to trigger
-it as it is called frequently and is very sensitive to bogus data
+elv is defined as char elv[ELV_NAME_MAX + strlen("-iosched")];
+so if name length > sizeof(elv), the name length must already bigger
+than ELV_NAME_MAX
 
-Did you see the other thread I started off yesterday?
+elevator_get is used in elevator_init, so if elevator_init is passing
+a super long name, why not just return -EINVAL?
+In this patch, if we pass a super long name, we're still trying to cut
+it and request_module an invalid name, right?
+Although '\0' is kept, but name is still invalid, right?
 
-  http://lkml.indiana.edu/hypermail/linux/kernel/1004.0/00157.html
 
-We could well see the same problem here. Not sure though as any kind of
-memory corruption ends up in Ooopses like the ones you see, but it could
-be a hint.
-
-Daniel
-
+>                request_module("%s", elv);
+>                spin_lock(&elv_list_lock);
+> --
+> 1.6.5.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
