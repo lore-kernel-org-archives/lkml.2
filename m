@@ -1,121 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759285Ab0DBHVq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 03:21:46 -0400
-Received: from exprod5og103.obsmtp.com ([64.18.0.145]:45778 "EHLO
-	exprod5og103.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759264Ab0DBHVj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 03:21:39 -0400
-MIME-Version: 1.0
-From: ShiYong LI <a22381@motorola.com>
-Date: Fri, 2 Apr 2010 15:21:16 +0800
-Message-ID: <k2s4810ea571004020021hade8123mb571b803b8472aef@mail.gmail.com>
-Subject: [PATCH] Fix missing of last user while dumping slab corruption log
-To: linux-kernel@vger.kernel.org
-Cc: cl@linux-foundation.org, penberg@cs.helsinki.fi, mpm@selenic.com,
-       linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-CFilter-Loop: Reflected
+	id S932153Ab0DBHWY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 03:22:24 -0400
+Received: from mga01.intel.com ([192.55.52.88]:50547 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759264Ab0DBHWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 03:22:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,352,1267430400"; 
+   d="scan'208";a="785985794"
+From: xiaohui.xin@intel.com
+To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+       mingo@elte.hu, mst@redhat.com, jdike@c2.user-mode-linux.org,
+       davem@davemloft.net
+Subject: [RFC][PATCH v2 0/3] Provide a zero-copy method on KVM virtio-net.
+Date: Fri,  2 Apr 2010 15:25:00 +0800
+Message-Id: <1270193100-6769-1-git-send-email-xiaohui.xin@intel.com>
+X-Mailer: git-send-email 1.5.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The idea is simple, just to pin the guest VM user space and then
+let host NIC driver has the chance to directly DMA to it. 
+The patches are based on vhost-net backend driver. We add a device
+which provides proto_ops as sendmsg/recvmsg to vhost-net to
+send/recv directly to/from the NIC driver. KVM guest who use the
+vhost-net backend may bind any ethX interface in the host side to
+get copyless data transfer thru guest virtio-net frontend.
 
-Even with SLAB_RED_ZONE and SLAB_STORE_USER enabled, kernel would NOT
-store redzone and last user data around allocated memory space if arch
-cache line > sizeof(unsigned long long). As a result, last user information
-is unexpectedly MISSED while dumping slab corruption log.
+The scenario is like this:
 
-This patch makes sure that redzone and last user tags get stored whatever
-arch cache line.
+The guest virtio-net driver submits multiple requests thru vhost-net
+backend driver to the kernel. And the requests are queued and then
+completed after corresponding actions in h/w are done.
 
-Compared to original codes, the change surely affects head redzone (redzone1).
-Actually, with SLAB_RED_ZONE and SLAB_STORE_USER enabled,
-allocated memory layout is as below:
+For read, user space buffers are dispensed to NIC driver for rx when
+a page constructor API is invoked. Means NICs can allocate user buffers
+from a page constructor. We add a hook in netif_receive_skb() function
+to intercept the incoming packets, and notify the zero-copy device.
 
-[ redzone1 ]   <--------- Affected area.
-[ real object space ]
-[ redzone2 ]
-[ last user ]
-[ ... ]
+For write, the zero-copy deivce may allocates a new host skb and puts
+payload on the skb_shinfo(skb)->frags, and copied the header to skb->data.
+The request remains pending until the skb is transmitted by h/w.
 
-Let's do some analysis: (whatever SLAB_STORE_USER is).
+Here, we have ever considered 2 ways to utilize the page constructor
+API to dispense the user buffers.
 
-1) With SLAB_RED_ZONE on, "align" >= sizeof(unsigned long long) according to
-    the following codes:
-	/* 2) arch mandated alignment */
-	if (ralign < ARCH_SLAB_MINALIGN) {
-		ralign = ARCH_SLAB_MINALIGN;
-	}
-	/* 3) caller mandated alignment */
-	if (ralign < align) {
-		ralign = align;
-	}
-	...
-	/*
-	 * 4) Store it.
-	 */
-	align = ralign;
+One:	Modify __alloc_skb() function a bit, it can only allocate a 
+	structure of sk_buff, and the data pointer is pointing to a 
+	user buffer which is coming from a page constructor API.
+	Then the shinfo of the skb is also from guest.
+	When packet is received from hardware, the skb->data is filled
+	directly by h/w. What we have done is in this way.
 
-    That's to say, could guarantee that redzone1 does NOT get broken
-at all. Meanwhile,
-    Real object space could meet the need of cache line size by using
-"align"  argument.
+	Pros:	We can avoid any copy here.
+	Cons:	Guest virtio-net driver needs to allocate skb as almost
+		the same method with the host NIC drivers, say the size
+		of netdev_alloc_skb() and the same reserved space in the
+		head of skb. Many NIC drivers are the same with guest and
+		ok for this. But some lastest NIC drivers reserves special
+		room in skb head. To deal with it, we suggest to provide
+		a method in guest virtio-net driver to ask for parameter
+		we interest from the NIC driver when we know which device 
+		we have bind to do zero-copy. Then we ask guest to do so.
+		Is that reasonable?
 
-2) With SLAB_RED_ZONE off, the change has no impact.
+Two:	Modify driver to get user buffer allocated from a page constructor
+	API(to substitute alloc_page()), the user buffer are used as payload
+	buffers and filled by h/w directly when packet is received. Driver
+	should associate the pages with skb (skb_shinfo(skb)->frags). For 
+	the head buffer side, let host allocates skb, and h/w fills it. 
+	After that, the data filled in host skb header will be copied into
+	guest header buffer which is submitted together with the payload buffer.
 
+	Pros:	We could less care the way how guest or host allocates their
+		buffers.
+	Cons:	We still need a bit copy here for the skb header.
 
->From 03b28964311090533643acd267abe0cbc3c9b0a5 Mon Sep 17 00:00:00 2001
-From: Shiyong Li <shi-yong.li@motorola.com>
-Date: Fri, 2 Apr 2010 14:50:30 +0800
-Subject: [PATCH] Fix missing of last user info while getting
-DEBUG_SLAB config enabled.
+We are not sure which way is the better here. This is the first thing we want
+to get comments from the community. We wish the modification to the network
+part will be generic which not used by vhost-net backend only, but a user
+application may use it as well when the zero-copy device may provides async
+read/write operations later.
 
-Even with SLAB_RED_ZONE and SLAB_STORE_USER enabled, kernel would NOT
-store redzone and last user data around allocated memory space if arch
-cache line > sizeof(unsigned long long). As a result, last user information
-is unexpectedly MISSED while dumping slab corruption log.
-
-This fix makes sure that redzone and last user tags get stored whatever
-cache line.
-
-Signed-off-by: Shiyong Li <shi-yong.li@motorola.com>
----
- mm/slab.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
-
-diff --git a/mm/slab.c b/mm/slab.c
-index a8a38ca..84af997 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -2267,9 +2267,6 @@ kmem_cache_create (const char *name, size_t
-size, size_t align,
- 	if (ralign < align) {
- 		ralign = align;
- 	}
--	/* disable debug if necessary */
--	if (ralign > __alignof__(unsigned long long))
--		flags &= ~(SLAB_RED_ZONE | SLAB_STORE_USER);
- 	/*
- 	 * 4) Store it.
- 	 */
-@@ -2289,8 +2286,8 @@ kmem_cache_create (const char *name, size_t
-size, size_t align,
- 	 */
- 	if (flags & SLAB_RED_ZONE) {
- 		/* add space for red zone words */
--		cachep->obj_offset += sizeof(unsigned long long);
--		size += 2 * sizeof(unsigned long long);
-+		cachep->obj_offset += align;
-+		size += align + sizeof(unsigned long long);
- 	}
- 	if (flags & SLAB_STORE_USER) {
- 		/* user store requires one word storage behind the end of
--- 
-1.6.0.4
+Please give comments especially for the network part modifications.
 
 
-Thanks & Best Regards
-Shiyong
+We provide multiple submits and asynchronous notifiicaton to 
+vhost-net too.
+
+Our goal is to improve the bandwidth and reduce the CPU usage.
+Exact performance data will be provided later. But for simple
+test with netperf, we found bindwidth up and CPU % up too,
+but the bindwidth up ratio is much more than CPU % up ratio.
+
+What we have not done yet:
+	packet split support
+	To support GRO
+	Performance tuning
+
+what we have done in v1:
+	polish the RCU usage
+	deal with write logging in asynchroush mode in vhost
+	add notifier block for mp device
+	rename page_ctor to mp_port in netdevice.h to make it looks generic
+	add mp_dev_change_flags() for mp device to change NIC state
+	add CONIFG_VHOST_MPASSTHRU to limit the usage when module is not load
+	a small fix for missing dev_put when fail
+	using dynamic minor instead of static minor number
+	a __KERNEL__ protect to mp_get_sock()
+
+what we have done in v2:
+	
+	remove most of the RCU usage, since the ctor pointer is only
+	changed by BIND/UNBIND ioctl, and during that time, NIC will be
+	stopped to get good cleanup(all outstanding requests are finished),
+	so the ctor pointer cannot be raced into wrong situation.
+
+	Remove the struct vhost_notifier with struct kiocb.
+	Let vhost-net backend to alloc/free the kiocb and transfer them
+	via sendmsg/recvmsg.
+
+	use get_user_pages_fast() and set_page_dirty_lock() when read.
+
+	Add some comments for netdev_mp_port_prep() and handle_mpassthru().
+
+
+Comments not addressed yet in this time:
+	the async write logging is not satified by vhost-net
+	Qemu needs a sync write
+	a limit for locked pages from get_user_pages_fast()
+	
+		
+performance:
+	using netperf with GSO/TSO disabled, 10G NIC, 
+	disabled packet split mode, with raw socket case compared to vhost.
+
+	bindwidth will be from 1.1Gbps to 1.7Gbps
+	CPU % from 120%-140% to 140%-160%
