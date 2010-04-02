@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab0DBPAn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 11:00:43 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44257 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751443Ab0DBPAh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 11:00:37 -0400
-Date: Fri, 2 Apr 2010 07:54:19 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Howells <dhowells@redhat.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-       "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-       Rabin Vincent <rabin@rab.in>, lkml <linux-kernel@vger.kernel.org>,
-       penberg@cs.helsinki.fi, cl@linux-foundation.org,
+	id S1754135Ab0DBPPM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 11:15:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27018 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751443Ab0DBPPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 11:15:07 -0400
+Date: Fri, 2 Apr 2010 17:14:04 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       linux-arch@vger.kernel.org
-Subject: Re: start_kernel(): bug: interrupts were enabled early
-In-Reply-To: <28599.1270219574@redhat.com>
-Message-ID: <alpine.LFD.2.00.1004020748540.3634@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1004011310210.3707@i5.linux-foundation.org> <20100325194100.GA2364@debian> <20100331134048.da4e35a7.akpm@linux-foundation.org> <4BB3B4DB.7040904@kernel.org> <20100331135220.c6695a51.akpm@linux-foundation.org> <4BB3BAD6.50308@zytor.com>
- <alpine.LFD.2.00.1004010904540.3707@i5.linux-foundation.org> <20100401102744.a4e6f24d.akpm@linux-foundation.org>  <28599.1270219574@redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 0/7] mm: preemptibility
+Message-ID: <20100402151404.GK5825@random.random>
+References: <20100402141601.435955404@chello.nl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100402141601.435955404@chello.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Fri, 2 Apr 2010, David Howells wrote:
-
-> Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Fri, Apr 02, 2010 at 04:16:01PM +0200, Peter Zijlstra wrote:
+> Hi,
 > 
-> > Ahh, yes. In this case, that doesn't likely change anything. The 
-> > save/restore versions of the irq-safe locks shouldn't be appreciably more 
-> > expensive than the non-saving ones. And architectures that really care 
-> > should have done their own per-arch optimized version anyway.
+> This (incomplete) patch-set makes part of the mm a lot more preemptible.
+> It converts i_mmap_lock and anon_vma->lock to mutexes.
+> On the way there it also makes mmu_gather preemptible.
 > 
-> That depends on the CPU.  Some CPUs have quite expensive interrupt disablement
-> instructions.  FRV does for instance; but fortunately, on the FRV, I can use
-> some of the excessive quantities of conditional registers to pretend that I
-> disable interrupts, and only actually do so if an interrupt actually happens.
-
-I think you're missing the part where we're not _adding_ any irq disables: 
-we're just changing the unconditional irq disable to a save-and-disable 
-(and the unconditional irq enable to a restore).
-
-So even if irq's are expensive to disable, the change from
-
-	spin_lock_irq()
-
-to
-
-	spin_lock_irqsave()
-
-won't make that code any more expensive.
-
-> > Maybe we should even document that - so that nobody else makes the mistake 
-> > x86-64 did of thinking that the "generic spinlock" version of the rwsem's 
-> > is anything but a hacky and bad fallback case.
+> The main motivation was making mm_take_all_locks() preemptible, since
+> it appears people are nesting hundreds of spinlocks there.
 > 
-> In some cases, it's actually the best way.  On a UP machine, for instance,
-> where they reduce to nothing or where your only atomic instruction is an XCHG
-> equivalent.
+> The side-effects are that we can finally make mmu_gather preemptible,
+> something which lots of people have wanted to do for a long time.
+> 
+> It also gets us anon_vma refcounting which seems to be wanted by
+> KSM as well as Mel's compaction work.
+> 
+> This patch set seems to build and boot on my x86_64 machine and even
+> builds a kernel. I'll work on getting PPC working again and audit other
+> architectures their mmu_gather implementation.
 
-Again, you seem to think that we used to have just a plain spin_lock. Not 
-so. We currently have a spin_lock_irq(), and it is NOT a no-op even on UP. 
-It does that irq disable.
+This is also the needed bit to allow to schedule in the mmu notifier
+methods by switching from rcu to srcu there. That will make XPMEM
+happy by allowing all mmu notifier methods to schedule. Considering
+this may not slowdown the more important fast paths, it seems overall
+beneficial effort to me.
 
-Anyway, I suspect that even with just an atomic xchg, you can do a better 
-job at doing down_read() than using the generic spin-lock version (likely 
-by busy-looping on a special "we're busy" value). But if you do want to 
-use the generic spin-lock version, I doubt any architecture makes that 
-irqsave version noticeable slower than the unconditional irq version.
-
-		Linus
+Thanks,
+Andrea
