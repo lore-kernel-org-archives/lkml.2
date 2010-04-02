@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758112Ab0DBFFW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 01:05:22 -0400
-Received: from mail-yw0-f172.google.com ([209.85.211.172]:41343 "EHLO
-	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755244Ab0DBFFR (ORCPT
+	id S1758003Ab0DBFGH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 01:06:07 -0400
+Received: from mail-gx0-f209.google.com ([209.85.217.209]:50330 "EHLO
+	mail-gx0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755244Ab0DBFF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 01:05:17 -0400
+	Fri, 2 Apr 2010 01:05:59 -0400
+X-Greylist: delayed 384 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Apr 2010 01:05:58 EDT
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=wlVx++eBn5HOA5x/evy5XZzCBwEV3onUgaU56NZU62OYAE636gB4CGYtAh2F5v3x+s
-         sNRBfNv/LqLBJy2iobuKceVflsETlXviyiCtPrZ5a+6oPWwd2MEtRcBOrhV7jfxM9hb9
-         8yNXW3KTkaPyoiifSxWZPQOxmen3LAIAnYfis=
+        b=d3XTl+L1eZTZC4VRvq44+jPGl6t0P7Snl6Qb5FGPvwSS3MwbPM4XLQdMDYK/YxND6o
+         VDx9mAnUF33iZBw3ejw7W3zUpSQtrV2YCXEzBkoyoLyBra4NAVSS31Ot2CTV6qS2MKe7
+         ZW5qr1sZ0PzXzRa/2kbB0TdUo14JNLFPZOcZA=
 From: Tom Zanussi <tzanussi@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, fweisbec@gmail.com, rostedt@goodmis.org,
        k-keiichi@bx.jp.nec.com, acme@ghostprotocols.net
-Subject: [RFC v2][PATCH 09/11] perf trace/scripting: rwtop and sctop scripts
-Date: Thu,  1 Apr 2010 23:59:23 -0500
-Message-Id: <1270184365-8281-10-git-send-email-tzanussi@gmail.com>
+Subject: [RFC v2][PATCH 01/11] perf: add pipe-specific header read/write and event processing code
+Date: Thu,  1 Apr 2010 23:59:15 -0500
+Message-Id: <1270184365-8281-2-git-send-email-tzanussi@gmail.com>
 X-Mailer: git-send-email 1.6.4.GIT
 In-Reply-To: <1270184365-8281-1-git-send-email-tzanussi@gmail.com>
 References: <1270184365-8281-1-git-send-email-tzanussi@gmail.com>
@@ -27,417 +28,440 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A couple of scripts, one in Python and the other in Perl, that
-demonstrate 'live mode' tracing.  For each, the output of the perf
-event stream is fed continuously to the script, which continuously
-aggregates the data and reports the current results every 3 seconds,
-or at the optionally specified interval.  After the current results
-are displayed, the aggregations are cleared and the cycle begins anew.
+This patch makes several changes to allow the perf event stream to be
+sent and received over a pipe:
 
-To run the scripts, simply pipe the output of the 'perf trace record'
-step as input to the corresponding 'perf trace report' step, using '-'
-as the filename to -o and -i:
+- adds pipe-specific versions of the header read/write code
 
-$ perf trace record sctop -o - | perf trace report sctop -i -
+- adds pipe-specific version of the event processing code
 
-Also adds clear_term() utility functions to the Util.pm and Util.py
-utility modules, for use by any script to clear the screen.
+- adds a range of event types to be used for header or other pseudo
+  events, above the range used by the kernel
+
+- checks the return value of event handlers, which they can use to
+  skip over large events during event processing rather than actually
+  reading them into event objects.
+
+- unifies the multiple do_read() functions and updates its users.
+
+Note that none of these changes affect the existing perf data file
+format or processing - this code only comes into play if perf output
+is sent to stdout (or is read from stdin).
 
 Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
 ---
- .../perl/Perf-Trace-Util/lib/Perf/Trace/Util.pm    |    6 +
- tools/perf/scripts/perl/bin/rwtop-record           |    2 +
- tools/perf/scripts/perl/bin/rwtop-report           |   23 +++
- tools/perf/scripts/perl/rwtop.pl                   |  177 ++++++++++++++++++++
- .../python/Perf-Trace-Util/lib/Perf/Trace/Util.py  |    3 +
- tools/perf/scripts/python/bin/sctop-record         |    2 +
- tools/perf/scripts/python/bin/sctop-report         |   24 +++
- tools/perf/scripts/python/sctop.py                 |   78 +++++++++
- 8 files changed, 315 insertions(+), 0 deletions(-)
- create mode 100644 tools/perf/scripts/perl/bin/rwtop-record
- create mode 100644 tools/perf/scripts/perl/bin/rwtop-report
- create mode 100644 tools/perf/scripts/perl/rwtop.pl
- create mode 100644 tools/perf/scripts/python/bin/sctop-record
- create mode 100644 tools/perf/scripts/python/bin/sctop-report
- create mode 100644 tools/perf/scripts/python/sctop.py
+ tools/perf/builtin-record.c |    2 +-
+ tools/perf/util/event.h     |    4 +
+ tools/perf/util/header.c    |   78 +++++++++++++++++++------
+ tools/perf/util/header.h    |    8 ++-
+ tools/perf/util/session.c   |  135 ++++++++++++++++++++++++++++++++++++++++---
+ tools/perf/util/session.h   |    4 +
+ 6 files changed, 202 insertions(+), 29 deletions(-)
 
-diff --git a/tools/perf/scripts/perl/Perf-Trace-Util/lib/Perf/Trace/Util.pm b/tools/perf/scripts/perl/Perf-Trace-Util/lib/Perf/Trace/Util.pm
-index f869c48..d94b40c 100644
---- a/tools/perf/scripts/perl/Perf-Trace-Util/lib/Perf/Trace/Util.pm
-+++ b/tools/perf/scripts/perl/Perf-Trace-Util/lib/Perf/Trace/Util.pm
-@@ -15,6 +15,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 60ecdd3..2654b61 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -488,7 +488,7 @@ static int __cmd_record(int argc, const char **argv)
+ 	}
  
- our @EXPORT = qw(
- avg nsecs nsecs_secs nsecs_nsecs nsecs_usecs print_nsecs
-+clear_term
- );
+ 	if (!file_new) {
+-		err = perf_header__read(&session->header, output);
++		err = perf_header__read(session, output);
+ 		if (err < 0)
+ 			return err;
+ 	}
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index a33b949..03cdfd9 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -83,6 +83,10 @@ struct build_id_event {
+ 	char			 filename[];
+ };
  
- our $VERSION = '0.01';
-@@ -55,6 +56,11 @@ sub nsecs_str {
-     return $str;
++enum perf_header_event_type { /* above any possible kernel type */
++	PERF_RECORD_HEADER_MAX			= 64,
++};
++
+ typedef union event_union {
+ 	struct perf_event_header	header;
+ 	struct ip_event			ip;
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 6c9aa16..8d05337 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -427,6 +427,25 @@ out_free:
+ 	return err;
  }
  
-+sub clear_term
++int perf_header__write_pipe(int fd)
 +{
-+    print "\x1b[H\x1b[2J";
-+}
++	struct perf_pipe_file_header f_header;
++	int err;
 +
- 1;
- __END__
- =head1 NAME
-diff --git a/tools/perf/scripts/perl/bin/rwtop-record b/tools/perf/scripts/perl/bin/rwtop-record
-new file mode 100644
-index 0000000..63976bf
---- /dev/null
-+++ b/tools/perf/scripts/perl/bin/rwtop-record
-@@ -0,0 +1,2 @@
-+#!/bin/bash
-+perf record -c 1 -f -a -M -R -e syscalls:sys_enter_read -e syscalls:sys_exit_read -e syscalls:sys_enter_write -e syscalls:sys_exit_write $@
-diff --git a/tools/perf/scripts/perl/bin/rwtop-report b/tools/perf/scripts/perl/bin/rwtop-report
-new file mode 100644
-index 0000000..93e698c
---- /dev/null
-+++ b/tools/perf/scripts/perl/bin/rwtop-report
-@@ -0,0 +1,23 @@
-+#!/bin/bash
-+# description: system-wide r/w top
-+# args: [interval]
-+n_args=0
-+for i in "$@"
-+do
-+    if expr match "$i" "-" > /dev/null ; then
-+	break
-+    fi
-+    n_args=$(( $n_args + 1 ))
-+done
-+if [ "$n_args" -gt 1 ] ; then
-+    echo "usage: rwtop-report [interval]"
-+    exit
-+fi
-+if [ "$n_args" -gt 0 ] ; then
-+    interval=$1
-+    shift
-+fi
-+perf trace $@ -s ~/libexec/perf-core/scripts/perl/rwtop.pl $interval
++	f_header = (struct perf_pipe_file_header){
++		.magic	   = PERF_MAGIC,
++		.size	   = sizeof(f_header),
++	};
 +
-+
-+
-diff --git a/tools/perf/scripts/perl/rwtop.pl b/tools/perf/scripts/perl/rwtop.pl
-new file mode 100644
-index 0000000..ec2ab49
---- /dev/null
-+++ b/tools/perf/scripts/perl/rwtop.pl
-@@ -0,0 +1,177 @@
-+#!/usr/bin/perl -w
-+# (c) 2010, Tom Zanussi <tzanussi@gmail.com>
-+# Licensed under the terms of the GNU GPL License version 2
-+
-+# read/write top
-+#
-+# Periodically displays system-wide r/w call activity, broken down by
-+# pid.  If an [interval] arg is specified, the display will be
-+# refreshed every [interval] seconds.  The default interval is 3
-+# seconds.
-+
-+use 5.010000;
-+use strict;
-+use warnings;
-+
-+use lib "$ENV{'PERF_EXEC_PATH'}/scripts/perl/Perf-Trace-Util/lib";
-+use lib "./Perf-Trace-Util/lib";
-+use Perf::Trace::Core;
-+use Perf::Trace::Util;
-+
-+my $default_interval = 3;
-+my $nlines = 20;
-+my $print_thread;
-+
-+my %reads;
-+my %writes;
-+
-+my $interval = shift;
-+if (!$interval) {
-+    $interval = $default_interval;
-+}
-+
-+sub syscalls::sys_exit_read
-+{
-+    my ($event_name, $context, $common_cpu, $common_secs, $common_nsecs,
-+	$common_pid, $common_comm,
-+	$nr, $ret) = @_;
-+
-+    if ($ret > 0) {
-+	$reads{$common_pid}{bytes_read} += $ret;
-+    } else {
-+	if (!defined ($reads{$common_pid}{bytes_read})) {
-+	    $reads{$common_pid}{bytes_read} = 0;
++	err = do_write(fd, &f_header, sizeof(f_header));
++	if (err < 0) {
++		pr_debug("failed to write perf pipe header\n");
++		return err;
 +	}
-+	$reads{$common_pid}{errors}{$ret}++;
-+    }
++
++	return 0;
 +}
 +
-+sub syscalls::sys_enter_read
-+{
-+    my ($event_name, $context, $common_cpu, $common_secs, $common_nsecs,
-+	$common_pid, $common_comm,
-+	$nr, $fd, $buf, $count) = @_;
+ int perf_header__write(struct perf_header *self, int fd, bool at_exit)
+ {
+ 	struct perf_file_header f_header;
+@@ -518,25 +537,10 @@ int perf_header__write(struct perf_header *self, int fd, bool at_exit)
+ 	return 0;
+ }
+ 
+-static int do_read(int fd, void *buf, size_t size)
+-{
+-	while (size) {
+-		int ret = read(fd, buf, size);
+-
+-		if (ret <= 0)
+-			return -1;
+-
+-		size -= ret;
+-		buf += ret;
+-	}
+-
+-	return 0;
+-}
+-
+ static int perf_header__getbuffer64(struct perf_header *self,
+ 				    int fd, void *buf, size_t size)
+ {
+-	if (do_read(fd, buf, size))
++	if (do_read(fd, buf, size) <= 0)
+ 		return -1;
+ 
+ 	if (self->needs_swap)
+@@ -592,7 +596,7 @@ int perf_file_header__read(struct perf_file_header *self,
+ {
+ 	lseek(fd, 0, SEEK_SET);
+ 
+-	if (do_read(fd, self, sizeof(*self)) ||
++	if (do_read(fd, self, sizeof(*self)) <= 0 ||
+ 	    memcmp(&self->magic, __perf_magic, sizeof(self->magic)))
+ 		return -1;
+ 
+@@ -662,13 +666,51 @@ static int perf_file_section__process(struct perf_file_section *self,
+ 	return 0;
+ }
+ 
+-int perf_header__read(struct perf_header *self, int fd)
++static int perf_file_header__read_pipe(struct perf_pipe_file_header *self,
++				       struct perf_header *ph, int fd)
+ {
++	if (do_read(fd, self, sizeof(*self)) <= 0 ||
++	    memcmp(&self->magic, __perf_magic, sizeof(self->magic)))
++		return -1;
 +
-+    $reads{$common_pid}{bytes_requested} += $count;
-+    $reads{$common_pid}{total_reads}++;
-+    $reads{$common_pid}{comm} = $common_comm;
-+}
++	if (self->size != sizeof(*self)) {
++		u64 size = bswap_64(self->size);
 +
-+sub syscalls::sys_exit_write
-+{
-+    my ($event_name, $context, $common_cpu, $common_secs, $common_nsecs,
-+	$common_pid, $common_comm,
-+	$nr, $ret) = @_;
++		if (size != sizeof(*self))
++			return -1;
 +
-+    if ($ret <= 0) {
-+	$writes{$common_pid}{errors}{$ret}++;
-+    }
-+}
-+
-+sub syscalls::sys_enter_write
-+{
-+    my ($event_name, $context, $common_cpu, $common_secs, $common_nsecs,
-+	$common_pid, $common_comm,
-+	$nr, $fd, $buf, $count) = @_;
-+
-+    $writes{$common_pid}{bytes_written} += $count;
-+    $writes{$common_pid}{total_writes}++;
-+    $writes{$common_pid}{comm} = $common_comm;
-+}
-+
-+sub trace_begin
-+{
-+    $SIG{ALRM} = \&print_totals;
-+    alarm 1;
-+}
-+
-+sub trace_end
-+{
-+    print_unhandled();
-+    print_totals();
-+}
-+
-+sub print_totals
-+{
-+    my $count;
-+
-+    $count = 0;
-+
-+    clear_term();
-+
-+    printf("\nread counts by pid:\n\n");
-+
-+    printf("%6s  %20s  %10s  %10s  %10s\n", "pid", "comm",
-+	   "# reads", "bytes_req", "bytes_read");
-+    printf("%6s  %-20s  %10s  %10s  %10s\n", "------", "--------------------",
-+	   "----------", "----------", "----------");
-+
-+    foreach my $pid (sort {$reads{$b}{bytes_read} <=>
-+			       $reads{$a}{bytes_read}} keys %reads) {
-+	my $comm = $reads{$pid}{comm};
-+	my $total_reads = $reads{$pid}{total_reads};
-+	my $bytes_requested = $reads{$pid}{bytes_requested};
-+	my $bytes_read = $reads{$pid}{bytes_read};
-+
-+	printf("%6s  %-20s  %10s  %10s  %10s\n", $pid, $comm,
-+	       $total_reads, $bytes_requested, $bytes_read);
-+
-+	if (++$count == $nlines) {
-+	    last;
++		ph->needs_swap = true;
 +	}
-+    }
 +
-+    $count = 0;
++	return 0;
++}
 +
-+    printf("\nwrite counts by pid:\n\n");
++static int perf_header__read_pipe(struct perf_session *session, int fd)
++{
++	struct perf_header *self = &session->header;
++	struct perf_pipe_file_header f_header;
 +
-+    printf("%6s  %20s  %10s  %13s\n", "pid", "comm",
-+	   "# writes", "bytes_written");
-+    printf("%6s  %-20s  %10s  %13s\n", "------", "--------------------",
-+	   "----------", "-------------");
-+
-+    foreach my $pid (sort {$writes{$b}{bytes_written} <=>
-+			       $writes{$a}{bytes_written}} keys %writes) {
-+	my $comm = $writes{$pid}{comm};
-+	my $total_writes = $writes{$pid}{total_writes};
-+	my $bytes_written = $writes{$pid}{bytes_written};
-+
-+	printf("%6s  %-20s  %10s  %13s\n", $pid, $comm,
-+	       $total_writes, $bytes_written);
-+
-+	if (++$count == $nlines) {
-+	    last;
++	if (perf_file_header__read_pipe(&f_header, self, fd) < 0) {
++		pr_debug("incompatible file format\n");
++		return -EINVAL;
 +	}
-+    }
 +
-+    %reads = ();
-+    %writes = ();
-+    alarm $interval;
++	session->fd = fd;
++
++	return 0;
 +}
 +
-+my %unhandled;
-+
-+sub print_unhandled
++int perf_header__read(struct perf_session *session, int fd)
 +{
-+    if ((scalar keys %unhandled) == 0) {
-+	return;
-+    }
++	struct perf_header *self = &session->header;
+ 	struct perf_file_header	f_header;
+ 	struct perf_file_attr	f_attr;
+ 	u64			f_id;
+ 	int nr_attrs, nr_ids, i, j;
+ 
++	if (session->fd_pipe)
++		return perf_header__read_pipe(session, fd);
 +
-+    print "\nunhandled events:\n\n";
+ 	if (perf_file_header__read(&f_header, self, fd) < 0) {
+ 		pr_debug("incompatible file format\n");
+ 		return -EINVAL;
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index 82a6af7..0ce25cc 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -39,6 +39,11 @@ struct perf_file_header {
+ 	DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
+ };
+ 
++struct perf_pipe_file_header {
++	u64				magic;
++	u64				size;
++};
 +
-+    printf("%-40s  %10s\n", "event", "count");
-+    printf("%-40s  %10s\n", "----------------------------------------",
-+	   "-----------");
+ struct perf_header;
+ 
+ int perf_file_header__read(struct perf_file_header *self,
+@@ -60,8 +65,9 @@ struct perf_header {
+ int perf_header__init(struct perf_header *self);
+ void perf_header__exit(struct perf_header *self);
+ 
+-int perf_header__read(struct perf_header *self, int fd);
++int perf_header__read(struct perf_session *session, int fd);
+ int perf_header__write(struct perf_header *self, int fd, bool at_exit);
++int perf_header__write_pipe(int fd);
+ 
+ int perf_header__add_attr(struct perf_header *self,
+ 			  struct perf_header_attr *attr);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 76b4ac6..b767e95 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -14,6 +14,16 @@ static int perf_session__open(struct perf_session *self, bool force)
+ {
+ 	struct stat input_stat;
+ 
++	if (!strcmp(self->filename, "-")) {
++		self->fd_pipe = true;
++		self->fd = STDIN_FILENO;
 +
-+    foreach my $event_name (keys %unhandled) {
-+	printf("%-40s  %10d\n", $event_name, $unhandled{$event_name});
-+    }
-+}
++		if (perf_header__read(self, self->fd) < 0)
++			pr_err("incompatible file format");
 +
-+sub trace_unhandled
++		return 0;
++	}
++
+ 	self->fd = open(self->filename, O_RDONLY);
+ 	if (self->fd < 0) {
+ 		pr_err("failed to open file: %s", self->filename);
+@@ -38,7 +48,7 @@ static int perf_session__open(struct perf_session *self, bool force)
+ 		goto out_close;
+ 	}
+ 
+-	if (perf_header__read(&self->header, self->fd) < 0) {
++	if (perf_header__read(self, self->fd) < 0) {
+ 		pr_err("incompatible file format");
+ 		goto out_close;
+ 	}
+@@ -57,6 +67,11 @@ static inline int perf_session__create_kernel_maps(struct perf_session *self)
+ 	return map_groups__create_kernel_maps(&self->kmaps, self->vmlinux_maps);
+ }
+ 
++void perf_session__update_sample_type(struct perf_session *self)
 +{
-+    my ($event_name, $context, $common_cpu, $common_secs, $common_nsecs,
-+	$common_pid, $common_comm) = @_;
-+
-+    $unhandled{$event_name}++;
++	self->sample_type = perf_header__sample_type(&self->header);
 +}
-diff --git a/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/Util.py b/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/Util.py
-index 83e9143..9689bc0 100644
---- a/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/Util.py
-+++ b/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/Util.py
-@@ -23,3 +23,6 @@ def nsecs_nsecs(nsecs):
- def nsecs_str(nsecs):
-     str = "%5u.%09u" % (nsecs_secs(nsecs), nsecs_nsecs(nsecs)),
-     return str
 +
-+def clear_term():
-+    print("\x1b[H\x1b[2J")
-diff --git a/tools/perf/scripts/python/bin/sctop-record b/tools/perf/scripts/python/bin/sctop-record
-new file mode 100644
-index 0000000..27ccffa
---- /dev/null
-+++ b/tools/perf/scripts/python/bin/sctop-record
-@@ -0,0 +1,2 @@
-+#!/bin/bash
-+perf record -c 1 -f -a -M -R -e raw_syscalls:sys_enter $@
-diff --git a/tools/perf/scripts/python/bin/sctop-report b/tools/perf/scripts/python/bin/sctop-report
-new file mode 100644
-index 0000000..b01c842
---- /dev/null
-+++ b/tools/perf/scripts/python/bin/sctop-report
-@@ -0,0 +1,24 @@
-+#!/bin/bash
-+# description: syscall top
-+# args: [comm] [interval]
-+n_args=0
-+for i in "$@"
-+do
-+    if expr match "$i" "-" > /dev/null ; then
-+	break
-+    fi
-+    n_args=$(( $n_args + 1 ))
-+done
-+if [ "$n_args" -gt 2 ] ; then
-+    echo "usage: sctop-report [comm] [interval]"
-+    exit
-+fi
-+if [ "$n_args" -gt 1 ] ; then
-+    comm=$1
-+    interval=$2
-+    shift 2
-+elif [ "$n_args" -gt 0 ] ; then
-+    interval=$1
-+    shift
-+fi
-+perf trace $@ -s ~/libexec/perf-core/scripts/python/sctop.py $comm $interval
-diff --git a/tools/perf/scripts/python/sctop.py b/tools/perf/scripts/python/sctop.py
-new file mode 100644
-index 0000000..6cafad4
---- /dev/null
-+++ b/tools/perf/scripts/python/sctop.py
-@@ -0,0 +1,78 @@
-+# system call top
-+# (c) 2010, Tom Zanussi <tzanussi@gmail.com>
-+# Licensed under the terms of the GNU GPL License version 2
-+#
-+# Periodically displays system-wide system call totals, broken down by
-+# syscall.  If a [comm] arg is specified, only syscalls called by
-+# [comm] are displayed. If an [interval] arg is specified, the display
-+# will be refreshed every [interval] seconds.  The default interval is
-+# 3 seconds.
+ struct perf_session *perf_session__new(const char *filename, int mode, bool force)
+ {
+ 	size_t len = filename ? strlen(filename) + 1 : 0;
+@@ -90,7 +105,7 @@ struct perf_session *perf_session__new(const char *filename, int mode, bool forc
+ 			goto out_delete;
+ 	}
+ 
+-	self->sample_type = perf_header__sample_type(&self->header);
++	perf_session__update_sample_type(self);
+ out:
+ 	return self;
+ out_free:
+@@ -210,14 +225,17 @@ static const char *event__name[] = {
+ 	[PERF_RECORD_SAMPLE]	 = "SAMPLE",
+ };
+ 
+-unsigned long event__total[PERF_RECORD_MAX];
++unsigned long event__total[PERF_RECORD_HEADER_MAX];
+ 
+ void event__print_totals(void)
+ {
+ 	int i;
+-	for (i = 0; i < PERF_RECORD_MAX; ++i)
++	for (i = 0; i < PERF_RECORD_HEADER_MAX; ++i) {
++		if (!event__name[i])
++			continue;
+ 		pr_info("%10s events: %10ld\n",
+ 			event__name[i], event__total[i]);
++	}
+ }
+ 
+ void mem_bswap_64(void *src, int byte_size)
+@@ -281,7 +299,7 @@ static event__swap_op event__swap_ops[] = {
+ 	[PERF_RECORD_LOST]   = event__all64_swap,
+ 	[PERF_RECORD_READ]   = event__read_swap,
+ 	[PERF_RECORD_SAMPLE] = event__all64_swap,
+-	[PERF_RECORD_MAX]    = NULL,
++	[PERF_RECORD_HEADER_MAX]    = NULL,
+ };
+ 
+ static int perf_session__process_event(struct perf_session *self,
+@@ -291,7 +309,7 @@ static int perf_session__process_event(struct perf_session *self,
+ {
+ 	trace_event(event);
+ 
+-	if (event->header.type < PERF_RECORD_MAX) {
++	if (event->header.type < PERF_RECORD_HEADER_MAX) {
+ 		dump_printf("%#Lx [%#x]: PERF_RECORD_%s",
+ 			    offset + head, event->header.size,
+ 			    event__name[event->header.type]);
+@@ -386,6 +404,101 @@ static struct thread *perf_session__register_idle_thread(struct perf_session *se
+ 	return thread;
+ }
+ 
++int do_read(int fd, void *buf, size_t size)
++{
++	void *buf_start = buf;
 +
-+import thread
-+import time
-+import os
-+import sys
++	while (size) {
++		int ret = read(fd, buf, size);
 +
-+sys.path.append(os.environ['PERF_EXEC_PATH'] + \
-+	'/scripts/python/Perf-Trace-Util/lib/Perf/Trace')
++		if (ret <= 0)
++			return ret;
 +
-+from perf_trace_context import *
-+from Core import *
-+from Util import *
++		size -= ret;
++		buf += ret;
++	}
 +
-+usage = "perf trace -s syscall-counts.py [comm] [interval]\n";
++	return buf - buf_start;
++}
 +
-+for_comm = None
-+default_interval = 3
-+interval = default_interval
++#define session_done()	(*(volatile int *)(&session_done))
++volatile int session_done;
 +
-+if len(sys.argv) > 3:
-+	sys.exit(usage)
++static int __perf_session__process_pipe_events(struct perf_session *self,
++					       struct perf_event_ops *ops)
++{
++	event_t event;
++	uint32_t size;
++	int skip = 0;
++	u64 head;
++	int err;
++	void *p;
 +
-+if len(sys.argv) > 2:
-+	for_comm = sys.argv[1]
-+	interval = int(sys.argv[2])
-+elif len(sys.argv) > 1:
-+	try:
-+		interval = int(sys.argv[1])
-+	except ValueError:
-+		for_comm = sys.argv[1]
-+		interval = default_interval
++	perf_event_ops__fill_defaults(ops);
 +
-+syscalls = autodict()
++	head = 0;
++more:
++	err = do_read(self->fd, &event, sizeof(struct perf_event_header));
++	if (err <= 0) {
++		if (err == 0)
++			goto done;
 +
-+def trace_begin():
-+	thread.start_new_thread(print_syscall_totals, (interval,))
-+	pass
++		pr_err("failed to read event header\n");
++		goto out_err;
++	}
 +
-+def raw_syscalls__sys_enter(event_name, context, common_cpu,
-+	common_secs, common_nsecs, common_pid, common_comm,
-+	id, args):
-+	if for_comm is not None:
-+		if common_comm != for_comm:
-+			return
-+	try:
-+		syscalls[id] += 1
-+	except TypeError:
-+		syscalls[id] = 1
++	if (self->header.needs_swap)
++		perf_event_header__bswap(&event.header);
 +
-+def print_syscall_totals(interval):
-+	while 1:
-+		clear_term()
-+		if for_comm is not None:
-+			print "\nsyscall events for %s:\n\n" % (for_comm),
-+		else:
-+			print "\nsyscall events:\n\n",
++	size = event.header.size;
++	if (size == 0)
++		size = 8;
 +
-+		print "%-40s  %10s\n" % ("event", "count"),
-+		print "%-40s  %10s\n" % ("----------------------------------------", \
-+						 "----------"),
++	p = &event;
++	p += sizeof(struct perf_event_header);
 +
-+		for id, val in sorted(syscalls.iteritems(), key = lambda(k, v): (v, k), \
-+					      reverse = True):
-+			try:
-+				print "%-40d  %10d\n" % (id, val),
-+			except TypeError:
-+				pass
-+		syscalls.clear()
-+		time.sleep(interval)
++	err = do_read(self->fd, p, size - sizeof(struct perf_event_header));
++	if (err <= 0) {
++		if (err == 0) {
++			pr_err("unexpected end of event stream\n");
++			goto done;
++		}
++
++		pr_err("failed to read event data\n");
++		goto out_err;
++	}
++
++	if (size == 0 ||
++	    (skip = perf_session__process_event(self, &event, ops,
++						0, head)) < 0) {
++		dump_printf("%#Lx [%#x]: skipping unknown header type: %d\n",
++			    head, event.header.size, event.header.type);
++		/*
++		 * assume we lost track of the stream, check alignment, and
++		 * increment a single u64 in the hope to catch on again 'soon'.
++		 */
++		if (unlikely(head & 7))
++			head &= ~7ULL;
++
++		size = 8;
++	}
++
++	head += size;
++
++	dump_printf("\n%#Lx [%#x]: event: %d\n",
++		    head, event.header.size, event.header.type);
++
++	if (skip > 0)
++		head += skip;
++
++	if (!session_done())
++		goto more;
++done:
++	err = 0;
++out_err:
++	return err;
++}
++
+ int __perf_session__process_events(struct perf_session *self,
+ 				   u64 data_offset, u64 data_size,
+ 				   u64 file_size, struct perf_event_ops *ops)
+@@ -503,9 +616,13 @@ out_getcwd_err:
+ 		self->cwdlen = strlen(self->cwd);
+ 	}
+ 
+-	err = __perf_session__process_events(self, self->header.data_offset,
+-					     self->header.data_size,
+-					     self->size, ops);
++	if (!self->fd_pipe)
++		err = __perf_session__process_events(self,
++						     self->header.data_offset,
++						     self->header.data_size,
++						     self->size, ops);
++	else
++		err = __perf_session__process_pipe_events(self, ops);
+ out_err:
+ 	return err;
+ }
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 631f815..8385fb5 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -27,6 +27,7 @@ struct perf_session {
+ 	u64			sample_type;
+ 	struct ref_reloc_sym	ref_reloc_sym;
+ 	int			fd;
++	bool			fd_pipe;
+ 	int			cwdlen;
+ 	char			*cwd;
+ 	char filename[0];
+@@ -87,6 +88,9 @@ static inline struct map *
+ 	return map_groups__new_module(&self->kmaps, start, filename);
+ }
+ 
++int do_read(int fd, void *buf, size_t size);
++void perf_session__update_sample_type(struct perf_session *self);
++
+ #ifdef NO_NEWT_SUPPORT
+ static inline void perf_session__browse_hists(struct rb_root *hists __used,
+ 					      u64 session_total __used,
 -- 
 1.6.4.GIT
 
