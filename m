@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab0DBVW3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 17:22:29 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:43388 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754779Ab0DBVWY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 17:22:24 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=HgOhBZGl5z8v7s0PoubpQSgKuqTalQn3WUHb5RdMN+tNsEDrbdJl4v2cvsTkMc/kc
-	8aa8O+cgx4BvBU28q1RPg==
-Date: Fri, 2 Apr 2010 14:22:16 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Oleg Nesterov <oleg@redhat.com>, anfei <anfei.zhou@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       nishimura@mxp.nes.nec.co.jp,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: [patch -mm v2] oom: exclude tasks with badness score of 0 from being
- selected
-In-Reply-To: <20100402210459.GA5112@redhat.com>
-Message-ID: <alpine.DEB.2.00.1004021421060.5599@chino.kir.corp.google.com>
-References: <20100331175836.GA11635@redhat.com> <20100331204718.GD11635@redhat.com> <alpine.DEB.2.00.1004010133190.6285@chino.kir.corp.google.com> <20100401135927.GA12460@redhat.com> <alpine.DEB.2.00.1004011210380.30661@chino.kir.corp.google.com>
- <20100402111406.GA4432@redhat.com> <alpine.DEB.2.00.1004021159310.1773@chino.kir.corp.google.com> <20100402191414.GA982@redhat.com> <alpine.DEB.2.00.1004021244010.15445@chino.kir.corp.google.com> <alpine.DEB.2.00.1004021253480.18402@chino.kir.corp.google.com>
- <20100402210459.GA5112@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754903Ab0DBVZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 17:25:28 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50598 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754551Ab0DBVZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 17:25:21 -0400
+Date: Fri, 2 Apr 2010 23:25:15 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Matt Turner <mattst88@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+       linux-alpha@vger.kernel.org
+Subject: Re: Discrepancy between comments for sched_find_first_bit
+Message-ID: <20100402212515.GC17041@elte.hu>
+References: <b4198de61003282037p502e9fbfi62123088b9d73923@mail.gmail.com>
+ <1269858302.12097.272.camel@laptop>
+ <20100402201648.GA15498@elte.hu>
+ <g2rb4198de61004021350tf509b5c3k22dfa8f2e24fedc8@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <g2rb4198de61004021350tf509b5c3k22dfa8f2e24fedc8@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An oom_badness() score of 0 means "never kill" according to
-Documentation/filesystems/proc.txt, so exclude it from being selected for
-kill.  These tasks have either detached their p->mm or are set to
-OOM_DISABLE.
 
-Also removes an unnecessary initialization of points to 0 in
-mem_cgroup_out_of_memory(), select_bad_process() does this already.
+* Matt Turner <mattst88@gmail.com> wrote:
 
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- mm/oom_kill.c |   13 ++-----------
- 1 files changed, 2 insertions(+), 11 deletions(-)
+> On Fri, Apr 2, 2010 at 4:16 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * Peter Zijlstra <peterz@infradead.org> wrote:
+> >
+> >> On Sun, 2010-03-28 at 23:37 -0400, Matt Turner wrote:
+> >> > include/asm-generic/bitops/sched.h says
+> >> > /*
+> >> > ?* Every architecture must define this function. It's the fastest
+> >> > ?* way of searching a 100-bit bitmap. ?It's guaranteed that at least
+> >> > ?* one of the 100 bits is cleared.
+> >> > ?*/
+> >> >
+> >> > arch/alpha/include/asm/bitops.h says
+> >> > /*
+> >> > ?* Every architecture must define this function. It's the fastest
+> >> > ?* way of searching a 140-bit bitmap where the first 100 bits are
+> >> > ?* unlikely to be set. It's guaranteed that at least one of the 140
+> >> > ?* bits is set.
+> >> > ?*/
+> >> >
+> >> > Is the guarantee that one of the first 100-bits set (and that the last
+> >> > 40 are useless?), or 140-bits? If it's just the first 100 bits we care
+> >> > about, then the alpha version needs to be fixed.
+> >> >
+> >> > I'm just checking this out, because gcc produces horrendous code for
+> >> > sched_find_first_bit on alpha. I rewrote it in assembly and it's
+> >> > better than 4 times faster.
+> >> >
+> >> > Also, is it even worth optimizing that function? It looks like it's
+> >> > only used in kernel/sched_rt.c.
+> >>
+> >> (might help if you CC the scheduler people on scheduler functions :-)
+> >>
+> >> Right, so it used to be 140 bits with the old O(1) scheduler, currently
+> >> (as you noted) sched_rt is the only user left and will therefore only
+> >> care about the first 100 bits.
+> >>
+> >> As it stands I think it might still make sense to optimize this as for
+> >> rt loads it still on a hot path.
+> >>
+> >> As to the 100 vs 140 length, would it really make much of difference to
+> >> shorten the implementation to 100? If not I'd leave it at 140.
+> >>
+> >> Ingo, any comments?
+> >
+> > I guess getting below the 128 bits boundary would shave an instruction and a
+> > branch off or so?
+> >
+> > ? ? ? ?Ingo
+> >
+> 
+> That's right. I should be able to get rid of a cmov, which kind of
+> counts as two instructions in EV6 scheduling.
+> 
+> So I should send a patch to reduce this to the first 100 (128) bits?
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -326,17 +326,8 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
- 			*ppoints = 1000;
- 		}
- 
--		/*
--		 * skip kernel threads and tasks which have already released
--		 * their mm.
--		 */
--		if (!p->mm)
--			continue;
--		if (p->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
--			continue;
--
- 		points = oom_badness(p, totalpages);
--		if (points > *ppoints || !chosen) {
-+		if (points > *ppoints) {
- 			chosen = p;
- 			*ppoints = points;
- 		}
-@@ -478,7 +469,7 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- void mem_cgroup_out_of_memory(struct mem_cgroup *mem, gfp_t gfp_mask)
- {
- 	unsigned long limit;
--	unsigned int points = 0;
-+	unsigned int points;
- 	struct task_struct *p;
- 
- 	if (sysctl_panic_on_oom == 2)
+Sure, why not, every instruction counts :-)
+
+Note, if you do it then please also include a disassembly of the area that 
+changed, so that we document the effect.
+
+	Ingo
