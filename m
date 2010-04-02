@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab0DBRAD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 13:00:03 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52352 "EHLO ogre.sisk.pl"
+	id S1755447Ab0DBRBj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 13:01:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18783 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755299Ab0DBQ74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 12:59:56 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: [linux-pm] what the patches do Re: [RFC 10/15] PM / Hibernate: user, implement user_ops reader
-Date: Fri, 2 Apr 2010 19:03:12 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Nigel Cunningham <ncunningham@crca.org.au>, linux-kernel@vger.kernel.org,
-       Jiri Slaby <jslaby@suse.cz>, jirislaby@gmail.com,
-       linux-pm@lists.linux-foundation.org
-References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <4BABDA59.8070107@crca.org.au> <20100402063644.GA14941@atrey.karlin.mff.cuni.cz>
-In-Reply-To: <20100402063644.GA14941@atrey.karlin.mff.cuni.cz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004021903.12993.rjw@sisk.pl>
+	id S1754753Ab0DBRBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 13:01:34 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: mingo@elte.hu, rostedt@goodmis.org, fweisbec@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCHv6 0/4] tracing: function graph output for preempt/irqs-off tracers
+Date: Fri,  2 Apr 2010 19:01:19 +0200
+Message-Id: <1270227683-14631-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 02 April 2010, Pavel Machek wrote:
-...
-> > Neither of those are impossible with in-kernel code, so I'd argue that  
-> > there's no need to keep the s2disk interface long-term. Userspace  
-> 
-> I disagree.
-> 
-> > helpers might be necessary for the first one (to manage the network  
-> > interface), but I already have multiple-resumes-from-the-same-image  
-> > support in TuxOnice (and more 'crazy stuff' like support for resuming a  
-> > different image after writing one - that can be used to switch to an  
-> > initramfs containing the binaries needed to power down a UPS).
-> 
-> The fact that it can be done in kernel -- anything can -- but whether
-> it should. I'd very much like to keep the 'crazy stuff' in userspace.
+hi,
 
-IMO the question really boils down to what's the benefit of doing these things
-in the kernel vs doing them in the user space.
+updates based on comments by Frederic Weisbecker,
+also rebase to latest master.
 
-If doing them in the kernel reduces the overall complexity of design (including
-the user space interface involved etc.) I don't really see why not to.
+I'm sending reworked version of the graph output support for
+preemptirqsoff/preemptoff/irqsoff tracers.
 
-Rafael
+v6:
+- using stubs instead of ifdef in trace_irqsoff for graph
+  tracer's calls
+
+v5:
+- function graph events are back in game
+- changed function graph tracer interface to be able to
+  pass custom tracer flags
+- changed calls to trace_function to trace graph records
+  when the display-graph otion is enabled.  As function tracer
+  and graph tracer have different spacing during the record
+  output, this way it looks better, and the info stays.
+
+  This could be also done via TRACE_PRINT, then it'd be displayed
+  as comment.. I chose the first way, though it could be easily
+  changed.
+
+v4:
+- fixed header to display all the info as for
+  current irqsoff tracer
+- fixed reset of the max_tr buffer during the
+  display-graph switch
+
+v3:
+- the function_graph tracer should have the same output
+  as current version even with events enabled,
+  unless I missed something again ;)
+- I gave up the idea of function_graph events,
+  since it was unsuitable for outputing other
+  events as comments "/* */"
+- I'm not including the raw function_graph for now
+
+
+attached patches:
+- 1/4 adding ftrace events for graph tracer
+- 2/4 graph tracer - adding support for passing flags to ouput functions
+- 3/4 graph output support for irqsoff tracer
+- 4/4 graph output support for preemptirqsoff/preemptoff tracers
+
+
+plz let me know what you think
+
+wbr,
+jirka
+---
