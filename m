@@ -1,170 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757410Ab0DBBXn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 21:23:43 -0400
-Received: from mga03.intel.com ([143.182.124.21]:35099 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757047Ab0DBBXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 21:23:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,351,1267430400"; 
-   d="scan'208";a="261311663"
-Date: Fri, 2 Apr 2010 09:23:38 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jens Axboe <jens.axboe@oracle.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] readahead even for FMODE_RANDOM
-Message-ID: <20100402012338.GA6393@localhost>
-References: <20100401183151.GO23510@kernel.dk>
+	id S1757504Ab0DBBYf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 21:24:35 -0400
+Received: from sous-sol.org ([216.99.217.87]:39812 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757155Ab0DBBYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 21:24:32 -0400
+Date: Thu, 1 Apr 2010 18:23:53 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Chris Wright <chrisw@sous-sol.org>, Neil Horman <nhorman@tuxdriver.com>,
+       Neil Horman <nhorman@redhat.com>, kexec@lists.infradead.org,
+       linux-kernel@vger.kernel.org, hbabu@us.ibm.com,
+       iommu@lists.linux-foundation.org,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Vivek Goyal <vgoyal@redhat.com>
+Subject: [PATCH 1/2] x86/amd-iommu: enable iommu before attaching devices
+Message-ID: <20100402012353.GY29241@sequoia.sous-sol.org>
+References: <20100331191811.GD13406@hmsreliant.think-freely.org> <m1sk7guv5u.fsf@fess.ebiederm.org> <20100331202745.GE13406@hmsreliant.think-freely.org> <20100401142902.GF24846@8bytes.org> <20100401144736.GA14069@shamino.rdu.redhat.com> <20100401155643.GG24846@8bytes.org> <20100401171149.GH13603@shamino.rdu.redhat.com> <20100401201433.GK24846@8bytes.org> <20100402000012.GA8930@hmsreliant.think-freely.org> <20100402003034.GX29241@sequoia.sous-sol.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100401183151.GO23510@kernel.dk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100402003034.GX29241@sequoia.sous-sol.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+Hit another kdump problem as reported by Neil Horman.  When initializaing
+the IOMMU, we attach devices to their domains before the IOMMU is
+fully (re)initialized.  Attaching a device will issue some important
+invalidations.  In the context of the newly kexec'd kdump kernel, the
+IOMMU may have stale cached data from the original kernel.  Because we
+do the attach too early, the invalidation commands are placed in the new
+command buffer before the IOMMU is updated w/ that buffer.  This leaves
+the stale entries in the kdump context and can renders device unusable.
+Simply enable the IOMMU before we do the attach.
 
-On Fri, Apr 02, 2010 at 02:31:51AM +0800, Jens Axboe wrote:
-> Hi,
-> 
-> I got a problem report with fio where larger block size random reads
-> where markedly slower with buffered IO than with O_DIRECT, and the
-> initial thought was that perhaps this was some fio oddity. The reporter
-> eventually discovered that turning off the fadvise hint made it work
-> fine. So I took a look, and it seems we never do readahead for
-> FMODE_RANDOM even if the request size is larger than 1 page. That seems
-> like a bug, if an application is doing eg 16kb random reads, you want to
-> readahead the 12kb remaining data. On devices where smaller transfer
-> sizes are slower than larger ones, this can make a large difference.
-> 
-> This patch makes us readahead even for FMODE_RANDOM, iff we'll be
-> reading more pages in that single read. I ran a quick test here, and it
-> appears to fix the problem (no difference with fadvise POSIX_FADV_RANDOM
-> being passed in or not).
- 
-I guess the application is doing (at least partial) sequential reads,
-while at the same time tell kernel with POSIX_FADV_RANDOM that it's
-doing random reads.
-
-If so, it's mainly the application's fault.
-
-However the kernel can behave more smart and less "dumb" :)
-It can inherit the current good behavior of "submit one single 16kb io
-request for a 16kb random read() syscall", while still be able to
-start _larger sized_ readahead if it's actually a sequential one.
-
-> Signed-off-by: Jens Axboe <jens.axboe@oracle.com>
-> 
-> diff --git a/mm/readahead.c b/mm/readahead.c
-> index 337b20e..d4b201c 100644
-> --- a/mm/readahead.c
-> +++ b/mm/readahead.c
-> @@ -501,8 +501,11 @@ void page_cache_sync_readahead(struct address_space *mapping,
->  	if (!ra->ra_pages)
->  		return;
->  
-> -	/* be dumb */
-> -	if (filp->f_mode & FMODE_RANDOM) {
-> +	/*
-> +	 * Be dumb for files marked as randomly accessed, but do readahead
-> +	 * inside the original request (req_size > 1).
-> +	 */
-> +	if ((filp->f_mode & FMODE_RANDOM) && req_size == 1) {
->  		force_page_cache_readahead(mapping, filp, offset, req_size);
->  		return;
->  	}
-
-The patch only fixes the (req_size != 1) case that exposed by your
-application. A complete fix would be 
-
-@@ -820,12 +825,6 @@ void page_cache_sync_readahead(struct ad
- 	if (!ra->ra_pages)
- 		return;
- 
--	/* be dumb */
--	if (filp->f_mode & FMODE_RANDOM) {
--		force_page_cache_readahead(mapping, filp, offset, req_size);
--		return;
--	}
--
- 	/* do read-ahead */
- 	ondemand_readahead(mapping, ra, filp, false, offset, req_size);
- }
-
-And a more optimized patch would look like this.  Note that only the
-last chunk is necessary for bug fixing, and only this chunk can be
-applied to vanilla 2.6.34-rc3.
-
-If no problem, I'll submit a patch with only the last chunk for
-2.6.34, and submit the remaining chunks for 2.6.35.
-
-Thanks,
-Fengguang
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Chris Wright <chrisw@sous-sol.org>
 ---
-Subject: readahead: more smart readahead on POSIX_FADV_RANDOM
-From: Wu Fengguang <fengguang.wu@intel.com>
-Date: Fri Apr 02 08:52:42 CST 2010
+ arch/x86/kernel/amd_iommu_init.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Some times user space applications will tell POSIX_FADV_RANDOM
-while still doing some sequential reads.
-
-The kernel can behave a bit smarter in this case, by letting the
-readahead heuristics handle the POSIX_FADV_RANDOM case, but with
-less aggressive assumption on sequential reads.
-
-CC: Jens Axboe <jens.axboe@oracle.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/readahead.c |   17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
-
---- linux.orig/mm/readahead.c	2010-04-02 08:43:53.000000000 +0800
-+++ linux/mm/readahead.c	2010-04-02 09:00:51.000000000 +0800
-@@ -664,6 +664,7 @@ ondemand_readahead(struct address_space 
- 	unsigned long max = max_sane_readahead(ra->ra_pages);
- 	unsigned long tt;  /* thrashing shreshold */
- 	pgoff_t start;
-+	bool random_hint = (filp && (filp->f_mode & FMODE_RANDOM));
+--- a/arch/x86/kernel/amd_iommu_init.c
++++ b/arch/x86/kernel/amd_iommu_init.c
+@@ -1288,6 +1288,8 @@ static int __init amd_iommu_init(void)
+ 	if (ret)
+ 		goto free;
  
- 	/*
- 	 * start of file
-@@ -671,7 +672,8 @@ ondemand_readahead(struct address_space 
- 	if (!offset) {
- 		ra_set_pattern(ra, RA_PATTERN_INITIAL);
- 		ra->start = offset;
--		if ((ra->ra_flags & READAHEAD_LSEEK) && req_size <= max) {
-+		if ((random_hint || (ra->ra_flags & READAHEAD_LSEEK)) &&
-+		    req_size <= max) {
- 			ra->size = req_size;
- 			ra->async_size = 0;
- 			goto readit;
-@@ -743,8 +745,11 @@ context_readahead:
- 	} else
- 		start = offset;
++	enable_iommus();
++
+ 	if (iommu_pass_through)
+ 		ret = amd_iommu_init_passthrough();
+ 	else
+@@ -1300,8 +1302,6 @@ static int __init amd_iommu_init(void)
  
--	tt = count_history_pages(mapping, ra, offset,
--				 READAHEAD_ASYNC_RATIO * max);
-+	if (unlikely(random_hint))
-+		tt = 0;
-+	else
-+		tt = count_history_pages(mapping, ra, offset,
-+					 READAHEAD_ASYNC_RATIO * max);
- 	/*
- 	 * no history pages cached, could be
- 	 * 	- a random read
-@@ -820,12 +825,6 @@ void page_cache_sync_readahead(struct ad
- 	if (!ra->ra_pages)
- 		return;
+ 	amd_iommu_init_notifier();
  
--	/* be dumb */
--	if (filp->f_mode & FMODE_RANDOM) {
--		force_page_cache_readahead(mapping, filp, offset, req_size);
--		return;
--	}
+-	enable_iommus();
 -
- 	/* do read-ahead */
- 	ondemand_readahead(mapping, ra, filp, false, offset, req_size);
- }
+ 	if (iommu_pass_through)
+ 		goto out;
+ 
