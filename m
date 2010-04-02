@@ -1,192 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756279Ab0DBBER (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 21:04:17 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37138 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147Ab0DBBEO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 21:04:14 -0400
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <w.sang@pengutronix.de>,
-       "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <gregkh@suse.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Grant Likely <grant.likely@secretlab.ca>,
-       Michal Simek <monstr@monstr.eu>,
-       Johannes Berg <johannes@sipsolutions.net>, Mike Isely <isely@pobox.com>,
-       Mauro Carvalho Chehab <mchehab@infradead.org>,
-       Sujith Thomas <sujith.thomas@intel.com>,
-       Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
-       Lin Ming <ming.m.lin@intel.com>, Bob Moore <robert.moore@intel.com>,
-       Krzysztof Helt <krzysztof.h1@wp.pl>, Anatolij Gustschin <agust@denx.de>,
-       Kai Jiang <b18973@freescale.com>,
-       Kumar Gala <galak@kernel.crashing.org>, linuxppc-dev@ozlabs.org,
-       linux-media@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Date: Fri,  2 Apr 2010 03:02:15 +0200
-Message-Id: <1270170140-325-2-git-send-email-w.sang@pengutronix.de>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <1270170140-325-1-git-send-email-w.sang@pengutronix.de>
-References: <1270170140-325-1-git-send-email-w.sang@pengutronix.de>
-X-SA-Exim-Connect-IP: 92.198.50.58
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-Subject: [PATCH 2/2] device_attributes: add sysfs_attr_init() for dynamic attributes
-X-SA-Exim-Version: 4.2.1 (built Sat, 01 Aug 2009 12:09:26 +0000)
-X-SA-Exim-Scanned: Yes (on metis.ext.pengutronix.de)
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1756794Ab0DBBIG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 21:08:06 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:48080 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754263Ab0DBBID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 21:08:03 -0400
+Date: Thu, 1 Apr 2010 18:07:55 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] rcu: only raise softirq when need
+Message-ID: <20100402010755.GJ2472@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4BB1CE6B.6030207@cn.fujitsu.com>
+ <20100330163036.GC2513@linux.vnet.ibm.com>
+ <4BB2AF2F.6030406@cn.fujitsu.com>
+ <20100331153037.GD2461@linux.vnet.ibm.com>
+ <4BB44DD0.7050302@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BB44DD0.7050302@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Made necessary by 6992f5334995af474c2b58d010d08bc597f0f2fe. Prevents further
-"key xxx not in .data" bug-reports. Although some attributes could probably be
-converted to static ones, this is left for people having hardware to test.
+On Thu, Apr 01, 2010 at 03:40:00PM +0800, Lai Jiangshan wrote:
+> Paul E. McKenney wrote:
+> > On Wed, Mar 31, 2010 at 10:10:55AM +0800, Lai Jiangshan wrote:
+> >> Paul E. McKenney wrote:
+> >>> On Tue, Mar 30, 2010 at 06:11:55PM +0800, Lai Jiangshan wrote:
+> >>>> I found something RCU_SOFTIRQ are called without do any thing.
+> >>>> (use function_graph to find it:
+> >>>>  1)               |  rcu_process_callbacks() {
+> >>>>  1)               |    __rcu_process_callbacks() {
+> >>>>  1)   0.634 us    |      rcu_process_gp_end();
+> >>>>  1)   0.487 us    |      check_for_new_grace_period();
+> >>>>  1)   2.672 us    |    }
+> >>>>  1)               |    __rcu_process_callbacks() {
+> >>>>  1)   0.633 us    |      rcu_process_gp_end();
+> >>>>  1)   0.491 us    |      check_for_new_grace_period();
+> >>>>  1)   2.672 us    |    }
+> >>>> )
+> >>>>
+> >>>> This patch make RCU_SOFTIRQ raised when need.
+> >>> So this seems to have two effects:
+> >>>
+> >>> 1.	Avoid checking for a quiescent state if RCU doesn't need one
+> >>> 	from this CPU.
+> >>>
+> >>> 2.	Avoid RCU_SOFTIRQ if RCU did need a quiescent state from
+> >>> 	this CPU, and if rcu_check_callbacks() saw a quiescent state.
+> >> This RCU_SOFTIRQ is not avoided.
+> >>
+> >> +	if (rdp->qs_pending && rdp->passed_quiesc) {
+> >> +		rdp->n_rp_report_qs++;
+> >>  		return 1;
+> >>  	}
+> >>
+> >> Old: raise RCU_SOFTIRQ when rdp->qs_pending is not zero
+> >> New: raise RCU_SOFTIRQ when rdp->qs_pending && rdp->passed_quiesc
+> >>
+> >> So the different effects only happen when this state:
+> >> rdp->qs_pending == 1 && rdp->passed_quiesc == 0,
+> >> But this state will be changed after next rcu_sched_qs() or families.
+> >> So it will not hang up.
+> > 
+> > You are quite correct.  I clearly need to give myself a day to think
+> > about patches to RCU functionality before replying.  On the other hand,
+> > I might have been just as confused after thinking on it, so airing my
+> > confusion immediately might well have been the optimal approach.  ;-)
+> > 
+> > So this patch looks like it would work, so the next question is how much
+> > it helps and/or hurts.
+> > 
+> >>> Except that if rcu_check_callbacks() did see a quiescent state, then we
+> >>> -need- RCU_SOFTIRQ to propagate this up the tree.  So I don't see how
+> >>> this patch helps, and unless I am missing something, it can result in
+> >>> grace-period hangs.  (This CPU is the last one to pass through a
+> >>> quiescent state, and this call to rcu_check_callbacks() finds one,
+> >>> and we fail to report it up the tree.)
+> >>>
+> >>> Please note that there are other possible causes for empty calls to
+> >>> rcu_process_callbacks():
+> >>>
+> >>> 1.	RCU needs a call to force_quiescent_state(), but some other
+> >>> 	CPU beats us to it.  We raise RCU_SOFTIRQ, but by the time
+> >>> 	we get there, our work is done.
+> >>>
+> >>> 2.	RCU needs to check for CPU stalls, but some other CPU beats
+> >>> 	us to it.
+> >>>
+> >>> 3.	RCU is idle, and this CPU needs another grace period, but
+> >>> 	some other CPU starts up a new grace period before our
+> >>> 	softirq gets started.
+> >> These may happen, but I have not seen any empty call after patch applied.
+> > 
+> > Before the patch, what fraction of the calls were empty calls?
+> > 
+> >>> So I do not believe that this patch is worthwhile even if it does turn
+> >>> out to be safe.
+> >> I accept that this patch is not worthwhile.
+> >>
+> >> Raising empty call is harmless, and it is a chance
+> >> to progress RCU or detect problems.
+> > 
+> > If you say "this patch has not been yet proven to be worthwhile" instead
+> > of "this patch is not worthwhile", I will agree with you.  Here is a
+> > quick rundown of my thoughts on it, which cannot be considered to be
+> > fully formed:
+> > 
+> > 1.	It cannot improve real-time scheduling latency, since there
+> > 	can be RCU_SOFTIRQ actions that really do something.  This
+> > 	patch therefore does not improve the worst-case code path
+> > 	(though it might -- or might not -- help the average path).
+> > 
+> > 2.	It seems to increase path length a bit, but I doubt that this
+> > 	is measurable, so not a valid objection.
+> > 
+> > 3.	It -might- improve throughput, but this would need to be
+> > 	proven.  This is the motivation for my question about the
+> > 	fraction of empty calls above.
+> > 
+> > 	Kernels that force all softirqs to execute in process
+> > 	context (e.g., CONFIG_PREEMPT_RT) are the most likely to
+> > 	see benefit from this patch, as a pair of context switches
+> > 	are saved in that case.  Of course, CONFIG_PREEMPT_RT is
+> > 	more about scheduling latency than maximum throughput.
+> > 
+> > 4.	It does complicate the code a bit, but could be refactored
+> > 	to reduce the complication.  (I haven't thought this through,
+> > 	but my guess is that the initial check should be factored
+> > 	across the "if" statement.)
+> > 
+> > All that aside, I don't believe the priority of this patch is particularly
+> > high, although it did do a good job of showing that your understanding
+> > of the treercu implementation is increasing.  Which is a very good thing!
+> > 
+> > Just out of curiosity, what is your test procedure?
 
-Found by this semantic patch:
+Apologies, my question was unclear.  I was asking how you test patches
+to RCU in general, not thing in particular.
 
-@ init @
-type T;
-identifier A;
-@@
+Still, very good info, thank you for providing it.
 
-        T {
-                ...
-                struct device_attribute A;
-                ...
-        };
+> 1------------------result
+> (CONFIG_HZ=1000 and CONFIG_PREEMPT=y)
 
-@ main extends init @
-expression E;
-statement S;
-identifier err;
-T *name;
-@@
+CONFIG_TREE_RCU or CONFIG_TREE_PREEMPT_RCU?
 
-        ... when != sysfs_attr_init(&name->A.attr);
-(
-+       sysfs_attr_init(&name->A.attr);
-        if (device_create_file(E, &name->A))
-                S
-|
-+       sysfs_attr_init(&name->A.attr);
-        err = device_create_file(E, &name->A);
-)
+> Before patch applied: 10% empty calls (something 30+ percent)
+> after patch applied: <0.5% empty calls
 
-While reviewing, I put the initialization to apropriate places.
+Hmmm...  You weren't running rcutorture in the background, were you?  ;-)
 
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Greg KH <gregkh@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- drivers/macintosh/windfarm_core.c           |    1 +
- drivers/media/video/pvrusb2/pvrusb2-sysfs.c |    8 ++++++++
- drivers/platform/x86/intel_menlow.c         |    1 +
- drivers/video/fsl-diu-fb.c                  |    1 +
- 4 files changed, 11 insertions(+), 0 deletions(-)
+> 2------------------test procedure
+> I think you can add kernel trace code to detect it. (I think it's simpler)
+> The next is my fast test:
+> 
+> ensure CONFIG_FUNCTION_GRAPH_TRACER = y
+> 
+> mount -t debugfs xx /debugfs/
+> echo rcu_process_callbacks > /debugfs/tracing/set_graph_function
+> echo function_graph > /debugfs/tracing/current_tracer
+> 
+> # make all cpu busy, example: complier the kernel with 'make -j XXX'
+> cat /debugfs/tracing/trace_pipe > trace.tmp # CTRL-C after 20 seconds
+> ./parser.py trace.tmp
 
-diff --git a/drivers/macintosh/windfarm_core.c b/drivers/macintosh/windfarm_core.c
-index 419795f..f447642 100644
---- a/drivers/macintosh/windfarm_core.c
-+++ b/drivers/macintosh/windfarm_core.c
-@@ -209,6 +209,7 @@ int wf_register_control(struct wf_control *new_ct)
- 	kref_init(&new_ct->ref);
- 	list_add(&new_ct->link, &wf_controls);
- 
-+	sysfs_attr_init(&new_ct->attr.attr);
- 	new_ct->attr.attr.name = new_ct->name;
- 	new_ct->attr.attr.mode = 0644;
- 	new_ct->attr.show = wf_show_control;
-diff --git a/drivers/media/video/pvrusb2/pvrusb2-sysfs.c b/drivers/media/video/pvrusb2/pvrusb2-sysfs.c
-index 6c23456..71f5056 100644
---- a/drivers/media/video/pvrusb2/pvrusb2-sysfs.c
-+++ b/drivers/media/video/pvrusb2/pvrusb2-sysfs.c
-@@ -423,10 +423,12 @@ static void pvr2_sysfs_add_debugifc(struct pvr2_sysfs *sfp)
- 
- 	dip = kzalloc(sizeof(*dip),GFP_KERNEL);
- 	if (!dip) return;
-+	sysfs_attr_init(&dip->attr_debugcmd.attr);
- 	dip->attr_debugcmd.attr.name = "debugcmd";
- 	dip->attr_debugcmd.attr.mode = S_IRUGO|S_IWUSR|S_IWGRP;
- 	dip->attr_debugcmd.show = debugcmd_show;
- 	dip->attr_debugcmd.store = debugcmd_store;
-+	sysfs_attr_init(&dip->attr_debuginfo.attr);
- 	dip->attr_debuginfo.attr.name = "debuginfo";
- 	dip->attr_debuginfo.attr.mode = S_IRUGO;
- 	dip->attr_debuginfo.show = debuginfo_show;
-@@ -644,6 +646,7 @@ static void class_dev_create(struct pvr2_sysfs *sfp,
- 		return;
- 	}
- 
-+	sysfs_attr_init(&sfp->attr_v4l_minor_number.attr);
- 	sfp->attr_v4l_minor_number.attr.name = "v4l_minor_number";
- 	sfp->attr_v4l_minor_number.attr.mode = S_IRUGO;
- 	sfp->attr_v4l_minor_number.show = v4l_minor_number_show;
-@@ -658,6 +661,7 @@ static void class_dev_create(struct pvr2_sysfs *sfp,
- 		sfp->v4l_minor_number_created_ok = !0;
- 	}
- 
-+	sysfs_attr_init(&sfp->attr_v4l_radio_minor_number.attr);
- 	sfp->attr_v4l_radio_minor_number.attr.name = "v4l_radio_minor_number";
- 	sfp->attr_v4l_radio_minor_number.attr.mode = S_IRUGO;
- 	sfp->attr_v4l_radio_minor_number.show = v4l_radio_minor_number_show;
-@@ -672,6 +676,7 @@ static void class_dev_create(struct pvr2_sysfs *sfp,
- 		sfp->v4l_radio_minor_number_created_ok = !0;
- 	}
- 
-+	sysfs_attr_init(&sfp->attr_unit_number.attr);
- 	sfp->attr_unit_number.attr.name = "unit_number";
- 	sfp->attr_unit_number.attr.mode = S_IRUGO;
- 	sfp->attr_unit_number.show = unit_number_show;
-@@ -685,6 +690,7 @@ static void class_dev_create(struct pvr2_sysfs *sfp,
- 		sfp->unit_number_created_ok = !0;
- 	}
- 
-+	sysfs_attr_init(&sfp->attr_bus_info.attr);
- 	sfp->attr_bus_info.attr.name = "bus_info_str";
- 	sfp->attr_bus_info.attr.mode = S_IRUGO;
- 	sfp->attr_bus_info.show = bus_info_show;
-@@ -699,6 +705,7 @@ static void class_dev_create(struct pvr2_sysfs *sfp,
- 		sfp->bus_info_created_ok = !0;
- 	}
- 
-+	sysfs_attr_init(&sfp->attr_hdw_name.attr);
- 	sfp->attr_hdw_name.attr.name = "device_hardware_type";
- 	sfp->attr_hdw_name.attr.mode = S_IRUGO;
- 	sfp->attr_hdw_name.show = hdw_name_show;
-@@ -713,6 +720,7 @@ static void class_dev_create(struct pvr2_sysfs *sfp,
- 		sfp->hdw_name_created_ok = !0;
- 	}
- 
-+	sysfs_attr_init(&sfp->attr_hdw_desc.attr);
- 	sfp->attr_hdw_desc.attr.name = "device_hardware_description";
- 	sfp->attr_hdw_desc.attr.mode = S_IRUGO;
- 	sfp->attr_hdw_desc.show = hdw_desc_show;
-diff --git a/drivers/platform/x86/intel_menlow.c b/drivers/platform/x86/intel_menlow.c
-index f0a90a6..90ba5d7 100644
---- a/drivers/platform/x86/intel_menlow.c
-+++ b/drivers/platform/x86/intel_menlow.c
-@@ -396,6 +396,7 @@ static int intel_menlow_add_one_attribute(char *name, int mode, void *show,
- 	if (!attr)
- 		return -ENOMEM;
- 
-+	sysfs_attr_init(&attr->attr.attr); /* That is consistent naming :D */
- 	attr->attr.attr.name = name;
- 	attr->attr.attr.mode = mode;
- 	attr->attr.show = show;
-diff --git a/drivers/video/fsl-diu-fb.c b/drivers/video/fsl-diu-fb.c
-index 4637bcb..994358a 100644
---- a/drivers/video/fsl-diu-fb.c
-+++ b/drivers/video/fsl-diu-fb.c
-@@ -1536,6 +1536,7 @@ static int __devinit fsl_diu_probe(struct of_device *ofdev,
- 		goto error;
- 	}
- 
-+	sysfs_attr_init(&machine_data->dev_attr.attr);
- 	machine_data->dev_attr.attr.name = "monitor";
- 	machine_data->dev_attr.attr.mode = S_IRUGO|S_IWUSR;
- 	machine_data->dev_attr.show = show_monitor;
--- 
-1.7.0
+OK, so if no rcutorture, then I wonder where the extra-long RCU read-side
+critical sections are.
 
+> 3----------------------test code and ....
+> (Because compiler may or may not inline a static function, So:)
+> Your 'empty_call_graph' is not deferent from mine very likely,
+> you should change it.
+> 
+> Q: why 'rcu_process_gp_end();' is empty call?
+> A: _raw_spin_trylock() is not inline-ed, we will
+> see a '{' and '_raw_spin_trylock()' in the graph
+> when it is not empty call:
+>  0)               |      rcu_process_gp_end() {
+>  0)   0.350 us    |        _raw_spin_trylock();
+>  0)   0.250 us    |        _raw_spin_unlock_irqrestore();
+>  0)   1.326 us    |      }
+> 
+> Q: Is this test trusted.
+> A: No, but I believe it.
+
+What you measured is what you measured, don't get me wrong.  I am just
+wondering how 10% of the scheduling-clock interrupts managed to hit
+RCU read-side critical sections.
+
+OK.  If you were running CONFIG_TREE_RCU, and if 10% of the execution
+time was in preemption-disabled regions in the kernel, and if there was
+an RCU grace period outstanding at all times (which there might well be
+due to file removal during kernel builds), and if each RCU grace period
+lasted no more than a millisecond or so, then that might explain your
+results.  If the grace periods last longer, then the fraction of time
+in preemption-disabled regions in the kernel must increase accordingly.
+
+If you had been running CONFIG_PREEMPT=n, then of course all of the
+time spent in the kernel would be preempt-disabled.
+
+Please understand that I am not doubting your measurements.  I instead
+want to be very sure that we are not papering over some subtle bug by
+making such a change.
+
+							Thanx, Paul
+
+> ------------------parser.py----------
+> #!/bin/env python
+> 
+> import sys
+> 
+> empty_call_graph = tuple(
+> ''' rcu_process_callbacks() {
+>  __rcu_process_callbacks() {
+>  rcu_process_gp_end();
+>  check_for_new_grace_period();
+>  }
+>  __rcu_process_callbacks() {
+>  rcu_process_gp_end();
+>  check_for_new_grace_period();
+>  }
+>  }
+> '''.splitlines())
+> 
+> total=0
+> empty=0
+> match=0
+> empty_block=[]
+> 
+> for line in file(sys.argv[1]):
+>   empty_block.append(line)
+>   if line.find('force_quiescent_state();') >= 0:
+>     continue
+> 
+>   if line.find(empty_call_graph[match]) < 0:
+>     match = 0
+>     empty_block=[]
+>     continue
+> 
+>   match = match + 1
+>   if match == 1:
+>     total = total + 1
+>   elif match == len(empty_call_graph):
+>     empty = empty + 1
+>     for emptyline in empty_block:
+>       print emptyline,
+>     empty_block=[]
+>     match = 0
+> 
+> print('empty call/total call: %d/%d' % (empty, total))
+> print('fraction: %f%%' % (100.0 * empty / total))
+> 
+> 
