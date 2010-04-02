@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab0DBJyn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 05:54:43 -0400
-Received: from mga06.intel.com ([134.134.136.21]:51324 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753484Ab0DBJyf (ORCPT
+	id S1757152Ab0DBJ5Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 05:57:16 -0400
+Received: from 84-21.comp.nus.edu.sg ([137.132.84.21]:34376 "EHLO
+	postfix1.comp.nus.edu.sg" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754869Ab0DBJ5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 05:54:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,352,1267430400"; 
-   d="scan'208";a="505804406"
-Date: Fri, 2 Apr 2010 11:55:12 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Dan Carpenter <error27@gmail.com>, Paul Fertser <fercerpav@gmail.com>,
-       Lars-Peter Clausen <lars@metafoo.de>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Arnaud Patard <arnaud.patard@rtp-net.org>, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [patch] mfd: off by one issue
-Message-ID: <20100402095511.GA8010@sortiz.org>
-References: <20100328112808.GO5069@bicker>
+	Fri, 2 Apr 2010 05:57:06 -0400
+X-Greylist: delayed 460 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Apr 2010 05:57:05 EDT
+Date: Fri, 2 Apr 2010 17:49:17 +0800 (SGT)
+From: NG KIAN YONG <ngky@comp.nus.edu.sg>
+To: gregkh@suse.de, lieb@canonical.com, forest@alittletooquiet.net,
+       andre.goddard@gmail.com
+cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] Staging: vt6655: fix brace coding style issue in ioctl.c
+Message-ID: <Pine.SOC.4.64.1004021738200.6970@sunfire0.comp.nus.edu.sg>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100328112808.GO5069@bicker>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+>From f7413706dd9b5fc217aa738bb48d36b46ab65a98 Mon Sep 17 00:00:00 2001
+From: Ng Kian Yong <ngky@comp.nus.edu.sg>
+Date: Fri, 2 Apr 2010 17:20:06 +0800
+Subject: [PATCH 1/1] Staging: vt6655: fix brace coding style issue in ioctl.c
+  This is a patch to the ioctl.c file that fixes up a brace warning found by the checkpatch.pl tool
+  Signed-off-by: Ng Kian Yong <ngky@comp.nus.edu.sg>
 
-On Sun, Mar 28, 2010 at 02:28:08PM +0300, Dan Carpenter wrote:
-> "pcf->irq_handler" has PCF50633_NUM_IRQ elements.
-> 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
-Patch applied, many thanks.
+---
+  drivers/staging/vt6655/ioctl.c |   12 ++++++------
+  1 files changed, 6 insertions(+), 6 deletions(-)
 
-Cheers,
-Samuel.
+diff --git a/drivers/staging/vt6655/ioctl.c b/drivers/staging/vt6655/ioctl.c
+index d9a5fd2..a15b953 100644
+--- a/drivers/staging/vt6655/ioctl.c
++++ b/drivers/staging/vt6655/ioctl.c
+@@ -54,14 +54,14 @@ static int          msglevel                =MSG_LEVEL_INFO;
 
+  /*---------------------  Export Variables  --------------------------*/
 
-> diff --git a/drivers/mfd/pcf50633-core.c b/drivers/mfd/pcf50633-core.c
-> index 03dcc92..4f13608 100644
-> --- a/drivers/mfd/pcf50633-core.c
-> +++ b/drivers/mfd/pcf50633-core.c
-> @@ -217,7 +217,7 @@ static struct attribute_group pcf_attr_group = {
->  int pcf50633_register_irq(struct pcf50633 *pcf, int irq,
->  			void (*handler) (int, void *), void *data)
->  {
-> -	if (irq < 0 || irq > PCF50633_NUM_IRQ || !handler)
-> +	if (irq < 0 || irq >= PCF50633_NUM_IRQ || !handler)
->  		return -EINVAL;
->  
->  	if (WARN_ON(pcf->irq_handler[irq].handler))
-> @@ -234,7 +234,7 @@ EXPORT_SYMBOL_GPL(pcf50633_register_irq);
->  
->  int pcf50633_free_irq(struct pcf50633 *pcf, int irq)
->  {
-> -	if (irq < 0 || irq > PCF50633_NUM_IRQ)
-> +	if (irq < 0 || irq >= PCF50633_NUM_IRQ)
->  		return -EINVAL;
->  
->  	mutex_lock(&pcf->lock);
+-int private_ioctl(PSDevice pDevice, struct ifreq *rq) {
+-
+-	PSCmdRequest        pReq = (PSCmdRequest)rq;
++int private_ioctl(PSDevice pDevice, struct ifreq *rq)
++{
++    PSCmdRequest        pReq = (PSCmdRequest)rq;
+      PSMgmtObject        pMgmt = pDevice->pMgmt;
+-	int 		        result = 0;
++    int                 result = 0;
+      PWLAN_IE_SSID       pItemSSID;
+      SCmdBSSJoin         sJoinCmd;
+-    SCmdZoneTypeSet  sZoneTypeCmd;
++    SCmdZoneTypeSet     sZoneTypeCmd;
+      SCmdScan            sScanCmd;
+      SCmdStartAP         sStartAPCmd;
+      SCmdSetWEP          sWEPCmd;
+@@ -83,7 +83,7 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq) {
+
+      pReq->wResult = 0;
+
+-    switch(pReq->wCmdCode) {
++    switch (pReq->wCmdCode) {
+
+      case WLAN_CMD_BSS_SCAN:
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.6.6.1
+
+
