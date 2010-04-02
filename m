@@ -1,72 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758095Ab0DBGDp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 02:03:45 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:44704 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757039Ab0DBGDk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 02:03:40 -0400
-Message-ID: <4BB588B5.1060309@in.ibm.com>
-Date: Fri, 02 Apr 2010 11:33:33 +0530
-From: Sachin Sant <sachinp@in.ibm.com>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+	id S1758264Ab0DBGRm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 02:17:42 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51906 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758028Ab0DBGRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 02:17:36 -0400
+Message-ID: <4BB58BCE.8090106@kernel.org>
+Date: Fri, 02 Apr 2010 15:16:46 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: linux-kernel <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-       Linux/PPC Development <linuxppc-dev@ozlabs.org>
-Subject: 2.6.34-rc3: Badness at kernel/lockdep.c:2706
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Ingo Molnar <mingo@elte.hu>
+CC: lkml <linux-kernel@vger.kernel.org>,
+       the arch/x86 maintainers <x86@kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Dimitri Sivanich <sivanich@sgi.com>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>, dipankar@in.ibm.com,
+       josh@freedesktop.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Arjan van de Ven <arjan@linux.intel.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] sched/core: implement and cpuhog
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 02 Apr 2010 06:16:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With 2.6.34-rc3 boot on a Power5 box :
+Hello, Ingo.
 
-loop: module loaded
-BUG: key 6b6b6b6b6b6b6b6b not in .data!
-------------[ cut here ]------------
-Badness at kernel/lockdep.c:2706
-NIP: c00000000010a0a8 LR: c00000000010a08c CTR: c0000000000704a4
-REGS: c0000001096d76f0 TRAP: 0700   Not tainted  (2.6.34-rc3)
-MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 28000082  XER: 00000009
-TASK = c0000001fa6f8000[1] 'swapper' THREAD: c0000001096d4000 CPU: 12
-GPR00: 0000000000000000 c0000001096d7970 c000000001322e38 0000000000000001
-GPR04: 0000000000000001 c0000000000c1ea8 0000000000000000 0000000000000002
-GPR08: 0000000000000000 c000000001cc5a00 0000000000002422 c00000000137d768
-GPR12: 0000000000000002 c00000000f66e400 0000000000d47940 0000000001c00000
-GPR16: ffffffffffffffff 0000000002673148 00000000018ff984 0000000000000060
-GPR20: 0000000000000000 ffffffffffffffff 000000000253a291 00000000018ff990
-GPR24: 00000000018ff988 c000000001229ef0 0000000000000000 c00000010793a730
-GPR28: 6b6b6b6b6b6b6b6b c00000010793afd8 c000000001299de0 c0000001096d7970
-NIP [c00000000010a0a8] .lockdep_init_map+0x12c/0x538
-LR [c00000000010a08c] .lockdep_init_map+0x110/0x538
-Call Trace:
-[c0000001096d7970] [c00000000010a074] .lockdep_init_map+0xf8/0x538 (unreliable)
-[c0000001096d7a30] [c000000000274eac] .sysfs_add_file_mode+0x90/0x124
-[c0000001096d7af0] [c000000000274f7c] .sysfs_add_file+0x3c/0x50
-[c0000001096d7b90] [c0000000002750d8] .sysfs_create_file+0x5c/0x74
-[c0000001096d7c30] [c0000000004b36a0] .device_create_file+0x40/0x5c
-[c0000001096d7cd0] [c0000000004db384] .wf_register_control+0x108/0x178
-[c0000001096d7d80] [c000000000a5f7cc] .wf_cpufreq_clamp_init+0x11c/0x16c
-[c0000001096d7e20] [c00000000000a104] .do_one_initcall+0xb0/0x208
-[c0000001096d7ed0] [c000000000a12568] .kernel_init+0x230/0x2f0
-[c0000001096d7f90] [c000000000033b20] .kernel_thread+0x54/0x70
-Instruction dump:
-e93e8190 80090000 2f800000 409e03f8 48280539 60000000 2fa30000 419e03e8
-e93e8198 80090000 2f800000 409e03d8 <0fe00000> 480003d0 e93e8140 fb9d0000
-Uniform Multi-Platform E-IDE driver
+Can you please pull from the following git tree into sched/core to
+receive cpuhog patches?
 
-Thanks
--Sachin
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git cpuhog
+
+Both sched/core and the patches remained the same from the second
+take[2].  Rusty Russell acked stop_machine changes and Oleg likes the
+changes.
+
+Peter agrees with the mechanics but is unhappy with the naming and
+suggests using stop_cpu/machine() names instead.  Currently, visible
+API is
+
+* hog_one_cpu()
+* hog_cpus()
+* [__]stop_machine()
+
+IIUC, Peter is suggesting something like (please feel free to correct
+if I got it wrong)
+
+* stop_one_cpu()
+* stop_cpus()
+* [__]stop_machine()
+
+The renaming shouldn't be difficult one way or the other but I think
+hog is better because it better describes what the API does (it
+doesn't really stop the cpu or cpus).  Please refer to the discussions
+in the first take[1] and second take[2] for details.
+
+The branch contains the following changes.
+
+Tejun Heo (4):
+      cpuhog: implement cpuhog
+      stop_machine: reimplement using cpuhog
+      scheduler: replace migration_thread with cpuhog
+      scheduler: kill paranoia check in synchronize_sched_expedited()
+
+ Documentation/RCU/torture.txt |   10 -
+ arch/s390/kernel/time.c       |    1 -
+ drivers/xen/manage.c          |   14 +--
+ include/linux/cpuhog.h        |   24 +++
+ include/linux/rcutiny.h       |    2 -
+ include/linux/rcutree.h       |    1 -
+ include/linux/stop_machine.h  |   20 ---
+ kernel/Makefile               |    2 +-
+ kernel/cpu.c                  |    8 -
+ kernel/cpuhog.c               |  368 +++++++++++++++++++++++++++++++++++++++++
+ kernel/module.c               |   14 +--
+ kernel/rcutorture.c           |    2 +-
+ kernel/sched.c                |  282 ++++++--------------------------
+ kernel/sched_fair.c           |   39 +++--
+ kernel/stop_machine.c         |  162 +++++--------------
+ 15 files changed, 511 insertions(+), 438 deletions(-)
+ create mode 100644 include/linux/cpuhog.h
+ create mode 100644 kernel/cpuhog.c
+
+Thanks.
 
 -- 
+tejun
 
----------------------------------
-Sachin Sant
-IBM Linux Technology Center
-India Systems and Technology Labs
-Bangalore, India
----------------------------------
-
+[1] http://thread.gmane.org/gmane.linux.kernel/958743
+[2] http://thread.gmane.org/gmane.linux.kernel/962635
