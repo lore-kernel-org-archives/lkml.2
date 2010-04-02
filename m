@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142Ab0DBTGQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 15:06:16 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:60948 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824Ab0DBTGF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 15:06:05 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=qDB2h9mnacPVkQeJSBoMl2NgKZvlivmW/28rpJu1zqAi8Ea36vHrMLLWX7xOfJX3I
-	EG/80waogmN92UZNHWMnw==
-Date: Fri, 2 Apr 2010 12:05:56 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       nishimura@mxp.nes.nec.co.jp,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm 1/4] oom: select_bad_process: check PF_KTHREAD instead
- of !mm to skip kthreads
-In-Reply-To: <20100402183132.GB31723@redhat.com>
-Message-ID: <alpine.DEB.2.00.1004021205380.1773@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330154659.GA12416@redhat.com> <alpine.DEB.2.00.1003301320020.5234@chino.kir.corp.google.com> <20100331175836.GA11635@redhat.com> <20100331204718.GD11635@redhat.com>
- <alpine.DEB.2.00.1004010133190.6285@chino.kir.corp.google.com> <20100401135927.GA12460@redhat.com> <alpine.DEB.2.00.1004011210380.30661@chino.kir.corp.google.com> <20100402111406.GA4432@redhat.com> <20100402183057.GA31723@redhat.com>
- <20100402183132.GB31723@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754169Ab0DBTGo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 15:06:44 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47703 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753750Ab0DBTGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 15:06:40 -0400
+Date: Fri, 2 Apr 2010 19:06:22 GMT
+From: tip-bot for Jason Wessel <jason.wessel@windriver.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       fweisbec@gmail.com, jason.wessel@windriver.com, stable@kernel.org,
+       tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       fweisbec@gmail.com, jason.wessel@windriver.com, stable@kernel.org,
+       tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1269975907-27602-1-git-send-email-jason.wessel@windriver.com>
+References: <1269975907-27602-1-git-send-email-jason.wessel@windriver.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] x86,kgdb: Always initialize the hw breakpoint attribute
+Message-ID: <tip-ab310b5edb8b601bcb02491ed6f7676da4fd1757@git.kernel.org>
+Git-Commit-ID: ab310b5edb8b601bcb02491ed6f7676da4fd1757
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 02 Apr 2010 19:06:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Apr 2010, Oleg Nesterov wrote:
+Commit-ID:  ab310b5edb8b601bcb02491ed6f7676da4fd1757
+Gitweb:     http://git.kernel.org/tip/ab310b5edb8b601bcb02491ed6f7676da4fd1757
+Author:     Jason Wessel <jason.wessel@windriver.com>
+AuthorDate: Tue, 30 Mar 2010 14:05:07 -0500
+Committer:  Frederic Weisbecker <fweisbec@gmail.com>
+CommitDate: Thu, 1 Apr 2010 08:26:32 +0200
 
-> select_bad_process() thinks a kernel thread can't have ->mm != NULL,
-> this is not true due to use_mm().
-> 
-> Change the code to check PF_KTHREAD.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+x86,kgdb: Always initialize the hw breakpoint attribute
 
-Acked-by: David Rientjes <rientjes@google.com>
+It is required to call hw_breakpoint_init() on an attr before using it
+in any other calls.  This fixes the problem where kgdb will sometimes
+fail to initialize on x86_64.
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: 2.6.33 <stable@kernel.org>
+LKML-Reference: <1269975907-27602-1-git-send-email-jason.wessel@windriver.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ arch/x86/kernel/kgdb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
+index bfba601..b2258ca 100644
+--- a/arch/x86/kernel/kgdb.c
++++ b/arch/x86/kernel/kgdb.c
+@@ -618,8 +618,8 @@ int kgdb_arch_init(void)
+ 	 * portion of kgdb because this operation requires mutexs to
+ 	 * complete.
+ 	 */
++	hw_breakpoint_init(&attr);
+ 	attr.bp_addr = (unsigned long)kgdb_arch_init;
+-	attr.type = PERF_TYPE_BREAKPOINT;
+ 	attr.bp_len = HW_BREAKPOINT_LEN_1;
+ 	attr.bp_type = HW_BREAKPOINT_W;
+ 	attr.disabled = 1;
