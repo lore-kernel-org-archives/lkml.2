@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568Ab0DBTPC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 15:15:02 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46771 "EHLO hera.kernel.org"
+	id S1755371Ab0DBTRG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 15:17:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44096 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754008Ab0DBTOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 15:14:54 -0400
-Date: Fri, 2 Apr 2010 19:14:31 GMT
-From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       weidong.han@intel.com, youquan.song@intel.com, jbarnes@virtuousgeek.org,
-       david.woodhouse@intel.com, suresh.b.siddha@intel.com,
-       Jan.Grossmann@kielnet.net, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       weidong.han@intel.com, youquan.song@intel.com, jbarnes@virtuousgeek.org,
-       david.woodhouse@intel.com, Jan.Grossmann@kielnet.net,
-       suresh.b.siddha@intel.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1270083887.7835.78.camel@sbs-t61.sc.intel.com>
-References: <1270083887.7835.78.camel@sbs-t61.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Fix double enable_IR_x2apic() call on SMP kernel on !SMP boards
-Message-ID: <tip-472a474c6630efd195d3738339fd1bdc8aa3b1aa@git.kernel.org>
-Git-Commit-ID: 472a474c6630efd195d3738339fd1bdc8aa3b1aa
-X-Mailer: tip-git-log-daemon
+	id S1753601Ab0DBTQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 15:16:57 -0400
+Date: Fri, 2 Apr 2010 21:14:14 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [patch] oom: give current access to memory reserves if it has
+	been killed
+Message-ID: <20100402191414.GA982@redhat.com>
+References: <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330154659.GA12416@redhat.com> <alpine.DEB.2.00.1003301320020.5234@chino.kir.corp.google.com> <20100331175836.GA11635@redhat.com> <20100331204718.GD11635@redhat.com> <alpine.DEB.2.00.1004010133190.6285@chino.kir.corp.google.com> <20100401135927.GA12460@redhat.com> <alpine.DEB.2.00.1004011210380.30661@chino.kir.corp.google.com> <20100402111406.GA4432@redhat.com> <alpine.DEB.2.00.1004021159310.1773@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 02 Apr 2010 19:14:32 +0000 (UTC)
+In-Reply-To: <alpine.DEB.2.00.1004021159310.1773@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  472a474c6630efd195d3738339fd1bdc8aa3b1aa
-Gitweb:     http://git.kernel.org/tip/472a474c6630efd195d3738339fd1bdc8aa3b1aa
-Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Wed, 31 Mar 2010 18:04:47 -0700
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 2 Apr 2010 20:48:47 +0200
+On 04/02, David Rientjes wrote:
+>
+> On Fri, 2 Apr 2010, Oleg Nesterov wrote:
+>
+> > David, you continue to ignore my arguments ;) select_bad_process()
+> > must not filter out the tasks with ->mm == NULL.
+> >
+> I'm not ignoring your arguments, I think you're ignoring what I'm
+> responding to.
 
-x86: Fix double enable_IR_x2apic() call on SMP kernel on !SMP boards
+Ah, sorry, I misunderstood your replies.
 
-Jan Grossmann reported kernel boot panic while booting SMP
-kernel on his system with a single core cpu. SMP kernels call
-enable_IR_x2apic() from native_smp_prepare_cpus() and on
-platforms where the kernel doesn't find SMP configuration we
-ended up again calling enable_IR_x2apic() from the
-APIC_init_uniprocessor() call in the smp_sanity_check(). Thus
-leading to kernel panic.
+> I prefer to keep oom_badness() to be a positive range as
+> it always has been (and /proc/pid/oom_score has always used an unsigned
+> qualifier),
 
-Don't call enable_IR_x2apic() and default_setup_apic_routing()
-from APIC_init_uniprocessor() in CONFIG_SMP case.
+Yes, I thought about /proc/pid/oom_score, but imho this is minor issue.
+We can s/%lu/%ld/ though, or just report 0 if oom_badness() returns -1.
+Or something.
 
-NOTE: this kind of non-idempotent and assymetric initialization
-sequence is rather fragile and unclean, we'll clean that up
-in v2.6.35. This is the minimal fix for v2.6.34.
+> so I disagree that we need to change oom_badness() to return
+> anything other than 0 for such tasks.  We need to filter them explicitly
+> in select_bad_process() instead, so please do this there.
 
-Reported-by: Jan.Grossmann@kielnet.net
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: <jbarnes@virtuousgeek.org>
-Cc: <david.woodhouse@intel.com>
-Cc: <weidong.han@intel.com>
-Cc: <youquan.song@intel.com>
-Cc: <Jan.Grossmann@kielnet.net>
-Cc: <stable@kernel.org> # [v2.6.32.x, v2.6.33.x]
-LKML-Reference: <1270083887.7835.78.camel@sbs-t61.sc.intel.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/apic/apic.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+The problem is, we need task_lock() to pin ->mm. Or, we can change
+find_lock_task_mm() to do get_task_mm() and return mm_struct *.
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 00187f1..e5a4a1e 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1640,8 +1640,10 @@ int __init APIC_init_uniprocessor(void)
- 	}
- #endif
- 
-+#ifndef CONFIG_SMP
- 	enable_IR_x2apic();
- 	default_setup_apic_routing();
-+#endif
- 
- 	verify_local_APIC();
- 	connect_bsp_APIC();
+But then oom_badness() (and proc_oom_score!) needs much more changes,
+it needs the new "struct mm_struct *mm" argument which is not necessarily
+equal to p->mm.
+
+So, I can't agree.
+
+Oleg.
+
