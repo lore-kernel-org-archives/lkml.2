@@ -1,65 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752958Ab0DBQBP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 12:01:15 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:49172 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461Ab0DBQBD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 12:01:03 -0400
-Date: Fri, 2 Apr 2010 17:00:59 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jerome Oufella <jerome.oufella@savoirfairelinux.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-       lm-sensors <lm-sensors@lm-sensors.org>, linux-kernel@vger.kernel.org
-Subject: Re: regulator: regulator_get behaviour without CONFIG_REGULATOR set
-Message-ID: <20100402160058.GE27613@sirena.org.uk>
-References: <2122967437.461270223106350.JavaMail.root@mail.savoirfairelinux.com> <1779783481.621270223270264.JavaMail.root@mail.savoirfairelinux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1779783481.621270223270264.JavaMail.root@mail.savoirfairelinux.com>
-X-Cookie: Forty two.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	id S1753675Ab0DBQCy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 12:02:54 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:34929 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751831Ab0DBQCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 12:02:47 -0400
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH 01/14] mm,migration: Take a reference to the anon_vma before migrating
+Date: Fri,  2 Apr 2010 17:02:35 +0100
+Message-Id: <1270224168-14775-2-git-send-email-mel@csn.ul.ie>
+X-Mailer: git-send-email 1.6.5
+In-Reply-To: <1270224168-14775-1-git-send-email-mel@csn.ul.ie>
+References: <1270224168-14775-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 02, 2010 at 11:47:50AM -0400, Jerome Oufella wrote:
+rmap_walk_anon() does not use page_lock_anon_vma() for looking up and
+locking an anon_vma and it does not appear to have sufficient locking to
+ensure the anon_vma does not disappear from under it.
 
-Please fix your mail client to word wrap paragraphs, I've manually fixed
-this up here.
+This patch copies an approach used by KSM to take a reference on the
+anon_vma while pages are being migrated. This should prevent rmap_walk()
+running into nasty surprises later because anon_vma has been freed.
 
-> Working on drivers/hwmon/sht15.c, I noticed it would return bogus
-> temperatures in my case, where CONFIG_REGULATOR is not set.
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Acked-by: Rik van Riel <riel@redhat.com>
+---
+ include/linux/rmap.h |   23 +++++++++++++++++++++++
+ mm/migrate.c         |   12 ++++++++++++
+ mm/rmap.c            |   10 +++++-----
+ 3 files changed, 40 insertions(+), 5 deletions(-)
 
-> This is due to the following section in drivers/hwmon/sht15.c:
-> 
-> /* If a regulator is available, query what the supply voltage actually is!*/
->         data->reg = regulator_get(data->dev, "vcc");
->         if (!IS_ERR(data->reg)) {
->             ...
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index d25bd22..567d43f 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -29,6 +29,9 @@ struct anon_vma {
+ #ifdef CONFIG_KSM
+ 	atomic_t ksm_refcount;
+ #endif
++#ifdef CONFIG_MIGRATION
++	atomic_t migrate_refcount;
++#endif
+ 	/*
+ 	 * NOTE: the LSB of the head.next is set by
+ 	 * mm_take_all_locks() _after_ taking the above lock. So the
+@@ -81,6 +84,26 @@ static inline int ksm_refcount(struct anon_vma *anon_vma)
+ 	return 0;
+ }
+ #endif /* CONFIG_KSM */
++#ifdef CONFIG_MIGRATION
++static inline void migrate_refcount_init(struct anon_vma *anon_vma)
++{
++	atomic_set(&anon_vma->migrate_refcount, 0);
++}
++
++static inline int migrate_refcount(struct anon_vma *anon_vma)
++{
++	return atomic_read(&anon_vma->migrate_refcount);
++}
++#else
++static inline void migrate_refcount_init(struct anon_vma *anon_vma)
++{
++}
++
++static inline int migrate_refcount(struct anon_vma *anon_vma)
++{
++	return 0;
++}
++#endif /* CONFIG_MIGRATE */
+ 
+ static inline struct anon_vma *page_anon_vma(struct page *page)
+ {
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 6903abf..06e6316 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -542,6 +542,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 	int rcu_locked = 0;
+ 	int charge = 0;
+ 	struct mem_cgroup *mem = NULL;
++	struct anon_vma *anon_vma = NULL;
+ 
+ 	if (!newpage)
+ 		return -ENOMEM;
+@@ -598,6 +599,8 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 	if (PageAnon(page)) {
+ 		rcu_read_lock();
+ 		rcu_locked = 1;
++		anon_vma = page_anon_vma(page);
++		atomic_inc(&anon_vma->migrate_refcount);
+ 	}
+ 
+ 	/*
+@@ -637,6 +640,15 @@ skip_unmap:
+ 	if (rc)
+ 		remove_migration_ptes(page, page);
+ rcu_unlock:
++
++	/* Drop an anon_vma reference if we took one */
++	if (anon_vma && atomic_dec_and_lock(&anon_vma->migrate_refcount, &anon_vma->lock)) {
++		int empty = list_empty(&anon_vma->head);
++		spin_unlock(&anon_vma->lock);
++		if (empty)
++			anon_vma_free(anon_vma);
++	}
++
+ 	if (rcu_locked)
+ 		rcu_read_unlock();
+ uncharge:
+diff --git a/mm/rmap.c b/mm/rmap.c
+index fcd593c..578d0fe 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -248,7 +248,8 @@ static void anon_vma_unlink(struct anon_vma_chain *anon_vma_chain)
+ 	list_del(&anon_vma_chain->same_anon_vma);
+ 
+ 	/* We must garbage collect the anon_vma if it's empty */
+-	empty = list_empty(&anon_vma->head) && !ksm_refcount(anon_vma);
++	empty = list_empty(&anon_vma->head) && !ksm_refcount(anon_vma) &&
++					!migrate_refcount(anon_vma);
+ 	spin_unlock(&anon_vma->lock);
+ 
+ 	if (empty)
+@@ -273,6 +274,7 @@ static void anon_vma_ctor(void *data)
+ 
+ 	spin_lock_init(&anon_vma->lock);
+ 	ksm_refcount_init(anon_vma);
++	migrate_refcount_init(anon_vma);
+ 	INIT_LIST_HEAD(&anon_vma->head);
+ }
+ 
+@@ -1338,10 +1340,8 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
+ 	/*
+ 	 * Note: remove_migration_ptes() cannot use page_lock_anon_vma()
+ 	 * because that depends on page_mapped(); but not all its usages
+-	 * are holding mmap_sem, which also gave the necessary guarantee
+-	 * (that this anon_vma's slab has not already been destroyed).
+-	 * This needs to be reviewed later: avoiding page_lock_anon_vma()
+-	 * is risky, and currently limits the usefulness of rmap_walk().
++	 * are holding mmap_sem. Users without mmap_sem are required to
++	 * take a reference count to prevent the anon_vma disappearing
+ 	 */
+ 	anon_vma = page_anon_vma(page);
+ 	if (!anon_vma)
+-- 
+1.6.5
 
-> Looking at consumer.h, it appears that regulator_get() returns a
-> pointer to its second argument when CONFIG_REGULATOR is not set.
-
-Right, it's just returning something that won't match IS_ERR().
-
-> What would be the proper way to determine if the returned value is a
-> valid regulator ?  Would it be safe to check it against the 2nd
-> argument ?
-
-You're asking the wrong question here.  The problem here is not that the
-regulator got stubbed out, the problem is that the sht15 driver is not
-checking the return value of regulator_get_voltage() and so is trying to
-use the error code that was returned as a voltage, with predictably poor
-results.  It is this function that the driver needs to check, not
-regulator_get().  There are a range of reasons why an error might be
-returned when querying the voltage, all of which would cause the same
-result.
-
-It is not sensible to check the return code of regulator_get() for
-anything other than IS_ERR().
