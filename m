@@ -1,141 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab0DBTEa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 15:04:30 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47554 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753473Ab0DBTEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 15:04:24 -0400
-Date: Fri, 2 Apr 2010 19:04:05 GMT
-From: tip-bot for Li Zefan <lizf@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       rostedt@goodmis.org, lizf@cn.fujitsu.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       lizf@cn.fujitsu.com, rostedt@goodmis.org, tglx@linutronix.de
-In-Reply-To: <4BA97FD0.7090202@cn.fujitsu.com>
-References: <4BA97FD0.7090202@cn.fujitsu.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:tracing/core] tracing: Update comments
-Message-ID: <tip-50354a8a28d0c91695a2d6d25b5a821bfe557a07@git.kernel.org>
-Git-Commit-ID: 50354a8a28d0c91695a2d6d25b5a821bfe557a07
-X-Mailer: tip-git-log-daemon
+	id S1754136Ab0DBTEl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 15:04:41 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:60443 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753933Ab0DBTEf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 15:04:35 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=yQexrKtF/3rhC5MMLihMdJZDK7Y4/Ml0hKrUKTvLwx/LpI0R2syoI4uM2oO9k16+K
+	VNB08UrE+oLpidFWH+o0Q==
+Date: Fri, 2 Apr 2010 12:04:28 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm 4/4] oom: oom_forkbomb_penalty: move thread_group_cputime()
+ out of task_lock()
+In-Reply-To: <20100402183309.GE31723@redhat.com>
+Message-ID: <alpine.DEB.2.00.1004021203410.1773@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330154659.GA12416@redhat.com> <alpine.DEB.2.00.1003301320020.5234@chino.kir.corp.google.com> <20100331175836.GA11635@redhat.com> <20100331204718.GD11635@redhat.com>
+ <alpine.DEB.2.00.1004010133190.6285@chino.kir.corp.google.com> <20100401135927.GA12460@redhat.com> <alpine.DEB.2.00.1004011210380.30661@chino.kir.corp.google.com> <20100402111406.GA4432@redhat.com> <20100402183057.GA31723@redhat.com>
+ <20100402183309.GE31723@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 02 Apr 2010 19:04:06 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  50354a8a28d0c91695a2d6d25b5a821bfe557a07
-Gitweb:     http://git.kernel.org/tip/50354a8a28d0c91695a2d6d25b5a821bfe557a07
-Author:     Li Zefan <lizf@cn.fujitsu.com>
-AuthorDate: Wed, 24 Mar 2010 10:58:24 +0800
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Wed, 31 Mar 2010 22:56:56 -0400
+On Fri, 2 Apr 2010, Oleg Nesterov wrote:
 
-tracing: Update comments
+> It doesn't make sense to call thread_group_cputime() under task_lock(),
+> we can drop this lock right after we read get_mm_rss() and save the
+> value in the local variable.
+> 
+> Note: probably it makes more sense to use sum_exec_runtime instead
+> of utime + stime, it is much more precise. A task can eat a lot of
+> CPU time, but its Xtime can be zero.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Make some comments consistent with the code.
-
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-LKML-Reference: <4BA97FD0.7090202@cn.fujitsu.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/trace/ftrace.h |   33 +++++++++++++++++++--------------
- 1 files changed, 19 insertions(+), 14 deletions(-)
-
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index ea6f9d4..75dd778 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -154,9 +154,11 @@
-  *
-  *	field = (typeof(field))entry;
-  *
-- *	p = get_cpu_var(ftrace_event_seq);
-+ *	p = &get_cpu_var(ftrace_event_seq);
-  *	trace_seq_init(p);
-- *	ret = trace_seq_printf(s, <TP_printk> "\n");
-+ *	ret = trace_seq_printf(s, "%s: ", <call>);
-+ *	if (ret)
-+ *		ret = trace_seq_printf(s, <TP_printk> "\n");
-  *	put_cpu();
-  *	if (!ret)
-  *		return TRACE_TYPE_PARTIAL_LINE;
-@@ -450,38 +452,38 @@ perf_trace_disable_##name(struct ftrace_event_call *unused)		\
-  *
-  * static void ftrace_raw_event_<call>(proto)
-  * {
-+ *	struct ftrace_data_offsets_<call> __maybe_unused __data_offsets;
-  *	struct ring_buffer_event *event;
-  *	struct ftrace_raw_<call> *entry; <-- defined in stage 1
-  *	struct ring_buffer *buffer;
-  *	unsigned long irq_flags;
-+ *	int __data_size;
-  *	int pc;
-  *
-  *	local_save_flags(irq_flags);
-  *	pc = preempt_count();
-  *
-+ *	__data_size = ftrace_get_offsets_<call>(&__data_offsets, args);
-+ *
-  *	event = trace_current_buffer_lock_reserve(&buffer,
-  *				  event_<call>.id,
-- *				  sizeof(struct ftrace_raw_<call>),
-+ *				  sizeof(*entry) + __data_size,
-  *				  irq_flags, pc);
-  *	if (!event)
-  *		return;
-  *	entry	= ring_buffer_event_data(event);
-  *
-- *	<assign>;  <-- Here we assign the entries by the __field and
-- *			__array macros.
-+ *	{ <assign>; }  <-- Here we assign the entries by the __field and
-+ *			   __array macros.
-  *
-- *	trace_current_buffer_unlock_commit(buffer, event, irq_flags, pc);
-+ *	if (!filter_current_check_discard(buffer, event_call, entry, event))
-+ *		trace_current_buffer_unlock_commit(buffer,
-+ *						   event, irq_flags, pc);
-  * }
-  *
-  * static int ftrace_raw_reg_event_<call>(struct ftrace_event_call *unused)
-  * {
-- *	int ret;
-- *
-- *	ret = register_trace_<call>(ftrace_raw_event_<call>);
-- *	if (!ret)
-- *		pr_info("event trace: Could not activate trace point "
-- *			"probe to <call>");
-- *	return ret;
-+ *	return register_trace_<call>(ftrace_raw_event_<call>);
-  * }
-  *
-  * static void ftrace_unreg_event_<call>(struct ftrace_event_call *unused)
-@@ -493,6 +495,8 @@ perf_trace_disable_##name(struct ftrace_event_call *unused)		\
-  *	.trace			= ftrace_raw_output_<call>, <-- stage 2
-  * };
-  *
-+ * static const char print_fmt_<call>[] = <TP_printk>;
-+ *
-  * static struct ftrace_event_call __used
-  * __attribute__((__aligned__(4)))
-  * __attribute__((section("_ftrace_events"))) event_<call> = {
-@@ -501,6 +505,8 @@ perf_trace_disable_##name(struct ftrace_event_call *unused)		\
-  *	.raw_init		= trace_event_raw_init,
-  *	.regfunc		= ftrace_reg_event_<call>,
-  *	.unregfunc		= ftrace_unreg_event_<call>,
-+ *	.print_fmt		= print_fmt_<call>,
-+ *	.define_fields		= ftrace_define_fields_<call>,
-  * }
-  *
-  */
-@@ -569,7 +575,6 @@ ftrace_raw_event_id_##call(struct ftrace_event_call *event_call,	\
- 		return;							\
- 	entry	= ring_buffer_event_data(event);			\
- 									\
--									\
- 	tstruct								\
- 									\
- 	{ assign; }							\
+Acked-by: David Rientjes <rientjes@google.com>
