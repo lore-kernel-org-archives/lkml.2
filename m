@@ -1,40 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758685Ab0DBKnW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 06:43:22 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:63056 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752841Ab0DBKnP (ORCPT
+	id S1758717Ab0DBKsu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 06:48:50 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:39968 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752909Ab0DBKsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 06:43:15 -0400
+	Fri, 2 Apr 2010 06:48:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+        h=date:from:to:subject:message-id:mail-followup-to:references
          :mime-version:content-type:content-disposition:in-reply-to
          :x-operating-system:user-agent;
-        b=wnOmWH6OlJ/N5N9ncBPxTeVgEleDV9C+ySnhNZsP9gi1Jr7P51Cdi/2poz1Asr4623
-         XuyLrgpmASKdQY2ySJ9m3WeeLGqmbQRZ6u5n/OcTy3pR+VZksrMD8DEvH+xUPyFpiXYa
-         J2bvvWElPdn12jst1cWrNULM9sXAajW8RU2LU=
-Date: Fri, 2 Apr 2010 18:43:09 +0800
+        b=sNBHQU6RQR8oXmYjHNSo25aZ9b5o2ev8d4doDzXbCA0ZG/nhc0nO1kCt4Hod4GJglt
+         +Qf/vXFH7h0AxEr0lLfh9EfxUQ4vejr530s+VBlG0svZvXukI0LX1pDZ8ft1kbFXC+OA
+         jiOb0naf3ZLW+Z0jBtZ1/sQB1040pDI1mtWhA=
+Date: Fri, 2 Apr 2010 18:48:37 +0800
 From: Li Hong <lihong.hi@gmail.com>
 To: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
-       linux-nilfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+       linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org
 Subject: [PATCH 2/2] nilfs2: Combine nilfs_btree_release_path() and
  nilfs_btree_free_path()
-Message-ID: <20100402104309.GC9652@xhl>
+Message-ID: <20100402104837.GD9652@xhl>
 Mail-Followup-To: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
 	linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20100331074100.GA11787@xhl>
+References: <20100402104206.GB9652@xhl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100331074100.GA11787@xhl>
+In-Reply-To: <20100402104206.GB9652@xhl>
 X-Operating-System: Linux xhl 2.6.31-14-generic
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Sorry, a same patch sent out a short time ago but replied to a wrong thread.
+-------------------- cut here ----------------------
 
 nilfs_btree_release_path() and nilfs_btree_free_path() are bound into each other
 tightly. Make them into one procedure to clearify the logic and avoid some
