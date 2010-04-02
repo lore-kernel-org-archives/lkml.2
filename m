@@ -1,144 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247Ab0DBS0n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 14:26:43 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38761 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751577Ab0DBS0h (ORCPT
+	id S1752317Ab0DBS3Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 14:29:25 -0400
+Received: from mail.leecountync.gov ([162.39.82.19]:33245 "EHLO
+	esa.leecountync.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750867Ab0DBS3T convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 14:26:37 -0400
-Date: Fri, 2 Apr 2010 11:24:28 -0400
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Borislav Petkov <bp@alien8.de>, Rik van Riel <riel@redhat.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Minchan Kim <minchan.kim@gmail.com>, Nick Piggin <npiggin@suse.de>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
- 2.6.34-rc3)
-Message-Id: <20100402112428.f46ddc44.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1003301029250.3707@i5.linux-foundation.org>
-	<20100402175937.GA19690@liondog.tnic>
-	<alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
+	Fri, 2 Apr 2010 14:29:19 -0400
+X-Greylist: delayed 1294 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Apr 2010 14:29:19 EDT
+From: "Clarence K. Hill" <khill@leecountync.gov>
+To: "info@webct.com" <info@webct.com>
+Date: Fri, 2 Apr 2010 14:06:30 -0400
+Subject: Your mailbox has exceeded one or more size limits
+Thread-Topic: Your mailbox has exceeded one or more size limits
+Thread-Index: AQHK0o84aWf23x2+pUGGwjmnkVR1/g==
+Message-ID: <06AFECE8DC5E634FBC3BCD82B22ED8EC38303DE758@lee-exchange.leecountync.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
+X-Mlf-Version: 7.2.1.2841
+X-Mlf-UniqueId: o201004021217150043667
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Apr 2010 11:09:14 -0700 (PDT) Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Your mailbox has exceeded one or more size limits set by your administrator.
+Your mailbox size is 239787 KB. Mailbox size limits:You may not be able to send or receive new mail until you reduce your mailbox size. To re-set your SPACE on our database prior to maintenance on your INBOX:
 
-> 
-> I think this is likely due to the new scalable anon_vma linking by Rik. 
+CLICK HERE:
+<http://www.zapsurvey.com/Survey.aspx?id=faca213f-c4c6-4775-b656-0b49fa48768f>
 
-Similar to https://bugzilla.kernel.org/show_bug.cgi?id=15680
+Regards
+WebCT Service Helpdesk
 
-> Nothing else I can imagine should have introduced anything like it.
-> 
-> Rik: the picures have the information, but you need to look at several to 
-> see both the oops and the backtrace. Here's a condensed version:
-> 
->  shrink_all_memory ->
->    do_try_to_free_pages ->
->      shrink_zone ->
->        shrink_inactive_list ->
->          shrink_page_list ->
->            page_referenced
-> 
-> where page_referenced() oopses due page_referenced_anon() as per 
-> Borislav's description below.
-> 
-> Added all the usual suspects to the Cc list. Left the full report appended 
-> so that the new people don't have to search for it on lkml.
-> 
-> 		Linus
-> 
-> On Fri, 2 Apr 2010, Borislav Petkov wrote:
-> > 
-> > I've got the following oopsie two times now when hibernating - this
-> > means, I don't get it everytime I hibernate but only sometimes, say once
-> > in a blue moon.
-> > 
-> > And yeah, I couldn't catch it over serial console so I had to make ugly
-> > pictures. By the way, the numbers in the filenames increment as I scroll
-> > down the whole oops (yep, it hadn't completely frozen and I still could
-> > do Shift->PgUp or Shift->PgDn on the console):
-> > 
-> > http://www.kernel.org/pub/linux/kernel/people/bp/
-> > 
-> > So, here's what I could decipher from the oopsie, someone else who's
-> > more knowledgeable in mm, rmap and anon_vma's list traversal should be
-> > able to tell what goes wrong there.
-> > 
-> > EIP is at page_referenced+0xee
-> > 
-> > which is
-> > 
-> > <disasm>
-> >     10c4:	41 01 c4             	add    %eax,%r12d
-> >     10c7:	83 7d cc 00          	cmpl   $0x0,-0x34(%rbp)
-> >     10cb:	74 19                	je     10e6 <page_referenced+0xff>
-> >     10cd:	4d 8b 6d 20          	mov    0x20(%r13),%r13
-> >     10d1:	49 83 ed 20          	sub    $0x20,%r13
-> > 
-> >     10d5:	49 8b 45 20          	mov    0x20(%r13),%rax		    <--------------
-> > 
-> >     10d9:	0f 18 08             	prefetcht0 (%rax)
-> >     10dc:	49 8d 45 20          	lea    0x20(%r13),%rax
-> >     10e0:	48 39 45 80          	cmp    %rax,-0x80(%rbp)
-> > </disasm>
-> > 
-> > 
-> > Corresponding asm:
-> > 
-> > <asm>
-> > 	.loc 1 496 0
-> > 	movq	32(%r13), %r13	# <variable>.same_anon_vma.next, __mptr.451
-> > .LVL295:
-> > 	subq	$32, %r13	#, avc
-> > .LVL296:
-> > .L184:
-> > .LBE1278:
-> > 	movq	32(%r13), %rax	# <variable>.same_anon_vma.next, <variable>.same_anon_vma.next			<----------------
-> > 	prefetcht0	(%rax)	# <variable>.same_anon_vma.next
-> > 	leaq	32(%r13), %rax	#, tmp97
-> > 	cmpq	%rax, -128(%rbp)	# tmp97, %sfp
-> > 	jne	.L187	#,
-> > .L186:
-> > 	.loc 1 514 0
-> > 	movq	%r14, %rdi	# anon_vma,
-> > 	call	page_unlock_anon_vma	#
-> > </asm>
-> > 
-> > 
-> > and the NULL pointer in question is being written into %r13 and then 32
-> > is subtracted from it (I'm guessing container_of()). This is consistent
-> > with the register snapshot - %r13 contains 0xffffffffffffffe0 which is
-> > -32 and with the code dump in the oops, in CIMG1640.JPG code points to
-> > opcode 49 8b 45 20.
-> > 
-> > Which is the following piece of code in <mm/rmap.c:page_referenced_anon()>.
-> > 
-> > <source>
-> > 
-> > 	mapcount = page_mapcount(page);
-> > 	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
-> > 		struct vm_area_struct *vma = avc->vma;
-> > 		unsigned long address = vma_address(page, vma);
-> > 		if (address == -EFAULT)
-> > 			continue;
-> > 
-> > </source>
-> > 
-> > which tells us that same_anon_vma.next is NULL. Hmm...
-> > 
-> > -- 
-> > Regards/Gruss,
-> >     Boris.
-> > 
+
+
+________________________________
+This email and any files transmitted with it are confidential and intended solely for the sender and receiver. If you are not the named addressee you should not disseminate, distribute, copy or alter this email. Any views or opinions presented in this email are solely those of the author and might not represent those of Lee County Government. Warning: Although Lee County Government has taken reasonable precautions to ensure no viruses are present in this email, the company cannot accept responsibility for any loss or damage arising from the use of this email or attachments. This email message, and any attachment(s) hereto, as well as any email message(s) that may be sent in response to it, may be considered Public Record subject to the North Carolina Public Records Law "NCGS.Ch.132" and may be disclosed to third parties and as such are subject to requests for review without the consent of the sender and/or receiver. If you are not the intended recipient, please destroy this message and inform the sender immediately. The information contained in this email may be confidential and, in any event, is intended only for the use of the entity or individual to whom it is addressed
