@@ -1,76 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab0DBVJc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 17:09:32 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:59306 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754551Ab0DBVJZ (ORCPT
+	id S1754866Ab0DBVW3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 17:22:29 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:43388 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754779Ab0DBVWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 17:09:25 -0400
-Date: Fri, 2 Apr 2010 23:09:17 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andi Kleen <andi@firstfloor.org>, Linus Torvalds <torvalds@osdl.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, David Miller <davem@davemloft.net>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [patch 1/2] genirq: Run irq handlers with interrupts disabled
-Message-ID: <20100402210916.GA23339@elf.ucw.cz>
-References: <20100326000325.917127328@linutronix.de>
- <20100326000405.758579387@linutronix.de>
- <20100326061310.GV20695@one.firstfloor.org>
- <alpine.LFD.2.00.1003261224070.3147@localhost.localdomain>
- <20100330053325.GL20695@one.firstfloor.org>
- <alpine.LFD.2.00.1003311315520.32352@localhost.localdomain>
- <20100402093132.GA1360@ucw.cz>
- <alpine.LFD.2.00.1004022242170.32352@localhost.localdomain>
+	Fri, 2 Apr 2010 17:22:24 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=HgOhBZGl5z8v7s0PoubpQSgKuqTalQn3WUHb5RdMN+tNsEDrbdJl4v2cvsTkMc/kc
+	8aa8O+cgx4BvBU28q1RPg==
+Date: Fri, 2 Apr 2010 14:22:16 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Oleg Nesterov <oleg@redhat.com>, anfei <anfei.zhou@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: [patch -mm v2] oom: exclude tasks with badness score of 0 from being
+ selected
+In-Reply-To: <20100402210459.GA5112@redhat.com>
+Message-ID: <alpine.DEB.2.00.1004021421060.5599@chino.kir.corp.google.com>
+References: <20100331175836.GA11635@redhat.com> <20100331204718.GD11635@redhat.com> <alpine.DEB.2.00.1004010133190.6285@chino.kir.corp.google.com> <20100401135927.GA12460@redhat.com> <alpine.DEB.2.00.1004011210380.30661@chino.kir.corp.google.com>
+ <20100402111406.GA4432@redhat.com> <alpine.DEB.2.00.1004021159310.1773@chino.kir.corp.google.com> <20100402191414.GA982@redhat.com> <alpine.DEB.2.00.1004021244010.15445@chino.kir.corp.google.com> <alpine.DEB.2.00.1004021253480.18402@chino.kir.corp.google.com>
+ <20100402210459.GA5112@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004022242170.32352@localhost.localdomain>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2010-04-02 22:42:51, Thomas Gleixner wrote:
-> On Fri, 2 Apr 2010, Pavel Machek wrote:
-> 
-> > On Wed 2010-03-31 13:16:37, Thomas Gleixner wrote:
-> > > On Tue, 30 Mar 2010, Andi Kleen wrote:
-> > > 
-> > > > > Why not simply force IRQF_DISABLED for all MSI interrupts. That still
-> > > > > allows nesting for non MSI ones, but it limits the chance of throwing
-> > > > > up reasonably well. That's a two liner.
-> > > > > 
-> > > > > Can you please test whether it resolves the issue at hand ?
-> > > > 
-> > > > Sorry for the late answer. Got confirmation that this patch
-> > > > fixes the test case. Thanks.
-> > > 
-> > > Ok, I'll push it linus wards and cc stable. I think thats the least
-> > > intrusive safe bet we can have right now.
-> > 
-> > stable? I'd say thats way too intrusive for -stable...
-> 
-> So we better let the possible stack overruns unaddressed ?
+An oom_badness() score of 0 means "never kill" according to
+Documentation/filesystems/proc.txt, so exclude it from being selected for
+kill.  These tasks have either detached their p->mm or are set to
+OOM_DISABLE.
 
--stable should have no regressions, first and foremost. And this is
-pretty certain to introduce some, at least on low-powered system with
-serial ports.
+Also removes an unnecessary initialization of points to 0 in
+mem_cgroup_out_of_memory(), select_bad_process() does this already.
 
-So yes, it is probably better to let the possible stack overruns
-unaddressed. We have lived with them for 15 years or so...
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ mm/oom_kill.c |   13 ++-----------
+ 1 files changed, 2 insertions(+), 11 deletions(-)
 
-(Alternatively, just make the irq stacks bigger? Or just take Andi's
-patch, which solves the overruns, and only introduces latency
-regressions when it would otherwise crash?)
-
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -326,17 +326,8 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ 			*ppoints = 1000;
+ 		}
+ 
+-		/*
+-		 * skip kernel threads and tasks which have already released
+-		 * their mm.
+-		 */
+-		if (!p->mm)
+-			continue;
+-		if (p->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
+-			continue;
+-
+ 		points = oom_badness(p, totalpages);
+-		if (points > *ppoints || !chosen) {
++		if (points > *ppoints) {
+ 			chosen = p;
+ 			*ppoints = points;
+ 		}
+@@ -478,7 +469,7 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ void mem_cgroup_out_of_memory(struct mem_cgroup *mem, gfp_t gfp_mask)
+ {
+ 	unsigned long limit;
+-	unsigned int points = 0;
++	unsigned int points;
+ 	struct task_struct *p;
+ 
+ 	if (sysctl_panic_on_oom == 2)
