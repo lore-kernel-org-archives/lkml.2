@@ -1,249 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759219Ab0DBGvE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 02:51:04 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47670 "EHLO mga01.intel.com"
+	id S1759223Ab0DBGwq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 02:52:46 -0400
+Received: from mga02.intel.com ([134.134.136.20]:54774 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758193Ab0DBGuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 02:50:54 -0400
+	id S1758193Ab0DBGwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 02:52:40 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.51,352,1267430400"; 
-   d="scan'208";a="554403912"
-Date: Fri, 2 Apr 2010 14:50:52 +0800
-From: Shaohua Li <shaohua.li@intel.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "Wu, Fengguang" <fengguang.wu@intel.com>
-Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
-Message-ID: <20100402065052.GA28027@sli10-desk.sh.intel.com>
-References: <20100331045348.GA3396@sli10-desk.sh.intel.com>
- <20100331142708.039E.A69D9226@jp.fujitsu.com>
- <20100331145030.03A1.A69D9226@jp.fujitsu.com>
+   d="scan'208";a="609725885"
+Date: Fri, 2 Apr 2010 14:52:37 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jens Axboe <jens.axboe@oracle.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] readahead even for FMODE_RANDOM
+Message-ID: <20100402065237.GA21508@localhost>
+References: <20100401183151.GO23510@kernel.dk> <20100402012338.GA6393@localhost> <20100402063830.GR23510@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100331145030.03A1.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100402063830.GR23510@kernel.dk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 31, 2010 at 01:53:27PM +0800, KOSAKI Motohiro wrote:
-> > > On Tue, Mar 30, 2010 at 02:08:53PM +0800, KOSAKI Motohiro wrote:
-> > > > Hi
-> > > > 
-> > > > > Commit 84b18490d1f1bc7ed5095c929f78bc002eb70f26 introduces a regression.
-> > > > > With it, our tmpfs test always oom. The test has a lot of rotated anon
-> > > > > pages and cause percent[0] zero. Actually the percent[0] is a very small
-> > > > > value, but our calculation round it to zero. The commit makes vmscan
-> > > > > completely skip anon pages and cause oops.
-> > > > > An option is if percent[x] is zero in get_scan_ratio(), forces it
-> > > > > to 1. See below patch.
-> > > > > But the offending commit still changes behavior. Without the commit, we scan
-> > > > > all pages if priority is zero, below patch doesn't fix this. Don't know if
-> > > > > It's required to fix this too.
-> > > > 
-> > > > Can you please post your /proc/meminfo and reproduce program? I'll digg it.
-> > > > 
-> > > > Very unfortunately, this patch isn't acceptable. In past time, vmscan 
-> > > > had similar logic, but 1% swap-out made lots bug reports. 
-> > > if 1% is still big, how about below patch?
+On Fri, Apr 02, 2010 at 02:38:30PM +0800, Jens Axboe wrote:
+> On Fri, Apr 02 2010, Wu Fengguang wrote:
+> > Hi Jens,
 > > 
-> > This patch makes a lot of sense than previous. however I think <1% anon ratio
-> > shouldn't happen anyway because file lru doesn't have reclaimable pages.
-> > <1% seems no good reclaim rate.
+> > On Fri, Apr 02, 2010 at 02:31:51AM +0800, Jens Axboe wrote:
+> > > Hi,
+> > > 
+> > > I got a problem report with fio where larger block size random reads
+> > > where markedly slower with buffered IO than with O_DIRECT, and the
+> > > initial thought was that perhaps this was some fio oddity. The reporter
+> > > eventually discovered that turning off the fadvise hint made it work
+> > > fine. So I took a look, and it seems we never do readahead for
+> > > FMODE_RANDOM even if the request size is larger than 1 page. That seems
+> > > like a bug, if an application is doing eg 16kb random reads, you want to
+> > > readahead the 12kb remaining data. On devices where smaller transfer
+> > > sizes are slower than larger ones, this can make a large difference.
+> > > 
+> > > This patch makes us readahead even for FMODE_RANDOM, iff we'll be
+> > > reading more pages in that single read. I ran a quick test here, and it
+> > > appears to fix the problem (no difference with fadvise POSIX_FADV_RANDOM
+> > > being passed in or not).
+> >  
+> > I guess the application is doing (at least partial) sequential reads,
+> > while at the same time tell kernel with POSIX_FADV_RANDOM that it's
+> > doing random reads.
+> > 
+> > If so, it's mainly the application's fault.
 > 
-> Oops, the above mention is wrong. sorry. only 1 page is still too big.
-> because under streaming io workload, the number of scanning anon pages should
-> be zero. this is very strong requirement. if not, backup operation will makes
-> a lot of swapping out.
-Sounds there is no big impact for the workload which you mentioned with the patch.
-please see below descriptions.
-I updated the description of the patch as fengguang suggested.
+> The application is doing large random reads. It's purely random, so
+> the POSIX_FADV_RANDOM hint is correct. However, thinking about it, it
 
+How large is it? For random reads > read_ahead_kb,
+ondemand_readahead() will break it into read_ahead_kb sized IOs, while
+force_page_cache_readahead() won't. That may impact IO performance.
 
+> may be that we later hit a random "block" that has now been cached due
+> to this read-ahead. Let me try and rule that out completely and see if
+> there's still the difference. The original reporter observed 4kb reads
+> hitting the driver, where 128kb was expected.
 
-Commit 84b18490d introduces a regression. With it, our tmpfs test always oom.
-The test uses a 6G tmpfs in a system with 3G memory. In the tmpfs, there are
-6 copies of kernel source and the test does kbuild for each copy. My
-investigation shows the test has a lot of rotated anon pages and quite few
-file pages, so get_scan_ratio calculates percent[0] to be zero. Actually
-the percent[0] shoule be a very small value, but our calculation round it
-to zero. The commit makes vmscan completely skip anon pages and cause oops.
+4kb reads hit the disk (on POSIX_FADV_RANDOM)? That sounds like
+behavior in pre .34 kernels that is fixed by commit 0141450f66c:
 
-To avoid underflow, we don't use percentage, instead we directly calculate
-how many pages should be scaned. In this way, we should get several scan pages
-for < 1% percent. With this fix, my test doesn't oom any more.
+    readahead: introduce FMODE_RANDOM for POSIX_FADV_RANDOM
 
-Note, this patch doesn't really change logics, but just increase precise. For
-system with a lot of memory, this might slightly changes behavior. For example,
-in a sequential file read workload, without the patch, we don't swap any anon
-pages. With it, if anon memory size is bigger than 16G, we will say one anon page
-swapped. The 16G is calculated as PAGE_SIZE * priority(4096) * (fp/ap). fp/ap
-is assumed to be 1024 which is common in this workload. So the impact sounds not
-a big deal.
+> > However the kernel can behave more smart and less "dumb" :)
+> > It can inherit the current good behavior of "submit one single 16kb io
+> > request for a 16kb random read() syscall", while still be able to
+> > start _larger sized_ readahead if it's actually a sequential one.
+> 
+> Yeah, that's an ancient issue and pretty sad.
+> 
+> > > diff --git a/mm/readahead.c b/mm/readahead.c
+> > > index 337b20e..d4b201c 100644
+> > > --- a/mm/readahead.c
+> > > +++ b/mm/readahead.c
+> > > @@ -501,8 +501,11 @@ void page_cache_sync_readahead(struct address_space *mapping,
+> > >  	if (!ra->ra_pages)
+> > >  		return;
+> > >  
+> > > -	/* be dumb */
+> > > -	if (filp->f_mode & FMODE_RANDOM) {
+> > > +	/*
+> > > +	 * Be dumb for files marked as randomly accessed, but do readahead
+> > > +	 * inside the original request (req_size > 1).
+> > > +	 */
+> > > +	if ((filp->f_mode & FMODE_RANDOM) && req_size == 1) {
+> > >  		force_page_cache_readahead(mapping, filp, offset, req_size);
+> > >  		return;
+> > >  	}
+> > 
+> > The patch only fixes the (req_size != 1) case that exposed by your
+> > application. A complete fix would be 
+> > 
+> > @@ -820,12 +825,6 @@ void page_cache_sync_readahead(struct ad
+> >  	if (!ra->ra_pages)
+> >  		return;
+> >  
+> > -	/* be dumb */
+> > -	if (filp->f_mode & FMODE_RANDOM) {
+> > -		force_page_cache_readahead(mapping, filp, offset, req_size);
+> > -		return;
+> > -	}
+> > -
+> 
+> Hmm, are we talking about the same thing? I want to hit read-ahead for
+> the remaining pages inside that random read, eg ensure that read-ahead
+> gets activated inside that window of the random request.
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+I think Yes. When the above block is gone, ondemand_readahead() will
+be invoked, and the readahead heuristic will find that it's an
+oversize read (whose size is > 128k) and start 128kb readahead for it.
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 79c8098..80a7ed5 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1519,27 +1519,50 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
- }
- 
- /*
-+ * Smallish @nr_to_scan's are deposited in @nr_saved_scan,
-+ * until we collected @swap_cluster_max pages to scan.
-+ */
-+static unsigned long nr_scan_try_batch(unsigned long nr_to_scan,
-+				       unsigned long *nr_saved_scan)
-+{
-+	unsigned long nr;
-+
-+	*nr_saved_scan += nr_to_scan;
-+	nr = *nr_saved_scan;
-+
-+	if (nr >= SWAP_CLUSTER_MAX)
-+		*nr_saved_scan = 0;
-+	else
-+		nr = 0;
-+
-+	return nr;
-+}
-+
-+/*
-  * Determine how aggressively the anon and file LRU lists should be
-  * scanned.  The relative value of each set of LRU lists is determined
-  * by looking at the fraction of the pages scanned we did rotate back
-  * onto the active list instead of evict.
-  *
-- * percent[0] specifies how much pressure to put on ram/swap backed
-- * memory, while percent[1] determines pressure on the file LRUs.
-+ * nr[x] specifies how many pages should be scaned
-  */
--static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
--					unsigned long *percent)
-+static void get_scan_count(struct zone *zone, struct scan_control *sc,
-+				unsigned long *nr, int priority)
- {
- 	unsigned long anon, file, free;
- 	unsigned long anon_prio, file_prio;
- 	unsigned long ap, fp;
- 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
-+	unsigned long fraction[2], denominator[2];
-+	enum lru_list l;
- 
- 	/* If we have no swap space, do not bother scanning anon pages. */
- 	if (!sc->may_swap || (nr_swap_pages <= 0)) {
--		percent[0] = 0;
--		percent[1] = 100;
--		return;
-+		fraction[0] = 0;
-+		denominator[0] = 1;
-+		fraction[1] = 1;
-+		denominator[1] = 1;
-+		goto out;
- 	}
- 
- 	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
-@@ -1552,9 +1575,11 @@ static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
- 		/* If we have very few page cache pages,
- 		   force-scan anon pages. */
- 		if (unlikely(file + free <= high_wmark_pages(zone))) {
--			percent[0] = 100;
--			percent[1] = 0;
--			return;
-+			fraction[0] = 1;
-+			denominator[0] = 1;
-+			fraction[1] = 0;
-+			denominator[1] = 1;
-+			goto out;
- 		}
- 	}
- 
-@@ -1601,29 +1626,29 @@ static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
- 	fp = (file_prio + 1) * (reclaim_stat->recent_scanned[1] + 1);
- 	fp /= reclaim_stat->recent_rotated[1] + 1;
- 
--	/* Normalize to percentages */
--	percent[0] = 100 * ap / (ap + fp + 1);
--	percent[1] = 100 - percent[0];
--}
--
--/*
-- * Smallish @nr_to_scan's are deposited in @nr_saved_scan,
-- * until we collected @swap_cluster_max pages to scan.
-- */
--static unsigned long nr_scan_try_batch(unsigned long nr_to_scan,
--				       unsigned long *nr_saved_scan)
--{
--	unsigned long nr;
-+	fraction[0] = ap;
-+	denominator[0] = ap + fp + 1;
-+	fraction[1] = fp;
-+	denominator[1] = ap + fp + 1;
- 
--	*nr_saved_scan += nr_to_scan;
--	nr = *nr_saved_scan;
-+out:
-+	for_each_evictable_lru(l) {
-+		int file = is_file_lru(l);
-+		unsigned long scan;
- 
--	if (nr >= SWAP_CLUSTER_MAX)
--		*nr_saved_scan = 0;
--	else
--		nr = 0;
-+		if (fraction[file] == 0) {
-+			nr[l] = 0;
-+			continue;
-+		}
- 
--	return nr;
-+		scan = zone_nr_lru_pages(zone, sc, l);
-+		if (priority) {
-+			scan >>= priority;
-+			scan = (scan * fraction[file] / denominator[file]);
-+		}
-+		nr[l] = nr_scan_try_batch(scan,
-+					  &reclaim_stat->nr_saved_scan[l]);
-+	}
- }
- 
- /*
-@@ -1634,31 +1659,11 @@ static void shrink_zone(int priority, struct zone *zone,
- {
- 	unsigned long nr[NR_LRU_LISTS];
- 	unsigned long nr_to_scan;
--	unsigned long percent[2];	/* anon @ 0; file @ 1 */
- 	enum lru_list l;
- 	unsigned long nr_reclaimed = sc->nr_reclaimed;
- 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
--	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
--
--	get_scan_ratio(zone, sc, percent);
- 
--	for_each_evictable_lru(l) {
--		int file = is_file_lru(l);
--		unsigned long scan;
--
--		if (percent[file] == 0) {
--			nr[l] = 0;
--			continue;
--		}
--
--		scan = zone_nr_lru_pages(zone, sc, l);
--		if (priority) {
--			scan >>= priority;
--			scan = (scan * percent[file]) / 100;
--		}
--		nr[l] = nr_scan_try_batch(scan,
--					  &reclaim_stat->nr_saved_scan[l]);
--	}
-+	get_scan_count(zone, sc, nr, priority);
- 
- 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
- 					nr[LRU_INACTIVE_FILE]) {
+Thanks,
+Fengguang
+
+> >  	/* do read-ahead */
+> >  	ondemand_readahead(mapping, ra, filp, false, offset, req_size);
+> >  }
+> > 
+> > And a more optimized patch would look like this.  Note that only the
+> > last chunk is necessary for bug fixing, and only this chunk can be
+> > applied to vanilla 2.6.34-rc3.
+> > 
+> > If no problem, I'll submit a patch with only the last chunk for
+> > 2.6.34, and submit the remaining chunks for 2.6.35.
+> > 
+> > Thanks,
+> > Fengguang
+> > ---
+> > Subject: readahead: more smart readahead on POSIX_FADV_RANDOM
+> > From: Wu Fengguang <fengguang.wu@intel.com>
+> > Date: Fri Apr 02 08:52:42 CST 2010
+> > 
+> > Some times user space applications will tell POSIX_FADV_RANDOM
+> > while still doing some sequential reads.
+> > 
+> > The kernel can behave a bit smarter in this case, by letting the
+> > readahead heuristics handle the POSIX_FADV_RANDOM case, but with
+> > less aggressive assumption on sequential reads.
+> 
+> I'll try and give this a spin. On the laptop, I cannot reproduce the
+> problem of smaller < reqsize ios, so hard to say just now.
+> 
+> > 
+> > CC: Jens Axboe <jens.axboe@oracle.com>
+> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > ---
+> >  mm/readahead.c |   17 ++++++++---------
+> >  1 file changed, 8 insertions(+), 9 deletions(-)
+> > 
+> > --- linux.orig/mm/readahead.c	2010-04-02 08:43:53.000000000 +0800
+> > +++ linux/mm/readahead.c	2010-04-02 09:00:51.000000000 +0800
+> > @@ -664,6 +664,7 @@ ondemand_readahead(struct address_space 
+> >  	unsigned long max = max_sane_readahead(ra->ra_pages);
+> >  	unsigned long tt;  /* thrashing shreshold */
+> >  	pgoff_t start;
+> > +	bool random_hint = (filp && (filp->f_mode & FMODE_RANDOM));
+> >  
+> >  	/*
+> >  	 * start of file
+> > @@ -671,7 +672,8 @@ ondemand_readahead(struct address_space 
+> >  	if (!offset) {
+> >  		ra_set_pattern(ra, RA_PATTERN_INITIAL);
+> >  		ra->start = offset;
+> > -		if ((ra->ra_flags & READAHEAD_LSEEK) && req_size <= max) {
+> > +		if ((random_hint || (ra->ra_flags & READAHEAD_LSEEK)) &&
+> > +		    req_size <= max) {
+> >  			ra->size = req_size;
+> >  			ra->async_size = 0;
+> >  			goto readit;
+> > @@ -743,8 +745,11 @@ context_readahead:
+> >  	} else
+> >  		start = offset;
+> >  
+> > -	tt = count_history_pages(mapping, ra, offset,
+> > -				 READAHEAD_ASYNC_RATIO * max);
+> > +	if (unlikely(random_hint))
+> > +		tt = 0;
+> > +	else
+> > +		tt = count_history_pages(mapping, ra, offset,
+> > +					 READAHEAD_ASYNC_RATIO * max);
+> >  	/*
+> >  	 * no history pages cached, could be
+> >  	 * 	- a random read
+> > @@ -820,12 +825,6 @@ void page_cache_sync_readahead(struct ad
+> >  	if (!ra->ra_pages)
+> >  		return;
+> >  
+> > -	/* be dumb */
+> > -	if (filp->f_mode & FMODE_RANDOM) {
+> > -		force_page_cache_readahead(mapping, filp, offset, req_size);
+> > -		return;
+> > -	}
+> > -
+> >  	/* do read-ahead */
+> >  	ondemand_readahead(mapping, ra, filp, false, offset, req_size);
+> >  }
+> 
+> -- 
+> Jens Axboe
