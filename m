@@ -1,175 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab0DBQFa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 12:05:30 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:34989 "EHLO gir.skynet.ie"
+	id S1754272Ab0DBQH0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 12:07:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42065 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753450Ab0DBQCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 12:02:53 -0400
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 12/14] Add a tunable that decides when memory should be compacted and when it should be reclaimed
-Date: Fri,  2 Apr 2010 17:02:46 +0100
-Message-Id: <1270224168-14775-13-git-send-email-mel@csn.ul.ie>
-X-Mailer: git-send-email 1.6.5
-In-Reply-To: <1270224168-14775-1-git-send-email-mel@csn.ul.ie>
-References: <1270224168-14775-1-git-send-email-mel@csn.ul.ie>
+	id S1751222Ab0DBQHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 12:07:17 -0400
+Date: Fri, 2 Apr 2010 18:05:12 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Alan Cox <alan@linux.intel.com>,
+       Greg KH <greg@kroah.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+       Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+       linux-kernel@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Sukadev Bhattiprolu <sukadev@us.ibm.com>, stable@kernel.org
+Subject: [PATCH 1/1] tty: release_one_tty() forgets to put pids
+Message-ID: <20100402160512.GB19920@redhat.com>
+References: <201003272121.ADE39095.JLFHOOMtSVOFQF@I-love.SAKURA.ne.jp> <tnxbpe5ygfy.fsf@e102109-lin.cambridge.arm.com> <20100331151719.8a92b302.akpm@linux-foundation.org> <20100402160447.GA19920@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100402160447.GA19920@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel applies some heuristics when deciding if memory should be
-compacted or reclaimed to satisfy a high-order allocation. One of these
-is based on the fragmentation. If the index is below 500, memory will
-not be compacted. This choice is arbitrary and not based on data. To
-help optimise the system and set a sensible default for this value, this
-patch adds a sysctl extfrag_threshold. The kernel will only compact
-memory if the fragmentation index is above the extfrag_threshold.
+release_one_tty(tty) can be called when tty still has a reference
+to pgrp/session. In this case we leak the pid.
 
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+The patch needs the ack from someone who understand tty magic.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- Documentation/sysctl/vm.txt |   18 ++++++++++++++++--
- include/linux/compaction.h  |    3 +++
- kernel/sysctl.c             |   15 +++++++++++++++
- mm/compaction.c             |   12 +++++++++++-
- 4 files changed, 45 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index 803c018..878b1b4 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -27,6 +27,7 @@ Currently, these files are in /proc/sys/vm:
- - dirty_ratio
- - dirty_writeback_centisecs
- - drop_caches
-+- extfrag_threshold
- - hugepages_treat_as_movable
- - hugetlb_shm_group
- - laptop_mode
-@@ -131,8 +132,7 @@ out to disk.  This tunable expresses the interval between those wakeups, in
+ drivers/char/tty_io.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- TTT/drivers/char/tty_io.c~TTY_PID_LEAK	2010-03-17 16:00:59.000000000 +0100
++++ TTT/drivers/char/tty_io.c	2010-04-02 17:23:07.000000000 +0200
+@@ -1423,6 +1423,8 @@ static void release_one_tty(struct work_
+ 	list_del_init(&tty->tty_files);
+ 	file_list_unlock();
  
- Setting this to zero disables periodic writeback altogether.
- 
--==============================================================
--
-+============================================================== 
- drop_caches
- 
- Writing to this will cause the kernel to drop clean caches, dentries and
-@@ -150,6 +150,20 @@ user should run `sync' first.
- 
- ==============================================================
- 
-+extfrag_threshold
-+
-+This parameter affects whether the kernel will compact memory or direct
-+reclaim to satisfy a high-order allocation. /proc/extfrag_index shows what
-+the fragmentation index for each order is in each zone in the system. Values
-+tending towards 0 imply allocations would fail due to lack of memory,
-+values towards 1000 imply failures are due to fragmentation and -1 implies
-+that the allocation will succeed as long as watermarks are met.
-+
-+The kernel will not compact memory in a zone if the
-+fragmentation index is <= extfrag_threshold. The default value is 500.
-+
-+==============================================================
-+
- hugepages_treat_as_movable
- 
- This parameter is only useful when kernelcore= is specified at boot time to
-diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-index faa3faf..ae98afc 100644
---- a/include/linux/compaction.h
-+++ b/include/linux/compaction.h
-@@ -11,6 +11,9 @@
- extern int sysctl_compact_memory;
- extern int sysctl_compaction_handler(struct ctl_table *table, int write,
- 			void __user *buffer, size_t *length, loff_t *ppos);
-+extern int sysctl_extfrag_threshold;
-+extern int sysctl_extfrag_handler(struct ctl_table *table, int write,
-+			void __user *buffer, size_t *length, loff_t *ppos);
- 
- extern int fragmentation_index(struct zone *zone, unsigned int order);
- extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 3838928..b8f292e 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -243,6 +243,11 @@ static int min_sched_shares_ratelimit = 100000; /* 100 usec */
- static int max_sched_shares_ratelimit = NSEC_PER_SEC; /* 1 second */
- #endif
- 
-+#ifdef CONFIG_COMPACTION
-+static int min_extfrag_threshold = 0;
-+static int max_extfrag_threshold = 1000;
-+#endif
-+
- static struct ctl_table kern_table[] = {
- 	{
- 		.procname	= "sched_child_runs_first",
-@@ -1111,6 +1116,16 @@ static struct ctl_table vm_table[] = {
- 		.mode		= 0200,
- 		.proc_handler	= sysctl_compaction_handler,
- 	},
-+	{
-+		.procname	= "extfrag_threshold",
-+		.data		= &sysctl_extfrag_threshold,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= sysctl_extfrag_handler,
-+		.extra1		= &min_extfrag_threshold,
-+		.extra2		= &max_extfrag_threshold,
-+	},
-+
- #endif /* CONFIG_COMPACTION */
- 	{
- 		.procname	= "min_free_kbytes",
-diff --git a/mm/compaction.c b/mm/compaction.c
-index e8ef511..3bb65d7 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -418,6 +418,8 @@ static unsigned long compact_zone_order(struct zone *zone,
- 	return compact_zone(zone, &cc);
++	put_pid(tty->pgrp);
++	put_pid(tty->session);
+ 	free_tty_struct(tty);
  }
  
-+int sysctl_extfrag_threshold = 500;
-+
- /**
-  * try_to_compact_pages - Direct compact to satisfy a high-order allocation
-  * @zonelist: The zonelist used for the current allocation
-@@ -476,7 +478,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 		 * Only compact if a failure would be due to fragmentation.
- 		 */
- 		fragindex = fragmentation_index(zone, order);
--		if (fragindex >= 0 && fragindex <= 500)
-+		if (fragindex >= 0 && fragindex <= sysctl_extfrag_threshold)
- 			continue;
- 
- 		if (fragindex == -1 && zone_watermark_ok(zone, order, watermark, 0, 0)) {
-@@ -556,6 +558,14 @@ int sysctl_compaction_handler(struct ctl_table *table, int write,
- 	return 0;
- }
- 
-+int sysctl_extfrag_handler(struct ctl_table *table, int write,
-+			void __user *buffer, size_t *length, loff_t *ppos)
-+{
-+	proc_dointvec_minmax(table, write, buffer, length, ppos);
-+
-+	return 0;
-+}
-+
- #if defined(CONFIG_SYSFS) && defined(CONFIG_NUMA)
- ssize_t sysfs_compact_node(struct sys_device *dev,
- 			struct sysdev_attribute *attr,
--- 
-1.6.5
 
