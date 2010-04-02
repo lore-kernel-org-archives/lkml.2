@@ -1,126 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079Ab0DBTNK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 15:13:10 -0400
-Received: from hera.kernel.org ([140.211.167.34]:38839 "EHLO hera.kernel.org"
+	id S1755263Ab0DBTNi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 15:13:38 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46674 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754871Ab0DBTM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 15:12:58 -0400
-Date: Fri, 2 Apr 2010 19:12:34 GMT
+	id S1754184Ab0DBTNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 15:13:31 -0400
+Date: Fri, 2 Apr 2010 19:12:51 GMT
 From: tip-bot for Oleg Nesterov <oleg@redhat.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
        a.p.zijlstra@chello.nl, oleg@redhat.com, tglx@linutronix.de,
-       mingo@elte.hu
+       rjw@sisk.pl, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
        a.p.zijlstra@chello.nl, tglx@linutronix.de, oleg@redhat.com,
-       mingo@elte.hu
-In-Reply-To: <20100315091019.GA9141@redhat.com>
-References: <20100315091019.GA9141@redhat.com>
+       rjw@sisk.pl, mingo@elte.hu
+In-Reply-To: <20100315091023.GA9148@redhat.com>
+References: <20100315091023.GA9148@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: sched_exec(): Remove the select_fallback_rq() logic
-Message-ID: <tip-30da688ef6b76e01969b00608202fff1eed2accc@git.kernel.org>
-Git-Commit-ID: 30da688ef6b76e01969b00608202fff1eed2accc
+Subject: [tip:sched/core] sched: _cpu_down(): Don't play with current->cpus_allowed
+Message-ID: <tip-6a1bdc1b577ebcb65f6603c57f8347309bc4ab13@git.kernel.org>
+Git-Commit-ID: 6a1bdc1b577ebcb65f6603c57f8347309bc4ab13
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 02 Apr 2010 19:12:35 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 02 Apr 2010 19:12:52 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  30da688ef6b76e01969b00608202fff1eed2accc
-Gitweb:     http://git.kernel.org/tip/30da688ef6b76e01969b00608202fff1eed2accc
+Commit-ID:  6a1bdc1b577ebcb65f6603c57f8347309bc4ab13
+Gitweb:     http://git.kernel.org/tip/6a1bdc1b577ebcb65f6603c57f8347309bc4ab13
 Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Mon, 15 Mar 2010 10:10:19 +0100
+AuthorDate: Mon, 15 Mar 2010 10:10:23 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 2 Apr 2010 20:12:02 +0200
+CommitDate: Fri, 2 Apr 2010 20:12:03 +0200
 
-sched: sched_exec(): Remove the select_fallback_rq() logic
+sched: _cpu_down(): Don't play with current->cpus_allowed
 
-sched_exec()->select_task_rq() reads/updates ->cpus_allowed lockless.
-This can race with other CPUs updating our ->cpus_allowed, and this
-looks meaningless to me.
+_cpu_down() changes the current task's affinity and then recovers it at
+the end. The problems are well known: we can't restore old_allowed if it
+was bound to the now-dead-cpu, and we can race with the userspace which
+can change cpu-affinity during unplug.
 
-The task is current and running, it must have online cpus in ->cpus_allowed,
-the fallback mode is bogus. And, if ->sched_class returns the "wrong" cpu,
-this likely means we raced with set_cpus_allowed() which was called
-for reason, why should sched_exec() retry and call ->select_task_rq()
-again?
-
-Change the code to call sched_class->select_task_rq() directly and do
-nothing if the returned cpu is wrong after re-checking under rq->lock.
-
->From now task_struct->cpus_allowed is always stable under TASK_WAKING,
-select_fallback_rq() is always called under rq-lock or the caller or
-the caller owns TASK_WAKING (select_task_rq).
+_cpu_down() should not play with current->cpus_allowed at all. Instead,
+take_cpu_down() can migrate the caller of _cpu_down() after __cpu_disable()
+removes the dying cpu from cpu_online_mask.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <20100315091019.GA9141@redhat.com>
+LKML-Reference: <20100315091023.GA9148@redhat.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched.c |   25 ++++++++-----------------
- 1 files changed, 8 insertions(+), 17 deletions(-)
+ include/linux/sched.h |    1 +
+ kernel/cpu.c          |   18 ++++++------------
+ kernel/sched.c        |    2 +-
+ 3 files changed, 8 insertions(+), 13 deletions(-)
 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 43c9451..8bea407 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1843,6 +1843,7 @@ extern void sched_clock_idle_sleep_event(void);
+ extern void sched_clock_idle_wakeup_event(u64 delta_ns);
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
++extern void move_task_off_dead_cpu(int dead_cpu, struct task_struct *p);
+ extern void idle_task_exit(void);
+ #else
+ static inline void idle_task_exit(void) {}
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index f8cced2..8d340fa 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -163,6 +163,7 @@ static inline void check_for_tasks(int cpu)
+ }
+ 
+ struct take_cpu_down_param {
++	struct task_struct *caller;
+ 	unsigned long mod;
+ 	void *hcpu;
+ };
+@@ -171,6 +172,7 @@ struct take_cpu_down_param {
+ static int __ref take_cpu_down(void *_param)
+ {
+ 	struct take_cpu_down_param *param = _param;
++	unsigned int cpu = (unsigned long)param->hcpu;
+ 	int err;
+ 
+ 	/* Ensure this CPU doesn't handle any more interrupts. */
+@@ -181,6 +183,8 @@ static int __ref take_cpu_down(void *_param)
+ 	raw_notifier_call_chain(&cpu_chain, CPU_DYING | param->mod,
+ 				param->hcpu);
+ 
++	if (task_cpu(param->caller) == cpu)
++		move_task_off_dead_cpu(cpu, param->caller);
+ 	/* Force idle task to run as soon as we yield: it should
+ 	   immediately notice cpu is offline and die quickly. */
+ 	sched_idle_next();
+@@ -191,10 +195,10 @@ static int __ref take_cpu_down(void *_param)
+ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ {
+ 	int err, nr_calls = 0;
+-	cpumask_var_t old_allowed;
+ 	void *hcpu = (void *)(long)cpu;
+ 	unsigned long mod = tasks_frozen ? CPU_TASKS_FROZEN : 0;
+ 	struct take_cpu_down_param tcd_param = {
++		.caller = current,
+ 		.mod = mod,
+ 		.hcpu = hcpu,
+ 	};
+@@ -205,9 +209,6 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 	if (!cpu_online(cpu))
+ 		return -EINVAL;
+ 
+-	if (!alloc_cpumask_var(&old_allowed, GFP_KERNEL))
+-		return -ENOMEM;
+-
+ 	cpu_hotplug_begin();
+ 	set_cpu_active(cpu, false);
+ 	err = __raw_notifier_call_chain(&cpu_chain, CPU_DOWN_PREPARE | mod,
+@@ -224,10 +225,6 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 		goto out_release;
+ 	}
+ 
+-	/* Ensure that we are not runnable on dying cpu */
+-	cpumask_copy(old_allowed, &current->cpus_allowed);
+-	set_cpus_allowed_ptr(current, cpu_active_mask);
+-
+ 	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
+ 	if (err) {
+ 		set_cpu_active(cpu, true);
+@@ -236,7 +233,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 					    hcpu) == NOTIFY_BAD)
+ 			BUG();
+ 
+-		goto out_allowed;
++		goto out_release;
+ 	}
+ 	BUG_ON(cpu_online(cpu));
+ 
+@@ -254,8 +251,6 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 
+ 	check_for_tasks(cpu);
+ 
+-out_allowed:
+-	set_cpus_allowed_ptr(current, old_allowed);
+ out_release:
+ 	cpu_hotplug_done();
+ 	if (!err) {
+@@ -263,7 +258,6 @@ out_release:
+ 					    hcpu) == NOTIFY_BAD)
+ 			BUG();
+ 	}
+-	free_cpumask_var(old_allowed);
+ 	return err;
+ }
+ 
 diff --git a/kernel/sched.c b/kernel/sched.c
-index f475c60..165b532 100644
+index 165b532..11119de 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -2280,6 +2280,9 @@ void task_oncpu_function_call(struct task_struct *p,
- }
- 
- #ifdef CONFIG_SMP
-+/*
-+ * ->cpus_allowed is protected by either TASK_WAKING or rq->lock held.
-+ */
- static int select_fallback_rq(int cpu, struct task_struct *p)
- {
- 	int dest_cpu;
-@@ -2316,12 +2319,7 @@ static int select_fallback_rq(int cpu, struct task_struct *p)
- }
- 
+@@ -5442,7 +5442,7 @@ static int migration_thread(void *data)
  /*
-- * Gets called from 3 sites (exec, fork, wakeup), since it is called without
-- * holding rq->lock we need to ensure ->cpus_allowed is stable, this is done
-- * by:
-- *
-- *  exec:           is unstable, retry loop
-- *  fork & wake-up: serialize ->cpus_allowed against TASK_WAKING
-+ * The caller (fork, wakeup) owns TASK_WAKING, ->cpus_allowed is stable.
+  * Figure out where task on dead CPU should go, use force if necessary.
   */
- static inline
- int select_task_rq(struct task_struct *p, int sd_flags, int wake_flags)
-@@ -3076,9 +3074,8 @@ void sched_exec(void)
- 	unsigned long flags;
- 	struct rq *rq;
- 
--again:
- 	this_cpu = get_cpu();
--	dest_cpu = select_task_rq(p, SD_BALANCE_EXEC, 0);
-+	dest_cpu = p->sched_class->select_task_rq(p, SD_BALANCE_EXEC, 0);
- 	if (dest_cpu == this_cpu) {
- 		put_cpu();
- 		return;
-@@ -3086,18 +3083,12 @@ again:
- 
- 	rq = task_rq_lock(p, &flags);
- 	put_cpu();
--
- 	/*
- 	 * select_task_rq() can race against ->cpus_allowed
- 	 */
--	if (!cpumask_test_cpu(dest_cpu, &p->cpus_allowed)
--	    || unlikely(!cpu_active(dest_cpu))) {
--		task_rq_unlock(rq, &flags);
--		goto again;
--	}
--
--	/* force the process onto the specified CPU */
--	if (migrate_task(p, dest_cpu, &req)) {
-+	if (cpumask_test_cpu(dest_cpu, &p->cpus_allowed) &&
-+	    likely(cpu_active(dest_cpu)) &&
-+	    migrate_task(p, dest_cpu, &req)) {
- 		/* Need to wait for migration thread (might exit: take ref). */
- 		struct task_struct *mt = rq->migration_thread;
- 
+-static void move_task_off_dead_cpu(int dead_cpu, struct task_struct *p)
++void move_task_off_dead_cpu(int dead_cpu, struct task_struct *p)
+ {
+ 	struct rq *rq = cpu_rq(dead_cpu);
+ 	int needs_cpu, uninitialized_var(dest_cpu);
