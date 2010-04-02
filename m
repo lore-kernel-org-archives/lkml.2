@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab0DBQEa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 12:04:30 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:34956 "EHLO gir.skynet.ie"
+	id S1754758Ab0DBQEn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 12:04:43 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:35031 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751589Ab0DBQCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 12:02:47 -0400
+	id S1751591Ab0DBQCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 12:02:52 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andrea Arcangeli <aarcange@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 03/14] mm: Share the anon_vma ref counts between KSM and page migration
-Date: Fri,  2 Apr 2010 17:02:37 +0100
-Message-Id: <1270224168-14775-4-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 10/14] Add /sys trigger for per-node memory compaction
+Date: Fri,  2 Apr 2010 17:02:44 +0100
+Message-Id: <1270224168-14775-11-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.6.5
 In-Reply-To: <1270224168-14775-1-git-send-email-mel@csn.ul.ie>
 References: <1270224168-14775-1-git-send-email-mel@csn.ul.ie>
@@ -27,170 +27,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For clarity of review, KSM and page migration have separate refcounts on
-the anon_vma. While clear, this is a waste of memory. This patch gets
-KSM and page migration to share their toys in a spirit of harmony.
+This patch adds a per-node sysfs file called compact. When the file is
+written to, each zone in that node is compacted. The intention that this
+would be used by something like a job scheduler in a batch system before
+a job starts so that the job can allocate the maximum number of
+hugepages without significant start-up cost.
 
 Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Acked-by: Rik van Riel <riel@redhat.com>
 Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Reviewed-by: Christoph Lameter <cl@linux-foundation.org>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- include/linux/rmap.h |   50 ++++++++++++++++++--------------------------------
- mm/ksm.c             |    4 ++--
- mm/migrate.c         |    4 ++--
- mm/rmap.c            |    6 ++----
- 4 files changed, 24 insertions(+), 40 deletions(-)
+ Documentation/ABI/testing/sysfs-devices-node |    7 +++++++
+ drivers/base/node.c                          |    3 +++
+ include/linux/compaction.h                   |   16 ++++++++++++++++
+ mm/compaction.c                              |   23 +++++++++++++++++++++++
+ 4 files changed, 49 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-devices-node
 
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index 567d43f..7721674 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -26,11 +26,17 @@
-  */
- struct anon_vma {
- 	spinlock_t lock;	/* Serialize access to vma list */
--#ifdef CONFIG_KSM
--	atomic_t ksm_refcount;
--#endif
--#ifdef CONFIG_MIGRATION
--	atomic_t migrate_refcount;
-+#if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
+diff --git a/Documentation/ABI/testing/sysfs-devices-node b/Documentation/ABI/testing/sysfs-devices-node
+new file mode 100644
+index 0000000..453a210
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-devices-node
+@@ -0,0 +1,7 @@
++What:		/sys/devices/system/node/nodeX/compact
++Date:		February 2010
++Contact:	Mel Gorman <mel@csn.ul.ie>
++Description:
++		When this file is written to, all memory within that node
++		will be compacted. When it completes, memory will be freed
++		into blocks which have as many contiguous pages as possible
+diff --git a/drivers/base/node.c b/drivers/base/node.c
+index 93b3ac6..07cdcc6 100644
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -15,6 +15,7 @@
+ #include <linux/cpu.h>
+ #include <linux/device.h>
+ #include <linux/swap.h>
++#include <linux/compaction.h>
+ 
+ static struct sysdev_class_attribute *node_state_attrs[];
+ 
+@@ -245,6 +246,8 @@ int register_node(struct node *node, int num, struct node *parent)
+ 		scan_unevictable_register_node(node);
+ 
+ 		hugetlb_register_node(node);
 +
-+	/*
-+	 * The external_refcount is taken by either KSM or page migration
-+	 * to take a reference to an anon_vma when there is no
-+	 * guarantee that the vma of page tables will exist for
-+	 * the duration of the operation. A caller that takes
-+	 * the reference is responsible for clearing up the
-+	 * anon_vma if they are the last user on release
-+	 */
-+	atomic_t external_refcount;
- #endif
- 	/*
- 	 * NOTE: the LSB of the head.next is set by
-@@ -64,46 +70,26 @@ struct anon_vma_chain {
- };
- 
- #ifdef CONFIG_MMU
--#ifdef CONFIG_KSM
--static inline void ksm_refcount_init(struct anon_vma *anon_vma)
-+#if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
-+static inline void anonvma_external_refcount_init(struct anon_vma *anon_vma)
- {
--	atomic_set(&anon_vma->ksm_refcount, 0);
-+	atomic_set(&anon_vma->external_refcount, 0);
++		compaction_register_node(node);
+ 	}
+ 	return error;
  }
+diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+index fef591b..c4ab05f 100644
+--- a/include/linux/compaction.h
++++ b/include/linux/compaction.h
+@@ -12,4 +12,20 @@ extern int sysctl_compaction_handler(struct ctl_table *table, int write,
+ 			void __user *buffer, size_t *length, loff_t *ppos);
+ #endif /* CONFIG_COMPACTION */
  
--static inline int ksm_refcount(struct anon_vma *anon_vma)
-+static inline int anonvma_external_refcount(struct anon_vma *anon_vma)
- {
--	return atomic_read(&anon_vma->ksm_refcount);
-+	return atomic_read(&anon_vma->external_refcount);
- }
- #else
--static inline void ksm_refcount_init(struct anon_vma *anon_vma)
-+static inline void anonvma_external_refcount_init(struct anon_vma *anon_vma)
- {
- }
++#if defined(CONFIG_COMPACTION) && defined(CONFIG_SYSFS) && defined(CONFIG_NUMA)
++extern int compaction_register_node(struct node *node);
++extern void compaction_unregister_node(struct node *node);
++
++#else
++
++static inline int compaction_register_node(struct node *node)
++{
++	return 0;
++}
++
++static inline void compaction_unregister_node(struct node *node)
++{
++}
++#endif /* CONFIG_COMPACTION && CONFIG_SYSFS && CONFIG_NUMA */
++
+ #endif /* _LINUX_COMPACTION_H */
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 615b811..b058bae 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -13,6 +13,7 @@
+ #include <linux/mm_inline.h>
+ #include <linux/backing-dev.h>
+ #include <linux/sysctl.h>
++#include <linux/sysfs.h>
+ #include "internal.h"
  
--static inline int ksm_refcount(struct anon_vma *anon_vma)
-+static inline int anonvma_external_refcount(struct anon_vma *anon_vma)
- {
+ /*
+@@ -437,3 +438,25 @@ int sysctl_compaction_handler(struct ctl_table *table, int write,
+ 
  	return 0;
  }
- #endif /* CONFIG_KSM */
--#ifdef CONFIG_MIGRATION
--static inline void migrate_refcount_init(struct anon_vma *anon_vma)
--{
--	atomic_set(&anon_vma->migrate_refcount, 0);
--}
--
--static inline int migrate_refcount(struct anon_vma *anon_vma)
--{
--	return atomic_read(&anon_vma->migrate_refcount);
--}
--#else
--static inline void migrate_refcount_init(struct anon_vma *anon_vma)
--{
--}
--
--static inline int migrate_refcount(struct anon_vma *anon_vma)
--{
--	return 0;
--}
--#endif /* CONFIG_MIGRATE */
- 
- static inline struct anon_vma *page_anon_vma(struct page *page)
- {
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 8cdfc2a..3666d43 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -318,14 +318,14 @@ static void hold_anon_vma(struct rmap_item *rmap_item,
- 			  struct anon_vma *anon_vma)
- {
- 	rmap_item->anon_vma = anon_vma;
--	atomic_inc(&anon_vma->ksm_refcount);
-+	atomic_inc(&anon_vma->external_refcount);
- }
- 
- static void drop_anon_vma(struct rmap_item *rmap_item)
- {
- 	struct anon_vma *anon_vma = rmap_item->anon_vma;
- 
--	if (atomic_dec_and_lock(&anon_vma->ksm_refcount, &anon_vma->lock)) {
-+	if (atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->lock)) {
- 		int empty = list_empty(&anon_vma->head);
- 		spin_unlock(&anon_vma->lock);
- 		if (empty)
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 5c5c1bd..35aad2a 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -611,7 +611,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 			goto rcu_unlock;
- 
- 		anon_vma = page_anon_vma(page);
--		atomic_inc(&anon_vma->migrate_refcount);
-+		atomic_inc(&anon_vma->external_refcount);
- 	}
- 
- 	/*
-@@ -653,7 +653,7 @@ skip_unmap:
- rcu_unlock:
- 
- 	/* Drop an anon_vma reference if we took one */
--	if (anon_vma && atomic_dec_and_lock(&anon_vma->migrate_refcount, &anon_vma->lock)) {
-+	if (anon_vma && atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->lock)) {
- 		int empty = list_empty(&anon_vma->head);
- 		spin_unlock(&anon_vma->lock);
- 		if (empty)
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 578d0fe..af35b75 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -248,8 +248,7 @@ static void anon_vma_unlink(struct anon_vma_chain *anon_vma_chain)
- 	list_del(&anon_vma_chain->same_anon_vma);
- 
- 	/* We must garbage collect the anon_vma if it's empty */
--	empty = list_empty(&anon_vma->head) && !ksm_refcount(anon_vma) &&
--					!migrate_refcount(anon_vma);
-+	empty = list_empty(&anon_vma->head) && !anonvma_external_refcount(anon_vma);
- 	spin_unlock(&anon_vma->lock);
- 
- 	if (empty)
-@@ -273,8 +272,7 @@ static void anon_vma_ctor(void *data)
- 	struct anon_vma *anon_vma = data;
- 
- 	spin_lock_init(&anon_vma->lock);
--	ksm_refcount_init(anon_vma);
--	migrate_refcount_init(anon_vma);
-+	anonvma_external_refcount_init(anon_vma);
- 	INIT_LIST_HEAD(&anon_vma->head);
- }
- 
++
++#if defined(CONFIG_SYSFS) && defined(CONFIG_NUMA)
++ssize_t sysfs_compact_node(struct sys_device *dev,
++			struct sysdev_attribute *attr,
++			const char *buf, size_t count)
++{
++	compact_node(dev->id);
++
++	return count;
++}
++static SYSDEV_ATTR(compact, S_IWUSR, NULL, sysfs_compact_node);
++
++int compaction_register_node(struct node *node)
++{
++	return sysdev_create_file(&node->sysdev, &attr_compact);
++}
++
++void compaction_unregister_node(struct node *node)
++{
++	return sysdev_remove_file(&node->sysdev, &attr_compact);
++}
++#endif /* CONFIG_SYSFS && CONFIG_NUMA */
 -- 
 1.6.5
 
