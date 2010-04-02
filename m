@@ -1,73 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022Ab0DBSWn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 14:22:43 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:55175 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735Ab0DBSWg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 14:22:36 -0400
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-       Alan Cox <alan@linux.intel.com>, Greg KH <greg@kroah.com>,
-       Catalin Marinas <catalin.marinas@arm.com>,
-       Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Serge Hallyn <serue@us.ibm.com>,
-       Sukadev Bhattiprolu <sukadev@us.ibm.com>, stable@kernel.org
-Subject: Re: [PATCH 1/1] tty: release_one_tty() forgets to put pids
-References: <201003272121.ADE39095.JLFHOOMtSVOFQF@I-love.SAKURA.ne.jp>
-	<tnxbpe5ygfy.fsf@e102109-lin.cambridge.arm.com>
-	<20100331151719.8a92b302.akpm@linux-foundation.org>
-	<20100402160447.GA19920@redhat.com>
-	<20100402160512.GB19920@redhat.com>
-	<alpine.LFD.2.00.1004021040320.3634@i5.linux-foundation.org>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Fri, 02 Apr 2010 11:22:29 -0700
-In-Reply-To: <alpine.LFD.2.00.1004021040320.3634@i5.linux-foundation.org> (Linus Torvalds's message of "Fri\, 2 Apr 2010 10\:46\:24 -0700 \(PDT\)")
-Message-ID: <m14ojtogt6.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S1752388Ab0DBSXh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 14:23:37 -0400
+Received: from capside.net ([81.19.98.74]:59060 "EHLO eul0600410.eu.verio.net"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751589Ab0DBSX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 14:23:28 -0400
+Message-ID: <4BB63619.6070607@sysvalve.es>
+Date: Fri, 02 Apr 2010 20:23:21 +0200
+From: =?UTF-8?B?IkwuIEFsYmVydG8gR2ltw6luZXoi?= <agimenez@sysvalve.es>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: torvalds@linux-foundation.org, stable@kernel.org, sukadev@us.ibm.com, serue@us.ibm.com, linux-kernel@vger.kernel.org, penguin-kernel@I-love.SAKURA.ne.jp, catalin.marinas@arm.com, greg@kroah.com, alan@linux.intel.com, akpm@linux-foundation.org, oleg@redhat.com
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+To: Oliver Neukum <oliver@neukum.org>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       linux-usb@vger.kernel.org, linville@tuxdriver.com, j.dumon@option.com,
+       steve.glendinning@smsc.com, davem@davemloft.net, gregkh@suse.de,
+       dgiagio@gmail.com, dborca@yahoo.com
+Subject: Re: [PATCHv3] drivers/net/usb: Add new driver ipheth
+References: <1269984864-28159-1-git-send-email-agimenez@sysvalve.es> <1270064527-8485-1-git-send-email-agimenez@sysvalve.es> <201003312233.26130.oliver@neukum.org>
+In-Reply-To: <201003312233.26130.oliver@neukum.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+On 03/31/2010 10:33 PM, Oliver Neukum wrote:
+> Am Mittwoch, 31. März 2010 21:42:07 schrieb L. Alberto Giménez:
 
-> On Fri, 2 Apr 2010, Oleg Nesterov wrote:
->>
->> release_one_tty(tty) can be called when tty still has a reference
->> to pgrp/session. In this case we leak the pid.
->
-> Hmm. Maybe we should have cleared this in tty_release() already. We 
-> already do some of the session clearing there (but we clear the session in 
-> the _tasks_ associated with the tty, not the tty session pointer).
->
-> But:
->
->> The patch needs the ack from someone who understand tty magic.
->
-> I think the patch is simpler than worrying about the much more complex 
-> release logic. So I think I actually prefer this patch over something that 
-> tries to be clever in tty_release.
->
-> We might even push it into "free_tty_struct()", although I think that the 
-> only non-release_one_tty() callers of that are the ones that allocated the 
-> tty but due to some failure never connected it to anything. So on the 
-> whole I think you picked the right spot.
->
-> So I'll ACK it. But maybe Alan sees some problem/issue I didn't see.
+Hi Oliver,
 
-I agree.   However we made it to release_one_tty with pids we need
-to free them, before we free the tty structure itself.
+Just like with Ben's comments I still have a couple of doubts about your
+comments.
 
-My general paranoia would suggest setting the pids to NULL.  So that
-we don't have the chance of a use after free.
 
-Eric
+>> +
+>> +static int ipheth_open(struct net_device *net)
+>> +{
+>> +	struct ipheth_device *dev = netdev_priv(net);
+>> +	struct usb_device *udev = dev->udev;
+>> +	int retval = 0;
+>> +
+>> +	usb_set_interface(udev, IPHETH_INTFNUM, IPHETH_ALT_INTFNUM);
+>> +	usb_clear_halt(udev, usb_rcvbulkpipe(udev, dev->bulk_in));
+>> +	usb_clear_halt(udev, usb_sndbulkpipe(udev, dev->bulk_out));
+> 
+> Is this really needed? If so, please add a comment.
+
+I understand that usb_clear_halt is only needed when the device has
+transmitted data, and as it is "open" time, we can assume that no
+transmissions ere made, so we don't need to clear anything (aka: remove
+both lines), am I right?
+
+
+>> +
+>> +	retval = ipheth_carrier_set(dev);
+>> +	if (retval)
+>> +		goto error;
+>> +
+>> +	retval = ipheth_rx_submit(dev, GFP_KERNEL);
+>> +	if (retval)
+>> +		goto error;
+>> +
+>> +	schedule_delayed_work(&dev->carrier_work, IPHETH_CARRIER_CHECK_TIMEOUT);
+> 
+> Does it make sense to start rx while you have no carrier?
+
+Well, I have no clue about this one. I think that upstream developers
+should take a look into this (Dario, Daniel, could you?) since I don't
+have the knowledge to decide what to do about it.
+
+But I assume that as with the previous one, we have just opened the
+device and we aren't (yet) doing anything with it, so we shouldn't start rx?
+
+>> +static void ipheth_disconnect(struct usb_interface *intf)
+>> +{
+>> +	struct ipheth_device *dev;
+>> +
+>> +	dev = usb_get_intfdata(intf);
+>> +	if (dev != NULL) {
+> 
+> is this check needed?
+
+Does usb_get_infdata always return not NULL? I haven't found anything
+about it (just manual pages for the function, but can't spot if it
+cannot return NULL). We disconnected the device, but I understand that
+the kernel still has the information and the allocated memory, so the
+cleanup code is still needed, isn't it?
+
+
+> 
+>> +static struct usb_driver ipheth_driver = {
+>> +	.name =		"ipheth",
+>> +	.probe =	ipheth_probe,
+>> +	.disconnect =	ipheth_disconnect,
+>> +	.id_table =	ipheth_table,
+>> +	.supports_autosuspend = 0,
+> 
+> redundant
+
+Why?
+
+Thanks a lot in advance.
+
+
+Best regards,
+-- 
+L. Alberto Giménez
+JabberID agimenez@jabber.sysvalve.es
+GnuPG key ID 0x3BAABDE1
