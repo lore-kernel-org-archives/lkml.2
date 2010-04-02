@@ -1,501 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab0DBJkd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 05:40:33 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:52198 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754362Ab0DBJkX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 05:40:23 -0400
-Date: Fri, 2 Apr 2010 11:40:21 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Lars Lindley <lindley@coyote.org>
-Cc: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: winbond: wbusb.c Coding style fixes.
-Message-ID: <20100402094021.GA8442@atrey.karlin.mff.cuni.cz>
-References: <1270198655-29471-1-git-send-email-lindley@coyote.org>
+	id S1755012Ab0DBJsd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 05:48:33 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:37363 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752859Ab0DBJsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 05:48:25 -0400
+Date: Fri, 2 Apr 2010 10:48:06 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: TAO HU <tghk48@motorola.com>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org,
+       "Ye Yuan.Bo-A22116" <yuan-bo.ye@motorola.com>,
+       Chang Qing-A21550 <Qing.Chang@motorola.com>,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: [Question] race condition in mm/page_alloc.c regarding
+	page->lru?
+Message-ID: <20100402094805.GA12886@csn.ul.ie>
+References: <i2i5f4a33681003312105m4cd42e9ayfe35cc0988c401b6@mail.gmail.com> <g2g5f4a33681004012051wedea9538w9da89e210b731422@mail.gmail.com> <20100402135955.645F.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1270198655-29471-1-git-send-email-lindley@coyote.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100402135955.645F.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I fixed the reported checkpatch.pl problems except for a bunch of
-> long lines and some printk:s.
-> I also removed versioning comments.
+On Fri, Apr 02, 2010 at 02:03:23PM +0900, KOSAKI Motohiro wrote:
+> Cc to Mel,
 > 
-> Signed-off-by: Lars Lindley <lindley@coyote.org>
-
-ACK.
-
-> ---
->  drivers/staging/winbond/wbusb.c |  187 +++++++++++++++++---------------------
->  1 files changed, 84 insertions(+), 103 deletions(-)
+> > 2 patches related to page_alloc.c were applied.
+> > Does anyone see a connection between the 2 patches and the panic?
+> > NOTE: the full patches are attached.
 > 
-> diff --git a/drivers/staging/winbond/wbusb.c b/drivers/staging/winbond/wbusb.c
-> index 3482eec..d7694e6 100644
-> --- a/drivers/staging/winbond/wbusb.c
-> +++ b/drivers/staging/winbond/wbusb.c
-> @@ -142,19 +142,17 @@ static void hal_set_radio_mode(struct hw_data *pHwData, unsigned char radio_off)
->  	if (pHwData->SurpriseRemove)
->  		return;
->  
-> -	if (radio_off)		//disable Baseband receive off
-> -	{
-> -		pHwData->CurrentRadioSw = 1;	// off
-> +	if (radio_off) {	/* disable Baseband receive off */
-> +		pHwData->CurrentRadioSw = 1;	/* off */
->  		reg->M24_MacControl &= 0xffffffbf;
->  	} else {
-> -		pHwData->CurrentRadioSw = 0;	// on
-> +		pHwData->CurrentRadioSw = 0;	/* on */
->  		reg->M24_MacControl |= 0x00000040;
->  	}
->  	Wb35Reg_Write(pHwData, 0x0824, reg->M24_MacControl);
->  }
->  
-> -static void
-> -hal_set_current_channel_ex(struct hw_data *pHwData, struct chan_info channel)
-> +static void hal_set_current_channel_ex(struct hw_data *pHwData, struct chan_info channel)
->  {
->  	struct wb35_reg *reg = &pHwData->reg;
->  
-> @@ -163,17 +161,18 @@ hal_set_current_channel_ex(struct hw_data *pHwData, struct chan_info channel)
->  
->  	printk("Going to channel: %d/%d\n", channel.band, channel.ChanNo);
->  
-> -	RFSynthesizer_SwitchingChannel(pHwData, channel);	// Switch channel
-> +	RFSynthesizer_SwitchingChannel(pHwData, channel); /* Switch channel */
->  	pHwData->Channel = channel.ChanNo;
->  	pHwData->band = channel.band;
->  #ifdef _PE_STATE_DUMP_
->  	printk("Set channel is %d, band =%d\n", pHwData->Channel,
->  	       pHwData->band);
->  #endif
-> -	reg->M28_MacControl &= ~0xff;	// Clean channel information field
-> +	reg->M28_MacControl &= ~0xff;	/* Clean channel information field */
->  	reg->M28_MacControl |= channel.ChanNo;
->  	Wb35Reg_WriteWithCallbackValue(pHwData, 0x0828, reg->M28_MacControl,
-> -				       (s8 *) & channel, sizeof(struct chan_info));
-> +				       (s8 *) &channel,
-> +				       sizeof(struct chan_info));
->  }
->  
->  static void hal_set_current_channel(struct hw_data *pHwData, struct chan_info channel)
-> @@ -188,21 +187,22 @@ static void hal_set_accept_broadcast(struct hw_data *pHwData, u8 enable)
->  	if (pHwData->SurpriseRemove)
->  		return;
->  
-> -	reg->M00_MacControl &= ~0x02000000;	//The HW value
-> +	reg->M00_MacControl &= ~0x02000000;	/* The HW value */
->  
->  	if (enable)
-> -		reg->M00_MacControl |= 0x02000000;	//The HW value
-> +		reg->M00_MacControl |= 0x02000000;	/* The HW value */
->  
->  	Wb35Reg_Write(pHwData, 0x0800, reg->M00_MacControl);
->  }
->  
-> -//for wep key error detection, we need to accept broadcast packets to be received temporary.
-> +/* For wep key error detection, we need to accept broadcast packets to be received temporary. */
->  static void hal_set_accept_promiscuous(struct hw_data *pHwData, u8 enable)
->  {
->  	struct wb35_reg *reg = &pHwData->reg;
->  
->  	if (pHwData->SurpriseRemove)
->  		return;
-> +
->  	if (enable) {
->  		reg->M00_MacControl |= 0x00400000;
->  		Wb35Reg_Write(pHwData, 0x0800, reg->M00_MacControl);
-> @@ -219,9 +219,9 @@ static void hal_set_accept_multicast(struct hw_data *pHwData, u8 enable)
->  	if (pHwData->SurpriseRemove)
->  		return;
->  
-> -	reg->M00_MacControl &= ~0x01000000;	//The HW value
-> +	reg->M00_MacControl &= ~0x01000000;	/* The HW value */
->  	if (enable)
-> -		reg->M00_MacControl |= 0x01000000;	//The HW value
-> +		reg->M00_MacControl |= 0x01000000;	/* The HW value */
->  	Wb35Reg_Write(pHwData, 0x0800, reg->M00_MacControl);
->  }
->  
-> @@ -232,13 +232,12 @@ static void hal_set_accept_beacon(struct hw_data *pHwData, u8 enable)
->  	if (pHwData->SurpriseRemove)
->  		return;
->  
-> -	// 20040108 debug
-> -	if (!enable)		//Due to SME and MLME are not suitable for 35
-> +	if (!enable)	/* Due to SME and MLME are not suitable for 35 */
->  		return;
->  
-> -	reg->M00_MacControl &= ~0x04000000;	//The HW value
-> +	reg->M00_MacControl &= ~0x04000000;	/* The HW value */
->  	if (enable)
-> -		reg->M00_MacControl |= 0x04000000;	//The HW value
-> +		reg->M00_MacControl |= 0x04000000;	/* The HW value */
->  
->  	Wb35Reg_Write(pHwData, 0x0800, reg->M00_MacControl);
->  }
-> @@ -283,8 +282,7 @@ static const struct ieee80211_ops wbsoft_ops = {
->  	.get_tsf		= wbsoft_get_tsf,
->  };
->  
-> -static void
-> -hal_set_ethernet_address(struct hw_data *pHwData, u8 * current_address)
-> +static void hal_set_ethernet_address(struct hw_data *pHwData, u8 *current_address)
->  {
->  	u32 ltmp[2];
->  
-> @@ -294,14 +292,12 @@ hal_set_ethernet_address(struct hw_data *pHwData, u8 * current_address)
->  	memcpy(pHwData->CurrentMacAddress, current_address, ETH_ALEN);
->  
->  	ltmp[0] = cpu_to_le32(*(u32 *) pHwData->CurrentMacAddress);
-> -	ltmp[1] =
-> -	    cpu_to_le32(*(u32 *) (pHwData->CurrentMacAddress + 4)) & 0xffff;
-> +	ltmp[1] = cpu_to_le32(*(u32 *) (pHwData->CurrentMacAddress + 4)) & 0xffff;
->  
->  	Wb35Reg_BurstWrite(pHwData, 0x03e8, ltmp, 2, AUTO_INCREMENT);
->  }
->  
-> -static void
-> -hal_get_permanent_address(struct hw_data *pHwData, u8 * pethernet_address)
-> +static void hal_get_permanent_address(struct hw_data *pHwData, u8 *pethernet_address)
->  {
->  	if (pHwData->SurpriseRemove)
->  		return;
-> @@ -319,7 +315,7 @@ static void hal_stop(struct hw_data *pHwData)
->  	pHwData->Wb35Tx.tx_halt = 1;
->  	Wb35Tx_stop(pHwData);
->  
-> -	reg->D00_DmaControl &= ~0xc0000000;	//Tx Off, Rx Off
-> +	reg->D00_DmaControl &= ~0xc0000000;	/* Tx Off, Rx Off */
->  	Wb35Reg_Write(pHwData, 0x0400, reg->D00_DmaControl);
->  }
->  
-> @@ -346,14 +342,14 @@ u8 hal_get_antenna_number(struct hw_data *pHwData)
->  }
->  
->  /* 0 : radio on; 1: radio off */
-> -static u8 hal_get_hw_radio_off(struct hw_data * pHwData)
-> +static u8 hal_get_hw_radio_off(struct hw_data *pHwData)
->  {
->  	struct wb35_reg *reg = &pHwData->reg;
->  
->  	if (pHwData->SurpriseRemove)
->  		return 1;
->  
-> -	//read the bit16 of register U1B0
-> +	/* read the bit16 of register U1B0 */
->  	Wb35Reg_Read(pHwData, 0x3b0, &reg->U1B0);
->  	if ((reg->U1B0 & 0x00010000)) {
->  		pHwData->CurrentRadioHw = 1;
-> @@ -387,104 +383,98 @@ static void hal_led_control(unsigned long data)
->  
->  	if (pHwData->LED_control) {
->  		ltmp2 = pHwData->LED_control & 0xff;
-> -		if (ltmp2 == 5)	// 5 is WPS mode
-> -		{
-> +		if (ltmp2 == 5)	{ /* 5 is WPS mode */
->  			TimeInterval = 100;
->  			ltmp2 = (pHwData->LED_control >> 8) & 0xff;
->  			switch (ltmp2) {
-> -			case 1:	// [0.2 On][0.1 Off]...
-> +			case 1:	/* [0.2 On][0.1 Off]... */
->  				pHwData->LED_Blinking %= 3;
-> -				ltmp = 0x1010;	// Led 1 & 0 Green and Red
-> -				if (pHwData->LED_Blinking == 2)	// Turn off
-> +				ltmp = 0x1010;	/* Led 1 & 0 Green and Red */
-> +				if (pHwData->LED_Blinking == 2)	/* Turn off */
->  					ltmp = 0;
->  				break;
-> -			case 2:	// [0.1 On][0.1 Off]...
-> +			case 2:	/* [0.1 On][0.1 Off]... */
->  				pHwData->LED_Blinking %= 2;
-> -				ltmp = 0x0010;	// Led 0 red color
-> -				if (pHwData->LED_Blinking)	// Turn off
-> +				ltmp = 0x0010;	/* Led 0 red color */
-> +				if (pHwData->LED_Blinking) /* Turn off */
->  					ltmp = 0;
->  				break;
-> -			case 3:	// [0.1 On][0.1 Off][0.1 On][0.1 Off][0.1 On][0.1 Off][0.1 On][0.1 Off][0.1 On][0.1 Off][0.5 Off]...
-> +			case 3:	/* [0.1 On][0.1 Off][0.1 On][0.1 Off][0.1 On][0.1 Off][0.1 On][0.1 Off][0.1 On][0.1 Off][0.5 Off]... */
->  				pHwData->LED_Blinking %= 15;
-> -				ltmp = 0x0010;	// Led 0 red color
-> -				if ((pHwData->LED_Blinking >= 9) || (pHwData->LED_Blinking % 2))	// Turn off 0.6 sec
-> +				ltmp = 0x0010;	/* Led 0 red color */
-> +				if ((pHwData->LED_Blinking >= 9) || (pHwData->LED_Blinking % 2)) /* Turn off 0.6 sec */
->  					ltmp = 0;
->  				break;
-> -			case 4:	// [300 On][ off ]
-> -				ltmp = 0x1000;	// Led 1 Green color
-> +			case 4:	/* [300 On][ off ] */
-> +				ltmp = 0x1000;	/* Led 1 Green color */
->  				if (pHwData->LED_Blinking >= 3000)
-> -					ltmp = 0;	// led maybe on after 300sec * 32bit counter overlap.
-> +					ltmp = 0; /* led maybe on after 300sec * 32bit counter overlap. */
->  				break;
->  			}
->  			pHwData->LED_Blinking++;
->  
->  			reg->U1BC_LEDConfigure = ltmp;
-> -			if (LEDSet != 7)	// Only 111 mode has 2 LEDs on PCB.
-> -			{
-> -				reg->U1BC_LEDConfigure |= (ltmp & 0xff) << 8;	// Copy LED result to each LED control register
-> +			if (LEDSet != 7) { /* Only 111 mode has 2 LEDs on PCB. */
-> +				reg->U1BC_LEDConfigure |= (ltmp & 0xff) << 8; /* Copy LED result to each LED control register */
->  				reg->U1BC_LEDConfigure |= (ltmp & 0xff00) >> 8;
->  			}
->  			Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);
->  		}
-> -	} else if (pHwData->CurrentRadioSw || pHwData->CurrentRadioHw)	// If radio off
-> -	{
-> +	} else if (pHwData->CurrentRadioSw || pHwData->CurrentRadioHw) { /* If radio off */
->  		if (reg->U1BC_LEDConfigure & 0x1010) {
->  			reg->U1BC_LEDConfigure &= ~0x1010;
->  			Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);
->  		}
->  	} else {
->  		switch (LEDSet) {
-> -		case 4:	// [100] Only 1 Led be placed on PCB and use pin 21 of IC. Use LED_0 for showing
-> -			if (!pHwData->LED_LinkOn)	// Blink only if not Link On
-> -			{
-> -				// Blinking if scanning is on progress
-> +		case 4:	/* [100] Only 1 Led be placed on PCB and use pin 21 of IC. Use LED_0 for showing */
-> +			if (!pHwData->LED_LinkOn) { /* Blink only if not Link On */
-> +				/* Blinking if scanning is on progress */
->  				if (pHwData->LED_Scanning) {
->  					if (pHwData->LED_Blinking == 0) {
->  						reg->U1BC_LEDConfigure |= 0x10;
-> -						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	// LED_0 On
-> +						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	/* LED_0 On */
->  						pHwData->LED_Blinking = 1;
->  						TimeInterval = 300;
->  					} else {
->  						reg->U1BC_LEDConfigure &= ~0x10;
-> -						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	// LED_0 Off
-> +						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	/* LED_0 Off */
->  						pHwData->LED_Blinking = 0;
->  						TimeInterval = 300;
->  					}
->  				} else {
-> -					//Turn Off LED_0
-> +					/* Turn Off LED_0 */
->  					if (reg->U1BC_LEDConfigure & 0x10) {
->  						reg->U1BC_LEDConfigure &= ~0x10;
-> -						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	// LED_0 Off
-> +						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	/* LED_0 Off */
->  					}
->  				}
->  			} else {
-> -				// Turn On LED_0
-> +				/* Turn On LED_0 */
->  				if ((reg->U1BC_LEDConfigure & 0x10) == 0) {
->  					reg->U1BC_LEDConfigure |= 0x10;
-> -					Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	// LED_0 Off
-> +					Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	/* LED_0 Off */
->  				}
->  			}
->  			break;
-> -
-> -		case 6:	// [110] Only 1 Led be placed on PCB and use pin 21 of IC. Use LED_0 for showing
-> -			if (!pHwData->LED_LinkOn)	// Blink only if not Link On
-> -			{
-> -				// Blinking if scanning is on progress
-> +		case 6:	/* [110] Only 1 Led be placed on PCB and use pin 21 of IC. Use LED_0 for showing */
-> +			if (!pHwData->LED_LinkOn) { /* Blink only if not Link On */
-> +				/* Blinking if scanning is on progress */
->  				if (pHwData->LED_Scanning) {
->  					if (pHwData->LED_Blinking == 0) {
->  						reg->U1BC_LEDConfigure &= ~0xf;
->  						reg->U1BC_LEDConfigure |= 0x10;
-> -						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	// LED_0 On
-> +						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	/* LED_0 On */
->  						pHwData->LED_Blinking = 1;
->  						TimeInterval = 300;
->  					} else {
->  						reg->U1BC_LEDConfigure &= ~0x1f;
-> -						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	// LED_0 Off
-> +						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	/* LED_0 Off */
->  						pHwData->LED_Blinking = 0;
->  						TimeInterval = 300;
->  					}
->  				} else {
-> -					// 20060901 Gray blinking if in disconnect state and not scanning
-> +					/* Gray blinking if in disconnect state and not scanning */
->  					ltmp = reg->U1BC_LEDConfigure;
->  					reg->U1BC_LEDConfigure &= ~0x1f;
->  					if (LED_GRAY2[(pHwData->LED_Blinking % 30)]) {
-> @@ -494,85 +484,78 @@ static void hal_led_control(unsigned long data)
->  					}
->  					pHwData->LED_Blinking++;
->  					if (reg->U1BC_LEDConfigure != ltmp)
-> -						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	// LED_0 Off
-> +						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	/* LED_0 Off */
->  					TimeInterval = 100;
->  				}
->  			} else {
-> -				// Turn On LED_0
-> +				/* Turn On LED_0 */
->  				if ((reg->U1BC_LEDConfigure & 0x10) == 0) {
->  					reg->U1BC_LEDConfigure |= 0x10;
-> -					Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	// LED_0 Off
-> +					Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	/* LED_0 Off */
->  				}
->  			}
->  			break;
-> -
-> -		case 5:	// [101] Only 1 Led be placed on PCB and use LED_1 for showing
-> -			if (!pHwData->LED_LinkOn)	// Blink only if not Link On
-> -			{
-> -				// Blinking if scanning is on progress
-> +		case 5:	/* [101] Only 1 Led be placed on PCB and use LED_1 for showing */
-> +			if (!pHwData->LED_LinkOn) { /* Blink only if not Link On */
-> +				/* Blinking if scanning is on progress */
->  				if (pHwData->LED_Scanning) {
->  					if (pHwData->LED_Blinking == 0) {
-> -						reg->U1BC_LEDConfigure |=
-> -						    0x1000;
-> -						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	// LED_1 On
-> +						reg->U1BC_LEDConfigure |= 0x1000;
-> +						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	/* LED_1 On */
->  						pHwData->LED_Blinking = 1;
->  						TimeInterval = 300;
->  					} else {
-> -						reg->U1BC_LEDConfigure &=
-> -						    ~0x1000;
-> -						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	// LED_1 Off
-> +						reg->U1BC_LEDConfigure &= ~0x1000;
-> +						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	/* LED_1 Off */
->  						pHwData->LED_Blinking = 0;
->  						TimeInterval = 300;
->  					}
->  				} else {
-> -					//Turn Off LED_1
-> +					/* Turn Off LED_1 */
->  					if (reg->U1BC_LEDConfigure & 0x1000) {
-> -						reg->U1BC_LEDConfigure &=
-> -						    ~0x1000;
-> -						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	// LED_1 Off
-> +						reg->U1BC_LEDConfigure &= ~0x1000;
-> +						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	/* LED_1 Off */
->  					}
->  				}
->  			} else {
-> -				// Is transmitting/receiving ??
-> +				/* Is transmitting/receiving ?? */
->  				if ((adapter->RxByteCount !=
->  				     pHwData->RxByteCountLast)
->  				    || (adapter->TxByteCount !=
->  					pHwData->TxByteCountLast)) {
->  					if ((reg->U1BC_LEDConfigure & 0x3000) !=
->  					    0x3000) {
-> -						reg->U1BC_LEDConfigure |=
-> -						    0x3000;
-> -						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	// LED_1 On
-> +						reg->U1BC_LEDConfigure |= 0x3000;
-> +						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	/* LED_1 On */
->  					}
-> -					// Update variable
-> +					/* Update variable */
->  					pHwData->RxByteCountLast =
->  					    adapter->RxByteCount;
->  					pHwData->TxByteCountLast =
->  					    adapter->TxByteCount;
->  					TimeInterval = 200;
->  				} else {
-> -					// Turn On LED_1 and blinking if transmitting/receiving
-> +					/* Turn On LED_1 and blinking if transmitting/receiving */
->  					if ((reg->U1BC_LEDConfigure & 0x3000) !=
->  					    0x1000) {
->  						reg->U1BC_LEDConfigure &=
->  						    ~0x3000;
->  						reg->U1BC_LEDConfigure |=
->  						    0x1000;
-> -						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	// LED_1 On
-> +						Wb35Reg_Write(pHwData, 0x03bc, reg->U1BC_LEDConfigure);	/* LED_1 On */
->  					}
->  				}
->  			}
->  			break;
-> -
-> -		default:	// Default setting. 2 LED be placed on PCB. LED_0: Link On LED_1 Active
-> +		default: /* Default setting. 2 LED be placed on PCB. LED_0: Link On LED_1 Active */
->  			if ((reg->U1BC_LEDConfigure & 0x3000) != 0x3000) {
-> -				reg->U1BC_LEDConfigure |= 0x3000;	// LED_1 is always on and event enable
-> +				reg->U1BC_LEDConfigure |= 0x3000;	/* LED_1 is always on and event enable */
->  				Wb35Reg_Write(pHwData, 0x03bc,
->  					      reg->U1BC_LEDConfigure);
->  			}
->  
->  			if (pHwData->LED_Blinking) {
-> -				// Gray blinking
-> +				/* Gray blinking */
->  				reg->U1BC_LEDConfigure &= ~0x0f;
->  				reg->U1BC_LEDConfigure |= 0x10;
->  				reg->U1BC_LEDConfigure |=
-> @@ -584,7 +567,7 @@ static void hal_led_control(unsigned long data)
->  				if (pHwData->LED_Blinking < 40)
->  					TimeInterval = 100;
->  				else {
-> -					pHwData->LED_Blinking = 0;	// Stop blinking
-> +					pHwData->LED_Blinking = 0; /* Stop blinking */
->  					reg->U1BC_LEDConfigure &= ~0x0f;
->  					Wb35Reg_Write(pHwData, 0x03bc,
->  						      reg->U1BC_LEDConfigure);
-> @@ -593,16 +576,14 @@ static void hal_led_control(unsigned long data)
->  			}
->  
->  			if (pHwData->LED_LinkOn) {
-> -				if (!(reg->U1BC_LEDConfigure & 0x10))	// Check the LED_0
-> -				{
-> -					//Try to turn ON LED_0 after gray blinking
-> +				if (!(reg->U1BC_LEDConfigure & 0x10)) { /* Check the LED_0 */
-> +					/* Try to turn ON LED_0 after gray blinking */
->  					reg->U1BC_LEDConfigure |= 0x10;
-> -					pHwData->LED_Blinking = 1;	//Start blinking
-> +					pHwData->LED_Blinking = 1; /* Start blinking */
->  					TimeInterval = 50;
->  				}
->  			} else {
-> -				if (reg->U1BC_LEDConfigure & 0x10)	// Check the LED_0
-> -				{
-> +				if (reg->U1BC_LEDConfigure & 0x10) { /* Check the LED_0 */
->  					reg->U1BC_LEDConfigure &= ~0x10;
->  					Wb35Reg_Write(pHwData, 0x03bc,
->  						      reg->U1BC_LEDConfigure);
-> @@ -611,7 +592,7 @@ static void hal_led_control(unsigned long data)
->  			break;
->  		}
->  
-> -		//20060828.1 Active send null packet to avoid AP disconnect
-> +		/* Active send null packet to avoid AP disconnect */
->  		if (pHwData->LED_LinkOn) {
->  			pHwData->NullPacketCount += TimeInterval;
->  			if (pHwData->NullPacketCount >=
-> @@ -622,7 +603,7 @@ static void hal_led_control(unsigned long data)
->  	}
->  
->  	pHwData->time_count += TimeInterval;
-> -	Wb35Tx_CurrentTime(adapter, pHwData->time_count);	// 20060928 add
-> +	Wb35Tx_CurrentTime(adapter, pHwData->time_count);
->  	pHwData->LEDTimer.expires = jiffies + msecs_to_jiffies(TimeInterval);
->  	add_timer(&pHwData->LEDTimer);
->  }
-> @@ -654,7 +635,7 @@ static int hal_init_hardware(struct ieee80211_hw *hw)
->  	SoftwareSet = hal_software_set(pHwData);
->  
->  #ifdef Vendor2
-> -	// Try to make sure the EEPROM contain
-> +	/* Try to make sure the EEPROM contain */
->  	SoftwareSet >>= 8;
->  	if (SoftwareSet != 0x82)
->  		return false;
+> I think your attached two patches are perfectly unrelated your problem.
+> 
+
+Agreed. It's unlikely that there is a race as such in the page
+allocator. In buffered_rmqueue that you initially talk about, the lists
+being manipulated are per-cpu lists. About the only way to corrupt them
+is if you had a NMI hander that called the page allocator. I really hope
+your platform is not doing anything like that.
+
+A double free of page->lru is a possibility. You could try reproducing
+the problem with CONFIG_DEBUG_LIST enabled to see if anything falls out.
+
+> "mm: Add min_free_order_shift tunable." seems makes zero sense. I don't think this patch
+> need to be merge.
+> 
+
+It makes a marginal amount of sense. Basically what it does is allowing
+high-order allocations to go much further below their watermarks than is
+currently allowed. If the platform in question is doing a lot of high-order
+allocations, this patch could be seen to "fix" the problem but you wouldn't
+touch mainline with it with a barge pole. It would be more stable to fix
+the drivers to not use high order allocations or use a mempool.
+
+It is inconceivable this patch is related to the problem though.
+
+> but "mm: Check if any page in a pageblock is reserved before marking it MIGRATE_RESERVE"
+> treat strange hardware correctly, I think. If Mel ack this, I hope merge it. 
+> Mel, Can we hear your opinion?
+> 
+
+This patch is interesting and I am surprised it is required. Is it really the
+case that page blocks near the start of a zone are dominated with PageReserved
+pages but the first one happen to be free? I guess it's conceivable on ARM
+where memmap can be freed at boot time.
+
+There is a theoritical problem with the patch but it is easily resolved.
+A PFN walker like this must call pfn_valid_within() before calling
+pfn_to_page(). If they do not, it's possible to get complete garbage
+for the page and result in a bad dereference. In this particular case,
+it would be a kernel oops rather than memory corruption though.
+
+If that was fixed, I'd see no problem with Acking the patch.
+
+It is also inconceivable this patch is related to the problem.
+
+> > 
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index a596bfd..34a29e2 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -2551,6 +2551,20 @@ static inline unsigned long
+> > wait_table_bits(unsigned long size)
+> >  #define LONG_ALIGN(x) (((x)+(sizeof(long))-1)&~((sizeof(long))-1))
+> > 
+> >  /*
+> > + * Check if a pageblock contains reserved pages
+> > + */
+> > +static int pageblock_is_reserved(unsigned long start_pfn)
+> > +{
+> > +	unsigned long end_pfn = start_pfn + pageblock_nr_pages;
+> > +	unsigned long pfn;
+> > +
+> > +	for (pfn = start_pfn; pfn < end_pfn; pfn++)
+> > +		if (PageReserved(pfn_to_page(pfn)))
+> > +			return 1;
+> > +	return 0;
+> > +}
+> > +
+> > +/*
+> >   * Mark a number of pageblocks as MIGRATE_RESERVE. The number
+> >   * of blocks reserved is based on zone->pages_min. The memory within the
+> >   * reserve will tend to store contiguous free pages. Setting min_free_kbytes
+> > @@ -2579,7 +2593,7 @@ static void setup_zone_migrate_reserve(struct zone *zone)
+> >  			continue;
+> > 
+> >  		/* Blocks with reserved pages will never free, skip them. */
+> > -		if (PageReserved(page))
+> > +		if (pageblock_is_reserved(pfn))
+> >  			continue;
+> > 
+> >  		block_migratetype = get_pageblock_migratetype(page);
+> > -- 
+> > 1.5.4.3
+> > 
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 5c44ed4..a596bfd 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -119,6 +119,7 @@ static char * const zone_names[MAX_NR_ZONES] = {
+> >  };
+> > 
+> >  int min_free_kbytes = 1024;
+> > +int min_free_order_shift = 1;
+> > 
+> >  unsigned long __meminitdata nr_kernel_pages;
+> >  unsigned long __meminitdata nr_all_pages;
+> > @@ -1256,7 +1257,7 @@ int zone_watermark_ok(struct zone *z, int order,
+> > unsigned long mark,
+> >  		free_pages -= z->free_area[o].nr_free << o;
+> > 
+> >  		/* Require fewer higher order pages to be free */
+> > -		min >>= 1;
+> > +		min >>= min_free_order_shift;
+> > 
+> >  		if (free_pages <= min)
+> >  			return 0;
+> > -- 
+> > 
+> > 
+> > On Thu, Apr 1, 2010 at 12:05 PM, TAO HU <tghk48@motorola.com> wrote:
+> > > Hi, all
+> > >
+> > > We got a panic on our ARM (OMAP) based HW.
+> > > Our code is based on 2.6.29 kernel (last commit for mm/page_alloc.c is
+> > > cc2559bccc72767cb446f79b071d96c30c26439b)
+> > >
+> > > It appears to crash while going through pcp->list in
+> > > buffered_rmqueue() of mm/page_alloc.c after checking vmlinux.
+> > > "00100100" implies LIST_POISON1 that suggests a race condition between
+> > > list_add() and list_del() in my personal view.
+> > > However we not yet figure out locking problem regarding page.lru.
+> > >
+> > > Any known issues about race condition in mm/page_alloc.c?
+> > > And other hints are highly appreciated.
+> > >
+> > >  /* Find a page of the appropriate migrate type */
+> > >                if (cold) {
+> > >                   ... ...
+> > >                } else {
+> > >                        list_for_each_entry(page, &pcp->list, lru)
+> > >                                if (page_private(page) == migratetype)
+> > >                                        break;
+> > >                }
+> > >
+> > > <1>[120898.805267] Unable to handle kernel paging request at virtual
+> > > address 00100100
+> > > <1>[120898.805633] pgd = c1560000
+> > > <1>[120898.805786] [00100100] *pgd=897b3031, *pte=00000000, *ppte=00000000
+> > > <4>[120898.806457] Internal error: Oops: 17 [#1] PREEMPT
+> > > ... ...
+> > > <4>[120898.807861] CPU: 0    Not tainted  (2.6.29-omap1 #1)
+> > > <4>[120898.808044] PC is at get_page_from_freelist+0x1d0/0x4b0
+> > > <4>[120898.808227] LR is at get_page_from_freelist+0xc8/0x4b0
+> > > <4>[120898.808563] pc : [<c00a600c>]    lr : [<c00a5f04>]    psr: 800000d3
+> > > <4>[120898.808563] sp : c49fbd18  ip : 00000000  fp : c49fbd74
+> > > <4>[120898.809020] r10: 00000000  r9 : 001000e8  r8 : 00000002
+> > > <4>[120898.809204] r7 : 001200d2  r6 : 60000053  r5 : c0507c4c  r4 : c49fa000
+> > > <4>[120898.809509] r3 : 001000e8  r2 : 00100100  r1 : c0507c6c  r0 : 00000001
+> > > <4>[120898.809844] Flags: Nzcv  IRQs off  FIQs off  Mode SVC_32  ISA
+> > > ARM  Segment kernel
+> > > <4>[120898.810028] Control: 10c5387d  Table: 82160019  DAC: 00000017
+> > > <4>[120898.948425] Backtrace:
+> > > <4>[120898.948760] [<c00a5e3c>] (get_page_from_freelist+0x0/0x4b0)
+> > > from [<c00a6398>] (__alloc_pages_internal+0xac/0x3e8)
+> > > <4>[120898.949554] [<c00a62ec>] (__alloc_pages_internal+0x0/0x3e8)
+> > > from [<c00b461c>] (handle_mm_fault+0x16c/0xbac)
+> > > <4>[120898.950347] [<c00b44b0>] (handle_mm_fault+0x0/0xbac) from
+> > > [<c00b51d0>] (__get_user_pages+0x174/0x2b4)
+> > > <4>[120898.951019] [<c00b505c>] (__get_user_pages+0x0/0x2b4) from
+> > > [<c00b534c>] (get_user_pages+0x3c/0x44)
+> > > <4>[120898.951812] [<c00b5310>] (get_user_pages+0x0/0x44) from
+> > > [<c00caf9c>] (get_arg_page+0x50/0xa4)
+> > > <4>[120898.952636] [<c00caf4c>] (get_arg_page+0x0/0xa4) from
+> > > [<c00cb1ec>] (copy_strings+0x108/0x210)
+> > > <4>[120898.953430]  r7:beffffe4 r6:00000ffc r5:00000000 r4:00000018
+> > > <4>[120898.954223] [<c00cb0e4>] (copy_strings+0x0/0x210) from
+> > > [<c00cb330>] (copy_strings_kernel+0x3c/0x74)
+> > > <4>[120898.955047] [<c00cb2f4>] (copy_strings_kernel+0x0/0x74) from
+> > > [<c00cc778>] (do_execve+0x18c/0x2b0)
+> > > <4>[120898.955841]  r5:0001e240 r4:0001e224
+> > > <4>[120898.956329] [<c00cc5ec>] (do_execve+0x0/0x2b0) from
+> > > [<c00400e4>] (sys_execve+0x3c/0x5c)
+> > > <4>[120898.957153] [<c00400a8>] (sys_execve+0x0/0x5c) from
+> > > [<c003ce80>] (ret_fast_syscall+0x0/0x2c)
+> > > <4>[120898.957946]  r7:0000000b r6:0001e270 r5:00000000 r4:0001d580
+> > > <4>[120898.958740] Code: e1530008 0a000006 e2429018 e1a03009 (e5b32018)
+> > >
+> > >
+> > >
+> > > --
+> > > Best Regards
+> > > Hu Tao
+> > >
+> 
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
