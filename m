@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759020Ab0DAX6X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 19:58:23 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54221 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754342Ab0DAX6T (ORCPT
+	id S1759029Ab0DBAA0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 20:00:26 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:36123 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758987Ab0DBAAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 19:58:19 -0400
-Date: Thu, 1 Apr 2010 16:57:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Serge E. Hallyn" <serue@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
-       Oren Laadan <orenl@cs.columbia.edu>
-Subject: Re: [C/R v20][PATCH 00/96] Linux Checkpoint-Restart - v20
-Message-Id: <20100401165754.9fe93085.akpm@linux-foundation.org>
-In-Reply-To: <20100401233710.GA23711@us.ibm.com>
-References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
-	<20100401233710.GA23711@us.ibm.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Apr 2010 20:00:24 -0400
+Date: Thu, 1 Apr 2010 20:00:12 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Neil Horman <nhorman@redhat.com>, kexec@lists.infradead.org,
+       linux-kernel@vger.kernel.org, hbabu@us.ibm.com,
+       iommu@lists.linux-foundation.org,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH] amd iommu: force flush of iommu prior during shutdown
+Message-ID: <20100402000012.GA8930@hmsreliant.think-freely.org>
+References: <20100331182824.GC13406@hmsreliant.think-freely.org>
+ <m1wrwsuxn9.fsf@fess.ebiederm.org>
+ <20100331191811.GD13406@hmsreliant.think-freely.org>
+ <m1sk7guv5u.fsf@fess.ebiederm.org>
+ <20100331202745.GE13406@hmsreliant.think-freely.org>
+ <20100401142902.GF24846@8bytes.org>
+ <20100401144736.GA14069@shamino.rdu.redhat.com>
+ <20100401155643.GG24846@8bytes.org>
+ <20100401171149.GH13603@shamino.rdu.redhat.com>
+ <20100401201433.GK24846@8bytes.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100401201433.GK24846@8bytes.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Apr 2010 18:37:10 -0500
-"Serge E. Hallyn" <serue@us.ibm.com> wrote:
-
-> Quoting Oren Laadan (orenl@cs.columbia.edu):
-> > Hi Andrew,
-> > 
-> > Following up on the thread on the checkpoint-restart patch set
-> > (http://lkml.org/lkml/2010/3/1/422), the following series is the
-> > latest checkpoint/restart, based on 2.6.33.
-> > 
-> > The first 20 patches are cleanups and prepartion for c/r; they
-> > are followed by the actual c/r code.
-> > 
-> > Please apply to -mm, and let us know if there is any way we can
-> > help.
+On Thu, Apr 01, 2010 at 10:14:34PM +0200, Joerg Roedel wrote:
+> On Thu, Apr 01, 2010 at 01:11:49PM -0400, Neil Horman wrote:
+> > On Thu, Apr 01, 2010 at 05:56:43PM +0200, Joerg Roedel wrote:
 > 
-> Hi Andrew,
+> > > The possible fix will be to enable the hardware earlier in the
+> > > initialization path.
+> > > 
+> > That sounds like a reasonable theory, I'll try hack something together
+> > shortly.
 > 
-> Oren sent v20 of the checkpoint/restart patchset out two weeks ago.
-> We've addressed some feedback from linux-fsdevel and added network and
-> pid namespace support.  So we could resend again now.  However we also
-> have a bigger patchset in the works which is feature-neutral, but moves
-> all the code out of linux-2.6/checkpoint/ and next to the code it
-> affects.  I ancitipate #ifdef clashes though, so we'll
-> need to do quite a bit of various-config-and-arch testing of the new
-> code layout.  If you're at a good point to pull it, we can resend the
-> code as is now so as to get some wider testing exposure. Or, if you prefer,
-> we can wait until after the code move in case that would be seen as more
-> amenable to meaningful review.
+> Great. So the problem might be already fixed when I am back in the
+> office ;-)
 > 
+Don't hold your breath, but I'll try my best :)
 
-I guess the final product would be better.  It sounds like it'll have
-the added benefit of making the various interested parties pay more
-attention, too ;)
+> > > This would only prevent possible data corruption. When the IOMMU is off
+> > > the devices will not get a target abort but will only write to different
+> > > physical memory locations. The window where a target abort can happen
+> > > starts when the kdump kernel re-enables the IOMMU and ends when the new
+> > > driver for that device attaches. This is a small window but there is not
+> > > a lot we can do to avoid this small time window.
+> > > 
+> > Can you explain this a bit further please?  From what I read, when the iommu is
+> > disabled, AIUI it does no translations.  That means that any dma addresses which
+> > the driver mapped via the iommu prior to a crash that are stored in devices will
+> > just get strobed on the bus without any translation.  If those dma address do
+> > not lay on top of any physical ram, won't that lead to bus errors, and
+> > transaction aborts?  Worse, if those dma addresses do lie on top of real
+> > physical addresses, won't we get corruption in various places?  Or am I missing
+> > part of how that works?
+> 
+> Hm, the device address may not be a valid host physical address, thats
+> true. But the problem with the small time-window when the IOMMU hardware
+> is re-programmed from the kdump kernel still exists.
+> I need to think about other possible side-effects of leaving the IOMMU
+> enabled on shutdown^Wboot into a kdump kernel.
+> 
+I think its an interesting angle to consider.  Thats why I was talking about
+cloning the old tables in the new kdump kernel and using the error log to filter
+out entries that we could safely assume were complete until enough of the iommu
+page tables were free, so that we could continue to hobble along in the kdump
+kernel until we got to a proper reboot.  All just thought experiment of course.
+I'll try tinkering with your idea above first.
+Neil
 
+> 	Joerg
+> 
+> 
