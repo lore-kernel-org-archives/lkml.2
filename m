@@ -1,62 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316Ab0DBTrc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 15:47:32 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35353 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753700Ab0DBTr0 (ORCPT
+	id S1754338Ab0DBTsY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 15:48:24 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35035 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753237Ab0DBTsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 15:47:26 -0400
-Date: Fri, 2 Apr 2010 12:43:00 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jason Wessel <jason.wessel@windriver.com>
-cc: Will Deacon <will.deacon@arm.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       kgdb-bugreport@lists.sourceforge.net, linux-arm@vger.kernel.org,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 4/5] kgdb: Use atomic operators which use barriers
-In-Reply-To: <4BB64762.6040806@windriver.com>
-Message-ID: <alpine.LFD.2.00.1004021238270.3634@i5.linux-foundation.org>
-References: <1270233145-29335-1-git-send-email-jason.wessel@windriver.com> <1270233145-29335-2-git-send-email-jason.wessel@windriver.com> <1270233145-29335-3-git-send-email-jason.wessel@windriver.com> <1270233145-29335-4-git-send-email-jason.wessel@windriver.com>
- <1270233145-29335-5-git-send-email-jason.wessel@windriver.com> <alpine.LFD.2.00.1004021205080.3634@i5.linux-foundation.org> <4BB64762.6040806@windriver.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Fri, 2 Apr 2010 15:48:18 -0400
+Message-ID: <4BB649E3.5060606@windriver.com>
+Date: Fri, 02 Apr 2010 14:47:47 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: kgdb-bugreport@lists.sourceforge.net, Will Deacon <will.deacon@arm.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       linux-arm@vger.kernel.org
+Subject: Re: [Kgdb-bugreport] [PATCH 4/5] kgdb: Use atomic operators whichuse
+ barriers
+References: <1270233145-29335-1-git-send-email-jason.wessel@windriver.com><1270233145-29335-2-git-send-email-jason.wessel@windriver.com><1270233145-29335-3-git-send-email-jason.wessel@windriver.com><1270233145-29335-4-git-send-email-jason.wessel@windriver.com><1270233145-29335-5-git-send-email-jason.wessel@windriver.com><alpine.LFD.2.00.1004021205080.3634@i5.linux-foundation.org> <4BB64762.6040806@windriver.com>
+In-Reply-To: <4BB64762.6040806@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 02 Apr 2010 19:47:47.0682 (UTC) FILETIME=[5EDE8420:01CAD29D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+Here is the revised patch, which is going into the kgdb-fixes branch.
 
-On Fri, 2 Apr 2010, Jason Wessel wrote:
-> 
-> Russell had this thread: 
-> http://permalink.gmane.org/gmane.linux.ports.arm.kernel/75717
+Thanks,
+Jason.
 
-Russell is wrong.
+--
+From: Jason Wessel <jason.wessel@windriver.com>
+Subject: [PATCH] kgdb: Use atomic operators which use barriers
 
-Yes, originally it was about P4's overheating. But let me repeat: the fact 
-is, this _is_ valid kernel code:
+The cpu_relax() does not mandate that there is an smp memory barrier.
+As a result on the arm smp architecture the kernel debugger can hang
+on entry from time to time, as shown by the kgdb regression tests.
 
-	kernel/sched.c-		while (task_is_waking(p))
-	kernel/sched.c:			cpu_relax();
+The solution is simply to use the atomic operators which include a
+proper smp memory barrier, instead of using atomic_set().
 
-(where that "task_is_waking()" is simply doing two regular reads, and 
-expects another CPU to be changing them).
+Tested-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+---
+ kernel/kgdb.c |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-This has _nothing_ to do with memory barriers, or with overheating. 
-
-The fact that maybe some ARM6 cache coherency implementation is pure and 
-utter sh*t and never sees the changes without the same instruction that 
-happens to be a memory barrier on that architecture does not make that 
-cpu_relax() any more about memory barriers.
-
-Similarly, the fact that P4's wanted cpu_relax() in order to not overheat 
-and cause slowdowns has _nothing_ to do with anything. 
-
-All that matters is that the above kind of while loop must work. The 
-architecture needs to do whatever it needs to do to make it work. End of 
-discussion. If on ARM6 that means "smp_mb()", then that's an ARM6 
-implementation issue.
-
-		Linus
+--- a/kernel/kgdb.c
++++ b/kernel/kgdb.c
+@@ -1379,8 +1379,7 @@ acquirelock:
+ 	 * Make sure the above info reaches the primary CPU before
+ 	 * our cpu_in_kgdb[] flag setting does:
+ 	 */
+-	smp_wmb();
+-	atomic_set(&cpu_in_kgdb[cpu], 1);
++	atomic_inc(&cpu_in_kgdb[cpu]);
+ 
+ 	/*
+ 	 * CPU will loop if it is a slave or request to become a kgdb
+@@ -1400,7 +1399,7 @@ return_normal:
+ 			 */
+ 			if (arch_kgdb_ops.correct_hw_break)
+ 				arch_kgdb_ops.correct_hw_break();
+-			atomic_set(&cpu_in_kgdb[cpu], 0);
++			atomic_dec(&cpu_in_kgdb[cpu]);
+ 			touch_softlockup_watchdog_sync();
+ 			clocksource_touch_watchdog();
+ 			local_irq_restore(flags);
+@@ -1449,7 +1448,7 @@ return_normal:
+ 	 */
+ 	if (!kgdb_single_step) {
+ 		for (i = 0; i < NR_CPUS; i++)
+-			atomic_set(&passive_cpu_wait[i], 1);
++			atomic_inc(&passive_cpu_wait[i]);
+ 	}
+ 
+ #ifdef CONFIG_SMP
+@@ -1483,11 +1482,11 @@ return_normal:
+ 	if (kgdb_io_ops->post_exception)
+ 		kgdb_io_ops->post_exception();
+ 
+-	atomic_set(&cpu_in_kgdb[ks->cpu], 0);
++	atomic_dec(&cpu_in_kgdb[ks->cpu]);
+ 
+ 	if (!kgdb_single_step) {
+ 		for (i = NR_CPUS-1; i >= 0; i--)
+-			atomic_set(&passive_cpu_wait[i], 0);
++			atomic_dec(&passive_cpu_wait[i]);
+ 		/*
+ 		 * Wait till all the CPUs have quit
+ 		 * from the debugger.
+@@ -1736,11 +1735,11 @@ EXPORT_SYMBOL_GPL(kgdb_unregister_io_mod
+  */
+ void kgdb_breakpoint(void)
+ {
+-	atomic_set(&kgdb_setting_breakpoint, 1);
++	atomic_inc(&kgdb_setting_breakpoint);
+ 	wmb(); /* Sync point before breakpoint */
+ 	arch_kgdb_breakpoint();
+ 	wmb(); /* Sync point after breakpoint */
+-	atomic_set(&kgdb_setting_breakpoint, 0);
++	atomic_dec(&kgdb_setting_breakpoint);
+ }
+ EXPORT_SYMBOL_GPL(kgdb_breakpoint);
+ 
