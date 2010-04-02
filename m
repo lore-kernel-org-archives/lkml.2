@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab0DBSfW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 14:35:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27800 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752769Ab0DBSfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 14:35:14 -0400
-Date: Fri, 2 Apr 2010 20:33:09 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: anfei <anfei.zhou@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       nishimura@mxp.nes.nec.co.jp,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH -mm 4/4] oom: oom_forkbomb_penalty: move
-	thread_group_cputime() out of task_lock()
-Message-ID: <20100402183309.GE31723@redhat.com>
-References: <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330154659.GA12416@redhat.com> <alpine.DEB.2.00.1003301320020.5234@chino.kir.corp.google.com> <20100331175836.GA11635@redhat.com> <20100331204718.GD11635@redhat.com> <alpine.DEB.2.00.1004010133190.6285@chino.kir.corp.google.com> <20100401135927.GA12460@redhat.com> <alpine.DEB.2.00.1004011210380.30661@chino.kir.corp.google.com> <20100402111406.GA4432@redhat.com> <20100402183057.GA31723@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100402183057.GA31723@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753733Ab0DBSfa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 14:35:30 -0400
+Received: from exchange.solarflare.com ([216.237.3.220]:53091 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752770Ab0DBSfP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 14:35:15 -0400
+Subject: Re: [PATCHv3] drivers/net/usb: Add new driver ipheth
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: "\"L. Alberto" =?ISO-8859-1?Q?Gim=E9nez=22?= <agimenez@sysvalve.es>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       linux-usb@vger.kernel.org, oliver@neukum.org, linville@tuxdriver.com,
+       j.dumon@option.com, steve.glendinning@smsc.com, davem@davemloft.net,
+       gregkh@suse.de, dgiagio@gmail.com, Daniel Borca <dborca@yahoo.com>
+In-Reply-To: <4BB62F33.1020507@sysvalve.es>
+References: <1269984864-28159-1-git-send-email-agimenez@sysvalve.es>
+	 <1270064527-8485-1-git-send-email-agimenez@sysvalve.es>
+	 <1270077538.8653.484.camel@localhost>  <4BB62620.3070807@sysvalve.es>
+	 <1270228883.12516.140.camel@localhost>  <4BB62F33.1020507@sysvalve.es>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Fri, 02 Apr 2010 19:35:08 +0100
+Message-ID: <1270233308.12516.145.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8BIT
+X-OriginalArrivalTime: 02 Apr 2010 18:35:41.0816 (UTC) FILETIME=[4C73BF80:01CAD293]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.000.1038-17294.005
+X-TM-AS-Result: No--27.636400-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It doesn't make sense to call thread_group_cputime() under task_lock(),
-we can drop this lock right after we read get_mm_rss() and save the
-value in the local variable.
+On Fri, 2010-04-02 at 19:53 +0200, "L. Alberto Giménez" wrote:
+> On 04/02/2010 07:21 PM, Ben Hutchings wrote:
+> > On Fri, 2010-04-02 at 19:15 +0200, "L. Alberto Giménez" wrote:
+> >> On 04/01/2010 01:18 AM, Ben Hutchings wrote:
+> >>> On Wed, 2010-03-31 at 21:42 +0200, L. Alberto Giménez wrote:
+> >>> [...]
+> >>>> --- /dev/null
+> >>>> +++ b/drivers/net/usb/ipheth.c
+> >>> [...]
+> >>>> +	usb_fill_bulk_urb(dev->tx_urb, udev,
+> >>>> +			  usb_sndbulkpipe(udev, dev->bulk_out),
+> >>>> +			  dev->tx_buf, IPHETH_BUF_SIZE,
+> >>>> +			  ipheth_sndbulk_callback,
+> >>>> +			  dev);
+> >>>> +	dev->tx_urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
+> >>>> +
+> >>>> +	retval = usb_submit_urb(dev->tx_urb, GFP_ATOMIC);
+> >>>> +	if (retval) {
+> >>>> +		err("%s: usb_submit_urb: %d", __func__, retval);
+> >>>> +		dev->stats.tx_errors++;
+> >>>> +		dev_kfree_skb_irq(skb);
+> >>>> +	} else {
+> >>>> +		net->trans_start = jiffies;
+> >>> No longer needed.
+> >> What is not longer needed? The assignment, the whole "else" branch? If
+> >> the assignment is what is not needed, can I just remove that line, right?
+> > 
+> > The assignment is not needed.
+> 
+> Hi,
+> 
+> I've been looking into this and it seems that the net_device.trans_start
+> field is now deprecated in favor of net_device.rx_queue.trans_start
+[...]
 
-Note: probably it makes more sense to use sum_exec_runtime instead
-of utime + stime, it is much more precise. A task can eat a lot of
-CPU time, but its Xtime can be zero.
+The networking core updates netdev_queue::trans_start by calling
+txq_trans_update() where necessary.  Drivers should not touch either
+net_device::trans_start or netdev_queue::trans_start any more.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
+Ben.
 
- mm/oom_kill.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
---- MM/mm/oom_kill.c~4_FORKBOMB_DROP_TASK_LOCK_EARLIER	2010-04-02 19:55:46.000000000 +0200
-+++ MM/mm/oom_kill.c	2010-04-02 20:16:13.000000000 +0200
-@@ -110,13 +110,16 @@ static unsigned long oom_forkbomb_penalt
- 		return 0;
- 	list_for_each_entry(child, &tsk->children, sibling) {
- 		struct task_cputime task_time;
--		unsigned long runtime;
-+		unsigned long runtime, rss;
- 
- 		task_lock(child);
- 		if (!child->mm || child->mm == tsk->mm) {
- 			task_unlock(child);
- 			continue;
- 		}
-+		rss = get_mm_rss(child->mm);
-+		task_unlock(child);
-+
- 		thread_group_cputime(child, &task_time);
- 		runtime = cputime_to_jiffies(task_time.utime) +
- 			  cputime_to_jiffies(task_time.stime);
-@@ -126,10 +129,9 @@ static unsigned long oom_forkbomb_penalt
- 		 * get to execute at all in such cases anyway.
- 		 */
- 		if (runtime < HZ) {
--			child_rss += get_mm_rss(child->mm);
-+			child_rss += rss;
- 			forkcount++;
- 		}
--		task_unlock(child);
- 	}
- 
- 	/*
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
