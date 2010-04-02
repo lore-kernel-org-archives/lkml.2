@@ -1,35 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273Ab0DBBUH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 21:20:07 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37131
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757151Ab0DBBUD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 21:20:03 -0400
-Date: Thu, 01 Apr 2010 18:20:04 -0700 (PDT)
-Message-Id: <20100401.182004.197314081.davem@davemloft.net>
-To: hartleys@visionengravers.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] printk.c: remove duplicate const
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <0D753D10438DA54287A00B0270842697636A7E956D@AUSP01VMBX24.collaborationhost.net>
-References: <0D753D10438DA54287A00B0270842697636A7E956D@AUSP01VMBX24.collaborationhost.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1757383Ab0DBBVb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 21:21:31 -0400
+Received: from crca.org.au ([74.207.252.120]:44364 "EHLO crca.org.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757151Ab0DBBV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 21:21:28 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4BB546DC.2020404@crca.org.au>
+Date: Fri, 02 Apr 2010 12:22:36 +1100
+From: Nigel Cunningham <ncunningham@crca.org.au>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9pre) Gecko/20100301 Shredder/3.0.4pre
+MIME-Version: 1.0
+To: Greg KH <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
+Subject: Re: Linux 2.6.32.11
+References: <20100401231656.GA11291@kroah.com> <20100401231712.GB11291@kroah.com>
+In-Reply-To: <20100401231712.GB11291@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-Date: Thu, 1 Apr 2010 20:13:27 -0500
+Hi.
 
-> Noticed during a sparse build.
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+The updates aren't available on git.kernel.org yet. Something wrong with 
+the mirroring perhaps?
 
-Isn't it intentional?  The two consts mark different aspects
-of the declaration const, both the pointers as well as the
-contents pointed to.
+Regards,
+
+Nigel
