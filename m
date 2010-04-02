@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758333Ab0DBBfs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 21:35:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25941 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757358Ab0DBBfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 21:35:44 -0400
-Date: Thu, 1 Apr 2010 21:35:13 -0400
-From: Neil Horman <nhorman@redhat.com>
-To: Chris Wright <chrisw@sous-sol.org>
-Cc: Joerg Roedel <joerg.roedel@amd.com>, Neil Horman <nhorman@tuxdriver.com>,
-       kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-       hbabu@us.ibm.com, iommu@lists.linux-foundation.org,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 1/2] x86/amd-iommu: enable iommu before attaching devices
-Message-ID: <20100402013513.GA2435@localhost.localdomain>
-References: <m1sk7guv5u.fsf@fess.ebiederm.org>
- <20100331202745.GE13406@hmsreliant.think-freely.org>
- <20100401142902.GF24846@8bytes.org>
- <20100401144736.GA14069@shamino.rdu.redhat.com>
- <20100401155643.GG24846@8bytes.org>
- <20100401171149.GH13603@shamino.rdu.redhat.com>
- <20100401201433.GK24846@8bytes.org>
- <20100402000012.GA8930@hmsreliant.think-freely.org>
- <20100402003034.GX29241@sequoia.sous-sol.org>
- <20100402012353.GY29241@sequoia.sous-sol.org>
+	id S1758546Ab0DBBhJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 21:37:09 -0400
+Received: from p01c12o143.mxlogic.net ([208.65.145.66]:50584 "EHLO
+	p01c12o143.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756112Ab0DBBhG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 21:37:06 -0400
+X-MXL-Hash: 4bb54a4151a6ffeb-cadf911b608d4a0bd718088ea7cf251c17bbd502
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+CC: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>
+Date: Thu, 1 Apr 2010 20:36:30 -0500
+Subject: [PATCH] fs-writeback.c: bitfields should be unsigned
+Thread-Topic: [PATCH] fs-writeback.c: bitfields should be unsigned
+Thread-Index: AcrSBOuhAQDzgk0rRY2YBvm7gUohnA==
+Message-ID: <0D753D10438DA54287A00B0270842697636A7E957E@AUSP01VMBX24.collaborationhost.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100402012353.GY29241@sequoia.sous-sol.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010040101)]
+X-MAIL-FROM: <hartleys@visionengravers.com>
+X-SOURCE-IP: [(unknown)]
+X-AnalysisOut: [v=1.0 c=1 a=ddTc33TfRA8A:10 a=VphdPIyG4kEA:10 a=IkcTkHD0fZ]
+X-AnalysisOut: [MA:10 a=zbe46bahRtDx8aUBN1lPzQ==:17 a=i00gxMtYAAAA:8 a=drO]
+X-AnalysisOut: [t6m5kAAAA:8 a=qBuN8AYTBAJUXrrEsnUA:9 a=oBtnuD4uuwZY4xgX7c6]
+X-AnalysisOut: [mKnZw8-4A:4 a=QEXdDO2ut3YA:10 a=x1WnkoZAwusA:10]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o321bGmE026765
 
-On Thu, Apr 01, 2010 at 06:23:53PM -0700, Chris Wright wrote:
-> Hit another kdump problem as reported by Neil Horman.  When initializaing
-> the IOMMU, we attach devices to their domains before the IOMMU is
-> fully (re)initialized.  Attaching a device will issue some important
-> invalidations.  In the context of the newly kexec'd kdump kernel, the
-> IOMMU may have stale cached data from the original kernel.  Because we
-> do the attach too early, the invalidation commands are placed in the new
-> command buffer before the IOMMU is updated w/ that buffer.  This leaves
-> the stale entries in the kdump context and can renders device unusable.
-> Simply enable the IOMMU before we do the attach.
-> 
-> Cc: Neil Horman <nhorman@tuxdriver.com>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+This fixes sparse noise:
+  error: dubious one-bit signed bitfield
 
-I'll test this out this weekend, thanks Chris!
-Neil
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
 
-> ---
->  arch/x86/kernel/amd_iommu_init.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> --- a/arch/x86/kernel/amd_iommu_init.c
-> +++ b/arch/x86/kernel/amd_iommu_init.c
-> @@ -1288,6 +1288,8 @@ static int __init amd_iommu_init(void)
->  	if (ret)
->  		goto free;
->  
-> +	enable_iommus();
-> +
->  	if (iommu_pass_through)
->  		ret = amd_iommu_init_passthrough();
->  	else
-> @@ -1300,8 +1302,6 @@ static int __init amd_iommu_init(void)
->  
->  	amd_iommu_init_notifier();
->  
-> -	enable_iommus();
-> -
->  	if (iommu_pass_through)
->  		goto out;
->  
+---
+
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 76fc4d5..a25f491 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -41,9 +41,9 @@ struct wb_writeback_args {
+ 	long nr_pages;
+ 	struct super_block *sb;
+ 	enum writeback_sync_modes sync_mode;
+-	int for_kupdate:1;
+-	int range_cyclic:1;
+-	int for_background:1;
++	unsigned int for_kupdate:1;
++	unsigned int range_cyclic:1;
++	unsigned int for_background:1;
+ };
+ 
+ /*
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
