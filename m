@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668Ab0DBVHP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 17:07:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754185Ab0DBVHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 17:07:08 -0400
-Date: Fri, 2 Apr 2010 23:04:59 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, anfei <anfei.zhou@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       nishimura@mxp.nes.nec.co.jp,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [patch -mm] oom: exclude tasks with badness score of 0 from
-	being selected
-Message-ID: <20100402210459.GA5112@redhat.com>
-References: <20100331175836.GA11635@redhat.com> <20100331204718.GD11635@redhat.com> <alpine.DEB.2.00.1004010133190.6285@chino.kir.corp.google.com> <20100401135927.GA12460@redhat.com> <alpine.DEB.2.00.1004011210380.30661@chino.kir.corp.google.com> <20100402111406.GA4432@redhat.com> <alpine.DEB.2.00.1004021159310.1773@chino.kir.corp.google.com> <20100402191414.GA982@redhat.com> <alpine.DEB.2.00.1004021244010.15445@chino.kir.corp.google.com> <alpine.DEB.2.00.1004021253480.18402@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1004021253480.18402@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754787Ab0DBVHq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 17:07:46 -0400
+Received: from mail-yw0-f172.google.com ([209.85.211.172]:54090 "EHLO
+	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754185Ab0DBVHj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 17:07:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=nSQMXMaD+dFV5YBLDdMKKylOJvnXIjldgLv7ovcwXxtr+8LjNZhLstyv+Zdj0h331z
+         BR0jfxvoNFQo2Hp+F28dzAeLNASrOd07cuqKmFAcDotyXTnpwl81cYpNdYsODgTIIt5T
+         z/rO7BuTM2Bbof3BKZ6Yf04MfJkzNpkG1YloI=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: lm-sensors@lm-sensors.org, "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH] hwmon:applesmc: Add support for iMac 9.
+Date: Fri,  2 Apr 2010 14:07:26 -0700
+Message-Id: <1270242446-12333-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.6.5.GIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02, David Rientjes wrote:
->
-> An oom_badness() score of 0 means "never kill" according to
-> Documentation/filesystems/proc.txt, so explicitly exclude it from being
-> selected for kill.  These tasks have either detached their p->mm or are
-> set to OOM_DISABLE.
 
-Agreed, but
+This patch adds support to hwmon:applesmc for the iMac9,1.
+Without this the default settings for applesmc and iMac
+are to set the machine to use only nine temperature
+sensors, with this patch you get all fourteen of them.
 
-> @@ -336,6 +336,8 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
->  			continue;
->
->  		points = oom_badness(p, totalpages);
-> +		if (!points)
-> +			continue;
->  		if (points > *ppoints || !chosen) {
 
-then "|| !chosen" can be killed.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+---
+ drivers/hwmon/applesmc.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-with this patch  !chosen <=> !*ppoints, and since points > 0
-
-		if (points > *ppoints) {
-
-is enough.
-
-Oleg.
+diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+index c1605b5..6ab3e78 100644
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -142,6 +142,9 @@ static const char *temperature_sensors_sets[][41] = {
+ 	  "TM1S", "TM2P", "TM2S", "TM3S", "TM8P", "TM8S", "TM9P", "TM9S",
+ 	  "TN0C", "TN0D", "TN0H", "TS0C", "Tp0C", "Tp1C", "Tv0S", "Tv1S",
+ 	  NULL },
++/* Set 17: iMac9,1 */
++	{ "TA0P", "TC0D", "TC0H", "TC0P", "TG0D", "TG0H", "TH0P", "TL0P",
++	  "TN0D", "TN0H", "TN0P", "TO0P", "Tm0P", "Tp0P", NULL },
+ };
+ 
+ /* List of keys used to read/write fan speeds */
+@@ -1350,6 +1353,8 @@ static __initdata struct dmi_match_data applesmc_dmi_data[] = {
+ 	{ .accelerometer = 1, .light = 1, .temperature_set = 15 },
+ /* MacPro3,1: temperature set 16 */
+ 	{ .accelerometer = 0, .light = 0, .temperature_set = 16 },
++/* iMac 9: light sensor only, temperature set 17 */
++	{ .accelerometer = 0, .light = 0, .temperature_set = 17 },
+ };
+ 
+ /* Note that DMI_MATCH(...,"MacBook") will match "MacBookPro1,1".
+@@ -1415,6 +1420,10 @@ static __initdata struct dmi_system_id applesmc_whitelist[] = {
+ 	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+ 	  DMI_MATCH(DMI_PRODUCT_NAME, "MacPro") },
+ 		&applesmc_dmi_data[4]},
++	{ applesmc_dmi_match, "Apple iMac 9", {
++	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple Inc."),
++	  DMI_MATCH(DMI_PRODUCT_NAME, "iMac9,1") },
++		&applesmc_dmi_data[17]},
+ 	{ applesmc_dmi_match, "Apple iMac 8", {
+ 	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+ 	  DMI_MATCH(DMI_PRODUCT_NAME, "iMac8") },
+-- 
+1.6.5.GIT
 
