@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932293Ab0DBMIs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 08:08:48 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42503 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756783Ab0DBMIm (ORCPT
+	id S1754041Ab0DBMST (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 08:18:19 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53033 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147Ab0DBMSL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 08:08:42 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2.6.34] mfd: Clean up after WM83xx AUXADC interrupt if it arrives late
-Date: Fri,  2 Apr 2010 13:08:39 +0100
-Message-Id: <1270210119-16746-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.0.3
+	Fri, 2 Apr 2010 08:18:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100402072750.GA22952@localhost>
+References: <cc557aab1003250606g6b4e3e7dgb1adfd46adc89124@mail.gmail.com>
+	 <3d0408631003252040r70c54b2fm24d64b819c59c9c@mail.gmail.com>
+	 <20100326040114.GA20717@localhost> <20100402072750.GA22952@localhost>
+Date: Fri, 2 Apr 2010 15:18:04 +0300
+Message-ID: <r2gcc557aab1004020518u5329383eh2bfaaf404fc5d8e2@mail.gmail.com>
+Subject: Re: [PATCH][BUGFIX] readahead: fix NULL filp dereference
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org,
+       "Yan, Zheng" <yanzheng@21cn.com>,
+       "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jens.axboe@oracle.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In certain circumstances, especially under heavy load, the AUXADC
-completion interrupt may be detected after we've timed out waiting for
-it.  That conversion would still succeed but the next conversion will
-see the completion that was signalled by the interrupt for the previous
-conversion and therefore not wait for the AUXADC conversion to run,
-causing it to report failure.
+On Fri, Apr 2, 2010 at 10:27 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> The btrfs relocate_file_extent_cluster() calls us with NULL filp:
+>
+>  [ 4005.426805] BUG: unable to handle kernel NULL pointer dereference at 00000021
+>  [ 4005.426818] IP: [<c109a130>] page_cache_sync_readahead+0x18/0x3e
+>
+> CC: Yan Zheng <yanzheng@21cn.com>
+> Reported-by: Kirill A. Shutemov <kirill@shutemov.name>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>
+> Andrew and Greg:
+>
+> This is an obvious correct bug fix for .34 and .33-stable,
+> so I'm resending it directly to you without Kirill's confirmation.
 
-Provide a simple, non-invasive cleanup by using try_wait_for_completion()
-to ensure that the completion is not signalled before we wait.  Since
-the AUXADC is run within a mutex we know there can only have been at
-most one AUXADC interrupt outstanding.  A more involved change should
-follow for the next merge window.
+Sorry.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm831x-core.c |    3 +++
- drivers/mfd/wm8350-core.c |    4 ++++
- 2 files changed, 7 insertions(+), 0 deletions(-)
+Tested-by: Kirill A. Shutemov <kirill@shutemov.name>
 
-diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
-index a3d5728..f2ab025 100644
---- a/drivers/mfd/wm831x-core.c
-+++ b/drivers/mfd/wm831x-core.c
-@@ -349,6 +349,9 @@ int wm831x_auxadc_read(struct wm831x *wm831x, enum wm831x_auxadc input)
- 		goto disable;
- 	}
- 
-+	/* If an interrupt arrived late clean up after it */
-+	try_wait_for_completion(&wm831x->auxadc_done);
-+
- 	/* Ignore the result to allow us to soldier on without IRQ hookup */
- 	wait_for_completion_timeout(&wm831x->auxadc_done, msecs_to_jiffies(5));
- 
-diff --git a/drivers/mfd/wm8350-core.c b/drivers/mfd/wm8350-core.c
-index e400a3b..b580748 100644
---- a/drivers/mfd/wm8350-core.c
-+++ b/drivers/mfd/wm8350-core.c
-@@ -363,6 +363,10 @@ int wm8350_read_auxadc(struct wm8350 *wm8350, int channel, int scale, int vref)
- 	reg |= 1 << channel | WM8350_AUXADC_POLL;
- 	wm8350_reg_write(wm8350, WM8350_DIGITISER_CONTROL_1, reg);
- 
-+	/* If a late IRQ left the completion signalled then consume
-+	 * the completion. */
-+	try_wait_for_completion(&wm8350->auxadc_done);
-+
- 	/* We ignore the result of the completion and just check for a
- 	 * conversion result, allowing us to soldier on if the IRQ
- 	 * infrastructure is not set up for the chip. */
--- 
-1.7.0.3
-
+> --- sound-2.6.orig/mm/readahead.c       2010-03-26 11:51:57.000000000 +0800
+> +++ sound-2.6/mm/readahead.c    2010-03-26 11:52:11.000000000 +0800
+> @@ -502,7 +502,7 @@ void page_cache_sync_readahead(struct ad
+>                return;
+>
+>        /* be dumb */
+> -       if (filp->f_mode & FMODE_RANDOM) {
+> +       if (filp && (filp->f_mode & FMODE_RANDOM)) {
+>                force_page_cache_readahead(mapping, filp, offset, req_size);
+>                return;
+>        }
+>
