@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755688Ab0DBREF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 13:04:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28940 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755713Ab0DBRDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 13:03:50 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-Subject: [PATCH -tip 4/4] [BUGFIX][RESEND] perf probe: Fix to close dwarf when
-	failing to analyze it
-To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>
-Date: Fri, 02 Apr 2010 12:50:59 -0400
-Message-ID: <20100402165059.23551.95587.stgit@localhost6.localdomain6>
-In-Reply-To: <20100402165031.23551.14034.stgit@localhost6.localdomain6>
-References: <20100402165031.23551.14034.stgit@localhost6.localdomain6>
-User-Agent: StGIT/0.14.3
+	id S1755820Ab0DBREk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 13:04:40 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:48141 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755551Ab0DBREe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 13:04:34 -0400
+Date: Fri, 2 Apr 2010 19:59:35 +0300
+From: Ozgur Yuksel <ozgur.yuksel@oracle.com>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Yinghai Lu <yinghai@kernel.org>, Dmitry Torokhov <dtor@mail.ru>,
+       bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org,
+       linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [Bugme-new] [Bug 15621] New: BUG: unable to handle kernel
+ paging request - comm: pccardd
+Message-ID: <20100402165935.GA3238@oracle.com>
+References: <bug-15621-10286@https.bugzilla.kernel.org/>
+ <201003301711.00351.bjorn.helgaas@hp.com>
+ <20100401091808.GA3236@oracle.com>
+ <201004011134.15175.bjorn.helgaas@hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004011134.15175.bjorn.helgaas@hp.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4BB622CE.00C1:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix to close libdw routine when failing to analyze it in
-find_perf_probe_point().
+Thu, Apr 01, 2010 at 11:34:13AM -0600 was the time for Bjorn Helgaas to speak thus:
+> Using ignore_loglevel shouldn't affect the problem, so I'm confused.
+> Can you reproduce the original problem and attach the entire serial
+> console log?
 
-Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
----
+It seems that the problem does not reproduce at all now. Unfortunately I do not
+have the images I have built on 2010-03-29 08:46 and building from a fresh
+ae6be51ed01d6c4aaf249a207b4434bc7785853b does not reproduce the problem. It is
+most likely the specific .config I used at the time (which I do not have
+anymore). Also I have been doing other builds on the same system, so maybe it
+was just a stale module or smth. 
 
- tools/perf/util/probe-finder.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 59b0115..a851377 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -818,8 +818,10 @@ int find_perf_probe_point(int fd, unsigned long addr,
- 		return -ENOENT;
- 
- 	/* Find cu die */
--	if (!dwarf_addrdie(dbg, (Dwarf_Addr)addr, &cudie))
--		return -EINVAL;
-+	if (!dwarf_addrdie(dbg, (Dwarf_Addr)addr, &cudie)) {
-+		ret = -EINVAL;
-+		goto end;
-+	}
- 
- 	/* Find a corresponding line */
- 	line = dwarf_getsrc_die(&cudie, (Dwarf_Addr)addr);
-
-
--- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+FWIW the problem does not reproduce with 2.6.34-rc3 at all too (on the very same
+hardware).
