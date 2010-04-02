@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838Ab0DBREK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 13:04:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28072 "EHLO mx1.redhat.com"
+	id S1755688Ab0DBREF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 13:04:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28940 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755701Ab0DBRDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755713Ab0DBRDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Apr 2010 13:03:50 -0400
 From: Masami Hiramatsu <mhiramat@redhat.com>
-Subject: [PATCH -tip 3/4] [BUGFIX] perf probe: Correct error message for
-	non-structure type
+Subject: [PATCH -tip 4/4] [BUGFIX][RESEND] perf probe: Fix to close dwarf when
+	failing to analyze it
 To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,8 +16,8 @@ Cc: Paul Mackerras <paulus@samba.org>,
        Frederic Weisbecker <fweisbec@gmail.com>,
        systemtap <systemtap@sources.redhat.com>,
        DLE <dle-develop@lists.sourceforge.net>
-Date: Fri, 02 Apr 2010 12:50:53 -0400
-Message-ID: <20100402165052.23551.75866.stgit@localhost6.localdomain6>
+Date: Fri, 02 Apr 2010 12:50:59 -0400
+Message-ID: <20100402165059.23551.95587.stgit@localhost6.localdomain6>
 In-Reply-To: <20100402165031.23551.14034.stgit@localhost6.localdomain6>
 References: <20100402165031.23551.14034.stgit@localhost6.localdomain6>
 User-Agent: StGIT/0.14.3
@@ -28,22 +28,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf probe outputs incorrect error message when it called with
-non-exist field on a non-data structure local variable.
-
-<Before>
- # perf probe vfs_read 'count.hoge'
-  Fatal: Structure on a register is not supported yet.
- # perf probe vfs_read 'count->hoge'
-  Fatal: Semantic error: hoge must be referred by '.'
-
-This corrects the messsage.
-
-<After>
- # perf probe vfs_read 'count.hoge'
-  Fatal: count is not a data structure.
- # perf probe vfs_read 'count->hoge'
-  Fatal: count is not a data structure.
+Fix to close libdw routine when failing to analyze it in
+find_perf_probe_point().
 
 Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -54,45 +40,26 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 ---
 
- tools/perf/util/probe-finder.c |   12 ++++++++----
- 1 files changed, 8 insertions(+), 4 deletions(-)
+ tools/perf/util/probe-finder.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index b44132e..59b0115 100644
+index 59b0115..a851377 100644
 --- a/tools/perf/util/probe-finder.c
 +++ b/tools/perf/util/probe-finder.c
-@@ -429,12 +429,20 @@ static void convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
- 		if (die_get_real_type(&type, &type) == NULL)
- 			die("Failed to get a type information of %s.", varname);
+@@ -818,8 +818,10 @@ int find_perf_probe_point(int fd, unsigned long addr,
+ 		return -ENOENT;
  
-+		/* Verify it is a data structure  */
-+		if (dwarf_tag(&type) != DW_TAG_structure_type)
-+			die("%s is not a data structure.", varname);
-+
- 		ref = xzalloc(sizeof(struct kprobe_trace_arg_ref));
- 		if (*ref_ptr)
- 			(*ref_ptr)->next = ref;
- 		else
- 			*ref_ptr = ref;
- 	} else {
-+		/* Verify it is a data structure  */
-+		if (dwarf_tag(&type) != DW_TAG_structure_type)
-+			die("%s is not a data structure.", varname);
-+
- 		if (field->ref)
- 			die("Semantic error: %s must be referred by '.'",
- 			    field->name);
-@@ -442,10 +450,6 @@ static void convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
- 			die("Structure on a register is not supported yet.");
- 	}
+ 	/* Find cu die */
+-	if (!dwarf_addrdie(dbg, (Dwarf_Addr)addr, &cudie))
+-		return -EINVAL;
++	if (!dwarf_addrdie(dbg, (Dwarf_Addr)addr, &cudie)) {
++		ret = -EINVAL;
++		goto end;
++	}
  
--	/* Verify it is a data structure  */
--	if (dwarf_tag(&type) != DW_TAG_structure_type)
--		die("%s is not a data structure.", varname);
--
- 	if (die_find_member(&type, field->name, &member) == NULL)
- 		die("%s(tyep:%s) has no member %s.", varname,
- 		    dwarf_diename(&type), field->name);
+ 	/* Find a corresponding line */
+ 	line = dwarf_getsrc_die(&cudie, (Dwarf_Addr)addr);
 
 
 -- 
