@@ -1,289 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758159Ab0DBFHv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 01:07:51 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:64116 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752213Ab0DBFHo (ORCPT
+	id S1758237Ab0DBFIa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 01:08:30 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49232 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753652Ab0DBFIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 01:07:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=levHAuuGRZ39ZfWYVNgpTvIxXRexY4vv9NLoYZwdC0S5BuBvf8yLjaWvdxRzCQRPYl
-         jz3rUOmWYF/atszAIYdLJyRueh3M4C23+yT7UI3IEYB+GLScKPPQpgZ310LYCIPDSR6P
-         jRVXKGR+4I0Q6azDpV+OmgVQrwUmEwhLZrt/A=
-From: Tom Zanussi <tzanussi@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, fweisbec@gmail.com, rostedt@goodmis.org,
-       k-keiichi@bx.jp.nec.com, acme@ghostprotocols.net
-Subject: [RFC v2][PATCH 06/11] perf: convert perf event types into event type events
-Date: Thu,  1 Apr 2010 23:59:20 -0500
-Message-Id: <1270184365-8281-7-git-send-email-tzanussi@gmail.com>
-X-Mailer: git-send-email 1.6.4.GIT
-In-Reply-To: <1270184365-8281-1-git-send-email-tzanussi@gmail.com>
-References: <1270184365-8281-1-git-send-email-tzanussi@gmail.com>
+	Fri, 2 Apr 2010 01:08:23 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 2 Apr 2010 14:04:06 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: TAO HU <tghk48@motorola.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       "Ye Yuan.Bo-A22116" <yuan-bo.ye@motorola.com>,
+       Chang Qing-A21550 <Qing.Chang@motorola.com>,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: [Question] race condition in mm/page_alloc.c regarding
+ page->lru?
+Message-Id: <20100402140406.d3d7f18e.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <g2g5f4a33681004012051wedea9538w9da89e210b731422@mail.gmail.com>
+References: <i2i5f4a33681003312105m4cd42e9ayfe35cc0988c401b6@mail.gmail.com>
+	<g2g5f4a33681004012051wedea9538w9da89e210b731422@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bypasses the event type perf header code and replaces it with a
-synthesized event and processing function that accomplishes the same
-thing, used when reading/writing perf data to/from a pipe.
+On Fri, 2 Apr 2010 11:51:33 +0800
+TAO HU <tghk48@motorola.com> wrote:
 
-Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
----
- tools/perf/builtin-record.c |    7 +++++
- tools/perf/builtin-report.c |    1 +
- tools/perf/builtin-trace.c  |    1 +
- tools/perf/util/event.h     |   14 +++++++++
- tools/perf/util/header.c    |   62 ++++++++++++++++++++++++++++++++++++++-----
- tools/perf/util/header.h    |    9 ++++++
- tools/perf/util/session.c   |   12 ++++++++
- tools/perf/util/session.h   |    3 +-
- 8 files changed, 101 insertions(+), 8 deletions(-)
+> 2 patches related to page_alloc.c were applied.
+> Does anyone see a connection between the 2 patches and the panic?
+> NOTE: the full patches are attached.
+> 
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 1f0abe2..c1682d1 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -593,6 +593,13 @@ static int __cmd_record(int argc, const char **argv)
- 			pr_err("Couldn't synthesize attrs.\n");
- 			return err;
- 		}
-+
-+		err = event__synthesize_event_types(process_synthesized_event,
-+						    session);
-+		if (err < 0) {
-+			pr_err("Couldn't synthesize event_types.\n");
-+			return err;
-+		}
- 	}
- 
- 	err = event__synthesize_kernel_mmap(process_synthesized_event,
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 0bb5d85..d319f83 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -266,6 +266,7 @@ static struct perf_event_ops event_ops = {
- 	.lost	= event__process_lost,
- 	.read	= process_read_event,
- 	.attr	= event__process_attr,
-+	.event_type = event__process_event_type,
- };
- 
- extern volatile int session_done;
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index bb28973..2489565 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -105,6 +105,7 @@ static struct perf_event_ops event_ops = {
- 	.sample	= process_sample_event,
- 	.comm	= event__process_comm,
- 	.attr	= event__process_attr,
-+	.event_type = event__process_event_type,
- };
- 
- extern volatile int session_done;
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 8a2ded3..52cb0e9 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -85,6 +85,7 @@ struct build_id_event {
- 
- enum perf_header_event_type { /* above any possible kernel type */
- 	PERF_RECORD_HEADER_ATTR			= 64,
-+	PERF_RECORD_HEADER_EVENT_TYPE		= 65,
- 	PERF_RECORD_HEADER_MAX
- };
- 
-@@ -94,6 +95,18 @@ struct attr_event {
- 	u64 id[];
- };
- 
-+#define MAX_EVENT_NAME 64
-+
-+struct perf_trace_event_type {
-+	u64	event_id;
-+	char	name[MAX_EVENT_NAME];
-+};
-+
-+struct event_type_event {
-+	struct perf_event_header header;
-+	struct perf_trace_event_type event_type;
-+};
-+
- typedef union event_union {
- 	struct perf_event_header	header;
- 	struct ip_event			ip;
-@@ -104,6 +117,7 @@ typedef union event_union {
- 	struct read_event		read;
- 	struct sample_event		sample;
- 	struct attr_event		attr;
-+	struct event_type_event		event_type;
- } event_t;
- 
- struct events_stats {
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index e361739..4463799 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -99,13 +99,6 @@ int perf_header__add_attr(struct perf_header *self,
- 	return 0;
- }
- 
--#define MAX_EVENT_NAME 64
--
--struct perf_trace_event_type {
--	u64	event_id;
--	char	name[MAX_EVENT_NAME];
--};
--
- static int event_count;
- static struct perf_trace_event_type *events;
- 
-@@ -886,3 +879,58 @@ int event__process_attr(event_t *self, struct perf_session *session)
- 
- 	return 0;
- }
-+
-+int event__synthesize_event_type(u64 event_id, char *name,
-+				 event__handler_t process,
-+				 struct perf_session *session)
-+{
-+	event_t ev;
-+	size_t size = 0;
-+	int err = 0;
-+
-+	memset(&ev, 0, sizeof(ev));
-+
-+	ev.event_type.event_type.event_id = event_id;
-+	memset(ev.event_type.event_type.name, 0, MAX_EVENT_NAME);
-+	strncpy(ev.event_type.event_type.name, name, MAX_EVENT_NAME - 1);
-+
-+	ev.event_type.header.type = PERF_RECORD_HEADER_EVENT_TYPE;
-+	size = strlen(name);
-+	size = ALIGN(size, sizeof(u64));
-+	ev.event_type.header.size = sizeof(ev.event_type) -
-+		(sizeof(ev.event_type.event_type.name) - size);
-+
-+	err = process(&ev, session);
-+
-+	return err;
-+}
-+
-+int event__synthesize_event_types(event__handler_t process,
-+				  struct perf_session *session)
-+{
-+	struct perf_trace_event_type *type;
-+	int i, err = 0;
-+
-+	for (i = 0; i < event_count; i++) {
-+		type = &events[i];
-+
-+		err = event__synthesize_event_type(type->event_id, type->name,
-+						   process, session);
-+		if (err) {
-+			pr_debug("failed to create perf header event type\n");
-+			return err;
-+		}
-+	}
-+
-+	return err;
-+}
-+
-+int event__process_event_type(event_t *self,
-+			      struct perf_session *session __unused)
-+{
-+	if (perf_header__push_event(self->event_type.event_type.event_id,
-+				    self->event_type.event_type.name) < 0)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 79ab267..dbedaf0 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -103,4 +103,13 @@ int event__synthesize_attrs(struct perf_header *self,
- 			    struct perf_session *session);
- int event__process_attr(event_t *self, struct perf_session *session);
- 
-+int event__synthesize_event_type(u64 event_id, char *name,
-+				 event__handler_t process,
-+				 struct perf_session *session);
-+int event__synthesize_event_types(event__handler_t process,
-+				  struct perf_session *session);
-+int event__process_event_type(event_t *self,
-+			      struct perf_session *session);
-+
-+
- #endif /* __PERF_HEADER_H */
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 2d977d1..7c3b355 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -212,6 +212,8 @@ static void perf_event_ops__fill_defaults(struct perf_event_ops *handler)
- 		handler->unthrottle = process_event_stub;
- 	if (handler->attr == NULL)
- 		handler->attr = process_event_stub;
-+	if (handler->event_type == NULL)
-+		handler->event_type = process_event_stub;
- }
- 
- static const char *event__name[] = {
-@@ -226,6 +228,7 @@ static const char *event__name[] = {
- 	[PERF_RECORD_READ]	 = "READ",
- 	[PERF_RECORD_SAMPLE]	 = "SAMPLE",
- 	[PERF_RECORD_HEADER_ATTR]	 = "ATTR",
-+	[PERF_RECORD_HEADER_EVENT_TYPE]	 = "EVENT_TYPE",
- };
- 
- unsigned long event__total[PERF_RECORD_HEADER_MAX];
-@@ -312,6 +315,12 @@ static void event__attr_swap(event_t *self)
- 	mem_bswap_64(self->attr.id, size);
- }
- 
-+static void event__event_type_swap(event_t *self)
-+{
-+	self->event_type.event_type.event_id =
-+		bswap_64(self->event_type.event_type.event_id);
-+}
-+
- typedef void (*event__swap_op)(event_t *self);
- 
- static event__swap_op event__swap_ops[] = {
-@@ -323,6 +332,7 @@ static event__swap_op event__swap_ops[] = {
- 	[PERF_RECORD_READ]   = event__read_swap,
- 	[PERF_RECORD_SAMPLE] = event__all64_swap,
- 	[PERF_RECORD_HEADER_ATTR]   = event__attr_swap,
-+	[PERF_RECORD_HEADER_EVENT_TYPE]   = event__event_type_swap,
- 	[PERF_RECORD_HEADER_MAX]    = NULL,
- };
- 
-@@ -365,6 +375,8 @@ static int perf_session__process_event(struct perf_session *self,
- 		return ops->unthrottle(event, self);
- 	case PERF_RECORD_HEADER_ATTR:
- 		return ops->attr(event, self);
-+	case PERF_RECORD_HEADER_EVENT_TYPE:
-+		return ops->event_type(event, self);
- 	default:
- 		self->unknown_events++;
- 		return -1;
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 07ee8f2..0f0abfd 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -45,7 +45,8 @@ struct perf_event_ops {
- 		 read,
- 		 throttle,
- 		 unthrottle,
--		 attr;
-+		 attr,
-+		 event_type;
- };
- 
- struct perf_session *perf_session__new(const char *filename, int mode, bool force);
--- 
-1.6.4.GIT
+I don't think there are relationship between patches and your panic.
+
+BTW, there is other case about the backlog rather than race in alloc_pages()
+itself. If someone list_del(&page->lru) and the page is already freed,
+you'll see the same backlog later.
+Then, I doubt use-after-free case rather than complicated races.
+
+Thanks,
+-Kame
+
+
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index a596bfd..34a29e2 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -2551,6 +2551,20 @@ static inline unsigned long
+> wait_table_bits(unsigned long size)
+>  #define LONG_ALIGN(x) (((x)+(sizeof(long))-1)&~((sizeof(long))-1))
+> 
+>  /*
+> + * Check if a pageblock contains reserved pages
+> + */
+> +static int pageblock_is_reserved(unsigned long start_pfn)
+> +{
+> +	unsigned long end_pfn = start_pfn + pageblock_nr_pages;
+> +	unsigned long pfn;
+> +
+> +	for (pfn = start_pfn; pfn < end_pfn; pfn++)
+> +		if (PageReserved(pfn_to_page(pfn)))
+> +			return 1;
+> +	return 0;
+> +}
+> +
+> +/*
+>   * Mark a number of pageblocks as MIGRATE_RESERVE. The number
+>   * of blocks reserved is based on zone->pages_min. The memory within the
+>   * reserve will tend to store contiguous free pages. Setting min_free_kbytes
+> @@ -2579,7 +2593,7 @@ static void setup_zone_migrate_reserve(struct zone *zone)
+>  			continue;
+> 
+>  		/* Blocks with reserved pages will never free, skip them. */
+> -		if (PageReserved(page))
+> +		if (pageblock_is_reserved(pfn))
+>  			continue;
+> 
+>  		block_migratetype = get_pageblock_migratetype(page);
+> -- 
+> 1.5.4.3
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 5c44ed4..a596bfd 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -119,6 +119,7 @@ static char * const zone_names[MAX_NR_ZONES] = {
+>  };
+> 
+>  int min_free_kbytes = 1024;
+> +int min_free_order_shift = 1;
+> 
+>  unsigned long __meminitdata nr_kernel_pages;
+>  unsigned long __meminitdata nr_all_pages;
+> @@ -1256,7 +1257,7 @@ int zone_watermark_ok(struct zone *z, int order,
+> unsigned long mark,
+>  		free_pages -= z->free_area[o].nr_free << o;
+> 
+>  		/* Require fewer higher order pages to be free */
+> -		min >>= 1;
+> +		min >>= min_free_order_shift;
+> 
+>  		if (free_pages <= min)
+>  			return 0;
+> -- 
+> 
+> 
+> On Thu, Apr 1, 2010 at 12:05 PM, TAO HU <tghk48@motorola.com> wrote:
+> > Hi, all
+> >
+> > We got a panic on our ARM (OMAP) based HW.
+> > Our code is based on 2.6.29 kernel (last commit for mm/page_alloc.c is
+> > cc2559bccc72767cb446f79b071d96c30c26439b)
+> >
+> > It appears to crash while going through pcp->list in
+> > buffered_rmqueue() of mm/page_alloc.c after checking vmlinux.
+> > "00100100" implies LIST_POISON1 that suggests a race condition between
+> > list_add() and list_del() in my personal view.
+> > However we not yet figure out locking problem regarding page.lru.
+> >
+> > Any known issues about race condition in mm/page_alloc.c?
+> > And other hints are highly appreciated.
+> >
+> >  /* Find a page of the appropriate migrate type */
+> >                if (cold) {
+> >                   ... ...
+> >                } else {
+> >                        list_for_each_entry(page, &pcp->list, lru)
+> >                                if (page_private(page) == migratetype)
+> >                                        break;
+> >                }
+> >
+> > <1>[120898.805267] Unable to handle kernel paging request at virtual
+> > address 00100100
+> > <1>[120898.805633] pgd = c1560000
+> > <1>[120898.805786] [00100100] *pgd=897b3031, *pte=00000000, *ppte=00000000
+> > <4>[120898.806457] Internal error: Oops: 17 [#1] PREEMPT
+> > ... ...
+> > <4>[120898.807861] CPU: 0    Not tainted  (2.6.29-omap1 #1)
+> > <4>[120898.808044] PC is at get_page_from_freelist+0x1d0/0x4b0
+> > <4>[120898.808227] LR is at get_page_from_freelist+0xc8/0x4b0
+> > <4>[120898.808563] pc : [<c00a600c>]    lr : [<c00a5f04>]    psr: 800000d3
+> > <4>[120898.808563] sp : c49fbd18  ip : 00000000  fp : c49fbd74
+> > <4>[120898.809020] r10: 00000000  r9 : 001000e8  r8 : 00000002
+> > <4>[120898.809204] r7 : 001200d2  r6 : 60000053  r5 : c0507c4c  r4 : c49fa000
+> > <4>[120898.809509] r3 : 001000e8  r2 : 00100100  r1 : c0507c6c  r0 : 00000001
+> > <4>[120898.809844] Flags: Nzcv  IRQs off  FIQs off  Mode SVC_32  ISA
+> > ARM  Segment kernel
+> > <4>[120898.810028] Control: 10c5387d  Table: 82160019  DAC: 00000017
+> > <4>[120898.948425] Backtrace:
+> > <4>[120898.948760] [<c00a5e3c>] (get_page_from_freelist+0x0/0x4b0)
+> > from [<c00a6398>] (__alloc_pages_internal+0xac/0x3e8)
+> > <4>[120898.949554] [<c00a62ec>] (__alloc_pages_internal+0x0/0x3e8)
+> > from [<c00b461c>] (handle_mm_fault+0x16c/0xbac)
+> > <4>[120898.950347] [<c00b44b0>] (handle_mm_fault+0x0/0xbac) from
+> > [<c00b51d0>] (__get_user_pages+0x174/0x2b4)
+> > <4>[120898.951019] [<c00b505c>] (__get_user_pages+0x0/0x2b4) from
+> > [<c00b534c>] (get_user_pages+0x3c/0x44)
+> > <4>[120898.951812] [<c00b5310>] (get_user_pages+0x0/0x44) from
+> > [<c00caf9c>] (get_arg_page+0x50/0xa4)
+> > <4>[120898.952636] [<c00caf4c>] (get_arg_page+0x0/0xa4) from
+> > [<c00cb1ec>] (copy_strings+0x108/0x210)
+> > <4>[120898.953430]  r7:beffffe4 r6:00000ffc r5:00000000 r4:00000018
+> > <4>[120898.954223] [<c00cb0e4>] (copy_strings+0x0/0x210) from
+> > [<c00cb330>] (copy_strings_kernel+0x3c/0x74)
+> > <4>[120898.955047] [<c00cb2f4>] (copy_strings_kernel+0x0/0x74) from
+> > [<c00cc778>] (do_execve+0x18c/0x2b0)
+> > <4>[120898.955841]  r5:0001e240 r4:0001e224
+> > <4>[120898.956329] [<c00cc5ec>] (do_execve+0x0/0x2b0) from
+> > [<c00400e4>] (sys_execve+0x3c/0x5c)
+> > <4>[120898.957153] [<c00400a8>] (sys_execve+0x0/0x5c) from
+> > [<c003ce80>] (ret_fast_syscall+0x0/0x2c)
+> > <4>[120898.957946]  r7:0000000b r6:0001e270 r5:00000000 r4:0001d580
+> > <4>[120898.958740] Code: e1530008 0a000006 e2429018 e1a03009 (e5b32018)
+> >
+> >
+> >
+> > --
+> > Best Regards
+> > Hu Tao
+> >
 
