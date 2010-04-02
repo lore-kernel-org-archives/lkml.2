@@ -1,60 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758621Ab0DBGgw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 02:36:52 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:43608 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758431Ab0DBGgq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 02:36:46 -0400
-Date: Fri, 2 Apr 2010 08:36:45 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Nigel Cunningham <ncunningham@crca.org.au>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-       Jiri Slaby <jslaby@suse.cz>, jirislaby@gmail.com,
-       linux-pm@lists.linux-foundation.org
-Subject: Re: [linux-pm] what the patches do Re: [RFC 10/15] PM / Hibernate:
-	user, implement user_ops reader
-Message-ID: <20100402063644.GA14941@atrey.karlin.mff.cuni.cz>
-References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <201003252114.36605.rjw@sisk.pl> <4BABC5B6.2070301@crca.org.au> <201003252129.10224.rjw@sisk.pl> <20100325212656.GD22902@elf.ucw.cz> <4BABDA59.8070107@crca.org.au>
+	id S1758642Ab0DBGii (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 02:38:38 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:34582 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758193Ab0DBGic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 02:38:32 -0400
+Date: Fri, 2 Apr 2010 08:38:30 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] readahead even for FMODE_RANDOM
+Message-ID: <20100402063830.GR23510@kernel.dk>
+References: <20100401183151.GO23510@kernel.dk> <20100402012338.GA6393@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BABDA59.8070107@crca.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100402012338.GA6393@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Fri, Apr 02 2010, Wu Fengguang wrote:
+> Hi Jens,
+> 
+> On Fri, Apr 02, 2010 at 02:31:51AM +0800, Jens Axboe wrote:
+> > Hi,
+> > 
+> > I got a problem report with fio where larger block size random reads
+> > where markedly slower with buffered IO than with O_DIRECT, and the
+> > initial thought was that perhaps this was some fio oddity. The reporter
+> > eventually discovered that turning off the fadvise hint made it work
+> > fine. So I took a look, and it seems we never do readahead for
+> > FMODE_RANDOM even if the request size is larger than 1 page. That seems
+> > like a bug, if an application is doing eg 16kb random reads, you want to
+> > readahead the 12kb remaining data. On devices where smaller transfer
+> > sizes are slower than larger ones, this can make a large difference.
+> > 
+> > This patch makes us readahead even for FMODE_RANDOM, iff we'll be
+> > reading more pages in that single read. I ran a quick test here, and it
+> > appears to fix the problem (no difference with fadvise POSIX_FADV_RANDOM
+> > being passed in or not).
+>  
+> I guess the application is doing (at least partial) sequential reads,
+> while at the same time tell kernel with POSIX_FADV_RANDOM that it's
+> doing random reads.
+> 
+> If so, it's mainly the application's fault.
 
->>>> So what's your long term plan then?
->>>
->>> First, improve the in-kernel thing, second, switch people to it, _then_ remove
->>> the s2disk interface (after we're reasonably sure it's not used by any major
->>> distro) and _finally_ simplify things after it's been removed.
->>
->> I'd really prefer to keep s2disk interface. It allows advanced stuff
->> like internet suspend resume (yep someone is doing it), crazy stuff
->> like multiple resumes from same image for fast booting (yep, some
->> embedded people are doing that) and might-be-useful stuff like
->> s2both...
->
-> Neither of those are impossible with in-kernel code, so I'd argue that  
-> there's no need to keep the s2disk interface long-term. Userspace  
+The application is doing large random reads. It's purely random, so
+the POSIX_FADV_RANDOM hint is correct. However, thinking about it, it
+may be that we later hit a random "block" that has now been cached due
+to this read-ahead. Let me try and rule that out completely and see if
+there's still the difference. The original reporter observed 4kb reads
+hitting the driver, where 128kb was expected.
 
-I disagree.
+> However the kernel can behave more smart and less "dumb" :)
+> It can inherit the current good behavior of "submit one single 16kb io
+> request for a 16kb random read() syscall", while still be able to
+> start _larger sized_ readahead if it's actually a sequential one.
 
-> helpers might be necessary for the first one (to manage the network  
-> interface), but I already have multiple-resumes-from-the-same-image  
-> support in TuxOnice (and more 'crazy stuff' like support for resuming a  
-> different image after writing one - that can be used to switch to an  
-> initramfs containing the binaries needed to power down a UPS).
+Yeah, that's an ancient issue and pretty sad.
 
-The fact that it can be done in kernel -- anything can -- but whether
-it should. I'd very much like to keep the 'crazy stuff' in userspace.
-									Pavel
+> > diff --git a/mm/readahead.c b/mm/readahead.c
+> > index 337b20e..d4b201c 100644
+> > --- a/mm/readahead.c
+> > +++ b/mm/readahead.c
+> > @@ -501,8 +501,11 @@ void page_cache_sync_readahead(struct address_space *mapping,
+> >  	if (!ra->ra_pages)
+> >  		return;
+> >  
+> > -	/* be dumb */
+> > -	if (filp->f_mode & FMODE_RANDOM) {
+> > +	/*
+> > +	 * Be dumb for files marked as randomly accessed, but do readahead
+> > +	 * inside the original request (req_size > 1).
+> > +	 */
+> > +	if ((filp->f_mode & FMODE_RANDOM) && req_size == 1) {
+> >  		force_page_cache_readahead(mapping, filp, offset, req_size);
+> >  		return;
+> >  	}
+> 
+> The patch only fixes the (req_size != 1) case that exposed by your
+> application. A complete fix would be 
+> 
+> @@ -820,12 +825,6 @@ void page_cache_sync_readahead(struct ad
+>  	if (!ra->ra_pages)
+>  		return;
+>  
+> -	/* be dumb */
+> -	if (filp->f_mode & FMODE_RANDOM) {
+> -		force_page_cache_readahead(mapping, filp, offset, req_size);
+> -		return;
+> -	}
+> -
+
+Hmm, are we talking about the same thing? I want to hit read-ahead for
+the remaining pages inside that random read, eg ensure that read-ahead
+gets activated inside that window of the random request.
+
+>  	/* do read-ahead */
+>  	ondemand_readahead(mapping, ra, filp, false, offset, req_size);
+>  }
+> 
+> And a more optimized patch would look like this.  Note that only the
+> last chunk is necessary for bug fixing, and only this chunk can be
+> applied to vanilla 2.6.34-rc3.
+> 
+> If no problem, I'll submit a patch with only the last chunk for
+> 2.6.34, and submit the remaining chunks for 2.6.35.
+> 
+> Thanks,
+> Fengguang
+> ---
+> Subject: readahead: more smart readahead on POSIX_FADV_RANDOM
+> From: Wu Fengguang <fengguang.wu@intel.com>
+> Date: Fri Apr 02 08:52:42 CST 2010
+> 
+> Some times user space applications will tell POSIX_FADV_RANDOM
+> while still doing some sequential reads.
+> 
+> The kernel can behave a bit smarter in this case, by letting the
+> readahead heuristics handle the POSIX_FADV_RANDOM case, but with
+> less aggressive assumption on sequential reads.
+
+I'll try and give this a spin. On the laptop, I cannot reproduce the
+problem of smaller < reqsize ios, so hard to say just now.
+
+> 
+> CC: Jens Axboe <jens.axboe@oracle.com>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  mm/readahead.c |   17 ++++++++---------
+>  1 file changed, 8 insertions(+), 9 deletions(-)
+> 
+> --- linux.orig/mm/readahead.c	2010-04-02 08:43:53.000000000 +0800
+> +++ linux/mm/readahead.c	2010-04-02 09:00:51.000000000 +0800
+> @@ -664,6 +664,7 @@ ondemand_readahead(struct address_space 
+>  	unsigned long max = max_sane_readahead(ra->ra_pages);
+>  	unsigned long tt;  /* thrashing shreshold */
+>  	pgoff_t start;
+> +	bool random_hint = (filp && (filp->f_mode & FMODE_RANDOM));
+>  
+>  	/*
+>  	 * start of file
+> @@ -671,7 +672,8 @@ ondemand_readahead(struct address_space 
+>  	if (!offset) {
+>  		ra_set_pattern(ra, RA_PATTERN_INITIAL);
+>  		ra->start = offset;
+> -		if ((ra->ra_flags & READAHEAD_LSEEK) && req_size <= max) {
+> +		if ((random_hint || (ra->ra_flags & READAHEAD_LSEEK)) &&
+> +		    req_size <= max) {
+>  			ra->size = req_size;
+>  			ra->async_size = 0;
+>  			goto readit;
+> @@ -743,8 +745,11 @@ context_readahead:
+>  	} else
+>  		start = offset;
+>  
+> -	tt = count_history_pages(mapping, ra, offset,
+> -				 READAHEAD_ASYNC_RATIO * max);
+> +	if (unlikely(random_hint))
+> +		tt = 0;
+> +	else
+> +		tt = count_history_pages(mapping, ra, offset,
+> +					 READAHEAD_ASYNC_RATIO * max);
+>  	/*
+>  	 * no history pages cached, could be
+>  	 * 	- a random read
+> @@ -820,12 +825,6 @@ void page_cache_sync_readahead(struct ad
+>  	if (!ra->ra_pages)
+>  		return;
+>  
+> -	/* be dumb */
+> -	if (filp->f_mode & FMODE_RANDOM) {
+> -		force_page_cache_readahead(mapping, filp, offset, req_size);
+> -		return;
+> -	}
+> -
+>  	/* do read-ahead */
+>  	ondemand_readahead(mapping, ra, filp, false, offset, req_size);
+>  }
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Jens Axboe
+
