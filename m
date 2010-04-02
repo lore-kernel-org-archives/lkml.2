@@ -1,40 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab0DBW0R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 18:26:17 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43938 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755238Ab0DBW0M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 18:26:12 -0400
-Date: Fri, 2 Apr 2010 23:25:16 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-       Will Deacon <will.deacon@arm.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       kgdb-bugreport@lists.sourceforge.net, linux-arm@vger.kernel.org
-Subject: Re: [PATCH 4/5] kgdb: Use atomic operators which use barriers
-Message-ID: <20100402222516.GA11073@n2100.arm.linux.org.uk>
-References: <1270233145-29335-1-git-send-email-jason.wessel@windriver.com> <1270233145-29335-2-git-send-email-jason.wessel@windriver.com> <1270233145-29335-3-git-send-email-jason.wessel@windriver.com> <1270233145-29335-4-git-send-email-jason.wessel@windriver.com> <1270233145-29335-5-git-send-email-jason.wessel@windriver.com> <alpine.LFD.2.00.1004021205080.3634@i5.linux-foundation.org> <4BB64762.6040806@windriver.com> <alpine.LFD.2.00.1004021238270.3634@i5.linux-foundation.org>
+	id S1755590Ab0DBWjH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 18:39:07 -0400
+Received: from sous-sol.org ([216.99.217.87]:46160 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755515Ab0DBWjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 18:39:00 -0400
+Date: Fri, 2 Apr 2010 15:38:09 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Chris Wright <chrisw@sous-sol.org>, Joerg Roedel <joerg.roedel@amd.com>,
+       Neil Horman <nhorman@tuxdriver.com>, Neil Horman <nhorman@redhat.com>,
+       kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+       hbabu@us.ibm.com, iommu@lists.linux-foundation.org,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH 1/2] x86/amd-iommu: enable iommu before attaching
+	devices
+Message-ID: <20100402223809.GB29241@sequoia.sous-sol.org>
+References: <20100331202745.GE13406@hmsreliant.think-freely.org> <20100401142902.GF24846@8bytes.org> <20100401144736.GA14069@shamino.rdu.redhat.com> <20100401155643.GG24846@8bytes.org> <20100401171149.GH13603@shamino.rdu.redhat.com> <20100401201433.GK24846@8bytes.org> <20100402000012.GA8930@hmsreliant.think-freely.org> <20100402003034.GX29241@sequoia.sous-sol.org> <20100402012353.GY29241@sequoia.sous-sol.org> <20100402155932.GA3516@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004021238270.3634@i5.linux-foundation.org>
+In-Reply-To: <20100402155932.GA3516@redhat.com>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 02, 2010 at 12:43:00PM -0700, Linus Torvalds wrote:
-> Russell is wrong.
+* Vivek Goyal (vgoyal@redhat.com) wrote:
+> Following is just for my education purposes. Trying to understand better
+> the impact of in-flight DMAs. So IIUC, in kudmp context following seems to be
+> sequence of events.
+> 
+> 1. kernel crashes, we leave IOMMU enabled.
 
-Actually, in future threads you end up agreeing with my position...
+No, we actually disable the IOMMU
 
-> The fact that maybe some ARM6 cache coherency implementation is pure and 
-> utter sh*t and never sees the changes without the same instruction that 
-> happens to be a memory barrier on that architecture does not make that 
-> cpu_relax() any more about memory barriers.
+panic()
+  crash_exec()
+    machine_crash_shutdown()
+      native_machine_crash_shutdown()
+        x86_platform.iommu_shutdown() == amd_iommu_init.c::disable_iommus()
+  
+> 2. boot into capture kernel and we call enable_iommus(). This function
+>    first disables iommu, sets up new device table and enables iommus
+>    again.
+> 	a. So during this small window when iommu is disabled and we enable
+> 	   it back, any inflight DMA will passthrough possibly to an
+> 	   unintended physical address as translation is disabled and it
+> 	   can corrupt the kdump kenrel.
 
-I'm not going to discuss it now; I'm on holiday.  Wait until mid-next
-week on this and I'll respond with a fuller reply.
+Yes, should be possible.
+
+> 	b. Even after enabling the iommu, I guess we will continue to
+> 	   use cached DTE, and translation information to handle any
+> 	   in-flight DMA. The difference is that now iommus are enabled
+> 	   so any in-flight DMA should go to the address as intended in
+> 	   first kenrel and should not corrupt anything.
+
+Cached DTE only gets you domainID and pt root, so results depend upon
+other caches too.
+
+> 3. Once iommus are enabled again, we allocated and initilize protection
+>    domains. We attach devices to domains. In the process we flush the
+>    DTE, PDE and IO TLBs.
+
+Yes, but this is immediately after 2b above.  We can't send the invalidate
+commands until the iommu is enabled.
+
+> 	c. Looks like do_attach->set_dte_entry(), by default gives write
+> 	   permission (IW) to all the devices. I am assuming that at
+> 	   this point of time translation is enabled and possibly unity
+> 	   mapped.
+
+Unlikely to have full unity map, it's typically just for a range,
+and this is also typically for devices that have interaction w/ BIOS
+(typical examples are usb/SMM for keyboard and integrated graphics).
+And the mapping is to reserved memory areas (BIOS regions).  On my test
+box, for example, there are none of the BIOS specified ranges.
+
+>	   If that's the case, any in-flight DMA will not be
+> 	   allowed to happen at unity mapped address and this can possibly
+> 	   corrupt the kernel? 
+
+I don't understand what you mean there.
+
+> I understand this patch should fix the case when in second kernel a 
+> device is not doing DMA because of possibly cached DTE, and translation
+> information. But looks like in-flight DMA issues will still need a closer
+> look. But that is a separate issue and needs to be addressed in separate
+> set of patches.
+
+All of the in-flight DMA corrupts kdump kernel memory issues can exist
+w/out an IOMMU.  On the one hand, the IOMMU actually reduces the window
+of opportunity, but on the other it adds possible translation issue.
+
+About the only thing we can do here is modify the crashing kernel to
+update the DTE to disable dma, invalidate, and leave IOMMU enabled.
+This is all in the context of crashing, so any further errors here mean
+we probably won't get to kdump kernel.
+
+The kexec'd kernel will still need to defensively prepare things as it
+always does since it can't trust anything that came before it.
+
+thanks,
+-chris
