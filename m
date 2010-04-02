@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756977Ab0DBAbs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Apr 2010 20:31:48 -0400
-Received: from sous-sol.org ([216.99.217.87]:36998 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751565Ab0DBAbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Apr 2010 20:31:45 -0400
-Date: Thu, 1 Apr 2010 17:30:34 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Joerg Roedel <joro@8bytes.org>, Neil Horman <nhorman@redhat.com>,
-       kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-       hbabu@us.ibm.com, iommu@lists.linux-foundation.org,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH] amd iommu: force flush of iommu prior during shutdown
-Message-ID: <20100402003034.GX29241@sequoia.sous-sol.org>
-References: <m1wrwsuxn9.fsf@fess.ebiederm.org> <20100331191811.GD13406@hmsreliant.think-freely.org> <m1sk7guv5u.fsf@fess.ebiederm.org> <20100331202745.GE13406@hmsreliant.think-freely.org> <20100401142902.GF24846@8bytes.org> <20100401144736.GA14069@shamino.rdu.redhat.com> <20100401155643.GG24846@8bytes.org> <20100401171149.GH13603@shamino.rdu.redhat.com> <20100401201433.GK24846@8bytes.org> <20100402000012.GA8930@hmsreliant.think-freely.org>
+	id S1756689Ab0DBAnP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Apr 2010 20:43:15 -0400
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:58751 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753374Ab0DBAnN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Apr 2010 20:43:13 -0400
+Date: Thu, 1 Apr 2010 17:43:11 -0700
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, socketcan-core@lists.berlios.de,
+       netdev@vger.kernel.org, sameo@linux.intel.com
+Subject: Re: [PATCH 2/3] can: add support for Janz VMOD-ICAN3 Intelligent
+ CAN module
+Message-ID: <20100402004311.GB25412@ovro.caltech.edu>
+References: <1269881932-3803-3-git-send-email-iws@ovro.caltech.edu>
+ <20100401130359.9a9b5c7b.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100402000012.GA8930@hmsreliant.think-freely.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20100401130359.9a9b5c7b.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Thu, 01 Apr 2010 17:43:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Neil Horman (nhorman@tuxdriver.com) wrote:
-> On Thu, Apr 01, 2010 at 10:14:34PM +0200, Joerg Roedel wrote:
-> > On Thu, Apr 01, 2010 at 01:11:49PM -0400, Neil Horman wrote:
-> > > On Thu, Apr 01, 2010 at 05:56:43PM +0200, Joerg Roedel wrote:
+On Thu, Apr 01, 2010 at 01:03:59PM -0700, Andrew Morton wrote:
+> On Mon, 29 Mar 2010 09:58:51 -0700
+> "Ira W. Snyder" <iws@ovro.caltech.edu> wrote:
+> 
+> > The Janz VMOD-ICAN3 is a MODULbus daughterboard which fits onto any
+> > MODULbus carrier board. It is an intelligent CAN controller with a
+> > microcontroller and associated firmware.
 > > 
-> > > > The possible fix will be to enable the hardware earlier in the
-> > > > initialization path.
-> > > > 
-> > > That sounds like a reasonable theory, I'll try hack something together
-> > > shortly.
-> > 
-> > Great. So the problem might be already fixed when I am back in the
-> > office ;-)
-> > 
-> Don't hold your breath, but I'll try my best :)
+> 
+> A neat-looking driver.
+> 
+> > ...
+> >
+> > +	spin_lock_irqsave(&mod->lock, flags);
+> >
+> > ...
+> 
+> It does this rather a lot.  it seems to be doing quite a lot of work
+> under that lock, too - quite a lot of memcpy_toio(), other stuff.
+> 
 
-The problem we had before was a combo of not clearing PDE and not having
-the command buffer set up properly.  Now we have basically the same
-problem.  The attach is running too early, so the invalidate commands
-are falling on deaf ears.
+Like most similar cards, the host computer communicates to the
+microcontroller through a dual ported memory (DPM) interface. In this
+card, it is split into 256x 256 byte pages/windows.
 
-thanks,
--chris
+The lock ensures that once code sets a window, it doesn't change while
+the memcpy/iowrite happens.
+
+> Is there potential here to disable interrupt for too long?  Not
+> possible to use spin_lock_bh() here?
+> 
+
+The largest possible memcpy_(to|from)io() in the driver is 256 bytes.
+Not too huge, but I understand the concern.
+
+Looking at this again, I don't take the lock in the interrupt handler
+(nor do I need to). What contexts do the network driver's xmit() and
+napi() routines run in? hardirq and softirq respectively, right? In that
+case, I think spin_lock_bh() is probably enough.
+
+Ira
