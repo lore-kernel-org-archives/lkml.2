@@ -1,89 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab0DBP4m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 11:56:42 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:38997 "EHLO mail.vyatta.com"
+	id S1753122Ab0DBQAh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 12:00:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51731 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab0DBP4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 11:56:34 -0400
-Date: Fri, 2 Apr 2010 08:55:56 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: xiaohui.xin@intel.com
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, mst@redhat.com, jdike@c2.user-mode-linux.org,
-       davem@davemloft.net
-Subject: Re: [RFC] [PATCH v2 3/3] Let host NIC driver to DMA to guest user
- space.
-Message-ID: <20100402085556.75a8ff7c@nehalam>
-In-Reply-To: <1270193410-6877-1-git-send-email-xiaohui.xin@intel.com>
-References: <1270193410-6877-1-git-send-email-xiaohui.xin@intel.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.3; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751461Ab0DBQAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 12:00:30 -0400
+Date: Fri, 2 Apr 2010 11:59:32 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Chris Wright <chrisw@sous-sol.org>
+Cc: Joerg Roedel <joerg.roedel@amd.com>, Neil Horman <nhorman@tuxdriver.com>,
+       Neil Horman <nhorman@redhat.com>, kexec@lists.infradead.org,
+       linux-kernel@vger.kernel.org, hbabu@us.ibm.com,
+       iommu@lists.linux-foundation.org,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH 1/2] x86/amd-iommu: enable iommu before attaching
+	devices
+Message-ID: <20100402155932.GA3516@redhat.com>
+References: <m1sk7guv5u.fsf@fess.ebiederm.org> <20100331202745.GE13406@hmsreliant.think-freely.org> <20100401142902.GF24846@8bytes.org> <20100401144736.GA14069@shamino.rdu.redhat.com> <20100401155643.GG24846@8bytes.org> <20100401171149.GH13603@shamino.rdu.redhat.com> <20100401201433.GK24846@8bytes.org> <20100402000012.GA8930@hmsreliant.think-freely.org> <20100402003034.GX29241@sequoia.sous-sol.org> <20100402012353.GY29241@sequoia.sous-sol.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100402012353.GY29241@sequoia.sous-sol.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  2 Apr 2010 15:30:10 +0800
-xiaohui.xin@intel.com wrote:
-
-> From: Xin Xiaohui <xiaohui.xin@intel.com>
+On Thu, Apr 01, 2010 at 06:23:53PM -0700, Chris Wright wrote:
+> Hit another kdump problem as reported by Neil Horman.  When initializaing
+> the IOMMU, we attach devices to their domains before the IOMMU is
+> fully (re)initialized.  Attaching a device will issue some important
+> invalidations.  In the context of the newly kexec'd kdump kernel, the
+> IOMMU may have stale cached data from the original kernel.  Because we
+> do the attach too early, the invalidation commands are placed in the new
+> command buffer before the IOMMU is updated w/ that buffer.  This leaves
+> the stale entries in the kdump context and can renders device unusable.
+> Simply enable the IOMMU before we do the attach.
 > 
-> The patch let host NIC driver to receive user space skb,
-> then the driver has chance to directly DMA to guest user
-> space buffers thru single ethX interface.
-> We want it to be more generic as a zero copy framework.
-> 
-> Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
-> Signed-off-by: Zhao Yu <yzhao81@gmail.com>
-> Sigend-off-by: Jeff Dike <jdike@c2.user-mode-linux.org>
+> Cc: Neil Horman <nhorman@tuxdriver.com>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> Signed-off-by: Chris Wright <chrisw@sous-sol.org>
 > ---
+>  arch/x86/kernel/amd_iommu_init.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> We consider 2 way to utilize the user buffres, but not sure which one
-> is better. Please give any comments.
-> 
-> One:    Modify __alloc_skb() function a bit, it can only allocate a
->         structure of sk_buff, and the data pointer is pointing to a
->         user buffer which is coming from a page constructor API.
->         Then the shinfo of the skb is also from guest.
->         When packet is received from hardware, the skb->data is filled
->         directly by h/w. What we have done is in this way.
-> 
->         Pros:   We can avoid any copy here.
->         Cons:   Guest virtio-net driver needs to allocate skb as almost
->                 the same method with the host NIC drivers, say the size
->                 of netdev_alloc_skb() and the same reserved space in the
->                 head of skb. Many NIC drivers are the same with guest and
->                 ok for this. But some lastest NIC drivers reserves special
->                 room in skb head. To deal with it, we suggest to provide
->                 a method in guest virtio-net driver to ask for parameter
->                 we interest from the NIC driver when we know which device
->                 we have bind to do zero-copy. Then we ask guest to do so.
->                 Is that reasonable?
-> 
-> Two:    Modify driver to get user buffer allocated from a page constructor
->         API(to substitute alloc_page()), the user buffer are used as payload
->         buffers and filled by h/w directly when packet is received. Driver
->         should associate the pages with skb (skb_shinfo(skb)->frags). For
->         the head buffer side, let host allocates skb, and h/w fills it.
->         After that, the data filled in host skb header will be copied into
->         guest header buffer which is submitted together with the payload buffer.
-> 
->         Pros:   We could less care the way how guest or host allocates their
->                 buffers.
->         Cons:   We still need a bit copy here for the skb header.
-> 
-> We are not sure which way is the better here. This is the first thing we want
-> to get comments from the community. We wish the modification to the network
-> part will be generic which not used by vhost-net backend only, but a user
-> application may use it as well when the zero-copy device may provides async
-> read/write operations later.
-> 
-> 
-> Thanks
-> Xiaohui
+> --- a/arch/x86/kernel/amd_iommu_init.c
+> +++ b/arch/x86/kernel/amd_iommu_init.c
+> @@ -1288,6 +1288,8 @@ static int __init amd_iommu_init(void)
+>  	if (ret)
+>  		goto free;
+>  
+> +	enable_iommus();
+> +
+>  	if (iommu_pass_through)
+>  		ret = amd_iommu_init_passthrough();
+>  	else
+> @@ -1300,8 +1302,6 @@ static int __init amd_iommu_init(void)
+>  
+>  	amd_iommu_init_notifier();
+>  
+> -	enable_iommus();
+> -
 
-How do you deal with the DoS problem of hostile user space app posting huge
-number of receives and never getting anything. 
+Ok, so now we do enable_iommu() before we attach devices and flush DTE and
+domain PDE, IO TLB. That makes sense.
+
+Following is just for my education purposes. Trying to understand better
+the impact of in-flight DMAs. So IIUC, in kudmp context following seems to be
+sequence of events.
+
+1. kernel crashes, we leave IOMMU enabled.
+
+2. boot into capture kernel and we call enable_iommus(). This function
+   first disables iommu, sets up new device table and enables iommus
+   again.
+	a. So during this small window when iommu is disabled and we enable
+	   it back, any inflight DMA will passthrough possibly to an
+	   unintended physical address as translation is disabled and it
+	   can corrupt the kdump kenrel.
+
+	b. Even after enabling the iommu, I guess we will continue to
+	   use cached DTE, and translation information to handle any
+	   in-flight DMA. The difference is that now iommus are enabled
+	   so any in-flight DMA should go to the address as intended in
+	   first kenrel and should not corrupt anything.
+
+3. Once iommus are enabled again, we allocated and initilize protection
+   domains. We attach devices to domains. In the process we flush the
+   DTE, PDE and IO TLBs.
+
+	c. Looks like do_attach->set_dte_entry(), by default gives write
+	   permission (IW) to all the devices. I am assuming that at
+	   this point of time translation is enabled and possibly unity
+	   mapped. If that's the case, any in-flight DMA will not be
+	   allowed to happen at unity mapped address and this can possibly
+	   corrupt the kernel? 
+
+I understand this patch should fix the case when in second kernel a 
+device is not doing DMA because of possibly cached DTE, and translation
+information. But looks like in-flight DMA issues will still need a closer
+look. But that is a separate issue and needs to be addressed in separate
+set of patches.
+
+Thanks
+Vivek
