@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169Ab0DBTGo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 15:06:44 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47703 "EHLO hera.kernel.org"
+	id S1754225Ab0DBTHN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 15:07:13 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47728 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753750Ab0DBTGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 15:06:40 -0400
-Date: Fri, 2 Apr 2010 19:06:22 GMT
-From: tip-bot for Jason Wessel <jason.wessel@windriver.com>
+	id S1753750Ab0DBTHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 15:07:06 -0400
+Date: Fri, 2 Apr 2010 19:06:39 GMT
+From: tip-bot for David Rientjes <rientjes@google.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       fweisbec@gmail.com, jason.wessel@windriver.com, stable@kernel.org,
-       tglx@linutronix.de, mingo@elte.hu
+       tglx@linutronix.de, rientjes@google.com, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       fweisbec@gmail.com, jason.wessel@windriver.com, stable@kernel.org,
-       tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1269975907-27602-1-git-send-email-jason.wessel@windriver.com>
-References: <1269975907-27602-1-git-send-email-jason.wessel@windriver.com>
+       tglx@linutronix.de, rientjes@google.com, mingo@elte.hu
+In-Reply-To: <alpine.DEB.2.00.1003251538060.8589@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1003251538060.8589@chino.kir.corp.google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] x86,kgdb: Always initialize the hw breakpoint attribute
-Message-ID: <tip-ab310b5edb8b601bcb02491ed6f7676da4fd1757@git.kernel.org>
-Git-Commit-ID: ab310b5edb8b601bcb02491ed6f7676da4fd1757
+Subject: [tip:x86/urgent] x86: Increase CONFIG_NODES_SHIFT max to 10
+Message-ID: <tip-51591e31dcb3716f03f962e26ec36a029aa46340@git.kernel.org>
+Git-Commit-ID: 51591e31dcb3716f03f962e26ec36a029aa46340
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 02 Apr 2010 19:06:23 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 02 Apr 2010 19:06:40 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ab310b5edb8b601bcb02491ed6f7676da4fd1757
-Gitweb:     http://git.kernel.org/tip/ab310b5edb8b601bcb02491ed6f7676da4fd1757
-Author:     Jason Wessel <jason.wessel@windriver.com>
-AuthorDate: Tue, 30 Mar 2010 14:05:07 -0500
-Committer:  Frederic Weisbecker <fweisbec@gmail.com>
-CommitDate: Thu, 1 Apr 2010 08:26:32 +0200
+Commit-ID:  51591e31dcb3716f03f962e26ec36a029aa46340
+Gitweb:     http://git.kernel.org/tip/51591e31dcb3716f03f962e26ec36a029aa46340
+Author:     David Rientjes <rientjes@google.com>
+AuthorDate: Thu, 25 Mar 2010 15:39:27 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 2 Apr 2010 19:09:31 +0200
 
-x86,kgdb: Always initialize the hw breakpoint attribute
+x86: Increase CONFIG_NODES_SHIFT max to 10
 
-It is required to call hw_breakpoint_init() on an attr before using it
-in any other calls.  This fixes the problem where kgdb will sometimes
-fail to initialize on x86_64.
+Some larger systems require more than 512 nodes, so increase the
+maximum CONFIG_NODES_SHIFT to 10 for a new max of 1024 nodes.
 
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: 2.6.33 <stable@kernel.org>
-LKML-Reference: <1269975907-27602-1-git-send-email-jason.wessel@windriver.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+This was tested with numa=fake=64M on systems with more than
+64GB of RAM. A total of 1022 nodes were initialized.
+
+Successfully builds with no additional warnings on x86_64
+allyesconfig.
+
+( No effect on any existing config. Newly enabled CONFIG_MAXSMP=y
+  will see the new default. )
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+LKML-Reference: <alpine.DEB.2.00.1003251538060.8589@chino.kir.corp.google.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/kgdb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/Kconfig |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
-index bfba601..b2258ca 100644
---- a/arch/x86/kernel/kgdb.c
-+++ b/arch/x86/kernel/kgdb.c
-@@ -618,8 +618,8 @@ int kgdb_arch_init(void)
- 	 * portion of kgdb because this operation requires mutexs to
- 	 * complete.
- 	 */
-+	hw_breakpoint_init(&attr);
- 	attr.bp_addr = (unsigned long)kgdb_arch_init;
--	attr.type = PERF_TYPE_BREAKPOINT;
- 	attr.bp_len = HW_BREAKPOINT_LEN_1;
- 	attr.bp_type = HW_BREAKPOINT_W;
- 	attr.disabled = 1;
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 0eacb1f..9458685 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1216,8 +1216,8 @@ config NUMA_EMU
+ 
+ config NODES_SHIFT
+ 	int "Maximum NUMA Nodes (as a power of 2)" if !MAXSMP
+-	range 1 9
+-	default "9" if MAXSMP
++	range 1 10
++	default "10" if MAXSMP
+ 	default "6" if X86_64
+ 	default "4" if X86_NUMAQ
+ 	default "3"
