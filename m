@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806Ab0DBQDM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 12:03:12 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:34926 "EHLO gir.skynet.ie"
+	id S1754520Ab0DBQDU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 12:03:20 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:35006 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396Ab0DBQCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 12:02:47 -0400
+	id S1753000Ab0DBQCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 12:02:51 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andrea Arcangeli <aarcange@redhat.com>,
@@ -17,271 +17,558 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 0/14] Memory Compaction v7
-Date: Fri,  2 Apr 2010 17:02:34 +0100
-Message-Id: <1270224168-14775-1-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 08/14] Memory compaction core
+Date: Fri,  2 Apr 2010 17:02:42 +0100
+Message-Id: <1270224168-14775-9-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.6.5
+In-Reply-To: <1270224168-14775-1-git-send-email-mel@csn.ul.ie>
+References: <1270224168-14775-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only change is relatively minor and is around the migration of unmapped
-PageSwapCache pages. Specifically, it's not safe to access anon_vma for
-these pages when remapping after migration completes so the last patch
-makes sure we don't.
+This patch is the core of a mechanism which compacts memory in a zone by
+relocating movable pages towards the end of the zone.
 
-Are there any further obstacles to merging?
+A single compaction run involves a migration scanner and a free scanner.
+Both scanners operate on pageblock-sized areas in the zone. The migration
+scanner starts at the bottom of the zone and searches for all movable pages
+within each area, isolating them onto a private list called migratelist.
+The free scanner starts at the top of the zone and searches for suitable
+areas and consumes the free pages within making them available for the
+migration scanner. The pages isolated for migration are then migrated to
+the newly isolated free pages.
 
-Changelog since V6
-  o Avoid accessing anon_vma when migrating unmapped PageSwapCache pages
-
-Changelog since V5
-  o Rebase to mmotm-2010-03-24-14-48
-  o Add more reviewed-by's
-  o Correct one spelling in vmstat.c and some leader clarifications
-  o Split the LRU isolation modes into a separate path
-  o Correct a NID change
-  o Call migrate_prep less frequently
-  o Remove unnecessary inlining
-  o Do not interfere with memory hot-remove
-  o Do not compact for orders <= PAGE_ALLOC_COSTLY_ORDER
-  o page_mapped instead of page_mapcount and allow swapcache to migrate
-  o Avoid too many pages being isolated for migration
-  o Handle PageSwapCache pages during migration
-
-Changelog since V4
-  o Remove unnecessary check for PageLRU and PageUnevictable
-  o Fix isolated accounting
-  o Close race window between page_mapcount and rcu_read_lock
-  o Added a lot more Reviewed-by tags
-
-Changelog since V3
-  o Document sysfs entries (subseqently, merged independently)
-  o COMPACTION should depend on MMU
-  o Comment updates
-  o Ensure proc/sysfs triggering of compaction fully completes
-  o Rename anon_vma refcount to external_refcount
-  o Rebase to mmotm on top of 2.6.34-rc1
-
-Changelog since V2
-  o Move unusable and fragmentation indices to separate proc files
-  o Express indices as being between 0 and 1
-  o Update copyright notice for compaction.c
-  o Avoid infinite loop when split free page fails
-  o Init compact_resume at least once (impacted x86 testing)
-  o Fewer pages are isolated during compaction.
-  o LRU lists are no longer rotated when page is busy
-  o NR_ISOLATED_* is updated to avoid isolating too many pages
-  o Update zone LRU stats correctly when isolating pages
-  o Reference count anon_vma instead of insufficient locking with
-    use-after-free races in memory compaction
-  o Watch for unmapped anon pages during migration
-  o Remove unnecessary parameters on a few functions
-  o Add Reviewed-by's. Note that I didn't add the Acks and Reviewed
-    for the proc patches as they have been split out into separate
-    files and I don't know if the Acks are still valid.
-
-Changelog since V1
-  o Update help blurb on CONFIG_MIGRATION
-  o Max unusable free space index is 100, not 1000
-  o Move blockpfn forward properly during compaction
-  o Cleanup CONFIG_COMPACTION vs CONFIG_MIGRATION confusion
-  o Permissions on /proc and /sys files should be 0200
-  o Reduce verbosity
-  o Compact all nodes when triggered via /proc
-  o Add per-node compaction via sysfs
-  o Move defer_compaction out-of-line
-  o Fix lock oddities in rmap_walk_anon
-  o Add documentation
-
-This patchset is a memory compaction mechanism that reduces external
-fragmentation memory by moving GFP_MOVABLE pages to a fewer number of
-pageblocks. The term "compaction" was chosen as there are is a number of
-mechanisms that are not mutually exclusive that can be used to defragment
-memory. For example, lumpy reclaim is a form of defragmentation as was slub
-"defragmentation" (really a form of targeted reclaim). Hence, this is called
-"compaction" to distinguish it from other forms of defragmentation.
-
-In this implementation, a full compaction run involves two scanners operating
-within a zone - a migration and a free scanner. The migration scanner
-starts at the beginning of a zone and finds all movable pages within one
-pageblock_nr_pages-sized area and isolates them on a migratepages list. The
-free scanner begins at the end of the zone and searches on a per-area
-basis for enough free pages to migrate all the pages on the migratepages
-list. As each area is respectively migrated or exhausted of free pages,
-the scanners are advanced one area.  A compaction run completes within a
-zone when the two scanners meet.
-
-This method is a bit primitive but is easy to understand and greater
-sophistication would require maintenance of counters on a per-pageblock
-basis. This would have a big impact on allocator fast-paths to improve
-compaction which is a poor trade-off.
-
-It also does not try relocate virtually contiguous pages to be physically
-contiguous. However, assuming transparent hugepages were in use, a
-hypothetical khugepaged might reuse compaction code to isolate free pages,
-split them and relocate userspace pages for promotion.
-
-Memory compaction can be triggered in one of three ways. It may be triggered
-explicitly by writing any value to /proc/sys/vm/compact_memory and compacting
-all of memory. It can be triggered on a per-node basis by writing any
-value to /sys/devices/system/node/nodeN/compact where N is the node ID to
-be compacted. When a process fails to allocate a high-order page, it may
-compact memory in an attempt to satisfy the allocation instead of entering
-direct reclaim. Explicit compaction does not finish until the two scanners
-meet and direct compaction ends if a suitable page becomes available that
-would meet watermarks.
-
-The series is in 14 patches. The first three are not "core" to the series
-but are important pre-requisites.
-
-Patch 1 reference counts anon_vma for rmap_walk_anon(). Without this
-	patch, it's possible to use anon_vma after free if the caller is
-	not holding a VMA or mmap_sem for the pages in question. While
-	there should be no existing user that causes this problem,
-	it's a requirement for memory compaction to be stable. The patch
-	is at the start of the series for bisection reasons.
-Patch 2 skips over anon pages during migration that are no longer mapped
-	because there still appeared to be a small window between when
-	a page was isolated and migration started during which anon_vma
-	could disappear.
-Patch 3 merges the KSM and migrate counts. It could be merged with patch 1
-	but would be slightly harder to review.
-Patch 4 allows CONFIG_MIGRATION to be set without CONFIG_NUMA
-Patch 5 exports a "unusable free space index" via /proc/pagetypeinfo. It's
-	a measure of external fragmentation that takes the size of the
-	allocation request into account. It can also be calculated from
-	userspace so can be dropped if requested
-Patch 6 exports a "fragmentation index" which only has meaning when an
-	allocation request fails. It determines if an allocation failure
-	would be due to a lack of memory or external fragmentation.
-Patch 7 moves the definition for LRU isolation modes for use by compaction
-Patch 8 is the compaction mechanism although it's unreachable at this point
-Patch 9 adds a means of compacting all of memory with a proc trgger
-Patch 10 adds a means of compacting a specific node with a sysfs trigger
-Patch 11 adds "direct compaction" before "direct reclaim" if it is
-	determined there is a good chance of success.
-Patch 12 adds a sysctl that allows tuning of the threshold at which the
-	kernel will compact or direct reclaim
-Patch 13 temporarily disables compaction if an allocation failure occurs
-	after compaction.
-Patch 14 allows the migration of PageSwapCache pages. This patch was not
-	as straight-forward as rmap_walk and migration needed extra
-	smarts to avoid problems under heavy memory pressure. It's possible
-	that memory hot-remove could be affected.
-
-Testing of compaction was in three stages.  For the test, debugging, preempt,
-the sleep watchdog and lockdep were all enabled but nothing nasty popped
-out. min_free_kbytes was tuned as recommended by hugeadm to help fragmentation
-avoidance and high-order allocations. It was tested on X86, X86-64 and PPC64.
-
-Ths first test represents one of the easiest cases that can be faced for
-lumpy reclaim or memory compaction.
-
-1. Machine freshly booted and configured for hugepage usage with
-	a) hugeadm --create-global-mounts
-	b) hugeadm --pool-pages-max DEFAULT:8G
-	c) hugeadm --set-recommended-min_free_kbytes
-	d) hugeadm --set-recommended-shmmax
-
-	The min_free_kbytes here is important. Anti-fragmentation works best
-	when pageblocks don't mix. hugeadm knows how to calculate a value that
-	will significantly reduce the worst of external-fragmentation-related
-	events as reported by the mm_page_alloc_extfrag tracepoint.
-
-2. Load up memory
-	a) Start updatedb
-	b) Create in parallel a X files of pagesize*128 in size. Wait
-	   until files are created. By parallel, I mean that 4096 instances
-	   of dd were launched, one after the other using &. The crude
-	   objective being to mix filesystem metadata allocations with
-	   the buffer cache.
-	c) Delete every second file so that pageblocks are likely to
-	   have holes
-	d) kill updatedb if it's still running
-
-	At this point, the system is quiet, memory is full but it's full with
-	clean filesystem metadata and clean buffer cache that is unmapped.
-	This is readily migrated or discarded so you'd expect lumpy reclaim
-	to have no significant advantage over compaction but this is at
-	the POC stage.
-
-3. In increments, attempt to allocate 5% of memory as hugepages.
-	   Measure how long it took, how successful it was, how many
-	   direct reclaims took place and how how many compactions. Note
-	   the compaction figures might not fully add up as compactions
-	   can take place for orders other than the hugepage size
-
-X86				vanilla		compaction
-Final page count                    915                916 (attempted 1002)
-pages reclaimed                   88872               2942
-
-X86-64				vanilla		compaction
-Final page count:                   901                902 (attempted 1002)
-Total pages reclaimed:           137573              50655
-
-PPC64				vanilla		compaction
-Final page count:                    89                 92 (attempted 110)
-Total pages reclaimed:            84727               9345
-
-There was not a dramatic improvement in success rates but it wouldn't be
-expected in this case either. What was important is that far fewer pages
-were reclaimed in all cases reducing the amount of IO required to satisfy
-a huge page allocation.
-
-The second tests were all performance related - kernbench, netperf, iozone
-and sysbench. None showed anything too remarkable.
-
-The last test was a high-order allocation stress test. Many kernel compiles
-are started to fill memory with a pressured mix of unmovable and movable
-allocations. During this, an attempt is made to allocate 90% of memory
-as huge pages - one at a time with small delays between attempts to avoid
-flooding the IO queue.
-
-                                             vanilla   compaction
-Percentage of request allocated X86               96           99
-Percentage of request allocated X86-64            96           98
-Percentage of request allocated PPC64             51           79
-
-Success rates are a little higher, particularly on PPC64 with the larger
-huge pages. What is most interesting is the latency when allocating huge
-pages.
-
-X86:    http://www.csn.ul.ie/~mel/postings/compaction-20100402/highalloc-interlatency-arnold-compaction-stress-v7r12-mean.ps
-X86_64: http://www.csn.ul.ie/~mel/postings/compaction-20100402/highalloc-interlatency-hydra-compaction-stress-v7r12-mean.ps
-PPC64: http://www.csn.ul.ie/~mel/postings/compaction-20100402/highalloc-interlatency-powyah-compaction-stress-v7r12-mean.ps
-
-X86 latency is reduced the least but it is depending heavily on the HIGHMEM
-zone to allocate many of its huge pages which is a relatively straight-forward
-job. X86-64 and PPC64 both show reductions in average time taken to allocate
-huge pages. It is not reduced to zero because the system is under enough
-memory pressure that reclaim is still required for some of the allocations.
-
-What is also enlightening in the same directory is the "stddev" files. Each
-of them show that the variance between allocation times is heavily reduced.
-
- Documentation/ABI/testing/sysfs-devices-node |    7 +
- Documentation/filesystems/proc.txt           |   25 +-
- Documentation/sysctl/vm.txt                  |   29 ++-
- drivers/base/node.c                          |    3 +
- include/linux/compaction.h                   |   81 ++++
- include/linux/mm.h                           |    1 +
- include/linux/mmzone.h                       |    7 +
- include/linux/rmap.h                         |   27 +-
- include/linux/swap.h                         |    6 +
- include/linux/vmstat.h                       |    2 +
- kernel/sysctl.c                              |   25 ++
- mm/Kconfig                                   |   18 +-
- mm/Makefile                                  |    1 +
- mm/compaction.c                              |  589 ++++++++++++++++++++++++++
- mm/ksm.c                                     |    4 +-
- mm/migrate.c                                 |   48 ++-
- mm/page_alloc.c                              |   73 ++++
- mm/rmap.c                                    |   10 +-
- mm/vmscan.c                                  |    5 -
- mm/vmstat.c                                  |  218 ++++++++++
- 20 files changed, 1145 insertions(+), 34 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-devices-node
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Acked-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+---
+ include/linux/compaction.h |    9 +
+ include/linux/mm.h         |    1 +
+ include/linux/swap.h       |    1 +
+ include/linux/vmstat.h     |    1 +
+ mm/Makefile                |    1 +
+ mm/compaction.c            |  379 ++++++++++++++++++++++++++++++++++++++++++++
+ mm/page_alloc.c            |   39 +++++
+ mm/vmstat.c                |    5 +
+ 8 files changed, 436 insertions(+), 0 deletions(-)
  create mode 100644 include/linux/compaction.h
  create mode 100644 mm/compaction.c
+
+diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+new file mode 100644
+index 0000000..dbebe58
+--- /dev/null
++++ b/include/linux/compaction.h
+@@ -0,0 +1,9 @@
++#ifndef _LINUX_COMPACTION_H
++#define _LINUX_COMPACTION_H
++
++/* Return values for compact_zone() */
++#define COMPACT_INCOMPLETE	0
++#define COMPACT_PARTIAL		1
++#define COMPACT_COMPLETE	2
++
++#endif /* _LINUX_COMPACTION_H */
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index f3b473a..f920815 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -335,6 +335,7 @@ void put_page(struct page *page);
+ void put_pages_list(struct list_head *pages);
+ 
+ void split_page(struct page *page, unsigned int order);
++int split_free_page(struct page *page);
+ 
+ /*
+  * Compound pages have a destructor function.  Provide a
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 986b12d..cf8bba7 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -151,6 +151,7 @@ enum {
+ };
+ 
+ #define SWAP_CLUSTER_MAX 32
++#define COMPACT_CLUSTER_MAX SWAP_CLUSTER_MAX
+ 
+ #define SWAP_MAP_MAX	0x3e	/* Max duplication count, in first swap_map */
+ #define SWAP_MAP_BAD	0x3f	/* Note pageblock is bad, in first swap_map */
+diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+index 117f0dd..56e4b44 100644
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -43,6 +43,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		KSWAPD_LOW_WMARK_HIT_QUICKLY, KSWAPD_HIGH_WMARK_HIT_QUICKLY,
+ 		KSWAPD_SKIP_CONGESTION_WAIT,
+ 		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
++		COMPACTBLOCKS, COMPACTPAGES, COMPACTPAGEFAILED,
+ #ifdef CONFIG_HUGETLB_PAGE
+ 		HTLB_BUDDY_PGALLOC, HTLB_BUDDY_PGALLOC_FAIL,
+ #endif
+diff --git a/mm/Makefile b/mm/Makefile
+index 7a68d2a..ccb1f72 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -33,6 +33,7 @@ obj-$(CONFIG_FAILSLAB) += failslab.o
+ obj-$(CONFIG_MEMORY_HOTPLUG) += memory_hotplug.o
+ obj-$(CONFIG_FS_XIP) += filemap_xip.o
+ obj-$(CONFIG_MIGRATION) += migrate.o
++obj-$(CONFIG_COMPACTION) += compaction.o
+ obj-$(CONFIG_SMP) += percpu.o
+ obj-$(CONFIG_QUICKLIST) += quicklist.o
+ obj-$(CONFIG_CGROUP_MEM_RES_CTLR) += memcontrol.o page_cgroup.o
+diff --git a/mm/compaction.c b/mm/compaction.c
+new file mode 100644
+index 0000000..4041209
+--- /dev/null
++++ b/mm/compaction.c
+@@ -0,0 +1,379 @@
++/*
++ * linux/mm/compaction.c
++ *
++ * Memory compaction for the reduction of external fragmentation. Note that
++ * this heavily depends upon page migration to do all the real heavy
++ * lifting
++ *
++ * Copyright IBM Corp. 2007-2010 Mel Gorman <mel@csn.ul.ie>
++ */
++#include <linux/swap.h>
++#include <linux/migrate.h>
++#include <linux/compaction.h>
++#include <linux/mm_inline.h>
++#include <linux/backing-dev.h>
++#include "internal.h"
++
++/*
++ * compact_control is used to track pages being migrated and the free pages
++ * they are being migrated to during memory compaction. The free_pfn starts
++ * at the end of a zone and migrate_pfn begins at the start. Movable pages
++ * are moved to the end of a zone during a compaction run and the run
++ * completes when free_pfn <= migrate_pfn
++ */
++struct compact_control {
++	struct list_head freepages;	/* List of free pages to migrate to */
++	struct list_head migratepages;	/* List of pages being migrated */
++	unsigned long nr_freepages;	/* Number of isolated free pages */
++	unsigned long nr_migratepages;	/* Number of pages to migrate */
++	unsigned long free_pfn;		/* isolate_freepages search base */
++	unsigned long migrate_pfn;	/* isolate_migratepages search base */
++
++	/* Account for isolated anon and file pages */
++	unsigned long nr_anon;
++	unsigned long nr_file;
++
++	struct zone *zone;
++};
++
++static int release_freepages(struct list_head *freelist)
++{
++	struct page *page, *next;
++	int count = 0;
++
++	list_for_each_entry_safe(page, next, freelist, lru) {
++		list_del(&page->lru);
++		__free_page(page);
++		count++;
++	}
++
++	return count;
++}
++
++/* Isolate free pages onto a private freelist. Must hold zone->lock */
++static int isolate_freepages_block(struct zone *zone,
++				unsigned long blockpfn,
++				struct list_head *freelist)
++{
++	unsigned long zone_end_pfn, end_pfn;
++	int total_isolated = 0;
++
++	/* Get the last PFN we should scan for free pages at */
++	zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
++	end_pfn = blockpfn + pageblock_nr_pages;
++	if (end_pfn > zone_end_pfn)
++		end_pfn = zone_end_pfn;
++
++	/* Isolate free pages. This assumes the block is valid */
++	for (; blockpfn < end_pfn; blockpfn++) {
++		struct page *page;
++		int isolated, i;
++
++		if (!pfn_valid_within(blockpfn))
++			continue;
++
++		page = pfn_to_page(blockpfn);
++		if (!PageBuddy(page))
++			continue;
++
++		/* Found a free page, break it into order-0 pages */
++		isolated = split_free_page(page);
++		total_isolated += isolated;
++		for (i = 0; i < isolated; i++) {
++			list_add(&page->lru, freelist);
++			page++;
++		}
++
++		/* If a page was split, advance to the end of it */
++		if (isolated)
++			blockpfn += isolated - 1;
++	}
++
++	return total_isolated;
++}
++
++/* Returns 1 if the page is within a block suitable for migration to */
++static int suitable_migration_target(struct page *page)
++{
++
++	int migratetype = get_pageblock_migratetype(page);
++
++	/* Don't interfere with memory hot-remove or the min_free_kbytes blocks */
++	if (migratetype == MIGRATE_ISOLATE || migratetype == MIGRATE_RESERVE)
++		return 0;
++
++	/* If the page is a large free page, then allow migration */
++	if (PageBuddy(page) && page_order(page) >= pageblock_order)
++		return 1;
++
++	/* If the block is MIGRATE_MOVABLE, allow migration */
++	if (migratetype == MIGRATE_MOVABLE)
++		return 1;
++
++	/* Otherwise skip the block */
++	return 0;
++}
++
++/*
++ * Based on information in the current compact_control, find blocks
++ * suitable for isolating free pages from
++ */
++static void isolate_freepages(struct zone *zone,
++				struct compact_control *cc)
++{
++	struct page *page;
++	unsigned long high_pfn, low_pfn, pfn;
++	unsigned long flags;
++	int nr_freepages = cc->nr_freepages;
++	struct list_head *freelist = &cc->freepages;
++
++	pfn = cc->free_pfn;
++	low_pfn = cc->migrate_pfn + pageblock_nr_pages;
++	high_pfn = low_pfn;
++
++	/*
++	 * Isolate free pages until enough are available to migrate the
++	 * pages on cc->migratepages. We stop searching if the migrate
++	 * and free page scanners meet or enough free pages are isolated.
++	 */
++	spin_lock_irqsave(&zone->lock, flags);
++	for (; pfn > low_pfn && cc->nr_migratepages > nr_freepages;
++					pfn -= pageblock_nr_pages) {
++		int isolated;
++
++		if (!pfn_valid(pfn))
++			continue;
++
++		/* 
++		 * Check for overlapping nodes/zones. It's possible on some
++		 * configurations to have a setup like
++		 * node0 node1 node0
++		 * i.e. it's possible that all pages within a zones range of
++		 * pages do not belong to a single zone.
++		 */
++		page = pfn_to_page(pfn);
++		if (page_zone(page) != zone)
++			continue;
++
++		/* Check the block is suitable for migration */
++		if (!suitable_migration_target(page))
++			continue;
++
++		/* Found a block suitable for isolating free pages from */
++		isolated = isolate_freepages_block(zone, pfn, freelist);
++		nr_freepages += isolated;
++
++		/*
++		 * Record the highest PFN we isolated pages from. When next
++		 * looking for free pages, the search will restart here as
++		 * page migration may have returned some pages to the allocator
++		 */
++		if (isolated)
++			high_pfn = max(high_pfn, pfn);
++	}
++	spin_unlock_irqrestore(&zone->lock, flags);
++
++	cc->free_pfn = high_pfn;
++	cc->nr_freepages = nr_freepages;
++}
++
++/* Update the number of anon and file isolated pages in the zone */
++static void acct_isolated(struct zone *zone, struct compact_control *cc)
++{
++	struct page *page;
++	unsigned int count[NR_LRU_LISTS] = { 0, };
++
++	list_for_each_entry(page, &cc->migratepages, lru) {
++		int lru = page_lru_base_type(page);
++		count[lru]++;
++	}
++
++	cc->nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
++	cc->nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
++	__mod_zone_page_state(zone, NR_ISOLATED_ANON, cc->nr_anon);
++	__mod_zone_page_state(zone, NR_ISOLATED_FILE, cc->nr_file);
++}
++
++/* Similar to reclaim, but different enough that they don't share logic */
++static int too_many_isolated(struct zone *zone)
++{
++
++	unsigned long inactive, isolated;
++
++	inactive = zone_page_state(zone, NR_INACTIVE_FILE) +
++					zone_page_state(zone, NR_INACTIVE_ANON);
++	isolated = zone_page_state(zone, NR_ISOLATED_FILE) +
++					zone_page_state(zone, NR_ISOLATED_ANON);
++
++	return isolated > inactive;
++}
++
++/*
++ * Isolate all pages that can be migrated from the block pointed to by
++ * the migrate scanner within compact_control.
++ */
++static unsigned long isolate_migratepages(struct zone *zone,
++					struct compact_control *cc)
++{
++	unsigned long low_pfn, end_pfn;
++	struct list_head *migratelist;
++
++	low_pfn = cc->migrate_pfn;
++	migratelist = &cc->migratepages;
++
++	/* Do not scan outside zone boundaries */
++	if (low_pfn < zone->zone_start_pfn)
++		low_pfn = zone->zone_start_pfn;
++
++	/* Setup to scan one block but not past where we are migrating to */
++	end_pfn = ALIGN(low_pfn + pageblock_nr_pages, pageblock_nr_pages);
++
++	/* Do not cross the free scanner or scan within a memory hole */
++	if (end_pfn > cc->free_pfn || !pfn_valid(low_pfn)) {
++		cc->migrate_pfn = end_pfn;
++		return 0;
++	}
++
++	/* Do not isolate the world */
++	while (unlikely(too_many_isolated(zone))) {
++		congestion_wait(BLK_RW_ASYNC, HZ/10);
++
++		if (fatal_signal_pending(current))
++			return 0;
++	}
++
++	/* Time to isolate some pages for migration */
++	spin_lock_irq(&zone->lru_lock);
++	for (; low_pfn < end_pfn; low_pfn++) {
++		struct page *page;
++		if (!pfn_valid_within(low_pfn))
++			continue;
++
++		/* Get the page and skip if free */
++		page = pfn_to_page(low_pfn);
++		if (PageBuddy(page)) {
++			low_pfn += (1 << page_order(page)) - 1;
++			continue;
++		}
++
++		/* Try isolate the page */
++		if (__isolate_lru_page(page, ISOLATE_BOTH, 0) == 0) {
++			del_page_from_lru_list(zone, page, page_lru(page));
++			list_add(&page->lru, migratelist);
++			mem_cgroup_del_lru(page);
++			cc->nr_migratepages++;
++		}
++
++		/* Avoid isolating too much */
++		if (cc->nr_migratepages == COMPACT_CLUSTER_MAX)
++			break;
++	}
++
++	acct_isolated(zone, cc);
++
++	spin_unlock_irq(&zone->lru_lock);
++	cc->migrate_pfn = low_pfn;
++
++	return cc->nr_migratepages;
++}
++
++/*
++ * This is a migrate-callback that "allocates" freepages by taking pages
++ * from the isolated freelists in the block we are migrating to.
++ */
++static struct page *compaction_alloc(struct page *migratepage,
++					unsigned long data,
++					int **result)
++{
++	struct compact_control *cc = (struct compact_control *)data;
++	struct page *freepage;
++
++	/* Isolate free pages if necessary */
++	if (list_empty(&cc->freepages)) {
++		isolate_freepages(cc->zone, cc);
++
++		if (list_empty(&cc->freepages))
++			return NULL;
++	}
++
++	freepage = list_entry(cc->freepages.next, struct page, lru);
++	list_del(&freepage->lru);
++	cc->nr_freepages--;
++
++	return freepage;
++}
++
++/*
++ * We cannot control nr_migratepages and nr_freepages fully when migration is
++ * running as migrate_pages() has no knowledge of compact_control. When
++ * migration is complete, we count the number of pages on the lists by hand.
++ */
++static void update_nr_listpages(struct compact_control *cc)
++{
++	int nr_migratepages = 0;
++	int nr_freepages = 0;
++	struct page *page;
++	list_for_each_entry(page, &cc->migratepages, lru)
++		nr_migratepages++;
++	list_for_each_entry(page, &cc->freepages, lru)
++		nr_freepages++;
++
++	cc->nr_migratepages = nr_migratepages;
++	cc->nr_freepages = nr_freepages;
++}
++
++static inline int compact_finished(struct zone *zone,
++						struct compact_control *cc)
++{
++	if (fatal_signal_pending(current))
++		return COMPACT_PARTIAL;
++
++	/* Compaction run completes if the migrate and free scanner meet */
++	if (cc->free_pfn <= cc->migrate_pfn)
++		return COMPACT_COMPLETE;
++
++	return COMPACT_INCOMPLETE;
++}
++
++static int compact_zone(struct zone *zone, struct compact_control *cc)
++{
++	int ret = COMPACT_INCOMPLETE;
++
++	/* Setup to move all movable pages to the end of the zone */
++	cc->migrate_pfn = zone->zone_start_pfn;
++	cc->free_pfn = cc->migrate_pfn + zone->spanned_pages;
++	cc->free_pfn &= ~(pageblock_nr_pages-1);
++
++	migrate_prep();
++
++	for (; ret == COMPACT_INCOMPLETE; ret = compact_finished(zone, cc)) {
++		unsigned long nr_migrate, nr_remaining;
++		if (!isolate_migratepages(zone, cc))
++			continue;
++
++		nr_migrate = cc->nr_migratepages;
++		migrate_pages(&cc->migratepages, compaction_alloc,
++						(unsigned long)cc, 0);
++		update_nr_listpages(cc);
++		nr_remaining = cc->nr_migratepages;
++
++		count_vm_event(COMPACTBLOCKS);
++		count_vm_events(COMPACTPAGES, nr_migrate - nr_remaining);
++		if (nr_remaining)
++			count_vm_events(COMPACTPAGEFAILED, nr_remaining);
++
++		/* Release LRU pages not migrated */
++		if (!list_empty(&cc->migratepages)) {
++			putback_lru_pages(&cc->migratepages);
++			cc->nr_migratepages = 0;
++		}
++
++	}
++
++	/* Release free pages and check accounting */
++	cc->nr_freepages -= release_freepages(&cc->freepages);
++	VM_BUG_ON(cc->nr_freepages != 0);
++
++	return ret;
++}
++
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 624cba4..3cf947d 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1208,6 +1208,45 @@ void split_page(struct page *page, unsigned int order)
+ }
+ 
+ /*
++ * Similar to split_page except the page is already free. As this is only
++ * being used for migration, the migratetype of the block also changes.
++ */
++int split_free_page(struct page *page)
++{
++	unsigned int order;
++	unsigned long watermark;
++	struct zone *zone;
++
++	BUG_ON(!PageBuddy(page));
++
++	zone = page_zone(page);
++	order = page_order(page);
++
++	/* Obey watermarks or the system could deadlock */
++	watermark = low_wmark_pages(zone) + (1 << order);
++	if (!zone_watermark_ok(zone, 0, watermark, 0, 0))
++		return 0;
++
++	/* Remove page from free list */
++	list_del(&page->lru);
++	zone->free_area[order].nr_free--;
++	rmv_page_order(page);
++	__mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
++
++	/* Split into individual pages */
++	set_page_refcounted(page);
++	split_page(page, order);
++
++	if (order >= pageblock_order - 1) {
++		struct page *endpage = page + (1 << order) - 1;
++		for (; page < endpage; page += pageblock_nr_pages)
++			set_pageblock_migratetype(page, MIGRATE_MOVABLE);
++	}
++
++	return 1 << order;
++}
++
++/*
+  * Really, prep_compound_page() should be called from __rmqueue_bulk().  But
+  * we cheat by calling it from here, in the order > 0 path.  Saves a branch
+  * or two.
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 351e491..3a69b48 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -892,6 +892,11 @@ static const char * const vmstat_text[] = {
+ 	"allocstall",
+ 
+ 	"pgrotated",
++
++	"compact_blocks_moved",
++	"compact_pages_moved",
++	"compact_pagemigrate_failed",
++
+ #ifdef CONFIG_HUGETLB_PAGE
+ 	"htlb_buddy_alloc_success",
+ 	"htlb_buddy_alloc_fail",
+-- 
+1.6.5
 
