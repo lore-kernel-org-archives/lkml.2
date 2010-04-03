@@ -1,38 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755801Ab0DCDNX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 23:13:23 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60697 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753444Ab0DCDNV (ORCPT
+	id S1751462Ab0DCEpc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Apr 2010 00:45:32 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:57367 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750883Ab0DCEp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 23:13:21 -0400
-Date: Fri, 2 Apr 2010 20:08:55 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Alan Cox <alan@linux.intel.com>,
-       Greg KH <greg@kroah.com>, Catalin Marinas <catalin.marinas@arm.com>,
-       Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-       linux-kernel@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Sukadev Bhattiprolu <sukadev@us.ibm.com>, stable@kernel.org
-Subject: Re: [PATCH 0/1] tty: release_one_tty() forgets to put pids
-In-Reply-To: <20100402160447.GA19920@redhat.com>
-Message-ID: <alpine.LFD.2.00.1004022007300.3634@i5.linux-foundation.org>
-References: <201003272121.ADE39095.JLFHOOMtSVOFQF@I-love.SAKURA.ne.jp> <tnxbpe5ygfy.fsf@e102109-lin.cambridge.arm.com> <20100331151719.8a92b302.akpm@linux-foundation.org> <20100402160447.GA19920@redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Sat, 3 Apr 2010 00:45:29 -0400
+Date: Sat, 3 Apr 2010 06:45:20 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andi Kleen <andi@firstfloor.org>, Linus Torvalds <torvalds@osdl.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, David Miller <davem@davemloft.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [patch 1/2] genirq: Run irq handlers with interrupts disabled
+Message-ID: <20100403044520.GA30558@elf.ucw.cz>
+References: <20100326000325.917127328@linutronix.de>
+ <20100326000405.758579387@linutronix.de>
+ <20100326061310.GV20695@one.firstfloor.org>
+ <alpine.LFD.2.00.1003261224070.3147@localhost.localdomain>
+ <20100330053325.GL20695@one.firstfloor.org>
+ <alpine.LFD.2.00.1003311315520.32352@localhost.localdomain>
+ <20100402093132.GA1360@ucw.cz>
+ <alpine.LFD.2.00.1004022242170.32352@localhost.localdomain>
+ <20100402210916.GA23339@elf.ucw.cz>
+ <alpine.LFD.2.00.1004030046160.32352@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1004030046160.32352@localhost.localdomain>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat 2010-04-03 00:51:20, Thomas Gleixner wrote:
+> Pavel,
+> 
+> On Fri, 2 Apr 2010, Pavel Machek wrote:
+> 
+> > On Fri 2010-04-02 22:42:51, Thomas Gleixner wrote:
+> > > On Fri, 2 Apr 2010, Pavel Machek wrote:
+> > > 
+> > > > On Wed 2010-03-31 13:16:37, Thomas Gleixner wrote:
+> > > > > On Tue, 30 Mar 2010, Andi Kleen wrote:
+> > > > > 
+> > > > > > > Why not simply force IRQF_DISABLED for all MSI interrupts. That still
+> > > > > > > allows nesting for non MSI ones, but it limits the chance of throwing
+> > > > > > > up reasonably well. That's a two liner.
+> > > > > > > 
+> > > > > > > Can you please test whether it resolves the issue at hand ?
+> > > > > > 
+> > > > > > Sorry for the late answer. Got confirmation that this patch
+> > > > > > fixes the test case. Thanks.
+> > > > > 
+> > > > > Ok, I'll push it linus wards and cc stable. I think thats the least
+> > > > > intrusive safe bet we can have right now.
+> > > > 
+> > > > stable? I'd say thats way too intrusive for -stable...
+> > > 
+> > > So we better let the possible stack overruns unaddressed ?
+> > 
+> > -stable should have no regressions, first and foremost. And this is
+> > pretty certain to introduce some, at least on low-powered system with
+> > serial ports.
+> 
+> I think you misunderstood what I'm going to push. The patch merily
+> forces IRQF_DISABLED for MSI(X) based interrupts. So that does not
+> affect low powered systems in any way.
+> 
+> It only affects high end systems where Dave Miller already said he did
+> the IRQF_DISABLED magic already in some NIC drivers just to prevent
+> that.
 
+Oops, yes, I did; lost in all the mails.
 
-Ok, I committed this, but after committing I realized that the patch 
-didn't have the "Cc: stable@kernel.org", even if the email did.
+> So I think your fear of regressions for low-powered systems is
+> completely unsubstantiated.
 
-So Greg et al: it's now commit 6da8d866d0d39e9509ff826660f6a86a6757c966 in 
-mainline. 
+Yep. Sorry for the noise.
 
-		Linus
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
