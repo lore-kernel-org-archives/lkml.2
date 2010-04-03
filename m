@@ -1,121 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab0DCA7G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 20:59:06 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52820 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754465Ab0DCA7A (ORCPT
+	id S1754863Ab0DCBKw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 21:10:52 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:62694 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753697Ab0DCBKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 20:59:00 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>, Greg KH <greg@kroah.com>,
-       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, linux-fsdevel@vger.kernel.org,
-       Eric Dumazet <eric.dumazet@gmail.com>, Benjamin LaHaise <bcrl@lhnet.ca>,
-       Serge Hallyn <serue@us.ibm.com>, netdev@vger.kernel.org
-In-Reply-To: <s2hac3eb2511003302251rcbae8767ne21e9daf1546c849@mail.gmail.com>
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
-	 <ac3eb2511003301153i43a60720hb015071e2c992199@mail.gmail.com>
-	 <m14ojxh0mz.fsf@fess.ebiederm.org>
-	 <s2hac3eb2511003302251rcbae8767ne21e9daf1546c849@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-PlT9U4DmwiuG74DiJlKJ"
-Date: Sat, 03 Apr 2010 01:58:23 +0100
-Message-ID: <1270256303.12516.234.camel@localhost>
+	Fri, 2 Apr 2010 21:10:48 -0400
+Date: Fri, 2 Apr 2010 18:09:37 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       David Woodhouse <dwmw2@infradead.org>,
+       "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>
+Subject: Re: [PATCH] mtd/maps/physmap: catch failure to register
+ MTD_PHYSMAP_COMPAT device
+Message-Id: <20100402180937.6c4a455a.randy.dunlap@oracle.com>
+In-Reply-To: <0D753D10438DA54287A00B0270842697636A7E9D36@AUSP01VMBX24.collaborationhost.net>
+References: <0D753D10438DA54287A00B0270842697636A7E9D36@AUSP01VMBX24.collaborationhost.net>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [PATCH 0/6] tagged sysfs support
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4BB69591.0031:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2 Apr 2010 17:46:30 -0500 H Hartley Sweeten wrote:
 
---=-PlT9U4DmwiuG74DiJlKJ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> If the default Kconfig values are used with MTD_PHYSMAP_COMPAT you end
+> up with a resource where end < start.  This causes __request_resource to
+> return a conflict which then returns an -EBUSY error code.  The current
+> physmap.c code just assumes that the platfom_device_register will always
+> succeed.
+> 
+> Catch this failure during the physmap_init and propogate the error.
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-On Wed, 2010-03-31 at 07:51 +0200, Kay Sievers wrote:
-> On Wed, Mar 31, 2010 at 01:04, Eric W. Biederman <ebiederm@xmission.com> =
-wrote:
-> > Kay Sievers <kay.sievers@vrfy.org> writes:
-> >> On Tue, Mar 30, 2010 at 20:30, Eric W. Biederman <ebiederm@xmission.co=
-m> wrote:
-> >>>
-> >>> The main short coming of using multiple network namespaces today
-> >>> is that only network devices for the primary network namespaces
-> >>> can be put in the kobject layer and sysfs.
-> >>>
-> >>> This is essentially the earlier version of this patchset that was
-> >>> reviewed before, just now on top of a version of sysfs that doesn't
-> >>> need cleanup patches to support it.
-> >>
-> >> Just to check if we are not in conflict with planned changes, and how
-> >> to possibly handle them:
-> >>
-> >> There is the plan and ongoing work to unify classes and buses, export
-> >> them at /sys/subsystem in the same layout of the current /sys/bus/.
-> >> The decision to export buses and classes as two different things
-> >> (which they aren't) is the last major piece in the sysfs layout which
-> >> needs to be fixed.
-> >
-> > Interesting.  We will symlinks ie:
-> > /sys/class -> /sys/subsystem
-> > /sys/bus -> /sys/subsystem
-> > to keep from breaking userspace.
->=20
-> Yeah, /sys/bus/, which is the only sane layout of the needlessly
-> different 3 versions of the same thing (bus, class, block).
-[...]
+Thanks, Hartley.
 
-block vs class/block is arguable, but as for abstracting the difference
-between bus and class... why?
+Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-Each bus defines a device interface covering enumeration,
-identification, power management and various aspects of their connection
-to the host.  This interface is implemented by the bus driver.
+> ---
+> 
+> diff --git a/drivers/mtd/maps/physmap.c b/drivers/mtd/maps/physmap.c
+> index d9603f7..426461a 100644
+> --- a/drivers/mtd/maps/physmap.c
+> +++ b/drivers/mtd/maps/physmap.c
+> @@ -264,8 +264,11 @@ static int __init physmap_init(void)
+>  
+>  	err = platform_driver_register(&physmap_flash_driver);
+>  #ifdef CONFIG_MTD_PHYSMAP_COMPAT
+> -	if (err == 0)
+> -		platform_device_register(&physmap_flash);
+> +	if (err == 0) {
+> +		err = platform_device_register(&physmap_flash);
+> +		if (err)
+> +			platform_driver_unregister(&physmap_flash_driver);
+> +	}
+>  #endif
+>  
+>  	return err;
 
-Each class defines a device interface covering functionality provided to
-user-space or higher level kernel components (block interface to
-filesystems, net driver interface to the networking core, etc).  This
-interface is implemented by multiple device-specific drivers.
 
-So while buses and classes both define device interfaces, they are
-fundamentally different types of interface.  And there are 'subsystems'
-that don't have devices at all (time, RCU, perf, ...).  If you're going
-to expose the set of subsystems, don't they belong in there?  But then,
-what would you put in their directories?
-
-Ben.
-
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
-
---=-PlT9U4DmwiuG74DiJlKJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIVAwUAS7aSq+e/yOyVhhEJAQJEZw/+OU6TO5XXg6e81XOoC6dxgh25Z6gC5Rvu
-VbW1+7wK/NVALQLcQCIPVB8FHJZPcr1I10qJgnL2TuO5NHfIXWZL9WRznXTceyJO
-Sq6BrhFM+KDmNDvt+UPESMJ4u6FOpWq5Bgi0dGi3I82aTdV1pL/Ojm0mAIHUv8wr
-UokeX1Ja8NgME+f4ur73utSeOVQAMLpQI0UiXN/mtzv2fhaHc8JG2FzeUNoJ9ZyL
-KPyxvP2H9a5Lu18O5Bkf3sqMOh6A5RVyQ02jLZlih2smzBcSZ3MSQGjZrwA9hP2+
-Cjd1yuD4OhB3iY/7MMbxSfoOnAI7z8hb+hsWQOfek4o7hIWVXLpe7Q8QqZfE8xUC
-TATNTK6BliwW4hYqyDZu8bV2lHZz3L5su9Bph2bWudy1QGBsXUV6BT3PiKcD05hn
-EReoW8UU6QOMRnEZBHOjjVdoIzklGd5Z344B/yw23Sgouf79G0kAq5PqWGCJTDit
-XjNUNJtO0FZONnBSk7FbhutcBzIqIxpVxn3dXDKdkjDLix0EZ+1hK0ooZtumu6zL
-bWyXP/1keX+Avh8cxmjd+ovavxjDj2vvnr1JfaWAIKQ3IS8xAgRqh6GihrPgd0as
-yST3Bd0TTKYcWQASBcq2PRK5GSTIB6vQdXgB7fOgXIe+RhEtOaPAzOCwHgCR+5TU
-fodLL/0h/zE=
-=u6dY
------END PGP SIGNATURE-----
-
---=-PlT9U4DmwiuG74DiJlKJ--
+---
+~Randy
