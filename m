@@ -1,64 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab0DCToP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Apr 2010 15:44:15 -0400
-Received: from relay01.mail-hub.dodo.com.au ([203.220.32.149]:56431 "EHLO
-	relay01.mail-hub.dodo.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754906Ab0DCToJ (ORCPT
+	id S1755891Ab0DCToZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Apr 2010 15:44:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55165 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755871Ab0DCToO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Apr 2010 15:44:09 -0400
-X-Greylist: delayed 6138 seconds by postgrey-1.27 at vger.kernel.org; Sat, 03 Apr 2010 15:44:09 EDT
-Recieved: from [79.125.23.11] with HTTP; Sun, 4 Apr 2010 4:00:09 +1000
-Message-ID: <20100404040009.29152.4BB775ED92E2C-4BB7@webmail.dodo.com.au>
-Date: Sun, 4 Apr 2010 4:00:09 +1000
-From: "NIPPON OIL AND GAS INC." <nipoilandgas@dodo.com.au>
-Reply-to: "NIPPON OIL AND GAS INC." <nipponoil_gascompany@yahoo.com.hk>
-Subject: JOB........
-X-Priority: 3
-X-Mailer: Dodo Internet Webmail Server 
-X-Original-IP: 79.125.23.11
-Content-Transfer-Encoding: 7BIT
-Content-Type: text/plain; charset=US-ASCII
-MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+	Sat, 3 Apr 2010 15:44:14 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 0/1] perf newt: Zoom operations
+Date: Sat,  3 Apr 2010 16:44:07 -0300
+Message-Id: <1270323848-28094-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---
-HUMAN RESOURCE DEPARTMENT
-NIPPON OIL EXPLORATION (CHINA), LTD
-Jian Guo Men Wai Avenue, Beijing 100004, P.R. China.
-Tel:  +8613710452080
-+8613539710477
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-ATTN: APPLICANT
+Hi Ingo,
 
-INTERNATIONAL EXPATRIATE OFFICIAL JOB ONLINE INTERVIEW
-Your name has been shortlisted/Chosen among the Lucky expatriates who
-submitted the CV to the CHINA ONLINE JOB,before we will issue you the
-Success Letter and the Contract Document You have to fill  the following
-information's and send it back to us.
+	Please consider pulling from the "perf" branch in:
 
-Full Names:...............
-City:.....................
-State:....................
-Country:..................
-Zip code:.................
-Sex:......................
-Phone:....................
-Age:.....................
-Marital Status:.........
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6
 
-Get back to me as soon as possible.
-Email : nipponoil_gascompany@yahoo.com.hk
-Bar. JING WANG
+Best Regards,
 
-Head of Recruitment Service
-NIPPON OIL AND GAS (CHINA)
+- Arnaldo
 
-________________________________________________
+Arnaldo Carvalho de Melo (1):
+  perf newt: Add a " "Zoom into foo.so DSO" and reverse operations
 
-This message was sent
-using Dodo Webmail - www.dodo.com.au
+ tools/perf/util/newt.c |  119 +++++++++++++++++++++++++++++++++++------------
+ tools/perf/util/sort.h |    3 +-
+ 2 files changed, 90 insertions(+), 32 deletions(-)
 
