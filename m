@@ -1,100 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab0DCNtG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Apr 2010 09:49:06 -0400
-Received: from ns.netcenter.hu ([195.228.254.57]:51894 "EHLO mail.netcenter.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752198Ab0DCNtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Apr 2010 09:49:04 -0400
-Message-ID: <22c901cad333$7a67db60$0400a8c0@dcccs>
-From: "Janos Haar" <janos.haar@netcenter.hu>
-To: "Dave Chinner" <david@fromorbit.com>
-Cc: <xiyou.wangcong@gmail.com>, <linux-kernel@vger.kernel.org>,
-       <kamezawa.hiroyu@jp.fujitsu.com>, <linux-mm@kvack.org>,
-       <xfs@oss.sgi.com>, <axboe@kernel.dk>
-References: <03ca01cacb92$195adf50$0400a8c0@dcccs> <2375c9f91003242029p1efbbea1v8e313e460b118f14@mail.gmail.com> <20100325153110.6be9a3df.kamezawa.hiroyu@jp.fujitsu.com> <02c101cacbf8$d21d1650$0400a8c0@dcccs> <179901cad182$5f87f620$0400a8c0@dcccs> <t2h2375c9f91004010337p618c4d5yc739fa25b5f842fa@mail.gmail.com> <1fe901cad2b0$d39d0300$0400a8c0@dcccs> <20100402230905.GW3335@dastard>
-Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look please!...)
-Date: Sat, 3 Apr 2010 15:42:10 +0200
+	id S1754037Ab0DCNyh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Apr 2010 09:54:37 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:38273 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752763Ab0DCNye (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Apr 2010 09:54:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=XEJ0q05Unh7daY8O7wPd4why/lkX3zlCc105TTxhJ63ctLiJfkTUyunAmggxOF4wsb
+         BOhcHhqo8mVkj+f0tYv01CeCAJR1dIjnMhaCh1Dz7KQoDg2b+Ss5IkVVc5qSJo8B5akA
+         QPb6XLZ/wrxU+WZ3I7NjsL/gxKUpDG2H05WK0=
+Date: Sat, 3 Apr 2010 10:54:28 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Tom Zanussi <tzanussi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, fweisbec@gmail.com,
+       rostedt@goodmis.org, k-keiichi@bx.jp.nec.com
+Subject: Re: [RFC v2][PATCH 08/11] perf: convert perf header build_ids into
+ build_id events
+Message-ID: <20100403135427.GB14310@ghostprotocols.net>
+References: <1270184365-8281-1-git-send-email-tzanussi@gmail.com>
+ <1270184365-8281-9-git-send-email-tzanussi@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 8bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.3598
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1270184365-8281-9-git-send-email-tzanussi@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Em Thu, Apr 01, 2010 at 11:59:22PM -0500, Tom Zanussi escreveu:
+> Bypasses the build_id perf header code and replaces it with a
+> synthesized event and processing function that accomplishes the same
+> thing, used when reading/writing perf data to/from a pipe.
 
-The actual version of kernel is 2.6.32.10.
-There is any significant fixes for me in the last (.11) or in the next 
-(33.x)?
+>  static void atexit_header(void)
+>  {
+> -	session->header.data_size += bytes_written;
+> +	if (!pipe_output) {
+> +		session->header.data_size += bytes_written;
+> -	process_buildids();
+> -	perf_header__write(&session->header, output, true);
+> +		process_buildids();
+> +		perf_header__write(&session->header, output, true);
+> +	} else {
+> +		int err;
+> +		err = event__synthesize_build_ids(process_synthesized_event,
+> +						  session);
+> +		if (err < 0)
+> +			pr_err("Couldn't synthesize build ids.\n");
 
-Thanks,
-Janos
+Humm, getting everything as events looks elegant, but for the buildid
+case... when processing samples we need to _first_ have the build-ids,
+hence they are in the header.
 
------ Original Message ----- 
-From: "Dave Chinner" <david@fromorbit.com>
-To: "Janos Haar" <janos.haar@netcenter.hu>
-Cc: "Américo Wang" <xiyou.wangcong@gmail.com>; 
-<linux-kernel@vger.kernel.org>; "KAMEZAWA Hiroyuki" 
-<kamezawa.hiroyu@jp.fujitsu.com>; <linux-mm@kvack.org>; <xfs@oss.sgi.com>; 
-<axboe@kernel.dk>
-Sent: Saturday, April 03, 2010 1:09 AM
-Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look 
-please!...)
+We only generate them after collecting all samples because it would
+disturb the system if we look at them in the ELF files when we get
+PERF_RECORD_MMAP events.
 
+In live mode we will be resolving symbols as we get samples, so I fail
+to see how synthesizing the build-ids as a last step will help.
 
-> On Sat, Apr 03, 2010 at 12:07:00AM +0200, Janos Haar wrote:
->> Hello,
->>
->> ----- Original Message ----- From: "Américo Wang"
->> <xiyou.wangcong@gmail.com>
->> To: "Janos Haar" <janos.haar@netcenter.hu>
->> Cc: <linux-kernel@vger.kernel.org>; "KAMEZAWA Hiroyuki"
->> <kamezawa.hiroyu@jp.fujitsu.com>; <linux-mm@kvack.org>;
->> <xfs@oss.sgi.com>; "Jens Axboe" <axboe@kernel.dk>
->> Sent: Thursday, April 01, 2010 12:37 PM
->> Subject: Re: Somebody take a look please! (some kind of kernel bug?)
->>
->>
->> >On Thu, Apr 1, 2010 at 6:01 PM, Janos Haar
->> ><janos.haar@netcenter.hu> wrote:
->> >>Hello,
->> >>
->> >
->> >Hi,
->> >This is a totally different bug from the previous one reported by you. 
->> >:)
->>
->> Today i have got this again, exactly the same. (if somebody wants
->> the log, just ask)
->> There is a cut:
->
-> Small hint - please put the subsytemthe bug occurred in in the
-> subject line. I missed this in the firehose of lkml traffic because
-> there wasnothing to indicate to me it was in XFS. Soemthing like:
->
-> "Kernel crash in xfs_iflush_cluster"
->
-> Won't get missed quite so easily....
->
-> This may be a fixed problem - what kernel are you running?
->
-> Cheers,
->
-> Dave.
-> -- 
-> Dave Chinner
-> david@fromorbit.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/ 
+With build-ids events we can at least generate it in advance for the
+kernel and modules, as it is a restriced number of DSOs and we have them
+easily accessible via /sys, but for the userspace bits...
 
+- Arnaldo
