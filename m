@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab0DCJJm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Apr 2010 05:09:42 -0400
-Received: from 84-21.comp.nus.edu.sg ([137.132.84.21]:40045 "EHLO
-	postfix1.comp.nus.edu.sg" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750968Ab0DCJJl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Apr 2010 05:09:41 -0400
-Date: Sat, 3 Apr 2010 17:09:34 +0800 (SGT)
-From: NG KIAN YONG <ngky@comp.nus.edu.sg>
-To: gregkh@suse.de, forest@alittletooquiet.net, andre.goddard@gmail.com
-cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       ngky@comp.nus.edu.sg
-Subject: [PATCH] Staging: vt6655: fix brace coding style issue in ioctl.c
-Message-ID: <Pine.SOC.4.64.1004031707420.3242@sunfire0.comp.nus.edu.sg>
+	id S1752707Ab0DCJ2Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Apr 2010 05:28:24 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46805 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751868Ab0DCJ2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Apr 2010 05:28:18 -0400
+Date: Sat, 3 Apr 2010 09:27:48 GMT
+From: tip-bot for Li Zefan <lizf@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       rostedt@goodmis.org, a.p.zijlstra@chello.nl, lizf@cn.fujitsu.com,
+       tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       lizf@cn.fujitsu.com, a.p.zijlstra@chello.nl, rostedt@goodmis.org,
+       tglx@linutronix.de
+In-Reply-To: <4BA97FA1.7030606@cn.fujitsu.com>
+References: <4BA97FA1.7030606@cn.fujitsu.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:tracing/urgent] tracing: Fix lockdep warning in global_clock()
+Message-ID: <tip-e36673ec5126f15a8cddf6049aede7bdcf484c26@git.kernel.org>
+Git-Commit-ID: e36673ec5126f15a8cddf6049aede7bdcf484c26
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 03 Apr 2010 09:27:51 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From f7413706dd9b5fc217aa738bb48d36b46ab65a98 Mon Sep 17 00:00:00 2001
-From: Ng Kian Yong <ngky@comp.nus.edu.sg>
-Date: Fri, 2 Apr 2010 17:20:06 +0800
-Subject: [PATCH] Staging: vt6655: fix brace coding style issue in ioctl.c
-  This is a patch to the ioctl.c file that fixes up a brace warning found by the checkpatch.pl tool
-  Signed-off-by: Ng Kian Yong <ngky@comp.nus.edu.sg>
+Commit-ID:  e36673ec5126f15a8cddf6049aede7bdcf484c26
+Gitweb:     http://git.kernel.org/tip/e36673ec5126f15a8cddf6049aede7bdcf484c26
+Author:     Li Zefan <lizf@cn.fujitsu.com>
+AuthorDate: Wed, 24 Mar 2010 10:57:37 +0800
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Mon, 29 Mar 2010 15:16:44 -0400
 
+tracing: Fix lockdep warning in global_clock()
+
+# echo 1 > events/enable
+ # echo global > trace_clock
+
+------------[ cut here ]------------
+WARNING: at kernel/lockdep.c:3162 check_flags+0xb2/0x190()
+...
+---[ end trace 3f86734a89416623 ]---
+possible reason: unannotated irqs-on.
+...
+
+There's no reason to use the raw_local_irq_save() in trace_clock_global.
+The local_irq_save() version is fine, and does not cause the bug in lockdep.
+
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+LKML-Reference: <4BA97FA1.7030606@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
-  drivers/staging/vt6655/ioctl.c |   12 ++++++------
-  1 files changed, 6 insertions(+), 6 deletions(-)
+ kernel/trace/trace_clock.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/vt6655/ioctl.c b/drivers/staging/vt6655/ioctl.c
-index d9a5fd2..a15b953 100644
---- a/drivers/staging/vt6655/ioctl.c
-+++ b/drivers/staging/vt6655/ioctl.c
-@@ -54,14 +54,14 @@ static int          msglevel                =MSG_LEVEL_INFO;
-
-  /*---------------------  Export Variables  --------------------------*/
-
--int private_ioctl(PSDevice pDevice, struct ifreq *rq) {
--
--	PSCmdRequest        pReq = (PSCmdRequest)rq;
-+int private_ioctl(PSDevice pDevice, struct ifreq *rq)
-+{
-+    PSCmdRequest        pReq = (PSCmdRequest)rq;
-      PSMgmtObject        pMgmt = pDevice->pMgmt;
--	int 		        result = 0;
-+    int                 result = 0;
-      PWLAN_IE_SSID       pItemSSID;
-      SCmdBSSJoin         sJoinCmd;
--    SCmdZoneTypeSet  sZoneTypeCmd;
-+    SCmdZoneTypeSet     sZoneTypeCmd;
-      SCmdScan            sScanCmd;
-      SCmdStartAP         sStartAPCmd;
-      SCmdSetWEP          sWEPCmd;
-@@ -83,7 +83,7 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq) {
-
-      pReq->wResult = 0;
-
--    switch(pReq->wCmdCode) {
-+    switch (pReq->wCmdCode) {
-
-      case WLAN_CMD_BSS_SCAN:
-
--- 
-1.6.6.1
-
-
+diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
+index 6fbfb8f..9d589d8 100644
+--- a/kernel/trace/trace_clock.c
++++ b/kernel/trace/trace_clock.c
+@@ -84,7 +84,7 @@ u64 notrace trace_clock_global(void)
+ 	int this_cpu;
+ 	u64 now;
+ 
+-	raw_local_irq_save(flags);
++	local_irq_save(flags);
+ 
+ 	this_cpu = raw_smp_processor_id();
+ 	now = cpu_clock(this_cpu);
+@@ -110,7 +110,7 @@ u64 notrace trace_clock_global(void)
+ 	arch_spin_unlock(&trace_clock_struct.lock);
+ 
+  out:
+-	raw_local_irq_restore(flags);
++	local_irq_restore(flags);
+ 
+ 	return now;
+ }
