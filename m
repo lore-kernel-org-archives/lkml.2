@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046Ab0DCJ5P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Apr 2010 05:57:15 -0400
-Received: from smtp-vbr7.xs4all.nl ([194.109.24.27]:4441 "EHLO
-	smtp-vbr7.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694Ab0DCJ5M (ORCPT
+	id S1753244Ab0DCKio (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Apr 2010 06:38:44 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:53617 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751646Ab0DCKik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Apr 2010 05:57:12 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] lib/vsprintf.c: Add missing EXPORT_SYMBOL(simple_strtoll)
-Date: Sat, 3 Apr 2010 11:57:36 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.33-tschai; KDE/4.3.5; x86_64; ; )
-Cc: andre.goddard@gmail.com
+	Sat, 3 Apr 2010 06:38:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vRZZSuMId6JmsLImsYIBJdLf4CP6/pISQjiXKhY0BSfbs/YD0ep1sqGgYoJ3XwbrhL
+         6YvdbYsn7ev6J89vh2V+OZpLZRZPWTtbWBDeBhQozp/QGai0wuyQyVS1LOSrU4qIJSXJ
+         g9Gsl7hK/duRKkHHZeCwytdDAX+0s5bqQ4D4I=
+Date: Sat, 3 Apr 2010 12:38:34 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>
+Subject: Re: [GIT PULL v3] perf fixes
+Message-ID: <20100403103829.GC5172@nowhere>
+References: <1270007927-6391-1-git-send-regression-fweisbec@gmail.com> <20100401071742.GB5207@nowhere> <20100402173203.GA11712@elte.hu>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004031157.36191.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100402173203.GA11712@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simple patch to fix a missing EXPORT_SYMBOL.
+On Fri, Apr 02, 2010 at 07:32:03PM +0200, Ingo Molnar wrote:
+> 
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 
+> > On Wed, Mar 31, 2010 at 05:58:45AM +0200, Frederic Weisbecker wrote:
+> > > Ingo,
+> > > 
+> > > Please pull the perf/urgent branch that can be found at:
+> > > 
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> > > 	perf/urgent
+> > 
+> > 
+> > I have updated the tree. There was a leftover patch for perf/core
+> > inside (not listed here). Also, since you've merged linus tree in
+> > perf/urgent lately, I've zapped my merge commit. Other than that,
+> > the three fixes remain.
+> > 
+> > Thanks.
+> 
+> Pulled, thanks Frederic!
+> 
+> Note, i also queued up this patch from Edwin:
+> 
+>   257ef9d: perf, x86: Fix callgraphs of 32-bit processes on 64-bit kernels
+> 
+> with your Acked-by added.
+> 
+> Thanks,
+> 
+> 	Ingo
 
-I must be the first person that wants to use this function :-)
 
-Signed-off-by: Hans Verkuil <hverkuil@xs4all.nl>
+Ah ok. I was too cautious and eventually queued it for perf/core, but
+if you think it's fine, no problem.
 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 24112e5..fe5ea4e 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -118,6 +118,7 @@ long long simple_strtoll(const char *cp, char **endp, unsigned int base)
- 
- 	return simple_strtoull(cp, endp, base);
- }
-+EXPORT_SYMBOL(simple_strtoll);
- 
- /**
-  * strict_strtoul - convert a string to an unsigned long strictly
+Thanks.
 
--- 
-Hans Verkuil - video4linux developer - sponsored by TANDBERG
