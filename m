@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755758Ab0DCRon (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Apr 2010 13:44:43 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:39447 "EHLO
+	id S1755786Ab0DCRtT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Apr 2010 13:49:19 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:38289 "EHLO
 	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755251Ab0DCRoh (ORCPT
+	with ESMTP id S1755075Ab0DCRtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Apr 2010 13:44:37 -0400
+	Sat, 3 Apr 2010 13:49:13 -0400
 To: Joerg Roedel <joro@8bytes.org>
 Cc: Chris Wright <chrisw@sous-sol.org>, Joerg Roedel <joerg.roedel@amd.com>,
        nhorman@redhat.com, nhorman@tuxdriver.com, kexec@lists.infradead.org,
@@ -15,11 +15,11 @@ Cc: Chris Wright <chrisw@sous-sol.org>, Joerg Roedel <joerg.roedel@amd.com>,
 Subject: Re: [PATCH 3/4] Revert "x86: disable IOMMUs on kernel crash"
 References: <20100403012751.834020949@sous-sol.org>
 	<20100403012820.229410717@sous-sol.org>
-	<20100403172224.GO24846@8bytes.org>
+	<20100403174128.GQ24846@8bytes.org>
 From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Sat, 03 Apr 2010 10:44:22 -0700
-In-Reply-To: <20100403172224.GO24846@8bytes.org> (Joerg Roedel's message of "Sat\, 3 Apr 2010 19\:22\:24 +0200")
-Message-ID: <m18w94l9c9.fsf@fess.ebiederm.org>
+Date: Sat, 03 Apr 2010 10:49:09 -0700
+In-Reply-To: <20100403174128.GQ24846@8bytes.org> (Joerg Roedel's message of "Sat\, 3 Apr 2010 19\:41\:28 +0200")
+Message-ID: <m1vdc8juju.fsf@fess.ebiederm.org>
 User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -71,21 +71,10 @@ Joerg Roedel <joro@8bytes.org> writes:
 >> -
 >>  	crash_save_cpu(regs, safe_smp_processor_id());
 >
-> Hmm, I think for this we need to change the gart code too and disable
-> the gart before its initialization runs to not re-introduce issues fixed
-> in commit bc2cea6a34fdb30f118ec75db39a46a191870607, no?
+> Another problem: This also breaks if the kdump kernel has no
+> iommu-support.
 
-That is a different code path with a different set of assumptions and
-restrictions.  On a normal kexec of course we want to do an orderly shutdown.
-
-For the gart with a little luck we can just ignore it on kexec on
-panic.  Unlike a virtualization capable iommu it doesn't prevent access
-to devices, when it is enabled.   Worst case is that we have to start
-including iommu=off for gart systems. The best case is that we can
-figure out how to have the gart code reinitialize itself sanely,
-starting from some arbitrary point.
-
-machine_crash_shutdown is about doing those things that we can not do
-in any other way.
+Not a problem.  We require a lot of things of the kdump kernel,
+and it is immediately apparent in a basic sanity test.
 
 Eric
