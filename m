@@ -1,30 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818Ab0DCNkc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Apr 2010 09:40:32 -0400
-Received: from mailhost.tue.nl ([131.155.2.19]:53462 "EHLO mailhost.tue.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751868Ab0DCNka convert rfc822-to-8bit (ORCPT
+	id S1754053Ab0DCNk4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Apr 2010 09:40:56 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51718 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753933Ab0DCNkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Apr 2010 09:40:30 -0400
-X-Greylist: delayed 840 seconds by postgrey-1.27 at vger.kernel.org; Sat, 03 Apr 2010 09:40:29 EDT
-From: =?iso-8859-1?Q?S=F6nmezler=2C_E=2E?= <e.sonmezler@student.tue.nl>
-Date: Sat, 3 Apr 2010 15:25:37 +0200
-Subject: 
-Thread-Index: AQHK0zEl8dZgmkC5F0SBlKny8gyeyw==
-Message-ID: <682334EFA68BC64FAFD91297475A0275A4B5CA3032@EXCHANGE12.campus.tue.nl>
-Accept-Language: nl-NL, en-US
-Content-Language: nl-NL
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: nl-NL, en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Sat, 3 Apr 2010 09:40:42 -0400
+Date: Sat, 3 Apr 2010 10:40:29 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Anton Blanchard <anton@samba.org>
+Cc: David Miller <davem@davemloft.net>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf symbols: Fill in pgoff in mmap synthesized events
+Message-ID: <20100403134029.GC27773@ghostprotocols.net>
+References: <20100403115331.GK5594@kryten>
 MIME-Version: 1.0
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100403115331.GK5594@kryten>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Sat, Apr 03, 2010 at 10:53:31PM +1100, Anton Blanchard escreveu:
+> 
+> When we synthesize mmap events we need to fill in the pgoff field. 
+> 
+> Signed-off-by: Anton Blanchard <anton@samba.org>
 
-I wish to notify you that late Gianni Agnell made you a beneficiary of his Will. He left the sum of Thirty Million, One Hundred Thousand Dollars (US$30, 100,000.00) to you in the Codicil and last testament to his Will. This may sound strange and unbelievable to you, you are advised to contact Barrister Hollis Whiteman via email which is below for more information; lawfirm46@gmail.com<mailto:lawfirm46@gmail.com>
+Thanks Anton,
+
+	Ingo, I added this one to my perf branch after fixing that
+branch due to a problem with the removal of tools/perf/util/string.h.
+
+- Arnaldo
