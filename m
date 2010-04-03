@@ -1,54 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab0DCQc5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Apr 2010 12:32:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18050 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752359Ab0DCQcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Apr 2010 12:32:48 -0400
-Message-ID: <4BB76DA1.4050904@redhat.com>
-Date: Sat, 03 Apr 2010 19:32:33 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1754947Ab0DCQf3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Apr 2010 12:35:29 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:45232 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426Ab0DCQfU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Apr 2010 12:35:20 -0400
 MIME-Version: 1.0
-To: Sridhar Samudrala <sri@us.ibm.com>
-CC: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, mingo@elte.hu, mst@redhat.com,
-       jdike@c2.user-mode-linux.org, davem@davemloft.net
-Subject: Re: [RFC][PATCH v2 0/3] Provide a zero-copy method on KVM virtio-net.
-References: <1270193100-6769-1-git-send-email-xiaohui.xin@intel.com> <1270252268.13897.14.camel@w-sridhar.beaverton.ibm.com>
-In-Reply-To: <1270252268.13897.14.camel@w-sridhar.beaverton.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1270310756.12516.308.camel@localhost>
+References: <m1fx3hk6gw.fsf@fess.ebiederm.org> <ac3eb2511003301153i43a60720hb015071e2c992199@mail.gmail.com> 
+	<m14ojxh0mz.fsf@fess.ebiederm.org> <s2hac3eb2511003302251rcbae8767ne21e9daf1546c849@mail.gmail.com> 
+	<1270256303.12516.234.camel@localhost> <h2gac3eb2511004030135q2a2f5002z912974c1d2ab8853@mail.gmail.com> 
+	<1270310756.12516.308.camel@localhost>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Sat, 3 Apr 2010 18:35:03 +0200
+Message-ID: <x2xac3eb2511004030935z7737c424p538e17eceb6c6af4@mail.gmail.com>
+Subject: Re: [PATCH 0/6] tagged sysfs support
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>, Greg KH <greg@kroah.com>,
+       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, linux-fsdevel@vger.kernel.org,
+       Eric Dumazet <eric.dumazet@gmail.com>, Benjamin LaHaise <bcrl@lhnet.ca>,
+       Serge Hallyn <serue@us.ibm.com>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2010 02:51 AM, Sridhar Samudrala wrote:
-> On Fri, 2010-04-02 at 15:25 +0800, xiaohui.xin@intel.com wrote:
->    
->> The idea is simple, just to pin the guest VM user space and then
->> let host NIC driver has the chance to directly DMA to it.
->> The patches are based on vhost-net backend driver. We add a device
->> which provides proto_ops as sendmsg/recvmsg to vhost-net to
->> send/recv directly to/from the NIC driver. KVM guest who use the
->> vhost-net backend may bind any ethX interface in the host side to
->> get copyless data transfer thru guest virtio-net frontend.
->>      
-> What is the advantage of this approach compared to PCI-passthrough
-> of the host NIC to the guest?
->    
+On Sat, Apr 3, 2010 at 18:05, Ben Hutchings <ben@decadent.org.uk> wrote:
+> On Sat, 2010-04-03 at 10:35 +0200, Kay Sievers wrote:
+>> On Sat, Apr 3, 2010 at 02:58, Ben Hutchings <ben@decadent.org.uk> wrote:
+>> > On Wed, 2010-03-31 at 07:51 +0200, Kay Sievers wrote:
+>> >> Yeah, /sys/bus/, which is the only sane layout of the needlessly
+>> >> different 3 versions of the same thing (bus, class, block).
+>> > [...]
+>> >
+>> > block vs class/block is arguable,
+>>
+>> That's already done long ago.
+>>
+>> > but as for abstracting the difference
+>> > between bus and class... why?
+>>
+>> There is absolutely no need to needlessly export two versions of the
+>> same thing. These directories serve no other purpose than to collect
+>> all devices of the same subsystem. There is no useful information that
+>> belongs to the type class or bus, they are both the same. Like
+>> "inputX" is implemented as a class, but is much more like a bus.
+>
+> Really, how do you enumerate 'input' buses?
 
-swapping/ksm/etc
-independence from host hardware
-live migration
+The current inputX devices, unlike eventX and mouseX, are like "bus devices".
 
-> Does this require pinning of the entire guest memory? Or only the
-> send/receive buffers?
->    
+>> And "usb" are devices, which are more a class of devices, and the
+>> interfaces and contollers belong to a bus.
+>
+> What common higher-level functionality do USB devices provide?
 
-If done correctly, just the send/receive buffers.
+A device file per example, which can do anything to the device. :)
 
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+>> There is really no point to make userspace needlessly complicated to
+>> distinguish the both.
+>>
+>> We also have already a buch of subsystems which moved from class to
+>> bus because they needed to express hierarchy between the same devices.
+>> So the goal is to have only one type of subsystem to solve these
+>> problems.
+>
+> That's interesting.  Which were those?
 
+i2c, iio, and a few which have been out-of-tree and got changed before
+the merge, because we knew they would not work as class devices, cause
+of the need to have childs, or the need to add additional properties
+at the subsystem directory level, just like pci, which has a "slots"
+directory at the pci subsystem directory, such stuff is not possible
+with the too simple class layout.
+
+> [...]
+>> > So while buses and classes both define device interfaces, they are
+>> > fundamentally different types of interface.
+>>
+>> No, they are not. They are just "devices". There is no useful
+>> difference these two different types expose. And the class layout is
+>> fundamentally broken, and not extendable. Peole mix lists of devices
+>> with custom subsystem-wide attributes, which we need to stop from
+>> doing this. The bus layout can carry custom directories, which is why
+>> we want that by default for all "classifications".
+> [...]
+>
+> I understand that you want to clean up a mess, but how do you know
+> you're not going to break user-space that depends on some of this mess?
+
+Just like /sys/block is doing it, /sys/class, /sys/bus will stay as
+symlinks, and not go away.
+
+Kay
