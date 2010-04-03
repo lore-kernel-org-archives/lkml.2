@@ -1,94 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155Ab0DCJ30 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Apr 2010 05:29:26 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60885 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752394Ab0DCJ3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Apr 2010 05:29:23 -0400
-Date: Sat, 3 Apr 2010 09:28:42 GMT
-From: tip-bot for Borislav Petkov <bp@amd64.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       bp@amd64.org, tglx@linutronix.de, mhiramat@redhat.com,
-       borislav.petkov@amd.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       bp@amd64.org, tglx@linutronix.de, mhiramat@redhat.com,
-       borislav.petkov@amd.com, mingo@elte.hu
-In-Reply-To: <20100329164755.GA16034@aftab>
-References: <20100329164755.GA16034@aftab>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf, probe-finder: Build fix on Debian
-Message-ID: <tip-b0f86f5a169c758a82b0e23eef6795356f6d5a25@git.kernel.org>
-Git-Commit-ID: b0f86f5a169c758a82b0e23eef6795356f6d5a25
-X-Mailer: tip-git-log-daemon
+	id S1753046Ab0DCJ5P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Apr 2010 05:57:15 -0400
+Received: from smtp-vbr7.xs4all.nl ([194.109.24.27]:4441 "EHLO
+	smtp-vbr7.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752694Ab0DCJ5M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Apr 2010 05:57:12 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] lib/vsprintf.c: Add missing EXPORT_SYMBOL(simple_strtoll)
+Date: Sat, 3 Apr 2010 11:57:36 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.33-tschai; KDE/4.3.5; x86_64; ; )
+Cc: andre.goddard@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 03 Apr 2010 09:28:43 +0000 (UTC)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004031157.36191.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b0f86f5a169c758a82b0e23eef6795356f6d5a25
-Gitweb:     http://git.kernel.org/tip/b0f86f5a169c758a82b0e23eef6795356f6d5a25
-Author:     Borislav Petkov <bp@amd64.org>
-AuthorDate: Mon, 29 Mar 2010 18:47:55 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 2 Apr 2010 22:46:26 +0200
+Simple patch to fix a missing EXPORT_SYMBOL.
 
-perf, probe-finder: Build fix on Debian
+I must be the first person that wants to use this function :-)
 
-Building chokes with:
+Signed-off-by: Hans Verkuil <hverkuil@xs4all.nl>
 
- In file included from /usr/include/gelf.h:53,
-                 from /usr/include/elfutils/libdw.h:53,
-                 from util/probe-finder.h:61,
-                 from util/probe-finder.c:39:
- /usr/include/libelf.h:98: error: expected specifier-qualifier-list before 'off64_t'
- [...]
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index 24112e5..fe5ea4e 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -118,6 +118,7 @@ long long simple_strtoll(const char *cp, char **endp, unsigned int base)
+ 
+ 	return simple_strtoull(cp, endp, base);
+ }
++EXPORT_SYMBOL(simple_strtoll);
+ 
+ /**
+  * strict_strtoul - convert a string to an unsigned long strictly
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Acked-by: Masami Hiramatsu <mhiramat@redhat.com>
-LKML-Reference: <20100329164755.GA16034@aftab>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- tools/perf/Makefile |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 8a8f52d..bc0f670 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -200,7 +200,7 @@ endif
- 
- CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
- EXTLIBS = -lpthread -lrt -lelf -lm
--ALL_CFLAGS = $(CFLAGS)
-+ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
- ALL_LDFLAGS = $(LDFLAGS)
- STRIP ?= strip
- 
-@@ -492,19 +492,19 @@ ifeq ($(uname_S),Darwin)
- 	PTHREAD_LIBS =
- endif
- 
--ifeq ($(shell sh -c "(echo '\#include <libelf.h>'; echo 'int main(void) { Elf * elf = elf_begin(0, ELF_C_READ, 0); return (long)elf; }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
--ifneq ($(shell sh -c "(echo '\#include <gnu/libc-version.h>'; echo 'int main(void) { const char * version = gnu_get_libc_version(); return (long)version; }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
-+ifeq ($(shell sh -c "(echo '\#include <libelf.h>'; echo 'int main(void) { Elf * elf = elf_begin(0, ELF_C_READ, 0); return (long)elf; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
-+ifneq ($(shell sh -c "(echo '\#include <gnu/libc-version.h>'; echo 'int main(void) { const char * version = gnu_get_libc_version(); return (long)version; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
- 	msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
- endif
- 
--	ifneq ($(shell sh -c "(echo '\#include <libelf.h>'; echo 'int main(void) { Elf * elf = elf_begin(0, ELF_C_READ_MMAP, 0); return (long)elf; }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
-+	ifneq ($(shell sh -c "(echo '\#include <libelf.h>'; echo 'int main(void) { Elf * elf = elf_begin(0, ELF_C_READ_MMAP, 0); return (long)elf; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
- 		BASIC_CFLAGS += -DLIBELF_NO_MMAP
- 	endif
- else
- 	msg := $(error No libelf.h/libelf found, please install libelf-dev/elfutils-libelf-devel and glibc-dev[el]);
- endif
- 
--ifneq ($(shell sh -c "(echo '\#include <dwarf.h>'; echo '\#include <libdw.h>'; echo 'int main(void) { Dwarf *dbg; dbg = dwarf_begin(0, DWARF_C_READ); return (long)dbg; }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -I/usr/include/elfutils -ldw -lelf -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
-+ifneq ($(shell sh -c "(echo '\#include <dwarf.h>'; echo '\#include <libdw.h>'; echo 'int main(void) { Dwarf *dbg; dbg = dwarf_begin(0, DWARF_C_READ); return (long)dbg; }') | $(CC) -x c - $(ALL_CFLAGS) -I/usr/include/elfutils -ldw -lelf -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
- 	msg := $(warning No libdw.h found or old libdw.h found, disables dwarf support. Please install elfutils-devel/elfutils-dev);
- 	BASIC_CFLAGS += -DNO_DWARF_SUPPORT
- else
+-- 
+Hans Verkuil - video4linux developer - sponsored by TANDBERG
