@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755605Ab0DCCGE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 22:06:04 -0400
-Received: from ozlabs.org ([203.10.76.45]:41361 "EHLO ozlabs.org"
+	id S1755753Ab0DCCk3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 22:40:29 -0400
+Received: from wine.ocn.ne.jp ([122.1.235.145]:56484 "EHLO smtp.wine.ocn.ne.jp"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755431Ab0DCCGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 22:06:00 -0400
-Date: Sat, 3 Apr 2010 13:03:42 +1100
-From: Anton Blanchard <anton@samba.org>
-To: Greg KH <gregkh@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>, Andi Kleen <ak@linux.intel.com>,
-       Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] devmem: Handle class_create() failure
-Message-ID: <20100403020342.GJ5594@kryten>
-References: <20100402072920.GH5594@kryten>
- <20100402165324.GD32081@suse.de>
-MIME-Version: 1.0
+	id S1755453Ab0DCCk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 22:40:26 -0400
+To: oleg@redhat.com, akpm@linux-foundation.org, alan@linux.intel.com,
+       greg@kroah.com, torvalds@linux-foundation.org
+Cc: catalin.marinas@arm.com, linux-kernel@vger.kernel.org, serue@us.ibm.com,
+       ebiederm@xmission.com, sukadev@us.ibm.com, stable@kernel.org
+Subject: Re: [PATCH 0/1] tty: release_one_tty() forgets to put pids
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201003272121.ADE39095.JLFHOOMtSVOFQF@I-love.SAKURA.ne.jp>
+	<tnxbpe5ygfy.fsf@e102109-lin.cambridge.arm.com>
+	<20100331151719.8a92b302.akpm@linux-foundation.org>
+	<20100402160447.GA19920@redhat.com>
+In-Reply-To: <20100402160447.GA19920@redhat.com>
+Message-Id: <201004031140.BBH39566.OFFJFVHMOtQOSL@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sat, 3 Apr 2010 11:40:19 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100402165324.GD32081@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-Hi Greg,
+Oleg Nesterov wrote:
+> Add cc's.
+> 
+> On 03/31, Andrew Morton wrote:
+> >
+> > On Tue, 30 Mar 2010 16:31:13 +0100
+> > Catalin Marinas <catalin.marinas@arm.com> wrote:
+> >
+> > > Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> wrote:
+> > > > I got below report with 2.6.33.1 .
+> > > >
+> > > > unreferenced object 0xde144600 (size 64):
+> > > >   comm "init", pid 1, jiffies 4294678101 (age 291.508s)
+> > >
+> > > [... snip ...]
+> > >
+> > > I reported similar leaks last year -
+> > > http://lkml.org/lkml/2009/7/8/422. There is some analysis in the thread
+> > > above of the reference counting but I couldn't figure out where it goes
+> > > wrong. It looks to me like there isn't any reference to a struct pid
+> > > block but its reference count is 2.
+> > >
+> > > There is a bugzilla entry as well -
+> > > https://bugzilla.kernel.org/show_bug.cgi?id=13868
+> 
+> OK. I do not undertand ttys, absolutely. This means the patch
+> should not be applied without acks. And in fact I feel the patch
+> probably fixes the symptom, not the problem. But the logic in
+> disassociate_ctty() is beyond my understanding.
+> 
+> However, I think it is easy to explain the leak.
+> 
+> Catalin, Tetsuo, could you try this patch?
+> 
+I confirmed using 2.6.34-rc3 that this patch solved the leak.
 
-> Is this something that we need for .34?  How were you getting this to
-> fail in the first place?
+Thank you.
 
-I hit this when we broke the IDR allocator for a few days.  The bug got
-introduced in commit 859ddf09743a8cc680af33f7259ccd0fd36bfe9d (idr: fix a
-critical misallocation bug), and was backed out a few days later in commit
-6f14a668f1a8b715a6e855f4e32705e54a6e86a1 (idr: revert misallocation bug fix).
-
-The sysfs inode allocator which uses IDR was getting back a bogus ENOSPC
-return code. I think the chances of seeing this fail otherwise would be pretty
-remote, you'd have to use up 2^31 sysfs inodes before hitting the real IDR
-limit.
-
-Anton
+> Oleg.
