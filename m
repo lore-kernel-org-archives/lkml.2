@@ -1,89 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462Ab0DCEpc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Apr 2010 00:45:32 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:57367 "EHLO
+	id S1751547Ab0DCFAt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Apr 2010 01:00:49 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:55390 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750883Ab0DCEp3 (ORCPT
+	by vger.kernel.org with ESMTP id S1750883Ab0DCFAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Apr 2010 00:45:29 -0400
-Date: Sat, 3 Apr 2010 06:45:20 +0200
+	Sat, 3 Apr 2010 01:00:47 -0400
+Date: Sat, 3 Apr 2010 07:00:37 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andi Kleen <andi@firstfloor.org>, Linus Torvalds <torvalds@osdl.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, David Miller <davem@davemloft.net>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [patch 1/2] genirq: Run irq handlers with interrupts disabled
-Message-ID: <20100403044520.GA30558@elf.ucw.cz>
-References: <20100326000325.917127328@linutronix.de>
- <20100326000405.758579387@linutronix.de>
- <20100326061310.GV20695@one.firstfloor.org>
- <alpine.LFD.2.00.1003261224070.3147@localhost.localdomain>
- <20100330053325.GL20695@one.firstfloor.org>
- <alpine.LFD.2.00.1003311315520.32352@localhost.localdomain>
- <20100402093132.GA1360@ucw.cz>
- <alpine.LFD.2.00.1004022242170.32352@localhost.localdomain>
- <20100402210916.GA23339@elf.ucw.cz>
- <alpine.LFD.2.00.1004030046160.32352@localhost.localdomain>
+To: kernel list <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
+Cc: bernie@plugable.com, amit.kucheria@canonical.com
+Subject: staging/udlfb: cleanups
+Message-ID: <20100403050037.GA31000@elf.ucw.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004030046160.32352@localhost.localdomain>
 X-Warning: Reading this can be dangerous to your mental health.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2010-04-03 00:51:20, Thomas Gleixner wrote:
-> Pavel,
-> 
-> On Fri, 2 Apr 2010, Pavel Machek wrote:
-> 
-> > On Fri 2010-04-02 22:42:51, Thomas Gleixner wrote:
-> > > On Fri, 2 Apr 2010, Pavel Machek wrote:
-> > > 
-> > > > On Wed 2010-03-31 13:16:37, Thomas Gleixner wrote:
-> > > > > On Tue, 30 Mar 2010, Andi Kleen wrote:
-> > > > > 
-> > > > > > > Why not simply force IRQF_DISABLED for all MSI interrupts. That still
-> > > > > > > allows nesting for non MSI ones, but it limits the chance of throwing
-> > > > > > > up reasonably well. That's a two liner.
-> > > > > > > 
-> > > > > > > Can you please test whether it resolves the issue at hand ?
-> > > > > > 
-> > > > > > Sorry for the late answer. Got confirmation that this patch
-> > > > > > fixes the test case. Thanks.
-> > > > > 
-> > > > > Ok, I'll push it linus wards and cc stable. I think thats the least
-> > > > > intrusive safe bet we can have right now.
-> > > > 
-> > > > stable? I'd say thats way too intrusive for -stable...
-> > > 
-> > > So we better let the possible stack overruns unaddressed ?
-> > 
-> > -stable should have no regressions, first and foremost. And this is
-> > pretty certain to introduce some, at least on low-powered system with
-> > serial ports.
-> 
-> I think you misunderstood what I'm going to push. The patch merily
-> forces IRQF_DISABLED for MSI(X) based interrupts. So that does not
-> affect low powered systems in any way.
-> 
-> It only affects high end systems where Dave Miller already said he did
-> the IRQF_DISABLED magic already in some NIC drivers just to prevent
-> that.
+This cleans up udlfb a tiny bit.
 
-Oops, yes, I did; lost in all the mails.
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-> So I think your fear of regressions for low-powered systems is
-> completely unsubstantiated.
-
-Yep. Sorry for the noise.
+diff --git a/drivers/staging/udlfb/udlfb.c b/drivers/staging/udlfb/udlfb.c
+index 8f6223c..647e801 100644
+--- a/drivers/staging/udlfb/udlfb.c
++++ b/drivers/staging/udlfb/udlfb.c
+@@ -57,17 +57,17 @@ static struct usb_device_id id_table[] = {
+ MODULE_DEVICE_TABLE(usb, id_table);
+ 
+ #ifndef CONFIG_FB_DEFERRED_IO
+-#warning message "kernel FB_DEFFERRED_IO option to support generic fbdev apps"
++#warning Please set CONFIG_FB_DEFFERRED_IO option to support generic fbdev apps
+ #endif
+ 
+ #ifndef CONFIG_FB_SYS_IMAGEBLIT
+ #ifndef CONFIG_FB_SYS_IMAGEBLIT_MODULE
+-#warning message "FB_SYS_* in kernel or module option to support fb console"
++#warning Please set CONFIG_FB_SYS_IMAGEBLIT option to support fb console
+ #endif
+ #endif
+ 
+ #ifndef CONFIG_FB_MODE_HELPERS
+-#warning message "kernel FB_MODE_HELPERS required. Expect build break"
++#warning CONFIG_FB_MODE_HELPERS required. Expect build break
+ #endif
+ 
+ /* dlfb keeps a list of urbs for efficient bulk transfers */
+@@ -365,32 +365,32 @@ static int dlfb_trim_hline(const u8 *bback, const u8 **bfront, int *width_bytes)
+ }
+ 
+ /*
+-Render a command stream for an encoded horizontal line segment of pixels.
+-
+-A command buffer holds several commands.
+-It always begins with a fresh command header
+-(the protocol doesn't require this, but we enforce it to allow
+-multiple buffers to be potentially encoded and sent in parallel).
+-A single command encodes one contiguous horizontal line of pixels
+-
+-The function relies on the client to do all allocation, so that
+-rendering can be done directly to output buffers (e.g. USB URBs).
+-The function fills the supplied command buffer, providing information
+-on where it left off, so the client may call in again with additional
+-buffers if the line will take several buffers to complete.
+-
+-A single command can transmit a maximum of 256 pixels,
+-regardless of the compression ratio (protocol design limit).
+-To the hardware, 0 for a size byte means 256
+-
+-Rather than 256 pixel commands which are either rl or raw encoded,
+-the rlx command simply assumes alternating raw and rl spans within one cmd.
+-This has a slightly larger header overhead, but produces more even results.
+-It also processes all data (read and write) in a single pass.
+-Performance benchmarks of common cases show it having just slightly better
+-compression than 256 pixel raw -or- rle commands, with similar CPU consumpion.
+-But for very rl friendly data, will compress not quite as well.
+-*/
++ * Render a command stream for an encoded horizontal line segment of pixels.
++ *
++ * A command buffer holds several commands.
++ * It always begins with a fresh command header
++ * (the protocol doesn't require this, but we enforce it to allow
++ * multiple buffers to be potentially encoded and sent in parallel).
++ * A single command encodes one contiguous horizontal line of pixels
++ *
++ * The function relies on the client to do all allocation, so that
++ * rendering can be done directly to output buffers (e.g. USB URBs).
++ * The function fills the supplied command buffer, providing information
++ * on where it left off, so the client may call in again with additional
++ * buffers if the line will take several buffers to complete.
++ *
++ * A single command can transmit a maximum of 256 pixels,
++ * regardless of the compression ratio (protocol design limit).
++ * To the hardware, 0 for a size byte means 256
++ * 
++ * Rather than 256 pixel commands which are either rl or raw encoded,
++ * the rlx command simply assumes alternating raw and rl spans within one cmd.
++ * This has a slightly larger header overhead, but produces more even results.
++ * It also processes all data (read and write) in a single pass.
++ * Performance benchmarks of common cases show it having just slightly better
++ * compression than 256 pixel raw -or- rle commands, with similar CPU consumpion.
++ * But for very rl friendly data, will compress not quite as well.
++ */
+ static void dlfb_compress_hline(
+ 	const uint16_t **pixel_start_ptr,
+ 	const uint16_t *const pixel_end,
 
 -- 
 (english) http://www.livejournal.com/~pavelmachek
