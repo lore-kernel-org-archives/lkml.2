@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641Ab0DCQI4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Apr 2010 12:08:56 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37382 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339Ab0DCQIy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Apr 2010 12:08:54 -0400
-Date: Sat, 3 Apr 2010 17:08:29 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-       Will Deacon <will.deacon@arm.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       kgdb-bugreport@lists.sourceforge.net, linux-arm@vger.kernel.org
-Subject: Re: [PATCH 4/5] kgdb: Use atomic operators which use barriers
-Message-ID: <20100403160829.GA1390@n2100.arm.linux.org.uk>
-References: <1270233145-29335-1-git-send-email-jason.wessel@windriver.com> <1270233145-29335-2-git-send-email-jason.wessel@windriver.com> <1270233145-29335-3-git-send-email-jason.wessel@windriver.com> <1270233145-29335-4-git-send-email-jason.wessel@windriver.com> <1270233145-29335-5-git-send-email-jason.wessel@windriver.com> <alpine.LFD.2.00.1004021205080.3634@i5.linux-foundation.org> <4BB64762.6040806@windriver.com> <alpine.LFD.2.00.1004021238270.3634@i5.linux-foundation.org> <20100402222516.GA11073@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1004021621300.3634@i5.linux-foundation.org>
+	id S1753760Ab0DCQZn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Apr 2010 12:25:43 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37837 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753384Ab0DCQZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Apr 2010 12:25:39 -0400
+Date: Sat, 3 Apr 2010 16:25:19 GMT
+From: tip-bot for Anton Blanchard <anton@samba.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+       anton@samba.org, hpa@zytor.com, mingo@redhat.com,
+       a.p.zijlstra@chello.nl, davem@davemloft.net, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, anton@samba.org, paulus@samba.org,
+       linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+       tglx@linutronix.de, davem@davemloft.net
+In-Reply-To: <20100403115331.GK5594@kryten>
+References: <20100403115331.GK5594@kryten>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf symbols: Fill in pgoff in mmap synthesized events
+Message-ID: <tip-4af8b35db6634dd1e0d616de689582b6c93550af@git.kernel.org>
+Git-Commit-ID: 4af8b35db6634dd1e0d616de689582b6c93550af
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004021621300.3634@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 03 Apr 2010 16:25:20 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 02, 2010 at 04:24:57PM -0700, Linus Torvalds wrote:
-> 
-> 
-> On Fri, 2 Apr 2010, Russell King - ARM Linux wrote:
-> > 
-> > Actually, in future threads you end up agreeing with my position...
-> 
-> I always agreed that it was not a memory barrier.
-> 
-> In fact, the commit that extended on the "volatile-considered-harmful" 
-> patch from you has this quote from me in the commit logs:
-> 
->     Linus sayeth:
->     
->     : I don't think it was ever the intention that it would be seen as anything
->     : but a compiler barrier, although it is obviously implied that it might
->     : well perform some per-architecture actions that have "memory barrier-like"
->     : semantics.
->     :
->     : After all, the whole and only point of the "cpu_relax()" thing is to tell
->     : the CPU that we're busy-looping on some event.
->     :
->     : And that "event" might be (and often is) about reading the same memory
->     : location over and over until it changes to what we want it to be.  So it's
->     : quite possible that on various architectures the "cpu_relax()" could be
->     : about making sure that such a tight loop on loads doesn't starve cache
->     : transactions, for example - and as such look a bit like a memory barrier
->     : from a CPU standpoint.
->     :
->     : But it's not meant to have any kind of architectural memory ordering
->     : semantics as far as the kernel is concerned - those must come from other
->     : sources.
-> 
-> which I think is pretty clear. 
-> 
-> But that quote seems to be the one where you then think I "agree" with 
-> you.
+Commit-ID:  4af8b35db6634dd1e0d616de689582b6c93550af
+Gitweb:     http://git.kernel.org/tip/4af8b35db6634dd1e0d616de689582b6c93550af
+Author:     Anton Blanchard <anton@samba.org>
+AuthorDate: Sat, 3 Apr 2010 22:53:31 +1100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Sat, 3 Apr 2010 10:20:31 -0300
 
-Yet again you read something into what I say that wasn't there.
+perf symbols: Fill in pgoff in mmap synthesized events
 
-Wait for me to return from holiday, as I said, and I'll respond further.
+When we synthesize mmap events we need to fill in the pgoff field.
+
+I wasn't able to test this completely since I couldn't find an
+executable region with a non 0 offset. We will see it when we start
+doing data profiling.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+LKML-Reference: <20100403115331.GK5594@kryten>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/event.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 052eaec..571fb25 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -130,6 +130,7 @@ static int event__synthesize_mmap_events(pid_t pid, pid_t tgid,
+ 			continue;
+ 		pbf += n + 3;
+ 		if (*pbf == 'x') { /* vm_exec */
++			u64 vm_pgoff;
+ 			char *execname = strchr(bf, '/');
+ 
+ 			/* Catch VDSO */
+@@ -139,6 +140,14 @@ static int event__synthesize_mmap_events(pid_t pid, pid_t tgid,
+ 			if (execname == NULL)
+ 				continue;
+ 
++			pbf += 3;
++			n = hex2u64(pbf, &vm_pgoff);
++			/* pgoff is in bytes, not pages */
++			if (n >= 0)
++				ev.mmap.pgoff = vm_pgoff << getpagesize();
++			else
++				ev.mmap.pgoff = 0;
++
+ 			size = strlen(execname);
+ 			execname[size - 1] = '\0'; /* Remove \n */
+ 			memcpy(ev.mmap.filename, execname, size);
