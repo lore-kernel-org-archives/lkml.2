@@ -1,124 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233Ab0DCQGh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Apr 2010 12:06:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60091 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752339Ab0DCQGe (ORCPT
+	id S1754641Ab0DCQI4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Apr 2010 12:08:56 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37382 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339Ab0DCQIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Apr 2010 12:06:34 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>, Greg KH <greg@kroah.com>,
-       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, linux-fsdevel@vger.kernel.org,
-       Eric Dumazet <eric.dumazet@gmail.com>, Benjamin LaHaise <bcrl@lhnet.ca>,
-       Serge Hallyn <serue@us.ibm.com>, netdev@vger.kernel.org
-In-Reply-To: <h2gac3eb2511004030135q2a2f5002z912974c1d2ab8853@mail.gmail.com>
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
-	 <ac3eb2511003301153i43a60720hb015071e2c992199@mail.gmail.com>
-	 <m14ojxh0mz.fsf@fess.ebiederm.org>
-	 <s2hac3eb2511003302251rcbae8767ne21e9daf1546c849@mail.gmail.com>
-	 <1270256303.12516.234.camel@localhost>
-	 <h2gac3eb2511004030135q2a2f5002z912974c1d2ab8853@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-wpd++Y0TrYLBEsvuVVoI"
-Date: Sat, 03 Apr 2010 17:05:56 +0100
-Message-ID: <1270310756.12516.308.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [PATCH 0/6] tagged sysfs support
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	Sat, 3 Apr 2010 12:08:54 -0400
+Date: Sat, 3 Apr 2010 17:08:29 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+       Will Deacon <will.deacon@arm.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       kgdb-bugreport@lists.sourceforge.net, linux-arm@vger.kernel.org
+Subject: Re: [PATCH 4/5] kgdb: Use atomic operators which use barriers
+Message-ID: <20100403160829.GA1390@n2100.arm.linux.org.uk>
+References: <1270233145-29335-1-git-send-email-jason.wessel@windriver.com> <1270233145-29335-2-git-send-email-jason.wessel@windriver.com> <1270233145-29335-3-git-send-email-jason.wessel@windriver.com> <1270233145-29335-4-git-send-email-jason.wessel@windriver.com> <1270233145-29335-5-git-send-email-jason.wessel@windriver.com> <alpine.LFD.2.00.1004021205080.3634@i5.linux-foundation.org> <4BB64762.6040806@windriver.com> <alpine.LFD.2.00.1004021238270.3634@i5.linux-foundation.org> <20100402222516.GA11073@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1004021621300.3634@i5.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1004021621300.3634@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 02, 2010 at 04:24:57PM -0700, Linus Torvalds wrote:
+> 
+> 
+> On Fri, 2 Apr 2010, Russell King - ARM Linux wrote:
+> > 
+> > Actually, in future threads you end up agreeing with my position...
+> 
+> I always agreed that it was not a memory barrier.
+> 
+> In fact, the commit that extended on the "volatile-considered-harmful" 
+> patch from you has this quote from me in the commit logs:
+> 
+>     Linus sayeth:
+>     
+>     : I don't think it was ever the intention that it would be seen as anything
+>     : but a compiler barrier, although it is obviously implied that it might
+>     : well perform some per-architecture actions that have "memory barrier-like"
+>     : semantics.
+>     :
+>     : After all, the whole and only point of the "cpu_relax()" thing is to tell
+>     : the CPU that we're busy-looping on some event.
+>     :
+>     : And that "event" might be (and often is) about reading the same memory
+>     : location over and over until it changes to what we want it to be.  So it's
+>     : quite possible that on various architectures the "cpu_relax()" could be
+>     : about making sure that such a tight loop on loads doesn't starve cache
+>     : transactions, for example - and as such look a bit like a memory barrier
+>     : from a CPU standpoint.
+>     :
+>     : But it's not meant to have any kind of architectural memory ordering
+>     : semantics as far as the kernel is concerned - those must come from other
+>     : sources.
+> 
+> which I think is pretty clear. 
+> 
+> But that quote seems to be the one where you then think I "agree" with 
+> you.
 
---=-wpd++Y0TrYLBEsvuVVoI
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Yet again you read something into what I say that wasn't there.
 
-On Sat, 2010-04-03 at 10:35 +0200, Kay Sievers wrote:
-> On Sat, Apr 3, 2010 at 02:58, Ben Hutchings <ben@decadent.org.uk> wrote:
-> > On Wed, 2010-03-31 at 07:51 +0200, Kay Sievers wrote:
-> >> Yeah, /sys/bus/, which is the only sane layout of the needlessly
-> >> different 3 versions of the same thing (bus, class, block).
-> > [...]
-> >
-> > block vs class/block is arguable,
->=20
-> That's already done long ago.
->=20
-> > but as for abstracting the difference
-> > between bus and class... why?
->=20
-> There is absolutely no need to needlessly export two versions of the
-> same thing. These directories serve no other purpose than to collect
-> all devices of the same subsystem. There is no useful information that
-> belongs to the type class or bus, they are both the same. Like
-> "inputX" is implemented as a class, but is much more like a bus.
-
-Really, how do you enumerate 'input' buses?
-
-> And "usb" are devices, which are more a class of devices, and the
-> interfaces and contollers belong to a bus.
-
-What common higher-level functionality do USB devices provide?
-
-> There is really no point to make userspace needlessly complicated to
-> distinguish the both.
->=20
-> We also have already a buch of subsystems which moved from class to
-> bus because they needed to express hierarchy between the same devices.
-> So the goal is to have only one type of subsystem to solve these
-> problems.
-
-That's interesting.  Which were those?
-
-[...]
-> > So while buses and classes both define device interfaces, they are
-> > fundamentally different types of interface.
->=20
-> No, they are not. They are just "devices". There is no useful
-> difference these two different types expose. And the class layout is
-> fundamentally broken, and not extendable. Peole mix lists of devices
-> with custom subsystem-wide attributes, which we need to stop from
-> doing this. The bus layout can carry custom directories, which is why
-> we want that by default for all "classifications".
-[...]
-
-I understand that you want to clean up a mess, but how do you know
-you're not going to break user-space that depends on some of this mess?
-
-Ben.
-
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
-
---=-wpd++Y0TrYLBEsvuVVoI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIVAwUAS7dnWue/yOyVhhEJAQLOSg/9GbfJ9o+ctZZa4vpK/i5Svwe5YMzn2dO8
-6xth7JkusARINJHtFu/LOUZftzcsvC7RbWp3mWP3h33FtUmlqRv0lKvZEb4/+oVd
-yjrJ+/gutCWQiSnYjfgutTa1B8qEV52161Gvrm6S7qDII5XVxGlIkRDuoDMO4P/A
-FDZtAInBwSytp6pUzTKasNwgGi/BDWrpxOuH96eWozgcgqj/lwgccAvApiGUBN7x
-/8/Q035mvmGiiNwFiZz18v/gPlwXSIc5GmsTL/ahu8CKT7wNP8EqLxrIbcCGLLqm
-Zv+ncaMNsHwRE9FGL2gkTe3w2l6CLpqxiARLqUwXJmWIABJXAhVqaAHKjG2avZnR
-NV0Wp9RTDIoL4vo2rneJml+JXS4K1tZr19RtTdSEq6I7tYS2DZ0euF+mWYt+F3SA
-sQO3OWgWf+Q36NKnn64l4QmxT8q4aK5aHDncxLWL2D7Rydfxgkb/2zyoSBJ1T9mq
-wyodtR8uS26rooGGkJieyotFzJoaSkBVpgJydHxLj2iWdDXIZTiEZXyJbaJa9OaV
-bSej7ypaUHe3ReH6oOeGeQb5ZdJqg71Y581pVeP6ZJIjk71+sPPWGWQqaE+7YPDs
-57d+/WgHrsakL/EtZpIsmySpymcijpNaOXwnluG8b7KKnJWS5RzIyGfLWGyVb2pE
-nUxOsTSXnj0=
-=Bf9e
------END PGP SIGNATURE-----
-
---=-wpd++Y0TrYLBEsvuVVoI--
+Wait for me to return from holiday, as I said, and I'll respond further.
