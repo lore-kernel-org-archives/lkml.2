@@ -1,83 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707Ab0DCJ2Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Apr 2010 05:28:24 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46805 "EHLO hera.kernel.org"
+	id S1753105Ab0DCJ2o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Apr 2010 05:28:44 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60858 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751868Ab0DCJ2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Apr 2010 05:28:18 -0400
-Date: Sat, 3 Apr 2010 09:27:48 GMT
-From: tip-bot for Li Zefan <lizf@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       rostedt@goodmis.org, a.p.zijlstra@chello.nl, lizf@cn.fujitsu.com,
-       tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       lizf@cn.fujitsu.com, a.p.zijlstra@chello.nl, rostedt@goodmis.org,
-       tglx@linutronix.de
-In-Reply-To: <4BA97FA1.7030606@cn.fujitsu.com>
-References: <4BA97FA1.7030606@cn.fujitsu.com>
+	id S1752763Ab0DCJ23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Apr 2010 05:28:29 -0400
+Date: Sat, 3 Apr 2010 09:28:06 GMT
+From: tip-bot for Julia Lawall <julia@diku.dk>
+Cc: linux-kernel@vger.kernel.org, julia@diku.dk, hpa@zytor.com,
+       mingo@redhat.com, rostedt@goodmis.org, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, julia@diku.dk,
+       linux-kernel@vger.kernel.org, rostedt@goodmis.org, tglx@linutronix.de
+In-Reply-To: <Pine.LNX.4.64.1003291736440.21896@ask.diku.dk>
+References: <Pine.LNX.4.64.1003291736440.21896@ask.diku.dk>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:tracing/urgent] tracing: Fix lockdep warning in global_clock()
-Message-ID: <tip-e36673ec5126f15a8cddf6049aede7bdcf484c26@git.kernel.org>
-Git-Commit-ID: e36673ec5126f15a8cddf6049aede7bdcf484c26
+Subject: [tip:tracing/urgent] ring-buffer: Add missing unlock
+Message-ID: <tip-292f60c0c4ab44aa2d589ba03c12e64a3b3c5e38@git.kernel.org>
+Git-Commit-ID: 292f60c0c4ab44aa2d589ba03c12e64a3b3c5e38
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 03 Apr 2010 09:27:51 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 03 Apr 2010 09:28:08 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e36673ec5126f15a8cddf6049aede7bdcf484c26
-Gitweb:     http://git.kernel.org/tip/e36673ec5126f15a8cddf6049aede7bdcf484c26
-Author:     Li Zefan <lizf@cn.fujitsu.com>
-AuthorDate: Wed, 24 Mar 2010 10:57:37 +0800
+Commit-ID:  292f60c0c4ab44aa2d589ba03c12e64a3b3c5e38
+Gitweb:     http://git.kernel.org/tip/292f60c0c4ab44aa2d589ba03c12e64a3b3c5e38
+Author:     Julia Lawall <julia@diku.dk>
+AuthorDate: Mon, 29 Mar 2010 17:37:02 +0200
 Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Mon, 29 Mar 2010 15:16:44 -0400
+CommitDate: Mon, 29 Mar 2010 15:23:24 -0400
 
-tracing: Fix lockdep warning in global_clock()
+ring-buffer: Add missing unlock
 
-# echo 1 > events/enable
- # echo global > trace_clock
+In some error handling cases the lock is not unlocked.  The return is
+converted to a goto, to share the unlock at the end of the function.
 
-------------[ cut here ]------------
-WARNING: at kernel/lockdep.c:3162 check_flags+0xb2/0x190()
-...
----[ end trace 3f86734a89416623 ]---
-possible reason: unannotated irqs-on.
-...
+A simplified version of the semantic patch that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-There's no reason to use the raw_local_irq_save() in trace_clock_global.
-The local_irq_save() version is fine, and does not cause the bug in lockdep.
+// <smpl>
+@r exists@
+expression E1;
+identifier f;
+@@
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-LKML-Reference: <4BA97FA1.7030606@cn.fujitsu.com>
+f (...) { <+...
+* spin_lock_irq (E1,...);
+... when != E1
+* return ...;
+...+> }
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+LKML-Reference: <Pine.LNX.4.64.1003291736440.21896@ask.diku.dk>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_clock.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/trace/ring_buffer.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
-index 6fbfb8f..9d589d8 100644
---- a/kernel/trace/trace_clock.c
-+++ b/kernel/trace/trace_clock.c
-@@ -84,7 +84,7 @@ u64 notrace trace_clock_global(void)
- 	int this_cpu;
- 	u64 now;
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index d1187ef..9a0f9bf 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -1209,18 +1209,19 @@ rb_remove_pages(struct ring_buffer_per_cpu *cpu_buffer, unsigned nr_pages)
  
--	raw_local_irq_save(flags);
-+	local_irq_save(flags);
+ 	for (i = 0; i < nr_pages; i++) {
+ 		if (RB_WARN_ON(cpu_buffer, list_empty(cpu_buffer->pages)))
+-			return;
++			goto out;
+ 		p = cpu_buffer->pages->next;
+ 		bpage = list_entry(p, struct buffer_page, list);
+ 		list_del_init(&bpage->list);
+ 		free_buffer_page(bpage);
+ 	}
+ 	if (RB_WARN_ON(cpu_buffer, list_empty(cpu_buffer->pages)))
+-		return;
++		goto out;
  
- 	this_cpu = raw_smp_processor_id();
- 	now = cpu_clock(this_cpu);
-@@ -110,7 +110,7 @@ u64 notrace trace_clock_global(void)
- 	arch_spin_unlock(&trace_clock_struct.lock);
+ 	rb_reset_cpu(cpu_buffer);
+ 	rb_check_pages(cpu_buffer);
  
-  out:
--	raw_local_irq_restore(flags);
-+	local_irq_restore(flags);
- 
- 	return now;
++out:
+ 	spin_unlock_irq(&cpu_buffer->reader_lock);
  }
+ 
+@@ -1237,7 +1238,7 @@ rb_insert_pages(struct ring_buffer_per_cpu *cpu_buffer,
+ 
+ 	for (i = 0; i < nr_pages; i++) {
+ 		if (RB_WARN_ON(cpu_buffer, list_empty(pages)))
+-			return;
++			goto out;
+ 		p = pages->next;
+ 		bpage = list_entry(p, struct buffer_page, list);
+ 		list_del_init(&bpage->list);
+@@ -1246,6 +1247,7 @@ rb_insert_pages(struct ring_buffer_per_cpu *cpu_buffer,
+ 	rb_reset_cpu(cpu_buffer);
+ 	rb_check_pages(cpu_buffer);
+ 
++out:
+ 	spin_unlock_irq(&cpu_buffer->reader_lock);
+ }
+ 
