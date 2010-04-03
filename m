@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab0DCTNV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Apr 2010 15:13:21 -0400
-Received: from 8bytes.org ([88.198.83.132]:52671 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753329Ab0DCTNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Apr 2010 15:13:16 -0400
-Date: Sat, 3 Apr 2010 21:13:14 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Chris Wright <chrisw@sous-sol.org>, Joerg Roedel <joerg.roedel@amd.com>,
-       nhorman@redhat.com, nhorman@tuxdriver.com, kexec@lists.infradead.org,
-       linux-kernel@vger.kernel.org, hbabu@us.ibm.com,
-       iommu@lists.linux-foundation.org, vgoyal@redhat.com
-Subject: Re: [PATCH 3/4] Revert "x86: disable IOMMUs on kernel crash"
-Message-ID: <20100403191314.GR24846@8bytes.org>
-References: <20100403012751.834020949@sous-sol.org> <20100403012820.229410717@sous-sol.org> <20100403174128.GQ24846@8bytes.org> <m1vdc8juju.fsf@fess.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1vdc8juju.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755430Ab0DCTUG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Apr 2010 15:20:06 -0400
+Received: from mail-in-12.arcor-online.net ([151.189.21.52]:41011 "EHLO
+	mail-in-12.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754002Ab0DCTUA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Apr 2010 15:20:00 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-04.arcor-online.net 880EA33A928
+Subject: Re: [Bug 12309] Large I/O operations result in slow performance
+ and high iowait times
+From: Thomas Pilarski <Thomas.Pilarski@arcor.de>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Jens Axboe <jens.axboe@oracle.com>
+In-Reply-To: <20100331002549.GB9925@khazad-dum.debian.net>
+References: <bug-12309-14043@http.bugzilla.kernel.org/>
+	 <201003162357.o2GNvkNF024562@demeter.kernel.org>
+	 <1269935094.2481.23.camel@localhost>
+	 <20100331002549.GB9925@khazad-dum.debian.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 03 Apr 2010 21:19:48 +0200
+Message-ID: <1270322388.26420.56.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 03, 2010 at 10:49:09AM -0700, Eric W. Biederman wrote:
-> Joerg Roedel <joro@8bytes.org> writes:
-
-> > Another problem: This also breaks if the kdump kernel has no
-> > iommu-support.
+> > This problem is enormous increased, while the ultra bay disc is acceded
+> > with udma2 instead of udma6 (caused by another bug), 
 > 
-> Not a problem.  We require a lot of things of the kdump kernel,
-> and it is immediately apparent in a basic sanity test.
+> There is a thinkpad BIOS bug that could cause that: it will not signal a
+> 80-wire cable when you hot-add an HD on a PATA ultrabay.  Exists at least on
+> all T4x, including the T43.
 
-Only if the sanity test is done on an iommu machine which I don't want
-to rely on.
+It's a SATA untrabay disk. There is a 40-wire message, but sometimes it
+works and sometimes not. I could not figure out, when it does and when
+not. 
 
-	Joerg
+> The fix is to whitelist these thinkpads for high-speed UDMA even on 40-wire
+> cables.  The workaround is to add a kernel command line parameter (I forget
+> which).
+> 
+> Does that match your udma2 instead of udma6 problem?
+
+Thanks. I will try it. But have to finish another project first. 
+
+
 
