@@ -1,53 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab0DCTUG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Apr 2010 15:20:06 -0400
-Received: from mail-in-12.arcor-online.net ([151.189.21.52]:41011 "EHLO
-	mail-in-12.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754002Ab0DCTUA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Apr 2010 15:20:00 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-04.arcor-online.net 880EA33A928
-Subject: Re: [Bug 12309] Large I/O operations result in slow performance
- and high iowait times
-From: Thomas Pilarski <Thomas.Pilarski@arcor.de>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Jens Axboe <jens.axboe@oracle.com>
-In-Reply-To: <20100331002549.GB9925@khazad-dum.debian.net>
-References: <bug-12309-14043@http.bugzilla.kernel.org/>
-	 <201003162357.o2GNvkNF024562@demeter.kernel.org>
-	 <1269935094.2481.23.camel@localhost>
-	 <20100331002549.GB9925@khazad-dum.debian.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 03 Apr 2010 21:19:48 +0200
-Message-ID: <1270322388.26420.56.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S1755673Ab0DCTar (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Apr 2010 15:30:47 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54375 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754002Ab0DCTal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Apr 2010 15:30:41 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Clemens Ladisch" <clemens@ladisch.de>
+Subject: Re: [Regression, post-rc2] Commit a5ee4eb7541 breaks OpenGL on RS780 (was: Re: Linux 2.6.34-rc3)
+Date: Sat, 3 Apr 2010 21:33:20 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
+Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
+       "Alex Deucher" <alexdeucher@gmail.com>,
+       "Linux PCI" <linux-pci@vger.kernel.org>, "Greg KH" <gregkh@suse.de>,
+       "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+       "Jesse Barnes" <jbarnes@virtuousgeek.org>,
+       dri-devel@lists.sourceforge.net, stable@kernel.org,
+       "Dave Airlie" <airlied@gmail.com>
+References: <alpine.LFD.2.00.1003301029250.3707@i5.linux-foundation.org> <201004021846.06522.rjw@sisk.pl> <1270318093.15869.1368145605@webmail.messagingengine.com>
+In-Reply-To: <1270318093.15869.1368145605@webmail.messagingengine.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201004032133.20872.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > This problem is enormous increased, while the ultra bay disc is acceded
-> > with udma2 instead of udma6 (caused by another bug), 
+On Saturday 03 April 2010, Clemens Ladisch wrote:
+> Rafael J. Wysocki wrote:
+> > From: Clemens Ladisch <clemens@ladisch.de>
+> > Subject: PCI quirk: RS780/RS880: disable MSI completely
+> > 
+> > The missing initialization of the nb_cntl.strap_msi_enable does not
+> > seem to be the only problem that prevents MSI, so that quirk is not
+> > sufficient to enable MSI on all machines.  To be safe, disable MSI
+> > unconditionally for the internal graphics and HDMI audio on these
+> > chipsets.
+> > 
+> > [rjw: Added the PCI_VENDOR_ID_AI quirk.]
+> > ...
+> > +DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, 0x9602, quirk_disable_msi);
+> > +DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ASUSTEK, 0x9602, quirk_disable_msi);
+> > +DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AI, 0x9602, quirk_disable_msi);
 > 
-> There is a thinkpad BIOS bug that could cause that: it will not signal a
-> 80-wire cable when you hot-add an HD on a PATA ultrabay.  Exists at least on
-> all T4x, including the T43.
+> I fear I have to NACK this.
 
-It's a SATA untrabay disk. There is a 40-wire message, but sometimes it
-works and sometimes not. I could not figure out, when it does and when
-not. 
+I'm afraid it's too late, the patch has been merged.
 
-> The fix is to whitelist these thinkpads for high-speed UDMA even on 40-wire
-> cables.  The workaround is to add a kernel command line parameter (I forget
-> which).
+> The fact that two OEMs have changed the vendor
+> ID makes it likely that this is a bug in AMD's template BIOS code, and that
+> we will see the same problem on other systems using other vendor IDs.
 > 
-> Does that match your udma2 instead of udma6 problem?
+> So we should not use the vendor ID of device 0x9602 to declare the quirk, but
+> use some other device with an ID that is known to be correct.  We already
+> access the configuration space of the host bridge, so we should use that.
+> 
+> Furthermore, the quirk in my first patch was never run at all on the ALi
+> system, so it is probable that the nb_cntl.strap_msi_enable detection
+> would actually work.  Rafael, please test this patch; if it doesn't work
+> on your system, we can still remove the check for the strap_msi_enable bit.
+> 
+> ==========
+> 
+> Subject: PCI quirk: RS780/RS880: work around wrong vendor IDs of RS780 bridge
+> 
+> On many RS780 systems, the vendor ID of the PCI/PCI bridge for the
+> internal graphics is set to that of the mainboard vendor, so the quirk
+> would not match and failed to notice the disabled MSI.
+> 
+> Since we do not know in advance all possible vendor IDs, we have to
+> declare the quirk on another device with an ID that is known to be
+> correct, and use that as a stepping stone to find the PCI/PCI bridge,
+> if present.
+> 
+> Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+> Cc: <stable@kernel.org>
 
-Thanks. I will try it. But have to finish another project first. 
+Yes, this works (after reverting commit
+5193d7a7f500cfbbfc0de221e808208199723521 and removing the
+(rdev->flags & RADEON_IS_IGP) test from radeon_irq_kms_init()).
 
-
-
+Thanks,
+Rafael
