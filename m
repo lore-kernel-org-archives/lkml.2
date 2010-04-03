@@ -1,20 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab0DCToZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Apr 2010 15:44:25 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55165 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755871Ab0DCToO (ORCPT
+	id S1755915Ab0DCTog (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Apr 2010 15:44:36 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:38582 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755884Ab0DCToU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Apr 2010 15:44:14 -0400
+	Sat, 3 Apr 2010 15:44:20 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 0/1] perf newt: Zoom operations
-Date: Sat,  3 Apr 2010 16:44:07 -0300
-Message-Id: <1270323848-28094-1-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>
+Subject: [PATCH 1/1] perf newt: Add a " "Zoom into foo.so DSO" and reverse operations
+Date: Sat,  3 Apr 2010 16:44:08 -0300
+Message-Id: <1270323848-28094-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+In-Reply-To: <1270323848-28094-1-git-send-email-acme@infradead.org>
+References: <1270323848-28094-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,20 +30,245 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Hi Ingo,
+Clicking on -> will bring as one of the popup menu options a "Zoom into
+CURRENT DSO", i.e. CURRENT will be replaced by the name of the DSO in
+the current line.
 
-	Please consider pulling from the "perf" branch in:
+Choosing this option will filter out all samples that didn't took place
+in a symbol in this DSO.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6
+After that the option reverts to "Zoom out of CURRENT DSO", to allow
+going back to the more compreensive view, not filtered by DSO.
 
-Best Regards,
+Future similar operations will include zooming into a particular thread,
+COMM, CPU, "last minute", "last N usecs", etc.
 
-- Arnaldo
-
-Arnaldo Carvalho de Melo (1):
-  perf newt: Add a " "Zoom into foo.so DSO" and reverse operations
-
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
  tools/perf/util/newt.c |  119 +++++++++++++++++++++++++++++++++++------------
  tools/perf/util/sort.h |    3 +-
  2 files changed, 90 insertions(+), 32 deletions(-)
+
+diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
+index c93bc2a..bbf725d 100644
+--- a/tools/perf/util/newt.c
++++ b/tools/perf/util/newt.c
+@@ -94,7 +94,7 @@ static newtComponent newt_form__new(void)
+ 	return self;
+ }
+ 
+-static int popup_menu(int argc, const char *argv[])
++static int popup_menu(int argc, char * const argv[])
+ {
+ 	struct newtExitStruct es;
+ 	int i, rc = -1, max_len = 5;
+@@ -397,22 +397,8 @@ static struct hist_browser *hist_browser__new(void)
+ {
+ 	struct hist_browser *self = malloc(sizeof(*self));
+ 
+-	if (self != NULL) {
+-		char seq[] = ".";
+-		int rows;
+-
+-		newtGetScreenSize(NULL, &rows);
+-
+-		if (symbol_conf.use_callchain)
+-			self->tree = newtCheckboxTreeMulti(0, 0, rows - 5, seq,
+-							   NEWT_FLAG_SCROLL);
+-		else
+-			self->tree = newtListbox(0, 0, rows - 5,
+-						(NEWT_FLAG_SCROLL |
+-						 NEWT_FLAG_RETURNEXIT));
+-		newtComponentAddCallback(self->tree, hist_browser__selection,
+-					 &self->selection);
+-	}
++	if (self != NULL)
++		self->form = NULL;
+ 
+ 	return self;
+ }
+@@ -431,6 +417,30 @@ static int hist_browser__populate(struct hist_browser *self, struct rb_root *his
+ 	struct ui_progress *progress;
+ 	struct rb_node *nd;
+ 	u64 curr_hist = 0;
++	char seq[] = ".";
++	char str[256];
++
++	if (self->form) {
++		newtFormDestroy(self->form);
++		newtPopWindow();
++	}
++
++	snprintf(str, sizeof(str), "Samples: %Ld                            ",
++		 session_total);
++	newtDrawRootText(0, 0, str);
++
++	newtGetScreenSize(NULL, &rows);
++
++	if (symbol_conf.use_callchain)
++		self->tree = newtCheckboxTreeMulti(0, 0, rows - 5, seq,
++						   NEWT_FLAG_SCROLL);
++	else
++		self->tree = newtListbox(0, 0, rows - 5,
++					(NEWT_FLAG_SCROLL |
++					 NEWT_FLAG_RETURNEXIT));
++
++	newtComponentAddCallback(self->tree, hist_browser__selection,
++				 &self->selection);
+ 
+ 	progress = ui_progress__new("Adding entries to the browser...", nr_hists);
+ 	if (progress == NULL)
+@@ -439,7 +449,12 @@ static int hist_browser__populate(struct hist_browser *self, struct rb_root *his
+ 	idx = 0;
+ 	for (nd = rb_first(hists); nd; nd = rb_next(nd)) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		int len = hist_entry__append_browser(h, self->tree, session_total);
++		int len;
++
++		if (h->filtered)
++			continue;
++
++		len = hist_entry__append_browser(h, self->tree, session_total);
+ 		if (len > max_len)
+ 			max_len = len;
+ 		if (symbol_conf.use_callchain)
+@@ -463,6 +478,9 @@ static int hist_browser__populate(struct hist_browser *self, struct rb_root *his
+ 	newtCenteredWindow(max_len + (symbol_conf.use_callchain ? 5 : 0),
+ 			   rows - 5, "Report");
+ 	self->form = newt_form__new();
++	if (self->form == NULL)
++		return -1;
++
+ 	newtFormAddHotKey(self->form, 'A');
+ 	newtFormAddHotKey(self->form, 'a');
+ 	newtFormAddHotKey(self->form, NEWT_KEY_RIGHT);
+@@ -472,29 +490,50 @@ static int hist_browser__populate(struct hist_browser *self, struct rb_root *his
+ 	return 0;
+ }
+ 
++static u64 hists__filter_by_dso(struct rb_root *hists, struct dso *dso,
++				u64 *session_total)
++{
++	struct rb_node *nd;
++	u64 nr_hists = 0;
++
++	*session_total = 0;
++
++	for (nd = rb_first(hists); nd; nd = rb_next(nd)) {
++		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
++
++		if (dso != NULL && (h->ms.map == NULL || h->ms.map->dso != dso)) {
++			h->filtered = true;
++			continue;
++		}
++		h->filtered = false;
++		++nr_hists;
++		*session_total += h->count;
++	}
++
++	return nr_hists;
++}
++
+ int perf_session__browse_hists(struct rb_root *hists, u64 nr_hists,
+ 			       u64 session_total, const char *helpline,
+ 			       const char *input_name)
+ {
+ 	struct newtExitStruct es;
+-	char str[1024];
++	bool dso_filtered = false;
+ 	int err = -1;
+ 	struct hist_browser *browser = hist_browser__new();
+ 
+ 	if (browser == NULL)
+ 		return -1;
+ 
+-	snprintf(str, sizeof(str), "Samples: %Ld", session_total);
+-	newtDrawRootText(0, 0, str);
+ 	newtPushHelpLine(helpline);
+ 
+ 	if (hist_browser__populate(browser, hists, nr_hists, session_total) < 0)
+ 		goto out;
+ 
+ 	while (1) {
+-		char annotate[512];
+-		const char *options[2];
+-		int nr_options = 0, choice = 0;
++		char *options[16];
++		int nr_options = 0, choice = 0, i,
++		    annotate = -2, zoom_dso = -2;
+ 
+ 		newtFormRun(browser->form, &es);
+ 		if (es.reason == NEWT_EXIT_HOTKEY) {
+@@ -510,18 +549,29 @@ int perf_session__browse_hists(struct rb_root *hists, u64 nr_hists,
+ 			}
+ 		}
+ 
+-		if (browser->selection->sym != NULL) {
+-			snprintf(annotate, sizeof(annotate),
+-				 "Annotate %s", browser->selection->sym->name);
+-			options[nr_options++] = annotate;
+-		}
++		if (browser->selection->sym != NULL &&
++		    asprintf(&options[nr_options], "Annotate %s",
++			     browser->selection->sym->name) > 0)
++			annotate = nr_options++;
++
++		if (browser->selection->map != NULL &&
++		    asprintf(&options[nr_options], "Zoom %s %s DSO",
++			     dso_filtered ? "out of" : "into",
++			     (browser->selection->map->dso->kernel ? "the Kernel" :
++			      browser->selection->map->dso->short_name)) > 0)
++			zoom_dso = nr_options++;
++
++		options[nr_options++] = (char *)"Exit";
+ 
+-		options[nr_options++] = "Exit";
+ 		choice = popup_menu(nr_options, options);
++
++		for (i = 0; i < nr_options - 1; ++i)
++			free(options[i]);
++
+ 		if (choice == nr_options - 1)
+ 			break;
+ do_annotate:
+-		if (browser->selection->sym != NULL && choice >= 0) {
++		if (choice == annotate) {
+ 			if (browser->selection->map->dso->origin == DSO__ORIG_KERNEL) {
+ 				newtPopHelpLine();
+ 				newtPushHelpLine("No vmlinux file found, can't "
+@@ -531,6 +581,13 @@ do_annotate:
+ 			}
+ 			map_symbol__annotate_browser(browser->selection,
+ 						     input_name);
++		} if (choice == zoom_dso) {
++			hists__filter_by_dso(hists,
++					     dso_filtered ? NULL : browser->selection->map->dso,
++					     &session_total);
++			dso_filtered = !dso_filtered;
++			if (hist_browser__populate(browser, hists, nr_hists, session_total) < 0)
++				goto out;
+ 		}
+ 	}
+ 	err = 0;
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 5bf2b74..dce79d3 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -48,7 +48,8 @@ struct hist_entry {
+ 	struct map_symbol	ms;
+ 	u64			ip;
+ 	char			level;
+-	struct symbol	  *parent;
++	bool			filtered;
++	struct symbol		*parent;
+ 	union {
+ 		unsigned long	  position;
+ 		struct hist_entry *pair;
+-- 
+1.6.2.5
 
