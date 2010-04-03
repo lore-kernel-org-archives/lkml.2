@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576Ab0DCB3h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 21:29:37 -0400
-Received: from sous-sol.org ([216.99.217.87]:45701 "EHLO x200.localdomain"
+	id S1755372Ab0DCB31 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 21:29:27 -0400
+Received: from sous-sol.org ([216.99.217.87]:45705 "EHLO x200.localdomain"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754889Ab0DCB3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 21:29:00 -0400
-Message-Id: <20100403012814.543517900@sous-sol.org>
+	id S1755045Ab0DCB3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 21:29:02 -0400
+Message-Id: <20100403012820.229410717@sous-sol.org>
 User-Agent: quilt/0.47-1
-Date: Fri, 02 Apr 2010 18:27:52 -0700
+Date: Fri, 02 Apr 2010 18:27:54 -0700
 From: Chris Wright <chrisw@sous-sol.org>
 To: Joerg Roedel <joerg.roedel@amd.com>
 Cc: nhorman@tuxdriver.com, nhorman@redhat.com, vgoyal@redhat.com,
        hbabu@us.ibm.com, ebiederm@xmission.com,
        iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] x86/amd-iommu: enable iommu before attaching devices
+Subject: [PATCH 3/4] Revert "x86: disable IOMMUs on kernel crash"
 References: <20100403012751.834020949@sous-sol.org>
-Content-Disposition: inline; filename=amd-enable-iommu-earlier.patch
+Content-Disposition: inline; filename=crash-leave-iommu-enabled.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hit another kdump problem as reported by Neil Horman.  When initializaing
-the IOMMU, we attach devices to their domains before the IOMMU is
-fully (re)initialized.  Attaching a device will issue some important
-invalidations.  In the context of the newly kexec'd kdump kernel, the
-IOMMU may have stale cached data from the original kernel.  Because we
-do the attach too early, the invalidation commands are placed in the new
-command buffer before the IOMMU is updated w/ that buffer.  This leaves
-the stale entries in the kdump context and can renders device unusable.
-Simply enable the IOMMU before we do the attach.
+This effectively reverts commit 61d047be99757fd9b0af900d7abce9a13a337488.
 
+Disabling the IOMMU can potetially allow DMA transactions to
+complete without being translated.  Leave it enabled, and allow
+crash kernel to do the IOMMU reinitialization properly.
+
+Cc: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Eric Biederman <ebiederm@xmission.com>
 Cc: Neil Horman <nhorman@tuxdriver.com>
 Cc: Vivek Goyal <vgoyal@redhat.com>
 Signed-off-by: Chris Wright <chrisw@sous-sol.org>
 ---
- arch/x86/kernel/amd_iommu_init.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/kernel/crash.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
---- a/arch/x86/kernel/amd_iommu_init.c
-+++ b/arch/x86/kernel/amd_iommu_init.c
-@@ -1288,6 +1288,8 @@ static int __init amd_iommu_init(void)
- 	if (ret)
- 		goto free;
+--- a/arch/x86/kernel/crash.c
++++ b/arch/x86/kernel/crash.c
+@@ -27,7 +27,6 @@
+ #include <asm/cpu.h>
+ #include <asm/reboot.h>
+ #include <asm/virtext.h>
+-#include <asm/x86_init.h>
  
-+	enable_iommus();
-+
- 	if (iommu_pass_through)
- 		ret = amd_iommu_init_passthrough();
- 	else
-@@ -1300,8 +1302,6 @@ static int __init amd_iommu_init(void)
+ #if defined(CONFIG_SMP) && defined(CONFIG_X86_LOCAL_APIC)
  
- 	amd_iommu_init_notifier();
- 
--	enable_iommus();
+@@ -103,10 +102,5 @@ void native_machine_crash_shutdown(struc
+ #ifdef CONFIG_HPET_TIMER
+ 	hpet_disable();
+ #endif
 -
- 	if (iommu_pass_through)
- 		goto out;
- 
-@@ -1315,6 +1315,7 @@ out:
- 	return ret;
- 
- free:
-+	disable_iommus();
- 
- 	amd_iommu_uninit_devices();
- 
+-#ifdef CONFIG_X86_64
+-	x86_platform.iommu_shutdown();
+-#endif
+-
+ 	crash_save_cpu(regs, safe_smp_processor_id());
+ }
 
