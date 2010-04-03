@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532Ab0DCAHU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Apr 2010 20:07:20 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:48579 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751387Ab0DCAHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Apr 2010 20:07:18 -0400
-Date: Sat, 3 Apr 2010 11:07:06 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Tejun Heo <tj@kernel.org>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/17] mfd: update gfp/slab.h includes
-Message-Id: <20100403110706.e7557a4c.sfr@canb.auug.org.au>
-In-Reply-To: <20100402162546.GL8010@sortiz.org>
-References: <1269885165-18617-1-git-send-email-tj@kernel.org>
-	<1269885165-18617-13-git-send-email-tj@kernel.org>
-	<20100402101159.GC8010@sortiz.org>
-	<20100402160855.GA15928@rakim.wolfsonmicro.main>
-	<20100402162546.GL8010@sortiz.org>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sat__3_Apr_2010_11_07_06_+1100_j4l3Xg2=pGxASHft"
+	id S1753420Ab0DCAYT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Apr 2010 20:24:19 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48158 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751565Ab0DCAYP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Apr 2010 20:24:15 -0400
+Date: Fri, 2 Apr 2010 17:19:34 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Borislav Petkov <bp@alien8.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Minchan Kim <minchan.kim@gmail.com>, Nick Piggin <npiggin@suse.de>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
+ 2.6.34-rc3)
+In-Reply-To: <4BB66941.1060809@redhat.com>
+Message-ID: <alpine.LFD.2.00.1004021705420.3634@i5.linux-foundation.org>
+References: <alpine.LFD.2.00.1003301029250.3707@i5.linux-foundation.org> <20100402175937.GA19690@liondog.tnic> <alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org> <20100402112428.f46ddc44.akpm@linux-foundation.org> <alpine.LFD.2.00.1004021135530.3634@i5.linux-foundation.org>
+ <4BB66941.1060809@redhat.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__3_Apr_2010_11_07_06_+1100_j4l3Xg2=pGxASHft
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Samuel, Mark,
 
-On Fri, 2 Apr 2010 18:25:47 +0200 Samuel Ortiz <sameo@linux.intel.com> wrot=
-e:
->
-> On Fri, Apr 02, 2010 at 05:08:55PM +0100, Mark Brown wrote:
-> > On Fri, Apr 02, 2010 at 12:12:00PM +0200, Samuel Ortiz wrote:
-> > > Hi Tejun,
-> > >=20
-> > > On Tue, Mar 30, 2010 at 02:52:40AM +0900, Tejun Heo wrote:
-> > > > Implicit slab.h inclusion via percpu.h is about to go away.  Make s=
-ure
-> > > > gfp.h or slab.h is included as necessary.
-> > > The davinci MFD driver is sitting in Mark's tree, so I guess he shoul=
-d take
-> > > this patch.
-> > > Mark, feel free to add my:
-> > > Acked-by: Samuel Ortiz <sameo@linux.intel.com>
-> >=20
-> > > to this patch.
-> >=20
-> > Unfortunately drivers/gpio/rdc321x-gpio.c isn't in mainline yet so the
-> > patch doesn't apply cleanly to ASoC either.  I've applied the DaVinci
-> > hunk, the other will need to go via your tree.
-> Thanks, I'm pushing the rdc321x part.
+On Fri, 2 Apr 2010, Rik van Riel wrote:
+> 
+> Interesting that it is a null pointer dereference, given
+> that we do not zero out the anon_vma_chain structs before
+> freeing them.
+> 
+> Page_referenced_anon() takes the anon_vma->lock before
+> walking the list.  The three places where we modify the
+> anon_vma_chain->same_anon_vma list, we also hold the
+> lock.
 
-Thanks, guys.
+So let's look at the individual anon_vma_chain entries instead.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+What is the protection of the 'vma->anon_vma_chain' list? In 
+anon_vma_prepare(), the code implies that it is the page_table_lock, but 
+what about anon_vma_clone()? If I'm reading it correctly, it is some odd 
+mix of "mmap_sem held for writing" or "mmap_sem held for reading _and_ 
+page_table_lock". And then we have the exit case that apparently has no 
+locking at all, but that should hopefully be single-threaded.
 
---Signature=_Sat__3_Apr_2010_11_07_06_+1100_j4l3Xg2=pGxASHft
-Content-Type: application/pgp-signature
+That thing is subtle. A few more comments about the locking would be good, 
+so that people like me wouldn't have to try to guess the rules from 
+reading the source.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+> There has to be a reason why a very heavy AIM7 workload
+> and some other stress tests did not trigger it, but a few
+> people are able to trigger it on their systems...
 
-iEYEARECAAYFAku2hqoACgkQjjKRsyhoI8wrqQCcDF+EPz8LwAMybABld8uDPcr/
-2CQAoKUxtfo0rg4dodh+X3WFCW/+6ksV
-=tACF
------END PGP SIGNATURE-----
+I don't think AIM7 is at all a very interesting workload, and not likely 
+to stress anything at all. Did your AIM7 test actually cause heavy 
+swapping? I doubt it. 
 
---Signature=_Sat__3_Apr_2010_11_07_06_+1100_j4l3Xg2=pGxASHft--
+Page swapout is where a lot of the magic happens, since that happens 
+without mmap_sem held etc. 
+
+			Linus
