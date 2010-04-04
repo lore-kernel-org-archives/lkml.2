@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab0DDS67 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 14:58:59 -0400
-Received: from old-tantale.fifi.org ([64.81.30.200]:33624 "EHLO
-	old-tantale.fifi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883Ab0DDS6x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 14:58:53 -0400
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>,
-       Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-       linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: webcam problem after suspend/hibernate
-References: <45cc95261003301455u10e6ee24pfb66176bfb279d1@mail.gmail.com>
-	<201003310125.26266.laurent.pinchart@ideasonboard.com>
-	<v2x45cc95261003311251idfdc9b8anb7b2060618611d30@mail.gmail.com>
-	<20100401165606.GA1677@ucw.cz> <87aatn9k7j.fsf@old-tantale.fifi.org>
-	<20100404132223.GA1346@ucw.cz>
-From: Philippe Troin <phil@fifi.org>
-Date: 04 Apr 2010 11:58:50 -0700
-In-Reply-To: <20100404132223.GA1346@ucw.cz>
-Message-ID: <87ljd3ujrp.fsf@old-tantale.fifi.org>
-User-Agent: Gnus/5.09 (Gnus v5.9.0) Emacs/21.2
+	id S1753079Ab0DDTCc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 15:02:32 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:44160 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750883Ab0DDTC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Apr 2010 15:02:27 -0400
+Date: Sun, 4 Apr 2010 21:02:11 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Arnd Bergmann <arnd@arndb.de>, Stephane Eranian <eranian@google.com>
+Subject: Re: [GIT PULL] perf updates
+Message-ID: <20100404190211.GA4564@elte.hu>
+References: <1270391804-6552-1-git-send-regression-fweisbec@gmail.com>
+ <20100404144223.GB5608@nowhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100404144223.GB5608@nowhere>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pavel Machek <pavel@ucw.cz> writes:
 
-> Hi!
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> On Sun, Apr 04, 2010 at 04:36:40PM +0200, Frederic Weisbecker wrote:
+> > Ingo,
+> > 
+> > Please pull the perf/core branch that can be found at:
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> > 	perf/core
+> > 
+> > Thanks,
+> > 	Frederic
+> > ---
+> > 
+> > Frederic Weisbecker (2):
+> >       perf: Drop the frame reliablity check
+> >       perf: Fetch hot regs from the template caller
+> > 
+> > Arnd Bergmann (1):
+> >       perf_event: Make perf fd non seekable
+> > 
+> > Hitoshi Mitake (1):
+> >       Swap inclusion order of util.h and string.h in util/string.c
 > 
-> > > > Do you mean the dmesg output ?
-> > > > A full dmesg is included in this address :
-> > > > http://pastebin.com/8XU619Uk
-> > > > Not in all suspend/hibernate the problem comes, only in some of them
-> > > > and this included dmesg output is just after a non working case of
-> > > > webcam fault.
-> > > > 
-> > > > 
-> > > > I also have found this in `/var/log/messages | grep uvcvideo`
-> > > > Mar 31 00:31:16 linux-l365 kernel: [399905.714743] usbcore:
-> > > > deregistering interface driver uvcvideo
-> > > > Mar 31 00:31:24 linux-l365 kernel: [399914.121386] uvcvideo: Found UVC
-> > > > 1.00 device LG Webcam (0c45:62c0)
-> > > > Mar 31 00:31:24 linux-l365 kernel: [399914.135661] usbcore: registered
-> > > > new interface driver uvcvideo
-> > > 
-> > > Also try unloading uvcvideo before suspend and reloading it after
-> > > resume...
-> > 
-> > I have a similar problem with a Creative Optia webcam.
-> > 
-> > I have found that removing the ehci_hcd module and reinserting it
-> > fixes the problem.
-> > 
-> > If your kernel ships with ehci_hcd built-in (F11 and later), the
-> > script included also fixes the problem (it rebind the device).
-> > 
-> > Of course, I'd love to see this issue fixed.
 > 
-> If unload/reload of uvcvideo helps, it is most likely problem in that.
+> I just did a last minute rebase, just to prepend the title of this
+> one with "perf: "
 > 
-> If unload/reload of ehci_hcd is needed, it is most likely ehci problem.
+> 
+> > 
+> > 
+> >  arch/x86/kernel/cpu/perf_event.c |    3 +--
+> >  include/trace/ftrace.h           |   23 ++++++++++++-----------
+> >  kernel/perf_event.c              |    1 +
+> >  tools/perf/util/string.c         |    2 +-
+> >  4 files changed, 15 insertions(+), 14 deletions(-)
 
-My testing shows that:
+Pulled, thanks a lot Frederic!
 
- 1. If I remove uvcvideo BEFORE suspend and reinsert it after resume,
-    it works.  However, I cannot always rmmod uvcvideo before suspend
-    as it may be in use.
-
- 2. As a work around, removing ehci_hcd and reinserting ehci_hcd upon
-    resume works as well.
-
- 3. Since my distribution's kernels come with ehci_hcd built into the
-    kernel, and I cannot do #2 any more, I also found that unbinding
-    and rebinding the device (with the script I sent earlier on) works
-    as well.
-
-I think uvcvideo is failing to reinitialize the camera on resume, and
-forcing an uvcvideo "reset" with either of these three methods kicks
-uvcvideo into working again.
-
-Phil.
+	Ingo
