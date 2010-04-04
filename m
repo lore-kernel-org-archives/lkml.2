@@ -1,75 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab0DDPRp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 11:17:45 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:54187 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754662Ab0DDPRi (ORCPT
+	id S1754856Ab0DDQNM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 12:13:12 -0400
+Received: from qw-out-2122.google.com ([74.125.92.24]:12938 "EHLO
+	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754773Ab0DDQNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 11:17:38 -0400
-Date: Sun, 4 Apr 2010 11:17:37 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Dominik Brodowski <linux@dominikbrodowski.net>
-cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       Dmitry Torokhov <dtor@mail.ru>
-Subject: Re: A few questions and issues with dynticks, NOHZ and powertop
-In-Reply-To: <20100403223328.GA4507@comet.dominikbrodowski.net>
-Message-ID: <Pine.LNX.4.44L0.1004041110010.2750-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 4 Apr 2010 12:13:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=B2+EIm6IywyCFg4WZvKjetGedkUoIHwnK+08knsk2XIcmxHg2eXlHoT0X52Wd1fgw0
+         8tgZXNigxfk6x/u+9e1Ttb5rRK5KHds4eFiBS8dH7RFzL/piXzqhFlrassTbDT1yHdDF
+         SPaZFXfIWP2lSpEtPZrTn40tWiaqzVgCQ7+OE=
+Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
+ 2.6.34-rc3)
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Borislav Petkov <bp@alien8.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+In-Reply-To: <4BB66941.1060809@redhat.com>
+References: <alpine.LFD.2.00.1003301029250.3707@i5.linux-foundation.org>
+	 <20100402175937.GA19690@liondog.tnic>
+	 <alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org>
+	 <20100402112428.f46ddc44.akpm@linux-foundation.org>
+	 <alpine.LFD.2.00.1004021135530.3634@i5.linux-foundation.org>
+	 <4BB66941.1060809@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Apr 2010 01:12:55 +0900
+Message-ID: <1270397575.1814.106.camel@barrios-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 4 Apr 2010, Dominik Brodowski wrote:
+Hi, Rik. 
 
-> Booting a SMP-capable kernel with "nosmp", or manually offlining one CPU
-> (or -- though I haven't tested it -- booting a SMP-capable kernel on a
-> system with merely one CPU) means that in up to about half of the calls to
-> tick_nohz_stop_sched_tick() are aborted due to rcu_needs_cpu(). This is
-> quite strange to me: AFAIK, RCU is an excellent tool for SMP, but not really
-> needed for UP?
-
-I can't answer the real question here, not knowing enough about the RCU
-implementation.  However, your impression is wrong: RCU very definitely
-_is_ useful and needed on UP systems.  It coordinates among processes
-(and interrupt handlers) as well as among processors.
-
-
-> 3) USB: built-in UHCI and a built-in 0a5c:2101 Broadcom Corp. A-Link
-> BlueUsbA2 Bluetooth module; built-in EHCI and a built-in 0ac8:c302 Z-Star
-> Microelectronics Corp. Vega USB 2.0 Camera.
+On Fri, 2010-04-02 at 18:01 -0400, Rik van Riel wrote:
+> On 04/02/2010 02:37 PM, Linus Torvalds wrote:
+> > On Fri, 2 Apr 2010, Andrew Morton wrote:
+> >> On Fri, 2 Apr 2010 11:09:14 -0700 (PDT) Linus Torvalds<torvalds@linux-foundation.org>  wrote:
+> >>
+> >>>
+> >>> I think this is likely due to the new scalable anon_vma linking by Rik.
+> >>
+> >> Similar to https://bugzilla.kernel.org/show_bug.cgi?id=15680
+> >
+> > Yup, looks like the same thing, except that bugzilla entry was due to
+> > swapping rather than hibernation and memory shrinking. But same end
+> > result, just different reasons for why we were trying to shrink the page
+> > lists.
 > 
-> usbcore.autosuspend is enabled (= 2), of course.
+> Interesting that it is a null pointer dereference, given
+> that we do not zero out the anon_vma_chain structs before
+> freeing them.
 > 
-> Recent USB suspend statistics
-> Active  Device name
-> 100.0%	USB device  7-1 : BCM92045NMD (Broadcom Corp)
-> 100.0%	USB device  1-2 : Vega USB 2.0 Camera. (Vimicro Corp.)
-> 100.0%	USB device usb7 : UHCI Host Controller (Linux 2.6.34-rc3 uhci_hcd)
-> 100.0%	USB device usb1 : EHCI Host Controller (Linux 2.6.34-rc3 ehci_hcd)
+> Page_referenced_anon() takes the anon_vma->lock before
+> walking the list.  The three places where we modify the
+> anon_vma_chain->same_anon_vma list, we also hold the
+> lock.
 > 
-> Booting into /bin/bash on a SMP kernel booted with "nosmp" leads to ~ 10
-> wakeups per second; disabling the cursor helps halfway (~ 5 wakeups); and
-> manually unbinding the USB host drivers from the USB host devices finally
-> lead to ~ 1.1 wakeups per second. What's keeping USB from suspending these
-> unused devices here?
+> No doubt something in mm/ is doing something silly, but
+> I have not found anything yet :(
+> 
+> If I had to guess, I'd say maybe we got one of the
+> mprotect & vma_adjust cases wrong.  Maybe a page stayed
+> around in the LRU (and in a process?) after its anon_vma
+> already got freed?
 
-Either the drivers don't support autosuspend or the devices aren't
-enabled for autosuspend.  By default, autosuspend is disabled for
-(almost) all non-hub devices.  You or your distribution must enable
-it manually by doing:
+While I review the code again due to this BUG, I found some strange
+thing. 
 
-	echo auto >/sys/bus/usb/devices/.../power/level
+In anon_vma_fork, if anon_vma_clone is successful but anon_vma_alloc is
+failed, what happens? Parent VMA's anon_vmas have anon_vma_chain which
+has vma which is destroyed. 
+I couldn't find any clean routine to remove this garbage. 
+I am missing something?
 
-If the driver doesn't support autosuspend then enabling it won't be
-enough; you'll also have to unbind the driver from the device.  The
-easiest way to do this is to unconfigure the device:
+But I think it isn't related to this bug because oops point is not
+vma_address but anon_vma_chain.next.
 
-	echo 0 >/sys/bus/usb/devices/.../bConfigurationValue
 
-Alan Stern
+
+-- 
+Kind regards,
+Minchan Kim
+
 
