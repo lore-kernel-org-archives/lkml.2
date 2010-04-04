@@ -1,150 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab0DDX0v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 19:26:51 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:51113 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751364Ab0DDX0p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 19:26:45 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=BGqHIll9/n5Ko34dAEWAdtipzf49zHgemPiEesAD9bRw0KC3JJzvjrR2L4UtDImfq
-	3YFxVEJwbguqapSGA5fug==
-Date: Sun, 4 Apr 2010 16:26:38 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Mel Gorman <mel@csn.ul.ie>
-cc: Oleg Nesterov <oleg@redhat.com>, anfei <anfei.zhou@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       nishimura@mxp.nes.nec.co.jp,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] oom killer: break from infinite loop
-In-Reply-To: <20100402101711.GC12886@csn.ul.ie>
-Message-ID: <alpine.DEB.2.00.1004041616280.7198@chino.kir.corp.google.com>
-References: <1269447905-5939-1-git-send-email-anfei.zhou@gmail.com> <20100326150805.f5853d1c.akpm@linux-foundation.org> <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com>
- <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100402101711.GC12886@csn.ul.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752396Ab0DDXhN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 19:37:13 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:42291 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751384Ab0DDXhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Apr 2010 19:37:06 -0400
+Date: Sun, 4 Apr 2010 16:37:02 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dominik Brodowski <linux@dominikbrodowski.net>,
+       Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Arjan van de Ven <arjan@linux.intel.com>,
+       Dmitry Torokhov <dtor@mail.ru>
+Subject: Re: A few questions and issues with dynticks, NOHZ and powertop
+Message-ID: <20100404233702.GA24102@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100403223328.GA4507@comet.dominikbrodowski.net>
+ <Pine.LNX.4.44L0.1004041110010.2750-100000@netrider.rowland.org>
+ <20100404163924.GA18428@comet.dominikbrodowski.net>
+ <20100404204725.GC2644@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100404204725.GC2644@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Apr 2010, Mel Gorman wrote:
+On Sun, Apr 04, 2010 at 01:47:25PM -0700, Paul E. McKenney wrote:
+> On Sun, Apr 04, 2010 at 06:39:24PM +0200, Dominik Brodowski wrote:
+> > On Sun, Apr 04, 2010 at 11:17:37AM -0400, Alan Stern wrote:
+> > > On Sun, 4 Apr 2010, Dominik Brodowski wrote:
+> > > 
+> > > > Booting a SMP-capable kernel with "nosmp", or manually offlining one CPU
+> > > > (or -- though I haven't tested it -- booting a SMP-capable kernel on a
+> > > > system with merely one CPU) means that in up to about half of the calls to
+> > > > tick_nohz_stop_sched_tick() are aborted due to rcu_needs_cpu(). This is
+> > > > quite strange to me: AFAIK, RCU is an excellent tool for SMP, but not really
+> > > > needed for UP?
+> > > 
+> > > I can't answer the real question here, not knowing enough about the RCU
+> > > implementation.  However, your impression is wrong: RCU very definitely
+> > > _is_ useful and needed on UP systems.  It coordinates among processes
+> > > (and interrupt handlers) as well as among processors.
+> > 
+> > Okay, but still: can't this be sped up by much on UP (especially if
+> > CONFIG_RCU_FAST_NO_HZ is set), so that we can go to sleep right away?
+> 
+> One situation that will prevent CONFIG_RCU_FAST_NO_HZ from putting the
+> machine to sleep right away is if there is an RCU callback posted that
+> spawns another RCU callback, and so on.  CONFIG_RCU_FAST_NO_HZ will handle
+> one callback that spawns another, but it gives up if the second callback
+> spawns a third.
+> 
+> Might this be what is happening to you?
+> 
+> If so, would you be willing to patch your kernel?  RCU_NEEDS_CPU_FLUSHES
+> is currently set to 5, and might be set to (say) 8.  This is defined
+> in kernel/rcutree_plugin.h, near line 990.
+> 
+> Another thing to try would be running with TINY_RCU, at least if it is
+> OK that RCU be non-preemptible.
 
-> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > --- a/mm/page_alloc.c
-> > +++ b/mm/page_alloc.c
-> > @@ -1610,13 +1610,21 @@ try_next_zone:
-> >  }
-> >  
-> >  static inline int
-> > -should_alloc_retry(gfp_t gfp_mask, unsigned int order,
-> > +should_alloc_retry(struct task_struct *p, gfp_t gfp_mask, unsigned int order,
-> >  				unsigned long pages_reclaimed)
-> >  {
-> >  	/* Do not loop if specifically requested */
-> >  	if (gfp_mask & __GFP_NORETRY)
-> >  		return 0;
-> >  
-> > +	/* Loop if specifically requested */
-> > +	if (gfp_mask & __GFP_NOFAIL)
-> > +		return 1;
-> > +
-> 
-> Meh, you could have preserved the comment but no biggie.
-> 
+And you did mention offlining some CPUs above.  The folloiwng patch
+(from Lai Jiangshan) is needed to handle this case.
 
-I'll remember to preserve it when it's proposed.
+							Thanx, Paul
 
-> > +	/* Task is killed, fail the allocation if possible */
-> > +	if (fatal_signal_pending(p))
-> > +		return 0;
-> > +
-> 
-> Seems reasonable. This will be checked on every major loop in the
-> allocator slow patch.
-> 
-> >  	/*
-> >  	 * In this implementation, order <= PAGE_ALLOC_COSTLY_ORDER
-> >  	 * means __GFP_NOFAIL, but that may not be true in other
-> > @@ -1635,13 +1643,6 @@ should_alloc_retry(gfp_t gfp_mask, unsigned int order,
-> >  	if (gfp_mask & __GFP_REPEAT && pages_reclaimed < (1 << order))
-> >  		return 1;
-> >  
-> > -	/*
-> > -	 * Don't let big-order allocations loop unless the caller
-> > -	 * explicitly requests that.
-> > -	 */
-> > -	if (gfp_mask & __GFP_NOFAIL)
-> > -		return 1;
-> > -
-> >  	return 0;
-> >  }
-> >  
-> > @@ -1798,6 +1799,7 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
-> >  	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
-> >  		if (!in_interrupt() &&
-> >  		    ((p->flags & PF_MEMALLOC) ||
-> > +		     (fatal_signal_pending(p) && (gfp_mask & __GFP_NOFAIL)) ||
-> 
-> This is a lot less clear. GFP_NOFAIL is rare so this is basically saying
-> that all threads with a fatal signal pending can ignore watermarks. This
-> is dangerous because if 1000 threads get killed, there is a possibility
-> of deadlocking the system.
-> 
+------------------------------------------------------------------------
 
-I don't quite understand the comment, this is only for __GFP_NOFAIL 
-allocations, which you say are rare, so a large number of threads won't be 
-doing this simultaneously.
+commit 6a2ae79877827355b747c0b91133a963b74ed396
+Author: Lai Jiangshan <laijs@cn.fujitsu.com>
+Date:   Tue Mar 30 18:40:36 2010 +0800
 
-> Why not obey the watermarks and just not retry the loop later and fail
-> the allocation?
-> 
+    rcu: ignore offline CPUs in last non-dyntick-idle CPU check
+    
+    Offline CPUs are not in nohz_cpu_mask, but can be ignored when checking
+    for the last non-dyntick-idle CPU.  This patch therefore only checks
+    online CPUs for not being dyntick idle, allowing fast entry into
+    full-system dyntick-idle state even when there are some offline CPUs.
+    
+    Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-The above check for (fatal_signal_pending(p) && (gfp_mask & __GFP_NOFAIL)) 
-essentially oom kills p without invoking the oom killer before direct 
-reclaim is invoked.  We know it has a pending SIGKILL and wants to exit, 
-so we allow it to allocate beyond the min watermark to avoid costly 
-reclaim or needlessly killing another task.
-
-> >  		     unlikely(test_thread_flag(TIF_MEMDIE))))
-> >  			alloc_flags |= ALLOC_NO_WATERMARKS;
-> >  	}
-> > @@ -1812,6 +1814,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
-> >  	int migratetype)
-> >  {
-> >  	const gfp_t wait = gfp_mask & __GFP_WAIT;
-> > +	const gfp_t nofail = gfp_mask & __GFP_NOFAIL;
-> >  	struct page *page = NULL;
-> >  	int alloc_flags;
-> >  	unsigned long pages_reclaimed = 0;
-> > @@ -1876,7 +1879,7 @@ rebalance:
-> >  		goto nopage;
-> >  
-> >  	/* Avoid allocations with no watermarks from looping endlessly */
-> > -	if (test_thread_flag(TIF_MEMDIE) && !(gfp_mask & __GFP_NOFAIL))
-> > +	if (test_thread_flag(TIF_MEMDIE) && !nofail)
-> >  		goto nopage;
-> >  
-> >  	/* Try direct reclaim and then allocating */
-> > @@ -1888,6 +1891,10 @@ rebalance:
-> >  	if (page)
-> >  		goto got_pg;
-> >  
-> > +	/* Task is killed, fail the allocation if possible */
-> > +	if (fatal_signal_pending(p) && !nofail)
-> > +		goto nopage;
-> > +
-> 
-> Again, I would expect this to be caught by should_alloc_retry().
-> 
-
-It is, but only after the oom killer is called.  We don't want to 
-needlessly kill another task here when p has already been killed but may 
-not be PF_EXITING yet.
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 79b53bd..687c4e9 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -1016,7 +1016,7 @@ int rcu_needs_cpu(int cpu)
+ 
+ 	/* Don't bother unless we are the last non-dyntick-idle CPU. */
+ 	for_each_cpu_not(thatcpu, nohz_cpu_mask)
+-		if (thatcpu != cpu) {
++		if (cpu_online(thatcpu) && thatcpu != cpu) {
+ 			per_cpu(rcu_dyntick_drain, cpu) = 0;
+ 			per_cpu(rcu_dyntick_holdoff, cpu) = jiffies - 1;
+ 			return rcu_needs_cpu_quick_check(cpu);
