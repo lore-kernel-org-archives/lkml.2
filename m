@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab0DDBqB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Apr 2010 21:46:01 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:42739 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191Ab0DDBpz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Apr 2010 21:45:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=JrydMj1AM8mn43UrnWTPTyU5lGyhVf9VBiLp4A5s6z9YoaRdt4M0MOHA1sb+7wGIFb
-         QU8SLcLWkHFTMKDE8vBFbfPAx+8IVRg6gKVEo2dmezR1hb8ta0V5nxtdnnuGikfFgpm7
-         9e68+5wtZ4LINcCqIaqkiv2C4Kvmd7F+/q03s=
+	id S1755784Ab0DDBuy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Apr 2010 21:50:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2656 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755078Ab0DDBur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Apr 2010 21:50:47 -0400
+Message-ID: <4BB7F05A.6010102@redhat.com>
+Date: Sat, 03 Apr 2010 21:50:18 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
 MIME-Version: 1.0
-In-Reply-To: <201004040312.28481.sven.eckelmann@gmx.de>
-References: <1270341625-28764-1-git-send-email-luisbg@ubuntu.com>
-	 <201004040312.28481.sven.eckelmann@gmx.de>
-Date: Sun, 4 Apr 2010 02:45:52 +0100
-X-Google-Sender-Auth: a97f9102cfadccf9
-Message-ID: <p2x506b70dc1004031845p81705070o325d93f839c80e9a@mail.gmail.com>
-Subject: Re: [PATCH 4/4] Staging: batman-adv: fix whitespace style issues
-From: Luis de Bethencourt <luisbg@ubuntu.com>
-To: Sven Eckelmann <sven.eckelmann@gmx.de>
-Cc: devel@driverdev.osuosl.org, gregkh@suse.de, linux-kernel@vger.kernel.org,
-       b.a.t.m.a.n@lists.open-mesh.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: rostedt@goodmis.org
+CC: Darren Hart <dvhltc@us.ibm.com>, "lkml," <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Peter Morreale <pmorreale@novell.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       john cooper <john.cooper@third-harmonic.com>
+Subject: Re: RFC: Ideal Adaptive Spinning Conditions
+References: <4BB3D90C.3030108@us.ibm.com>	 <1270078689.19685.8040.camel@gandalf.stny.rr.com>	 <4BB40140.20109@us.ibm.com> <1270088753.19685.8218.camel@gandalf.stny.rr.com>
+In-Reply-To: <1270088753.19685.8218.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 4, 2010 at 2:12 AM, Sven Eckelmann <sven.eckelmann@gmx.de> wrote:
-> Luis de Bethencourt wrote:
->> This patch fixes the 32 unnecessary whitespaces before a quoted
->> newline that the batman-adv files had.
+On 03/31/2010 10:25 PM, Steven Rostedt wrote:
+> On Wed, 2010-03-31 at 19:13 -0700, Darren Hart wrote:
+>> Steven Rostedt wrote:
+>>> On Wed, 2010-03-31 at 16:21 -0700, Darren Hart wrote:
+>>>
+>>>> o What type of lock hold times do we expect to benefit?
+>>>
+>>> 0 (that's a zero) :-p
+>>>
+>>> I haven't seen your patches but you are not doing a heuristic approach,
+>>> are you? That is, do not "spin" hoping the lock will suddenly become
+>>> free. I was against that for -rt and I would be against that for futex
+>>> too.
+>>
+>> I'm not sure what you're getting at here. Adaptive spinning is indeed
+>> hoping the lock will become free while you are spinning and checking
+>> it's owner...
 >
-> Thanks.
->
-> Your patch conflicts with patches waiting to be applied by Greg KH. I will
-> redo your changes for the current and development version and submit them to
-> the b.a.t.m.a.n. mailing list for further discussion. Is that ok for you?
->
-> Best regards,
->        Sven Eckelmann
->
+> I'm talking about the original idea people had of "lets spin for 50us
+> and hope it is unlocked before then", which I thought was not a good
+> idea.
 
-Sven,
+Maybe not a good idea when running on bare metal, but it
+could be a big help when running virtualized.
 
-Sorry about the conflict, thanks for redoing the changes. Where can I
-find the current and development branches? I want to avoid doing this
-mistake again in the future. Specially since I'm planning on doing
-some janitorial work on Staging for a while if it's OK with you guys.
-I see it as nice experience and practice while learning and getting
-ready for more valuable contributions :)
+A lock with a short hold time can, occasionally, have a
+very long hold time, when the VCPU holding the lock is
+preempted by the host/hypervisor.
 
-Cheers,
-Luis de Bethencourt
+An adaptive lock would spin-and-acquire if the lock holder
+is running, while turning into a sleep lock when the lock
+holder has been preempted.
+
