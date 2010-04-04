@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab0DDKTc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 06:19:32 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45255 "EHLO mx1.suse.de"
+	id S1753603Ab0DDKWg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 06:22:36 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45288 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753222Ab0DDKTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 06:19:25 -0400
-Date: Sun, 04 Apr 2010 12:19:24 +0200
-Message-ID: <s5hr5mvh64z.wl%tiwai@suse.de>
+	id S1753170Ab0DDKWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Apr 2010 06:22:30 -0400
+Date: Sun, 04 Apr 2010 12:22:29 +0200
+Message-ID: <s5hochzh5zu.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Harald Dunkel <harri@afaics.de>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.33.1 regression: sound splutters
-In-Reply-To: <4BB4CE36.7020807@afaics.de>
-References: <4BB1E34B.5030207@darkharri.de>
-	<s5hhbnx1xen.wl%tiwai@suse.de>
-	<4BB467AD.7070001@afaics.de>
-	<s5h1veza4vt.wl%tiwai@suse.de>
-	<4BB4B32C.8080501@afaics.de>
-	<s5haatn8bej.wl%tiwai@suse.de>
-	<4BB4CE36.7020807@afaics.de>
+To: Julia Lawall <julia@diku.dk>
+Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 3/3] sound/pci: Eliminate use after free
+In-Reply-To: <Pine.LNX.4.64.1004021447390.17695@ask.diku.dk>
+References: <Pine.LNX.4.64.1004021447390.17695@ask.diku.dk>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -29,19 +24,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu, 01 Apr 2010 18:47:50 +0200,
-Harald Dunkel wrote:
+At Fri, 2 Apr 2010 14:47:59 +0200 (CEST),
+Julia Lawall wrote:
 > 
-> On 04/01/10 17:01, Takashi Iwai wrote:
-> > 
-> > Could you tell more details about your machine, which vendor, product
-> > name etc to fill there?  Then I'll commit the fix to the upstream.
-> > 
+> From: Julia Lawall <julia@diku.dk>
 > 
-> The PC is a (pretty old) Aopen MZ915-M, made in 2006, AFAIR. See
-> the specs on http://global.aopen.com/products_detail.aspx?Auno=2170 .
+> Use the call to snd_card_free in the error handling code at the end of the
+> function, as in the other error cases.
+> 
+> A simplified version of the semantic patch that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression E,E2;
+> @@
+> 
+> snd_card_free(E)
+> ...
+> (
+>   E = E2
+> |
+> * E
+> )
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Thanks.  I added the device to the quirk list now.
+Applied now.  Thanks.
 
 
 Takashi
