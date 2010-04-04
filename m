@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750977Ab0DDEGU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 00:06:20 -0400
-Received: from cantor.suse.de ([195.135.220.2]:40008 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750720Ab0DDEGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 00:06:13 -0400
-Date: Sat, 3 Apr 2010 21:06:41 -0700
-From: Greg KH <gregkh@suse.de>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Larry Finger <Larry.Finger@lwfinger.net>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: Linux 2.6.34-rc3
-Message-ID: <20100404040641.GA10542@suse.de>
-References: <4BB24E5F.3030703@lwfinger.net> <alpine.LFD.2.00.1004032032160.3634@i5.linux-foundation.org> <20100404035438.GB12800@pengutronix.de>
+	id S1751073Ab0DDEV7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 00:21:59 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56247 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720Ab0DDEVz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Apr 2010 00:21:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:content-type:content-transfer-encoding;
+        b=MNvGtbX/YzXZtrx+1FgDtSVfab/Ees7kft+sBlEI3FI0nFPbgzRvSQlVs6TSHNhXnA
+         SZ6CjgdYKquja1WL220jZp2kvRUlC26e44mbccEy7rGzB4sNpWy6qU1k7kD4uyA25oaZ
+         SxKNf3bniGiKrjgruH0Kg8Cqp1VJNfNjGcPXA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100404035438.GB12800@pengutronix.de>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Date: Sun, 4 Apr 2010 12:21:54 +0800
+X-Google-Sender-Auth: 4450130945436131
+Message-ID: <m2mc58e39921004032121hc7ca41f0gacd90ffe2abc6444@mail.gmail.com>
+Subject: Can we remove the Zone_DMA?
+From: tek-life <teklife.kernel@gmail.com>
+To: linux-kernel@vger.kernel.org, ebiederm@xmission.com
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 04, 2010 at 05:54:38AM +0200, Wolfram Sang wrote:
-> On Sat, Apr 03, 2010 at 08:39:10PM -0700, Linus Torvalds wrote:
-> 
-> > requirements came from. Maybe the patches are already waiting in Greg's 
-> > tree or something?
-> 
-> Andrew picked them up meanwhile.
+I¡¯m a newbie on the linux kernel. Now I am reading the source code of
+Linux . I have a question in the following about ZONE_DMA.
 
-And I have them as well, Linus will get them in a few days also, when I
-catch up with my queue.
 
-thanks,
+In Linux , The Memory is divided to three zone. They are ZONE_DMA
+¡¢ZONE_NORMAL  and ZONE_HIGHMEM. From the book of "Undstand the Linux
+kernel ", the ZONE_DMA has the effect that the Direct Memory Access
+(DMA) processors for old ISA buses have a strong limitation: they are
+able to address only the first 16 MB of RAM. SO ,we must set a zone
+for  the DMA on ISA bus.  And I suspect that the hardware has
+developed so quickly .And  in this days the ISA has been weeded out.
+And so ,if we not defined the ZONE_DMA, is the system be effected? And
+why not remove ZONE_DMA from the kernel . If it cann¡®t to do so£¬the
+compatibility is the only reason?
 
-greg k-h
+
+Thanks
