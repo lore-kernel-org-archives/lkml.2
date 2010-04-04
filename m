@@ -1,100 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765Ab0DDJC0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 05:02:26 -0400
-Received: from troy.hostgo.com ([64.62.143.130]:59417 "EHLO troy.hostgo.com"
+	id S1753421Ab0DDJHq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 05:07:46 -0400
+Received: from 8bytes.org ([88.198.83.132]:40664 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752579Ab0DDJCU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 05:02:20 -0400
-X-Greylist: delayed 2756 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Apr 2010 05:02:20 EDT
-From: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
-To: linux-kernel@vger.kernel.org
-Subject: Re: Fwd: Can we remove the Zone_DMA?
-Date: Sun, 4 Apr 2010 02:16:19 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-trunk-amd64; KDE/4.4.2; x86_64; ; )
-References: <m2mc58e39921004032121hc7ca41f0gacd90ffe2abc6444@mail.gmail.com> <s2mc58e39921004032233rfd47a83eoa86b37ffe59d2e7@mail.gmail.com> <201004040349.28840.dhazelton@enter.net>
-In-Reply-To: <201004040349.28840.dhazelton@enter.net>
+	id S1752696Ab0DDJHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Apr 2010 05:07:41 -0400
+Date: Sun, 4 Apr 2010 11:07:40 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: tek-life <teklife.kernel@gmail.com>
+Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com
+Subject: Re: Can we remove the Zone_DMA?
+Message-ID: <20100404090740.GV24846@8bytes.org>
+References: <m2mc58e39921004032121hc7ca41f0gacd90ffe2abc6444@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="gb2312"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201004040216.19925.tfjellstrom@strangesoft.net>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - troy.hostgo.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - strangesoft.net
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <m2mc58e39921004032121hc7ca41f0gacd90ffe2abc6444@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On April 4, 2010, Daniel Hazelton wrote:
-> On Sunday 04 April 2010 01:33:09 am tek-life wrote:
-> > Thanks for your reply.And do you means that , If I use a modern PC,such
-> > as my pc (CPU:Intel dual-core 2.6GHZ; Memory 2GB; And no pci ).I can
-> > remove the ZONE_DMA .And make sure this system also run smoothly as
-> > before?
+On Sun, Apr 04, 2010 at 12:21:54PM +0800, tek-life wrote:
+> I鈥檓 a newbie on the linux kernel. Now I am reading the source code of
+> Linux . I have a question in the following about ZONE_DMA.
 > 
-> *MAYBE* - if you don't use parallel ports, floppy drives or similar.
-> There actually are still a lot of devices that use the ISA bus in a
-> modern PC - even the keyboard (well, not USB ones) is an ISA device.
 > 
-> Simple fact is that if it was possible to configure it out and not cause
-> massive problems somebody would have already spun out a patch to allow
-> just that.
+> In Linux , The Memory is divided to three zone. They are ZONE_DMA
+> 銆乑ONE_NORMAL  and ZONE_HIGHMEM. From the book of "Undstand the Linux
+> kernel ", the ZONE_DMA has the effect that the Direct Memory Access
+> (DMA) processors for old ISA buses have a strong limitation: they are
+> able to address only the first 16 MB of RAM. SO ,we must set a zone
+> for  the DMA on ISA bus.  And I suspect that the hardware has
+> developed so quickly .And  in this days the ISA has been weeded out.
+> And so ,if we not defined the ZONE_DMA, is the system be effected? And
+> why not remove ZONE_DMA from the kernel . If it cann鈥榯 to do so锛宼he
+> compatibility is the only reason?
 
-Some onboard motherboard devices may also be ISA devices.
+There are a couple of reasons to keep ZONE_DMA. It is not used by ISA
+device drivers exclusivly. Old style PCI devices may have small DMA
+masks (so they could address between 16 MB and 4GB depending on the
+device) too. Drivers for these devices often use ZONE_DMA as a fallback
+if they can't allocate memory addressable by the device using
+ZONE_NORMAL. So there is a use for ZONE_DMA with 32bit PCI too.
+(And I also remember I have seen an AM2 board with an ISA slot for
+ embedded purposes too, so ISA is not completly dead)
 
-> DRH
-> 
-> > 在 2010年4月4日 下午1:07，Daniel Hazelton <dhazelton@enter.net>写道：
-> > 
-> > On Sunday 04 April 2010 12:21:54 am tek-life wrote:
-> > > > I’m a newbie on the linux kernel. Now I am reading the source code
-> > > > of Linux . I have a question in the following about ZONE_DMA.
-> > > > 
-> > > > 
-> > > > In Linux , The Memory is divided to three zone. They are ZONE_DMA
-> > > > 、ZONE_NORMAL  and ZONE_HIGHMEM. From the book of "Undstand the
-> > > > Linux kernel ", the ZONE_DMA has the effect that the Direct Memory
-> > > > Access (DMA) processors for old ISA buses have a strong
-> > > > limitation: they are able to address only the first 16 MB of RAM.
-> > > > SO ,we must set a zone for  the DMA on ISA bus.  And I suspect
-> > > > that the hardware has developed so quickly .And  in this days the
-> > > > ISA has been weeded out. And so ,if we not defined the ZONE_DMA,
-> > > > is the system be effected? And why not remove ZONE_DMA from the
-> > > > kernel . If it cann‘t to do so，the compatibility is the only
-> > > > reason?
-> > > 
-> > > While ISA is gone as a true peripheral interconnect for new systems
-> > > it does,
-> > > actually, still live on in a lot of systems that Linux still
-> > > supports. While
-> > > those systems, generally, are running the same kernel and userspace
-> > > they were
-> > > a decade ago I have no doubt that somebody might find an old machine
-> > > and put
-> > > Linux on it - just because they could.
-> > > 
-> > > And that also discounts the non-IBM PC machines that are out there
-> > > that Linux
-> > > also supports. While I don't know enough about them to say for sure,
-> > > I am quite certain that at least some of them are still using the
-> > > ISA bus.
-> > > 
-> > > DRH
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
-> in the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+	Joerg
 
-
--- 
-Thomas Fjellstrom
-tfjellstrom@strangesoft.net
