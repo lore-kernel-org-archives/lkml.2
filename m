@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185Ab0DDINd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 04:13:33 -0400
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:55384 "EHLO
-	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab0DDINZ (ORCPT
+	id S1752282Ab0DDIPV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 04:15:21 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36385
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751537Ab0DDIPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 04:13:25 -0400
-From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, mitake@dcl.info.waseda.ac.jp,
-       h.mitake@gmail.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH] Swap including order of util.h and string.h of util/string.c
-Date: Sun,  4 Apr 2010 17:13:18 +0900
-Message-Id: <1270368798-27232-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-X-Mailer: git-send-email 1.6.5.2
+	Sun, 4 Apr 2010 04:15:16 -0400
+Date: Sun, 04 Apr 2010 01:15:17 -0700 (PDT)
+Message-Id: <20100404.011517.182704987.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current util/string.c includes headers in this order: string.h, util.h
-But this causes build error because __USE_GNU definition
-is needed for strndup() definition like this,
-% make -j
-touch .perf.dev.null
-    CC util/string.o
-cc1: warnings being treated as errors
-util/string.c: In function ‘argv_split’:
-util/string.c:171: error: implicit declaration of function ‘strndup’
-util/string.c:171: error: incompatible implicit declaration of built-in function ‘strndup’
 
-So this patch swaps order of including headers.
-util.h defines _GNU_SOURCE, and /usr/include/features.h defines __USE_GNU as 1
-if _GNU_SOURCE is defined.
+Please pull to get these sparc fixes.
 
-Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/string.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks a lot!
 
-diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
-index d438924..0409fc7 100644
---- a/tools/perf/util/string.c
-+++ b/tools/perf/util/string.c
-@@ -1,5 +1,5 @@
--#include "string.h"
- #include "util.h"
-+#include "string.h"
- 
- #define K 1024LL
- /*
--- 
-1.6.5.2
+The following changes since commit 5e11611a5d22252f3f9c169a3c9377eac0c32033:
+  Linus Torvalds (1):
+        Merge master.kernel.org:/home/rmk/linux-2.6-arm
 
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc-2.6.git master
+
+Ben Hutchings (1):
+      sparc64: Fix array size reported by vmemmap_populate()
+
+David S. Miller (5):
+      sparc: Fix regset register window handling.
+      Merge branch 'master' of /home/davem/src/GIT/linux-2.6/
+      sparc64: Update defconfig.
+      sparc64: Implement perf_arch_fetch_caller_regs
+      sunxvr500: Ignore secondary output PCI devices.
+
+Julia Lawall (1):
+      drivers/serial/sunsu.c: Correct use after free
+
+ arch/sparc/configs/sparc64_defconfig |   28 +++++++-----
+ arch/sparc/kernel/helpers.S          |   75 ++++++++++++++++++++++++++++++++++
+ arch/sparc/kernel/ptrace_32.c        |    4 ++
+ arch/sparc/kernel/ptrace_64.c        |    4 ++
+ arch/sparc/mm/init_64.c              |    2 +-
+ drivers/serial/sunsu.c               |    4 +-
+ drivers/video/sunxvr500.c            |   24 ++++++++---
+ 7 files changed, 120 insertions(+), 21 deletions(-)
