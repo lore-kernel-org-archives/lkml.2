@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331Ab0DDUqK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 16:46:10 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:4702 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab0DDUqH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 16:46:07 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=rbhu79hya40TPxgzXiLafxGGEo8/HtvgZeY3nKt2zHy3T6GuwReKEOrE2Zt/D+NTX
-	8vvYzT9mjNs8OBI5HWseA==
-Date: Sun, 4 Apr 2010 13:45:54 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux-foundation.org>
-cc: Pekka Enberg <penberg@cs.helsinki.fi>, Nick Piggin <npiggin@suse.de>,
-       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, haicheng.li@intel.com,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [patch v2] slab: add memory hotplug support
-In-Reply-To: <alpine.DEB.2.00.1003301141190.24717@router.home>
-Message-ID: <alpine.DEB.2.00.1004041336450.4184@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1002242357450.26099@chino.kir.corp.google.com>  <20100226155755.GE16335@basil.fritz.box>  <alpine.DEB.2.00.1002261123520.7719@router.home>  <alpine.DEB.2.00.1002261555030.32111@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1003010224170.26824@chino.kir.corp.google.com>  <20100305062002.GV8653@laptop>  <alpine.DEB.2.00.1003081502400.30456@chino.kir.corp.google.com>  <20100309134633.GM8653@laptop>  <alpine.DEB.2.00.1003271849260.7249@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1003271940190.8399@chino.kir.corp.google.com> <84144f021003300201x563c72vb41cc9de359cc7d0@mail.gmail.com> <alpine.DEB.2.00.1003301141190.24717@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752893Ab0DDUrf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 16:47:35 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:58800 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752249Ab0DDUr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Apr 2010 16:47:28 -0400
+Date: Sun, 4 Apr 2010 13:47:25 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dominik Brodowski <linux@dominikbrodowski.net>,
+       Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Arjan van de Ven <arjan@linux.intel.com>,
+       Dmitry Torokhov <dtor@mail.ru>
+Subject: Re: A few questions and issues with dynticks, NOHZ and powertop
+Message-ID: <20100404204725.GC2644@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100403223328.GA4507@comet.dominikbrodowski.net>
+ <Pine.LNX.4.44L0.1004041110010.2750-100000@netrider.rowland.org>
+ <20100404163924.GA18428@comet.dominikbrodowski.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100404163924.GA18428@comet.dominikbrodowski.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Mar 2010, Christoph Lameter wrote:
-
-> > Nick, Christoph, lets make a a deal: you ACK, I merge. How does that
-> > sound to you?
+On Sun, Apr 04, 2010 at 06:39:24PM +0200, Dominik Brodowski wrote:
+> On Sun, Apr 04, 2010 at 11:17:37AM -0400, Alan Stern wrote:
+> > On Sun, 4 Apr 2010, Dominik Brodowski wrote:
+> > 
+> > > Booting a SMP-capable kernel with "nosmp", or manually offlining one CPU
+> > > (or -- though I haven't tested it -- booting a SMP-capable kernel on a
+> > > system with merely one CPU) means that in up to about half of the calls to
+> > > tick_nohz_stop_sched_tick() are aborted due to rcu_needs_cpu(). This is
+> > > quite strange to me: AFAIK, RCU is an excellent tool for SMP, but not really
+> > > needed for UP?
+> > 
+> > I can't answer the real question here, not knowing enough about the RCU
+> > implementation.  However, your impression is wrong: RCU very definitely
+> > _is_ useful and needed on UP systems.  It coordinates among processes
+> > (and interrupt handlers) as well as among processors.
 > 
-> I looked through the patch before and slabwise this seems to beok but I am
-> still not very sure how this interacts with the node and cpu bootstrap.
-> You can have the ack with this caveat.
+> Okay, but still: can't this be sped up by much on UP (especially if
+> CONFIG_RCU_FAST_NO_HZ is set), so that we can go to sleep right away?
+
+One situation that will prevent CONFIG_RCU_FAST_NO_HZ from putting the
+machine to sleep right away is if there is an RCU callback posted that
+spawns another RCU callback, and so on.  CONFIG_RCU_FAST_NO_HZ will handle
+one callback that spawns another, but it gives up if the second callback
+spawns a third.
+
+Might this be what is happening to you?
+
+If so, would you be willing to patch your kernel?  RCU_NEEDS_CPU_FLUSHES
+is currently set to 5, and might be set to (say) 8.  This is defined
+in kernel/rcutree_plugin.h, near line 990.
+
+Another thing to try would be running with TINY_RCU, at least if it is
+OK that RCU be non-preemptible.
+
+							Thanx, Paul
+
+> > > 3) USB: built-in UHCI and a built-in 0a5c:2101 Broadcom Corp. A-Link
+> > > BlueUsbA2 Bluetooth module; built-in EHCI and a built-in 0ac8:c302 Z-Star
+> > > Microelectronics Corp. Vega USB 2.0 Camera.
+> > > 
+> > > usbcore.autosuspend is enabled (= 2), of course.
+> > > 
+> > > Recent USB suspend statistics
+> > > Active  Device name
+> > > 100.0%	USB device  7-1 : BCM92045NMD (Broadcom Corp)
+> > > 100.0%	USB device  1-2 : Vega USB 2.0 Camera. (Vimicro Corp.)
+> > > 100.0%	USB device usb7 : UHCI Host Controller (Linux 2.6.34-rc3 uhci_hcd)
+> > > 100.0%	USB device usb1 : EHCI Host Controller (Linux 2.6.34-rc3 ehci_hcd)
+> > > 
+> > > Booting into /bin/bash on a SMP kernel booted with "nosmp" leads to ~ 10
+> > > wakeups per second; disabling the cursor helps halfway (~ 5 wakeups); and
+> > > manually unbinding the USB host drivers from the USB host devices finally
+> > > lead to ~ 1.1 wakeups per second. What's keeping USB from suspending these
+> > > unused devices here?
+> > 
+> > Either the drivers don't support autosuspend or the devices aren't
+> > enabled for autosuspend.  By default, autosuspend is disabled for
+> > (almost) all non-hub devices.  You or your distribution must enable
+> > it manually by doing:
+> > 
+> > 	echo auto >/sys/bus/usb/devices/.../power/level
+> > 
+> > If the driver doesn't support autosuspend then enabling it won't be
+> > enough; you'll also have to unbind the driver from the device.  The
+> > easiest way to do this is to unconfigure the device:
+> > 
+> > 	echo 0 >/sys/bus/usb/devices/.../bConfigurationValue
 > 
-> Acked-by: Christoph Lameter <cl@linux-foundation.org>
+> Thanks! This way, it works, even without manually unbinding the host
+> drivers.
 > 
-
-Thanks.
-
-I tested this for node hotplug by setting ACPI_SRAT_MEM_HOT_PLUGGABLE 
-regions and then setting up a new memory section with 
-/sys/devices/system/memory/probe.  I onlined the new memory section, which 
-mapped to an offline node, and verified that the nwe nodelists were 
-initialized correctly.  This is done before the MEM_ONLINE notifier and 
-the bit being set in node_states[N_HIGH_MEMORY].  So, for node hot-add, it 
-works.
-
-MEM_GOING_OFFLINE is more interesting, but there's nothing harmful about 
-draining the freelist and reporting whether there are existing full or 
-partial slabs back to the memory hotplug layer to preempt a hot-remove 
-since those slabs cannot be freed.  I don't consider that to be a risky 
-change.
-
-As far as the interactions between memory and cpu hotplug, they are really 
-different things with many of the same implications for the slab layer.  
-Both have the possibility of bringing new nodes online or offline and they 
-must be dealt with accordingly.  We lack support for offlining an entire 
-node at a time since we must hotplug first by adding a new memory section, 
-so these notifiers won't be called simultaneously.  Even if they were, 
-draining the freelist and checking if a nodelist needs to be initialized 
-is not going to be harmful since both notifiers have the same checks for 
-existing nodelists (which is not only necessary if we _did_ have 
-simultaneous cpu and memory hot-add, but also if a node transitioned from 
-online to offline and back to online).
-
-I hope this patch is merged because it obviously fixed a problem on my box 
-where a memory section could be added, a node onlined, and then no slab 
-metadata being initialized for that memory.
+> Best,
+> 	Dominik
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
