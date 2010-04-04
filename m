@@ -1,90 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751292Ab0DDFdR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 01:33:17 -0400
-Received: from mail-iw0-f197.google.com ([209.85.223.197]:52837 "EHLO
-	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab0DDFdL convert rfc822-to-8bit (ORCPT
+	id S1751726Ab0DDHYv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 03:24:51 -0400
+Received: from smtp-out002.kontent.com ([81.88.40.216]:38925 "EHLO
+	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab0DDHYo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 01:33:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=fNfln1nviekD13NbBZzqUvEyIx878b3ztfZ6G1ii8l+QtNQSUdWgAYx3/gExo4qNLk
-         ZUfGaBIM1QnLyY7Dh4dSZVypHwrzWclxvFtO2mAwTB31Z7JLmaT1UuT9QsOiJJpY/aEa
-         Btso9WwaROVEPQYVGM7Ssl+GxkSjJRPZH4Yx8=
+	Sun, 4 Apr 2010 03:24:44 -0400
+From: Oliver Neukum <oliver@neukum.org>
+To: "L. Alberto =?utf-8?q?Gim=C3=A9nez?=" <agimenez@sysvalve.es>
+Subject: Re: [PATCHv3] drivers/net/usb: Add new driver ipheth
+Date: Sun, 4 Apr 2010 09:24:43 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-0.1-default; KDE/4.3.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       linux-usb@vger.kernel.org, linville@tuxdriver.com, j.dumon@option.com,
+       steve.glendinning@smsc.com, davem@davemloft.net, gregkh@suse.de,
+       dgiagio@gmail.com, dborca@yahoo.com
+References: <1269984864-28159-1-git-send-email-agimenez@sysvalve.es> <201003312233.26130.oliver@neukum.org> <4BB63619.6070607@sysvalve.es>
+In-Reply-To: <4BB63619.6070607@sysvalve.es>
 MIME-Version: 1.0
-In-Reply-To: <k2tc58e39921004032226ze2eb64dev21f8c2d137a49ebc@mail.gmail.com>
-References: <m2mc58e39921004032121hc7ca41f0gacd90ffe2abc6444@mail.gmail.com>
-	 <201004040107.15783.dhazelton@enter.net>
-	 <k2tc58e39921004032226ze2eb64dev21f8c2d137a49ebc@mail.gmail.com>
-Date: Sun, 4 Apr 2010 13:33:09 +0800
-X-Google-Sender-Auth: 2508f8d0b896fc19
-Message-ID: <s2mc58e39921004032233rfd47a83eoa86b37ffe59d2e7@mail.gmail.com>
-Subject: Fwd: Can we remove the Zone_DMA?
-From: tek-life <teklife.kernel@gmail.com>
-To: dhazelton@enter.net
-Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com
-Content-Type: text/plain; charset=GB2312
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8BIT
+Message-Id: <201004040924.43949.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your reply.And do you means that , If I use a modern PC,such as
-my pc (CPU:Intel dual-core 2.6GHZ; Memory 2GB; And no pci ).I can remove the
-ZONE_DMA .And make sure this system also run smoothly as before?
+Am Freitag, 2. April 2010 20:23:21 schrieb L. Alberto Gim茅nez:
+> On 03/31/2010 10:33 PM, Oliver Neukum wrote:
+> > Am Mittwoch, 31. M盲rz 2010 21:42:07 schrieb L. Alberto Gim茅nez:
+> 
+> Hi Oliver,
+> 
+> Just like with Ben's comments I still have a couple of doubts about your
+> comments.
+> 
+> 
+> >> +
+> >> +static int ipheth_open(struct net_device *net)
+> >> +{
+> >> +	struct ipheth_device *dev = netdev_priv(net);
+> >> +	struct usb_device *udev = dev->udev;
+> >> +	int retval = 0;
+> >> +
+> >> +	usb_set_interface(udev, IPHETH_INTFNUM, IPHETH_ALT_INTFNUM);
+> >> +	usb_clear_halt(udev, usb_rcvbulkpipe(udev, dev->bulk_in));
+> >> +	usb_clear_halt(udev, usb_sndbulkpipe(udev, dev->bulk_out));
+> > 
+> > Is this really needed? If so, please add a comment.
+> 
+> I understand that usb_clear_halt is only needed when the device has
+> transmitted data, and as it is "open" time, we can assume that no
+> transmissions ere made, so we don't need to clear anything (aka: remove
+> both lines), am I right?
 
-在 2010年4月4日 下午1:07，Daniel Hazelton <dhazelton@enter.net>写道：
+Clearing a halt is necessary only when a device has stalled due to an
+error condition. Unless the device is buggy and produces errors for
+no good reason you don't need these lines.
+ 
+> >> +
+> >> +	retval = ipheth_carrier_set(dev);
+> >> +	if (retval)
+> >> +		goto error;
+> >> +
+> >> +	retval = ipheth_rx_submit(dev, GFP_KERNEL);
+> >> +	if (retval)
+> >> +		goto error;
+> >> +
+> >> +	schedule_delayed_work(&dev->carrier_work, IPHETH_CARRIER_CHECK_TIMEOUT);
+> > 
+> > Does it make sense to start rx while you have no carrier?
+> 
+> Well, I have no clue about this one. I think that upstream developers
+> should take a look into this (Dario, Daniel, could you?) since I don't
+> have the knowledge to decide what to do about it.
+> 
+> But I assume that as with the previous one, we have just opened the
+> device and we aren't (yet) doing anything with it, so we shouldn't start rx?
 
-On Sunday 04 April 2010 12:21:54 am tek-life wrote:
-> > I’m a newbie on the linux kernel. Now I am reading the source code of
-> > Linux . I have a question in the following about ZONE_DMA.
-> >
-> >
-> > In Linux , The Memory is divided to three zone. They are ZONE_DMA
-> > 、ZONE_NORMAL  and ZONE_HIGHMEM. From the book of "Undstand the Linux
-> > kernel ", the ZONE_DMA has the effect that the Direct Memory Access
-> > (DMA) processors for old ISA buses have a strong limitation: they are
-> > able to address only the first 16 MB of RAM. SO ,we must set a zone
-> > for  the DMA on ISA bus.  And I suspect that the hardware has
-> > developed so quickly .And  in this days the ISA has been weeded out.
-> > And so ,if we not defined the ZONE_DMA, is the system be effected? And
-> > why not remove ZONE_DMA from the kernel . If it cann‘t to do so，the
-> > compatibility is the only reason?
->
-> While ISA is gone as a true peripheral interconnect for new systems it
-> does,
-> actually, still live on in a lot of systems that Linux still supports.
-> While
-> those systems, generally, are running the same kernel and userspace they
-> were
-> a decade ago I have no doubt that somebody might find an old machine and
-> put
-> Linux on it - just because they could.
->
-> And that also discounts the non-IBM PC machines that are out there that
-> Linux
-> also supports. While I don't know enough about them to say for sure, I am
-> quite certain that at least some of them are still using the ISA bus.
->
-> DRH
->
+Your code as is is correct, I just wondered whether it could be made more
+efficient.
 
+> >> +static void ipheth_disconnect(struct usb_interface *intf)
+> >> +{
+> >> +	struct ipheth_device *dev;
+> >> +
+> >> +	dev = usb_get_intfdata(intf);
+> >> +	if (dev != NULL) {
+> > 
+> > is this check needed?
+> 
+> Does usb_get_infdata always return not NULL? I haven't found anything
 
+It returns what you gave it with  usb_set_intfdata().
 
--- 
-Laboratory of Service Computing Technology and System
+> about it (just manual pages for the function, but can't spot if it
+> cannot return NULL). We disconnected the device, but I understand that
+> the kernel still has the information and the allocated memory, so the
+> cleanup code is still needed, isn't it?
 
-p-web:http://tek-life.org/blog
-QQ:150439216
+It is definitely needed.
 
+> >> +static struct usb_driver ipheth_driver = {
+> >> +	.name =		"ipheth",
+> >> +	.probe =	ipheth_probe,
+> >> +	.disconnect =	ipheth_disconnect,
+> >> +	.id_table =	ipheth_table,
+> >> +	.supports_autosuspend = 0,
+> > 
+> > redundant
+> 
+> Why?
 
+0 is the default.
 
--- 
-Laboratory of Service Computing Technology and System
-
-p-web:http://tek-life.org/blog
-QQ:150439216
+	Regards
+		Oliver
