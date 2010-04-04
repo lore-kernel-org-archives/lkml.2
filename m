@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab0DDKJQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 06:09:16 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:52539 "EHLO mx3.mail.elte.hu"
+	id S1753375Ab0DDKMA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 06:12:00 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:59124 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752599Ab0DDKJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 06:09:09 -0400
-Date: Sun, 4 Apr 2010 12:09:02 +0200
+	id S1752734Ab0DDKLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Apr 2010 06:11:54 -0400
+Date: Sun, 4 Apr 2010 12:11:48 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Mike Galbraith <efault@gmx.de>,
        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] tracing fixes
-Message-ID: <20100404100902.GA28689@elte.hu>
+Subject: [GIT PULL] scheduler fixes
+Message-ID: <20100404101148.GA4178@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -29,90 +29,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
 Linus,
 
-Please pull the latest tracing-fixes-for-linus git tree from:
+Please pull the latest sched-fixes-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git tracing-fixes-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git sched-fixes-for-linus
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Julia Lawall (1):
-      ring-buffer: Add missing unlock
+Mike Galbraith (1):
+      sched: Fix proc_sched_set_task()
 
-Li Zefan (1):
-      tracing: Fix lockdep warning in global_clock()
+Oleg Nesterov (1):
+      sched: set_cpus_allowed_ptr(): Don't use rq->migration_thread after unlock
 
 
- kernel/trace/ring_buffer.c |    8 +++++---
- kernel/trace/trace_clock.c |    4 ++--
- 2 files changed, 7 insertions(+), 5 deletions(-)
+ kernel/sched.c       |    2 +-
+ kernel/sched_debug.c |    4 ----
+ 2 files changed, 1 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index d1187ef..9a0f9bf 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -1209,18 +1209,19 @@ rb_remove_pages(struct ring_buffer_per_cpu *cpu_buffer, unsigned nr_pages)
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 49d2fa7..528a105 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -5387,7 +5387,7 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
  
- 	for (i = 0; i < nr_pages; i++) {
- 		if (RB_WARN_ON(cpu_buffer, list_empty(cpu_buffer->pages)))
--			return;
-+			goto out;
- 		p = cpu_buffer->pages->next;
- 		bpage = list_entry(p, struct buffer_page, list);
- 		list_del_init(&bpage->list);
- 		free_buffer_page(bpage);
- 	}
- 	if (RB_WARN_ON(cpu_buffer, list_empty(cpu_buffer->pages)))
--		return;
-+		goto out;
- 
- 	rb_reset_cpu(cpu_buffer);
- 	rb_check_pages(cpu_buffer);
- 
-+out:
- 	spin_unlock_irq(&cpu_buffer->reader_lock);
- }
- 
-@@ -1237,7 +1238,7 @@ rb_insert_pages(struct ring_buffer_per_cpu *cpu_buffer,
- 
- 	for (i = 0; i < nr_pages; i++) {
- 		if (RB_WARN_ON(cpu_buffer, list_empty(pages)))
--			return;
-+			goto out;
- 		p = pages->next;
- 		bpage = list_entry(p, struct buffer_page, list);
- 		list_del_init(&bpage->list);
-@@ -1246,6 +1247,7 @@ rb_insert_pages(struct ring_buffer_per_cpu *cpu_buffer,
- 	rb_reset_cpu(cpu_buffer);
- 	rb_check_pages(cpu_buffer);
- 
-+out:
- 	spin_unlock_irq(&cpu_buffer->reader_lock);
- }
- 
-diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
-index 6fbfb8f..9d589d8 100644
---- a/kernel/trace/trace_clock.c
-+++ b/kernel/trace/trace_clock.c
-@@ -84,7 +84,7 @@ u64 notrace trace_clock_global(void)
- 	int this_cpu;
- 	u64 now;
- 
--	raw_local_irq_save(flags);
-+	local_irq_save(flags);
- 
- 	this_cpu = raw_smp_processor_id();
- 	now = cpu_clock(this_cpu);
-@@ -110,7 +110,7 @@ u64 notrace trace_clock_global(void)
- 	arch_spin_unlock(&trace_clock_struct.lock);
- 
-  out:
--	raw_local_irq_restore(flags);
-+	local_irq_restore(flags);
- 
- 	return now;
+ 		get_task_struct(mt);
+ 		task_rq_unlock(rq, &flags);
+-		wake_up_process(rq->migration_thread);
++		wake_up_process(mt);
+ 		put_task_struct(mt);
+ 		wait_for_completion(&req.done);
+ 		tlb_migrate_finish(p->mm);
+diff --git a/kernel/sched_debug.c b/kernel/sched_debug.c
+index 67f95aa..9b49db1 100644
+--- a/kernel/sched_debug.c
++++ b/kernel/sched_debug.c
+@@ -518,8 +518,4 @@ void proc_sched_set_task(struct task_struct *p)
+ 	p->se.nr_wakeups_idle			= 0;
+ 	p->sched_info.bkl_count			= 0;
+ #endif
+-	p->se.sum_exec_runtime			= 0;
+-	p->se.prev_sum_exec_runtime		= 0;
+-	p->nvcsw				= 0;
+-	p->nivcsw				= 0;
  }
