@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176Ab0DDILF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 04:11:05 -0400
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:55363 "EHLO
+	id S1752185Ab0DDINd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 04:13:33 -0400
+Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:55384 "EHLO
 	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab0DDILA (ORCPT
+	with ESMTP id S1751537Ab0DDINZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 04:11:00 -0400
-Message-ID: <4BB84991.5080301@dcl.info.waseda.ac.jp>
-Date: Sun, 04 Apr 2010 17:10:57 +0900
+	Sun, 4 Apr 2010 04:13:25 -0400
 From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091211 Shredder/3.0
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+To: mingo@elte.hu
+Cc: linux-kernel@vger.kernel.org, mitake@dcl.info.waseda.ac.jp,
+       h.mitake@gmail.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
        Frederic Weisbecker <fweisbec@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Floating point exception by perf record
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH] Swap including order of util.h and string.h of util/string.c
+Date: Sun,  4 Apr 2010 17:13:18 +0900
+Message-Id: <1270368798-27232-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+X-Mailer: git-send-email 1.6.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Current util/string.c includes headers in this order: string.h, util.h
+But this causes build error because __USE_GNU definition
+is needed for strndup() definition like this,
+% make -j
+touch .perf.dev.null
+    CC util/string.o
+cc1: warnings being treated as errors
+util/string.c: In function ‘argv_split’:
+util/string.c:171: error: implicit declaration of function ‘strndup’
+util/string.c:171: error: incompatible implicit declaration of built-in function ‘strndup’
 
-Hi Arnaldo,
+So this patch swaps order of including headers.
+util.h defines _GNU_SOURCE, and /usr/include/features.h defines __USE_GNU as 1
+if _GNU_SOURCE is defined.
 
-I suffered a mysterious floating point exception when executing perf
-on current tip/master.
+Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/string.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-For example,
+diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
+index d438924..0409fc7 100644
+--- a/tools/perf/util/string.c
++++ b/tools/perf/util/string.c
+@@ -1,5 +1,5 @@
+-#include "string.h"
+ #include "util.h"
++#include "string.h"
+ 
+ #define K 1024LL
+ /*
+-- 
+1.6.5.2
 
-% sudo ./perf lock record ./perf bench sched messaging
-# Running sched/messaging benchmark...
-# 20 sender and receiver processes per group
-# 10 groups == 400 processes run
-
-      Total time: 1.375 [sec]
-[ perf record: Woken up 0 times to write data ]
-[ perf record: Captured and wrote 160.002 MB perf.data (~6990599 samples) ]
-[1]    26348 floating point exception  sudo ./perf lock record ./perf 
-bench sched messaging
-
-dmesg says that
-
-[10212.752490] perf[26348] trap divide error ip:7fade8564310 
-sp:7fff46d926e8 error:0 in libnewt.so.0.52.2[7fade8556000+15000]
-
-Example is of perf lock, but this is not a special phenomenon of perf lock,
-other users of perf record, like perf sched, caused the same problem.
-
-I found that this might be caused by the line 283 of perf.c
-
-	if (fclose(stdout)) # <- closing stdout!
-		die("close failed on standard output: %s", strerror(errno));
-
-I don't know well about libnewt, do you know something like cause?
-
-The version of libnewt I'm using is 0.52.2 (default of Debian lenny)
-
-Thanks,
-	Hitoshi
