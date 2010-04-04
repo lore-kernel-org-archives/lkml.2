@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356Ab0DDI24 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 04:28:56 -0400
-Received: from mail-yw0-f172.google.com ([209.85.211.172]:34153 "EHLO
-	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab0DDI2s convert rfc822-to-8bit (ORCPT
+	id S1752234Ab0DDI3T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 04:29:19 -0400
+Received: from mail-iw0-f197.google.com ([209.85.223.197]:52463 "EHLO
+	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752184Ab0DDI2v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 04:28:48 -0400
+	Sun, 4 Apr 2010 04:28:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:date
          :x-google-sender-auth:message-id:subject:from:to:content-type
          :content-transfer-encoding;
-        b=BqJ6Stnc63RPEHKs7J/cVAaqVZ5fhKHiihHZWHzjy17Bd5HigjV6XA8WFQKpgHLEdx
-         L60UNEAjYf9OcEVXMxJY2wDcC0kTNv5oqHZLHkm1e7a5YtvwGB7GH+X9lWMrRnPK0T6i
-         6aq7TLhO1sD9znNoEYR6mePmWEmt4/ABF5zBU=
+        b=A2UolpvddK9Yr/2xjwbsIZ2XVAX4wQ7giuUhz5F0vDr9MoLp2SGhdSMR7GxyyScOW/
+         hKLCOejORWv193RGj7PMTzoehfol6E6zuNvNhv+4uAPRRlqLpkCKod2k0cAv4Obj28sd
+         CL/SA+Cy7LS8YQlyalnTJ4BQ4xIkTqRqEwiCo=
 MIME-Version: 1.0
 In-Reply-To: <201004040349.28840.dhazelton@enter.net>
 References: <m2mc58e39921004032121hc7ca41f0gacd90ffe2abc6444@mail.gmail.com>
 	 <k2tc58e39921004032226ze2eb64dev21f8c2d137a49ebc@mail.gmail.com>
 	 <s2mc58e39921004032233rfd47a83eoa86b37ffe59d2e7@mail.gmail.com>
 	 <201004040349.28840.dhazelton@enter.net>
-Date: Sun, 4 Apr 2010 16:28:45 +0800
-X-Google-Sender-Auth: 98af69473eb782fd
-Message-ID: <k2rc58e39921004040128m1774f406k76bded10260c74b5@mail.gmail.com>
+Date: Sun, 4 Apr 2010 16:28:49 +0800
+X-Google-Sender-Auth: 5140202cd6c99a4a
+Message-ID: <j2rc58e39921004040128xb502c314u4b6b080a77fee813@mail.gmail.com>
 Subject: Re: Can we remove the Zone_DMA?
 From: tek-life <teklife.kernel@gmail.com>
 To: dhazelton@enter.net, oliver@neukum.org, linux-kernel@vger.kernel.org,
@@ -98,10 +98,3 @@ the keyboard don't use DMA.
 >> >
 >> > DRH
 >
-
-
--- 
-Laboratory of Service Computing Technology and System
-
-p-web:http://tek-life.org/blog
-QQ:150439216
