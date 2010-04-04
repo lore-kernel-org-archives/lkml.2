@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab0DDOhX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 10:37:23 -0400
+	id S1754653Ab0DDOhl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 10:37:41 -0400
 Received: from mail-bw0-f209.google.com ([209.85.218.209]:53038 "EHLO
 	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754475Ab0DDOg7 (ORCPT
+	with ESMTP id S1754515Ab0DDOhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 10:36:59 -0400
+	Sun, 4 Apr 2010 10:37:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Q+1FdMITEIUEwLX3h5MadkZKEuIWSPlPTbaHdKruf+PA8X5Yxy9hruTaYwH6YYj0Xi
-         m2mu/AjioCOxx1HWKuoRSWx5O8Yj1YJippv/jb1KgKqP61izkzaqfYpURJ/vo5D6IuaV
-         w4HKuuzut7dUl6UwAAnIyTZj4CoJK4xlGlv/s=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references
+         :mime-version:content-type:content-transfer-encoding;
+        b=LhxKOrWHL+LBccqdyeOfPfBIykvgiAijORDCR1CifBOVla2EQe7V/er49/vpptb1SI
+         68AzY33Lev+UAm2EbSRbdKR4Tgp+2VLkX6q8WaVo1c0jD0fdBZfMPXcDyPFMDa8NWTfw
+         v7fW0NabTZTp9vbQPDmVeNJRa0hfZUxTPUcVk=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@relay.de.ibm.com>,
-       Arnd Bergmann <arnd@arndb.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 3/4] perf_event: Make perf fd non seekable
-Date: Sun,  4 Apr 2010 16:36:43 +0200
-Message-Id: <1270391804-6552-4-git-send-regression-fweisbec@gmail.com>
+Subject: [PATCH 4/4] Swap inclusion order of util.h and string.h in util/string.c
+Date: Sun,  4 Apr 2010 16:36:44 +0200
+Message-Id: <1270391804-6552-5-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.6.2.3
 In-Reply-To: <1270391804-6552-1-git-send-regression-fweisbec@gmail.com>
 References: <1270391804-6552-1-git-send-regression-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@relay.de.ibm.com>
+From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
 
-Perf_event does not need seeking, so prevent it in order to
-get rid of default_llseek, which uses the BKL.
+Currently util/string.c includes headers in this order: string.h, util.h
+But this causes a build error because __USE_GNU definition
+is needed for strndup() definition:
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+	% make -j
+	touch .perf.dev.null
+	    CC util/string.o
+	cc1: warnings being treated as errors
+	util/string.c: In function ‘argv_split’:
+	util/string.c:171: error: implicit declaration of function ‘strndup’
+	util/string.c:171: error: incompatible implicit declaration of built-in function ‘strndup’
+
+So this patch swaps the headers inclusion order.
+util.h defines _GNU_SOURCE, and /usr/include/features.h defines
+__USE_GNU as 1 if _GNU_SOURCE is defined.
+
+Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-[drop the nonseekable_open, not needed for anon inodes]
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+LKML-Reference: <1270368798-27232-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/perf_event.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ tools/perf/util/string.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 63fbce1..4aa50ff 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -2645,6 +2645,7 @@ static int perf_fasync(int fd, struct file *filp, int on)
- }
+diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
+index d438924..0409fc7 100644
+--- a/tools/perf/util/string.c
++++ b/tools/perf/util/string.c
+@@ -1,5 +1,5 @@
+-#include "string.h"
+ #include "util.h"
++#include "string.h"
  
- static const struct file_operations perf_fops = {
-+	.llseek			= no_llseek,
- 	.release		= perf_release,
- 	.read			= perf_read,
- 	.poll			= perf_poll,
+ #define K 1024LL
+ /*
 -- 
 1.6.2.3
 
