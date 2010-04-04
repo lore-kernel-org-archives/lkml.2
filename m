@@ -1,57 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212Ab0DDXK5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 19:10:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25394 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751364Ab0DDXKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 19:10:50 -0400
-Date: Sun, 4 Apr 2010 19:09:25 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Borislav Petkov <bp@alien8.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-Subject: [PATCH] rmap: fix anon_vma_fork() memory leak
-Message-ID: <20100404190925.5daac2f3@annuminas.surriel.com>
-In-Reply-To: <1270397575.1814.106.camel@barrios-desktop>
-References: <alpine.LFD.2.00.1003301029250.3707@i5.linux-foundation.org>
-	<20100402175937.GA19690@liondog.tnic>
-	<alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org>
-	<20100402112428.f46ddc44.akpm@linux-foundation.org>
-	<alpine.LFD.2.00.1004021135530.3634@i5.linux-foundation.org>
-	<4BB66941.1060809@redhat.com>
-	<1270397575.1814.106.camel@barrios-desktop>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752270Ab0DDXVB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 19:21:01 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45488 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372Ab0DDXU4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Apr 2010 19:20:56 -0400
+Date: Sun, 4 Apr 2010 20:20:42 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH 0/2] perf newt: Zoom operations
+Message-ID: <20100404232042.GB3908@ghostprotocols.net>
+References: <1270345250-4833-1-git-send-email-acme@infradead.org>
+ <20100404095827.GA30536@elte.hu>
+ <20100404125354.GA3908@ghostprotocols.net>
+ <20100404190512.GB4564@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100404190512.GB4564@elte.hu>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a memory leak in anon_vma_fork(), where we fail to tear down the
-anon_vmas attached to the new VMA in case setting up the new anon_vma
-fails.
+Em Sun, Apr 04, 2010 at 09:05:12PM +0200, Ingo Molnar escreveu:
+> 
+> * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> 
+> > Em Sun, Apr 04, 2010 at 11:58:27AM +0200, Ingo Molnar escreveu:
+> > > * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> > > > Arnaldo Carvalho de Melo (2):
+> > > >   perf newt: Add a "Zoom into foo.so DSO" and reverse operations
+> > > >   perf TUI: Add a "Zoom into COMM(PID) thread" and reverse operations
+> > > 
+> > > Pulled, thanks Arnaldo!
+> > > 
+> > > There's still a few basic usability glitches that i've noticed:
+> > > 
+> > >  - it's not clear how to zoom out, once zoomed in
+> > 
+> > I'll use the title line to store the name of the DSO and Thread and the help 
+> > line to state that to zoom out, press -> + zoom out, and I think that it is 
+> > a good idea to use 'd' and 'D' to zoom in/out of DSOs and 't' and 'T' to 
+> > zoom in/out of DSOs.
+> 
+> Cool, a help line will do the trick i'm sure. The only problem situation is 
+> when there is zero information about how to proceed - some people exit and 
+> dont ever come back in that case :-)
 
-Reported-by: Minchan Kim <minchan.kim@gmail.com>
-Signed-off-by: Rik van Riel <riel@redhat.com>
-
-diff --git a/mm/rmap.c b/mm/rmap.c
-index fcd593c..fb7ce99 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -231,6 +231,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
+Yeah, first impression is always important to take into account, but
+difficult to get it right, what I'm trying, as much as possible, is to
+keep key assignments as intuitive as possible, but early adopters are
+key in this regard, so please do speak up!
  
-  out_error_free_anon_vma:
- 	anon_vma_free(anon_vma);
-+	unlink_anon_vmas(vma);
-  out_error:
- 	return -ENOMEM;
- }
+> > >  - there's no help screen and no help line for people to see what can be 
+> > >    done on a given screen. While it's good that the intuitive things work
+> > >    by default (arrow keys, escape, enter, etc.), there should also be additional
+> > >    visual information about what can be done.
+> > 
+> > F1 and textboxes with a short description of what can be done given for the 
+> > first time or till the user presses "Suppress these info boxes" will be 
+> > added.
+> 
+> Maybe we need 'h' and '?' in addition of F1, as F1 is often already mapped and 
+> caught by the terminal (it is so with gnome-terminal).
 
+Right, h and ? will be mapped too, even I'm not being aware that those
+are associated with asking for help, but the
+ask-for-help-via-F1-taken-by-your-xterm-app problem is well known and we
+have to provide a workaround for that :-)
+ 
+> >  
+> > >  - i think double escape should exit, right now it stays at the 'are you sure'
+> > >    screen
+> > 
+> > Here I thought that something had to be done to avoid that accidentally 
+> > pressing ESC two times or having "Yes" as default option, trowing away 
+> > possibly a long processed session, what do others think about it?
+> 
+> Yeah, i think you are right.
+> 
+> > I think that ESC + "Yes" as a default may be ok, as two keys need to be 
+> > pressed (ESC + Enter), enough warning/confirmation, I gues, right?
+> 
+> Ok, that would work!
+
+Excellent, I almost got the title line for in place filters bullet done
+before being dragged by family to go out fishing, will fishing, oops,
+finish that tomorrow :-)
+
+- Arnaldo
