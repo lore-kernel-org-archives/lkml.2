@@ -1,26 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab0DDN1x (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 09:27:53 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:50041 "EHLO
+	id S1754327Ab0DDNrq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 09:47:46 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:54286 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753255Ab0DDN1r (ORCPT
+	by vger.kernel.org with ESMTP id S1754251Ab0DDNrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 09:27:47 -0400
-Date: Sun, 4 Apr 2010 15:27:34 +0200
+	Sun, 4 Apr 2010 09:47:41 -0400
+Date: Sun, 4 Apr 2010 15:47:29 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-       Linux Input <linux-input@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [RFC] Input: implement sysrq as an input handler
-Message-ID: <20100404132734.GB1346@ucw.cz>
-References: <20100317061952.GA19789@core.coreip.homeip.net> <20100319000043.GC12017@khazad-dum.debian.net> <20100319000931.GA5671@core.coreip.homeip.net> <20100319160641.GC16743@khazad-dum.debian.net> <20100319180314.GB12143@core.coreip.homeip.net> <20100320025329.GA2468@khazad-dum.debian.net> <20100322045910.GE31621@core.coreip.homeip.net> <20100401133454.GA1291@ucw.cz> <20100401154212.GA7900@core.coreip.homeip.net>
+To: Theodore Tso <tytso@mit.edu>, Ric Wheeler <rwheeler@redhat.com>,
+       Krzysztof Halasa <khc@pm.waw.pl>, Christoph Hellwig <hch@infradead.org>,
+       Mark Lord <lkml@rtr.ca>, Michael Tokarev <mjt@tls.msk.ru>,
+       david@lang.hm, NeilBrown <neilb@suse.de>, Rob Landley <rob@landley.net>,
+       Florian Weimer <fweimer@bfk.de>,
+       Goswin von Brederlow <goswin-v-b@web.de>,
+       kernel list <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@osdl.org>, mtk.manpages@gmail.com,
+       rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+       linux-ext4@vger.kernel.org, corbet@lwn.net
+Subject: fsck more often when powerfail is detected (was Re: wishful
+	thinking about atomic, multi-sector or full MD stripe width, writes
+	in storage)
+Message-ID: <20100404134729.GA1388@ucw.cz>
+References: <20090831132139.GA5425@infradead.org> <4A9F230F.40707@redhat.com> <m3ab1cp9ii.fsf@intrepid.localdomain> <4A9FA5F2.9090704@redhat.com> <m3ljkwnoct.fsf@intrepid.localdomain> <4A9FC9B3.1080809@redhat.com> <m3ab1cnn7y.fsf@intrepid.localdomain> <4A9FCF6B.1080704@redhat.com> <20090907114534.GP23450@elf.ucw.cz> <20090907131026.GC32427@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100401154212.GA7900@core.coreip.homeip.net>
+In-Reply-To: <20090907131026.GC32427@mit.edu>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,43 +35,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi!
 
-> > If userspace disables sysrq during normal operation, that makes it
-> > useless.
-> > 
-> > If normal user could do that, that's a security problem.
-> > 
+> > Yes, but ext3 was designed to handle the partial write  (according to
+> > tytso).
 > 
-> Yes, and...? This patch does not change the way one enables, disables,
-> intercepts, etc. SysRq and SAK compared to how it was handled when SysRq
-> was part of keyboard _input handler_. The only thisng this patch does is
-> moving the code into a _separate_ input handler.
+> I'm not sure what made you think that I said that.  In practice things
+> usually work out, as a conseuqence of the fact that ext3 uses physical
+> block journaling, but it's not perfect, becase...
 
-Yep, that was just a note.
+Ok; so the journalling actually  is not reliable on many machines --
+not even disk drive manufacturers guarantee full block writes AFAICT.
 
-> > > The problem is that device does not know what SysRq and especially SAK are.
-> > > User can reassign key codes and key symbols easily.
+Maybe there's time to reviwe the patch to increase mount count by >1
+when journal is replayed, to do fsck more often when powerfails are
+present?
+
+
+> > > Also, when you enable the write cache (MD or not) you are buffering 
+> > > multiple MB's of data that can go away on power loss. Far greater (10x) 
+> > > the exposure that the partial RAID rewrite case worries about.
 > > 
-> > That was not case in original implementation; it had hardcoded keymap.
+> > Yes, that's what barriers are for. Except that they are not there on
+> > MD0/MD5/MD6. They actually work on local sata drives...
 > 
-> The earth was also flat back then and the only keyboard was AT one. SAK
-> was always part of keymap so could be reassinged at any time.
+> Yes, but ext3 does not enable barriers by default (the patch has been
+> submitted but akpm has balked because he doesn't like the performance
+> degredation and doesn't believe that Chris Mason's "workload of doom"
+> is a common case).  Note though that it is possible for dirty blocks
+> to remain in the track buffer for *minutes* without being written to
+> spinning rust platters without a barrier.
 
-Well, there are two SAKs.
-
-One SAK -- in keymap, is remappable and always was.
-
-Second, sysrq-saK -- is (was?) hardcoded and not affected by
-keymap. Please don't change that.
-
-> > > I don't think we had any issues like this since 2.5 so I would not worry
-> > > about userspace too much. If anything we just need to review what stuff
-> > > we run as root (we do that anyway, right?).
-> > 
-> > Hehe. If X can break sysrq, that's both X and sysrq problem.
-> 
-> Root can disable Sysrq... News at 11.
-
-Root *does* disable sysrq is indeed news ... and problem.
+So we do wrong thing by default. Another reason to do fsck more often
+when powerfails are present?
 									Pavel
 -- 
 (english) http://www.livejournal.com/~pavelmachek
