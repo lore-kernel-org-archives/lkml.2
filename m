@@ -1,90 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab0DDTF2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 15:05:28 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:59861 "EHLO mx2.mail.elte.hu"
+	id S1751523Ab0DDTaq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 15:30:46 -0400
+Received: from THUNK.ORG ([69.25.196.29]:55614 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751440Ab0DDTFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 15:05:22 -0400
-Date: Sun, 4 Apr 2010 21:05:12 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>
-Subject: Re: [PATCH 0/2] perf newt: Zoom operations
-Message-ID: <20100404190512.GB4564@elte.hu>
-References: <1270345250-4833-1-git-send-email-acme@infradead.org>
- <20100404095827.GA30536@elte.hu>
- <20100404125354.GA3908@ghostprotocols.net>
+	id S1750735Ab0DDTaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Apr 2010 15:30:39 -0400
+Date: Sun, 4 Apr 2010 15:29:12 -0400
+From: tytso@mit.edu
+To: Rob Landley <rob@landley.net>
+Cc: Pavel Machek <pavel@ucw.cz>, Ric Wheeler <rwheeler@redhat.com>,
+       Krzysztof Halasa <khc@pm.waw.pl>, Christoph Hellwig <hch@infradead.org>,
+       Mark Lord <lkml@rtr.ca>, Michael Tokarev <mjt@tls.msk.ru>,
+       david@lang.hm, NeilBrown <neilb@suse.de>,
+       Florian Weimer <fweimer@bfk.de>,
+       Goswin von Brederlow <goswin-v-b@web.de>,
+       kernel list <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@osdl.org>, mtk.manpages@gmail.com,
+       rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+       linux-ext4@vger.kernel.org, corbet@lwn.net
+Subject: Re: fsck more often when powerfail is detected (was Re: wishful
+ thinking about atomic, multi-sector or full MD stripe width, writes in
+ storage)
+Message-ID: <20100404192912.GH18524@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Rob Landley <rob@landley.net>,
+	Pavel Machek <pavel@ucw.cz>, Ric Wheeler <rwheeler@redhat.com>,
+	Krzysztof Halasa <khc@pm.waw.pl>,
+	Christoph Hellwig <hch@infradead.org>, Mark Lord <lkml@rtr.ca>,
+	Michael Tokarev <mjt@tls.msk.ru>, david@lang.hm,
+	NeilBrown <neilb@suse.de>, Florian Weimer <fweimer@bfk.de>,
+	Goswin von Brederlow <goswin-v-b@web.de>,
+	kernel list <linux-kernel@vger.kernel.org>,
+	Andrew Morton <akpm@osdl.org>, mtk.manpages@gmail.com,
+	rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+	linux-ext4@vger.kernel.org, corbet@lwn.net
+References: <20090831132139.GA5425@infradead.org>
+ <20090907131026.GC32427@mit.edu>
+ <20100404134729.GA1388@ucw.cz>
+ <201004041259.18741.rob@landley.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100404125354.GA3908@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <201004041259.18741.rob@landley.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Apr 04, 2010 at 12:59:16PM -0500, Rob Landley wrote:
+> I don't know of a server anywhere that can afford an unscheduled
+> extra four hours of downtime due to the system deciding to fsck
+> itself, and I don't know a Linux laptop user anywhere who would be
+> happy to fire up their laptop and suddenly be told "oh, you can't do
+> anything with it for two hours, and you can't power it down either".
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+So what I recommend for server class machines is to either turn off
+the automatic fsck's (it's the default, but it's documented and there
+are supported ways of turning it off --- that's hardly developers
+"ramming" it down user's throats), or more preferably, to use LVM, and
+then use a snapshot and running fsck on the snapshot.
 
-> Em Sun, Apr 04, 2010 at 11:58:27AM +0200, Ingo Molnar escreveu:
-> > * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-> > > Arnaldo Carvalho de Melo (2):
-> > >   perf newt: Add a "Zoom into foo.so DSO" and reverse operations
-> > >   perf TUI: Add a "Zoom into COMM(PID) thread" and reverse operations
-> > 
-> > Pulled, thanks Arnaldo!
-> > 
-> > There's still a few basic usability glitches that i've noticed:
-> > 
-> >  - it's not clear how to zoom out, once zoomed in
-> 
-> I'll use the title line to store the name of the DSO and Thread and the help 
-> line to state that to zoom out, press -> + zoom out, and I think that it is 
-> a good idea to use 'd' and 'D' to zoom in/out of DSOs and 't' and 'T' to 
-> zoom in/out of DSOs.
+> I'm all for btrfs coming along and being able to fsck itself behind
+> my back where I don't have to care about it.  (Although I want to
+> tell it _not_ to do that when on battery power.)  
 
-Cool, a help line will do the trick i'm sure. The only problem situation is 
-when there is zero information about how to proceed - some people exit and 
-dont ever come back in that case :-)
+You can do this with ext3/ext4 today, now.  Just take a look at
+e2croncheck in the contrib directory of e2fsprogs.  Changing it to not
+do this when on battery power is a trivial exercise.  
 
-> >  - there's no help screen and no help line for people to see what can be 
-> >    done on a given screen. While it's good that the intuitive things work
-> >    by default (arrow keys, escape, enter, etc.), there should also be additional
-> >    visual information about what can be done.
-> 
-> F1 and textboxes with a short description of what can be done given for the 
-> first time or till the user presses "Suppress these info boxes" will be 
-> added.
+> My laptop power fails all the time, due to battery exhaustion.  Back
+> under KDE it was decent about suspending when it was ran low on
+> power, but ever since KDE 4 came out and I had to switch to XFCE,
+> it's using the gnome infrastructure, which collects funky statistics
+> and heuristics but can never quite save them to disk because
+> suddenly running out of power when it thinks it's got 20 minutes
+> left doesn't give it the opportunity to save its database.  So it'll
+> never auto-suspend, just suddenly die if I don't hit the button.
 
-Maybe we need 'h' and '?' in addition of F1, as F1 is often already mapped and 
-caught by the terminal (it is so with gnome-terminal).
+Hmm, why are you running on battery so often?  I make a point of
+running connected to the AC mains whenever possible, because a LiOn
+battery only has about 200 full-cycle charge/discharges in it, and
+given the cost of LiOn batteries, basically each charge/discharge
+cycle costs a dollar each.  So I only run on batteries when I
+absolutely have to, and in practice it's rare that I dip below 30% or
+so.
 
->  
-> >  - i think double escape should exit, right now it stays at the 'are you sure'
-> >    screen
-> 
-> Here I thought that something had to be done to avoid that accidentally 
-> pressing ESC two times or having "Yes" as default option, trowing away 
-> possibly a long processed session, what do others think about it?
+> As a result of one of these, two large media files in my "anime"
+> subdirectory are not only crosslinked, but the common sector they
+> share is bad.  (It ran out of power in the act of writing that
+> sector.  I left it copying large files to the drive and forgot to
+> plug it in, and it did the loud click emergency park and power down
+> thing when the hardware voltage regulator tripped.)
 
-Yeah, i think you are right.
+So e2fsck would fix the cross-linking.  We do need to have some better
+tools to do forced rewrite of sectors that have gone bad in a HDD.  It
+can be done by using badblocks -n, but translating the sector number
+emitted by the device driver (which for some drivers is relative to
+the beginning of the partition, and for others is relative to the
+beginning of the disk).  It is possible to run badblocks -w on the
+whole disk, of course, but it's better to just run it on the specific
+block in question.
 
-> I think that ESC + "Yes" as a default may be ok, as two keys need to be 
-> pressed (ESC + Enter), enough warning/confirmation, I gues, right?
+> I'm much more comfortable living with this until I can get a new laptop than 
+> with the idea of running fsck on the system and letting it do who knows what 
+> it response to something that is not actually a problem.
 
-Ok, that would work!
+Well, it actually is a problem.  And there may be other problems
+hiding that you're not aware of.  Running "badblocks -b 4096 -n" may
+discover other blocks that have failed, and you can then decide
+whether you want to let fsck fix things up.  If you don't, though,
+it's probably not fair to blame ext3 or e2fsck for any future
+failures (not that it's likely to stop you :-).
 
-Thanks,
-
-	Ingo
+	      	   	       	       	   - Ted
