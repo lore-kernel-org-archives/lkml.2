@@ -1,61 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882Ab0DDH0T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 03:26:19 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:48512 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751542Ab0DDH0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 03:26:13 -0400
-Date: Sun, 4 Apr 2010 17:26:05 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kyle@mcmartin.ca
-Subject: Re: linux-next: build warning after merge of the tree
-Message-Id: <20100404172605.098eb8ad.sfr@canb.auug.org.au>
-In-Reply-To: <20100328.185707.161194820.davem@davemloft.net>
-References: <20100329103139.1a735227.sfr@canb.auug.org.au>
-	<20100328.185707.161194820.davem@davemloft.net>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sun__4_Apr_2010_17_26_05_+1000_ouKpu5uhsFq5sqW+"
+	id S1751931Ab0DDHaH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 03:30:07 -0400
+Received: from smtprelay03.ispgateway.de ([80.67.31.37]:40228 "EHLO
+	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab0DDHaB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Apr 2010 03:30:01 -0400
+X-Greylist: delayed 321 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Apr 2010 03:30:01 EDT
+Message-ID: <4BB83EAE.5090609@bwalle.de>
+Date: Sun, 04 Apr 2010 09:24:30 +0200
+From: Bernhard Walle <bernhard@bwalle.de>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; de; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Joerg Roedel <joro@8bytes.org>, nhorman@redhat.com, nhorman@tuxdriver.com,
+       Joerg Roedel <joerg.roedel@amd.com>, kexec@lists.infradead.org,
+       linux-kernel@vger.kernel.org, Chris Wright <chrisw@sous-sol.org>,
+       hbabu@us.ibm.com, iommu@lists.linux-foundation.org, vgoyal@redhat.com
+Subject: Re: [PATCH 3/4] Revert "x86: disable IOMMUs on kernel crash"
+References: <20100403012751.834020949@sous-sol.org>	<20100403012820.229410717@sous-sol.org>	<20100403174128.GQ24846@8bytes.org> <m1vdc8juju.fsf@fess.ebiederm.org>
+In-Reply-To: <m1vdc8juju.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: bernhard@bwalle.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__4_Apr_2010_17_26_05_+1000_ouKpu5uhsFq5sqW+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Am 03.04.10 19:49, schrieb Eric W. Biederman:
+> Not a problem.  We require a lot of things of the kdump kernel,
+> and it is immediately apparent in a basic sanity test.
 
-Hi Dave,
+Also, in most cases (for example: distribution kernels), the kdump
+kernel nowadays is identical to the running kernel. So, if the running
+kernel has IOMMU support, the kdump kernel also has.
 
-On Sun, 28 Mar 2010 18:57:07 -0700 (PDT) David Miller <davem@davemloft.net>=
- wrote:
->
-> Strange, it didn't warn here.
->=20
-> I just committed the following, let me know if it fixes
-> this.
 
-Yeah, that did it, thanks
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Sun__4_Apr_2010_17_26_05_+1000_ouKpu5uhsFq5sqW+
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAku4Pw0ACgkQjjKRsyhoI8zU5ACdGMLv3IV3wVDr0W4XvCF2S9KD
-VpwAoK6flZ40PViuzZuh/TD2on9axKtf
-=omtc
------END PGP SIGNATURE-----
-
---Signature=_Sun__4_Apr_2010_17_26_05_+1000_ouKpu5uhsFq5sqW+--
+Regards,
+Bernhard
