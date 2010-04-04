@@ -1,101 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396Ab0DDXhN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 19:37:13 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:42291 "EHLO e3.ny.us.ibm.com"
+	id S1752988Ab0DDXk7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 19:40:59 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:56034 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751384Ab0DDXhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 19:37:06 -0400
-Date: Sun, 4 Apr 2010 16:37:02 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-       Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       Dmitry Torokhov <dtor@mail.ru>
-Subject: Re: A few questions and issues with dynticks, NOHZ and powertop
-Message-ID: <20100404233702.GA24102@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100403223328.GA4507@comet.dominikbrodowski.net>
- <Pine.LNX.4.44L0.1004041110010.2750-100000@netrider.rowland.org>
- <20100404163924.GA18428@comet.dominikbrodowski.net>
- <20100404204725.GC2644@linux.vnet.ibm.com>
+	id S1751384Ab0DDXky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Apr 2010 19:40:54 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH] ACPI / PM: Move ACPI video resume to a PM notifier
+Date: Mon, 5 Apr 2010 01:43:51 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+       pm list <linux-pm@lists.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>
+References: <201003040125.30091.rjw@sisk.pl>
+In-Reply-To: <201003040125.30091.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100404204725.GC2644@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004050143.51109.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 04, 2010 at 01:47:25PM -0700, Paul E. McKenney wrote:
-> On Sun, Apr 04, 2010 at 06:39:24PM +0200, Dominik Brodowski wrote:
-> > On Sun, Apr 04, 2010 at 11:17:37AM -0400, Alan Stern wrote:
-> > > On Sun, 4 Apr 2010, Dominik Brodowski wrote:
-> > > 
-> > > > Booting a SMP-capable kernel with "nosmp", or manually offlining one CPU
-> > > > (or -- though I haven't tested it -- booting a SMP-capable kernel on a
-> > > > system with merely one CPU) means that in up to about half of the calls to
-> > > > tick_nohz_stop_sched_tick() are aborted due to rcu_needs_cpu(). This is
-> > > > quite strange to me: AFAIK, RCU is an excellent tool for SMP, but not really
-> > > > needed for UP?
-> > > 
-> > > I can't answer the real question here, not knowing enough about the RCU
-> > > implementation.  However, your impression is wrong: RCU very definitely
-> > > _is_ useful and needed on UP systems.  It coordinates among processes
-> > > (and interrupt handlers) as well as among processors.
-> > 
-> > Okay, but still: can't this be sped up by much on UP (especially if
-> > CONFIG_RCU_FAST_NO_HZ is set), so that we can go to sleep right away?
+Hi Len,
+
+On Thursday 04 March 2010, Rafael J. Wysocki wrote:
+> There is a problem with the ACPI video resume routine that it's
+> executed before the GPU that may be accessed by it.  To fix this
+> issue, move the ACPI video resume to a power management notifier,
+> so that it's executed after resuming all devices, including the GPU.
 > 
-> One situation that will prevent CONFIG_RCU_FAST_NO_HZ from putting the
-> machine to sleep right away is if there is an RCU callback posted that
-> spawns another RCU callback, and so on.  CONFIG_RCU_FAST_NO_HZ will handle
-> one callback that spawns another, but it gives up if the second callback
-> spawns a third.
-> 
-> Might this be what is happening to you?
-> 
-> If so, would you be willing to patch your kernel?  RCU_NEEDS_CPU_FLUSHES
-> is currently set to 5, and might be set to (say) 8.  This is defined
-> in kernel/rcutree_plugin.h, near line 990.
-> 
-> Another thing to try would be running with TINY_RCU, at least if it is
-> OK that RCU be non-preemptible.
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-And you did mention offlining some CPUs above.  The folloiwng patch
-(from Lai Jiangshan) is needed to handle this case.
+Please replace the $subject patch with the appended one.
 
-							Thanx, Paul
+The problem is that the notifier is also executed while we're checking for
+the presence of hibernation image during boot and in that case we'll set the
+brightness to a wrong value if device->backlight->props.brightness  is not
+initialized by acpi_video_device_find_cap().
 
-------------------------------------------------------------------------
+Rafael
 
-commit 6a2ae79877827355b747c0b91133a963b74ed396
-Author: Lai Jiangshan <laijs@cn.fujitsu.com>
-Date:   Tue Mar 30 18:40:36 2010 +0800
+---
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: ACPI / PM: Move ACPI video resume to a PM notifier
 
-    rcu: ignore offline CPUs in last non-dyntick-idle CPU check
-    
-    Offline CPUs are not in nohz_cpu_mask, but can be ignored when checking
-    for the last non-dyntick-idle CPU.  This patch therefore only checks
-    online CPUs for not being dyntick idle, allowing fast entry into
-    full-system dyntick-idle state even when there are some offline CPUs.
-    
-    Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+There is a problem with the ACPI video resume routine that it's
+executed before the GPU that may be accessed by it.  To fix this
+issue, move the ACPI video resume to a power management notifier,
+so that's executed after resuming all devices, including the GPU.
 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 79b53bd..687c4e9 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1016,7 +1016,7 @@ int rcu_needs_cpu(int cpu)
+Fixes https://bugzilla.kernel.org/show_bug.cgi?id=15096, which is
+a listed regression from 2.6.31.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/acpi/video.c |   38 ++++++++++++++++++++++++++++++--------
+ 1 file changed, 30 insertions(+), 8 deletions(-)
+
+Index: linux-2.6/drivers/acpi/video.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/video.c
++++ linux-2.6/drivers/acpi/video.c
+@@ -43,6 +43,7 @@
+ #include <linux/dmi.h>
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
++#include <linux/suspend.h>
  
- 	/* Don't bother unless we are the last non-dyntick-idle CPU. */
- 	for_each_cpu_not(thatcpu, nohz_cpu_mask)
--		if (thatcpu != cpu) {
-+		if (cpu_online(thatcpu) && thatcpu != cpu) {
- 			per_cpu(rcu_dyntick_drain, cpu) = 0;
- 			per_cpu(rcu_dyntick_holdoff, cpu) = jiffies - 1;
- 			return rcu_needs_cpu_quick_check(cpu);
+ #define PREFIX "ACPI: "
+ 
+@@ -88,7 +89,6 @@ module_param(allow_duplicates, bool, 064
+ static int register_count = 0;
+ static int acpi_video_bus_add(struct acpi_device *device);
+ static int acpi_video_bus_remove(struct acpi_device *device, int type);
+-static int acpi_video_resume(struct acpi_device *device);
+ static void acpi_video_bus_notify(struct acpi_device *device, u32 event);
+ 
+ static const struct acpi_device_id video_device_ids[] = {
+@@ -104,7 +104,6 @@ static struct acpi_driver acpi_video_bus
+ 	.ops = {
+ 		.add = acpi_video_bus_add,
+ 		.remove = acpi_video_bus_remove,
+-		.resume = acpi_video_resume,
+ 		.notify = acpi_video_bus_notify,
+ 		},
+ };
+@@ -159,6 +158,7 @@ struct acpi_video_bus {
+ 	struct proc_dir_entry *dir;
+ 	struct input_dev *input;
+ 	char phys[32];	/* for input device */
++	struct notifier_block pm_nb;
+ };
+ 
+ struct acpi_video_device_flags {
+@@ -1020,6 +1020,13 @@ static void acpi_video_device_find_cap(s
+ 		if (IS_ERR(device->backlight))
+ 			return;
+ 
++		/*
++		 * Save current brightness level in case we have to restore it
++		 * before acpi_video_device_lcd_set_level() is called next time.
++		 */
++		device->backlight->props.brightness =
++				acpi_video_get_brightness(device->backlight);
++
+ 		result = sysfs_create_link(&device->backlight->dev.kobj,
+ 					   &device->dev->dev.kobj, "device");
+ 		if (result)
+@@ -2235,24 +2242,31 @@ static void acpi_video_device_notify(acp
+ 	return;
+ }
+ 
+-static int instance;
+-static int acpi_video_resume(struct acpi_device *device)
++static int acpi_video_resume(struct notifier_block *nb,
++				unsigned long val, void *ign)
+ {
+ 	struct acpi_video_bus *video;
+ 	struct acpi_video_device *video_device;
+ 	int i;
+ 
+-	if (!device || !acpi_driver_data(device))
+-		return -EINVAL;
++	switch (val) {
++	case PM_HIBERNATION_PREPARE:
++	case PM_SUSPEND_PREPARE:
++	case PM_RESTORE_PREPARE:
++		return NOTIFY_DONE;
++	}
+ 
+-	video = acpi_driver_data(device);
++	video = container_of(nb, struct acpi_video_bus, pm_nb);
++
++	dev_info(&video->device->dev, "Restoring backlight state\n");
+ 
+ 	for (i = 0; i < video->attached_count; i++) {
+ 		video_device = video->attached_array[i].bind_info;
+ 		if (video_device && video_device->backlight)
+ 			acpi_video_set_brightness(video_device->backlight);
+ 	}
+-	return AE_OK;
++
++	return NOTIFY_OK;
+ }
+ 
+ static acpi_status
+@@ -2276,6 +2290,8 @@ acpi_video_bus_match(acpi_handle handle,
+ 	return AE_OK;
+ }
+ 
++static int instance;
++
+ static int acpi_video_bus_add(struct acpi_device *device)
+ {
+ 	struct acpi_video_bus *video;
+@@ -2369,6 +2385,10 @@ static int acpi_video_bus_add(struct acp
+ 	       video->flags.rom ? "yes" : "no",
+ 	       video->flags.post ? "yes" : "no");
+ 
++	video->pm_nb.notifier_call = acpi_video_resume;
++	video->pm_nb.priority = 0;
++	register_pm_notifier(&video->pm_nb);
++
+ 	return 0;
+ 
+  err_free_input_dev:
+@@ -2395,6 +2415,8 @@ static int acpi_video_bus_remove(struct 
+ 
+ 	video = acpi_driver_data(device);
+ 
++	unregister_pm_notifier(&video->pm_nb);
++
+ 	acpi_video_bus_stop_devices(video);
+ 	acpi_video_bus_put_devices(video);
+ 	acpi_video_bus_remove_fs(device);
