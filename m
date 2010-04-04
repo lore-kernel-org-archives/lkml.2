@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079Ab0DDTCc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 15:02:32 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:44160 "EHLO mx3.mail.elte.hu"
+	id S1754121Ab0DDTF2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 15:05:28 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:59861 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750883Ab0DDTC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 15:02:27 -0400
-Date: Sun, 4 Apr 2010 21:02:11 +0200
+	id S1751440Ab0DDTFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Apr 2010 15:05:22 -0400
+Date: Sun, 4 Apr 2010 21:05:12 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Arnd Bergmann <arnd@arndb.de>, Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL] perf updates
-Message-ID: <20100404190211.GA4564@elte.hu>
-References: <1270391804-6552-1-git-send-regression-fweisbec@gmail.com>
- <20100404144223.GB5608@nowhere>
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH 0/2] perf newt: Zoom operations
+Message-ID: <20100404190512.GB4564@elte.hu>
+References: <1270345250-4833-1-git-send-email-acme@infradead.org>
+ <20100404095827.GA30536@elte.hu>
+ <20100404125354.GA3908@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100404144223.GB5608@nowhere>
+In-Reply-To: <20100404125354.GA3908@ghostprotocols.net>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -36,43 +35,56 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-> On Sun, Apr 04, 2010 at 04:36:40PM +0200, Frederic Weisbecker wrote:
-> > Ingo,
+> Em Sun, Apr 04, 2010 at 11:58:27AM +0200, Ingo Molnar escreveu:
+> > * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> > > Arnaldo Carvalho de Melo (2):
+> > >   perf newt: Add a "Zoom into foo.so DSO" and reverse operations
+> > >   perf TUI: Add a "Zoom into COMM(PID) thread" and reverse operations
 > > 
-> > Please pull the perf/core branch that can be found at:
+> > Pulled, thanks Arnaldo!
 > > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> > 	perf/core
+> > There's still a few basic usability glitches that i've noticed:
 > > 
-> > Thanks,
-> > 	Frederic
-> > ---
-> > 
-> > Frederic Weisbecker (2):
-> >       perf: Drop the frame reliablity check
-> >       perf: Fetch hot regs from the template caller
-> > 
-> > Arnd Bergmann (1):
-> >       perf_event: Make perf fd non seekable
-> > 
-> > Hitoshi Mitake (1):
-> >       Swap inclusion order of util.h and string.h in util/string.c
+> >  - it's not clear how to zoom out, once zoomed in
 > 
-> 
-> I just did a last minute rebase, just to prepend the title of this
-> one with "perf: "
-> 
-> 
-> > 
-> > 
-> >  arch/x86/kernel/cpu/perf_event.c |    3 +--
-> >  include/trace/ftrace.h           |   23 ++++++++++++-----------
-> >  kernel/perf_event.c              |    1 +
-> >  tools/perf/util/string.c         |    2 +-
-> >  4 files changed, 15 insertions(+), 14 deletions(-)
+> I'll use the title line to store the name of the DSO and Thread and the help 
+> line to state that to zoom out, press -> + zoom out, and I think that it is 
+> a good idea to use 'd' and 'D' to zoom in/out of DSOs and 't' and 'T' to 
+> zoom in/out of DSOs.
 
-Pulled, thanks a lot Frederic!
+Cool, a help line will do the trick i'm sure. The only problem situation is 
+when there is zero information about how to proceed - some people exit and 
+dont ever come back in that case :-)
+
+> >  - there's no help screen and no help line for people to see what can be 
+> >    done on a given screen. While it's good that the intuitive things work
+> >    by default (arrow keys, escape, enter, etc.), there should also be additional
+> >    visual information about what can be done.
+> 
+> F1 and textboxes with a short description of what can be done given for the 
+> first time or till the user presses "Suppress these info boxes" will be 
+> added.
+
+Maybe we need 'h' and '?' in addition of F1, as F1 is often already mapped and 
+caught by the terminal (it is so with gnome-terminal).
+
+>  
+> >  - i think double escape should exit, right now it stays at the 'are you sure'
+> >    screen
+> 
+> Here I thought that something had to be done to avoid that accidentally 
+> pressing ESC two times or having "Yes" as default option, trowing away 
+> possibly a long processed session, what do others think about it?
+
+Yeah, i think you are right.
+
+> I think that ESC + "Yes" as a default may be ok, as two keys need to be 
+> pressed (ESC + Enter), enough warning/confirmation, I gues, right?
+
+Ok, that would work!
+
+Thanks,
 
 	Ingo
