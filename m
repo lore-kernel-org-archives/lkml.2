@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691Ab0DDTdp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 15:33:45 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:33567 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751083Ab0DDTdi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 15:33:38 -0400
-Date: Sun, 4 Apr 2010 21:34:06 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Philippe Troin <phil@fifi.org>
-Cc: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>,
-       Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-       linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: webcam problem after suspend/hibernate
-Message-ID: <20100404193405.GA15065@elf.ucw.cz>
-References: <45cc95261003301455u10e6ee24pfb66176bfb279d1@mail.gmail.com>
- <201003310125.26266.laurent.pinchart@ideasonboard.com>
- <v2x45cc95261003311251idfdc9b8anb7b2060618611d30@mail.gmail.com>
- <20100401165606.GA1677@ucw.cz>
- <87aatn9k7j.fsf@old-tantale.fifi.org>
- <20100404132223.GA1346@ucw.cz>
- <87ljd3ujrp.fsf@old-tantale.fifi.org>
+	id S1752100Ab0DDTfb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 15:35:31 -0400
+Received: from THUNK.ORG ([69.25.196.29]:57404 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751104Ab0DDTfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Apr 2010 15:35:23 -0400
+Date: Sun, 4 Apr 2010 15:35:02 -0400
+From: tytso@mit.edu
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Rob Landley <rob@landley.net>, Ric Wheeler <rwheeler@redhat.com>,
+       Krzysztof Halasa <khc@pm.waw.pl>, Christoph Hellwig <hch@infradead.org>,
+       Mark Lord <lkml@rtr.ca>, Michael Tokarev <mjt@tls.msk.ru>,
+       david@lang.hm, NeilBrown <neilb@suse.de>,
+       Florian Weimer <fweimer@bfk.de>,
+       Goswin von Brederlow <goswin-v-b@web.de>,
+       kernel list <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@osdl.org>, mtk.manpages@gmail.com,
+       rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+       linux-ext4@vger.kernel.org, corbet@lwn.net
+Subject: Re: fsck more often when powerfail is detected (was Re: wishful
+ thinking about atomic, multi-sector or full MD stripe width, writes in
+ storage)
+Message-ID: <20100404193502.GI18524@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Pavel Machek <pavel@ucw.cz>,
+	Rob Landley <rob@landley.net>, Ric Wheeler <rwheeler@redhat.com>,
+	Krzysztof Halasa <khc@pm.waw.pl>,
+	Christoph Hellwig <hch@infradead.org>, Mark Lord <lkml@rtr.ca>,
+	Michael Tokarev <mjt@tls.msk.ru>, david@lang.hm,
+	NeilBrown <neilb@suse.de>, Florian Weimer <fweimer@bfk.de>,
+	Goswin von Brederlow <goswin-v-b@web.de>,
+	kernel list <linux-kernel@vger.kernel.org>,
+	Andrew Morton <akpm@osdl.org>, mtk.manpages@gmail.com,
+	rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+	linux-ext4@vger.kernel.org, corbet@lwn.net
+References: <20090831132139.GA5425@infradead.org>
+ <20090907131026.GC32427@mit.edu>
+ <20100404134729.GA1388@ucw.cz>
+ <201004041259.18741.rob@landley.net>
+ <20100404184546.GA18873@elf.ucw.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87ljd3ujrp.fsf@old-tantale.fifi.org>
-X-Warning: Reading this can be dangerous to your mental health.
+In-Reply-To: <20100404184546.GA18873@elf.ucw.cz>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > If unload/reload of uvcvideo helps, it is most likely problem in that.
-> > 
-> > If unload/reload of ehci_hcd is needed, it is most likely ehci problem.
+On Sun, Apr 04, 2010 at 08:45:46PM +0200, Pavel Machek wrote:
 > 
-> My testing shows that:
+> I'm not sure of what right intervals between check are for you, but
+> I'd say that fsck once a year or every 100 mounts or every 10 power
+> failures is probably good idea for everybody...
+
+For people using e2croncheck, where you can check it when the system
+is idle and without needing to do a power cycle, I'd recommend once a
+week, actually.
+
+> > hours of downtime due to the system deciding to fsck itself, and I
+> > don't know a Linux laptop user anywhere who would be happy to fire
+> > up their laptop and suddenly be told "oh, you can't do anything
+> > with it for two hours, and you can't power it down either".
 > 
->  1. If I remove uvcvideo BEFORE suspend and reinsert it after resume,
->     it works.  However, I cannot always rmmod uvcvideo before suspend
->     as it may be in use.
-> 
->  2. As a work around, removing ehci_hcd and reinserting ehci_hcd upon
->     resume works as well.
-> 
->  3. Since my distribution's kernels come with ehci_hcd built into the
->     kernel, and I cannot do #2 any more, I also found that unbinding
->     and rebinding the device (with the script I sent earlier on) works
->     as well.
-> 
-> I think uvcvideo is failing to reinitialize the camera on resume, and
-> forcing an uvcvideo "reset" with either of these three methods kicks
-> uvcvideo into working again.
+> On laptop situation is easy. Pull the plug, hit reset, wait for fsck,
+> plug AC back in. Done that, too :-).
 
-Ok, that puts the problem firmly into uvcvideo area.
+Some distributions will allow you to cancel an fsck; either by using
+^C, or hitting escape.  That's a matter for the boot scripts, which
+are distribution specific.  Ubuntu has a way of doing this, for
+example, if I recall correctly --- although since I've started using
+e2croncheck, I've never had an issue with an e2fsck taking place on
+bootup.  Also, ext4, fscks are so much much faster that even before I
+upgraded to using an SSD, it's never been an issue for me.  It's
+certainly not hours any more....
 
-Try changing its _resume routine to whatever is done on device
-unplug... it should be rather easy, and is quite close to "correct"
-solution.
+> Yep, it would be nice if fsck had "escape" button.
 
+Complain to your distribution.  :-)
 
-									Pavel 
+Or this is Linux and open source; fix it yourself, and submit the
+patches back to your distribution.  If all you want to do is whine,
+then maybe Rob's choice is the best way, go switch to the velvet-lined
+closed system/jail which is the Macintosh.  :-)
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+(I created e2croncheck to solve my problem; if that isn't good enough
+for you, I encourage you to find/create your own fixes.)
+
+							- Ted
