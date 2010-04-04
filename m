@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab0DDPGV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 11:06:21 -0400
-Received: from nat.nue.novell.com ([195.135.221.3]:34301 "EHLO
-	emea5-mh.id5.novell.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754500Ab0DDPGP (ORCPT
+	id S1754770Ab0DDPRp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 11:17:45 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:54187 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754662Ab0DDPRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 11:06:15 -0400
-Subject: Re: RFC: Ideal Adaptive Spinning Conditions
-From: "Peter W. Morreale" <pmorreale@novell.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: rostedt@goodmis.org, Darren Hart <dvhltc@us.ibm.com>,
-       "lkml," <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Gregory Haskins <ghaskins@novell.com>,
-       Sven-Thorsten Dietrich <sdietrich@novell.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Chris Mason <chris.mason@oracle.com>,
-       john cooper <john.cooper@third-harmonic.com>
-In-Reply-To: <4BB7F05A.6010102@redhat.com>
-References: <4BB3D90C.3030108@us.ibm.com>
-	 <1270078689.19685.8040.camel@gandalf.stny.rr.com>
-	 <4BB40140.20109@us.ibm.com>
-	 <1270088753.19685.8218.camel@gandalf.stny.rr.com>
-	 <4BB7F05A.6010102@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Novell Inc.
-Date: Sun, 04 Apr 2010 09:06:04 -0600
-Message-ID: <1270393564.2997.141.camel@hermosa.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	Sun, 4 Apr 2010 11:17:38 -0400
+Date: Sun, 4 Apr 2010 11:17:37 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Dominik Brodowski <linux@dominikbrodowski.net>
+cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Arjan van de Ven <arjan@linux.intel.com>,
+       Dmitry Torokhov <dtor@mail.ru>
+Subject: Re: A few questions and issues with dynticks, NOHZ and powertop
+In-Reply-To: <20100403223328.GA4507@comet.dominikbrodowski.net>
+Message-ID: <Pine.LNX.4.44L0.1004041110010.2750-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-04-03 at 21:50 -0400, Rik van Riel wrote:
-> On 03/31/2010 10:25 PM, Steven Rostedt wrote:
-> > On Wed, 2010-03-31 at 19:13 -0700, Darren Hart wrote:
-> >> Steven Rostedt wrote:
-> >>> On Wed, 2010-03-31 at 16:21 -0700, Darren Hart wrote:
-> >>>
-> >>>> o What type of lock hold times do we expect to benefit?
-> >>>
-> >>> 0 (that's a zero) :-p
-> >>>
-> >>> I haven't seen your patches but you are not doing a heuristic approach,
-> >>> are you? That is, do not "spin" hoping the lock will suddenly become
-> >>> free. I was against that for -rt and I would be against that for futex
-> >>> too.
-> >>
-> >> I'm not sure what you're getting at here. Adaptive spinning is indeed
-> >> hoping the lock will become free while you are spinning and checking
-> >> it's owner...
-> >
-> > I'm talking about the original idea people had of "lets spin for 50us
-> > and hope it is unlocked before then", which I thought was not a good
-> > idea.
+On Sun, 4 Apr 2010, Dominik Brodowski wrote:
+
+> Booting a SMP-capable kernel with "nosmp", or manually offlining one CPU
+> (or -- though I haven't tested it -- booting a SMP-capable kernel on a
+> system with merely one CPU) means that in up to about half of the calls to
+> tick_nohz_stop_sched_tick() are aborted due to rcu_needs_cpu(). This is
+> quite strange to me: AFAIK, RCU is an excellent tool for SMP, but not really
+> needed for UP?
+
+I can't answer the real question here, not knowing enough about the RCU
+implementation.  However, your impression is wrong: RCU very definitely
+_is_ useful and needed on UP systems.  It coordinates among processes
+(and interrupt handlers) as well as among processors.
+
+
+> 3) USB: built-in UHCI and a built-in 0a5c:2101 Broadcom Corp. A-Link
+> BlueUsbA2 Bluetooth module; built-in EHCI and a built-in 0ac8:c302 Z-Star
+> Microelectronics Corp. Vega USB 2.0 Camera.
 > 
-> Maybe not a good idea when running on bare metal, but it
-> could be a big help when running virtualized.
+> usbcore.autosuspend is enabled (= 2), of course.
 > 
-> A lock with a short hold time can, occasionally, have a
-> very long hold time, when the VCPU holding the lock is
-> preempted by the host/hypervisor.
+> Recent USB suspend statistics
+> Active  Device name
+> 100.0%	USB device  7-1 : BCM92045NMD (Broadcom Corp)
+> 100.0%	USB device  1-2 : Vega USB 2.0 Camera. (Vimicro Corp.)
+> 100.0%	USB device usb7 : UHCI Host Controller (Linux 2.6.34-rc3 uhci_hcd)
+> 100.0%	USB device usb1 : EHCI Host Controller (Linux 2.6.34-rc3 ehci_hcd)
 > 
-> An adaptive lock would spin-and-acquire if the lock holder
-> is running, while turning into a sleep lock when the lock
-> holder has been preempted.
-> 
+> Booting into /bin/bash on a SMP kernel booted with "nosmp" leads to ~ 10
+> wakeups per second; disabling the cursor helps halfway (~ 5 wakeups); and
+> manually unbinding the USB host drivers from the USB host devices finally
+> lead to ~ 1.1 wakeups per second. What's keeping USB from suspending these
+> unused devices here?
 
-Which is precisely what the RT variant does.  Each iteration of the
-'spin' loop verifies that the lock owner is on CPU.   If the owner is
-not, all other tasks stop spinning and sleep.
+Either the drivers don't support autosuspend or the devices aren't
+enabled for autosuspend.  By default, autosuspend is disabled for
+(almost) all non-hub devices.  You or your distribution must enable
+it manually by doing:
 
-So how does a timeout help in the VCPU case?  
+	echo auto >/sys/bus/usb/devices/.../power/level
 
-Best,
--PWM
+If the driver doesn't support autosuspend then enabling it won't be
+enough; you'll also have to unbind the driver from the device.  The
+easiest way to do this is to unconfigure the device:
 
+	echo 0 >/sys/bus/usb/devices/.../bConfigurationValue
 
-
-
+Alan Stern
 
