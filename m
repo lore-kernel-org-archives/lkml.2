@@ -1,200 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab0DDNLe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 09:11:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63632 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752413Ab0DDNL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 09:11:28 -0400
-Date: Sun, 4 Apr 2010 16:07:41 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "David S. Miller" <davem@davemloft.net>,
-       Rusty Russell <rusty@rustcorp.com.au>, Jiri Pirko <jpirko@redhat.com>,
-       "Michael S. Tsirkin" <mst@redhat.com>, Shirley Ma <xma@us.ibm.com>,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2] virtio-net: move sg off stack
-Message-ID: <20100404130741.GA7500@redhat.com>
+	id S1754171Ab0DDNWk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 09:22:40 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:54854 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753255Ab0DDNWc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Apr 2010 09:22:32 -0400
+Date: Sun, 4 Apr 2010 15:22:24 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Philippe Troin <phil@fifi.org>
+Cc: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>,
+       Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+       linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: webcam problem after suspend/hibernate
+Message-ID: <20100404132223.GA1346@ucw.cz>
+References: <45cc95261003301455u10e6ee24pfb66176bfb279d1@mail.gmail.com> <201003310125.26266.laurent.pinchart@ideasonboard.com> <v2x45cc95261003311251idfdc9b8anb7b2060618611d30@mail.gmail.com> <20100401165606.GA1677@ucw.cz> <87aatn9k7j.fsf@old-tantale.fifi.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <87aatn9k7j.fsf@old-tantale.fifi.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move sg structure off stack and into virtnet_info structure.
-This helps remove extra sg_init_table calls as well as reduce
-stack usage.
+Hi!
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Tested-by: Michael S. Tsirkin <mst@redhat.com>
----
+> > > Do you mean the dmesg output ?
+> > > A full dmesg is included in this address :
+> > > http://pastebin.com/8XU619Uk
+> > > Not in all suspend/hibernate the problem comes, only in some of them
+> > > and this included dmesg output is just after a non working case of
+> > > webcam fault.
+> > > 
+> > > 
+> > > I also have found this in `/var/log/messages | grep uvcvideo`
+> > > Mar 31 00:31:16 linux-l365 kernel: [399905.714743] usbcore:
+> > > deregistering interface driver uvcvideo
+> > > Mar 31 00:31:24 linux-l365 kernel: [399914.121386] uvcvideo: Found UVC
+> > > 1.00 device LG Webcam (0c45:62c0)
+> > > Mar 31 00:31:24 linux-l365 kernel: [399914.135661] usbcore: registered
+> > > new interface driver uvcvideo
+> > 
+> > Also try unloading uvcvideo before suspend and reloading it after
+> > resume...
+> 
+> I have a similar problem with a Creative Optia webcam.
+> 
+> I have found that removing the ehci_hcd module and reinserting it
+> fixes the problem.
+> 
+> If your kernel ships with ehci_hcd built-in (F11 and later), the
+> script included also fixes the problem (it rebind the device).
+> 
+> Of course, I'd love to see this issue fixed.
 
-Changes from v1: fix compilation of add_recvbuf_mergeable (&rx_sg -> rx_sg)
+If unload/reload of uvcvideo helps, it is most likely problem in that.
 
-This patch works for me. Shirley, could you find the time to test
-this as well please?
+If unload/reload of ehci_hcd is needed, it is most likely ehci problem.
 
- drivers/net/virtio_net.c |   52 ++++++++++++++++++++++-----------------------
- 1 files changed, 25 insertions(+), 27 deletions(-)
-
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 3f5be35..186dd6a 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -39,8 +39,7 @@ module_param(gso, bool, 0444);
- 
- #define VIRTNET_SEND_COMMAND_SG_MAX    2
- 
--struct virtnet_info
--{
-+struct virtnet_info {
- 	struct virtio_device *vdev;
- 	struct virtqueue *rvq, *svq, *cvq;
- 	struct net_device *dev;
-@@ -61,6 +60,10 @@ struct virtnet_info
- 
- 	/* Chain pages by the private ptr. */
- 	struct page *pages;
-+
-+	/* fragments + linear part + virtio header */
-+	struct scatterlist rx_sg[MAX_SKB_FRAGS + 2];
-+	struct scatterlist tx_sg[MAX_SKB_FRAGS + 2];
- };
- 
- struct skb_vnet_hdr {
-@@ -323,10 +326,8 @@ static int add_recvbuf_small(struct virtnet_info *vi, gfp_t gfp)
- {
- 	struct sk_buff *skb;
- 	struct skb_vnet_hdr *hdr;
--	struct scatterlist sg[2];
- 	int err;
- 
--	sg_init_table(sg, 2);
- 	skb = netdev_alloc_skb_ip_align(vi->dev, MAX_PACKET_LEN);
- 	if (unlikely(!skb))
- 		return -ENOMEM;
-@@ -334,11 +335,11 @@ static int add_recvbuf_small(struct virtnet_info *vi, gfp_t gfp)
- 	skb_put(skb, MAX_PACKET_LEN);
- 
- 	hdr = skb_vnet_hdr(skb);
--	sg_set_buf(sg, &hdr->hdr, sizeof hdr->hdr);
-+	sg_set_buf(vi->rx_sg, &hdr->hdr, sizeof hdr->hdr);
- 
--	skb_to_sgvec(skb, sg + 1, 0, skb->len);
-+	skb_to_sgvec(skb, vi->rx_sg + 1, 0, skb->len);
- 
--	err = vi->rvq->vq_ops->add_buf(vi->rvq, sg, 0, 2, skb);
-+	err = vi->rvq->vq_ops->add_buf(vi->rvq, vi->rx_sg, 0, 2, skb);
- 	if (err < 0)
- 		dev_kfree_skb(skb);
- 
-@@ -347,13 +348,11 @@ static int add_recvbuf_small(struct virtnet_info *vi, gfp_t gfp)
- 
- static int add_recvbuf_big(struct virtnet_info *vi, gfp_t gfp)
- {
--	struct scatterlist sg[MAX_SKB_FRAGS + 2];
- 	struct page *first, *list = NULL;
- 	char *p;
- 	int i, err, offset;
- 
--	sg_init_table(sg, MAX_SKB_FRAGS + 2);
--	/* page in sg[MAX_SKB_FRAGS + 1] is list tail */
-+	/* page in vi->rx_sg[MAX_SKB_FRAGS + 1] is list tail */
- 	for (i = MAX_SKB_FRAGS + 1; i > 1; --i) {
- 		first = get_a_page(vi, gfp);
- 		if (!first) {
-@@ -361,7 +360,7 @@ static int add_recvbuf_big(struct virtnet_info *vi, gfp_t gfp)
- 				give_pages(vi, list);
- 			return -ENOMEM;
- 		}
--		sg_set_buf(&sg[i], page_address(first), PAGE_SIZE);
-+		sg_set_buf(&vi->rx_sg[i], page_address(first), PAGE_SIZE);
- 
- 		/* chain new page in list head to match sg */
- 		first->private = (unsigned long)list;
-@@ -375,17 +374,17 @@ static int add_recvbuf_big(struct virtnet_info *vi, gfp_t gfp)
- 	}
- 	p = page_address(first);
- 
--	/* sg[0], sg[1] share the same page */
--	/* a separated sg[0] for  virtio_net_hdr only during to QEMU bug*/
--	sg_set_buf(&sg[0], p, sizeof(struct virtio_net_hdr));
-+	/* vi->rx_sg[0], vi->rx_sg[1] share the same page */
-+	/* a separated vi->rx_sg[0] for virtio_net_hdr only due to QEMU bug */
-+	sg_set_buf(&vi->rx_sg[0], p, sizeof(struct virtio_net_hdr));
- 
--	/* sg[1] for data packet, from offset */
-+	/* vi->rx_sg[1] for data packet, from offset */
- 	offset = sizeof(struct padded_vnet_hdr);
--	sg_set_buf(&sg[1], p + offset, PAGE_SIZE - offset);
-+	sg_set_buf(&vi->rx_sg[1], p + offset, PAGE_SIZE - offset);
- 
- 	/* chain first in list head */
- 	first->private = (unsigned long)list;
--	err = vi->rvq->vq_ops->add_buf(vi->rvq, sg, 0, MAX_SKB_FRAGS + 2,
-+	err = vi->rvq->vq_ops->add_buf(vi->rvq, vi->rx_sg, 0, MAX_SKB_FRAGS + 2,
- 				       first);
- 	if (err < 0)
- 		give_pages(vi, first);
-@@ -396,16 +395,15 @@ static int add_recvbuf_big(struct virtnet_info *vi, gfp_t gfp)
- static int add_recvbuf_mergeable(struct virtnet_info *vi, gfp_t gfp)
- {
- 	struct page *page;
--	struct scatterlist sg;
- 	int err;
- 
- 	page = get_a_page(vi, gfp);
- 	if (!page)
- 		return -ENOMEM;
- 
--	sg_init_one(&sg, page_address(page), PAGE_SIZE);
-+	sg_init_one(vi->rx_sg, page_address(page), PAGE_SIZE);
- 
--	err = vi->rvq->vq_ops->add_buf(vi->rvq, &sg, 0, 1, page);
-+	err = vi->rvq->vq_ops->add_buf(vi->rvq, vi->rx_sg, 0, 1, page);
- 	if (err < 0)
- 		give_pages(vi, page);
- 
-@@ -514,12 +512,9 @@ static unsigned int free_old_xmit_skbs(struct virtnet_info *vi)
- 
- static int xmit_skb(struct virtnet_info *vi, struct sk_buff *skb)
- {
--	struct scatterlist sg[2+MAX_SKB_FRAGS];
- 	struct skb_vnet_hdr *hdr = skb_vnet_hdr(skb);
- 	const unsigned char *dest = ((struct ethhdr *)skb->data)->h_dest;
- 
--	sg_init_table(sg, 2+MAX_SKB_FRAGS);
--
- 	pr_debug("%s: xmit %p %pM\n", vi->dev->name, skb, dest);
- 
- 	if (skb->ip_summed == CHECKSUM_PARTIAL) {
-@@ -553,12 +548,13 @@ static int xmit_skb(struct virtnet_info *vi, struct sk_buff *skb)
- 
- 	/* Encode metadata header at front. */
- 	if (vi->mergeable_rx_bufs)
--		sg_set_buf(sg, &hdr->mhdr, sizeof hdr->mhdr);
-+		sg_set_buf(vi->tx_sg, &hdr->mhdr, sizeof hdr->mhdr);
- 	else
--		sg_set_buf(sg, &hdr->hdr, sizeof hdr->hdr);
-+		sg_set_buf(vi->tx_sg, &hdr->hdr, sizeof hdr->hdr);
- 
--	hdr->num_sg = skb_to_sgvec(skb, sg+1, 0, skb->len) + 1;
--	return vi->svq->vq_ops->add_buf(vi->svq, sg, hdr->num_sg, 0, skb);
-+	hdr->num_sg = skb_to_sgvec(skb, vi->tx_sg + 1, 0, skb->len) + 1;
-+	return vi->svq->vq_ops->add_buf(vi->svq, vi->tx_sg, hdr->num_sg,
-+					0, skb);
- }
- 
- static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
-@@ -941,6 +937,8 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	vdev->priv = vi;
- 	vi->pages = NULL;
- 	INIT_DELAYED_WORK(&vi->refill, refill_work);
-+	sg_init_table(vi->rx_sg, ARRAY_SIZE(vi->rx_sg));
-+	sg_init_table(vi->tx_sg, ARRAY_SIZE(vi->tx_sg));
- 
- 	/* If we can receive ANY GSO packets, we must allocate large ones. */
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
 -- 
-1.7.0.2.280.gc6f05
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
