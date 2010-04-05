@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab0DEPmG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 11:42:06 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40762 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754611Ab0DEPmA (ORCPT
+	id S1755478Ab0DEPpy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 11:45:54 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:46454 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754611Ab0DEPpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 11:42:00 -0400
-Date: Mon, 5 Apr 2010 08:37:26 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-cc: Minchan Kim <minchan.kim@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Borislav Petkov <bp@alien8.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-Subject: Re: [PATCH] rmap: fix anon_vma_fork() memory leak
-In-Reply-To: <20100404190925.5daac2f3@annuminas.surriel.com>
-Message-ID: <alpine.LFD.2.00.1004050824400.21313@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1003301029250.3707@i5.linux-foundation.org> <20100402175937.GA19690@liondog.tnic> <alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org> <20100402112428.f46ddc44.akpm@linux-foundation.org> <alpine.LFD.2.00.1004021135530.3634@i5.linux-foundation.org>
- <4BB66941.1060809@redhat.com> <1270397575.1814.106.camel@barrios-desktop> <20100404190925.5daac2f3@annuminas.surriel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 5 Apr 2010 11:45:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=Rd44fk/jO7JIxpTO3GDf1SzOmkVZa9h4M5RRbVl1P6MuHM5qOajsq8HS8Zjv8HDo1Y
+         6RPgelLGaZqEz7p3GBlj1DDUN3ynXU2CuCk9nx2J3Z65AchScqgh+ykftgtAP9AeXm0i
+         WBs4cEhFFyRJKRplnJObdcY7XtPXe+b3JLIA8=
+Subject: [PATCH 1/2] ntfs : Clean up ntfs_attr_extend_initialized
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Anton Altaparmakov <aia21@cantab.net>, Al Viro <viro@zeniv.linux.org.uk>,
+       Christoph Hellwig <hch@lst.de>, Jiri Kosina <jkosina@suse.cz>,
+       linux-ntfs-dev@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 06 Apr 2010 00:45:35 +0900
+Message-ID: <1270482335.1814.136.camel@barrios-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+cached_page and lru_pvec have not been used.
+Let's remove the arguments.
 
-On Sun, 4 Apr 2010, Rik van Riel wrote:
->
-> Fix a memory leak in anon_vma_fork(), where we fail to tear down the
-> anon_vmas attached to the new VMA in case setting up the new anon_vma
-> fails.
-> 
-> Reported-by: Minchan Kim <minchan.kim@gmail.com>
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> ---
-> 
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index fcd593c..fb7ce99 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -231,6 +231,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
->  
->   out_error_free_anon_vma:
->  	anon_vma_free(anon_vma);
-> +	unlink_anon_vmas(vma);
->   out_error:
->  	return -ENOMEM;
->  }
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+---
+ fs/ntfs/file.c |    9 ++-------
+ 1 files changed, 2 insertions(+), 7 deletions(-)
 
-This looks _very_ wrong to me.
+diff --git a/fs/ntfs/file.c b/fs/ntfs/file.c
+index b681c71..41ffdcc 100644
+--- a/fs/ntfs/file.c
++++ b/fs/ntfs/file.c
+@@ -97,9 +97,6 @@ static int ntfs_file_open(struct inode *vi, struct file *filp)
+  * the page at all.  For a more detailed explanation see ntfs_truncate() in
+  * fs/ntfs/inode.c.
+  *
+- * @cached_page and @lru_pvec are just optimizations for dealing with multiple
+- * pages.
+- *
+  * Return 0 on success and -errno on error.  In the case that an error is
+  * encountered it is possible that the initialized size will already have been
+  * incremented some way towards @new_init_size but it is guaranteed that if
+@@ -109,8 +106,7 @@ static int ntfs_file_open(struct inode *vi, struct file *filp)
+  * Locking: i_mutex on the vfs inode corrseponsind to the ntfs inode @ni must be
+  *	    held by the caller.
+  */
+-static int ntfs_attr_extend_initialized(ntfs_inode *ni, const s64 new_init_size,
+-		struct page **cached_page, struct pagevec *lru_pvec)
++static int ntfs_attr_extend_initialized(ntfs_inode *ni, const s64 new_init_size)
+ {
+ 	s64 old_init_size;
+ 	loff_t old_i_size;
+@@ -1924,8 +1920,7 @@ static ssize_t ntfs_file_buffered_write(struct kiocb *iocb,
+ 	ll = ni->initialized_size;
+ 	read_unlock_irqrestore(&ni->size_lock, flags);
+ 	if (pos > ll) {
+-		err = ntfs_attr_extend_initialized(ni, pos, &cached_page,
+-				&lru_pvec);
++		err = ntfs_attr_extend_initialized(ni, pos);
+ 		if (err < 0) {
+ 			ntfs_error(vol->sb, "Cannot perform write to inode "
+ 					"0x%lx, attribute type 0x%x, because "
+-- 
+1.6.5
 
-Shouldn't the unlink_anon_vmas() be in the "out_error" case? IOW, we 
-should do it even if the "anon_vma_alloc()" failed, nbot just if the 
-"anon_vma_chain_alloc()" failed?
 
-No?
 
-What am I missing?
+-- 
+Kind regards,
+Minchan Kim
 
-			Linus
+
