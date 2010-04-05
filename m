@@ -1,106 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab0DERnk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 13:43:40 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:52360 "EHLO comal.ext.ti.com"
+	id S1755208Ab0DERqL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 13:46:11 -0400
+Received: from thunk.org ([69.25.196.29]:44757 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754736Ab0DERne (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 13:43:34 -0400
-From: "Madhusudhan" <madhu.cr@ti.com>
-To: "'Madhusudhan'" <madhu.cr@ti.com>, <me@felipebalbi.com>,
-       "'kishore kadiyala'" <kishorek.kadiyala@gmail.com>
-Cc: "'Vimal Singh'" <vimal.newwork@gmail.com>, <tony@atomide.com>,
-       <svenkatr@ti.com>, <linux-omap@vger.kernel.org>,
-       <linux-kernel@vger.kernel.org>, <jarkko.lavinen@nokia.com>
-References: <35697.192.168.10.89.1265898023.squirrel@dbdmail.itg.ti.com> <004701caab40$68b576e0$544ff780@am.dhcp.ti.com> <x2q7f9d1ffb1003302307nb8e91be0o55da59c3375f1720@mail.gmail.com> <v2yce9ab5791003302327hc67deb3akc7d18146534038f9@mail.gmail.com> <h2p7f9d1ffb1003310003z508e21dbqe37b6e1cad425866@mail.gmail.com> <003b01cad0f0$6ea78040$544ff780@am.dhcp.ti.com> <g2s7f9d1ffb1003312331o149df218g651c3e4349ac9a77@mail.gmail.com> <003c01cad1b1$da2cdbf0$544ff780@am.dhcp.ti.com> <m2n7f9d1ffb1004050556o1ed2eec8ief66d60fc85f96de@mail.gmail.com> <20100405164839.GB17388@gandalf> <007c01cad4e4$26c5a700$544ff780@am.dhcp.ti.com>
-Subject: RE: [PATCH v3] OMAP: Fix for bus width which improves SD card's peformance.
-Date: Mon, 5 Apr 2010 12:43:11 -0500
-Message-ID: <007d01cad4e7$76076350$544ff780@am.dhcp.ti.com>
+	id S1753728Ab0DERqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 13:46:08 -0400
+Date: Mon, 5 Apr 2010 13:46:03 -0400
+From: tytso@mit.edu
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
+       linux-kernel@vger.kernel.org, jens.axboe@oracle.com,
+       esandeen@redhat.com
+Subject: Re: [patch/rft] jbd2: tag journal writes as metadata I/O
+Message-ID: <20100405174603.GA24493@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Jeff Moyer <jmoyer@redhat.com>,
+	Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org, jens.axboe@oracle.com,
+	esandeen@redhat.com
+References: <x49iq8b9ep5.fsf@segfault.boston.devel.redhat.com>
+ <20100401194822.GA8401@atrey.karlin.mff.cuni.cz>
+ <x49tyrpkjmq.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <007c01cad4e4$26c5a700$544ff780@am.dhcp.ti.com>
-Thread-Index: AcrU38C+4+XFRBPqR++M66+bC7dIIAAA/D8QAADJ6bA=
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3198
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x49tyrpkjmq.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: linux-omap-owner@vger.kernel.org [mailto:linux-omap-
-> owner@vger.kernel.org] On Behalf Of Madhusudhan
-> Sent: Monday, April 05, 2010 12:19 PM
-> To: me@felipebalbi.com; 'kishore kadiyala'
-> Cc: 'Vimal Singh'; tony@atomide.com; svenkatr@ti.com; linux-
-> omap@vger.kernel.org; linux-kernel@vger.kernel.org;
-> jarkko.lavinen@nokia.com
-> Subject: RE: [PATCH v3] OMAP: Fix for bus width which improves SD card's
-> peformance.
+On Mon, Apr 05, 2010 at 11:24:13AM -0400, Jeff Moyer wrote:
+> Jan Kara <jack@suse.cz> writes:
 > 
-> 
-> 
-> > -----Original Message-----
-> > From: Felipe Balbi [mailto:me@felipebalbi.com]
-> > Sent: Monday, April 05, 2010 11:49 AM
-> > To: kishore kadiyala
-> > Cc: Madhusudhan; Vimal Singh; tony@atomide.com; svenkatr@ti.com; linux-
-> > omap@vger.kernel.org; linux-kernel@vger.kernel.org;
-> > jarkko.lavinen@nokia.com
-> > Subject: Re: [PATCH v3] OMAP: Fix for bus width which improves SD card's
-> > peformance.
+> >   Hi,
 > >
-> > Hi,
-> >
-> > On Mon, Apr 05, 2010 at 06:26:16PM +0530, kishore kadiyala wrote:
-> > > @@ -2091,9 +2091,9 @@ static int __init omap_hsmmc_probe(struct
-> > >  	mmc->caps |= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
-> > >  		     MMC_CAP_WAIT_WHILE_BUSY;
-> > >
-> > > -	if (mmc_slot(host).wires >= 8)
-> > > -		mmc->caps |= MMC_CAP_8_BIT_DATA;
-> > > -	else if (mmc_slot(host).wires >= 4)
-> > > +	if (mmc_slot(host).wires == 8)
-> > > +		mmc->caps |= (MMC_CAP_8_BIT_DATA | MMC_CAP_4_BIT_DATA);
-> > > +	else if (mmc_slot(host).wires == 4)
-> > >  		mmc->caps |= MMC_CAP_4_BIT_DATA;
-> >
-> > I believe it would be enough to just remove the 'else', so the code
-> > would look like:
-> >
-> > if (mmc_slot(host).wires >= 8)
-> > 	mmc->caps |= MMC_CAP_8_BIT_DATA;
-> > if (mmc_slot(host).wires >= 4)
+> >> In running iozone for writes to small files, we noticed a pretty big
+> >> discrepency between the performance of the deadline and cfq I/O
+> >> schedulers.  Investigation showed that I/O was being issued from 2
+> >> different contexts: the iozone process itself, and the jbd2/sdh-8 thread
+> >> (as expected).  Because of the way cfq performs slice idling, the delays
+> >> introduced between the metadata and data I/Os were significant.  For
+> >> example, cfq would see about 7MB/s versus deadline's 35 for the same
+> >> workload.  I also tested fs_mark with writing and fsyncing 1000 64k
+> >> files, and a similar 5x performance difference was observed.  Eric
+> >> Sandeen suggested that I flag the journal writes as metadata, and once I
+> >> did that, the performance difference went away completely (cfq has
+> >> special logic to prioritize metadata I/O).
+> >> 
+> >> So, I'm submitting this patch for comments and testing.  I have a
+> >> similar patch for jbd that I will submit if folks agree that this is a
+> >> good idea.
+> >   This looks like a good idea to me. I'd just be careful about data=journal
+> > mode where even data is written via journal and thus you'd incorrectly
+> > prioritize all the IO. I suppose that could have negative impact on performace
+> > of other filesystems on the same disk. So for data=journal mode, I'd leave
+> > write_op to be just WRITE / WRITE_SYNC_PLUG.
 > 
-> Since the first if command already checks for the 8-bit the second check
-> like >= 4 is definitely not readable in my opinion.
-> 
-> Functionally do you see anything wrong with this patch??
-> 
+> Hi, Jan, thanks for the review!  I'm trying to figure out the best way
+> to relay the journal mode from ext3 or ext4 to jbd or jbd2.  Would a new
+> journal flag, set in journal_init_inode, be appropriate?  This wouldn't
+> cover the case of data journalling set per inode, though.  It also puts
+> some ext3-specific code into the purportedly fs-agnostic jbd code
+> (specifically, testing the superblock for the data journal mount flag).
+> Do you have any suggestions?
 
-Just to clarify my earlier comment on the patch was to resubmit like below:
+I don't think it's necessary to worry about journal=data mode.  First
+of all, it's not true that all of the I/O would be prioritized as
+metadata.  In data=journal mode, data blocks are written twice; once
+to the journal, and once to the final location on disk.  And the
+journal writes do need to be prioritized because the commit can't go
+out until all of the preceeding journal blocks have been written.  So
+treating all of the journal writes as metadata for the the purposes of
+cfq's prioritization makes sense to me....
 
-if (mmc_slot(host).wires == 8)
-	mmc->caps |= (MMC_CAP_8_BIT_DATA | MMC_CAP_4_BIT_DATA);
-if (mmc_slot(host).wires == 4)
-  		mmc->caps |= MMC_CAP_4_BIT_DATA;
-
-IMHO, this should be good enough.
-
-Regards,
-Madhu
-
-
-> > 	mmc->caps |= MMC_CAP_4_BIT_DATA;
-> >
-> > --
-> > balbi
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+					- Ted
