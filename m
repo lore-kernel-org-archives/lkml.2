@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902Ab0DEOUu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 10:20:50 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:13936 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753619Ab0DEOUo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 10:20:44 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=jxRiuffNq1r1VQfjmVTI/6+EoBvDzBoRK6V3c4l/ZrH68AHEsatY5ww9NQ71CjRye
-	GdEPZvBrgOTzdhx8p0BMw==
+	id S1754993Ab0DEOZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 10:25:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34098 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754814Ab0DEOZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 10:25:53 -0400
+Date: Mon, 5 Apr 2010 16:23:34 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Rientjes <rientjes@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Cc: anfei <anfei.zhou@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH -mm] oom: select_bad_process: never choose tasks with
+	badness == 0
+Message-ID: <20100405142334.GA31074@redhat.com>
+References: <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330154659.GA12416@redhat.com> <alpine.DEB.2.00.1003301320020.5234@chino.kir.corp.google.com> <20100331175836.GA11635@redhat.com> <20100331204718.GD11635@redhat.com> <alpine.DEB.2.00.1004010133190.6285@chino.kir.corp.google.com> <20100401135927.GA12460@redhat.com> <alpine.DEB.2.00.1004011210380.30661@chino.kir.corp.google.com> <20100402111406.GA4432@redhat.com> <20100402183057.GA31723@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20100325005228.GA13225@redhat.com>
-References: <1269473756-30327-1-git-send-email-rickyb@google.com>
-	 <20100325005228.GA13225@redhat.com>
-Date: Mon, 5 Apr 2010 07:20:41 -0700
-Message-ID: <v2g23904f641004050720pc0d7aa04n294381af44047dd3@mail.gmail.com>
-Subject: Re: [PATCH] Expose the statistics in blkio.time and blkio.sectors for 
-	the root cgroup
-From: Manuel Benitez <rickyb@google.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Corrado Zoccolo <czoccolo@gmail.com>,
-       Jeff Moyer <jmoyer@redhat.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100402183057.GA31723@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens,
+This is the David's patch rediffed agains the recent changes in -mm.
 
-Please let me know if this patch is/isn't acceptable. Not having the
-statistics exposed at the root is a little bit problematic for our
-user-level control programs.
+As David pointed out, we should fix select_bad_process() which currently
+always selects the first process which was not filtered out before
+oom_badness(), no matter what oom_badness() returns.
 
--Ricky
+Change the code to ignore the process if oom_badness() returns 0, this
+matters Documentation/filesystems/proc.txt and this merely looks better.
 
-On Wed, Mar 24, 2010 at 5:52 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Wed, Mar 24, 2010 at 04:35:56PM -0700, Ricky Benitez wrote:
->> Currently, the io statistics for the root cgroup are maintained, but
->> they are not shown because the device information is not available at
->> the point that the root blkio cgroup is created. This patch updates
->> the device information when the statistics are updated so that the
->> statistics become visible.
->>
->
-> Ok, root group is created when request queue is being initialized and
-> device information like major/minor number is not available. This is
-> not the cleanest solution but can't think of something better right now.
->
-> Acked-by: Vivek Goyal <vgoyal@redhat.com>
->
-> Thanks
-> Vivek
->
->> Signed-off-by: Ricky Benitez <rickyb@google.com>
->> ---
->>  block/cfq-iosched.c |    5 +++++
->>  1 files changed, 5 insertions(+), 0 deletions(-)
->>
->> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
->> index dee9d93..4a3579a 100644
->> --- a/block/cfq-iosched.c
->> +++ b/block/cfq-iosched.c
->> @@ -947,6 +947,11 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
->>       unsigned int major, minor;
->>
->>       cfqg = cfqg_of_blkg(blkiocg_lookup_group(blkcg, key));
->> +     if (cfqg && !cfqg->blkg.dev && bdi->dev && dev_name(bdi->dev)) {
->> +             sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
->> +             cfqg->blkg.dev = MKDEV(major, minor);
->> +             goto done;
->> +     }
->>       if (cfqg || !create)
->>               goto done;
->>
->> --
->> 1.7.0.1
->
+This also allows us to do more cleanups:
+
+	- no need to check OOM_SCORE_ADJ_MIN in select_bad_process(),
+	  oom_badness() returns 0 in this case.
+
+	- oom_badness() can simply return 0 instead of -1 if the task
+	  has no ->mm.
+
+	  Now we can make it "unsigned" again, the signness and the
+	  special "points >= 0" in select_bad_process() was added to
+	  preserve the current behaviour.
+
+Suggested-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+
+ include/linux/oom.h |    3 ++-
+ mm/oom_kill.c       |   11 ++++-------
+ 2 files changed, 6 insertions(+), 8 deletions(-)
+
+--- MM/include/linux/oom.h~5_BADNESS_DONT_RET_NEGATIVE	2010-04-05 15:39:21.000000000 +0200
++++ MM/include/linux/oom.h	2010-04-05 15:44:49.000000000 +0200
+@@ -40,7 +40,8 @@ enum oom_constraint {
+ 	CONSTRAINT_MEMORY_POLICY,
+ };
+ 
+-extern int oom_badness(struct task_struct *p, unsigned long totalpages);
++extern unsigned int oom_badness(struct task_struct *p,
++					unsigned long totalpages);
+ extern int try_set_zone_oom(struct zonelist *zonelist, gfp_t gfp_flags);
+ extern void clear_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_flags);
+ 
+--- MM/mm/oom_kill.c~5_BADNESS_DONT_RET_NEGATIVE	2010-04-05 15:39:21.000000000 +0200
++++ MM/mm/oom_kill.c	2010-04-05 16:09:58.000000000 +0200
+@@ -153,7 +153,7 @@ static unsigned long oom_forkbomb_penalt
+  * predictable as possible.  The goal is to return the highest value for the
+  * task consuming the most memory to avoid subsequent oom conditions.
+  */
+-int oom_badness(struct task_struct *p, unsigned long totalpages)
++unsigned int oom_badness(struct task_struct *p, unsigned long totalpages)
+ {
+ 	int points;
+ 
+@@ -173,7 +173,7 @@ int oom_badness(struct task_struct *p, u
+ 
+ 	p = find_lock_task_mm(p);
+ 	if (!p)
+-		return -1;
++		return 0;
+ 	/*
+ 	 * The baseline for the badness score is the proportion of RAM that each
+ 	 * task's rss and swap space use.
+@@ -294,7 +294,7 @@ static struct task_struct *select_bad_pr
+ 	*ppoints = 0;
+ 
+ 	for_each_process(p) {
+-		int points;
++		unsigned int points;
+ 
+ 		/* skip the init task and kthreads */
+ 		if (is_global_init(p) || (p->flags & PF_KTHREAD))
+@@ -336,11 +336,8 @@ static struct task_struct *select_bad_pr
+ 			*ppoints = 1000;
+ 		}
+ 
+-		if (p->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
+-			continue;
+-
+ 		points = oom_badness(p, totalpages);
+-		if (points >= 0 && (points > *ppoints || !chosen)) {
++		if (points > *ppoints) {
+ 			chosen = p;
+ 			*ppoints = points;
+ 		}
+
