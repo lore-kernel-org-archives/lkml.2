@@ -1,38 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751348Ab0DEGpv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 02:45:51 -0400
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:43244 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab0DEGpp (ORCPT
+	id S1751417Ab0DEG5Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 02:57:16 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:35937 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994Ab0DEG5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 02:45:45 -0400
-Date: Mon, 5 Apr 2010 08:45:44 +0200
-From: Andreas Mohr <andi@lisas.de>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.34-rc3: Can't insmod after make, because versions now
-	differ?!
-Message-ID: <20100405064544.GA22355@rhlx01.hs-esslingen.de>
+	Mon, 5 Apr 2010 02:57:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=MnnRckGo+tX0NJ6xUx3tjXMobMpGJZRyL3iklRZPhkv2vv1fuxqF1ya6w4aPJJ6gt4
+         uTC5XOf6MfBi5abKp48c7BtIGhKWIfFTWUimILbddGMPRw7mHJS7X1E2GuiXpY9en+4q
+         zPbOVAQ+2TNGvgQgZ68xntriZqhBgCmtYRVyc=
+Date: Mon, 5 Apr 2010 08:57:04 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
+       acme@redhat.com, a.p.zijlstra@chello.nl, paulus@samba.org
+Subject: Re: Random scheduler/unaligned accesses crashes with perf lock
+	events on sparc 64
+Message-ID: <20100405065701.GC5127@nowhere>
+References: <20100404121851.GC5177@nowhere> <20100404122113.GD5177@nowhere> <20100404.180057.109331958.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100405053628.GA12217@elf.ucw.cz>
-X-Priority: none
+In-Reply-To: <20100404.180057.109331958.davem@davemloft.net>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Apr 04, 2010 at 06:00:57PM -0700, David Miller wrote:
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Date: Sun, 4 Apr 2010 14:21:19 +0200
+> 
+> > Forgot the config, it's in attachment.
+> 
+> I get them too when even trying to use the function tracer in some
+> simple way.  They occur in random places and eventually the entire
+> machine wedges and is unusuable.
 
-> Having to reboot every time I recompile the module or play with git
-> makes modules useless for development :-(.
 
-Confirmed. -rc3 (from 2.6.33 - sorry) was the only kernel I ever
-observed this on (I simply changed a driver and redid make modules_install,
-boom, version string (/lib/modules/...) changed from 2.6.34-rc3 to
-2.6.34-rc3-...-dirty, despite having kept my git unupdated and on the
-2.6.34-rc3 tag.
+Yeah. But it's not totally random. I often see the same scheduler
+crash.
 
-Andreas Mohr
+It seems to happen after an unaligned access fixup.
+
+
+> 
+> I suspect there is some bug that ends up corrupting memory, so I
+> started trying to debug this last night when I first saw it.
+
+
+Ok. I indeed have the same problem with the function tracer when
+it is running.
+
+ 
+> I'll let you know if I make any progress.
+
+
+Thanks!
+
