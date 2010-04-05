@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756526Ab0DEUmB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 16:42:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55076 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756219Ab0DEUlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 16:41:55 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: tytso@mit.edu
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-       jens.axboe@oracle.com, esandeen@redhat.com
-Subject: Re: [patch/rft] jbd2: tag journal writes as metadata I/O
-References: <x49iq8b9ep5.fsf@segfault.boston.devel.redhat.com>
-	<20100405175205.GA4681@thunk.org>
-	<x49hbnpkaqw.fsf@segfault.boston.devel.redhat.com>
-	<20100405194803.GC23670@thunk.org>
-	<x49zl1hiqoz.fsf@segfault.boston.devel.redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 05 Apr 2010 16:41:48 -0400
-In-Reply-To: <x49zl1hiqoz.fsf@segfault.boston.devel.redhat.com> (Jeff Moyer's
-	message of "Mon, 05 Apr 2010 16:34:36 -0400")
-Message-ID: <x49vdc5iqcz.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1756546Ab0DEUmk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 16:42:40 -0400
+Received: from isilmar.linta.de ([213.133.102.198]:38966 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756219Ab0DEUmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 16:42:36 -0400
+Date: Mon, 5 Apr 2010 22:41:43 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: Arjan van de Ven <arjan@linux.intel.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Adam Belay <abelay@novell.com>, Len Brown <len.brown@intel.com>,
+       linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: A few questions and issues with dynticks, NOHZ and powertop
+Message-ID: <20100405204143.GB23159@comet.dominikbrodowski.net>
+Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
+	Arjan van de Ven <arjan@linux.intel.com>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Adam Belay <abelay@novell.com>, Len Brown <len.brown@intel.com>,
+	linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+	Alan Stern <stern@rowland.harvard.edu>
+References: <20100403223328.GA4507@comet.dominikbrodowski.net>
+ <20100403235326.GA23445@core.coreip.homeip.net>
+ <20100404104708.GA5922@comet.dominikbrodowski.net>
+ <4BB95C33.1050706@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BB95C33.1050706@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Moyer <jmoyer@redhat.com> writes:
+On Sun, Apr 04, 2010 at 08:42:43PM -0700, Arjan van de Ven wrote:
+> On 4/4/2010 3:47, Dominik Brodowski wrote:
+> >Hey,
+> >
+> >On Sat, Apr 03, 2010 at 04:53:26PM -0700, Dmitry Torokhov wrote:
+> >>On Sun, Apr 04, 2010 at 12:33:28AM +0200, Dominik Brodowski wrote:
+> >>>
+> >>>4) SynPS/2 touchpad:
+> >>>Why does moving the touchpad lead to sooo many IRQs? I can't look as fast
+> >>>as the mouse pointer seems to get new data:
+> >>>   62,5% (473,1)<interrupt>  : PS/2 keyboard/mouse/touchpad
+> >>>
+> >>
+> >>80 pps @ 6 bytes/packet = 480 interrupts/sec.
+> >>
+> >>You can try using psmouse.rate=40 to limit it to 40 pps which should
+> >>bring it to the rate of standard PS/2 mouse at the expense of
+> >>sensitivity...
+> >
+> >as a sidenote: if we know -- like here -- that the next IRQ will be issued
+> >soon, in approximately 1.75 ms (well, at least on my system), might it make
+> >sense to make tick_nohz_get_sleep_length() smarter to know about this?
+> 
+> yes and no.
+> 
+> if you are very sure (95%+ or so) then absolutely it needs to know about this
+> so that the C state selection code can make a better decision.
+> Right now it tries to look at history to guess this delay.
+> 
+> Unfortunately we do not currently have such a concept in the code to make this
+> work... but it'd be really nice to have.
 
-> tytso@mit.edu writes:
->
->> On Mon, Apr 05, 2010 at 02:36:07PM -0400, Jeff Moyer wrote:
->>> >
->>> > What benchmark were you using to test small file writes?  This looks
->>> > good to me as well, but we might want to do some extra benchmarking
->>> > just to be sure we're not accidentally introducing a performance
->>> > regression.
->>> 
->>> iozone showed regressions for write and re-write in runs that include
->>> fsync timings for small files (<8MB).  Here's the command line used for
->>> testing:
->>> 
->>> iozone -az -n 4k -g 2048m -y 1k -q 1m -e
->>
->> iozone is showing performance regressions or performance improvements?
->> I thought the point of this patch was to improve iozone benchmarks?
->
-> Sorry, Ted, what I meant to say was that iozone showed differences
-> between deadline and cfq, where cfq's performance was much worse than
-> deadline's.
+Dmitry, are we "very sure" in this touchpad case?
 
-And to be 100% clear, with the patch, the performance differences
-between deadline and cfq were in the noise.
+Best,
+	Dominik
 
-Cheers,
-Jeff
