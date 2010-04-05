@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab0DEM4Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 08:56:25 -0400
-Received: from mail-fx0-f227.google.com ([209.85.220.227]:38493 "EHLO
-	mail-fx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754571Ab0DEM4S (ORCPT
+	id S1754775Ab0DENX4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 09:23:56 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54011 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754465Ab0DENXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 08:56:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=u2+kfYHZtZNJjlMfPZrzd5rdT1wrVk/5/vD8oHwxB7x0bsldC9RDgXrFLppx6+Aiqa
-         2GZdDeaAxeF3r6iUbu3RqjF5XDPjNDr13cNnBJ5z/Cj9ws39HcvVUL2KXx6DKQgOSbA+
-         2x24yoPTJElmXcg7upx1GGD/DVoowCSq+qats=
+	Mon, 5 Apr 2010 09:23:50 -0400
+Date: Mon, 5 Apr 2010 14:23:47 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
+       lm-sensors <lm-sensors@lm-sensors.org>, linux-kernel@vger.kernel.org,
+       Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [lm-sensors] regulator: regulator_get behaviour without
+ CONFIG_REGULATOR set
+Message-ID: <20100405132347.GA6580@rakim.wolfsonmicro.main>
+References: <2122967437.461270223106350.JavaMail.root@mail.savoirfairelinux.com>
+ <1779783481.621270223270264.JavaMail.root@mail.savoirfairelinux.com>
+ <20100402160058.GE27613@sirena.org.uk>
+ <20100402184403.2ea1263e@hyperion.delvare>
+ <20100402185138.GA12817@opensource.wolfsonmicro.com>
+ <20100402213010.4a64e50f@hyperion.delvare>
+ <20100402204503.GA15237@opensource.wolfsonmicro.com>
+ <20100403173745.2bf17ee6@hyperion.delvare>
 MIME-Version: 1.0
-In-Reply-To: <003c01cad1b1$da2cdbf0$544ff780@am.dhcp.ti.com>
-References: <35697.192.168.10.89.1265898023.squirrel@dbdmail.itg.ti.com>
-	 <004701caab40$68b576e0$544ff780@am.dhcp.ti.com>
-	 <x2q7f9d1ffb1003302307nb8e91be0o55da59c3375f1720@mail.gmail.com>
-	 <v2yce9ab5791003302327hc67deb3akc7d18146534038f9@mail.gmail.com>
-	 <h2p7f9d1ffb1003310003z508e21dbqe37b6e1cad425866@mail.gmail.com>
-	 <003b01cad0f0$6ea78040$544ff780@am.dhcp.ti.com>
-	 <g2s7f9d1ffb1003312331o149df218g651c3e4349ac9a77@mail.gmail.com>
-	 <003c01cad1b1$da2cdbf0$544ff780@am.dhcp.ti.com>
-Date: Mon, 5 Apr 2010 18:26:16 +0530
-Message-ID: <m2n7f9d1ffb1004050556o1ed2eec8ief66d60fc85f96de@mail.gmail.com>
-Subject: [PATCH v3] OMAP: Fix for bus width which improves SD card's 
-	peformance.
-From: kishore kadiyala <kishorek.kadiyala@gmail.com>
-To: Madhusudhan <madhu.cr@ti.com>
-Cc: Vimal Singh <vimal.newwork@gmail.com>, tony@atomide.com, svenkatr@ti.com,
-       linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-       jarkko.lavinen@nokia.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100403173745.2bf17ee6@hyperion.delvare>
+X-Cookie: Pyros of the world... IGNITE !!!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kishore Kadiyala <kishore.kadiyala@ti.com>
+On Sat, Apr 03, 2010 at 05:37:45PM +0200, Jean Delvare wrote:
+> On Fri, 2 Apr 2010 21:45:03 +0100, Mark Brown wrote:
 
-This patch improves low speeds for SD cards.
-OMAP-MMC controller's can support maximum bus width of '8'.
-when bus width is mentioned as "8" in controller data,the SD
-stack will check whether bus width is "4" and if not it will
-set bus width to "1" and there by degrading performance.
-This patch fixes the issue and improves the performance of
-SD cards.
+> > In this case you don't need the if (voltage) check - the code that uses
+> > supply_uV is going to have to cope with it being set to 0 if the driver
+> > doesn't just give up, and the enable wants to happen anyway (perhaps
+> > we've got a switchable supply we can't read the voltage of).  It should
+> > never make any odds if the notifier never gets called since the supply
+> > could be invariant.
 
-Signed-off-by: Kishore Kadiyala <kishore.kadiyala@ti.com>
-Signed-off-by: Venkatraman S <svenkatr@ti.com>
-Acked-by: Madhusudhan Chikkature <madhu.cr@ti.com>
-Tested-by: Jarkko Nikula <jhnikula@gmail.com>
----
-In V3 : Updated  with Madhu's comments  and appended Tested by Nikula
-In V2 : Appended Signed-off by Venkat and Ack by Madhu
+> We still need to check if (voltage) to not overwrite the previous value
+> of data->supply_uV with 0. We will probably do that as an immediate fix
+> to the sht15 driver. But yes, the rest doesn't need a condition.
 
- Here are my experiment numbers, on a Class 6 SDHC card:
- Read peformance is increased by 220%
- Write Performance is increased by 52%
+I was assuming that there wasn't a previous value since this was in
+probe(), sorry.
 
- drivers/mmc/host/omap_hsmmc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
- drivers/mmc/host/omap_hsmmc.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+> Still, I'd prefer if drivers were just able to check for data->reg ==
+> NULL and skip the whole thing. Would you apply the following patch?
 
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index 83f0aff..44e79f7 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -2091,9 +2091,9 @@ static int __init omap_hsmmc_probe(struct
- 	mmc->caps |= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
- 		     MMC_CAP_WAIT_WHILE_BUSY;
+> From: Jean Delvare <khali@linux-fr.org>
+> Subject: regulator: Let drivers know when they use the stub API
 
--	if (mmc_slot(host).wires >= 8)
--		mmc->caps |= MMC_CAP_8_BIT_DATA;
--	else if (mmc_slot(host).wires >= 4)
-+	if (mmc_slot(host).wires == 8)
-+		mmc->caps |= (MMC_CAP_8_BIT_DATA | MMC_CAP_4_BIT_DATA);
-+	else if (mmc_slot(host).wires == 4)
- 		mmc->caps |= MMC_CAP_4_BIT_DATA;
+> Have the stub variant of regulator_get() return NULL, so that drivers
+> can (but still don't have to) handle this case specifically.
 
- 	if (mmc_slot(host).nonremovable)
--- 
-1.6.3.3
+I guess I'll ack it but I'd be suspicous of driver code which actually
+makes use of this - there is actual hardware which has the same features
+as the regulator that gets stubbed in and ought to be handled.  On the
+other hand, perhaps someone will come up with a good use for it.
+
+It also seems a bit odd to return a traditional error value in a success
+case but it doesn't actually make much difference.
