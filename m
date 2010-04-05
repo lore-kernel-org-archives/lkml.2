@@ -1,19 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393Ab0DEP00 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 11:26:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54116 "EHLO
+	id S1755440Ab0DEP0i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 11:26:38 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54122 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755227Ab0DEP0W (ORCPT
+	with ESMTP id S1755373Ab0DEP0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 11:26:22 -0400
+	Mon, 5 Apr 2010 11:26:25 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 0/2] perf: Usability improvements
-Date: Mon,  5 Apr 2010 12:26:14 -0300
-Message-Id: <1270481176-20659-1-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>
+Subject: [PATCH 2/2] perf TUI: Move "Yes" button to before "No"
+Date: Mon,  5 Apr 2010 12:26:16 -0300
+Message-Id: <1270481176-20659-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1270481176-20659-1-git-send-email-acme@infradead.org>
+References: <1270481176-20659-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,16 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Hi Ingo,
+Esc + Enter should be enough warning to avoid accidentaly exiting from
+the browser.
 
-	Please consider pulling from the "perf" branch at:
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/newt.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6
-
-Arnaldo Carvalho de Melo (2):
-  perf TUI: Show filters on the title and add help line about how to zoom out
-  perf TUI: Move "Yes" button to before "No"
-
- tools/perf/util/newt.c |   98 +++++++++++++++++++++++++++++++++--------------
- 1 files changed, 69 insertions(+), 29 deletions(-)
+diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
+index c0e71aa..7a123a9 100644
+--- a/tools/perf/util/newt.c
++++ b/tools/perf/util/newt.c
+@@ -132,7 +132,7 @@ static bool dialog_yesno(const char *msg)
+ {
+ 	/* newtWinChoice should really be accepting const char pointers... */
+ 	char yes[] = "Yes", no[] = "No";
+-	return newtWinChoice(NULL, no, yes, (char *)msg) == 2;
++	return newtWinChoice(NULL, yes, no, (char *)msg) == 1;
+ }
+ 
+ /*
+-- 
+1.6.2.5
 
