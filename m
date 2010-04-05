@@ -1,137 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502Ab0DEPsQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 11:48:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9372 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754611Ab0DEPsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 11:48:05 -0400
-Date: Mon, 5 Apr 2010 11:47:57 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Divyesh Shah <dpshah@google.com>
-Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
-       ctalbott@google.com
-Subject: Re: [PATCH 1/3][v2] blkio: Remove per-cfqq nr_sectors as we'll be
-	passing
-Message-ID: <20100405154757.GE876@redhat.com>
-References: <20100403014724.30746.16081.stgit@austin.mtv.corp.google.com> <20100403015445.30746.39086.stgit@austin.mtv.corp.google.com>
+	id S1755550Ab0DEPyg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 11:54:36 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:49499 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755463Ab0DEPya convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 11:54:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Y+H5v9GkyelVTbNCQ1jr93sfaa4zz9itnZQc6osktlU2oPvijAHE8hSb5OOabrD37I
+         gdpgpyYgrWNhb38OIf+CVYLcPfVPTyI07B1nK3kUtVeMX62RNcYyKakqZ7Jmk1tF3LXC
+         YzZu+RUXNS2ImiR1L0G/50HmxmuYs4Kwms8pw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100403015445.30746.39086.stgit@austin.mtv.corp.google.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <alpine.LFD.2.00.1004050824400.21313@i5.linux-foundation.org>
+References: <alpine.LFD.2.00.1003301029250.3707@i5.linux-foundation.org>
+	 <20100402175937.GA19690@liondog.tnic>
+	 <alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org>
+	 <20100402112428.f46ddc44.akpm@linux-foundation.org>
+	 <alpine.LFD.2.00.1004021135530.3634@i5.linux-foundation.org>
+	 <4BB66941.1060809@redhat.com>
+	 <1270397575.1814.106.camel@barrios-desktop>
+	 <20100404190925.5daac2f3@annuminas.surriel.com>
+	 <alpine.LFD.2.00.1004050824400.21313@i5.linux-foundation.org>
+Date: Tue, 6 Apr 2010 00:48:35 +0900
+Message-ID: <r2y28c262361004050848v75fc5397j7c5aafa9c0c6206e@mail.gmail.com>
+Subject: Re: [PATCH] rmap: fix anon_vma_fork() memory leak
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+       Borislav Petkov <bp@alien8.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 02, 2010 at 06:55:48PM -0700, Divyesh Shah wrote:
-> that info at request dispatch with other stats now. This patch removes the
-> existing support for accounting sectors for a blkio_group. This will be added
-> back differently in the next two patches.
-> 
-> Signed-off-by: Divyesh Shah<dpshah@google.com>
-> ---
-> 
->  block/blk-cgroup.c  |    3 +--
->  block/blk-cgroup.h  |    6 ++----
->  block/cfq-iosched.c |   10 ++--------
->  3 files changed, 5 insertions(+), 14 deletions(-)
-> 
-> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> index 4b686ad..5be3981 100644
-> --- a/block/blk-cgroup.c
-> +++ b/block/blk-cgroup.c
-> @@ -56,10 +56,9 @@ struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
->  EXPORT_SYMBOL_GPL(cgroup_to_blkio_cgroup);
->  
->  void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
-> -			unsigned long time, unsigned long sectors)
-> +						unsigned long time)
->  {
->  	blkg->time += time;
-> -	blkg->sectors += sectors;
->  }
->  EXPORT_SYMBOL_GPL(blkiocg_update_blkio_group_stats);
->  
-> diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-> index 8ccc204..fe44517 100644
-> --- a/block/blk-cgroup.h
-> +++ b/block/blk-cgroup.h
-> @@ -106,7 +106,7 @@ extern int blkiocg_del_blkio_group(struct blkio_group *blkg);
->  extern struct blkio_group *blkiocg_lookup_group(struct blkio_cgroup *blkcg,
->  						void *key);
->  void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
-> -			unsigned long time, unsigned long sectors);
-> +						unsigned long time);
->  #else
->  struct cgroup;
->  static inline struct blkio_cgroup *
-> @@ -123,8 +123,6 @@ blkiocg_del_blkio_group(struct blkio_group *blkg) { return 0; }
->  static inline struct blkio_group *
->  blkiocg_lookup_group(struct blkio_cgroup *blkcg, void *key) { return NULL; }
->  static inline void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
-> -			unsigned long time, unsigned long sectors)
-> -{
-> -}
-> +						unsigned long time) {}
->  #endif
->  #endif /* _BLK_CGROUP_H */
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index ef1680b..c18e348 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -141,8 +141,6 @@ struct cfq_queue {
->  	struct cfq_queue *new_cfqq;
->  	struct cfq_group *cfqg;
->  	struct cfq_group *orig_cfqg;
-> -	/* Sectors dispatched in current dispatch round */
-> -	unsigned long nr_sectors;
->  };
->  
->  /*
-> @@ -882,8 +880,7 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
->  			slice_used = cfqq->allocated_slice;
->  	}
->  
-> -	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u sect=%lu", slice_used,
-> -				cfqq->nr_sectors);
-> +	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u", slice_used);
+On Tue, Apr 6, 2010 at 12:37 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+>
+> On Sun, 4 Apr 2010, Rik van Riel wrote:
+>>
+>> Fix a memory leak in anon_vma_fork(), where we fail to tear down the
+>> anon_vmas attached to the new VMA in case setting up the new anon_vma
+>> fails.
+>>
+>> Reported-by: Minchan Kim <minchan.kim@gmail.com>
+>> Signed-off-by: Rik van Riel <riel@redhat.com>
+>> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+>> ---
+>>
+>> diff --git a/mm/rmap.c b/mm/rmap.c
+>> index fcd593c..fb7ce99 100644
+>> --- a/mm/rmap.c
+>> +++ b/mm/rmap.c
+>> @@ -231,6 +231,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
+>>
+>>   out_error_free_anon_vma:
+>>       anon_vma_free(anon_vma);
+>> +     unlink_anon_vmas(vma);
+>>   out_error:
+>>       return -ENOMEM;
+>>  }
+>
+> This looks _very_ wrong to me.
+>
+> Shouldn't the unlink_anon_vmas() be in the "out_error" case? IOW, we
+> should do it even if the "anon_vma_alloc()" failed, nbot just if the
+> "anon_vma_chain_alloc()" failed?
+>
+> No?
+>
+> What am I missing?
 
-Hi Divyesh,
+Indeed. You're right.
+I should have been reviewed more carefully.
 
-I had found above message useful when I am looking at blktraces. It helps
-to know how many sectors one could transfer in a given time slice.
-Especially if you are comparing two queues in two groups. I think we are
-going to loose this information now?
 
-Vivek
 
->  	return slice_used;
->  }
->  
-> @@ -917,8 +914,7 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
->  
->  	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
->  					st->min_vdisktime);
-> -	blkiocg_update_blkio_group_stats(&cfqg->blkg, used_sl,
-> -						cfqq->nr_sectors);
-> +	blkiocg_update_blkio_group_stats(&cfqg->blkg, used_sl);
->  }
->  
->  #ifdef CONFIG_CFQ_GROUP_IOSCHED
-> @@ -1524,7 +1520,6 @@ static void __cfq_set_active_queue(struct cfq_data *cfqd,
->  		cfqq->allocated_slice = 0;
->  		cfqq->slice_end = 0;
->  		cfqq->slice_dispatch = 0;
-> -		cfqq->nr_sectors = 0;
->  
->  		cfq_clear_cfqq_wait_request(cfqq);
->  		cfq_clear_cfqq_must_dispatch(cfqq);
-> @@ -1869,7 +1864,6 @@ static void cfq_dispatch_insert(struct request_queue *q, struct request *rq)
->  	elv_dispatch_sort(q, rq);
->  
->  	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
-> -	cfqq->nr_sectors += blk_rq_sectors(rq);
->  }
->  
->  /*
+-- 
+Kind regards,
+Minchan Kim
