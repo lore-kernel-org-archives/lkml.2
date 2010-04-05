@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756924Ab0DEXq5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 19:46:57 -0400
-Received: from sh.osrg.net ([192.16.179.4]:57170 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756670Ab0DEXqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 19:46:51 -0400
-Date: Tue, 6 Apr 2010 08:46:38 +0900
-To: akpm@linux-foundation.org
-Cc: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: Re: [PATCH -mm 2/5] asm-generic: add NEED_SG_DMA_LENGTH to define
- sg_dma_len()
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100405163541.aa10c605.akpm@linux-foundation.org>
-References: <1270391153-17519-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-	<1270391153-17519-3-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-	<20100405163541.aa10c605.akpm@linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100406084603B.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 06 Apr 2010 08:46:39 +0900 (JST)
+	id S1756990Ab0DEXsN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 19:48:13 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:63417 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756757Ab0DEXsJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 19:48:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100405230301.GF32401@fluff.org.uk>
+References: <20100311174830.4824.19820.stgit@angua> <20100311180649.4824.10368.stgit@angua> 
+	<20100405230301.GF32401@fluff.org.uk>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 5 Apr 2010 17:47:48 -0600
+X-Google-Sender-Auth: d194c4a98b8ece7e
+Message-ID: <q2tfa686aa41004051647p4c8182d0h807583d09714761a@mail.gmail.com>
+Subject: Re: [PATCH 33/37] sound/soc: use .dev.of_node instead of .node in 
+	struct of_device
+To: Ben Dooks <ben-linux@fluff.org>
+Cc: monstr@monstr.eu, gregkh@suse.de, benh@kernel.crashing.org,
+       akpm@linux-foundation.org, davem@davemloft.net, sfr@canb.auug.org.au,
+       jgarzik@pobox.com, dwmw2@infradead.org, jeremy.kerr@canonical.com,
+       James.Bottomley@suse.de, broonie@opensource.wolfsonmicro.com,
+       microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org,
+       linuxppc-dev@ozlabs.org, sparclinux@vger.kernel.org,
+       linux-ide@vger.kernel.org, netdev@vger.kernel.org,
+       linux-i2c@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+       linux-scsi@vger.kernel.org, alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 Apr 2010 16:35:41 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+Hi Ben, thanks for the comment.  Reply below...
 
-> On Sun,  4 Apr 2010 23:25:50 +0900
-> FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
-> 
-> > There are only two ways to define sg_dma_len(); use sg->dma_length or
-> > sg->length. This patch introduces NEED_SG_DMA_LENGTH that enables
-> > architectures to choose sg->dma_length or sg->length.
-> 
-> i386 allnoconfig:
-> 
-> arch/x86/kernel/pci-nommu.c: In function 'nommu_map_sg':
-> arch/x86/kernel/pci-nommu.c:71: error: 'struct scatterlist' has no member named 'dma_length'
-> 
-> So I enabled NEED_SG_DMA_LENGTH on x86_32 as well.  It compiles...
+On Mon, Apr 5, 2010 at 5:03 PM, Ben Dooks <ben-linux@fluff.org> wrote:
+> On Thu, Mar 11, 2010 at 11:06:50AM -0700, Grant Likely wrote:
+>> .node is being removed
+[...]
+>> --- a/sound/soc/fsl/mpc8610_hpcd.c
+>> +++ b/sound/soc/fsl/mpc8610_hpcd.c
+>> @@ -202,7 +202,7 @@ static struct snd_soc_ops mpc8610_hpcd_ops = {
+>>  static int mpc8610_hpcd_probe(struct of_device *ofdev,
+>>       const struct of_device_id *match)
+>>  {
+>> -     struct device_node *np = ofdev->node;
+>> +     struct device_node *np = ofdev->dev.of_node;
+>>       struct device_node *codec_np = NULL;
+>>       struct device_node *guts_np = NULL;
+>>       struct device_node *dma_np = NULL;
+>
+> This looks like one case where an inline function would have been a
+> help.
 
-Sorry about that. The fix is fine by me. We can remove dma_length in
-pci-nommu.c though (there is no point of setting dma_length here).
+In what regard (how would you like it to look)?  The node pointer
+location is very unlikely to move again, and I prefer the clarity of
+direct dereferencing.
 
-Thanks,
+g.
