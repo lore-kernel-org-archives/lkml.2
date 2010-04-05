@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152Ab0DEKbh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 06:31:37 -0400
-Received: from mail-fx0-f227.google.com ([209.85.220.227]:56967 "EHLO
-	mail-fx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660Ab0DEKbb (ORCPT
+	id S1753136Ab0DEKhc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 06:37:32 -0400
+Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:50193 "EHLO
+	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751723Ab0DEKh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 06:31:31 -0400
+	Mon, 5 Apr 2010 06:37:26 -0400
+Message-ID: <4BB9BD52.6060109@dcl.info.waseda.ac.jp>
+Date: Mon, 05 Apr 2010 19:37:06 +0900
+From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091211 Shredder/3.0
 MIME-Version: 1.0
-X-Originating-IP: [212.159.75.221]
-Date: Mon, 5 Apr 2010 11:31:29 +0100
-Message-ID: <u2j6a4b170b1004050331mf0ec0dd4pf2e47d9dda5e6be9@mail.gmail.com>
-Subject: [PATCH] watchdog docs: Fix use of WDIOC_SETOPTIONS ioctl.
-From: James Hogan <james@albanarts.com>
-To: Wim Van Sebroeck <wim@iguana.be>, Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>, Trevor Keith <tsrk@tsrk.net>,
-       James Hogan <james.hogan@imgtec.com>,
-       Ladinu Chandrasinghe <ladinu.pub@gmail.com>,
-       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+       mingo@elte.hu, paulus@samba.org, tglx@linutronix.de, gregkh@suse.de
+Subject: Re: [PATCH] Separate lock events with types
+References: <20100129221252.GA5052@nowhere> <1267002166-7281-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <20100326233259.GI7166@nowhere>
+In-Reply-To: <20100326233259.GI7166@nowhere>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the watchdog-test program and watchdog-api.txt, pass the values to
-the WDIOC_SETOPTIONS ioctl as a pointer to an integer containing the
-values intead of directly in the third ioctl argument. The actual
-watchdog drivers in drivers/watchdog don't read the options directly
-from the argument but use get_user and copy_from_user.
+On 03/27/10 08:33, Frederic Weisbecker wrote:
+ > On Wed, Feb 24, 2010 at 06:02:46PM +0900, Hitoshi Mitake wrote:
+ >> Sorry for my long silence...
+ >>
+ >> Thanks for Frederic's great work like trace_lock_class_init(),
+ >> overhead of perf lock was reduced a lot.
+ >> But still there is overhead which cannot be disregarded.
+ >>
+ >> So I'd like to suggest that separating lock trace events into each 
+types of lock.
+ >> e.g.
+ >> 	trace_lock_acquire() ->  spin_trace_lock_acquire(), 
+rwlock_trace_lock_acquire()
+ >> I think that mutex and spinlock are completely different things.
+ >> And as I describe below, filtering at recording phase can reduce 
+overhead of tracing.
+ >>
+ >> CAUTION:
+ >> This patch is the proof of concept. The way this patch employes
+ >> is different from one I described above. This patch adds if statement
+ >> before trace_lock_*(). Implementation of separating events per types 
+will be
+ >> a big one, so this is an only trial edition for performance 
+improvements.
+ >
+ >
+ > Instead of having one different event for each type of locks,
+ > I would rather suggest to add a "lock type" field in the (future)
+ > lock_init_class class. This requires we implement event injection
+ > properly before.
+ >
+ > So if we store the lock type in the lockdep_map, we can just dump
+ > the type on lock class initialization:
+ >
+ > - on register_lock_class
+ > - on event injection to catchup with lock that have already registered
+ >
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
----
- Documentation/watchdog/src/watchdog-test.c |    8 ++++++--
- Documentation/watchdog/watchdog-api.txt    |    5 ++---
- 2 files changed, 8 insertions(+), 5 deletions(-)
+Yeah, this is a smarter way than the one I suggested.
 
-diff --git a/Documentation/watchdog/src/watchdog-test.c
-b/Documentation/watchdog/src/watchdog-test.c
-index a750532..63fdc34 100644
---- a/Documentation/watchdog/src/watchdog-test.c
-+++ b/Documentation/watchdog/src/watchdog-test.c
-@@ -31,6 +31,8 @@ static void keep_alive(void)
-  */
- int main(int argc, char *argv[])
- {
-+    int flags;
-+
-     fd = open("/dev/watchdog", O_WRONLY);
+But specifying types of locks to focuse on will require special way.
+I thought that ioctl() will make this type specifying possible,
+but it will not match to other events...
+e.g. perf record will be required dirty change for it.
 
-     if (fd == -1) {
-@@ -41,12 +43,14 @@ int main(int argc, char *argv[])
+Do you have any good ideas at this point?
 
-     if (argc > 1) {
- 	if (!strncasecmp(argv[1], "-d", 2)) {
--	    ioctl(fd, WDIOC_SETOPTIONS, WDIOS_DISABLECARD);
-+	    flags = WDIOS_DISABLECARD;
-+	    ioctl(fd, WDIOC_SETOPTIONS, &flags);
- 	    fprintf(stderr, "Watchdog card disabled.\n");
- 	    fflush(stderr);
- 	    exit(0);
- 	} else if (!strncasecmp(argv[1], "-e", 2)) {
--	    ioctl(fd, WDIOC_SETOPTIONS, WDIOS_ENABLECARD);
-+	    flags = WDIOS_ENABLECARD;
-+	    ioctl(fd, WDIOC_SETOPTIONS, &flags);
- 	    fprintf(stderr, "Watchdog card enabled.\n");
- 	    fflush(stderr);
- 	    exit(0);
-diff --git a/Documentation/watchdog/watchdog-api.txt
-b/Documentation/watchdog/watchdog-api.txt
-index 4cc4ba9..eb7132e 100644
---- a/Documentation/watchdog/watchdog-api.txt
-+++ b/Documentation/watchdog/watchdog-api.txt
-@@ -222,11 +222,10 @@ returned value is the temperature in degrees fahrenheit.
-     ioctl(fd, WDIOC_GETTEMP, &temperature);
-
- Finally the SETOPTIONS ioctl can be used to control some aspects of
--the cards operation; right now the pcwd driver is the only one
--supporting this ioctl.
-+the cards operation.
-
-     int options = 0;
--    ioctl(fd, WDIOC_SETOPTIONS, options);
-+    ioctl(fd, WDIOC_SETOPTIONS, &options);
-
- The following options are available:
-
--- 
-1.6.6.1
+Thanks,
+	Hitoshi
