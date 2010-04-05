@@ -1,67 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab0DEQsH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 12:48:07 -0400
-Received: from ns1.siteground211.com ([209.62.36.12]:45554 "EHLO
-	serv01.siteground211.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755180Ab0DEQr7 (ORCPT
+	id S1755618Ab0DEQxz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 12:53:55 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:59896 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755255Ab0DEQxt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 12:47:59 -0400
-Date: Mon, 5 Apr 2010 19:48:39 +0300
-From: Felipe Balbi <me@felipebalbi.com>
-To: kishore kadiyala <kishorek.kadiyala@gmail.com>
-Cc: Madhusudhan <madhu.cr@ti.com>, Vimal Singh <vimal.newwork@gmail.com>,
-       tony@atomide.com, svenkatr@ti.com, linux-omap@vger.kernel.org,
-       linux-kernel@vger.kernel.org, jarkko.lavinen@nokia.com
-Subject: Re: [PATCH v3] OMAP: Fix for bus width which improves SD card's
- peformance.
-Message-ID: <20100405164839.GB17388@gandalf>
-Reply-To: me@felipebalbi.com
-References: <35697.192.168.10.89.1265898023.squirrel@dbdmail.itg.ti.com>
- <004701caab40$68b576e0$544ff780@am.dhcp.ti.com>
- <x2q7f9d1ffb1003302307nb8e91be0o55da59c3375f1720@mail.gmail.com>
- <v2yce9ab5791003302327hc67deb3akc7d18146534038f9@mail.gmail.com>
- <h2p7f9d1ffb1003310003z508e21dbqe37b6e1cad425866@mail.gmail.com>
- <003b01cad0f0$6ea78040$544ff780@am.dhcp.ti.com>
- <g2s7f9d1ffb1003312331o149df218g651c3e4349ac9a77@mail.gmail.com>
- <003c01cad1b1$da2cdbf0$544ff780@am.dhcp.ti.com>
- <m2n7f9d1ffb1004050556o1ed2eec8ief66d60fc85f96de@mail.gmail.com>
+	Mon, 5 Apr 2010 12:53:49 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:from:date:message-id:
+	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=T+nFlA1Pvu0pRi3iVYwyf0+ANmA0teqnu5tl8++hQTkOYUCQC7CAvAseVvaUYpfUq
+	YsYLQSZsMeamI7/riscDw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m2n7f9d1ffb1004050556o1ed2eec8ief66d60fc85f96de@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - serv01.siteground211.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - felipebalbi.com
+In-Reply-To: <20100405151237.GD876@redhat.com>
+References: <20100401215541.2843.79107.stgit@austin.mtv.corp.google.com> 
+	<20100401220129.2843.36193.stgit@austin.mtv.corp.google.com> 
+	<20100402191000.GD3516@redhat.com> <w2maf41c7c41004021636ia2261ffcv56b6c85928bdee86@mail.gmail.com> 
+	<20100405151237.GD876@redhat.com>
+From: Divyesh Shah <dpshah@google.com>
+Date: Mon, 5 Apr 2010 09:53:25 -0700
+Message-ID: <t2qaf41c7c41004050953v8807001we5da5fb26d088c7a@mail.gmail.com>
+Subject: Re: [PATCH 3/3] blkio: Increment the blkio cgroup stats for real now
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
+       ctalbott@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Apr 5, 2010 at 8:12 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Fri, Apr 02, 2010 at 04:36:34PM -0700, Divyesh Shah wrote:
+>> On Fri, Apr 2, 2010 at 12:10 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>> > On Thu, Apr 01, 2010 at 03:01:41PM -0700, Divyesh Shah wrote:
+>> >> We also add start_time_ns and io_start_time_ns fields to struct request
+>> >> here to record the time when a request is created and when it is
+>> >> dispatched to device. We use ns uints here as ms and jiffies are
+>> >> not very useful for non-rotational media.
+>> >>
+>> >> Signed-off-by: Divyesh Shah<dpshah@google.com>
+>> >> ---
+>> >>
+>> >>  block/blk-cgroup.c     |   60 ++++++++++++++++++++++++++++++++++++++++++++++--
+>> >>  block/blk-cgroup.h     |   14 +++++++++--
+>> >>  block/blk-core.c       |    6 +++--
+>> >>  block/cfq-iosched.c    |    4 ++-
+>> >>  include/linux/blkdev.h |   20 +++++++++++++++-
+>> >>  5 files changed, 95 insertions(+), 9 deletions(-)
+>> >>
+>> >> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+>> >> index ad6843f..9af7257 100644
+>> >> --- a/block/blk-cgroup.c
+>> >> +++ b/block/blk-cgroup.c
+>> >> @@ -15,6 +15,7 @@
+>> >>  #include <linux/kdev_t.h>
+>> >>  #include <linux/module.h>
+>> >>  #include <linux/err.h>
+>> >> +#include <linux/blkdev.h>
+>> >>  #include "blk-cgroup.h"
+>> >>
+>> >>  static DEFINE_SPINLOCK(blkio_list_lock);
+>> >> @@ -55,6 +56,26 @@ struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
+>> >>  }
+>> >>  EXPORT_SYMBOL_GPL(cgroup_to_blkio_cgroup);
+>> >>
+>> >> +/*
+>> >> + * Add to the appropriate stat variable depending on the request type.
+>> >> + * This should be called with the blkg->stats_lock held.
+>> >> + */
+>> >> +void io_add_stat(uint64_t *stat, uint64_t add, unsigned int flags)
+>> >> +{
+>> >> +     if (flags & REQ_RW)
+>> >> +             stat[IO_WRITE] += add;
+>> >> +     else
+>> >> +             stat[IO_READ] += add;
+>> >> +     /*
+>> >> +      * Everywhere in the block layer, an IO is treated as sync if it is a
+>> >> +      * read or a SYNC write. We follow the same norm.
+>> >> +      */
+>> >> +     if (!(flags & REQ_RW) || flags & REQ_RW_SYNC)
+>> >> +             stat[IO_SYNC] += add;
+>> >> +     else
+>> >> +             stat[IO_ASYNC] += add;
+>> >> +}
+>> >> +
+>> >
+>> > Hi Divyesh,
+>> >
+>> > Can we have any request based information limited to cfq and not put that
+>> > in blkio-cgroup. The reason being that I am expecting that some kind of
+>> > max bw policy interface will not necessarily be implemented at CFQ
+>> > level. We might have to implement it at higher level so that it can
+>> > work with all dm/md devices. If that's the case, then it might very well
+>> > be either a bio based interface also.
+>> >
+>> > So just keeping that possibility in mind, can we keep blk-cgroup as
+>> > generic as possible and not necessarily make it dependent on "struct
+>> > request".
+>>
+>> Ok. I do understand the motivation for keeping the request related
+>> info out of blk-cgroup. Everything except the rq->cmd_flags can be
+>> easily done away with. Maybe I'll need to have CFQ send the sync and
+>> direction bits as args to the functions that need it. Not ideal coz
+>> we'll have functions with many args but I guess its not that bad too.
+>>
+>> >
+>> > If you implement, two dimensional arrays for stats then we can have
+>> > following function.
+>> >
+>> > blkio_add_stat(enum stat_type var enum stat_sub_type var_type, u64 val)
+>>
+>> I would want to avoid calls like these from CFQ into the blkcg code
+>> because many CFQ events trigger update for multiple stats (you'll see
+>> more with stats in later patchsets) and doing these calls
+>> independently for each stat would mean that we would also need to grab
+>> the stats_lock multiple times when we could've avoided that.
+>
+> I understand the need to club the updates and reduce the need of taking
+> stats_lock multiple times. I was thinking of any of following.
+>
+> - Get rid of reset interface per cgroup. Rely on changing ioscheduler on
+>  request queue and that will get rid of stats_lock entirely.
 
-On Mon, Apr 05, 2010 at 06:26:16PM +0530, kishore kadiyala wrote:
-> @@ -2091,9 +2091,9 @@ static int __init omap_hsmmc_probe(struct
->  	mmc->caps |= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
->  		     MMC_CAP_WAIT_WHILE_BUSY;
-> 
-> -	if (mmc_slot(host).wires >= 8)
-> -		mmc->caps |= MMC_CAP_8_BIT_DATA;
-> -	else if (mmc_slot(host).wires >= 4)
-> +	if (mmc_slot(host).wires == 8)
-> +		mmc->caps |= (MMC_CAP_8_BIT_DATA | MMC_CAP_4_BIT_DATA);
-> +	else if (mmc_slot(host).wires == 4)
->  		mmc->caps |= MMC_CAP_4_BIT_DATA;
+This takes away the ability to reset stats at will which is very
+useful when debugging and for testing IO controller.
 
-I believe it would be enough to just remove the 'else', so the code
-would look like:
+> - Can we use a function blkio_add_stat() with variable number of arguments
+>  so that more than one stat can be updated in a single call?
 
-if (mmc_slot(host).wires >= 8)
-	mmc->caps |= MMC_CAP_8_BIT_DATA;
-if (mmc_slot(host).wires >= 4)
-	mmc->caps |= MMC_CAP_4_BIT_DATA;
+I really don't like this at all.
 
--- 
-balbi
+> If you have other ideas to implement it without assuming "struct rq" in
+> blk-cgroup, please do that.
+
+I've already got rid of any rq assumptions in blk-cgroup. The only
+place where we're using rq is for rq_start_time_ns() and
+rq_io-start_time_ns() functions but they are not used by the
+blk-cgroup code directly (only CFQ uses them). For another user of
+io-controller, we can implement a bio based functions.
+
+>
+> Thanks
+> Vivek
+>
