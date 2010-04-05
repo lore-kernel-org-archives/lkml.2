@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932073Ab0DEXPg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 19:15:36 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44523 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756686Ab0DEXPa (ORCPT
+	id S1756890Ab0DEXR6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 19:17:58 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:49457 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932072Ab0DEXPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 19:15:30 -0400
-Date: Mon, 5 Apr 2010 16:11:10 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Avi Kivity <avi@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-       Dmitry Torokhov <dtor@vmware.com>, linux-kernel@vger.kernel.org,
-       pv-drivers@vmware.com
-Subject: Re: [PATCH] VMware Balloon driver
-Message-Id: <20100405161110.6a66bf82.akpm@linux-foundation.org>
-In-Reply-To: <9df0ea91-9bff-4038-99f1-fdb80aad7147@default>
-References: <20100404215202.GA13020@dtor-ws.eng.vmware.com>
-	<20100405142419.2c9bea3d.akpm@linux-foundation.org>
-	<4BBA5E1C.10706@goop.org>
-	<20100405151720.8a6ac5e3.akpm@linux-foundation.org>
-	<4BBA6383.7070601@redhat.com
- 20100405154023.c7e4f877.akpm@linux-foundation.org>
-	<9df0ea91-9bff-4038-99f1-fdb80aad7147@default>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 5 Apr 2010 19:15:35 -0400
+Message-ID: <4BBA6F0B.2060008@us.ibm.com>
+Date: Mon, 05 Apr 2010 16:15:23 -0700
+From: Darren Hart <dvhltc@us.ibm.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive
+ spinning
+References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com> <4BBA5305.7010002@redhat.com> <4BBA5C00.4090703@us.ibm.com> <4BBA6279.20802@redhat.com>
+In-Reply-To: <4BBA6279.20802@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 Apr 2010 16:03:48 -0700 (PDT)
-Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+Avi Kivity wrote:
 
-> > > On 04/06/2010 01:17 AM, Andrew Morton wrote:
-> > > >> The basic idea of the driver is to allow a guest system to give up
-> > > >> memory it isn't using so it can be reused by other virtual
-> > machines (or
-> > > >> the host itself).
-> > > >>
-> > > > So...  does this differ in any fundamental way from what
-> > hibernation
-> > > > does, via shrink_all_memory()?
-> > > >
-> > >
-> > > Just the _all_ bit, and the fact that we need to report the freed
-> > page
-> > > numbers to the hypervisor.
-> > >
-> > 
-> > So...  why not tweak that, rather than implementing some parallel
-> > thing?
+>>> An interesting (but perhaps difficult to achieve) optimization would 
+>>> be to spin in userspace.
+>>
+>> I couldn't think of a lightweight way to determine when the owner has 
+>> been scheduled out in userspace. Kernel assistance is required. You 
+>> could do this on the schedule() side of things, but I figured I'd get 
+>> some strong pushback if I tried to add a hook into descheduling that 
+>> flipped a bit in the futex value stating the owner was about to 
+>> deschedule(). Still, that might be something to explore.
 > 
-> I think Avi was being facetious ("_all_").  Hibernation assumes
-> everything in the machine is going to stop for awhile.  Ballooning
-> assumes that the machine has lower memory need for awhile, but
-> is otherwise fully operational.
+> In the futex value it's hopeless (since a thread can hold many locks), 
 
-shrink_all_memory() doesn't require that processes be stopped.
+It can, but there is a futex value per lock. If the task_struct had a 
+list of held futex locks (as it does for pi futex locks) the 
+deschedule() path could walk that and mark the FUTEX_OWNER_SLEEPING bit.
 
-If the existing code doesn't exactly match virtualisation's
-requirements, it can be changed.
 
->  Think of it as hot-plug memory
-> at a page granularity.
+> but I don't think it's unreasonable to set a bit in the thread local 
+> storage area.  The futex format would then need to be extended to 
+> contain a pointer to this bit.
 
-hotplug is different because it targets particular physical pages.  For
-this requirement any old page will do.  Preferably one which won't be
-needed soon, yes?
+This appears to be 1 bit per task instead of 1 bit per lock. Also, the 
+value is thread-specific... so how would a potential waiter be able to 
+determine if the owner of a particular lock was running or not with this 
+method?  ... maybe I'm missing some core bit about TLS... are you 
+talking about pthread_key_create() and pthread_getspecific() ?
 
+Thanks,
+
+-- 
+Darren Hart
+IBM Linux Technology Center
+Real-Time Linux Team
