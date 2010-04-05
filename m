@@ -1,98 +1,391 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740Ab0DEWIa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 18:08:30 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:59713 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756439Ab0DEWIZ (ORCPT
+	id S932069Ab0DEWK3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 18:10:29 -0400
+Received: from mail-fx0-f227.google.com ([209.85.220.227]:37318 "EHLO
+	mail-fx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756439Ab0DEWKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 18:08:25 -0400
-Date: Mon, 5 Apr 2010 18:08:22 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, mingo@elte.hu,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Nicholas Miell <nmiell@comcast.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       Nick Piggin <npiggin@suse.de>, Chris Friesen <cfriesen@nortel.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] introduce sys_membarrier(): process-wide memory
-	barrier (v10)
-Message-ID: <20100405220822.GB16208@Krystal>
-References: <20100405175736.GA12656@Krystal> <20100405113837.e475db7b.randy.dunlap@oracle.com> <20100405191057.GB13309@Krystal> <20100405210833.GA17206@feather>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100405210833.GA17206@feather>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 18:01:53 up 73 days, 39 min,  7 users,  load average: 0.03, 0.03,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 5 Apr 2010 18:10:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=K1619pzw5i3g1ZJ+eSIRM57ujAwBVMHnqmKLRzLkmpMDVdmg3UB57Rz16EKqp82wfd
+         AuV8aZZVF9KCfRTfaKKVYW4/wNxlIa8HHzqZg6Ct22+EIerJj9jQ1pF9+vUjw8tAui+h
+         rTcjmNUQgj9uc4MpsavC7loguPskWdQLgfj/Y=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] lockdep: Make lockstats counting per cpu
+Date: Tue,  6 Apr 2010 00:10:17 +0200
+Message-Id: <1270505417-8144-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.6.2.3
+In-Reply-To: <1269736197-10958-1-git-send-regression-fweisbec@gmail.com>
+References: <1269736197-10958-1-git-send-regression-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Josh Triplett (josh@joshtriplett.org) wrote:
-> On Mon, Apr 05, 2010 at 03:10:57PM -0400, Mathieu Desnoyers wrote:
-> > * Randy Dunlap (randy.dunlap@oracle.com) wrote:
-> > > On Mon, 5 Apr 2010 13:57:37 -0400 Mathieu Desnoyers wrote:
-> > > > +/*
-> > > > + * sys_membarrier - issue memory barrier on current process running threads
-> > > > + * @flags: One of these must be set:
-> > > > + *         MEMBARRIER_EXPEDITED
-> > > > + *             Adds some overhead, fast execution (few microseconds)
-> > > > + *         MEMBARRIER_DELAYED
-> > > > + *             Low overhead, but slow execution (few milliseconds)
-> > > > + *
-> > > > + *         MEMBARRIER_QUERY
-> > > > + *           This optional flag can be set to query if the kernel supports
-> > > > + *           a set of flags.
-> > > > + *
-> > > > + * return values: Returns -EINVAL if the flags are incorrect. Testing for kernel
-> > > > + * sys_membarrier support can be done by checking for -ENOSYS return value.
-> > > > + * Return values >= 0 indicate success. For a given set of flags on a given
-> > > > + * kernel, this system call will always return the same value. It is therefore
-> > > > + * correct to check the return value only once at library load, passing the
-> > > 
-> > > library load assumes caller is a library?  does the kernel care about that?
-> > 
-> > Nope, it doesn't. Will rephrase:
-> > 
-> >     ... It is therefore
-> >  * correct to check the return value only once during a process lifetime,
-> >  * passing the MEMBARRIER_QUERY flag in addition to only check if the flags are
-> >  * supported, without performing any synchronization.
-> 
-> Technically you can optimize even more than "process lifetime", since as
-> you said the results hold "For a given set of flags on a given kernel".
-> So you could check once and use the results as long as you remain on the
-> same running system.  (Craziness like live process migration and
-> checkpoint/restart aside. :) )
+Locking statistics are implemented using global atomic variables.
+This is usually fine unless some path write them very often.
 
-True. But notice that I first state the general correctness condition
-(consistent on a given kernel), and then state that it is therefore true over a
-process life-time. Basically, I want to clarify how the "MEMBARRIER_QUERY" flag
-can be used from a user-space perspective. Stating that we can save the result
-here and there and re-use it afterward will not help making this system call
-documentation clearer; I fear it would just have the opposite effect: confusing
-API users.
+This is the case for the function and function graph tracers
+that disable irqs for each entry saved (except if the function
+tracer is in preempt disabled only mode).
+And calls to local_irq_save/restore() increment hardirqs_on_events
+and hardirqs_off_events stats (or similar stats for redundant
+versions).
 
-Thanks,
+Incrementing these global vars for each function ends up in too
+much cache bouncing if lockstats are enabled.
 
-Mathieu
+To solve this, implement the debug_atomic_*() operations using
+per cpu vars.
 
-> 
-> - Josh Triplett
+v2: Use per_cpu() instead of get_cpu_var() to fetch the desired
+cpu vars on debug_atomic_read()
 
+v3: Store the stats in a structure. No need for local_t as we
+are NMI/irq safe.
+
+v4: Fix tons of build errors. I thought I had tested it but I
+probably forgot to select the relevant config.
+
+Suggested-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/lockdep.c           |   47 ++++++++++------------------
+ kernel/lockdep_internals.h |   74 +++++++++++++++++++++++++++++++------------
+ kernel/lockdep_proc.c      |   58 +++++++++++++++++-----------------
+ 3 files changed, 99 insertions(+), 80 deletions(-)
+
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index c927a54..08e6f76 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -430,20 +430,7 @@ static struct stack_trace lockdep_init_trace = {
+ /*
+  * Various lockdep statistics:
+  */
+-atomic_t chain_lookup_hits;
+-atomic_t chain_lookup_misses;
+-atomic_t hardirqs_on_events;
+-atomic_t hardirqs_off_events;
+-atomic_t redundant_hardirqs_on;
+-atomic_t redundant_hardirqs_off;
+-atomic_t softirqs_on_events;
+-atomic_t softirqs_off_events;
+-atomic_t redundant_softirqs_on;
+-atomic_t redundant_softirqs_off;
+-atomic_t nr_unused_locks;
+-atomic_t nr_cyclic_checks;
+-atomic_t nr_find_usage_forwards_checks;
+-atomic_t nr_find_usage_backwards_checks;
++DEFINE_PER_CPU(struct lockdep_stats, lockdep_stats);
+ #endif
+ 
+ /*
+@@ -758,7 +745,7 @@ register_lock_class(struct lockdep_map *lock, unsigned int subclass, int force)
+ 		return NULL;
+ 	}
+ 	class = lock_classes + nr_lock_classes++;
+-	debug_atomic_inc(&nr_unused_locks);
++	debug_atomic_inc(nr_unused_locks);
+ 	class->key = key;
+ 	class->name = lock->name;
+ 	class->subclass = subclass;
+@@ -1215,7 +1202,7 @@ check_noncircular(struct lock_list *root, struct lock_class *target,
+ {
+ 	int result;
+ 
+-	debug_atomic_inc(&nr_cyclic_checks);
++	debug_atomic_inc(nr_cyclic_checks);
+ 
+ 	result = __bfs_forwards(root, target, class_equal, target_entry);
+ 
+@@ -1252,7 +1239,7 @@ find_usage_forwards(struct lock_list *root, enum lock_usage_bit bit,
+ {
+ 	int result;
+ 
+-	debug_atomic_inc(&nr_find_usage_forwards_checks);
++	debug_atomic_inc(nr_find_usage_forwards_checks);
+ 
+ 	result = __bfs_forwards(root, (void *)bit, usage_match, target_entry);
+ 
+@@ -1275,7 +1262,7 @@ find_usage_backwards(struct lock_list *root, enum lock_usage_bit bit,
+ {
+ 	int result;
+ 
+-	debug_atomic_inc(&nr_find_usage_backwards_checks);
++	debug_atomic_inc(nr_find_usage_backwards_checks);
+ 
+ 	result = __bfs_backwards(root, (void *)bit, usage_match, target_entry);
+ 
+@@ -1835,7 +1822,7 @@ static inline int lookup_chain_cache(struct task_struct *curr,
+ 	list_for_each_entry(chain, hash_head, entry) {
+ 		if (chain->chain_key == chain_key) {
+ cache_hit:
+-			debug_atomic_inc(&chain_lookup_hits);
++			debug_atomic_inc(chain_lookup_hits);
+ 			if (very_verbose(class))
+ 				printk("\nhash chain already cached, key: "
+ 					"%016Lx tail class: [%p] %s\n",
+@@ -1900,7 +1887,7 @@ cache_hit:
+ 		chain_hlocks[chain->base + j] = class - lock_classes;
+ 	}
+ 	list_add_tail_rcu(&chain->entry, hash_head);
+-	debug_atomic_inc(&chain_lookup_misses);
++	debug_atomic_inc(chain_lookup_misses);
+ 	inc_chains();
+ 
+ 	return 1;
+@@ -2321,7 +2308,7 @@ void trace_hardirqs_on_caller(unsigned long ip)
+ 		return;
+ 
+ 	if (unlikely(curr->hardirqs_enabled)) {
+-		debug_atomic_inc(&redundant_hardirqs_on);
++		debug_atomic_inc(redundant_hardirqs_on);
+ 		return;
+ 	}
+ 	/* we'll do an OFF -> ON transition: */
+@@ -2348,7 +2335,7 @@ void trace_hardirqs_on_caller(unsigned long ip)
+ 
+ 	curr->hardirq_enable_ip = ip;
+ 	curr->hardirq_enable_event = ++curr->irq_events;
+-	debug_atomic_inc(&hardirqs_on_events);
++	debug_atomic_inc(hardirqs_on_events);
+ }
+ EXPORT_SYMBOL(trace_hardirqs_on_caller);
+ 
+@@ -2380,9 +2367,9 @@ void trace_hardirqs_off_caller(unsigned long ip)
+ 		curr->hardirqs_enabled = 0;
+ 		curr->hardirq_disable_ip = ip;
+ 		curr->hardirq_disable_event = ++curr->irq_events;
+-		debug_atomic_inc(&hardirqs_off_events);
++		debug_atomic_inc(hardirqs_off_events);
+ 	} else
+-		debug_atomic_inc(&redundant_hardirqs_off);
++		debug_atomic_inc(redundant_hardirqs_off);
+ }
+ EXPORT_SYMBOL(trace_hardirqs_off_caller);
+ 
+@@ -2406,7 +2393,7 @@ void trace_softirqs_on(unsigned long ip)
+ 		return;
+ 
+ 	if (curr->softirqs_enabled) {
+-		debug_atomic_inc(&redundant_softirqs_on);
++		debug_atomic_inc(redundant_softirqs_on);
+ 		return;
+ 	}
+ 
+@@ -2416,7 +2403,7 @@ void trace_softirqs_on(unsigned long ip)
+ 	curr->softirqs_enabled = 1;
+ 	curr->softirq_enable_ip = ip;
+ 	curr->softirq_enable_event = ++curr->irq_events;
+-	debug_atomic_inc(&softirqs_on_events);
++	debug_atomic_inc(softirqs_on_events);
+ 	/*
+ 	 * We are going to turn softirqs on, so set the
+ 	 * usage bit for all held locks, if hardirqs are
+@@ -2446,10 +2433,10 @@ void trace_softirqs_off(unsigned long ip)
+ 		curr->softirqs_enabled = 0;
+ 		curr->softirq_disable_ip = ip;
+ 		curr->softirq_disable_event = ++curr->irq_events;
+-		debug_atomic_inc(&softirqs_off_events);
++		debug_atomic_inc(softirqs_off_events);
+ 		DEBUG_LOCKS_WARN_ON(!softirq_count());
+ 	} else
+-		debug_atomic_inc(&redundant_softirqs_off);
++		debug_atomic_inc(redundant_softirqs_off);
+ }
+ 
+ static void __lockdep_trace_alloc(gfp_t gfp_mask, unsigned long flags)
+@@ -2654,7 +2641,7 @@ static int mark_lock(struct task_struct *curr, struct held_lock *this,
+ 			return 0;
+ 		break;
+ 	case LOCK_USED:
+-		debug_atomic_dec(&nr_unused_locks);
++		debug_atomic_dec(nr_unused_locks);
+ 		break;
+ 	default:
+ 		if (!debug_locks_off_graph_unlock())
+@@ -2760,7 +2747,7 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
+ 		if (!class)
+ 			return 0;
+ 	}
+-	debug_atomic_inc((atomic_t *)&class->ops);
++	atomic_inc((atomic_t *)&class->ops);
+ 	if (very_verbose(class)) {
+ 		printk("\nacquire class [%p] %s", class->key, class->name);
+ 		if (class->name_version > 1)
+diff --git a/kernel/lockdep_internals.h b/kernel/lockdep_internals.h
+index a2ee95a..8d7d4b6 100644
+--- a/kernel/lockdep_internals.h
++++ b/kernel/lockdep_internals.h
+@@ -110,29 +110,61 @@ lockdep_count_backward_deps(struct lock_class *class)
+ #endif
+ 
+ #ifdef CONFIG_DEBUG_LOCKDEP
++
++#include <asm/local.h>
+ /*
+- * Various lockdep statistics:
++ * Various lockdep statistics.
++ * We want them per cpu as they are often accessed in fast path
++ * and we want to avoid too much cache bouncing.
+  */
+-extern atomic_t chain_lookup_hits;
+-extern atomic_t chain_lookup_misses;
+-extern atomic_t hardirqs_on_events;
+-extern atomic_t hardirqs_off_events;
+-extern atomic_t redundant_hardirqs_on;
+-extern atomic_t redundant_hardirqs_off;
+-extern atomic_t softirqs_on_events;
+-extern atomic_t softirqs_off_events;
+-extern atomic_t redundant_softirqs_on;
+-extern atomic_t redundant_softirqs_off;
+-extern atomic_t nr_unused_locks;
+-extern atomic_t nr_cyclic_checks;
+-extern atomic_t nr_cyclic_check_recursions;
+-extern atomic_t nr_find_usage_forwards_checks;
+-extern atomic_t nr_find_usage_forwards_recursions;
+-extern atomic_t nr_find_usage_backwards_checks;
+-extern atomic_t nr_find_usage_backwards_recursions;
+-# define debug_atomic_inc(ptr)		atomic_inc(ptr)
+-# define debug_atomic_dec(ptr)		atomic_dec(ptr)
+-# define debug_atomic_read(ptr)		atomic_read(ptr)
++struct lockdep_stats {
++	int	chain_lookup_hits;
++	int	chain_lookup_misses;
++	int	hardirqs_on_events;
++	int	hardirqs_off_events;
++	int	redundant_hardirqs_on;
++	int	redundant_hardirqs_off;
++	int	softirqs_on_events;
++	int	softirqs_off_events;
++	int	redundant_softirqs_on;
++	int	redundant_softirqs_off;
++	int	nr_unused_locks;
++	int	nr_cyclic_checks;
++	int	nr_cyclic_check_recursions;
++	int	nr_find_usage_forwards_checks;
++	int	nr_find_usage_forwards_recursions;
++	int	nr_find_usage_backwards_checks;
++	int	nr_find_usage_backwards_recursions;
++};
++
++DECLARE_PER_CPU(struct lockdep_stats, lockdep_stats);
++
++#define debug_atomic_inc(ptr)			{		\
++	struct lockdep_stats *__cpu_lockdep_stats;		\
++								\
++	WARN_ON_ONCE(!irqs_disabled());				\
++	__cpu_lockdep_stats = &__get_cpu_var(lockdep_stats);	\
++	__cpu_lockdep_stats->ptr++;				\
++}
++
++#define debug_atomic_dec(ptr)			{		\
++	struct lockdep_stats *__cpu_lockdep_stats;		\
++								\
++	WARN_ON_ONCE(!irqs_disabled());				\
++	__cpu_lockdep_stats = &__get_cpu_var(lockdep_stats);	\
++	__cpu_lockdep_stats->ptr--;				\
++}
++
++#define debug_atomic_read(ptr)		({				\
++	struct lockdep_stats *__cpu_lockdep_stats;			\
++	unsigned long long __total = 0;					\
++	int __cpu;							\
++	for_each_possible_cpu(__cpu) {					\
++		__cpu_lockdep_stats = &per_cpu(lockdep_stats, __cpu);	\
++		__total += __cpu_lockdep_stats->ptr;			\
++	}								\
++	__total;							\
++})
+ #else
+ # define debug_atomic_inc(ptr)		do { } while (0)
+ # define debug_atomic_dec(ptr)		do { } while (0)
+diff --git a/kernel/lockdep_proc.c b/kernel/lockdep_proc.c
+index d4aba4f..59b76c8 100644
+--- a/kernel/lockdep_proc.c
++++ b/kernel/lockdep_proc.c
+@@ -184,34 +184,34 @@ static const struct file_operations proc_lockdep_chains_operations = {
+ static void lockdep_stats_debug_show(struct seq_file *m)
+ {
+ #ifdef CONFIG_DEBUG_LOCKDEP
+-	unsigned int hi1 = debug_atomic_read(&hardirqs_on_events),
+-		     hi2 = debug_atomic_read(&hardirqs_off_events),
+-		     hr1 = debug_atomic_read(&redundant_hardirqs_on),
+-		     hr2 = debug_atomic_read(&redundant_hardirqs_off),
+-		     si1 = debug_atomic_read(&softirqs_on_events),
+-		     si2 = debug_atomic_read(&softirqs_off_events),
+-		     sr1 = debug_atomic_read(&redundant_softirqs_on),
+-		     sr2 = debug_atomic_read(&redundant_softirqs_off);
+-
+-	seq_printf(m, " chain lookup misses:           %11u\n",
+-		debug_atomic_read(&chain_lookup_misses));
+-	seq_printf(m, " chain lookup hits:             %11u\n",
+-		debug_atomic_read(&chain_lookup_hits));
+-	seq_printf(m, " cyclic checks:                 %11u\n",
+-		debug_atomic_read(&nr_cyclic_checks));
+-	seq_printf(m, " find-mask forwards checks:     %11u\n",
+-		debug_atomic_read(&nr_find_usage_forwards_checks));
+-	seq_printf(m, " find-mask backwards checks:    %11u\n",
+-		debug_atomic_read(&nr_find_usage_backwards_checks));
+-
+-	seq_printf(m, " hardirq on events:             %11u\n", hi1);
+-	seq_printf(m, " hardirq off events:            %11u\n", hi2);
+-	seq_printf(m, " redundant hardirq ons:         %11u\n", hr1);
+-	seq_printf(m, " redundant hardirq offs:        %11u\n", hr2);
+-	seq_printf(m, " softirq on events:             %11u\n", si1);
+-	seq_printf(m, " softirq off events:            %11u\n", si2);
+-	seq_printf(m, " redundant softirq ons:         %11u\n", sr1);
+-	seq_printf(m, " redundant softirq offs:        %11u\n", sr2);
++	unsigned long long hi1 = debug_atomic_read(hardirqs_on_events),
++			   hi2 = debug_atomic_read(hardirqs_off_events),
++			   hr1 = debug_atomic_read(redundant_hardirqs_on),
++			   hr2 = debug_atomic_read(redundant_hardirqs_off),
++			   si1 = debug_atomic_read(softirqs_on_events),
++			   si2 = debug_atomic_read(softirqs_off_events),
++			   sr1 = debug_atomic_read(redundant_softirqs_on),
++			   sr2 = debug_atomic_read(redundant_softirqs_off);
++
++	seq_printf(m, " chain lookup misses:           %11llu\n",
++		debug_atomic_read(chain_lookup_misses));
++	seq_printf(m, " chain lookup hits:             %11llu\n",
++		debug_atomic_read(chain_lookup_hits));
++	seq_printf(m, " cyclic checks:                 %11llu\n",
++		debug_atomic_read(nr_cyclic_checks));
++	seq_printf(m, " find-mask forwards checks:     %11llu\n",
++		debug_atomic_read(nr_find_usage_forwards_checks));
++	seq_printf(m, " find-mask backwards checks:    %11llu\n",
++		debug_atomic_read(nr_find_usage_backwards_checks));
++
++	seq_printf(m, " hardirq on events:             %11llu\n", hi1);
++	seq_printf(m, " hardirq off events:            %11llu\n", hi2);
++	seq_printf(m, " redundant hardirq ons:         %11llu\n", hr1);
++	seq_printf(m, " redundant hardirq offs:        %11llu\n", hr2);
++	seq_printf(m, " softirq on events:             %11llu\n", si1);
++	seq_printf(m, " softirq off events:            %11llu\n", si2);
++	seq_printf(m, " redundant softirq ons:         %11llu\n", sr1);
++	seq_printf(m, " redundant softirq offs:        %11llu\n", sr2);
+ #endif
+ }
+ 
+@@ -263,7 +263,7 @@ static int lockdep_stats_show(struct seq_file *m, void *v)
+ #endif
+ 	}
+ #ifdef CONFIG_DEBUG_LOCKDEP
+-	DEBUG_LOCKS_WARN_ON(debug_atomic_read(&nr_unused_locks) != nr_unused);
++	DEBUG_LOCKS_WARN_ON(debug_atomic_read(nr_unused_locks) != nr_unused);
+ #endif
+ 	seq_printf(m, " lock-classes:                  %11lu [max: %lu]\n",
+ 			nr_lock_classes, MAX_LOCKDEP_KEYS);
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.6.2.3
+
