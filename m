@@ -1,252 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273Ab0DEJNK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 05:13:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39349 "EHLO mx1.redhat.com"
+	id S1752617Ab0DEJNU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 05:13:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61346 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751941Ab0DEJMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 05:12:54 -0400
-Date: Mon, 5 Apr 2010 05:12:30 -0400
+	id S1752380Ab0DEJNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 05:13:15 -0400
+Date: Mon, 5 Apr 2010 05:12:40 -0400
 From: Amerigo Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Stephen Hemminger <shemminger@linux-foundation.org>,
-       netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
-       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-       Amerigo Wang <amwang@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-       Matt Mackall <mpm@selenic.com>, bonding-devel@lists.sourceforge.net,
-       Jay Vosburgh <fubar@us.ibm.com>, David Miller <davem@davemloft.net>
-Message-Id: <20100405091617.4890.30552.sendpatchset@localhost.localdomain>
+Cc: Matt Mackall <mpm@selenic.com>, netdev@vger.kernel.org,
+       bridge@lists.linux-foundation.org, Andy Gospodarek <gospo@redhat.com>,
+       Neil Horman <nhorman@tuxdriver.com>, Amerigo Wang <amwang@redhat.com>,
+       Jeff Moyer <jmoyer@redhat.com>,
+       Stephen Hemminger <shemminger@linux-foundation.org>,
+       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
+       David Miller <davem@davemloft.net>
+Message-Id: <20100405091628.4890.30541.sendpatchset@localhost.localdomain>
 In-Reply-To: <20100405091605.4890.31181.sendpatchset@localhost.localdomain>
 References: <20100405091605.4890.31181.sendpatchset@localhost.localdomain>
-Subject: [v2 Patch 2/3] bridge: make bridge support netpoll
+Subject: [v2 Patch 3/3] bonding: make bonding support netpoll
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Based on the previous patch, make bridge support netpoll by:
+Based on Andy's work, but I modified a lot.
 
-1) implement the 2 methods to support netpoll for bridge;
+Similar to the patch for bridge, this patch does:
 
-2) modify netpoll during forwarding packets via bridge;
+1) implement the 2 methods to support netpoll for bonding;
 
-3) disable netpoll support of bridge when a netpoll-unabled device
-   is added to bridge;
+2) modify netpoll during forwarding packets via bonding;
+
+3) disable netpoll support of bonding when a netpoll-unabled device
+   is added to bonding;
 
 4) enable netpoll support when all underlying devices support netpoll.
 
-Cc: David Miller <davem@davemloft.net>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Stephen Hemminger <shemminger@linux-foundation.org>
+Cc: Andy Gospodarek <gospo@redhat.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>
 Cc: Matt Mackall <mpm@selenic.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Jay Vosburgh <fubar@us.ibm.com>
+Cc: David Miller <davem@davemloft.net>
 Signed-off-by: WANG Cong <amwang@redhat.com>
 
 ---
 
-Index: linux-2.6/net/bridge/br_device.c
+Index: linux-2.6/drivers/net/bonding/bond_main.c
 ===================================================================
---- linux-2.6.orig/net/bridge/br_device.c
-+++ linux-2.6/net/bridge/br_device.c
-@@ -13,8 +13,10 @@
- 
- #include <linux/kernel.h>
+--- linux-2.6.orig/drivers/net/bonding/bond_main.c
++++ linux-2.6/drivers/net/bonding/bond_main.c
+@@ -59,6 +59,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/errno.h>
  #include <linux/netdevice.h>
 +#include <linux/netpoll.h>
+ #include <linux/inetdevice.h>
+ #include <linux/igmp.h>
  #include <linux/etherdevice.h>
- #include <linux/ethtool.h>
-+#include <linux/list.h>
+@@ -430,7 +431,18 @@ int bond_dev_queue_xmit(struct bonding *
+ 	}
  
- #include <asm/uaccess.h>
- #include "br_private.h"
-@@ -162,6 +164,59 @@ static int br_set_tx_csum(struct net_dev
+ 	skb->priority = 1;
+-	dev_queue_xmit(skb);
++#ifdef CONFIG_NET_POLL_CONTROLLER
++	if (bond->dev->priv_flags & IFF_IN_NETPOLL) {
++		struct netpoll *np = bond->dev->npinfo->netpoll;
++		slave_dev->npinfo = bond->dev->npinfo;
++		np->real_dev = np->dev = skb->dev;
++		slave_dev->priv_flags |= IFF_IN_NETPOLL;
++		netpoll_send_skb(np, skb);
++		slave_dev->priv_flags &= ~IFF_IN_NETPOLL;
++		np->dev = bond->dev;
++	} else
++#endif
++		dev_queue_xmit(skb);
+ 
  	return 0;
+ }
+@@ -1329,6 +1341,60 @@ static void bond_detach_slave(struct bon
+ 	bond->slave_cnt--;
  }
  
 +#ifdef CONFIG_NET_POLL_CONTROLLER
-+bool br_devices_support_netpoll(struct net_bridge *br)
++static bool slaves_support_netpoll(struct net_device *bond_dev)
 +{
-+	struct net_bridge_port *p;
++	struct bonding *bond = netdev_priv(bond_dev);
++	struct slave *slave;
++	int i = 0;
 +	bool ret = true;
-+	int count = 0;
-+	unsigned long flags;
 +
-+	spin_lock_irqsave(&br->lock, flags);
-+	list_for_each_entry(p, &br->port_list, list) {
-+		count++;
-+		if (p->dev->priv_flags & IFF_DISABLE_NETPOLL
-+				|| !p->dev->netdev_ops->ndo_poll_controller)
++	read_lock(&bond->lock);
++	bond_for_each_slave(bond, slave, i) {
++		if ((slave->dev->priv_flags & IFF_DISABLE_NETPOLL)
++				|| !slave->dev->netdev_ops->ndo_poll_controller)
 +			ret = false;
 +	}
-+	spin_unlock_irqrestore(&br->lock, flags);
-+	return count != 0 && ret;
++	read_unlock(&bond->lock);
++	return i != 0 && ret;
 +}
 +
-+static void br_poll_controller(struct net_device *br_dev)
++static void bond_poll_controller(struct net_device *bond_dev)
 +{
-+	struct netpoll *np = br_dev->npinfo->netpoll;
-+
-+	if (np->real_dev != br_dev)
-+		netpoll_poll_dev(np->real_dev);
++	struct net_device *dev = bond_dev->npinfo->netpoll->real_dev;
++	if (dev != bond_dev)
++		netpoll_poll_dev(dev);
 +}
 +
-+void br_netpoll_cleanup(struct net_device *br_dev)
++static void bond_netpoll_cleanup(struct net_device *bond_dev)
 +{
-+	struct net_bridge *br = netdev_priv(br_dev);
-+	struct net_bridge_port *p, *n;
++	struct bonding *bond = netdev_priv(bond_dev);
++	struct slave *slave;
 +	const struct net_device_ops *ops;
++	int i;
 +
-+	br->dev->npinfo = NULL;
-+	list_for_each_entry_safe(p, n, &br->port_list, list) {
-+		if (p->dev) {
-+			ops = p->dev->netdev_ops;
++	read_lock(&bond->lock);
++	bond_dev->npinfo = NULL;
++	bond_for_each_slave(bond, slave, i) {
++		if (slave->dev) {
++			ops = slave->dev->netdev_ops;
 +			if (ops->ndo_netpoll_cleanup)
-+				ops->ndo_netpoll_cleanup(p->dev);
++				ops->ndo_netpoll_cleanup(slave->dev);
 +			else
-+				p->dev->npinfo = NULL;
++				slave->dev->npinfo = NULL;
 +		}
 +	}
++	read_unlock(&bond->lock);
 +}
 +
 +#else
 +
-+void br_netpoll_cleanup(struct net_device *br_dev)
++static void bond_netpoll_cleanup(struct net_device *bond_dev)
 +{
 +}
 +
 +#endif
 +
- static const struct ethtool_ops br_ethtool_ops = {
- 	.get_drvinfo    = br_getinfo,
- 	.get_link	= ethtool_op_get_link,
-@@ -184,6 +239,10 @@ static const struct net_device_ops br_ne
- 	.ndo_set_multicast_list	 = br_dev_set_multicast_list,
- 	.ndo_change_mtu		 = br_change_mtu,
- 	.ndo_do_ioctl		 = br_dev_ioctl,
+ /*---------------------------------- IOCTL ----------------------------------*/
+ 
+ static int bond_sethwaddr(struct net_device *bond_dev,
+@@ -1746,6 +1812,18 @@ int bond_enslave(struct net_device *bond
+ 		new_slave->state == BOND_STATE_ACTIVE ? "n active" : " backup",
+ 		new_slave->link != BOND_LINK_DOWN ? "n up" : " down");
+ 
 +#ifdef CONFIG_NET_POLL_CONTROLLER
-+	.ndo_netpoll_cleanup	 = br_netpoll_cleanup,
-+	.ndo_poll_controller	 = br_poll_controller,
++	if (slaves_support_netpoll(bond_dev)) {
++		bond_dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
++		if (bond_dev->npinfo)
++			slave_dev->npinfo = bond_dev->npinfo;
++	} else if (!(bond_dev->priv_flags & IFF_DISABLE_NETPOLL)) {
++		bond_dev->priv_flags |= IFF_DISABLE_NETPOLL;
++		pr_info("New slave device %s does not support netpoll\n",
++			slave_dev->name);
++		pr_info("Disabling netpoll support for %s\n", bond_dev->name);
++	}
++#endif
+ 	/* enslave is successful */
+ 	return 0;
+ 
+@@ -1929,6 +2007,15 @@ int bond_release(struct net_device *bond
+ 
+ 	netdev_set_master(slave_dev, NULL);
+ 
++#ifdef CONFIG_NET_POLL_CONTROLLER
++	if (slaves_support_netpoll(bond_dev))
++		bond_dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
++	if (slave_dev->netdev_ops->ndo_netpoll_cleanup)
++		slave_dev->netdev_ops->ndo_netpoll_cleanup(slave_dev);
++	else
++		slave_dev->npinfo = NULL;
++#endif
++
+ 	/* close slave before restoring its mac address */
+ 	dev_close(slave_dev);
+ 
+@@ -4448,6 +4535,10 @@ static const struct net_device_ops bond_
+ 	.ndo_vlan_rx_register	= bond_vlan_rx_register,
+ 	.ndo_vlan_rx_add_vid 	= bond_vlan_rx_add_vid,
+ 	.ndo_vlan_rx_kill_vid	= bond_vlan_rx_kill_vid,
++#ifdef CONFIG_NET_POLL_CONTROLLER
++	.ndo_netpoll_cleanup	= bond_netpoll_cleanup,
++	.ndo_poll_controller	= bond_poll_controller,
 +#endif
  };
  
- void br_dev_setup(struct net_device *dev)
-Index: linux-2.6/net/bridge/br_forward.c
-===================================================================
---- linux-2.6.orig/net/bridge/br_forward.c
-+++ linux-2.6/net/bridge/br_forward.c
-@@ -14,6 +14,7 @@
- #include <linux/err.h>
- #include <linux/kernel.h>
- #include <linux/netdevice.h>
-+#include <linux/netpoll.h>
- #include <linux/skbuff.h>
- #include <linux/if_vlan.h>
- #include <linux/netfilter_bridge.h>
-@@ -49,7 +50,13 @@ int br_dev_queue_push_xmit(struct sk_buf
- 		else {
- 			skb_push(skb, ETH_HLEN);
- 
--			dev_queue_xmit(skb);
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+			if (skb->dev->priv_flags & IFF_IN_NETPOLL) {
-+				netpoll_send_skb(skb->dev->npinfo->netpoll, skb);
-+				skb->dev->priv_flags &= ~IFF_IN_NETPOLL;
-+			} else
-+#endif
-+				dev_queue_xmit(skb);
- 		}
- 	}
- 
-@@ -65,9 +72,23 @@ int br_forward_finish(struct sk_buff *sk
- 
- static void __br_deliver(const struct net_bridge_port *to, struct sk_buff *skb)
+ static void bond_setup(struct net_device *bond_dev)
+@@ -4533,6 +4624,8 @@ static void bond_uninit(struct net_devic
  {
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	struct net_bridge *br = to->br;
-+	if (br->dev->priv_flags & IFF_IN_NETPOLL) {
-+		struct netpoll *np;
-+		to->dev->npinfo = skb->dev->npinfo;
-+		np = skb->dev->npinfo->netpoll;
-+		np->real_dev = np->dev = to->dev;
-+		to->dev->priv_flags |= IFF_IN_NETPOLL;
-+	}
-+#endif
- 	skb->dev = to->dev;
- 	NF_HOOK(PF_BRIDGE, NF_BR_LOCAL_OUT, skb, NULL, skb->dev,
- 			br_forward_finish);
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	if (skb->dev->npinfo)
-+		skb->dev->npinfo->netpoll->dev = br->dev;
-+#endif
- }
+ 	struct bonding *bond = netdev_priv(bond_dev);
  
- static void __br_forward(const struct net_bridge_port *to, struct sk_buff *skb)
-Index: linux-2.6/net/bridge/br_if.c
-===================================================================
---- linux-2.6.orig/net/bridge/br_if.c
-+++ linux-2.6/net/bridge/br_if.c
-@@ -19,6 +19,7 @@
- #include <linux/init.h>
- #include <linux/rtnetlink.h>
- #include <linux/if_ether.h>
-+#include <linux/netpoll.h>
- #include <net/sock.h>
- 
- #include "br_private.h"
-@@ -152,6 +153,14 @@ static void del_nbp(struct net_bridge_po
- 	kobject_uevent(&p->kobj, KOBJ_REMOVE);
- 	kobject_del(&p->kobj);
- 
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	if (br_devices_support_netpoll(br))
-+		br->dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
-+	if (dev->netdev_ops->ndo_netpoll_cleanup)
-+		dev->netdev_ops->ndo_netpoll_cleanup(dev);
-+	else
-+		dev->npinfo = NULL;
-+#endif
- 	call_rcu(&p->rcu, destroy_nbp_rcu);
- }
- 
-@@ -164,6 +173,8 @@ static void del_br(struct net_bridge *br
- 		del_nbp(p);
- 	}
- 
-+	br_netpoll_cleanup(br->dev);
++	bond_netpoll_cleanup(bond_dev);
 +
- 	del_timer_sync(&br->gc_timer);
+ 	/* Release the bonded slaves */
+ 	bond_release_all(bond_dev);
  
- 	br_sysfs_delbr(br->dev);
-@@ -437,6 +448,20 @@ int br_add_if(struct net_bridge *br, str
- 
- 	kobject_uevent(&p->kobj, KOBJ_ADD);
- 
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	if (br_devices_support_netpoll(br)) {
-+		br->dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
-+		if (br->dev->npinfo)
-+			dev->npinfo = br->dev->npinfo;
-+	} else if (!(br->dev->priv_flags & IFF_DISABLE_NETPOLL)) {
-+		br->dev->priv_flags |= IFF_DISABLE_NETPOLL;
-+		printk(KERN_INFO "New device %s does not support netpoll\n",
-+			dev->name);
-+		printk(KERN_INFO "Disabling netpoll for %s\n",
-+			br->dev->name);
-+	}
-+#endif
-+
- 	return 0;
- err2:
- 	br_fdb_delete_by_port(br, p, 1);
-Index: linux-2.6/net/bridge/br_private.h
-===================================================================
---- linux-2.6.orig/net/bridge/br_private.h
-+++ linux-2.6/net/bridge/br_private.h
-@@ -233,6 +233,8 @@ static inline int br_is_root_bridge(cons
- extern void br_dev_setup(struct net_device *dev);
- extern netdev_tx_t br_dev_xmit(struct sk_buff *skb,
- 			       struct net_device *dev);
-+extern bool br_devices_support_netpoll(struct net_bridge *br);
-+extern void br_netpoll_cleanup(struct net_device *br_dev);
- 
- /* br_fdb.c */
- extern int br_fdb_init(void);
