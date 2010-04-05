@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab0DEMad (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 08:30:33 -0400
-Received: from mga11.intel.com ([192.55.52.93]:42895 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754386Ab0DEMa0 convert rfc822-to-8bit (ORCPT
+	id S1754658Ab0DEMyB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 08:54:01 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:47876 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754571Ab0DEMxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 08:30:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,365,1267430400"; 
-   d="scan'208";a="786502524"
-From: "Wang, Yong Y" <yong.y.wang@intel.com>
-To: Tejun Heo <tj@kernel.org>
-CC: lkml <linux-kernel@vger.kernel.org>
-Date: Mon, 5 Apr 2010 20:30:07 +0800
-Subject: RE: [PATCH] eeepc-wmi: include slab.h
-Thread-Topic: [PATCH] eeepc-wmi: include slab.h
-Thread-Index: AcrUaXPwqM9mVazlQkOTwWDM6MPw6gAUfWLQ
-Message-ID: <FC2FB65B4D919844ADE4BE3C2BB739AD1E03881D@shsmsx501.ccr.corp.intel.com>
-References: <4BB94DC1.5010403@kernel.org>
-In-Reply-To: <4BB94DC1.5010403@kernel.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 5 Apr 2010 08:53:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=Ks91d3pHS6VtRk4VJUfNNsh6VlCwZsXzpGLQIiCs1MVmjXymGAVWt3JAUSMSaegTLF
+         IIAXW5M/I5NdHttYe3mFRSXauQMIh4kVBZlxJInRwEGsXwG7rEhu2T1kLi34pcgFf8Xm
+         eEt0lrOfFbY32lx21vKWkqiscNGdXlEPmRP4w=
+Date: Mon, 5 Apr 2010 15:53:30 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Joerg Roedel <joerg.roedel@amd.com>, Ingo Molnar <mingo@elte.hu>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       Shaun Ruffell <sruffell@digium.com>, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [patch] dma-debug: off by one issue
+Message-ID: <20100405125329.GA16197@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Joerg Roedel <joro@8bytes.org>, Joerg Roedel <joerg.roedel@amd.com>,
+	Ingo Molnar <mingo@elte.hu>,
+	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+	Shaun Ruffell <sruffell@digium.com>, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+References: <20100402112843.GI5265@bicker> <20100403204717.GS24846@8bytes.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100403204717.GS24846@8bytes.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Tejun Heo [mailto:tj@kernel.org]
-> Sent: Monday, April 05, 2010 10:41 AM
-> To: lkml
-> Cc: Wang, Yong Y
-> Subject: [PATCH] eeepc-wmi: include slab.h
+On Sat, Apr 03, 2010 at 10:47:17PM +0200, Joerg Roedel wrote:
+> On Fri, Apr 02, 2010 at 02:28:43PM +0300, Dan Carpenter wrote:
+> > We need to reserve the last character for the NULL terminator.
 > 
-> eeepc-wmi uses kfree() but doesn't include slab.h.  Include it.
+> The character is already reserved by the user-to-kernel copy earlier in
+> the function.
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Yong Wang <yong.y.wang@intel.com>
-> ---
-> Hello,
+> 	Joerg
 > 
-> I've committed this patch to percpu#slabh branch which breaks implicit
-> slab interface availability.  I'm gonna push the branch to Linus
-> soonish.
-> 
-> Thanks.
-> 
->  drivers/platform/x86/eeepc-wmi.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/eeepc-wmi.c
-> b/drivers/platform/x86/eeepc-wmi.c
-> index 2466b7b..9f88226 100644
-> --- a/drivers/platform/x86/eeepc-wmi.c
-> +++ b/drivers/platform/x86/eeepc-wmi.c
-> @@ -27,6 +27,7 @@
->  #include <linux/module.h>
->  #include <linux/init.h>
->  #include <linux/types.h>
-> +#include <linux/slab.h>
->  #include <linux/input.h>
->  #include <linux/input/sparse-keymap.h>
->  #include <acpi/acpi_bus.h>
 
-<linux/module.h> includes <linux/percpu.h> which in turn includes <linux/slab.h>.
-Doesn't it?
+Yes, but the original code requires more code reading to audit. Let's 
+change the commit message to say that it's a clean up patch.
 
-Thanks
--Yong
+regards,
+dan carpenter
 
+> > 
+> > Signed-off-by: Dan Carpenter <error27@gmail.com>
+> > 
+> > diff --git a/lib/dma-debug.c b/lib/dma-debug.c
+> > index ba8b670..01e6427 100644
+> > --- a/lib/dma-debug.c
+> > +++ b/lib/dma-debug.c
+> > @@ -570,7 +570,7 @@ static ssize_t filter_write(struct file *file, const char __user *userbuf,
+> >  	 * Now parse out the first token and use it as the name for the
+> >  	 * driver to filter for.
+> >  	 */
+> > -	for (i = 0; i < NAME_MAX_LEN; ++i) {
+> > +	for (i = 0; i < NAME_MAX_LEN - 1; ++i) {
+> >  		current_driver_name[i] = buf[i];
+> >  		if (isspace(buf[i]) || buf[i] == ' ' || buf[i] == 0)
+> >  			break;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
