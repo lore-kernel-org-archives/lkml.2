@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754953Ab0DESPn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 14:15:43 -0400
-Received: from imr2.ericy.com ([198.24.6.3]:32813 "EHLO imr2.ericy.com"
+	id S1755357Ab0DESYw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 14:24:52 -0400
+Received: from ns.netcenter.hu ([195.228.254.57]:49160 "EHLO mail.netcenter.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751732Ab0DESPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 14:15:37 -0400
-Subject: Re: [PATCH][RESEND] x86: Do not write to VGA memory space if
- CONFIG_VGA_CONSOLE is undefined
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: <guenter.roeck@ericsson.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <hpa@zytor.com>, <penberg@cs.helsinki.fi>, <mingo@redhat.com>,
-       <x86@kernel.org>, <guenter.roeck@ericsson.com>
-In-Reply-To: <84144f021003310832i3420e4c1g7396b4d1f311f393@mail.gmail.com>
-References: <1270046479-4486-1-git-send-email-guenter.roeck@ericsson.com>
-	 <84144f021003310832i3420e4c1g7396b4d1f311f393@mail.gmail.com>
-Content-Type: text/plain
-Organization: Ericsson
-Date: Mon, 5 Apr 2010 11:10:29 -0700
-Message-ID: <1270491029.1477.453.camel@groeck-laptop>
+	id S1751847Ab0DESYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 14:24:46 -0400
+Message-ID: <2bd101cad4ec$5a425f30$0400a8c0@dcccs>
+From: "Janos Haar" <janos.haar@netcenter.hu>
+To: "Dave Chinner" <david@fromorbit.com>
+Cc: <xiyou.wangcong@gmail.com>, <linux-kernel@vger.kernel.org>,
+       <kamezawa.hiroyu@jp.fujitsu.com>, <linux-mm@kvack.org>,
+       <xfs@oss.sgi.com>, <axboe@kernel.dk>
+References: <03ca01cacb92$195adf50$0400a8c0@dcccs> <2375c9f91003242029p1efbbea1v8e313e460b118f14@mail.gmail.com> <20100325153110.6be9a3df.kamezawa.hiroyu@jp.fujitsu.com> <02c101cacbf8$d21d1650$0400a8c0@dcccs> <179901cad182$5f87f620$0400a8c0@dcccs> <t2h2375c9f91004010337p618c4d5yc739fa25b5f842fa@mail.gmail.com> <1fe901cad2b0$d39d0300$0400a8c0@dcccs> <20100402230905.GW3335@dastard> <22c901cad333$7a67db60$0400a8c0@dcccs> <20100404103701.GX3335@dastard>
+Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look please!...)
+Date: Mon, 5 Apr 2010 20:17:27 +0200
 MIME-Version: 1.0
-X-Mailer: Evolution 2.26.1 
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.3598
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-31 at 11:32 -0400, Pekka Enberg wrote:
-> On Wed, Mar 31, 2010 at 4:41 PM, Guenter Roeck
-> <guenter.roeck@ericsson.com> wrote:
-> > Current early_printk code writes into VGA memory space even
-> > if CONFIG_VGA_CONSOLE is undefined. This can cause problems
-> > if there is no VGA device in the system, especially if the memory
-> > is used by another device.
-> >
-> > Fix problem by redirecting output to early_serial_console
-> > if CONFIG_VGA_CONSOLE is undefined.
-> >
-> > Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> 
-> Reviewed-by: Pekka Enberg <penberg@cs.helsinki.fi>
-> 
-What will it take to get this patch into the tree ?
+Dave,
 
-If there are coding style issues or some other unresolved concerns,
-please let me know.
+Thank you for your answer.
+Like i sad before, this is a productive server with important service.
+Can you please send the fix for me as soon as it is done even for testing 
+it....
+Or point me to the right direction to get it?
 
-Guenter
+Thanks a lot,
+Janos Haar
 
+----- Original Message ----- 
+From: "Dave Chinner" <david@fromorbit.com>
+To: "Janos Haar" <janos.haar@netcenter.hu>
+Cc: <xiyou.wangcong@gmail.com>; <linux-kernel@vger.kernel.org>; 
+<kamezawa.hiroyu@jp.fujitsu.com>; <linux-mm@kvack.org>; <xfs@oss.sgi.com>; 
+<axboe@kernel.dk>
+Sent: Sunday, April 04, 2010 12:37 PM
+Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look 
+please!...)
+
+
+> On Sat, Apr 03, 2010 at 03:42:10PM +0200, Janos Haar wrote:
+>> Hello,
+>>
+>> The actual version of kernel is 2.6.32.10.
+>> There is any significant fixes for me in the last (.11) or in the
+>> next (33.x)?
+>
+> The fixes for this bug are queued up already for the next
+> 2.6.32.x release.
+>
+> Cheers,
+>
+> Dave.
+> -- 
+> Dave Chinner
+> david@fromorbit.com 
 
