@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450Ab0DEPfS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 11:35:18 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:57355 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755008Ab0DEPfN (ORCPT
+	id S1755470Ab0DEPmG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 11:42:06 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40762 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754611Ab0DEPmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 11:35:13 -0400
-Date: Mon, 5 Apr 2010 11:34:55 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Chris Wright <chrisw@sous-sol.org>
-Cc: Joerg Roedel <joerg.roedel@amd.com>, Neil Horman <nhorman@redhat.com>,
-       kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-       hbabu@us.ibm.com, iommu@lists.linux-foundation.org,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 1/2] x86/amd-iommu: enable iommu before attaching devices
-Message-ID: <20100405153455.GB27116@hmsreliant.think-freely.org>
-References: <m1sk7guv5u.fsf@fess.ebiederm.org>
- <20100331202745.GE13406@hmsreliant.think-freely.org>
- <20100401142902.GF24846@8bytes.org>
- <20100401144736.GA14069@shamino.rdu.redhat.com>
- <20100401155643.GG24846@8bytes.org>
- <20100401171149.GH13603@shamino.rdu.redhat.com>
- <20100401201433.GK24846@8bytes.org>
- <20100402000012.GA8930@hmsreliant.think-freely.org>
- <20100402003034.GX29241@sequoia.sous-sol.org>
- <20100402012353.GY29241@sequoia.sous-sol.org>
+	Mon, 5 Apr 2010 11:42:00 -0400
+Date: Mon, 5 Apr 2010 08:37:26 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+cc: Minchan Kim <minchan.kim@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Borislav Petkov <bp@alien8.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Subject: Re: [PATCH] rmap: fix anon_vma_fork() memory leak
+In-Reply-To: <20100404190925.5daac2f3@annuminas.surriel.com>
+Message-ID: <alpine.LFD.2.00.1004050824400.21313@i5.linux-foundation.org>
+References: <alpine.LFD.2.00.1003301029250.3707@i5.linux-foundation.org> <20100402175937.GA19690@liondog.tnic> <alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org> <20100402112428.f46ddc44.akpm@linux-foundation.org> <alpine.LFD.2.00.1004021135530.3634@i5.linux-foundation.org>
+ <4BB66941.1060809@redhat.com> <1270397575.1814.106.camel@barrios-desktop> <20100404190925.5daac2f3@annuminas.surriel.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100402012353.GY29241@sequoia.sous-sol.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-Spam-Score: -2.9 (--)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 01, 2010 at 06:23:53PM -0700, Chris Wright wrote:
-> Hit another kdump problem as reported by Neil Horman.  When initializaing
-> the IOMMU, we attach devices to their domains before the IOMMU is
-> fully (re)initialized.  Attaching a device will issue some important
-> invalidations.  In the context of the newly kexec'd kdump kernel, the
-> IOMMU may have stale cached data from the original kernel.  Because we
-> do the attach too early, the invalidation commands are placed in the new
-> command buffer before the IOMMU is updated w/ that buffer.  This leaves
-> the stale entries in the kdump context and can renders device unusable.
-> Simply enable the IOMMU before we do the attach.
+
+
+On Sun, 4 Apr 2010, Rik van Riel wrote:
+>
+> Fix a memory leak in anon_vma_fork(), where we fail to tear down the
+> anon_vmas attached to the new VMA in case setting up the new anon_vma
+> fails.
 > 
-> Cc: Neil Horman <nhorman@tuxdriver.com>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+> Reported-by: Minchan Kim <minchan.kim@gmail.com>
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 > ---
->  arch/x86/kernel/amd_iommu_init.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> --- a/arch/x86/kernel/amd_iommu_init.c
-> +++ b/arch/x86/kernel/amd_iommu_init.c
-> @@ -1288,6 +1288,8 @@ static int __init amd_iommu_init(void)
->  	if (ret)
->  		goto free;
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index fcd593c..fb7ce99 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -231,6 +231,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
 >  
-> +	enable_iommus();
-> +
->  	if (iommu_pass_through)
->  		ret = amd_iommu_init_passthrough();
->  	else
-> @@ -1300,8 +1302,6 @@ static int __init amd_iommu_init(void)
->  
->  	amd_iommu_init_notifier();
->  
-> -	enable_iommus();
-> -
->  	if (iommu_pass_through)
->  		goto out;
->  
-> 
+>   out_error_free_anon_vma:
+>  	anon_vma_free(anon_vma);
+> +	unlink_anon_vmas(vma);
+>   out_error:
+>  	return -ENOMEM;
+>  }
 
-FWIW, this patch series fixed the kdump issues I was having on my AMD system
-here.  Thanks Chris
+This looks _very_ wrong to me.
 
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Shouldn't the unlink_anon_vmas() be in the "out_error" case? IOW, we 
+should do it even if the "anon_vma_alloc()" failed, nbot just if the 
+"anon_vma_chain_alloc()" failed?
 
+No?
+
+What am I missing?
+
+			Linus
