@@ -1,59 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756337Ab0DETtL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 15:49:11 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29834 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756165Ab0DETtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 15:49:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,366,1267430400"; 
-   d="scan'208";a="610400661"
-Message-ID: <4BBA3EAB.6010800@linux.intel.com>
-Date: Mon, 05 Apr 2010 12:48:59 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1756323Ab0DETxI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 15:53:08 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:2202 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755531Ab0DETxB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 15:53:01 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=NWkvWzLfyHPGCmbsO1tlkv+pXHH4FbyDR/5nUdR1VzL82HKvOGEQryApICpE3HO7F
+	86pPHX+H2JdI6Bv/OHadA==
 MIME-Version: 1.0
-To: david@lang.hm
-CC: paulmck@linux.vnet.ibm.com, Dominik Brodowski <linux@dominikbrodowski.net>,
-       Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>, Dmitry Torokhov <dtor@mail.ru>
-Subject: Re: A few questions and issues with dynticks, NOHZ and powertop
-References: <20100403223328.GA4507@comet.dominikbrodowski.net> <Pine.LNX.4.44L0.1004041110010.2750-100000@netrider.rowland.org> <20100404163924.GA18428@comet.dominikbrodowski.net> <20100404204725.GC2644@linux.vnet.ibm.com> <20100404233702.GA24102@linux.vnet.ibm.com> <4BB95C85.80205@linux.intel.com> <20100405042222.GD2644@linux.vnet.ibm.com> <4BB9F657.4050901@linux.intel.com> <20100405151401.GA2525@linux.vnet.ibm.com> <4BBA0AC5.1080905@linux.intel.com> <alpine.DEB.2.00.1004051137160.12764@asgard.lang.hm>
-In-Reply-To: <alpine.DEB.2.00.1004051137160.12764@asgard.lang.hm>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1270496004-9715-1-git-send-email-mike@android.com>
+References: <1270496004-9715-1-git-send-email-mike@android.com>
+Date: Mon, 5 Apr 2010 12:52:57 -0700
+Message-ID: <w2l6599ad831004051252mbf8c4cedz293540bfc7b2f87a@mail.gmail.com>
+Subject: Re: [RFC][PATCH] sched: cpuacct: Track cpuusage per cpu frequency
+From: Paul Menage <menage@google.com>
+To: Mike Chan <mike@android.com>
+Cc: balbir@in.ibm.com, cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/5/2010 11:44, david@lang.hm wrote:
-> On Mon, 5 Apr 2010, Arjan van de Ven wrote:
+On Mon, Apr 5, 2010 at 12:33 PM, Mike Chan <mike@android.com> wrote:
+> New file: cpuacct.cpufreq when CONFIG_CPU_FREQ_STATS is enabled.
 >
->> On 4/5/2010 8:14, Paul E. McKenney wrote:
->>> So the main issue is that for many workloads, it is best to run full
->>> bore
->>> and get done quickly, thus allowing the entire machine to be powered
->>> down?
->>
->> yep
->
-> Race To Idle works extremely well in a batch type situation where there
-> is not going to be any work to do after you finish what you have.
->
-> It doesn't work quite as well if you are going to have new work to do in
-> the near future.
->
-> You cannot power down the entire machine if you have to look for user
-> input.
->
-> It takes time (and power) to shut down and start back up, if you are
-> going to have more work to do before you can make the complete cycle
-> (and save more power than it costs to make the transitions), it's best
-> to stay at full power, even if you are idle.
+> cpuacct.cpufreq accounts for cpu time per-cpu frequency, time is exported
+> in nano-seconds
 
-for the things we're talking about here (memory controllers etc) we're talking
-about single to low double digit microseconds (or even less) of time to go up and down.
-Many of the things you talk about are in the millisecond timeframe.
+Can you clarify the wording of this (and describe it in the relevant
+Documentation/... file)? It's not clear.
 
+>From the code, it appears that the file reports a breakdown of how
+much CPU time the cgroup has been consuming at each different CPU
+frequency level. If so, then you probably want to reword the
+description to avoid "per-cpu", since that makes it sounds as though
+it's reporting something, well, "per CPU".
+
+Also, what's the motivation here? If it's for power monitoring
+purposes, might it be simpler to just report a single number, that's
+the integral of the CPU usage by frequency index (i.e. calculated from
+the same information that this patch is already gathering in
+cpuacct_charge()) rather than dumping a whole table on userspace?
+
+Paul
+
+>
+> We do not know the cpufreq table size at compile time.
+> So a new config option CONFIG_CPUACCT_CPUFREQ_TABLE_MAX is intruduced,
+> to determine the cpufreq table per-cpu in the cpuacct struct.
+>
+> Signed-off-by: Mike Chan <mike@android.com>
+> ---
+>  init/Kconfig   |    5 +++
+>  kernel/sched.c |   99 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 104 insertions(+), 0 deletions(-)
+>
+> diff --git a/init/Kconfig b/init/Kconfig
+> index eb77e8c..e1e86df 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -534,6 +534,11 @@ config CGROUP_CPUACCT
+>          Provides a simple Resource Controller for monitoring the
+>          total CPU consumed by the tasks in a cgroup.
+>
+> +config CPUACCT_CPUFREQ_TABLE_MAX
+> +       int "Max CPUFREQ table size"
+> +       depends on CGROUP_CPUACCT && CPU_FREQ_TABLE
+> +       default 32
+> +
+>  config RESOURCE_COUNTERS
+>        bool "Resource counters"
+>        help
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 528a105..a0b56b5 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -71,6 +71,7 @@
+>  #include <linux/debugfs.h>
+>  #include <linux/ctype.h>
+>  #include <linux/ftrace.h>
+> +#include <linux/cpufreq.h>
+>
+>  #include <asm/tlb.h>
+>  #include <asm/irq_regs.h>
+> @@ -8817,6 +8818,11 @@ struct cgroup_subsys cpu_cgroup_subsys = {
+>  * (balbir@in.ibm.com).
+>  */
+>
+> +#ifdef CONFIG_CPU_FREQ_STAT
+> +/* The alloc_percpu macro uses typeof so we must define a type here. */
+> +typedef struct { u64 usage[CONFIG_CPUACCT_CPUFREQ_TABLE_MAX]; } cpufreq_usage_t;
+> +#endif
+> +
+>  /* track cpu usage of a group of tasks and its child groups */
+>  struct cpuacct {
+>        struct cgroup_subsys_state css;
+> @@ -8824,6 +8830,10 @@ struct cpuacct {
+>        u64 __percpu *cpuusage;
+>        struct percpu_counter cpustat[CPUACCT_STAT_NSTATS];
+>        struct cpuacct *parent;
+> +#ifdef CONFIG_CPU_FREQ_STAT
+> +       /* cpufreq_usage is a pointer to an array of u64-types on every cpu */
+> +       cpufreq_usage_t *cpufreq_usage;
+> +#endif
+>  };
+>
+>  struct cgroup_subsys cpuacct_subsys;
+> @@ -8856,6 +8866,10 @@ static struct cgroup_subsys_state *cpuacct_create(
+>        if (!ca->cpuusage)
+>                goto out_free_ca;
+>
+> +#ifdef CONFIG_CPU_FREQ_STAT
+> +       ca->cpufreq_usage = alloc_percpu(cpufreq_usage_t);
+> +#endif
+> +
+>        for (i = 0; i < CPUACCT_STAT_NSTATS; i++)
+>                if (percpu_counter_init(&ca->cpustat[i], 0))
+>                        goto out_free_counters;
+> @@ -8888,6 +8902,74 @@ cpuacct_destroy(struct cgroup_subsys *ss, struct cgroup *cgrp)
+>        kfree(ca);
+>  }
+>
+> +#ifdef CONFIG_CPU_FREQ_STAT
+> +static int cpufreq_index;
+> +static int cpuacct_cpufreq_notify(struct notifier_block *nb, unsigned long val,
+> +                                       void *data)
+> +{
+> +       int ret;
+> +       struct cpufreq_policy *policy;
+> +       struct cpufreq_freqs *freq = data;
+> +       struct cpufreq_frequency_table *table;
+> +
+> +       if (val != CPUFREQ_POSTCHANGE)
+> +               return 0;
+> +
+> +       /* Update cpufreq_index with current speed */
+> +       table = cpufreq_frequency_get_table(freq->cpu);
+> +       policy = cpufreq_cpu_get(freq->cpu);
+> +       ret = cpufreq_frequency_table_target(policy, table,
+> +                       cpufreq_quick_get(freq->cpu),
+> +                       CPUFREQ_RELATION_L, &cpufreq_index);
+> +       cpufreq_cpu_put(policy);
+> +       return ret;
+> +}
+> +
+> +static struct notifier_block cpufreq_notifier = {
+> +       .notifier_call = cpuacct_cpufreq_notify,
+> +};
+> +
+> +static __init int cpuacct_init(void)
+> +{
+> +       return cpufreq_register_notifier(&cpufreq_notifier,
+> +                                       CPUFREQ_TRANSITION_NOTIFIER);
+> +}
+> +
+> +module_init(cpuacct_init);
+> +
+> +static int cpuacct_cpufreq_show(struct cgroup *cgrp, struct cftype *cft,
+> +               struct cgroup_map_cb *cb)
+> +{
+> +       int i;
+> +       unsigned int cpu;
+> +       char buf[32];
+> +       struct cpuacct *ca = cgroup_ca(cgrp);
+> +       struct cpufreq_frequency_table *table =
+> +               cpufreq_frequency_get_table(smp_processor_id());
+> +
+> +       for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+> +               u64 total = 0;
+> +
+> +               if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+> +                       continue;
+> +
+> +               for_each_present_cpu(cpu) {
+> +                       cpufreq_usage_t *cpufreq_usage;
+> +
+> +                       cpufreq_usage = per_cpu_ptr(ca->cpufreq_usage, cpu);
+> +                       table = cpufreq_frequency_get_table(cpu);
+> +
+> +                       total += cpufreq_usage->usage[i];
+> +               }
+> +
+> +               snprintf(buf, sizeof(buf), "%d", table[i].frequency);
+> +               cb->fill(cb, buf, total);
+> +       }
+> +
+> +       return 0;
+> +}
+> +#endif
+> +
+>  static u64 cpuacct_cpuusage_read(struct cpuacct *ca, int cpu)
+>  {
+>        u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
+> @@ -9003,6 +9085,12 @@ static struct cftype files[] = {
+>                .name = "stat",
+>                .read_map = cpuacct_stats_show,
+>        },
+> +#ifdef CONFIG_CPU_FREQ_STAT
+> +       {
+> +               .name = "cpufreq",
+> +               .read_map = cpuacct_cpufreq_show,
+> +       },
+> +#endif
+>  };
+>
+>  static int cpuacct_populate(struct cgroup_subsys *ss, struct cgroup *cgrp)
+> @@ -9031,6 +9119,17 @@ static void cpuacct_charge(struct task_struct *tsk, u64 cputime)
+>
+>        for (; ca; ca = ca->parent) {
+>                u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
+> +#ifdef CONFIG_CPU_FREQ_STAT
+> +               cpufreq_usage_t *cpufreq_usage =
+> +                       per_cpu_ptr(ca->cpufreq_usage, cpu);
+> +
+> +               if (cpufreq_index > CONFIG_CPUACCT_CPUFREQ_TABLE_MAX)
+> +                       printk_once(KERN_WARNING "cpuacct_charge: "
+> +                                       "cpufreq_index: %d exceeds max table "
+> +                                       "size\n", cpufreq_index);
+> +               else
+> +                       cpufreq_usage->usage[cpufreq_index] += cputime;
+> +#endif
+>                *cpuusage += cputime;
+>        }
+>
+> --
+> 1.7.0.1
+>
+>
