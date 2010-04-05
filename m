@@ -1,294 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab0DEKim (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 06:38:42 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63544 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751735Ab0DEKi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 06:38:26 -0400
-Message-ID: <4BB9BD8A.9040209@cn.fujitsu.com>
-Date: Mon, 05 Apr 2010 18:38:02 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
-MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Ingo Molnar <mingo@elte.hu>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Nathan Fontenot <nfont@austin.ibm.com>,
-       Peter Zijlstra <peterz@infradead.org>,
+	id S1753092Ab0DEKsT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 06:48:19 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:43454 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751735Ab0DEKsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 06:48:12 -0400
+Date: Mon, 5 Apr 2010 11:47:52 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: David Rientjes <rientjes@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, anfei <anfei.zhou@gmail.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
-       Sachin Sant <sachinp@in.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Shane Wang <shane.wang@intel.com>, Roland McGrath <roland@redhat.com>,
-       linux-kernel@vger.kernel.org, Gautham R Shenoy <ego@in.ibm.com>
-Subject: [PATCH 2/2] cpuhotplug: make get_online_cpus() scalability by using
- percpu counter
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] oom killer: break from infinite loop
+Message-ID: <20100405104752.GB21207@csn.ul.ie>
+References: <1269447905-5939-1-git-send-email-anfei.zhou@gmail.com> <20100326150805.f5853d1c.akpm@linux-foundation.org> <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com> <20100402101711.GC12886@csn.ul.ie> <alpine.DEB.2.00.1004041616280.7198@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1004041616280.7198@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Apr 04, 2010 at 04:26:38PM -0700, David Rientjes wrote:
+> On Fri, 2 Apr 2010, Mel Gorman wrote:
+> 
+> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > --- a/mm/page_alloc.c
+> > > +++ b/mm/page_alloc.c
+> > > @@ -1610,13 +1610,21 @@ try_next_zone:
+> > >  }
+> > >  
+> > >  static inline int
+> > > -should_alloc_retry(gfp_t gfp_mask, unsigned int order,
+> > > +should_alloc_retry(struct task_struct *p, gfp_t gfp_mask, unsigned int order,
+> > >  				unsigned long pages_reclaimed)
+> > >  {
+> > >  	/* Do not loop if specifically requested */
+> > >  	if (gfp_mask & __GFP_NORETRY)
+> > >  		return 0;
+> > >  
+> > > +	/* Loop if specifically requested */
+> > > +	if (gfp_mask & __GFP_NOFAIL)
+> > > +		return 1;
+> > > +
+> > 
+> > Meh, you could have preserved the comment but no biggie.
+> > 
+> 
+> I'll remember to preserve it when it's proposed.
+> 
+> > > +	/* Task is killed, fail the allocation if possible */
+> > > +	if (fatal_signal_pending(p))
+> > > +		return 0;
+> > > +
+> > 
+> > Seems reasonable. This will be checked on every major loop in the
+> > allocator slow patch.
+> > 
+> > >  	/*
+> > >  	 * In this implementation, order <= PAGE_ALLOC_COSTLY_ORDER
+> > >  	 * means __GFP_NOFAIL, but that may not be true in other
+> > > @@ -1635,13 +1643,6 @@ should_alloc_retry(gfp_t gfp_mask, unsigned int order,
+> > >  	if (gfp_mask & __GFP_REPEAT && pages_reclaimed < (1 << order))
+> > >  		return 1;
+> > >  
+> > > -	/*
+> > > -	 * Don't let big-order allocations loop unless the caller
+> > > -	 * explicitly requests that.
+> > > -	 */
+> > > -	if (gfp_mask & __GFP_NOFAIL)
+> > > -		return 1;
+> > > -
+> > >  	return 0;
+> > >  }
+> > >  
+> > > @@ -1798,6 +1799,7 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+> > >  	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
+> > >  		if (!in_interrupt() &&
+> > >  		    ((p->flags & PF_MEMALLOC) ||
+> > > +		     (fatal_signal_pending(p) && (gfp_mask & __GFP_NOFAIL)) ||
+> > 
+> > This is a lot less clear. GFP_NOFAIL is rare so this is basically saying
+> > that all threads with a fatal signal pending can ignore watermarks. This
+> > is dangerous because if 1000 threads get killed, there is a possibility
+> > of deadlocking the system.
+> > 
+> 
+> I don't quite understand the comment, this is only for __GFP_NOFAIL 
+> allocations, which you say are rare, so a large number of threads won't be 
+> doing this simultaneously.
+> 
+> > Why not obey the watermarks and just not retry the loop later and fail
+> > the allocation?
+> > 
+> 
+> The above check for (fatal_signal_pending(p) && (gfp_mask & __GFP_NOFAIL)) 
+> essentially oom kills p without invoking the oom killer before direct 
+> reclaim is invoked.  We know it has a pending SIGKILL and wants to exit, 
+> so we allow it to allocate beyond the min watermark to avoid costly 
+> reclaim or needlessly killing another task.
+> 
 
-Current get_online_cpus() acquires a mutex lock and then
-release it. It is not scale and it hurts cache. This patch rewrite it.
+Sorry, I typod.
 
-1) get_online_cpus() must be allowed to be called recursively, so I added
-   get_online_cpus_nest for every task for new code.
+GFP_NOFAIL is rare but this is basically saying that all threads with a
+fatal signal and using NOFAIL can ignore watermarks.
 
-   This patch just allows get_online_cpus() to be called recursively,
-   but when it is not nested, get_online_cpus() will wait until
-   cpuhotplug finished, so the potential starvation is avoided.
+I don't think there is any caller in an exit path will be using GFP_NOFAIL
+as it's most common user is file-system related but it still feels unnecssary
+to check this case on every call to the slow path.
 
-   And, the livelock of cpu_hotplug_begin() is avoided, so the comment
-   is removed.
+> > >  		     unlikely(test_thread_flag(TIF_MEMDIE))))
+> > >  			alloc_flags |= ALLOC_NO_WATERMARKS;
+> > >  	}
+> > > @@ -1812,6 +1814,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+> > >  	int migratetype)
+> > >  {
+> > >  	const gfp_t wait = gfp_mask & __GFP_WAIT;
+> > > +	const gfp_t nofail = gfp_mask & __GFP_NOFAIL;
+> > >  	struct page *page = NULL;
+> > >  	int alloc_flags;
+> > >  	unsigned long pages_reclaimed = 0;
+> > > @@ -1876,7 +1879,7 @@ rebalance:
+> > >  		goto nopage;
+> > >  
+> > >  	/* Avoid allocations with no watermarks from looping endlessly */
+> > > -	if (test_thread_flag(TIF_MEMDIE) && !(gfp_mask & __GFP_NOFAIL))
+> > > +	if (test_thread_flag(TIF_MEMDIE) && !nofail)
+> > >  		goto nopage;
+> > >  
+> > >  	/* Try direct reclaim and then allocating */
+> > > @@ -1888,6 +1891,10 @@ rebalance:
+> > >  	if (page)
+> > >  		goto got_pg;
+> > >  
+> > > +	/* Task is killed, fail the allocation if possible */
+> > > +	if (fatal_signal_pending(p) && !nofail)
+> > > +		goto nopage;
+> > > +
+> > 
+> > Again, I would expect this to be caught by should_alloc_retry().
+> > 
+> 
+> It is, but only after the oom killer is called.  We don't want to 
+> needlessly kill another task here when p has already been killed but may 
+> not be PF_EXITING yet.
+> 
 
-2) This new code use PER_CPU counters, and this counters protected
-   by RCU. These counters acts like the reference counters of a modules.
-   (Actually, all these code is stolen from module.c: try_refcount_get()
-   is stolen from try_module_get(), put_online_cpus() from module_put()...)
+Fair point. How about just checking before __alloc_pages_may_oom() is
+called then? This check will be then in a slower path.
+I recognise this means that it is also only checked when direct reclaim
+is failing but there is at least one good reason for it.
 
-   After this patch applied, get_online_cpus() is very light and scale when
-   cpuhotplug is not running. It just disables preemption and increase
-   the cpu counter and then enables preemption.
+With this change, processes that have been sigkilled may now fail allocations
+that they might not have failed before. It would be difficult to trigger
+but here is one possible problem with this change;
 
-3) Since we have try_refcount_get(), I add a new API try_get_online_cpus().
+1. System was borderline with some trashing
+2. User starts program that gobbles up lots of memory on page faults,
+   trashing the system further and annoying the user
+3. User sends SIGKILL
+4. Process was faulting and returns NULL because fatal signal was pending
+5. Fault path returns VM_FAULT_OOM
+6. Arch-specific path (on x86 anyway) calls out_of_memory again because
+   VM_FAULT_OOM was returned.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- include/linux/cpu.h   |    2
- include/linux/sched.h |    3 +
- kernel/cpu.c          |  131 ++++++++++++++++++++++++++++++++------------------
- kernel/fork.c         |    3 +
- 4 files changed, 94 insertions(+), 45 deletions(-)
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index e287863..a32809c 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -112,6 +112,7 @@ extern struct sysdev_class cpu_sysdev_class;
- 
- extern void get_online_cpus(void);
- extern void put_online_cpus(void);
-+extern int try_get_online_cpus(void);
- #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
- #define register_hotcpu_notifier(nb)	register_cpu_notifier(nb)
- #define unregister_hotcpu_notifier(nb)	unregister_cpu_notifier(nb)
-@@ -134,6 +135,7 @@ static inline void cpu_hotplug_driver_unlock(void)
- 
- #define get_online_cpus()	do { } while (0)
- #define put_online_cpus()	do { } while (0)
-+#define try_get_online_cpus()	(1)
- #define hotcpu_notifier(fn, pri)	do { (void)(fn); } while (0)
- /* These aren't inline functions due to a GCC bug. */
- #define register_hotcpu_notifier(nb)	({ (void)(nb); 0; })
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index c46b6e5..0422ea3 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1501,6 +1501,9 @@ struct task_struct {
- 		unsigned long memsw_bytes; /* uncharged mem+swap usage */
- 	} memcg_batch;
- #endif
-+#ifdef CONFIG_HOTPLUG_CPU
-+	int get_online_cpus_nest;
-+#endif
- };
- 
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index bc1e3d5..ede02c6 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -14,6 +14,7 @@
- #include <linux/kthread.h>
- #include <linux/stop_machine.h>
- #include <linux/mutex.h>
-+#include <linux/percpu.h>
- 
- #ifdef CONFIG_SMP
- /* Serializes the updates to cpu_online_mask, cpu_present_mask */
-@@ -42,41 +43,82 @@ static int cpu_hotplug_disabled;
- 
- #ifdef CONFIG_HOTPLUG_CPU
- 
--static struct {
--	struct task_struct *active_writer;
--	struct mutex lock; /* Synchronizes accesses to refcount, */
--	/*
--	 * Also blocks the new readers during
--	 * an ongoing cpu hotplug operation.
--	 */
--	int refcount;
--} cpu_hotplug = {
--	.active_writer = NULL,
--	.lock = __MUTEX_INITIALIZER(cpu_hotplug.lock),
--	.refcount = 0,
--};
-+DEFINE_MUTEX(cpu_hotplug_lock);
-+struct task_struct *cpu_hotplug_task;
-+DEFINE_PER_CPU(int, refcount);
-+
-+static int try_refcount_get(void)
-+{
-+	preempt_disable();
-+
-+	if (likely(!cpu_hotplug_task)) {
-+		__get_cpu_var(refcount)++;
-+		preempt_enable();
-+		return 1;
-+	}
-+
-+	preempt_enable();
-+	return 0;
-+}
-+
-+int try_get_online_cpus(void)
-+{
-+	if (cpu_hotplug_task == current)
-+		return 1;
-+
-+	if (current->get_online_cpus_nest || try_refcount_get()) {
-+		current->get_online_cpus_nest++;
-+		return 1;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(try_get_online_cpus);
- 
- void get_online_cpus(void)
- {
- 	might_sleep();
--	if (cpu_hotplug.active_writer == current)
-+	if (cpu_hotplug_task == current)
-+		return;
-+
-+	if (current->get_online_cpus_nest++)
-+		return;
-+
-+	if (likely(try_refcount_get()))
- 		return;
--	mutex_lock(&cpu_hotplug.lock);
--	cpu_hotplug.refcount++;
--	mutex_unlock(&cpu_hotplug.lock);
- 
-+	mutex_lock(&cpu_hotplug_lock);
-+	percpu_add(refcount, 1);
-+	mutex_unlock(&cpu_hotplug_lock);
- }
- EXPORT_SYMBOL_GPL(get_online_cpus);
- 
-+static unsigned int refcount_sum(void)
-+{
-+	unsigned int total = 0;
-+	int cpu;
-+
-+	for_each_possible_cpu(cpu)
-+		total += per_cpu(refcount, cpu);
-+
-+	return total;
-+}
-+
- void put_online_cpus(void)
- {
--	if (cpu_hotplug.active_writer == current)
-+	if (cpu_hotplug_task == current)
-+		return;
-+
-+	if (WARN_ON(!current->get_online_cpus_nest))
- 		return;
--	mutex_lock(&cpu_hotplug.lock);
--	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
--		wake_up_process(cpu_hotplug.active_writer);
--	mutex_unlock(&cpu_hotplug.lock);
- 
-+	if (!--current->get_online_cpus_nest) {
-+		preempt_disable();
-+		__get_cpu_var(refcount)--;
-+		if (cpu_hotplug_task)
-+			wake_up_process(cpu_hotplug_task);
-+		preempt_enable();
-+	}
- }
- EXPORT_SYMBOL_GPL(put_online_cpus);
- 
-@@ -85,41 +127,40 @@ EXPORT_SYMBOL_GPL(put_online_cpus);
-  * refcount goes to zero.
-  *
-  * Note that during a cpu-hotplug operation, the new readers, if any,
-- * will be blocked by the cpu_hotplug.lock
-- *
-- * Since cpu_hotplug_begin() is always called after invoking
-- * cpu_maps_update_begin(), we can be sure that only one writer is active.
-- *
-- * Note that theoretically, there is a possibility of a livelock:
-- * - Refcount goes to zero, last reader wakes up the sleeping
-- *   writer.
-- * - Last reader unlocks the cpu_hotplug.lock.
-- * - A new reader arrives at this moment, bumps up the refcount.
-- * - The writer acquires the cpu_hotplug.lock finds the refcount
-- *   non zero and goes to sleep again.
-- *
-- * However, this is very difficult to achieve in practice since
-- * get_online_cpus() not an api which is called all that often.
-- *
-+ * will be blocked by the cpu_hotplug_lock
-  */
- static void cpu_hotplug_begin(void)
- {
--	cpu_hotplug.active_writer = current;
-+	mutex_lock(&cpu_hotplug_lock);
-+
-+	/*
-+	 * Set cpu_hotplug_task. Wait until all running try_refcount_get()
-+	 * finished and all these try_refcount_get() behavior are seen.
-+	 */
-+	cpu_hotplug_task = current;
-+	synchronize_sched();
- 
-+	/* Wait for zero refcount */
- 	for (;;) {
--		mutex_lock(&cpu_hotplug.lock);
--		if (likely(!cpu_hotplug.refcount))
-+		set_current_state(TASK_UNINTERRUPTIBLE);
-+		if (!refcount_sum())
- 			break;
--		__set_current_state(TASK_UNINTERRUPTIBLE);
--		mutex_unlock(&cpu_hotplug.lock);
- 		schedule();
- 	}
-+
-+	__set_current_state(TASK_RUNNING);
- }
- 
- static void cpu_hotplug_done(void)
- {
--	cpu_hotplug.active_writer = NULL;
--	mutex_unlock(&cpu_hotplug.lock);
-+	/*
-+	 * Ensure try_refcount_get() sees the front befavior
-+	 * after it sees cpu_hotplug_task == NULL.
-+	 */
-+	smp_mb();
-+
-+	cpu_hotplug_task = NULL;
-+	mutex_unlock(&cpu_hotplug_lock);
- }
- 
- #else /* #if CONFIG_HOTPLUG_CPU */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index d67f1db..b162014 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1109,6 +1109,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	p->memcg_batch.memcg = NULL;
- #endif
- 	p->stack_start = stack_start;
-+#ifdef CONFIG_HOTPLUG_CPU
-+	p->get_online_cpus_nest = 0;
-+#endif
- 
- 	/* Perform scheduler related setup. Assign this task to a CPU. */
- 	sched_fork(p, clone_flags);
+Ho hum, I haven't thought about this before but it's also possible that
+a process that is fauling that gets oom-killed will trigger a cascading
+OOM kill. If the system was heavily trashing, it might mean a large
+number of processes get killed.
 
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
