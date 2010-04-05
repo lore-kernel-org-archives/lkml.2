@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab0DEN5I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 09:57:08 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50885 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751444Ab0DEN5A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 09:57:00 -0400
-Date: Mon, 5 Apr 2010 14:56:58 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Todd Fischer <todd.fischer@ridgerun.com>
-Cc: linux-kernel@vger.kernel.org,
-       davinci-linux-open-source@linux.davincidsp.com, sameo@linux.intel.com,
-       lrg@slimlogic.co.uk
-Subject: Re: [PATCH 4/4]-V2 Add MFD driver for TPS6507x family of
- multi-function chips and move TPS6507x regulator driver from being
- stand-alone to using the MFD driver.
-Message-ID: <20100405135657.GI6580@rakim.wolfsonmicro.main>
-References: <1270244253-4234-1-git-send-email-todd.fischer@ridgerun.com>
- <1270244253-4234-2-git-send-email-todd.fischer@ridgerun.com>
- <1270244253-4234-3-git-send-email-todd.fischer@ridgerun.com>
- <1270244253-4234-4-git-send-email-todd.fischer@ridgerun.com>
- <1270244253-4234-5-git-send-email-todd.fischer@ridgerun.com>
+	id S1754722Ab0DEOCY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 10:02:24 -0400
+Received: from 8bytes.org ([88.198.83.132]:56689 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753668Ab0DEOCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 10:02:16 -0400
+Date: Mon, 5 Apr 2010 16:02:15 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Dan Carpenter <error27@gmail.com>, Joerg Roedel <joerg.roedel@amd.com>,
+       Ingo Molnar <mingo@elte.hu>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       Shaun Ruffell <sruffell@digium.com>, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [patch] dma-debug: off by one issue
+Message-ID: <20100405140215.GA29758@8bytes.org>
+References: <20100402112843.GI5265@bicker> <20100403204717.GS24846@8bytes.org> <20100405125329.GA16197@bicker>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1270244253-4234-5-git-send-email-todd.fischer@ridgerun.com>
-X-Cookie: Pyros of the world... IGNITE !!!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100405125329.GA16197@bicker>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 02, 2010 at 03:37:33PM -0600, Todd Fischer wrote:
-> Add MFD driver for TPS6507x family of multi-function chips.  Move TPS6507x 
-> regulator driver from being stand-alone driver to using the MFD TPS6507x driver.
+On Mon, Apr 05, 2010 at 03:53:30PM +0300, Dan Carpenter wrote:
+> On Sat, Apr 03, 2010 at 10:47:17PM +0200, Joerg Roedel wrote:
+
+> > The character is already reserved by the user-to-kernel copy earlier in
+> > the function.
 > 
-> Signed-off-by: Todd Fischer <todd.fischer@ridgerun.com>
+> Yes, but the original code requires more code reading to audit. Let's 
+> change the commit message to say that it's a clean up patch.
 
-One issue...
+In this case its better to remove the
 
-> +static int tps6507x_i2c_read_device(struct tps6507x_dev *tps6507x, char reg,
-> +				  int bytes, void *dest)
-> +{
-> +	struct i2c_client *i2c = tps6507x->i2c_client;
-> +	int ret;
-> +
-> +	ret = i2c_master_send(i2c, &reg, 1);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = i2c_master_recv(i2c, dest, bytes);
-> +	if (ret < 0)
-> +		return ret;
-> +	if (ret != bytes)
-> +		return -EIO;
-> +	return 0;
-> +}
+	current_driver_name[i] = 0;
 
-Your register I/O functions don't have anything protecting them against
-concurrent access.  This isn't really an issue for the writes by
-themselves since they do a single transaction on the I2C bus so the I2C
-layer concurrency protection ought to be enough but for reads you need
-to send the register address first then read back the data, opening up
-an issue.  A simple mutex in the read and write functions ought to cover
-this.
+line just after the loop.
+
+	Joerg
+
