@@ -1,65 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751308Ab0DEGi3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 02:38:29 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:34181 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750818Ab0DEGiX (ORCPT
+	id S1751348Ab0DEGpv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 02:45:51 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:43244 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab0DEGpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 02:38:23 -0400
-Date: Mon, 5 Apr 2010 08:38:52 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Leisner, Martin" <Martin.Leisner@xerox.com>,
-       linux-pm@lists.linux-foundation.org, Andrew Morton <akpm@osdl.org>,
-       kernel list <linux-kernel@vger.kernel.org>
-Subject: document open(/dev/snapshot) sideeffects -- was Re: [linux-pm]
- syncing the disks when entering sleep
-Message-ID: <20100405063852.GA1924@elf.ucw.cz>
-References: <76FA3B279DD9DA48896E2B404944957204E0B241@USA7061MS02.na.xerox.net>
- <201001272150.05846.rjw@sisk.pl>
- <20100128072658.GB25633@atrey.karlin.mff.cuni.cz>
- <201001281143.08993.rjw@sisk.pl>
+	Mon, 5 Apr 2010 02:45:45 -0400
+Date: Mon, 5 Apr 2010 08:45:44 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.34-rc3: Can't insmod after make, because versions now
+	differ?!
+Message-ID: <20100405064544.GA22355@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201001281143.08993.rjw@sisk.pl>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100405053628.GA12217@elf.ucw.cz>
+X-Priority: none
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi,
 
-> > > Please note that merely _opening_ /dev/snapshot has side effects, so that's
-> > > not just "three ioctls".
-> > 
-> > I search Doc*/power/userland-swsusp.txt, and could not find mentions
-> > of sideeffects. Perhaps that should be fixed?
-> 
-> Please feel free to make the docs more complete, then.
+> Having to reboot every time I recompile the module or play with git
+> makes modules useless for development :-(.
 
-Yes, something like this?
+Confirmed. -rc3 (from 2.6.33 - sorry) was the only kernel I ever
+observed this on (I simply changed a driver and redid make modules_install,
+boom, version string (/lib/modules/...) changed from 2.6.34-rc3 to
+2.6.34-rc3-...-dirty, despite having kept my git unupdated and on the
+2.6.34-rc3 tag.
 
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
-
---- a/Documentation/power/userland-swsusp.txt
-+++ b/Documentation/power/userland-swsusp.txt
-@@ -24,6 +24,10 @@ assumed to be in the resume mode.  The device cannot be open for simultaneous
- reading and writing.  It is also impossible to have the device open more than
- once at a time.
- 
-+Even opening the device has side effects. Data structures are
-+allocated, and PM_HIBERNATION_PREPARE / PM_RESTORE_PREPARE chains are
-+called.
-+
- The ioctl() commands recognized by the device are:
- 
- SNAPSHOT_FREEZE - freeze user space processes (the current process is
-
-
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Andreas Mohr
