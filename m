@@ -1,140 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499Ab0DEPq2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 11:46:28 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:35119 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754611Ab0DEPqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 11:46:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=MsNMSZU6IpM1Jv5I96oxT54wMKLM7k6ZhRUoDb0LYHMC9Es3JMIcJ5c/18aS65cbwC
-         +bRjm0r4oXKxq1ejtOifEd80tsmJ1MBjZlP0/V4iUDSCXSxIfcAKLYomj1IKad//Cd1S
-         Wl1HBwCkBegrrSgq3Ljpwr09MJ+v9fASSDszs=
-Subject: [PATCH 2/2] ntfs: use add_to_page_cache_lru
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Anton Altaparmakov <aia21@cantab.net>, Al Viro <viro@zeniv.linux.org.uk>,
-       Jiri Kosina <jkosina@suse.cz>, Christoph Hellwig <hch@lst.de>,
-       linux-kernel@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
-       Nick Piggin <npiggin@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 06 Apr 2010 00:46:05 +0900
-Message-ID: <1270482365.1814.138.camel@barrios-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1755502Ab0DEPsQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 11:48:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9372 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754611Ab0DEPsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 11:48:05 -0400
+Date: Mon, 5 Apr 2010 11:47:57 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Divyesh Shah <dpshah@google.com>
+Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
+       ctalbott@google.com
+Subject: Re: [PATCH 1/3][v2] blkio: Remove per-cfqq nr_sectors as we'll be
+	passing
+Message-ID: <20100405154757.GE876@redhat.com>
+References: <20100403014724.30746.16081.stgit@austin.mtv.corp.google.com> <20100403015445.30746.39086.stgit@austin.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100403015445.30746.39086.stgit@austin.mtv.corp.google.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 02, 2010 at 06:55:48PM -0700, Divyesh Shah wrote:
+> that info at request dispatch with other stats now. This patch removes the
+> existing support for accounting sectors for a blkio_group. This will be added
+> back differently in the next two patches.
+> 
+> Signed-off-by: Divyesh Shah<dpshah@google.com>
+> ---
+> 
+>  block/blk-cgroup.c  |    3 +--
+>  block/blk-cgroup.h  |    6 ++----
+>  block/cfq-iosched.c |   10 ++--------
+>  3 files changed, 5 insertions(+), 14 deletions(-)
+> 
+> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+> index 4b686ad..5be3981 100644
+> --- a/block/blk-cgroup.c
+> +++ b/block/blk-cgroup.c
+> @@ -56,10 +56,9 @@ struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
+>  EXPORT_SYMBOL_GPL(cgroup_to_blkio_cgroup);
+>  
+>  void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
+> -			unsigned long time, unsigned long sectors)
+> +						unsigned long time)
+>  {
+>  	blkg->time += time;
+> -	blkg->sectors += sectors;
+>  }
+>  EXPORT_SYMBOL_GPL(blkiocg_update_blkio_group_stats);
+>  
+> diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+> index 8ccc204..fe44517 100644
+> --- a/block/blk-cgroup.h
+> +++ b/block/blk-cgroup.h
+> @@ -106,7 +106,7 @@ extern int blkiocg_del_blkio_group(struct blkio_group *blkg);
+>  extern struct blkio_group *blkiocg_lookup_group(struct blkio_cgroup *blkcg,
+>  						void *key);
+>  void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
+> -			unsigned long time, unsigned long sectors);
+> +						unsigned long time);
+>  #else
+>  struct cgroup;
+>  static inline struct blkio_cgroup *
+> @@ -123,8 +123,6 @@ blkiocg_del_blkio_group(struct blkio_group *blkg) { return 0; }
+>  static inline struct blkio_group *
+>  blkiocg_lookup_group(struct blkio_cgroup *blkcg, void *key) { return NULL; }
+>  static inline void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
+> -			unsigned long time, unsigned long sectors)
+> -{
+> -}
+> +						unsigned long time) {}
+>  #endif
+>  #endif /* _BLK_CGROUP_H */
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index ef1680b..c18e348 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -141,8 +141,6 @@ struct cfq_queue {
+>  	struct cfq_queue *new_cfqq;
+>  	struct cfq_group *cfqg;
+>  	struct cfq_group *orig_cfqg;
+> -	/* Sectors dispatched in current dispatch round */
+> -	unsigned long nr_sectors;
+>  };
+>  
+>  /*
+> @@ -882,8 +880,7 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
+>  			slice_used = cfqq->allocated_slice;
+>  	}
+>  
+> -	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u sect=%lu", slice_used,
+> -				cfqq->nr_sectors);
+> +	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u", slice_used);
 
-While I discuss exportable add_to_page_cache_lru, 
-http://marc.info/?l=linux-mm&m=127047788612445&w=2
-I found that 
-http://www.mail-archive.com/linux-btrfs@vger.kernel.org/msg04472.html.
+Hi Divyesh,
 
-Let's change to use it in ntfs.
+I had found above message useful when I am looking at blktraces. It helps
+to know how many sectors one could transfer in a given time slice.
+Especially if you are comparing two queues in two groups. I think we are
+going to loose this information now?
 
-== CUT_HERE ==
+Vivek
 
-Quote from Nick piggin's about btrfs patch
-- http://www.mail-archive.com/linux-btrfs@vger.kernel.org/msg04472.html.
-
-"add_to_page_cache_lru is exported, so it should be used. Benefits over
-using a private pagevec: neater code, 128 bytes fewer stack used, percpu
-lru ordering is preserved, and finally don't need to flush pagevec
-before returning so batching may be shared with other LRU insertions."
-
-Let's use it instead of private pagevec in ntfs, too.
-
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- fs/ntfs/file.c |   19 ++++---------------
- 1 files changed, 4 insertions(+), 15 deletions(-)
-
-diff --git a/fs/ntfs/file.c b/fs/ntfs/file.c
-index 41ffdcc..f05b650 100644
---- a/fs/ntfs/file.c
-+++ b/fs/ntfs/file.c
-@@ -398,18 +398,13 @@ static inline void ntfs_fault_in_pages_readable_iovec(const struct iovec *iov,
-  * Obtain @nr_pages locked page cache pages from the mapping @mapping and
-  * starting at index @index.
-  *
-- * If a page is newly created, increment its refcount and add it to the
-- * caller's lru-buffering pagevec @lru_pvec.
-- *
-- * This is the same as mm/filemap.c::__grab_cache_page(), except that @nr_pages
-- * are obtained at once instead of just one page and that 0 is returned on
-- * success and -errno on error.
-+ * If a page is newly created, add it to lru list
-  *
-  * Note, the page locks are obtained in ascending page index order.
-  */
- static inline int __ntfs_grab_cache_pages(struct address_space *mapping,
- 		pgoff_t index, const unsigned nr_pages, struct page **pages,
--		struct page **cached_page, struct pagevec *lru_pvec)
-+		struct page **cached_page)
- {
- 	int err, nr;
- 
-@@ -425,7 +420,7 @@ static inline int __ntfs_grab_cache_pages(struct address_space *mapping,
- 					goto err_out;
- 				}
- 			}
--			err = add_to_page_cache(*cached_page, mapping, index,
-+			err = add_to_page_cache_lru(*cached_page, mapping, index,
- 					GFP_KERNEL);
- 			if (unlikely(err)) {
- 				if (err == -EEXIST)
-@@ -433,9 +428,6 @@ static inline int __ntfs_grab_cache_pages(struct address_space *mapping,
- 				goto err_out;
- 			}
- 			pages[nr] = *cached_page;
--			page_cache_get(*cached_page);
--			if (unlikely(!pagevec_add(lru_pvec, *cached_page)))
--				__pagevec_lru_add_file(lru_pvec);
- 			*cached_page = NULL;
- 		}
- 		index++;
-@@ -1795,7 +1787,6 @@ static ssize_t ntfs_file_buffered_write(struct kiocb *iocb,
- 	ssize_t status, written;
- 	unsigned nr_pages;
- 	int err;
--	struct pagevec lru_pvec;
- 
- 	ntfs_debug("Entering for i_ino 0x%lx, attribute type 0x%x, "
- 			"pos 0x%llx, count 0x%lx.",
-@@ -1907,7 +1898,6 @@ static ssize_t ntfs_file_buffered_write(struct kiocb *iocb,
- 			}
- 		}
- 	}
--	pagevec_init(&lru_pvec, 0);
- 	written = 0;
- 	/*
- 	 * If the write starts beyond the initialized size, extend it up to the
-@@ -2006,7 +1996,7 @@ static ssize_t ntfs_file_buffered_write(struct kiocb *iocb,
- 			ntfs_fault_in_pages_readable_iovec(iov, iov_ofs, bytes);
- 		/* Get and lock @do_pages starting at index @start_idx. */
- 		status = __ntfs_grab_cache_pages(mapping, start_idx, do_pages,
--				pages, &cached_page, &lru_pvec);
-+				pages, &cached_page);
- 		if (unlikely(status))
- 			break;
- 		/*
-@@ -2071,7 +2061,6 @@ err_out:
- 	*ppos = pos;
- 	if (cached_page)
- 		page_cache_release(cached_page);
--	pagevec_lru_add_file(&lru_pvec);
- 	ntfs_debug("Done.  Returning %s (written 0x%lx, status %li).",
- 			written ? "written" : "status", (unsigned long)written,
- 			(long)status);
--- 
-1.6.5
-
-
-
+>  	return slice_used;
+>  }
+>  
+> @@ -917,8 +914,7 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+>  
+>  	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
+>  					st->min_vdisktime);
+> -	blkiocg_update_blkio_group_stats(&cfqg->blkg, used_sl,
+> -						cfqq->nr_sectors);
+> +	blkiocg_update_blkio_group_stats(&cfqg->blkg, used_sl);
+>  }
+>  
+>  #ifdef CONFIG_CFQ_GROUP_IOSCHED
+> @@ -1524,7 +1520,6 @@ static void __cfq_set_active_queue(struct cfq_data *cfqd,
+>  		cfqq->allocated_slice = 0;
+>  		cfqq->slice_end = 0;
+>  		cfqq->slice_dispatch = 0;
+> -		cfqq->nr_sectors = 0;
+>  
+>  		cfq_clear_cfqq_wait_request(cfqq);
+>  		cfq_clear_cfqq_must_dispatch(cfqq);
+> @@ -1869,7 +1864,6 @@ static void cfq_dispatch_insert(struct request_queue *q, struct request *rq)
+>  	elv_dispatch_sort(q, rq);
+>  
+>  	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
+> -	cfqq->nr_sectors += blk_rq_sectors(rq);
+>  }
+>  
+>  /*
