@@ -1,115 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab0DEOZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 10:25:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34098 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754814Ab0DEOZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 10:25:53 -0400
-Date: Mon, 5 Apr 2010 16:23:34 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: anfei <anfei.zhou@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       nishimura@mxp.nes.nec.co.jp,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH -mm] oom: select_bad_process: never choose tasks with
-	badness == 0
-Message-ID: <20100405142334.GA31074@redhat.com>
-References: <alpine.DEB.2.00.1003291302170.14859@chino.kir.corp.google.com> <20100330154659.GA12416@redhat.com> <alpine.DEB.2.00.1003301320020.5234@chino.kir.corp.google.com> <20100331175836.GA11635@redhat.com> <20100331204718.GD11635@redhat.com> <alpine.DEB.2.00.1004010133190.6285@chino.kir.corp.google.com> <20100401135927.GA12460@redhat.com> <alpine.DEB.2.00.1004011210380.30661@chino.kir.corp.google.com> <20100402111406.GA4432@redhat.com> <20100402183057.GA31723@redhat.com>
+	id S1755037Ab0DEO03 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 10:26:29 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:38319 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755007Ab0DEO0Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 10:26:24 -0400
+Message-ID: <4BB9F309.8070807@monstr.eu>
+Date: Mon, 05 Apr 2010 16:26:17 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100402183057.GA31723@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "Steven J. Magnani" <steve@digidescorp.com>
+CC: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] microblaze: Fix ftrace_update_ftrace_func panic
+References: <1270232979-12113-1-git-send-email-steve@digidescorp.com>
+In-Reply-To: <1270232979-12113-1-git-send-email-steve@digidescorp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the David's patch rediffed agains the recent changes in -mm.
+Steven J. Magnani wrote:
+> The Microblaze dynamic ftrace code assumes a call ordering that is not met
+> in all scenarios. Specifically, executing a command similar to:
+> 
+>   echo 105 > /sys/kernel/debug/tracing/set_ftrace_pid
+> 
+> before any other tracing-related commands results in a kernel panic:
+> 
+>   BUG: failure at arch/microblaze/kernel/ftrace.c:198/ftrace_update_ftrace_func()!
+> 
+> Recoding ftrace_update_ftrace_func() to use &ftrace_caller directly eliminates 
+> the need to capture its address elsewhere (and thus rely on a particular call 
+> sequence).
 
-As David pointed out, we should fix select_bad_process() which currently
-always selects the first process which was not filtered out before
-oom_badness(), no matter what oom_badness() returns.
+I would like to replicate this problem to see that there is. I am not 
+able to reach this fault
+Please copy & paste log with your commands.
 
-Change the code to ignore the process if oom_badness() returns 0, this
-matters Documentation/filesystems/proc.txt and this merely looks better.
+Thanks,
+Michal
 
-This also allows us to do more cleanups:
 
-	- no need to check OOM_SCORE_ADJ_MIN in select_bad_process(),
-	  oom_badness() returns 0 in this case.
+> 
+> Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+> ---
+> diff -uprN a/arch/microblaze/kernel/ftrace.c b/arch/microblaze/kernel/ftrace.c
+> --- a/arch/microblaze/kernel/ftrace.c	2010-04-02 13:10:54.000000000 -0500
+> +++ b/arch/microblaze/kernel/ftrace.c	2010-04-02 13:13:29.000000000 -0500
+> @@ -151,13 +151,10 @@ int ftrace_make_nop(struct module *mod,
+>  	return ret;
+>  }
+>  
+> -static int ret_addr; /* initialized as 0 by default */
+> -
+>  /* I believe that first is called ftrace_make_nop before this function */
+>  int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
+>  {
+>  	int ret;
+> -	ret_addr = addr; /* saving where the barrier jump is */
+>  	pr_debug("%s: addr:0x%x, rec->ip: 0x%x, imm:0x%x\n",
+>  		__func__, (unsigned int)addr, (unsigned int)rec->ip, imm);
+>  	ret = ftrace_modify_code(rec->ip, imm);
+> @@ -194,12 +191,9 @@ int ftrace_update_ftrace_func(ftrace_fun
+>  	ret = ftrace_modify_code(ip, upper);
+>  	ret += ftrace_modify_code(ip + 4, lower);
+>  
+> -	/* We just need to remove the rtsd r15, 8 by NOP */
+> -	BUG_ON(!ret_addr);
+> -	if (ret_addr)
+> -		ret += ftrace_modify_code(ret_addr, MICROBLAZE_NOP);
+> -	else
+> -		ret = 1; /* fault */
+> +	/* We just need to replace the rtsd r15, 8 with NOP */
+> +	ret += ftrace_modify_code((unsigned long)&ftrace_caller,
+> +				  MICROBLAZE_NOP);
+>  
+>  	/* All changes are done - lets do caches consistent */
+>  	flush_icache();
+> 
 
-	- oom_badness() can simply return 0 instead of -1 if the task
-	  has no ->mm.
 
-	  Now we can make it "unsigned" again, the signness and the
-	  special "points >= 0" in select_bad_process() was added to
-	  preserve the current behaviour.
-
-Suggested-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
-
- include/linux/oom.h |    3 ++-
- mm/oom_kill.c       |   11 ++++-------
- 2 files changed, 6 insertions(+), 8 deletions(-)
-
---- MM/include/linux/oom.h~5_BADNESS_DONT_RET_NEGATIVE	2010-04-05 15:39:21.000000000 +0200
-+++ MM/include/linux/oom.h	2010-04-05 15:44:49.000000000 +0200
-@@ -40,7 +40,8 @@ enum oom_constraint {
- 	CONSTRAINT_MEMORY_POLICY,
- };
- 
--extern int oom_badness(struct task_struct *p, unsigned long totalpages);
-+extern unsigned int oom_badness(struct task_struct *p,
-+					unsigned long totalpages);
- extern int try_set_zone_oom(struct zonelist *zonelist, gfp_t gfp_flags);
- extern void clear_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_flags);
- 
---- MM/mm/oom_kill.c~5_BADNESS_DONT_RET_NEGATIVE	2010-04-05 15:39:21.000000000 +0200
-+++ MM/mm/oom_kill.c	2010-04-05 16:09:58.000000000 +0200
-@@ -153,7 +153,7 @@ static unsigned long oom_forkbomb_penalt
-  * predictable as possible.  The goal is to return the highest value for the
-  * task consuming the most memory to avoid subsequent oom conditions.
-  */
--int oom_badness(struct task_struct *p, unsigned long totalpages)
-+unsigned int oom_badness(struct task_struct *p, unsigned long totalpages)
- {
- 	int points;
- 
-@@ -173,7 +173,7 @@ int oom_badness(struct task_struct *p, u
- 
- 	p = find_lock_task_mm(p);
- 	if (!p)
--		return -1;
-+		return 0;
- 	/*
- 	 * The baseline for the badness score is the proportion of RAM that each
- 	 * task's rss and swap space use.
-@@ -294,7 +294,7 @@ static struct task_struct *select_bad_pr
- 	*ppoints = 0;
- 
- 	for_each_process(p) {
--		int points;
-+		unsigned int points;
- 
- 		/* skip the init task and kthreads */
- 		if (is_global_init(p) || (p->flags & PF_KTHREAD))
-@@ -336,11 +336,8 @@ static struct task_struct *select_bad_pr
- 			*ppoints = 1000;
- 		}
- 
--		if (p->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
--			continue;
--
- 		points = oom_badness(p, totalpages);
--		if (points >= 0 && (points > *ppoints || !chosen)) {
-+		if (points > *ppoints) {
- 			chosen = p;
- 			*ppoints = points;
- 		}
-
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
