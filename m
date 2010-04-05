@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417Ab0DEG5Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 02:57:16 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:35937 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab0DEG5M (ORCPT
+	id S1751638Ab0DEHF6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 03:05:58 -0400
+Received: from sajino.sajinet.com.pe ([76.74.239.193]:40172 "EHLO
+	sajino.sajinet.com.pe" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922Ab0DEHFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 02:57:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=MnnRckGo+tX0NJ6xUx3tjXMobMpGJZRyL3iklRZPhkv2vv1fuxqF1ya6w4aPJJ6gt4
-         uTC5XOf6MfBi5abKp48c7BtIGhKWIfFTWUimILbddGMPRw7mHJS7X1E2GuiXpY9en+4q
-         zPbOVAQ+2TNGvgQgZ68xntriZqhBgCmtYRVyc=
-Date: Mon, 5 Apr 2010 08:57:04 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
-       acme@redhat.com, a.p.zijlstra@chello.nl, paulus@samba.org
-Subject: Re: Random scheduler/unaligned accesses crashes with perf lock
-	events on sparc 64
-Message-ID: <20100405065701.GC5127@nowhere>
-References: <20100404121851.GC5177@nowhere> <20100404122113.GD5177@nowhere> <20100404.180057.109331958.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100404.180057.109331958.davem@davemloft.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 5 Apr 2010 03:05:51 -0400
+X-Greylist: delayed 595 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Apr 2010 03:05:51 EDT
+From: Carlo Marcelo Arenas Belon <carenas@sajinet.com.pe>
+To: linux-kernel@vger.kernel.org
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+       Eric B Munson <ebmunson@us.ibm.com>,
+       Carlo Marcelo Arenas Belon <carenas@sajinet.com.pe>
+Subject: [PATCH] documentation: slightly more correct value for MAP_HUGETLB in map_hugetlb.c
+Date: Sun,  4 Apr 2010 23:54:53 -0700
+Message-Id: <1270450493-8790-1-git-send-email-carenas@sajinet.com.pe>
+X-Mailer: git-send-email 1.7.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 04, 2010 at 06:00:57PM -0700, David Miller wrote:
-> From: Frederic Weisbecker <fweisbec@gmail.com>
-> Date: Sun, 4 Apr 2010 14:21:19 +0200
-> 
-> > Forgot the config, it's in attachment.
-> 
-> I get them too when even trying to use the function tracer in some
-> simple way.  They occur in random places and eventually the entire
-> machine wedges and is unusuable.
+still not correct for alpha, mips, parisc or xtensa but working out of
+the box in the most common architectures without having to deal with
+complicated macros or including architecture specific headers.
 
+Signed-off-by: Carlo Marcelo Arenas Belon <carenas@sajinet.com.pe>
+---
+ Documentation/vm/map_hugetlb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Yeah. But it's not totally random. I often see the same scheduler
-crash.
-
-It seems to happen after an unaligned access fixup.
-
-
-> 
-> I suspect there is some bug that ends up corrupting memory, so I
-> started trying to debug this last night when I first saw it.
-
-
-Ok. I indeed have the same problem with the function tracer when
-it is running.
-
+diff --git a/Documentation/vm/map_hugetlb.c b/Documentation/vm/map_hugetlb.c
+index 9969c7d..eda1a6d 100644
+--- a/Documentation/vm/map_hugetlb.c
++++ b/Documentation/vm/map_hugetlb.c
+@@ -19,7 +19,7 @@
+ #define PROTECTION (PROT_READ | PROT_WRITE)
  
-> I'll let you know if I make any progress.
-
-
-Thanks!
+ #ifndef MAP_HUGETLB
+-#define MAP_HUGETLB 0x40
++#define MAP_HUGETLB 0x40000 /* arch specific */
+ #endif
+ 
+ /* Only ia64 requires this */
+-- 
+1.5.4.3
 
