@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756237Ab0DETGN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 15:06:13 -0400
-Received: from mail.perches.com ([173.55.12.10]:1358 "EHLO mail.perches.com"
+	id S1756250Ab0DETGV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 15:06:21 -0400
+Received: from mail.perches.com ([173.55.12.10]:1359 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754140Ab0DETFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755929Ab0DETFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Apr 2010 15:05:49 -0400
 From: Joe Perches <joe@perches.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-       linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 01/11] arch/ia64/hp/common/sba_iommu.c: Rename dev_info to adi
-Date: Mon,  5 Apr 2010 12:05:31 -0700
-Message-Id: <efbe5e3689b7668cb68a7e226af88129880e6d3c.1270493677.git.joe@perches.com>
+Cc: David Vrabel <david.vrabel@csr.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+       linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 02/11] drivers/usb/host/hwa-hc.c: Rename dev_info to hdi
+Date: Mon,  5 Apr 2010 12:05:32 -0700
+Message-Id: <0d6b9010d1fd6965951685a46e2effa0e3db89d4.1270493677.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.0.3.311.g6a6955
 In-Reply-To: <20100304232928.2e45bdd1.akpm@linux-foundation.org>
 References: <20100304232928.2e45bdd1.akpm@linux-foundation.org>
@@ -31,45 +31,57 @@ to converting the dev_info macro to a function.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- arch/ia64/hp/common/sba_iommu.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/usb/host/hwa-hc.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/arch/ia64/hp/common/sba_iommu.c b/arch/ia64/hp/common/sba_iommu.c
-index e14c492..4ce8d13 100644
---- a/arch/ia64/hp/common/sba_iommu.c
-+++ b/arch/ia64/hp/common/sba_iommu.c
-@@ -2046,13 +2046,13 @@ acpi_sba_ioc_add(struct acpi_device *device)
- 	struct ioc *ioc;
- 	acpi_status status;
- 	u64 hpa, length;
--	struct acpi_device_info *dev_info;
-+	struct acpi_device_info *adi;
+diff --git a/drivers/usb/host/hwa-hc.c b/drivers/usb/host/hwa-hc.c
+index 88b0321..5366ab1 100644
+--- a/drivers/usb/host/hwa-hc.c
++++ b/drivers/usb/host/hwa-hc.c
+@@ -375,16 +375,16 @@ static int __hwahc_op_dev_info_set(struct wusbhc *wusbhc,
+ 	struct hwahc *hwahc = container_of(wusbhc, struct hwahc, wusbhc);
+ 	struct wahc *wa = &hwahc->wa;
+ 	u8 iface_no = wa->usb_iface->cur_altsetting->desc.bInterfaceNumber;
+-	struct hwa_dev_info *dev_info;
++	struct hwa_dev_info *hdi;
+ 	int ret;
  
- 	status = hp_acpi_csr_space(device->handle, &hpa, &length);
- 	if (ACPI_FAILURE(status))
- 		return 1;
- 
--	status = acpi_get_object_info(device->handle, &dev_info);
-+	status = acpi_get_object_info(device->handle, &adi);
- 	if (ACPI_FAILURE(status))
- 		return 1;
- 
-@@ -2060,13 +2060,13 @@ acpi_sba_ioc_add(struct acpi_device *device)
- 	 * For HWP0001, only SBA appears in ACPI namespace.  It encloses the PCI
- 	 * root bridges, and its CSR space includes the IOC function.
- 	 */
--	if (strncmp("HWP0001", dev_info->hardware_id.string, 7) == 0) {
-+	if (strncmp("HWP0001", adi->hardware_id.string, 7) == 0) {
- 		hpa += ZX1_IOC_OFFSET;
- 		/* zx1 based systems default to kernel page size iommu pages */
- 		if (!iovp_shift)
- 			iovp_shift = min(PAGE_SHIFT, 16);
- 	}
--	kfree(dev_info);
-+	kfree(adi);
+ 	/* fill out the Device Info buffer and send it */
+-	dev_info = kzalloc(sizeof(struct hwa_dev_info), GFP_KERNEL);
+-	if (!dev_info)
++	hdi = kzalloc(sizeof(struct hwa_dev_info), GFP_KERNEL);
++	if (!hdi)
+ 		return -ENOMEM;
+-	uwb_mas_bm_copy_le(dev_info->bmDeviceAvailability,
++	uwb_mas_bm_copy_le(hdi->bmDeviceAvailability,
+ 			   &wusb_dev->availability);
+-	dev_info->bDeviceAddress = wusb_dev->addr;
++	hdi->bDeviceAddress = wusb_dev->addr;
  
  	/*
- 	 * default anything not caught above or specified on cmdline to 4k
+ 	 * If the descriptors haven't been read yet, use a default PHY
+@@ -394,17 +394,17 @@ static int __hwahc_op_dev_info_set(struct wusbhc *wusbhc,
+ 	 * have been read).
+ 	 */
+ 	if (wusb_dev->wusb_cap_descr)
+-		dev_info->wPHYRates = wusb_dev->wusb_cap_descr->wPHYRates;
++		hdi->wPHYRates = wusb_dev->wusb_cap_descr->wPHYRates;
+ 	else
+-		dev_info->wPHYRates = cpu_to_le16(USB_WIRELESS_PHY_53);
++		hdi->wPHYRates = cpu_to_le16(USB_WIRELESS_PHY_53);
+ 
+ 	ret = usb_control_msg(wa->usb_dev, usb_sndctrlpipe(wa->usb_dev, 0),
+ 			WUSB_REQ_SET_DEV_INFO,
+ 			USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+ 			0, wusb_dev->port_idx << 8 | iface_no,
+-			dev_info, sizeof(struct hwa_dev_info),
++			hdi, sizeof(struct hwa_dev_info),
+ 			1000 /* FIXME: arbitrary */);
+-	kfree(dev_info);
++	kfree(hdi);
+ 	return ret;
+ }
+ 
 -- 
 1.7.0.3.311.g6a6955
 
