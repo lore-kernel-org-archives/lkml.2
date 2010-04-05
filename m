@@ -1,391 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932069Ab0DEWK3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 18:10:29 -0400
-Received: from mail-fx0-f227.google.com ([209.85.220.227]:37318 "EHLO
-	mail-fx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756439Ab0DEWKX (ORCPT
+	id S932076Ab0DEWLQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 18:11:16 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:50102 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756439Ab0DEWLI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 18:10:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=K1619pzw5i3g1ZJ+eSIRM57ujAwBVMHnqmKLRzLkmpMDVdmg3UB57Rz16EKqp82wfd
-         AuV8aZZVF9KCfRTfaKKVYW4/wNxlIa8HHzqZg6Ct22+EIerJj9jQ1pF9+vUjw8tAui+h
-         rTcjmNUQgj9uc4MpsavC7loguPskWdQLgfj/Y=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH] lockdep: Make lockstats counting per cpu
-Date: Tue,  6 Apr 2010 00:10:17 +0200
-Message-Id: <1270505417-8144-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.6.2.3
-In-Reply-To: <1269736197-10958-1-git-send-regression-fweisbec@gmail.com>
-References: <1269736197-10958-1-git-send-regression-fweisbec@gmail.com>
+	Mon, 5 Apr 2010 18:11:08 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:from:date:message-id:
+	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=r8qiUPbO4eAFseCs9sM/cdU9Mff3XqptycyCWe/797rLEQqzwZMJVz4939jnGHjEu
+	ThtHBuHFLUkalY9+b9xlw==
+MIME-Version: 1.0
+In-Reply-To: <20100405181200.GJ876@redhat.com>
+References: <20100403014724.30746.16081.stgit@austin.mtv.corp.google.com> 
+	<20100403015640.30746.4264.stgit@austin.mtv.corp.google.com> 
+	<20100405181200.GJ876@redhat.com>
+From: Divyesh Shah <dpshah@google.com>
+Date: Mon, 5 Apr 2010 15:10:44 -0700
+Message-ID: <n2xaf41c7c41004051510ne0be83n4ce58e22d6ef64f7@mail.gmail.com>
+Subject: Re: [PATCH 3/3][v2] blkio: Increment the blkio cgroup stats for real 
+	now
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
+       ctalbott@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Locking statistics are implemented using global atomic variables.
-This is usually fine unless some path write them very often.
+On Mon, Apr 5, 2010 at 11:12 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Fri, Apr 02, 2010 at 06:57:27PM -0700, Divyesh Shah wrote:
+>> We also add start_time_ns and io_start_time_ns fields to struct request
+>> here to record the time when a request is created and when it is
+>> dispatched to device. We use ns uints here as ms and jiffies are
+>> not very useful for non-rotational media.
+>>
+>> Signed-off-by: Divyesh Shah<dpshah@google.com>
+>> ---
+>>
+>>  block/blk-cgroup.c     |   49 ++++++++++++++++++++++++++++++++++++++++++++++--
+>>  block/blk-cgroup.h     |   33 +++++++++++++++++++++++++++++---
+>>  block/blk-core.c       |    6 ++++--
+>>  block/cfq-iosched.c    |    6 +++++-
+>>  include/linux/blkdev.h |   38 ++++++++++++++++++++++++++++++++++++-
+>>  5 files changed, 123 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+>> index cac10b2..21c0d28 100644
+>> --- a/block/blk-cgroup.c
+>> +++ b/block/blk-cgroup.c
+>> @@ -15,6 +15,7 @@
+>>  #include <linux/kdev_t.h>
+>>  #include <linux/module.h>
+>>  #include <linux/err.h>
+>> +#include <linux/blkdev.h>
+>>  #include "blk-cgroup.h"
+>>
+>>  #define MAX_KEY_LEN 100
+>> @@ -57,6 +58,16 @@ struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
+>>  }
+>>  EXPORT_SYMBOL_GPL(cgroup_to_blkio_cgroup);
+>>
+>> +/*
+>> + * Add to the appropriate stat variable depending on the request type.
+>> + * This should be called with the blkg->stats_lock held.
+>> + */
+>> +void io_add_stat(uint64_t *stat, uint64_t add, int direction, int sync)
+>> +{
+>> +     stat[direction] += add;
+>> +     stat[sync] += add;
+>> +}
+>> +
+>
+> static? blkio_add_stat()?
+Will fix in V3
+>
+> how about using "bool" for direction and sync? This is true throughout the
+> patch.
+Will do.
 
-This is the case for the function and function graph tracers
-that disable irqs for each entry saved (except if the function
-tracer is in preempt disabled only mode).
-And calls to local_irq_save/restore() increment hardirqs_on_events
-and hardirqs_off_events stats (or similar stats for redundant
-versions).
-
-Incrementing these global vars for each function ends up in too
-much cache bouncing if lockstats are enabled.
-
-To solve this, implement the debug_atomic_*() operations using
-per cpu vars.
-
-v2: Use per_cpu() instead of get_cpu_var() to fetch the desired
-cpu vars on debug_atomic_read()
-
-v3: Store the stats in a structure. No need for local_t as we
-are NMI/irq safe.
-
-v4: Fix tons of build errors. I thought I had tested it but I
-probably forgot to select the relevant config.
-
-Suggested-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/lockdep.c           |   47 ++++++++++------------------
- kernel/lockdep_internals.h |   74 +++++++++++++++++++++++++++++++------------
- kernel/lockdep_proc.c      |   58 +++++++++++++++++-----------------
- 3 files changed, 99 insertions(+), 80 deletions(-)
-
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index c927a54..08e6f76 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -430,20 +430,7 @@ static struct stack_trace lockdep_init_trace = {
- /*
-  * Various lockdep statistics:
-  */
--atomic_t chain_lookup_hits;
--atomic_t chain_lookup_misses;
--atomic_t hardirqs_on_events;
--atomic_t hardirqs_off_events;
--atomic_t redundant_hardirqs_on;
--atomic_t redundant_hardirqs_off;
--atomic_t softirqs_on_events;
--atomic_t softirqs_off_events;
--atomic_t redundant_softirqs_on;
--atomic_t redundant_softirqs_off;
--atomic_t nr_unused_locks;
--atomic_t nr_cyclic_checks;
--atomic_t nr_find_usage_forwards_checks;
--atomic_t nr_find_usage_backwards_checks;
-+DEFINE_PER_CPU(struct lockdep_stats, lockdep_stats);
- #endif
- 
- /*
-@@ -758,7 +745,7 @@ register_lock_class(struct lockdep_map *lock, unsigned int subclass, int force)
- 		return NULL;
- 	}
- 	class = lock_classes + nr_lock_classes++;
--	debug_atomic_inc(&nr_unused_locks);
-+	debug_atomic_inc(nr_unused_locks);
- 	class->key = key;
- 	class->name = lock->name;
- 	class->subclass = subclass;
-@@ -1215,7 +1202,7 @@ check_noncircular(struct lock_list *root, struct lock_class *target,
- {
- 	int result;
- 
--	debug_atomic_inc(&nr_cyclic_checks);
-+	debug_atomic_inc(nr_cyclic_checks);
- 
- 	result = __bfs_forwards(root, target, class_equal, target_entry);
- 
-@@ -1252,7 +1239,7 @@ find_usage_forwards(struct lock_list *root, enum lock_usage_bit bit,
- {
- 	int result;
- 
--	debug_atomic_inc(&nr_find_usage_forwards_checks);
-+	debug_atomic_inc(nr_find_usage_forwards_checks);
- 
- 	result = __bfs_forwards(root, (void *)bit, usage_match, target_entry);
- 
-@@ -1275,7 +1262,7 @@ find_usage_backwards(struct lock_list *root, enum lock_usage_bit bit,
- {
- 	int result;
- 
--	debug_atomic_inc(&nr_find_usage_backwards_checks);
-+	debug_atomic_inc(nr_find_usage_backwards_checks);
- 
- 	result = __bfs_backwards(root, (void *)bit, usage_match, target_entry);
- 
-@@ -1835,7 +1822,7 @@ static inline int lookup_chain_cache(struct task_struct *curr,
- 	list_for_each_entry(chain, hash_head, entry) {
- 		if (chain->chain_key == chain_key) {
- cache_hit:
--			debug_atomic_inc(&chain_lookup_hits);
-+			debug_atomic_inc(chain_lookup_hits);
- 			if (very_verbose(class))
- 				printk("\nhash chain already cached, key: "
- 					"%016Lx tail class: [%p] %s\n",
-@@ -1900,7 +1887,7 @@ cache_hit:
- 		chain_hlocks[chain->base + j] = class - lock_classes;
- 	}
- 	list_add_tail_rcu(&chain->entry, hash_head);
--	debug_atomic_inc(&chain_lookup_misses);
-+	debug_atomic_inc(chain_lookup_misses);
- 	inc_chains();
- 
- 	return 1;
-@@ -2321,7 +2308,7 @@ void trace_hardirqs_on_caller(unsigned long ip)
- 		return;
- 
- 	if (unlikely(curr->hardirqs_enabled)) {
--		debug_atomic_inc(&redundant_hardirqs_on);
-+		debug_atomic_inc(redundant_hardirqs_on);
- 		return;
- 	}
- 	/* we'll do an OFF -> ON transition: */
-@@ -2348,7 +2335,7 @@ void trace_hardirqs_on_caller(unsigned long ip)
- 
- 	curr->hardirq_enable_ip = ip;
- 	curr->hardirq_enable_event = ++curr->irq_events;
--	debug_atomic_inc(&hardirqs_on_events);
-+	debug_atomic_inc(hardirqs_on_events);
- }
- EXPORT_SYMBOL(trace_hardirqs_on_caller);
- 
-@@ -2380,9 +2367,9 @@ void trace_hardirqs_off_caller(unsigned long ip)
- 		curr->hardirqs_enabled = 0;
- 		curr->hardirq_disable_ip = ip;
- 		curr->hardirq_disable_event = ++curr->irq_events;
--		debug_atomic_inc(&hardirqs_off_events);
-+		debug_atomic_inc(hardirqs_off_events);
- 	} else
--		debug_atomic_inc(&redundant_hardirqs_off);
-+		debug_atomic_inc(redundant_hardirqs_off);
- }
- EXPORT_SYMBOL(trace_hardirqs_off_caller);
- 
-@@ -2406,7 +2393,7 @@ void trace_softirqs_on(unsigned long ip)
- 		return;
- 
- 	if (curr->softirqs_enabled) {
--		debug_atomic_inc(&redundant_softirqs_on);
-+		debug_atomic_inc(redundant_softirqs_on);
- 		return;
- 	}
- 
-@@ -2416,7 +2403,7 @@ void trace_softirqs_on(unsigned long ip)
- 	curr->softirqs_enabled = 1;
- 	curr->softirq_enable_ip = ip;
- 	curr->softirq_enable_event = ++curr->irq_events;
--	debug_atomic_inc(&softirqs_on_events);
-+	debug_atomic_inc(softirqs_on_events);
- 	/*
- 	 * We are going to turn softirqs on, so set the
- 	 * usage bit for all held locks, if hardirqs are
-@@ -2446,10 +2433,10 @@ void trace_softirqs_off(unsigned long ip)
- 		curr->softirqs_enabled = 0;
- 		curr->softirq_disable_ip = ip;
- 		curr->softirq_disable_event = ++curr->irq_events;
--		debug_atomic_inc(&softirqs_off_events);
-+		debug_atomic_inc(softirqs_off_events);
- 		DEBUG_LOCKS_WARN_ON(!softirq_count());
- 	} else
--		debug_atomic_inc(&redundant_softirqs_off);
-+		debug_atomic_inc(redundant_softirqs_off);
- }
- 
- static void __lockdep_trace_alloc(gfp_t gfp_mask, unsigned long flags)
-@@ -2654,7 +2641,7 @@ static int mark_lock(struct task_struct *curr, struct held_lock *this,
- 			return 0;
- 		break;
- 	case LOCK_USED:
--		debug_atomic_dec(&nr_unused_locks);
-+		debug_atomic_dec(nr_unused_locks);
- 		break;
- 	default:
- 		if (!debug_locks_off_graph_unlock())
-@@ -2760,7 +2747,7 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
- 		if (!class)
- 			return 0;
- 	}
--	debug_atomic_inc((atomic_t *)&class->ops);
-+	atomic_inc((atomic_t *)&class->ops);
- 	if (very_verbose(class)) {
- 		printk("\nacquire class [%p] %s", class->key, class->name);
- 		if (class->name_version > 1)
-diff --git a/kernel/lockdep_internals.h b/kernel/lockdep_internals.h
-index a2ee95a..8d7d4b6 100644
---- a/kernel/lockdep_internals.h
-+++ b/kernel/lockdep_internals.h
-@@ -110,29 +110,61 @@ lockdep_count_backward_deps(struct lock_class *class)
- #endif
- 
- #ifdef CONFIG_DEBUG_LOCKDEP
-+
-+#include <asm/local.h>
- /*
-- * Various lockdep statistics:
-+ * Various lockdep statistics.
-+ * We want them per cpu as they are often accessed in fast path
-+ * and we want to avoid too much cache bouncing.
-  */
--extern atomic_t chain_lookup_hits;
--extern atomic_t chain_lookup_misses;
--extern atomic_t hardirqs_on_events;
--extern atomic_t hardirqs_off_events;
--extern atomic_t redundant_hardirqs_on;
--extern atomic_t redundant_hardirqs_off;
--extern atomic_t softirqs_on_events;
--extern atomic_t softirqs_off_events;
--extern atomic_t redundant_softirqs_on;
--extern atomic_t redundant_softirqs_off;
--extern atomic_t nr_unused_locks;
--extern atomic_t nr_cyclic_checks;
--extern atomic_t nr_cyclic_check_recursions;
--extern atomic_t nr_find_usage_forwards_checks;
--extern atomic_t nr_find_usage_forwards_recursions;
--extern atomic_t nr_find_usage_backwards_checks;
--extern atomic_t nr_find_usage_backwards_recursions;
--# define debug_atomic_inc(ptr)		atomic_inc(ptr)
--# define debug_atomic_dec(ptr)		atomic_dec(ptr)
--# define debug_atomic_read(ptr)		atomic_read(ptr)
-+struct lockdep_stats {
-+	int	chain_lookup_hits;
-+	int	chain_lookup_misses;
-+	int	hardirqs_on_events;
-+	int	hardirqs_off_events;
-+	int	redundant_hardirqs_on;
-+	int	redundant_hardirqs_off;
-+	int	softirqs_on_events;
-+	int	softirqs_off_events;
-+	int	redundant_softirqs_on;
-+	int	redundant_softirqs_off;
-+	int	nr_unused_locks;
-+	int	nr_cyclic_checks;
-+	int	nr_cyclic_check_recursions;
-+	int	nr_find_usage_forwards_checks;
-+	int	nr_find_usage_forwards_recursions;
-+	int	nr_find_usage_backwards_checks;
-+	int	nr_find_usage_backwards_recursions;
-+};
-+
-+DECLARE_PER_CPU(struct lockdep_stats, lockdep_stats);
-+
-+#define debug_atomic_inc(ptr)			{		\
-+	struct lockdep_stats *__cpu_lockdep_stats;		\
-+								\
-+	WARN_ON_ONCE(!irqs_disabled());				\
-+	__cpu_lockdep_stats = &__get_cpu_var(lockdep_stats);	\
-+	__cpu_lockdep_stats->ptr++;				\
-+}
-+
-+#define debug_atomic_dec(ptr)			{		\
-+	struct lockdep_stats *__cpu_lockdep_stats;		\
-+								\
-+	WARN_ON_ONCE(!irqs_disabled());				\
-+	__cpu_lockdep_stats = &__get_cpu_var(lockdep_stats);	\
-+	__cpu_lockdep_stats->ptr--;				\
-+}
-+
-+#define debug_atomic_read(ptr)		({				\
-+	struct lockdep_stats *__cpu_lockdep_stats;			\
-+	unsigned long long __total = 0;					\
-+	int __cpu;							\
-+	for_each_possible_cpu(__cpu) {					\
-+		__cpu_lockdep_stats = &per_cpu(lockdep_stats, __cpu);	\
-+		__total += __cpu_lockdep_stats->ptr;			\
-+	}								\
-+	__total;							\
-+})
- #else
- # define debug_atomic_inc(ptr)		do { } while (0)
- # define debug_atomic_dec(ptr)		do { } while (0)
-diff --git a/kernel/lockdep_proc.c b/kernel/lockdep_proc.c
-index d4aba4f..59b76c8 100644
---- a/kernel/lockdep_proc.c
-+++ b/kernel/lockdep_proc.c
-@@ -184,34 +184,34 @@ static const struct file_operations proc_lockdep_chains_operations = {
- static void lockdep_stats_debug_show(struct seq_file *m)
- {
- #ifdef CONFIG_DEBUG_LOCKDEP
--	unsigned int hi1 = debug_atomic_read(&hardirqs_on_events),
--		     hi2 = debug_atomic_read(&hardirqs_off_events),
--		     hr1 = debug_atomic_read(&redundant_hardirqs_on),
--		     hr2 = debug_atomic_read(&redundant_hardirqs_off),
--		     si1 = debug_atomic_read(&softirqs_on_events),
--		     si2 = debug_atomic_read(&softirqs_off_events),
--		     sr1 = debug_atomic_read(&redundant_softirqs_on),
--		     sr2 = debug_atomic_read(&redundant_softirqs_off);
--
--	seq_printf(m, " chain lookup misses:           %11u\n",
--		debug_atomic_read(&chain_lookup_misses));
--	seq_printf(m, " chain lookup hits:             %11u\n",
--		debug_atomic_read(&chain_lookup_hits));
--	seq_printf(m, " cyclic checks:                 %11u\n",
--		debug_atomic_read(&nr_cyclic_checks));
--	seq_printf(m, " find-mask forwards checks:     %11u\n",
--		debug_atomic_read(&nr_find_usage_forwards_checks));
--	seq_printf(m, " find-mask backwards checks:    %11u\n",
--		debug_atomic_read(&nr_find_usage_backwards_checks));
--
--	seq_printf(m, " hardirq on events:             %11u\n", hi1);
--	seq_printf(m, " hardirq off events:            %11u\n", hi2);
--	seq_printf(m, " redundant hardirq ons:         %11u\n", hr1);
--	seq_printf(m, " redundant hardirq offs:        %11u\n", hr2);
--	seq_printf(m, " softirq on events:             %11u\n", si1);
--	seq_printf(m, " softirq off events:            %11u\n", si2);
--	seq_printf(m, " redundant softirq ons:         %11u\n", sr1);
--	seq_printf(m, " redundant softirq offs:        %11u\n", sr2);
-+	unsigned long long hi1 = debug_atomic_read(hardirqs_on_events),
-+			   hi2 = debug_atomic_read(hardirqs_off_events),
-+			   hr1 = debug_atomic_read(redundant_hardirqs_on),
-+			   hr2 = debug_atomic_read(redundant_hardirqs_off),
-+			   si1 = debug_atomic_read(softirqs_on_events),
-+			   si2 = debug_atomic_read(softirqs_off_events),
-+			   sr1 = debug_atomic_read(redundant_softirqs_on),
-+			   sr2 = debug_atomic_read(redundant_softirqs_off);
-+
-+	seq_printf(m, " chain lookup misses:           %11llu\n",
-+		debug_atomic_read(chain_lookup_misses));
-+	seq_printf(m, " chain lookup hits:             %11llu\n",
-+		debug_atomic_read(chain_lookup_hits));
-+	seq_printf(m, " cyclic checks:                 %11llu\n",
-+		debug_atomic_read(nr_cyclic_checks));
-+	seq_printf(m, " find-mask forwards checks:     %11llu\n",
-+		debug_atomic_read(nr_find_usage_forwards_checks));
-+	seq_printf(m, " find-mask backwards checks:    %11llu\n",
-+		debug_atomic_read(nr_find_usage_backwards_checks));
-+
-+	seq_printf(m, " hardirq on events:             %11llu\n", hi1);
-+	seq_printf(m, " hardirq off events:            %11llu\n", hi2);
-+	seq_printf(m, " redundant hardirq ons:         %11llu\n", hr1);
-+	seq_printf(m, " redundant hardirq offs:        %11llu\n", hr2);
-+	seq_printf(m, " softirq on events:             %11llu\n", si1);
-+	seq_printf(m, " softirq off events:            %11llu\n", si2);
-+	seq_printf(m, " redundant softirq ons:         %11llu\n", sr1);
-+	seq_printf(m, " redundant softirq offs:        %11llu\n", sr2);
- #endif
- }
- 
-@@ -263,7 +263,7 @@ static int lockdep_stats_show(struct seq_file *m, void *v)
- #endif
- 	}
- #ifdef CONFIG_DEBUG_LOCKDEP
--	DEBUG_LOCKS_WARN_ON(debug_atomic_read(&nr_unused_locks) != nr_unused);
-+	DEBUG_LOCKS_WARN_ON(debug_atomic_read(nr_unused_locks) != nr_unused);
- #endif
- 	seq_printf(m, " lock-classes:                  %11lu [max: %lu]\n",
- 			nr_lock_classes, MAX_LOCKDEP_KEYS);
--- 
-1.6.2.3
-
+>
+>>  void blkiocg_update_timeslice_used(struct blkio_group *blkg, unsigned long time)
+>>  {
+>>       unsigned long flags;
+>> @@ -67,6 +78,40 @@ void blkiocg_update_timeslice_used(struct blkio_group *blkg, unsigned long time)
+>>  }
+>>  EXPORT_SYMBOL_GPL(blkiocg_update_timeslice_used);
+>>
+>> +void blkiocg_update_dispatch_stats(struct blkio_group *blkg,
+>> +                             uint64_t bytes, int direction, int sync)
+>> +{
+>> +     struct blkio_group_stats *stats;
+>> +     unsigned long flags;
+>> +
+>> +     spin_lock_irqsave(&blkg->stats_lock, flags);
+>> +     stats = &blkg->stats;
+>> +     stats->sectors += bytes >> 9;
+>> +     io_add_stat(stats->io_serviced, 1, direction, sync);
+>> +     io_add_stat(stats->io_service_bytes, bytes, direction, sync);
+>> +     spin_unlock_irqrestore(&blkg->stats_lock, flags);
+>> +}
+>> +EXPORT_SYMBOL_GPL(blkiocg_update_dispatch_stats);
+>> +
+>> +void blkiocg_update_completion_stats(struct blkio_group *blkg,
+>> +     uint64_t start_time, uint64_t io_start_time, int direction, int sync)
+>> +{
+>> +     struct blkio_group_stats *stats;
+>> +     unsigned long flags;
+>> +     unsigned long long now = sched_clock();
+>> +
+>> +     spin_lock_irqsave(&blkg->stats_lock, flags);
+>> +     stats = &blkg->stats;
+>> +     if (time_after64(now, io_start_time))
+>> +             io_add_stat(stats->io_service_time, now - io_start_time,
+>> +                             direction, sync);
+>> +     if (time_after64(io_start_time, start_time))
+>> +             io_add_stat(stats->io_wait_time, io_start_time - start_time,
+>> +                             direction, sync);
+>> +     spin_unlock_irqrestore(&blkg->stats_lock, flags);
+>> +}
+>> +EXPORT_SYMBOL_GPL(blkiocg_update_completion_stats);
+>> +
+>>  void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
+>>                       struct blkio_group *blkg, void *key, dev_t dev)
+>>  {
+>> @@ -325,12 +370,12 @@ SHOW_FUNCTION_PER_GROUP(dequeue, blkio_get_stat, blkio_get_dequeue_stat, 0);
+>>  #undef SHOW_FUNCTION_PER_GROUP
+>>
+>>  #ifdef CONFIG_DEBUG_BLK_CGROUP
+>> -void blkiocg_update_blkio_group_dequeue_stats(struct blkio_group *blkg,
+>> +void blkiocg_update_dequeue_stats(struct blkio_group *blkg,
+>>                       unsigned long dequeue)
+>>  {
+>>       blkg->stats.dequeue += dequeue;
+>>  }
+>> -EXPORT_SYMBOL_GPL(blkiocg_update_blkio_group_dequeue_stats);
+>> +EXPORT_SYMBOL_GPL(blkiocg_update_dequeue_stats);
+>>  #endif
+>>
+>>  struct cftype blkio_files[] = {
+>> diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+>> index e8600b0..5fc88e1 100644
+>> --- a/block/blk-cgroup.h
+>> +++ b/block/blk-cgroup.h
+>> @@ -112,12 +112,12 @@ static inline char *blkg_path(struct blkio_group *blkg)
+>>  {
+>>       return blkg->path;
+>>  }
+>> -void blkiocg_update_blkio_group_dequeue_stats(struct blkio_group *blkg,
+>> +void blkiocg_update_dequeue_stats(struct blkio_group *blkg,
+>>                               unsigned long dequeue);
+>>  #else
+>>  static inline char *blkg_path(struct blkio_group *blkg) { return NULL; }
+>> -static inline void blkiocg_update_blkio_group_dequeue_stats(
+>> -                     struct blkio_group *blkg, unsigned long dequeue) {}
+>> +static inline void blkiocg_update_dequeue_stats(struct blkio_group *blkg,
+>> +                                             unsigned long dequeue) {}
+>>  #endif
+>>
+>>  #if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
+>> @@ -130,6 +130,20 @@ extern struct blkio_group *blkiocg_lookup_group(struct blkio_cgroup *blkcg,
+>>                                               void *key);
+>>  void blkiocg_update_timeslice_used(struct blkio_group *blkg,
+>>                                       unsigned long time);
+>> +void blkiocg_update_dispatch_stats(struct blkio_group *blkg, uint64_t bytes,
+>> +                                             int direction, int sync);
+>> +void blkiocg_update_completion_stats(struct blkio_group *blkg,
+>> +     uint64_t start_time, uint64_t io_start_time, int direction, int sync);
+>> +static inline int rq_direction(struct request *rq)
+>> +{
+>> +     return (rq->cmd_flags & REQ_RW) ? IO_WRITE : IO_READ;
+>> +}
+>
+> blkdev.h offers rq_data_dir(). Let mapping of 0 or 1 to correct enum
+> happen in blkio-cgroup.c. This is not rq property. This is internal to
+> blkio.
+Will fix in v3 for both direction and sync mapping.
+>
+>> +
+>> +static inline int rq_sync(struct request *rq)
+>> +{
+>> +     return (!(rq->cmd_flags & REQ_RW) ||
+>> +             rq->cmd_flags & REQ_RW_SYNC) ? IO_SYNC : IO_ASYNC;
+>> +}
+>
+>
+> blkdev.h already offers rq_is_sync(). We can use that. Mapping of 1 or 0
+> to corrent enum number IO_SYNC, IO_ASYNC can be done by blkio-cgroup.c
+>
+>
+> Vivek
+>
+>>  #else
+>>  struct cgroup;
+>>  static inline struct blkio_cgroup *
+>> @@ -147,5 +161,18 @@ static inline struct blkio_group *
+>>  blkiocg_lookup_group(struct blkio_cgroup *blkcg, void *key) { return NULL; }
+>>  static inline void blkiocg_update_timeslice_used(struct blkio_group *blkg,
+>>                                               unsigned long time) {}
+>> +static inline void blkiocg_update_dispatch_stats(struct blkio_group *blkg,
+>> +                             uint64_t bytes, int direction, int sync) {}
+>> +static inline void blkiocg_update_completion_stats(struct blkio_group *blkg,
+>> +     uint64_t start_time, uint64_t io_start_time, int direction, int sync) {}
+>> +static inline int rq_direction(struct request *rq)
+>> +{
+>> +     return 0;
+>> +}
+>> +
+>> +static inline int rq_sync(struct request *rq)
+>> +{
+>> +     return 0;
+>> +}
+>>  #endif
+>>  #endif /* _BLK_CGROUP_H */
+>> diff --git a/block/blk-core.c b/block/blk-core.c
+>> index 9fe174d..1d94f15 100644
+>> --- a/block/blk-core.c
+>> +++ b/block/blk-core.c
+>> @@ -127,6 +127,7 @@ void blk_rq_init(struct request_queue *q, struct request *rq)
+>>       rq->tag = -1;
+>>       rq->ref_count = 1;
+>>       rq->start_time = jiffies;
+>> +     set_start_time_ns(rq);
+>>  }
+>>  EXPORT_SYMBOL(blk_rq_init);
+>>
+>> @@ -1855,8 +1856,10 @@ void blk_dequeue_request(struct request *rq)
+>>        * and to it is freed is accounted as io that is in progress at
+>>        * the driver side.
+>>        */
+>> -     if (blk_account_rq(rq))
+>> +     if (blk_account_rq(rq)) {
+>>               q->in_flight[rq_is_sync(rq)]++;
+>> +             set_io_start_time_ns(rq);
+>> +     }
+>>  }
+>>
+>>  /**
+>> @@ -2517,4 +2520,3 @@ int __init blk_dev_init(void)
+>>
+>>       return 0;
+>>  }
+>> -
+>> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+>> index d91df9f..59aeadf 100644
+>> --- a/block/cfq-iosched.c
+>> +++ b/block/cfq-iosched.c
+>> @@ -854,7 +854,7 @@ cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>>       if (!RB_EMPTY_NODE(&cfqg->rb_node))
+>>               cfq_rb_erase(&cfqg->rb_node, st);
+>>       cfqg->saved_workload_slice = 0;
+>> -     blkiocg_update_blkio_group_dequeue_stats(&cfqg->blkg, 1);
+>> +     blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
+>>  }
+>>
+>>  static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
+>> @@ -1864,6 +1864,8 @@ static void cfq_dispatch_insert(struct request_queue *q, struct request *rq)
+>>       elv_dispatch_sort(q, rq);
+>>
+>>       cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
+>> +     blkiocg_update_dispatch_stats(&cfqq->cfqg->blkg, blk_rq_bytes(rq),
+>> +                                     rq_direction(rq), rq_sync(rq));
+>>  }
+>>
+>>  /*
+>> @@ -3284,6 +3286,8 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
+>>       WARN_ON(!cfqq->dispatched);
+>>       cfqd->rq_in_driver--;
+>>       cfqq->dispatched--;
+>> +     blkiocg_update_completion_stats(&cfqq->cfqg->blkg, rq_start_time_ns(rq),
+>> +                     rq_io_start_time_ns(rq), rq_direction(rq), rq_sync(rq));
+>>
+>>       cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]--;
+>>
+>> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+>> index ebd22db..ac1f30d 100644
+>> --- a/include/linux/blkdev.h
+>> +++ b/include/linux/blkdev.h
+>> @@ -193,7 +193,10 @@ struct request {
+>>
+>>       struct gendisk *rq_disk;
+>>       unsigned long start_time;
+>> -
+>> +#if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
+>> +     unsigned long long start_time_ns;
+>> +     unsigned long long io_start_time_ns;    /* when passed to hardware */
+>> +#endif
+>>       /* Number of scatter-gather DMA addr+len pairs after
+>>        * physical address coalescing is performed.
+>>        */
+>> @@ -1219,6 +1222,39 @@ static inline void put_dev_sector(Sector p)
+>>  struct work_struct;
+>>  int kblockd_schedule_work(struct request_queue *q, struct work_struct *work);
+>>
+>> +#if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
+>> +static inline void set_start_time_ns(struct request *req)
+>> +{
+>> +     req->start_time_ns = sched_clock();
+>> +}
+>> +
+>> +static inline void set_io_start_time_ns(struct request *req)
+>> +{
+>> +     req->io_start_time_ns = sched_clock();
+>> +}
+>> +
+>> +static inline uint64_t rq_start_time_ns(struct request *req)
+>> +{
+>> +     return req->start_time_ns;
+>> +}
+>> +
+>> +static inline uint64_t rq_io_start_time_ns(struct request *req)
+>> +{
+>> +     return req->io_start_time_ns;
+>> +}
+>> +#else
+>> +static inline void set_start_time_ns(struct request *req) {}
+>> +static inline void set_io_start_time_ns(struct request *req) {}
+>> +static inline uint64_t rq_start_time_ns(struct request *req)
+>> +{
+>> +     return 0;
+>> +}
+>> +static inline uint64_t rq_io_start_time_ns(struct request *req)
+>> +{
+>> +     return 0;
+>> +}
+>> +#endif
+>> +
+>>  #define MODULE_ALIAS_BLOCKDEV(major,minor) \
+>>       MODULE_ALIAS("block-major-" __stringify(major) "-" __stringify(minor))
+>>  #define MODULE_ALIAS_BLOCKDEV_MAJOR(major) \
+>
