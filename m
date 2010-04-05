@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab0DEQkc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 12:40:32 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:43394 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755289Ab0DEQk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 12:40:26 -0400
-Date: Mon, 5 Apr 2010 09:40:23 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
-       Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>, Dmitry Torokhov <dtor@mail.ru>
-Subject: Re: A few questions and issues with dynticks, NOHZ and powertop
-Message-ID: <20100405164023.GD2525@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100404163924.GA18428@comet.dominikbrodowski.net>
- <20100404204725.GC2644@linux.vnet.ibm.com>
- <20100404233702.GA24102@linux.vnet.ibm.com>
- <4BB95C85.80205@linux.intel.com>
- <20100405042222.GD2644@linux.vnet.ibm.com>
- <4BB9F657.4050901@linux.intel.com>
- <20100405151401.GA2525@linux.vnet.ibm.com>
- <4BBA0AC5.1080905@linux.intel.com>
- <20100405162249.GB2525@linux.vnet.ibm.com>
- <4BBA0E74.2090803@linux.intel.com>
+	id S1755591Ab0DEQsH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 12:48:07 -0400
+Received: from ns1.siteground211.com ([209.62.36.12]:45554 "EHLO
+	serv01.siteground211.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755180Ab0DEQr7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 12:47:59 -0400
+Date: Mon, 5 Apr 2010 19:48:39 +0300
+From: Felipe Balbi <me@felipebalbi.com>
+To: kishore kadiyala <kishorek.kadiyala@gmail.com>
+Cc: Madhusudhan <madhu.cr@ti.com>, Vimal Singh <vimal.newwork@gmail.com>,
+       tony@atomide.com, svenkatr@ti.com, linux-omap@vger.kernel.org,
+       linux-kernel@vger.kernel.org, jarkko.lavinen@nokia.com
+Subject: Re: [PATCH v3] OMAP: Fix for bus width which improves SD card's
+ peformance.
+Message-ID: <20100405164839.GB17388@gandalf>
+Reply-To: me@felipebalbi.com
+References: <35697.192.168.10.89.1265898023.squirrel@dbdmail.itg.ti.com>
+ <004701caab40$68b576e0$544ff780@am.dhcp.ti.com>
+ <x2q7f9d1ffb1003302307nb8e91be0o55da59c3375f1720@mail.gmail.com>
+ <v2yce9ab5791003302327hc67deb3akc7d18146534038f9@mail.gmail.com>
+ <h2p7f9d1ffb1003310003z508e21dbqe37b6e1cad425866@mail.gmail.com>
+ <003b01cad0f0$6ea78040$544ff780@am.dhcp.ti.com>
+ <g2s7f9d1ffb1003312331o149df218g651c3e4349ac9a77@mail.gmail.com>
+ <003c01cad1b1$da2cdbf0$544ff780@am.dhcp.ti.com>
+ <m2n7f9d1ffb1004050556o1ed2eec8ief66d60fc85f96de@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BBA0E74.2090803@linux.intel.com>
+In-Reply-To: <m2n7f9d1ffb1004050556o1ed2eec8ief66d60fc85f96de@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - serv01.siteground211.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - felipebalbi.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05, 2010 at 09:23:16AM -0700, Arjan van de Ven wrote:
-> On 4/5/2010 9:22, Paul E. McKenney wrote:
-> >On Mon, Apr 05, 2010 at 09:07:33AM -0700, Arjan van de Ven wrote:
-> >>On 4/5/2010 8:14, Paul E. McKenney wrote:
-> >>>So the main issue is that for many workloads, it is best to run full bore
-> >>>and get done quickly, thus allowing the entire machine to be powered down?
-> >>
-> >>yep
-> >>
-> >>>If so, it seems likely that there would be some workloads that were sometimes
-> >>>unable to use all the CPUs, in which case shutting down (idling, offlining,
-> >>>dyntick-idling, whatever) the excess CPUs might nevertheless be the right
-> >>>thing to do.
-> >>
-> >>but the point is that the normal scheduler + idle behavior gives you exactly that
-> >>in a natural way !
-> >>If you don't have enough work (tasks) to keep all cores busy, the others are and stay idle.
-> >
-> >So your earlier objection was not to dyntick-idle as such, but rather
-> >to artificially constraining the scheduler to induce dyntick-idle?
+Hi,
+
+On Mon, Apr 05, 2010 at 06:26:16PM +0530, kishore kadiyala wrote:
+> @@ -2091,9 +2091,9 @@ static int __init omap_hsmmc_probe(struct
+>  	mmc->caps |= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
+>  		     MMC_CAP_WAIT_WHILE_BUSY;
 > 
-> my objection was against the notion that offlining cpus helps power/energy ;-)
+> -	if (mmc_slot(host).wires >= 8)
+> -		mmc->caps |= MMC_CAP_8_BIT_DATA;
+> -	else if (mmc_slot(host).wires >= 4)
+> +	if (mmc_slot(host).wires == 8)
+> +		mmc->caps |= (MMC_CAP_8_BIT_DATA | MMC_CAP_4_BIT_DATA);
+> +	else if (mmc_slot(host).wires == 4)
+>  		mmc->caps |= MMC_CAP_4_BIT_DATA;
 
-Fair enough, at least in general.  I should hasten to add that Lai's
-patch also helps in the case where NR_CPUS is greater than the number
-of CPUs on the system.
+I believe it would be enough to just remove the 'else', so the code
+would look like:
 
-							Thanx, Paul
+if (mmc_slot(host).wires >= 8)
+	mmc->caps |= MMC_CAP_8_BIT_DATA;
+if (mmc_slot(host).wires >= 4)
+	mmc->caps |= MMC_CAP_4_BIT_DATA;
+
+-- 
+balbi
