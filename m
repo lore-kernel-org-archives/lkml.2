@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751189Ab0DEFgI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 01:36:08 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:46963 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750886Ab0DEFgA (ORCPT
+	id S1751251Ab0DEGGJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 02:06:09 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61238 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750961Ab0DEGGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 01:36:00 -0400
-Date: Mon, 5 Apr 2010 07:36:28 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: kernel list <linux-kernel@vger.kernel.org>
-Subject: 2.6.34-rc3: Can't insmod after make, because versions now differ?!
-Message-ID: <20100405053628.GA12217@elf.ucw.cz>
+	Mon, 5 Apr 2010 02:06:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:content-type;
+        b=upo+Y9FPW4u8kROQkaqUA9Q36C7TmWTeQf902f07NhwC7oSKvJ4d35qiqtRwuS1EHy
+         NvkE9yhfAJDp5XrJFS7kxaKvX6k8zwk9WBQ44nDcPnby+vM5XqaiaQbIssgsfwweL2jv
+         1JRhATkDsUSTrBb8GBkDFYx9yap7An14pBCPM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Carl <carlchatfield@gmail.com>
+Date: Mon, 5 Apr 2010 16:05:43 +1000
+Message-ID: <x2pd56eedfb1004042305m3fdc4a8y7464a14e25cdb01c@mail.gmail.com>
+Subject: Touchpad hacking, who to talk to before commencing work
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi everybody, this is my first post to the list.
 
-I guess version check is needed, but this is excessive:
+I have a new mbp 5, and I've been frustrated at the basicness of its
+operation compared to its functionality under osx. My original plan
+was to simply open
+up the bcm5974 and create a deadzone at the bottom of the touch pad so
+I could rest my thumb there and click. Configuration through synaptics
+doesnt seem to work for some reason.
 
-Apr  5 07:33:16 amd kernel: udlfb: version magic
-'2.6.34-rc3-00345-ge8240f9-dirty SMP mod_unload CORE2 ' should be
-'2.6.34-rc3-00344-g548fc0a-dirty SMP mod_unload CORE2 '
+Anyway, to make a long story short, I had a bit too much fun with the
+trackpad and watching it track all 10 fingers, and now I'd like to
+implement some
+more advanced functionality. As a quick hack, I could theoretically do
+this inside the driver itself, but it would be better to write a new
+input handler.
 
-Yes, I played with git and recompiled my kernel in order to get new
-module version, but... not even insmod -f works.
+Is anyone currently working on something similar. I dont want to be
+reinventing the wheel.
 
-Having to reboot every time I recompile the module or play with git
-makes modules useless for development :-(.
-								Pavel
- 
+Cheers guys.
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Carl
