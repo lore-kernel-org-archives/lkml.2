@@ -1,155 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755735Ab0DERF6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 13:05:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16655 "EHLO mx1.redhat.com"
+	id S1755757Ab0DERTw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 13:19:52 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51117 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755472Ab0DERFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 13:05:52 -0400
-Date: Mon, 5 Apr 2010 13:05:36 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Divyesh Shah <dpshah@google.com>
-Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
-       ctalbott@google.com
-Subject: Re: [PATCH 1/3][v2] blkio: Remove per-cfqq nr_sectors as we'll be
-	passing
-Message-ID: <20100405170535.GG876@redhat.com>
-References: <20100403014724.30746.16081.stgit@austin.mtv.corp.google.com> <20100403015445.30746.39086.stgit@austin.mtv.corp.google.com> <20100405154757.GE876@redhat.com> <g2vaf41c7c41004050957u27c79217t21b22004b3086659@mail.gmail.com>
+	id S1755213Ab0DERTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 13:19:46 -0400
+From: "Madhusudhan" <madhu.cr@ti.com>
+To: <me@felipebalbi.com>, "'kishore kadiyala'" <kishorek.kadiyala@gmail.com>
+Cc: "'Vimal Singh'" <vimal.newwork@gmail.com>, <tony@atomide.com>,
+       <svenkatr@ti.com>, <linux-omap@vger.kernel.org>,
+       <linux-kernel@vger.kernel.org>, <jarkko.lavinen@nokia.com>
+References: <35697.192.168.10.89.1265898023.squirrel@dbdmail.itg.ti.com> <004701caab40$68b576e0$544ff780@am.dhcp.ti.com> <x2q7f9d1ffb1003302307nb8e91be0o55da59c3375f1720@mail.gmail.com> <v2yce9ab5791003302327hc67deb3akc7d18146534038f9@mail.gmail.com> <h2p7f9d1ffb1003310003z508e21dbqe37b6e1cad425866@mail.gmail.com> <003b01cad0f0$6ea78040$544ff780@am.dhcp.ti.com> <g2s7f9d1ffb1003312331o149df218g651c3e4349ac9a77@mail.gmail.com> <003c01cad1b1$da2cdbf0$544ff780@am.dhcp.ti.com> <m2n7f9d1ffb1004050556o1ed2eec8ief66d60fc85f96de@mail.gmail.com> <20100405164839.GB17388@gandalf>
+Subject: RE: [PATCH v3] OMAP: Fix for bus width which improves SD card's peformance.
+Date: Mon, 5 Apr 2010 12:19:29 -0500
+Message-ID: <007c01cad4e4$26c5a700$544ff780@am.dhcp.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <g2vaf41c7c41004050957u27c79217t21b22004b3086659@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <20100405164839.GB17388@gandalf>
+Thread-Index: AcrU38C+4+XFRBPqR++M66+bC7dIIAAA/D8Q
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3198
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05, 2010 at 09:57:08AM -0700, Divyesh Shah wrote:
-> On Mon, Apr 5, 2010 at 8:47 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Fri, Apr 02, 2010 at 06:55:48PM -0700, Divyesh Shah wrote:
-> >> that info at request dispatch with other stats now. This patch removes the
-> >> existing support for accounting sectors for a blkio_group. This will be added
-> >> back differently in the next two patches.
-> >>
-> >> Signed-off-by: Divyesh Shah<dpshah@google.com>
-> >> ---
-> >>
-> >>  block/blk-cgroup.c  |    3 +--
-> >>  block/blk-cgroup.h  |    6 ++----
-> >>  block/cfq-iosched.c |   10 ++--------
-> >>  3 files changed, 5 insertions(+), 14 deletions(-)
-> >>
-> >> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> >> index 4b686ad..5be3981 100644
-> >> --- a/block/blk-cgroup.c
-> >> +++ b/block/blk-cgroup.c
-> >> @@ -56,10 +56,9 @@ struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
-> >>  EXPORT_SYMBOL_GPL(cgroup_to_blkio_cgroup);
-> >>
-> >>  void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
-> >> -                     unsigned long time, unsigned long sectors)
-> >> +                                             unsigned long time)
-> >>  {
-> >>       blkg->time += time;
-> >> -     blkg->sectors += sectors;
-> >>  }
-> >>  EXPORT_SYMBOL_GPL(blkiocg_update_blkio_group_stats);
-> >>
-> >> diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-> >> index 8ccc204..fe44517 100644
-> >> --- a/block/blk-cgroup.h
-> >> +++ b/block/blk-cgroup.h
-> >> @@ -106,7 +106,7 @@ extern int blkiocg_del_blkio_group(struct blkio_group *blkg);
-> >>  extern struct blkio_group *blkiocg_lookup_group(struct blkio_cgroup *blkcg,
-> >>                                               void *key);
-> >>  void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
-> >> -                     unsigned long time, unsigned long sectors);
-> >> +                                             unsigned long time);
-> >>  #else
-> >>  struct cgroup;
-> >>  static inline struct blkio_cgroup *
-> >> @@ -123,8 +123,6 @@ blkiocg_del_blkio_group(struct blkio_group *blkg) { return 0; }
-> >>  static inline struct blkio_group *
-> >>  blkiocg_lookup_group(struct blkio_cgroup *blkcg, void *key) { return NULL; }
-> >>  static inline void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
-> >> -                     unsigned long time, unsigned long sectors)
-> >> -{
-> >> -}
-> >> +                                             unsigned long time) {}
-> >>  #endif
-> >>  #endif /* _BLK_CGROUP_H */
-> >> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> >> index ef1680b..c18e348 100644
-> >> --- a/block/cfq-iosched.c
-> >> +++ b/block/cfq-iosched.c
-> >> @@ -141,8 +141,6 @@ struct cfq_queue {
-> >>       struct cfq_queue *new_cfqq;
-> >>       struct cfq_group *cfqg;
-> >>       struct cfq_group *orig_cfqg;
-> >> -     /* Sectors dispatched in current dispatch round */
-> >> -     unsigned long nr_sectors;
-> >>  };
-> >>
-> >>  /*
-> >> @@ -882,8 +880,7 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
-> >>                       slice_used = cfqq->allocated_slice;
-> >>       }
-> >>
-> >> -     cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u sect=%lu", slice_used,
-> >> -                             cfqq->nr_sectors);
-> >> +     cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u", slice_used);
-> >
-> > Hi Divyesh,
-> >
-> > I had found above message useful when I am looking at blktraces. It helps
-> > to know how many sectors one could transfer in a given time slice.
-> > Especially if you are comparing two queues in two groups. I think we are
-> > going to loose this information now?
+
+
+> -----Original Message-----
+> From: Felipe Balbi [mailto:me@felipebalbi.com]
+> Sent: Monday, April 05, 2010 11:49 AM
+> To: kishore kadiyala
+> Cc: Madhusudhan; Vimal Singh; tony@atomide.com; svenkatr@ti.com; linux-
+> omap@vger.kernel.org; linux-kernel@vger.kernel.org;
+> jarkko.lavinen@nokia.com
+> Subject: Re: [PATCH v3] OMAP: Fix for bus width which improves SD card's
+> peformance.
 > 
-
-Printing it for each request does not help, because I was interested total
-of once slice. How long was the slice and how many sectors we completed.
-
-Well, for the time being, don't worry about it. If I really need it I 
-will put anohter patch to re-introduce it.
-
-Vivek
-
-> Would printing the number of sectors for each request help? If you
-> think this is really important we can keep this redundant information
-> as well.
+> Hi,
 > 
+> On Mon, Apr 05, 2010 at 06:26:16PM +0530, kishore kadiyala wrote:
+> > @@ -2091,9 +2091,9 @@ static int __init omap_hsmmc_probe(struct
+> >  	mmc->caps |= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
+> >  		     MMC_CAP_WAIT_WHILE_BUSY;
 > >
-> > Vivek
-> >
-> >>       return slice_used;
-> >>  }
-> >>
-> >> @@ -917,8 +914,7 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
-> >>
-> >>       cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
-> >>                                       st->min_vdisktime);
-> >> -     blkiocg_update_blkio_group_stats(&cfqg->blkg, used_sl,
-> >> -                                             cfqq->nr_sectors);
-> >> +     blkiocg_update_blkio_group_stats(&cfqg->blkg, used_sl);
-> >>  }
-> >>
-> >>  #ifdef CONFIG_CFQ_GROUP_IOSCHED
-> >> @@ -1524,7 +1520,6 @@ static void __cfq_set_active_queue(struct cfq_data *cfqd,
-> >>               cfqq->allocated_slice = 0;
-> >>               cfqq->slice_end = 0;
-> >>               cfqq->slice_dispatch = 0;
-> >> -             cfqq->nr_sectors = 0;
-> >>
-> >>               cfq_clear_cfqq_wait_request(cfqq);
-> >>               cfq_clear_cfqq_must_dispatch(cfqq);
-> >> @@ -1869,7 +1864,6 @@ static void cfq_dispatch_insert(struct request_queue *q, struct request *rq)
-> >>       elv_dispatch_sort(q, rq);
-> >>
-> >>       cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
-> >> -     cfqq->nr_sectors += blk_rq_sectors(rq);
-> >>  }
-> >>
-> >>  /*
-> >
+> > -	if (mmc_slot(host).wires >= 8)
+> > -		mmc->caps |= MMC_CAP_8_BIT_DATA;
+> > -	else if (mmc_slot(host).wires >= 4)
+> > +	if (mmc_slot(host).wires == 8)
+> > +		mmc->caps |= (MMC_CAP_8_BIT_DATA | MMC_CAP_4_BIT_DATA);
+> > +	else if (mmc_slot(host).wires == 4)
+> >  		mmc->caps |= MMC_CAP_4_BIT_DATA;
+> 
+> I believe it would be enough to just remove the 'else', so the code
+> would look like:
+> 
+> if (mmc_slot(host).wires >= 8)
+> 	mmc->caps |= MMC_CAP_8_BIT_DATA;
+> if (mmc_slot(host).wires >= 4)
+
+Since the first if command already checks for the 8-bit the second check
+like >= 4 is definitely not readable in my opinion.
+
+Functionally do you see anything wrong with this patch??
+
+> 	mmc->caps |= MMC_CAP_4_BIT_DATA;
+> 
+> --
+> balbi
+
