@@ -1,151 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690Ab0DEVjD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 17:39:03 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:37793 "EHLO e9.ny.us.ibm.com"
+	id S1756680Ab0DEVkI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 17:40:08 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:49453 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756450Ab0DEVi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 17:38:57 -0400
-Date: Mon, 5 Apr 2010 14:38:52 -0700
+	id S1756439Ab0DEVkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 17:40:00 -0400
+Date: Mon, 5 Apr 2010 14:39:53 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-       Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       Dmitry Torokhov <dtor@mail.ru>
-Subject: Re: A few questions and issues with dynticks, NOHZ and powertop
-Message-ID: <20100405213852.GI2525@linux.vnet.ibm.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>, mingo@elte.hu,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Nicholas Miell <nmiell@comcast.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
+       peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+       Nick Piggin <npiggin@suse.de>, Chris Friesen <cfriesen@nortel.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] introduce sys_membarrier(): process-wide memory
+ barrier (v10)
+Message-ID: <20100405213953.GJ2525@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100404233702.GA24102@linux.vnet.ibm.com>
- <20100404204725.GC2644@linux.vnet.ibm.com>
- <20100405210340.GA4638@comet.dominikbrodowski.net>
+References: <20100405175736.GA12656@Krystal>
+ <20100405113837.e475db7b.randy.dunlap@oracle.com>
+ <20100405191057.GB13309@Krystal>
+ <20100405204021.GH2525@linux.vnet.ibm.com>
+ <4BBA46DB.9060106@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100405210340.GA4638@comet.dominikbrodowski.net>
+In-Reply-To: <4BBA46DB.9060106@oracle.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05, 2010 at 11:03:40PM +0200, Dominik Brodowski wrote:
-> Paul,
-> 
-> I really appreaciate your reply -- thanks! I've done some more testing in
-> the meantime:
-> 
-> On Sun, Apr 04, 2010 at 01:47:25PM -0700, Paul E. McKenney wrote:
-> > On Sun, Apr 04, 2010 at 06:39:24PM +0200, Dominik Brodowski wrote:
-> > > On Sun, Apr 04, 2010 at 11:17:37AM -0400, Alan Stern wrote:
-> > > > On Sun, 4 Apr 2010, Dominik Brodowski wrote:
-> > > > 
-> > > > > Booting a SMP-capable kernel with "nosmp", or manually offlining one CPU
-> > > > > (or -- though I haven't tested it -- booting a SMP-capable kernel on a
-> > > > > system with merely one CPU) means that in up to about half of the calls to
-> > > > > tick_nohz_stop_sched_tick() are aborted due to rcu_needs_cpu(). This is
-> > > > > quite strange to me: AFAIK, RCU is an excellent tool for SMP, but not really
-> > > > > needed for UP?
-> > > > 
-> > > > I can't answer the real question here, not knowing enough about the RCU
-> > > > implementation.  However, your impression is wrong: RCU very definitely
-> > > > _is_ useful and needed on UP systems.  It coordinates among processes
-> > > > (and interrupt handlers) as well as among processors.
-> > > 
-> > > Okay, but still: can't this be sped up by much on UP (especially if
-> > > CONFIG_RCU_FAST_NO_HZ is set), so that we can go to sleep right away?
+On Mon, Apr 05, 2010 at 01:23:55PM -0700, Randy Dunlap wrote:
+> Paul E. McKenney wrote:
+> > On Mon, Apr 05, 2010 at 03:10:57PM -0400, Mathieu Desnoyers wrote:
+> >> * Randy Dunlap (randy.dunlap@oracle.com) wrote:
+> >>> On Mon, 5 Apr 2010 13:57:37 -0400 Mathieu Desnoyers wrote:
 > > 
-> > One situation that will prevent CONFIG_RCU_FAST_NO_HZ from putting the
-> > machine to sleep right away is if there is an RCU callback posted that
-> > spawns another RCU callback, and so on.  CONFIG_RCU_FAST_NO_HZ will handle
-> > one callback that spawns another, but it gives up if the second callback
-> > spawns a third.
-> 
-> Will the remaining callbacks be executed immediately afterwards (due to a
-> need_resched() etc.), or only after the next tick?
-
-Only after the next tick.  To see why, imagine an RCU callback that
-re-registers itself -- which is a perfectly legal thing to do.  The
-only thing that will happen if we run through grace periods faster is
-that we will have more invocations of that same callback to deal with.
-
-So we try for a bit, and if that doesn't get rid of all of the callbacks,
-we hold off until the next jiffy.
-
-> > Might this be what is happening to you?
+> > [ . . . ]
 > > 
-> > If so, would you be willing to patch your kernel?  RCU_NEEDS_CPU_FLUSHES
-> > is currently set to 5, and might be set to (say) 8.  This is defined
-> > in kernel/rcutree_plugin.h, near line 990.
+> >>>> +#else /* #ifdef CONFIG_SMP */
+> >>> I don't know that we have a known convention for that, but I would use:
+> >>>
+> >>> #else /* not CONFIG_SMP */
+> >>>
+> >>> or
+> >>>
+> >>> #else /* !CONFIG_SMP */
+> >>>
+> >>>> +
+> >>>> +SYSCALL_DEFINE1(membarrier, unsigned int, flags)
+> >>>> +{
+> >>>> +	return 0;
+> >>>> +}
+> >>>> +
+> >>>> +#endif /* #else #ifdef CONFIG_SMP */
 > 
-> Applied the patch by Lai Jiangshan, and tested 5 and 8:
+> or just:
 > 
-> 5:	  Wakeups-from-idle: 33.4		(hrtimer_sched_timer: 78 %)
-> 		34% of calls to tick_nohz_stop_sched_tick fail due to
-> 			rcu_needs_cpu()
-> 8:	  Wakeups-from-idle: 36.5		(hrtimer_sched_timer: 83 %)
-> 		37% of calls to tick_nohz_stop_sched_tick fail due to
-> 			rcu_needs_cpu()
-
-I don't recall your posting wakeups-from-idle for the original -- did
-we get improvement?  You did say "roughly 50%", but...
-
-OK, I see what is happening...
-
-What happens in the CONFIG_RCU_FAST_NO_HZ case is as follows:
-
-o	Check to see if the holdoff period is in effect, and if so,
-	just check to see if RCU needs the CPU for later processing
-	without attempting to accelerate grace periods.
-
-o	Check to see if there is some other non-dyntick-idle CPU.
-	If there is, reset holdoff state and just check to see if
-	RCU needs the CPU for later processing without attempting to
-	accelerate grace periods.
-
-o	Check for initialization and hitting the RCU_NEEDS_CPU_FLUSHES
-	limit, again doing the "just check" thing if we hit the limit.
-
-o	For each of RCU-sched and RCU-bh, note a quiescent state
-	and force the grace-period machinery, noting in each case
-	whether or not there are callbacks left to invoke.
-
-o	If there are callbacks left to invoke, raise RCU_SOFTIRQ.
-	This softirq will process the callbacks.  (Why not just invoke
-	the softirq function directly?	Because lockdep yells at you
-	and I do not believe that this is a false positive.)
-
-o	If there are callbacks left to invoke, tell the caller that
-	this CPU cannot yet enter dyntick-idle state.
-
-But if we told the caller that this CPU cannot yet enter dyntick-idle
-state, then we also raised RCU_SOFTIRQ.  Once the softirq returns, we
-should once again try to enter dyntick-idle state.
-
-So a significant fraction of calls to rcu_needs_cpu() saying "no" does
-not necessarily mean that we are taking significant time to get the
-grace periods and callbacks out of the way.  The funny loop involving
-softirq is required due to locking-design issues.
-
-Or are you seeing significant delays between successive calls to
-rcu_needs_cpu() on your setup?
-
-> > Another thing to try would be running with TINY_RCU, at least if it is
-> > OK that RCU be non-preemptible.
+> #endif /* #else #ifdef CONFIG_SMP : tell the reader that the #else part of the #ifdef CONFIG_SMP just ended */
 > 
-> tick_nohz_stop_sched_tick() doesn't fail in this case because of
-> rcu_needs_cpu(). However, the improvements are hardly recognizable:
+> ad nauseum.
+
+You lost me on this one.
+
+> >>> and:
+> >>>
+> >>> #endif /* CONFIG_SMP */
+> >>>
+> >>> The "#else #ifdef" is both ugly and too wordy IMO.
+> > 
+> > The extra words make it very clear that we are in at the end of the #else
+> > clause of a #ifdef with the given condition.  With "#endif /* CONFIG_SMP
+> > */", is the immediately preceding code compiled under CONFIG_SMP or
+> > !CONFIG_SMP?  You have to dig back and see whether or not there is a
+> > #else clause.
+> > 
+> > But there is no accounting for taste.  ;-)
 > 
-> TINY_RCU: Wakeups-from-idle: 33.9		(hrtimer_sched_timer: 53 %)
+> IYHO.
 
-TINY_RCU is set up to automatically do CONFIG_RCU_FAST_NO_HZ, and do
-the same softirq dance, or that is the theory, anyway.  Again, are you
-seeing significant delays between successive calls to rcu_needs_cpu()?
-
-> > And you did mention offlining some CPUs above. 
-> 
-> ... just for testing how NOHZ works on UP systems ;)
-
-;-)
+Indeed, in both directions.
 
 							Thanx, Paul
