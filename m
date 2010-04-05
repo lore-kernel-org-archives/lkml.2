@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451Ab0DEJjd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 05:39:33 -0400
-Received: from mail-fx0-f227.google.com ([209.85.220.227]:55019 "EHLO
-	mail-fx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab0DEJj0 (ORCPT
+	id S1752738Ab0DEJ4w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 05:56:52 -0400
+Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:49866 "EHLO
+	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab0DEJ4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 05:39:26 -0400
+	Mon, 5 Apr 2010 05:56:45 -0400
+Message-ID: <4BB9B3CB.8010306@dcl.info.waseda.ac.jp>
+Date: Mon, 05 Apr 2010 18:56:27 +0900
+From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091211 Shredder/3.0
 MIME-Version: 1.0
-X-Originating-IP: [212.159.75.221]
-Date: Mon, 5 Apr 2010 10:39:25 +0100
-Message-ID: <s2g6a4b170b1004050239ga41e5496r1e416b755f655a0a@mail.gmail.com>
-Subject: Bad watchdog ioctl definitions
-From: James Hogan <james@albanarts.com>
-To: Wim Van Sebroeck <wim@iguana.be>,
-       H Hartley Sweeten <hsweeten@visionengravers.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Thierry Reding <thierry.reding@avionic-design.de>,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Arnd Bergmann <arnd@arndb.de>, Stephane Eranian <eranian@google.com>
+Subject: Re: [GIT PULL] perf updates
+References: <1270391804-6552-1-git-send-regression-fweisbec@gmail.com> <20100404144223.GB5608@nowhere>
+In-Reply-To: <20100404144223.GB5608@nowhere>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 04/04/10 23:42, Frederic Weisbecker wrote:
+ > On Sun, Apr 04, 2010 at 04:36:40PM +0200, Frederic Weisbecker wrote:
+ >> Ingo,
+ >>
+ >> Please pull the perf/core branch that can be found at:
+ >>
+ >> 
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+ >> 	perf/core
+ >>
+ >> Thanks,
+ >> 	Frederic
+ >> ---
+ >>
+ >> Frederic Weisbecker (2):
+ >>        perf: Drop the frame reliablity check
+ >>        perf: Fetch hot regs from the template caller
+ >>
+ >> Arnd Bergmann (1):
+ >>        perf_event: Make perf fd non seekable
+ >>
+ >> Hitoshi Mitake (1):
+ >>        Swap inclusion order of util.h and string.h in util/string.c
+ >
+ >
+ > I just did a last minute rebase, just to prepend the title of this
+ > one with "perf: "
 
-I've noticed that some of the ioctl definitions in
-include/linux/watchdog.h are incorrect, for example:
+Ah, sorry, my naming of title was not good...
 
-#define WDIOC_SETOPTIONS        _IOR(WATCHDOG_IOCTL_BASE, 4, int)
-This is a write ioctl so should be _IOW
-
-#define WDIOC_KEEPALIVE         _IOR(WATCHDOG_IOCTL_BASE, 5, int)
-I think this should just be _IO since the argument is ignored anyway
-
->From a quick grep, mpcore_wdt appears to be the only watchdog driver
-in drivers/watchdog that uses _IOC_DIR on the ioctl number, which
-breaks the SETOPTIONS ioctl on this driver.
-
-Is it usually even possible to change ioctl numbers for compatibility?
-What's the usual process?
-
-Cheers
--- 
-James Hogan
+Thanks,
+	Hitoshi
