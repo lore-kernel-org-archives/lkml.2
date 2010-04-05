@@ -1,90 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457Ab0DESbt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 14:31:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35437 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754864Ab0DESbn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 14:31:43 -0400
-Date: Mon, 5 Apr 2010 15:31:27 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Floating point exception by perf record
-Message-ID: <20100405183127.GA3677@ghostprotocols.net>
-References: <4BB84991.5080301@dcl.info.waseda.ac.jp>
+	id S1755500Ab0DESeS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 14:34:18 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:36855 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755387Ab0DESeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 14:34:11 -0400
+Date: Mon, 5 Apr 2010 11:34:03 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
+       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
+Subject: [PATCH RFC tip/core/rcu 0/10] rcu: patches queued for 2.6.35
+Message-ID: <20100405183403.GA23075@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BB84991.5080301@dcl.info.waseda.ac.jp>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, Apr 04, 2010 at 05:10:57PM +0900, Hitoshi Mitake escreveu:
-> I suffered a mysterious floating point exception when executing perf
-> on current tip/master.
->
-> For example,
->
-> % sudo ./perf lock record ./perf bench sched messaging
-> # Running sched/messaging benchmark...
-> # 20 sender and receiver processes per group
-> # 10 groups == 400 processes run
->
->      Total time: 1.375 [sec]
-> [ perf record: Woken up 0 times to write data ]
-> [ perf record: Captured and wrote 160.002 MB perf.data (~6990599 samples) ]
-> [1]    26348 floating point exception  sudo ./perf lock record ./perf  
-> bench sched messaging
->
-> dmesg says that
->
-> [10212.752490] perf[26348] trap divide error ip:7fade8564310  
-> sp:7fff46d926e8 error:0 in libnewt.so.0.52.2[7fade8556000+15000]
->
-> Example is of perf lock, but this is not a special phenomenon of perf lock,
-> other users of perf record, like perf sched, caused the same problem.
->
-> I found that this might be caused by the line 283 of perf.c
->
-> 	if (fclose(stdout)) # <- closing stdout!
-> 		die("close failed on standard output: %s", strerror(errno));
->
-> I don't know well about libnewt, do you know something like cause?
->
-> The version of libnewt I'm using is 0.52.2 (default of Debian lenny)
+Hello!
 
-I just built a kernel where 'perf lock' can work, but I'm seeing a
-different problem:
+RFC preview of RCU patches queued for 2.6.35:
 
-[root@doppio ~]# perf lock trace | head -3
-  Warning: Error: expected 'data' but read 'overwrite'
-         swapper-0     [000]   619.086424: lock_acquire: 0xffff8800029d4b28 &q->lock
-         swapper-0     [000]   619.086429: lock_acquire: 0xffff8800029d08f8 &ctx->lock
-         swapper-0     [000]   619.086439: lock_acquire: 0xffffffff81a38e58 clockevents_lock
-[root@doppio ~]# perf lock report | head -3
-  Warning: Error: expected 'data' but read 'overwrite'
-                ID                 Name   acquired  contended total wait (ns)   max wait (ns)   min wait (ns) 
+ 1.	substitute set_need_resched for sending resched IPIs
+ 	This reduces OS jitter.
 
-0xffff8800029d4b28             &q->lock          0          0               0               0               0 
-[root@doppio ~]# 
+ 2.	make dead code really dead
+ 3.	move some code from macro to function
+ 	Cleanups from Lai Jiangshan.
 
-My system details:
+ 4.	ignore offline CPUs in last non dyntick idle CPU check
+ 	Fix to my CONFIG_RCU_FAST_NO_HZ code to handle offline and
+	non-existent CPUs, also from Lai Jiangshan.
 
-[root@doppio ~]# uname -a
-Linux doppio.ghostprotocols.net 2.6.34-rc3-tip+ #1 SMP Mon Apr 5 13:49:42 BRT 2010 x86_64 x86_64 x86_64 GNU/Linux
-[root@doppio ~]# rpm -q newt
-newt-0.52.10-4.fc11.x86_64
-[root@doppio ~]# 
+ 5.	fix bogus CONFIG_PROVE_LOCKING in comments to reality
+ 6.	fix now bogus rcu_scheduler_active comments
+ 	Comment fixups.
 
-No segfaults here :-\
+ 7.	shrink rcutiny by making synchronize_rcu_bh be inline
+ 	Shrink TINY_RCU some more.
 
-- Arnaldo
+ 8.	rename rcutiny rcu_ctrlblk to rcu_sched_ctrlblk
+ 	First step towards TINY_PREEMPTIBLE_RCU.
+
+ 9.	refactor RCU's context switch handling
+ 	Reduce the number of needless softirqs.
+
+10.	slim down rcutiny by removing rcu_scheduler_active and friends
+	More shrinkage for TINY_RCU
+
+							Thanx, Paul
+
+ b/include/linux/rcupdate.h |   15 ++++++-----
+ b/include/linux/rcutiny.h  |   12 ++++++++-
+ b/include/linux/rcutree.h  |    2 +
+ b/include/linux/srcu.h     |    4 +--
+ b/kernel/rcupdate.c        |   19 --------------
+ b/kernel/rcutiny.c         |    9 +-----
+ b/kernel/rcutiny_plugin.h  |   39 ++++++++++++++++++++++++++++++
+ b/kernel/rcutree.c         |   10 +++++++
+ b/kernel/rcutree_plugin.h  |    2 -
+ b/kernel/sched.c           |    2 -
+ b/kernel/softirq.c         |    2 -
+ include/linux/rcupdate.h   |   12 +++------
+ include/linux/rcutiny.h    |   17 +++++++++++++
+ include/linux/rcutree.h    |    4 +++
+ kernel/rcutiny.c           |   20 ++++++++++-----
+ kernel/rcutree.c           |   58 ++++++++++++++++++++++++++++++++-------------
+ kernel/rcutree_plugin.h    |   11 +++++---
+ 17 files changed, 166 insertions(+), 72 deletions(-)
