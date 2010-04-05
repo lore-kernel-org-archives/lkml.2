@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab0DESYw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 14:24:52 -0400
-Received: from ns.netcenter.hu ([195.228.254.57]:49160 "EHLO mail.netcenter.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751847Ab0DESYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 14:24:46 -0400
-Message-ID: <2bd101cad4ec$5a425f30$0400a8c0@dcccs>
-From: "Janos Haar" <janos.haar@netcenter.hu>
-To: "Dave Chinner" <david@fromorbit.com>
-Cc: <xiyou.wangcong@gmail.com>, <linux-kernel@vger.kernel.org>,
-       <kamezawa.hiroyu@jp.fujitsu.com>, <linux-mm@kvack.org>,
-       <xfs@oss.sgi.com>, <axboe@kernel.dk>
-References: <03ca01cacb92$195adf50$0400a8c0@dcccs> <2375c9f91003242029p1efbbea1v8e313e460b118f14@mail.gmail.com> <20100325153110.6be9a3df.kamezawa.hiroyu@jp.fujitsu.com> <02c101cacbf8$d21d1650$0400a8c0@dcccs> <179901cad182$5f87f620$0400a8c0@dcccs> <t2h2375c9f91004010337p618c4d5yc739fa25b5f842fa@mail.gmail.com> <1fe901cad2b0$d39d0300$0400a8c0@dcccs> <20100402230905.GW3335@dastard> <22c901cad333$7a67db60$0400a8c0@dcccs> <20100404103701.GX3335@dastard>
-Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look please!...)
-Date: Mon, 5 Apr 2010 20:17:27 +0200
+	id S1755457Ab0DESbt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 14:31:49 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35437 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754864Ab0DESbn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 14:31:43 -0400
+Date: Mon, 5 Apr 2010 15:31:27 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Floating point exception by perf record
+Message-ID: <20100405183127.GA3677@ghostprotocols.net>
+References: <4BB84991.5080301@dcl.info.waseda.ac.jp>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.3598
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BB84991.5080301@dcl.info.waseda.ac.jp>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
-
-Thank you for your answer.
-Like i sad before, this is a productive server with important service.
-Can you please send the fix for me as soon as it is done even for testing 
-it....
-Or point me to the right direction to get it?
-
-Thanks a lot,
-Janos Haar
-
------ Original Message ----- 
-From: "Dave Chinner" <david@fromorbit.com>
-To: "Janos Haar" <janos.haar@netcenter.hu>
-Cc: <xiyou.wangcong@gmail.com>; <linux-kernel@vger.kernel.org>; 
-<kamezawa.hiroyu@jp.fujitsu.com>; <linux-mm@kvack.org>; <xfs@oss.sgi.com>; 
-<axboe@kernel.dk>
-Sent: Sunday, April 04, 2010 12:37 PM
-Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look 
-please!...)
-
-
-> On Sat, Apr 03, 2010 at 03:42:10PM +0200, Janos Haar wrote:
->> Hello,
->>
->> The actual version of kernel is 2.6.32.10.
->> There is any significant fixes for me in the last (.11) or in the
->> next (33.x)?
+Em Sun, Apr 04, 2010 at 05:10:57PM +0900, Hitoshi Mitake escreveu:
+> I suffered a mysterious floating point exception when executing perf
+> on current tip/master.
 >
-> The fixes for this bug are queued up already for the next
-> 2.6.32.x release.
+> For example,
 >
-> Cheers,
+> % sudo ./perf lock record ./perf bench sched messaging
+> # Running sched/messaging benchmark...
+> # 20 sender and receiver processes per group
+> # 10 groups == 400 processes run
 >
-> Dave.
-> -- 
-> Dave Chinner
-> david@fromorbit.com 
+>      Total time: 1.375 [sec]
+> [ perf record: Woken up 0 times to write data ]
+> [ perf record: Captured and wrote 160.002 MB perf.data (~6990599 samples) ]
+> [1]    26348 floating point exception  sudo ./perf lock record ./perf  
+> bench sched messaging
+>
+> dmesg says that
+>
+> [10212.752490] perf[26348] trap divide error ip:7fade8564310  
+> sp:7fff46d926e8 error:0 in libnewt.so.0.52.2[7fade8556000+15000]
+>
+> Example is of perf lock, but this is not a special phenomenon of perf lock,
+> other users of perf record, like perf sched, caused the same problem.
+>
+> I found that this might be caused by the line 283 of perf.c
+>
+> 	if (fclose(stdout)) # <- closing stdout!
+> 		die("close failed on standard output: %s", strerror(errno));
+>
+> I don't know well about libnewt, do you know something like cause?
+>
+> The version of libnewt I'm using is 0.52.2 (default of Debian lenny)
 
+I just built a kernel where 'perf lock' can work, but I'm seeing a
+different problem:
+
+[root@doppio ~]# perf lock trace | head -3
+  Warning: Error: expected 'data' but read 'overwrite'
+         swapper-0     [000]   619.086424: lock_acquire: 0xffff8800029d4b28 &q->lock
+         swapper-0     [000]   619.086429: lock_acquire: 0xffff8800029d08f8 &ctx->lock
+         swapper-0     [000]   619.086439: lock_acquire: 0xffffffff81a38e58 clockevents_lock
+[root@doppio ~]# perf lock report | head -3
+  Warning: Error: expected 'data' but read 'overwrite'
+                ID                 Name   acquired  contended total wait (ns)   max wait (ns)   min wait (ns) 
+
+0xffff8800029d4b28             &q->lock          0          0               0               0               0 
+[root@doppio ~]# 
+
+My system details:
+
+[root@doppio ~]# uname -a
+Linux doppio.ghostprotocols.net 2.6.34-rc3-tip+ #1 SMP Mon Apr 5 13:49:42 BRT 2010 x86_64 x86_64 x86_64 GNU/Linux
+[root@doppio ~]# rpm -q newt
+newt-0.52.10-4.fc11.x86_64
+[root@doppio ~]# 
+
+No segfaults here :-\
+
+- Arnaldo
