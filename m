@@ -1,450 +1,451 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277Ab0DETHe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 15:07:34 -0400
-Received: from mail.perches.com ([173.55.12.10]:1385 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756207Ab0DETF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 15:05:57 -0400
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Vrabel <david.vrabel@csr.com>, netdev@vger.kernel.org,
+	id S1756215Ab0DETLL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 15:11:11 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:59889 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755872Ab0DETLE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 15:11:04 -0400
+Date: Mon, 5 Apr 2010 15:10:57 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: mingo@elte.hu, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Nicholas Miell <nmiell@comcast.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
+       peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+       Nick Piggin <npiggin@suse.de>, Chris Friesen <cfriesen@nortel.com>,
        linux-kernel@vger.kernel.org
-Subject: [PATCH 11/11] drivers/uwb: Rename dev_info to wdi
-Date: Mon,  5 Apr 2010 12:05:41 -0700
-Message-Id: <6bd4d4dacf32631b72c3827a3b133a26e2e8b889.1270493677.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.0.3.311.g6a6955
-In-Reply-To: <20100304232928.2e45bdd1.akpm@linux-foundation.org>
-References: <20100304232928.2e45bdd1.akpm@linux-foundation.org>
-In-Reply-To: <cover.1270493677.git.joe@perches.com>
-References: <cover.1270493677.git.joe@perches.com>
+Subject: Re: [PATCH] introduce sys_membarrier(): process-wide memory
+	barrier (v10)
+Message-ID: <20100405191057.GB13309@Krystal>
+References: <20100405175736.GA12656@Krystal> <20100405113837.e475db7b.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100405113837.e475db7b.randy.dunlap@oracle.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 14:53:35 up 72 days, 21:30,  7 users,  load average: 0.00, 0.01,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a macro called dev_info that prints struct device specific
-information.  Having variables with the same name can be confusing and
-prevents conversion of the macro to a function.
+* Randy Dunlap (randy.dunlap@oracle.com) wrote:
+> On Mon, 5 Apr 2010 13:57:37 -0400 Mathieu Desnoyers wrote:
+> 
+> > [ The last RFC submission got no reply, so I am submitting for real now, hoping
+> > to hear something else than the sound of "crickets" (yeah, it's unsually warm in
+> > Montreal for this time of the year). The only objections that remain are style
+> > issues pointed out by Ingo. These are answered below. ]
+> > 
+> 
+> more chirping.
 
-Rename the existing dev_info variables to something else in preparation
-to converting the dev_info macro to a function.
+:)
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/uwb/i1480/i1480u-wlp/lc.c |   16 ++++++------
- drivers/uwb/wlp/messages.c        |   40 ++++++++++++++++----------------
- drivers/uwb/wlp/sysfs.c           |   46 ++++++++++++++++++------------------
- drivers/uwb/wlp/wlp-lc.c          |   12 +++++-----
- 4 files changed, 57 insertions(+), 57 deletions(-)
+> 
+> ...
+> 
+> > This patch applies on top of -tip based on 2.6.34-rc3.
+> > 
+> > Here is an implementation of a new system call, sys_membarrier(), which
+> > executes a memory barrier on all threads of the current process. It can be used
+> > to distribute the cost of user-space memory barriers asymmetrically by
+> > transforming pairs of memory barriers into pairs consisting of sys_membarrier()
+> > and a compiler barrier. For synchronization primitives that distinguish between
+> > read-side and write-side (e.g. userspace RCU, rwlocks), the read-side can be
+> > accelerated significantly by moving the bulk of the memory barrier overhead to
+> > the write-side.
+> >  
+> > The first user of this system call is the "liburcu" Userspace RCU implementation
+> > found at http://lttng.org/urcu. It aims at greatly simplifying and enhancing the
+> > current implementation, which uses a scheme similar to the sys_membarrier(), but
+> > based on signals sent to each reader thread.
+> 
+> and what uses liburcu?
 
-diff --git a/drivers/uwb/i1480/i1480u-wlp/lc.c b/drivers/uwb/i1480/i1480u-wlp/lc.c
-index f272dfe..bd52675 100644
---- a/drivers/uwb/i1480/i1480u-wlp/lc.c
-+++ b/drivers/uwb/i1480/i1480u-wlp/lc.c
-@@ -92,28 +92,28 @@ void i1480u_init(struct i1480u *i1480u)
-  * information elements have intuitive mappings, other not.
-  */
- static
--void i1480u_fill_device_info(struct wlp *wlp, struct wlp_device_info *dev_info)
-+void i1480u_fill_device_info(struct wlp *wlp, struct wlp_device_info *wdi)
- {
- 	struct i1480u *i1480u = container_of(wlp, struct i1480u, wlp);
- 	struct usb_device *usb_dev = i1480u->usb_dev;
- 	/* Treat device name and model name the same */
- 	if (usb_dev->descriptor.iProduct) {
- 		usb_string(usb_dev, usb_dev->descriptor.iProduct,
--			   dev_info->name, sizeof(dev_info->name));
-+			   wdi->name, sizeof(wdi->name));
- 		usb_string(usb_dev, usb_dev->descriptor.iProduct,
--			   dev_info->model_name, sizeof(dev_info->model_name));
-+			   wdi->model_name, sizeof(wdi->model_name));
- 	}
- 	if (usb_dev->descriptor.iManufacturer)
- 		usb_string(usb_dev, usb_dev->descriptor.iManufacturer,
--			   dev_info->manufacturer,
--			   sizeof(dev_info->manufacturer));
--	scnprintf(dev_info->model_nr, sizeof(dev_info->model_nr), "%04x",
-+			   wdi->manufacturer,
-+			   sizeof(wdi->manufacturer));
-+	scnprintf(wdi->model_nr, sizeof(wdi->model_nr), "%04x",
- 		  __le16_to_cpu(usb_dev->descriptor.bcdDevice));
- 	if (usb_dev->descriptor.iSerialNumber)
- 		usb_string(usb_dev, usb_dev->descriptor.iSerialNumber,
--			   dev_info->serial, sizeof(dev_info->serial));
-+			   wdi->serial, sizeof(wdi->serial));
- 	/* FIXME: where should we obtain category? */
--	dev_info->prim_dev_type.category = cpu_to_le16(WLP_DEV_CAT_OTHER);
-+	wdi->prim_dev_type.category = cpu_to_le16(WLP_DEV_CAT_OTHER);
- 	/* FIXME: Complete OUI and OUIsubdiv attributes */
- }
- 
-diff --git a/drivers/uwb/wlp/messages.c b/drivers/uwb/wlp/messages.c
-index 7516486..4057942 100644
---- a/drivers/uwb/wlp/messages.c
-+++ b/drivers/uwb/wlp/messages.c
-@@ -712,7 +712,7 @@ static int wlp_build_assoc_d1(struct wlp *wlp, struct wlp_wss *wss,
- 	struct sk_buff *_skb;
- 	void *d1_itr;
- 
--	if (wlp->dev_info == NULL) {
-+	if (wlp->wdi == NULL) {
- 		result = __wlp_setup_device_info(wlp);
- 		if (result < 0) {
- 			dev_err(dev, "WLP: Unable to setup device "
-@@ -720,7 +720,7 @@ static int wlp_build_assoc_d1(struct wlp *wlp, struct wlp_wss *wss,
- 			goto error;
- 		}
- 	}
--	info = wlp->dev_info;
-+	info = wlp->wdi;
- 	_skb = dev_alloc_skb(sizeof(*_d1)
- 		      + sizeof(struct wlp_attr_uuid_e)
- 		      + sizeof(struct wlp_attr_wss_sel_mthd)
-@@ -794,7 +794,7 @@ int wlp_build_assoc_d2(struct wlp *wlp, struct wlp_wss *wss,
- 	void *d2_itr;
- 	size_t mem_needed;
- 
--	if (wlp->dev_info == NULL) {
-+	if (wlp->wdi == NULL) {
- 		result = __wlp_setup_device_info(wlp);
- 		if (result < 0) {
- 			dev_err(dev, "WLP: Unable to setup device "
-@@ -802,7 +802,7 @@ int wlp_build_assoc_d2(struct wlp *wlp, struct wlp_wss *wss,
- 			goto error;
- 		}
- 	}
--	info = wlp->dev_info;
-+	info = wlp->wdi;
- 	mem_needed = sizeof(*_d2)
- 		      + sizeof(struct wlp_attr_uuid_e)
- 		      + sizeof(struct wlp_attr_uuid_r)
-@@ -970,7 +970,7 @@ error_parse:
-  */
- static
- int wlp_get_variable_info(struct wlp *wlp, void *data,
--			  struct wlp_device_info *dev_info, ssize_t len)
-+			  struct wlp_device_info *wdi, ssize_t len)
- {
- 	struct device *dev = &wlp->rc->uwb_dev.dev;
- 	size_t used = 0;
-@@ -993,7 +993,7 @@ int wlp_get_variable_info(struct wlp *wlp, void *data,
- 				goto error_parse;
- 			}
- 			result = wlp_get_manufacturer(wlp, data + used,
--						      dev_info->manufacturer,
-+						      wdi->manufacturer,
- 						      len - used);
- 			if (result < 0) {
- 				dev_err(dev, "WLP: Unable to obtain "
-@@ -1011,7 +1011,7 @@ int wlp_get_variable_info(struct wlp *wlp, void *data,
- 				goto error_parse;
- 			}
- 			result = wlp_get_model_name(wlp, data + used,
--						    dev_info->model_name,
-+						    wdi->model_name,
- 						    len - used);
- 			if (result < 0) {
- 				dev_err(dev, "WLP: Unable to obtain Model "
-@@ -1028,7 +1028,7 @@ int wlp_get_variable_info(struct wlp *wlp, void *data,
- 				goto error_parse;
- 			}
- 			result = wlp_get_model_nr(wlp, data + used,
--						  dev_info->model_nr,
-+						  wdi->model_nr,
- 						  len - used);
- 			if (result < 0) {
- 				dev_err(dev, "WLP: Unable to obtain Model "
-@@ -1045,7 +1045,7 @@ int wlp_get_variable_info(struct wlp *wlp, void *data,
- 				goto error_parse;
- 			}
- 			result = wlp_get_serial(wlp, data + used,
--						dev_info->serial, len - used);
-+						wdi->serial, len - used);
- 			if (result < 0) {
- 				dev_err(dev, "WLP: Unable to obtain Serial "
- 					"number attribute from D1 message.\n");
-@@ -1061,7 +1061,7 @@ int wlp_get_variable_info(struct wlp *wlp, void *data,
- 				goto error_parse;
- 			}
- 			result = wlp_get_prim_dev_type(wlp, data + used,
--						       &dev_info->prim_dev_type,
-+						       &wdi->prim_dev_type,
- 						       len - used);
- 			if (result < 0) {
- 				dev_err(dev, "WLP: Unable to obtain Primary "
-@@ -1069,10 +1069,10 @@ int wlp_get_variable_info(struct wlp *wlp, void *data,
- 					"message.\n");
- 				goto error_parse;
- 			}
--			dev_info->prim_dev_type.category =
--				le16_to_cpu(dev_info->prim_dev_type.category);
--			dev_info->prim_dev_type.subID =
--				le16_to_cpu(dev_info->prim_dev_type.subID);
-+			wdi->prim_dev_type.category =
-+				le16_to_cpu(wdi->prim_dev_type.category);
-+			wdi->prim_dev_type.subID =
-+				le16_to_cpu(wdi->prim_dev_type.subID);
- 			last = WLP_ATTR_PRI_DEV_TYPE;
- 			used += result;
- 			break;
-@@ -1098,7 +1098,7 @@ static
- int wlp_parse_d1_frame(struct wlp *wlp, struct sk_buff *skb,
- 		       struct wlp_uuid *uuid_e,
- 		       enum wlp_wss_sel_mthd *sel_mthd,
--		       struct wlp_device_info *dev_info,
-+		       struct wlp_device_info *wdi,
- 		       enum wlp_assc_error *assc_err)
- {
- 	struct device *dev = &wlp->rc->uwb_dev.dev;
-@@ -1123,7 +1123,7 @@ int wlp_parse_d1_frame(struct wlp *wlp, struct sk_buff *skb,
- 		goto error_parse;
- 	}
- 	used += result;
--	result = wlp_get_dev_name(wlp, ptr + used, dev_info->name,
-+	result = wlp_get_dev_name(wlp, ptr + used, wdi->name,
- 				     len - used);
- 	if (result < 0) {
- 		dev_err(dev, "WLP: unable to obtain Device Name from D1 "
-@@ -1131,7 +1131,7 @@ int wlp_parse_d1_frame(struct wlp *wlp, struct sk_buff *skb,
- 		goto error_parse;
- 	}
- 	used += result;
--	result = wlp_get_variable_info(wlp, ptr + used, dev_info, len - used);
-+	result = wlp_get_variable_info(wlp, ptr + used, wdi, len - used);
- 	if (result < 0) {
- 		dev_err(dev, "WLP: unable to obtain Device Information from "
- 			"D1 message.\n");
-@@ -1171,15 +1171,15 @@ void wlp_handle_d1_frame(struct work_struct *ws)
- 	struct device *dev = &wlp->rc->uwb_dev.dev;
- 	struct wlp_uuid uuid_e;
- 	enum wlp_wss_sel_mthd sel_mthd = 0;
--	struct wlp_device_info dev_info;
-+	struct wlp_device_info wdi;
- 	enum wlp_assc_error assc_err;
- 	struct sk_buff *resp = NULL;
- 
- 	/* Parse D1 frame */
- 	mutex_lock(&wss->mutex);
- 	mutex_lock(&wlp->mutex); /* to access wlp->uuid */
--	memset(&dev_info, 0, sizeof(dev_info));
--	result = wlp_parse_d1_frame(wlp, skb, &uuid_e, &sel_mthd, &dev_info,
-+	memset(&wdi, 0, sizeof(wdi));
-+	result = wlp_parse_d1_frame(wlp, skb, &uuid_e, &sel_mthd, &wdi,
- 				    &assc_err);
- 	if (result < 0) {
- 		dev_err(dev, "WLP: Unable to parse incoming D1 frame.\n");
-diff --git a/drivers/uwb/wlp/sysfs.c b/drivers/uwb/wlp/sysfs.c
-index 6627c94..b24751c 100644
---- a/drivers/uwb/wlp/sysfs.c
-+++ b/drivers/uwb/wlp/sysfs.c
-@@ -333,12 +333,12 @@ ssize_t wlp_dev_##type##_show(struct wlp *wlp, char *buf)		\
- {									\
- 	ssize_t result = 0;						\
- 	mutex_lock(&wlp->mutex);					\
--	if (wlp->dev_info == NULL) {					\
-+	if (wlp->wdi == NULL) {						\
- 		result = __wlp_setup_device_info(wlp);			\
- 		if (result < 0)						\
- 			goto out;					\
- 	}								\
--	result = scnprintf(buf, PAGE_SIZE, "%s\n", wlp->dev_info->type);\
-+	result = scnprintf(buf, PAGE_SIZE, "%s\n", wlp->wdi->type);	\
- out:									\
- 	mutex_unlock(&wlp->mutex);					\
- 	return result;							\
-@@ -360,14 +360,14 @@ ssize_t wlp_dev_##type##_store(struct wlp *wlp, const char *buf, size_t size)\
- 	ssize_t result;							\
- 	char format[10];						\
- 	mutex_lock(&wlp->mutex);					\
--	if (wlp->dev_info == NULL) {					\
-+	if (wlp->wdi == NULL) {						\
- 		result = __wlp_alloc_device_info(wlp);			\
- 		if (result < 0)						\
- 			goto out;					\
- 	}								\
--	memset(wlp->dev_info->type, 0, sizeof(wlp->dev_info->type));	\
-+	memset(wlp->wdi->type, 0, sizeof(wlp->wdi->type));		\
- 	sprintf(format, "%%%uc", len);					\
--	result = sscanf(buf, format, wlp->dev_info->type);		\
-+	result = sscanf(buf, format, wlp->wdi->type);			\
- out:									\
- 	mutex_unlock(&wlp->mutex);					\
- 	return result < 0 ? result : size;				\
-@@ -409,13 +409,13 @@ ssize_t wlp_dev_prim_category_show(struct wlp *wlp, char *buf)
- {
- 	ssize_t result = 0;
- 	mutex_lock(&wlp->mutex);
--	if (wlp->dev_info == NULL) {
-+	if (wlp->wdi == NULL) {
- 		result = __wlp_setup_device_info(wlp);
- 		if (result < 0)
- 			goto out;
- 	}
- 	result = scnprintf(buf, PAGE_SIZE, "%s\n",
--		  wlp_dev_category_str(wlp->dev_info->prim_dev_type.category));
-+		  wlp_dev_category_str(wlp->wdi->prim_dev_type.category));
- out:
- 	mutex_unlock(&wlp->mutex);
- 	return result;
-@@ -428,7 +428,7 @@ ssize_t wlp_dev_prim_category_store(struct wlp *wlp, const char *buf,
- 	ssize_t result;
- 	u16 cat;
- 	mutex_lock(&wlp->mutex);
--	if (wlp->dev_info == NULL) {
-+	if (wlp->wdi == NULL) {
- 		result = __wlp_alloc_device_info(wlp);
- 		if (result < 0)
- 			goto out;
-@@ -436,7 +436,7 @@ ssize_t wlp_dev_prim_category_store(struct wlp *wlp, const char *buf,
- 	result = sscanf(buf, "%hu", &cat);
- 	if ((cat >= WLP_DEV_CAT_COMPUTER && cat <= WLP_DEV_CAT_TELEPHONE)
- 	    || cat == WLP_DEV_CAT_OTHER)
--		wlp->dev_info->prim_dev_type.category = cat;
-+		wlp->wdi->prim_dev_type.category = cat;
- 	else
- 		result = -EINVAL;
- out:
-@@ -449,15 +449,15 @@ ssize_t wlp_dev_prim_OUI_show(struct wlp *wlp, char *buf)
- {
- 	ssize_t result = 0;
- 	mutex_lock(&wlp->mutex);
--	if (wlp->dev_info == NULL) {
-+	if (wlp->wdi == NULL) {
- 		result = __wlp_setup_device_info(wlp);
- 		if (result < 0)
- 			goto out;
- 	}
- 	result = scnprintf(buf, PAGE_SIZE, "%02x:%02x:%02x\n",
--			   wlp->dev_info->prim_dev_type.OUI[0],
--			   wlp->dev_info->prim_dev_type.OUI[1],
--			   wlp->dev_info->prim_dev_type.OUI[2]);
-+			   wlp->wdi->prim_dev_type.OUI[0],
-+			   wlp->wdi->prim_dev_type.OUI[1],
-+			   wlp->wdi->prim_dev_type.OUI[2]);
- out:
- 	mutex_unlock(&wlp->mutex);
- 	return result;
-@@ -469,7 +469,7 @@ ssize_t wlp_dev_prim_OUI_store(struct wlp *wlp, const char *buf, size_t size)
- 	ssize_t result;
- 	u8 OUI[3];
- 	mutex_lock(&wlp->mutex);
--	if (wlp->dev_info == NULL) {
-+	if (wlp->wdi == NULL) {
- 		result = __wlp_alloc_device_info(wlp);
- 		if (result < 0)
- 			goto out;
-@@ -480,7 +480,7 @@ ssize_t wlp_dev_prim_OUI_store(struct wlp *wlp, const char *buf, size_t size)
- 		result = -EINVAL;
- 		goto out;
- 	} else
--		memcpy(wlp->dev_info->prim_dev_type.OUI, OUI, sizeof(OUI));
-+		memcpy(wlp->wdi->prim_dev_type.OUI, OUI, sizeof(OUI));
- out:
- 	mutex_unlock(&wlp->mutex);
- 	return result < 0 ? result : size;
-@@ -492,13 +492,13 @@ ssize_t wlp_dev_prim_OUI_sub_show(struct wlp *wlp, char *buf)
- {
- 	ssize_t result = 0;
- 	mutex_lock(&wlp->mutex);
--	if (wlp->dev_info == NULL) {
-+	if (wlp->wdi == NULL) {
- 		result = __wlp_setup_device_info(wlp);
- 		if (result < 0)
- 			goto out;
- 	}
- 	result = scnprintf(buf, PAGE_SIZE, "%u\n",
--			   wlp->dev_info->prim_dev_type.OUIsubdiv);
-+			   wlp->wdi->prim_dev_type.OUIsubdiv);
- out:
- 	mutex_unlock(&wlp->mutex);
- 	return result;
-@@ -512,14 +512,14 @@ ssize_t wlp_dev_prim_OUI_sub_store(struct wlp *wlp, const char *buf,
- 	unsigned sub;
- 	u8 max_sub = ~0;
- 	mutex_lock(&wlp->mutex);
--	if (wlp->dev_info == NULL) {
-+	if (wlp->wdi == NULL) {
- 		result = __wlp_alloc_device_info(wlp);
- 		if (result < 0)
- 			goto out;
- 	}
- 	result = sscanf(buf, "%u", &sub);
- 	if (sub <= max_sub)
--		wlp->dev_info->prim_dev_type.OUIsubdiv = sub;
-+		wlp->wdi->prim_dev_type.OUIsubdiv = sub;
- 	else
- 		result = -EINVAL;
- out:
-@@ -532,13 +532,13 @@ ssize_t wlp_dev_prim_subcat_show(struct wlp *wlp, char *buf)
- {
- 	ssize_t result = 0;
- 	mutex_lock(&wlp->mutex);
--	if (wlp->dev_info == NULL) {
-+	if (wlp->wdi == NULL) {
- 		result = __wlp_setup_device_info(wlp);
- 		if (result < 0)
- 			goto out;
- 	}
- 	result = scnprintf(buf, PAGE_SIZE, "%u\n",
--			   wlp->dev_info->prim_dev_type.subID);
-+			   wlp->wdi->prim_dev_type.subID);
- out:
- 	mutex_unlock(&wlp->mutex);
- 	return result;
-@@ -552,14 +552,14 @@ ssize_t wlp_dev_prim_subcat_store(struct wlp *wlp, const char *buf,
- 	unsigned sub;
- 	__le16 max_sub = ~0;
- 	mutex_lock(&wlp->mutex);
--	if (wlp->dev_info == NULL) {
-+	if (wlp->wdi == NULL) {
- 		result = __wlp_alloc_device_info(wlp);
- 		if (result < 0)
- 			goto out;
- 	}
- 	result = sscanf(buf, "%u", &sub);
- 	if (sub <= max_sub)
--		wlp->dev_info->prim_dev_type.subID = sub;
-+		wlp->wdi->prim_dev_type.subID = sub;
- 	else
- 		result = -EINVAL;
- out:
-diff --git a/drivers/uwb/wlp/wlp-lc.c b/drivers/uwb/wlp/wlp-lc.c
-index 13db739..530613e 100644
---- a/drivers/uwb/wlp/wlp-lc.c
-+++ b/drivers/uwb/wlp/wlp-lc.c
-@@ -39,9 +39,9 @@ void wlp_neighbor_init(struct wlp_neighbor_e *neighbor)
- int __wlp_alloc_device_info(struct wlp *wlp)
- {
- 	struct device *dev = &wlp->rc->uwb_dev.dev;
--	BUG_ON(wlp->dev_info != NULL);
--	wlp->dev_info = kzalloc(sizeof(struct wlp_device_info), GFP_KERNEL);
--	if (wlp->dev_info == NULL) {
-+	BUG_ON(wlp->wdi != NULL);
-+	wlp->wdi = kzalloc(sizeof(struct wlp_device_info), GFP_KERNEL);
-+	if (wlp->wdi == NULL) {
- 		dev_err(dev, "WLP: Unable to allocate memory for "
- 			"device information.\n");
- 		return -ENOMEM;
-@@ -58,7 +58,7 @@ int __wlp_alloc_device_info(struct wlp *wlp)
- static
- void __wlp_fill_device_info(struct wlp *wlp)
- {
--	wlp->fill_device_info(wlp, wlp->dev_info);
-+	wlp->fill_device_info(wlp, wlp->wdi);
- }
- 
- /**
-@@ -538,8 +538,8 @@ void wlp_remove(struct wlp *wlp)
- 	uwb_notifs_deregister(wlp->rc, &wlp->uwb_notifs_handler);
- 	wlp_eda_release(&wlp->eda);
- 	mutex_lock(&wlp->mutex);
--	if (wlp->dev_info != NULL)
--		kfree(wlp->dev_info);
-+	if (wlp->wdi != NULL)
-+		kfree(wlp->wdi);
- 	mutex_unlock(&wlp->mutex);
- 	wlp->rc = NULL;
- }
+(adding to the next version changelog)
+
+Liburcu is currently packaged in Debian, Ubuntu, Gentoo, and it is also being
+packaged for Fedora. It is already being used by a few programs/libraries, and
+given it's wide availability, we can expect more in a near future.
+
+The first user of this library is the UST (Userspace Tracing) library; a port of
+LTTng to a userspace.
+
+  http://lttng.org/ust
+
+Modulo a few changes to port it to userspace, the kernel and user-space LTTng
+should be expected to have similar performance, because they use essentially the
+same lockless buffering scheme, described in chapter 5 of my thesis:
+
+http://www.lttng.org/pub/thesis/desnoyers-dissertation-2009-12.pdf
+
+Here is the impact of two additional memory barriers on the LTTng tracer fast
+path:
+
+Intel Core Xeon 2.0 GHz
+LTTng probe writing 16-byte worth of data to the trace (+4 byte event header)
+(execution of 200000 loops, therefore trace buffers are cache-hot)
+
+119 ns per event
+
+adding 2 memory barriers, one before and one after the tracepoint:
+
+155 ns per event
+
+So we have a 25% slowdown on the tracer fast path, which is quite significant
+when it comes to trace heavy workloads. The slowdown ratio may change slightly
+for non cache-hot scenarios, but I expect it to stay in the same range. Section
+8.4 of my thesis discusses the overhead of cache-cold buffers (around 333 ns per
+event rather than 119 ns). I expect the cost of the memory barriers to increase
+too in a cache-cold scenario.
+
+> 
+> > This patch mostly sits in kernel/sched.c (it needs to access struct rq). It is
+> > based on kernel v2.6.34-rc3, and also applies fine to tip/master . I am
+> > proposing it for merge for 2.6.35. I think the -tip tree would be the right one
+> > to pick up this patch, as it touches sched.c.
+> > 
+> ...
+> 
+> > 
+> > This patch only adds the system calls to x86 32/64. See the sys_membarrier()
+> > comments for memory barriers requirement in switch_mm() to port to other
+> > architectures.
+> > 
+> > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> > Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > CC: Nicholas Miell <nmiell@comcast.net>
+> > CC: Linus Torvalds <torvalds@linux-foundation.org>
+> > CC: mingo@elte.hu
+> > CC: laijs@cn.fujitsu.com
+> > CC: dipankar@in.ibm.com
+> > CC: akpm@linux-foundation.org
+> > CC: josh@joshtriplett.org
+> > CC: dvhltc@us.ibm.com
+> > CC: niv@us.ibm.com
+> > CC: tglx@linutronix.de
+> > CC: peterz@infradead.org
+> > CC: Valdis.Kletnieks@vt.edu
+> > CC: dhowells@redhat.com
+> > CC: Nick Piggin <npiggin@suse.de>
+> > CC: Chris Friesen <cfriesen@nortel.com>
+> > ---
+> >  arch/x86/ia32/ia32entry.S          |    1 
+> >  arch/x86/include/asm/mmu_context.h |   28 ++++-
+> >  arch/x86/include/asm/unistd_32.h   |    3 
+> >  arch/x86/include/asm/unistd_64.h   |    2 
+> >  arch/x86/kernel/syscall_table_32.S |    1 
+> >  include/linux/Kbuild               |    1 
+> >  include/linux/membarrier.h         |   47 ++++++++
+> >  kernel/sched.c                     |  194 +++++++++++++++++++++++++++++++++++++
+> >  8 files changed, 274 insertions(+), 3 deletions(-)
+> > 
+> > Index: linux.trees.git/arch/x86/include/asm/unistd_64.h
+> > ===================================================================
+> > --- linux.trees.git.orig/arch/x86/include/asm/unistd_64.h	2010-03-30 09:48:03.000000000 -0400
+> > +++ linux.trees.git/arch/x86/include/asm/unistd_64.h	2010-04-05 13:46:16.000000000 -0400
+> > @@ -663,6 +663,8 @@ __SYSCALL(__NR_rt_tgsigqueueinfo, sys_rt
+> >  __SYSCALL(__NR_perf_event_open, sys_perf_event_open)
+> >  #define __NR_recvmmsg				299
+> >  __SYSCALL(__NR_recvmmsg, sys_recvmmsg)
+> > +#define __NR_membarrier				300
+> > +__SYSCALL(__NR_membarrier, sys_membarrier)
+> >  
+> >  #ifndef __NO_STUBS
+> >  #define __ARCH_WANT_OLD_READDIR
+> > Index: linux.trees.git/kernel/sched.c
+> > ===================================================================
+> > --- linux.trees.git.orig/kernel/sched.c	2010-04-05 13:45:52.000000000 -0400
+> > +++ linux.trees.git/kernel/sched.c	2010-04-05 13:53:49.000000000 -0400
+> > @@ -71,6 +71,7 @@
+> >  #include <linux/debugfs.h>
+> >  #include <linux/ctype.h>
+> >  #include <linux/ftrace.h>
+> > +#include <linux/membarrier.h>
+> >  
+> >  #include <asm/tlb.h>
+> >  #include <asm/irq_regs.h>
+> > @@ -8951,6 +8952,199 @@ struct cgroup_subsys cpuacct_subsys = {
+> >  };
+> >  #endif	/* CONFIG_CGROUP_CPUACCT */
+> >  
+> > +#ifdef CONFIG_SMP
+> > +
+> > +/*
+> > + * Execute a memory barrier on all active threads from the current process
+> > + * on SMP systems. Do not rely on implicit barriers in IPI handler execution,
+> > + * because batched IPI lists are synchronized with spinlocks rather than full
+> > + * memory barriers. This is not the bulk of the overhead anyway, so let's stay
+> > + * on the safe side.
+> > + */
+> > +static void membarrier_ipi(void *unused)
+> > +{
+> > +	smp_mb();
+> > +}
+> > +
+> > +/*
+> > + * Handle out-of-mem by sending per-cpu IPIs instead.
+> > + */
+> > +static void membarrier_retry(void)
+> > +{
+> > +	struct mm_struct *mm;
+> > +	int cpu;
+> > +
+> > +	for_each_cpu(cpu, mm_cpumask(current->mm)) {
+> > +		raw_spin_lock_irq(&cpu_rq(cpu)->lock);
+> > +		mm = cpu_curr(cpu)->mm;
+> > +		raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
+> > +		if (current->mm == mm)
+> > +			smp_call_function_single(cpu, membarrier_ipi, NULL, 1);
+> > +	}
+> > +}
+> > +
+> > +/*
+> > + * sys_membarrier - issue memory barrier on current process running threads
+> > + * @flags: One of these must be set:
+> > + *         MEMBARRIER_EXPEDITED
+> > + *             Adds some overhead, fast execution (few microseconds)
+> > + *         MEMBARRIER_DELAYED
+> > + *             Low overhead, but slow execution (few milliseconds)
+> > + *
+> > + *         MEMBARRIER_QUERY
+> > + *           This optional flag can be set to query if the kernel supports
+> > + *           a set of flags.
+> > + *
+> > + * return values: Returns -EINVAL if the flags are incorrect. Testing for kernel
+> > + * sys_membarrier support can be done by checking for -ENOSYS return value.
+> > + * Return values >= 0 indicate success. For a given set of flags on a given
+> > + * kernel, this system call will always return the same value. It is therefore
+> > + * correct to check the return value only once at library load, passing the
+> 
+> library load assumes caller is a library?  does the kernel care about that?
+
+Nope, it doesn't. Will rephrase:
+
+    ... It is therefore
+ * correct to check the return value only once during a process lifetime,
+ * passing the MEMBARRIER_QUERY flag in addition to only check if the flags are
+ * supported, without performing any synchronization.
+
+
+> 
+> 
+> > + * MEMBARRIER_QUERY flag in addition to only check if the flags are supported,
+> > + * without performing any synchronization.
+> > + *
+> > + * This system call executes a memory barrier on all running threads of the
+> > + * current process. Upon completion, the caller thread is ensured that all
+> > + * process threads have passed through a state where all memory accesses to
+> > + * user-space addresses match program order. (non-running threads are de facto
+> > + * in such a state)
+> 
+>                 state.)
+> 
+
+ok
+
+> > + *
+> > + * Using the non-expedited mode is recommended for applications which can
+> > + * afford leaving the caller thread waiting for a few milliseconds. A good
+> > + * example would be a thread dedicated to execute RCU callbacks, which waits
+> > + * for callbacks to enqueue most of the time anyway.
+> > + *
+> > + * The expedited mode is recommended whenever the application needs to have
+> > + * control returning to the caller thread as quickly as possible. An example
+> > + * of such application would be one which uses the same thread to perform
+> > + * data structure updates and issue the RCU synchronization.
+> > + *
+> > + * It is perfectly safe to call both expedited and non-expedited
+> > + * sys_membarrier() in a process.
+> > + *
+> > + * mm_cpumask is used as an approximation of the processors which run threads
+> > + * belonging to the current process. It is a superset of the cpumask to which we
+> > + * must send IPIs, mainly due to lazy TLB shootdown. Therefore, for each CPU in
+> > + * the mm_cpumask, we check each runqueue with the rq lock held to make sure our
+> > + * ->mm is indeed running on them. The rq lock ensures that a memory barrier is
+> > + * issued each time the rq current task is changed. This reduces the risk of
+> > + * disturbing a RT task by sending unnecessary IPIs. There is still a slight
+> > + * chance to disturb an unrelated task, because we do not lock the runqueues
+> > + * while sending IPIs, but the real-time effect of this heavy locking would be
+> > + * worse than the comparatively small disruption of an IPI.
+> > + *
+> > + * RED PEN: before assinging a system call number for sys_membarrier() to an
+> 
+>                       assigning
+
+ok
+
+> 
+> > + * architecture, we must ensure that switch_mm issues full memory barriers
+> > + * (or a synchronizing instruction having the same effect) between:
+> > + * - memory accesses to user-space addresses and clear mm_cpumask.
+> > + * - set mm_cpumask and memory accesses to user-space addresses.
+> > + *
+> > + * The reason why these memory barriers are required is that mm_cpumask updates,
+> > + * as well as iteration on the mm_cpumask, offer no ordering guarantees.
+> > + * These added memory barriers ensure that any thread modifying the mm_cpumask
+> > + * is in a state where all memory accesses to user-space addresses are
+> > + * guaranteed to be in program order.
+> > + *
+> > + * In some case adding a comment to this effect will suffice, in others we
+> > + * will need to add smp_mb__before_clear_bit()/smp_mb__after_clear_bit() or
+> > + * simply smp_mb(). These barriers are required to ensure we do not _miss_ a
+> > + * CPU that need to receive an IPI, which would be a bug.
+> > + *
+> > + * On uniprocessor systems, this system call simply returns 0 without doing
+> > + * anything, so user-space knows it is implemented.
+> > + *
+> > + * The flags argument has room for extensibility, with 16 lower bits holding
+> > + * mandatory flags for which older kernels will fail if they encounter an
+> > + * unknown flag. The high 16 bits are used for optional flags, which older
+> > + * kernels don't have to care about.
+> > + *
+> > + * This synchronization only takes care of threads using the current process
+> > + * memory map. It should not be used to synchronize accesses performed on memory
+> > + * maps shared between different processes.
+> > + */
+> > +SYSCALL_DEFINE1(membarrier, unsigned int, flags)
+> > +{
+> > +	struct mm_struct *mm;
+> > +	cpumask_var_t tmpmask;
+> > +	int cpu;
+> > +
+> > +	/*
+> > +	 * Expect _only_ one of expedited or delayed flags.
+> > +	 * Don't care about optional mask for now.
+> > +	 */
+> > +	switch (flags & MEMBARRIER_MANDATORY_MASK) {
+> > +	case MEMBARRIER_EXPEDITED:
+> > +	case MEMBARRIER_DELAYED:
+> > +		break;
+> > +	default:
+> > +		return -EINVAL;
+> > +	}
+> > +	if (unlikely(flags & MEMBARRIER_QUERY
+> > +		     || thread_group_empty(current))
+> > +		     || num_online_cpus() == 1)
+> > +		return 0;
+> > +	if (flags & MEMBARRIER_DELAYED) {
+> > +		synchronize_sched();
+> > +		return 0;
+> > +	}
+> > +	/*
+> > +	 * Memory barrier on the caller thread between previous memory accesses
+> > +	 * to user-space addresses and sending memory-barrier IPIs. Orders all
+> > +	 * user-space address memory accesses prior to sys_membarrier() before
+> > +	 * mm_cpumask read and membarrier_ipi executions. This barrier is paired
+> > +	 * with memory barriers in:
+> > +	 * - membarrier_ipi() (for each running threads of the current process)
+> > +	 * - switch_mm() (ordering scheduler mm_cpumask update wrt memory
+> > +	 *                accesses to user-space addresses)
+> > +	 * - Each CPU ->mm update performed with rq lock held by the scheduler.
+> > +	 *   A memory barrier is issued each time ->mm is changed while the rq
+> > +	 *   lock is held.
+> > +	 */
+> > +	smp_mb();
+> > +	if (!alloc_cpumask_var(&tmpmask, GFP_NOWAIT)) {
+> > +		membarrier_retry();
+> > +		goto out;
+> > +	}
+> > +	cpumask_copy(tmpmask, mm_cpumask(current->mm));
+> > +	preempt_disable();
+> > +	cpumask_clear_cpu(smp_processor_id(), tmpmask);
+> > +	for_each_cpu(cpu, tmpmask) {
+> > +		raw_spin_lock_irq(&cpu_rq(cpu)->lock);
+> > +		mm = cpu_curr(cpu)->mm;
+> > +		raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
+> > +		if (current->mm != mm)
+> > +			cpumask_clear_cpu(cpu, tmpmask);
+> > +	}
+> > +	smp_call_function_many(tmpmask, membarrier_ipi, NULL, 1);
+> > +	preempt_enable();
+> > +	free_cpumask_var(tmpmask);
+> > +out:
+> > +	/*
+> > +	 * Memory barrier on the caller thread between sending&waiting for
+> 
+>                                                        sending & waiting
+> 
+
+ok
+
+> > +	 * memory-barrier IPIs and following memory accesses to user-space
+> > +	 * addresses. Orders mm_cpumask read and membarrier_ipi executions
+> > +	 * before all user-space address memory accesses following
+> > +	 * sys_membarrier(). This barrier is paired with memory barriers in:
+> > +	 * - membarrier_ipi() (for each running threads of the current process)
+> > +	 * - switch_mm() (ordering scheduler mm_cpumask update wrt memory
+> > +	 *                accesses to user-space addresses)
+> > +	 * - Each CPU ->mm update performed with rq lock held by the scheduler.
+> > +	 *   A memory barrier is issued each time ->mm is changed while the rq
+> > +	 *   lock is held.
+> > +	 */
+> > +	smp_mb();
+> > +	return 0;
+> > +}
+> > +
+> > +#else /* #ifdef CONFIG_SMP */
+> 
+> I don't know that we have a known convention for that, but I would use:
+> 
+> #else /* not CONFIG_SMP */
+> 
+> or
+> 
+> #else /* !CONFIG_SMP */
+> 
+> > +
+> > +SYSCALL_DEFINE1(membarrier, unsigned int, flags)
+> > +{
+> > +	return 0;
+> > +}
+> > +
+> > +#endif /* #else #ifdef CONFIG_SMP */
+> 
+> and:
+> 
+> #endif /* CONFIG_SMP */
+> 
+> The "#else #ifdef" is both ugly and too wordy IMO.
+
+OK. I merely followed the coding style of the code added to sched.c by Paul
+McKenney. But you are right, the rest of sched.c does as you say:
+
+#else /* !CONFIG_SMP */
+
+#endif /* CONFIG_SMP */
+
+Will fix.
+
+Thanks !
+
+Mathieu
+
+> 
+> > +
+> >  #ifndef CONFIG_SMP
+> >  
+> >  int rcu_expedited_torture_stats(char *page)
+> 
+> 
+> ---
+> ~Randy
+> 
+
 -- 
-1.7.0.3.311.g6a6955
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
