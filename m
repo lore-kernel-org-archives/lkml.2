@@ -1,451 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab0DETLL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 15:11:11 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:59889 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755872Ab0DETLE (ORCPT
+	id S1756228Ab0DETOa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 15:14:30 -0400
+Received: from mail-fx0-f227.google.com ([209.85.220.227]:44382 "EHLO
+	mail-fx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755872Ab0DETOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 15:11:04 -0400
-Date: Mon, 5 Apr 2010 15:10:57 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: mingo@elte.hu, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Nicholas Miell <nmiell@comcast.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
-       peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       Nick Piggin <npiggin@suse.de>, Chris Friesen <cfriesen@nortel.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] introduce sys_membarrier(): process-wide memory
-	barrier (v10)
-Message-ID: <20100405191057.GB13309@Krystal>
-References: <20100405175736.GA12656@Krystal> <20100405113837.e475db7b.randy.dunlap@oracle.com>
+	Mon, 5 Apr 2010 15:14:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=O8v8COxLa1ghJ4MAeFp2bk1BOeGwZS5NSTRPLm7SmG8cpTIVN+WZCJ7mytRUL+P7vj
+         7sNZq1uCUosqs22ca4qYR9OwBuYw+mDBNzOrD7IxY2T4imGMVoCUbTBBTzlGp9Q6/09S
+         PezIZ/98zu8ymbyEj6jEw4kd/M1rHdPldf91c=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100405113837.e475db7b.randy.dunlap@oracle.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 14:53:35 up 72 days, 21:30,  7 users,  load average: 0.00, 0.01,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Mon, 5 Apr 2010 21:14:21 +0200
+Message-ID: <y2z4bc8bc021004051214qf2adadf6u54862990349a7433@mail.gmail.com>
+Subject: [PATCH] compal-laptop.c: added JHL90, battery & hwmon interface
+From: Roald Frederickx <roald.frederickx@gmail.com>
+To: mingo@redhat.com, superm1@ubuntu.com, mario_limonciello@dell.com,
+       linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=00163649a1a5ee57330483822292
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Randy Dunlap (randy.dunlap@oracle.com) wrote:
-> On Mon, 5 Apr 2010 13:57:37 -0400 Mathieu Desnoyers wrote:
-> 
-> > [ The last RFC submission got no reply, so I am submitting for real now, hoping
-> > to hear something else than the sound of "crickets" (yeah, it's unsually warm in
-> > Montreal for this time of the year). The only objections that remain are style
-> > issues pointed out by Ingo. These are answered below. ]
-> > 
-> 
-> more chirping.
+--00163649a1a5ee57330483822292
+Content-Type: text/plain; charset=ISO-8859-1
 
-:)
+Dear kernel developers,
 
-> 
-> ...
-> 
-> > This patch applies on top of -tip based on 2.6.34-rc3.
-> > 
-> > Here is an implementation of a new system call, sys_membarrier(), which
-> > executes a memory barrier on all threads of the current process. It can be used
-> > to distribute the cost of user-space memory barriers asymmetrically by
-> > transforming pairs of memory barriers into pairs consisting of sys_membarrier()
-> > and a compiler barrier. For synchronization primitives that distinguish between
-> > read-side and write-side (e.g. userspace RCU, rwlocks), the read-side can be
-> > accelerated significantly by moving the bulk of the memory barrier overhead to
-> > the write-side.
-> >  
-> > The first user of this system call is the "liburcu" Userspace RCU implementation
-> > found at http://lttng.org/urcu. It aims at greatly simplifying and enhancing the
-> > current implementation, which uses a scheme similar to the sys_membarrier(), but
-> > based on signals sent to each reader thread.
-> 
-> and what uses liburcu?
-
-(adding to the next version changelog)
-
-Liburcu is currently packaged in Debian, Ubuntu, Gentoo, and it is also being
-packaged for Fedora. It is already being used by a few programs/libraries, and
-given it's wide availability, we can expect more in a near future.
-
-The first user of this library is the UST (Userspace Tracing) library; a port of
-LTTng to a userspace.
-
-  http://lttng.org/ust
-
-Modulo a few changes to port it to userspace, the kernel and user-space LTTng
-should be expected to have similar performance, because they use essentially the
-same lockless buffering scheme, described in chapter 5 of my thesis:
-
-http://www.lttng.org/pub/thesis/desnoyers-dissertation-2009-12.pdf
-
-Here is the impact of two additional memory barriers on the LTTng tracer fast
-path:
-
-Intel Core Xeon 2.0 GHz
-LTTng probe writing 16-byte worth of data to the trace (+4 byte event header)
-(execution of 200000 loops, therefore trace buffers are cache-hot)
-
-119 ns per event
-
-adding 2 memory barriers, one before and one after the tracepoint:
-
-155 ns per event
-
-So we have a 25% slowdown on the tracer fast path, which is quite significant
-when it comes to trace heavy workloads. The slowdown ratio may change slightly
-for non cache-hot scenarios, but I expect it to stay in the same range. Section
-8.4 of my thesis discusses the overhead of cache-cold buffers (around 333 ns per
-event rather than 119 ns). I expect the cost of the memory barriers to increase
-too in a cache-cold scenario.
-
-> 
-> > This patch mostly sits in kernel/sched.c (it needs to access struct rq). It is
-> > based on kernel v2.6.34-rc3, and also applies fine to tip/master . I am
-> > proposing it for merge for 2.6.35. I think the -tip tree would be the right one
-> > to pick up this patch, as it touches sched.c.
-> > 
-> ...
-> 
-> > 
-> > This patch only adds the system calls to x86 32/64. See the sys_membarrier()
-> > comments for memory barriers requirement in switch_mm() to port to other
-> > architectures.
-> > 
-> > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > Acked-by: Steven Rostedt <rostedt@goodmis.org>
-> > Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > CC: Nicholas Miell <nmiell@comcast.net>
-> > CC: Linus Torvalds <torvalds@linux-foundation.org>
-> > CC: mingo@elte.hu
-> > CC: laijs@cn.fujitsu.com
-> > CC: dipankar@in.ibm.com
-> > CC: akpm@linux-foundation.org
-> > CC: josh@joshtriplett.org
-> > CC: dvhltc@us.ibm.com
-> > CC: niv@us.ibm.com
-> > CC: tglx@linutronix.de
-> > CC: peterz@infradead.org
-> > CC: Valdis.Kletnieks@vt.edu
-> > CC: dhowells@redhat.com
-> > CC: Nick Piggin <npiggin@suse.de>
-> > CC: Chris Friesen <cfriesen@nortel.com>
-> > ---
-> >  arch/x86/ia32/ia32entry.S          |    1 
-> >  arch/x86/include/asm/mmu_context.h |   28 ++++-
-> >  arch/x86/include/asm/unistd_32.h   |    3 
-> >  arch/x86/include/asm/unistd_64.h   |    2 
-> >  arch/x86/kernel/syscall_table_32.S |    1 
-> >  include/linux/Kbuild               |    1 
-> >  include/linux/membarrier.h         |   47 ++++++++
-> >  kernel/sched.c                     |  194 +++++++++++++++++++++++++++++++++++++
-> >  8 files changed, 274 insertions(+), 3 deletions(-)
-> > 
-> > Index: linux.trees.git/arch/x86/include/asm/unistd_64.h
-> > ===================================================================
-> > --- linux.trees.git.orig/arch/x86/include/asm/unistd_64.h	2010-03-30 09:48:03.000000000 -0400
-> > +++ linux.trees.git/arch/x86/include/asm/unistd_64.h	2010-04-05 13:46:16.000000000 -0400
-> > @@ -663,6 +663,8 @@ __SYSCALL(__NR_rt_tgsigqueueinfo, sys_rt
-> >  __SYSCALL(__NR_perf_event_open, sys_perf_event_open)
-> >  #define __NR_recvmmsg				299
-> >  __SYSCALL(__NR_recvmmsg, sys_recvmmsg)
-> > +#define __NR_membarrier				300
-> > +__SYSCALL(__NR_membarrier, sys_membarrier)
-> >  
-> >  #ifndef __NO_STUBS
-> >  #define __ARCH_WANT_OLD_READDIR
-> > Index: linux.trees.git/kernel/sched.c
-> > ===================================================================
-> > --- linux.trees.git.orig/kernel/sched.c	2010-04-05 13:45:52.000000000 -0400
-> > +++ linux.trees.git/kernel/sched.c	2010-04-05 13:53:49.000000000 -0400
-> > @@ -71,6 +71,7 @@
-> >  #include <linux/debugfs.h>
-> >  #include <linux/ctype.h>
-> >  #include <linux/ftrace.h>
-> > +#include <linux/membarrier.h>
-> >  
-> >  #include <asm/tlb.h>
-> >  #include <asm/irq_regs.h>
-> > @@ -8951,6 +8952,199 @@ struct cgroup_subsys cpuacct_subsys = {
-> >  };
-> >  #endif	/* CONFIG_CGROUP_CPUACCT */
-> >  
-> > +#ifdef CONFIG_SMP
-> > +
-> > +/*
-> > + * Execute a memory barrier on all active threads from the current process
-> > + * on SMP systems. Do not rely on implicit barriers in IPI handler execution,
-> > + * because batched IPI lists are synchronized with spinlocks rather than full
-> > + * memory barriers. This is not the bulk of the overhead anyway, so let's stay
-> > + * on the safe side.
-> > + */
-> > +static void membarrier_ipi(void *unused)
-> > +{
-> > +	smp_mb();
-> > +}
-> > +
-> > +/*
-> > + * Handle out-of-mem by sending per-cpu IPIs instead.
-> > + */
-> > +static void membarrier_retry(void)
-> > +{
-> > +	struct mm_struct *mm;
-> > +	int cpu;
-> > +
-> > +	for_each_cpu(cpu, mm_cpumask(current->mm)) {
-> > +		raw_spin_lock_irq(&cpu_rq(cpu)->lock);
-> > +		mm = cpu_curr(cpu)->mm;
-> > +		raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
-> > +		if (current->mm == mm)
-> > +			smp_call_function_single(cpu, membarrier_ipi, NULL, 1);
-> > +	}
-> > +}
-> > +
-> > +/*
-> > + * sys_membarrier - issue memory barrier on current process running threads
-> > + * @flags: One of these must be set:
-> > + *         MEMBARRIER_EXPEDITED
-> > + *             Adds some overhead, fast execution (few microseconds)
-> > + *         MEMBARRIER_DELAYED
-> > + *             Low overhead, but slow execution (few milliseconds)
-> > + *
-> > + *         MEMBARRIER_QUERY
-> > + *           This optional flag can be set to query if the kernel supports
-> > + *           a set of flags.
-> > + *
-> > + * return values: Returns -EINVAL if the flags are incorrect. Testing for kernel
-> > + * sys_membarrier support can be done by checking for -ENOSYS return value.
-> > + * Return values >= 0 indicate success. For a given set of flags on a given
-> > + * kernel, this system call will always return the same value. It is therefore
-> > + * correct to check the return value only once at library load, passing the
-> 
-> library load assumes caller is a library?  does the kernel care about that?
-
-Nope, it doesn't. Will rephrase:
-
-    ... It is therefore
- * correct to check the return value only once during a process lifetime,
- * passing the MEMBARRIER_QUERY flag in addition to only check if the flags are
- * supported, without performing any synchronization.
+On February the fourth I have contacted Cezary Jackiewicz regarding a
+(large) addition to the compal-laptop driver (he is listed in the
+maintainers file as the person to contact). However I still haven't
+received any reply to date. I have recently checked the github commits
+on this driver and I saw some activity during February and March. I
+have patched my original addition to the driver to reflect the changes
+that were made to the driver in the meantime. This mail is sent to all
+the people that were involved in those github commits (excluding
+Linus) and to the kernel mailing list.
 
 
-> 
-> 
-> > + * MEMBARRIER_QUERY flag in addition to only check if the flags are supported,
-> > + * without performing any synchronization.
-> > + *
-> > + * This system call executes a memory barrier on all running threads of the
-> > + * current process. Upon completion, the caller thread is ensured that all
-> > + * process threads have passed through a state where all memory accesses to
-> > + * user-space addresses match program order. (non-running threads are de facto
-> > + * in such a state)
-> 
->                 state.)
-> 
+About the additions:
 
-ok
+The driver now supports the Compal JHL90 (which I use) and it has some
+added features. The biggest novelties are a battery interface
+(power_supply) and a temperature and fan control interface (hmwon).
 
-> > + *
-> > + * Using the non-expedited mode is recommended for applications which can
-> > + * afford leaving the caller thread waiting for a few milliseconds. A good
-> > + * example would be a thread dedicated to execute RCU callbacks, which waits
-> > + * for callbacks to enqueue most of the time anyway.
-> > + *
-> > + * The expedited mode is recommended whenever the application needs to have
-> > + * control returning to the caller thread as quickly as possible. An example
-> > + * of such application would be one which uses the same thread to perform
-> > + * data structure updates and issue the RCU synchronization.
-> > + *
-> > + * It is perfectly safe to call both expedited and non-expedited
-> > + * sys_membarrier() in a process.
-> > + *
-> > + * mm_cpumask is used as an approximation of the processors which run threads
-> > + * belonging to the current process. It is a superset of the cpumask to which we
-> > + * must send IPIs, mainly due to lazy TLB shootdown. Therefore, for each CPU in
-> > + * the mm_cpumask, we check each runqueue with the rq lock held to make sure our
-> > + * ->mm is indeed running on them. The rq lock ensures that a memory barrier is
-> > + * issued each time the rq current task is changed. This reduces the risk of
-> > + * disturbing a RT task by sending unnecessary IPIs. There is still a slight
-> > + * chance to disturb an unrelated task, because we do not lock the runqueues
-> > + * while sending IPIs, but the real-time effect of this heavy locking would be
-> > + * worse than the comparatively small disruption of an IPI.
-> > + *
-> > + * RED PEN: before assinging a system call number for sys_membarrier() to an
-> 
->                       assigning
+Much of the original code of the old features is still there, but I've
+changed some names to keep the naming more coherent with the added
+functionalities.
 
-ok
+This is my first kernel patch, so I'm new to this. I've added my name
+and email address as an author (I'm willing to respond to questions,
+and/or to test future versions on a JHL90 platform). I also bumped up
+the version number to 0.2.7 as this is quite a big change.
 
-> 
-> > + * architecture, we must ensure that switch_mm issues full memory barriers
-> > + * (or a synchronizing instruction having the same effect) between:
-> > + * - memory accesses to user-space addresses and clear mm_cpumask.
-> > + * - set mm_cpumask and memory accesses to user-space addresses.
-> > + *
-> > + * The reason why these memory barriers are required is that mm_cpumask updates,
-> > + * as well as iteration on the mm_cpumask, offer no ordering guarantees.
-> > + * These added memory barriers ensure that any thread modifying the mm_cpumask
-> > + * is in a state where all memory accesses to user-space addresses are
-> > + * guaranteed to be in program order.
-> > + *
-> > + * In some case adding a comment to this effect will suffice, in others we
-> > + * will need to add smp_mb__before_clear_bit()/smp_mb__after_clear_bit() or
-> > + * simply smp_mb(). These barriers are required to ensure we do not _miss_ a
-> > + * CPU that need to receive an IPI, which would be a bug.
-> > + *
-> > + * On uniprocessor systems, this system call simply returns 0 without doing
-> > + * anything, so user-space knows it is implemented.
-> > + *
-> > + * The flags argument has room for extensibility, with 16 lower bits holding
-> > + * mandatory flags for which older kernels will fail if they encounter an
-> > + * unknown flag. The high 16 bits are used for optional flags, which older
-> > + * kernels don't have to care about.
-> > + *
-> > + * This synchronization only takes care of threads using the current process
-> > + * memory map. It should not be used to synchronize accesses performed on memory
-> > + * maps shared between different processes.
-> > + */
-> > +SYSCALL_DEFINE1(membarrier, unsigned int, flags)
-> > +{
-> > +	struct mm_struct *mm;
-> > +	cpumask_var_t tmpmask;
-> > +	int cpu;
-> > +
-> > +	/*
-> > +	 * Expect _only_ one of expedited or delayed flags.
-> > +	 * Don't care about optional mask for now.
-> > +	 */
-> > +	switch (flags & MEMBARRIER_MANDATORY_MASK) {
-> > +	case MEMBARRIER_EXPEDITED:
-> > +	case MEMBARRIER_DELAYED:
-> > +		break;
-> > +	default:
-> > +		return -EINVAL;
-> > +	}
-> > +	if (unlikely(flags & MEMBARRIER_QUERY
-> > +		     || thread_group_empty(current))
-> > +		     || num_online_cpus() == 1)
-> > +		return 0;
-> > +	if (flags & MEMBARRIER_DELAYED) {
-> > +		synchronize_sched();
-> > +		return 0;
-> > +	}
-> > +	/*
-> > +	 * Memory barrier on the caller thread between previous memory accesses
-> > +	 * to user-space addresses and sending memory-barrier IPIs. Orders all
-> > +	 * user-space address memory accesses prior to sys_membarrier() before
-> > +	 * mm_cpumask read and membarrier_ipi executions. This barrier is paired
-> > +	 * with memory barriers in:
-> > +	 * - membarrier_ipi() (for each running threads of the current process)
-> > +	 * - switch_mm() (ordering scheduler mm_cpumask update wrt memory
-> > +	 *                accesses to user-space addresses)
-> > +	 * - Each CPU ->mm update performed with rq lock held by the scheduler.
-> > +	 *   A memory barrier is issued each time ->mm is changed while the rq
-> > +	 *   lock is held.
-> > +	 */
-> > +	smp_mb();
-> > +	if (!alloc_cpumask_var(&tmpmask, GFP_NOWAIT)) {
-> > +		membarrier_retry();
-> > +		goto out;
-> > +	}
-> > +	cpumask_copy(tmpmask, mm_cpumask(current->mm));
-> > +	preempt_disable();
-> > +	cpumask_clear_cpu(smp_processor_id(), tmpmask);
-> > +	for_each_cpu(cpu, tmpmask) {
-> > +		raw_spin_lock_irq(&cpu_rq(cpu)->lock);
-> > +		mm = cpu_curr(cpu)->mm;
-> > +		raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
-> > +		if (current->mm != mm)
-> > +			cpumask_clear_cpu(cpu, tmpmask);
-> > +	}
-> > +	smp_call_function_many(tmpmask, membarrier_ipi, NULL, 1);
-> > +	preempt_enable();
-> > +	free_cpumask_var(tmpmask);
-> > +out:
-> > +	/*
-> > +	 * Memory barrier on the caller thread between sending&waiting for
-> 
->                                                        sending & waiting
-> 
 
-ok
+Some technical stuff about the new driver:
 
-> > +	 * memory-barrier IPIs and following memory accesses to user-space
-> > +	 * addresses. Orders mm_cpumask read and membarrier_ipi executions
-> > +	 * before all user-space address memory accesses following
-> > +	 * sys_membarrier(). This barrier is paired with memory barriers in:
-> > +	 * - membarrier_ipi() (for each running threads of the current process)
-> > +	 * - switch_mm() (ordering scheduler mm_cpumask update wrt memory
-> > +	 *                accesses to user-space addresses)
-> > +	 * - Each CPU ->mm update performed with rq lock held by the scheduler.
-> > +	 *   A memory barrier is issued each time ->mm is changed while the rq
-> > +	 *   lock is held.
-> > +	 */
-> > +	smp_mb();
-> > +	return 0;
-> > +}
-> > +
-> > +#else /* #ifdef CONFIG_SMP */
-> 
-> I don't know that we have a known convention for that, but I would use:
-> 
-> #else /* not CONFIG_SMP */
-> 
-> or
-> 
-> #else /* !CONFIG_SMP */
-> 
-> > +
-> > +SYSCALL_DEFINE1(membarrier, unsigned int, flags)
-> > +{
-> > +	return 0;
-> > +}
-> > +
-> > +#endif /* #else #ifdef CONFIG_SMP */
-> 
-> and:
-> 
-> #endif /* CONFIG_SMP */
-> 
-> The "#else #ifdef" is both ugly and too wordy IMO.
+NOTE: First of all, I'm not sure if the extra features also work on
+the other Compal boards. If it turns out they only work on the JHL90,
+then the driver can easily be altered to only enable them if the DMI
+detection find such a board. (I can make those changes, should this be
+needed.)
 
-OK. I merely followed the coding style of the code added to sched.c by Paul
-McKenney. But you are right, the rest of sched.c does as you say:
+I've noticed a quirk in my fan controller. I have to re-send the
+wanted pwm-level to the controller every so often. If I don't do this,
+the fanspeed will slowly rise until after a couple of minutes it's at
+full speed. (Note that every normal userland application will probably
+update the pwm-level every so often anyway, based on temperature
+readings, so this might not be an issue in practice) If this turns out
+to be a problem with all the controllers, maybe we should implement a
+kernel timer and have the driver re-send the pwm level every XX
+seconds to make this transparent to userspace? (However, I couldn't
+immediately find a way to do this *cleanly*.)
 
-#else /* !CONFIG_SMP */
+Additional information can be found in the source comments.
 
-#endif /* CONFIG_SMP */
 
-Will fix.
+Lastly: the code. I've just inserted the entire source code. A diff
+wouldn't be of much use given the amount of code that was altered and
+added. It's attached as a bzipped tarball containing two files:
+compal-laptop.c and the advised README.
 
-Thanks !
 
-Mathieu
+Kind regards,
 
-> 
-> > +
-> >  #ifndef CONFIG_SMP
-> >  
-> >  int rcu_expedited_torture_stats(char *page)
-> 
-> 
-> ---
-> ~Randy
-> 
+Roald Frederickx
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+--00163649a1a5ee57330483822292
+Content-Type: application/x-bzip2; name="compal-laptop.tar.bz2"
+Content-Disposition: attachment; filename="compal-laptop.tar.bz2"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_g7nn8xk20
+
+QlpoOTFBWSZTWS4WykoAJEh/lP86goD7/////////v////8BAAABAAhgKJ973d30MgHRdzb7bn25
+577nAAJ721uwrve953d97dbe0SV3aybqX1HZBQbZpoAKtgArtzkmt9sXFJWtahVXr4+99333d7tH
+VVQq4YLuxxWbb20cLUn32D1nd1B4Nuu6gxIIE0MptBpMmU9TDTQEnhFH6mynqm1NjSRo/VPTRPUA
+Bp6Qw00Q0BBTNETI9Cap6nijepDRjU9R6gAPUeptQAAAAaDTTRBKRp5QAAeoNDQAAANAAaZGgAAa
+ACTSSITTSaqf6CepPJipvSR+qeyptT1HqZNDQ02hMTygYmgek0DT0hoIlEIyAmFPSp/oaSbRqM0K
+emo09TZQ2p6T1DIZPUZHlPUepoBpiaCJIgE0E0AQJo0ZJlEP9Sn6nlD0p6R6nqBoyeoADQBoaH/7
+9x+78Peb3MAQrFAH4fDl3kkD5H2Gp8fkWsYGOlLbESjQIdRmKU0Zh8IWqJjJSFiGDMIDDfBO3ELE
+kflEfsdvv63O6fYzr+Gal69S47vW7WXtuTOjDBQKFdf62/NmsBIqHSmBrxg30EhdS+lgFggnCxCG
+JDnBq1MnQg3hw4XNrimcaGwAFAD3aWALDKUkEJ1pOpWYqQgDFYOEEDCBUGMcc+f/EsFKqD/HzJ24
+eZ6ZZhvKSDCCIMZIs0wKsiKAoQFkEQVBIICQYqkVVRFQgjARRWCgFQoQ2BbCUQGQQmtqG3xpvFh1
+Zj7xNSCmN/D12MFMFIpIuGgJ+uWL61ja9Ejaix+ph/lwbkFkIYFjO2YGUJB5ZZKa4pklg5JxSSgh
+1XbHAzYA1CVhrk7asDdlakxlpcY2xEqdWUHSU7GqbXSG2qbKrC62mM2obiO++Fuzickpktyyiw3p
+pKZi2m6sdF0R4bDdGl04wYjqzXGFSaAfySGgw4qm7IsCiAoGBaufJ15qW1Gf792y/rd/wfb5dWrz
+wQWdXOgn8WWTGqpLqwMiI4ys6+/X2vJ7/5dH/Dp+g1v0PCdMr07zkv0t5n0O5jpN0/Phdrwe1D9D
++bxXOUVeHTwN81vTzZpWiIYg9E9Ms88qkiBskGfJpofK8OdcurRrbnt04bcwxrP6n1AYxOSIoIiI
+sYoeYgsHQLcQ8mpKtQxMSRr68smKqos9Y2tlSYJiRRybhAZogggQ5EmK3xDZxu38g6kAghKADLs+
+2QT/chyreGuAZoez2/JX+sAM/a793gpSTbj58JjTqIAmf9ZlCkVgw7Kr0wPvIFJylF2mok8e15a7
+fvZoZWpMhIASHx558g+HZCfKBc37f+1+NsNkC2G/kvHCr4ZQ4bSq5/l9j/tuTpZPFQt9/RYHg9Qj
+hmCf+KJG4MeIuE+HOicpOqqFFaEWETgHDsbw+vnzclJizF9J8v7vXv66hURpe34i84vLNUeagiOb
+AJl4kT0lGTuRMwQpIZCqMyEdgFbYd/w3xwaAc4Qbl3YL0M5yHn7HgSfMPghhgkiFuz3LDEho5a7f
+poYJ7/pyqyCf6iYZKQCiWtYqioqnCYNsksPAiD4QB01pZgUCwgCQgwIqSNtKAyguX6/PaHxQGryY
+AbHt9+zCsDVofQbrTnXghHcuC9shAljp0diFFKCd80lvRDKcWf68CzLKYFAhmz23qV0fVSpUtmBM
+JBhbH4eW0enO7hnEJRniwiutAHsSSSSSSCSSEUCySSSz1NgzsICgSXH4eJvRok3hxAwOD+5StuEH
+G4gqGKHo9kQJfDpefj3Iod1T1iUEqbsaMPCgmqlgDNt7cwj2s4Mu/elBlGQ4+nLlHSwGngFAjoUx
+eU+3RDcQg+EnlZqE0xdgh16AGO3CA8jDnwPVgbszmnoZo8F5dvAqqqr8tPUnia8eCSqFCFiWVaJL
+7g64FF8GwBhrkaGkiPHchtzyr7PGrNXru912M2rK10QC8jmNvdwXZDasDMEEk4syWmWyx7LJbFnJ
+hBBJHxASHqb2Da3H+FkE0sByyCyUHbMZugTbVcyIkLRmLSInYdwjmiPX2KjAWD8uX8gwoSCOob44
+t9vcJgYRByIQa+eCIGTTXOb7KocTOuygawVSESFR6Z7YgNyItby5tvCw6Jz403DpcN76+Fwb7MUl
+Fcs42MM6b1pQGS1lPAWURveXo3llOFhIY6aKq9MFBHAIBIiesOq1Y5QTSr/kdW6g1PJGjLg9jWbo
+mu+LhIYvXhKp+WZidV4XnOomrwtFaSXmkpDLBxGd48uegrOPEwawtBl+GHDluqOp8ga7vlYbrsw6
+CpEPPkgwCRBeBXJbGgpcDdzSO0KJPuiKsS5OSqTn0R/PQSxmPLwEBAkRqycwJHIe42st01Z44Crf
+y732kMI8Burzi4YomYQbpz1QMQTtECIEVQG5g/blVOHijp59a4CWVl38zN8+9cdsusRMe8vSV6NH
+M85hU3hruu+L6NXSzyANanAoH4rWZUla3s+2hznOargibDjsK6Xf5OOdM4YGsdEAiImkOBCePfg6
+D6Tzel97zanHby6UnwFuaoxzyosIBsKAGPpD8uo+HlG3y2j2ZiOBgGQ1MO3LGXB98SBTd2MeAhzH
+zJIDTLiQdr90AR3Rxc0F+fVPvUClXkO247vk7n5b6r8eseP+W7mIgSAHbhT89lKwGHJZ9JjPoD40
+RO87vwX84fY7CnMnMgcUiSWGgqgBA8kzc6GN2AjoZ5Pf7K26xoJFGtEIyAeXXzXtD+t4N/Ug49d/
+vGqEup5QqUpBIXHpFNHFsx2nuj6u7YycURDbyFxnG+vuEaRWPQAIi2yDmm2mx2xS+++aafMFTrmZ
+8sQh4l/243OVUl9qMmaXNrAbRfGG0U9QmJ/aciIVQUG/FgEjsOAkyDM59g2FBtZvFpGhHgupJJJJ
+YZUl/jonlb4v/TAj48PvkpprS0Bexm3fPJRq7JPi2cSfC9xug5zM7Q+Rz3vZRfw+2fwdui2z59vi
+4toBwbgFgQjJGSZgZUd+Q5Nzlfq1h+27crQ3GUauMS5e0Ydr1yZ0PrvYqu+bO6A7+bFyVVY4Y80/
+WCRn5L0bphLs8jARUl2ImeKKhvcmrLrFvvCHtnGkOixnsIjjptpDXXC+91VkJ3HeVgJ7mzvDe812
+DpElB1Jg+qIZUCABrZgbryKCTpD++PDlv63ibfnLrNc3XZzpl184tXq4xJBZBIKSIQjILESKKjGH
+FrFkPmkEwz5jJAWCF1IgB+nr5nz9Pt7tirp7S2J5Zcean+xS6nnhW1AvQkqiiIGAQUluvAd/ceRH
+kz7u/u625eatc0QU5ZUrHyFcU7Fr9fJ1dXDvw4uqR64VJbmRsHj4tV7uZzNvszS5o2ur6wBaRDIB
+QAiULRujS6iqXbaPluQHi+jrhTlv5AKQEJpCeK5uZ+Nmx72xzeRgvl8pyzQeb0Tf0GqGyFi8MLtv
+bfK4fKq1DMDG+TguuplNc9bIZ4os6KDGkwHeImwGxmDBFiFokhQFoCdQ9SiQNmZ62FRJrNBbmq9x
+Jk3FihaBBIF6hlSHQMGnMVMBKgHObB2Z7ovtsqte1uWy4Bj3A1oNALSA00+rwU916SRIXoMh7TJf
+fy8zBJZ3rPEfkE+aqMuEqEtlGi+A338N/mH8n5GlvZ0B45MJKDrir+rCN1LOQkHxdMmRFq2jCGFz
+iM/cL48kpe80+znuJiv2adtOCDBVINXhuRIp6pMrpSS5eqvzhiRUb60yBxckkkkH1lT24e4twyM8
+NqzUx9QbWUwlyfolpaFFV6Kn1HI2wgH3zyIfKh86twoq8RKkttWKNUEEP/+m2fGwvq2l3kFRFlcr
+ngLCxyOYJKXuvE4RST2/e7P3/n+LhzDiJhyjicJQbK1wmODyED40O9NTxQ9k4mfDywZM/lJbbCn6
+Po/DjBJoORvCk+trZlrgc/r3hA6E+5x1vaDL14mUmSHwkhUQGeoyhwQQ+pgCBDoHhj7MmM6JiAWF
+t7RTfvJiabtbmCJMqIti1bqbCGdATqIEcDNxPGhQjJIDUJ2LrW122K3Tdu82yGX3PBTc2mmE4B3f
+zxGCYG4JNmRYs57gXEDhzofWDugILwp3kjJXHBiVunLXfV28KLXEUCNyMVjA0wMCArZXCuwC78N/
+3s4SeNA/6ibnfZDXCyt6UqE5IlyhKQPd/vJhIoLnMcAMc2sQcYWsAqVWs5B1EYpeXQjPOg5VTjGE
+G9JnsGZft7vD8tDHfWZk7OZuNroDbcmpRQQH8nqxikQOwZ4EJKeQa34b8DhsHOO+bF2eOBRQwgXJ
+Y4AncDhHGuthlV6YATAPjdpaxiAHAGi6MZzDvMBwaDsFAjo2gBGeb+CQFLWVNThckWryKY91UWEA
+dbtpnage3t+jOD64ISAyJI4Vw4d3G02bhv0TPewlEUnf287031tVBpq7BrMV2vcci/6yffQwQMsv
+479PJdNLYHRlh8PDb7vwen8Hr/D/QmL9HCqPNyel3zr63P4/ohtarK33+qaDBkdXslFSInTXiRxa
+X7IfyEucLHIdvl6duQ3V9ll1bX6bnjp/WITv+QoQAHttX1POHPhkFPKBEYkCIc+bTZpaI+lG+iRD
+QkwAx2du08D5Qri5ep0I9kldEqntaWxSZGtRT3uJizQTfNjiMmhKKbD8WEhiSGzdqCrufBy8ffbd
+NuPHWSwkic0s7FPD3y7Zz4u2HsEYo7oj5RUgf3DEZKw+JAUWAQ1vokxJEk+at9FKnsh8Kiw5tfje
+k448PxUxWe9c2ByoTpskkkJ4vEJ5Ab/KB3rUPNJBsiFIyFK2l6lx31DOnekdN6mNfnWhmATQtFj7
+fkxAZ8oWx2Er+YHIQ6ccq4KaKb/IShTmPTkKckMAMIEMIamvH1Q28cl8QgocI1VVVfk+23G43GEF
+K0WKKhFFFdvF8aGyE79dbCTMgPUjlYPXhXlsbD39pCaCW4BRZU7AHszLiydoQCjYUpJH84w4Xs3A
+/cmlgMMZIf2o9dN0045iUCE42EoSEAMh1KEwscgfgKQTJPEELoWJvKyHRUzMl5jwWD9I56CfalJy
+Ozz9ZDP2YeVKBv97bczQcEkzHxo5wHPDw5Ad4Z+KTQe+HrA6z3lwdikMgJDYNBDwII8kKTIPoyTY
+dOYB6QmIGZ7yt5NEOHuDbRea7jZXjmlA6DqKNPIsQCHOBuD7blAwU0DUtvtVVRRFOYpDkROoawwA
+sBQmIVdXJQrH+X9j3huBwPH2xKnrD2lbu54h6yBJ9RSbQu1WjbEwE3lqcnChdEMf3GQMgEsZfd9J
+ayiKIqqu3MJkECzuAOvlzDEwXz84KSdjVKFOS4V2AXCn1i0J1BsmeZh5WM181MWdBSrHrOJ7zuKq
+qSvsC2MHIBsMXAKrE1BpTeHEWWmeAX9Ro64OAB5CfxB7D34OL7fLWIWV0Lu3EFPET8EniyHelDXj
+azYlWpx9skQ05DDxUIbFx3BxOB2cF9Fvme+TDTRTKSHhnUsRBEDWi5A2XM61CQ82e2iWUyBgNgsj
+AhssMlL+YM4XyhII0RIWfaEXYpTJdNARzaJgQW60mzkRb4xK8LgU//aADZczp56WQkUOAZ0D6OBm
+QFMClP5kCHAQ5LAXPocYB6HzuvBy9pm7ECFyxYq1i4UNrGdsE1XIgB5QXpcTNeHt2QsYTA8QgZCH
+hSJcgG7QHy4L/i/p/pk/fv+z91GGFF+C8g14EOshLFHYWCBRbJxfqo9wcwD3A+5z8xPoNkoQ1MAu
+HxUgfQbg4JDXz0CMCAQF4eR7UzwWaP0gGp7w5X5GmA8i7ZaKUmIC1RZcEOomPZpdD8XbnZdgR55k
+/zPTgdUDzqqqqqqqqqqqqB6QRsondY0NioBMpIyGK3R7FCDB8eBmBQolJRARCmpPP5J9JJt2HhpQ
+3CllsSFiUR2EKlsQkuBvPt5DqOIG4MgMQO40HYCyzc8QOAhDMD1HaGauWOC6IJ01sNygKBwLcACw
+2AOhSpRFRxfhzw7CMmakrSgpp70IEQjCGqaRJXqm2wBcxRO6gLcB6iYcFIeEOOwBs6KFxTZghwCI
+j6iJxXEuTy4nvguBhh60s4/HEfDGbnqBh0Um6mgptcUm6PYa9RsjXKecLT+if0TDx1HZ4ds4GR0O
+N0jfyrvzENRS5XnCSBsg+gEVL5SB16NDQXHjA7vUNA5pgFKNhiAcxNLs1TlYDkAZ3EO+8IqRYu5x
+BGKHJA0yAoHXiY/YXC25kuM6GoQHVMYJE6K5AWPTAU0NQLhG/eMRoAs5WAZyWjlEtyEQu7ffcqV9
+3333C5oc7Q5yofUTnA4p3oUNygCBMiab+a90EavWGFh4NnC5GUeRzgiXO7Pef5oTjxY3Hk+aHwfK
++jn/AcOjhR5OekqVq2DClcvuyWKWoQCemiq8zPY+8E4zY3D4g9hZgiJ0NswDn1HWYT1F2METbmPs
+Vp7fBYcNL2gDoOs60+98XiY4hDHKS9t6wNadcrGLtuc0sGAhZhzWjbIkJAxNmMZU3wn3cpOH7TiY
+mg6L1FN5TRoidE64Gz0DaCXFRFRU0bbm6ptapdpE6YYidh4OYOuRxEOcOIQMBLES4trHd34DaCS4
+UpuvAEcs0xMTF+PZV949i2C+PI/g5bKHRNypxHY1IQhhCWzR3e4B7msnbPkFCglVqeYfiq09Z5aN
+txKHyg/qRyMB2K4SE+MQ/ySQMIGCaAHzdT7JDaQRgxENsqXRk6tpWMNpEPSIG3HiRIoMQFEIDAs4
+wFYoHtwD4t32fBEmJmcoY2Fa0rlle173wxTbMJ8XcsBcTlvJGHQtQW5U4RlwNQ0YdxQ4bhyEduBg
+MP8SQNXRuUZwm/h5DRFVdi3aTqPqwNTDmP2uo31eeZlEu535Vd3TtbvlxOoA39zmahHrXRsE7JOi
+jRrvmEIAELsyzxApMn5no6okISRYifMxEMah2tDSslAjqoQiVlLk9aGEYetT+fxFPvyQE8/5PfwX
+DBNp2oSAh0WBiIECNhZNrxSEm8OyUrLRScx4Iq2iOsufbGu64ebVCGFxISiKJ6MVOAmFkxU0P0Qp
+lmjaaHIAZgswdcRrr8QQtbyh8nIGEKgQkLQ/RE8sxYi8DaTceOJkMWI58imowVxhPAzngnz3DPbC
+3Zn4MwDdE77fpz0Dp/ByT1uugj8EP0yEECMQDsU59U15UkOWLW8ijntRQ033Hayn8X0ikXnAHTJE
+krnDPkUfUcjI6x3OnnliDwO0NOqmgfUcig/kKCo+hSH9gsXIlkxWexLH++QF7ZMDlJoRNJ8IEgh9
+YaHxwr+fwS2/Os7Cne5PjNYF9cw63xaCQPhqZhSCXlABNAZ+wpvAGrapjjD47m4Ja+Jxq2eIPMMO
+lAYglVVSVRtGQwYOFjbEQhreh9d92H4r5R35nRFGMDgjgDobG8UpGgpRzHzDLInEGeB49sKfgX9N
+4zL+cHye5YoTt78DYNrsZGpFohtgOs0wx0yfmZ2EUYHbNYKC+EkJknaFpPOG53TzB3cHD3a8Mma2
+jg5qmsA0aoZrbNhxDEuClrpnzm59TN4RmWzZxysZBiCGDshpx5hxtU8YYH9ZYXZg3nYXvo4I7Wlt
+s2LCpmy7eudhzPuCAdvhCeXl4ZgVsfighWBtEMwf2x2O0cXEITch38yoZ2mhg0sQoa8wAgHcTgFk
+ZBBZEgkA9IY7Brvz6WoMQrO5M/RSgfSGJyoUSCwpeGIRGlAiYUE5cevcclw7rQhlzwzjUIIX0lhI
+SK6lWByMvrPHItieoBMNThZZQGoQBgmYICBWgcFp0ZMsZCsKAygzCi0iLRFzlcF7qsXhLzsqVosS
+PRYKLkRlJhZ8Vho1LVvei5RaMqPd4q4VpowIoDklMiYmCiRyIJSQRlsRbAE3MnKmosk9UmGIitXh
+5hzAGBKFQgCItnbuTW4JoJhSV9ph0UQzwOjab49Td45WjajaFwAXXirnJcGagdXQbn1QoR8cDkIC
+QIBIggG97CyBFrbbHNLPc4FFmVG3XEc/CLG5Cmkz2QjQIgpzKphOvoQyAXHjzc1sROSCBzxk9Qgo
+YfPh3W8CZU1E8QbRLBDI8ddlbnl16zNhC/bgtgAeeF2TLWXHtC6Ou/EPi1Bj1IGhTPy9aAgzIoxb
+sbq1nYo6dN97DxGFIsBvIz4tB0WUgsI9tANS5ua0b6o4cA5a3AEKTkHLdmzYTns6jjd9p5e/q/lJ
+JJJJJMNzSZp2RLH0QwMJppwGiIOiPTJTZe12jxYRMw6bk7k4WmkbhaqhWswMEeIQZwpN7EjAIQkY
+F++b7Yb4uSC4iobCdj7rKAX8jbo4+zqSUeSfznXjtmIGpzuFcb2D9/u7gLGSJlzBpN0+306JY8D9
+FZkMQ35galyCEmAA5SvNE6oZSOcRt6mu0nkPHhu7/PDEMDQA8ZHH7205zwCVbI37VoqitZggF6JU
++xlRM8psXv2N2MS0ySw3ux4QoQK3BosoT5T6KysCmhgj22xgEspR+f9nfpvxF2KYMYSUK2WXkiBM
+qAV6IZYPMHhD524Q+zyDM9l2vhhelL1On3H2OCOOIFBXi806SgpB6WKgV69faEAwCZjEO15A2yQT
+XBOvu9Snf3bGodeP2nYP1OWyATkpf8+tZ6k74EghSdwmdj6h3OA7EES2meZn+XpRrB3/AHgIhffY
+t4GXHx58uRVefbhVz5hw1xI+yd3CShYgVGE9hQURoPSym4sPJX1nVHd5+M8IDQibujWpsyJJGQhA
+jpLww1WU66JYV35mFJKaleBXQSg+olkzvkZHvOnTTFUx2zTFG+cA58AcbgM5hSqM6SCBQM3JqTkL
+HgARAnTmHlmE4+DOruphjlArCIy0lEGGVBtUcuVwuTGiJRKW5ZLbFZmE/X1jqSToGxMcLEQKJQlj
+A0MwO2isZEZETUGXBQoIkEaLbg5rkSu2QhCV9cIMNgxryEdFNQDgx4PBbESQSMDAzCmsvy3NT233
+GFsnI+kBuTiaA4X3HUN4aCQ3JaAyAWSIl1C864p2H9jy7A5sOCcDLSGBPbvcmW9brmGD1BgBrXYG
+cZJxpTtNPHMtqS2uF7THC8xTN6Impd8k2y5CMSIR0U3wuIvgD15jQDiAjlpzKV9BELKSTrhSRBVA
+BJ6nnLud8fBFqZe/ZUzoR4eF1qFVsTKKFwgkDKUeWU8urqEUhYCAWv7legYmgYzUqrZlLJhvrWXL
+bTXjmYfpCdxUSYnAEO5qIigiZ78LxDxQSmwwEDaSctb95yOR9EQ8uamjmDxDYGBQKGwzQ4E7LZDP
+pTOgeMCEoiaQDWBre/8uOf1m2XE5WT2bK6iaOy6hYYIcFLjhZSKkgEwWlNpaxoOkyBsyFEDCBbJN
+oFOmercwVnGvZXpFfhzoTA8L4m0TtD8WP0JYpOkKC6+uDZBzH4f1akNWWniNGGDkOCDw3NgSMhIG
+whSO/CWvAxBbemBJPExCEFA3agvKeHEtpvmB6ElV6bFE3hfRncwM7Zwp1B2gN3wCGoPnsp2W2CRs
+msz0LeZDpXRKz26UMNSBSyLpxQyqagsUdieG5oeboq80tmULlLxzqUnm7j7hZiOHaCJcCIYJiI0F
+siBa+8jIlOvuYIV8Ng+zqSRnvlEgeuDxLJuA+kLxgJIhIlnSVAEu8GOumYn3jsvwBn258wSYw+dh
+NfB62xUu++JOZR82USiQ0TJQ7TBP4U+fGxgm+l4n9eGxiUGxv1AbnFfTAdLhkkqAfgkzR7cLk7rW
+Sx34eIPchfymnBbEA3w0IIicqp8vQ1zBok91DhOsF6y2NIfsHfpZpDUW2CKKPcmYWIkqjANgVE7I
+Eaacky5qmgBm4r7SNBNgDVUMAo1BAKERJTj+V0fUSJnJ9OS5WMEM12hZaoolvuq5FL6dBQn1Cnw8
+t9m6FMz1NaFHRow45CMSQhcaN9R4uIdk9hlbzKJ4jUoaSkFnIGBmrf09ZYJcxCtIEIUDrYpHQKQe
+5uegiVLcwvdUznghIyMiHIq3HEgvZGh5T7DY4IaBDfxqVQPl6CYB3GqPBIPSr2C3FChsVQ0IvJaT
+kO+LbD86qWzrehq/1yp9x7G7jMIeusmKYxelyC91JeRGSADd6O7wkrvyruc2ReGsegYJjq3D1ZjB
+epZQWNoZmLkCPhQGBDog6+KbMGZGwDY04EYHauWnu3v2AnCia2lFo22zLcq+QBkVxHCj7/prz54l
+jjPhZsWmlHUenZYxVha+DboMPIytiXYB0rHCFEh2YoFdxnQXupS4LaDAyr1XEv2YjrRxM8Td6196
+KFrjZoKCmEDPbkHIU3wyUsYBRYyIc0ohK0oTMjIygtLU9sT6r2s4wTiKSK+KHE8IPcl85d+vJ6+3
+3/j6ijx71ORcg89DywTTPDu/QOAxiomKpKQCFBCNEggQMQbtUMAppJ72lxcQEL1hYJQoomBNUYCq
+ihuHdpzWxBkotCDlsYEosdSUHDEUs7mC0S7uzTR5u7M9xc5YwWAUYOhkSGxolgUFKCA72ZJtJZoR
+QROfAMwxzvNQRcdCAyGqkCSpGPCUiYKDNcjfNaoh5NlVVVVVVXihVvuyoxgBrDX2YAy+eFjXzyow
+yAzEfXuGJxOmTGAJ+ir74lBgH8UC0iaCoYtQ1NLb4edjwtBtRQTEe1Jomyx2jaDsdN9VKkU4c2Cg
+dq/jSl4MjoIUFQBbR0L8uW2m29sL35E5UoplqFyzZIUgsUdFexvKS6F518iaXNpWdZN9IrUEqaLR
+1ZXwtc3ZkmdUeso/azuTlFL0wChpLddHAaeCZE2l57hEx7LgvKHemwTbSO21CvYtoVC+BKiOk6ii
+ccNChzSQxFygHKMUeIqmB+n7TrWb1CgpRpx6FdvDqiKGQ04thnHlYtkNDTsWm4Q1EQ9is+6nGTt9
+fqr0pL2QjAKkw3NK/vbblgTQIgSINZFPimBlIhAYGI3kEM5DDeNDSLPloJJBJIJJBJIJIjEMkpMl
+Sb60kfZmZ/s1TrkacSkyTtQTioYXGxjsZzvSruAKMRdOmRfP6Ozw3cHdWpKlaUmHnuTNdzrQ3V3p
+08/cb2ninRezlmN40K8LLQoFhLeILMpcpsgZvafRsyPMCdPuuVTmUh2Fk8CU0ECuvoyKgyjkoDCB
+bJCwKesCH/4u5IpwoSBcLZSU
+--00163649a1a5ee57330483822292--
