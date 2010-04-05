@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab0DEOJS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 10:09:18 -0400
-Received: from 8bytes.org ([88.198.83.132]:53029 "EHLO 8bytes.org"
+	id S1754887Ab0DEOLH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 10:11:07 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:56711 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751444Ab0DEOJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 10:09:10 -0400
-Date: Mon, 5 Apr 2010 16:09:09 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Dan Carpenter <error27@gmail.com>, Joerg Roedel <joerg.roedel@amd.com>,
-       Ingo Molnar <mingo@elte.hu>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       Shaun Ruffell <sruffell@digium.com>, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [patch] dma-debug: off by one issue
-Message-ID: <20100405140909.GB29758@8bytes.org>
-References: <20100402112843.GI5265@bicker> <20100403204717.GS24846@8bytes.org> <20100405125329.GA16197@bicker> <20100405140215.GA29758@8bytes.org>
+	id S1751656Ab0DEOK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 10:10:58 -0400
+Message-ID: <4BB9EF3D.8040905@us.ibm.com>
+Date: Mon, 05 Apr 2010 07:10:05 -0700
+From: Darren Hart <dvhltc@us.ibm.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100405140215.GA29758@8bytes.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Rik van Riel <riel@redhat.com>
+CC: rostedt@goodmis.org, "lkml," <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Peter Morreale <pmorreale@novell.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       john cooper <john.cooper@third-harmonic.com>
+Subject: Re: RFC: Ideal Adaptive Spinning Conditions
+References: <4BB3D90C.3030108@us.ibm.com> <1270078689.19685.8040.camel@gandalf.stny.rr.com> <4BB40140.20109@us.ibm.com> <1270088753.19685.8218.camel@gandalf.stny.rr.com> <4BB7F05A.6010102@redhat.com>
+In-Reply-To: <4BB7F05A.6010102@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05, 2010 at 04:02:15PM +0200, Joerg Roedel wrote:
-> On Mon, Apr 05, 2010 at 03:53:30PM +0300, Dan Carpenter wrote:
-> > On Sat, Apr 03, 2010 at 10:47:17PM +0200, Joerg Roedel wrote:
+Rik van Riel wrote:
+> On 03/31/2010 10:25 PM, Steven Rostedt wrote:
+>> On Wed, 2010-03-31 at 19:13 -0700, Darren Hart wrote:
+>>> Steven Rostedt wrote:
+>>>> On Wed, 2010-03-31 at 16:21 -0700, Darren Hart wrote:
+>>>>
+>>>>> o What type of lock hold times do we expect to benefit?
+>>>>
+>>>> 0 (that's a zero) :-p
+>>>>
+>>>> I haven't seen your patches but you are not doing a heuristic approach,
+>>>> are you? That is, do not "spin" hoping the lock will suddenly become
+>>>> free. I was against that for -rt and I would be against that for futex
+>>>> too.
+>>>
+>>> I'm not sure what you're getting at here. Adaptive spinning is indeed
+>>> hoping the lock will become free while you are spinning and checking
+>>> it's owner...
+>>
+>> I'm talking about the original idea people had of "lets spin for 50us
+>> and hope it is unlocked before then", which I thought was not a good
+>> idea.
 > 
-> > > The character is already reserved by the user-to-kernel copy earlier in
-> > > the function.
-> > 
-> > Yes, but the original code requires more code reading to audit. Let's 
-> > change the commit message to say that it's a clean up patch.
+> Maybe not a good idea when running on bare metal, but it
+> could be a big help when running virtualized.
 > 
-> In this case its better to remove the
+> A lock with a short hold time can, occasionally, have a
+> very long hold time, when the VCPU holding the lock is
+> preempted by the host/hypervisor.
 > 
-> 	current_driver_name[i] = 0;
-> 
-> line just after the loop.
+> An adaptive lock would spin-and-acquire if the lock holder
+> is running, while turning into a sleep lock when the lock
+> holder has been preempted.
 
-Ah no, thats nonsense. Mind to resend the patch with a new
-commit-message? I'll queue it then tomorrow.
+Right, Steven was referring to a braindead 50us spin, regardless of the 
+state of the owner. This is the kind of spinning userspace spinlocks 
+currently implement because they have no information regarding the state 
+of the owner. By adding adaptive spinning to the kernel, these userspace 
+locks can make more intelligent spinning decisions.
 
-	Joerg
 
+-- 
+Darren Hart
+IBM Linux Technology Center
+Real-Time Linux Team
