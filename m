@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534Ab0DEUYP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 16:24:15 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:59503 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756364Ab0DEUYH (ORCPT
+	id S1756548Ab0DEUYY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 16:24:24 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:36707 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756438Ab0DEUYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 16:24:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=lTyQ0sEOclFKbtub+UunmdGb6p2DIZWan2G6lx7PqHmVS8MLxWkQqxEK57iPM/h3Od
-         3poPIjIEt2UyZuDwxVgU/4okndu7nNljCoBkwcXu8grcPciRYE+2CcB6X72YF+dXI/bW
-         vYgSLgihuFBXdv1q3jRPD7KD4swT1kcWpj5Ag=
-Subject: [BUG] x86info fails on 2.6.34 ?
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Dave Jones <davej@redhat.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 Apr 2010 22:24:01 +0200
-Message-ID: <1270499041.9013.15.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Apr 2010 16:24:19 -0400
+From: Darren Hart <dvhltc@us.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>, Avi Kivity <avi@redhat.com>
+Subject: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive spinning
+Date: Mon,  5 Apr 2010 13:23:53 -0700
+Message-Id: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave
+In-Reply-To: 
 
-I just noticed x86info was not working anymore on latest kernel
+NOT FOR INCLUSION
 
-x86info v1.24.  Dave Jones 2001-2009
-Feedback to <davej@redhat.com>.
+The following patch series implements a new experimental kernel side futex mutex
+via new FUTEX_LOCK and FUTEX_LOCK_ADAPTIVE futex op codes. The adaptive spin
+follows the kernel mutex model of allowing one spinner until the lock is
+released or the owner is descheduled. The patch currently allows the user to
+specify if they want no spinning, a single adaptive spinner, or multiple
+spinners (aggressive adaptive spinning, or aas... which I have mistyped as "ass"
+enough times to realize a better term is indeed required :-).
 
-type seek: Value too large for defined data type
+I'm using the futex_lock branch of my futextest test suite to gather results.
+The test is performance/futex_lock.c and can be checked out here:
 
+git://git.kernel.org/pub/scm/linux/kernel/git/dvhart/futextest.git
 
-Offending syscall is an lseek(fd, -1, SEEK_CUR) on /dev/mem file
+Per Avi's suggestion I added asm instruction based period and duty-cycle options
+to do some testing. A series of plots with 256 threads, one per period length,
+is shown at the URL below. Each plot compares raw futex lock (normal, no
+spinning) with a single spinner (adaptive) and with multiple spinners (aas) for
+each of several duty-cycles to determine performance at various levels of
+contention. The test measure the number of lock/unlock pairs performed per
+second (in thousands).
 
+http://www.kernel.org/pub/linux/kernel/people/dvhart/adaptive_futex/v4/
 
+Avi's suggested starting point was 1000 instructions with a 10% duty cycle.
+That plot "Futex Lock/Unlock (Period=1000, Threads=256)" does appear to be the
+most interesting of the lot. It's not so short that other overhead becomes the
+bottleneck, and not so long so as to make adaptive spinning benefits show up
+as noise in the numbers. The adaptive spin (with a single waiter) consistently
+beats the normal run, and outperforms aas for most duty-cycles. I rechecked a
+few points on this plot to confirm and the relative scores remained consistent.
+These plots were generated using 10,000,000 iterations per datapoint.
 
-open("/dev/mem", O_RDONLY)              = 3
-...
-lseek(3, 1023092, SEEK_SET)             = 1023092
-read(3, "PCMP\4\3\4\266HP      PROLIANT    \0\0\0\0\0"..., 44) = 44
-read(3, "\0"..., 1)                     = 1
-lseek(3, -1, SEEK_CUR)                  = -1 EOVERFLOW (Value too large
-for defined data type)
+Lastly, I should mention that these results all underperform a simple
+pthread_mutex_lock()/pthread_mutex_unlock() pair. I'm looking into why but felt
+I was overdue in sharing what I have to date. A test comparing this to a
+sched_yield() style userspace spinlock would probably be more appropraite.
 
-It seems -1 is taken as an unsigned quantity ?
+Thanks,
 
+Darren Hart
+IBM Linux Technology Center
+Real-Time Linux Team
 
