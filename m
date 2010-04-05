@@ -1,152 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab0DEPOh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 11:14:37 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45551 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755311Ab0DEPO0 (ORCPT
+	id S1755280Ab0DEPRc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 11:17:32 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:64394 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754611Ab0DEPR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 11:14:26 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/2] mfd: Ensure WM831x charger interrupts are acknowledged when suspending
-Date: Mon,  5 Apr 2010 16:14:18 +0100
-Message-Id: <1270480458-2346-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.0.3
-In-Reply-To: <1270480458-2346-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1270480458-2346-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Mon, 5 Apr 2010 11:17:26 -0400
+X-Authority-Analysis: v=1.1 cv=HGzZEZllc7l+rGriDeLGo6RTzaxOKII9nWt1C4P+aSw= c=1 sm=0 a=lCZnNc42cWUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=omOdbC7AAAAA:8 a=meVymXHHAAAA:8 a=n7_h5HR9FGrHuRqvOMQA:9 a=6qL_nnPzzWdbb8ONdtHFalsQn0cA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: [PATCH][GIT PULL] tracing: Fix uninitialized variable of
+ tracing/trace output
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Mon, 05 Apr 2010 11:17:24 -0400
+Message-ID: <1270480644.19685.14822.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The charger interrupts on the WM831x are unconditionally a wake source
-for the system. If the power driver is not able to monitor them (for
-example, due to the IRQ line not having been wired up on the system)
-then any charger interrupt will prevent the system suspending for any
-meaningful amount of time since nothing will ack them.
 
-Avoid this issue by manually acknowledging these interrupts when we
-suspend the WM831x core device if they are masked. If software is
-actually using the interrupts then they will be unmasked and this
-change will have no effect.
+Ingo,
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm831x-core.c       |   47 +++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/wm831x/core.h |    5 ++-
- 2 files changed, 50 insertions(+), 2 deletions(-)
+Please pull the latest tip/tracing/core tree, which can be found at:
 
-diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
-index f8a8cdf..8152529 100644
---- a/drivers/mfd/wm831x-core.c
-+++ b/drivers/mfd/wm831x-core.c
-@@ -1493,6 +1493,7 @@ static int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- 	case WM8310:
- 		parent = WM8310;
- 		wm831x->num_gpio = 16;
-+		wm831x->charger_irq_wake = 1;
- 		if (rev > 0) {
- 			wm831x->has_gpio_ena = 1;
- 			wm831x->has_cs_sts = 1;
-@@ -1504,6 +1505,7 @@ static int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- 	case WM8311:
- 		parent = WM8311;
- 		wm831x->num_gpio = 16;
-+		wm831x->charger_irq_wake = 1;
- 		if (rev > 0) {
- 			wm831x->has_gpio_ena = 1;
- 			wm831x->has_cs_sts = 1;
-@@ -1515,6 +1517,7 @@ static int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- 	case WM8312:
- 		parent = WM8312;
- 		wm831x->num_gpio = 16;
-+		wm831x->charger_irq_wake = 1;
- 		if (rev > 0) {
- 			wm831x->has_gpio_ena = 1;
- 			wm831x->has_cs_sts = 1;
-@@ -1653,6 +1656,42 @@ static void wm831x_device_exit(struct wm831x *wm831x)
- 	kfree(wm831x);
- }
- 
-+static int wm831x_device_suspend(struct wm831x *wm831x)
-+{
-+	int reg, mask;
-+
-+	/* If the charger IRQs are a wake source then make sure we ack
-+	 * them even if they're not actively being used (eg, no power
-+	 * driver or no IRQ line wired up) then acknowledge the
-+	 * interrupts otherwise suspend won't last very long.
-+	 */
-+	if (wm831x->charger_irq_wake) {
-+		reg = wm831x_reg_read(wm831x, WM831X_INTERRUPT_STATUS_2_MASK);
-+
-+		mask = WM831X_CHG_BATT_HOT_EINT |
-+			WM831X_CHG_BATT_COLD_EINT |
-+			WM831X_CHG_BATT_FAIL_EINT |
-+			WM831X_CHG_OV_EINT | WM831X_CHG_END_EINT |
-+			WM831X_CHG_TO_EINT | WM831X_CHG_MODE_EINT |
-+			WM831X_CHG_START_EINT;
-+
-+		/* If any of the interrupts are masked read the statuses */
-+		if (reg & mask)
-+			reg = wm831x_reg_read(wm831x,
-+					      WM831X_INTERRUPT_STATUS_2);
-+
-+		if (reg & mask) {
-+			dev_info(wm831x->dev,
-+				 "Acknowledging masked charger IRQs: %x\n",
-+				 reg & mask);
-+			wm831x_reg_write(wm831x, WM831X_INTERRUPT_STATUS_2,
-+					 reg & mask);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- static int wm831x_i2c_read_device(struct wm831x *wm831x, unsigned short reg,
- 				  int bytes, void *dest)
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/tracing/core
+
+
+Lai Jiangshan (1):
+      tracing: Fix uninitialized variable of tracing/trace output
+
+----
+ kernel/trace/trace.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+---------------------------
+commit aa27497c2fb4c7f57706099bd489e683e5cc3e3b
+Author: Lai Jiangshan <laijs@cn.fujitsu.com>
+Date:   Mon Apr 5 17:11:05 2010 +0800
+
+    tracing: Fix uninitialized variable of tracing/trace output
+    
+    Because a local variable is not initialized, I got these
+    when I did 'cat tracing/trace'. (not trace_pipe):
+    
+    CPU:0 [LOST 18446744071579453134 EVENTS]
+                  ps-3099  [000]   560.770221: lock_acquire: ffff880030865010 &(&dentry->d_lock)->rlock
+    CPU:0 [LOST 18446744071579453134 EVENTS]
+                  ps-3099  [000]   560.770221: lock_release: ffff880030865010 &(&dentry->d_lock)->rlock
+    CPU:0 [LOST 18446612133255294080 EVENTS]
+                  ps-3099  [000]   560.770221: lock_acquire: ffff880030865010 &(&dentry->d_lock)->rlock
+    CPU:0 [LOST 18446744071579453134 EVENTS]
+                  ps-3099  [000]   560.770222: lock_release: ffff880030865010 &(&dentry->d_lock)->rlock
+    CPU:0 [LOST 18446744071579453134 EVENTS]
+                  ps-3099  [000]   560.770222: lock_release: ffffffff816cfb98 dcache_lock
+    
+    See peek_next_entry(), it does not set *lost_events when we 'cat tracing/trace'
+    
+    Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+    LKML-Reference: <4BB9A929.2000303@cn.fujitsu.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 0498beb..b9be232 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1571,7 +1571,7 @@ __find_next_entry(struct trace_iterator *iter, int *ent_cpu,
  {
-@@ -1727,6 +1766,13 @@ static int wm831x_i2c_remove(struct i2c_client *i2c)
- 	return 0;
- }
- 
-+static int wm831x_i2c_suspend(struct i2c_client *i2c)
-+{
-+	struct wm831x *wm831x = i2c_get_clientdata(i2c);
-+
-+	return wm831x_device_suspend(wm831x);
-+}
-+
- static const struct i2c_device_id wm831x_i2c_id[] = {
- 	{ "wm8310", WM8310 },
- 	{ "wm8311", WM8311 },
-@@ -1744,6 +1790,7 @@ static struct i2c_driver wm831x_i2c_driver = {
- 	},
- 	.probe = wm831x_i2c_probe,
- 	.remove = wm831x_i2c_remove,
-+	.suspend = wm831x_i2c_suspend,
- 	.id_table = wm831x_i2c_id,
- };
- 
-diff --git a/include/linux/mfd/wm831x/core.h b/include/linux/mfd/wm831x/core.h
-index 5915f6e..eb5bd4e 100644
---- a/include/linux/mfd/wm831x/core.h
-+++ b/include/linux/mfd/wm831x/core.h
-@@ -256,8 +256,9 @@ struct wm831x {
- 	int irq_masks_cache[WM831X_NUM_IRQ_REGS]; /* Cached hardware value */
- 
- 	/* Chip revision based flags */
--	unsigned has_gpio_ena:1;  /* Has GPIO enable bit */
--	unsigned has_cs_sts:1;    /* Has current sink status bit */
-+	unsigned has_gpio_ena:1;         /* Has GPIO enable bit */
-+	unsigned has_cs_sts:1;           /* Has current sink status bit */
-+	unsigned charger_irq_wake:1;     /* Are charger IRQs a wake source? */
- 
- 	int num_gpio;
- 
--- 
-1.7.0.3
+ 	struct ring_buffer *buffer = iter->tr->buffer;
+ 	struct trace_entry *ent, *next = NULL;
+-	unsigned long lost_events, next_lost = 0;
++	unsigned long lost_events = 0, next_lost = 0;
+ 	int cpu_file = iter->cpu_file;
+ 	u64 next_ts = 0, ts;
+ 	int next_cpu = -1;
+
 
