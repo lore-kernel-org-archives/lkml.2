@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511Ab0DEUey (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 16:34:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18455 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756412Ab0DEUer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 16:34:47 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: tytso@mit.edu
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-       jens.axboe@oracle.com, esandeen@redhat.com
-Subject: Re: [patch/rft] jbd2: tag journal writes as metadata I/O
-References: <x49iq8b9ep5.fsf@segfault.boston.devel.redhat.com>
-	<20100405175205.GA4681@thunk.org>
-	<x49hbnpkaqw.fsf@segfault.boston.devel.redhat.com>
-	<20100405194803.GC23670@thunk.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 05 Apr 2010 16:34:36 -0400
-In-Reply-To: <20100405194803.GC23670@thunk.org> (tytso@mit.edu's message of
-	"Mon, 5 Apr 2010 15:48:03 -0400")
-Message-ID: <x49zl1hiqoz.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756478Ab0DEUj6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 16:39:58 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44825 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756351Ab0DEUjw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 16:39:52 -0400
+Date: Mon, 5 Apr 2010 13:39:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Anton Blanchard <anton@samba.org>
+Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] raw: fsync method is now required
+Message-Id: <20100405133902.082a6ef7.akpm@linux-foundation.org>
+In-Reply-To: <20100404004523.GL5594@kryten>
+References: <20100404004523.GL5594@kryten>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tytso@mit.edu writes:
+On Sun, 4 Apr 2010 10:45:23 +1000
+Anton Blanchard <anton@samba.org> wrote:
 
-> On Mon, Apr 05, 2010 at 02:36:07PM -0400, Jeff Moyer wrote:
->> >
->> > What benchmark were you using to test small file writes?  This looks
->> > good to me as well, but we might want to do some extra benchmarking
->> > just to be sure we're not accidentally introducing a performance
->> > regression.
->> 
->> iozone showed regressions for write and re-write in runs that include
->> fsync timings for small files (<8MB).  Here's the command line used for
->> testing:
->> 
->> iozone -az -n 4k -g 2048m -y 1k -q 1m -e
->
-> iozone is showing performance regressions or performance improvements?
-> I thought the point of this patch was to improve iozone benchmarks?
+> 
+> Commit 148f948ba877f4d3cdef036b1ff6d9f68986706a (vfs: Introduce new helpers for syncing after writing to O_SYNC file or IS_SYNC inode) broke the raw driver.
+> 
+> We now call through generic_file_aio_write -> generic_write_sync ->
+> vfs_fsync_range. vfs_fsync_range has:
+> 
+>         if (!fop || !fop->fsync) {
+>                 ret = -EINVAL;
+>                 goto out;
+>         }
+> 
+> But drivers/char/raw.c doesn't set an fsync method. 
 
-Sorry, Ted, what I meant to say was that iozone showed differences
-between deadline and cfq, where cfq's performance was much worse than
-deadline's.
+So if you run fsync() against a /dev/rawX fd you get -EINVAL?  erk.
 
-Thanks!
-Jeff
+> We have two options: fix it or remove the raw driver completely. I'm happy
+> to do either, the fact this has been broken for so long suggests it is
+> rarely used.
+
+Well.  It shows that fsync() is rarely used.
+
+> The patch below adds an fsync method to the raw driver. My knowledge of the
+> block layer is pretty sketchy so this could do with a once over.
+> 
+> If we instead decide to remove the raw driver, this patch might still be
+> useful as a backport to 2.6.33 and 2.6.32.
+
+People go all whiny when I talk about removing raw.c.  I gave up.
