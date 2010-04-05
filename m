@@ -1,205 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756826Ab0DEW6k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 18:58:40 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:63278 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756717Ab0DEW6d (ORCPT
+	id S1756842Ab0DEW7i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 18:59:38 -0400
+Received: from aeryn.fluff.org.uk ([87.194.8.8]:14018 "EHLO
+	kira.home.fluff.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756717Ab0DEW7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 18:58:33 -0400
-Date: Mon, 5 Apr 2010 15:58:33 -0700
-From: Dmitry Torokhov <dtor@vmware.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-       Avi Kivity <avi@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [PATCH] VMware Balloon driver
-Message-ID: <20100405225833.GA25970@dtor-ws.eng.vmware.com>
-References: <20100404215202.GA13020@dtor-ws.eng.vmware.com>
- <20100405142419.2c9bea3d.akpm@linux-foundation.org>
+	Mon, 5 Apr 2010 18:59:32 -0400
+Date: Mon, 5 Apr 2010 23:59:25 +0100
+From: Ben Dooks <ben-linux@fluff.org>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: kernel-janitors@vger.kernel.org, linux-i2c@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: i2c-drivers: Remove dangling pointers
+Message-ID: <20100405225925.GC32401@fluff.org.uk>
+References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100405142419.2c9bea3d.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de>
+X-Disclaimer: These are my own opinions, so there!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05, 2010 at 02:24:19PM -0700, Andrew Morton wrote:
-> On Sun, 4 Apr 2010 14:52:02 -0700
-> Dmitry Torokhov <dtor@vmware.com> wrote:
+On Sat, Mar 20, 2010 at 03:12:41PM +0100, Wolfram Sang wrote:
+> Hi,
 > 
-> > This is standalone version of VMware Balloon driver. Unlike previous
-> > version, that tried to integrate VMware ballooning transport into virtio
-> > subsystem, and use stock virtio_ballon driver, this one implements both
-> > controlling thread/algorithm and hypervisor transport.
-> > 
-> > We are submitting standalone driver because KVM maintainer (Avi Kivity)
-> > expressed opinion (rightly) that our transport does not fit well into
-> > virtqueue paradigm and thus it does not make much sense to integrate
-> > with virtio.
-> > 
+> here is a patch series fixing I2C drivers which free their private data
+> structure and leave the clientdata pointer dangling or do the cleanup in the
+> wrong order. All occurences were found using coccinelle [1] and the semantic
+> patch below. The matches have been reviewed, and sometimes adapted.
 > 
-> I think I've forgotten what balloon drivers do.  Are they as nasty a
-> hack as I remember believing them to be?
+> The complete series goes to linux-i2c and kernel-janitors. The rest of the CCs
+> is handled per patch using get_maintainers.pl (which always adds LKML, so you
+> have the complete series there, too).
 > 
-> A summary of what this code sets out to do, and how it does it would be
-> useful.
+> Please review, comment, apply!
 > 
+> Kind regards,
+> 
+>    Wolfram
+> 
+> [1] http://coccinelle.lip6.fr/
 
-Jeremy provided a very good writeup; I will aldo expand changelog in the
-next version.
-
-> Also please explain the applicability of this driver.  Will xen use it?
-> kvm?  Out-of-tree code?
-
-The driver is expected to be used on VMware platform - mainly ESX.
-Originally we tried to converge with KVM and use virtio and
-stock virtio_balloon driver but Avi mentioned that our code emulating
-virtqueue was more than balloon code itself and thus using virtio did
-not make nuch sense.
-
+>From the list of things here, there's nothing in here that I should be
+worried about (just checking) ?
+ 
+> ===
 > 
-> The code implements a user-visible API (in /proc, at least).  Please
-> fully describe the proposed interface(s) in the changelog so we can
-> review and understand that proposal.
-
-OK.
-
+> @@
+> type T;
+> identifier client, data;
+> @@
 > 
-> >
-> > ...
-> >
-> > +static bool vmballoon_send_start(struct vmballoon *b)
-> > +{
-> > +	unsigned long status, dummy;
-> > +
-> > +	STATS_INC(b->stats.start);
-> > +
-> > +	status = VMWARE_BALLOON_CMD(START, VMW_BALLOON_PROTOCOL_VERSION, dummy);
-> > +	if (status == VMW_BALLOON_SUCCESS)
-> > +		return true;
-> > +
-> > +	pr_debug("%s - failed, hv returns %ld\n", __func__, status);
+> // Check if function uses clientdata
+> (
+> 	i2c_set_clientdata(client, data);
+> |
+> 	data = i2c_get_clientdata(client);
+> |
+> 	T data = i2c_get_clientdata(client);
+> )
+> // Anything inbetween
+> 	...
+> // Check if clientdata gets NULLed before data is freed
+> (
+> 	i2c_set_clientdata(client, NULL);
+> 	...
+>  	kfree(data);
+> |
+> +	i2c_set_clientdata(client, NULL);
+>  	kfree(data);
+> 	...
+> -	i2c_set_clientdata(client, NULL);
+> |
+> +	i2c_set_clientdata(client, NULL);
+> ? 	kfree(data);
+> )
 > 
-> The code refers to something called "hv".  I suspect that's stale?
+> ===
 > 
-> > +	STATS_INC(b->stats.start_fail);
-> > +	return false;
-> > +}
-> > +
-> > +static bool vmballoon_check_status(struct vmballoon *b, unsigned long status)
-> > +{
-> > +	switch (status) {
-> > +	case VMW_BALLOON_SUCCESS:
-> > +		return true;
-> > +
-> > +	case VMW_BALLOON_ERROR_RESET:
-> > +		b->reset_required = true;
-> > +		/* fall through */
-> > +
-> > +	default:
-> > +		return false;
-> > +	}
-> > +}
-> > +
-> > +static bool vmballoon_send_guest_id(struct vmballoon *b)
-> > +{
-> > +	unsigned long status, dummy;
-> > +
-> > +	status = VMWARE_BALLOON_CMD(GUEST_ID, VMW_BALLOON_GUEST_ID, dummy);
-> > +
-> > +	STATS_INC(b->stats.guest_type);
-> > +
-> > +	if (vmballoon_check_status(b, status))
-> > +		return true;
-> > +
-> > +	pr_debug("%s - failed, hv returns %ld\n", __func__, status);
-> > +	STATS_INC(b->stats.guest_type_fail);
-> > +	return false;
-> > +}
+>  drivers/gpio/adp5588-gpio.c                   |    1 +
+>  drivers/gpio/max732x.c                        |    1 +
+>  drivers/gpio/pca953x.c                        |    1 +
+>  drivers/gpio/pcf857x.c                        |    7 ++++---
+>  drivers/hwmon/ad7414.c                        |    2 ++
+>  drivers/hwmon/ad7418.c                        |    2 ++
+>  drivers/hwmon/adm1021.c                       |    2 ++
+>  drivers/hwmon/adm1025.c                       |    2 ++
+>  drivers/hwmon/adm1026.c                       |    2 ++
+>  drivers/hwmon/adm1029.c                       |    2 ++
+>  drivers/hwmon/adm1031.c                       |    2 ++
+>  drivers/hwmon/adm9240.c                       |    2 ++
+>  drivers/hwmon/ads7828.c                       |    5 ++++-
+>  drivers/hwmon/adt7462.c                       |    2 ++
+>  drivers/hwmon/adt7470.c                       |    2 ++
+>  drivers/hwmon/adt7475.c                       |    2 ++
+>  drivers/hwmon/amc6821.c                       |    2 ++
+>  drivers/hwmon/asb100.c                        |    2 ++
+>  drivers/hwmon/atxp1.c                         |    2 ++
+>  drivers/hwmon/dme1737.c                       |    2 ++
+>  drivers/hwmon/ds1621.c                        |    2 ++
+>  drivers/hwmon/f75375s.c                       |    4 ++--
+>  drivers/hwmon/g760a.c                         |    4 ++--
+>  drivers/hwmon/gl518sm.c                       |    2 ++
+>  drivers/hwmon/gl520sm.c                       |    2 ++
+>  drivers/hwmon/lm63.c                          |    2 ++
+>  drivers/hwmon/lm77.c                          |    2 ++
+>  drivers/hwmon/lm78.c                          |    2 ++
+>  drivers/hwmon/lm80.c                          |    2 ++
+>  drivers/hwmon/lm83.c                          |    2 ++
+>  drivers/hwmon/lm85.c                          |    2 ++
+>  drivers/hwmon/lm87.c                          |    2 ++
+>  drivers/hwmon/lm90.c                          |    2 ++
+>  drivers/hwmon/lm92.c                          |    2 ++
+>  drivers/hwmon/lm93.c                          |    2 ++
+>  drivers/hwmon/lm95241.c                       |    1 +
+>  drivers/hwmon/ltc4215.c                       |    2 ++
+>  drivers/hwmon/ltc4245.c                       |    2 ++
+>  drivers/hwmon/max1619.c                       |    2 ++
+>  drivers/hwmon/max6650.c                       |    2 ++
+>  drivers/hwmon/pcf8591.c                       |    6 +++++-
+>  drivers/hwmon/smsc47m192.c                    |    2 ++
+>  drivers/hwmon/thmc50.c                        |    2 ++
+>  drivers/hwmon/tmp401.c                        |    1 +
+>  drivers/hwmon/w83791d.c                       |    2 ++
+>  drivers/hwmon/w83792d.c                       |    2 ++
+>  drivers/hwmon/w83793.c                        |    1 +
+>  drivers/hwmon/w83l785ts.c                     |    2 ++
+>  drivers/hwmon/w83l786ng.c                     |    2 ++
+>  drivers/input/keyboard/lm8323.c               |    2 ++
+>  drivers/input/keyboard/qt2160.c               |    2 +-
+>  drivers/input/touchscreen/mcs5000_ts.c        |    2 +-
+>  drivers/input/touchscreen/tsc2007.c           |    1 +
+>  drivers/leds/leds-lp3944.c                    |    2 +-
+>  drivers/leds/leds-pca9532.c                   |    4 ++--
+>  drivers/leds/leds-pca955x.c                   |    4 ++--
+>  drivers/macintosh/therm_adt746x.c             |    2 ++
+>  drivers/media/radio/radio-tea5764.c           |    2 ++
+>  drivers/media/radio/si470x/radio-si470x-i2c.c |    2 +-
+>  drivers/media/video/cs5345.c                  |    1 +
+>  drivers/media/video/cs53l32a.c                |    1 +
+>  drivers/media/video/ir-kbd-i2c.c              |    2 ++
+>  drivers/media/video/tda9840.c                 |    1 +
+>  drivers/media/video/tea6415c.c                |    1 +
+>  drivers/media/video/tea6420.c                 |    1 +
+>  drivers/media/video/ths7303.c                 |    1 +
+>  drivers/mfd/88pm860x-i2c.c                    |    1 +
+>  drivers/mfd/ab3100-core.c                     |    2 ++
+>  drivers/mfd/da903x.c                          |    1 +
+>  drivers/mfd/menelaus.c                        |    3 ++-
+>  drivers/mfd/pcf50633-core.c                   |    1 +
+>  drivers/mfd/tps65010.c                        |    2 +-
+>  drivers/mfd/wm8350-i2c.c                      |    2 ++
+>  drivers/misc/ad525x_dpot.c                    |    2 +-
+>  drivers/misc/eeprom/at24.c                    |    2 +-
+>  drivers/misc/eeprom/eeprom.c                  |    6 +++++-
+>  drivers/misc/eeprom/max6875.c                 |    2 ++
+>  drivers/misc/ics932s401.c                     |    2 ++
+>  drivers/misc/isl29003.c                       |    6 +++++-
+>  drivers/misc/tsl2550.c                        |    6 +++++-
+>  drivers/mtd/maps/pismo.c                      |    8 +++++++-
+>  drivers/power/bq27x00_battery.c               |    2 ++
+>  drivers/power/ds2782_battery.c                |    4 ++--
+>  drivers/regulator/max1586.c                   |    2 +-
+>  drivers/regulator/max8649.c                   |    3 ++-
+>  drivers/regulator/max8660.c                   |    2 +-
+>  drivers/rtc/rtc-ds1307.c                      |    2 ++
+>  drivers/rtc/rtc-fm3130.c                      |    2 ++
+>  drivers/rtc/rtc-m41t80.c                      |    2 ++
+>  drivers/rtc/rtc-pcf8563.c                     |    2 ++
+>  drivers/rtc/rtc-pcf8583.c                     |    2 ++
+>  drivers/rtc/rtc-rs5c372.c                     |    2 ++
+>  drivers/rtc/rtc-s35390a.c                     |    4 ++--
+>  drivers/staging/dream/synaptics_i2c_rmi.c     |    2 ++
+>  drivers/staging/go7007/wis-saa7113.c          |    1 +
+>  drivers/staging/go7007/wis-saa7115.c          |    1 +
+>  drivers/staging/go7007/wis-tw9903.c           |    1 +
+>  drivers/staging/iio/adc/max1363_core.c        |    2 ++
+>  drivers/staging/iio/light/tsl2563.c           |    2 ++
+>  drivers/usb/otg/isp1301_omap.c                |    5 ++++-
+>  drivers/video/matrox/matroxfb_maven.c         |    1 +
+>  drivers/w1/masters/ds2482.c                   |    2 ++
+>  102 files changed, 198 insertions(+), 33 deletions(-)
 > 
-> The lack of comments makes it all a bit hard to take in.
-
-OK, I will address lack of comments.
-
-> 
-> >
-> > ...
-> >
-> > +static int __init vmballoon_init(void)
-> > +{
-> > +	int error;
-> > +
-> > +	/*
-> > +	 * Check if we are running on VMware's hypervisor and bail out
-> > +	 * if we are not.
-> > +	 */
-> > +	if (!vmware_platform())
-> > +		return -ENODEV;
-> > +
-> > +	vmballoon_wq = create_freezeable_workqueue("vmmemctl");
-> > +	if (!vmballoon_wq) {
-> > +		pr_err("failed to create workqueue\n");
-> > +		return -ENOMEM;
-> > +	}
-> > +
-> > +	/* initialize global state */
-> > +	memset(&balloon, 0, sizeof(balloon));
-> 
-> The memset seems to be unneeded.
-
-OK.
-
-> 
-> > +	INIT_LIST_HEAD(&balloon.pages);
-> > +	INIT_LIST_HEAD(&balloon.refused_pages);
-> > +
-> > +	/* initialize rates */
-> > +	balloon.rate_alloc = VMW_BALLOON_RATE_ALLOC_MAX;
-> > +	balloon.rate_free = VMW_BALLOON_RATE_FREE_MAX;
-> > +
-> > +	INIT_DELAYED_WORK(&balloon.dwork, vmballoon_work);
-> > +
-> > +	/*
-> > +	 * Start balloon.
-> > +	 */
-> > +	if (!vmballoon_send_start(&balloon)) {
-> > +		pr_err("failed to send start command to the host\n");
-> > +		error = -EIO;
-> > +		goto fail;
-> > +	}
-> > +
-> > +	if (!vmballoon_send_guest_id(&balloon)) {
-> > +		pr_err("failed to send guest ID to the host\n");
-> > +		error = -EIO;
-> > +		goto fail;
-> > +	}
-> > +
-> > +	error = vmballoon_procfs_init(&balloon);
-> > +	if (error)
-> > +		goto fail;
-> > +
-> > +	queue_delayed_work(vmballoon_wq, &balloon.dwork, 0);
-> > +
-> > +	return 0;
-> > +
-> > +fail:
-> > +	destroy_workqueue(vmballoon_wq);
-> > +	return error;
-> > +}
-> >
-> > ...
-> >
-> 
-> Oh well, ho hum.  Help is needed on working out what to do about this,
-> please.
-> 
-> Congrats on the new job, btw ;)
-
-Thanks ;). BTW, please send input stuff to my gmail addresss till.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 -- 
-Dmitry
+Ben (ben@fluff.org, http://www.fluff.org/)
 
+  'a smiley only costs 4 bytes'
