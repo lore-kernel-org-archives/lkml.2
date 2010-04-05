@@ -1,136 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab0DEDj7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 23:39:59 -0400
-Received: from sh.osrg.net ([192.16.179.4]:36110 "EHLO sh.osrg.net"
+	id S1754283Ab0DEDmz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 23:42:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:1879 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753889Ab0DEDjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 23:39:53 -0400
-Date: Mon, 5 Apr 2010 12:39:32 +0900
-To: linux@arm.linux.org.uk
-Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-       davem@davemloft.net, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: dmabounce: fix partial sync in dma_sync_single_* API
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1754113Ab0DEDmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Apr 2010 23:42:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,364,1267430400"; 
+   d="scan'208";a="610207286"
+Message-ID: <4BB95C33.1050706@linux.intel.com>
+Date: Sun, 04 Apr 2010 20:42:43 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Dominik Brodowski <linux@dominikbrodowski.net>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Adam Belay <abelay@novell.com>, Len Brown <len.brown@intel.com>,
+       linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: A few questions and issues with dynticks, NOHZ and powertop
+References: <20100403223328.GA4507@comet.dominikbrodowski.net> <20100403235326.GA23445@core.coreip.homeip.net> <20100404104708.GA5922@comet.dominikbrodowski.net>
+In-Reply-To: <20100404104708.GA5922@comet.dominikbrodowski.net>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100405123847C.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 05 Apr 2010 12:39:34 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't have arm hardware that uses dmabounce so I can't confirm the
-problem but seems that dmabounce doesn't work for some drivers...
+On 4/4/2010 3:47, Dominik Brodowski wrote:
+> Hey,
+>
+> On Sat, Apr 03, 2010 at 04:53:26PM -0700, Dmitry Torokhov wrote:
+>> On Sun, Apr 04, 2010 at 12:33:28AM +0200, Dominik Brodowski wrote:
+>>>
+>>> 4) SynPS/2 touchpad:
+>>> Why does moving the touchpad lead to sooo many IRQs? I can't look as fast
+>>> as the mouse pointer seems to get new data:
+>>>    62,5% (473,1)<interrupt>  : PS/2 keyboard/mouse/touchpad
+>>>
+>>
+>> 80 pps @ 6 bytes/packet = 480 interrupts/sec.
+>>
+>> You can try using psmouse.rate=40 to limit it to 40 pps which should
+>> bring it to the rate of standard PS/2 mouse at the expense of
+>> sensitivity...
+>
+> as a sidenote: if we know -- like here -- that the next IRQ will be issued
+> soon, in approximately 1.75 ms (well, at least on my system), might it make
+> sense to make tick_nohz_get_sleep_length() smarter to know about this?
 
-=
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: [PATCH] ARM: dmabounce: fix partial sync in dma_sync_single_* API
+yes and no.
 
-Some network drivers do a partial sync with
-dma_sync_single_for_{device|cpu}. The dma_addr argument might not be
-the same as one as passed into the mapping API.
+if you are very sure (95%+ or so) then absolutely it needs to know about this
+so that the C state selection code can make a better decision.
+Right now it tries to look at history to guess this delay.
 
-This adds some tricks to find_safe_buffer() for
-dma_sync_single_for_{device|cpu}.
-
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
----
- arch/arm/common/dmabounce.c |   31 +++++++++++++++++++++----------
- 1 files changed, 21 insertions(+), 10 deletions(-)
-
-diff --git a/arch/arm/common/dmabounce.c b/arch/arm/common/dmabounce.c
-index cc0a932..87eb160 100644
---- a/arch/arm/common/dmabounce.c
-+++ b/arch/arm/common/dmabounce.c
-@@ -163,7 +163,8 @@ alloc_safe_buffer(struct dmabounce_device_info *device_info, void *ptr,
- 
- /* determine if a buffer is from our "safe" pool */
- static inline struct safe_buffer *
--find_safe_buffer(struct dmabounce_device_info *device_info, dma_addr_t safe_dma_addr)
-+find_safe_buffer(struct dmabounce_device_info *device_info, dma_addr_t safe_dma_addr,
-+		 int for_sync)
- {
- 	struct safe_buffer *b, *rb = NULL;
- 	unsigned long flags;
-@@ -171,10 +172,17 @@ find_safe_buffer(struct dmabounce_device_info *device_info, dma_addr_t safe_dma_
- 	read_lock_irqsave(&device_info->lock, flags);
- 
- 	list_for_each_entry(b, &device_info->safe_buffers, node)
--		if (b->safe_dma_addr == safe_dma_addr) {
--			rb = b;
--			break;
--		}
-+		if (for_sync) {
-+			if (b->safe_dma_addr <= safe_dma_addr &&
-+			    safe_dma_addr < b->safe_dma_addr + b->size) {
-+				rb = b;
-+				break;
-+			}
-+		} else
-+			if (b->safe_dma_addr == safe_dma_addr) {
-+				rb = b;
-+				break;
-+			}
- 
- 	read_unlock_irqrestore(&device_info->lock, flags);
- 	return rb;
-@@ -205,7 +213,8 @@ free_safe_buffer(struct dmabounce_device_info *device_info, struct safe_buffer *
- /* ************************************************** */
- 
- static struct safe_buffer *find_safe_buffer_dev(struct device *dev,
--		dma_addr_t dma_addr, const char *where)
-+						dma_addr_t dma_addr, const char *where,
-+						int for_sync)
- {
- 	if (!dev || !dev->archdata.dmabounce)
- 		return NULL;
-@@ -216,7 +225,7 @@ static struct safe_buffer *find_safe_buffer_dev(struct device *dev,
- 			pr_err("unknown device: Trying to %s invalid mapping\n", where);
- 		return NULL;
- 	}
--	return find_safe_buffer(dev->archdata.dmabounce, dma_addr);
-+	return find_safe_buffer(dev->archdata.dmabounce, dma_addr, for_sync);
- }
- 
- static inline dma_addr_t map_single(struct device *dev, void *ptr, size_t size,
-@@ -286,7 +295,7 @@ static inline dma_addr_t map_single(struct device *dev, void *ptr, size_t size,
- static inline void unmap_single(struct device *dev, dma_addr_t dma_addr,
- 		size_t size, enum dma_data_direction dir)
- {
--	struct safe_buffer *buf = find_safe_buffer_dev(dev, dma_addr, "unmap");
-+	struct safe_buffer *buf = find_safe_buffer_dev(dev, dma_addr, "unmap", 0);
- 
- 	if (buf) {
- 		BUG_ON(buf->size != size);
-@@ -398,7 +407,7 @@ int dmabounce_sync_for_cpu(struct device *dev, dma_addr_t addr,
- 	dev_dbg(dev, "%s(dma=%#x,off=%#lx,sz=%zx,dir=%x)\n",
- 		__func__, addr, off, sz, dir);
- 
--	buf = find_safe_buffer_dev(dev, addr, __func__);
-+	buf = find_safe_buffer_dev(dev, addr, __func__, 1);
- 	if (!buf)
- 		return 1;
- 
-@@ -411,6 +420,8 @@ int dmabounce_sync_for_cpu(struct device *dev, dma_addr_t addr,
- 	DO_STATS(dev->archdata.dmabounce->bounce_count++);
- 
- 	if (dir == DMA_FROM_DEVICE || dir == DMA_BIDIRECTIONAL) {
-+		if (addr != buf->safe_dma_addr)
-+			off = addr - buf->safe_dma_addr;
- 		dev_dbg(dev, "%s: copy back safe %p to unsafe %p size %d\n",
- 			__func__, buf->safe + off, buf->ptr + off, sz);
- 		memcpy(buf->ptr + off, buf->safe + off, sz);
-@@ -427,7 +438,7 @@ int dmabounce_sync_for_device(struct device *dev, dma_addr_t addr,
- 	dev_dbg(dev, "%s(dma=%#x,off=%#lx,sz=%zx,dir=%x)\n",
- 		__func__, addr, off, sz, dir);
- 
--	buf = find_safe_buffer_dev(dev, addr, __func__);
-+	buf = find_safe_buffer_dev(dev, addr, __func__, 1);
- 	if (!buf)
- 		return 1;
- 
--- 
-1.7.0
-
+Unfortunately we do not currently have such a concept in the code to make this
+work... but it'd be really nice to have.
