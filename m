@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756431Ab0DEUes (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 16:34:48 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:56931 "EHLO e3.ny.us.ibm.com"
+	id S1756511Ab0DEUey (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 16:34:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18455 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756352Ab0DEUep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 16:34:45 -0400
-Date: Mon, 5 Apr 2010 13:34:41 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: david@lang.hm, Dominik Brodowski <linux@dominikbrodowski.net>,
-       Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>, Dmitry Torokhov <dtor@mail.ru>
-Subject: Re: A few questions and issues with dynticks, NOHZ and powertop
-Message-ID: <20100405203441.GG2525@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100404163924.GA18428@comet.dominikbrodowski.net>
- <20100404204725.GC2644@linux.vnet.ibm.com>
- <20100404233702.GA24102@linux.vnet.ibm.com>
- <4BB95C85.80205@linux.intel.com>
- <20100405042222.GD2644@linux.vnet.ibm.com>
- <4BB9F657.4050901@linux.intel.com>
- <20100405151401.GA2525@linux.vnet.ibm.com>
- <4BBA0AC5.1080905@linux.intel.com>
- <alpine.DEB.2.00.1004051137160.12764@asgard.lang.hm>
- <4BBA3EAB.6010800@linux.intel.com>
+	id S1756412Ab0DEUer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 16:34:47 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: tytso@mit.edu
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+       jens.axboe@oracle.com, esandeen@redhat.com
+Subject: Re: [patch/rft] jbd2: tag journal writes as metadata I/O
+References: <x49iq8b9ep5.fsf@segfault.boston.devel.redhat.com>
+	<20100405175205.GA4681@thunk.org>
+	<x49hbnpkaqw.fsf@segfault.boston.devel.redhat.com>
+	<20100405194803.GC23670@thunk.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 05 Apr 2010 16:34:36 -0400
+In-Reply-To: <20100405194803.GC23670@thunk.org> (tytso@mit.edu's message of
+	"Mon, 5 Apr 2010 15:48:03 -0400")
+Message-ID: <x49zl1hiqoz.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BBA3EAB.6010800@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05, 2010 at 12:48:59PM -0700, Arjan van de Ven wrote:
-> On 4/5/2010 11:44, david@lang.hm wrote:
-> >On Mon, 5 Apr 2010, Arjan van de Ven wrote:
-> >
-> >>On 4/5/2010 8:14, Paul E. McKenney wrote:
-> >>>So the main issue is that for many workloads, it is best to run full
-> >>>bore
-> >>>and get done quickly, thus allowing the entire machine to be powered
-> >>>down?
-> >>
-> >>yep
-> >
-> >Race To Idle works extremely well in a batch type situation where there
-> >is not going to be any work to do after you finish what you have.
-> >
-> >It doesn't work quite as well if you are going to have new work to do in
-> >the near future.
-> >
-> >You cannot power down the entire machine if you have to look for user
-> >input.
-> >
-> >It takes time (and power) to shut down and start back up, if you are
-> >going to have more work to do before you can make the complete cycle
-> >(and save more power than it costs to make the transitions), it's best
-> >to stay at full power, even if you are idle.
-> 
-> for the things we're talking about here (memory controllers etc) we're talking
-> about single to low double digit microseconds (or even less) of time to go up and down.
-> Many of the things you talk about are in the millisecond timeframe.
+tytso@mit.edu writes:
 
-So the decision will depend not only on the workload itself, but also
-on the hardware that the workload uses.
+> On Mon, Apr 05, 2010 at 02:36:07PM -0400, Jeff Moyer wrote:
+>> >
+>> > What benchmark were you using to test small file writes?  This looks
+>> > good to me as well, but we might want to do some extra benchmarking
+>> > just to be sure we're not accidentally introducing a performance
+>> > regression.
+>> 
+>> iozone showed regressions for write and re-write in runs that include
+>> fsync timings for small files (<8MB).  Here's the command line used for
+>> testing:
+>> 
+>> iozone -az -n 4k -g 2048m -y 1k -q 1m -e
+>
+> iozone is showing performance regressions or performance improvements?
+> I thought the point of this patch was to improve iozone benchmarks?
 
-							Thanx, Paul
+Sorry, Ted, what I meant to say was that iozone showed differences
+between deadline and cfq, where cfq's performance was much worse than
+deadline's.
+
+Thanks!
+Jeff
