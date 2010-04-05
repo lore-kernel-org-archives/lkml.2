@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab0DEKzj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 06:55:39 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:42289 "EHLO
-	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751735Ab0DEKzd (ORCPT
+	id S1754206Ab0DELAH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 07:00:07 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47270 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786Ab0DELAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 06:55:33 -0400
-X-Greylist: delayed 2532 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Apr 2010 06:55:33 EDT
-Date: Mon, 5 Apr 2010 18:13:13 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Subject: Re: [PATCH ide#master] ide: clean up timed out request handling
-Message-ID: <20100405101313.GA17322@gondor.apana.org.au>
-References: <4BB9AAB7.3020209@kernel.org>
+	Mon, 5 Apr 2010 07:00:00 -0400
+Date: Mon, 5 Apr 2010 12:59:57 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: Greg KH <gregkh@suse.de>, Sven Neumann <s.neumann@raumfeld.com>,
+       linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       AKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: Memory corruption with 2.6.32.10, but not with 2.6.34-rc3
+Message-ID: <20100405105957.GA2302@pengutronix.de>
+References: <20100401132156.GJ30807@buzzloop.caiaq.de> <20100401165144.GB1138@suse.de> <20100401165857.GN30801@buzzloop.caiaq.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4BB9AAB7.3020209@kernel.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100401165857.GN30801@buzzloop.caiaq.de>
 User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05, 2010 at 06:17:43PM +0900, Tejun Heo wrote:
-> 8f6205cd572fece673da0255d74843680f67f879 introduced a bug where a
-> timed out DMA request is never requeued and lost.
-> 6072f7491f5ef391a575e18a1165e72a3eef1601 fixed this by making
-> ide_dma_timeout_retry() requeue the request itself.  While the fix is
-> correct, it makes DMA and non-DMA paths asymmetric regarding how the
-> in flight request is requeued.
+On Thu, Apr 01, 2010 at 06:58:57PM +0200, Daniel Mack wrote:
+> On Thu, Apr 01, 2010 at 09:51:44AM -0700, Greg KH wrote:
+> > On Thu, Apr 01, 2010 at 03:21:56PM +0200, Daniel Mack wrote:
+> > > 
+> > > I can cherry-pick things if anyone pin-points something and run
+> > > lont-time tests again. Any pointer appreciated.
+> > 
+> > Oh, how about running 'git bisect' to try to find the solution?  Just
+> > remember to reverse 'good' and 'bad' for when you tell git bisect what
+> > the results are.
 > 
-> As long as hwif->rq is set, the IDE driver is assuming ownership of
-> the request and the request should either be completed or requeued
-> when clearing hwif->rq.  In the timeout path, the ide driver holds
-> onto the request as long as the recovery action (ie. reset) is in
-> progress and clears it after the state machine is stopped (ide_stopped
-> return), so the existing requeueing logic is correct.  The bug
-> occurred because ide_dma_timeout_retry() explicitly clears hwif->rq
-> without requeueing it.
-> 
-> ide_dma_timeout_retry() is called only by ide_timer_expiry() and
-> returns ide_started only when ide_error() would return it - ie. after
-> reset state machine has started in which case the state machine will
-> eventually end up executing the ide_stopped path in ide_timer_expiry()
-> after reset protocol is complete.  So, there is no need to clear
-> hwif->rq from ide_dma_timeout_retry().  ide_timer_expiry() will handle
-> it the same way as PIO timeout path.
-> 
-> Kill hwif->rq clearing and requeueing from ide_dma_timeout_retry() and
-> let ide_timer_expiry() deal with it.  The end result should remain the
-> same.
-> 
-> grepping shows ide_dma_timeout_retry() is the only site which clears
-> hwif->rq without taking care of the request, so there shouldn't be
-> similar fallouts.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> ---
-> Herbert, can you please test this survives your test case?
+> Jep, I thought about that of course. But unfortunately, the platform
+> got merged mainline in the middle of that time window which makes
+> bisecting tricky. And worse than that - every test run take around half
+> a day at least :(
+What you can do is backport the platform-support on top of rev initially
+marked good (in a branch named say foo) and when asked for testing do:
 
-I'll put it on my test machine.
+	git merge --no-commit foo
+	<test>
+	git reset --hard
+	git bisect {good|bad}
 
-However, as this bug triggers rarely (it's a race condition between
-qemu and ide), I don't expect a negative result any time soon.
+Assuming the platform-support got in in one go (and you shouldn't test
+in the middle, which you can simply skip), the merge should always work
+just fine.
 
-In any case, your patch looks good to me.
+Best regards
+Uwe
 
-Cheers,
 -- 
-Visit Openswan at http://www.openswan.org/
-Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
