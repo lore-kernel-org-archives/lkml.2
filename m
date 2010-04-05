@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877Ab0DEXES (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 19:04:18 -0400
-Received: from us-mx4.synaptics.com ([12.178.49.178]:60520 "EHLO
-	us-mx4.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756816Ab0DEXEJ (ORCPT
+	id S1756901Ab0DEXEc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 19:04:32 -0400
+Received: from aeryn.fluff.org.uk ([87.194.8.8]:14753 "EHLO
+	kira.home.fluff.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756816Ab0DEXE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 19:04:09 -0400
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Mon, 05 Apr 2010 14:55:49 -0700
-Message-ID: <4BBA6C65.1010300@synaptics.com>
-Date: Mon, 5 Apr 2010 16:04:05 -0700
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	Mon, 5 Apr 2010 19:04:26 -0400
+Date: Tue, 6 Apr 2010 00:03:01 +0100
+From: Ben Dooks <ben-linux@fluff.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: monstr@monstr.eu, gregkh@suse.de, benh@kernel.crashing.org,
+       akpm@linux-foundation.org, davem@davemloft.net, sfr@canb.auug.org.au,
+       jgarzik@pobox.com, ben-linux@fluff.org, dwmw2@infradead.org,
+       jeremy.kerr@canonical.com, James.Bottomley@suse.de,
+       broonie@opensource.wolfsonmicro.com, microblaze-uclinux@itee.uq.edu.au,
+       linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+       sparclinux@vger.kernel.org, linux-ide@vger.kernel.org,
+       netdev@vger.kernel.org, linux-i2c@vger.kernel.org,
+       devicetree-discuss@lists.ozlabs.org, linux-scsi@vger.kernel.org,
+       alsa-devel@alsa-project.org
+Subject: Re: [PATCH 33/37] sound/soc: use .dev.of_node instead of .node in
+ struct of_device
+Message-ID: <20100405230301.GF32401@fluff.org.uk>
+References: <20100311174830.4824.19820.stgit@angua>
+ <20100311180649.4824.10368.stgit@angua>
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Linux Kernel <linux-kernel@vger.kernel.org>,
-       Linux Input <linux-input@vger.kernel.org>,
-       Allie Xiong <axiong@synaptics.com>,
-       William Manson <WManson@synaptics.com>
-Subject: Re: [RFC PATCH 1/1] input/touchscreen: Synaptics Touchscreen Driver
-References: <1269310058-10894-1-git-send-email-cheiny@synaptics.com>	<1269310058-10894-2-git-send-email-cheiny@synaptics.com> <20100402145025.0265a074@hyperion.delvare>
-In-Reply-To: <20100402145025.0265a074@hyperion.delvare>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100311180649.4824.10368.stgit@angua>
+X-Disclaimer: These are my own opinions, so there!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2010 05:50 AM, Jean Delvare wrote:
-> Sorry for the delay. Here finally come my comments on your code. I'm
-> only commenting on the i2c side of things.
+On Thu, Mar 11, 2010 at 11:06:50AM -0700, Grant Likely wrote:
+> .node is being removed
+> 
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> ---
+> 
+>  sound/soc/fsl/mpc8610_hpcd.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/sound/soc/fsl/mpc8610_hpcd.c b/sound/soc/fsl/mpc8610_hpcd.c
+> index ef67d1c..d7e1b9a 100644
+> --- a/sound/soc/fsl/mpc8610_hpcd.c
+> +++ b/sound/soc/fsl/mpc8610_hpcd.c
+> @@ -202,7 +202,7 @@ static struct snd_soc_ops mpc8610_hpcd_ops = {
+>  static int mpc8610_hpcd_probe(struct of_device *ofdev,
+>  	const struct of_device_id *match)
+>  {
+> -	struct device_node *np = ofdev->node;
+> +	struct device_node *np = ofdev->dev.of_node;
+>  	struct device_node *codec_np = NULL;
+>  	struct device_node *guts_np = NULL;
+>  	struct device_node *dma_np = NULL;
 
-Hi Jean,
+This looks like one case where an inline function would have been a
+help.
 
-Thanks for the input!  It's quite helpful and clears up some things we 
-were a bit puzzled about.  We'll fold most of your suggestions into the 
-next patch.  Answers to some questions you raised will be coming shortly.
 
-				Thanks again,
-					Chris
+-- 
+Ben (ben@fluff.org, http://www.fluff.org/)
+
+  'a smiley only costs 4 bytes'
