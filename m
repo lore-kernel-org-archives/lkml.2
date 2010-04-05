@@ -1,58 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195Ab0DEC7e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Apr 2010 22:59:34 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40881 "EHLO hera.kernel.org"
+	id S1754246Ab0DEDj7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Apr 2010 23:39:59 -0400
+Received: from sh.osrg.net ([192.16.179.4]:36110 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754035Ab0DEC72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 22:59:28 -0400
-Message-ID: <4BB951FE.3090402@kernel.org>
-Date: Mon, 05 Apr 2010 11:59:10 +0900
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [GIT PULL] percpu fixes for 2.6.34-rc3
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753889Ab0DEDjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Apr 2010 23:39:53 -0400
+Date: Mon, 5 Apr 2010 12:39:32 +0900
+To: linux@arm.linux.org.uk
+Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+       davem@davemloft.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: dmabounce: fix partial sync in dma_sync_single_* API
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 05 Apr 2010 02:59:14 +0000 (UTC)
+Message-Id: <20100405123847C.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 05 Apr 2010 12:39:34 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+I don't have arm hardware that uses dmabounce so I can't confirm the
+problem but seems that dmabounce doesn't work for some drivers...
 
-Please pull from the following percpu branch.
+=
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: [PATCH] ARM: dmabounce: fix partial sync in dma_sync_single_* API
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-linus
+Some network drivers do a partial sync with
+dma_sync_single_for_{device|cpu}. The dma_addr argument might not be
+the same as one as passed into the mapping API.
 
-lockdep was hardcoding conditions to determine whether an address
-belongs to percpu area.  With recent percpu allocator changes, the
-logic no longer is correct triggering bogus warning messages.  The
-above branch implements is_kernel/module_percpu_address() and makes
-lockdep use them instead.
+This adds some tricks to find_safe_buffer() for
+dma_sync_single_for_{device|cpu}.
 
-Has been tested in linux-next and pulls cleanly into
-db217dece3003df0841bacf9556b5c06aa097dae.
+Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+---
+ arch/arm/common/dmabounce.c |   31 +++++++++++++++++++++----------
+ 1 files changed, 21 insertions(+), 10 deletions(-)
 
-Thanks.
+diff --git a/arch/arm/common/dmabounce.c b/arch/arm/common/dmabounce.c
+index cc0a932..87eb160 100644
+--- a/arch/arm/common/dmabounce.c
++++ b/arch/arm/common/dmabounce.c
+@@ -163,7 +163,8 @@ alloc_safe_buffer(struct dmabounce_device_info *device_info, void *ptr,
+ 
+ /* determine if a buffer is from our "safe" pool */
+ static inline struct safe_buffer *
+-find_safe_buffer(struct dmabounce_device_info *device_info, dma_addr_t safe_dma_addr)
++find_safe_buffer(struct dmabounce_device_info *device_info, dma_addr_t safe_dma_addr,
++		 int for_sync)
+ {
+ 	struct safe_buffer *b, *rb = NULL;
+ 	unsigned long flags;
+@@ -171,10 +172,17 @@ find_safe_buffer(struct dmabounce_device_info *device_info, dma_addr_t safe_dma_
+ 	read_lock_irqsave(&device_info->lock, flags);
+ 
+ 	list_for_each_entry(b, &device_info->safe_buffers, node)
+-		if (b->safe_dma_addr == safe_dma_addr) {
+-			rb = b;
+-			break;
+-		}
++		if (for_sync) {
++			if (b->safe_dma_addr <= safe_dma_addr &&
++			    safe_dma_addr < b->safe_dma_addr + b->size) {
++				rb = b;
++				break;
++			}
++		} else
++			if (b->safe_dma_addr == safe_dma_addr) {
++				rb = b;
++				break;
++			}
+ 
+ 	read_unlock_irqrestore(&device_info->lock, flags);
+ 	return rb;
+@@ -205,7 +213,8 @@ free_safe_buffer(struct dmabounce_device_info *device_info, struct safe_buffer *
+ /* ************************************************** */
+ 
+ static struct safe_buffer *find_safe_buffer_dev(struct device *dev,
+-		dma_addr_t dma_addr, const char *where)
++						dma_addr_t dma_addr, const char *where,
++						int for_sync)
+ {
+ 	if (!dev || !dev->archdata.dmabounce)
+ 		return NULL;
+@@ -216,7 +225,7 @@ static struct safe_buffer *find_safe_buffer_dev(struct device *dev,
+ 			pr_err("unknown device: Trying to %s invalid mapping\n", where);
+ 		return NULL;
+ 	}
+-	return find_safe_buffer(dev->archdata.dmabounce, dma_addr);
++	return find_safe_buffer(dev->archdata.dmabounce, dma_addr, for_sync);
+ }
+ 
+ static inline dma_addr_t map_single(struct device *dev, void *ptr, size_t size,
+@@ -286,7 +295,7 @@ static inline dma_addr_t map_single(struct device *dev, void *ptr, size_t size,
+ static inline void unmap_single(struct device *dev, dma_addr_t dma_addr,
+ 		size_t size, enum dma_data_direction dir)
+ {
+-	struct safe_buffer *buf = find_safe_buffer_dev(dev, dma_addr, "unmap");
++	struct safe_buffer *buf = find_safe_buffer_dev(dev, dma_addr, "unmap", 0);
+ 
+ 	if (buf) {
+ 		BUG_ON(buf->size != size);
+@@ -398,7 +407,7 @@ int dmabounce_sync_for_cpu(struct device *dev, dma_addr_t addr,
+ 	dev_dbg(dev, "%s(dma=%#x,off=%#lx,sz=%zx,dir=%x)\n",
+ 		__func__, addr, off, sz, dir);
+ 
+-	buf = find_safe_buffer_dev(dev, addr, __func__);
++	buf = find_safe_buffer_dev(dev, addr, __func__, 1);
+ 	if (!buf)
+ 		return 1;
+ 
+@@ -411,6 +420,8 @@ int dmabounce_sync_for_cpu(struct device *dev, dma_addr_t addr,
+ 	DO_STATS(dev->archdata.dmabounce->bounce_count++);
+ 
+ 	if (dir == DMA_FROM_DEVICE || dir == DMA_BIDIRECTIONAL) {
++		if (addr != buf->safe_dma_addr)
++			off = addr - buf->safe_dma_addr;
+ 		dev_dbg(dev, "%s: copy back safe %p to unsafe %p size %d\n",
+ 			__func__, buf->safe + off, buf->ptr + off, sz);
+ 		memcpy(buf->ptr + off, buf->safe + off, sz);
+@@ -427,7 +438,7 @@ int dmabounce_sync_for_device(struct device *dev, dma_addr_t addr,
+ 	dev_dbg(dev, "%s(dma=%#x,off=%#lx,sz=%zx,dir=%x)\n",
+ 		__func__, addr, off, sz, dir);
+ 
+-	buf = find_safe_buffer_dev(dev, addr, __func__);
++	buf = find_safe_buffer_dev(dev, addr, __func__, 1);
+ 	if (!buf)
+ 		return 1;
+ 
+-- 
+1.7.0
 
-Randy Dunlap (1):
-      module: add stub for is_module_percpu_address
-
-Tejun Heo (2):
-      module: encapsulate percpu handling better and record percpu_size
-      percpu, module: implement and use is_kernel/module_percpu_address()
-
- include/linux/module.h |   11 +++++-
- include/linux/percpu.h |    7 +++
- kernel/lockdep.c       |   21 ++-------
- kernel/module.c        |  104 +++++++++++++++++++++++++++++++++--------------
- mm/percpu.c            |   26 ++++++++++++
- 5 files changed, 121 insertions(+), 48 deletions(-)
-
---
-tejun
