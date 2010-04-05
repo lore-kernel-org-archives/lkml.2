@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751638Ab0DEHF6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 03:05:58 -0400
-Received: from sajino.sajinet.com.pe ([76.74.239.193]:40172 "EHLO
-	sajino.sajinet.com.pe" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab0DEHFv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 03:05:51 -0400
-X-Greylist: delayed 595 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Apr 2010 03:05:51 EDT
-From: Carlo Marcelo Arenas Belon <carenas@sajinet.com.pe>
-To: linux-kernel@vger.kernel.org
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-       Eric B Munson <ebmunson@us.ibm.com>,
-       Carlo Marcelo Arenas Belon <carenas@sajinet.com.pe>
-Subject: [PATCH] documentation: slightly more correct value for MAP_HUGETLB in map_hugetlb.c
-Date: Sun,  4 Apr 2010 23:54:53 -0700
-Message-Id: <1270450493-8790-1-git-send-email-carenas@sajinet.com.pe>
-X-Mailer: git-send-email 1.7.0.1
+	id S1751517Ab0DEHpU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 03:45:20 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56184 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751102Ab0DEHpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 03:45:14 -0400
+Message-ID: <4BB994FC.1090106@kernel.org>
+Date: Mon, 05 Apr 2010 16:45:00 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
+       linux-kernel@vger.kernel.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
+       linux-fsdevel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+       Benjamin LaHaise <bcrl@lhnet.ca>, Serge Hallyn <serue@us.ibm.com>,
+       netdev@vger.kernel.org
+Subject: Re: [PATCH 1/6] sysfs: Basic support for multiple super blocks
+References: <m1fx3hk6gw.fsf@fess.ebiederm.org>	<1269973889-25260-1-git-send-email-ebiederm@xmission.com>	<4BB2E098.7030202@kernel.org> <m1634d82e0.fsf@fess.ebiederm.org>
+In-Reply-To: <m1634d82e0.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 05 Apr 2010 07:45:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-still not correct for alpha, mips, parisc or xtensa but working out of
-the box in the most common architectures without having to deal with
-complicated macros or including architecture specific headers.
+Hello, Eric.
 
-Signed-off-by: Carlo Marcelo Arenas Belon <carenas@sajinet.com.pe>
----
- Documentation/vm/map_hugetlb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On 03/31/2010 02:51 PM, Eric W. Biederman wrote:
+>> I haven't looked at later patches but I suppose this is gonna be
+>> filled with more meaningful stuff later. 
+> 
+> Yes it will.
+> 
+>> One (possibly silly) thing
+>> that stands out compared to get_sb_single() is missing remount
+>> handling.  Is it intended?
+> 
+> There is nothing for a remount to do so I ignore it.   The only
+> thing that would possibly be meaningful is a read-only mount,
+> and nothing I know of sysfs suggests read-only mounts of sysfs
+> work, or make any sense.
 
-diff --git a/Documentation/vm/map_hugetlb.c b/Documentation/vm/map_hugetlb.c
-index 9969c7d..eda1a6d 100644
---- a/Documentation/vm/map_hugetlb.c
-+++ b/Documentation/vm/map_hugetlb.c
-@@ -19,7 +19,7 @@
- #define PROTECTION (PROT_READ | PROT_WRITE)
- 
- #ifndef MAP_HUGETLB
--#define MAP_HUGETLB 0x40
-+#define MAP_HUGETLB 0x40000 /* arch specific */
- #endif
- 
- /* Only ia64 requires this */
+I see.  Wouldn't it be better to make that design choice evident by
+stating the choice in the comment or at least in the patch
+description?  As it currently stands, you're burying a clear
+functional change in a seemingly innocent patch which contains zero
+line of comment and two lines of description.  The same pattern holds
+for this whole patchset.  Where are the comments and descriptions
+about the design and implementation?  :-(
+
+Thanks.
+
 -- 
-1.5.4.3
-
+tejun
