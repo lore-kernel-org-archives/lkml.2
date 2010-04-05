@@ -1,40 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755405Ab0DEPYl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 11:24:41 -0400
-Received: from cpsmtpm-eml105.kpnxchange.com ([195.121.3.9]:56370 "EHLO
-	CPSMTPM-EML105.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755361Ab0DEPY3 (ORCPT
+	id S1755393Ab0DEP00 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 11:26:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54116 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755227Ab0DEP0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 11:24:29 -0400
-From: Frans Pop <elendil@planet.nl>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: 2.6.34-rc3: Can't insmod after make, because versions now differ?!
-Date: Mon, 5 Apr 2010 17:24:24 +0200
-User-Agent: KMail/1.9.9
-Cc: linux-kernel@vger.kernel.org
-References: <20100405053628.GA12217@elf.ucw.cz>
-In-reply-To: <20100405053628.GA12217@elf.ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201004051724.26225.elendil@planet.nl>
-X-OriginalArrivalTime: 05 Apr 2010 15:24:27.0930 (UTC) FILETIME=[14B8EFA0:01CAD4D4]
+	Mon, 5 Apr 2010 11:26:22 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 0/2] perf: Usability improvements
+Date: Mon,  5 Apr 2010 12:26:14 -0300
+Message-Id: <1270481176-20659-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pavel Machek wrote:
-> Apr  5 07:33:16 amd kernel: udlfb: version magic
-> '2.6.34-rc3-00345-ge8240f9-dirty SMP mod_unload CORE2 ' should be
-> '2.6.34-rc3-00344-g548fc0a-dirty SMP mod_unload CORE2 '
-> 
-> Yes, I played with git and recompiled my kernel in order to get new
-> module version, but... not even insmod -f works.
-> 
-> Having to reboot every time I recompile the module or play with git
-> makes modules useless for development :-(.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Disable CONFIG_LOCALVERSION_AUTO?
+Hi Ingo,
+
+	Please consider pulling from the "perf" branch at:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6
+
+Arnaldo Carvalho de Melo (2):
+  perf TUI: Show filters on the title and add help line about how to zoom out
+  perf TUI: Move "Yes" button to before "No"
+
+ tools/perf/util/newt.c |   98 +++++++++++++++++++++++++++++++++--------------
+ 1 files changed, 69 insertions(+), 29 deletions(-)
+
