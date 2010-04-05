@@ -1,54 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755641Ab0DEQ5O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 12:57:14 -0400
-Received: from fg-out-1718.google.com ([72.14.220.152]:22835 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755255Ab0DEQ5C (ORCPT
+	id S1755692Ab0DEQ5g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 12:57:36 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:61723 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755495Ab0DEQ5a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 12:57:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=sqZf6j+/soOaa7UvWztUV1u61q9IlUBnImBmZj24Wz5H5oVGO6PgrNj6oyDs7d4A6P
-         08fhwPdJA8ie8DS9iBLAPuACRmzCkpUDo/u5w4ZvT1arP1ml8Nu2A9oDdzmb3kzXWLxJ
-         5bQUJNcp8pKkfZuxYpqvx+DyrYvyOk2q1Iz1o=
-Date: Mon, 5 Apr 2010 20:56:57 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Greg KH <greg@kroah.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>,
-       Hank Janssen <hjanssen@microsoft.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging, hv: Fix up memory leak on HvCleanup
-Message-ID: <20100405165657.GE5079@lenovo>
+	Mon, 5 Apr 2010 12:57:30 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:from:date:message-id:
+	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=FcxL4Mdn0m9T6/l/mWVYZWeRFqmjt191SigtWlGBfxskQlH4HZBUfOryaVjTGUpL5
+	C0smqDXUTQmMHeWwvk4bQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100405154757.GE876@redhat.com>
+References: <20100403014724.30746.16081.stgit@austin.mtv.corp.google.com> 
+	<20100403015445.30746.39086.stgit@austin.mtv.corp.google.com> 
+	<20100405154757.GE876@redhat.com>
+From: Divyesh Shah <dpshah@google.com>
+Date: Mon, 5 Apr 2010 09:57:08 -0700
+Message-ID: <g2vaf41c7c41004050957u27c79217t21b22004b3086659@mail.gmail.com>
+Subject: Re: [PATCH 1/3][v2] blkio: Remove per-cfqq nr_sectors as we'll be 
+	passing
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
+       ctalbott@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't assign NULL too early
+On Mon, Apr 5, 2010 at 8:47 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Fri, Apr 02, 2010 at 06:55:48PM -0700, Divyesh Shah wrote:
+>> that info at request dispatch with other stats now. This patch removes the
+>> existing support for accounting sectors for a blkio_group. This will be added
+>> back differently in the next two patches.
+>>
+>> Signed-off-by: Divyesh Shah<dpshah@google.com>
+>> ---
+>>
+>>  block/blk-cgroup.c  |    3 +--
+>>  block/blk-cgroup.h  |    6 ++----
+>>  block/cfq-iosched.c |   10 ++--------
+>>  3 files changed, 5 insertions(+), 14 deletions(-)
+>>
+>> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+>> index 4b686ad..5be3981 100644
+>> --- a/block/blk-cgroup.c
+>> +++ b/block/blk-cgroup.c
+>> @@ -56,10 +56,9 @@ struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
+>>  EXPORT_SYMBOL_GPL(cgroup_to_blkio_cgroup);
+>>
+>>  void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
+>> -                     unsigned long time, unsigned long sectors)
+>> +                                             unsigned long time)
+>>  {
+>>       blkg->time += time;
+>> -     blkg->sectors += sectors;
+>>  }
+>>  EXPORT_SYMBOL_GPL(blkiocg_update_blkio_group_stats);
+>>
+>> diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+>> index 8ccc204..fe44517 100644
+>> --- a/block/blk-cgroup.h
+>> +++ b/block/blk-cgroup.h
+>> @@ -106,7 +106,7 @@ extern int blkiocg_del_blkio_group(struct blkio_group *blkg);
+>>  extern struct blkio_group *blkiocg_lookup_group(struct blkio_cgroup *blkcg,
+>>                                               void *key);
+>>  void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
+>> -                     unsigned long time, unsigned long sectors);
+>> +                                             unsigned long time);
+>>  #else
+>>  struct cgroup;
+>>  static inline struct blkio_cgroup *
+>> @@ -123,8 +123,6 @@ blkiocg_del_blkio_group(struct blkio_group *blkg) { return 0; }
+>>  static inline struct blkio_group *
+>>  blkiocg_lookup_group(struct blkio_cgroup *blkcg, void *key) { return NULL; }
+>>  static inline void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
+>> -                     unsigned long time, unsigned long sectors)
+>> -{
+>> -}
+>> +                                             unsigned long time) {}
+>>  #endif
+>>  #endif /* _BLK_CGROUP_H */
+>> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+>> index ef1680b..c18e348 100644
+>> --- a/block/cfq-iosched.c
+>> +++ b/block/cfq-iosched.c
+>> @@ -141,8 +141,6 @@ struct cfq_queue {
+>>       struct cfq_queue *new_cfqq;
+>>       struct cfq_group *cfqg;
+>>       struct cfq_group *orig_cfqg;
+>> -     /* Sectors dispatched in current dispatch round */
+>> -     unsigned long nr_sectors;
+>>  };
+>>
+>>  /*
+>> @@ -882,8 +880,7 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
+>>                       slice_used = cfqq->allocated_slice;
+>>       }
+>>
+>> -     cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u sect=%lu", slice_used,
+>> -                             cfqq->nr_sectors);
+>> +     cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u", slice_used);
+>
+> Hi Divyesh,
+>
+> I had found above message useful when I am looking at blktraces. It helps
+> to know how many sectors one could transfer in a given time slice.
+> Especially if you are comparing two queues in two groups. I think we are
+> going to loose this information now?
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- drivers/staging/hv/Hv.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Would printing the number of sectors for each request help? If you
+think this is really important we can keep this redundant information
+as well.
 
-Index: linux-2.6.git/drivers/staging/hv/Hv.c
-=====================================================================
---- linux-2.6.git.orig/drivers/staging/hv/Hv.c
-+++ linux-2.6.git/drivers/staging/hv/Hv.c
-@@ -305,9 +305,9 @@ void HvCleanup(void)
- 	DPRINT_ENTER(VMBUS);
- 
- 	if (gHvContext.SignalEventBuffer) {
-+		kfree(gHvContext.SignalEventBuffer);
- 		gHvContext.SignalEventBuffer = NULL;
- 		gHvContext.SignalEventParam = NULL;
--		kfree(gHvContext.SignalEventBuffer);
- 	}
- 
- 	if (gHvContext.HypercallPage) {
+>
+> Vivek
+>
+>>       return slice_used;
+>>  }
+>>
+>> @@ -917,8 +914,7 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+>>
+>>       cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
+>>                                       st->min_vdisktime);
+>> -     blkiocg_update_blkio_group_stats(&cfqg->blkg, used_sl,
+>> -                                             cfqq->nr_sectors);
+>> +     blkiocg_update_blkio_group_stats(&cfqg->blkg, used_sl);
+>>  }
+>>
+>>  #ifdef CONFIG_CFQ_GROUP_IOSCHED
+>> @@ -1524,7 +1520,6 @@ static void __cfq_set_active_queue(struct cfq_data *cfqd,
+>>               cfqq->allocated_slice = 0;
+>>               cfqq->slice_end = 0;
+>>               cfqq->slice_dispatch = 0;
+>> -             cfqq->nr_sectors = 0;
+>>
+>>               cfq_clear_cfqq_wait_request(cfqq);
+>>               cfq_clear_cfqq_must_dispatch(cfqq);
+>> @@ -1869,7 +1864,6 @@ static void cfq_dispatch_insert(struct request_queue *q, struct request *rq)
+>>       elv_dispatch_sort(q, rq);
+>>
+>>       cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
+>> -     cfqq->nr_sectors += blk_rq_sectors(rq);
+>>  }
+>>
+>>  /*
+>
