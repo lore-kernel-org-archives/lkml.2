@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756496Ab0DEUQo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 16:16:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17109 "EHLO mx1.redhat.com"
+	id S1756505Ab0DEURM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 16:17:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8259 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756458Ab0DEUQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 16:16:38 -0400
-From: Eric Paris <eparis@redhat.com>
-To: torvalds@linux-foundation.org
-Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-       linux-audit@redhat.com
-Subject: [PATCH] audit: preface audit printk with audit
-Date: Mon,  5 Apr 2010 16:16:26 -0400
-Message-Id: <1270498586-24226-1-git-send-email-eparis@redhat.com>
+	id S1756456Ab0DEURI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 16:17:08 -0400
+Date: Mon, 5 Apr 2010 16:16:46 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Aristeu Sergio Rozanski Filho <aris@ruivo.org>, mingo@elte.hu,
+       peterz@infradead.org, aris@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [watchdog] combine nmi_watchdog and softlockup
+Message-ID: <20100405201646.GF15159@redhat.com>
+References: <20100323213338.GA29170@redhat.com>
+ <20100328024650.GA26522@jake.ruivo.org>
+ <20100329182617.GI15159@redhat.com>
+ <20100330145238.GG6706@cathedrallabs.org>
+ <20100405201111.GF5079@lenovo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100405201111.GF5079@lenovo>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There have been a number of reports of people seeing the message:
-"name_count maxed, losing inode data: dev=00:05, inode=3185"
-in dmesg.  These usually lead to people reporting problems to the filesystem
-group who are in turn clueless what they mean.  Eventually someone finds me
-and I explain what is going on and that these come from the audit system.
-The basics of the problem is that the audit subsystem never expects a single
-syscall to 'interact' (for some wish washy meaning of interact)  with more
-than 20 inodes.  But in fact some operations like loading kernel modules can
-cause changes to lots of inodes in debugfs.  There are a couple real fixes
-being bandied about including removing the fixed compile time limit of 20 or
-not auditing changes in debugfs (or both) but neither are small and obvious
-so I am not sending them for immediate inclusion (I hope Al forwards a real
-solution next devel window).  In the meantime this patch simply adds 'audit'
-to the beginning of the crap message so if a user sees it, they come
-blame me first and we can talk about what it means and make sure we understand
-all of the reasons it can happen and make sure this gets solved correctly
-in the long run.
+On Tue, Apr 06, 2010 at 12:11:11AM +0400, Cyrill Gorcunov wrote:
+> On Tue, Mar 30, 2010 at 10:52:38AM -0400, Aristeu Sergio Rozanski Filho wrote:
+> > > On Sat, Mar 27, 2010 at 10:46:50PM -0400, Aristeu Sergio Rozanski Filho wrote:
+> > > > Hi Don,
+> > > > > +/* deprecated */
+> > > > > +static int __init nosoftlockup_setup(char *str)
+> > > > > +{
+> > > > > +	no_watchdog = 1;
+> > > > > +	return 1;
+> > > > > +}
+> > > > > +__setup("nosoftlockup", nosoftlockup_setup);
+> > > > > +static int __init nonmi_watchdog_setup(char *str)
+> > > > > +{
+> > > > > +	no_watchdog = 1;
+> > > > > +	return 1;
+> > > > > +}
+> > > > > +__setup("nonmi_watchdog", nonmi_watchdog_setup);
+> > > > didn't you just add nonmi_watchdog parameter? I don't think there's a reason
+> > > > to keep compatibility here.
+> > > 
+> > > Hmm, I think you are right.  I thought I added that because it existed in
+> > > the old nmi_watchdog setup but I can't find it.  So yeah, I can drop that.
+> > you could provide a nmi_watchdog=0 backwards compatibility and warn about
+> > values != 0
+> > 
+> > -- 
+> > Aristeu
+> > 
+> 
+> Sorry for a long delay, I think we might need to inform a user that "lapic",
+> "ioapic" is no longer used (perf-nmi is supposed to substitute the former nmi
+> code in a long term right?) so that for some time period, say the whole release
+> cycle, if lapic or ioapic, or numbers are passed to nmi_watchdog= setup option
+> we would just print out that the parameters are deprecated and better to not
+> use them any longer. Hm?
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
----
- kernel/auditsc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Agreed.
 
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index f3a461c..d6de684 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -1893,7 +1893,7 @@ static int audit_inc_name_count(struct audit_context *context,
- {
- 	if (context->name_count >= AUDIT_NAMES) {
- 		if (inode)
--			printk(KERN_DEBUG "name_count maxed, losing inode data: "
-+			printk(KERN_DEBUG "audit: name_count maxed, losing inode data: "
- 			       "dev=%02x:%02x, inode=%lu\n",
- 			       MAJOR(inode->i_sb->s_dev),
- 			       MINOR(inode->i_sb->s_dev),
--- 
-1.6.5.3
-
+Cheers,
+Don
