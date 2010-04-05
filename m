@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756478Ab0DEUj6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 16:39:58 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44825 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756351Ab0DEUjw (ORCPT
+	id S1756542Ab0DEUkU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 16:40:20 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:48566 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756479Ab0DEUkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 16:39:52 -0400
-Date: Mon, 5 Apr 2010 13:39:02 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Anton Blanchard <anton@samba.org>
-Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] raw: fsync method is now required
-Message-Id: <20100405133902.082a6ef7.akpm@linux-foundation.org>
-In-Reply-To: <20100404004523.GL5594@kryten>
-References: <20100404004523.GL5594@kryten>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Apr 2010 16:40:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=Ibv4s5F5/ziqOHzaJtmv7lOMs3vdlsBW8493PGbLtSngxZVwpmt82cjkk3NDLI4JJi
+         q8yfuzgiCWqmbYtnybF1P4bCNyCqSoAZ+gVL8uR+C5RVGdSuyTbXtBwZMHzkdTsnsBW1
+         DhEDydBLDkSZYKL/YwSBnOEbDPAT3TBk8TdaM=
+MIME-Version: 1.0
+Date: Mon, 5 Apr 2010 15:40:12 -0500
+Message-ID: <i2la4e6962a1004051340n741c2594s5765dfdc85414e7b@mail.gmail.com>
+Subject: [GIT PULL] 9p file system bug fixes for 2.6.34-rc3
+From: Eric Van Hensbergen <ericvh@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       V9FS Developers <v9fs-developer@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 4 Apr 2010 10:45:23 +1000
-Anton Blanchard <anton@samba.org> wrote:
+Linus,
 
-> 
-> Commit 148f948ba877f4d3cdef036b1ff6d9f68986706a (vfs: Introduce new helpers for syncing after writing to O_SYNC file or IS_SYNC inode) broke the raw driver.
-> 
-> We now call through generic_file_aio_write -> generic_write_sync ->
-> vfs_fsync_range. vfs_fsync_range has:
-> 
->         if (!fop || !fop->fsync) {
->                 ret = -EINVAL;
->                 goto out;
->         }
-> 
-> But drivers/char/raw.c doesn't set an fsync method. 
+The following changes since commit db217dece3003df0841bacf9556b5c06aa097dae:
+  Linus Torvalds (1):
+        Merge git://git.kernel.org/.../davem/sparc-2.6
 
-So if you run fsync() against a /dev/rawX fd you get -EINVAL?  erk.
+are available in the git repository at:
 
-> We have two options: fix it or remove the raw driver completely. I'm happy
-> to do either, the fact this has been broken for so long suggests it is
-> rarely used.
+  git://git.kernel.org/pub/scm/linux/kernel/git/ericvh/v9fs.git for-linus
 
-Well.  It shows that fsync() is rarely used.
+Aneesh Kumar K.V (3):
+      fs/9p: Clunk the fid resulting from partial walk of the name
+      9p: drop nlink remove
+      9p: Make sure we are able to clunk the cached fid on umount
 
-> The patch below adds an fsync method to the raw driver. My knowledge of the
-> block layer is pretty sketchy so this could do with a once over.
-> 
-> If we instead decide to remove the raw driver, this patch might still be
-> useful as a backport to 2.6.33 and 2.6.32.
+Dan Carpenter (2):
+      9p: return on mutex_lock_interruptible()
+      9p: saving negative to unsigned char
 
-People go all whiny when I talk about removing raw.c.  I gave up.
+Sripathi Kodi (3):
+      9p: Fix setting of protocol flags in v9fs_session_info structure.
+      9p: documentation update
+      9p: Creating files with names too long should fail with ENAMETOOLONG.
+
+ Documentation/filesystems/9p.txt |   18 ++++++++++++++++--
+ fs/9p/fid.c                      |   12 ++++++++++--
+ fs/9p/v9fs.c                     |   21 ++++++++++++++++++---
+ fs/9p/v9fs.h                     |    1 +
+ fs/9p/vfs_dir.c                  |    2 ++
+ fs/9p/vfs_inode.c                |    9 ++++++++-
+ fs/9p/vfs_super.c                |    3 ++-
+ include/net/9p/client.h          |    2 ++
+ net/9p/client.c                  |   23 +++++++++++++++++++----
+ 9 files changed, 78 insertions(+), 13 deletions(-)
+
+    thanks,
+
+           -eric
