@@ -1,40 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756572Ab0DEUnO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 16:43:14 -0400
-Received: from verein.lst.de ([213.95.11.210]:55575 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756219Ab0DEUnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 16:43:08 -0400
-Date: Mon, 5 Apr 2010 22:42:08 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Anton Blanchard <anton@samba.org>, Jan Kara <jack@suse.cz>,
-       Christoph Hellwig <hch@lst.de>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] raw: fsync method is now required
-Message-ID: <20100405204208.GA4100@lst.de>
-References: <20100404004523.GL5594@kryten> <20100405133902.082a6ef7.akpm@linux-foundation.org>
+	id S1756508Ab0DEUqv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 16:46:51 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59652
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756219Ab0DEUqp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 16:46:45 -0400
+Date: Mon, 05 Apr 2010 13:46:47 -0700 (PDT)
+Message-Id: <20100405.134647.48384289.davem@davemloft.net>
+To: fweisbec@gmail.com
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
+       acme@redhat.com, a.p.zijlstra@chello.nl, paulus@samba.org
+Subject: Re: Random scheduler/unaligned accesses crashes with perf lock
+ events on sparc 64
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100405194055.GA5265@nowhere>
+References: <20100405065701.GC5127@nowhere>
+	<20100405.122233.188421941.davem@davemloft.net>
+	<20100405194055.GA5265@nowhere>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100405133902.082a6ef7.akpm@linux-foundation.org>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05, 2010 at 01:39:02PM -0700, Andrew Morton wrote:
-> So if you run fsync() against a /dev/rawX fd you get -EINVAL?  erk.
-> 
-> > We have two options: fix it or remove the raw driver completely. I'm happy
-> > to do either, the fact this has been broken for so long suggests it is
-> > rarely used.
-> 
-> Well.  It shows that fsync() is rarely used.
+From: Frederic Weisbecker <fweisbec@gmail.com>
+Date: Mon, 5 Apr 2010 21:40:58 +0200
 
-The new O_SYNC implementation uses fsync, so O_SYNC users are also
-affected now.  Still shows that either one is relatively rarely used..
+> It happens without CONFIG_FUNCTION_TRACER as well (but it happens
+> when the function tracer runs). And I hadn't your perf_arch_save_caller_regs()
+> when I triggered this.
 
+Good clues, thanks.
