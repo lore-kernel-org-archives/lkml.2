@@ -1,38 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434Ab0DEQUq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 12:20:46 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:48790 "EHLO kernel.dk"
+	id S1755008Ab0DEQXA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 12:23:00 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:55478 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755173Ab0DEQUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 12:20:42 -0400
-Date: Mon, 5 Apr 2010 18:20:40 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: Manuel Benitez <rickyb@google.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Corrado Zoccolo <czoccolo@gmail.com>,
-       Jeff Moyer <jmoyer@redhat.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Expose the statistics in blkio.time and blkio.sectors
-	for   the root cgroup
-Message-ID: <20100405162040.GH23510@kernel.dk>
-References: <1269473756-30327-1-git-send-email-rickyb@google.com> <20100325005228.GA13225@redhat.com> <v2g23904f641004050720pc0d7aa04n294381af44047dd3@mail.gmail.com>
+	id S1755173Ab0DEQWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 12:22:55 -0400
+Date: Mon, 5 Apr 2010 09:22:49 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
+       Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>, Dmitry Torokhov <dtor@mail.ru>
+Subject: Re: A few questions and issues with dynticks, NOHZ and powertop
+Message-ID: <20100405162249.GB2525@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100403223328.GA4507@comet.dominikbrodowski.net>
+ <Pine.LNX.4.44L0.1004041110010.2750-100000@netrider.rowland.org>
+ <20100404163924.GA18428@comet.dominikbrodowski.net>
+ <20100404204725.GC2644@linux.vnet.ibm.com>
+ <20100404233702.GA24102@linux.vnet.ibm.com>
+ <4BB95C85.80205@linux.intel.com>
+ <20100405042222.GD2644@linux.vnet.ibm.com>
+ <4BB9F657.4050901@linux.intel.com>
+ <20100405151401.GA2525@linux.vnet.ibm.com>
+ <4BBA0AC5.1080905@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <v2g23904f641004050720pc0d7aa04n294381af44047dd3@mail.gmail.com>
+In-Reply-To: <4BBA0AC5.1080905@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05 2010, Manuel Benitez wrote:
-> Jens,
+On Mon, Apr 05, 2010 at 09:07:33AM -0700, Arjan van de Ven wrote:
+> On 4/5/2010 8:14, Paul E. McKenney wrote:
+> >So the main issue is that for many workloads, it is best to run full bore
+> >and get done quickly, thus allowing the entire machine to be powered down?
 > 
-> Please let me know if this patch is/isn't acceptable. Not having the
-> statistics exposed at the root is a little bit problematic for our
-> user-level control programs.
+> yep
+> 
+> >If so, it seems likely that there would be some workloads that were sometimes
+> >unable to use all the CPUs, in which case shutting down (idling, offlining,
+> >dyntick-idling, whatever) the excess CPUs might nevertheless be the right
+> >thing to do.
+> 
+> but the point is that the normal scheduler + idle behavior gives you exactly that
+> in a natural way !
+> If you don't have enough work (tasks) to keep all cores busy, the others are and stay idle.
 
-It's fine with me, I'll queue it up.
+So your earlier objection was not to dyntick-idle as such, but rather
+to artificially constraining the scheduler to induce dyntick-idle?
 
--- 
-Jens Axboe
-
+						Thanx, Paul
