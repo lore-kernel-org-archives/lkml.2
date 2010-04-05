@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751517Ab0DEHpU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 03:45:20 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56184 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751102Ab0DEHpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 03:45:14 -0400
-Message-ID: <4BB994FC.1090106@kernel.org>
-Date: Mon, 05 Apr 2010 16:45:00 +0900
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1751450Ab0DEHwT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 03:52:19 -0400
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:17120 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750960Ab0DEHwM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 03:52:12 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEACEyuUtR8TNa/2dsb2JhbACbSHKyCYUHBA
+Message-ID: <4BB99654.4090203@computer.org>
+Date: Mon, 05 Apr 2010 09:50:44 +0200
+From: Jan Ceuleers <jan.ceuleers@computer.org>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
-       linux-kernel@vger.kernel.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
-       linux-fsdevel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-       Benjamin LaHaise <bcrl@lhnet.ca>, Serge Hallyn <serue@us.ibm.com>,
-       netdev@vger.kernel.org
-Subject: Re: [PATCH 1/6] sysfs: Basic support for multiple super blocks
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org>	<1269973889-25260-1-git-send-email-ebiederm@xmission.com>	<4BB2E098.7030202@kernel.org> <m1634d82e0.fsf@fess.ebiederm.org>
-In-Reply-To: <m1634d82e0.fsf@fess.ebiederm.org>
+To: Alexander Konovalenko <alexkon@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: Reading entropy_avail file appears to consume entropy
+References: <epOXE-4EU-7@gated-at.bofh.it> <b7822cd7-97f3-489e-a16b-686b0419d3f2@k19g2000yqn.googlegroups.com>
+In-Reply-To: <b7822cd7-97f3-489e-a16b-686b0419d3f2@k19g2000yqn.googlegroups.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 05 Apr 2010 07:45:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Eric.
-
-On 03/31/2010 02:51 PM, Eric W. Biederman wrote:
->> I haven't looked at later patches but I suppose this is gonna be
->> filled with more meaningful stuff later. 
+Alexander Konovalenko wrote:
+> On Mar 19, Jan Ceuleers wrote:
+>> I'm using the 2.6.31 kernel that comes with Ubuntu 9.10.
+>>
+>> If I
+>>
+>>    # watch cat /proc/sys/kernel/random/entropy_avail
+>>
+>> then the size of the entropy pool falls rapidly (by more than 200 bytes per 2s interval).
+>> It settles down around 160 bytes.
 > 
-> Yes it will.
+> Jan, did you find out anything interesting about this issue?
 > 
->> One (possibly silly) thing
->> that stands out compared to get_sb_single() is missing remount
->> handling.  Is it intended?
+> I have a wild guess, although I have no idea whether it can be
+> correct. I couldn't catch any user-space /dev/random or /dev/urandom
+> readers with fuser, so I think something in the kernel is using up the
+> entropy. If I remember correctly, recent Ubuntu releases were supposed
+> to include a security feature that randomizes memory layout in order
+> to mitigate some kinds of security vulnerabilities. What if each time
+> a new process is started the kernel needs to obtain a significant
+> number of random bytes? Here is some supporting evidence. I can
+> reproduce the behavior you describe on a vanilla Ubuntu 9.10 system
+> (without latest updates). But if I watch entropy_avail using a Python
+> script that does not start a new process every time, then the
+> available entropy amount won't decrease. (The system is otherwise
+> idle.) Give it a try:
 > 
-> There is nothing for a remount to do so I ignore it.   The only
-> thing that would possibly be meaningful is a read-only mount,
-> and nothing I know of sysfs suggests read-only mounts of sysfs
-> work, or make any sense.
+> $ python
+> import sys, time
+> while True:
+>   sys.stdout.write(open('/proc/sys/kernel/random/entropy_avail',
+> 'r').read())
+>   time.sleep(1)
+> 
+> It would be great if someone with knowledge about this could confirm
+> or refute my guess.
+> 
+>  -- Alexander
+> 
 
-I see.  Wouldn't it be better to make that design choice evident by
-stating the choice in the comment or at least in the patch
-description?  As it currently stands, you're burying a clear
-functional change in a seemingly innocent patch which contains zero
-line of comment and two lines of description.  The same pattern holds
-for this whole patchset.  Where are the comments and descriptions
-about the design and implementation?  :-(
+Alexander,
 
-Thanks.
+Thanks, this never made it out to LKML so I'm forwarding it now.
 
--- 
-tejun
+This does sound quite plausible; does anyone from Ubuntu want to chip in?
+
+Thanks, Jan
