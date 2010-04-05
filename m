@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755779Ab0DERfr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 13:35:47 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42872 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755799Ab0DERfm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 13:35:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :x-operating-system:user-agent;
-        b=XcFAw05/MdJfiZpi1OvTi+rAe7MA80/HpsC6mSt5SaFeXgrAQLR9tebxs6ybR2bK8D
-         sNlroAfvW7A7Z9WfxACna4o51+0QtmHbboppDJzhGHYtvTiBrDzJ9aZ12ObIoeY7lOZp
-         PTuo/9Sl851vjxb2HvBzxYZHIA1eZPipaonk8=
-Date: Tue, 6 Apr 2010 01:35:34 +0800
-From: Li Hong <lihong.hi@gmail.com>
-To: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
-       linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] nilfs2: add a print message after loading nilfs2
-Message-ID: <20100405173534.GB22644@xhl>
-Mail-Followup-To: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
-	linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20100405173402.GA22644@xhl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100405173402.GA22644@xhl>
-X-Operating-System: Linux xhl 2.6.31-14-generic
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755897Ab0DERga (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 13:36:30 -0400
+Received: from mail.perches.com ([173.55.12.10]:1340 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755840Ab0DERgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 13:36:24 -0400
+Subject: Re: tulip_stop_rxtx() failed (CSR5 0xf0260000 CSR6 0xb3862002) on
+ DEC Alpha Personal Workstation 433au
+From: Joe Perches <joe@perches.com>
+To: Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+Cc: Grant Grundler <grundler@parisc-linux.org>,
+       Kyle McMartin <kyle@mcmartin.ca>,
+       "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100405171318.GA18915@physik.fu-berlin.de>
+References: <20100405171318.GA18915@physik.fu-berlin.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Apr 2010 10:36:22 -0700
+Message-ID: <1270488982.31062.28.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From b4e426f77cd05bd6046c1fa67c51ee06368ea23e Mon Sep 17 00:00:00 2001
-From: Li Hong <lihong.hi@gmail.com>
-Date: Tue, 6 Apr 2010 01:23:04 +0800
-Subject: [PATCH] nilfs2: add a print message after loading nilfs2
+On Mon, 2010-04-05 at 19:13 +0200, Adrian Glaubitz wrote:
+> Hi guys,
+> 
+> I installed Debian unstable on an old digital workstation "DEC Digital
+> Personal Workstation 433au" (Miata) which has an on-board tulip
+> network controller. I'm not really using that network controller but
+> an off-board intel e1000 controller. However, I found that the tulip
+> driver produces a lot of noise in the message log, the following
+> message is repated periodically and spams the whole message log:
+> 
+> 0000:00:03.0: tulip_stop_rxtx() failed (CSR5 0xf0260000 CSR6 0xb3862002)
+> 
+> Do you think this is related to the fact that no cable is connected to
+> the network controller?
 
+Probably something is trying periodically to open the device.
+Maybe this helps reduce the message log noise:
 
-Signed-off-by: Li Hong <lihong.hi@gmail.com>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/nilfs2/super.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/fs/nilfs2/super.c b/fs/nilfs2/super.c
-index 2e767bc..9f91765 100644
---- a/fs/nilfs2/super.c
-+++ b/fs/nilfs2/super.c
-@@ -1186,7 +1186,12 @@ static int __init init_nilfs_fs(void)
- 		return err;
+diff --git a/drivers/net/tulip/tulip.h b/drivers/net/tulip/tulip.h
+index 0afa2d4..8c675aa 100644
+--- a/drivers/net/tulip/tulip.h
++++ b/drivers/net/tulip/tulip.h
+@@ -515,12 +515,11 @@ static inline void tulip_stop_rxtx(struct tulip_private *tp)
+ 		while (--i && (ioread32(ioaddr + CSR5) & (CSR5_TS|CSR5_RS)))
+ 			udelay(10);
  
- 	err = register_filesystem(&nilfs_fs_type);
--	return err;
-+	if (err)
-+		return err;
-+
-+	printk(KERN_INFO "nilfs2 file system loaded!\n");
-+	return 0;
-+
+-		if (!i)
+-			printk(KERN_DEBUG "%s: tulip_stop_rxtx() failed"
+-					" (CSR5 0x%x CSR6 0x%x)\n",
+-					pci_name(tp->pdev),
+-					ioread32(ioaddr + CSR5),
+-					ioread32(ioaddr + CSR6));
++		if (!i && tulip_debug > 1)
++			printk(KERN_DEBUG "%s: tulip_stop_rxtx() failed (CSR5 0x%x CSR6 0x%x)\n",
++			       pci_name(tp->pdev),
++			       ioread32(ioaddr + CSR5),
++			       ioread32(ioaddr + CSR6));
+ 	}
  }
  
- static void __exit exit_nilfs_fs(void)
--- 
-1.6.3.3
+
 
