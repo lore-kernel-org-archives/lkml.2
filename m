@@ -1,65 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab0DEPY3 (ORCPT <rfc822;w@1wt.eu>);
+	id S1755405Ab0DEPYl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 11:24:41 -0400
+Received: from cpsmtpm-eml105.kpnxchange.com ([195.121.3.9]:56370 "EHLO
+	CPSMTPM-EML105.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755361Ab0DEPY3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Apr 2010 11:24:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38075 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754611Ab0DEPYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 11:24:21 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-       jens.axboe@oracle.com, esandeen@redhat.com
-Subject: Re: [patch/rft] jbd2: tag journal writes as metadata I/O
-References: <x49iq8b9ep5.fsf@segfault.boston.devel.redhat.com>
-	<20100401194822.GA8401@atrey.karlin.mff.cuni.cz>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 05 Apr 2010 11:24:13 -0400
-In-Reply-To: <20100401194822.GA8401@atrey.karlin.mff.cuni.cz> (Jan Kara's
-	message of "Thu, 1 Apr 2010 21:48:23 +0200")
-Message-ID: <x49tyrpkjmq.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+From: Frans Pop <elendil@planet.nl>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: 2.6.34-rc3: Can't insmod after make, because versions now differ?!
+Date: Mon, 5 Apr 2010 17:24:24 +0200
+User-Agent: KMail/1.9.9
+Cc: linux-kernel@vger.kernel.org
+References: <20100405053628.GA12217@elf.ucw.cz>
+In-reply-To: <20100405053628.GA12217@elf.ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201004051724.26225.elendil@planet.nl>
+X-OriginalArrivalTime: 05 Apr 2010 15:24:27.0930 (UTC) FILETIME=[14B8EFA0:01CAD4D4]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Kara <jack@suse.cz> writes:
+Pavel Machek wrote:
+> Apr  5 07:33:16 amd kernel: udlfb: version magic
+> '2.6.34-rc3-00345-ge8240f9-dirty SMP mod_unload CORE2 ' should be
+> '2.6.34-rc3-00344-g548fc0a-dirty SMP mod_unload CORE2 '
+> 
+> Yes, I played with git and recompiled my kernel in order to get new
+> module version, but... not even insmod -f works.
+> 
+> Having to reboot every time I recompile the module or play with git
+> makes modules useless for development :-(.
 
->   Hi,
->
->> In running iozone for writes to small files, we noticed a pretty big
->> discrepency between the performance of the deadline and cfq I/O
->> schedulers.  Investigation showed that I/O was being issued from 2
->> different contexts: the iozone process itself, and the jbd2/sdh-8 thread
->> (as expected).  Because of the way cfq performs slice idling, the delays
->> introduced between the metadata and data I/Os were significant.  For
->> example, cfq would see about 7MB/s versus deadline's 35 for the same
->> workload.  I also tested fs_mark with writing and fsyncing 1000 64k
->> files, and a similar 5x performance difference was observed.  Eric
->> Sandeen suggested that I flag the journal writes as metadata, and once I
->> did that, the performance difference went away completely (cfq has
->> special logic to prioritize metadata I/O).
->> 
->> So, I'm submitting this patch for comments and testing.  I have a
->> similar patch for jbd that I will submit if folks agree that this is a
->> good idea.
->   This looks like a good idea to me. I'd just be careful about data=journal
-> mode where even data is written via journal and thus you'd incorrectly
-> prioritize all the IO. I suppose that could have negative impact on performace
-> of other filesystems on the same disk. So for data=journal mode, I'd leave
-> write_op to be just WRITE / WRITE_SYNC_PLUG.
-
-Hi, Jan, thanks for the review!  I'm trying to figure out the best way
-to relay the journal mode from ext3 or ext4 to jbd or jbd2.  Would a new
-journal flag, set in journal_init_inode, be appropriate?  This wouldn't
-cover the case of data journalling set per inode, though.  It also puts
-some ext3-specific code into the purportedly fs-agnostic jbd code
-(specifically, testing the superblock for the data journal mount flag).
-Do you have any suggestions?
-
-Thanks!
-Jeff
+Disable CONFIG_LOCALVERSION_AUTO?
