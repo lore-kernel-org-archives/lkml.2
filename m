@@ -1,98 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635Ab0DEVD5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 17:03:57 -0400
-Received: from isilmar.linta.de ([213.133.102.198]:48935 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756367Ab0DEVDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 17:03:50 -0400
-Date: Mon, 5 Apr 2010 23:03:40 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       Dmitry Torokhov <dtor@mail.ru>
-Subject: Re: A few questions and issues with dynticks, NOHZ and powertop
-Message-ID: <20100405210340.GA4638@comet.dominikbrodowski.net>
-Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Alan Stern <stern@rowland.harvard.edu>,
-	linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-	Arjan van de Ven <arjan@linux.intel.com>,
-	Dmitry Torokhov <dtor@mail.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100404233702.GA24102@linux.vnet.ibm.com>
- <20100404204725.GC2644@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756646Ab0DEVEU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 17:04:20 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:62323 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756617Ab0DEVEO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 17:04:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Sqtc8AP7Uj1MXmRU7QAzoBw8LWLmi2InLw9OyJQ9MiZoHHW5KPVqCvByoxDW8f+kD+
+         EM7TnGQW83LuatMSRxdQpcssjhVNLeD1uq1kkqT9qWdvh9HLw59w3cywsuZugVgwMD8i
+         F6N8hrPgcKVgot0MMvi9GXhuftYkZLJ7gtZUY=
+Subject: Re: [BUG] x86info fails on 2.6.34 ?
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1270499041.9013.15.camel@edumazet-laptop>
+References: <1270499041.9013.15.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Apr 2010 23:04:08 +0200
+Message-ID: <1270501448.9013.23.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul,
-
-I really appreaciate your reply -- thanks! I've done some more testing in
-the meantime:
-
-On Sun, Apr 04, 2010 at 01:47:25PM -0700, Paul E. McKenney wrote:
-> On Sun, Apr 04, 2010 at 06:39:24PM +0200, Dominik Brodowski wrote:
-> > On Sun, Apr 04, 2010 at 11:17:37AM -0400, Alan Stern wrote:
-> > > On Sun, 4 Apr 2010, Dominik Brodowski wrote:
-> > > 
-> > > > Booting a SMP-capable kernel with "nosmp", or manually offlining one CPU
-> > > > (or -- though I haven't tested it -- booting a SMP-capable kernel on a
-> > > > system with merely one CPU) means that in up to about half of the calls to
-> > > > tick_nohz_stop_sched_tick() are aborted due to rcu_needs_cpu(). This is
-> > > > quite strange to me: AFAIK, RCU is an excellent tool for SMP, but not really
-> > > > needed for UP?
-> > > 
-> > > I can't answer the real question here, not knowing enough about the RCU
-> > > implementation.  However, your impression is wrong: RCU very definitely
-> > > _is_ useful and needed on UP systems.  It coordinates among processes
-> > > (and interrupt handlers) as well as among processors.
-> > 
-> > Okay, but still: can't this be sped up by much on UP (especially if
-> > CONFIG_RCU_FAST_NO_HZ is set), so that we can go to sleep right away?
+Le lundi 05 avril 2010 à 22:24 +0200, Eric Dumazet a écrit :
+> Hi Dave
 > 
-> One situation that will prevent CONFIG_RCU_FAST_NO_HZ from putting the
-> machine to sleep right away is if there is an RCU callback posted that
-> spawns another RCU callback, and so on.  CONFIG_RCU_FAST_NO_HZ will handle
-> one callback that spawns another, but it gives up if the second callback
-> spawns a third.
-
-Will the remaining callbacks be executed immediately afterwards (due to a
-need_resched() etc.), or only after the next tick?
-
-> Might this be what is happening to you?
+> I just noticed x86info was not working anymore on latest kernel
 > 
-> If so, would you be willing to patch your kernel?  RCU_NEEDS_CPU_FLUSHES
-> is currently set to 5, and might be set to (say) 8.  This is defined
-> in kernel/rcutree_plugin.h, near line 990.
+> x86info v1.24.  Dave Jones 2001-2009
+> Feedback to <davej@redhat.com>.
+> 
+> type seek: Value too large for defined data type
+> 
+> 
+> Offending syscall is an lseek(fd, -1, SEEK_CUR) on /dev/mem file
+> 
+> 
+> 
+> open("/dev/mem", O_RDONLY)              = 3
+> ...
+> lseek(3, 1023092, SEEK_SET)             = 1023092
+> read(3, "PCMP\4\3\4\266HP      PROLIANT    \0\0\0\0\0"..., 44) = 44
+> read(3, "\0"..., 1)                     = 1
+> lseek(3, -1, SEEK_CUR)                  = -1 EOVERFLOW (Value too large
+> for defined data type)
+> 
+> It seems -1 is taken as an unsigned quantity ?
+> 
 
-Applied the patch by Lai Jiangshan, and tested 5 and 8:
+Andrew, commit dcefafb6ac90ece8d68a6c203105f3d313e52da4 seems to be the
+problem. 
 
-5:	  Wakeups-from-idle: 33.4		(hrtimer_sched_timer: 78 %)
-		34% of calls to tick_nohz_stop_sched_tick fail due to
-			rcu_needs_cpu()
-8:	  Wakeups-from-idle: 36.5		(hrtimer_sched_timer: 83 %)
-		37% of calls to tick_nohz_stop_sched_tick fail due to
-			rcu_needs_cpu()
+It breaks rewinds (negative offsets to lseek (... SEEK_CUR))
 
-> Another thing to try would be running with TINY_RCU, at least if it is
-> OK that RCU be non-preemptible.
 
-tick_nohz_stop_sched_tick() doesn't fail in this case because of
-rcu_needs_cpu(). However, the improvements are hardly recognizable:
+commit dcefafb6ac90ece8d68a6c203105f3d313e52da4
+Author: Wu Fengguang <fengguang.wu@intel.com>
+Date:   Wed Mar 10 15:21:51 2010 -0800
 
-TINY_RCU: Wakeups-from-idle: 33.9		(hrtimer_sched_timer: 53 %)
+    /dev/mem: dont allow seek to last page
+    
+    So as to return a uniform error -EOVERFLOW instead of a random one:
+    
+    # kmem-seek 0xfffffffffffffff0
+    seek /dev/kmem: Device or resource busy
+    # kmem-seek 0xfffffffffffffff1
+    seek /dev/kmem: Block device required
+    
+    Suggested by OGAWA Hirofumi.
+    
+    Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+    Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+    Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
-> And you did mention offlining some CPUs above. 
 
-... just for testing how NOHZ works on UP systems ;)
 
-Best,
-	Dominik
