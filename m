@@ -1,208 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab0DETdo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 15:33:44 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:39000 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756114Ab0DETdi (ORCPT
+	id S1756248Ab0DEThG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 15:37:06 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:56142 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754140Ab0DEThA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 15:33:38 -0400
-From: Mike Chan <mike@android.com>
-Cc: menage@google.com, balbir@in.ibm.com, cpufreq@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Mike Chan <mike@android.com>
-Subject: [RFC][PATCH] sched: cpuacct: Track cpuusage per cpu frequency
-Date: Mon,  5 Apr 2010 12:33:24 -0700
-Message-Id: <1270496004-9715-1-git-send-email-mike@android.com>
-X-Mailer: git-send-email 1.7.0.1
-X-System-Of-Record: true
-To: unlisted-recipients:; (no To-header on input)
+	Mon, 5 Apr 2010 15:37:00 -0400
+Date: Mon, 5 Apr 2010 15:36:37 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Btrfs updates
+Message-ID: <20100405193637.GC21620@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4BBA3BCF.0001:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New file: cpuacct.cpufreq when CONFIG_CPU_FREQ_STATS is enabled.
+Hello everyone,
 
-cpuacct.cpufreq accounts for cpu time per-cpu frequency, time is exported
-in nano-seconds
+The master branch of the btrfs-unstable repo has a collection of fixes:
 
-We do not know the cpufreq table size at compile time.
-So a new config option CONFIG_CPUACCT_CPUFREQ_TABLE_MAX is intruduced,
-to determine the cpufreq table per-cpu in the cpuacct struct.
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git master
 
-Signed-off-by: Mike Chan <mike@android.com>
----
- init/Kconfig   |    5 +++
- kernel/sched.c |   99 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 104 insertions(+), 0 deletions(-)
+Josef fixed a few different ENOSPC problems, and removed the mount -o
+max_extent mount option, which was not used and didn't fit in well with
+enospc at all.
 
-diff --git a/init/Kconfig b/init/Kconfig
-index eb77e8c..e1e86df 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -534,6 +534,11 @@ config CGROUP_CPUACCT
- 	  Provides a simple Resource Controller for monitoring the
- 	  total CPU consumed by the tasks in a cgroup.
- 
-+config CPUACCT_CPUFREQ_TABLE_MAX
-+	int "Max CPUFREQ table size"
-+	depends on CGROUP_CPUACCT && CPU_FREQ_TABLE
-+	default 32
-+
- config RESOURCE_COUNTERS
- 	bool "Resource counters"
- 	help
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 528a105..a0b56b5 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -71,6 +71,7 @@
- #include <linux/debugfs.h>
- #include <linux/ctype.h>
- #include <linux/ftrace.h>
-+#include <linux/cpufreq.h>
- 
- #include <asm/tlb.h>
- #include <asm/irq_regs.h>
-@@ -8817,6 +8818,11 @@ struct cgroup_subsys cpu_cgroup_subsys = {
-  * (balbir@in.ibm.com).
-  */
- 
-+#ifdef CONFIG_CPU_FREQ_STAT
-+/* The alloc_percpu macro uses typeof so we must define a type here. */
-+typedef struct { u64 usage[CONFIG_CPUACCT_CPUFREQ_TABLE_MAX]; } cpufreq_usage_t;
-+#endif
-+
- /* track cpu usage of a group of tasks and its child groups */
- struct cpuacct {
- 	struct cgroup_subsys_state css;
-@@ -8824,6 +8830,10 @@ struct cpuacct {
- 	u64 __percpu *cpuusage;
- 	struct percpu_counter cpustat[CPUACCT_STAT_NSTATS];
- 	struct cpuacct *parent;
-+#ifdef CONFIG_CPU_FREQ_STAT
-+	/* cpufreq_usage is a pointer to an array of u64-types on every cpu */
-+	cpufreq_usage_t *cpufreq_usage;
-+#endif
- };
- 
- struct cgroup_subsys cpuacct_subsys;
-@@ -8856,6 +8866,10 @@ static struct cgroup_subsys_state *cpuacct_create(
- 	if (!ca->cpuusage)
- 		goto out_free_ca;
- 
-+#ifdef CONFIG_CPU_FREQ_STAT
-+	ca->cpufreq_usage = alloc_percpu(cpufreq_usage_t);
-+#endif
-+
- 	for (i = 0; i < CPUACCT_STAT_NSTATS; i++)
- 		if (percpu_counter_init(&ca->cpustat[i], 0))
- 			goto out_free_counters;
-@@ -8888,6 +8902,74 @@ cpuacct_destroy(struct cgroup_subsys *ss, struct cgroup *cgrp)
- 	kfree(ca);
- }
- 
-+#ifdef CONFIG_CPU_FREQ_STAT
-+static int cpufreq_index;
-+static int cpuacct_cpufreq_notify(struct notifier_block *nb, unsigned long val,
-+					void *data)
-+{
-+	int ret;
-+	struct cpufreq_policy *policy;
-+	struct cpufreq_freqs *freq = data;
-+	struct cpufreq_frequency_table *table;
-+
-+	if (val != CPUFREQ_POSTCHANGE)
-+		return 0;
-+
-+	/* Update cpufreq_index with current speed */
-+	table = cpufreq_frequency_get_table(freq->cpu);
-+	policy = cpufreq_cpu_get(freq->cpu);
-+	ret = cpufreq_frequency_table_target(policy, table,
-+			cpufreq_quick_get(freq->cpu),
-+			CPUFREQ_RELATION_L, &cpufreq_index);
-+	cpufreq_cpu_put(policy);
-+	return ret;
-+}
-+
-+static struct notifier_block cpufreq_notifier = {
-+	.notifier_call = cpuacct_cpufreq_notify,
-+};
-+
-+static __init int cpuacct_init(void)
-+{
-+	return cpufreq_register_notifier(&cpufreq_notifier,
-+					CPUFREQ_TRANSITION_NOTIFIER);
-+}
-+
-+module_init(cpuacct_init);
-+
-+static int cpuacct_cpufreq_show(struct cgroup *cgrp, struct cftype *cft,
-+		struct cgroup_map_cb *cb)
-+{
-+	int i;
-+	unsigned int cpu;
-+	char buf[32];
-+	struct cpuacct *ca = cgroup_ca(cgrp);
-+	struct cpufreq_frequency_table *table =
-+		cpufreq_frequency_get_table(smp_processor_id());
-+
-+	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
-+		u64 total = 0;
-+
-+		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
-+			continue;
-+
-+		for_each_present_cpu(cpu) {
-+			cpufreq_usage_t *cpufreq_usage;
-+
-+			cpufreq_usage = per_cpu_ptr(ca->cpufreq_usage, cpu);
-+			table = cpufreq_frequency_get_table(cpu);
-+
-+			total += cpufreq_usage->usage[i];
-+		}
-+
-+		snprintf(buf, sizeof(buf), "%d", table[i].frequency);
-+		cb->fill(cb, buf, total);
-+	}
-+
-+	return 0;
-+}
-+#endif
-+
- static u64 cpuacct_cpuusage_read(struct cpuacct *ca, int cpu)
- {
- 	u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
-@@ -9003,6 +9085,12 @@ static struct cftype files[] = {
- 		.name = "stat",
- 		.read_map = cpuacct_stats_show,
- 	},
-+#ifdef CONFIG_CPU_FREQ_STAT
-+	{
-+		.name = "cpufreq",
-+		.read_map = cpuacct_cpufreq_show,
-+	},
-+#endif
- };
- 
- static int cpuacct_populate(struct cgroup_subsys *ss, struct cgroup *cgrp)
-@@ -9031,6 +9119,17 @@ static void cpuacct_charge(struct task_struct *tsk, u64 cputime)
- 
- 	for (; ca; ca = ca->parent) {
- 		u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
-+#ifdef CONFIG_CPU_FREQ_STAT
-+		cpufreq_usage_t *cpufreq_usage =
-+			per_cpu_ptr(ca->cpufreq_usage, cpu);
-+
-+		if (cpufreq_index > CONFIG_CPUACCT_CPUFREQ_TABLE_MAX)
-+			printk_once(KERN_WARNING "cpuacct_charge: "
-+					"cpufreq_index: %d exceeds max table "
-+					"size\n", cpufreq_index);
-+		else
-+			cpufreq_usage->usage[cpufreq_index] += cputime;
-+#endif
- 		*cpuusage += cputime;
- 	}
- 
--- 
-1.7.0.1
+Sage fixed up when and how we add the directory entries that go with
+snapshots, which will avoid dangling directory entries if we crash at
+the wrong time during snapshot creation.
+
+Nick Piggin made the btrfs page cache code a little bit less of a special
+snowflake, switching us back to the proper API.
+
+Zhao Lei and Miao Xie contributed a long series of cleanups and fixes.
+I've put the cleanups into a .35 queue and the fixes are here.
+
+Josef Bacik (4) commits (+32/-91):
+    Btrfs: fail to mount if we have problems reading the block groups (+12/-4)
+    Btrfs: fix small race with delalloc flushing waitqueue's (+4/-5)
+    Btrfs: fix chunk allocate size calculation (+3/-1)
+    Btrfs: kill max_extent mount option (+13/-81)
+
+Zhao Lei (3) commits (+9/-12):
+    Btrfs: Simplify num_stripes's calculation logical for __btrfs_alloc_chunk() (+2/-2)
+    Btrfs: Add error handle for btrfs_search_slot() in btrfs_read_chunk_tree() (+2/-0)
+    Btrfs: Remove unnecessary finish_wait() in wait_current_trans() (+5/-10)
+
+Dan Carpenter (3) commits (+5/-1):
+    Btrfs: handle kmalloc() failure in inode lookup ioctl (+3/-0)
+    Btrfs: check btrfs_get_extent return for IS_ERR() (+1/-1)
+    Btrfs: dereferencing freed memory (+1/-0)
+
+Sage Weil (1) commits (+31/-66):
+    Btrfs: create snapshot references in same commit as snapshot
+
+Andrea Gelmini (1) commits (+0/-1):
+    Btrfs: remove duplicate include in ioctl.c
+
+Chris Mason (1) commits (+4/-0):
+    Btrfs: add check for changed leaves in setup_leaf_for_split
+
+Miao Xie (1) commits (+4/-1):
+    Btrfs: add NULL check for do_walk_down()
+
+Nick Piggin (1) commits (+5/-32):
+    Btrfs: use add_to_page_cache_lru, use __page_cache_alloc
+
+Total: (15) commits
+
+ fs/btrfs/transaction.c  |  112 +++++++++++++++---------------------------------
+ fs/btrfs/inode.c        |   59 +------------------------
+ fs/btrfs/super.c        |   23 +--------
+ fs/btrfs/extent-tree.c  |   23 ++++++---
+ fs/btrfs/compression.c  |   22 +--------
+ fs/btrfs/extent_io.c    |   15 ------
+ fs/btrfs/disk-io.c      |   12 +++--
+ fs/btrfs/volumes.c      |   10 +++-
+ fs/btrfs/ioctl.c        |    7 ++-
+ fs/btrfs/ordered-data.c |    6 +-
+ fs/btrfs/ctree.c        |    4 +
+ fs/btrfs/ctree.h        |    1 
+ 12 files changed, 90 insertions(+), 204 deletions(-)
 
