@@ -1,67 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab0DEJVm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 05:21:42 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:40989 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751145Ab0DEJVg (ORCPT
+	id S1752839Ab0DEJas (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 05:30:48 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:54226 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab0DEJan (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 05:21:36 -0400
-Date: Mon, 5 Apr 2010 11:21:27 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-       Will Deacon <will.deacon@arm.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       kgdb-bugreport@lists.sourceforge.net, linux-arm@vger.kernel.org,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 4/5] kgdb: Use atomic operators which use barriers
-Message-ID: <20100405092126.GA1419@ucw.cz>
-References: <1270233145-29335-1-git-send-email-jason.wessel@windriver.com> <1270233145-29335-2-git-send-email-jason.wessel@windriver.com> <1270233145-29335-3-git-send-email-jason.wessel@windriver.com> <1270233145-29335-4-git-send-email-jason.wessel@windriver.com> <1270233145-29335-5-git-send-email-jason.wessel@windriver.com> <alpine.LFD.2.00.1004021205080.3634@i5.linux-foundation.org> <4BB64762.6040806@windriver.com> <alpine.LFD.2.00.1004021238270.3634@i5.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004021238270.3634@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 5 Apr 2010 05:30:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=qTWa3yTnleIT1FcoihPLCLsqq4Xx6UDe4B65c/l1Q2qrOrzoiLC8H0AqWIqt2S2VNz
+         lvelSTry+o7ErkqHvUX1hCObWVuelKTksgx60UFVdTmdCUCy7DON2OYnuY8i8ECwFqHn
+         ponXXwors3viJ/s3GpoUlqsGgoUZXyDPikA6g=
+Subject: Re: Reading entropy_avail file appears to consume entropy
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jan Ceuleers <jan.ceuleers@computer.org>
+Cc: Alexander Konovalenko <alexkon@gmail.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <4BB99654.4090203@computer.org>
+References: <epOXE-4EU-7@gated-at.bofh.it>
+	 <b7822cd7-97f3-489e-a16b-686b0419d3f2@k19g2000yqn.googlegroups.com>
+	 <4BB99654.4090203@computer.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Apr 2010 11:30:37 +0200
+Message-ID: <1270459837.4722.2.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > Russell had this thread: 
-> > http://permalink.gmane.org/gmane.linux.ports.arm.kernel/75717
+Le lundi 05 avril 2010 à 09:50 +0200, Jan Ceuleers a écrit :
+> Alexander Konovalenko wrote:
+> > On Mar 19, Jan Ceuleers wrote:
+> >> I'm using the 2.6.31 kernel that comes with Ubuntu 9.10.
+> >>
+> >> If I
+> >>
+> >>    # watch cat /proc/sys/kernel/random/entropy_avail
+> >>
+> >> then the size of the entropy pool falls rapidly (by more than 200 bytes per 2s interval).
+> >> It settles down around 160 bytes.
+> > 
+> > Jan, did you find out anything interesting about this issue?
+> > 
+> > I have a wild guess, although I have no idea whether it can be
+> > correct. I couldn't catch any user-space /dev/random or /dev/urandom
+> > readers with fuser, so I think something in the kernel is using up the
+> > entropy. If I remember correctly, recent Ubuntu releases were supposed
+> > to include a security feature that randomizes memory layout in order
+> > to mitigate some kinds of security vulnerabilities. What if each time
+> > a new process is started the kernel needs to obtain a significant
+> > number of random bytes? Here is some supporting evidence. I can
+> > reproduce the behavior you describe on a vanilla Ubuntu 9.10 system
+> > (without latest updates). But if I watch entropy_avail using a Python
+> > script that does not start a new process every time, then the
+> > available entropy amount won't decrease. (The system is otherwise
+> > idle.) Give it a try:
+> > 
+> > $ python
+> > import sys, time
+> > while True:
+> >   sys.stdout.write(open('/proc/sys/kernel/random/entropy_avail',
+> > 'r').read())
+> >   time.sleep(1)
+> > 
+> > It would be great if someone with knowledge about this could confirm
+> > or refute my guess.
+> > 
+> >  -- Alexander
+> > 
 > 
-> Russell is wrong.
+> Alexander,
 > 
-> Yes, originally it was about P4's overheating. But let me repeat: the fact 
-> is, this _is_ valid kernel code:
+> Thanks, this never made it out to LKML so I'm forwarding it now.
 > 
-> 	kernel/sched.c-		while (task_is_waking(p))
-> 	kernel/sched.c:			cpu_relax();
-
-
-And this is valid (but ugly and not optimal) kernel code:
-
- 	kernel/sched.c-		while (task_is_waking(p))
- 	kernel/sched.c:			asm volatile("" :: "memory");
-
-
-> (where that "task_is_waking()" is simply doing two regular reads, and 
-> expects another CPU to be changing them).
+> This does sound quite plausible; does anyone from Ubuntu want to chip in?
 > 
-> This has _nothing_ to do with memory barriers, or with overheating. 
-...
-> All that matters is that the above kind of while loop must work. The 
-> architecture needs to do whatever it needs to do to make it work. End of 
-> discussion. If on ARM6 that means "smp_mb()", then that's an ARM6 
-> implementation issue.
 
-...so I don't think inserting smp_mb() into cpu_relax() and udelay()
-and similar can ever fix the problem fully.
+Nothing related to Ubuntu I guess
 
-Run smp_mb() from periodic interrupt?
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+
+commit f06295b44c296c8fb08823a3118468ae343b60f2
+Author: Kees Cook <kees.cook@canonical.com>
+Date:   Wed Jan 7 18:08:52 2009 -0800
+
+    ELF: implement AT_RANDOM for glibc PRNG seeding
+    
+    While discussing[1] the need for glibc to have access to random bytes
+    during program load, it seems that an earlier attempt to implement
+    AT_RANDOM got stalled.  This implements a random 16 byte string, available
+    to every ELF program via a new auxv AT_RANDOM vector.
+    
+    [1] http://sourceware.org/ml/libc-alpha/2008-10/msg00006.html
+    
+    Ulrich said:
+    
+    glibc needs right after startup a bit of random data for internal
+    protections (stack canary etc).  What is now in upstream glibc is that we
+    always unconditionally open /dev/urandom, read some data, and use it.  For
+    every process startup.  That's slow.
+    
+    ...
+    
+    The solution is to provide a limited amount of random data to the
+    starting process in the aux vector.  I suggested 16 bytes and this is
+    what the patch implements.  If we need only 16 bytes or less we use the
+    data directly.  If we need more we'll use the 16 bytes to see a PRNG.
+    This avoids the costly /dev/urandom use and it allows the kernel to use
+    the most adequate source of random data for this purpose.  It might not
+    be the same pool as that for /dev/urandom.
+    
+    Concerns were expressed about the depletion of the randomness pool.  But
+    this patch doesn't make the situation worse, it doesn't deplete entropy
+    more than happens now.
+    
+    Signed-off-by: Kees Cook <kees.cook@canonical.com>
+    Cc: Jakub Jelinek <jakub@redhat.com>
+    Cc: Andi Kleen <andi@firstfloor.org>
+    Cc: Ulrich Drepper <drepper@redhat.com>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+
