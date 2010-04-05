@@ -1,175 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528Ab0DEJOX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 05:14:23 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:49387 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab0DEJOR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 05:14:17 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=pQm/5RWIlkbyh23jjZEP5JceUCJQjLNHvdb1jRgxe4+YhXAm5SGYaHVZR6x0qUpgS
-	I9NM25nxgL8AyzOarpgoQ==
+	id S1752380Ab0DEJSY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 05:18:24 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55688 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751518Ab0DEJSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 05:18:17 -0400
+Message-ID: <4BB9AAB7.3020209@kernel.org>
+Date: Mon, 05 Apr 2010 18:17:43 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <4B9B1416.5020101@dcl.info.waseda.ac.jp>
-References: <4B98BB50.1000002@cn.fujitsu.com>
-	 <4B9B1416.5020101@dcl.info.waseda.ac.jp>
-Date: Mon, 5 Apr 2010 02:14:06 -0700
-Message-ID: <n2k8d20b11a1004050214m529fa5e7ke31a2213728ea511@mail.gmail.com>
-Subject: Re: lock's trace events can improve mutex's performance in userspace?
-From: Michel Lespinasse <walken@google.com>
-To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Ming Lei <tom.leiming@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+To: "David S. Miller" <davem@davemloft.net>,
+       Herbert Xu <herbert@gondor.apana.org.au>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Subject: [PATCH ide#master] ide: clean up timed out request handling
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 05 Apr 2010 09:17:46 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the late reply...
+8f6205cd572fece673da0255d74843680f67f879 introduced a bug where a
+timed out DMA request is never requeued and lost.
+6072f7491f5ef391a575e18a1165e72a3eef1601 fixed this by making
+ide_dma_timeout_retry() requeue the request itself.  While the fix is
+correct, it makes DMA and non-DMA paths asymmetric regarding how the
+in flight request is requeued.
 
-One thing to consider in locking micro-benchmarks is that often, code
-changes that slow down parts of the contended code path where the lock
-is not held, will result in an increase of the reported
-micro-benchmark metric. This effect is particularly marked for
-micro-benchmarks that consist of multiple threads doing empty
-acquire/release loops.
+As long as hwif->rq is set, the IDE driver is assuming ownership of
+the request and the request should either be completed or requeued
+when clearing hwif->rq.  In the timeout path, the ide driver holds
+onto the request as long as the recovery action (ie. reset) is in
+progress and clears it after the state machine is stopped (ide_stopped
+return), so the existing requeueing logic is correct.  The bug
+occurred because ide_dma_timeout_retry() explicitly clears hwif->rq
+without requeueing it.
 
-As a thought experiment, imagine what would happen if you added a
-one-millisecond sleep in the contended code path for mutex
-acquisition. Soon all but one of your benchmark threads would be
-sleeping, and the only non-sleeping thread would be able to spin on
-that lock/unlock loop with no contention, resulting in very nice
-results for the micro-benchmark. Remove the sleep and the lock/unlock
-threads will have to contend, resulting in lower reported performance
-metrics.
+ide_dma_timeout_retry() is called only by ide_timer_expiry() and
+returns ide_started only when ide_error() would return it - ie. after
+reset state machine has started in which case the state machine will
+eventually end up executing the ide_stopped path in ide_timer_expiry()
+after reset protocol is complete.  So, there is no need to clear
+hwif->rq from ide_dma_timeout_retry().  ide_timer_expiry() will handle
+it the same way as PIO timeout path.
 
-I think what you're seeing with lockdep events is a smaller case of
-this - enabling lockdep slows down the contended code path, but also
-reduces the number of times that it is taken...
+Kill hwif->rq clearing and requeueing from ide_dma_timeout_retry() and
+let ide_timer_expiry() deal with it.  The end result should remain the
+same.
 
-On Fri, Mar 12, 2010 at 8:27 PM, Hitoshi Mitake
-<mitake@dcl.info.waseda.ac.jp> wrote:
-> On 03/11/10 18:43, Xiao Guangrong wrote:
->> We found that if enable lock's trace events, the 'sysbench mutex'
->> benchmark program can run quicker.
->>
->> The simple program that is attached can reproduce it, the system info,
->> kernel config, and the script are also attached.
->>
->> The test step is below:
->>
->> # tar -zxvf test-mutex.tar.bz
->> # cd test-mutex
->> # make
->> # ./tscript.sh>&  log
->> # cat log | grep "real"
->> real    0m46.765s<  all trace events are disabled>
->> real    0m47.073s
->> real    0m47.402s
->> real    0m46.458s
->> real    0m47.433s
->> real    0m47.395s
->> real    0m47.010s
->> real    0m47.454s
->> real    0m47.044s
->> real    0m47.464s
->> real    0m39.245s<  enable lock's trace events>
->> real    0m40.822s
->> real    0m40.779s
->> real    0m40.549s
->> real    0m40.605s
->> real    0m40.923s
->> real    0m40.560s
->> real    0m41.050s
->> real    0m40.757s
->> real    0m40.715s
->>
->> [ "<  ...>" is my comments ]
->>
->>  From the result, we can see the program's runtime is less if enable
-> lock's
->> trace events.
->>
->> The conclusion is weird but i don't know why.
->
-> Hi Xiao,
->
-> It's hard to believe, but...
->
-> % sudo ./tscript.sh &> log
-> % grep real log
-> real    0m24.132s
-> real    0m23.535s
-> real    0m20.064s
-> real    0m16.636s <- enabled from here
-> real    0m16.435s
-> real    0m17.339s
->
-> I could reproduce your surprising result.
-> (I only execed your benchmark 3 times.)
->
-> I rewrote your mainc.c and checked contended count of each test like
-> this way,
->                if (pthread_mutex_trylock(&mutex) == EBUSY) {
->                        pthread_mutex_lock(&mutex);
->                        atomic_inc(&contended);
->                }
-> # I'll attach my new mainc.c
->
-> % cat log
-> Run mutex with trace events disabled...
-> contended:25191221
->
-> real    0m24.132s
-> user    0m17.149s
-> sys     1m18.933s
-> contended:25360563
->
-> real    0m23.535s
-> user    0m17.233s
-> sys     1m16.213s
-> contended:23813911
->
-> real    0m20.064s
-> user    0m15.561s
-> sys     1m4.332s
-> Run mutex with lockdep events enabled...
-> contended:11458318
->
-> real    0m16.636s
-> user    0m10.173s
-> sys     0m55.595s
-> contended:11881095
->
-> real    0m16.435s
-> user    0m10.273s
-> sys     0m54.911s
-> contended:11261650
->
-> real    0m17.339s
-> user    0m10.225s
-> sys     0m58.556s
->
-> It seems that num of contention decreased to about half.
-> I don't know why this happened and effect to performance of it,
-> but this result is worth to consider.
->
-> Thanks,
->        Hitoshi
->
+grepping shows ide_dma_timeout_retry() is the only site which clears
+hwif->rq without taking care of the request, so there shouldn't be
+similar fallouts.
 
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+---
+Herbert, can you please test this survives your test case?
 
+Thanks.
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+ drivers/ide/ide-dma.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/ide/ide-dma.c b/drivers/ide/ide-dma.c
+index fd40a81..963bc8b 100644
+--- a/drivers/ide/ide-dma.c
++++ b/drivers/ide/ide-dma.c
+@@ -448,7 +448,6 @@ ide_startstop_t ide_dma_timeout_retry(ide_drive_t *drive, int error)
+ 	ide_hwif_t *hwif = drive->hwif;
+ 	const struct ide_dma_ops *dma_ops = hwif->dma_ops;
+ 	struct ide_cmd *cmd = &hwif->cmd;
+-	struct request *rq;
+ 	ide_startstop_t ret = ide_stopped;
+
+ 	/*
+@@ -486,14 +485,10 @@ ide_startstop_t ide_dma_timeout_retry(ide_drive_t *drive, int error)
+ 	ide_dma_off_quietly(drive);
+
+ 	/*
+-	 * un-busy drive etc and make sure request is sane
++	 * make sure request is sane
+ 	 */
+-	rq = hwif->rq;
+-	if (rq) {
+-		hwif->rq = NULL;
+-		rq->errors = 0;
+-		ide_requeue_and_plug(drive, rq);
+-	}
++	if (hwif->rq)
++		hwif->rq->errors = 0;
+ 	return ret;
+ }
+
