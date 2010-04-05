@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464Ab0DEUAo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 16:00:44 -0400
-Received: from imr2.ericy.com ([198.24.6.3]:46214 "EHLO imr2.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755918Ab0DEUAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 16:00:40 -0400
-Subject: Re: [PATCH][RESEND] x86: Do not write to VGA memory space if
- CONFIG_VGA_CONSOLE is undefined
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: linux-kernel@vger.kernel.org, hpa@zytor.com
-CC: penberg@cs.helsinki.fi, mingo@redhat.com, x86@kernel.org
-In-Reply-To: <4BBA3021.9090504@zytor.com>
-References: <1270046479-4486-1-git-send-email-guenter.roeck@ericsson.com>
-	 <84144f021003310832i3420e4c1g7396b4d1f311f393@mail.gmail.com>
-	 <1270491029.1477.453.camel@groeck-laptop>  <4BBA3021.9090504@zytor.com>
-Content-Type: text/plain
-Organization: Ericsson
-Date: Mon, 5 Apr 2010 13:02:05 -0700
-Message-ID: <1270497725.1477.488.camel@groeck-laptop>
+	id S1756486Ab0DEULX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 16:11:23 -0400
+Received: from fg-out-1718.google.com ([72.14.220.157]:5987 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756456Ab0DEULR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 16:11:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=dLL5PuW4JWkviTYgxzmkYqa9Q7bWIeUyfQfSYEMqRTMExSuHuAAvhN5rc2a+zjBh1t
+         isjfvdhf/jzfzIIdK8qa/p5WAIBx9ur1sPuYl1QaaJg7/NWRidTVEtY/X1nvMLJnoHbu
+         rNTqKBF8Yq81Ikea0c62P2Lbj5wk+UbyXqFv4=
+Date: Tue, 6 Apr 2010 00:11:11 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Aristeu Sergio Rozanski Filho <aris@ruivo.org>
+Cc: Don Zickus <dzickus@redhat.com>, mingo@elte.hu, peterz@infradead.org,
+       aris@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [watchdog] combine nmi_watchdog and softlockup
+Message-ID: <20100405201111.GF5079@lenovo>
+References: <20100323213338.GA29170@redhat.com> <20100328024650.GA26522@jake.ruivo.org> <20100329182617.GI15159@redhat.com> <20100330145238.GG6706@cathedrallabs.org>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.26.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100330145238.GG6706@cathedrallabs.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-04-05 at 14:46 -0400, H. Peter Anvin wrote:
-> On 04/05/2010 11:10 AM, Guenter Roeck wrote:
-> > On Wed, 2010-03-31 at 11:32 -0400, Pekka Enberg wrote:
-> >> On Wed, Mar 31, 2010 at 4:41 PM, Guenter Roeck
-> >> <guenter.roeck@ericsson.com> wrote:
-> >>> Current early_printk code writes into VGA memory space even
-> >>> if CONFIG_VGA_CONSOLE is undefined. This can cause problems
-> >>> if there is no VGA device in the system, especially if the memory
-> >>> is used by another device.
-> >>>
-> >>> Fix problem by redirecting output to early_serial_console
-> >>> if CONFIG_VGA_CONSOLE is undefined.
-> >>>
-> >>> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> >>
-> >> Reviewed-by: Pekka Enberg <penberg@cs.helsinki.fi>
-> >>
-> > What will it take to get this patch into the tree ?
+On Tue, Mar 30, 2010 at 10:52:38AM -0400, Aristeu Sergio Rozanski Filho wrote:
+> > On Sat, Mar 27, 2010 at 10:46:50PM -0400, Aristeu Sergio Rozanski Filho wrote:
+> > > Hi Don,
+> > > > +/* deprecated */
+> > > > +static int __init nosoftlockup_setup(char *str)
+> > > > +{
+> > > > +	no_watchdog = 1;
+> > > > +	return 1;
+> > > > +}
+> > > > +__setup("nosoftlockup", nosoftlockup_setup);
+> > > > +static int __init nonmi_watchdog_setup(char *str)
+> > > > +{
+> > > > +	no_watchdog = 1;
+> > > > +	return 1;
+> > > > +}
+> > > > +__setup("nonmi_watchdog", nonmi_watchdog_setup);
+> > > didn't you just add nonmi_watchdog parameter? I don't think there's a reason
+> > > to keep compatibility here.
 > > 
-> > If there are coding style issues or some other unresolved concerns,
-> > please let me know.
-> > 
+> > Hmm, I think you are right.  I thought I added that because it existed in
+> > the old nmi_watchdog setup but I can't find it.  So yeah, I can drop that.
+> you could provide a nmi_watchdog=0 backwards compatibility and warn about
+> values != 0
 > 
-> You didn't answer my question (c).
+> -- 
+> Aristeu
 > 
-> I want to know how you ended up with
-> boot_params.screen_info.orig_video_isVGA == 1 on a system with no VGA,
-> which seems like it would have resolved this.
-> 
-> I am *not* inclined to add a compile-time test for what should have been
-> handed with a runtime test already.
-> 
-Sorry, I thought I did answer it.
 
-The problem is that early_printk() can be called prior to the call to
-setup_early_printk(). Since early_console is currently pre-initialized
-with early_vga_console, output can be written to VGA memory space even
-if there is no VGA controller in the system (and even if
-boot_params.screen_info.orig_video_isVGA == 0). This happens for all
-early_printk() calls executed prior to the call to setup_early_printk().
+Sorry for a long delay, I think we might need to inform a user that "lapic",
+"ioapic" is no longer used (perf-nmi is supposed to substitute the former nmi
+code in a long term right?) so that for some time period, say the whole release
+cycle, if lapic or ioapic, or numbers are passed to nmi_watchdog= setup option
+we would just print out that the parameters are deprecated and better to not
+use them any longer. Hm?
 
-I don't mind taking out have_vga_console, if that is the issue. That is
-just an optimization resulting in the entire VGA code to be optimized
-away if CONFIG_VGA_CONSOLE is not defined. The important part of the
-patch is to not pre-initialize early_console with early_vga_console if
-CONFIG_VGA_CONSOLE is not defined.
-
-An alternative might be to not pre-initialize early_console at all, and
-to modify early_printk() to not do anything if early_console is NULL.
-However, that would result in output such as "Kernel alive" to not be
-displayed at all, which I assumed would be undesirable.
-
-Guenter
-
-
+	-- Cyrill
