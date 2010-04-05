@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab0DES7V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 14:59:21 -0400
-Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:34683 "EHLO
-	outpost1.zedat.fu-berlin.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755879Ab0DES7H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 14:59:07 -0400
-Date: Mon, 5 Apr 2010 20:59:02 +0200
-To: Joe Perches <joe@perches.com>
-Cc: Grant Grundler <grundler@parisc-linux.org>,
-       Kyle McMartin <kyle@mcmartin.ca>,
-       "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: tulip_stop_rxtx() failed (CSR5 0xf0260000 CSR6 0xb3862002) on
- DEC Alpha Personal Workstation 433au
-Message-ID: <20100405185902.GA22607@physik.fu-berlin.de>
-References: <20100405171318.GA18915@physik.fu-berlin.de>
- <1270488982.31062.28.camel@Joe-Laptop.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1270488982.31062.28.camel@Joe-Laptop.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-From: Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
-X-Originating-IP: 160.45.64.218
+	id S1756195Ab0DETF5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 15:05:57 -0400
+Received: from mail.perches.com ([173.55.12.10]:1350 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753416Ab0DETFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 15:05:49 -0400
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+       Mark Gross <mark.gross@intel.com>,
+       Doug Thompson <dougthompson@xmission.com>, Mike Isely <isely@pobox.com>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       David Vrabel <david.vrabel@csr.com>, linux-ia64@vger.kernel.org,
+       linux-kernel@vger.kernel.org, bluesmoke-devel@lists.sourceforge.net,
+       linux-media@vger.kernel.org, linux-s390@vger.kernel.org,
+       devel@driverdev.osuosl.org, linux-usb@vger.kernel.org,
+       netdev@vger.kernel.org
+Subject: [PATCH 00/11] treewide: rename dev_info variables to something else
+Date: Mon,  5 Apr 2010 12:05:30 -0700
+Message-Id: <cover.1270493677.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.0.3.311.g6a6955
+In-Reply-To: <20100304232928.2e45bdd1.akpm@linux-foundation.org>
+References: <20100304232928.2e45bdd1.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+There is a macro called dev_info that prints struct device specific
+information.  Having variables with the same name can be confusing and
+prevents conversion of the macro to a function.
 
-On Mon, Apr 05, 2010 at 10:36:22AM -0700, Joe Perches wrote:
-> On Mon, 2010-04-05 at 19:13 +0200, Adrian Glaubitz wrote:
-> > Hi guys,
-> > 
-> > I installed Debian unstable on an old digital workstation "DEC Digital
-> > Personal Workstation 433au" (Miata) which has an on-board tulip
-> > network controller. I'm not really using that network controller but
-> > an off-board intel e1000 controller. However, I found that the tulip
-> > driver produces a lot of noise in the message log, the following
-> > message is repated periodically and spams the whole message log:
-> > 
-> > 0000:00:03.0: tulip_stop_rxtx() failed (CSR5 0xf0260000 CSR6 0xb3862002)
-> > 
-> > Do you think this is related to the fact that no cable is connected to
-> > the network controller?
-> 
-> Probably something is trying periodically to open the device.
-> Maybe this helps reduce the message log noise:
+Rename the existing dev_info variables to something else in preparation
+to converting the dev_info macro to a function.
 
-Thanks for the patch. I will apply it to a current rc of 2.6.34 and
-build a new kernel, probably not before tomorrow as I cannot reboot
-the Alpha remotely as the "aboot" boot loader does not boot
-automatically.
+Joe Perches (11):
+  arch/ia64/hp/common/sba_iommu.c: Rename dev_info to adi
+  drivers/usb/host/hwa-hc.c: Rename dev_info to hdi
+  drivers/usb/wusbcore/wusbhc.h: Remove unused dev_info from struct wusb_port
+  drivers/s390/block/dcssblk.c: Rename dev_info to ddi
+  drivers/edac/amd: Rename dev_info to adi
+  drivers/edac/cpc925_edac.c: Rename dev_info to cdi
+  drivers/edac/e7*_edac.c: Rename dev_info to edi
+  drivers/staging/iio: Rename dev_info to idi
+  pvrusb2-v4l2: Rename dev_info to pdi
+  drivers/char/mem.c: Rename dev_info to bdi
+  drivers/uwb: Rename dev_info to wdi
 
-Thanks,
+ arch/ia64/hp/common/sba_iommu.c            |    8 +-
+ drivers/char/mem.c                         |    6 +-
+ drivers/edac/amd8111_edac.c                |   88 ++++----
+ drivers/edac/amd8131_edac.c                |   86 ++++----
+ drivers/edac/cpc925_edac.c                 |  122 +++++-----
+ drivers/edac/e752x_edac.c                  |   18 +-
+ drivers/edac/e7xxx_edac.c                  |    8 +-
+ drivers/media/video/pvrusb2/pvrusb2-v4l2.c |   22 +-
+ drivers/s390/block/dcssblk.c               |  328 ++++++++++++++--------------
+ drivers/staging/iio/accel/lis3l02dq_core.c |    4 +-
+ drivers/staging/iio/accel/lis3l02dq_ring.c |   20 +-
+ drivers/staging/iio/accel/sca3000_core.c   |   24 +-
+ drivers/staging/iio/adc/max1363_core.c     |   36 ++--
+ drivers/staging/iio/adc/max1363_ring.c     |    6 +-
+ drivers/staging/iio/chrdev.h               |    2 +-
+ drivers/staging/iio/iio.h                  |   54 +++---
+ drivers/staging/iio/industrialio-core.c    |  232 ++++++++++----------
+ drivers/staging/iio/industrialio-ring.c    |   38 ++--
+ drivers/staging/iio/industrialio-trigger.c |   34 ++--
+ drivers/staging/iio/ring_generic.h         |    4 +-
+ drivers/staging/iio/trigger_consumer.h     |   16 +-
+ drivers/usb/host/hwa-hc.c                  |   18 +-
+ drivers/usb/wusbcore/wusbhc.h              |   10 -
+ drivers/uwb/i1480/i1480u-wlp/lc.c          |   16 +-
+ drivers/uwb/wlp/messages.c                 |   40 ++--
+ drivers/uwb/wlp/sysfs.c                    |   46 ++--
+ drivers/uwb/wlp/wlp-lc.c                   |   12 +-
+ 27 files changed, 644 insertions(+), 654 deletions(-)
 
-Adrian
