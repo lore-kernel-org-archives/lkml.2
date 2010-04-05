@@ -1,66 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab0DEPBj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 11:01:39 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37838 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755006Ab0DEPBd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 11:01:33 -0400
-Date: Mon, 5 Apr 2010 07:56:56 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Pavel Machek <pavel@ucw.cz>
-cc: Jason Wessel <jason.wessel@windriver.com>,
-       Will Deacon <will.deacon@arm.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       kgdb-bugreport@lists.sourceforge.net, linux-arm@vger.kernel.org,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 4/5] kgdb: Use atomic operators which use barriers
-In-Reply-To: <20100405092126.GA1419@ucw.cz>
-Message-ID: <alpine.LFD.2.00.1004050751500.8323@i5.linux-foundation.org>
-References: <1270233145-29335-1-git-send-email-jason.wessel@windriver.com> <1270233145-29335-2-git-send-email-jason.wessel@windriver.com> <1270233145-29335-3-git-send-email-jason.wessel@windriver.com> <1270233145-29335-4-git-send-email-jason.wessel@windriver.com>
- <1270233145-29335-5-git-send-email-jason.wessel@windriver.com> <alpine.LFD.2.00.1004021205080.3634@i5.linux-foundation.org> <4BB64762.6040806@windriver.com> <alpine.LFD.2.00.1004021238270.3634@i5.linux-foundation.org> <20100405092126.GA1419@ucw.cz>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755278Ab0DEPMv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 11:12:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63008 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755192Ab0DEPMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 11:12:45 -0400
+Date: Mon, 5 Apr 2010 11:12:38 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Divyesh Shah <dpshah@google.com>
+Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
+       ctalbott@google.com
+Subject: Re: [PATCH 3/3] blkio: Increment the blkio cgroup stats for real
+	now
+Message-ID: <20100405151237.GD876@redhat.com>
+References: <20100401215541.2843.79107.stgit@austin.mtv.corp.google.com> <20100401220129.2843.36193.stgit@austin.mtv.corp.google.com> <20100402191000.GD3516@redhat.com> <w2maf41c7c41004021636ia2261ffcv56b6c85928bdee86@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <w2maf41c7c41004021636ia2261ffcv56b6c85928bdee86@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Mon, 5 Apr 2010, Pavel Machek wrote:
+On Fri, Apr 02, 2010 at 04:36:34PM -0700, Divyesh Shah wrote:
+> On Fri, Apr 2, 2010 at 12:10 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Thu, Apr 01, 2010 at 03:01:41PM -0700, Divyesh Shah wrote:
+> >> We also add start_time_ns and io_start_time_ns fields to struct request
+> >> here to record the time when a request is created and when it is
+> >> dispatched to device. We use ns uints here as ms and jiffies are
+> >> not very useful for non-rotational media.
+> >>
+> >> Signed-off-by: Divyesh Shah<dpshah@google.com>
+> >> ---
+> >>
+> >>  block/blk-cgroup.c     |   60 ++++++++++++++++++++++++++++++++++++++++++++++--
+> >>  block/blk-cgroup.h     |   14 +++++++++--
+> >>  block/blk-core.c       |    6 +++--
+> >>  block/cfq-iosched.c    |    4 ++-
+> >>  include/linux/blkdev.h |   20 +++++++++++++++-
+> >>  5 files changed, 95 insertions(+), 9 deletions(-)
+> >>
+> >> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+> >> index ad6843f..9af7257 100644
+> >> --- a/block/blk-cgroup.c
+> >> +++ b/block/blk-cgroup.c
+> >> @@ -15,6 +15,7 @@
+> >>  #include <linux/kdev_t.h>
+> >>  #include <linux/module.h>
+> >>  #include <linux/err.h>
+> >> +#include <linux/blkdev.h>
+> >>  #include "blk-cgroup.h"
+> >>
+> >>  static DEFINE_SPINLOCK(blkio_list_lock);
+> >> @@ -55,6 +56,26 @@ struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
+> >>  }
+> >>  EXPORT_SYMBOL_GPL(cgroup_to_blkio_cgroup);
+> >>
+> >> +/*
+> >> + * Add to the appropriate stat variable depending on the request type.
+> >> + * This should be called with the blkg->stats_lock held.
+> >> + */
+> >> +void io_add_stat(uint64_t *stat, uint64_t add, unsigned int flags)
+> >> +{
+> >> +     if (flags & REQ_RW)
+> >> +             stat[IO_WRITE] += add;
+> >> +     else
+> >> +             stat[IO_READ] += add;
+> >> +     /*
+> >> +      * Everywhere in the block layer, an IO is treated as sync if it is a
+> >> +      * read or a SYNC write. We follow the same norm.
+> >> +      */
+> >> +     if (!(flags & REQ_RW) || flags & REQ_RW_SYNC)
+> >> +             stat[IO_SYNC] += add;
+> >> +     else
+> >> +             stat[IO_ASYNC] += add;
+> >> +}
+> >> +
+> >
+> > Hi Divyesh,
+> >
+> > Can we have any request based information limited to cfq and not put that
+> > in blkio-cgroup. The reason being that I am expecting that some kind of
+> > max bw policy interface will not necessarily be implemented at CFQ
+> > level. We might have to implement it at higher level so that it can
+> > work with all dm/md devices. If that's the case, then it might very well
+> > be either a bio based interface also.
+> >
+> > So just keeping that possibility in mind, can we keep blk-cgroup as
+> > generic as possible and not necessarily make it dependent on "struct
+> > request".
 > 
-> And this is valid (but ugly and not optimal) kernel code:
+> Ok. I do understand the motivation for keeping the request related
+> info out of blk-cgroup. Everything except the rq->cmd_flags can be
+> easily done away with. Maybe I'll need to have CFQ send the sync and
+> direction bits as args to the functions that need it. Not ideal coz
+> we'll have functions with many args but I guess its not that bad too.
 > 
->  	kernel/sched.c-		while (task_is_waking(p))
->  	kernel/sched.c:			asm volatile("" :: "memory");
+> >
+> > If you implement, two dimensional arrays for stats then we can have
+> > following function.
+> >
+> > blkio_add_stat(enum stat_type var enum stat_sub_type var_type, u64 val)
+> 
+> I would want to avoid calls like these from CFQ into the blkcg code
+> because many CFQ events trigger update for multiple stats (you'll see
+> more with stats in later patchsets) and doing these calls
+> independently for each stat would mean that we would also need to grab
+> the stats_lock multiple times when we could've avoided that.
 
-No. We would consider such code buggy.
+I understand the need to club the updates and reduce the need of taking
+stats_lock multiple times. I was thinking of any of following.
 
-That said, you're right that such code would exist. But if it were to 
-exist and cause lock-ups, at least I would consider it a simple and 
-outright bug, and that the proper fix would be to just replace the asm 
-with cpu_relax().
+- Get rid of reset interface per cgroup. Rely on changing ioscheduler on
+  request queue and that will get rid of stats_lock entirely.
 
-> ...so I don't think inserting smp_mb() into cpu_relax() and udelay()
-> and similar can ever fix the problem fully.
+- Can we use a function blkio_add_stat() with variable number of arguments
+  so that more than one stat can be updated in a single call?
 
-See above. 
+If you have other ideas to implement it without assuming "struct rq" in
+blk-cgroup, please do that.
 
-> Run smp_mb() from periodic interrupt?
-
-Doesn't help - it's quite valid to do things like this in irq-disabled 
-code, although it is hopefully very very rare.
-
-In particular, I suspect the kgdb use _is_ interrupts disabled, and is why 
-the ARM people even noticed (the normal cases would break out of the loop 
-exactly because an interrupt occurred, and an interrupt is probably 
-already enough to make the issue go away).
-
-And please do not confuse this with smp_mb() - this is not about the Linux 
-notion of a memory barrier, this is about whatever per-arch oddity that 
-makes changes not be noticed (ie caches may be _coherent_, but they are 
-not "timely").
-
-			Linus
+Thanks
+Vivek
