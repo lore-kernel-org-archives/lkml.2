@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756646Ab0DEVEU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 17:04:20 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:62323 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756617Ab0DEVEO (ORCPT
+	id S1756640Ab0DEVJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 17:09:16 -0400
+Received: from relay1-d.mail.gandi.net ([217.70.183.193]:60427 "EHLO
+	relay1-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756412Ab0DEVJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 17:04:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Sqtc8AP7Uj1MXmRU7QAzoBw8LWLmi2InLw9OyJQ9MiZoHHW5KPVqCvByoxDW8f+kD+
-         EM7TnGQW83LuatMSRxdQpcssjhVNLeD1uq1kkqT9qWdvh9HLw59w3cywsuZugVgwMD8i
-         F6N8hrPgcKVgot0MMvi9GXhuftYkZLJ7gtZUY=
-Subject: Re: [BUG] x86info fails on 2.6.34 ?
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1270499041.9013.15.camel@edumazet-laptop>
-References: <1270499041.9013.15.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 Apr 2010 23:04:08 +0200
-Message-ID: <1270501448.9013.23.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 5 Apr 2010 17:09:10 -0400
+X-Originating-IP: 217.70.178.45
+X-Originating-IP: 173.50.255.69
+Date: Mon, 5 Apr 2010 14:08:34 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, mingo@elte.hu,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Nicholas Miell <nmiell@comcast.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+       Nick Piggin <npiggin@suse.de>, Chris Friesen <cfriesen@nortel.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] introduce sys_membarrier(): process-wide memory
+ barrier (v10)
+Message-ID: <20100405210833.GA17206@feather>
+References: <20100405175736.GA12656@Krystal>
+ <20100405113837.e475db7b.randy.dunlap@oracle.com>
+ <20100405191057.GB13309@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100405191057.GB13309@Krystal>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 05 avril 2010 à 22:24 +0200, Eric Dumazet a écrit :
-> Hi Dave
+On Mon, Apr 05, 2010 at 03:10:57PM -0400, Mathieu Desnoyers wrote:
+> * Randy Dunlap (randy.dunlap@oracle.com) wrote:
+> > On Mon, 5 Apr 2010 13:57:37 -0400 Mathieu Desnoyers wrote:
+> > > +/*
+> > > + * sys_membarrier - issue memory barrier on current process running threads
+> > > + * @flags: One of these must be set:
+> > > + *         MEMBARRIER_EXPEDITED
+> > > + *             Adds some overhead, fast execution (few microseconds)
+> > > + *         MEMBARRIER_DELAYED
+> > > + *             Low overhead, but slow execution (few milliseconds)
+> > > + *
+> > > + *         MEMBARRIER_QUERY
+> > > + *           This optional flag can be set to query if the kernel supports
+> > > + *           a set of flags.
+> > > + *
+> > > + * return values: Returns -EINVAL if the flags are incorrect. Testing for kernel
+> > > + * sys_membarrier support can be done by checking for -ENOSYS return value.
+> > > + * Return values >= 0 indicate success. For a given set of flags on a given
+> > > + * kernel, this system call will always return the same value. It is therefore
+> > > + * correct to check the return value only once at library load, passing the
+> > 
+> > library load assumes caller is a library?  does the kernel care about that?
 > 
-> I just noticed x86info was not working anymore on latest kernel
+> Nope, it doesn't. Will rephrase:
 > 
-> x86info v1.24.  Dave Jones 2001-2009
-> Feedback to <davej@redhat.com>.
-> 
-> type seek: Value too large for defined data type
-> 
-> 
-> Offending syscall is an lseek(fd, -1, SEEK_CUR) on /dev/mem file
-> 
-> 
-> 
-> open("/dev/mem", O_RDONLY)              = 3
-> ...
-> lseek(3, 1023092, SEEK_SET)             = 1023092
-> read(3, "PCMP\4\3\4\266HP      PROLIANT    \0\0\0\0\0"..., 44) = 44
-> read(3, "\0"..., 1)                     = 1
-> lseek(3, -1, SEEK_CUR)                  = -1 EOVERFLOW (Value too large
-> for defined data type)
-> 
-> It seems -1 is taken as an unsigned quantity ?
-> 
+>     ... It is therefore
+>  * correct to check the return value only once during a process lifetime,
+>  * passing the MEMBARRIER_QUERY flag in addition to only check if the flags are
+>  * supported, without performing any synchronization.
 
-Andrew, commit dcefafb6ac90ece8d68a6c203105f3d313e52da4 seems to be the
-problem. 
+Technically you can optimize even more than "process lifetime", since as
+you said the results hold "For a given set of flags on a given kernel".
+So you could check once and use the results as long as you remain on the
+same running system.  (Craziness like live process migration and
+checkpoint/restart aside. :) )
 
-It breaks rewinds (negative offsets to lseek (... SEEK_CUR))
-
-
-commit dcefafb6ac90ece8d68a6c203105f3d313e52da4
-Author: Wu Fengguang <fengguang.wu@intel.com>
-Date:   Wed Mar 10 15:21:51 2010 -0800
-
-    /dev/mem: dont allow seek to last page
-    
-    So as to return a uniform error -EOVERFLOW instead of a random one:
-    
-    # kmem-seek 0xfffffffffffffff0
-    seek /dev/kmem: Device or resource busy
-    # kmem-seek 0xfffffffffffffff1
-    seek /dev/kmem: Block device required
-    
-    Suggested by OGAWA Hirofumi.
-    
-    Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-    Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-    Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-
-
+- Josh Triplett
