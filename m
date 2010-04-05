@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562Ab0DEUke (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 16:40:34 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:58949 "EHLO e1.ny.us.ibm.com"
+	id S1756526Ab0DEUmB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 16:42:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55076 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756420Ab0DEUka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 16:40:30 -0400
-Date: Mon, 5 Apr 2010 13:40:21 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, mingo@elte.hu,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Nicholas Miell <nmiell@comcast.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
-       peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       Nick Piggin <npiggin@suse.de>, Chris Friesen <cfriesen@nortel.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] introduce sys_membarrier(): process-wide memory
-	barrier (v10)
-Message-ID: <20100405204021.GH2525@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100405175736.GA12656@Krystal>
- <20100405113837.e475db7b.randy.dunlap@oracle.com>
- <20100405191057.GB13309@Krystal>
+	id S1756219Ab0DEUlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 16:41:55 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: tytso@mit.edu
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+       jens.axboe@oracle.com, esandeen@redhat.com
+Subject: Re: [patch/rft] jbd2: tag journal writes as metadata I/O
+References: <x49iq8b9ep5.fsf@segfault.boston.devel.redhat.com>
+	<20100405175205.GA4681@thunk.org>
+	<x49hbnpkaqw.fsf@segfault.boston.devel.redhat.com>
+	<20100405194803.GC23670@thunk.org>
+	<x49zl1hiqoz.fsf@segfault.boston.devel.redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 05 Apr 2010 16:41:48 -0400
+In-Reply-To: <x49zl1hiqoz.fsf@segfault.boston.devel.redhat.com> (Jeff Moyer's
+	message of "Mon, 05 Apr 2010 16:34:36 -0400")
+Message-ID: <x49vdc5iqcz.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100405191057.GB13309@Krystal>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05, 2010 at 03:10:57PM -0400, Mathieu Desnoyers wrote:
-> * Randy Dunlap (randy.dunlap@oracle.com) wrote:
-> > On Mon, 5 Apr 2010 13:57:37 -0400 Mathieu Desnoyers wrote:
+Jeff Moyer <jmoyer@redhat.com> writes:
 
-[ . . . ]
+> tytso@mit.edu writes:
+>
+>> On Mon, Apr 05, 2010 at 02:36:07PM -0400, Jeff Moyer wrote:
+>>> >
+>>> > What benchmark were you using to test small file writes?  This looks
+>>> > good to me as well, but we might want to do some extra benchmarking
+>>> > just to be sure we're not accidentally introducing a performance
+>>> > regression.
+>>> 
+>>> iozone showed regressions for write and re-write in runs that include
+>>> fsync timings for small files (<8MB).  Here's the command line used for
+>>> testing:
+>>> 
+>>> iozone -az -n 4k -g 2048m -y 1k -q 1m -e
+>>
+>> iozone is showing performance regressions or performance improvements?
+>> I thought the point of this patch was to improve iozone benchmarks?
+>
+> Sorry, Ted, what I meant to say was that iozone showed differences
+> between deadline and cfq, where cfq's performance was much worse than
+> deadline's.
 
-> > > +#else /* #ifdef CONFIG_SMP */
-> > 
-> > I don't know that we have a known convention for that, but I would use:
-> > 
-> > #else /* not CONFIG_SMP */
-> > 
-> > or
-> > 
-> > #else /* !CONFIG_SMP */
-> > 
-> > > +
-> > > +SYSCALL_DEFINE1(membarrier, unsigned int, flags)
-> > > +{
-> > > +	return 0;
-> > > +}
-> > > +
-> > > +#endif /* #else #ifdef CONFIG_SMP */
-> > 
-> > and:
-> > 
-> > #endif /* CONFIG_SMP */
-> > 
-> > The "#else #ifdef" is both ugly and too wordy IMO.
+And to be 100% clear, with the patch, the performance differences
+between deadline and cfq were in the noise.
 
-The extra words make it very clear that we are in at the end of the #else
-clause of a #ifdef with the given condition.  With "#endif /* CONFIG_SMP
-*/", is the immediately preceding code compiled under CONFIG_SMP or
-!CONFIG_SMP?  You have to dig back and see whether or not there is a
-#else clause.
-
-But there is no accounting for taste.  ;-)
-
-							Thanx, Paul
-
-> OK. I merely followed the coding style of the code added to sched.c by Paul
-> McKenney. But you are right, the rest of sched.c does as you say:
-> 
-> #else /* !CONFIG_SMP */
-> 
-> #endif /* CONFIG_SMP */
-> 
-> Will fix.
-> 
-> Thanks !
-> 
-> Mathieu
-> 
-> > 
-> > > +
-> > >  #ifndef CONFIG_SMP
-> > >  
-> > >  int rcu_expedited_torture_stats(char *page)
-> > 
-> > 
-> > ---
-> > ~Randy
-> > 
-> 
-> -- 
-> Mathieu Desnoyers
-> Operating System Efficiency R&D Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Cheers,
+Jeff
