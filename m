@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291Ab0DETsS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 15:48:18 -0400
-Received: from thunk.org ([69.25.196.29]:58821 "EHLO thunker.thunk.org"
+	id S1756337Ab0DETtL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 15:49:11 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29834 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755608Ab0DETsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 15:48:12 -0400
-Date: Mon, 5 Apr 2010 15:48:03 -0400
-From: tytso@mit.edu
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-       jens.axboe@oracle.com, esandeen@redhat.com
-Subject: Re: [patch/rft] jbd2: tag journal writes as metadata I/O
-Message-ID: <20100405194803.GC23670@thunk.org>
-Mail-Followup-To: tytso@mit.edu, Jeff Moyer <jmoyer@redhat.com>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-	jens.axboe@oracle.com, esandeen@redhat.com
-References: <x49iq8b9ep5.fsf@segfault.boston.devel.redhat.com>
- <20100405175205.GA4681@thunk.org>
- <x49hbnpkaqw.fsf@segfault.boston.devel.redhat.com>
+	id S1756165Ab0DETtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 15:49:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,366,1267430400"; 
+   d="scan'208";a="610400661"
+Message-ID: <4BBA3EAB.6010800@linux.intel.com>
+Date: Mon, 05 Apr 2010 12:48:59 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x49hbnpkaqw.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+To: david@lang.hm
+CC: paulmck@linux.vnet.ibm.com, Dominik Brodowski <linux@dominikbrodowski.net>,
+       Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>, Dmitry Torokhov <dtor@mail.ru>
+Subject: Re: A few questions and issues with dynticks, NOHZ and powertop
+References: <20100403223328.GA4507@comet.dominikbrodowski.net> <Pine.LNX.4.44L0.1004041110010.2750-100000@netrider.rowland.org> <20100404163924.GA18428@comet.dominikbrodowski.net> <20100404204725.GC2644@linux.vnet.ibm.com> <20100404233702.GA24102@linux.vnet.ibm.com> <4BB95C85.80205@linux.intel.com> <20100405042222.GD2644@linux.vnet.ibm.com> <4BB9F657.4050901@linux.intel.com> <20100405151401.GA2525@linux.vnet.ibm.com> <4BBA0AC5.1080905@linux.intel.com> <alpine.DEB.2.00.1004051137160.12764@asgard.lang.hm>
+In-Reply-To: <alpine.DEB.2.00.1004051137160.12764@asgard.lang.hm>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05, 2010 at 02:36:07PM -0400, Jeff Moyer wrote:
-> >
-> > What benchmark were you using to test small file writes?  This looks
-> > good to me as well, but we might want to do some extra benchmarking
-> > just to be sure we're not accidentally introducing a performance
-> > regression.
-> 
-> iozone showed regressions for write and re-write in runs that include
-> fsync timings for small files (<8MB).  Here's the command line used for
-> testing:
-> 
-> iozone -az -n 4k -g 2048m -y 1k -q 1m -e
+On 4/5/2010 11:44, david@lang.hm wrote:
+> On Mon, 5 Apr 2010, Arjan van de Ven wrote:
+>
+>> On 4/5/2010 8:14, Paul E. McKenney wrote:
+>>> So the main issue is that for many workloads, it is best to run full
+>>> bore
+>>> and get done quickly, thus allowing the entire machine to be powered
+>>> down?
+>>
+>> yep
+>
+> Race To Idle works extremely well in a batch type situation where there
+> is not going to be any work to do after you finish what you have.
+>
+> It doesn't work quite as well if you are going to have new work to do in
+> the near future.
+>
+> You cannot power down the entire machine if you have to look for user
+> input.
+>
+> It takes time (and power) to shut down and start back up, if you are
+> going to have more work to do before you can make the complete cycle
+> (and save more power than it costs to make the transitions), it's best
+> to stay at full power, even if you are idle.
 
-iozone is showing performance regressions or performance improvements?
-I thought the point of this patch was to improve iozone benchmarks?
+for the things we're talking about here (memory controllers etc) we're talking
+about single to low double digit microseconds (or even less) of time to go up and down.
+Many of the things you talk about are in the millisecond timeframe.
 
-  	      	       	    	      - Ted
