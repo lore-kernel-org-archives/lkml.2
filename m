@@ -1,198 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab0DEJNU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 05:13:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61346 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752380Ab0DEJNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 05:13:15 -0400
-Date: Mon, 5 Apr 2010 05:12:40 -0400
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Matt Mackall <mpm@selenic.com>, netdev@vger.kernel.org,
-       bridge@lists.linux-foundation.org, Andy Gospodarek <gospo@redhat.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Amerigo Wang <amwang@redhat.com>,
-       Jeff Moyer <jmoyer@redhat.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
-       David Miller <davem@davemloft.net>
-Message-Id: <20100405091628.4890.30541.sendpatchset@localhost.localdomain>
-In-Reply-To: <20100405091605.4890.31181.sendpatchset@localhost.localdomain>
-References: <20100405091605.4890.31181.sendpatchset@localhost.localdomain>
-Subject: [v2 Patch 3/3] bonding: make bonding support netpoll
+	id S1752528Ab0DEJOX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 05:14:23 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:49387 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847Ab0DEJOR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 05:14:17 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=pQm/5RWIlkbyh23jjZEP5JceUCJQjLNHvdb1jRgxe4+YhXAm5SGYaHVZR6x0qUpgS
+	I9NM25nxgL8AyzOarpgoQ==
+MIME-Version: 1.0
+In-Reply-To: <4B9B1416.5020101@dcl.info.waseda.ac.jp>
+References: <4B98BB50.1000002@cn.fujitsu.com>
+	 <4B9B1416.5020101@dcl.info.waseda.ac.jp>
+Date: Mon, 5 Apr 2010 02:14:06 -0700
+Message-ID: <n2k8d20b11a1004050214m529fa5e7ke31a2213728ea511@mail.gmail.com>
+Subject: Re: lock's trace events can improve mutex's performance in userspace?
+From: Michel Lespinasse <walken@google.com>
+To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Ming Lei <tom.leiming@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sorry for the late reply...
 
-Based on Andy's work, but I modified a lot.
+One thing to consider in locking micro-benchmarks is that often, code
+changes that slow down parts of the contended code path where the lock
+is not held, will result in an increase of the reported
+micro-benchmark metric. This effect is particularly marked for
+micro-benchmarks that consist of multiple threads doing empty
+acquire/release loops.
 
-Similar to the patch for bridge, this patch does:
+As a thought experiment, imagine what would happen if you added a
+one-millisecond sleep in the contended code path for mutex
+acquisition. Soon all but one of your benchmark threads would be
+sleeping, and the only non-sleeping thread would be able to spin on
+that lock/unlock loop with no contention, resulting in very nice
+results for the micro-benchmark. Remove the sleep and the lock/unlock
+threads will have to contend, resulting in lower reported performance
+metrics.
 
-1) implement the 2 methods to support netpoll for bonding;
+I think what you're seeing with lockdep events is a smaller case of
+this - enabling lockdep slows down the contended code path, but also
+reduces the number of times that it is taken...
 
-2) modify netpoll during forwarding packets via bonding;
+On Fri, Mar 12, 2010 at 8:27 PM, Hitoshi Mitake
+<mitake@dcl.info.waseda.ac.jp> wrote:
+> On 03/11/10 18:43, Xiao Guangrong wrote:
+>> We found that if enable lock's trace events, the 'sysbench mutex'
+>> benchmark program can run quicker.
+>>
+>> The simple program that is attached can reproduce it, the system info,
+>> kernel config, and the script are also attached.
+>>
+>> The test step is below:
+>>
+>> # tar -zxvf test-mutex.tar.bz
+>> # cd test-mutex
+>> # make
+>> # ./tscript.sh>&  log
+>> # cat log | grep "real"
+>> real    0m46.765s<  all trace events are disabled>
+>> real    0m47.073s
+>> real    0m47.402s
+>> real    0m46.458s
+>> real    0m47.433s
+>> real    0m47.395s
+>> real    0m47.010s
+>> real    0m47.454s
+>> real    0m47.044s
+>> real    0m47.464s
+>> real    0m39.245s<  enable lock's trace events>
+>> real    0m40.822s
+>> real    0m40.779s
+>> real    0m40.549s
+>> real    0m40.605s
+>> real    0m40.923s
+>> real    0m40.560s
+>> real    0m41.050s
+>> real    0m40.757s
+>> real    0m40.715s
+>>
+>> [ "<  ...>" is my comments ]
+>>
+>>  From the result, we can see the program's runtime is less if enable
+> lock's
+>> trace events.
+>>
+>> The conclusion is weird but i don't know why.
+>
+> Hi Xiao,
+>
+> It's hard to believe, but...
+>
+> % sudo ./tscript.sh &> log
+> % grep real log
+> real    0m24.132s
+> real    0m23.535s
+> real    0m20.064s
+> real    0m16.636s <- enabled from here
+> real    0m16.435s
+> real    0m17.339s
+>
+> I could reproduce your surprising result.
+> (I only execed your benchmark 3 times.)
+>
+> I rewrote your mainc.c and checked contended count of each test like
+> this way,
+>                if (pthread_mutex_trylock(&mutex) == EBUSY) {
+>                        pthread_mutex_lock(&mutex);
+>                        atomic_inc(&contended);
+>                }
+> # I'll attach my new mainc.c
+>
+> % cat log
+> Run mutex with trace events disabled...
+> contended:25191221
+>
+> real    0m24.132s
+> user    0m17.149s
+> sys     1m18.933s
+> contended:25360563
+>
+> real    0m23.535s
+> user    0m17.233s
+> sys     1m16.213s
+> contended:23813911
+>
+> real    0m20.064s
+> user    0m15.561s
+> sys     1m4.332s
+> Run mutex with lockdep events enabled...
+> contended:11458318
+>
+> real    0m16.636s
+> user    0m10.173s
+> sys     0m55.595s
+> contended:11881095
+>
+> real    0m16.435s
+> user    0m10.273s
+> sys     0m54.911s
+> contended:11261650
+>
+> real    0m17.339s
+> user    0m10.225s
+> sys     0m58.556s
+>
+> It seems that num of contention decreased to about half.
+> I don't know why this happened and effect to performance of it,
+> but this result is worth to consider.
+>
+> Thanks,
+>        Hitoshi
+>
 
-3) disable netpoll support of bonding when a netpoll-unabled device
-   is added to bonding;
 
-4) enable netpoll support when all underlying devices support netpoll.
 
-Cc: Andy Gospodarek <gospo@redhat.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Jay Vosburgh <fubar@us.ibm.com>
-Cc: David Miller <davem@davemloft.net>
-Signed-off-by: WANG Cong <amwang@redhat.com>
-
----
-
-Index: linux-2.6/drivers/net/bonding/bond_main.c
-===================================================================
---- linux-2.6.orig/drivers/net/bonding/bond_main.c
-+++ linux-2.6/drivers/net/bonding/bond_main.c
-@@ -59,6 +59,7 @@
- #include <linux/uaccess.h>
- #include <linux/errno.h>
- #include <linux/netdevice.h>
-+#include <linux/netpoll.h>
- #include <linux/inetdevice.h>
- #include <linux/igmp.h>
- #include <linux/etherdevice.h>
-@@ -430,7 +431,18 @@ int bond_dev_queue_xmit(struct bonding *
- 	}
- 
- 	skb->priority = 1;
--	dev_queue_xmit(skb);
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	if (bond->dev->priv_flags & IFF_IN_NETPOLL) {
-+		struct netpoll *np = bond->dev->npinfo->netpoll;
-+		slave_dev->npinfo = bond->dev->npinfo;
-+		np->real_dev = np->dev = skb->dev;
-+		slave_dev->priv_flags |= IFF_IN_NETPOLL;
-+		netpoll_send_skb(np, skb);
-+		slave_dev->priv_flags &= ~IFF_IN_NETPOLL;
-+		np->dev = bond->dev;
-+	} else
-+#endif
-+		dev_queue_xmit(skb);
- 
- 	return 0;
- }
-@@ -1329,6 +1341,60 @@ static void bond_detach_slave(struct bon
- 	bond->slave_cnt--;
- }
- 
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+static bool slaves_support_netpoll(struct net_device *bond_dev)
-+{
-+	struct bonding *bond = netdev_priv(bond_dev);
-+	struct slave *slave;
-+	int i = 0;
-+	bool ret = true;
-+
-+	read_lock(&bond->lock);
-+	bond_for_each_slave(bond, slave, i) {
-+		if ((slave->dev->priv_flags & IFF_DISABLE_NETPOLL)
-+				|| !slave->dev->netdev_ops->ndo_poll_controller)
-+			ret = false;
-+	}
-+	read_unlock(&bond->lock);
-+	return i != 0 && ret;
-+}
-+
-+static void bond_poll_controller(struct net_device *bond_dev)
-+{
-+	struct net_device *dev = bond_dev->npinfo->netpoll->real_dev;
-+	if (dev != bond_dev)
-+		netpoll_poll_dev(dev);
-+}
-+
-+static void bond_netpoll_cleanup(struct net_device *bond_dev)
-+{
-+	struct bonding *bond = netdev_priv(bond_dev);
-+	struct slave *slave;
-+	const struct net_device_ops *ops;
-+	int i;
-+
-+	read_lock(&bond->lock);
-+	bond_dev->npinfo = NULL;
-+	bond_for_each_slave(bond, slave, i) {
-+		if (slave->dev) {
-+			ops = slave->dev->netdev_ops;
-+			if (ops->ndo_netpoll_cleanup)
-+				ops->ndo_netpoll_cleanup(slave->dev);
-+			else
-+				slave->dev->npinfo = NULL;
-+		}
-+	}
-+	read_unlock(&bond->lock);
-+}
-+
-+#else
-+
-+static void bond_netpoll_cleanup(struct net_device *bond_dev)
-+{
-+}
-+
-+#endif
-+
- /*---------------------------------- IOCTL ----------------------------------*/
- 
- static int bond_sethwaddr(struct net_device *bond_dev,
-@@ -1746,6 +1812,18 @@ int bond_enslave(struct net_device *bond
- 		new_slave->state == BOND_STATE_ACTIVE ? "n active" : " backup",
- 		new_slave->link != BOND_LINK_DOWN ? "n up" : " down");
- 
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	if (slaves_support_netpoll(bond_dev)) {
-+		bond_dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
-+		if (bond_dev->npinfo)
-+			slave_dev->npinfo = bond_dev->npinfo;
-+	} else if (!(bond_dev->priv_flags & IFF_DISABLE_NETPOLL)) {
-+		bond_dev->priv_flags |= IFF_DISABLE_NETPOLL;
-+		pr_info("New slave device %s does not support netpoll\n",
-+			slave_dev->name);
-+		pr_info("Disabling netpoll support for %s\n", bond_dev->name);
-+	}
-+#endif
- 	/* enslave is successful */
- 	return 0;
- 
-@@ -1929,6 +2007,15 @@ int bond_release(struct net_device *bond
- 
- 	netdev_set_master(slave_dev, NULL);
- 
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	if (slaves_support_netpoll(bond_dev))
-+		bond_dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
-+	if (slave_dev->netdev_ops->ndo_netpoll_cleanup)
-+		slave_dev->netdev_ops->ndo_netpoll_cleanup(slave_dev);
-+	else
-+		slave_dev->npinfo = NULL;
-+#endif
-+
- 	/* close slave before restoring its mac address */
- 	dev_close(slave_dev);
- 
-@@ -4448,6 +4535,10 @@ static const struct net_device_ops bond_
- 	.ndo_vlan_rx_register	= bond_vlan_rx_register,
- 	.ndo_vlan_rx_add_vid 	= bond_vlan_rx_add_vid,
- 	.ndo_vlan_rx_kill_vid	= bond_vlan_rx_kill_vid,
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	.ndo_netpoll_cleanup	= bond_netpoll_cleanup,
-+	.ndo_poll_controller	= bond_poll_controller,
-+#endif
- };
- 
- static void bond_setup(struct net_device *bond_dev)
-@@ -4533,6 +4624,8 @@ static void bond_uninit(struct net_devic
- {
- 	struct bonding *bond = netdev_priv(bond_dev);
- 
-+	bond_netpoll_cleanup(bond_dev);
-+
- 	/* Release the bonded slaves */
- 	bond_release_all(bond_dev);
- 
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
