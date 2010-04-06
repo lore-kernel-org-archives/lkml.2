@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757100Ab0DFQuV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 12:50:21 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:54896 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755773Ab0DFQuQ (ORCPT
+	id S1757204Ab0DFQvG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 12:51:06 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34550 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756394Ab0DFQvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 12:50:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=paNRyHFxKdaaOc/Qu2jDFMf7wviQzi6al5gCQg+PyjBEKCJuJwgs434MOHNXk2WOAM
-         HZFEeSsyxBTnexCHEeEo80FC+8KY7GzafcH8Zt2vSY5YlEHehtx4B0PCRGoFWKdmTqrm
-         2sXS4FBYZmv/9kFdpbb0J9DQr6oDMitk32zQE=
-Date: Tue, 6 Apr 2010 20:50:07 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Ryan Mallon <ryan@bluewatersys.com>, Hans Verkuil <hverkuil@xs4all.nl>,
-       Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH] power/ds2782: fix clientdata on removal
-Message-ID: <20100406165007.GA27648@oksana.dev.rtsoft.ru>
-References: <1270117664-29099-1-git-send-email-w.sang@pengutronix.de>
- <20100401104021.GA30121@oksana.dev.rtsoft.ru>
- <20100404141336.GA10176@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100404141336.GA10176@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 6 Apr 2010 12:51:00 -0400
+Date: Tue, 6 Apr 2010 17:54:15 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Avi Kivity <avi@redhat.com>, Darren Hart <dvhltc@us.ibm.com>,
+       Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive
+ spinning
+Message-ID: <20100406175415.3e4a57df@lxorguk.ukuu.org.uk>
+In-Reply-To: <alpine.LFD.2.00.1004061809080.32352@localhost.localdomain>
+References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com>
+	<4BBA5305.7010002@redhat.com>
+	<4BBA5C00.4090703@us.ibm.com>
+	<4BBA6279.20802@redhat.com>
+	<4BBA6B6F.7040201@us.ibm.com>
+	<4BBB36FA.4020008@redhat.com>
+	<1270560931.1595.342.camel@laptop>
+	<20100406145128.6324ac9a@lxorguk.ukuu.org.uk>
+	<4BBB531A.4070500@us.ibm.com>
+	<4BBB5C0D.8050602@redhat.com>
+	<alpine.LFD.2.00.1004061809080.32352@localhost.localdomain>
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 04, 2010 at 04:13:36PM +0200, Wolfram Sang wrote:
-> On Thu, Apr 01, 2010 at 02:40:21PM +0400, Anton Vorontsov wrote:
-> > On Thu, Apr 01, 2010 at 12:27:44PM +0200, Wolfram Sang wrote:
-> > > Probably due to a copy & paste bug, clientdata was set again to the data
-> > > structure (which is freed immediately afterwards) when it should be
-> > > NULLed. Just remove the calls as the i2c-core does this automatically
-> > > now.
-> > > 
-> > > Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> > > Cc: Ryan Mallon <ryan@bluewatersys.com>
-> > > Cc: Hans Verkuil <hverkuil@xs4all.nl>
-> > > Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-> > > Cc: Jean Delvare <khali@linux-fr.org>
-> > > ---
-> > >
-> > > Anton: If it is okay with you, I think this should go via the I2C-tree to
-> > > ensure it comes after the needed modification of the i2c-core.
-> > 
-> > Sure thing.
-> > 
-> > Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
+> > IMO the best solution is to spin in userspace while the lock holder is
+> > running, fall into the kernel when it is scheduled out.
 > 
-> Sorry, I misunderstood Jean. Would be nice if you could pick it up. Sorry for
-> the noise.
+> That's just not realistic as user space has no idea whether the lock
+> holder is running or not and when it's scheduled out without a syscall :)
 
-Applied.
+Which is the real problem that wants addressing and can be addressed very
+cheaply. That would bring us up to par with 1970s RTOS environments ;)
 
-Thanks!
-
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+Alan
