@@ -1,151 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab0DFJux (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 05:50:53 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54049
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752286Ab0DFJur (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 05:50:47 -0400
-Date: Tue, 06 Apr 2010 02:50:49 -0700 (PDT)
-Message-Id: <20100406.025049.267615796.davem@davemloft.net>
-To: fweisbec@gmail.com
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
-       acme@redhat.com, a.p.zijlstra@chello.nl, paulus@samba.org
-Subject: Re: Random scheduler/unaligned accesses crashes with perf lock
- events on sparc 64
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100405194055.GA5265@nowhere>
-References: <20100405065701.GC5127@nowhere>
-	<20100405.122233.188421941.davem@davemloft.net>
-	<20100405194055.GA5265@nowhere>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1753224Ab0DFJvt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 05:51:49 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:56639 "EHLO cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752127Ab0DFJvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 05:51:43 -0400
+Date: Tue, 6 Apr 2010 11:51:35 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Taras Glek <tglek@mozilla.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
+Message-ID: <20100406095135.GB5183@cmpxchg.org>
+References: <4BBA6776.5060804@mozilla.com>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BBA6776.5060804@mozilla.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
-Date: Mon, 5 Apr 2010 21:40:58 +0200
+On Mon, Apr 05, 2010 at 03:43:02PM -0700, Taras Glek wrote:
+> Hello,
+> I am working on improving Mozilla startup times. It turns out that page 
+> faults(caused by lack of cooperation between user/kernelspace) are the 
+> main cause of slow startup. I need some insights from someone who 
+> understands linux vm behavior.
+> 
+> Current Situation:
+> The dynamic linker mmap()s  executable and data sections of our 
+> executable but it doesn't call madvise().
+> By default page faults trigger 131072byte reads. To make matters worse, 
+> the compile-time linker + gcc lay out code in a manner that does not 
+> correspond to how the resulting executable will be executed(ie the 
+> layout is basically random). This means that during startup 15-40mb 
+> binaries are read in basically random fashion. Even if one orders the 
+> binary optimally, throughput is still suboptimal due to the puny readahead.
+> 
+> IO Hints:
+> Fortunately when one specifies madvise(WILLNEED) pagefaults trigger 2mb 
+> reads and a binary that tends to take 110 page faults(ie program stops 
+> execution and waits for disk) can be reduced down to 6. This has the 
+> potential to double application startup of large apps without any clear 
+> downsides. Suse ships their glibc with a dynamic linker patch to 
+> fadvise() dynamic libraries(not sure why they switched from doing 
+> madvise before).
+> 
+> I filed a glibc bug about this at 
+> http://sourceware.org/bugzilla/show_bug.cgi?id=11431 . Uli commented 
+> with his concern about wasting memory resources. What is the impact of 
+> madvise(WILLNEED) or the fadvise equivalent on systems under memory 
+> pressure? Does the kernel simply start ignoring these hints?
 
-> It happens without CONFIG_FUNCTION_TRACER as well (but it happens
-> when the function tracer runs). And I hadn't your
-> perf_arch_save_caller_regs() when I triggered this.
+It will throttle based on memory pressure.  In idle situations it will
+eat your file cache, however, to satisfy the request.
 
-I figured out the problem, it's NMIs.  As soon as I disable all of the
-NMI watchdog code, the problem goes away.
+Now, the file cache should be much bigger than the amount of unneeded
+pages you prefault with the hint over the whole library, so I guess the
+benefit of prefaulting the right pages outweighs the downside of evicting
+some cache for unused library pages.
 
-This is because some parts of the NMI interrupt handling path are not
-marked with "notrace" and the various tracer code paths use
-local_irq_disable() (either directly or indirectly) which doesn't work
-with sparc64's NMI scheme.  These essentially turn NMIs back on in the
-NMI handler before the NMI condition has been cleared, and thus we can
-re-enter with another NMI interrupt.
+Still, it's a workaround for deficits in the demand-paging/readahead
+heuristics and thus a bit ugly, I feel.  Maybe Wu can help.
 
-We went through this for perf events, and we just made sure that
-local_irq_{enable,disable}() never occurs in any of the code paths in
-perf events that can be reached via the NMI interrupt handler.  (the
-only one we had was sched_clock() and that was easily fixed)
+> Also, once an application is started is it reasonable to keep it 
+> madvise(WILLNEED)ed or should the madvise flags be reset?
 
-So, the first mcount hit we get is for rcu_nmi_enter() via
-nmi_enter().
+It's a one-time operation that starts immediate readahead, no permanent
+changes are done.
 
-I can see two ways to handle this:
+> Perhaps the kernel could monitor the page-in patterns to increase the 
+> readahead sizes? This may already happen, I've noticed that a handful of 
+> pagefaults trigger > 131072bytes of IO, perhaps this just needs tweaking.
 
-1) Pepper 'notrace' markers onto rcu_nmi_enter(), rcu_nmi_exit()
-   and whatever else I can see getting hit in the NMI interrupt
-   handler code paths.
+CCd the man :-)
 
-2) Add a hack to __raw_local_irq_save() that keeps it from writing
-   anything to the interrupt level register if we have NMI's disabled.
-   (this puts the cost on the entire kernel instead of just the NMI
-   paths).
-
-#1 seems to be the intent on other platforms, the majority of the NMI
-code paths are protected with 'notrace' on x86, I bet nobody noticed
-that nmi_enter() when CONFIG_NO_HZ && !CONFIG_TINY_RCU ends up calling
-a function that does tracing.
-
-The next one we'll hit is atomic_notifier_call_chain()  (amusingly
-notify_die() is marked 'notrace' but the one thing it calls isn't)
-
-For example, the following are the generic notrace annotations I
-would need to get sparc64 ftrace functioning again. (Frederic I will
-send you the full patch with the sparc specific bits under seperate
-cover in so that you can test things...)
-
---------------------
-kernel: Add notrace annotations to common routines invoked via NMI.
-
-This includes the atomic notifier call chain as well as the RCU
-specific NMI enter/exit handlers.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
-
-diff --git a/kernel/notifier.c b/kernel/notifier.c
-index 2488ba7..ceae89a 100644
---- a/kernel/notifier.c
-+++ b/kernel/notifier.c
-@@ -71,9 +71,9 @@ static int notifier_chain_unregister(struct notifier_block **nl,
-  *	@returns:	notifier_call_chain returns the value returned by the
-  *			last notifier function called.
-  */
--static int __kprobes notifier_call_chain(struct notifier_block **nl,
--					unsigned long val, void *v,
--					int nr_to_call,	int *nr_calls)
-+static int notrace __kprobes notifier_call_chain(struct notifier_block **nl,
-+						 unsigned long val, void *v,
-+						 int nr_to_call,	int *nr_calls)
- {
- 	int ret = NOTIFY_DONE;
- 	struct notifier_block *nb, *next_nb;
-@@ -172,9 +172,9 @@ EXPORT_SYMBOL_GPL(atomic_notifier_chain_unregister);
-  *	Otherwise the return value is the return value
-  *	of the last notifier function called.
-  */
--int __kprobes __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
--					unsigned long val, void *v,
--					int nr_to_call, int *nr_calls)
-+int notrace __kprobes __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
-+						   unsigned long val, void *v,
-+						   int nr_to_call, int *nr_calls)
- {
- 	int ret;
- 
-@@ -185,8 +185,8 @@ int __kprobes __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
- }
- EXPORT_SYMBOL_GPL(__atomic_notifier_call_chain);
- 
--int __kprobes atomic_notifier_call_chain(struct atomic_notifier_head *nh,
--		unsigned long val, void *v)
-+int notrace __kprobes atomic_notifier_call_chain(struct atomic_notifier_head *nh,
-+						 unsigned long val, void *v)
- {
- 	return __atomic_notifier_call_chain(nh, val, v, -1, NULL);
- }
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 3ec8160..d1a44ab 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -286,7 +286,7 @@ void rcu_exit_nohz(void)
-  * irq handler running, this updates rdtp->dynticks_nmi to let the
-  * RCU grace-period handling know that the CPU is active.
-  */
--void rcu_nmi_enter(void)
-+void notrace rcu_nmi_enter(void)
- {
- 	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
- 
-@@ -304,7 +304,7 @@ void rcu_nmi_enter(void)
-  * irq handler running, this updates rdtp->dynticks_nmi to let the
-  * RCU grace-period handling know that the CPU is no longer active.
-  */
--void rcu_nmi_exit(void)
-+void notrace rcu_nmi_exit(void)
- {
- 	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
- 
-
-
+> Thanks,
+> Taras Glek
+> 
+> PS. For more details on this issue see my blog at 
+> https://blog.mozilla.com/tglek/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
