@@ -1,388 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757127Ab0DFQ46 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 12:56:58 -0400
-Received: from www.tglx.de ([62.245.132.106]:45870 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751669Ab0DFQ4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 12:56:52 -0400
-Date: Tue, 6 Apr 2010 18:55:44 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Darren Hart <dvhltc@us.ibm.com>
-cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-       Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
-       "Peter W. Morreale" <pmorreale@novell.com>,
-       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Gregory Haskins <ghaskins@novell.com>,
-       Sven-Thorsten Dietrich <sdietrich@novell.com>,
-       Chris Mason <chris.mason@oracle.com>,
-       John Cooper <john.cooper@third-harmonic.com>,
-       Chris Wright <chrisw@sous-sol.org>, Avi Kivity <avi@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 4/6] futex: Add FUTEX_LOCK with optional adaptive
- spinning
-In-Reply-To: <1270499039-23728-5-git-send-email-dvhltc@us.ibm.com>
-Message-ID: <alpine.LFD.2.00.1004061818250.32352@localhost.localdomain>
-References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com> <1270499039-23728-5-git-send-email-dvhltc@us.ibm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757311Ab0DFQ5S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 12:57:18 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:51547 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757076Ab0DFQ5J convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 12:57:09 -0400
+Date: Tue, 6 Apr 2010 09:56:33 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Bruno =?ISO-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+       linux-input@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       rvinyard@cs.nmsu.edu
+Subject: Re: [PATCH mmotm] hid-picolcd: depends on LCD_CLASS_DEVICE
+Message-Id: <20100406095633.49ec957a.randy.dunlap@oracle.com>
+In-Reply-To: <20100406183535.7de3c628@neptune.home>
+References: <201004052336.o35NaeSE015814@imap1.linux-foundation.org>
+	<20100405220414.9d90da83.randy.dunlap@oracle.com>
+	<alpine.LNX.2.00.1004061038510.8345@pobox.suse.cz>
+	<20100406105635.5384a087@pluto.restena.lu>
+	<20100406082614.79aaf1c5.randy.dunlap@oracle.com>
+	<20100406183535.7de3c628@neptune.home>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4BBB67D3.0184:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 Apr 2010, Darren Hart wrote:
-> +#ifdef CONFIG_SMP
-> +struct thread_info *futex_owner(u32 __user *uaddr)
-> +{
-> +	struct thread_info *ti = NULL;
-> +	struct task_struct *p;
-> +	pid_t pid;
-> +	u32 uval;
-> +
-> +	if (get_futex_value_locked(&uval, uaddr))
-> +		return NULL;
-> +
-> +	pid = uval & FUTEX_TID_MASK;
-> +	rcu_read_lock();
-> +	p = find_task_by_vpid(pid);
-> +	if (p) {
-> +		const struct cred *cred, *pcred;
-> +
-> +		cred = current_cred();
-> +		pcred = __task_cred(p);
-> +		if (cred->euid == pcred->euid ||
-> +		    cred->euid == pcred->uid)
-> +			ti = task_thread_info(p);
+On Tue, 6 Apr 2010 18:35:35 +0200 Bruno Prémont wrote:
 
-  We want a get_task_struct() here, don't we ?
+> On Tue, 06 April 2010 Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> > On Tue, 6 Apr 2010 10:56:35 +0200 Bruno Prémont wrote:
+> > 
+> > > On Tue, 6 Apr 2010 10:40:06 +0200 Jiri Kosina <jkosina@suse.cz> wrote:
+> > > > 
+> > > > [ adding Bruno to CC ]
+> > > > 
+> > > > On Mon, 5 Apr 2010, Randy Dunlap wrote:
+> > > > 
+> > > > > From: Randy Dunlap <randy.dunlap@oracle.com>
+> > > > > 
+> > > > > HID_PICOLCD should depend on LCD_CLASS_DEVICE, otherwise the
+> > > > > build fails when HID_PICOLCD=y and LCD_CLASS_DEVICE=m:
+> > > > > 
+> > > > > hid-picolcd.c:(.text+0x84523f): undefined reference to `lcd_device_unregister'
+> > > > > hid-picolcd.c:(.text+0x8478ab): undefined reference to `lcd_device_register'
+> > > > > hid-picolcd.c:(.text+0x84c15f): undefined reference to `lcd_device_unregister'
+> > > 
+> > > That is weird, the
+> > > 
+> > > #if defined(CONFIG_LCD_CLASS_DEVICE) || defined(CONFIG_LCD_CLASS_DEVICE_MODULE)
+> > >   feature support code
+> > > #else
+> > >   empty stubs
+> > > #endif
+> > > 
+> > > blocks should have prevented LCD_CLASS support from being built if it
+> > > was not enabled in configuration.
+> > > 
+> > > Do you have the .config matching your build?
+> > 
+> > Yes, it's attached.
+> 
+> Thanks, here is the extract (only the pertinent items):
+> CONFIG_BACKLIGHT_LCD_SUPPORT=y
+> CONFIG_LCD_CLASS_DEVICE=m
+> CONFIG_BACKLIGHT_CLASS_DEVICE=y
+> CONFIG_HID_PICOLCD=y
+> 
+> It triggers the issue by having PicoLCD built-in while one of the
+> optional dependencies as a module.
 
-> +	}
-> +	rcu_read_unlock();
-> +
-> +	return ti;
-> +}
-> +#endif
-> +
+Yes, basically what the patch description said.
 
-> +/**
-> + * trylock_futex_adaptive() - Try to acquire the futex lock in a busy loop
-> + * @uaddr: the futex user address
-> + *
-> + * Try to acquire a futex lock in a loop until the owner changes or the owner
-> + * is descheduled. To lock the futex, set the value to the current TID.
-> + *
-> + * Returns:
-> + *  0 - Gave up, lock not acquired
-> + *  1 - Futex lock acquired
-> + * <0 - On error
-> + */
-> +static int trylock_futex_adaptive(u32 __user *uaddr)
-> +{
-> +	int ret = 0;
-> +	u32 curval;
-> +
-> +	for (;;) {
-> +		struct thread_info *owner;
-> +
-> +		owner = futex_owner(uaddr);
-> +		if (owner && futex_spin_on_owner(uaddr, owner))
-> +			break;
-> +
-> +		/*
-> +		 * Try to acquire the lock. If we acquire it or error out,
-> +		 * break to enable preemption and handle ret outside the loop.
-> +		 */
-> +		curval = cmpxchg_futex_value_locked(uaddr, 0,
-> +		                                    task_pid_vnr(current));
-> +
-> +		if (curval == 0) {
-> +			ret = 1;
-> +			break;
-> +		}
-> +
-> +		if (unlikely(curval == -EFAULT)) {
-> +			ret = -EFAULT;
-> +			break;
-> +		}
-> +
-> +		/*
-> +		 * Futex locks manage the owner atomically. We are not in
-> +		 * danger of deadlock by preempting a pending owner. Abort the
-> +		 * loop if our time slice has expired.  RT Threads can spin
-> +		 * until they preempt the owner, at which point they will break
-> +		 * out of the loop anyway.
-> +		 */
-> +		if (need_resched())
-> +			break;
-> +
-> +		cpu_relax();
-> +	}
-> +	return ret;
-> +}
+> Any idea of how this can be solved with kbuild in order to keep the
+> dependencies optional?
+> 
+> Something that would satisfy the following pseudocode:
+>   if CONFIG_HID_PICOLCD == y
+>     assert(CONFIG_LCD_CLASS_DEVICE != m)
+> 
+
+If you don't want the kconfig machinery to do that (it appears that you don't),
+then I guess that you'll need to expand the source code to handle
+CONFIG_LCD_CLASS_DEVICE=y and CONFIG_LCD_CLASS_DEVICE=m differently.
+Or only handle them differently if HID_PICOLCD=y.  :(
 
 
-Hmm. The order is weird. Why don't you do that simpler ?
+> 
+> One of my attempts did end up with a circular loop with regard to FB
+> (some of the FB drivers did select INPUT)?
 
-Get the uval, the tid and the thread_info pointer outside of the
-loop. Also task_pid_vnr(current) just needs a one time lookup.
+  (not that I can find)
 
-change the loop to do:
+CONFIG_VT does select INPUT
+and CONFIG_DRM_I915 does
+	select INPUT if ACPI
 
-       for (;;) {
-       	   curval = cmpxchg_futex_value_locked(uaddr, 0, curtid);
-  
-	   if (!curval)
-	      return 1;
-	   if ((curval & FUTEX_TID_MASK) != ownertid) {
-	      ownertid = curval & FUTEX_TID_MASK;
-	      owner = update_owner(ownertid);
-	   }
 
-	   if (owner && futex_spin_on_owner(....))
-	   .....
+> I had something like:
+> 
+> config HID_PICOLCD
+>   tristate ...
+> 
+> config HID_PICOLCD_FB
+>   bool ...
+>   depends on HID_PICOLCD
+>   select FB
+>   select FB_...
+> 
+> ...
+> 
+> Then in the code I checked for CONFIG_HID_PICOLCD_FB instead of
+> (CONFIG_FB or CONFIG_FB_MODULE).
 
-       }
 
-> +/**
-> + * futex_lock() - Acquire the lock and set the futex value
-> + * @uaddr:  the futex user address
-> + * @flags:  futex flags (FLAGS_SHARED, FLAGS_CLOCKRT, FLAGS_ADAPTIVE, etc.)
-> + * @detect: detect deadlock (1) or not (0)
-> + * @time:   absolute timeout
-> + *
-> + * futex_(un)lock() define a futex value policy and implement a full mutex. The
-> + * futex value stores the owner's TID or'd with FUTEX_WAITERS and/or
-> + * FUTEX_OWNER_DIED as appropriate.
-> + *
-> + * Userspace tried a 0 -> TID atomic transition of the futex value and failed.
-> + * Try to acquire the lock in the kernel, blocking if necessary. Return to
-> + * userspace with the lock held and the futex value set accordingly (or after a
-> + * timeout).
-> + *
-> + * Returns:
-> + *  0 - On success
-> + * <0 - On error
-> + */
-> +static int futex_lock(u32 __user *uaddr, int flags, int detect, ktime_t *time)
-> +{
-> +	struct hrtimer_sleeper timeout, *to = NULL;
-> +	struct futex_hash_bucket *hb;
-> +	struct futex_q q = FUTEX_Q_INIT;
-> +	int ret = 0;
-> +
-> +	if (refill_pi_state_cache())
-> +		return -ENOMEM;
-> +
-> +	if (time) {
-> +		to = &timeout;
-> +		hrtimer_init_on_stack(&to->timer, CLOCK_REALTIME,
-> +				      HRTIMER_MODE_ABS);
 
-  Please make that like the WAIT_BITSET one, which can select the
-  clock and defaults to MONOTONIC.
-
-> +		hrtimer_init_sleeper(to, current);
-> +		hrtimer_set_expires(&to->timer, *time);
-> +	}
-
-  Why setup all this _before_ trying the adaptive spin ?
-
-> +retry:
-> +#ifdef CONFIG_SMP
-> +	if (flags & FLAGS_ADAPTIVE) {
-
-  Why do we want that non adaptive version at all ?
-
-> +		preempt_disable();
-> +		ret = trylock_futex_adaptive(uaddr);
-> +		preempt_enable();
-> +
-> +		/* We got the lock. */
-> +		if (ret == 1) {
-> +			ret = 0;
-> +			goto out;
-> +		}
-> +
-> +		/* We encountered an error, -EFAULT most likely. */
-> +		if (ret)
-> +			goto out;
-> +	}
-> +#endif
-> +	q.key = FUTEX_KEY_INIT;
-> +	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key);
-> +	if (unlikely(ret != 0))
-> +		goto out;
-> +
-> +	hb = queue_lock(&q);
-> +
-> +	ret = lock_futex_atomic(uaddr, current, 0);
-> +	if (unlikely(ret)) {
-> +		switch (ret) {
-> +		case 1:
-> +			/* We got the lock. */
-> +			ret = 0;
-> +			goto out_unlock_put_key;
-> +		case -EFAULT:
-> +			goto uaddr_faulted;
-> +		default:
-> +			goto out_unlock_put_key;
-> +		}
-> +	}
-> +	/*
-> +	 * Only actually queue now that the atomic ops are done:
-> +	 */
-> +	futex_wait_queue_me(hb, &q, to);
-> +
-> +	ret = unqueue_me(&q);
-> +
-> +	/* If we were woken by the owner, try and acquire the lock. */
-> +	if (!ret)
-> +		goto retry;
-> +
-> +	ret = -ETIMEDOUT;
-> +	if (to && !to->task)
-> +		goto out_put_key;
-> +
-> +	/*
-> +	 * We expect signal_pending(current), but we might be the
-> +	 * victim of a spurious wakeup as well.
-> +         */
-> +	ret = -ERESTARTNOINTR;
-> +	if (!signal_pending(current)) {
-> +		put_futex_key(&q.key);
-> +		goto retry;
-> +	}
-> +
-> +	goto out_put_key;
-> +
-> +out_unlock_put_key:
-> +	queue_unlock(&q, hb);
-> +
-> +out_put_key:
-> +	put_futex_key(&q.key);
-> +out:
-> +	if (to)
-> +		destroy_hrtimer_on_stack(&to->timer);
-> +	return ret != -EINTR ? ret : -ERESTARTNOINTR;
-
-  Which code sets -EINTR ?
-
-> +
-> +uaddr_faulted:
-> +	queue_unlock(&q, hb);
-> +
-> +	ret = fault_in_user_writeable(uaddr);
-> +	if (ret)
-> +		goto out_put_key;
-> +
-> +	put_futex_key(&q.key);
-> +	goto retry;
-> +}
-> +
-> +
->  /*
->   * Support for robust futexes: the kernel cleans up held futexes at
->   * thread exit time.
-> @@ -2623,6 +2830,12 @@ long do_futex(u32 __user *uaddr, int op, u32 val, ktime_t *timeout,
->  	case FUTEX_CMP_REQUEUE_PI:
->  		ret = futex_requeue(uaddr, flags, uaddr2, val, val2, &val3, 1);
->  		break;
-> +	case FUTEX_LOCK_ADAPTIVE:
-> +		flags |= FLAGS_ADAPTIVE;
-> +	case FUTEX_LOCK:
-> +		if (futex_cmpxchg_enabled)
-> +			ret = futex_lock(uaddr, flags, val, timeout);
-> +		break;
->  	default:
->  		ret = -ENOSYS;
->  	}
-> @@ -2641,7 +2854,8 @@ SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
->  
->  	if (utime && (cmd == FUTEX_WAIT || cmd == FUTEX_LOCK_PI ||
->  		      cmd == FUTEX_WAIT_BITSET ||
-> -		      cmd == FUTEX_WAIT_REQUEUE_PI)) {
-> +		      cmd == FUTEX_WAIT_REQUEUE_PI ||
-> +		      cmd == FUTEX_LOCK || cmd == FUTEX_LOCK_ADAPTIVE)) {
->  		if (copy_from_user(&ts, utime, sizeof(ts)) != 0)
->  			return -EFAULT;
->  		if (!timespec_valid(&ts))
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 9ab3cd7..a2dbb5b 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -3818,6 +3818,65 @@ int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
->  out:
->  	return 1;
->  }
-> +
-> +#ifdef CONFIG_FUTEX
-> +#include <linux/futex.h>
-> +
-> +int futex_spin_on_owner(u32 __user *uaddr, struct thread_info *owner)
-> +{
-> +	unsigned int cpu;
-> +	struct rq *rq;
-> +
-> +	if (!sched_feat(OWNER_SPIN))
-> +		return 0;
-> +
-> +#ifdef CONFIG_DEBUG_PAGEALLOC
-> +	/*
-> +	 * Need to access the cpu field knowing that
-> +	 * DEBUG_PAGEALLOC could have unmapped it if
-> +	 * the mutex owner just released it and exited.
-> +	 */
-> +	if (probe_kernel_address(&owner->cpu, cpu))
-> +		goto out;
-> +#else
-> +	cpu = owner->cpu;
-> +#endif
-> +
-> +	/*
-> +	 * Even if the access succeeded (likely case),
-> +	 * the cpu field may no longer be valid.
-> +	 */
-> +	if (cpu >= nr_cpumask_bits)
-> +		goto out;
-> +
-> +	/*
-> +	 * We need to validate that we can do a
-> +	 * get_cpu() and that we have the percpu area.
-> +	 */
-> +	if (!cpu_online(cpu))
-> +		goto out;
-> +
-> +	rq = cpu_rq(cpu);
-> +
-> +	for (;;) {
-> +		/*
-> +		 * Owner changed, break to re-assess state.
-> +		 */
-> +		if (futex_owner(uaddr) != owner)
-> +			break;
-
-  Uurg. It's enough to check whether the TID value changed. No need to
-  look up the full thing in every iteration.
-
-> +		/*
-> +		 * Is that owner really running on that cpu?
-> +		 */
-> +		if (task_thread_info(rq->curr) != owner || need_resched())
-> +			return 0;
-> +
-> +		cpu_relax();
-> +	}
-> +out:
-> +	return 1;
-> +}
-> +#endif
->  #endif
-
-Do we really need all this code ? A simple owner->on_cpu (owner needs
-to be the task_struct then) would be sufficient to figure that out,
-wouldn't it?
-
-Thanks,
-
-	tglx
+---
+~Randy
+(re)read Documentation/ManagementStyle
