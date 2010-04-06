@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab0DFPb3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 11:31:29 -0400
-Received: from fg-out-1718.google.com ([72.14.220.154]:29576 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976Ab0DFPbY (ORCPT
+	id S1755737Ab0DFPdj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 11:33:39 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:51631 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751665Ab0DFPdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 11:31:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=R7mWb3L1WGbwSfj/j5Cdbm2v/KmuFzT9u+mZNllG6UvVNQRe7YCCRcduyLPh98zt1t
-         S6das9S3GNYwlKsHfI36W8Xp/jOOCMXUDn2BveipZfRLgImTJFGNNyIF+JgGVHBt5i+/
-         KlBDiRQwPY1rsXGWJyNGwmVpx4GhA4/zd4F/I=
-Date: Tue, 6 Apr 2010 19:31:15 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>, mingo@elte.hu, peterz@infradead.org,
-       aris@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [watchdog] combine nmi_watchdog and softlockup
-Message-ID: <20100406153115.GB5744@lenovo>
-References: <20100323213338.GA29170@redhat.com> <20100406141321.GA8416@nowhere>
+	Tue, 6 Apr 2010 11:33:33 -0400
+Message-ID: <4BBB5433.3060005@us.ibm.com>
+Date: Tue, 06 Apr 2010 08:33:07 -0700
+From: Darren Hart <dvhltc@us.ibm.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100406141321.GA8416@nowhere>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ulrich Drepper <drepper@gmail.com>, Avi Kivity <avi@redhat.com>,
+       linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive
+ spinning
+References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com> <4BBA5305.7010002@redhat.com> <1270543721.1597.748.camel@laptop> <m2ua36005b51004060747y1abf15edj28227274844db2e7@mail.gmail.com> <1270565478.1595.529.camel@laptop>
+In-Reply-To: <1270565478.1595.529.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 06, 2010 at 04:13:30PM +0200, Frederic Weisbecker wrote:
-[...]
-> > +static int watchdog_enable(int cpu)
-> > +{
-> > +	struct perf_event_attr *wd_attr;
-> > +	struct perf_event *event = per_cpu(watchdog_ev, cpu);
-> > +	struct task_struct *p = per_cpu(softlockup_watchdog, cpu);
-> > +
-> > +	/* is it already setup and enabled? */
-> > +	if (event && event->state > PERF_EVENT_STATE_OFF)
-> > +		goto out;
-> > +
-> > +	/* it is setup but not enabled */
-> > +	if (event != NULL)
-> > +		goto out_enable;
-> > +
-> > +	/* Try to register using hardware perf events first */
-> > +	wd_attr = &wd_hw_attr;
-> > +	wd_attr->sample_period = hw_nmi_get_sample_period();
-> > +	event = perf_event_create_kernel_counter(wd_attr, cpu, -1, watchdog_overflow_callback);
-> > +	if (!IS_ERR(event)) {
-> > +		printk(KERN_INFO "NMI watchdog enabled, takes one hw-pmu counter.\n");
-> > +		goto out_save;
-> > +	}
-> > +
-> > +	/* hardware doesn't exist or not supported, fallback to software events */
-> > +	printk(KERN_INFO "NMI watchdog: hardware not available, trying software events\n");
-> > +	wd_attr = &wd_sw_attr;
-> > +	wd_attr->sample_period = softlockup_thresh * NSEC_PER_SEC;
-> > +	event = perf_event_create_kernel_counter(wd_attr, cpu, -1, watchdog_overflow_callback);
+Peter Zijlstra wrote:
+> On Tue, 2010-04-06 at 07:47 -0700, Ulrich Drepper wrote:
+>> On Tue, Apr 6, 2010 at 01:48, Peter Zijlstra <peterz@infradead.org>
+>> wrote:
+>>>  try
+>>>  spin
+>>>  try
+>>>  syscall
+>> This is available for a long time in the mutex implementation
+>> (PTHREAD_MUTEX_ADAPTIVE_NP mutex type).  It hasn't show much
+>> improvement if any.  There were some people demanding this support for
+>> as far as I know they are not using it now.  This is adaptive
+>> spinning, learning from previous calls how long to wait.  But it's
+>> still unguided.  There is no way to get information like "the owner
+>> has been descheduled". 
 > 
-> I fear the cpu clock is not going to help you detecting any hard lockups.
-> If you're stuck in an interrupt or an irq disabled loop, your cpu clock is
-> not going to fire.
->
+> That's where the FUTEX_LOCK thing comes in, it does all those, the above
+> was a single spin loop to amortize the syscall overhead.
+> 
+> I wouldn't make it any more complex than a single pause ins, syscalls
+> are terribly cheap these days.
 
-I guess it's not supposed to. For such cases only nmi irqs may help for which
-the perf events are there (/me need to check if we program apic timer for anything
-like that). But it should help for other deadlocks. Or I miss something?
+And yet they still seem to have a real impact on the futex_lock 
+benchmark. Perhaps I am just still looking at pathological cases, but 
+there is a strong correlation between high syscall counts and really low 
+iterations per second. Granted this also correlates with lock 
+contention. However, when using the same period and duty-cycle I find 
+that a locking mechanism that makes significantly fewer syscalls also 
+significantly outperforms one that makes more. Kind of handwavy stilly, 
+I'll have more numbers this afternoon.
 
-	-- Cyrill
+-- 
+Darren Hart
+IBM Linux Technology Center
+Real-Time Linux Team
