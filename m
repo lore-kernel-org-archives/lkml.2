@@ -1,189 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757441Ab0DFVa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 17:30:59 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:43019 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756836Ab0DFVay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 17:30:54 -0400
-From: John Stultz <johnstul@us.ibm.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: John Stultz <johnstul@us.ibm.com>,
-       =?utf-8?q?Petr=20Tit=C4=9Bra?= <P.Titera@century.cz>,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] time: remove xtime_cache (take 2)
-Date: Tue,  6 Apr 2010 14:30:51 -0700
-Message-Id: <1270589451-30773-1-git-send-email-johnstul@us.ibm.com>
-X-Mailer: git-send-email 1.6.0.4
+	id S932085Ab0DFVcd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 17:32:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53622 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932080Ab0DFVc0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 17:32:26 -0400
+Date: Tue, 6 Apr 2010 14:27:37 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Borislav Petkov <bp@alien8.de>
+cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
+ 2.6.34-rc3)
+In-Reply-To: <20100406205123.GC20357@a1.tnic>
+Message-ID: <alpine.LFD.2.00.1004061403170.3487@i5.linux-foundation.org>
+References: <alpine.LFD.2.00.1004060841460.3487@i5.linux-foundation.org> <1270571019.1814.163.camel@barrios-desktop> <alpine.LFD.2.00.1004060926430.3487@i5.linux-foundation.org> <1270572327.1711.3.camel@barrios-desktop> <alpine.LFD.2.00.1004060951030.3487@i5.linux-foundation.org>
+ <4BBB69A9.5090906@redhat.com> <alpine.LFD.2.00.1004061053450.3487@i5.linux-foundation.org> <20100406120315.53ad7390.akpm@linux-foundation.org> <20100406194238.GB20357@a1.tnic> <alpine.LFD.2.00.1004061243240.3487@i5.linux-foundation.org>
+ <20100406205123.GC20357@a1.tnic>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas: Mind queueing this up for 2.6.35?
 
-With the earlier logarithmic time accumulation patch, xtime will now
-always be within one "tick" of the current time, instead of possibly
-half a second off.
 
-This removes the need for the xtime_cache value, which always stored the
-time at the last interrupt, so this patch cleans that up removing the
-xtime_cache related code.
+On Tue, 6 Apr 2010, Borislav Petkov wrote:
+> > So again, it's actually anon_vma.head.next that is NULL, not any of the 
+> > entries on the list itself.
+> > 
+> > Now, I can see several cases for this:
+> > 
+> >  - the obvious one: anon_vma just wasn't correctly initialized, and is 
+> >    missing a INIT_LIST_HEAD(&anon_vma->head). That's either a slab bug (we 
+> >    don't have a whole lot of coverage of constructors), or somebody 
+> >    allocated an anon_vma without using the anon_vma_cachep.
+> 
+> I've added code to verify this and am suspend/resuming now... Wait a
+> minute, Linus, you're good! :) :
+> 
+> [  873.083074] PM: Preallocating image memory... 
+> [  873.254359] NULL anon_vma->head.next, page 2182681
 
-This patch also addresses an issue with an earlier version of this change,
-where xtime_cache was normalizing xtime, which could in some cases be
-not valid (ie: tv_nsec == NSEC_PER_SEC). This is fixed by handling
-the edge case in update_wall_time().
+Yeah, I was pretty sure of that thing.
 
-Cc: Petr Titěra <P.Titera@century.cz>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
----
- include/linux/time.h      |    1 -
- kernel/time.c             |    1 -
- kernel/time/timekeeping.c |   35 ++++++++++++++++-------------------
- 3 files changed, 16 insertions(+), 21 deletions(-)
+I still don't see _how_ it happens, though. That 'struct anon_vma' is very 
+simple, and contains literally just the lock and that list_head.
 
-diff --git a/include/linux/time.h b/include/linux/time.h
-index 6e026e4..ea3559f 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -150,7 +150,6 @@ extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
- extern int timekeeping_valid_for_hres(void);
- extern u64 timekeeping_max_deferment(void);
- extern void update_wall_time(void);
--extern void update_xtime_cache(u64 nsec);
- extern void timekeeping_leap_insert(int leapsecond);
- 
- struct tms;
-diff --git a/kernel/time.c b/kernel/time.c
-index 656dccf..129fe12 100644
---- a/kernel/time.c
-+++ b/kernel/time.c
-@@ -135,7 +135,6 @@ static inline void warp_clock(void)
- 	write_seqlock_irq(&xtime_lock);
- 	wall_to_monotonic.tv_sec -= sys_tz.tz_minuteswest * 60;
- 	xtime.tv_sec += sys_tz.tz_minuteswest * 60;
--	update_xtime_cache(0);
- 	write_sequnlock_irq(&xtime_lock);
- 	clock_was_set();
- }
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 39f6177..dec9175 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -165,13 +165,6 @@ struct timespec raw_time;
- /* flag for if timekeeping is suspended */
- int __read_mostly timekeeping_suspended;
- 
--static struct timespec xtime_cache __attribute__ ((aligned (16)));
--void update_xtime_cache(u64 nsec)
--{
--	xtime_cache = xtime;
--	timespec_add_ns(&xtime_cache, nsec);
--}
--
- /* must hold xtime_lock */
- void timekeeping_leap_insert(int leapsecond)
- {
-@@ -332,8 +325,6 @@ int do_settimeofday(struct timespec *tv)
- 
- 	xtime = *tv;
- 
--	update_xtime_cache(0);
--
- 	timekeeper.ntp_error = 0;
- 	ntp_clear();
- 
-@@ -559,7 +550,6 @@ void __init timekeeping_init(void)
- 	}
- 	set_normalized_timespec(&wall_to_monotonic,
- 				-boot.tv_sec, -boot.tv_nsec);
--	update_xtime_cache(0);
- 	total_sleep_time.tv_sec = 0;
- 	total_sleep_time.tv_nsec = 0;
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
-@@ -593,7 +583,6 @@ static int timekeeping_resume(struct sys_device *dev)
- 		wall_to_monotonic = timespec_sub(wall_to_monotonic, ts);
- 		total_sleep_time = timespec_add_safe(total_sleep_time, ts);
- 	}
--	update_xtime_cache(0);
- 	/* re-base the last cycle value */
- 	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
- 	timekeeper.ntp_error = 0;
-@@ -788,7 +777,6 @@ void update_wall_time(void)
- {
- 	struct clocksource *clock;
- 	cycle_t offset;
--	u64 nsecs;
- 	int shift = 0, maxshift;
- 
- 	/* Make sure we're fully resumed: */
-@@ -847,7 +835,9 @@ void update_wall_time(void)
- 		timekeeper.ntp_error += neg << timekeeper.ntp_error_shift;
- 	}
- 
--	/* store full nanoseconds into xtime after rounding it up and
-+
-+	/*
-+	 * Store full nanoseconds into xtime after rounding it up and
- 	 * add the remainder to the error difference.
- 	 */
- 	xtime.tv_nsec =	((s64) timekeeper.xtime_nsec >> timekeeper.shift) + 1;
-@@ -855,8 +845,15 @@ void update_wall_time(void)
- 	timekeeper.ntp_error +=	timekeeper.xtime_nsec <<
- 				timekeeper.ntp_error_shift;
- 
--	nsecs = clocksource_cyc2ns(offset, timekeeper.mult, timekeeper.shift);
--	update_xtime_cache(nsecs);
-+	/*
-+	 * Finally, make sure that after the rounding 
-+	 * xtime.tv_nsec isn't larger then NSEC_PER_SEC
-+	 */
-+	if (unlikely(xtime.tv_nsec >= NSEC_PER_SEC)) {
-+		xtime.tv_nsec -= NSEC_PER_SEC;
-+		xtime.tv_sec++;
-+		second_overflow();
-+	}
- 
- 	/* check to see if there is a new clocksource to use */
- 	update_vsyscall(&xtime, timekeeper.clock, timekeeper.mult);
-@@ -896,13 +893,13 @@ EXPORT_SYMBOL_GPL(monotonic_to_bootbased);
- 
- unsigned long get_seconds(void)
- {
--	return xtime_cache.tv_sec;
-+	return xtime.tv_sec;
- }
- EXPORT_SYMBOL(get_seconds);
- 
- struct timespec __current_kernel_time(void)
- {
--	return xtime_cache;
-+	return xtime;
- }
- 
- struct timespec current_kernel_time(void)
-@@ -913,7 +910,7 @@ struct timespec current_kernel_time(void)
- 	do {
- 		seq = read_seqbegin(&xtime_lock);
- 
--		now = xtime_cache;
-+		now = xtime;
- 	} while (read_seqretry(&xtime_lock, seq));
- 
- 	return now;
-@@ -928,7 +925,7 @@ struct timespec get_monotonic_coarse(void)
- 	do {
- 		seq = read_seqbegin(&xtime_lock);
- 
--		now = xtime_cache;
-+		now = xtime;
- 		mono = wall_to_monotonic;
- 	} while (read_seqretry(&xtime_lock, seq));
- 
--- 
-1.6.0.4
+Now, 'head.next' is kind of magical, because it contains that magic 
+low-bit "have I been locked" thing (see "vm_lock_anon_vma()" in 
+mm/mmap.c). But I'm not seeing anything else touching it.
 
+And if you allocate a anon_vma the proper way, the SLUB constructor should 
+have made sure that the head is initialized. And no normal list operation 
+ever sets any list pointer to zero, although a "list_del()" on the first 
+list entry could do it if that first list entry had a NULL next pointer. 
+
+> Now, how do we track back to the place which is missing anon_vma->head
+> init? Can we use the struct page *page arg to page_referenced_anon()
+> somehow?
+
+You might enable SLUB debugging (both SLUB_DEBUG _and_ SLUB_DEBUG_ON), and 
+then make the "object_err()" function in mm/slub.c be non-static. You 
+could call it when you see the problem, perhaps.
+
+Or you could just add tests to both alloc_anon_vma() and free_anon_vma() 
+to check that 'list_empty(&anon_vma->head)' is true. I dunno.
+
+> >    I haven't looked at the kernel config files: do they perhaps share the 
+> >    same (odd?) SLUB/SLAB/SLOB config?
+> 
+> what is an odd SL[AOU]B config?
+
+Probably anything but the default SLUB these days.  But Steinar already 
+said he had SLUB, so it's unlikely to be something odd.
+
+> >  - anon_vma isn't actually an anonvma at all. 'page->mapping' was crud 
+> >    with the low bit set. That sounds unlikely, but who knows. The ksm code 
+> >    sets mapping to "stable_node + PAGE_MAPPING_ANON | PAGE_MAPPING_KSM"
+> > 
+> >    Did people have KSM enabled?
+> 
+> Nope, KSM is off here.
+
+Yeah, wasn't for Steinar either. So it doesn't look like it's any odd 
+corner case that depends on some odd configuration.
+
+		Linus
