@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab0DFJpI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 05:45:08 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:33467 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab0DFJpA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 05:45:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=eV9+A1dvxXCoebdx90CjYOP8FUDFOcp0Ed0dv9CAuibfjPi3AX9AMscE5bP4pyLaqo
-         tGtdo9Jin57OnJMwR49hyk8B1EfAkFE1QlBQEESyLKUIi3cfkOpW4uXE1Cfpxz1YlMMd
-         Mhn1RQf22NQT7twOFjhsL4T8eOCIRUQ118Jrc=
-Date: Tue, 6 Apr 2010 11:44:54 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-       linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-       tglx@linutronix.de, gregkh@suse.de
-Subject: Re: [PATCH] Separate lock events with types
-Message-ID: <20100406094451.GC5147@nowhere>
-References: <20100129221252.GA5052@nowhere> <1267002166-7281-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <20100326233259.GI7166@nowhere> <1270542366.1597.720.camel@laptop>
+	id S1752892Ab0DFJui (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 05:50:38 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:41103 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752127Ab0DFJuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 05:50:32 -0400
+Date: Tue, 6 Apr 2010 11:50:12 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Stephen Rothwell <sfr@canb.auug.org.au>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [GIT PULL] break implicit percpu.h -> slab.h dependency
+Message-ID: <20100406095012.GA23593@elte.hu>
+References: <4BB95DEE.3050607@kernel.org>
+ <20100406092523.GA30270@elte.hu>
+ <4BBB0118.307@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1270542366.1597.720.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4BBB0118.307@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 06, 2010 at 10:26:06AM +0200, Peter Zijlstra wrote:
-> On Sat, 2010-03-27 at 00:33 +0100, Frederic Weisbecker wrote:
-> > So if we store the lock type in the lockdep_map, we can just dump
-> > the type on lock class initialization:
-> > 
-> > - on register_lock_class
-> > - on event injection to catchup with lock that have already registered
-> > 
-> > That's what does my tree perf/inject (minus the lock type), but this
-> > all require a redesign, in both ftrace and perf sides.
-> > 
+
+* Tejun Heo <tj@kernel.org> wrote:
+
+> Hello, Ingo.
 > 
-> Right, and I don't like to bloat dep_map for no reason. I still think
-> all this lock type stuff is a waste of time.
+> On 04/06/2010 06:25 PM, Ingo Molnar wrote:
+> > FYI, -tip testing found a build breakage with your changes:
+> > 
+> >  drivers/base/node.c:373: error: implicit declaration of function 'kmalloc'
+> >  drivers/base/node.c:377: error: implicit declaration of function 'kfree'
+> 
+> These are NODEMASK_ALLOC() and NODEMASK_FREE() macros which become
+> kmalloc/kfree() iff NODES_SHIFT > 8.  I'll grep for these macros and
+> commit a proper fix.
+> 
+> > The fix is below. Since my first test today triggered a build failure i'd 
+> > expect there to be more - i'll send all subsequent fixes to this thread.
+> 
+> Thanks.  Much appreciated.
 
+It's looking pretty good so far with about a dozen tests passed. Thanks for 
+doing this transition so carefully!
 
-Again, it makes no sense to mix up reports of spinlocks, rwlocks, mutexes
-or whatever together in the same latency report.
-
-I agree with you that such report makes no sense if you don't look at
-the code and then find the nature of the locks on the deeper overview.
-
-But the first overview is going to be unhelpful at best if you have
-everything in the same linear report.
-
-You'll naturally find the mutexes first reporting the worst latencies,
-then rwsem, then the spinlocks, then the read rwlocks (read) at the end
-of the list (depending on the cases).
-
-And yet their latency intervals have utter different meanings. You can't
-provide a taste report that mixes beers and wines qualities based on the
-same magnitudes.
-
-I really believe perf lock is going to suck at best without this.
-
-
+	Ingo
