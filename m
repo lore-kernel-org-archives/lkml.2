@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757245Ab0DFQya (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 12:54:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35582 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757076Ab0DFQyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 12:54:24 -0400
-Message-ID: <4BBB622F.4070501@redhat.com>
-Date: Tue, 06 Apr 2010 19:32:47 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Dmitry Torokhov <dtor@vmware.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-       Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [PATCH] VMware Balloon driver
-References: <20100404215202.GA13020@dtor-ws.eng.vmware.com> <20100405142419.2c9bea3d.akpm@linux-foundation.org> <20100405225833.GA25970@dtor-ws.eng.vmware.com>
-In-Reply-To: <20100405225833.GA25970@dtor-ws.eng.vmware.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1757325Ab0DFQyr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 12:54:47 -0400
+Received: from mail-ew0-f220.google.com ([209.85.219.220]:44838 "EHLO
+	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754615Ab0DFQyk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 12:54:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=bQgdgfQL6ObXDrHd6GZ7wXkAycE7ZtVh3iTGrCduGxl0kVWwu9bc1wxEzE3ZXK9Bmk
+         r5h6fiGmXvTn8DLdi5pHZJ2xRAC1UKd0jlf7FApGiE2AIYXKNnMPFunaZ95Vf4x1CjRU
+         lCNDKTIzgVRKaTIYh1zFMfHuLCXuTRwYj3tF4=
+Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
+ 2.6.34-rc3)
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Borislav Petkov <bp@alien8.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>
+In-Reply-To: <alpine.LFD.2.00.1004060929130.3487@i5.linux-foundation.org>
+References: <20100402175937.GA19690@liondog.tnic>
+	 <alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org>
+	 <20100406173754.7E5A.A69D9226@jp.fujitsu.com> <4BBB475A.7070002@redhat.com>
+	  <1270568096.1814.145.camel@barrios-desktop>
+	 <alpine.LFD.2.00.1004060841460.3487@i5.linux-foundation.org>
+	 <1270571019.1814.163.camel@barrios-desktop>
+	 <alpine.LFD.2.00.1004060929130.3487@i5.linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 07 Apr 2010 01:54:26 +0900
+Message-ID: <1270572866.1711.10.camel@barrios-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2010 01:58 AM, Dmitry Torokhov wrote:
->
->> Also please explain the applicability of this driver.  Will xen use it?
->> kvm?  Out-of-tree code?
->>      
-> The driver is expected to be used on VMware platform - mainly ESX.
-> Originally we tried to converge with KVM and use virtio and
-> stock virtio_balloon driver but Avi mentioned that our code emulating
-> virtqueue was more than balloon code itself and thus using virtio did
-> not make nuch sense.
->    
+On Tue, 2010-04-06 at 09:32 -0700, Linus Torvalds wrote:
+> 
+> On Wed, 7 Apr 2010, Minchan Kim wrote:
+> > > 
+> > > I don't think so. That isn't the racy case. We're working with a 
+> > > anon_vma_chain, so the anonvma is all there.
+> > 
+> > But the anon_vma is using for another anon_vma. 
+> 
+> No, that can only happen if somebody has done "anon_vma_free()" on it. And 
+> nobody does that if the anonvma still has a non-empty'&anon_vma->head'.
+> 
+> So as long as the anon_vma has a anon_vma_chain entry associated with it 
+> (or a ksm refcount, but that's a separate issue), it's not going to be 
+> re-allocated for any other use, because it's not going to be free'd.
+> 	
 
-Yeah.  If we wanted commonality, we could make a balloon_core.c that 
-contains the common code.  IMO that's premature, but perhaps there's 
-some meat there (like suspend/resume support and /proc//sys interface).
+> 		Linus
+
+That's what I am missing.
+Thanks, Linus. 
+
+I will think over the problem. :)
 
 -- 
-error compiling committee.c: too many arguments to function
+Kind regards,
+Minchan Kim
+
 
