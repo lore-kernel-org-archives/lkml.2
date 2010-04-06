@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757006Ab0DFQg4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 12:36:56 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44938 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751669Ab0DFQgt (ORCPT
+	id S1756988Ab0DFQl7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 12:41:59 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60297 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755845Ab0DFQlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 12:36:49 -0400
-Date: Tue, 6 Apr 2010 09:32:43 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-cc: Rik van Riel <riel@redhat.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Borislav Petkov <bp@alien8.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>
-Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
- 2.6.34-rc3)
-In-Reply-To: <1270571019.1814.163.camel@barrios-desktop>
-Message-ID: <alpine.LFD.2.00.1004060929130.3487@i5.linux-foundation.org>
-References: <20100402175937.GA19690@liondog.tnic>  <alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org>  <20100406173754.7E5A.A69D9226@jp.fujitsu.com> <4BBB475A.7070002@redhat.com>  <1270568096.1814.145.camel@barrios-desktop> 
- <alpine.LFD.2.00.1004060841460.3487@i5.linux-foundation.org> <1270571019.1814.163.camel@barrios-desktop>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 6 Apr 2010 12:41:53 -0400
+Date: Tue, 6 Apr 2010 17:44:59 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Darren Hart <dvhltc@us.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
+       linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive
+ spinning
+Message-ID: <20100406174459.60088461@lxorguk.ukuu.org.uk>
+In-Reply-To: <4BBB531A.4070500@us.ibm.com>
+References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com>
+	<4BBA5305.7010002@redhat.com>
+	<4BBA5C00.4090703@us.ibm.com>
+	<4BBA6279.20802@redhat.com>
+	<4BBA6B6F.7040201@us.ibm.com>
+	<4BBB36FA.4020008@redhat.com>
+	<1270560931.1595.342.camel@laptop>
+	<20100406145128.6324ac9a@lxorguk.ukuu.org.uk>
+	<4BBB531A.4070500@us.ibm.com>
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Do you feel some of these situations would also benefit from some kernel 
+> assistance to stop spinning when the owner schedules out? Or are you 
+> saying that there are situations where pure userspace spinlocks will 
+> always be the best option?
+
+There are cases its the best option - you are assuming for example that
+the owner can get scheduled out. Eg nailing one thread per CPU in some
+specialist high performance situations means they can't.
+
+> If the latter, I'd think that they would also be situations where 
+> sched_yield() is not used as part of the spin loop. If so, then these 
+> are not our target situations for FUTEX_LOCK_ADAPTIVE, which hopes to 
+> provide a better informed mechanism for making spin or sleep decisions. 
+> If sleeping isn't part of the locking construct implementation, then 
+> FUTEX_LOCK_ADAPTIVE doesn't have much to offer.
+
+I am unsure about the approach. As Avi says knowing that the lock owner is
+scheduled out allows for far better behaviour. It doesn't need complex
+per lock stuff or per lock notifier entries on pre-empt either.
+
+A given task is either pre-empted or not and in the normal case of things
+you need this within a process so you've got shared pages anyway. So you
+only need one instance of the 'is thread X pre-empted' bit somewhere in a
+non swappable page.
+
+That gives you something along the lines of
+
+	runaddr = find_run_flag(lock);
+	do {
+		while(*runaddr == RUNNING) {
+			if (trylock(lock))
+				return WHOOPEE;
+			cpu relax
+		}
+		yield (_on(thread));
+	} while(*runaddr != DEAD);
 
 
-On Wed, 7 Apr 2010, Minchan Kim wrote:
-> > 
-> > I don't think so. That isn't the racy case. We're working with a 
-> > anon_vma_chain, so the anonvma is all there.
-> 
-> But the anon_vma is using for another anon_vma. 
+which unlike blindly spinning can avoid the worst of any hit on the CPU
+power and would be a bit more guided ?
 
-No, that can only happen if somebody has done "anon_vma_free()" on it. And 
-nobody does that if the anonvma still has a non-empty'&anon_vma->head'.
-
-So as long as the anon_vma has a anon_vma_chain entry associated with it 
-(or a ksm refcount, but that's a separate issue), it's not going to be 
-re-allocated for any other use, because it's not going to be free'd.
-	
-		Linus
