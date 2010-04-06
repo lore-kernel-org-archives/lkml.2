@@ -1,60 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757016Ab0DFGAI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 02:00:08 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:45488 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757112Ab0DFF7V (ORCPT
+	id S1752233Ab0DFGGt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 02:06:49 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30567 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756575Ab0DFGGg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 01:59:21 -0400
-From: Samu Onkalo <samu.p.onkalo@nokia.com>
-To: eric.piel@tremplin-utc.net, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Samu Onkalo <samu.p.onkalo@nokia.com>
-Subject: [RESEND PATCH v2 6/6] lis3: Setup poll interval limits
-Date: Tue,  6 Apr 2010 08:58:45 +0300
-Message-Id: <1270533525-15312-7-git-send-email-samu.p.onkalo@nokia.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1270533525-15312-1-git-send-email-samu.p.onkalo@nokia.com>
-References: <1270533525-15312-1-git-send-email-samu.p.onkalo@nokia.com>
+	Tue, 6 Apr 2010 02:06:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,370,1267430400"; 
+   d="scan'208";a="610525712"
+From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+To: Sridhar Samudrala <sri@us.ibm.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mingo@elte.hu" <mingo@elte.hu>, "mst@redhat.com" <mst@redhat.com>,
+       "jdike@c2.user-mode-linux.org" <jdike@c2.user-mode-linux.org>,
+       "davem@davemloft.net" <davem@davemloft.net>
+Date: Tue, 6 Apr 2010 14:06:17 +0800
+Subject: RE: [RFC][PATCH v2 0/3] Provide a zero-copy method on KVM
+ virtio-net.
+Thread-Topic: [RFC][PATCH v2 0/3] Provide a zero-copy method on KVM
+ virtio-net.
+Thread-Index: AcrSv2NcsMuQijFfSWWpljCVFw2NygCji0ow
+Message-ID: <97F6D3BD476C464182C1B7BABF0B0AF5C17B5BEE@shzsmsx502.ccr.corp.intel.com>
+References: <1270193100-6769-1-git-send-email-xiaohui.xin@intel.com>
+ <1270252268.13897.14.camel@w-sridhar.beaverton.ibm.com>
+In-Reply-To: <1270252268.13897.14.camel@w-sridhar.beaverton.ibm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 06 Apr 2010 05:59:03.0659 (UTC) FILETIME=[42B1BBB0:01CAD54E]
-X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set valid adjustment window (0 - 2000ms).
+Sridhar,
 
-Signed-off-by: Samu Onkalo <samu.p.onkalo@nokia.com>
-Acked-by: Éric Piel <eric.piel@tremplin-utc.net>
----
- drivers/hwmon/lis3lv02d.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+>> The idea is simple, just to pin the guest VM user space and then
+>> let host NIC driver has the chance to directly DMA to it. 
+>> The patches are based on vhost-net backend driver. We add a device
+>> which provides proto_ops as sendmsg/recvmsg to vhost-net to
+>> send/recv directly to/from the NIC driver. KVM guest who use the
+>>vhost-net backend may bind any ethX interface in the host side to
+>> get copyless data transfer thru guest virtio-net frontend.
 
-diff --git a/drivers/hwmon/lis3lv02d.c b/drivers/hwmon/lis3lv02d.c
-index 56a1d34..6138f03 100644
---- a/drivers/hwmon/lis3lv02d.c
-+++ b/drivers/hwmon/lis3lv02d.c
-@@ -41,6 +41,8 @@
+>What is the advantage of this approach compared to PCI-passthrough
+>of the host NIC to the guest?
+
+PCI-passthrough needs hardware support, a kind of iommu engine will
+help to translate guest physical address to host physical address.
+And currently, a PCI-passthrough device cannot pass live migration.
+
+The zero-copy is a pure software solution. It doesn't need special hardware support.
+In theory, it can pass live migration.
  
- /* joystick device poll interval in milliseconds */
- #define MDPS_POLL_INTERVAL 50
-+#define MDPS_POLL_MIN	   0
-+#define MDPS_POLL_MAX	   2000
- /*
-  * The sensor can also generate interrupts (DRDY) but it's pretty pointless
-  * because they are generated even if the data do not change. So it's better
-@@ -459,6 +461,8 @@ int lis3lv02d_joystick_enable(void)
- 
- 	lis3_dev.idev->poll = lis3lv02d_joystick_poll;
- 	lis3_dev.idev->poll_interval = MDPS_POLL_INTERVAL;
-+	lis3_dev.idev->poll_interval_min = MDPS_POLL_MIN;
-+	lis3_dev.idev->poll_interval_max = MDPS_POLL_MAX;
- 	input_dev = lis3_dev.idev->input;
- 
- 	input_dev->name       = "ST LIS3LV02DL Accelerometer";
--- 
-1.6.0.4
+>Does this require pinning of the entire guest memory? Or only the
+>send/receive buffers?
+
+We need only to pin the send/receive buffers.
+
+Thanks
+Xiaohui
+
+>Thanks
+>Sridhar
+> 
+> The scenario is like this:
+> 
+> The guest virtio-net driver submits multiple requests thru vhost-net
+> backend driver to the kernel. And the requests are queued and then
+> completed after corresponding actions in h/w are done.
+> 
+> For read, user space buffers are dispensed to NIC driver for rx when
+> a page constructor API is invoked. Means NICs can allocate user buffers
+> from a page constructor. We add a hook in netif_receive_skb() function
+> to intercept the incoming packets, and notify the zero-copy device.
+> 
+> For write, the zero-copy deivce may allocates a new host skb and puts
+> payload on the skb_shinfo(skb)->frags, and copied the header to skb->data.
+> The request remains pending until the skb is transmitted by h/w.
+> 
+> Here, we have ever considered 2 ways to utilize the page constructor
+> API to dispense the user buffers.
+> 
+> One:	Modify __alloc_skb() function a bit, it can only allocate a 
+> 	structure of sk_buff, and the data pointer is pointing to a 
+> 	user buffer which is coming from a page constructor API.
+> 	Then the shinfo of the skb is also from guest.
+> 	When packet is received from hardware, the skb->data is filled
+> 	directly by h/w. What we have done is in this way.
+> 
+> 	Pros:	We can avoid any copy here.
+> 	Cons:	Guest virtio-net driver needs to allocate skb as almost
+> 		the same method with the host NIC drivers, say the size
+> 		of netdev_alloc_skb() and the same reserved space in the
+> 		head of skb. Many NIC drivers are the same with guest and
+> 		ok for this. But some lastest NIC drivers reserves special
+> 		room in skb head. To deal with it, we suggest to provide
+> 		a method in guest virtio-net driver to ask for parameter
+> 		we interest from the NIC driver when we know which device 
+> 		we have bind to do zero-copy. Then we ask guest to do so.
+> 		Is that reasonable?
+> 
+> Two:	Modify driver to get user buffer allocated from a page constructor
+> 	API(to substitute alloc_page()), the user buffer are used as payload
+> 	buffers and filled by h/w directly when packet is received. Driver
+> 	should associate the pages with skb (skb_shinfo(skb)->frags). For 
+> 	the head buffer side, let host allocates skb, and h/w fills it. 
+> 	After that, the data filled in host skb header will be copied into
+> 	guest header buffer which is submitted together with the payload buffer.
+> 
+> 	Pros:	We could less care the way how guest or host allocates their
+> 		buffers.
+> 	Cons:	We still need a bit copy here for the skb header.
+> 
+> We are not sure which way is the better here. This is the first thing we want
+> to get comments from the community. We wish the modification to the network
+> part will be generic which not used by vhost-net backend only, but a user
+> application may use it as well when the zero-copy device may provides async
+> read/write operations later.
+> 
+> Please give comments especially for the network part modifications.
+> 
+> 
+> We provide multiple submits and asynchronous notifiicaton to 
+> vhost-net too.
+> 
+> Our goal is to improve the bandwidth and reduce the CPU usage.
+> Exact performance data will be provided later. But for simple
+> test with netperf, we found bindwidth up and CPU % up too,
+> but the bindwidth up ratio is much more than CPU % up ratio.
+> 
+> What we have not done yet:
+> 	packet split support
+> 	To support GRO
+> 	Performance tuning
+> 
+> what we have done in v1:
+> 	polish the RCU usage
+> 	deal with write logging in asynchroush mode in vhost
+> 	add notifier block for mp device
+> 	rename page_ctor to mp_port in netdevice.h to make it looks generic
+> 	add mp_dev_change_flags() for mp device to change NIC state
+> 	add CONIFG_VHOST_MPASSTHRU to limit the usage when module is not load
+> 	a small fix for missing dev_put when fail
+> 	using dynamic minor instead of static minor number
+> 	a __KERNEL__ protect to mp_get_sock()
+> 
+> what we have done in v2:
+> 	
+> 	remove most of the RCU usage, since the ctor pointer is only
+> 	changed by BIND/UNBIND ioctl, and during that time, NIC will be
+> 	stopped to get good cleanup(all outstanding requests are finished),
+> 	so the ctor pointer cannot be raced into wrong situation.
+> 
+> 	Remove the struct vhost_notifier with struct kiocb.
+> 	Let vhost-net backend to alloc/free the kiocb and transfer them
+> 	via sendmsg/recvmsg.
+> 
+> 	use get_user_pages_fast() and set_page_dirty_lock() when read.
+> 
+> 	Add some comments for netdev_mp_port_prep() and handle_mpassthru().
+> 
+> 
+> Comments not addressed yet in this time:
+> 	the async write logging is not satified by vhost-net
+> 	Qemu needs a sync write
+> 	a limit for locked pages from get_user_pages_fast()
+> 	
+> 		
+> performance:
+> 	using netperf with GSO/TSO disabled, 10G NIC, 
+> 	disabled packet split mode, with raw socket case compared to vhost.
+> 
+> 	bindwidth will be from 1.1Gbps to 1.7Gbps
+> 	CPU % from 120%-140% to 140%-160%
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
