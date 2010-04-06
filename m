@@ -1,232 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab0DFPQm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 11:16:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28468 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753544Ab0DFPQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 11:16:29 -0400
-Date: Tue, 6 Apr 2010 11:16:21 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Divyesh Shah <dpshah@google.com>
-Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
-       ctalbott@google.com
-Subject: Re: [PATCH 2/3][v3] blkio: Add io controller stats like
-Message-ID: <20100406151621.GB3029@redhat.com>
-References: <20100406032630.23464.24685.stgit@austin.mtv.corp.google.com> <20100406033629.23464.90216.stgit@austin.mtv.corp.google.com>
+	id S1755286Ab0DFPRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 11:17:31 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:37486 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752579Ab0DFPRZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 11:17:25 -0400
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Matt Helsley <matthltc@us.ibm.com>, Roland McGrath <roland@redhat.com>,
+       Grzegorz Nosek <root@localdomain.pl>,
+       Sukadev Bhattiprolu <sukadev@us.ibm.com>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: Testing lxc 0.6.5 in Fedora 13
+References: <20100321195044.GA23757@megiteam.pl>
+	<20100323212834.GH20796@count0.beaverton.ibm.com>
+	<20100325213356.GB20541@megiteam.pl>
+	<20100326111131.GA8604@redhat.com>
+	<20100326115357.GA3345@count0.beaverton.ibm.com>
+	<20100326124522.GD17113@megiteam.pl>
+	<20100326134709.GB15790@redhat.com>
+	<20100406034443.8B40ED477@magilla.sf.frob.com>
+	<20100406135345.GC3345@count0.beaverton.ibm.com>
+	<20100406143635.GA12315@redhat.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Tue, 06 Apr 2010 08:17:21 -0700
+In-Reply-To: <20100406143635.GA12315@redhat.com> (Oleg Nesterov's message of "Tue\, 6 Apr 2010 16\:36\:35 +0200")
+Message-ID: <m1k4sk8vb2.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100406033629.23464.90216.stgit@austin.mtv.corp.google.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 76.21.114.89
+X-SA-Exim-Rcpt-To: oleg@redhat.com, linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org, sukadev@us.ibm.com, root@localdomain.pl, roland@redhat.com, matthltc@us.ibm.com
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05, 2010 at 08:37:01PM -0700, Divyesh Shah wrote:
-> - io_service_time (the time between request dispatch and completion for IOs
->   in the cgroup)
-> - io_wait_time (the time spent waiting in the IO shceduler queues before
->   getting serviced)
-> - io_serviced (number of IOs serviced from this blkio_group)
-> - io_service_bytes (Number of bytes served for this cgroup)
-> 
-> These stats are accumulated per operation type helping us to distinguish between
-> read and write, and sync and async IO. This patch does not increment any of
-> these stats.
-> 
-> Signed-off-by: Divyesh Shah<dpshah@google.com>
-> ---
-> 
->  Documentation/cgroups/blkio-controller.txt |   40 +++++++
->  block/blk-cgroup.c                         |  166 +++++++++++++++++++++++++---
->  block/blk-cgroup.h                         |   60 ++++++++--
->  block/cfq-iosched.c                        |    3 -
->  4 files changed, 239 insertions(+), 30 deletions(-)
-> 
-> diff --git a/Documentation/cgroups/blkio-controller.txt b/Documentation/cgroups/blkio-controller.txt
-> index 630879c..087925b 100644
-> --- a/Documentation/cgroups/blkio-controller.txt
-> +++ b/Documentation/cgroups/blkio-controller.txt
-> @@ -77,7 +77,6 @@ Details of cgroup files
->  =======================
->  - blkio.weight
->  	- Specifies per cgroup weight.
-> -
->  	  Currently allowed range of weights is from 100 to 1000.
->  
->  - blkio.time
-> @@ -92,6 +91,41 @@ Details of cgroup files
->  	  third field specifies the number of sectors transferred by the
->  	  group to/from the device.
->  
-> +- blkio.io_service_bytes
-> +	- Number of bytes transferred to/from the disk by the group. These
-> +	  are further divided by the type of operation - read or write, sync
-> +	  or async. First two fields specify the major and minor number of the
-> +	  device, third field specifies the operation type and the fourth field
-> +	  specifies the number of bytes.
-> +
-> +- blkio.io_serviced
-> +	- Number of IOs completed to/from the disk by the group. These
-> +	  are further divided by the type of operation - read or write, sync
-> +	  or async. First two fields specify the major and minor number of the
-> +	  device, third field specifies the operation type and the fourth field
-> +	  specifies the number of IOs.
-> +
+Oleg Nesterov <oleg@redhat.com> writes:
 
-Hi Divyesh,
+> On 04/06, Matt Helsley wrote:
+>>
+>> On Mon, Apr 05, 2010 at 08:44:43PM -0700, Roland McGrath wrote:
+>>
+>> > tracehook_report_clone_complete() call is made when that task_struct is no
+>> > longer guaranteed to be valid.
+>
+> Hmm. I missed this.
+>
+>> Also, if utrace allows multiple tracers and they each
+>> exist in a different namespace then storing a pid nr isn't going to work.
+>
+> Yes, but utrace is simple. ptrace_report_clone() does
+>
+> 	ctx->eventmsg = child->pid;
+>
+> we should fix this line and that is all, afaics. Every tracer has a
+> separate "struct ptrace_context *ctx".
+>
+>> So my hunch is, in the long run, we'll need to hold a reference there and
+>> drop it when the last tracer detaches
+>
+> Without utrace only one tracer is possible.
+>
+> So, I think we should either change do_fork() to get the right tracee_pid_nr,
+> or add get/put into do_fork() and change tracehooks as Roland suggested.
 
-V3 looks much better. Just couple of minor nits.
+For a unicast path where the is no danger of the destination process changing
+I don't see why we can't compute the userspace pid_nr.  It only get's tricky
+for things like broadcast signals (pgrp, session) when we don't who the
+final recipient process will be.
 
-> +- blkio.io_service_time
-> +	- Total amount of time between request dispatch and request completion
-> +	  for the IOs done by this cgroup. This is in nanoseconds to make it
-> +	  meaningful for flash devices too. For devices with queue depth of 1,
-> +	  this time represents the actual service time. When queue_depth > 1,
-> +	  that is no longer true as requests may be served out of order.
+I think that only gets truly bad in the case of unix domain sockets.
 
-Like io_wait_time, can you also mention here that this time is cumulative
-time and on NCQ disks it can be more than actual time elapsed.
-
-I did a quick run with your patches. I ran a sequential workload for 30s
-in two groups of weight 100 and 200. Following is the output of
-blkio.io_service_time (I have kept stats for only disk 253:3 in output).
-
-# cat test1/blkio.io_service_time 
-253:3 Read 18019970625
-253:3 Write 0
-253:3 Sync 18019970625
-253:3 Async 0
-253:3 Total 18019970625
-
-# cat test2/blkio.io_service_time 
-253:3 Read 35479070171
-253:3 Write 0
-253:3 Sync 35479070171
-253:3 Async 0
-
-This storage supports NCQ. We see that though I ran test only for
-30 seconds, total service ime for cgroup is close to 18+35=53 seconds.
-
-> +	  This time is further divided by the type of operation -
-> +	  read or write, sync or async. First two fields specify the major and
-> +	  minor number of the device, third field specifies the operation type
-> +	  and the fourth field specifies the io_service_time in ns.
-> +
-> +- blkio.io_wait_time
-> +	- Total amount of time the IO spent waiting in the scheduler queues for
-> +	  service. This can be greater than the total time elapsed since it is
-> +	  cumulative io_wait_time for all IOs. This is in nanoseconds to make it
-> +	  meaningful for flash devices too. This time is further divided by the
-> +	  type of operation - read or write, sync or async. First two fields
-> +	  specify the major and minor number of the device, third field
-> +	  specifies the operation type and the fourth field specifies the
-> +	  io_wait_time in ns.
-> +
->  - blkio.dequeue
->  	- Debugging aid only enabled if CONFIG_DEBUG_CFQ_IOSCHED=y. This
->  	  gives the statistics about how many a times a group was dequeued
-> @@ -99,6 +133,10 @@ Details of cgroup files
->  	  and minor number of the device and third field specifies the number
->  	  of times a group was dequeued from a particular device.
->  
-> +- blkio.reset_stats
-> +	- Writing an int to this file will result in resetting all the stats
-> +	  for that cgroup.
-> +
-
-Personally, I like adding a separate file to reset the stats. Now one does
-not get surprised by the fact that writting to blkio.io_service_time, also
-reset rest of the stats.
-
->  CFQ sysfs tunable
->  =================
->  /sys/block/<disk>/queue/iosched/group_isolation
-> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> index 5be3981..d585a05 100644
-> --- a/block/blk-cgroup.c
-> +++ b/block/blk-cgroup.c
-> @@ -17,6 +17,8 @@
->  #include <linux/err.h>
->  #include "blk-cgroup.h"
->  
-> +#define MAX_KEY_LEN 100
-> +
->  static DEFINE_SPINLOCK(blkio_list_lock);
->  static LIST_HEAD(blkio_list);
->  
-> @@ -55,12 +57,21 @@ struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
->  }
->  EXPORT_SYMBOL_GPL(cgroup_to_blkio_cgroup);
->  
-> -void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
-> -						unsigned long time)
-> +void blkio_group_init(struct blkio_group *blkg)
-> +{
-> +	spin_lock_init(&blkg->stats_lock);
-> +}
-> +EXPORT_SYMBOL_GPL(blkio_group_init);
-> +
-> +void blkiocg_update_timeslice_used(struct blkio_group *blkg, unsigned long time)
->  {
-> -	blkg->time += time;
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&blkg->stats_lock, flags);
-> +	blkg->stats.time += time;
-> +	spin_unlock_irqrestore(&blkg->stats_lock, flags);
->  }
-> -EXPORT_SYMBOL_GPL(blkiocg_update_blkio_group_stats);
-> +EXPORT_SYMBOL_GPL(blkiocg_update_timeslice_used);
->  
->  void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
->  			struct blkio_group *blkg, void *key, dev_t dev)
-> @@ -170,13 +181,107 @@ blkiocg_weight_write(struct cgroup *cgroup, struct cftype *cftype, u64 val)
->  	return 0;
->  }
->  
-> -#define SHOW_FUNCTION_PER_GROUP(__VAR)					\
-> +static int
-> +blkiocg_reset_write(struct cgroup *cgroup, struct cftype *cftype, u64 val)
-> +{
-
-I guess we can rename this function to blkiocg_reset_stats().
-
-[..]
-> @@ -217,16 +331,36 @@ struct cftype blkio_files[] = {
->  	},
->  	{
->  		.name = "time",
-> -		.read_seq_string = blkiocg_time_read,
-> +		.read_map = blkiocg_time_read,
->  	},
->  	{
->  		.name = "sectors",
-> -		.read_seq_string = blkiocg_sectors_read,
-> +		.read_map = blkiocg_sectors_read,
-> +	},
-> +	{
-> +		.name = "io_service_bytes",
-> +		.read_map = blkiocg_io_service_bytes_read,
-> +	},
-> +	{
-> +		.name = "io_serviced",
-> +		.read_map = blkiocg_io_serviced_read,
-> +	},
-> +	{
-> +		.name = "io_service_time",
-> +		.read_map = blkiocg_io_service_time_read,
-> +	},
-> +	{
-> +		.name = "io_wait_time",
-> +		.read_map = blkiocg_io_wait_time_read,
-> +	},
-> +	{
-> +		.name = "reset_stats",
-> +		.write_u64 = blkiocg_reset_write,
-
-use blkiocg_reset_stats?
-
-Thanks
-Vivek
+Eric
