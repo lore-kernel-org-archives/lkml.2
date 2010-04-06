@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757862Ab0DFXly (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 19:41:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48838 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757789Ab0DFXln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 19:41:43 -0400
-Message-ID: <4BBBC470.4050002@zytor.com>
-Date: Tue, 06 Apr 2010 16:32:00 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S932179Ab0DFXmX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 19:42:23 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39737 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757782Ab0DFXmQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 19:42:16 -0400
+Date: Tue, 6 Apr 2010 16:37:51 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Borislav Petkov <bp@alien8.de>
+cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
+ 2.6.34-rc3)
+In-Reply-To: <20100406225925.GA3446@liondog.tnic>
+Message-ID: <alpine.LFD.2.00.1004061630410.3487@i5.linux-foundation.org>
+References: <alpine.LFD.2.00.1004060926430.3487@i5.linux-foundation.org> <1270572327.1711.3.camel@barrios-desktop> <alpine.LFD.2.00.1004060951030.3487@i5.linux-foundation.org> <4BBB69A9.5090906@redhat.com> <alpine.LFD.2.00.1004061053450.3487@i5.linux-foundation.org>
+ <20100406120315.53ad7390.akpm@linux-foundation.org> <20100406194238.GB20357@a1.tnic> <alpine.LFD.2.00.1004061243240.3487@i5.linux-foundation.org> <20100406205123.GC20357@a1.tnic> <alpine.LFD.2.00.1004061403170.3487@i5.linux-foundation.org>
+ <20100406225925.GA3446@liondog.tnic>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Youngwhan Song <breadncup@gmail.com>
-CC: Venkatram Tummala <venkatram867@gmail.com>,
-       Joel Fernandes <agnel.joel@gmail.com>,
-       Frank Hu <frank.hu.2001@gmail.com>,
-       hayfeng Lee <teklife.kernel@gmail.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-kernel@zh-kernel.org" <linux-kernel@zh-kernel.org>,
-       "kernelnewbies@nl.linux.org" <kernelnewbies@nl.linux.org>
-Subject: Re: why choose 896MB to the start point of ZONE_HIGHMEM
-References: <l2y5f6c52c61004060737me670f6e2t6071444c4fd1318b@mail.gmail.com>  	<g2s9ff7a3bc1004060802va38aa361s6abd07e8c992dd56@mail.gmail.com>  	<4BBB7AC9.5060008@zytor.com> <o2m8f84f9951004061220x16f3aa8by9cf19ec28ea492d7@mail.gmail.com>  	<4BBB8F07.60401@zytor.com> <w2p9ff7a3bc1004061301v6cc76e1g1e573468b1b8807d@mail.gmail.com> 	<q2iacff6c2b1004061528t28f1337eq977aabf8fe71bc22@mail.gmail.com> <3715922601579231267@unknownmsgid>
-In-Reply-To: <3715922601579231267@unknownmsgid>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2010 04:27 PM, Youngwhan Song wrote:
-> Nice explanation, Venkatram,
-> 
-> Just one question pop up mind.
-> 
-> What if actual physical memory is only 256MB? How does kernel divide
-> virtual memory? Do we need to specify the region to kernel? Or will
-> kernel itself decide it automatically? 
-> 
 
-If there is less than 896 MB of physical memory, the vmalloc region is
-automatically extended (in your case, it will be 768 MB in size.)  There
-will be no HIGHMEM in such a case, and if you are compiling your own
-kernel you will gain considerable speed by disabling HIGHMEM support
-completely.
 
-This, of course, was the norm back when Linux was first created, and a
-typical amount of memory was 8 MB or so.  That we'd have gigabytes of
-memory seemed very distant at the time.
+On Wed, 7 Apr 2010, Borislav Petkov wrote:
+> +
+> +	if (!anon_vma->head.next) {
+> +		printk(KERN_ERR "NULL anon_vma->head.next, page %lu\n",
+> +				page_to_pfn(page));
+> +
+> +		object_err(anon_vma_cachep, page, (u8 *)anon_vma, "NULL next");
 
-	-hpa
+Oh, and since the debugging code never triggered ('head.next' wasn't 
+actually NULL), you never got here, but the 'page' you passed in to 
+object_error() should be the page of the slab allocation, not the page 
+associated with the anon_vma.
+
+So it should be something like "virt_to_head_page(anon_vma)" that you pass 
+in to object_err().
+
+Not that it matters. I assume it is the fact that SLAB debugging is on 
+that actually turns the NULL into a non-NULL thing. Poisoning is not 
+active for SLUb's with constructors or RCU-freeing, but things like 
+redzoning still are. So enabling SLUB debugging will change the offsets 
+within the pages of all the SLUB allocations.  I wonder if that's just 
+what caused it to now have that 0x002e2e2e002e2e2e instead of NULL.
+
+		Linus
