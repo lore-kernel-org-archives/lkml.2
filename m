@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621Ab0DFJe4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 05:34:56 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:2247 "EHLO relay.sw.ru"
+	id S1752785Ab0DFJf3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 05:35:29 -0400
+Received: from lucidpixels.com ([75.144.35.66]:34576 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751682Ab0DFJeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 05:34:50 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: Tom Zanussi <zanussi@comcast.net>
-Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] relay: move remove_buf_file inside relay_close_buf
-References: <1267292137-12930-1-git-send-email-dmonakhov@openvz.org>
-Date: Tue, 06 Apr 2010 13:34:33 +0400
-In-Reply-To: <1267292137-12930-1-git-send-email-dmonakhov@openvz.org> (Dmitry
-	Monakhov's message of "Sat, 27 Feb 2010 20:35:37 +0300")
-Message-ID: <87hbnox6ty.fsf@openvz.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	id S1751682Ab0DFJfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 05:35:22 -0400
+Date: Tue, 6 Apr 2010 05:35:20 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: 2.6.33.2: USB Quickcam Pro 9000 (usb resets)?
+In-Reply-To: <Pine.LNX.4.44L0.1004051434070.1458-100000@iolanthe.rowland.org>
+Message-ID: <alpine.DEB.2.00.1004060533460.12641@p34.internal.lan>
+References: <Pine.LNX.4.44L0.1004051434070.1458-100000@iolanthe.rowland.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add Tom Zanussi to recipients.
-Tom, please take a look at the patch, it is simple and clean and it able
-to solve long standing blktrace related bug.
-Dmitry Monakhov <dmonakhov@openvz.org> writes:
-> Currently remove_buf_file callback is called from from kobject
-> release method. This result in follow issue:
-> # blktrace -d /dev/sda1 -d /dev/sda -o test
-> blktrace_setup()
->  dir = create_dir()
->  rchan = relay_open(dir,...)
->  ->create_buf_file_callback
->     buf_file  = debugfs_create_file(dir, )
+
+
+On Mon, 5 Apr 2010, Alan Stern wrote:
+
+> On Mon, 5 Apr 2010, Justin Piszcz wrote:
 >
-> Userspace will open buf_file.
-> Later we make a decision to stop tracing
-> blktrace_down()
->   relay_close(rhcan)  /* just decrement kobj reference  */
->                       /* since it is not zero then callback not called */
->   debugfs_remove(dir) /* FAIL due to non empty dir   */
+>> Hi,
+>>
+>> When no webcam is used, I do not see disconnect/reconnects.
+>> When I use a webcam, I see the following, is this normal?
+>> Note: I run motion on this host.
 >
-> Later user space will close the file and file will be deleted,
-> but directory still exist.
-> user_space_close()
->  ->file_release
->    ->release_buf_file_callback
->      ->debugfs_remove(buf_file)
->
-> In fact this is general issue, blktrace is just one of examples.
-> We can not reliably remove parent dir until all users close the
-> buf_file.
->
-> We don't have to wait this long. File may be deleted
-> inside relay_close_buf().
->
-> Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-> ---
->  kernel/relay.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/kernel/relay.c b/kernel/relay.c
-> index c705a41..dcf71c8 100644
-> --- a/kernel/relay.c
-> +++ b/kernel/relay.c
-> @@ -237,7 +237,6 @@ static void relay_destroy_buf(struct rchan_buf *buf)
->  static void relay_remove_buf(struct kref *kref)
->  {
->  	struct rchan_buf *buf = container_of(kref, struct rchan_buf, kref);
-> -	buf->chan->cb->remove_buf_file(buf->dentry);
->  	relay_destroy_buf(buf);
->  }
->  
-> @@ -487,6 +486,7 @@ static void relay_close_buf(struct rchan_buf *buf)
->  {
->  	buf->finalized = 1;
->  	del_timer_sync(&buf->timer);
-> +	buf->chan->cb->remove_buf_file(buf->dentry);
->  	kref_put(&buf->kref, relay_remove_buf);
->  }
+> No, it is not normal.  It indicates that the webcam is somehow
+> interfering with the signals from the keyboard hub.
+
+So the USB hub is shared amongst the ports in the back of the board that
+I am using:
+
+Port 1-> keyboard/mouse
+Port 2-> USB hub -> webcam
+Port 3-> UPS (but not using nut at the moment, just hooked up)
+
+$ lsusb
+Bus 001 Device 023: ID 0461:4d15 Primax Electronics, Ltd Dell Optical Mouse
+Bus 001 Device 022: ID 413c:2002 Dell Computer Corp. SK-8125 Keyboard
+Bus 001 Device 005: ID 046d:0990 Logitech, Inc. QuickCam Pro 9000
+Bus 001 Device 004: ID 413c:1002 Dell Computer Corp. Keyboard Hub
+Bus 001 Device 003: ID 2001:f103 D-Link Corp. [hex] DUB-H7 7-port USB 2.0 hub
+Bus 001 Device 002: ID 8087:0020 Intel Corp. Integrated Rate Matching Hub
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 002 Device 003: ID 051d:0002 American Power Conversion Uninterruptible Power Supply
+Bus 002 Device 002: ID 8087:0020 Intel Corp. Integrated Rate Matching Hub
+Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+
+Any recommendations/workarounds how to fix or just ignore it?
+
+Justin.
+
