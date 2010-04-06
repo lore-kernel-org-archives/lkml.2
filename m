@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546Ab0DFN0c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 09:26:32 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:46257 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753734Ab0DFN00 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 09:26:26 -0400
-Date: Tue, 6 Apr 2010 15:26:22 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Frans Pop <elendil@planet.nl>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.34-rc3: Can't insmod after make, because versions now
-	differ?!
-Message-ID: <20100406132622.GA1366@ucw.cz>
-References: <20100405053628.GA12217@elf.ucw.cz> <201004051724.26225.elendil@planet.nl> <20100406070641.GA19231@atrey.karlin.mff.cuni.cz> <201004061500.32569.elendil@planet.nl>
+	id S1755732Ab0DFN3R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 09:29:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14769 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754644Ab0DFN3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 09:29:06 -0400
+Message-ID: <4BBB36FA.4020008@redhat.com>
+Date: Tue, 06 Apr 2010 16:28:26 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201004061500.32569.elendil@planet.nl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Darren Hart <dvhltc@us.ibm.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive
+ spinning
+References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com> <4BBA5305.7010002@redhat.com> <4BBA5C00.4090703@us.ibm.com> <4BBA6279.20802@redhat.com> <4BBA6B6F.7040201@us.ibm.com>
+In-Reply-To: <4BBA6B6F.7040201@us.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2010-04-06 15:00:31, Frans Pop wrote:
-> On Tuesday 06 April 2010, Pavel Machek wrote:
-> > Yes, but... should module version checking be fixed so that it does
-> > not interfere like that?
-> 
-> I don't think so. Essentially you are getting what you configured: an 
-> extremely fine-grained kernel version. It's up to you to decide whether 
-> the benefits of that outweigh the limitations it brings.
+On 04/06/2010 01:59 AM, Darren Hart wrote:
+>
+>
+>>>> I'd be interested in seeing runs where the average number of 
+>>>> waiters is 0.2, 0.5, 1, and 2, corresponding to moderate-to-bad 
+>>>> contention.
+>>>> 25 average waiters on compute bound code means the application 
+>>>> needs to be rewritten, no amount of mutex tweaking will help it.
+>>>
+>>> Perhaps something NR_CPUS threads would be of more interest? 
+>>
+>> That seems artificial.
+>
+> How so? Several real world applications use one thread per CPU to 
+> dispatch work to, wait for events, etc.
 
-Yes, I want descriptive version strings. And yes, I'd like to use
-modules, and do development.
+Yes, but that's the best case for spinning.  You could simply use a 
+userspace spinlock in this case.
 
-Unfortunately, these two seem mutually exclusive. Given that Linus
-made noises (iirc) about 'everyone should set localversion_auto'... 
 
-> Stripping parts of the kernel version for module compatibility checks could 
-> interfere with suffixes explicitly added by distros to specify ABI 
-> compatibility.
+>
+>>>> Does the wakeup code select the spinning waiter, or just a random 
+>>>> waiter?
+>>>
+>>> The wakeup code selects the highest priority task in fifo order to 
+>>> wake-up - however, under contention it is most likely going to go 
+>>> back to sleep as another waiter will steal the lock out from under 
+>>> it. This locking strategy is unashamedly about as "unfair" as it gets.
+>>
+>> Best to avoid the wakeup if we notice the lock was stolen.
+>
+> You really can't do this precisely. You can read the futex value at 
+> various points along the wakeup path, but at some point you have to 
+> commit to waking a task, and you still have a race between the time 
+> you wake_up_task() and when it is scheduled and attempts the cmpxchg 
+> itself.
+>
 
-So split the version into regular parts and very detailed parts,
-putting explicit user options into 'regular'?
+The race is not a problem as it's just an optimization.  If you lose it 
+you get a spurious wakeup, if you win you save some cpu cycles.
+
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+error compiling committee.c: too many arguments to function
+
