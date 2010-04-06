@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756258Ab0DFUBw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 16:01:52 -0400
-Received: from mail-pz0-f193.google.com ([209.85.222.193]:62376 "EHLO
-	mail-pz0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752927Ab0DFUBr convert rfc822-to-8bit (ORCPT
+	id S1756324Ab0DFUC6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 16:02:58 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:48854 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755765Ab0DFUCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 16:01:47 -0400
+	Tue, 6 Apr 2010 16:02:54 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=oMQWVV+PdUVYMuhBV46cA8nJ+Q3yNmIQ2vfVpKRotZjzCYIpxEaQ1dIoG2gkz+KX5g
-         4lzNmh4KsGRc1hwniWd9+VYpN6aCqdUO2opMuq5F1rb4OHM5j/al1wFi8MaEr/2EF7X+
-         xyyeKM5FsXvidQEgpyNsD9ReEWoxKVEzBUFi8=
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=pdkPj0pMp4B23dXwXpajTANRUzNGu1UvS165hGEfKiBbkpLq1op4O9dqrl5Cy77SSJ
+         IDVP9zVENg4XdiXdeWtJ7mDd277zwxoCx08bnOSRIscCx5z86HiCXtHbhgl8hEHqAndi
+         FBlYgKvg/YaT5IY9eegWIpb35dbmXAfRlCLqY=
 MIME-Version: 1.0
-In-Reply-To: <4BBB8F07.60401@zytor.com>
-References: <l2y5f6c52c61004060737me670f6e2t6071444c4fd1318b@mail.gmail.com>
-	 <g2s9ff7a3bc1004060802va38aa361s6abd07e8c992dd56@mail.gmail.com>
-	 <4BBB7AC9.5060008@zytor.com>
-	 <o2m8f84f9951004061220x16f3aa8by9cf19ec28ea492d7@mail.gmail.com>
-	 <4BBB8F07.60401@zytor.com>
-Date: Wed, 7 Apr 2010 01:31:46 +0530
-Message-ID: <w2p9ff7a3bc1004061301v6cc76e1g1e573468b1b8807d@mail.gmail.com>
-Subject: Re: why choose 896MB to the start point of ZONE_HIGHMEM
-From: Joel Fernandes <agnel.joel@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Frank Hu <frank.hu.2001@gmail.com>, hayfeng Lee <teklife.kernel@gmail.com>,
-       linux-kernel@vger.kernel.org, linux-kernel@zh-kernel.org,
-       kernelnewbies@nl.linux.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <alpine.LFD.2.00.1004062024560.32352@localhost.localdomain>
+References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com> 
+	<4BBA5C00.4090703@us.ibm.com> <4BBA6279.20802@redhat.com> 
+	<4BBA6B6F.7040201@us.ibm.com> <4BBB36FA.4020008@redhat.com> 
+	<1270560931.1595.342.camel@laptop> <20100406145128.6324ac9a@lxorguk.ukuu.org.uk> 
+	<4BBB531A.4070500@us.ibm.com> <20100406174459.60088461@lxorguk.ukuu.org.uk> 
+	<alpine.LFD.2.00.1004062024560.32352@localhost.localdomain>
+From: Ulrich Drepper <drepper@gmail.com>
+Date: Tue, 6 Apr 2010 13:02:28 -0700
+Message-ID: <y2qa36005b51004061302t53bccf60v2cc152e7c64b20ca@mail.gmail.com>
+Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive 
+	spinning
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Darren Hart <dvhltc@us.ibm.com>,
+       Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
+       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Tue, Apr 6, 2010 at 12:31, Thomas Gleixner <tglx@linutronix.de> wrote:
+> We need to figure out a more efficient way to
+> do the spinning in the kernel where we have all the necessary
+> information already.
 
-On Wed, Apr 7, 2010 at 1:14 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 04/06/2010 12:20 PM, Frank Hu wrote:
->>>
->>> The ELF ABI specifies that user space has 3 GB available to it.  That
->>> leaves 1 GB for the kernel.  The kernel, by default, uses 128 MB for I/O
->>> mapping, vmalloc, and kmap support, which leaves 896 MB for LOWMEM.
->>>
->>> All of these boundaries are configurable; with PAE enabled the user
->>> space boundary has to be on a 1 GB boundary.
->>>
->>
->> the VM split is also configurable when building the kernel (for 32-bit
->> processors).
->
-> I did say "all these boundaries are configurable".  Rather explicitly.
->
+Really?  The owner information isn't in general available in the
+kernel.  Futex operation doesn't require the value used to be the PID
+(or negative of the PID).  That is a dramatic limitation of the
+usefulness of futexes.
 
-I thought the 896 MB was a hardware limitation on 32 bit architectures
-and something that cannot be configured? Or am I missing something
-here? Also the vm-splits refer to "virtual memory" . While ZONE_* and
-the 896MB we were discussing refers to "physical memory". How then is
-discussing about vm splits pertinent here?
+At userlevel there is access to other fields of the data structure
+which can contain the owner information.
 
-Thanks,
--Joel
+I would like to see the method using a per-thread pinned page and an
+update of a memory location on scheduling.  For benchmarking at least.
+ I agree that a sys_yield_to() syscall would be at the very least
+useful as well.  But it's useful for other things already.
