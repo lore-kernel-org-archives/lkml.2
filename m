@@ -1,158 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325Ab0DFRm5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 13:42:57 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:35776 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756659Ab0DFRmg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 13:42:36 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: linux-i2c@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>
-Cc: Chaithrika U S <chaithrika@ti.com>,
-       "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-       "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Philby John <pjohn@in.mvista.com>,
-       "Srinivasan, Nageswari" <nageswari@ti.com>,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] i2c: davinci: Add cpufreq support
-Date: Tue,  6 Apr 2010 10:42:17 -0700
-Message-Id: <1270575738-22388-6-git-send-email-khilman@deeprootsystems.com>
-X-Mailer: git-send-email 1.7.0.2
-In-Reply-To: <1270575738-22388-1-git-send-email-khilman@deeprootsystems.com>
-References: <1270575738-22388-1-git-send-email-khilman@deeprootsystems.com>
+	id S1757062Ab0DFRnJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 13:43:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4799 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757093Ab0DFRmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 13:42:35 -0400
+Date: Tue, 6 Apr 2010 13:42:18 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Divyesh Shah <dpshah@google.com>
+Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
+       ctalbott@google.com
+Subject: Re: [PATCH 2/3][v3] blkio: Add io controller stats like
+Message-ID: <20100406174218.GE3029@redhat.com>
+References: <20100406032630.23464.24685.stgit@austin.mtv.corp.google.com> <20100406033629.23464.90216.stgit@austin.mtv.corp.google.com> <20100406151621.GB3029@redhat.com> <s2haf41c7c41004060959j8d49feccx385545e66288c185@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <s2haf41c7c41004060959j8d49feccx385545e66288c185@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chaithrika U S <chaithrika@ti.com>
+On Tue, Apr 06, 2010 at 09:59:32AM -0700, Divyesh Shah wrote:
+> Vivek,
+>        I'll send out a v3.1 only for this patch since you've Acked the
+> other 2 patches. Thanks a lot for the detailed reviews again!
+> 
 
-Add cpufreq support for DaVinci I2C driver.
-Tested on DA850/OMAP-L138 EVM.
+That's fine. You can just reply to same mail and attach the new patch.
+Just that we need to explicitly mention to Jens to pick this new patch
+with minor modifications.
 
-Signed-off-by: Chaithrika U S <chaithrika@ti.com>
-Acked-by: Kevin Hilman <khilman@deeprootsystems.com>
----
- drivers/i2c/busses/i2c-davinci.c |   63 ++++++++++++++++++++++++++++++++++++++
- 1 files changed, 63 insertions(+), 0 deletions(-)
+Jens, how should we handle this patchset now? Original patches have
+already been applied to you for-2.6.35 branch. Should Divyesh, now
+send cleanup patches on top of these or something else?
 
-diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
-index dfec296..fd7a155 100644
---- a/drivers/i2c/busses/i2c-davinci.c
-+++ b/drivers/i2c/busses/i2c-davinci.c
-@@ -35,6 +35,7 @@
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
- #include <linux/io.h>
-+#include <linux/cpufreq.h>
- 
- #include <mach/hardware.h>
- #include <mach/i2c.h>
-@@ -106,6 +107,10 @@ struct davinci_i2c_dev {
- 	int			stop;
- 	u8			terminate;
- 	struct i2c_adapter	adapter;
-+#ifdef CONFIG_CPU_FREQ
-+	struct completion	xfr_complete;
-+	struct notifier_block	freq_transition;
-+#endif
- };
- 
- /* default platform data to use if not supplied in the platform_device */
-@@ -390,6 +395,11 @@ i2c_davinci_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
- 		if (ret < 0)
- 			return ret;
- 	}
-+
-+#ifdef CONFIG_CPU_FREQ
-+	complete(&dev->xfr_complete);
-+#endif
-+
- 	return num;
- }
- 
-@@ -522,6 +532,48 @@ static irqreturn_t i2c_davinci_isr(int this_irq, void *dev_id)
- 	return count ? IRQ_HANDLED : IRQ_NONE;
- }
- 
-+#ifdef CONFIG_CPU_FREQ
-+static int i2c_davinci_cpufreq_transition(struct notifier_block *nb,
-+				     unsigned long val, void *data)
-+{
-+	struct davinci_i2c_dev *dev;
-+
-+	dev = container_of(nb, struct davinci_i2c_dev, freq_transition);
-+	if (val == CPUFREQ_PRECHANGE) {
-+		wait_for_completion(&dev->xfr_complete);
-+		davinci_i2c_reset_ctrl(dev, 0);
-+	} else if (val == CPUFREQ_POSTCHANGE) {
-+		i2c_davinci_calc_clk_dividers(dev);
-+		davinci_i2c_reset_ctrl(dev, 1);
-+	}
-+
-+	return 0;
-+}
-+
-+static inline int i2c_davinci_cpufreq_register(struct davinci_i2c_dev *dev)
-+{
-+	dev->freq_transition.notifier_call = i2c_davinci_cpufreq_transition;
-+
-+	return cpufreq_register_notifier(&dev->freq_transition,
-+					 CPUFREQ_TRANSITION_NOTIFIER);
-+}
-+
-+static inline void i2c_davinci_cpufreq_deregister(struct davinci_i2c_dev *dev)
-+{
-+	cpufreq_unregister_notifier(&dev->freq_transition,
-+				    CPUFREQ_TRANSITION_NOTIFIER);
-+}
-+#else
-+static inline int i2c_davinci_cpufreq_register(struct davinci_i2c_dev *dev)
-+{
-+	return 0;
-+}
-+
-+static inline void i2c_davinci_cpufreq_deregister(struct davinci_i2c_dev *dev)
-+{
-+}
-+#endif
-+
- static struct i2c_algorithm i2c_davinci_algo = {
- 	.master_xfer	= i2c_davinci_xfer,
- 	.functionality	= i2c_davinci_func,
-@@ -561,6 +613,9 @@ static int davinci_i2c_probe(struct platform_device *pdev)
- 	}
- 
- 	init_completion(&dev->cmd_complete);
-+#ifdef CONFIG_CPU_FREQ
-+	init_completion(&dev->xfr_complete);
-+#endif
- 	dev->dev = get_device(&pdev->dev);
- 	dev->irq = irq->start;
- 	platform_set_drvdata(pdev, dev);
-@@ -586,6 +641,12 @@ static int davinci_i2c_probe(struct platform_device *pdev)
- 		goto err_unuse_clocks;
- 	}
- 
-+	r = i2c_davinci_cpufreq_register(dev);
-+	if (r) {
-+		dev_err(&pdev->dev, "failed to register cpufreq\n");
-+		goto err_free_irq;
-+	}
-+
- 	adap = &dev->adapter;
- 	i2c_set_adapdata(adap, dev);
- 	adap->owner = THIS_MODULE;
-@@ -627,6 +688,8 @@ static int davinci_i2c_remove(struct platform_device *pdev)
- 	struct davinci_i2c_dev *dev = platform_get_drvdata(pdev);
- 	struct resource *mem;
- 
-+	i2c_davinci_cpufreq_deregister(dev);
-+
- 	platform_set_drvdata(pdev, NULL);
- 	i2c_del_adapter(&dev->adapter);
- 	put_device(&pdev->dev);
--- 
-1.7.0.2
+Thanks
+Vivek
 
+> On Tue, Apr 6, 2010 at 8:16 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Mon, Apr 05, 2010 at 08:37:01PM -0700, Divyesh Shah wrote:
+> >> - io_service_time (the time between request dispatch and completion for IOs
+> >>   in the cgroup)
+> >> - io_wait_time (the time spent waiting in the IO shceduler queues before
+> >>   getting serviced)
+> >> - io_serviced (number of IOs serviced from this blkio_group)
+> >> - io_service_bytes (Number of bytes served for this cgroup)
+> >>
+> >> These stats are accumulated per operation type helping us to distinguish between
+> >> read and write, and sync and async IO. This patch does not increment any of
+> >> these stats.
+> >>
+> >> Signed-off-by: Divyesh Shah<dpshah@google.com>
+> >> ---
+> >>
+> >>  Documentation/cgroups/blkio-controller.txt |   40 +++++++
+> >>  block/blk-cgroup.c                         |  166 +++++++++++++++++++++++++---
+> >>  block/blk-cgroup.h                         |   60 ++++++++--
+> >>  block/cfq-iosched.c                        |    3 -
+> >>  4 files changed, 239 insertions(+), 30 deletions(-)
+> >>
+> >> diff --git a/Documentation/cgroups/blkio-controller.txt b/Documentation/cgroups/blkio-controller.txt
+> >> index 630879c..087925b 100644
+> >> --- a/Documentation/cgroups/blkio-controller.txt
+> >> +++ b/Documentation/cgroups/blkio-controller.txt
+> >> @@ -77,7 +77,6 @@ Details of cgroup files
+> >>  =======================
+> >>  - blkio.weight
+> >>       - Specifies per cgroup weight.
+> >> -
+> >>         Currently allowed range of weights is from 100 to 1000.
+> >>
+> >>  - blkio.time
+> >> @@ -92,6 +91,41 @@ Details of cgroup files
+> >>         third field specifies the number of sectors transferred by the
+> >>         group to/from the device.
+> >>
+> >> +- blkio.io_service_bytes
+> >> +     - Number of bytes transferred to/from the disk by the group. These
+> >> +       are further divided by the type of operation - read or write, sync
+> >> +       or async. First two fields specify the major and minor number of the
+> >> +       device, third field specifies the operation type and the fourth field
+> >> +       specifies the number of bytes.
+> >> +
+> >> +- blkio.io_serviced
+> >> +     - Number of IOs completed to/from the disk by the group. These
+> >> +       are further divided by the type of operation - read or write, sync
+> >> +       or async. First two fields specify the major and minor number of the
+> >> +       device, third field specifies the operation type and the fourth field
+> >> +       specifies the number of IOs.
+> >> +
+> >
+> > Hi Divyesh,
+> >
+> > V3 looks much better. Just couple of minor nits.
+> >
+> >> +- blkio.io_service_time
+> >> +     - Total amount of time between request dispatch and request completion
+> >> +       for the IOs done by this cgroup. This is in nanoseconds to make it
+> >> +       meaningful for flash devices too. For devices with queue depth of 1,
+> >> +       this time represents the actual service time. When queue_depth > 1,
+> >> +       that is no longer true as requests may be served out of order.
+> >
+> > Like io_wait_time, can you also mention here that this time is cumulative
+> > time and on NCQ disks it can be more than actual time elapsed.
+> 
+> Will do.
+> 
+> >
+> > I did a quick run with your patches. I ran a sequential workload for 30s
+> > in two groups of weight 100 and 200. Following is the output of
+> > blkio.io_service_time (I have kept stats for only disk 253:3 in output).
+> >
+> > # cat test1/blkio.io_service_time
+> > 253:3 Read 18019970625
+> > 253:3 Write 0
+> > 253:3 Sync 18019970625
+> > 253:3 Async 0
+> > 253:3 Total 18019970625
+> >
+> > # cat test2/blkio.io_service_time
+> > 253:3 Read 35479070171
+> > 253:3 Write 0
+> > 253:3 Sync 35479070171
+> > 253:3 Async 0
+> >
+> > This storage supports NCQ. We see that though I ran test only for
+> > 30 seconds, total service ime for cgroup is close to 18+35=53 seconds.
+> 
+> Yes that is expected as from our discussion about NCQ as any IO can
+> have the service time of multiple IOs coupled together when serviced
+> out of order.
+> 
+> >
+> >> +       This time is further divided by the type of operation -
+> >> +       read or write, sync or async. First two fields specify the major and
+> >> +       minor number of the device, third field specifies the operation type
+> >> +       and the fourth field specifies the io_service_time in ns.
+> >> +
+> >> +- blkio.io_wait_time
+> >> +     - Total amount of time the IO spent waiting in the scheduler queues for
+> >> +       service. This can be greater than the total time elapsed since it is
+> >> +       cumulative io_wait_time for all IOs. This is in nanoseconds to make it
+> >> +       meaningful for flash devices too. This time is further divided by the
+> >> +       type of operation - read or write, sync or async. First two fields
+> >> +       specify the major and minor number of the device, third field
+> >> +       specifies the operation type and the fourth field specifies the
+> >> +       io_wait_time in ns.
+> >> +
+> >>  - blkio.dequeue
+> >>       - Debugging aid only enabled if CONFIG_DEBUG_CFQ_IOSCHED=y. This
+> >>         gives the statistics about how many a times a group was dequeued
+> >> @@ -99,6 +133,10 @@ Details of cgroup files
+> >>         and minor number of the device and third field specifies the number
+> >>         of times a group was dequeued from a particular device.
+> >>
+> >> +- blkio.reset_stats
+> >> +     - Writing an int to this file will result in resetting all the stats
+> >> +       for that cgroup.
+> >> +
+> >
+> > Personally, I like adding a separate file to reset the stats. Now one does
+> > not get surprised by the fact that writting to blkio.io_service_time, also
+> > reset rest of the stats.
+> >
+> >>  CFQ sysfs tunable
+> >>  =================
+> >>  /sys/block/<disk>/queue/iosched/group_isolation
+> >> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+> >> index 5be3981..d585a05 100644
+> >> --- a/block/blk-cgroup.c
+> >> +++ b/block/blk-cgroup.c
+> >> @@ -17,6 +17,8 @@
+> >>  #include <linux/err.h>
+> >>  #include "blk-cgroup.h"
+> >>
+> >> +#define MAX_KEY_LEN 100
+> >> +
+> >>  static DEFINE_SPINLOCK(blkio_list_lock);
+> >>  static LIST_HEAD(blkio_list);
+> >>
+> >> @@ -55,12 +57,21 @@ struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
+> >>  }
+> >>  EXPORT_SYMBOL_GPL(cgroup_to_blkio_cgroup);
+> >>
+> >> -void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
+> >> -                                             unsigned long time)
+> >> +void blkio_group_init(struct blkio_group *blkg)
+> >> +{
+> >> +     spin_lock_init(&blkg->stats_lock);
+> >> +}
+> >> +EXPORT_SYMBOL_GPL(blkio_group_init);
+> >> +
+> >> +void blkiocg_update_timeslice_used(struct blkio_group *blkg, unsigned long time)
+> >>  {
+> >> -     blkg->time += time;
+> >> +     unsigned long flags;
+> >> +
+> >> +     spin_lock_irqsave(&blkg->stats_lock, flags);
+> >> +     blkg->stats.time += time;
+> >> +     spin_unlock_irqrestore(&blkg->stats_lock, flags);
+> >>  }
+> >> -EXPORT_SYMBOL_GPL(blkiocg_update_blkio_group_stats);
+> >> +EXPORT_SYMBOL_GPL(blkiocg_update_timeslice_used);
+> >>
+> >>  void blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
+> >>                       struct blkio_group *blkg, void *key, dev_t dev)
+> >> @@ -170,13 +181,107 @@ blkiocg_weight_write(struct cgroup *cgroup, struct cftype *cftype, u64 val)
+> >>       return 0;
+> >>  }
+> >>
+> >> -#define SHOW_FUNCTION_PER_GROUP(__VAR)                                       \
+> >> +static int
+> >> +blkiocg_reset_write(struct cgroup *cgroup, struct cftype *cftype, u64 val)
+> >> +{
+> >
+> > I guess we can rename this function to blkiocg_reset_stats().
+> Will do
+> 
+> >
+> > [..]
+> >> @@ -217,16 +331,36 @@ struct cftype blkio_files[] = {
+> >>       },
+> >>       {
+> >>               .name = "time",
+> >> -             .read_seq_string = blkiocg_time_read,
+> >> +             .read_map = blkiocg_time_read,
+> >>       },
+> >>       {
+> >>               .name = "sectors",
+> >> -             .read_seq_string = blkiocg_sectors_read,
+> >> +             .read_map = blkiocg_sectors_read,
+> >> +     },
+> >> +     {
+> >> +             .name = "io_service_bytes",
+> >> +             .read_map = blkiocg_io_service_bytes_read,
+> >> +     },
+> >> +     {
+> >> +             .name = "io_serviced",
+> >> +             .read_map = blkiocg_io_serviced_read,
+> >> +     },
+> >> +     {
+> >> +             .name = "io_service_time",
+> >> +             .read_map = blkiocg_io_service_time_read,
+> >> +     },
+> >> +     {
+> >> +             .name = "io_wait_time",
+> >> +             .read_map = blkiocg_io_wait_time_read,
+> >> +     },
+> >> +     {
+> >> +             .name = "reset_stats",
+> >> +             .write_u64 = blkiocg_reset_write,
+> >
+> > use blkiocg_reset_stats?
+> Will do
+> >
+> > Thanks
+> > Vivek
+> >
