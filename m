@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756474Ab0DFPeb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 11:34:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51008 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756408Ab0DFPe0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 11:34:26 -0400
-Date: Tue, 6 Apr 2010 17:34:37 +0200
-From: Jan Kara <jack@suse.cz>
-To: Anton Blanchard <anton@samba.org>
-Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] raw: fsync method is now required
-Message-ID: <20100406153437.GB4420@quack.suse.cz>
-References: <20100404004523.GL5594@kryten>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100404004523.GL5594@kryten>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756561Ab0DFPfN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 11:35:13 -0400
+Received: from mail-qy0-f179.google.com ([209.85.221.179]:48836 "EHLO
+	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754333Ab0DFPfI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 11:35:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=v2s/NYkfR6/ymkoIZrn1iM0usx/IGpX/yOI/GcWi+tGTPWrVgmWqAGQ4Xc9ZiMFyOo
+         FqROw44ypslp/HULB4XW58/minWo8rTn6qR/lnMd14IocN92dpAT2KikSWewzleUUN6t
+         aAkYFCG+ycmtEmi2BZ4ZB60tmhMPvbjKPYfCo=
+Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
+ 2.6.34-rc3)
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Borislav Petkov <bp@alien8.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>
+In-Reply-To: <4BBB475A.7070002@redhat.com>
+References: <20100402175937.GA19690@liondog.tnic>
+	 <alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org>
+	 <20100406173754.7E5A.A69D9226@jp.fujitsu.com> <4BBB475A.7070002@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 07 Apr 2010 00:34:55 +0900
+Message-ID: <1270568096.1814.145.camel@barrios-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 04-04-10 10:45:23, Anton Blanchard wrote:
-> Commit 148f948ba877f4d3cdef036b1ff6d9f68986706a (vfs: Introduce new helpers for syncing after writing to O_SYNC file or IS_SYNC inode) broke the raw driver.
+On Tue, 2010-04-06 at 10:38 -0400, Rik van Riel wrote:
+> On 04/06/2010 04:53 AM, KOSAKI Motohiro wrote:
 > 
-> We now call through generic_file_aio_write -> generic_write_sync ->
-> vfs_fsync_range. vfs_fsync_range has:
+> > Today, I've reviewed this patch carefully. but I haven't found any bug.
 > 
->         if (!fop || !fop->fsync) {
->                 ret = -EINVAL;
->                 goto out;
->         }
+> > Also, I've runned stress workload with shrink_all_memory() today. but
+> > I couldn't reproduce the issue. hmm..  (perhaps I'm no lucky guy.
+> > I'm frequently fail to reproduce)
+> >
+> > I'll continue to work.
 > 
-> But drivers/char/raw.c doesn't set an fsync method. 
-> 
-> We have two options: fix it or remove the raw driver completely. I'm happy
-> to do either, the fact this has been broken for so long suggests it is
-> rarely used.
-> 
-> The patch below adds an fsync method to the raw driver. My knowledge of the
-> block layer is pretty sketchy so this could do with a once over.
-  Thanks for catching this. The patch looks fine.
- 
-> If we instead decide to remove the raw driver, this patch might still be
-> useful as a backport to 2.6.33 and 2.6.32.
-  Oracle databases still use raw devices so I don't think we should remove
-them.
+> My status with this bug is the same - I have gone through
+> the code from all angles, but have not found any other bugs
+> yet (except for that leak - which could leave invalid
+> pointers behind).
 
-Reviewed-by: Jan Kara <jack@suse.cz>
+Let's see the unlink_anon_vmas. 
 
-								Honza
---
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1. list_for_each_entry_safe(avc,next, vma->anon_vma_chain, same_vma)
+2. 	anon_vma_unlink
+3. 		spin_lock(anon_vma->lock) <-- HERE LOCK.
+4.		list_del(anon_vma_chain->same_anon_vma);
+
+What if anon_vma is destroyed and reuse by SLAB_XXX_RCU for another
+anon_vma object between 2 and 3?
+I mean how to make sure 3) does lock valid anon_vma? 
+
+I hope it is culprit.
+
+
+-- 
+Kind regards,
+Minchan Kim
+
+
