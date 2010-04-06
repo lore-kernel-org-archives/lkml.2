@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561Ab0DFPfN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 11:35:13 -0400
-Received: from mail-qy0-f179.google.com ([209.85.221.179]:48836 "EHLO
-	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754333Ab0DFPfI (ORCPT
+	id S1755090Ab0DFPhm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 11:37:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34231 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753100Ab0DFPhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 11:35:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=v2s/NYkfR6/ymkoIZrn1iM0usx/IGpX/yOI/GcWi+tGTPWrVgmWqAGQ4Xc9ZiMFyOo
-         FqROw44ypslp/HULB4XW58/minWo8rTn6qR/lnMd14IocN92dpAT2KikSWewzleUUN6t
-         aAkYFCG+ycmtEmi2BZ4ZB60tmhMPvbjKPYfCo=
-Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
- 2.6.34-rc3)
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Borislav Petkov <bp@alien8.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>
-In-Reply-To: <4BBB475A.7070002@redhat.com>
-References: <20100402175937.GA19690@liondog.tnic>
-	 <alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org>
-	 <20100406173754.7E5A.A69D9226@jp.fujitsu.com> <4BBB475A.7070002@redhat.com>
+	Tue, 6 Apr 2010 11:37:36 -0400
+Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive
+ spinning
+From: Peter Zijlstra <peterz@infradead.org>
+To: Darren Hart <dvhltc@us.ibm.com>
+Cc: Ulrich Drepper <drepper@gmail.com>, Avi Kivity <avi@redhat.com>,
+       linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>
+In-Reply-To: <4BBB5433.3060005@us.ibm.com>
+References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com>
+	 <4BBA5305.7010002@redhat.com> <1270543721.1597.748.camel@laptop>
+	 <m2ua36005b51004060747y1abf15edj28227274844db2e7@mail.gmail.com>
+	 <1270565478.1595.529.camel@laptop>  <4BBB5433.3060005@us.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 07 Apr 2010 00:34:55 +0900
-Message-ID: <1270568096.1814.145.camel@barrios-desktop>
+Date: Tue, 06 Apr 2010 17:37:29 +0200
+Message-ID: <1270568249.20295.37.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-06 at 10:38 -0400, Rik van Riel wrote:
-> On 04/06/2010 04:53 AM, KOSAKI Motohiro wrote:
+On Tue, 2010-04-06 at 08:33 -0700, Darren Hart wrote:
+> Peter Zijlstra wrote:
+> > On Tue, 2010-04-06 at 07:47 -0700, Ulrich Drepper wrote:
+> >> On Tue, Apr 6, 2010 at 01:48, Peter Zijlstra <peterz@infradead.org>
+> >> wrote:
+> >>>  try
+> >>>  spin
+> >>>  try
+> >>>  syscall
+> >> This is available for a long time in the mutex implementation
+> >> (PTHREAD_MUTEX_ADAPTIVE_NP mutex type).  It hasn't show much
+> >> improvement if any.  There were some people demanding this support for
+> >> as far as I know they are not using it now.  This is adaptive
+> >> spinning, learning from previous calls how long to wait.  But it's
+> >> still unguided.  There is no way to get information like "the owner
+> >> has been descheduled". 
+> > 
+> > That's where the FUTEX_LOCK thing comes in, it does all those, the above
+> > was a single spin loop to amortize the syscall overhead.
+> > 
+> > I wouldn't make it any more complex than a single pause ins, syscalls
+> > are terribly cheap these days.
 > 
-> > Today, I've reviewed this patch carefully. but I haven't found any bug.
-> 
-> > Also, I've runned stress workload with shrink_all_memory() today. but
-> > I couldn't reproduce the issue. hmm..  (perhaps I'm no lucky guy.
-> > I'm frequently fail to reproduce)
-> >
-> > I'll continue to work.
-> 
-> My status with this bug is the same - I have gone through
-> the code from all angles, but have not found any other bugs
-> yet (except for that leak - which could leave invalid
-> pointers behind).
+> And yet they still seem to have a real impact on the futex_lock 
+> benchmark. Perhaps I am just still looking at pathological cases, but 
+> there is a strong correlation between high syscall counts and really low 
+> iterations per second. Granted this also correlates with lock 
+> contention. However, when using the same period and duty-cycle I find 
+> that a locking mechanism that makes significantly fewer syscalls also 
+> significantly outperforms one that makes more. Kind of handwavy stilly, 
+> I'll have more numbers this afternoon.
 
-Let's see the unlink_anon_vmas. 
+Sure, but I'm still not sure why FUTEX_LOCK ends up making more syscalls
+than FUTEX_WAIT based locking. Both should only do the syscall when the
+lock is contended, both should only ever do 1 syscall per acquire,
+right?
 
-1. list_for_each_entry_safe(avc,next, vma->anon_vma_chain, same_vma)
-2. 	anon_vma_unlink
-3. 		spin_lock(anon_vma->lock) <-- HERE LOCK.
-4.		list_del(anon_vma_chain->same_anon_vma);
-
-What if anon_vma is destroyed and reuse by SLAB_XXX_RCU for another
-anon_vma object between 2 and 3?
-I mean how to make sure 3) does lock valid anon_vma? 
-
-I hope it is culprit.
-
-
--- 
-Kind regards,
-Minchan Kim
 
 
