@@ -1,132 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756394Ab0DFPac (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 11:30:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47041 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756261Ab0DFPa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 11:30:26 -0400
-Date: Tue, 6 Apr 2010 11:30:19 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Divyesh Shah <dpshah@google.com>
-Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
-       ctalbott@google.com
-Subject: Re: [PATCH 1/3][v3] blkio: Remove per-cfqq nr_sectors as we'll be
-	passing
-Message-ID: <20100406153019.GD3029@redhat.com>
-References: <20100406032630.23464.24685.stgit@austin.mtv.corp.google.com> <20100406033519.23464.66155.stgit@austin.mtv.corp.google.com>
+	id S1756104Ab0DFPb3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 11:31:29 -0400
+Received: from fg-out-1718.google.com ([72.14.220.154]:29576 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976Ab0DFPbY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 11:31:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=R7mWb3L1WGbwSfj/j5Cdbm2v/KmuFzT9u+mZNllG6UvVNQRe7YCCRcduyLPh98zt1t
+         S6das9S3GNYwlKsHfI36W8Xp/jOOCMXUDn2BveipZfRLgImTJFGNNyIF+JgGVHBt5i+/
+         KlBDiRQwPY1rsXGWJyNGwmVpx4GhA4/zd4F/I=
+Date: Tue, 6 Apr 2010 19:31:15 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>, mingo@elte.hu, peterz@infradead.org,
+       aris@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [watchdog] combine nmi_watchdog and softlockup
+Message-ID: <20100406153115.GB5744@lenovo>
+References: <20100323213338.GA29170@redhat.com> <20100406141321.GA8416@nowhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100406033519.23464.66155.stgit@austin.mtv.corp.google.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20100406141321.GA8416@nowhere>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05, 2010 at 08:36:24PM -0700, Divyesh Shah wrote:
-> that info at request dispatch with other stats now. This patch removes the
-> existing support for accounting sectors for a blkio_group. This will be added
-> back differently in the next two patches.
+On Tue, Apr 06, 2010 at 04:13:30PM +0200, Frederic Weisbecker wrote:
+[...]
+> > +static int watchdog_enable(int cpu)
+> > +{
+> > +	struct perf_event_attr *wd_attr;
+> > +	struct perf_event *event = per_cpu(watchdog_ev, cpu);
+> > +	struct task_struct *p = per_cpu(softlockup_watchdog, cpu);
+> > +
+> > +	/* is it already setup and enabled? */
+> > +	if (event && event->state > PERF_EVENT_STATE_OFF)
+> > +		goto out;
+> > +
+> > +	/* it is setup but not enabled */
+> > +	if (event != NULL)
+> > +		goto out_enable;
+> > +
+> > +	/* Try to register using hardware perf events first */
+> > +	wd_attr = &wd_hw_attr;
+> > +	wd_attr->sample_period = hw_nmi_get_sample_period();
+> > +	event = perf_event_create_kernel_counter(wd_attr, cpu, -1, watchdog_overflow_callback);
+> > +	if (!IS_ERR(event)) {
+> > +		printk(KERN_INFO "NMI watchdog enabled, takes one hw-pmu counter.\n");
+> > +		goto out_save;
+> > +	}
+> > +
+> > +	/* hardware doesn't exist or not supported, fallback to software events */
+> > +	printk(KERN_INFO "NMI watchdog: hardware not available, trying software events\n");
+> > +	wd_attr = &wd_sw_attr;
+> > +	wd_attr->sample_period = softlockup_thresh * NSEC_PER_SEC;
+> > +	event = perf_event_create_kernel_counter(wd_attr, cpu, -1, watchdog_overflow_callback);
 > 
-> Signed-off-by: Divyesh Shah<dpshah@google.com>
+> I fear the cpu clock is not going to help you detecting any hard lockups.
+> If you're stuck in an interrupt or an irq disabled loop, your cpu clock is
+> not going to fire.
+>
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+I guess it's not supposed to. For such cases only nmi irqs may help for which
+the perf events are there (/me need to check if we program apic timer for anything
+like that). But it should help for other deadlocks. Or I miss something?
 
-Vivek
-
-> ---
-> 
->  block/blk-cgroup.c  |    3 +--
->  block/blk-cgroup.h  |    6 ++----
->  block/cfq-iosched.c |   10 ++--------
->  3 files changed, 5 insertions(+), 14 deletions(-)
-> 
-> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> index 4b686ad..5be3981 100644
-> --- a/block/blk-cgroup.c
-> +++ b/block/blk-cgroup.c
-> @@ -56,10 +56,9 @@ struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
->  EXPORT_SYMBOL_GPL(cgroup_to_blkio_cgroup);
->  
->  void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
-> -			unsigned long time, unsigned long sectors)
-> +						unsigned long time)
->  {
->  	blkg->time += time;
-> -	blkg->sectors += sectors;
->  }
->  EXPORT_SYMBOL_GPL(blkiocg_update_blkio_group_stats);
->  
-> diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-> index 8ccc204..fe44517 100644
-> --- a/block/blk-cgroup.h
-> +++ b/block/blk-cgroup.h
-> @@ -106,7 +106,7 @@ extern int blkiocg_del_blkio_group(struct blkio_group *blkg);
->  extern struct blkio_group *blkiocg_lookup_group(struct blkio_cgroup *blkcg,
->  						void *key);
->  void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
-> -			unsigned long time, unsigned long sectors);
-> +						unsigned long time);
->  #else
->  struct cgroup;
->  static inline struct blkio_cgroup *
-> @@ -123,8 +123,6 @@ blkiocg_del_blkio_group(struct blkio_group *blkg) { return 0; }
->  static inline struct blkio_group *
->  blkiocg_lookup_group(struct blkio_cgroup *blkcg, void *key) { return NULL; }
->  static inline void blkiocg_update_blkio_group_stats(struct blkio_group *blkg,
-> -			unsigned long time, unsigned long sectors)
-> -{
-> -}
-> +						unsigned long time) {}
->  #endif
->  #endif /* _BLK_CGROUP_H */
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index ef1680b..c18e348 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -141,8 +141,6 @@ struct cfq_queue {
->  	struct cfq_queue *new_cfqq;
->  	struct cfq_group *cfqg;
->  	struct cfq_group *orig_cfqg;
-> -	/* Sectors dispatched in current dispatch round */
-> -	unsigned long nr_sectors;
->  };
->  
->  /*
-> @@ -882,8 +880,7 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
->  			slice_used = cfqq->allocated_slice;
->  	}
->  
-> -	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u sect=%lu", slice_used,
-> -				cfqq->nr_sectors);
-> +	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u", slice_used);
->  	return slice_used;
->  }
->  
-> @@ -917,8 +914,7 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
->  
->  	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
->  					st->min_vdisktime);
-> -	blkiocg_update_blkio_group_stats(&cfqg->blkg, used_sl,
-> -						cfqq->nr_sectors);
-> +	blkiocg_update_blkio_group_stats(&cfqg->blkg, used_sl);
->  }
->  
->  #ifdef CONFIG_CFQ_GROUP_IOSCHED
-> @@ -1524,7 +1520,6 @@ static void __cfq_set_active_queue(struct cfq_data *cfqd,
->  		cfqq->allocated_slice = 0;
->  		cfqq->slice_end = 0;
->  		cfqq->slice_dispatch = 0;
-> -		cfqq->nr_sectors = 0;
->  
->  		cfq_clear_cfqq_wait_request(cfqq);
->  		cfq_clear_cfqq_must_dispatch(cfqq);
-> @@ -1869,7 +1864,6 @@ static void cfq_dispatch_insert(struct request_queue *q, struct request *rq)
->  	elv_dispatch_sort(q, rq);
->  
->  	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
-> -	cfqq->nr_sectors += blk_rq_sectors(rq);
->  }
->  
->  /*
+	-- Cyrill
