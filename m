@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756693Ab0DFQ2Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 12:28:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36933 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756219Ab0DFQ2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 12:28:09 -0400
-Message-ID: <4BBB6110.2080505@redhat.com>
-Date: Tue, 06 Apr 2010 19:28:00 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1756718Ab0DFQac (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 12:30:32 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42632 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669Ab0DFQaZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 12:30:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=SycazUXNigwhb9evDg29XaK2uQzoHr8VgNAVYZu/xWRpgXCCFdGW1DM9EKPwE3/Rgp
+         gsDLF8cuBMNDYbIevJJICwApVwZLdvZOhphyRi4XfTBJWDKX7D1ZbxIRc4O2C/9VmMI+
+         jaOTIiVKwILrN7eDM9b37R+4waROz48uuuHrA=
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>, Dmitry Torokhov <dtor@vmware.com>,
-       linux-kernel@vger.kernel.org, pv-drivers@vmware.com,
-       Dan Magenheimer <dan.magenheimer@oracle.com>
-Subject: Re: [PATCH] VMware Balloon driver
-References: <20100404215202.GA13020@dtor-ws.eng.vmware.com>	<20100405142419.2c9bea3d.akpm@linux-foundation.org>	<4BBA5E1C.10706@goop.org>	<20100405151720.8a6ac5e3.akpm@linux-foundation.org>	<4BBA6383.7070601@redhat.com> <20100405154023.c7e4f877.akpm@linux-foundation.org>
-In-Reply-To: <20100405154023.c7e4f877.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100406154728.GF5288@laptop>
+References: <1270482365.1814.138.camel@barrios-desktop>
+	 <20100406154728.GF5288@laptop>
+Date: Wed, 7 Apr 2010 01:30:24 +0900
+Message-ID: <r2s28c262361004060930u95af7d62k5136aeb67c8d7019@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ntfs: use add_to_page_cache_lru
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Anton Altaparmakov <aia21@cantab.net>,
+       Al Viro <viro@zeniv.linux.org.uk>, Jiri Kosina <jkosina@suse.cz>,
+       Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org,
+       linux-ntfs-dev@lists.sourceforge.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2010 01:40 AM, Andrew Morton wrote:
-> On Tue, 06 Apr 2010 01:26:11 +0300
-> Avi Kivity<avi@redhat.com>  wrote:
->
->    
->> On 04/06/2010 01:17 AM, Andrew Morton wrote:
->>      
->>>> The basic idea of the driver is to allow a guest system to give up
->>>> memory it isn't using so it can be reused by other virtual machines (or
->>>> the host itself).
->>>>
->>>>          
->>> So...  does this differ in any fundamental way from what hibernation
->>> does, via shrink_all_memory()?
->>>
->>>        
->> Just the _all_ bit, and the fact that we need to report the freed page
->> numbers to the hypervisor.
->>
->>      
-> So...  why not tweak that, rather than implementing some parallel thing?
->    
+Hi, Nick.
 
-That's maybe 5 lines of code.  Most of the code is focused on 
-interpreting requests from the hypervisor and replying with the page 
-numbers.
+On Wed, Apr 7, 2010 at 12:47 AM, Nick Piggin <npiggin@suse.de> wrote:
+> On Tue, Apr 06, 2010 at 12:46:05AM +0900, Minchan Kim wrote:
+>>
+>> While I discuss exportable add_to_page_cache_lru,
+>> http://marc.info/?l=linux-mm&m=127047788612445&w=2
+>> I found that
+>> http://www.mail-archive.com/linux-btrfs@vger.kernel.org/msg04472.html.
+>>
+>> Let's change to use it in ntfs.
+>
+> Thanks, I went through most filesystems and changed it in those too,
+> including ntfs. Haven't had much feedback but I'll just send the
+> patches to Andrew if they haven't been merged by next release.
+>
+
+Please, let me know it.
+That's because actually I had a plan to change about some filesystem.
+If you already did it, I don't need to do. :)
+
+Thanks, Nick.
+
+
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Kind regards,
+Minchan Kim
