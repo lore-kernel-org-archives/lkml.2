@@ -1,110 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756512Ab0DFDb1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 23:31:27 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13281 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753061Ab0DFDbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 23:31:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,369,1267430400"; 
-   d="scan'208";a="610500767"
-Date: Tue, 6 Apr 2010 11:31:14 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: "Li, Shaohua" <shaohua.li@intel.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
-Message-ID: <20100406033114.GB13169@localhost>
-References: <20100406105324.7E30.A69D9226@jp.fujitsu.com> <20100406023043.GA12420@localhost> <20100406115543.7E39.A69D9226@jp.fujitsu.com>
+	id S1756069Ab0DFDfq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 23:35:46 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:22925 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332Ab0DFDfl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 23:35:41 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:subject:to:cc:date:message-id:user-agent:
+	mime-version:content-type:content-transfer-encoding:x-system-of-record;
+	b=S+GalRQwM2khlYhj84sntOBu9R0ooDL/OKQTPSgfYzaM5WOK4XuxS8l8iQUWIQigv
+	wpTUXaEvNsQc/9s0YLk+w==
+From: Divyesh Shah <dpshah@google.com>
+Subject: [PATCH 0/3][v3] blkio: IO controller stats
+To: jens.axboe@oracle.com, vgoyal@redhat.com
+Cc: linux-kernel@vger.kernel.org, nauman@google.com, ctalbott@google.com
+Date: Mon, 05 Apr 2010 20:35:14 -0700
+Message-ID: <20100406032630.23464.24685.stgit@austin.mtv.corp.google.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100406115543.7E39.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 06, 2010 at 10:58:43AM +0800, KOSAKI Motohiro wrote:
-> > On Tue, Apr 06, 2010 at 10:06:19AM +0800, KOSAKI Motohiro wrote:
-> > > > On Tue, Apr 06, 2010 at 09:25:36AM +0800, Li, Shaohua wrote:
-> > > > > On Sun, Apr 04, 2010 at 10:19:06PM +0800, KOSAKI Motohiro wrote:
-> > > > > > > On Fri, Apr 02, 2010 at 05:14:38PM +0800, KOSAKI Motohiro wrote:
-> > > > > > > > > > > This patch makes a lot of sense than previous. however I think <1% anon ratio
-> > > > > > > > > > > shouldn't happen anyway because file lru doesn't have reclaimable pages.
-> > > > > > > > > > > <1% seems no good reclaim rate.
-> > > > > > > > > > 
-> > > > > > > > > > Oops, the above mention is wrong. sorry. only 1 page is still too big.
-> > > > > > > > > > because under streaming io workload, the number of scanning anon pages should
-> > > > > > > > > > be zero. this is very strong requirement. if not, backup operation will makes
-> > > > > > > > > > a lot of swapping out.
-> > > > > > > > > Sounds there is no big impact for the workload which you mentioned with the patch.
-> > > > > > > > > please see below descriptions.
-> > > > > > > > > I updated the description of the patch as fengguang suggested.
-> > > > > > > > 
-> > > > > > > > Umm.. sorry, no.
-> > > > > > > > 
-> > > > > > > > "one fix but introduce another one bug" is not good deal. instead, 
-> > > > > > > > I'll revert the guilty commit at first as akpm mentioned.
-> > > > > > > Even we revert the commit, the patch still has its benefit, as it increases
-> > > > > > > calculation precision, right?
-> > > > > > 
-> > > > > > no, you shouldn't ignore the regression case.
-> > > > 
-> > > > > I don't think this is serious. In my calculation, there is only 1 page swapped out
-> > > > > for 6G anonmous memory. 1 page should haven't any performance impact.
-> > > > 
-> > > > 1 anon page scanned for every N file pages scanned?
-> > > > 
-> > > > Is N a _huge_ enough ratio so that the anon list will be very light scanned?
-> > > > 
-> > > > Rik: here is a little background.
-> > > 
-> > > The problem is, the VM are couteniously discarding no longer used file
-> > > cache. if we are scan extra anon 1 page, we will observe tons swap usage
-> > > after few days.
-> > > 
-> > > please don't only think benchmark.
-> > 
-> > OK the days-of-streaming-io typically happen in file servers.  Suppose
-> > a file server with 16GB memory, 1GB of which is consumed by anonymous
-> > pages, others are for page cache.
-> > 
-> > Assume that the exact file:anon ratio computed by the get_scan_ratio()
-> > algorithm is 1000:1. In that case percent[0]=0.1 and is rounded down
-> > to 0, which keeps the anon pages in memory for the few days.
-> > 
-> > Now with Shaohua's patch, nr[0] = (262144/4096)/1000 = 0.06 will also
-> > be rounded down to 0. It only becomes >=1 when
-> > - reclaim runs into trouble and priority goes low
-> > - anon list goes huge
-> > 
-> > So I guess Shaohua's patch still has reasonable "underflow" threshold :)
-> 
-> Again, I didn't said his patch is no worth. I only said we don't have to
-> ignore the downside. 
+The following series implements some additional stats for IO controller.
 
-Right, we should document both the upside and downside.
+These stats have helped us debug issues with earlier IO controller
+versions and should be useful now as well.
+We've been using these stats for monitoring and debugging problems after the
+fact as these stats can be collected and stored for later use.
 
-The main difference happens when file:anon scan ratio > 100:1.
+One might argue that most of this information can be exported using blktrace
+when debugging. However, blktrace has non-trivial performance impact and
+cannot be always turned on. These stats provide a way for continuous monitoring
+without losing much performance on rotational disks. We've been able to look
+at these stats and debug issues after problems have been reported in the wild
+and understand the IO pattern of the affected workloads.
+Some of these stats are also a good data source for high-level analysis and
+capacity planning.
 
-For the current percent[] based computing, percent[0]=0 hence nr[0]=0
-which disables anon list scan unconditionally, for good or for bad.
+This patchset adds 4 stats and I will send out another patchset later for
+stats like io_merged and some stats that can be turned on only for
+debugging - idle_time (total time spent idling for this blkio_group),
+wait_time (total time spent by the blkio_group waiting before any one of its
+queues got a timeslice). I've tried to breakdown the stats and sent the most
+basic ones here.
 
-For the direct nr[] computing,
-- nr[0] will be 0 for typical file servers, because with priority=12
-  and anon lru size < 1.6GB, nr[0] = (anon_size/4096)/100 < 0
-- nr[0] will be non-zero when priority=1 and anon_size > 100 pages,
-  this stops OOM for Shaohua's test case, however may not be enough to
-  guarantee safety (your previous reverting patch can provide this
-  guarantee).
+Changelog from v2 (most based on Vivek Goyal's comments):
+o Initialize blkg->stats_lock
+o rename io_add_stat to blkio_add_stat and declare it static
+o use bool for direction and sync
+o derive direction and sync info from existing rq methods
+o use 12 for major:minor string length
+o define io_service_time better to cover the NCQ case
+o add a separate reset_stats interface
+o make the indexed stats a 2d array to simplify macro and function pointer code
 
-I liked Shaohua's patch a lot -- it adapts well to both the
-file-server case and the mostly-anon-pages case :)
+Changelog from v1 (most based on Vivek Goyal's comments):
+o blkio.time now exports in jiffies as before
+o Added stats description in patch description and
+  Documentation/cgroup/blkio-controller.txt
+o Prefix all stats functions with blkio and make them static as applicable
+o replace IO_TYPE_MAX with IO_TYPE_TOTAL
+o Moved #define constant to top of blk-cgroup.c
+o Pass dev_t around instead of char *
+o Add note to documentation file about resetting stats
+o use BLK_CGROUP_MODULE in addition to BLK_CGROUP config option in #ifdef
+ statements
+o Avoid struct request specific knowledge in blk-cgroup. blk-cgroup.h now has
+ rq_direction() and rq_sync() functions which are used by CFQ and when using
+ io-controller at a higher level, bio_* functions can be added.
+---
 
-Thanks,
-Fengguang
+Divyesh Shah (3):
+      Increment the blkio cgroup stats for real now.
+      Add io controller stats like
+      Remove per-cfqq nr_sectors as we'll be passing that info at request dispatch
+
+
+ Documentation/cgroups/blkio-controller.txt |   40 +++++
+ block/blk-cgroup.c                         |  225 ++++++++++++++++++++++++++--
+ block/blk-cgroup.h                         |   79 ++++++++--
+ block/blk-core.c                           |    6 -
+ block/cfq-iosched.c                        |   18 +-
+ include/linux/blkdev.h                     |   38 +++++
+ 6 files changed, 356 insertions(+), 50 deletions(-)
+
+-- 
+Divyesh
