@@ -1,207 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751176Ab0DFEgK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 00:36:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11092 "EHLO mx1.redhat.com"
+	id S1751265Ab0DFEtX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 00:49:23 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53086 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751068Ab0DFEgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 00:36:02 -0400
-Message-ID: <4BBABAB8.4010401@redhat.com>
-Date: Tue, 06 Apr 2010 12:38:16 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
+	id S1751168Ab0DFEtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 00:49:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,370,1267430400"; 
+   d="scan'208";a="610512927"
+Date: Tue, 6 Apr 2010 12:49:10 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       "Li, Shaohua" <shaohua.li@intel.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
+Message-ID: <20100406044910.GA16303@localhost>
+References: <20100406105324.7E30.A69D9226@jp.fujitsu.com> <20100406023043.GA12420@localhost> <20100406115543.7E39.A69D9226@jp.fujitsu.com> <20100406033114.GB13169@localhost> <4BBAAD3F.3090900@redhat.com>
 MIME-Version: 1.0
-To: Andy Gospodarek <andy@greyhouse.net>
-CC: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-       netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
-       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-       Jeff Moyer <jmoyer@redhat.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
-       David Miller <davem@davemloft.net>
-Subject: Re: [v2 Patch 3/3] bonding: make bonding support netpoll
-References: <20100405091605.4890.31181.sendpatchset@localhost.localdomain> <20100405091628.4890.30541.sendpatchset@localhost.localdomain> <20100405194356.GA10488@gospo.rdu.redhat.com> <4BBA9FDB.4040909@redhat.com>
-In-Reply-To: <4BBA9FDB.4040909@redhat.com>
-Content-Type: multipart/mixed;
- boundary="------------080408090506020501050800"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BBAAD3F.3090900@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080408090506020501050800
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-
-Cong Wang wrote:
-> Before I try to reproduce it, could you please try to replace the 
-> 'read_lock()'
-> in slaves_support_netpoll() with 'read_lock_bh()'? (read_unlock() too) 
-> Try if this helps.
+On Tue, Apr 06, 2010 at 11:40:47AM +0800, Rik van Riel wrote:
+> On 04/05/2010 11:31 PM, Wu Fengguang wrote:
+> > On Tue, Apr 06, 2010 at 10:58:43AM +0800, KOSAKI Motohiro wrote:
+> >> Again, I didn't said his patch is no worth. I only said we don't have to
+> >> ignore the downside.
+> >
+> > Right, we should document both the upside and downside.
 > 
+> The downside is obvious: streaming IO (used once data
+> that does not fit in the cache) can push out data that
+> is used more often - requiring that it be swapped in
+> at a later point in time.
+> 
+> I understand what Shaohua's patch does, but I do not
+> understand the upside.  What good does it do to increase
+> the size of the cache for streaming IO data, which is
+> generally touched only once?
 
-Confirmed. Please use the attached patch instead, for your testing.
+Not that bad :)  With Shaohua's patch the anon list will typically
+_never_ get scanned, just like before.
 
-Thanks!
+If it's mostly use-once IO, file:anon will be 1000 or even 10000, and
+priority=12.  Then only anon lists larger than 16GB or 160GB will get
+nr[0] >= 1.
 
+> What kind of performance benefits can we get by doing
+> that?
 
---------------080408090506020501050800
-Content-Type: text/x-patch;
- name="bonding-support-netpoll.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline;
- filename="bonding-support-netpoll.diff"
+So vmscan behavior and performance remain the same as before.
 
-Index: linux-2.6/drivers/net/bonding/bond_main.c
-===================================================================
---- linux-2.6.orig/drivers/net/bonding/bond_main.c
-+++ linux-2.6/drivers/net/bonding/bond_main.c
-@@ -59,6 +59,7 @@
- #include <linux/uaccess.h>
- #include <linux/errno.h>
- #include <linux/netdevice.h>
-+#include <linux/netpoll.h>
- #include <linux/inetdevice.h>
- #include <linux/igmp.h>
- #include <linux/etherdevice.h>
-@@ -430,7 +431,18 @@ int bond_dev_queue_xmit(struct bonding *
- 	}
- 
- 	skb->priority = 1;
--	dev_queue_xmit(skb);
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	if (bond->dev->priv_flags & IFF_IN_NETPOLL) {
-+		struct netpoll *np = bond->dev->npinfo->netpoll;
-+		slave_dev->npinfo = bond->dev->npinfo;
-+		np->real_dev = np->dev = skb->dev;
-+		slave_dev->priv_flags |= IFF_IN_NETPOLL;
-+		netpoll_send_skb(np, skb);
-+		slave_dev->priv_flags &= ~IFF_IN_NETPOLL;
-+		np->dev = bond->dev;
-+	} else
-+#endif
-+		dev_queue_xmit(skb);
- 
- 	return 0;
- }
-@@ -1329,6 +1341,61 @@ static void bond_detach_slave(struct bon
- 	bond->slave_cnt--;
- }
- 
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+/*
-+ * You must hold read lock of bond->lock before calling this.
-+ */
-+static bool slaves_support_netpoll(struct net_device *bond_dev)
-+{
-+	struct bonding *bond = netdev_priv(bond_dev);
-+	struct slave *slave;
-+	int i = 0;
-+	bool ret = true;
-+
-+	bond_for_each_slave(bond, slave, i) {
-+		if ((slave->dev->priv_flags & IFF_DISABLE_NETPOLL)
-+				|| !slave->dev->netdev_ops->ndo_poll_controller)
-+			ret = false;
-+	}
-+	return i != 0 && ret;
-+}
-+
-+static void bond_poll_controller(struct net_device *bond_dev)
-+{
-+	struct net_device *dev = bond_dev->npinfo->netpoll->real_dev;
-+	if (dev != bond_dev)
-+		netpoll_poll_dev(dev);
-+}
-+
-+static void bond_netpoll_cleanup(struct net_device *bond_dev)
-+{
-+	struct bonding *bond = netdev_priv(bond_dev);
-+	struct slave *slave;
-+	const struct net_device_ops *ops;
-+	int i;
-+
-+	read_lock(&bond->lock);
-+	bond_dev->npinfo = NULL;
-+	bond_for_each_slave(bond, slave, i) {
-+		if (slave->dev) {
-+			ops = slave->dev->netdev_ops;
-+			if (ops->ndo_netpoll_cleanup)
-+				ops->ndo_netpoll_cleanup(slave->dev);
-+			else
-+				slave->dev->npinfo = NULL;
-+		}
-+	}
-+	read_unlock(&bond->lock);
-+}
-+
-+#else
-+
-+static void bond_netpoll_cleanup(struct net_device *bond_dev)
-+{
-+}
-+
-+#endif
-+
- /*---------------------------------- IOCTL ----------------------------------*/
- 
- static int bond_sethwaddr(struct net_device *bond_dev,
-@@ -1735,6 +1802,18 @@ int bond_enslave(struct net_device *bond
- 
- 	bond_set_carrier(bond);
- 
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	if (slaves_support_netpoll(bond_dev)) {
-+		bond_dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
-+		if (bond_dev->npinfo)
-+			slave_dev->npinfo = bond_dev->npinfo;
-+	} else if (!(bond_dev->priv_flags & IFF_DISABLE_NETPOLL)) {
-+		bond_dev->priv_flags |= IFF_DISABLE_NETPOLL;
-+		pr_info("New slave device %s does not support netpoll\n",
-+			slave_dev->name);
-+		pr_info("Disabling netpoll support for %s\n", bond_dev->name);
-+	}
-+#endif
- 	read_unlock(&bond->lock);
- 
- 	res = bond_create_slave_symlinks(bond_dev, slave_dev);
-@@ -1929,6 +2008,17 @@ int bond_release(struct net_device *bond
- 
- 	netdev_set_master(slave_dev, NULL);
- 
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	read_lock_bh(&bond->lock);
-+	if (slaves_support_netpoll(bond_dev))
-+		bond_dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
-+	read_unlock_bh(&bond->lock);
-+	if (slave_dev->netdev_ops->ndo_netpoll_cleanup)
-+		slave_dev->netdev_ops->ndo_netpoll_cleanup(slave_dev);
-+	else
-+		slave_dev->npinfo = NULL;
-+#endif
-+
- 	/* close slave before restoring its mac address */
- 	dev_close(slave_dev);
- 
-@@ -4448,6 +4538,10 @@ static const struct net_device_ops bond_
- 	.ndo_vlan_rx_register	= bond_vlan_rx_register,
- 	.ndo_vlan_rx_add_vid 	= bond_vlan_rx_add_vid,
- 	.ndo_vlan_rx_kill_vid	= bond_vlan_rx_kill_vid,
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	.ndo_netpoll_cleanup	= bond_netpoll_cleanup,
-+	.ndo_poll_controller	= bond_poll_controller,
-+#endif
- };
- 
- static void bond_setup(struct net_device *bond_dev)
-@@ -4533,6 +4627,8 @@ static void bond_uninit(struct net_devic
- {
- 	struct bonding *bond = netdev_priv(bond_dev);
- 
-+	bond_netpoll_cleanup(bond_dev);
-+
- 	/* Release the bonded slaves */
- 	bond_release_all(bond_dev);
- 
+For really large anon list, such workload is beyond our imagination.
+So we cannot assert "don't scan anon list" will be a benefit.
 
---------------080408090506020501050800--
+On the other hand, in the test case of "do stream IO when most memory
+occupied by tmpfs pages", it is very bad behavior refuse to scan anon
+list in normal and suddenly start scanning _the whole_ anon list when
+priority hits 0. Shaohua's patch helps it by gradually increasing the
+scan nr of anon list as memory pressure increases.
+
+Thanks,
+Fengguang
+
+> > The main difference happens when file:anon scan ratio>  100:1.
+> >
+> > For the current percent[] based computing, percent[0]=0 hence nr[0]=0
+> > which disables anon list scan unconditionally, for good or for bad.
+> >
+> > For the direct nr[] computing,
+> > - nr[0] will be 0 for typical file servers, because with priority=12
+> >    and anon lru size<  1.6GB, nr[0] = (anon_size/4096)/100<  0
+> > - nr[0] will be non-zero when priority=1 and anon_size>  100 pages,
+> >    this stops OOM for Shaohua's test case, however may not be enough to
+> >    guarantee safety (your previous reverting patch can provide this
+> >    guarantee).
+> >
+> > I liked Shaohua's patch a lot -- it adapts well to both the
+> > file-server case and the mostly-anon-pages case :)
+> 
+> 
