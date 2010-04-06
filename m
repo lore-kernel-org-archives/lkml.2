@@ -1,92 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845Ab0DFPll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 11:41:41 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:35134 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752951Ab0DFPlf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 11:41:35 -0400
-Date: Tue, 6 Apr 2010 11:40:47 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Btrfs updates
-Message-ID: <20100406154047.GE5413@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20100405193637.GC21620@think>
+	id S1756219Ab0DFPmL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 11:42:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64937 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752951Ab0DFPmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 11:42:04 -0400
+Message-ID: <4BBB55DC.8070509@redhat.com>
+Date: Tue, 06 Apr 2010 11:40:12 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100405193637.GC21620@think>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4BBB5609.0138:SCFMA4539814,ss=1,fgs=0
+To: Minchan Kim <minchan.kim@gmail.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Borislav Petkov <bp@alien8.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>
+Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux 2.6.34-rc3)
+References: <20100402175937.GA19690@liondog.tnic>	 <alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org>	 <20100406173754.7E5A.A69D9226@jp.fujitsu.com> <4BBB475A.7070002@redhat.com> <1270568096.1814.145.camel@barrios-desktop>
+In-Reply-To: <1270568096.1814.145.camel@barrios-desktop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05, 2010 at 03:36:37PM -0400, Chris Mason wrote:
-> Hello everyone,
-> 
-> The master branch of the btrfs-unstable repo has a collection of fixes:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git master
-> 
+On 04/06/2010 11:34 AM, Minchan Kim wrote:
 
-That pull request was missing another enospc fix from Josef, and Yan
-Zheng noticed we were sometimes trying to allocate zero sized chunks
-from the disk pool.  I've updated the git tree with two new commits,
-here is the corrected shortlog:
+> Let's see the unlink_anon_vmas.
+>
+> 1. list_for_each_entry_safe(avc,next, vma->anon_vma_chain, same_vma)
+> 2. 	anon_vma_unlink
+> 3. 		spin_lock(anon_vma->lock)<-- HERE LOCK.
+> 4.		list_del(anon_vma_chain->same_anon_vma);
+>
+> What if anon_vma is destroyed and reuse by SLAB_XXX_RCU for another
+> anon_vma object between 2 and 3?
+> I mean how to make sure 3) does lock valid anon_vma?
+>
+> I hope it is culprit.
 
-Josef Bacik (5) commits (+47/-96):
-    Btrfs: fail to mount if we have problems reading the block groups (+12/-4)
-    Btrfs: fix small race with delalloc flushing waitqueue's (+4/-5)
-    Btrfs: fix chunk allocate size calculation (+3/-1)
-    Btrfs: fix data enospc check overflow (+15/-5)
-    Btrfs: kill max_extent mount option (+13/-81)
+How can the anon_vma get destroyed and reused, when this
+anon_vma_chain still has a reference to it (and the
+anon_vma has not been freed yet)?
 
-Zhao Lei (3) commits (+9/-12):
-    Btrfs: Simplify num_stripes's calculation logical for __btrfs_alloc_chunk() (+2/-2)
-    Btrfs: Add error handle for btrfs_search_slot() in btrfs_read_chunk_tree() (+2/-0)
-    Btrfs: Remove unnecessary finish_wait() in wait_current_trans() (+5/-10)
-
-Dan Carpenter (3) commits (+5/-1):
-    Btrfs: handle kmalloc() failure in inode lookup ioctl (+3/-0)
-    Btrfs: check btrfs_get_extent return for IS_ERR() (+1/-1)
-    Btrfs: dereferencing freed memory (+1/-0)
-
-Chris Mason (2) commits (+10/-0):
-    Btrfs: make sure the chunk allocator doesn't create zero length chunks (+6/-0)
-    Btrfs: add check for changed leaves in setup_leaf_for_split (+4/-0)
-
-Sage Weil (1) commits (+31/-66):
-    Btrfs: create snapshot references in same commit as snapshot
-
-Andrea Gelmini (1) commits (+0/-1):
-    Btrfs: remove duplicate include in ioctl.c
-
-Miao Xie (1) commits (+4/-1):
-    Btrfs: add NULL check for do_walk_down()
-
-Nick Piggin (1) commits (+5/-32):
-    Btrfs: use add_to_page_cache_lru, use __page_cache_alloc
-
-Total: (17) commits
-
- fs/btrfs/transaction.c  |  112 +++++++++++++++---------------------------------
- fs/btrfs/inode.c        |   59 +------------------------
- fs/btrfs/extent-tree.c  |   43 ++++++++++++------
- fs/btrfs/super.c        |   23 +--------
- fs/btrfs/compression.c  |   22 +--------
- fs/btrfs/volumes.c      |   16 +++++-
- fs/btrfs/extent_io.c    |   15 ------
- fs/btrfs/disk-io.c      |   12 +++--
- fs/btrfs/ioctl.c        |    7 ++-
- fs/btrfs/ordered-data.c |    6 +-
- fs/btrfs/ctree.c        |    4 +
- fs/btrfs/ctree.h        |    1 
- 12 files changed, 111 insertions(+), 209 deletions(-)
+What combination of circumstances is necessary for
+your bug hypothetical to happen?
