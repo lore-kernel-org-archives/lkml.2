@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab0DFJkg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 05:40:36 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:43855 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228Ab0DFJka (ORCPT
+	id S1752751Ab0DFJpI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 05:45:08 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:33467 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821Ab0DFJpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 05:40:30 -0400
-Message-ID: <4BBB0167.2040903@ru.mvista.com>
-Date: Tue, 06 Apr 2010 13:39:51 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Tue, 6 Apr 2010 05:45:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=eV9+A1dvxXCoebdx90CjYOP8FUDFOcp0Ed0dv9CAuibfjPi3AX9AMscE5bP4pyLaqo
+         tGtdo9Jin57OnJMwR49hyk8B1EfAkFE1QlBQEESyLKUIi3cfkOpW4uXE1Cfpxz1YlMMd
+         Mhn1RQf22NQT7twOFjhsL4T8eOCIRUQ118Jrc=
+Date: Tue, 6 Apr 2010 11:44:54 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+       linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+       tglx@linutronix.de, gregkh@suse.de
+Subject: Re: [PATCH] Separate lock events with types
+Message-ID: <20100406094451.GC5147@nowhere>
+References: <20100129221252.GA5052@nowhere> <1267002166-7281-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <20100326233259.GI7166@nowhere> <1270542366.1597.720.camel@laptop>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       David Vrabel <david.vrabel@csr.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/11] drivers/usb/wusbcore/wusbhc.h: Remove unused dev_info
- from struct wusb_port
-References: <20100304232928.2e45bdd1.akpm@linux-foundation.org> <8ec25276e62c8b9669ad8e46a6f5f9cbb0f507c3.1270493677.git.joe@perches.com>
-In-Reply-To: <8ec25276e62c8b9669ad8e46a6f5f9cbb0f507c3.1270493677.git.joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1270542366.1597.720.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, Apr 06, 2010 at 10:26:06AM +0200, Peter Zijlstra wrote:
+> On Sat, 2010-03-27 at 00:33 +0100, Frederic Weisbecker wrote:
+> > So if we store the lock type in the lockdep_map, we can just dump
+> > the type on lock class initialization:
+> > 
+> > - on register_lock_class
+> > - on event injection to catchup with lock that have already registered
+> > 
+> > That's what does my tree perf/inject (minus the lock type), but this
+> > all require a redesign, in both ftrace and perf sides.
+> > 
+> 
+> Right, and I don't like to bloat dep_map for no reason. I still think
+> all this lock type stuff is a waste of time.
 
-Joe Perches wrote:
 
-> There is a macro called dev_info that prints struct device specific
-> information.  Having variables with the same name can be confusing and
-> prevents conversion of the macro to a function.
->
-> Rename the existing dev_info variables to something else in preparation
-> to converting the dev_info macro to a function.
->   
+Again, it makes no sense to mix up reports of spinlocks, rwlocks, mutexes
+or whatever together in the same latency report.
 
-   You're not renaming the variable in this case, you're removing a field.
+I agree with you that such report makes no sense if you don't look at
+the code and then find the nature of the locks on the deeper overview.
 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/usb/wusbcore/wusbhc.h |   10 ----------
->  1 files changed, 0 insertions(+), 10 deletions(-)
->
-> diff --git a/drivers/usb/wusbcore/wusbhc.h b/drivers/usb/wusbcore/wusbhc.h
-> index 759cda5..dffda29 100644
-> --- a/drivers/usb/wusbcore/wusbhc.h
-> +++ b/drivers/usb/wusbcore/wusbhc.h
-> @@ -185,15 +185,6 @@ struct wusb_port {
->   *
->   *                 Read/Write protected by @mutex
->   *
-> - * @dev_info       This array has ports_max elements. It is used to
-> - *                 give the HC information about the WUSB devices (see
-> - *                 'struct wusb_dev_info').
-> - *
-> - *	           For HWA we need to allocate it in heap; for WHCI it
-> - *                 needs to be permanently mapped, so we keep it for
-> - *                 both and make it easy. Call wusbhc->dev_info_set()
-> - *                 to update an entry.
-> - *
->   * @ports_max	   Number of simultaneous device connections (fake
->   *                 ports) this HC will take. Read-only.
->   *
-> @@ -259,7 +250,6 @@ struct wusbhc {
->  	struct mutex mutex;			/* locks everything else */
->  	u16 cluster_id;				/* Wireless USB Cluster ID */
->  	struct wusb_port *port;			/* Fake port status handling */
-> -	struct wusb_dev_info *dev_info;		/* for Set Device Info mgmt */
->  	u8 ports_max;
->  	unsigned active:1;			/* currently xmit'ing MMCs */
->  	struct wuie_keep_alive keep_alive_ie;	/* protected by mutex */
->   
+But the first overview is going to be unhelpful at best if you have
+everything in the same linear report.
 
-WBR, Sergei
+You'll naturally find the mutexes first reporting the worst latencies,
+then rwsem, then the spinlocks, then the read rwlocks (read) at the end
+of the list (depending on the cases).
+
+And yet their latency intervals have utter different meanings. You can't
+provide a taste report that mixes beers and wines qualities based on the
+same magnitudes.
+
+I really believe perf lock is going to suck at best without this.
+
 
