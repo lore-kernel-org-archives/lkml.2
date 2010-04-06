@@ -1,70 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756688Ab0DFOvu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 10:51:50 -0400
-Received: from mail-pz0-f193.google.com ([209.85.222.193]:50599 "EHLO
-	mail-pz0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754745Ab0DFOvp convert rfc822-to-8bit (ORCPT
+	id S1756513Ab0DFOxP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 10:53:15 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:61284 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755750Ab0DFOxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 10:51:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=kbyiFrSMzKK1B3pLvtBnfadBL6bISy+eHJgHlX8m8EaIP3FQca+ij4G40oQqiV7Bon
-         dGVjOFR3OSY9F5dZfcaNeHbcboqxntEZo/SfIr7qXJJ+xytW2RBYjcACyV9qeWkJmxJh
-         RfS2gevAJpErTIBhPr1ZwOv9UVzHJaarG+Gzo=
+	Tue, 6 Apr 2010 10:53:08 -0400
+From: "Hans-Peter Jansen" <hpj@urpla.net>
+To: Dave Chinner <david@fromorbit.com>
+Subject: Re: 2.6.34-rc3: simple du (on a big xfs tree) triggers oom killer [bisected: 57817c68229984818fea9e614d6f95249c3fb098]
+User-Agent: KMail/1.9.10
+Cc: linux-kernel@vger.kernel.org, opensuse-kernel@opensuse.org,
+       xfs@oss.sgi.com
+References: <201004050049.17952.hpj@urpla.net> <201004051335.41857.hpj@urpla.net> <20100405230600.GA3335@dastard>
+In-Reply-To: <20100405230600.GA3335@dastard>
 MIME-Version: 1.0
-In-Reply-To: <1270277000.2686.20.camel@sbs-t61>
-References: <v2o817ecb6f1003311859nb14bab83y80f743a0accc5028@mail.gmail.com>
-	 <1270277000.2686.20.camel@sbs-t61>
-Date: Tue, 6 Apr 2010 10:51:44 -0400
-Message-ID: <g2g817ecb6f1004060751s1fd3d42bqc19b5c36b33c3c13@mail.gmail.com>
-Subject: Re: [PATCH 1/4] [tip:x86/mm] Correcting improper large page 
-	preservation
-From: Siarhei Liakh <sliakh.lkml@gmail.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       James Morris <jmorris@namei.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
-       Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Length: 4856
+Date: Tue, 6 Apr 2010 16:52:57 +0200
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004061652.58189.hpj@urpla.net>
+X-Provags-ID: V01U2FsdGVkX1/D7KPhlI/B7iaRWKqER4aIBZ9k0IkA9XU0AHu
+ VOlYcPJPtdQS95odmfNMyYOIR0OAzU5v4WqWICCdgwkHcZ1kng
+ 6ca7nYpgpMELxdBm5gWYzv6ursjcshp
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 3, 2010 at 2:43 AM, Suresh Siddha <suresh.b.siddha@intel.com> wrote:
-> On Wed, 2010-03-31 at 18:59 -0700, Siarhei Liakh wrote:
->> +     /*
->> +      * .data and .bss should always be writable.
->> +      */
->> +     if ((within(pfn, __pa((unsigned long)_sdata) >> PAGE_SHIFT,
->> +                __pa((unsigned long)_edata) >> PAGE_SHIFT)) ||
->> +         (within(pfn, __pa((unsigned long)__bss_start) >> PAGE_SHIFT,
->> +                __pa((unsigned long)__bss_stop) >> PAGE_SHIFT))) {
->> +             pgprot_val(required) |= _PAGE_RW;
->> +     }
->
-> I have reviewed this patch and the only comment I have is:
->
-> On 64bit kernels, kernel text/data mapping and kernel identity mappings
-> are different virtual addresses mapping to same pfn ranges. For the
-> data/bss pages, does it help (in identifying certain data corruptions
-> more easily) in making the kernel identity mapping to be set to
-> read-only and enforce the need of RW only for the kernel data mappings.
->
-> Or is there some obscure code that uses something like
-> __va(__pa(data_symbol)) and writes to it?
->
-> If not, we can remove the __pa() constructs above and use the addr for
-> comparisons.
+Hi Dave,
 
-Done.
-Patch V2 have been posted.
+On Tuesday 06 April 2010, 01:06:00 Dave Chinner wrote:
+> On Mon, Apr 05, 2010 at 01:35:41PM +0200, Hans-Peter Jansen wrote:
+> > >
+> > > Oh, this is a highmem box. You ran out of low memory, I think, which
+> > > is where all the inodes are cached. Seems like a VM problem or a
+> > > highmem/lowmem split config problem to me, not anything to do with
+> > > XFS...
+
+With all due respect, I disagree. See below.
+
+> > Might be, I don't have a chance to test this on a different FS. Thanks
+> > for the answer anyway, Dave. I hope, you don't mind, that I keep you
+> > copied on this thread..
+> >
+> > This matter is, I cannot locate the problem from the syslog output.
+> > Might be a "can't see the forest because all the trees" syndrome.
+>
+> Well, I have to ask why you are running a 32bit PAE kernel when your
+> CPU is:
+>
+> <6>[    0.085062] CPU0: Intel(R) Xeon(R) CPU           X3460  @ 2.80GHz
+> stepping 05
+>
+> 64bit capable.  Use a 64 bit kernel and this problem should go away.
+
+Sure, but for compatibility reasons with a customer setup, that I'm fully 
+responsible for and we strongly depend on, it is i586 still. (and it's a 
+system, that I've full access on only for a few hours on sundays, which 
+punishes my family..).
+
+Dave, I really don't want to disappoint you, but a lengthy bisection session 
+points to:
+
+57817c68229984818fea9e614d6f95249c3fb098 is the first bad commit
+commit 57817c68229984818fea9e614d6f95249c3fb098
+Author: Dave Chinner <david@fromorbit.com>
+Date:   Sun Jan 10 23:51:47 2010 +0000
+
+    xfs: reclaim all inodes by background tree walks
+    
+    We cannot do direct inode reclaim without taking the flush lock to
+    ensure that we do not reclaim an inode under IO. We check the inode
+    is clean before doing direct reclaim, but this is not good enough
+    because the inode flush code marks the inode clean once it has
+    copied the in-core dirty state to the backing buffer.
+    
+    It is the flush lock that determines whether the inode is still
+    under IO, even though it is marked clean, and the inode is still
+    required at IO completion so we can't reclaim it even though it is
+    clean in core. Hence the requirement that we need to take the flush
+    lock even on clean inodes because this guarantees that the inode
+    writeback IO has completed and it is safe to reclaim the inode.
+    
+    With delayed write inode flushing, we coul dend up waiting a long
+    time on the flush lock even for a clean inode. The background
+    reclaim already handles this efficiently, so avoid all the problems
+    by killing the direct reclaim path altogether.
+    
+    Signed-off-by: Dave Chinner <david@fromorbit.com>
+    Reviewed-by: Christoph Hellwig <hch@lst.de>
+    Signed-off-by: Alex Elder <aelder@sgi.com>
+
+:040000 040000 9cada5739037ecd59afb358cf5ed6186b82d5236 
+8e6b6febccba69bc4cdbfd1886d545c369d64c41 M      fs
+
+I will try to prove this by reverting this commit on a 2.6.33.2 build, but
+that's going to take another day, or so.
+
+> > It's hard to believe, that a current kernel on a current system with 12
+> > GB, even if using the insane pae on i586 is not able to cope with an du
+> > on a 1.1 TB file tree. Since du is invokable by users, this creates a
+> > pretty ugly DOS attack for local users.
+>
+> Agreed. And FWIW, don't let your filesystems get near ENOSPC on
+> 2.6.34-rc, either....
+>
+> (i.e. under sustained write load, 2.6.34-rc will hit the OOM killer
+> on page cache allocation before the filesystem can report ENOSPC to
+> the user application.  Test 224 in the xfsqa suite on a VM w/ 1GB
+> RAM will trigger this with > 90% reliability....)
+
+Hmm, thanks for the warning. Will resort to 2.6.33.2 for now on my servers
+and keep an eye on the xfs commit logs...
+
+Cheers && greetings to the orbit ;-),
+Pete
+
+For the sake of completeness, here's the revert:
+
+---
+commit dfe0d292280ad21c9cf3f240bb415913715d8980
+Author: Hans-Peter Jansen <hpj@urpla.net>
+Date:   Tue Apr 6 16:05:47 2010 +0200
+
+    Revert "xfs: reclaim all inodes by background tree walks"
+    
+    This reverts commit 57817c68229984818fea9e614d6f95249c3fb098.
+    
+    Avoid triggering the oom killer with a simple du on a big xfs tree on i586.
+    
+    Signed-off-by: Hans-Peter Jansen <hpj@urpla.net>
+
+:100644 100644 52e06b4... a76fc01... M	fs/xfs/linux-2.6/xfs_super.c
+
+diff --git a/fs/xfs/linux-2.6/xfs_super.c b/fs/xfs/linux-2.6/xfs_super.c
+index 52e06b4..a76fc01 100644
+--- a/fs/xfs/linux-2.6/xfs_super.c
++++ b/fs/xfs/linux-2.6/xfs_super.c
+@@ -954,14 +954,16 @@ xfs_fs_destroy_inode(
+ 	ASSERT_ALWAYS(!xfs_iflags_test(ip, XFS_IRECLAIM));
+ 
+ 	/*
+-	 * We always use background reclaim here because even if the
+-	 * inode is clean, it still may be under IO and hence we have
+-	 * to take the flush lock. The background reclaim path handles
+-	 * this more efficiently than we can here, so simply let background
+-	 * reclaim tear down all inodes.
++	 * If we have nothing to flush with this inode then complete the
++	 * teardown now, otherwise delay the flush operation.
+ 	 */
++	if (!xfs_inode_clean(ip)) {
++		xfs_inode_set_reclaim_tag(ip);
++		return;
++	}
++
+ out_reclaim:
+-	xfs_inode_set_reclaim_tag(ip);
++	xfs_ireclaim(ip);
+ }
+ 
+ /*
+
