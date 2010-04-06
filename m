@@ -1,90 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756537Ab0DFUp6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 16:45:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59872 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755649Ab0DFUpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 16:45:52 -0400
-Date: Tue, 6 Apr 2010 16:39:56 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Chris Wright <chrisw@sous-sol.org>, Joerg Roedel <joro@8bytes.org>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Bernhard Walle <bernhard@bwalle.de>, nhorman@redhat.com,
-       nhorman@tuxdriver.com, kexec@lists.infradead.org,
-       linux-kernel@vger.kernel.org, hbabu@us.ibm.com,
-       iommu@lists.linux-foundation.org
-Subject: Re: [PATCH 3/4] Revert "x86: disable IOMMUs on kernel crash"
-Message-ID: <20100406203956.GI3029@redhat.com>
-References: <20100403012751.834020949@sous-sol.org> <20100403012820.229410717@sous-sol.org> <20100403174128.GQ24846@8bytes.org> <m1vdc8juju.fsf@fess.ebiederm.org> <4BB83EAE.5090609@bwalle.de> <20100404085338.GU24846@8bytes.org> <m17hond01n.fsf@fess.ebiederm.org> <20100404100101.GW24846@8bytes.org> <20100406174257.GG29241@sequoia.sous-sol.org> <20100406175106.GH28166@amd.com>
+	id S1756594Ab0DFUq0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 16:46:26 -0400
+Received: from isilmar.linta.de ([213.133.102.198]:38909 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756353Ab0DFUqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 16:46:19 -0400
+Date: Tue, 6 Apr 2010 22:45:37 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Arjan van de Ven <arjan@linux.intel.com>,
+       Dmitry Torokhov <dtor@mail.ru>
+Subject: Re: A few questions and issues with dynticks, NOHZ and powertop
+Message-ID: <20100406204537.GA4324@comet.dominikbrodowski.net>
+Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Alan Stern <stern@rowland.harvard.edu>,
+	linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+	Arjan van de Ven <arjan@linux.intel.com>,
+	Dmitry Torokhov <dtor@mail.ru>
+References: <20100404233702.GA24102@linux.vnet.ibm.com>
+ <20100404204725.GC2644@linux.vnet.ibm.com>
+ <20100405210340.GA4638@comet.dominikbrodowski.net>
+ <20100405213852.GI2525@linux.vnet.ibm.com>
+ <20100405221123.GA1903@isilmar.linta.de>
+ <20100405223130.GM2525@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100406175106.GH28166@amd.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20100405223130.GM2525@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 06, 2010 at 07:51:06PM +0200, Joerg Roedel wrote:
-> On Tue, Apr 06, 2010 at 10:42:57AM -0700, Chris Wright wrote:
-> > * Joerg Roedel (joro@8bytes.org) wrote:
-> > > On Sun, Apr 04, 2010 at 02:44:36AM -0700, Eric W. Biederman wrote:
-> > > > Joerg Roedel <joro@8bytes.org> writes:
-> > > > 
-> > > > > On Sun, Apr 04, 2010 at 09:24:30AM +0200, Bernhard Walle wrote:
-> > > > >> Am 03.04.10 19:49, schrieb Eric W. Biederman:
-> > > > >> > Not a problem.  We require a lot of things of the kdump kernel,
-> > > > >> > and it is immediately apparent in a basic sanity test.
-> > > > >> 
-> > > > >> Also, in most cases (for example: distribution kernels), the kdump
-> > > > >> kernel nowadays is identical to the running kernel. So, if the running
-> > > > >> kernel has IOMMU support, the kdump kernel also has.
-> > > > >
-> > > > > Yes, I know. But is that a requirement for kexec?
-> > > > 
-> > > > For normal kexec no.  That path is expected to do a clean hardware
-> > > > shutdown.
-> > > > 
-> > > > For kexec on panic aka kdump the requirement is that your your crash
-> > > > kernel be able to initialize your hardware from any state it can be
-> > > > put in.
+On Mon, Apr 05, 2010 at 03:31:30PM -0700, Paul E. McKenney wrote:
+> > > 5) powertop and hrtimer_start_range_ns (tick_sched_timer) on a SMP kernel
+> > > booted with "nosmp":
 > > > 
-> > > Ok, if you show me where this is documented for everybody then I am
-> > > probably convinced :-)
-> > > We should fixup the gart initialization anyway.
-> > 
-> > So, you planning to pull in all 4 patches then?
+> > > Wakeups-from-idle per second :  9.9     interval: 15.0s
+> > > ...
+> > >   48.5% (  9.4)     <kernel core> : hrtimer_start (tick_sched_timer) 
+> > >   26.1% (  5.1)     <kernel core> : cursor_timer_handler
+> > >   (cursor_timer_handle
+> > >   20.6% (  4.0)     <kernel core> : usb_hcd_poll_rh_status (rh_timer_func) 
+> > >    1.0% (  0.2)     <kernel core> : arm_supers_timer
+> > >   (sync_supers_timer_fn) 
+> > >    0.7% (  0.1)       <interrupt> : ata_piix 
+> > >    ...
+> > > 
+> > > Accoding to http://www.linuxpowertop.org , the count in the brackets is
+> > > how
+> > > many wakeups per seconds were caused by one source. Adding all _except_
+> > >   48.5% (  9.4)     <kernel core> : hrtimer_start (tick_sched_timer)
+> > > up leads to the 9.9.
 > 
-> Yes, I will apply them tomorrow and write a fix for the GART issue this
-> may introduce.
-> 
+> OK, so you further instrumented the hrtimer_sched_timer (or was it
+> tick_sched_timer?) to find the number that you were attributing to
+> rcu_needs_cpu()?
 
-Hi Joerg,
+That's what I did -- to tick_nohz_stop_sched_tick(), to see why the
+tick_sched_timer did not get stopped. Or why powertop thinks it did not
+get stopped...
 
-Going through the old mail thread, I think the commit you pointed to was
-primarily introduced to solve kexec + GART issue and not necessarily kdump
-issue.
+Patch below (works only for 1 or 2 CPUs) for all interested parties, 
+_NOT_ intended for submission, though ;)
 
-In fact disabling IOMMU patch was introduced by you.
+0x0001: CPU #1
+0x0002: inidle
+0x0004: not inidle
+0x0008: INACTIVE
+0x0010: need_resched
+0x0020: softirq
+0x0040: rcu_needs_
+0x0080: printk_needs_
+0x0100: arch_needs_
+0x0200: off-by-one 
+0x0400: skip
+0x0800: loadbalance:
+0x1000: cancel timer (SUCCESS)
+0x2000: timer was already in the past
+0x4000: hrtimer_start() (SUCCESS)
+0x8000: stop_tick (SUCCESS)
 
-Author: Joerg Roedel <joerg.roedel@amd.com>
-Date:   Tue Jun 9 17:56:09 2009 +0200
+Fixing USB-autosuspend and disabling the fbcon cursor, I'm down to
+~0.9 wakeups-per-second booting with "nosmp".
 
-    x86: disable IOMMUs on kernel crash
-    
-    If the IOMMUs are still enabled when the kexec kernel boots access to
-    the disk is not possible. This is bad for tools like kdump or anything
-    else which wants to use PCI devices.
-    
-    Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-
-I am assuming you introduced this patch because you faced issues with
-amd-iommu and not GART.
-
-So basically GART should have been working with kdump even before you
-introduced disabling iommu patch in kdump path.
-
-Thanks
-Vivek
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index f992762..6ba7bae 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -210,19 +210,35 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
+ 	u64 time_delta;
+ 	int cpu;
++	static int testrun_counter = 0;
++	int testrun = 0;
++	u64 debugdata = 0;
++
++	testrun_counter++;
++
++	if ((testrun_counter % 123) == 0)
++		testrun = 1;
+ 
+ 	local_irq_save(flags);
+ 
+ 	cpu = smp_processor_id();
+ 	ts = &per_cpu(tick_cpu_sched, cpu);
+ 
++	debugdata = cpu;
++
++	if (inidle)
++		debugdata |= 0x2;
++
++
+ 	/*
+ 	 * Call to tick_nohz_start_idle stops the last_update_time from being
+ 	 * updated. Thus, it must not be called in the event we are called from
+ 	 * irq_exit() with the prior state different than idle.
+ 	 */
+-	if (!inidle && !ts->inidle)
++	if (!inidle && !ts->inidle) {
++		debugdata |= 0x4;
+ 		goto end;
++	}
+ 
+ 	/*
+ 	 * Set ts->inidle unconditionally. Even if the system did not
+@@ -245,11 +261,15 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
+ 	}
+ 
+-	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE))
++	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE)) {
++		debugdata |= 0x8;		
+ 		goto end;
++	}
+ 
+-	if (need_resched())
++	if (need_resched()) {
++		debugdata |= 0x10;
+ 		goto end;
++	}
+ 
+ 	if (unlikely(local_softirq_pending() && cpu_online(cpu))) {
+ 		static int ratelimit;
+@@ -259,6 +279,7 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 			       (unsigned int) local_softirq_pending());
+ 			ratelimit++;
+ 		}
++		debugdata |= 0x20;
+ 		goto end;
+ 	}
+ 
+@@ -275,6 +296,12 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 	    arch_needs_cpu(cpu)) {
+ 		next_jiffies = last_jiffies + 1;
+ 		delta_jiffies = 1;
++		if (rcu_needs_cpu(cpu))
++			debugdata |= 0x40;
++		if (printk_needs_cpu(cpu))
++			debugdata |= 0x80;
++		if (arch_needs_cpu(cpu))
++			debugdata |= 0x100;
+ 	} else {
+ 		/* Get the next timer wheel timer */
+ 		next_jiffies = get_next_timer_interrupt(last_jiffies);
+@@ -284,8 +311,10 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 	 * Do not stop the tick, if we are only one off
+ 	 * or if the cpu is required for rcu
+ 	 */
+-	if (!ts->tick_stopped && delta_jiffies == 1)
++	if (!ts->tick_stopped && delta_jiffies == 1) {
++		debugdata |= 0x200;
+ 		goto out;
++	}
+ 
+ 	/* Schedule the tick, if we are at least one jiffie off */
+ 	if ((long)delta_jiffies >= 1) {
+@@ -341,8 +370,10 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 			cpumask_set_cpu(cpu, nohz_cpu_mask);
+ 
+ 		/* Skip reprogram of event if its not changed */
+-		if (ts->tick_stopped && ktime_equal(expires, dev->next_event))
++		if (ts->tick_stopped && ktime_equal(expires, dev->next_event)) {
++			debugdata |= 0x400;
+ 			goto out;
++		}
+ 
+ 		/*
+ 		 * nohz_stop_sched_tick can be called several times before
+@@ -357,8 +388,10 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 				 * sched tick not stopped!
+ 				 */
+ 				cpumask_clear_cpu(cpu, nohz_cpu_mask);
++				debugdata |= 0x800;
+ 				goto out;
+ 			}
++			debugdata |= 0x8000;
+ 
+ 			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
+ 			ts->tick_stopped = 1;
+@@ -375,7 +408,8 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 		 * If the expiration time == KTIME_MAX, then
+ 		 * in this case we simply stop the tick timer.
+ 		 */
+-		 if (unlikely(expires.tv64 == KTIME_MAX)) {
++		if (unlikely(expires.tv64 == KTIME_MAX)) {
++			debugdata |= 0x1000;
+ 			if (ts->nohz_mode == NOHZ_MODE_HIGHRES)
+ 				hrtimer_cancel(&ts->sched_timer);
+ 			goto out;
+@@ -384,9 +418,13 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 		if (ts->nohz_mode == NOHZ_MODE_HIGHRES) {
+ 			hrtimer_start(&ts->sched_timer, expires,
+ 				      HRTIMER_MODE_ABS_PINNED);
++			debugdata |= 0x2000;
+ 			/* Check, if the timer was already in the past */
+-			if (hrtimer_active(&ts->sched_timer))
++			if (hrtimer_active(&ts->sched_timer)) {
++				debugdata &= ~(0x2000);
++				debugdata |= 0x4000;
+ 				goto out;
++			}
+ 		} else if (!tick_program_event(expires, 0))
+ 				goto out;
+ 		/*
+@@ -403,6 +441,8 @@ out:
+ 	ts->last_jiffies = last_jiffies;
+ 	ts->sleep_length = ktime_sub(dev->next_event, now);
+ end:
++	if (testrun)
++		printk(KERN_DEBUG "0x%0llx\n", debugdata);
+ 	local_irq_restore(flags);
+ }
+ 
