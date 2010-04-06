@@ -1,48 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757488Ab0DFS0C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 14:26:02 -0400
-Received: from claw.goop.org ([74.207.240.146]:55799 "EHLO claw.goop.org"
+	id S1757526Ab0DFS1H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 14:27:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6091 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757164Ab0DFSZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 14:25:56 -0400
-Message-ID: <4BBB7CA3.2060802@goop.org>
-Date: Tue, 06 Apr 2010 11:25:39 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S1757428Ab0DFS06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 14:26:58 -0400
+Date: Tue, 6 Apr 2010 14:25:27 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: tytso@mit.edu, Jeff Moyer <jmoyer@redhat.com>, Jan Kara <jack@suse.cz>,
+       linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+       jens.axboe@oracle.com, esandeen@redhat.com
+Subject: Re: [patch/rft] jbd2: tag journal writes as metadata I/O
+Message-ID: <20100406182527.GF3029@redhat.com>
+References: <x49iq8b9ep5.fsf@segfault.boston.devel.redhat.com> <20100401194822.GA8401@atrey.karlin.mff.cuni.cz> <x49tyrpkjmq.fsf@segfault.boston.devel.redhat.com> <20100405174603.GA24493@thunk.org>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Dmitry Torokhov <dtor@vmware.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "pv-drivers@vmware.com" <pv-drivers@vmware.com>
-Subject: Re: [PATCH] VMware Balloon driver
-References: <20100404215202.GA13020@dtor-ws.eng.vmware.com> <20100405142419.2c9bea3d.akpm@linux-foundation.org> <20100405225833.GA25970@dtor-ws.eng.vmware.com> <4BBB622F.4070501@redhat.com>
-In-Reply-To: <4BBB622F.4070501@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100405174603.GA24493@thunk.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2010 09:32 AM, Avi Kivity wrote:
-> Yeah.  If we wanted commonality, we could make a balloon_core.c that 
-> contains the common code.  IMO that's premature, but perhaps there's 
-> some meat there (like suspend/resume support and /proc//sys interface).
+On Mon, Apr 05, 2010 at 01:46:03PM -0400, vivek.goyal2008@gmail.com wrote:
+> On Mon, Apr 05, 2010 at 11:24:13AM -0400, Jeff Moyer wrote:
+> > Jan Kara <jack@suse.cz> writes:
+> > 
+> > >   Hi,
+> > >
+> > >> In running iozone for writes to small files, we noticed a pretty big
+> > >> discrepency between the performance of the deadline and cfq I/O
+> > >> schedulers.  Investigation showed that I/O was being issued from 2
+> > >> different contexts: the iozone process itself, and the jbd2/sdh-8 thread
+> > >> (as expected).  Because of the way cfq performs slice idling, the delays
+> > >> introduced between the metadata and data I/Os were significant.  For
+> > >> example, cfq would see about 7MB/s versus deadline's 35 for the same
+> > >> workload.  I also tested fs_mark with writing and fsyncing 1000 64k
+> > >> files, and a similar 5x performance difference was observed.  Eric
+> > >> Sandeen suggested that I flag the journal writes as metadata, and once I
+> > >> did that, the performance difference went away completely (cfq has
+> > >> special logic to prioritize metadata I/O).
+> > >> 
+> > >> So, I'm submitting this patch for comments and testing.  I have a
+> > >> similar patch for jbd that I will submit if folks agree that this is a
+> > >> good idea.
+> > >   This looks like a good idea to me. I'd just be careful about data=journal
+> > > mode where even data is written via journal and thus you'd incorrectly
+> > > prioritize all the IO. I suppose that could have negative impact on performace
+> > > of other filesystems on the same disk. So for data=journal mode, I'd leave
+> > > write_op to be just WRITE / WRITE_SYNC_PLUG.
+> > 
+> > Hi, Jan, thanks for the review!  I'm trying to figure out the best way
+> > to relay the journal mode from ext3 or ext4 to jbd or jbd2.  Would a new
+> > journal flag, set in journal_init_inode, be appropriate?  This wouldn't
+> > cover the case of data journalling set per inode, though.  It also puts
+> > some ext3-specific code into the purportedly fs-agnostic jbd code
+> > (specifically, testing the superblock for the data journal mount flag).
+> > Do you have any suggestions?
+> 
+> I don't think it's necessary to worry about journal=data mode.  First
+> of all, it's not true that all of the I/O would be prioritized as
+> metadata.  In data=journal mode, data blocks are written twice; once
+> to the journal, and once to the final location on disk.  And the
+> journal writes do need to be prioritized because the commit can't go
+> out until all of the preceeding journal blocks have been written.  So
+> treating all of the journal writes as metadata for the the purposes of
+> cfq's prioritization makes sense to me....
+> 
 
-I think it would be useful to have common:
+CFQ currently seems to be preempting any thread doing IO if a request has
+been marked as metadata. I think this is going to be bad for any other IO
+going on.
 
-   1. User and kernel mode ABIs for controlling ballooning.  It assumes
-      that the different balloon implementations are sufficiently
-      similar in semantics.   (Once there's a kernel ABI, adding a
-      common user ABI is trivial.)
-   2. Policy driving the ballooning driver, at least from the guest
-      side.  That is, some good metrics from the vm subsystem about
-      memory pressure (both positive and negative), and something to
-      turn those metrics into requests to the balloon driver.
+I wrote a small fio script which is doing buffered writes with bs=32K and I
+am doing fsync on file after every 20 IOs (fsync=20). I am assuming that this
+something close to writting a small file and then doing fsync on that. 
 
-1) is not a huge amount of code, but something consistent would be 
-nice.  2) is something we've been missing and is a bit of an open 
-question/research project anyway.
+With that fio script running I launched firefox and measured the time it
+takes.
 
-     J
+Without patch
+=============
+real    0m13.141s
+user    0m0.588s
+sys     0m0.164s
+
+real    0m11.859s
+user    0m0.580s
+sys     0m0.163s
+
+real    0m13.384s
+user    0m0.587s
+sys     0m0.163s
+
+With patch
+==========
+real    0m25.986s
+user    0m0.627s
+sys     0m0.150s
+
+real    0m29.582s
+user    0m0.623s
+sys     0m0.156s
+
+real    0m25.898s
+user    0m0.587s
+sys     0m0.160s
+
+So it looks like that firefox launching times have seems to just almost doubled.
+
+My fio script looks like as follows.
+
+*******************************************
+[global]
+directory=/root/fio/
+ioscheduler=cfq
+size=1G
+group_reporting=1
+bs=32K
+exec_prerun='echo 3 > /proc/sys/vm/drop_caches'
+
+[iostest]
+numjobs=1
+new_group=1
+rw=write
+fsync=20
+**********************************************
+
+Thanks
+Vivek
+
+> 					- Ted
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
