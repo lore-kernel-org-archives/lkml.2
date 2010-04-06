@@ -1,96 +1,388 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361Ab0DFQz0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 12:55:26 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:57081 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757253Ab0DFQzS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 12:55:18 -0400
-Message-ID: <4BBB6767.7010202@ti.com>
-Date: Tue, 6 Apr 2010 11:55:03 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	id S1757127Ab0DFQ46 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 12:56:58 -0400
+Received: from www.tglx.de ([62.245.132.106]:45870 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751669Ab0DFQ4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 12:56:52 -0400
+Date: Tue, 6 Apr 2010 18:55:44 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Darren Hart <dvhltc@us.ibm.com>
+cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+       Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>, Avi Kivity <avi@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 4/6] futex: Add FUTEX_LOCK with optional adaptive
+ spinning
+In-Reply-To: <1270499039-23728-5-git-send-email-dvhltc@us.ibm.com>
+Message-ID: <alpine.LFD.2.00.1004061818250.32352@localhost.localdomain>
+References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com> <1270499039-23728-5-git-send-email-dvhltc@us.ibm.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: "felipe.balbi@nokia.com" <felipe.balbi@nokia.com>
-CC: "Chikkature Rajashekar, Madhusudhan" <madhu.cr@ti.com>,
-       "me@felipebalbi.com" <me@felipebalbi.com>,
-       "'kishore kadiyala'" <kishorek.kadiyala@gmail.com>,
-       "'Vimal Singh'" <vimal.newwork@gmail.com>,
-       "tony@atomide.com" <tony@atomide.com>,
-       "S, Venkatraman" <svenkatr@ti.com>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Lavinen Jarkko (Nokia-D/Helsinki)" <jarkko.lavinen@nokia.com>
-Subject: Re: [PATCH v3] OMAP: Fix for bus width which improves SD card's peformance.
-References: <v2yce9ab5791003302327hc67deb3akc7d18146534038f9@mail.gmail.com> <h2p7f9d1ffb1003310003z508e21dbqe37b6e1cad425866@mail.gmail.com> <003b01cad0f0$6ea78040$544ff780@am.dhcp.ti.com> <g2s7f9d1ffb1003312331o149df218g651c3e4349ac9a77@mail.gmail.com> <003c01cad1b1$da2cdbf0$544ff780@am.dhcp.ti.com> <m2n7f9d1ffb1004050556o1ed2eec8ief66d60fc85f96de@mail.gmail.com> <20100405164839.GB17388@gandalf> <007c01cad4e4$26c5a700$544ff780@am.dhcp.ti.com> <20100406050035.GA32537@gandalf> <003901cad5a4$730264d0$544ff780@am.dhcp.ti.com> <20100406163211.GA29117@nokia.com>
-In-Reply-To: <20100406163211.GA29117@nokia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe Balbi had written, on 04/06/2010 11:32 AM, the following:
-> On Tue, Apr 06, 2010 at 06:16:01PM +0200, ext Madhusudhan wrote:
->>
->>> -----Original Message-----
->>> From: Felipe Balbi [mailto:me@felipebalbi.com]
->>> Sent: Tuesday, April 06, 2010 12:01 AM
->>> To: Madhusudhan
->>> Cc: me@felipebalbi.com; 'kishore kadiyala'; 'Vimal Singh';
->>> tony@atomide.com; svenkatr@ti.com; linux-omap@vger.kernel.org; linux-
->>> kernel@vger.kernel.org; jarkko.lavinen@nokia.com
->>> Subject: Re: [PATCH v3] OMAP: Fix for bus width which improves SD card's
->>> peformance.
->>>
->>> Hi,
->>>
->>> On Mon, Apr 05, 2010 at 12:19:29PM -0500, Madhusudhan wrote:
->>>> Since the first if command already checks for the 8-bit the second check
->>>> like >= 4 is definitely not readable in my opinion.
->>> how come ???
->>>
->>>> Functionally do you see anything wrong with this patch??
->>> functionally no, but (hypothetical situation) and if on
->>> omap4/5/6/whatever, omap controller supports a bigger bus width then
->>> you'll have to add a line like:
->>>
->>> +	if (mmc_slot(host).wires == 16)
->>> +		mmc->caps |= (MMC_CAP_16_BIT_DATA | MMC_CAP_8_BIT_DATA |
->>> +				MMC_CAP_4_BIT_DATA);
->>> -	if (mmc_slot(host).wires == 8)
->>> +	else if (mmc_slot(host).wires == 8)
->>>
->>> do you see the problem ?? In my opinion it doesn't scale well.
->>>
->> The point we should note here is that MMC spec supports a max bus width of
->> 8-bit. So anything beyond 8-bit is not in the picture as of today.
-> 
-> in that case, the code could be:
-> 
-> WARN_ON(mmc_slot(host).wires > 8);
-> 
-> if (mmc_slot(host).wires == 8)
-> 	mmc->caps |= MMC_CAP_8_BIT_DATA;
-> if (mmc_slot(host).wires >= 4)
-> 	mmc->caps |= MMC_CAP_4_BIT_DATA;
->
-some reasons why i love switch statements ;) since I dont expect other 
-than precisely 4 and 8 (do we expect 5,6,7 - i might be wrong).. but if 
-it is so, wont the following be better?
+On Mon, 5 Apr 2010, Darren Hart wrote:
+> +#ifdef CONFIG_SMP
+> +struct thread_info *futex_owner(u32 __user *uaddr)
+> +{
+> +	struct thread_info *ti = NULL;
+> +	struct task_struct *p;
+> +	pid_t pid;
+> +	u32 uval;
+> +
+> +	if (get_futex_value_locked(&uval, uaddr))
+> +		return NULL;
+> +
+> +	pid = uval & FUTEX_TID_MASK;
+> +	rcu_read_lock();
+> +	p = find_task_by_vpid(pid);
+> +	if (p) {
+> +		const struct cred *cred, *pcred;
+> +
+> +		cred = current_cred();
+> +		pcred = __task_cred(p);
+> +		if (cred->euid == pcred->euid ||
+> +		    cred->euid == pcred->uid)
+> +			ti = task_thread_info(p);
 
-switch (mmc_slot(host).wires)
-{
-case 8:
-	mmc->caps |= MMC_CAP_8_BIT_DATA;
-	/* fall thru*/
-case 4:
-	mmc->caps |= MMC_CAP_4_BIT_DATA;
-		break;
-default:
-	WARN("bad width");
-}	
--- 
-Regards,
-Nishanth Menon
+  We want a get_task_struct() here, don't we ?
+
+> +	}
+> +	rcu_read_unlock();
+> +
+> +	return ti;
+> +}
+> +#endif
+> +
+
+> +/**
+> + * trylock_futex_adaptive() - Try to acquire the futex lock in a busy loop
+> + * @uaddr: the futex user address
+> + *
+> + * Try to acquire a futex lock in a loop until the owner changes or the owner
+> + * is descheduled. To lock the futex, set the value to the current TID.
+> + *
+> + * Returns:
+> + *  0 - Gave up, lock not acquired
+> + *  1 - Futex lock acquired
+> + * <0 - On error
+> + */
+> +static int trylock_futex_adaptive(u32 __user *uaddr)
+> +{
+> +	int ret = 0;
+> +	u32 curval;
+> +
+> +	for (;;) {
+> +		struct thread_info *owner;
+> +
+> +		owner = futex_owner(uaddr);
+> +		if (owner && futex_spin_on_owner(uaddr, owner))
+> +			break;
+> +
+> +		/*
+> +		 * Try to acquire the lock. If we acquire it or error out,
+> +		 * break to enable preemption and handle ret outside the loop.
+> +		 */
+> +		curval = cmpxchg_futex_value_locked(uaddr, 0,
+> +		                                    task_pid_vnr(current));
+> +
+> +		if (curval == 0) {
+> +			ret = 1;
+> +			break;
+> +		}
+> +
+> +		if (unlikely(curval == -EFAULT)) {
+> +			ret = -EFAULT;
+> +			break;
+> +		}
+> +
+> +		/*
+> +		 * Futex locks manage the owner atomically. We are not in
+> +		 * danger of deadlock by preempting a pending owner. Abort the
+> +		 * loop if our time slice has expired.  RT Threads can spin
+> +		 * until they preempt the owner, at which point they will break
+> +		 * out of the loop anyway.
+> +		 */
+> +		if (need_resched())
+> +			break;
+> +
+> +		cpu_relax();
+> +	}
+> +	return ret;
+> +}
+
+
+Hmm. The order is weird. Why don't you do that simpler ?
+
+Get the uval, the tid and the thread_info pointer outside of the
+loop. Also task_pid_vnr(current) just needs a one time lookup.
+
+change the loop to do:
+
+       for (;;) {
+       	   curval = cmpxchg_futex_value_locked(uaddr, 0, curtid);
+  
+	   if (!curval)
+	      return 1;
+	   if ((curval & FUTEX_TID_MASK) != ownertid) {
+	      ownertid = curval & FUTEX_TID_MASK;
+	      owner = update_owner(ownertid);
+	   }
+
+	   if (owner && futex_spin_on_owner(....))
+	   .....
+
+       }
+
+> +/**
+> + * futex_lock() - Acquire the lock and set the futex value
+> + * @uaddr:  the futex user address
+> + * @flags:  futex flags (FLAGS_SHARED, FLAGS_CLOCKRT, FLAGS_ADAPTIVE, etc.)
+> + * @detect: detect deadlock (1) or not (0)
+> + * @time:   absolute timeout
+> + *
+> + * futex_(un)lock() define a futex value policy and implement a full mutex. The
+> + * futex value stores the owner's TID or'd with FUTEX_WAITERS and/or
+> + * FUTEX_OWNER_DIED as appropriate.
+> + *
+> + * Userspace tried a 0 -> TID atomic transition of the futex value and failed.
+> + * Try to acquire the lock in the kernel, blocking if necessary. Return to
+> + * userspace with the lock held and the futex value set accordingly (or after a
+> + * timeout).
+> + *
+> + * Returns:
+> + *  0 - On success
+> + * <0 - On error
+> + */
+> +static int futex_lock(u32 __user *uaddr, int flags, int detect, ktime_t *time)
+> +{
+> +	struct hrtimer_sleeper timeout, *to = NULL;
+> +	struct futex_hash_bucket *hb;
+> +	struct futex_q q = FUTEX_Q_INIT;
+> +	int ret = 0;
+> +
+> +	if (refill_pi_state_cache())
+> +		return -ENOMEM;
+> +
+> +	if (time) {
+> +		to = &timeout;
+> +		hrtimer_init_on_stack(&to->timer, CLOCK_REALTIME,
+> +				      HRTIMER_MODE_ABS);
+
+  Please make that like the WAIT_BITSET one, which can select the
+  clock and defaults to MONOTONIC.
+
+> +		hrtimer_init_sleeper(to, current);
+> +		hrtimer_set_expires(&to->timer, *time);
+> +	}
+
+  Why setup all this _before_ trying the adaptive spin ?
+
+> +retry:
+> +#ifdef CONFIG_SMP
+> +	if (flags & FLAGS_ADAPTIVE) {
+
+  Why do we want that non adaptive version at all ?
+
+> +		preempt_disable();
+> +		ret = trylock_futex_adaptive(uaddr);
+> +		preempt_enable();
+> +
+> +		/* We got the lock. */
+> +		if (ret == 1) {
+> +			ret = 0;
+> +			goto out;
+> +		}
+> +
+> +		/* We encountered an error, -EFAULT most likely. */
+> +		if (ret)
+> +			goto out;
+> +	}
+> +#endif
+> +	q.key = FUTEX_KEY_INIT;
+> +	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key);
+> +	if (unlikely(ret != 0))
+> +		goto out;
+> +
+> +	hb = queue_lock(&q);
+> +
+> +	ret = lock_futex_atomic(uaddr, current, 0);
+> +	if (unlikely(ret)) {
+> +		switch (ret) {
+> +		case 1:
+> +			/* We got the lock. */
+> +			ret = 0;
+> +			goto out_unlock_put_key;
+> +		case -EFAULT:
+> +			goto uaddr_faulted;
+> +		default:
+> +			goto out_unlock_put_key;
+> +		}
+> +	}
+> +	/*
+> +	 * Only actually queue now that the atomic ops are done:
+> +	 */
+> +	futex_wait_queue_me(hb, &q, to);
+> +
+> +	ret = unqueue_me(&q);
+> +
+> +	/* If we were woken by the owner, try and acquire the lock. */
+> +	if (!ret)
+> +		goto retry;
+> +
+> +	ret = -ETIMEDOUT;
+> +	if (to && !to->task)
+> +		goto out_put_key;
+> +
+> +	/*
+> +	 * We expect signal_pending(current), but we might be the
+> +	 * victim of a spurious wakeup as well.
+> +         */
+> +	ret = -ERESTARTNOINTR;
+> +	if (!signal_pending(current)) {
+> +		put_futex_key(&q.key);
+> +		goto retry;
+> +	}
+> +
+> +	goto out_put_key;
+> +
+> +out_unlock_put_key:
+> +	queue_unlock(&q, hb);
+> +
+> +out_put_key:
+> +	put_futex_key(&q.key);
+> +out:
+> +	if (to)
+> +		destroy_hrtimer_on_stack(&to->timer);
+> +	return ret != -EINTR ? ret : -ERESTARTNOINTR;
+
+  Which code sets -EINTR ?
+
+> +
+> +uaddr_faulted:
+> +	queue_unlock(&q, hb);
+> +
+> +	ret = fault_in_user_writeable(uaddr);
+> +	if (ret)
+> +		goto out_put_key;
+> +
+> +	put_futex_key(&q.key);
+> +	goto retry;
+> +}
+> +
+> +
+>  /*
+>   * Support for robust futexes: the kernel cleans up held futexes at
+>   * thread exit time.
+> @@ -2623,6 +2830,12 @@ long do_futex(u32 __user *uaddr, int op, u32 val, ktime_t *timeout,
+>  	case FUTEX_CMP_REQUEUE_PI:
+>  		ret = futex_requeue(uaddr, flags, uaddr2, val, val2, &val3, 1);
+>  		break;
+> +	case FUTEX_LOCK_ADAPTIVE:
+> +		flags |= FLAGS_ADAPTIVE;
+> +	case FUTEX_LOCK:
+> +		if (futex_cmpxchg_enabled)
+> +			ret = futex_lock(uaddr, flags, val, timeout);
+> +		break;
+>  	default:
+>  		ret = -ENOSYS;
+>  	}
+> @@ -2641,7 +2854,8 @@ SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
+>  
+>  	if (utime && (cmd == FUTEX_WAIT || cmd == FUTEX_LOCK_PI ||
+>  		      cmd == FUTEX_WAIT_BITSET ||
+> -		      cmd == FUTEX_WAIT_REQUEUE_PI)) {
+> +		      cmd == FUTEX_WAIT_REQUEUE_PI ||
+> +		      cmd == FUTEX_LOCK || cmd == FUTEX_LOCK_ADAPTIVE)) {
+>  		if (copy_from_user(&ts, utime, sizeof(ts)) != 0)
+>  			return -EFAULT;
+>  		if (!timespec_valid(&ts))
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 9ab3cd7..a2dbb5b 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -3818,6 +3818,65 @@ int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
+>  out:
+>  	return 1;
+>  }
+> +
+> +#ifdef CONFIG_FUTEX
+> +#include <linux/futex.h>
+> +
+> +int futex_spin_on_owner(u32 __user *uaddr, struct thread_info *owner)
+> +{
+> +	unsigned int cpu;
+> +	struct rq *rq;
+> +
+> +	if (!sched_feat(OWNER_SPIN))
+> +		return 0;
+> +
+> +#ifdef CONFIG_DEBUG_PAGEALLOC
+> +	/*
+> +	 * Need to access the cpu field knowing that
+> +	 * DEBUG_PAGEALLOC could have unmapped it if
+> +	 * the mutex owner just released it and exited.
+> +	 */
+> +	if (probe_kernel_address(&owner->cpu, cpu))
+> +		goto out;
+> +#else
+> +	cpu = owner->cpu;
+> +#endif
+> +
+> +	/*
+> +	 * Even if the access succeeded (likely case),
+> +	 * the cpu field may no longer be valid.
+> +	 */
+> +	if (cpu >= nr_cpumask_bits)
+> +		goto out;
+> +
+> +	/*
+> +	 * We need to validate that we can do a
+> +	 * get_cpu() and that we have the percpu area.
+> +	 */
+> +	if (!cpu_online(cpu))
+> +		goto out;
+> +
+> +	rq = cpu_rq(cpu);
+> +
+> +	for (;;) {
+> +		/*
+> +		 * Owner changed, break to re-assess state.
+> +		 */
+> +		if (futex_owner(uaddr) != owner)
+> +			break;
+
+  Uurg. It's enough to check whether the TID value changed. No need to
+  look up the full thing in every iteration.
+
+> +		/*
+> +		 * Is that owner really running on that cpu?
+> +		 */
+> +		if (task_thread_info(rq->curr) != owner || need_resched())
+> +			return 0;
+> +
+> +		cpu_relax();
+> +	}
+> +out:
+> +	return 1;
+> +}
+> +#endif
+>  #endif
+
+Do we really need all this code ? A simple owner->on_cpu (owner needs
+to be the task_struct then) would be sufficient to figure that out,
+wouldn't it?
+
+Thanks,
+
+	tglx
