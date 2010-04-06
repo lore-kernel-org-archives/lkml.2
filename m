@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865Ab0DFVRu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 17:17:50 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60880
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756702Ab0DFVRn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 17:17:43 -0400
-Date: Tue, 06 Apr 2010 14:17:44 -0700 (PDT)
-Message-Id: <20100406.141744.17264255.davem@davemloft.net>
-To: rostedt@goodmis.org
-Cc: srostedt@redhat.com, fweisbec@gmail.com, sparclinux@vger.kernel.org,
-       linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
-       a.p.zijlstra@chello.nl, paulus@samba.org
-Subject: Re: Random scheduler/unaligned accesses crashes with perf lock
- events on sparc 64
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1270577758.19685.15557.camel@gandalf.stny.rr.com>
-References: <1270561264.2738.8.camel@localhost.localdomain>
-	<20100406.104635.210218044.davem@davemloft.net>
-	<1270577758.19685.15557.camel@gandalf.stny.rr.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1756923Ab0DFVTX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 17:19:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17227 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756702Ab0DFVTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 17:19:15 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100406194843.GJ5288@laptop>
+References: <20100406194843.GJ5288@laptop> <20100406193134.26429.78585.stgit@warthog.procyon.org.uk>
+To: Nick Piggin <npiggin@suse.de>
+Cc: dhowells@redhat.com, torvalds@osdl.org, akpm@linux-foundation.org,
+       paulmck@linux.vnet.ibm.com, corbet@lwn.net,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH] radix_tree_tag_get() is not as safe as the docs make out
+Date: Tue, 06 Apr 2010 22:18:58 +0100
+Message-ID: <27834.1270588738@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
-Date: Tue, 06 Apr 2010 14:15:58 -0400
+Nick Piggin <npiggin@suse.de> wrote:
 
-> On Tue, 2010-04-06 at 10:46 -0700, David Miller wrote:
->> Just fix the CPP test to handle 32-bit platforms with slow
->> mis-alignment handling, everything else seems to be working properly
->> after I fixed the NMI issues on sparc64.
-> 
-> A little more work will need to be done since on 32bit, the page headers
-> are 12 bytes, not 16, so we start off without being aligned 8bytes. But
-> that too is fixable.
+> Nack, just drop the BUG_ON.
 
-Oh yeah the buffer_data_page, good point.
+I can do that.
+
+> I don't know what you mean by "untrustworthy answer".
+
+I was thinking that the answer you get from radix_tree_tag_get() may be invalid
+if the tag chain is being modified as you read it.  So if you do:
+
+	rcu_read_lock()
+	...
+	x = radix_tree_tag_get(r, i, t);
+	...
+	y = radix_tree_tag_get(r, i, t);
+	...
+	rcu_read_unlock()
+
+Then you can't guarantee that x == y, even though you were holding the RCU read
+lock.
+
+As you suggested, I'll try and come up with a comment modification to this
+effect.
+
+David
