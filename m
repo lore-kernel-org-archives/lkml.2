@@ -1,152 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443Ab0DFOuJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 10:50:09 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:46935 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756219Ab0DFOuC (ORCPT
+	id S1756591Ab0DFOv3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 10:51:29 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59150 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754745Ab0DFOvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 10:50:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=xm6uE+EJgZFOu9uA2kS+y/KmUAx8zcVnL86cJyRvowOtGvnTHbo64tu3eB3w26w84c
-         M3ZaEeFFa8SL3vwXk8yhZ+8OBED3G+MqHiZRLNnfjPTlzjG9Gm3PNErwmCahzW+uAOQS
-         ygzNC7Ol9TcLpFFV1QqZFK3MwFu8/wdmsgqLw=
-MIME-Version: 1.0
-Date: Tue, 6 Apr 2010 10:50:00 -0400
-Message-ID: <w2k817ecb6f1004060750s9e92b1camf2c390df0c520543@mail.gmail.com>
-Subject: [PATCH V2] [tip:x86/mm] Correcting improper large page preservation
-From: Siarhei Liakh <sliakh.lkml@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       linux-next@vger.kernel.org
-Cc: Arjan van de Ven <arjan@infradead.org>, James Morris <jmorris@namei.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
-       Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
-       Suresh Siddha <suresh.b.siddha@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 6 Apr 2010 10:51:23 -0400
+Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive 
+ spinning
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ulrich Drepper <drepper@gmail.com>
+Cc: Avi Kivity <avi@redhat.com>, Darren Hart <dvhltc@us.ibm.com>,
+       linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>
+In-Reply-To: <m2ua36005b51004060747y1abf15edj28227274844db2e7@mail.gmail.com>
+References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com>
+	 <4BBA5305.7010002@redhat.com> <1270543721.1597.748.camel@laptop>
+	 <m2ua36005b51004060747y1abf15edj28227274844db2e7@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 06 Apr 2010 16:51:18 +0200
+Message-ID: <1270565478.1595.529.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a bug in try_preserve_large_page() which may result
-in improper large page preservation and improper application of page
-attributes to the memory area outside of the original change request.
-More specifically, the problem manifests itself when set_memory_*() is
-called for several pages at the beginning of the large page and
-try_preserve_large_page() erroneously concludes that the change can be
-applied to whole large page.
-The fix consists of 3 parts:
-1. addition of "required" protection attributes in
-static_protections(), so .data and .bss can be guaranteed to stay "RW"
-2. static_protections() is now called for every small page within
-large page to determine compatibility of new protection attributes
-(instead of just small pages within the requested range).
-3. large page can be preserved only if attribute change is
-large-page-aligned and covers whole large page.
+On Tue, 2010-04-06 at 07:47 -0700, Ulrich Drepper wrote:
+> On Tue, Apr 6, 2010 at 01:48, Peter Zijlstra <peterz@infradead.org>
+> wrote:
+> >  try
+> >  spin
+> >  try
+> >  syscall
+> 
+> This is available for a long time in the mutex implementation
+> (PTHREAD_MUTEX_ADAPTIVE_NP mutex type).  It hasn't show much
+> improvement if any.  There were some people demanding this support for
+> as far as I know they are not using it now.  This is adaptive
+> spinning, learning from previous calls how long to wait.  But it's
+> still unguided.  There is no way to get information like "the owner
+> has been descheduled". 
 
-V1:  try_preserve_large_page() patch for Linux 2.6.34-rc2
-V2:  replaced pfn check with address check for kernel rw-data
+That's where the FUTEX_LOCK thing comes in, it does all those, the above
+was a single spin loop to amortize the syscall overhead.
 
-Signed-off-by: Siarhei Liakh <sliakh.lkml@gmail.com>
-Signed-off-by: Xuxian Jiang <jiang@cs.ncsu.edu>
-Reviewed-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
+I wouldn't make it any more complex than a single pause ins, syscalls
+are terribly cheap these days.
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index cf07c26..f4ed8eb 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -255,6 +255,7 @@ static inline pgprot_t static_protections(pgprot_t
-prot, unsigned long address,
- 				   unsigned long pfn)
- {
- 	pgprot_t forbidden = __pgprot(0);
-+	pgprot_t required = __pgprot(0);
-
- 	/*
- 	 * The BIOS area between 640k and 1Mb needs to be executable for
-@@ -278,6 +279,13 @@ static inline pgprot_t
-static_protections(pgprot_t prot, unsigned long address,
- 	if (within(pfn, __pa((unsigned long)__start_rodata) >> PAGE_SHIFT,
- 		   __pa((unsigned long)__end_rodata) >> PAGE_SHIFT))
- 		pgprot_val(forbidden) |= _PAGE_RW;
-+	/*
-+	 * .data and .bss should always be writable.
-+	 */
-+	if (within(address, (unsigned long)_sdata, (unsigned long)_edata) ||
-+	    within(address, (unsigned long)__bss_start,
-+			(unsigned long)__bss_stop))
-+		pgprot_val(required) |= _PAGE_RW;
-
- #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
- 	/*
-@@ -317,6 +325,7 @@ static inline pgprot_t static_protections(pgprot_t
-prot, unsigned long address,
- #endif
-
- 	prot = __pgprot(pgprot_val(prot) & ~pgprot_val(forbidden));
-+	prot = __pgprot(pgprot_val(prot) | pgprot_val(required));
-
- 	return prot;
- }
-@@ -393,7 +402,7 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- {
- 	unsigned long nextpage_addr, numpages, pmask, psize, flags, addr, pfn;
- 	pte_t new_pte, old_pte, *tmp;
--	pgprot_t old_prot, new_prot;
-+	pgprot_t old_prot, new_prot, req_prot;
- 	int i, do_split = 1;
- 	unsigned int level;
-
-@@ -438,10 +447,10 @@ try_preserve_large_page(pte_t *kpte, unsigned
-long address,
- 	 * We are safe now. Check whether the new pgprot is the same:
- 	 */
- 	old_pte = *kpte;
--	old_prot = new_prot = pte_pgprot(old_pte);
-+	old_prot = new_prot = req_prot = pte_pgprot(old_pte);
-
--	pgprot_val(new_prot) &= ~pgprot_val(cpa->mask_clr);
--	pgprot_val(new_prot) |= pgprot_val(cpa->mask_set);
-+	pgprot_val(req_prot) &= ~pgprot_val(cpa->mask_clr);
-+	pgprot_val(req_prot) |= pgprot_val(cpa->mask_set);
-
- 	/*
- 	 * old_pte points to the large page base address. So we need
-@@ -450,17 +459,17 @@ try_preserve_large_page(pte_t *kpte, unsigned
-long address,
- 	pfn = pte_pfn(old_pte) + ((address & (psize - 1)) >> PAGE_SHIFT);
- 	cpa->pfn = pfn;
-
--	new_prot = static_protections(new_prot, address, pfn);
-+	new_prot = static_protections(req_prot, address, pfn);
-
- 	/*
- 	 * We need to check the full range, whether
- 	 * static_protection() requires a different pgprot for one of
- 	 * the pages in the range we try to preserve:
- 	 */
--	addr = address + PAGE_SIZE;
--	pfn++;
--	for (i = 1; i < cpa->numpages; i++, addr += PAGE_SIZE, pfn++) {
--		pgprot_t chk_prot = static_protections(new_prot, addr, pfn);
-+	addr = address & pmask;
-+	pfn = pte_pfn(old_pte);
-+	for (i = 0; i < (psize >> PAGE_SHIFT); i++, addr += PAGE_SIZE, pfn++) {
-+		pgprot_t chk_prot = static_protections(req_prot, addr, pfn);
-
- 		if (pgprot_val(chk_prot) != pgprot_val(new_prot))
- 			goto out_unlock;
-@@ -483,7 +492,8 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- 	 * that we limited the number of possible pages already to
- 	 * the number of pages in the large page.
- 	 */
--	if (address == (nextpage_addr - psize) && cpa->numpages == numpages) {
-+	if (address == (address & pmask) &&
-+		cpa->numpages == (psize >> PAGE_SHIFT)) {
- 		/*
- 		 * The address is aligned and the number of pages
- 		 * covers the full page.
