@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751265Ab0DFEtX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 00:49:23 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53086 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751168Ab0DFEtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 00:49:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,370,1267430400"; 
-   d="scan'208";a="610512927"
-Date: Tue, 6 Apr 2010 12:49:10 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       "Li, Shaohua" <shaohua.li@intel.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
-Message-ID: <20100406044910.GA16303@localhost>
-References: <20100406105324.7E30.A69D9226@jp.fujitsu.com> <20100406023043.GA12420@localhost> <20100406115543.7E39.A69D9226@jp.fujitsu.com> <20100406033114.GB13169@localhost> <4BBAAD3F.3090900@redhat.com>
+	id S1751260Ab0DFFAG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 01:00:06 -0400
+Received: from ns1.siteground211.com ([209.62.36.12]:54379 "EHLO
+	serv01.siteground211.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999Ab0DFE77 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 00:59:59 -0400
+Date: Tue, 6 Apr 2010 08:00:36 +0300
+From: Felipe Balbi <me@felipebalbi.com>
+To: Madhusudhan <madhu.cr@ti.com>
+Cc: me@felipebalbi.com, "'kishore kadiyala'" <kishorek.kadiyala@gmail.com>,
+       "'Vimal Singh'" <vimal.newwork@gmail.com>, tony@atomide.com,
+       svenkatr@ti.com, linux-omap@vger.kernel.org,
+       linux-kernel@vger.kernel.org, jarkko.lavinen@nokia.com
+Subject: Re: [PATCH v3] OMAP: Fix for bus width which improves SD card's
+ peformance.
+Message-ID: <20100406050035.GA32537@gandalf>
+Reply-To: me@felipebalbi.com
+References: <004701caab40$68b576e0$544ff780@am.dhcp.ti.com>
+ <x2q7f9d1ffb1003302307nb8e91be0o55da59c3375f1720@mail.gmail.com>
+ <v2yce9ab5791003302327hc67deb3akc7d18146534038f9@mail.gmail.com>
+ <h2p7f9d1ffb1003310003z508e21dbqe37b6e1cad425866@mail.gmail.com>
+ <003b01cad0f0$6ea78040$544ff780@am.dhcp.ti.com>
+ <g2s7f9d1ffb1003312331o149df218g651c3e4349ac9a77@mail.gmail.com>
+ <003c01cad1b1$da2cdbf0$544ff780@am.dhcp.ti.com>
+ <m2n7f9d1ffb1004050556o1ed2eec8ief66d60fc85f96de@mail.gmail.com>
+ <20100405164839.GB17388@gandalf>
+ <007c01cad4e4$26c5a700$544ff780@am.dhcp.ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BBAAD3F.3090900@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <007c01cad4e4$26c5a700$544ff780@am.dhcp.ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - serv01.siteground211.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - felipebalbi.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 06, 2010 at 11:40:47AM +0800, Rik van Riel wrote:
-> On 04/05/2010 11:31 PM, Wu Fengguang wrote:
-> > On Tue, Apr 06, 2010 at 10:58:43AM +0800, KOSAKI Motohiro wrote:
-> >> Again, I didn't said his patch is no worth. I only said we don't have to
-> >> ignore the downside.
-> >
-> > Right, we should document both the upside and downside.
-> 
-> The downside is obvious: streaming IO (used once data
-> that does not fit in the cache) can push out data that
-> is used more often - requiring that it be swapped in
-> at a later point in time.
-> 
-> I understand what Shaohua's patch does, but I do not
-> understand the upside.  What good does it do to increase
-> the size of the cache for streaming IO data, which is
-> generally touched only once?
+Hi,
 
-Not that bad :)  With Shaohua's patch the anon list will typically
-_never_ get scanned, just like before.
+On Mon, Apr 05, 2010 at 12:19:29PM -0500, Madhusudhan wrote:
+> Since the first if command already checks for the 8-bit the second check
+> like >= 4 is definitely not readable in my opinion.
 
-If it's mostly use-once IO, file:anon will be 1000 or even 10000, and
-priority=12.  Then only anon lists larger than 16GB or 160GB will get
-nr[0] >= 1.
+how come ???
 
-> What kind of performance benefits can we get by doing
-> that?
+> Functionally do you see anything wrong with this patch??
 
-So vmscan behavior and performance remain the same as before.
+functionally no, but (hypothetical situation) and if on
+omap4/5/6/whatever, omap controller supports a bigger bus width then
+you'll have to add a line like:
 
-For really large anon list, such workload is beyond our imagination.
-So we cannot assert "don't scan anon list" will be a benefit.
++	if (mmc_slot(host).wires == 16)
++		mmc->caps |= (MMC_CAP_16_BIT_DATA | MMC_CAP_8_BIT_DATA |
++				MMC_CAP_4_BIT_DATA);
+-	if (mmc_slot(host).wires == 8)
++	else if (mmc_slot(host).wires == 8)
 
-On the other hand, in the test case of "do stream IO when most memory
-occupied by tmpfs pages", it is very bad behavior refuse to scan anon
-list in normal and suddenly start scanning _the whole_ anon list when
-priority hits 0. Shaohua's patch helps it by gradually increasing the
-scan nr of anon list as memory pressure increases.
+do you see the problem ?? In my opinion it doesn't scale well.
 
-Thanks,
-Fengguang
-
-> > The main difference happens when file:anon scan ratio>  100:1.
-> >
-> > For the current percent[] based computing, percent[0]=0 hence nr[0]=0
-> > which disables anon list scan unconditionally, for good or for bad.
-> >
-> > For the direct nr[] computing,
-> > - nr[0] will be 0 for typical file servers, because with priority=12
-> >    and anon lru size<  1.6GB, nr[0] = (anon_size/4096)/100<  0
-> > - nr[0] will be non-zero when priority=1 and anon_size>  100 pages,
-> >    this stops OOM for Shaohua's test case, however may not be enough to
-> >    guarantee safety (your previous reverting patch can provide this
-> >    guarantee).
-> >
-> > I liked Shaohua's patch a lot -- it adapts well to both the
-> > file-server case and the mostly-anon-pages case :)
-> 
-> 
+-- 
+balbi
