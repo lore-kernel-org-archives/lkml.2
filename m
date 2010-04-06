@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581Ab0DFFGL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 01:06:11 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38702 "EHLO mx1.suse.de"
+	id S1751522Ab0DFFJh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 01:09:37 -0400
+Received: from gate.crashing.org ([63.228.1.57]:37137 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751181Ab0DFFGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 01:06:05 -0400
-Date: Tue, 6 Apr 2010 15:05:49 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Nick Piggin <npiggin@gmail.com>,
-       linux-kernel@vger.kernel.org, Jon Masters <jonathan@jonmasters.org>
-Subject: Re: Is module refcounting racy?
-Message-ID: <20100406050549.GA11191@laptop>
-References: <20100318105533.GE25636@laptop>
- <201003291942.56706.rusty@rustcorp.com.au>
- <e619185d1003290958w23037176uc869c7dbc0a48bcc@mail.gmail.com>
- <201003311414.49364.rusty@rustcorp.com.au>
- <20100401080940.GA8356@laptop>
- <alpine.LFD.2.00.1004010852170.3707@i5.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004010852170.3707@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751244Ab0DFFJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 01:09:31 -0400
+Subject: mprotect pgprot handling weirdness
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: linux-mm@kvack.org
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 06 Apr 2010 15:09:26 +1000
+Message-ID: <1270530566.13812.28.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 01, 2010 at 08:55:59AM -0700, Linus Torvalds wrote:
-> 
-> 
-> On Thu, 1 Apr 2010, Nick Piggin wrote:
-> > 
-> > I think it can be done racelessly with my patch, which is not really too
-> > much overhead. I think if this is considered too much, then we should
-> > either fix code and preferably de-export and remove module_refcount from
-> > drivers, or remove module removal completely.
-> 
-> I doubt your patch matters too much, but I like it conceptually and it 
-> seems to be a nice basis for perhaps doing something clever in the long 
-> run.
-> 
-> [ ie avoiding the stop_machine and instead perhaps doing some optimistic 
->   thing like "see if we seem to be unused right now, then unregister us, 
->   and see - after unregistering - that the usage counts haven't increased, 
->   and re-register if they have. ]
+Hi folks !
 
-That's true, reducing the requirement for stop_machine is always a nice
-thing to have.
+While looking at untangling a bit some of the mess with vm_flags and
+pgprot (*), I notices a few things I can't quite explain... they may ..
+or may not be bugs, but I though it was worth mentioning:
 
-Also if anyone else is looking at a way to do _really_ scalable
-refcounting elsewhere, this could be a good template (I certainly looked
-here first when trying to get ideas for vfsmount refcounting).
+- In mprotect_fixup() :
 
- 
-> So I'd like to apply it as a "good improvement, even if module unloading 
-> which is the only thing that _should_ care deeply should already be under 
-> stop-machine".
-> 
-> But I'd like an ack or two first.
+	/*
+	 * vm_flags and vm_page_prot are protected by the mmap_sem
+	 * held in write mode.
+	 */
+	vma->vm_flags = newflags;
+	vma->vm_page_prot = pgprot_modify(vma->vm_page_prot,
+					  vm_get_page_prot(newflags));
 
-Sure, I'll let Rusty push it to you when he's happy with it.
+	if (vma_wants_writenotify(vma)) {
+		vma->vm_page_prot = vm_get_page_prot(newflags & ~VM_SHARED);
+		dirty_accountable = 1;
+	}
+
+So as you can see above, we take great care (using pgprot_modify) to avoid
+blasting away some PAT related flags on x86 (no other arch implements
+pgprot_modify() today).... but if we hit vma_wants_writenotify(), then
+we unconditionally override the entire vma->vm_page_prot field with some
+new prot bits born of the new vm_flags. That sounds odd...
+
+- in sys_mprotect: 
+
+	newflags = vm_flags | (vma->vm_flags & ~(VM_READ | VM_WRITE | VM_EXEC));
+
+Do I read correctly that this means we cannot -remove- any flag than
+VM_READ, VM_WRITE or VM_EXEC ? That means that we cannot remove PROT_SAO
+which gets turned into VM_SAO on powerpc ... Yet another reason to take
+those arch specific mapping attributes out of the vm_flags.
+
+(*) Right now it's near impossible to add arch specific PROT_* bits to
+mmap/mprotect for fancy things like cachability attributes, or other
+nifty things like reverse-endian mappings that we have on some embedded
+platforms, I'm investigating ways to better separate vm_page_prot from
+vm_flags so some PROT_* bits can go straight to the former without
+having to be mirrored in some way in the later.
+
+Cheers,
+Ben.
+
 
