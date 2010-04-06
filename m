@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578Ab0DFP5U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 11:57:20 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36390 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752218Ab0DFP5O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 11:57:14 -0400
-From: Liang Li <liang.li@windriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, akpm@linux-foundation.org, wangchen@cn.fujitsu.com
-Subject: [RFC PATCH] x86: let 'reservetop' functioning right
-Date: Tue,  6 Apr 2010 23:55:25 +0800
-Message-Id: <1270569325-8161-1-git-send-email-liang.li@windriver.com>
-X-Mailer: git-send-email 1.6.6
-X-OriginalArrivalTime: 06 Apr 2010 15:56:21.0101 (UTC) FILETIME=[B37969D0:01CAD5A1]
+	id S1755918Ab0DFP6v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 11:58:51 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50221 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751682Ab0DFP6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 11:58:45 -0400
+Date: Tue, 6 Apr 2010 15:57:36 GMT
+From: tip-bot for Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, paulus@samba.org,
+       hpa@zytor.com, mingo@redhat.com, arjan@linux.intel.com,
+       a.p.zijlstra@chello.nl, ming.m.lin@intel.com, tglx@linutronix.de,
+       vweaver1@eecs.utk.edu, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org, acme@redhat.com,
+       linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+       arjan@linux.intel.com, ming.m.lin@intel.com, tglx@linutronix.de,
+       vweaver1@eecs.utk.edu, mingo@elte.hu
+In-Reply-To: <alpine.DEB.2.00.1004060956580.1417@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1004060956580.1417@cl320.eecs.utk.edu>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf, x86: Enable Nehalem-EX support
+Message-ID: <tip-134fbadf028a5977a1b06b0253d3ee33e6f0c642@git.kernel.org>
+Git-Commit-ID: 134fbadf028a5977a1b06b0253d3ee33e6f0c642
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 06 Apr 2010 15:57:37 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When specify 'reservetop=0xbadc0de' kernel parameter, the kernel will
-stop booting due to a early_ioremap bug that relate to commit 8827247ff.
+Commit-ID:  134fbadf028a5977a1b06b0253d3ee33e6f0c642
+Gitweb:     http://git.kernel.org/tip/134fbadf028a5977a1b06b0253d3ee33e6f0c642
+Author:     Vince Weaver <vweaver1@eecs.utk.edu>
+AuthorDate: Tue, 6 Apr 2010 10:01:19 -0400
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 6 Apr 2010 17:52:59 +0200
 
-The root cause of boot failure problem is the value of 'slot_virt[i]'
-was initialized in setup_arch->early_ioremap_init. But later in
-setup_arch, the function 'parse_early_param' will modify 'FIXADDR_TOP'
-when 'reservetop=0xbadc0de' being specified.
+perf, x86: Enable Nehalem-EX support
 
-The simplest fix might be use __fix_to_virt(idx0) to get updated value
-of 'FIXADDR_TOP' in '__early_ioremap' instead of reference old value
-from slot_virt[slot] directly.
+According to Intel Software Devel Manual Volume 3B, the
+Nehalem-EX PMU is just like regular Nehalem (except for the
+uncore support, which is completely different).
 
-Signed-off-by: Liang Li <liang.li@windriver.com>
+Signed-off-by:  Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Lin Ming <ming.m.lin@intel.com>
+LKML-Reference: <alpine.DEB.2.00.1004060956580.1417@cl320.eecs.utk.edu>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
-Hi,
+ arch/x86/kernel/cpu/perf_event_intel.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-I am not sure if kernel command line option 'reservetop' will block boot
-is the normal situation or not. Could someone tell me if we should fix
-it or just leave it as is or someone is doing something to replace
-'reservetop' with some other stuff?
-
- arch/x86/mm/ioremap.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-index 5eb1ba7..ea82ef0 100644
---- a/arch/x86/mm/ioremap.c
-+++ b/arch/x86/mm/ioremap.c
-@@ -537,9 +537,9 @@ __early_ioremap(resource_size_t phys_addr, unsigned long size, pgprot_t prot)
- 		--nrpages;
- 	}
- 	if (early_ioremap_debug)
--		printk(KERN_CONT "%08lx + %08lx\n", offset, slot_virt[slot]);
-+		printk(KERN_CONT "%08lx + %08lx\n", offset, __fix_to_virt(idx0));
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 84bfde6..9c794ac 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -936,6 +936,7 @@ static __init int intel_pmu_init(void)
  
--	prev_map[slot] = (void __iomem *)(offset + slot_virt[slot]);
-+	prev_map[slot] = (void __iomem *)(offset + __fix_to_virt(idx0));
- 	return prev_map[slot];
- }
+ 	case 26: /* 45 nm nehalem, "Bloomfield" */
+ 	case 30: /* 45 nm nehalem, "Lynnfield" */
++	case 46: /* 45 nm nehalem-ex, "Beckton" */
+ 		memcpy(hw_cache_event_ids, nehalem_hw_cache_event_ids,
+ 		       sizeof(hw_cache_event_ids));
  
--- 
-1.6.6
-
