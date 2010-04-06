@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab0DFRs7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 13:48:59 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:44256 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753224Ab0DFRsx (ORCPT
+	id S1756845Ab0DFRu0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 13:50:26 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55012 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371Ab0DFRuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 13:48:53 -0400
+	Tue, 6 Apr 2010 13:50:19 -0400
 From: Kevin Hilman <khilman@deeprootsystems.com>
 To: linux-i2c@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>
-Cc: Dirk Behme <dirk.behme@googlemail.com>,
-       Sudhakar Rajashekhara <sudhakar.raj@ti.com>,
-       Alexander Vasiliev <alexvasiljev@gmail.com>,
-       Brad Griffis <bgriffis@ti.com>, Dirk Behme <dirk.behme@gmail.com>,
+Cc: Chaithrika U S <chaithrika@ti.com>,
        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
        Kevin Hilman <khilman@deeprootsystems.com>,
-       Chaithrika U S <chaithrika@ti.com>, Philby John <pjohn@in.mvista.com>,
+       Philby John <pjohn@in.mvista.com>,
        "Srinivasan, Nageswari" <nageswari@ti.com>,
        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/6] i2c: davinci: Fix smbus Oops with AIC33 usage
-Date: Tue,  6 Apr 2010 10:42:13 -0700
-Message-Id: <1270575738-22388-2-git-send-email-khilman@deeprootsystems.com>
+Subject: [PATCH 3/6] i2c: davinci: Add helper functions for power management
+Date: Tue,  6 Apr 2010 10:42:15 -0700
+Message-Id: <1270575738-22388-4-git-send-email-khilman@deeprootsystems.com>
 X-Mailer: git-send-email 1.7.0.2
 In-Reply-To: <1270575738-22388-1-git-send-email-khilman@deeprootsystems.com>
 References: <1270575738-22388-1-git-send-email-khilman@deeprootsystems.com>
@@ -29,113 +26,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Behme <dirk.behme@googlemail.com>
+From: Chaithrika U S <chaithrika@ti.com>
 
-This fixes Oops at kernel startup while "scanning" for TLV320AIC23IDx
-addresses.
+Add i2c reset control and clock divider calculation functions
+which will be useful for power management features.
 
-Additional fix from Sudhakar Rajashekhara: I think 'first byte set'
-should come after the write because an I2C transaction is being
-carried out before configuring the I2C mode register (which has bits
-to configure Master, Start condition etc), which causes undefined
-behavior.
-
-Signed-off-by: Sudhakar Rajashekhara <sudhakar.raj@ti.com>
-Signed-off-by: Alexander Vasiliev <alexvasiljev@gmail.com>
-Signed-off-by: Brad Griffis <bgriffis@ti.com>
-Signed-off-by: Dirk Behme <dirk.behme@gmail.com>
+Signed-off-by: Chaithrika U S <chaithrika@ti.com>
 Acked-by: Kevin Hilman <khilman@deeprootsystems.com>
 ---
- drivers/i2c/busses/i2c-davinci.c |   31 +++++++++++++++++++++++++++----
- 1 files changed, 27 insertions(+), 4 deletions(-)
+ drivers/i2c/busses/i2c-davinci.c |   56 +++++++++++++++++++++++++-------------
+ 1 files changed, 37 insertions(+), 19 deletions(-)
 
 diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
-index c89687a..3b9ab23 100644
+index 9327cc9..9239d2b 100644
 --- a/drivers/i2c/busses/i2c-davinci.c
 +++ b/drivers/i2c/busses/i2c-davinci.c
-@@ -112,6 +112,7 @@ struct davinci_i2c_dev {
- 	u8			*buf;
- 	size_t			buf_len;
- 	int			irq;
-+	int			stop;
- 	u8			terminate;
- 	struct i2c_adapter	adapter;
- };
-@@ -249,9 +250,6 @@ i2c_davinci_xfer_msg(struct i2c_adapter *adap, struct i2c_msg *msg, int stop)
- 	u16 w;
- 	int r;
- 
--	if (msg->len == 0)
--		return -EINVAL;
--
- 	if (!pdata)
- 		pdata = &davinci_i2c_platform_data_default;
- 	/* Introduce a delay, required for some boards (e.g Davinci EVM) */
-@@ -263,6 +261,7 @@ i2c_davinci_xfer_msg(struct i2c_adapter *adap, struct i2c_msg *msg, int stop)
- 
- 	dev->buf = msg->buf;
- 	dev->buf_len = msg->len;
-+	dev->stop = stop;
- 
- 	davinci_i2c_write_reg(dev, DAVINCI_I2C_CNT_REG, dev->buf_len);
- 
-@@ -280,6 +279,10 @@ i2c_davinci_xfer_msg(struct i2c_adapter *adap, struct i2c_msg *msg, int stop)
- 		flag |= DAVINCI_I2C_MDR_TRX;
- 	if (stop)
- 		flag |= DAVINCI_I2C_MDR_STP;
-+	if (msg->len == 0) {
-+		flag |= DAVINCI_I2C_MDR_RM;
-+		flag &= ~DAVINCI_I2C_MDR_STP;
-+	}
- 
- 	/* Enable receive or transmit interrupts */
- 	w = davinci_i2c_read_reg(dev, DAVINCI_I2C_IMR_REG);
-@@ -290,9 +293,21 @@ i2c_davinci_xfer_msg(struct i2c_adapter *adap, struct i2c_msg *msg, int stop)
- 	davinci_i2c_write_reg(dev, DAVINCI_I2C_IMR_REG, w);
- 
- 	dev->terminate = 0;
-+
- 	/* write the data into mode register */
- 	davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, flag);
- 
-+	/*
-+	 * First byte should be set here, not after interrupt,
-+	 * because transmit-data-ready interrupt can come before
-+	 * NACK-interrupt during sending of previous message and
-+	 * ICDXR may have wrong data
-+	 */
-+	if ((!(msg->flags & I2C_M_RD)) && dev->buf_len) {
-+		davinci_i2c_write_reg(dev, DAVINCI_I2C_DXR_REG, *dev->buf++);
-+		dev->buf_len--;
-+	}
-+
- 	r = wait_for_completion_interruptible_timeout(&dev->cmd_complete,
- 						      dev->adapter.timeout);
- 	if (r == 0) {
-@@ -371,7 +386,7 @@ i2c_davinci_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
- 
- static u32 i2c_davinci_func(struct i2c_adapter *adap)
- {
--	return I2C_FUNC_I2C | (I2C_FUNC_SMBUS_EMUL & ~I2C_FUNC_SMBUS_QUICK);
-+	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
+@@ -125,12 +125,21 @@ static inline u16 davinci_i2c_read_reg(struct davinci_i2c_dev *i2c_dev, int reg)
+ 	return __raw_readw(i2c_dev->base + reg);
  }
  
- static void terminate_read(struct davinci_i2c_dev *dev)
-@@ -430,6 +445,14 @@ static irqreturn_t i2c_davinci_isr(int this_irq, void *dev_id)
- 		case DAVINCI_I2C_IVR_ARDY:
- 			davinci_i2c_write_reg(dev,
- 				DAVINCI_I2C_STR_REG, DAVINCI_I2C_STR_ARDY);
-+			if (((dev->buf_len == 0) && (dev->stop != 0)) ||
-+			    (dev->cmd_err & DAVINCI_I2C_STR_NACK)) {
-+				w = davinci_i2c_read_reg(dev,
-+							 DAVINCI_I2C_MDR_REG);
-+				w |= DAVINCI_I2C_MDR_STP;
-+				davinci_i2c_write_reg(dev,
-+						      DAVINCI_I2C_MDR_REG, w);
-+			}
- 			complete(&dev->cmd_complete);
- 			break;
+-/*
+- * This functions configures I2C and brings I2C out of reset.
+- * This function is called during I2C init function. This function
+- * also gets called if I2C encounters any errors.
+- */
+-static int i2c_davinci_init(struct davinci_i2c_dev *dev)
++static inline void davinci_i2c_reset_ctrl(struct davinci_i2c_dev *i2c_dev,
++								int val)
++{
++	u16 w;
++
++	w = davinci_i2c_read_reg(i2c_dev, DAVINCI_I2C_MDR_REG);
++	if (!val)	/* put I2C into reset */
++		w &= ~DAVINCI_I2C_MDR_IRS;
++	else		/* take I2C out of reset */
++		w |= DAVINCI_I2C_MDR_IRS;
++
++	davinci_i2c_write_reg(i2c_dev, DAVINCI_I2C_MDR_REG, w);
++}
++
++static void i2c_davinci_calc_clk_dividers(struct davinci_i2c_dev *dev)
+ {
+ 	struct davinci_i2c_platform_data *pdata = dev->dev->platform_data;
+ 	u16 psc;
+@@ -139,15 +148,6 @@ static int i2c_davinci_init(struct davinci_i2c_dev *dev)
+ 	u32 clkh;
+ 	u32 clkl;
+ 	u32 input_clock = clk_get_rate(dev->clk);
+-	u16 w;
+-
+-	if (!pdata)
+-		pdata = &davinci_i2c_platform_data_default;
+-
+-	/* put I2C into reset */
+-	w = davinci_i2c_read_reg(dev, DAVINCI_I2C_MDR_REG);
+-	w &= ~DAVINCI_I2C_MDR_IRS;
+-	davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, w);
  
+ 	/* NOTE: I2C Clock divider programming info
+ 	 * As per I2C specs the following formulas provide prescaler
+@@ -179,12 +179,32 @@ static int i2c_davinci_init(struct davinci_i2c_dev *dev)
+ 	davinci_i2c_write_reg(dev, DAVINCI_I2C_CLKH_REG, clkh);
+ 	davinci_i2c_write_reg(dev, DAVINCI_I2C_CLKL_REG, clkl);
+ 
++	dev_dbg(dev->dev, "input_clock = %d, CLK = %d\n", input_clock, clk);
++}
++
++/*
++ * This function configures I2C and brings I2C out of reset.
++ * This function is called during I2C init function. This function
++ * also gets called if I2C encounters any errors.
++ */
++static int i2c_davinci_init(struct davinci_i2c_dev *dev)
++{
++	struct davinci_i2c_platform_data *pdata = dev->dev->platform_data;
++
++	if (!pdata)
++		pdata = &davinci_i2c_platform_data_default;
++
++	/* put I2C into reset */
++	davinci_i2c_reset_ctrl(dev, 0);
++
++	/* compute clock dividers */
++	i2c_davinci_calc_clk_dividers(dev);
++
+ 	/* Respond at reserved "SMBus Host" slave address" (and zero);
+ 	 * we seem to have no option to not respond...
+ 	 */
+ 	davinci_i2c_write_reg(dev, DAVINCI_I2C_OAR_REG, 0x08);
+ 
+-	dev_dbg(dev->dev, "input_clock = %d, CLK = %d\n", input_clock, clk);
+ 	dev_dbg(dev->dev, "PSC  = %d\n",
+ 		davinci_i2c_read_reg(dev, DAVINCI_I2C_PSC_REG));
+ 	dev_dbg(dev->dev, "CLKL = %d\n",
+@@ -195,9 +215,7 @@ static int i2c_davinci_init(struct davinci_i2c_dev *dev)
+ 		pdata->bus_freq, pdata->bus_delay);
+ 
+ 	/* Take the I2C module out of reset: */
+-	w = davinci_i2c_read_reg(dev, DAVINCI_I2C_MDR_REG);
+-	w |= DAVINCI_I2C_MDR_IRS;
+-	davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, w);
++	davinci_i2c_reset_ctrl(dev, 1);
+ 
+ 	/* Enable interrupts */
+ 	davinci_i2c_write_reg(dev, DAVINCI_I2C_IMR_REG, I2C_DAVINCI_INTR_ALL);
 -- 
 1.7.0.2
 
