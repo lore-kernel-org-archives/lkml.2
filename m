@@ -1,326 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802Ab0DFVMD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 17:12:03 -0400
-Received: from vms173011pub.verizon.net ([206.46.173.11]:44380 "EHLO
-	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756438Ab0DFVLy (ORCPT
+	id S932070Ab0DFVMx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 17:12:53 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:51626 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756438Ab0DFVMs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 17:11:54 -0400
-Date: Tue, 06 Apr 2010 17:11:52 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-acpi@vger.kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT pull request] ACPI patches for 2.6.34-rc3 - take two
-In-reply-to: <alpine.LFD.2.00.1004060308030.21994@localhost.localdomain>
-Message-id: <alpine.LFD.2.00.1004061708170.4168@localhost.localdomain>
-References: <alpine.LFD.2.00.1004060308030.21994@localhost.localdomain>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: MULTIPART/MIXED; BOUNDARY="8323328-1096381456-1270588312=:4168"
+	Tue, 6 Apr 2010 17:12:48 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=WsUXpzMW9HVLEuakG/TUKj1QEqafXqKaAkuSHUyCaLnIR61M6T8stbx80RZdYREka
+	ZDuPRXIXN+/xwJOeaNEng==
+MIME-Version: 1.0
+In-Reply-To: <1270298740.19685.11779.camel@gandalf.stny.rr.com>
+References: <m2u5df78e1d1003301627ya1f621f7qaf0ad099f62d787e@mail.gmail.com>
+	 <1269995724.22564.58.camel@localhost.localdomain>
+	 <q2o5df78e1d1003302101q585143aan32e8872fcdb05c8a@mail.gmail.com>
+	 <1270081707.19685.8095.camel@gandalf.stny.rr.com>
+	 <p2t5df78e1d1003311814q1f270e41o4ebdc1f48659c034@mail.gmail.com>
+	 <1270084982.19685.8151.camel@gandalf.stny.rr.com>
+	 <j2s5df78e1d1004021610p96e6454ezdc5d1a0a42aa78f@mail.gmail.com>
+	 <1270298740.19685.11779.camel@gandalf.stny.rr.com>
+Date: Tue, 6 Apr 2010 14:12:44 -0700
+Message-ID: <j2v5df78e1d1004061412mda3e6556qfc5c2ca3041c17b3@mail.gmail.com>
+Subject: Re: lockup in rb_get_reader_page
+From: Jiaying Zhang <jiayingz@google.com>
+To: rostedt@goodmis.org
+Cc: Steven Rostedt <srostedt@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Steven,
 
---8323328-1096381456-1270588312=:4168
-Content-Type: TEXT/PLAIN; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+On Sat, Apr 3, 2010 at 5:45 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Fri, 2010-04-02 at 16:10 -0700, Jiaying Zhang wrote:
+>
+>> The page offset is the index we added in the buffer_page structure.
+>> You can ignore this field. The interesting part here is that both
+>> cpu_buffer->head_page and cpu_buffer->reader_page point to the
+>> same buffer_page. I am not sure yet how we entered this situation,
+>
+> You can ignore the cpu_buffer->head_page, it is used as a reference and
+> is not part of the main algorithm. It is just there to tell the reader
+> where the last head page was.
+>
+>> but the problem is once we get here, we will be in an infinite loop.
+>
+> But yes, it should never point to the reader page, because the reader
+> controls the head_page __and__ the reader page.
+>
+>>
+>> At the beginning of the spin loop, we call rb_set_head_page() to grab
+>> the head_page. In that function, we check whether a page is the head_page
+>> with rb_is_head_page(). The problem is that rb_is_head_page() may
+>> return RB_PAGE_MOVED if the head_page has changed to another
+>> page, and that is what has happened as the above messages show.
+>
+> I don't see where it said that.
+>
+> If RB_PAGE_MOVED is returned in rb_set_head_page then something is very
+> broken. Because that is only returned if the reader modified the code.
+> And since we only allow one reader at a time (we have locks to protect
+> that), and the rb_set_head_page is only called by the reader, then this
+> would mean another reader is reading the ring buffer.
+>
+> I should add a:
+>
+>        if ((ret = rb_is_head_page(cpu_buffer, page, page->list.prev))) {
+>                RB_WARN_ON(ret == RB_PAGE_MOVED);
+>                cpu_buffer->head_page = page;
+>                return page;
+>        }
+>
+>
+I added the RB_WARN_ON(ret == RB_PAGE_MOVED) in rb_set_head_page()
+as you suggested and I think it has helped me figure out the problem.
 
-Hi Linus,
+I saw a warning triggered by this WARN_ON this morning and realized
+that although we are not doing read from interrupt context, we sometimes
+call ring_buffer_empty() from a timer interrupt handler that checks whether
+there is new data coming in the trace buffer and if so wakes up the
+user-space reader. ring_buffer_empty() calls rb_set_head_page()
+that can move the head_page. As far as I understand, it should be
+ok to have ring_buffer_empty() preempt a writer so I guess we should leave
+that RB_WARN_ON out from rb_set_head_page(). The problem in our case
+is that we use our own locking mechanism to guarantee a single reader
+instead of using the cpu_buffer->reader_lock so the reader is not synchronized
+with ring_buffer_empty(). So when ring_buffer_empty() is called while
+we are in the process of swapping the reader_page and head_page, the
+head_page pointer can point to the old head, i.e., the new reader_page,
+and we will enter into an infinite loop.
 
-please pull from: 
+I wrapped our rb_get_reader_page() calls with cpu_buffer->reader_lock
+spinlock and it seems to have solved the problem.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git release
+Thank you very much for the help!
 
-Bug fixes, per below.
+Jiaying
 
-Note that I've refreshed a patch from Rafael 
-(ac7729da880e742613129ee6dea0045328670d2d)
-and re-pushed this branch since yesterday.
-
-In the event you already pulled it, I can instead send
-a small incremental patch.
-
-This will update the files shown below.
-
-thanks!
-
---
-Len Brown
-Intel Open Source Technology Center
-
-
-ps. individual patches are available on linux-acpi@vger.kernel.org
-and a consolidated plain patch is available here:
-http://ftp.kernel.org/pub/linux/kernel/people/lenb/acpi/patches/2.6.34/acpi-release-20100121-2.6.34-rc3.diff.gz
-
- drivers/acpi/acpica/evgpe.c    |   19 ++++-------
- drivers/acpi/acpica/exprep.c   |   12 +++++++
- drivers/acpi/battery.c         |    6 ++--
- drivers/acpi/dock.c            |    7 +---
- drivers/acpi/ec.c              |   35 +++++---------------
- drivers/acpi/numa.c            |    6 ++-
- drivers/acpi/osl.c             |   23 +++++++------
- drivers/acpi/scan.c            |   12 +++---
- drivers/acpi/video.c           |   67 +++++++++++++++++++++++++++------------
- drivers/pnp/pnpacpi/rsparser.c |   42 ++++++++++++++++++-------
- 10 files changed, 131 insertions(+), 98 deletions(-)
-
-through these commits:
-
-Alan Jenkins (2):
-      ACPI: battery: Fix CONFIG_ACPI_SYSFS_POWER=n
-      ACPI: battery drivers should call power_supply_changed()
-
-Alexey Starikovskiy (1):
-      ACPI: EC: Allow multibyte access to EC
-
-Bjorn Helgaas (2):
-      ACPI: use _HID when supplied by root-level devices
-      PNPACPI: truncate _CRS windows with _LEN > _MAX - _MIN + 1
-
-Chase Douglas (1):
-      ACPI: Reduce ACPI resource conflict message to KERN_WARNING, printk cleanup
-
-David Rientjes (1):
-      ACPI: NUMA: map pxms to low node ids
-
-Matthew Garrett (1):
-      ACPI: Don't send KEY_UNKNOWN for random video notifications
-
-Rafael J. Wysocki (2):
-      ACPI / ACPICA: Do not check reference counters in acpi_ev_enable_gpe()
-      ACPI / PM: Move ACPI video resume to a PM notifier
-
-Zhang Rui (2):
-      ACPI dock: support multiple ACPI dock devices
-      ACPI: fixes a false alarm from lockdep
-
-with this log:
-
-commit c25f7cf2032aaac9bd50d6eee982719878538082
-Merge: f79e1ce dadf28a ac7729d 3162b6f bc73675 b7b30de bf02bd2 1638bca 0f9b75e 17c452f
-Author: Len Brown <len.brown@intel.com>
-Date:   Tue Apr 6 17:06:22 2010 -0400
-
-    Merge branches 'battery', 'bugzilla-14667', 'bugzilla-15096', 'bugzilla-15480', 'bugzilla-15521', 'bugzilla-15605', 'gpe-reference-counters', 'misc', 'pxm-fix' and 'video-random-key' into release
-
-commit ac7729da880e742613129ee6dea0045328670d2d
-Author: Rafael J. Wysocki <rjw@sisk.pl>
-Date:   Mon Apr 5 01:43:51 2010 +0200
-
-    ACPI / PM: Move ACPI video resume to a PM notifier
-    
-    There is a problem with the ACPI video resume routine that it's
-    executed before the GPU that may be accessed by it.  To fix this
-    issue, move the ACPI video resume to a power management notifier,
-    so that's executed after resuming all devices, including the GPU.
-    
-    Fixes https://bugzilla.kernel.org/show_bug.cgi?id=15096, which is
-    a listed regression from 2.6.31.
-    
-    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-    Tested-by: Rafa³ Mi³ecki <zajec5@gmail.com>
-    Acked-by: Matthew Garrett <mjg@redhat.com>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit 1638bca898e55f1c89f18b2e5accfac8591fed61
-Author: Chase Douglas <chase.douglas@canonical.com>
-Date:   Mon Mar 22 15:08:09 2010 -0400
-
-    ACPI: Reduce ACPI resource conflict message to KERN_WARNING, printk cleanup
-    
-    By default, ACPI resource conflict messages are logged at level
-    KERN_ERR. This is a rather high level for a message that is more a
-    warning than an indication of a real kernel error. Also, KERN_ERR level
-    messages can appear over some boot splash screens, and this message is
-    not serious enough to warrant such treatment. Thus, the log level has
-    been reduced to KERN_WARNING.
-    
-    [lenb changed to KERN_WARNING rather than all the way to KERN_INFO]
-    
-    Also, cleanup message to use %pR resource printing format.
-    
-    Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit f79e1cec8c8aa64895fd7b595dc7b48157df0754
-Author: Alan Jenkins <alan-jenkins@tuffmail.co.uk>
-Date:   Tue Jun 30 14:36:16 2009 +0000
-
-    ACPI: battery drivers should call power_supply_changed()
-    
-    Calling kobject_uevent() directly is a layering violation.  In
-    particular, it means we'll miss updating the generic LED trigger.
-    
-    Signed-off-by: Alan Jenkins <alan-jenkins@tuffmail.co.uk>
-    Acked-by: Alexey Starikovskiy <astarikovskiy@suse.de>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit e363a755e8033e18f733fc0d1687039df8efade0
-Author: Alan Jenkins <alan-jenkins@tuffmail.co.uk>
-Date:   Tue Jun 30 14:35:05 2009 +0000
-
-    ACPI: battery: Fix CONFIG_ACPI_SYSFS_POWER=n
-    
-    Disabling CONFIG_ACPI_SYSFS_POWER changes the behaviour of
-    acpi_battery_update().  It will call acpi_battery_get_info()
-    even if the battery is not present.  I haven't noticed this
-    causing any problem, but it does look like a bad idea.
-    
-    Signed-off-by: Alan Jenkins <alan-jenkins@tuffmail.co.uk>
-    Acked-by: Alexey Starikovskiy <astarikovskiy@suse.de>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit 3162b6f0c5e1fcad372d64194fb3cb968941b428
-Author: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Date:   Thu Mar 25 10:32:49 2010 -0600
-
-    PNPACPI: truncate _CRS windows with _LEN > _MAX - _MIN + 1
-    
-    The ACPI spec (sec 6.4.3.5 in v4.0) requires that for Address Space Resource
-    Descriptors, _LEN <= _MAX - _MIN + 1 in all cases, but there are BIOSes that
-    violate this.  We experimentally determined that Windows truncates the
-    resource so it doesn't extend past _MAX, so let's do the same thing in
-    Linux.
-    
-    http://bugzilla.kernel.org/show_bug.cgi?id=15480
-    
-    Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
-    Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit 17c452f99cf5e073b219a069a419b7b8ab3cfa97
-Author: Matthew Garrett <mjg@redhat.com>
-Date:   Fri Dec 11 17:40:46 2009 -0500
-
-    ACPI: Don't send KEY_UNKNOWN for random video notifications
-    
-    I have a machine here that's sending 0xD1 notifications on the video
-    device once every second or so. I have no idea why (it's a prototype,
-    it may be broken), but sending KEY_UNKNOWN is unhelpful and results in
-    the console becoming unusable. Let's not report keys unless we have
-    something useful to say about them.
-    
-    Signed-off-by: Matthew Garrett <mjg@redhat.com>
-    Acked-by: Zhang Rui <rui.zhang@intel.com>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit 0f9b75ef3722814134f307f51c19e0791da40e69
-Author: David Rientjes <rientjes@google.com>
-Date:   Thu Mar 25 16:33:04 2010 -0700
-
-    ACPI: NUMA: map pxms to low node ids
-    
-    pxms are mapped to low node ids to maintain generic kernel use of
-    functions such as pxm_to_node() that are used to determine device
-    affinity.  Otherwise, there is no pxm-to-node and node-to-pxm matching
-    rule for x86_64 users of NUMA emulation where a single pxm may be bound
-    to multiple NUMA nodes.
-    
-    Signed-off-by: David Rientjes <rientjes@google.com>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit b7b30de53aef6ce773d34837ba7d8422bd3baeec
-Author: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Date:   Wed Mar 24 10:44:33 2010 -0600
-
-    ACPI: use _HID when supplied by root-level devices
-    
-    Previously, we assumed the only Device object immediately below the root
-    was the \_SB Scope (which the ACPI CA treats as a Device), so we forced
-    the HID of all such objects to ACPI_BUS_HID ("LNXSYBUS").
-    
-    However, there are DSDTs that supply root-level Device objects with _HIDs.
-    This patch makes us pay attention to those _HIDs and only add the synthetic
-    ACPI_BUS_HID for root-level objects that do not supply their own _HID.
-    
-    For example, this DSDT: https://bugzilla.kernel.org/show_bug.cgi?id=15605
-    contains:
-    
-        Scope (_SB) {
-    	...
-        }
-        Device (AMW0) {
-    	Name (_HID, EisaId ("PNP0C14"))
-    	...
-        }
-    
-    and we should use "PNP0C14" for the AMW0 device, not "LNXSYBUS".
-    
-    Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
-    Acked-by: Zhang Rui <rui.zhang@intel.com>
-    Tested-by: Yong Wang <yong.y.wang@intel.com>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit bf02bd2590eb78d79ba1033d6df80c778b2f5ddf
-Author: Rafael J. Wysocki <rjw@sisk.pl>
-Date:   Tue Mar 16 23:21:55 2010 +0100
-
-    ACPI / ACPICA: Do not check reference counters in acpi_ev_enable_gpe()
-    
-    acpi_ev_enable_gpe() should enable the GPE at the hardware level
-    regardless of the value of the GPE's runtime reference counter.
-    
-    There are only two callers of acpi_ev_enable_gpe(), acpi_enable_gpe()
-    and acpi_set_gpe().  The first one checks the GPE's runtime
-    reference counter itself and only calls acpi_ev_enable_gpe() if it's
-    equal to one, and the other one is supposed to enable the GPE
-    unconditionally (if called with ACPI_GPE_ENABLE).
-    
-    This change fixes the problem in acpi_enable_wakeup_device() where
-    the GPE will not be enabled for wakeup if it's runtime reference
-    counter is zero, which is a regression from 2.6.33.
-    
-    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-    Reported-by: Robert Moore <robert.moore@intel.com>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit bc73675b99fd9850dd914be01d71af99c5d2a1ae
-Author: Zhang Rui <rui.zhang@intel.com>
-Date:   Mon Mar 22 15:48:54 2010 +0800
-
-    ACPI: fixes a false alarm from lockdep
-    
-    fixes a false alarm from lockdep, as acpi hotplug workqueue waits other
-    workqueues.
-    http://bugzilla.kernel.org/show_bug.cgi?id=14553
-    https://bugzilla.kernel.org/show_bug.cgi?id=15521
-    
-    Original-patch-from: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-    Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit 1ee4d61fd9822fb89e63b88a66848477087cd82e
-Author: Zhang Rui <rui.zhang@intel.com>
-Date:   Mon Mar 22 15:46:49 2010 +0800
-
-    ACPI dock: support multiple ACPI dock devices
-    
-    There may be multiple ACPI dock devices exist in ACPI namespace
-    and we should probe all of them.
-    http://bugzilla.kernel.org/show_bug.cgi?id=15521
-    
-    CC: Li Shaohua <shaohua.li@intel.com>
-    Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit dadf28a10c3eb29421837a2e413ab869ebd9e168
-Author: Alexey Starikovskiy <astarikovskiy@suse.de>
-Date:   Wed Mar 17 13:14:13 2010 -0400
-
-    ACPI: EC: Allow multibyte access to EC
-    
-    http://bugzilla.kernel.org/show_bug.cgi?id=14667
-    
-    Signed-off-by: Alexey Starikovskiy <astarikovskiy@suse.de>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
---8323328-1096381456-1270588312=:4168--
+>> Shouldn't we just return 0 in case that head_page has moved so that
+>> we can move to the next page in the loop inside rb_set_head_page()?
+>
+> No, when the reader moves the page, the RB_PAGE_MOVED forces the writer
+> to go into the conflict path (conflict between writer and reader).
+>
+> -- Steve
+>
+>
+>
