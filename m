@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756591Ab0DFNll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 09:41:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53654 "EHLO mx1.redhat.com"
+	id S1756558Ab0DFNm1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 09:42:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8824 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756430Ab0DFNld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 09:41:33 -0400
-Date: Tue, 6 Apr 2010 15:38:47 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: anfei <anfei.zhou@gmail.com>
-Cc: David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       nishimura@mxp.nes.nec.co.jp,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm 2/4] oom: select_bad_process: PF_EXITING check
-	should take ->mm into account
-Message-ID: <20100406133847.GA10039@redhat.com>
-References: <20100331204718.GD11635@redhat.com> <alpine.DEB.2.00.1004010133190.6285@chino.kir.corp.google.com> <20100401135927.GA12460@redhat.com> <alpine.DEB.2.00.1004011210380.30661@chino.kir.corp.google.com> <20100402111406.GA4432@redhat.com> <20100402183057.GA31723@redhat.com> <20100402183216.GC31723@redhat.com> <20100406114235.GA3965@desktop> <20100406121811.GA6802@redhat.com> <20100406130518.GB3965@desktop>
+	id S1756219Ab0DFNmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 09:42:21 -0400
+Message-ID: <4BBB3A15.6020502@redhat.com>
+Date: Tue, 06 Apr 2010 16:41:41 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100406130518.GB3965@desktop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Darren Hart <dvhltc@us.ibm.com>, linux-kernel@vger.kernel.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive
+ spinning
+References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com>	 <4BBA5305.7010002@redhat.com> <4BBA5C00.4090703@us.ibm.com>	 <4BBA6279.20802@redhat.com> <4BBA6B6F.7040201@us.ibm.com>	 <4BBB36FA.4020008@redhat.com> <1270560931.1595.342.camel@laptop>
+In-Reply-To: <1270560931.1595.342.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06, anfei wrote:
->
-> On Tue, Apr 06, 2010 at 02:18:11PM +0200, Oleg Nesterov wrote:
-> >
-> > I do not really know what is the "right" solution. Even if we fix this
-> > check for mt case, we also have CLONE_VM tasks.
-> >
-> What about checking mm->mm_users too? If there are any other users,
-> just let badness judge.  CLONE_VM tasks but not mt seem rare, and
-> badness doesn't consider it too.
+On 04/06/2010 04:35 PM, Peter Zijlstra wrote:
+> On Tue, 2010-04-06 at 16:28 +0300, Avi Kivity wrote:
+>    
+>> Yes, but that's the best case for spinning.  You could simply use a
+>> userspace spinlock in this case.
+>>      
+> Userspace spinlocks are evil.. they should _never_ be used.
+>    
 
-Even if we forget about get_task_mm() which increments mm_users, it is not
-clear to me how to do this check correctly.
+But in this case they're fastest.  If we don't provide a non-evil 
+alternative, people will use them.
 
-Say, mm_users > 1 but SIGNAL_GROUP_EXIT is set. This means this process is
-exiting and (ignoring CLONE_VM task) it is going to release its ->mm. But
-otoh mm can be NULL.
-
-Perhaps we can do
-
-	if ((PF_EXITING && thread_group_empty(p) ||
-	    (p->signal->flags & SIGNAL_GROUP_EXIT) {
-		// OK, it is exiting
-
-		bool has_mm = false;
-		do {
-			if (t->mm) {
-				has_mm = true;
-				break;
-			}
-		} while_each_thread(p, t);
-			
-		if (!has_mm)
-			continue;
-
-		if (p != current)
-			return ERR_PTR(-1);
-		...
-	}
-
-I dunno.
-
-Oleg.
+-- 
+error compiling committee.c: too many arguments to function
 
