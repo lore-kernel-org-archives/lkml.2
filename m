@@ -1,54 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756441Ab0DFD0t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 23:26:49 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:41085 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab0DFD0p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 23:26:45 -0400
-Date: Tue, 6 Apr 2010 13:26:42 +1000
-From: Simon Horman <horms@verge.net.au>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: wzt.wzt@gmail.com, linux-kernel@vger.kernel.org, wensong@linux-vs.org,
-       Julian Anastasov <ja@ssi.bg>, netdev@vger.kernel.org,
-       lvs-devel@vger.kernel.org, Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH] IPVS: replace sprintf to snprintf to avoid stack
- buffer overflow
-Message-ID: <20100406032642.GG30359@verge.net.au>
-References: <20100406025020.GA2741@localhost.localdomain>
- <k2l412e6f7f1004051958h7c50f439r6b7a84379c35cba5@mail.gmail.com>
+	id S1756512Ab0DFDb1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 23:31:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13281 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753061Ab0DFDbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 23:31:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,369,1267430400"; 
+   d="scan'208";a="610500767"
+Date: Tue, 6 Apr 2010 11:31:14 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: "Li, Shaohua" <shaohua.li@intel.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
+Message-ID: <20100406033114.GB13169@localhost>
+References: <20100406105324.7E30.A69D9226@jp.fujitsu.com> <20100406023043.GA12420@localhost> <20100406115543.7E39.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <k2l412e6f7f1004051958h7c50f439r6b7a84379c35cba5@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100406115543.7E39.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 06, 2010 at 10:58:28AM +0800, Changli Gao wrote:
-> On Tue, Apr 6, 2010 at 10:50 AM,  <wzt.wzt@gmail.com> wrote:
-> > IPVS not check the length of pp->name, use sprintf will cause stack buffer overflow.
-> > struct ip_vs_protocol{} declare name as char *, if register a protocol as:
-> > struct ip_vs_protocol ip_vs_test = {
-> >        .name =                 "aaaaaaaa....128...aaa",
-> >        .debug_packet =         ip_vs_tcpudp_debug_packet,
-> > };
-> >
-> > when called ip_vs_tcpudp_debug_packet(), sprintf(buf, "%s TRUNCATED", pp->name);
-> > will cause stack buffer overflow.
-> >
+On Tue, Apr 06, 2010 at 10:58:43AM +0800, KOSAKI Motohiro wrote:
+> > On Tue, Apr 06, 2010 at 10:06:19AM +0800, KOSAKI Motohiro wrote:
+> > > > On Tue, Apr 06, 2010 at 09:25:36AM +0800, Li, Shaohua wrote:
+> > > > > On Sun, Apr 04, 2010 at 10:19:06PM +0800, KOSAKI Motohiro wrote:
+> > > > > > > On Fri, Apr 02, 2010 at 05:14:38PM +0800, KOSAKI Motohiro wrote:
+> > > > > > > > > > > This patch makes a lot of sense than previous. however I think <1% anon ratio
+> > > > > > > > > > > shouldn't happen anyway because file lru doesn't have reclaimable pages.
+> > > > > > > > > > > <1% seems no good reclaim rate.
+> > > > > > > > > > 
+> > > > > > > > > > Oops, the above mention is wrong. sorry. only 1 page is still too big.
+> > > > > > > > > > because under streaming io workload, the number of scanning anon pages should
+> > > > > > > > > > be zero. this is very strong requirement. if not, backup operation will makes
+> > > > > > > > > > a lot of swapping out.
+> > > > > > > > > Sounds there is no big impact for the workload which you mentioned with the patch.
+> > > > > > > > > please see below descriptions.
+> > > > > > > > > I updated the description of the patch as fengguang suggested.
+> > > > > > > > 
+> > > > > > > > Umm.. sorry, no.
+> > > > > > > > 
+> > > > > > > > "one fix but introduce another one bug" is not good deal. instead, 
+> > > > > > > > I'll revert the guilty commit at first as akpm mentioned.
+> > > > > > > Even we revert the commit, the patch still has its benefit, as it increases
+> > > > > > > calculation precision, right?
+> > > > > > 
+> > > > > > no, you shouldn't ignore the regression case.
+> > > > 
+> > > > > I don't think this is serious. In my calculation, there is only 1 page swapped out
+> > > > > for 6G anonmous memory. 1 page should haven't any performance impact.
+> > > > 
+> > > > 1 anon page scanned for every N file pages scanned?
+> > > > 
+> > > > Is N a _huge_ enough ratio so that the anon list will be very light scanned?
+> > > > 
+> > > > Rik: here is a little background.
+> > > 
+> > > The problem is, the VM are couteniously discarding no longer used file
+> > > cache. if we are scan extra anon 1 page, we will observe tons swap usage
+> > > after few days.
+> > > 
+> > > please don't only think benchmark.
+> > 
+> > OK the days-of-streaming-io typically happen in file servers.  Suppose
+> > a file server with 16GB memory, 1GB of which is consumed by anonymous
+> > pages, others are for page cache.
+> > 
+> > Assume that the exact file:anon ratio computed by the get_scan_ratio()
+> > algorithm is 1000:1. In that case percent[0]=0.1 and is rounded down
+> > to 0, which keeps the anon pages in memory for the few days.
+> > 
+> > Now with Shaohua's patch, nr[0] = (262144/4096)/1000 = 0.06 will also
+> > be rounded down to 0. It only becomes >=1 when
+> > - reclaim runs into trouble and priority goes low
+> > - anon list goes huge
+> > 
+> > So I guess Shaohua's patch still has reasonable "underflow" threshold :)
 > 
-> Long messages will be truncated instead of buffer overflow. We need to
-> find a way to handle long messages elegantly.
+> Again, I didn't said his patch is no worth. I only said we don't have to
+> ignore the downside. 
 
-Its really a corner case. In practice protocol modules don't have really
-long names. And if one was merged that did, the buffer size could be increased
-at that time.
+Right, we should document both the upside and downside.
 
-So while I think its reasonable to protect against something unexpected
-in a protocol-module name crashing the system. Especially as that
-can be achieved without any real overhead. I don't think we need
-to sanitise the output.
+The main difference happens when file:anon scan ratio > 100:1.
+
+For the current percent[] based computing, percent[0]=0 hence nr[0]=0
+which disables anon list scan unconditionally, for good or for bad.
+
+For the direct nr[] computing,
+- nr[0] will be 0 for typical file servers, because with priority=12
+  and anon lru size < 1.6GB, nr[0] = (anon_size/4096)/100 < 0
+- nr[0] will be non-zero when priority=1 and anon_size > 100 pages,
+  this stops OOM for Shaohua's test case, however may not be enough to
+  guarantee safety (your previous reverting patch can provide this
+  guarantee).
+
+I liked Shaohua's patch a lot -- it adapts well to both the
+file-server case and the mostly-anon-pages case :)
+
+Thanks,
+Fengguang
