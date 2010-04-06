@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab0DFMaV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 08:30:21 -0400
-Received: from cluster-d.mailcontrol.com ([85.115.60.190]:60668 "EHLO
+	id S1755244Ab0DFMqM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 08:46:12 -0400
+Received: from cluster-d.mailcontrol.com ([85.115.60.190]:40057 "EHLO
 	cluster-d.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755150Ab0DFMaR (ORCPT
+	with ESMTP id S1753426Ab0DFMqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 08:30:17 -0400
-Message-ID: <4BBB28E9.7040705@csr.com>
-Date: Tue, 06 Apr 2010 13:28:25 +0100
+	Tue, 6 Apr 2010 08:46:02 -0400
+Message-ID: <4BBB2CC3.5010300@csr.com>
+Date: Tue, 06 Apr 2010 13:44:51 +0100
 From: David Vrabel <david.vrabel@csr.com>
 User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
@@ -16,12 +16,13 @@ To: Joe Perches <joe@perches.com>
 CC: Andrew Morton <akpm@linux-foundation.org>,
        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/11] drivers/usb/host/hwa-hc.c: Rename dev_info to hdi
-References: <20100304232928.2e45bdd1.akpm@linux-foundation.org> <0d6b9010d1fd6965951685a46e2effa0e3db89d4.1270493677.git.joe@perches.com>
-In-Reply-To: <0d6b9010d1fd6965951685a46e2effa0e3db89d4.1270493677.git.joe@perches.com>
+Subject: Re: [PATCH 03/11] drivers/usb/wusbcore/wusbhc.h: Remove unused dev_info
+ from struct wusb_port
+References: <20100304232928.2e45bdd1.akpm@linux-foundation.org> <8ec25276e62c8b9669ad8e46a6f5f9cbb0f507c3.1270493677.git.joe@perches.com>
+In-Reply-To: <8ec25276e62c8b9669ad8e46a6f5f9cbb0f507c3.1270493677.git.joe@perches.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Apr 2010 12:28:26.0197 (UTC) FILETIME=[A7DA2050:01CAD584]
+X-OriginalArrivalTime: 06 Apr 2010 12:44:51.0613 (UTC) FILETIME=[F334ACD0:01CAD586]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -36,7 +37,11 @@ Joe Perches wrote:
 > 
 > Signed-off-by: Joe Perches <joe@perches.com>
 
+This commit message isn't strictly correct but otherwise,
+
 Acked-by: David Vrabel <david.vrabel@csr.com>
+
+Not sure what this field was ever for...
 
 David
 -- 
