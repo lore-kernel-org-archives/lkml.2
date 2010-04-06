@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591Ab0DFJZo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 05:25:44 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:47782 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751385Ab0DFJZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 05:25:38 -0400
-Date: Tue, 6 Apr 2010 11:25:23 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [GIT PULL] break implicit percpu.h -> slab.h dependency
-Message-ID: <20100406092523.GA30270@elte.hu>
-References: <4BB95DEE.3050607@kernel.org>
+	id S1752779Ab0DFJZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 05:25:57 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:57649 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752603Ab0DFJZv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 05:25:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Cv1wE2eJsRc1MyM4+/dAwM/TVqab44t6UKCt7Dua4L+f6SrA/m9JldeYlgPP2eJCLD
+         5VQ7p2c191l3P23umN7uS5acGS1h7ojDETcez1g7dzwOmJaZKISYcYJKKirZBDZBUsA+
+         boGssKFb/D9hsy15HERjSqRMFjZX6D/Z5R7QA=
+Date: Tue, 6 Apr 2010 11:25:45 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] lockdep: Make lockstats counting per cpu
+Message-ID: <20100406092544.GB5147@nowhere>
+References: <1269736197-10958-1-git-send-regression-fweisbec@gmail.com> <1270505417-8144-1-git-send-regression-fweisbec@gmail.com> <1270543587.1597.742.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BB95DEE.3050607@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1270543587.1597.742.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Tejun Heo <tj@kernel.org> wrote:
-
->   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git slabh
+On Tue, Apr 06, 2010 at 10:46:27AM +0200, Peter Zijlstra wrote:
+> On Tue, 2010-04-06 at 00:10 +0200, Frederic Weisbecker wrote:
+> > Locking statistics are implemented using global atomic variables.
+> > This is usually fine unless some path write them very often.
+> > 
+> > This is the case for the function and function graph tracers
+> > that disable irqs for each entry saved (except if the function
+> > tracer is in preempt disabled only mode).
+> > And calls to local_irq_save/restore() increment hardirqs_on_events
+> > and hardirqs_off_events stats (or similar stats for redundant
+> > versions).
+> > 
+> > Incrementing these global vars for each function ends up in too
+> > much cache bouncing if lockstats are enabled.
+> > 
+> > To solve this, implement the debug_atomic_*() operations using
+> > per cpu vars.
+> > 
+> > 
 > 
-> This is rather unusual pull request at this stage in -rc cycles but
-> given the mostly trivial nature and massive size of this change, I
-> think it would be beneficial to merge this while the tree isn't
-> changing too rapidly and as early as possible so that further
-> breakages aren't introduced.
+> So I really have to ask, why?
+> 
+> This is CONFIG_DEBUG_LOCKDEP code, so its default off, and used to debug
+> lockdep. Debug code should be as simple as possible, and preferably
+> should not care about performance where possible.
+> 
+> So why complicate this?
+> 
 
-FYI, -tip testing found a build breakage with your changes:
 
- drivers/base/node.c:373: error: implicit declaration of function 'kmalloc'
- drivers/base/node.c:377: error: implicit declaration of function 'kfree'
+Also at worst it adds no more than 20 lines of code...
 
-The fix is below. Since my first test today triggered a build failure i'd 
-expect there to be more - i'll send all subsequent fixes to this thread.
-
-Thanks,
-
-	Ingo
-
-Index: linux2/drivers/base/node.c
-===================================================================
---- linux2.orig/drivers/base/node.c
-+++ linux2/drivers/base/node.c
-@@ -16,6 +16,7 @@
- #include <linux/device.h>
- #include <linux/swap.h>
- #include <linux/gfp.h>
-+#include <linux/slab.h>
- 
- static struct sysdev_class_attribute *node_state_attrs[];
- 
