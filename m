@@ -1,123 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932123Ab0DFCnd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 22:43:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35477 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757102Ab0DFCn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 22:43:27 -0400
-Subject: Re: [PATCH] libertas/sdio: set ECSI bit for 1-bit transfers
-From: Dan Williams <dcbw@redhat.com>
-To: Daniel Mack <daniel@caiaq.de>
-Cc: linux-kernel@vger.kernel.org, mirqus@gmail.com,
-       Alagu Sankar <alagusankar@embwise.com>,
-       Volker Ernst <volker.ernst@txtr.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Holger Schurig <hs4233@mail.mn-solutions.de>,
-       Bing Zhao <bzhao@marvell.com>, libertas-dev@lists.infradead.org,
-       linux-wireless@vger.kernel.org, linux-mmc@vger.kernel.org
-In-Reply-To: <1270042309-18606-1-git-send-email-daniel@caiaq.de>
-References: <k2he2d7436a1003310249v63878e0ahe1b398401937a225@mail.gmail.com>
-	 <1270042309-18606-1-git-send-email-daniel@caiaq.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 Apr 2010 19:42:39 -0700
-Message-ID: <1270521759.24724.6.camel@localhost.localdomain>
+	id S1757247Ab0DFCue (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 22:50:34 -0400
+Received: from mail-yw0-f198.google.com ([209.85.211.198]:42806 "EHLO
+	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757169Ab0DFCuZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 22:50:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=RegFl7U5dpQfJzKNQWDCzXozaIhFjXrm3tqamvITU1aAHQDaf6opC916mjyNhcJQOM
+         E7GWZrWum0e1wsDmh1zbh71u6TIyun+duBTDeWk69rLVfx9DcIZ8rNmpqLBSX/bZof7C
+         C+cJ9B7M9UmEeEMkkhuGiwo9cyAPofAoFIFoU=
+Date: Tue, 6 Apr 2010 10:50:20 +0800
+From: wzt.wzt@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: wensong@linux-vs.org, netdev@vger.kernel.org, lvs-devel@vger.kernel.org
+Subject: [PATCH] IPVS: replace sprintf to snprintf to avoid stack buffer overflow
+Message-ID: <20100406025020.GA2741@localhost.localdomain>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-31 at 15:31 +0200, Daniel Mack wrote:
-> When operating in 1-bit mode, SDAT1 is used as dedicated interrupt line.
-> However, the 8686 will only drive this line when the ECSI bit is set in
-> the CCCR_IF register.
-> 
-> Thanks to Alagu Sankar for pointing me in the right direction.
+IPVS not check the length of pp->name, use sprintf will cause stack buffer overflow.
+struct ip_vs_protocol{} declare name as char *, if register a protocol as:
+struct ip_vs_protocol ip_vs_test = {
+        .name =			"aaaaaaaa....128...aaa",
+	.debug_packet =         ip_vs_tcpudp_debug_packet,
+};
 
-Could you modify the patch to do this *only* for the 8686?  Apparently
-only the 8686 this hardware "quirk" and thus this might have odd
-side-effects on the 8688 or the 8385.
+when called ip_vs_tcpudp_debug_packet(), sprintf(buf, "%s TRUNCATED", pp->name); 
+will cause stack buffer overflow.
 
-Check the 'struct if_sdio_card' model member and compare it to
-IF_SDIO_MODEL_8686 like if_sdio_probe() does.
+Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
 
-Thanks!
-Dan
+---
+ net/netfilter/ipvs/ip_vs_proto.c        |   16 ++++++++--------
+ net/netfilter/ipvs/ip_vs_proto_ah_esp.c |    8 ++++----
+ 2 files changed, 12 insertions(+), 12 deletions(-)
 
-> Signed-off-by: Daniel Mack <daniel@caiaq.de>
-> Cc: Alagu Sankar <alagusankar@embwise.com>
-> Cc: Volker Ernst <volker.ernst@txtr.com>
-> Cc: Dan Williams <dcbw@redhat.com>
-> Cc: John W. Linville <linville@tuxdriver.com>
-> Cc: Holger Schurig <hs4233@mail.mn-solutions.de>
-> Cc: Bing Zhao <bzhao@marvell.com>
-> Cc: libertas-dev@lists.infradead.org
-> Cc: linux-wireless@vger.kernel.org
-> Cc: linux-mmc@vger.kernel.org
-> ---
->  drivers/net/wireless/libertas/if_sdio.c |   21 +++++++++++++++++++++
->  include/linux/mmc/sdio.h                |    2 ++
->  2 files changed, 23 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/net/wireless/libertas/if_sdio.c b/drivers/net/wireless/libertas/if_sdio.c
-> index 7a73f62..f89bb8b 100644
-> --- a/drivers/net/wireless/libertas/if_sdio.c
-> +++ b/drivers/net/wireless/libertas/if_sdio.c
-> @@ -34,6 +34,8 @@
->  #include <linux/mmc/card.h>
->  #include <linux/mmc/sdio_func.h>
->  #include <linux/mmc/sdio_ids.h>
-> +#include <linux/mmc/sdio.h>
-> +#include <linux/mmc/host.h>
->  
->  #include "host.h"
->  #include "decl.h"
-> @@ -942,6 +944,7 @@ static int if_sdio_probe(struct sdio_func *func,
->  	int ret, i;
->  	unsigned int model;
->  	struct if_sdio_packet *packet;
-> +	struct mmc_host *host = func->card->host;
->  
->  	lbs_deb_enter(LBS_DEB_SDIO);
->  
-> @@ -1022,6 +1025,24 @@ static int if_sdio_probe(struct sdio_func *func,
->  	if (ret)
->  		goto disable;
->  
-> +	/* For 1-bit transfers, we need to enable the interrupt flag in
-> +	 * the CCCR register. Set the MMC_QUIRK_LENIENT_FN0 bit to allow
-> +	 * access to non-vendor registers. */
-> +	if ((host->caps & MMC_CAP_SDIO_IRQ) &&
-> +	    (host->ios.bus_width == MMC_BUS_WIDTH_1)) {
-> +		u8 reg;
-> +
-> +		func->card->quirks |= MMC_QUIRK_LENIENT_FN0;
-> +		reg = sdio_f0_readb(func, SDIO_CCCR_IF, &ret);
-> +		if (ret)
-> +			goto release_int;
-> +
-> +		reg |= SDIO_BUS_ECSI;
-> +		sdio_f0_writeb(func, reg, SDIO_CCCR_IF, &ret);
-> +		if (ret)
-> +			goto release_int;
-> +	}
-> +
->  	card->ioport = sdio_readb(func, IF_SDIO_IOPORT, &ret);
->  	if (ret)
->  		goto release_int;
-> diff --git a/include/linux/mmc/sdio.h b/include/linux/mmc/sdio.h
-> index 0ebaef5..329a8fa 100644
-> --- a/include/linux/mmc/sdio.h
-> +++ b/include/linux/mmc/sdio.h
-> @@ -94,6 +94,8 @@
->  
->  #define  SDIO_BUS_WIDTH_1BIT	0x00
->  #define  SDIO_BUS_WIDTH_4BIT	0x02
-> +#define  SDIO_BUS_ECSI		0x20	/* Enable continuous SPI interrupt */
-> +#define  SDIO_BUS_SCSI		0x40	/* Support continuous SPI interrupt */
->  
->  #define  SDIO_BUS_ASYNC_INT	0x20
->  
-
+diff --git a/net/netfilter/ipvs/ip_vs_proto.c b/net/netfilter/ipvs/ip_vs_proto.c
+index 0e58455..8143318 100644
+--- a/net/netfilter/ipvs/ip_vs_proto.c
++++ b/net/netfilter/ipvs/ip_vs_proto.c
+@@ -166,9 +166,9 @@ ip_vs_tcpudp_debug_packet_v4(struct ip_vs_protocol *pp,
+ 
+ 	ih = skb_header_pointer(skb, offset, sizeof(_iph), &_iph);
+ 	if (ih == NULL)
+-		sprintf(buf, "%s TRUNCATED", pp->name);
++		snprintf(buf, sizeof(buf), "%s TRUNCATED", pp->name);
+ 	else if (ih->frag_off & htons(IP_OFFSET))
+-		sprintf(buf, "%s %pI4->%pI4 frag",
++		snprintf(buf, sizeof(buf), "%s %pI4->%pI4 frag",
+ 			pp->name, &ih->saddr, &ih->daddr);
+ 	else {
+ 		__be16 _ports[2], *pptr
+@@ -176,10 +176,10 @@ ip_vs_tcpudp_debug_packet_v4(struct ip_vs_protocol *pp,
+ 		pptr = skb_header_pointer(skb, offset + ih->ihl*4,
+ 					  sizeof(_ports), _ports);
+ 		if (pptr == NULL)
+-			sprintf(buf, "%s TRUNCATED %pI4->%pI4",
++			snprintf(buf, sizeof(buf), "%s TRUNCATED %pI4->%pI4",
+ 				pp->name, &ih->saddr, &ih->daddr);
+ 		else
+-			sprintf(buf, "%s %pI4:%u->%pI4:%u",
++			snprintf(buf, sizeof(buf), "%s %pI4:%u->%pI4:%u",
+ 				pp->name,
+ 				&ih->saddr, ntohs(pptr[0]),
+ 				&ih->daddr, ntohs(pptr[1]));
+@@ -200,9 +200,9 @@ ip_vs_tcpudp_debug_packet_v6(struct ip_vs_protocol *pp,
+ 
+ 	ih = skb_header_pointer(skb, offset, sizeof(_iph), &_iph);
+ 	if (ih == NULL)
+-		sprintf(buf, "%s TRUNCATED", pp->name);
++		snprintf(buf, sizeof(buf), "%s TRUNCATED", pp->name);
+ 	else if (ih->nexthdr == IPPROTO_FRAGMENT)
+-		sprintf(buf, "%s %pI6->%pI6 frag",
++		snprintf(buf, sizeof(buf), "%s %pI6->%pI6 frag",
+ 			pp->name, &ih->saddr, &ih->daddr);
+ 	else {
+ 		__be16 _ports[2], *pptr;
+@@ -210,10 +210,10 @@ ip_vs_tcpudp_debug_packet_v6(struct ip_vs_protocol *pp,
+ 		pptr = skb_header_pointer(skb, offset + sizeof(struct ipv6hdr),
+ 					  sizeof(_ports), _ports);
+ 		if (pptr == NULL)
+-			sprintf(buf, "%s TRUNCATED %pI6->%pI6",
++			snprintf(buf, sizeof(buf), "%s TRUNCATED %pI6->%pI6",
+ 				pp->name, &ih->saddr, &ih->daddr);
+ 		else
+-			sprintf(buf, "%s %pI6:%u->%pI6:%u",
++			snprintf(buf, sizeof(buf), "%s %pI6:%u->%pI6:%u",
+ 				pp->name,
+ 				&ih->saddr, ntohs(pptr[0]),
+ 				&ih->daddr, ntohs(pptr[1]));
+diff --git a/net/netfilter/ipvs/ip_vs_proto_ah_esp.c b/net/netfilter/ipvs/ip_vs_proto_ah_esp.c
+index c30b43c..ce795ab 100644
+--- a/net/netfilter/ipvs/ip_vs_proto_ah_esp.c
++++ b/net/netfilter/ipvs/ip_vs_proto_ah_esp.c
+@@ -136,9 +136,9 @@ ah_esp_debug_packet_v4(struct ip_vs_protocol *pp, const struct sk_buff *skb,
+ 
+ 	ih = skb_header_pointer(skb, offset, sizeof(_iph), &_iph);
+ 	if (ih == NULL)
+-		sprintf(buf, "%s TRUNCATED", pp->name);
++		snprintf(buf, sizeof(buf), "%s TRUNCATED", pp->name);
+ 	else
+-		sprintf(buf, "%s %pI4->%pI4",
++		snprintf(buf, sizeof(buf), "%s %pI4->%pI4",
+ 			pp->name, &ih->saddr, &ih->daddr);
+ 
+ 	pr_debug("%s: %s\n", msg, buf);
+@@ -154,9 +154,9 @@ ah_esp_debug_packet_v6(struct ip_vs_protocol *pp, const struct sk_buff *skb,
+ 
+ 	ih = skb_header_pointer(skb, offset, sizeof(_iph), &_iph);
+ 	if (ih == NULL)
+-		sprintf(buf, "%s TRUNCATED", pp->name);
++		snprintf(buf, sizeof(buf), "%s TRUNCATED", pp->name);
+ 	else
+-		sprintf(buf, "%s %pI6->%pI6",
++		snprintf(buf, sizeof(buf), "%s %pI6->%pI6",
+ 			pp->name, &ih->saddr, &ih->daddr);
+ 
+ 	pr_debug("%s: %s\n", msg, buf);
+-- 
+1.6.5.3
 
