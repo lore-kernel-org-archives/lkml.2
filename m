@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503Ab0DFJdU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 05:33:20 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:65081 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751682Ab0DFJdN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 05:33:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=RJblFyIdLcPSa6pr9iFwlx3h3CtvACTSCjc0gxlJCjipdwA8TTYKyt5dXHEiyVQUZB
-         zORGVtboroW49X0VAJ97BqVrhWT6PJSngBs7NoYqcI6z/D6iZWJpCNGbpyGMIGlTKcuy
-         /DeHrPDIrTHK7inqlrEaXqj4CuONtDWuFXXeo=
+	id S1752621Ab0DFJe4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 05:34:56 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:2247 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751682Ab0DFJeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 05:34:50 -0400
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: Tom Zanussi <zanussi@comcast.net>
+Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] relay: move remove_buf_file inside relay_close_buf
+References: <1267292137-12930-1-git-send-email-dmonakhov@openvz.org>
+Date: Tue, 06 Apr 2010 13:34:33 +0400
+In-Reply-To: <1267292137-12930-1-git-send-email-dmonakhov@openvz.org> (Dmitry
+	Monakhov's message of "Sat, 27 Feb 2010 20:35:37 +0300")
+Message-ID: <87hbnox6ty.fsf@openvz.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20100404193405.GA15065@elf.ucw.cz>
-References: <45cc95261003301455u10e6ee24pfb66176bfb279d1@mail.gmail.com> 
-	<201003310125.26266.laurent.pinchart@ideasonboard.com> <v2x45cc95261003311251idfdc9b8anb7b2060618611d30@mail.gmail.com> 
-	<20100401165606.GA1677@ucw.cz> <87aatn9k7j.fsf@old-tantale.fifi.org> 
-	<20100404132223.GA1346@ucw.cz> <87ljd3ujrp.fsf@old-tantale.fifi.org> 
-	<20100404193405.GA15065@elf.ucw.cz>
-From: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>
-Date: Tue, 6 Apr 2010 11:32:46 +0200
-Message-ID: <r2m45cc95261004060232y4c862040r9044bb435ad7eae5@mail.gmail.com>
-Subject: Re: webcam problem after suspend/hibernate
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Philippe Troin <phil@fifi.org>,
-       Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-       linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi !
-
-> Ok, that puts the problem firmly into uvcvideo area.
+add Tom Zanussi to recipients.
+Tom, please take a look at the patch, it is simple and clean and it able
+to solve long standing blktrace related bug.
+Dmitry Monakhov <dmonakhov@openvz.org> writes:
+> Currently remove_buf_file callback is called from from kobject
+> release method. This result in follow issue:
+> # blktrace -d /dev/sda1 -d /dev/sda -o test
+> blktrace_setup()
+>  dir = create_dir()
+>  rchan = relay_open(dir,...)
+>  ->create_buf_file_callback
+>     buf_file  = debugfs_create_file(dir, )
 >
-> Try changing its _resume routine to whatever is done on device
-> unplug... it should be rather easy, and is quite close to "correct"
-> solution.
-
-I am waiting to try that.
-
-If I always need to rmmod/modprobe everytime, that is meaning that
-something is kept messed somewhere in memory and should be cleaned by
-restart (reinitialize ?) the device.
-
-
-Mohamed-Ikbel
+> Userspace will open buf_file.
+> Later we make a decision to stop tracing
+> blktrace_down()
+>   relay_close(rhcan)  /* just decrement kobj reference  */
+>                       /* since it is not zero then callback not called */
+>   debugfs_remove(dir) /* FAIL due to non empty dir   */
+>
+> Later user space will close the file and file will be deleted,
+> but directory still exist.
+> user_space_close()
+>  ->file_release
+>    ->release_buf_file_callback
+>      ->debugfs_remove(buf_file)
+>
+> In fact this is general issue, blktrace is just one of examples.
+> We can not reliably remove parent dir until all users close the
+> buf_file.
+>
+> We don't have to wait this long. File may be deleted
+> inside relay_close_buf().
+>
+> Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+> ---
+>  kernel/relay.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/kernel/relay.c b/kernel/relay.c
+> index c705a41..dcf71c8 100644
+> --- a/kernel/relay.c
+> +++ b/kernel/relay.c
+> @@ -237,7 +237,6 @@ static void relay_destroy_buf(struct rchan_buf *buf)
+>  static void relay_remove_buf(struct kref *kref)
+>  {
+>  	struct rchan_buf *buf = container_of(kref, struct rchan_buf, kref);
+> -	buf->chan->cb->remove_buf_file(buf->dentry);
+>  	relay_destroy_buf(buf);
+>  }
+>  
+> @@ -487,6 +486,7 @@ static void relay_close_buf(struct rchan_buf *buf)
+>  {
+>  	buf->finalized = 1;
+>  	del_timer_sync(&buf->timer);
+> +	buf->chan->cb->remove_buf_file(buf->dentry);
+>  	kref_put(&buf->kref, relay_remove_buf);
+>  }
