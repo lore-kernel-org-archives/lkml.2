@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab0DFNM7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 09:12:59 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54842 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755705Ab0DFNMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 09:12:52 -0400
-Message-ID: <4BBB334D.5040308@suse.de>
-Date: Tue, 06 Apr 2010 18:42:45 +0530
-From: Suresh Jayaraman <sjayaraman@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091130 SUSE/3.0.0-1.1.1 Thunderbird/3.0
+	id S1755546Ab0DFN0c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 09:26:32 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:46257 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753734Ab0DFN00 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 09:26:26 -0400
+Date: Tue, 6 Apr 2010 15:26:22 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Frans Pop <elendil@planet.nl>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.34-rc3: Can't insmod after make, because versions now
+	differ?!
+Message-ID: <20100406132622.GA1366@ucw.cz>
+References: <20100405053628.GA12217@elf.ucw.cz> <201004051724.26225.elendil@planet.nl> <20100406070641.GA19231@atrey.karlin.mff.cuni.cz> <201004061500.32569.elendil@planet.nl>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: High priority threads causing severe CPU load imbalances
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004061500.32569.elendil@planet.nl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a simple test program that accepts number of threads(pthreads) to
-be created as a input. Each of these threads that gets created invokes a
-function which is just a infinite while loop. The main function after
-creating those threads goes in a infinite loop itself
+On Tue 2010-04-06 15:00:31, Frans Pop wrote:
+> On Tuesday 06 April 2010, Pavel Machek wrote:
+> > Yes, but... should module version checking be fixed so that it does
+> > not interfere like that?
+> 
+> I don't think so. Essentially you are getting what you configured: an 
+> extremely fine-grained kernel version. It's up to you to decide whether 
+> the benefits of that outweigh the limitations it brings.
 
-My test machine is a Dual Core AMD Opteron(tm) 860 with 8
-sockets(non-HT), I run this test program with number of threads ==
-number of CPUs:
+Yes, I want descriptive version strings. And yes, I'd like to use
+modules, and do development.
 
-   ./loadcpu -t 16
+Unfortunately, these two seem mutually exclusive. Given that Linus
+made noises (iirc) about 'everyone should set localversion_auto'... 
 
-I see 100% CPU utilization on almost all CPUs (via mpstat/htop/vmstat).
+> Stripping parts of the kernel version for module compatibility checks could 
+> interfere with suffixes explicitly added by distros to specify ABI 
+> compatibility.
 
-When the above threads are running, if I introduce a few high priority
-threads by doing:
-
-   nice -n -13 ./loadcpu -t 3
-
-After a short while, I see a few CPUs becoming idle at ~0% utilization
-(the number of CPUs becoming idle equals roughly the number of high
-priority threads i.e. 3). When I stop the high priority threads, the CPU
-utilization comes back to normal i.e. ~100%.
-
-This is reproducible on 2.6.32.10 stable kernel with all the recent all
-SMT fixes (I hope) and I think it would be reproducible in current
-upstream as well.
-
-sched_mc_power_savings has been always set to 0.
-
-I spent a while staring at the load balancing and the thread migration
-code, but could not figure out why this is happening. Would appreciate
-any pointers.
-
-
-Thanks,
+So split the version into regular parts and very detailed parts,
+putting explicit user options into 'regular'?
 
 -- 
-Suresh Jayaraman
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
