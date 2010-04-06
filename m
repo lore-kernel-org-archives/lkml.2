@@ -1,63 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558Ab0DFWPl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 18:15:41 -0400
-Received: from gate.crashing.org ([63.228.1.57]:47579 "EHLO gate.crashing.org"
+	id S1757544Ab0DFWSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 18:18:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45299 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756778Ab0DFWPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 18:15:35 -0400
-Subject: Re: Arch specific mmap attributes (Was: mprotect pgprot handling
- weirdness)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-mm@kvack.org,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       linux-arch@vger.kernel.org
-In-Reply-To: <20100406185246.7E63.A69D9226@jp.fujitsu.com>
-References: <20100406151751.7E4E.A69D9226@jp.fujitsu.com>
-	 <1270539044.13812.65.camel@pasglop>
-	 <20100406185246.7E63.A69D9226@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 07 Apr 2010 08:15:11 +1000
-Message-ID: <1270592111.13812.88.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1756135Ab0DFWSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 18:18:10 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+Subject: [PATCH -tip] kprobes: Move enable/disable_kprobe() out from debugfs
+	code
+To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
+Cc: Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>
+Date: Tue, 06 Apr 2010 18:24:52 -0400
+Message-ID: <20100406222452.13879.48199.stgit@localhost6.localdomain6>
+In-Reply-To: <4BB5FED3.4020809@redhat.com>
+References: <4BB5FED3.4020809@redhat.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-06 at 19:26 +0900, KOSAKI Motohiro wrote:
-> > Ok, I see. No biggie. The main deal remains how we want to do that
-> > inside the kernel :-) I think the less horrible options here are
-> > to either extend vm_flags to always be 64-bit, or add a separate
-> > vm_map_attributes flag, and add the necessary bits and pieces to
-> > prevent merge accross different attribute vma's.
-> 
-> vma->vm_flags already have VM_SAO. Why do we need more flags?
-> At least, I dislike to add separate flags member into vma.
-> It might introduce unnecessary messy into vma merge thing.
+Move enable/disable_kprobe() API out from debugfs related code,
+because these interfaces are not related to debugfs interface.
 
-Well, we did shove SAO in there, and used up the very last vm_flag for
-it a while back. Now I need another one, for little endian mappings. So
-I'm stuck.
+Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+Reported-by: Tony Luck <tony.luck@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+---
 
-But the problem goes further I believe. Archs do nowadays have quite an
-interesting set of MMU attributes that it would be useful to expose to
-some extent.
+ kernel/kprobes.c |  132 +++++++++++++++++++++++++++---------------------------
+ 1 files changed, 66 insertions(+), 66 deletions(-)
 
-Some powerpc's also provide storage keys for example and I think ARM
-have something along those lines. There's interesting cachability
-attributes too, on x86 as well. Being able to use such attributes to
-request for example a relaxed ordering mapping on x86 might be useful.
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 0ed46f3..282035f 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1588,6 +1588,72 @@ static void __kprobes kill_kprobe(struct kprobe *p)
+ 	arch_remove_kprobe(p);
+ }
+ 
++/* Disable one kprobe */
++int __kprobes disable_kprobe(struct kprobe *kp)
++{
++	int ret = 0;
++	struct kprobe *p;
++
++	mutex_lock(&kprobe_mutex);
++
++	/* Check whether specified probe is valid. */
++	p = __get_valid_kprobe(kp);
++	if (unlikely(p == NULL)) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	/* If the probe is already disabled (or gone), just return */
++	if (kprobe_disabled(kp))
++		goto out;
++
++	kp->flags |= KPROBE_FLAG_DISABLED;
++	if (p != kp)
++		/* When kp != p, p is always enabled. */
++		try_to_disable_aggr_kprobe(p);
++
++	if (!kprobes_all_disarmed && kprobe_disabled(p))
++		disarm_kprobe(p);
++out:
++	mutex_unlock(&kprobe_mutex);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(disable_kprobe);
++
++/* Enable one kprobe */
++int __kprobes enable_kprobe(struct kprobe *kp)
++{
++	int ret = 0;
++	struct kprobe *p;
++
++	mutex_lock(&kprobe_mutex);
++
++	/* Check whether specified probe is valid. */
++	p = __get_valid_kprobe(kp);
++	if (unlikely(p == NULL)) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	if (kprobe_gone(kp)) {
++		/* This kprobe has gone, we couldn't enable it. */
++		ret = -EINVAL;
++		goto out;
++	}
++
++	if (p != kp)
++		kp->flags &= ~KPROBE_FLAG_DISABLED;
++
++	if (!kprobes_all_disarmed && kprobe_disabled(p)) {
++		p->flags &= ~KPROBE_FLAG_DISABLED;
++		arm_kprobe(p);
++	}
++out:
++	mutex_unlock(&kprobe_mutex);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(enable_kprobe);
++
+ void __kprobes dump_kprobe(struct kprobe *kp)
+ {
+ 	printk(KERN_WARNING "Dumping kprobe:\n");
+@@ -1805,72 +1871,6 @@ static const struct file_operations debugfs_kprobes_operations = {
+ 	.release        = seq_release,
+ };
+ 
+-/* Disable one kprobe */
+-int __kprobes disable_kprobe(struct kprobe *kp)
+-{
+-	int ret = 0;
+-	struct kprobe *p;
+-
+-	mutex_lock(&kprobe_mutex);
+-
+-	/* Check whether specified probe is valid. */
+-	p = __get_valid_kprobe(kp);
+-	if (unlikely(p == NULL)) {
+-		ret = -EINVAL;
+-		goto out;
+-	}
+-
+-	/* If the probe is already disabled (or gone), just return */
+-	if (kprobe_disabled(kp))
+-		goto out;
+-
+-	kp->flags |= KPROBE_FLAG_DISABLED;
+-	if (p != kp)
+-		/* When kp != p, p is always enabled. */
+-		try_to_disable_aggr_kprobe(p);
+-
+-	if (!kprobes_all_disarmed && kprobe_disabled(p))
+-		disarm_kprobe(p);
+-out:
+-	mutex_unlock(&kprobe_mutex);
+-	return ret;
+-}
+-EXPORT_SYMBOL_GPL(disable_kprobe);
+-
+-/* Enable one kprobe */
+-int __kprobes enable_kprobe(struct kprobe *kp)
+-{
+-	int ret = 0;
+-	struct kprobe *p;
+-
+-	mutex_lock(&kprobe_mutex);
+-
+-	/* Check whether specified probe is valid. */
+-	p = __get_valid_kprobe(kp);
+-	if (unlikely(p == NULL)) {
+-		ret = -EINVAL;
+-		goto out;
+-	}
+-
+-	if (kprobe_gone(kp)) {
+-		/* This kprobe has gone, we couldn't enable it. */
+-		ret = -EINVAL;
+-		goto out;
+-	}
+-
+-	if (p != kp)
+-		kp->flags &= ~KPROBE_FLAG_DISABLED;
+-
+-	if (!kprobes_all_disarmed && kprobe_disabled(p)) {
+-		p->flags &= ~KPROBE_FLAG_DISABLED;
+-		arm_kprobe(p);
+-	}
+-out:
+-	mutex_unlock(&kprobe_mutex);
+-	return ret;
+-}
+-EXPORT_SYMBOL_GPL(enable_kprobe);
+-
+ static void __kprobes arm_all_kprobes(void)
+ {
+ 	struct hlist_head *head;
 
-I think it basically boils down to either extend vm_flags to always be
-64-bit, which seems to be Nick preferred approach, or introduct a
-vm_attributes with all the necessary changes to the merge code to take
-it into account (not -that- hard tho, there's only half a page of
-results in grep for these things :-)
 
-Cheers,
-Ben.
-
-
+-- 
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
