@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756219Ab0DFPmL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 11:42:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64937 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752951Ab0DFPmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 11:42:04 -0400
-Message-ID: <4BBB55DC.8070509@redhat.com>
-Date: Tue, 06 Apr 2010 11:40:12 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
+	id S1756446Ab0DFPm7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 11:42:59 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:47565 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753145Ab0DFPmx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 11:42:53 -0400
+Date: Tue, 6 Apr 2010 10:41:47 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+cc: Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       alex.shi@intel.com,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
+In-Reply-To: <1270542497.2078.123.camel@ymzhang.sh.intel.com>
+Message-ID: <alpine.DEB.2.00.1004061033330.18750@router.home>
+References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>  <alpine.DEB.2.00.1003250942080.2670@router.home>  <1269570902.9614.92.camel@alexs-hp.sh.intel.com>  <1270114166.2078.107.camel@ymzhang.sh.intel.com>  <alpine.DEB.2.00.1004011050340.16531@router.home>
+  <1270195589.2078.116.camel@ymzhang.sh.intel.com>  <alpine.DEB.2.00.1004050853300.23149@router.home>  <i2z84144f021004051030k7ff5190cyc083aa12c552dfac@mail.gmail.com>  <4BBA8DF9.8010409@kernel.org> <1270542497.2078.123.camel@ymzhang.sh.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Minchan Kim <minchan.kim@gmail.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Borislav Petkov <bp@alien8.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>
-Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux 2.6.34-rc3)
-References: <20100402175937.GA19690@liondog.tnic>	 <alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org>	 <20100406173754.7E5A.A69D9226@jp.fujitsu.com> <4BBB475A.7070002@redhat.com> <1270568096.1814.145.camel@barrios-desktop>
-In-Reply-To: <1270568096.1814.145.camel@barrios-desktop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2010 11:34 AM, Minchan Kim wrote:
+On Tue, 6 Apr 2010, Zhang, Yanmin wrote:
 
-> Let's see the unlink_anon_vmas.
->
-> 1. list_for_each_entry_safe(avc,next, vma->anon_vma_chain, same_vma)
-> 2. 	anon_vma_unlink
-> 3. 		spin_lock(anon_vma->lock)<-- HERE LOCK.
-> 4.		list_del(anon_vma_chain->same_anon_vma);
->
-> What if anon_vma is destroyed and reuse by SLAB_XXX_RCU for another
-> anon_vma object between 2 and 3?
-> I mean how to make sure 3) does lock valid anon_vma?
->
-> I hope it is culprit.
+> Thanks. I tried 2 and 4 times and didn't see much improvement.
+> I checked /proc/vamallocinfo and it doesn't have item of pcpu_get_vm_areas
+> when I use 4 times of PERCPU_DYNAMIC_RESERVE.
 
-How can the anon_vma get destroyed and reused, when this
-anon_vma_chain still has a reference to it (and the
-anon_vma has not been freed yet)?
+> I used perf to collect dtlb misses and LLC misses. dtlb miss data is not
+> stable. Sometimes, we have a bigger dtlb miss, but get a better result.
+>
+> LLC misses data are more stable. Only LLC-load-misses is the clear sign now.
+> LLC-store-misses has no big difference.
 
-What combination of circumstances is necessary for
-your bug hypothetical to happen?
+LLC-load-miss is exactly what condition?
+
+The cacheline environment in the hotpath should only include the following
+cache lines (without debugging and counters):
+
+1. The first cacheline from the kmem_cache structure
+
+(This is different from the sitation before the 2.6.34 changes. Earlier
+some critical values (object length etc) where available
+from the kmem_cache_cpu structure.  The cacheline containing the percpu
+structure array was needed to determome the kmem_cache_cpu address!)
+
+2. The first cacheline from kmem_cache_cpu
+
+3. The first cacheline of the data object (free pointer)
+
+And in case of a kfree/ kmem_cache_free:
+
+4. Cacheline that contains the page struct of the page the object resides
+in.
+
+Can you post the .config you are using and the bootup messages?
+
