@@ -1,78 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab0DFDKG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 23:10:06 -0400
-Received: from qw-out-2122.google.com ([74.125.92.24]:14143 "EHLO
-	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115Ab0DFDJ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 23:09:58 -0400
-From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       TAO HU <tghk48@motorola.com>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org,
-       "Ye Yuan.Bo-A22116" <yuan-bo.ye@motorola.com>,
-       Chang Qing-A21550 <Qing.Chang@motorola.com>,
-       linux-arm-kernel@lists.infradead.org,
-       =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-Subject: [PATCH] mm: Check if any page in a pageblock is reserved before marking it MIGRATE_RESERVE
-Date: Mon,  5 Apr 2010 20:09:16 -0700
-Message-Id: <1270523356-1728-1-git-send-email-arve@android.com>
-X-Mailer: git-send-email 1.6.5.1
-In-Reply-To: <20100405101424.GA21207@csn.ul.ie>
-References: <20100405101424.GA21207@csn.ul.ie>
+	id S1755141Ab0DFDOg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 23:14:36 -0400
+Received: from ozlabs.org ([203.10.76.45]:58126 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751115Ab0DFDOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 23:14:31 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: David Miller <davem@davemloft.net>
+Subject: Re: [PATCH] virtio-net: move sg off stack
+Date: Tue, 6 Apr 2010 12:44:28 +0930
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; i686; ; )
+Cc: mst@redhat.com, jpirko@redhat.com, xma@us.ibm.com, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+References: <20100331.031636.04083770.davem@davemloft.net> <20100331124156.GA4598@redhat.com> <20100401.192648.185498218.davem@davemloft.net>
+In-Reply-To: <20100401.192648.185498218.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004061244.29187.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes a problem where the first pageblock got marked MIGRATE_RESERVE even
-though it only had a few free pages. This in turn caused no contiguous memory
-to be reserved and frequent kswapd wakeups that emptied the caches to get more
-contiguous memory.
+On Fri, 2 Apr 2010 12:56:48 pm David Miller wrote:
+> From: "Michael S. Tsirkin" <mst@redhat.com>
+> Date: Wed, 31 Mar 2010 15:41:58 +0300
+> 
+> > Move sg structure off stack and into virtnet_info structure.
+> > This helps remove extra sg_init_table calls as well as reduce
+> > stack usage.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> > 
+> > Compile-tested only for now.
+> > Shirley, Rusty Russell, does this fix CONFIG_DEBUG_SG=y for you?
 
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
----
- mm/page_alloc.c |   16 +++++++++++++++-
- 1 files changed, 15 insertions(+), 1 deletions(-)
+Yes, this fixes the BUG_ON() for me (trivial changes to base on Linus'
+tree only).
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index fb7df1d..46ade16 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2860,6 +2860,20 @@ static inline unsigned long wait_table_bits(unsigned long size)
- #define LONG_ALIGN(x) (((x)+(sizeof(long))-1)&~((sizeof(long))-1))
- 
- /*
-+ * Check if a pageblock contains reserved pages
-+ */
-+static int pageblock_is_reserved(unsigned long start_pfn)
-+{
-+	unsigned long end_pfn = start_pfn + pageblock_nr_pages;
-+	unsigned long pfn;
-+
-+	for (pfn = start_pfn; pfn < end_pfn; pfn++)
-+		if (!pfn_valid_within(pfn) || PageReserved(pfn_to_page(pfn)))
-+			return 1;
-+	return 0;
-+}
-+
-+/*
-  * Mark a number of pageblocks as MIGRATE_RESERVE. The number
-  * of blocks reserved is based on min_wmark_pages(zone). The memory within
-  * the reserve will tend to store contiguous free pages. Setting min_free_kbytes
-@@ -2898,7 +2912,7 @@ static void setup_zone_migrate_reserve(struct zone *zone)
- 			continue;
- 
- 		/* Blocks with reserved pages will never free, skip them. */
--		if (PageReserved(page))
-+		if (pageblock_is_reserved(pfn))
- 			continue;
- 
- 		block_migratetype = get_pageblock_migratetype(page);
--- 
-1.6.5.1
-
+Thanks,
+Rusty.
