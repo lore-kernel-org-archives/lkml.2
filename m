@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757398Ab0DFTf7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 15:35:59 -0400
-Received: from web114310.mail.gq1.yahoo.com ([98.136.183.52]:47881 "HELO
-	web114310.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756736Ab0DFTfw (ORCPT
+	id S1757351Ab0DFTh0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 15:37:26 -0400
+Received: from cassarossa.samfundet.no ([129.241.93.19]:45760 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753224Ab0DFThU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 15:35:52 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Apr 2010 15:35:52 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
-  b=ZL22m3/NySYFylj3GqugeB9iRoLJmw3jLngMaESRMXGoWtkVIaDZqBjqopnlsuLvlR7dB9VHLV/8J1uw0tU2lOxuSSRO8EAhkMkHhHMlt5pe6B23sNoQwy8hpbmj0x6M+A+7JeNoc7kseZ9cTYaHhQ403GThTN3P72Zo0NUPlaM=;
-Message-ID: <132589.32312.qm@web114310.mail.gq1.yahoo.com>
-X-YMail-OSG: Y4DwB7wVM1luNdn5XfgkYGQtfPpa.g6Irg8VMUSTcaKhSxm
- r7UqowMQ8IVQU74aNERcTRFErDj5MPes2HQa1nD3zrKGKoFw0.WrkeXePWnj
- oHeufdVU3UlCdPA9RXGJTvM5an4cN.JSHMgtXoEMupA2xvDFwwE79oWnOeGB
- Sie7VMzCkzNWm_JkqX5ZjxHml.o5OLeZw3lQJIkTkLQDj7rwnDFAUysv976u
- P49p2f4gvUf_pqExveDbujREmRamQGr5RF2dhMhb1AZkz107lsCS12gTuPt6
- TsSNOU1VChdjZ
-X-Mailer: YahooMailRC/324.3 YahooMailWebService/0.8.100.260964
-Date: Tue, 6 Apr 2010 12:29:12 -0700 (PDT)
-From: Rick Sherm <rick.sherm@yahoo.com>
-Subject: Memory policy question for NUMA arch....
-To: linux-kernel@vger.kernel.org
+	Tue, 6 Apr 2010 15:37:20 -0400
+X-Greylist: delayed 1600 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Apr 2010 15:37:20 EDT
+Date: Tue, 6 Apr 2010 21:10:23 +0200
+From: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Borislav Petkov <bp@alien8.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>
+Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
+ 2.6.34-rc3)
+Message-ID: <20100406191023.GE14054@uio.no>
+References: <4BBB475A.7070002@redhat.com>
+ <1270568096.1814.145.camel@barrios-desktop>
+ <alpine.LFD.2.00.1004060841460.3487@i5.linux-foundation.org>
+ <1270571019.1814.163.camel@barrios-desktop>
+ <alpine.LFD.2.00.1004060926430.3487@i5.linux-foundation.org>
+ <1270572327.1711.3.camel@barrios-desktop>
+ <alpine.LFD.2.00.1004060951030.3487@i5.linux-foundation.org>
+ <4BBB69A9.5090906@redhat.com>
+ <alpine.LFD.2.00.1004061053450.3487@i5.linux-foundation.org>
+ <20100406120315.53ad7390.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20100406120315.53ad7390.akpm@linux-foundation.org>
+X-Operating-System: Linux 2.6.29.1 on a x86_64
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Apr 06, 2010 at 12:03:15PM -0700, Andrew Morton wrote:
+>> For example, maybe some list corruption causes us to do that 
+>> "anon_vma_chain_link()" _twice_ on the same avc entry. So we do that 
+>> "list_add_tail(&avc->same_anon_vma, &anon_vma->head);" on an entry that 
+>> already had "same_anon_vma" on one list.
+> The lib/list_debug.c stuff might detect such things.  I wonder if
+> either Borislav or Steinar had CONFIG_DEBUG_LIST enabled?
 
-On a NUMA host, if a driver calls __get_free_pages() then it will eventually invoke ->alloc_pages_current(..). The comment above/within alloc_pages_current() says 'current->mempolicy' will be used.So what memory policy will kick-in if the driver is trying to allocate some memory blocks during driver load time(say from probe_one)? System-wide default policy,correct?
+Not set on my kernel.
 
-What if the driver wishes to i) stay confined to a 'cpulist' OR ii) use a different mem-policy? How do I achieve this?
-I will choose the 'cpulist' after I am successfuly able to affinitize the MSI-X vectors.
-
-regards
-Rick
-
-
-      
+/* Steinar */
+-- 
+Homepage: http://www.sesse.net/
