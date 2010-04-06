@@ -1,78 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab0DFPUf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 11:20:35 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59994 "EHLO mx1.suse.de"
+	id S1754593Ab0DFPWz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 11:22:55 -0400
+Received: from havoc.gtf.org ([69.61.125.42]:39967 "EHLO havoc.gtf.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750976Ab0DFPU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 11:20:27 -0400
-Date: Tue, 6 Apr 2010 17:20:37 +0200
-From: Jan Kara <jack@suse.cz>
-To: tytso@mit.edu
-Cc: Jeff Moyer <jmoyer@redhat.com>, Jan Kara <jack@suse.cz>,
-       linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-       jens.axboe@oracle.com, esandeen@redhat.com
-Subject: Re: [patch/rft] jbd2: tag journal writes as metadata I/O
-Message-ID: <20100406152036.GA4420@quack.suse.cz>
-References: <x49iq8b9ep5.fsf@segfault.boston.devel.redhat.com>
- <20100401194822.GA8401@atrey.karlin.mff.cuni.cz>
- <x49tyrpkjmq.fsf@segfault.boston.devel.redhat.com>
- <20100405174603.GA24493@thunk.org>
-MIME-Version: 1.0
+	id S1751665Ab0DFPWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 11:22:49 -0400
+Date: Tue, 6 Apr 2010 11:22:48 -0400
+From: Jeff Garzik <jeff@garzik.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [git patches] libata fixes
+Message-ID: <20100406152248.GA369@havoc.gtf.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100405174603.GA24493@thunk.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 05-04-10 13:46:03, tytso@mit.edu wrote:
-> On Mon, Apr 05, 2010 at 11:24:13AM -0400, Jeff Moyer wrote:
-> > Jan Kara <jack@suse.cz> writes:
-> > >> In running iozone for writes to small files, we noticed a pretty big
-> > >> discrepency between the performance of the deadline and cfq I/O
-> > >> schedulers.  Investigation showed that I/O was being issued from 2
-> > >> different contexts: the iozone process itself, and the jbd2/sdh-8 thread
-> > >> (as expected).  Because of the way cfq performs slice idling, the delays
-> > >> introduced between the metadata and data I/Os were significant.  For
-> > >> example, cfq would see about 7MB/s versus deadline's 35 for the same
-> > >> workload.  I also tested fs_mark with writing and fsyncing 1000 64k
-> > >> files, and a similar 5x performance difference was observed.  Eric
-> > >> Sandeen suggested that I flag the journal writes as metadata, and once I
-> > >> did that, the performance difference went away completely (cfq has
-> > >> special logic to prioritize metadata I/O).
-> > >> 
-> > >> So, I'm submitting this patch for comments and testing.  I have a
-> > >> similar patch for jbd that I will submit if folks agree that this is a
-> > >> good idea.
-> > >   This looks like a good idea to me. I'd just be careful about data=journal
-> > > mode where even data is written via journal and thus you'd incorrectly
-> > > prioritize all the IO. I suppose that could have negative impact on performace
-> > > of other filesystems on the same disk. So for data=journal mode, I'd leave
-> > > write_op to be just WRITE / WRITE_SYNC_PLUG.
-> > 
-> > Hi, Jan, thanks for the review!  I'm trying to figure out the best way
-> > to relay the journal mode from ext3 or ext4 to jbd or jbd2.  Would a new
-> > journal flag, set in journal_init_inode, be appropriate?  This wouldn't
-> > cover the case of data journalling set per inode, though.  It also puts
-> > some ext3-specific code into the purportedly fs-agnostic jbd code
-> > (specifically, testing the superblock for the data journal mount flag).
-> > Do you have any suggestions?
-> 
-> I don't think it's necessary to worry about journal=data mode.  First
-> of all, it's not true that all of the I/O would be prioritized as
-> metadata.  In data=journal mode, data blocks are written twice; once
-> to the journal, and once to the final location on disk.  And the
-> journal writes do need to be prioritized because the commit can't go
-> out until all of the preceeding journal blocks have been written.  So
-> treating all of the journal writes as metadata for the the purposes of
-> cfq's prioritization makes sense to me....
-  OK, you are right that if we look at it this way, it makes sence to
-treat data writes to journal as metadata. So Jeff, now I agree with your
-original patch.
 
-									Honza 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+
+The Host Protected Area (HPA) fix is rather large, but nothing to be
+done about that except fix it, unfortunately.  The other two fixes are
+one/two-liners.
+
+
+
+Please pull from 'upstream-linus' branch of
+master.kernel.org:/pub/scm/linux/kernel/git/jgarzik/libata-dev.git upstream-linus
+
+to receive the following updates:
+
+ drivers/ata/libata-core.c |   77 ++++++++++++++++++++++++++++-----------------
+ drivers/ata/libata-sff.c  |    4 --
+ include/linux/libata.h    |    1 +
+ 3 files changed, 49 insertions(+), 33 deletions(-)
+
+Tejun Heo (3):
+      libata: don't whine on spurious IRQ
+      libata: disable NCQ on Crucial C300 SSD
+      libata: unlock HPA if device shrunk
+
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 3f6771e..49cffb6 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -1494,6 +1494,7 @@ static int ata_hpa_resize(struct ata_device *dev)
+ {
+ 	struct ata_eh_context *ehc = &dev->link->eh_context;
+ 	int print_info = ehc->i.flags & ATA_EHI_PRINTINFO;
++	bool unlock_hpa = ata_ignore_hpa || dev->flags & ATA_DFLAG_UNLOCK_HPA;
+ 	u64 sectors = ata_id_n_sectors(dev->id);
+ 	u64 native_sectors;
+ 	int rc;
+@@ -1510,7 +1511,7 @@ static int ata_hpa_resize(struct ata_device *dev)
+ 		/* If device aborted the command or HPA isn't going to
+ 		 * be unlocked, skip HPA resizing.
+ 		 */
+-		if (rc == -EACCES || !ata_ignore_hpa) {
++		if (rc == -EACCES || !unlock_hpa) {
+ 			ata_dev_printk(dev, KERN_WARNING, "HPA support seems "
+ 				       "broken, skipping HPA handling\n");
+ 			dev->horkage |= ATA_HORKAGE_BROKEN_HPA;
+@@ -1525,7 +1526,7 @@ static int ata_hpa_resize(struct ata_device *dev)
+ 	dev->n_native_sectors = native_sectors;
+ 
+ 	/* nothing to do? */
+-	if (native_sectors <= sectors || !ata_ignore_hpa) {
++	if (native_sectors <= sectors || !unlock_hpa) {
+ 		if (!print_info || native_sectors == sectors)
+ 			return 0;
+ 
+@@ -4186,36 +4187,51 @@ int ata_dev_revalidate(struct ata_device *dev, unsigned int new_class,
+ 		goto fail;
+ 
+ 	/* verify n_sectors hasn't changed */
+-	if (dev->class == ATA_DEV_ATA && n_sectors &&
+-	    dev->n_sectors != n_sectors) {
+-		ata_dev_printk(dev, KERN_WARNING, "n_sectors mismatch "
+-			       "%llu != %llu\n",
+-			       (unsigned long long)n_sectors,
+-			       (unsigned long long)dev->n_sectors);
+-		/*
+-		 * Something could have caused HPA to be unlocked
+-		 * involuntarily.  If n_native_sectors hasn't changed
+-		 * and the new size matches it, keep the device.
+-		 */
+-		if (dev->n_native_sectors == n_native_sectors &&
+-		    dev->n_sectors > n_sectors &&
+-		    dev->n_sectors == n_native_sectors) {
+-			ata_dev_printk(dev, KERN_WARNING,
+-				       "new n_sectors matches native, probably "
+-				       "late HPA unlock, continuing\n");
+-			/* keep using the old n_sectors */
+-			dev->n_sectors = n_sectors;
+-		} else {
+-			/* restore original n_[native]_sectors and fail */
+-			dev->n_native_sectors = n_native_sectors;
+-			dev->n_sectors = n_sectors;
+-			rc = -ENODEV;
+-			goto fail;
+-		}
++	if (dev->class != ATA_DEV_ATA || !n_sectors ||
++	    dev->n_sectors == n_sectors)
++		return 0;
++
++	/* n_sectors has changed */
++	ata_dev_printk(dev, KERN_WARNING, "n_sectors mismatch %llu != %llu\n",
++		       (unsigned long long)n_sectors,
++		       (unsigned long long)dev->n_sectors);
++
++	/*
++	 * Something could have caused HPA to be unlocked
++	 * involuntarily.  If n_native_sectors hasn't changed and the
++	 * new size matches it, keep the device.
++	 */
++	if (dev->n_native_sectors == n_native_sectors &&
++	    dev->n_sectors > n_sectors && dev->n_sectors == n_native_sectors) {
++		ata_dev_printk(dev, KERN_WARNING,
++			       "new n_sectors matches native, probably "
++			       "late HPA unlock, continuing\n");
++		/* keep using the old n_sectors */
++		dev->n_sectors = n_sectors;
++		return 0;
+ 	}
+ 
+-	return 0;
++	/*
++	 * Some BIOSes boot w/o HPA but resume w/ HPA locked.  Try
++	 * unlocking HPA in those cases.
++	 *
++	 * https://bugzilla.kernel.org/show_bug.cgi?id=15396
++	 */
++	if (dev->n_native_sectors == n_native_sectors &&
++	    dev->n_sectors < n_sectors && n_sectors == n_native_sectors &&
++	    !(dev->horkage & ATA_HORKAGE_BROKEN_HPA)) {
++		ata_dev_printk(dev, KERN_WARNING,
++			       "old n_sectors matches native, probably "
++			       "late HPA lock, will try to unlock HPA\n");
++		/* try unlocking HPA */
++		dev->flags |= ATA_DFLAG_UNLOCK_HPA;
++		rc = -EIO;
++	} else
++		rc = -ENODEV;
+ 
++	/* restore original n_[native_]sectors and fail */
++	dev->n_native_sectors = n_native_sectors;
++	dev->n_sectors = n_sectors;
+  fail:
+ 	ata_dev_printk(dev, KERN_ERR, "revalidation failed (errno=%d)\n", rc);
+ 	return rc;
+@@ -4354,6 +4370,9 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
+ 	{ "HTS541080G9SA00",    "MB4OC60D",     ATA_HORKAGE_NONCQ, },
+ 	{ "HTS541010G9SA00",    "MBZOC60D",     ATA_HORKAGE_NONCQ, },
+ 
++	/* https://bugzilla.kernel.org/show_bug.cgi?id=15573 */
++	{ "C300-CTFDDAC128MAG",	"0001",		ATA_HORKAGE_NONCQ, },
++
+ 	/* devices which puke on READ_NATIVE_MAX */
+ 	{ "HDS724040KLSA80",	"KFAOA20N",	ATA_HORKAGE_BROKEN_HPA, },
+ 	{ "WDC WD3200JD-00KLB0", "WD-WCAMR1130137", ATA_HORKAGE_BROKEN_HPA },
+diff --git a/drivers/ata/libata-sff.c b/drivers/ata/libata-sff.c
+index 6411e0c..e3877b6 100644
+--- a/drivers/ata/libata-sff.c
++++ b/drivers/ata/libata-sff.c
+@@ -1816,10 +1816,6 @@ retry:
+ 			    !ap->ops->sff_irq_check(ap))
+ 				continue;
+ 
+-			if (printk_ratelimit())
+-				ata_port_printk(ap, KERN_INFO,
+-						"clearing spurious IRQ\n");
+-
+ 			if (idle & (1 << i)) {
+ 				ap->ops->sff_check_status(ap);
+ 				ap->ops->sff_irq_clear(ap);
+diff --git a/include/linux/libata.h b/include/linux/libata.h
+index f8ea71e..b2f2003 100644
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -146,6 +146,7 @@ enum {
+ 	ATA_DFLAG_SLEEPING	= (1 << 15), /* device is sleeping */
+ 	ATA_DFLAG_DUBIOUS_XFER	= (1 << 16), /* data transfer not verified */
+ 	ATA_DFLAG_NO_UNLOAD	= (1 << 17), /* device doesn't support unload */
++	ATA_DFLAG_UNLOCK_HPA	= (1 << 18), /* unlock HPA */
+ 	ATA_DFLAG_INIT_MASK	= (1 << 24) - 1,
+ 
+ 	ATA_DFLAG_DETACH	= (1 << 24),
