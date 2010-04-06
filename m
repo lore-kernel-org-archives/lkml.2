@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757212Ab0DFDlK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 23:41:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52040 "EHLO mx1.redhat.com"
+	id S1757219Ab0DFDpB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 23:45:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48694 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754877Ab0DFDlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 23:41:00 -0400
-Message-ID: <4BBAAD3F.3090900@redhat.com>
-Date: Mon, 05 Apr 2010 23:40:47 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
+	id S1754877Ab0DFDoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 23:44:55 -0400
 MIME-Version: 1.0
-To: Wu Fengguang <fengguang.wu@intel.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       "Li, Shaohua" <shaohua.li@intel.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
-References: <20100406105324.7E30.A69D9226@jp.fujitsu.com> <20100406023043.GA12420@localhost> <20100406115543.7E39.A69D9226@jp.fujitsu.com> <20100406033114.GB13169@localhost>
-In-Reply-To: <20100406033114.GB13169@localhost>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+X-Fcc: ~/Mail/linus
+Cc: Grzegorz Nosek <root@localdomain.pl>, Matt Helsley <matthltc@us.ibm.com>,
+       Sukadev Bhattiprolu <sukadev@us.ibm.com>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: Testing lxc 0.6.5 in Fedora 13
+In-Reply-To: Oleg Nesterov's message of  Friday, 26 March 2010 14:47:09 +0100 <20100326134709.GB15790@redhat.com>
+References: <20100321195044.GA23757@megiteam.pl>
+	<20100323212834.GH20796@count0.beaverton.ibm.com>
+	<20100325213356.GB20541@megiteam.pl>
+	<20100326111131.GA8604@redhat.com>
+	<20100326115357.GA3345@count0.beaverton.ibm.com>
+	<20100326124522.GD17113@megiteam.pl>
+	<20100326134709.GB15790@redhat.com>
+X-Windows: garbage at your fingertips.
+Message-Id: <20100406034443.8B40ED477@magilla.sf.frob.com>
+Date: Mon,  5 Apr 2010 20:44:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2010 11:31 PM, Wu Fengguang wrote:
-> On Tue, Apr 06, 2010 at 10:58:43AM +0800, KOSAKI Motohiro wrote:
->> Again, I didn't said his patch is no worth. I only said we don't have to
->> ignore the downside.
->
-> Right, we should document both the upside and downside.
+(I've been away for a couple of weeks.)
+I concur with the things Oleg's said in this thread.
 
-The downside is obvious: streaming IO (used once data
-that does not fit in the cache) can push out data that
-is used more often - requiring that it be swapped in
-at a later point in time.
+As to what's "correct" for the kernel in theory, it would certainly make
+sense to clean up the ptrace cases to use the tracer (parent) pid_ns when
+reporting any PID as such.  The wait and SIGCHLD code already does this, so
+that would be consistent.  Off hand I don't see anything other than
+tracehook_report_clone{,_complete}() that sees the wrong value now.
 
-I understand what Shaohua's patch does, but I do not
-understand the upside.  What good does it do to increase
-the size of the cache for streaming IO data, which is
-generally touched only once?
+Fixing that requires a bit of hair.  The simple and clean approach is to
+just have the tracehook calls (i.e. ptrace layer) extract the PID from the
+task_struct using the desired pid_ns.  The trouble there is that the
+tracehook_report_clone_complete() call is made when that task_struct is no
+longer guaranteed to be valid.  The contrary approach of extracting the
+appropriate value for the tracer earlier breaks the clean layering because
+the fork.c code really should not know at all that ->parent->nsproxy is the
+place to look for what values to pass to tracehook calls.  I guess the
+simple and clean fix is to get_task_struct() before wake_up_new_task()
+and put_task_struct() after tracehook_report_clone_complete().  That does
+add some gratuitous atomic incr/decr overhead, though.
 
-What kind of performance benefits can we get by doing
-that?
-
-> The main difference happens when file:anon scan ratio>  100:1.
->
-> For the current percent[] based computing, percent[0]=0 hence nr[0]=0
-> which disables anon list scan unconditionally, for good or for bad.
->
-> For the direct nr[] computing,
-> - nr[0] will be 0 for typical file servers, because with priority=12
->    and anon lru size<  1.6GB, nr[0] = (anon_size/4096)/100<  0
-> - nr[0] will be non-zero when priority=1 and anon_size>  100 pages,
->    this stops OOM for Shaohua's test case, however may not be enough to
->    guarantee safety (your previous reverting patch can provide this
->    guarantee).
->
-> I liked Shaohua's patch a lot -- it adapts well to both the
-> file-server case and the mostly-anon-pages case :)
+None of this has much of anything to do with strace, of course.  As I've
+said, I don't see anything other than the PTRACE_GETEVENTMSG value for
+PTRACE_EVENT_{CLONE,FORK,VFORK} reports that is wrong in the kernel.  As
+Oleg said, strace doesn't use that at all.  (This is not the place to
+discuss the details of strace further.)
 
 
+Thanks,
+Roland
