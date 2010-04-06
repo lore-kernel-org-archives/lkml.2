@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226Ab0DFCkz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 22:40:55 -0400
-Received: from fg-out-1718.google.com ([72.14.220.153]:37096 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757202Ab0DFCks convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 22:40:48 -0400
+	id S1757123Ab0DFClH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 22:41:07 -0400
+Received: from ozlabs.org ([203.10.76.45]:38080 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757212Ab0DFCku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 22:40:50 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: linux-next: Tree for April 1 (virtio_blk warning)
+Date: Tue, 6 Apr 2010 12:10:48 +0930
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; i686; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>,
+       john cooper <john.cooper@redhat.com>
+References: <20100401172317.80b6d961.sfr@canb.auug.org.au> <20100401091312.85775242.randy.dunlap@oracle.com>
+In-Reply-To: <20100401091312.85775242.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <20100406021559.GD3630@balbir.in.ibm.com>
-References: <1270496004-9715-1-git-send-email-mike@android.com>
-	 <w2l6599ad831004051252mbf8c4cedz293540bfc7b2f87a@mail.gmail.com>
-	 <20100406021559.GD3630@balbir.in.ibm.com>
-Date: Mon, 5 Apr 2010 19:40:43 -0700
-Message-ID: <z2s8bb80c381004051940t27e513fbr3b4ec282666b8398@mail.gmail.com>
-Subject: Re: [RFC][PATCH] sched: cpuacct: Track cpuusage per cpu frequency
-From: Mike Chan <mike@android.com>
-To: balbir@linux.vnet.ibm.com
-Cc: Paul Menage <menage@google.com>, cpufreq@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004061210.48840.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 5, 2010 at 7:15 PM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> * menage@google.com <menage@google.com> [2010-04-05 12:52:57]:
->
->> On Mon, Apr 5, 2010 at 12:33 PM, Mike Chan <mike@android.com> wrote:
->> > New file: cpuacct.cpufreq when CONFIG_CPU_FREQ_STATS is enabled.
->> >
->> > cpuacct.cpufreq accounts for cpu time per-cpu frequency, time is exported
->> > in nano-seconds
->>
->> Can you clarify the wording of this (and describe it in the relevant
->> Documentation/... file)? It's not clear.
->>
->> From the code, it appears that the file reports a breakdown of how
->> much CPU time the cgroup has been consuming at each different CPU
->> frequency level. If so, then you probably want to reword the
->> description to avoid "per-cpu", since that makes it sounds as though
->> it's reporting something, well, "per CPU".
->>
->> Also, what's the motivation here? If it's for power monitoring
->> purposes, might it be simpler to just report a single number, that's
->> the integral of the CPU usage by frequency index (i.e. calculated from
->> the same information that this patch is already gathering in
->> cpuacct_charge()) rather than dumping a whole table on userspace?
->
-> As utilization increases, won't the integral quickly overflow? BTW,
-> Mike have you looked at the scaled accounting infrastructure we have
-> in taskstats?
->
+On Fri, 2 Apr 2010 02:43:12 am Randy Dunlap wrote:
+> On Thu, 1 Apr 2010 17:23:17 +1100 Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > Changes since 20100331:
+> 
+> 
+> drivers/block/virtio_blk.c:228:13: warning: multi-character character constant
+> 
+> due to:
+> 
+> 	if (cmd == 'VBID') {
 
-I just looked (thanks for pointed that out, it was new to me, thx!).
-The problem here is that the accounting scales time based of cpu
-speed. As it currently stands it will not represent power tracking
-accurately as the power consumption of running at 1ghz / 2 != 500mhz.
-We would have to register a weight factor for each speed and those
-would have to be registered from the board files (at least in the ARM
-world), since voltage levels can vary across projects.
+John?  That looks suspiciously like untested code.
 
--- Mike
-
-> --
->        Three Cheers,
->        Balbir
->
+Thanks,
+Rusty.
