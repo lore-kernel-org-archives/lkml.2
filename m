@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756591Ab0DFOv3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 10:51:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59150 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754745Ab0DFOvX (ORCPT
+	id S1756688Ab0DFOvu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 10:51:50 -0400
+Received: from mail-pz0-f193.google.com ([209.85.222.193]:50599 "EHLO
+	mail-pz0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754745Ab0DFOvp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 10:51:23 -0400
-Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive 
- spinning
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ulrich Drepper <drepper@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>, Darren Hart <dvhltc@us.ibm.com>,
-       linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
-       "Peter W. Morreale" <pmorreale@novell.com>,
-       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Gregory Haskins <ghaskins@novell.com>,
-       Sven-Thorsten Dietrich <sdietrich@novell.com>,
-       Chris Mason <chris.mason@oracle.com>,
-       John Cooper <john.cooper@third-harmonic.com>,
-       Chris Wright <chrisw@sous-sol.org>
-In-Reply-To: <m2ua36005b51004060747y1abf15edj28227274844db2e7@mail.gmail.com>
-References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com>
-	 <4BBA5305.7010002@redhat.com> <1270543721.1597.748.camel@laptop>
-	 <m2ua36005b51004060747y1abf15edj28227274844db2e7@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 06 Apr 2010 16:51:18 +0200
-Message-ID: <1270565478.1595.529.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Apr 2010 10:51:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=kbyiFrSMzKK1B3pLvtBnfadBL6bISy+eHJgHlX8m8EaIP3FQca+ij4G40oQqiV7Bon
+         dGVjOFR3OSY9F5dZfcaNeHbcboqxntEZo/SfIr7qXJJ+xytW2RBYjcACyV9qeWkJmxJh
+         RfS2gevAJpErTIBhPr1ZwOv9UVzHJaarG+Gzo=
+MIME-Version: 1.0
+In-Reply-To: <1270277000.2686.20.camel@sbs-t61>
+References: <v2o817ecb6f1003311859nb14bab83y80f743a0accc5028@mail.gmail.com>
+	 <1270277000.2686.20.camel@sbs-t61>
+Date: Tue, 6 Apr 2010 10:51:44 -0400
+Message-ID: <g2g817ecb6f1004060751s1fd3d42bqc19b5c36b33c3c13@mail.gmail.com>
+Subject: Re: [PATCH 1/4] [tip:x86/mm] Correcting improper large page 
+	preservation
+From: Siarhei Liakh <sliakh.lkml@gmail.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       Arjan van de Ven <arjan@infradead.org>,
+       James Morris <jmorris@namei.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
+       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
+       Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-06 at 07:47 -0700, Ulrich Drepper wrote:
-> On Tue, Apr 6, 2010 at 01:48, Peter Zijlstra <peterz@infradead.org>
-> wrote:
-> >  try
-> >  spin
-> >  try
-> >  syscall
-> 
-> This is available for a long time in the mutex implementation
-> (PTHREAD_MUTEX_ADAPTIVE_NP mutex type).  It hasn't show much
-> improvement if any.  There were some people demanding this support for
-> as far as I know they are not using it now.  This is adaptive
-> spinning, learning from previous calls how long to wait.  But it's
-> still unguided.  There is no way to get information like "the owner
-> has been descheduled". 
+On Sat, Apr 3, 2010 at 2:43 AM, Suresh Siddha <suresh.b.siddha@intel.com> wrote:
+> On Wed, 2010-03-31 at 18:59 -0700, Siarhei Liakh wrote:
+>> +     /*
+>> +      * .data and .bss should always be writable.
+>> +      */
+>> +     if ((within(pfn, __pa((unsigned long)_sdata) >> PAGE_SHIFT,
+>> +                __pa((unsigned long)_edata) >> PAGE_SHIFT)) ||
+>> +         (within(pfn, __pa((unsigned long)__bss_start) >> PAGE_SHIFT,
+>> +                __pa((unsigned long)__bss_stop) >> PAGE_SHIFT))) {
+>> +             pgprot_val(required) |= _PAGE_RW;
+>> +     }
+>
+> I have reviewed this patch and the only comment I have is:
+>
+> On 64bit kernels, kernel text/data mapping and kernel identity mappings
+> are different virtual addresses mapping to same pfn ranges. For the
+> data/bss pages, does it help (in identifying certain data corruptions
+> more easily) in making the kernel identity mapping to be set to
+> read-only and enforce the need of RW only for the kernel data mappings.
+>
+> Or is there some obscure code that uses something like
+> __va(__pa(data_symbol)) and writes to it?
+>
+> If not, we can remove the __pa() constructs above and use the addr for
+> comparisons.
 
-That's where the FUTEX_LOCK thing comes in, it does all those, the above
-was a single spin loop to amortize the syscall overhead.
-
-I wouldn't make it any more complex than a single pause ins, syscalls
-are terribly cheap these days.
-
+Done.
+Patch V2 have been posted.
