@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509Ab0DFQ5y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 12:57:54 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:65510 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757076Ab0DFQ5q (ORCPT
+	id S1757189Ab0DFQ6S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 12:58:18 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56236 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756882Ab0DFQ6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 12:57:46 -0400
-Date: Tue, 6 Apr 2010 19:57:20 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: ext Nishanth Menon <nm@ti.com>
-Cc: "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>,
-       "Chikkature Rajashekar, Madhusudhan" <madhu.cr@ti.com>,
-       "me@felipebalbi.com" <me@felipebalbi.com>,
-       "'kishore kadiyala'" <kishorek.kadiyala@gmail.com>,
-       "'Vimal Singh'" <vimal.newwork@gmail.com>,
-       "tony@atomide.com" <tony@atomide.com>,
-       "S, Venkatraman" <svenkatr@ti.com>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Lavinen Jarkko (Nokia-D/Helsinki)" <jarkko.lavinen@nokia.com>
-Subject: Re: [PATCH v3] OMAP: Fix for bus width which improves SD card's
- peformance.
-Message-ID: <20100406165720.GA17916@nokia.com>
-Reply-To: felipe.balbi@nokia.com
-References: <003b01cad0f0$6ea78040$544ff780@am.dhcp.ti.com>
- <g2s7f9d1ffb1003312331o149df218g651c3e4349ac9a77@mail.gmail.com>
- <003c01cad1b1$da2cdbf0$544ff780@am.dhcp.ti.com>
- <m2n7f9d1ffb1004050556o1ed2eec8ief66d60fc85f96de@mail.gmail.com>
- <20100405164839.GB17388@gandalf>
- <007c01cad4e4$26c5a700$544ff780@am.dhcp.ti.com>
- <20100406050035.GA32537@gandalf>
- <003901cad5a4$730264d0$544ff780@am.dhcp.ti.com>
- <20100406163211.GA29117@nokia.com>
- <4BBB6767.7010202@ti.com>
+	Tue, 6 Apr 2010 12:58:10 -0400
+Date: Tue, 6 Apr 2010 09:53:57 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Minchan Kim <minchan.kim@gmail.com>
+cc: Rik van Riel <riel@redhat.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Borislav Petkov <bp@alien8.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>
+Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
+ 2.6.34-rc3)
+In-Reply-To: <1270572327.1711.3.camel@barrios-desktop>
+Message-ID: <alpine.LFD.2.00.1004060951030.3487@i5.linux-foundation.org>
+References: <20100402175937.GA19690@liondog.tnic>  <alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org>  <20100406173754.7E5A.A69D9226@jp.fujitsu.com> <4BBB475A.7070002@redhat.com>   <1270568096.1814.145.camel@barrios-desktop> 
+ <alpine.LFD.2.00.1004060841460.3487@i5.linux-foundation.org>  <1270571019.1814.163.camel@barrios-desktop>  <alpine.LFD.2.00.1004060926430.3487@i5.linux-foundation.org> <1270572327.1711.3.camel@barrios-desktop>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <4BBB6767.7010202@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 06 Apr 2010 16:57:32.0104 (UTC) FILETIME=[3F900480:01CAD5AA]
-X-Nokia-AV: Clean
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 06, 2010 at 06:55:03PM +0200, ext Nishanth Menon wrote:
->some reasons why i love switch statements ;) since I dont expect other
->than precisely 4 and 8 (do we expect 5,6,7 - i might be wrong).. but if
->it is so, wont the following be better?
->
->switch (mmc_slot(host).wires)
->{
->case 8:
->	mmc->caps |= MMC_CAP_8_BIT_DATA;
->	/* fall thru*/
->case 4:
->	mmc->caps |= MMC_CAP_4_BIT_DATA;
->		break;
->default:
->	WARN("bad width");
->}
 
-I like that, but I remember Madhu (or someone else) saying he thinks 
-it's less readable this way. Go figure...
 
--- 
-balbi
+On Wed, 7 Apr 2010, Minchan Kim wrote:
+> 
+> unmap_and_move
+> 	remove_migration_ptes
+> 		rmap_walk
+> 			rmap_walk_anon
+> 
+> We always has rcu_read_lock about anon page in unmap_and_move.
+> So I think it's not buggy. What am I missing?
+
+Ok, in that case it's fine.
+
+However, it does bring back my comment about all those anonvma changes: 
+the locking is totally undocumented. 
+
+Why isn't there a thing _saying_ that it's ok because of this?
+
+Why is there no comment about the locking of that 'same_vma' / 
+'vma->anon_vma_chain' except for the totally nonsensical one about 
+page_table_lock (which doesn't protect _any_ of the other cases)?
+
+		Linus
