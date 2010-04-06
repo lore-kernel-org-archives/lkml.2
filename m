@@ -1,484 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121Ab0DFFrL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 01:47:11 -0400
-Received: from mga14.intel.com ([143.182.124.37]:28126 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751000Ab0DFFrI convert rfc822-to-8bit (ORCPT
+	id S1752440Ab0DFFwY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 01:52:24 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38910 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab0DFFwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 01:47:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,370,1267430400"; 
-   d="scan'208";a="262410568"
-From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "mingo@elte.hu" <mingo@elte.hu>,
-       "jdike@addtoit.com" <jdike@addtoit.com>
-Date: Tue, 6 Apr 2010 13:46:56 +0800
-Subject: RE: [PATCH v1 2/3] Provides multiple submits and asynchronous
-	notifications.
-Thread-Topic: [PATCH v1 2/3] Provides multiple submits and asynchronous
-	notifications.
-Thread-Index: AcrT7DezJGp/XfkQRWiUDSZtLP/fsQBX+CyA
-Message-ID: <97F6D3BD476C464182C1B7BABF0B0AF5C17B5BC1@shzsmsx502.ccr.corp.intel.com>
-References: <20100317102710.GB9782@redhat.com>
- <1270113296-4999-1-git-send-email-xiaohui.xin@intel.com>
- <20100401110250.GD3323@redhat.com>
- <97F6D3BD476C464182C1B7BABF0B0AF5C17B55B5@shzsmsx502.ccr.corp.intel.com>
- <20100404114028.GF3189@redhat.com>
-In-Reply-To: <20100404114028.GF3189@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 6 Apr 2010 01:52:21 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: mprotect pgprot handling weirdness
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1270530566.13812.28.camel@pasglop>
+References: <1270530566.13812.28.camel@pasglop>
+Message-Id: <20100406143928.7E4B.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue,  6 Apr 2010 14:52:15 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael,
-> >>> For the write logging, do you have a function in hand that we can
-> >>> recompute the log? If that, I think I can use it to recompute the
-> >>>log info when the logging is suddenly enabled.
-> >>> For the outstanding requests, do you mean all the user buffers have
-> >>>submitted before the logging ioctl changed? That may be a lot, and
-> >> >some of them are still in NIC ring descriptors. Waiting them to be
-> >>>finished may be need some time. I think when logging ioctl changed,
-> >> >then the logging is changed just after that is also reasonable.
- 
-> >>The key point is that after loggin ioctl returns, any
-> >>subsequent change to memory must be logged. It does not
-> >>matter when was the request submitted, otherwise we will
-> >>get memory corruption on migration.
+> Hi folks !
+> 
+> While looking at untangling a bit some of the mess with vm_flags and
+> pgprot (*), I notices a few things I can't quite explain... they may ..
+> or may not be bugs, but I though it was worth mentioning:
+> 
+> - In mprotect_fixup() :
+> 
+> 	/*
+> 	 * vm_flags and vm_page_prot are protected by the mmap_sem
+> 	 * held in write mode.
+> 	 */
+> 	vma->vm_flags = newflags;
+> 	vma->vm_page_prot = pgprot_modify(vma->vm_page_prot,
+> 					  vm_get_page_prot(newflags));
+> 
+> 	if (vma_wants_writenotify(vma)) {
+> 		vma->vm_page_prot = vm_get_page_prot(newflags & ~VM_SHARED);
+> 		dirty_accountable = 1;
+> 	}
+> 
+> So as you can see above, we take great care (using pgprot_modify) to avoid
+> blasting away some PAT related flags on x86 (no other arch implements
+> pgprot_modify() today).... but if we hit vma_wants_writenotify(), then
+> we unconditionally override the entire vma->vm_page_prot field with some
+> new prot bits born of the new vm_flags. That sounds odd...
+> 
+> - in sys_mprotect: 
+> 
+> 	newflags = vm_flags | (vma->vm_flags & ~(VM_READ | VM_WRITE | VM_EXEC));
+> 
+> Do I read correctly that this means we cannot -remove- any flag than
+> VM_READ, VM_WRITE or VM_EXEC ? That means that we cannot remove PROT_SAO
+> which gets turned into VM_SAO on powerpc ... Yet another reason to take
+> those arch specific mapping attributes out of the vm_flags.
+> 
+> (*) Right now it's near impossible to add arch specific PROT_* bits to
+> mmap/mprotect for fancy things like cachability attributes, or other
+> nifty things like reverse-endian mappings that we have on some embedded
+> platforms, I'm investigating ways to better separate vm_page_prot from
+> vm_flags so some PROT_* bits can go straight to the former without
+> having to be mirrored in some way in the later.
 
-> >The change to memory happens when vhost_add_used_and_signal(), right?
-> >So after ioctl returns, just recompute the log info to the events in the async queue,
-> >is ok. Since the ioctl and write log operations are all protected by vq->mutex.
- 
->> Thanks
->> Xiaohui
+This check was introduced the following commit. yes now we don't
+consider arch specific PROT_xx flags. but I don't think it is odd.
 
->Yes, I think this will work.
+Yeah, I can imagine at least embedded people certenary need arch
+specific PROT_xx flags and they hope to change it. but I don't 
+think mprotect() fit for your usage. I mean mprotect() is widely 
+used glibc internally. then, If mprotec can change which flags, 
+glibc might turn off such flags implictly.
 
-Thanks, so do you have the function to recompute the log info in your hand that I can 
-use? I have weakly remembered that you have noticed it before some time.
+So, Why can't we proper new syscall? It has no regression risk.
 
-> > Thanks
-> > Xiaohui
-> > 
-> >  drivers/vhost/net.c   |  189 +++++++++++++++++++++++++++++++++++++++++++++++--
-> >  drivers/vhost/vhost.h |   10 +++
-> >  2 files changed, 192 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> > index 22d5fef..2aafd90 100644
-> > --- a/drivers/vhost/net.c
-> > +++ b/drivers/vhost/net.c
-> > @@ -17,11 +17,13 @@
-> >  #include <linux/workqueue.h>
-> >  #include <linux/rcupdate.h>
-> >  #include <linux/file.h>
-> > +#include <linux/aio.h>
-> >  
-> >  #include <linux/net.h>
-> >  #include <linux/if_packet.h>
-> >  #include <linux/if_arp.h>
-> >  #include <linux/if_tun.h>
-> > +#include <linux/mpassthru.h>
-> >  
-> >  #include <net/sock.h>
-> >  
-> > @@ -47,6 +49,7 @@ struct vhost_net {
-> >  	struct vhost_dev dev;
-> >  	struct vhost_virtqueue vqs[VHOST_NET_VQ_MAX];
-> >  	struct vhost_poll poll[VHOST_NET_VQ_MAX];
-> > +	struct kmem_cache       *cache;
-> >  	/* Tells us whether we are polling a socket for TX.
-> >  	 * We only do this when socket buffer fills up.
-> >  	 * Protected by tx vq lock. */
-> > @@ -91,11 +94,88 @@ static void tx_poll_start(struct vhost_net *net, struct socket *sock)
-> >  	net->tx_poll_state = VHOST_NET_POLL_STARTED;
-> >  }
-> >  
-> > +struct kiocb *notify_dequeue(struct vhost_virtqueue *vq)
-> > +{
-> > +	struct kiocb *iocb = NULL;
-> > +	unsigned long flags;
-> > +
-> > +	spin_lock_irqsave(&vq->notify_lock, flags);
-> > +	if (!list_empty(&vq->notifier)) {
-> > +		iocb = list_first_entry(&vq->notifier,
-> > +				struct kiocb, ki_list);
-> > +		list_del(&iocb->ki_list);
-> > +	}
-> > +	spin_unlock_irqrestore(&vq->notify_lock, flags);
-> > +	return iocb;
-> > +}
-> > +
-> > +static void handle_async_rx_events_notify(struct vhost_net *net,
-> > +					struct vhost_virtqueue *vq)
-> > +{
-> > +	struct kiocb *iocb = NULL;
-> > +	struct vhost_log *vq_log = NULL;
-> > +	int rx_total_len = 0;
-> > +	int log, size;
-> > +
-> > +	if (vq->link_state != VHOST_VQ_LINK_ASYNC)
-> > +		return;
-> > +
-> > +	if (vq->receiver)
-> > +		vq->receiver(vq);
-> > +
-> > +	vq_log = unlikely(vhost_has_feature(
-> > +				&net->dev, VHOST_F_LOG_ALL)) ? vq->log : NULL;
-> > +	while ((iocb = notify_dequeue(vq)) != NULL) {
-> > +		vhost_add_used_and_signal(&net->dev, vq,
-> > +				iocb->ki_pos, iocb->ki_nbytes);
-> > +		log = (int)iocb->ki_user_data;
-> > +		size = iocb->ki_nbytes;
-> > +		rx_total_len += iocb->ki_nbytes;
-> > +
-> > +		if (iocb->ki_dtor)
-> > +			iocb->ki_dtor(iocb);
-> > +		kmem_cache_free(net->cache, iocb);
-> > +
-> > +		if (unlikely(vq_log))
-> > +			vhost_log_write(vq, vq_log, log, size);
-> > +		if (unlikely(rx_total_len >= VHOST_NET_WEIGHT)) {
-> > +			vhost_poll_queue(&vq->poll);
-> > +			break;
-> > +		}
-> > +	}
-> > +}
-> > +
-> > +static void handle_async_tx_events_notify(struct vhost_net *net,
-> > +					struct vhost_virtqueue *vq)
-> > +{
-> > +	struct kiocb *iocb = NULL;
-> > +	int tx_total_len = 0;
-> > +
-> > +	if (vq->link_state != VHOST_VQ_LINK_ASYNC)
-> > +		return;
-> > +
-> > +	while ((iocb = notify_dequeue(vq)) != NULL) {
-> > +		vhost_add_used_and_signal(&net->dev, vq,
-> > +				iocb->ki_pos, 0);
-> > +		tx_total_len += iocb->ki_nbytes;
-> > +
-> > +		if (iocb->ki_dtor)
-> > +			iocb->ki_dtor(iocb);
-> > +
-> > +		kmem_cache_free(net->cache, iocb);
-> > +		if (unlikely(tx_total_len >= VHOST_NET_WEIGHT)) {
-> > +			vhost_poll_queue(&vq->poll);
-> > +			break;
-> > +		}
-> > +	}
-> > +}
-> > +
-> >  /* Expects to be always run from workqueue - which acts as
-> >   * read-size critical section for our kind of RCU. */
-> >  static void handle_tx(struct vhost_net *net)
-> >  {
-> >  	struct vhost_virtqueue *vq = &net->dev.vqs[VHOST_NET_VQ_TX];
-> > +	struct kiocb *iocb = NULL;
-> >  	unsigned head, out, in, s;
-> >  	struct msghdr msg = {
-> >  		.msg_name = NULL,
-> > @@ -124,6 +204,8 @@ static void handle_tx(struct vhost_net *net)
-> >  		tx_poll_stop(net);
-> >  	hdr_size = vq->hdr_size;
-> >  
-> > +	handle_async_tx_events_notify(net, vq);
-> > +
-> >  	for (;;) {
-> >  		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
-> >  					 ARRAY_SIZE(vq->iov),
-> > @@ -151,6 +233,15 @@ static void handle_tx(struct vhost_net *net)
-> >  		/* Skip header. TODO: support TSO. */
-> >  		s = move_iovec_hdr(vq->iov, vq->hdr, hdr_size, out);
-> >  		msg.msg_iovlen = out;
-> > +
-> > +		if (vq->link_state == VHOST_VQ_LINK_ASYNC) {
-> > +			iocb = kmem_cache_zalloc(net->cache, GFP_KERNEL);
-> > +			if (!iocb)
-> > +				break;
-> > +			iocb->ki_pos = head;
-> > +			iocb->private = (void *)vq;
-> > +		}
-> > +
-> >  		len = iov_length(vq->iov, out);
-> >  		/* Sanity check */
-> >  		if (!len) {
-> > @@ -160,12 +251,16 @@ static void handle_tx(struct vhost_net *net)
-> >  			break;
-> >  		}
-> >  		/* TODO: Check specific error and bomb out unless ENOBUFS? */
-> > -		err = sock->ops->sendmsg(NULL, sock, &msg, len);
-> > +		err = sock->ops->sendmsg(iocb, sock, &msg, len);
-> >  		if (unlikely(err < 0)) {
-> >  			vhost_discard_vq_desc(vq);
-> >  			tx_poll_start(net, sock);
-> >  			break;
-> >  		}
-> > +
-> > +		if (vq->link_state == VHOST_VQ_LINK_ASYNC)
-> > +			continue;
-> > +
-> >  		if (err != len)
-> >  			pr_err("Truncated TX packet: "
-> >  			       " len %d != %zd\n", err, len);
-> > @@ -177,6 +272,8 @@ static void handle_tx(struct vhost_net *net)
-> >  		}
-> >  	}
-> >  
-> > +	handle_async_tx_events_notify(net, vq);
-> > +
-> >  	mutex_unlock(&vq->mutex);
-> >  	unuse_mm(net->dev.mm);
-> >  }
-> > @@ -186,6 +283,7 @@ static void handle_tx(struct vhost_net *net)
-> >  static void handle_rx(struct vhost_net *net)
-> >  {
-> >  	struct vhost_virtqueue *vq = &net->dev.vqs[VHOST_NET_VQ_RX];
-> > +	struct kiocb *iocb = NULL;
-> >  	unsigned head, out, in, log, s;
-> >  	struct vhost_log *vq_log;
-> >  	struct msghdr msg = {
-> > @@ -206,7 +304,8 @@ static void handle_rx(struct vhost_net *net)
-> >  	int err;
-> >  	size_t hdr_size;
-> >  	struct socket *sock = rcu_dereference(vq->private_data);
-> > -	if (!sock || skb_queue_empty(&sock->sk->sk_receive_queue))
-> > +	if (!sock || (skb_queue_empty(&sock->sk->sk_receive_queue) &&
-> > +			vq->link_state == VHOST_VQ_LINK_SYNC))
-> >  		return;
-> >  
-> >  	use_mm(net->dev.mm);
-> > @@ -214,9 +313,18 @@ static void handle_rx(struct vhost_net *net)
-> >  	vhost_disable_notify(vq);
-> >  	hdr_size = vq->hdr_size;
-> >  
-> > -	vq_log = unlikely(vhost_has_feature(&net->dev, VHOST_F_LOG_ALL)) ?
-> > +	/* In async cases, for write logging, the simple way is to get
-> > +	 * the log info always, and really logging is decided later.
-> > +	 * Thus, when logging enabled, we can get log, and when logging
-> > +	 * disabled, we can get log disabled accordingly.
-> > +	 */
-> > +
-> > +	vq_log = unlikely(vhost_has_feature(&net->dev, VHOST_F_LOG_ALL)) |
-> > +		(vq->link_state == VHOST_VQ_LINK_ASYNC) ?
-> >  		vq->log : NULL;
-> >  
-> > +	handle_async_rx_events_notify(net, vq);
-> > +
-> >  	for (;;) {
-> >  		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
-> >  					 ARRAY_SIZE(vq->iov),
-> > @@ -245,6 +353,14 @@ static void handle_rx(struct vhost_net *net)
-> >  		s = move_iovec_hdr(vq->iov, vq->hdr, hdr_size, in);
-> >  		msg.msg_iovlen = in;
-> >  		len = iov_length(vq->iov, in);
-> > +		if (vq->link_state == VHOST_VQ_LINK_ASYNC) {
-> > +			iocb = kmem_cache_zalloc(net->cache, GFP_KERNEL);
-> > +			if (!iocb)
-> > +				break;
-> > +			iocb->private = vq;
-> > +			iocb->ki_pos = head;
-> > +			iocb->ki_user_data = log;
-> > +		}
-> >  		/* Sanity check */
-> >  		if (!len) {
-> >  			vq_err(vq, "Unexpected header len for RX: "
-> > @@ -252,13 +368,18 @@ static void handle_rx(struct vhost_net *net)
-> >  			       iov_length(vq->hdr, s), hdr_size);
-> >  			break;
-> >  		}
-> > -		err = sock->ops->recvmsg(NULL, sock, &msg,
-> > +
-> > +		err = sock->ops->recvmsg(iocb, sock, &msg,
-> >  					 len, MSG_DONTWAIT | MSG_TRUNC);
-> >  		/* TODO: Check specific error and bomb out unless EAGAIN? */
-> >  		if (err < 0) {
-> >  			vhost_discard_vq_desc(vq);
-> >  			break;
-> >  		}
-> > +
-> > +		if (vq->link_state == VHOST_VQ_LINK_ASYNC)
-> > +			continue;
-> > +
-> >  		/* TODO: Should check and handle checksum. */
-> >  		if (err > len) {
-> >  			pr_err("Discarded truncated rx packet: "
-> > @@ -284,10 +405,13 @@ static void handle_rx(struct vhost_net *net)
-> >  		}
-> >  	}
-> >  
-> > +	handle_async_rx_events_notify(net, vq);
-> > +
-> >  	mutex_unlock(&vq->mutex);
-> >  	unuse_mm(net->dev.mm);
-> >  }
-> >  
-> > +
-> >  static void handle_tx_kick(struct work_struct *work)
-> >  {
-> >  	struct vhost_virtqueue *vq;
-> > @@ -338,6 +462,7 @@ static int vhost_net_open(struct inode *inode, struct file *f)
-> >  	vhost_poll_init(n->poll + VHOST_NET_VQ_TX, handle_tx_net, POLLOUT);
-> >  	vhost_poll_init(n->poll + VHOST_NET_VQ_RX, handle_rx_net, POLLIN);
-> >  	n->tx_poll_state = VHOST_NET_POLL_DISABLED;
-> > +	n->cache = NULL;
-> >  	return 0;
-> >  }
-> >  
-> > @@ -398,6 +523,17 @@ static void vhost_net_flush(struct vhost_net *n)
-> >  	vhost_net_flush_vq(n, VHOST_NET_VQ_RX);
-> >  }
-> >  
-> > +static void vhost_notifier_cleanup(struct vhost_net *n)
-> > +{
-> > +	struct vhost_virtqueue *vq = &n->dev.vqs[VHOST_NET_VQ_RX];
-> > +	struct kiocb *iocb = NULL;
-> > +	if (n->cache) {
-> > +		while ((iocb = notify_dequeue(vq)) != NULL)
-> > +			kmem_cache_free(n->cache, iocb);
-> > +		kmem_cache_destroy(n->cache);
-> > +	}
-> > +}
-> > +
-> >  static int vhost_net_release(struct inode *inode, struct file *f)
-> >  {
-> >  	struct vhost_net *n = f->private_data;
-> > @@ -414,6 +550,7 @@ static int vhost_net_release(struct inode *inode, struct file *f)
-> >  	/* We do an extra flush before freeing memory,
-> >  	 * since jobs can re-queue themselves. */
-> >  	vhost_net_flush(n);
-> > +	vhost_notifier_cleanup(n);
-> >  	kfree(n);
-> >  	return 0;
-> >  }
-> > @@ -462,7 +599,19 @@ static struct socket *get_tun_socket(int fd)
-> >  	return sock;
-> >  }
-> >  
-> > -static struct socket *get_socket(int fd)
-> > +static struct socket *get_mp_socket(int fd)
-> > +{
-> > +	struct file *file = fget(fd);
-> > +	struct socket *sock;
-> > +	if (!file)
-> > +		return ERR_PTR(-EBADF);
-> > +	sock = mp_get_socket(file);
-> > +	if (IS_ERR(sock))
-> > +		fput(file);
-> > +	return sock;
-> > +}
-> > +
-> > +static struct socket *get_socket(struct vhost_virtqueue *vq, int fd)
-> >  {
-> >  	struct socket *sock;
-> >  	if (fd == -1)
-> > @@ -473,9 +622,31 @@ static struct socket *get_socket(int fd)
-> >  	sock = get_tun_socket(fd);
-> >  	if (!IS_ERR(sock))
-> >  		return sock;
-> > +	sock = get_mp_socket(fd);
-> > +	if (!IS_ERR(sock)) {
-> > +		vq->link_state = VHOST_VQ_LINK_ASYNC;
-> > +		return sock;
-> > +	}
-> >  	return ERR_PTR(-ENOTSOCK);
-> >  }
-> >  
-> > +static void vhost_init_link_state(struct vhost_net *n, int index)
-> > +{
-> > +	struct vhost_virtqueue *vq = n->vqs + index;
-> > +
-> > +	WARN_ON(!mutex_is_locked(&vq->mutex));
-> > +	if (vq->link_state == VHOST_VQ_LINK_ASYNC) {
-> > +		vq->receiver = NULL;
-> > +		INIT_LIST_HEAD(&vq->notifier);
-> > +		spin_lock_init(&vq->notify_lock);
-> > +		if (!n->cache) {
-> > +			n->cache = kmem_cache_create("vhost_kiocb",
-> > +					sizeof(struct kiocb), 0,
-> > +					SLAB_HWCACHE_ALIGN, NULL);
-> > +		}
-> > +	}
-> > +}
-> > +
-> >  static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
-> >  {
-> >  	struct socket *sock, *oldsock;
-> > @@ -493,12 +664,15 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
-> >  	}
-> >  	vq = n->vqs + index;
-> >  	mutex_lock(&vq->mutex);
-> > -	sock = get_socket(fd);
-> > +	vq->link_state = VHOST_VQ_LINK_SYNC;
-> > +	sock = get_socket(vq, fd);
-> >  	if (IS_ERR(sock)) {
-> >  		r = PTR_ERR(sock);
-> >  		goto err;
-> >  	}
-> >  
-> > +	vhost_init_link_state(n, index);
-> > +
-> >  	/* start polling new socket */
-> >  	oldsock = vq->private_data;
-> >  	if (sock == oldsock)
-> > @@ -507,8 +681,8 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
-> >  	vhost_net_disable_vq(n, vq);
-> >  	rcu_assign_pointer(vq->private_data, sock);
-> >  	vhost_net_enable_vq(n, vq);
-> > -	mutex_unlock(&vq->mutex);
-> >  done:
-> > +	mutex_unlock(&vq->mutex);
-> >  	mutex_unlock(&n->dev.mutex);
-> >  	if (oldsock) {
-> >  		vhost_net_flush_vq(n, index);
-> > @@ -516,6 +690,7 @@ done:
-> >  	}
-> >  	return r;
-> >  err:
-> > +	mutex_unlock(&vq->mutex);
-> >  	mutex_unlock(&n->dev.mutex);
-> >  	return r;
-> >  }
-> > diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-> > index d1f0453..cffe39a 100644
-> > --- a/drivers/vhost/vhost.h
-> > +++ b/drivers/vhost/vhost.h
-> > @@ -43,6 +43,11 @@ struct vhost_log {
-> >  	u64 len;
-> >  };
-> >  
-> > +enum vhost_vq_link_state {
-> > +	VHOST_VQ_LINK_SYNC = 	0,
-> > +	VHOST_VQ_LINK_ASYNC = 	1,
-> > +};
-> > +
-> >  /* The virtqueue structure describes a queue attached to a device. */
-> >  struct vhost_virtqueue {
-> >  	struct vhost_dev *dev;
-> > @@ -96,6 +101,11 @@ struct vhost_virtqueue {
-> >  	/* Log write descriptors */
-> >  	void __user *log_base;
-> >  	struct vhost_log log[VHOST_NET_MAX_SG];
-> > +	/*Differiate async socket for 0-copy from normal*/
-> > +	enum vhost_vq_link_state link_state;
-> > +	struct list_head notifier;
-> > +	spinlock_t notify_lock;
-> > +	void (*receiver)(struct vhost_virtqueue *);
-> >  };
-> >  
-> >  struct vhost_dev {
-> > -- 
-> > 1.5.4.4
+
+
+==========================================================
+commit d5e066ae3c39b4036b5f5021c352af0b73c85568
+Author: torvalds <torvalds>
+Date:   Fri Sep 5 19:05:07 2003 +0000
+
+    Fix mprotect() to do proper PROT_xxx -> VM_xxx translation.
+
+    This also fixes the bug with MAP_SEM being potentially
+    interpreted as VM_SHARED.
+
+    BKrev: 3f58de63gvzz-PsxwnRPnXTpz7EOeg
+
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index 2c01579..699962e 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -224,7 +224,7 @@ fail:
+ asmlinkage long
+ sys_mprotect(unsigned long start, size_t len, unsigned long prot)
+ {
+-       unsigned long nstart, end, tmp;
++       unsigned long vm_flags, nstart, end, tmp;
+        struct vm_area_struct * vma, * next, * prev;
+        int error = -EINVAL;
+
+@@ -239,6 +239,8 @@ sys_mprotect(unsigned long start, size_t len, unsigned long prot)
+        if (end == start)
+                return 0;
+
++       vm_flags = calc_vm_prot_bits(prot);
++
+        down_write(&current->mm->mmap_sem);
+
+        vma = find_vma_prev(current->mm, start, &prev);
+@@ -257,7 +259,8 @@ sys_mprotect(unsigned long start, size_t len, unsigned long prot)
+                        goto out;
+                }
+
+-               newflags = prot | (vma->vm_flags & ~(PROT_READ | PROT_WRITE | PROT_EXEC));
++               newflags = vm_flags | (vma->vm_flags & ~(VM_READ | VM_WRITE | VM_EXEC));
++
+                if ((newflags & ~(newflags >> 4)) & 0xf) {
+                        error = -EACCES;
+                        goto out;
+
+
+
