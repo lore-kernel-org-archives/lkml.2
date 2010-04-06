@@ -1,89 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab0DFJvt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 05:51:49 -0400
-Received: from f0.cmpxchg.org ([85.214.51.133]:56639 "EHLO cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752127Ab0DFJvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 05:51:43 -0400
-Date: Tue, 6 Apr 2010 11:51:35 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Taras Glek <tglek@mozilla.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
-Message-ID: <20100406095135.GB5183@cmpxchg.org>
-References: <4BBA6776.5060804@mozilla.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BBA6776.5060804@mozilla.com>
+	id S1753002Ab0DFKJS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 06:09:18 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50880 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752480Ab0DFKJN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 06:09:13 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux 2.6.34-rc3)
+Cc: kosaki.motohiro@jp.fujitsu.com,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Borislav Petkov <bp@alien8.de>, Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Minchan Kim <minchan.kim@gmail.com>, Nick Piggin <npiggin@suse.de>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>
+In-Reply-To: <20100406173754.7E5A.A69D9226@jp.fujitsu.com>
+References: <alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org> <20100406173754.7E5A.A69D9226@jp.fujitsu.com>
+Message-Id: <20100406190036.7E66.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue,  6 Apr 2010 19:09:08 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05, 2010 at 03:43:02PM -0700, Taras Glek wrote:
-> Hello,
-> I am working on improving Mozilla startup times. It turns out that page 
-> faults(caused by lack of cooperation between user/kernelspace) are the 
-> main cause of slow startup. I need some insights from someone who 
-> understands linux vm behavior.
-> 
-> Current Situation:
-> The dynamic linker mmap()s  executable and data sections of our 
-> executable but it doesn't call madvise().
-> By default page faults trigger 131072byte reads. To make matters worse, 
-> the compile-time linker + gcc lay out code in a manner that does not 
-> correspond to how the resulting executable will be executed(ie the 
-> layout is basically random). This means that during startup 15-40mb 
-> binaries are read in basically random fashion. Even if one orders the 
-> binary optimally, throughput is still suboptimal due to the puny readahead.
-> 
-> IO Hints:
-> Fortunately when one specifies madvise(WILLNEED) pagefaults trigger 2mb 
-> reads and a binary that tends to take 110 page faults(ie program stops 
-> execution and waits for disk) can be reduced down to 6. This has the 
-> potential to double application startup of large apps without any clear 
-> downsides. Suse ships their glibc with a dynamic linker patch to 
-> fadvise() dynamic libraries(not sure why they switched from doing 
-> madvise before).
-> 
-> I filed a glibc bug about this at 
-> http://sourceware.org/bugzilla/show_bug.cgi?id=11431 . Uli commented 
-> with his concern about wasting memory resources. What is the impact of 
-> madvise(WILLNEED) or the fadvise equivalent on systems under memory 
-> pressure? Does the kernel simply start ignoring these hints?
+> (b) is also impossible. SLAB_DESTROY_BY_RCU delay the page for anon_vma 
+> freeing until next rcu period. It mean rcu_read_lock()+page_mapped() 
+> can see kfree()ed page. but it is safe. noone corrupt it.
 
-It will throttle based on memory pressure.  In idle situations it will
-eat your file cache, however, to satisfy the request.
+by the way: I haven't understand why rik's per process anon_vma concept
+works correctly with ksm. ksm increase anon_vma->ksm_refcount. but it seems
+not guranteed vma->anon_vma and page->anon_vma are the same.
 
-Now, the file cache should be much bigger than the amount of unneeded
-pages you prefault with the hint over the whole library, so I guess the
-benefit of prefaulting the right pages outweighs the downside of evicting
-some cache for unused library pages.
+but I guess bug reporter doesn't use ksm, it's minor feature.
 
-Still, it's a workaround for deficits in the demand-paging/readahead
-heuristics and thus a bit ugly, I feel.  Maybe Wu can help.
 
-> Also, once an application is started is it reasonable to keep it 
-> madvise(WILLNEED)ed or should the madvise flags be reset?
 
-It's a one-time operation that starts immediate readahead, no permanent
-changes are done.
-
-> Perhaps the kernel could monitor the page-in patterns to increase the 
-> readahead sizes? This may already happen, I've noticed that a handful of 
-> pagefaults trigger > 131072bytes of IO, perhaps this just needs tweaking.
-
-CCd the man :-)
-
-> Thanks,
-> Taras Glek
-> 
-> PS. For more details on this issue see my blog at 
-> https://blog.mozilla.com/tglek/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
