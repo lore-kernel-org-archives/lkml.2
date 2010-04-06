@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737Ab0DFPdj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 11:33:39 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:51631 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab0DFPdd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 11:33:33 -0400
-Message-ID: <4BBB5433.3060005@us.ibm.com>
-Date: Tue, 06 Apr 2010 08:33:07 -0700
-From: Darren Hart <dvhltc@us.ibm.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	id S1755868Ab0DFPeD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 11:34:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18974 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751212Ab0DFPdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 11:33:55 -0400
+Date: Tue, 6 Apr 2010 17:33:48 +0200
+From: Karel Zak <kzak@redhat.com>
+To: Phillip Susi <psusi@cfl.rr.com>
+Cc: Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Extended partition mapping wrong size
+Message-ID: <20100406153348.GE7858@nb.net.home>
+References: <4BB0D12B.6060701@cfl.rr.com> <20100406114706.GA30340@nb.net.home> <4BBB3E0F.1030309@cfl.rr.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ulrich Drepper <drepper@gmail.com>, Avi Kivity <avi@redhat.com>,
-       linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
-       "Peter W. Morreale" <pmorreale@novell.com>,
-       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Gregory Haskins <ghaskins@novell.com>,
-       Sven-Thorsten Dietrich <sdietrich@novell.com>,
-       Chris Mason <chris.mason@oracle.com>,
-       John Cooper <john.cooper@third-harmonic.com>,
-       Chris Wright <chrisw@sous-sol.org>
-Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive
- spinning
-References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com> <4BBA5305.7010002@redhat.com> <1270543721.1597.748.camel@laptop> <m2ua36005b51004060747y1abf15edj28227274844db2e7@mail.gmail.com> <1270565478.1595.529.camel@laptop>
-In-Reply-To: <1270565478.1595.529.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BBB3E0F.1030309@cfl.rr.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra wrote:
-> On Tue, 2010-04-06 at 07:47 -0700, Ulrich Drepper wrote:
->> On Tue, Apr 6, 2010 at 01:48, Peter Zijlstra <peterz@infradead.org>
->> wrote:
->>>  try
->>>  spin
->>>  try
->>>  syscall
->> This is available for a long time in the mutex implementation
->> (PTHREAD_MUTEX_ADAPTIVE_NP mutex type).  It hasn't show much
->> improvement if any.  There were some people demanding this support for
->> as far as I know they are not using it now.  This is adaptive
->> spinning, learning from previous calls how long to wait.  But it's
->> still unguided.  There is no way to get information like "the owner
->> has been descheduled". 
+On Tue, Apr 06, 2010 at 09:58:39AM -0400, Phillip Susi wrote:
+> On 4/6/2010 7:47 AM, Karel Zak wrote:
+> > This is probably kernel bug. It's really insane that the extended
+> > pseudo partition overflows to the next logical partition.
 > 
-> That's where the FUTEX_LOCK thing comes in, it does all those, the above
-> was a single spin loop to amortize the syscall overhead.
+> Indeed.
 > 
-> I wouldn't make it any more complex than a single pause ins, syscalls
-> are terribly cheap these days.
+> >  Please no. I think the size should not be more than 2 sectors (1024
+> >  bytes). The current concept works for years and we have in userspace 
+> >  /etc/partitions parsers that use "if (blocks <= 1)" to detect
 
-And yet they still seem to have a real impact on the futex_lock 
-benchmark. Perhaps I am just still looking at pathological cases, but 
-there is a strong correlation between high syscall counts and really low 
-iterations per second. Granted this also correlates with lock 
-contention. However, when using the same period and duty-cycle I find 
-that a locking mechanism that makes significantly fewer syscalls also 
-significantly outperforms one that makes more. Kind of handwavy stilly, 
-I'll have more numbers this afternoon.
+Sorry, /proc/partitions
+
+> >  extended partitions.
+> 
+> Could you elaborate a bit on this?  What programs have such tests and
+> what would they do differently if it were larger?
+
+I know about libblkid in e2fsprogs and util-linux-ng. It scans
+/proc/partitions to get list of "normal" block devices.
+
+We have no clue how many programs/scripts depend on this behaviour.
+
+> >  The other problem are mkfs programs, the space used for alignment
+> >  could be 1MiB (or more) -- it's enough many mkfs programs.
+> 
+> What's wrong with that? 
+
+Irrelevant question ;-) It's there for years and it's well know kernel
+feature. 
+
+I understand that from a pedantic point of view the current solution is
+not perfect, but I don't see any practical reason why we need to change
+anything. There is no issue. Right?
+
+> If you REALLY want to, there's no reason you can't create a tiny fs there. 
+
+You have to care about the partition table (EBR).
+
+The current 1024 bytes is completely useless size, if you enlarge the
+size of the partition (for example to 1MiB) you will see reports from
+people who lost their extended partitions. (I don't believe that all
+mkfs programs are able to detect/skip EBR.)
+
+> Then again, I could swear that once upon a time the kernel simply
+> did not bother creating a dev node for the extended partition, and
+> this seems to be a hack that was put in to make it easy for LILO to
+> install to one.  Personally I'd prefer going back to the old
+> behavior of just not having a useless device there.
+
+This is probably better idea than enlarge the size :-)
+
+    Karel
 
 -- 
-Darren Hart
-IBM Linux Technology Center
-Real-Time Linux Team
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
