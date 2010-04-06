@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749Ab0DFQLG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 12:11:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30117 "EHLO mx1.redhat.com"
+	id S1756107Ab0DFQOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 12:14:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5633 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751682Ab0DFQK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 12:10:59 -0400
-Message-ID: <4BBB5CEF.6060803@redhat.com>
-Date: Tue, 06 Apr 2010 19:10:23 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Darren Hart <dvhltc@us.ibm.com>, linux-kernel@vger.kernel.org,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       "Peter W. Morreale" <pmorreale@novell.com>,
-       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Gregory Haskins <ghaskins@novell.com>,
-       Sven-Thorsten Dietrich <sdietrich@novell.com>,
-       Chris Mason <chris.mason@oracle.com>,
-       John Cooper <john.cooper@third-harmonic.com>,
-       Chris Wright <chrisw@sous-sol.org>
-Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive
- spinning
-References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com>	 <4BBA5305.7010002@redhat.com> <4BBA5C00.4090703@us.ibm.com>	 <4BBA6279.20802@redhat.com> <4BBA6B6F.7040201@us.ibm.com>	 <4BBB36FA.4020008@redhat.com> <1270560931.1595.342.camel@laptop>	 <4BBB3A15.6020502@redhat.com> <1270562948.1595.442.camel@laptop>
-In-Reply-To: <1270562948.1595.442.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755637Ab0DFQOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 12:14:09 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100405175754.GE2525@linux.vnet.ibm.com>
+References: <20100405175754.GE2525@linux.vnet.ibm.com> <25276.1269901350@redhat.com> <26760.1269903543@redhat.com> <20100329232636.GT2569@linux.vnet.ibm.com> <2440.1269967151@redhat.com> <21972.1269993064@redhat.com> <10818.1270044273@redhat.com> <15371.1270057054@redhat.com> <19556.1270076008@redhat.com> <14003.1270122314@redhat.com> <4161.1270133211@redhat.com> 
+To: paulmck@linux.vnet.ibm.com
+Cc: dhowells@redhat.com, Eric Dumazet <eric.dumazet@gmail.com>,
+       Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFS: Fix RCU warnings in nfs_inode_return_delegation_noreclaim() [ver #2]
+Date: Tue, 06 Apr 2010 17:14:03 +0100
+Message-ID: <23331.1270570443@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2010 05:09 PM, Peter Zijlstra wrote:
-> On Tue, 2010-04-06 at 16:41 +0300, Avi Kivity wrote:
->    
->> On 04/06/2010 04:35 PM, Peter Zijlstra wrote:
->>      
->>> On Tue, 2010-04-06 at 16:28 +0300, Avi Kivity wrote:
->>>
->>>        
->>>> Yes, but that's the best case for spinning.  You could simply use a
->>>> userspace spinlock in this case.
->>>>
->>>>          
->>> Userspace spinlocks are evil.. they should _never_ be used.
->>>
->>>        
->> But in this case they're fastest.  If we don't provide a non-evil
->> alternative, people will use them.
->>
->>      
-> That's what FUTEX_LOCK is about.
->    
+Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-That works for the uncontended case.  For the contended case, the waiter 
-and the owner have to go into the kernel and back out to transfer 
-ownership.  In the non-adaptive case you have to switch to the idle task 
-and back as well, and send an IPI.  That's a lot of latency if the 
-unlock happened just after the waiter started the descent into the kernel.
+> > > So you have objected to needless memory barriers.  How do you feel
+> > > about possibly needless ACCESS_ONCE() calls?
+> > 
+> > That would work here since it shouldn't emit any excess instructions.
+> 
+> And here is the corresponding patch.  Seem reasonable?
 
--- 
-error compiling committee.c: too many arguments to function
+Actually, now I've thought about it some more.  No, it's not reasonable.
+You've written:
 
+    This patch adds a variant of rcu_dereference() that handles situations
+    where the RCU-protected data structure cannot change, perhaps due to
+    our holding the update-side lock, or where the RCU-protected pointer is
+    only to be tested, not dereferenced.
+
+But if we hold the update-side lock, then why should we be forced to use
+ACCESS_ONCE()?
+
+In fact, if we don't hold the lock, but we want to test the pointer twice in
+succession, why should we be required to use ACCESS_LOCK()?
+
+David
