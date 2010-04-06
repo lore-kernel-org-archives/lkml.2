@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab0DFRGq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 13:06:46 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:44368 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754649Ab0DFRGj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 13:06:39 -0400
-Date: Tue, 6 Apr 2010 10:06:39 -0700
-From: Dmitry Torokhov <dtor@vmware.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-       Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [PATCH] VMware Balloon driver
-Message-ID: <20100406170639.GA20948@dtor-ws.eng.vmware.com>
-References: <20100404215202.GA13020@dtor-ws.eng.vmware.com>
- <20100405142419.2c9bea3d.akpm@linux-foundation.org>
- <20100405225833.GA25970@dtor-ws.eng.vmware.com>
- <4BBB622F.4070501@redhat.com>
+	id S1755868Ab0DFRJS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 13:09:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54356 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753018Ab0DFRJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 13:09:11 -0400
+Date: Wed, 7 Apr 2010 03:09:03 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: David Howells <dhowells@redhat.com>
+Cc: paulmck@linux.vnet.ibm.com, corbet@lwn.net, linux-kernel@vger.kernel.org,
+       linux-cachefs@redhat.com
+Subject: Re: An incorrect assumption over radix_tree_tag_get()
+Message-ID: <20100406170903.GH5288@laptop>
+References: <23428.1270570789@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BBB622F.4070501@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <23428.1270570789@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 06, 2010 at 09:32:47AM -0700, Avi Kivity wrote:
-> On 04/06/2010 01:58 AM, Dmitry Torokhov wrote:
-> >
-> >> Also please explain the applicability of this driver.  Will xen use it?
-> >> kvm?  Out-of-tree code?
-> >>      
-> > The driver is expected to be used on VMware platform - mainly ESX.
-> > Originally we tried to converge with KVM and use virtio and
-> > stock virtio_balloon driver but Avi mentioned that our code emulating
-> > virtqueue was more than balloon code itself and thus using virtio did
-> > not make nuch sense.
-> >    
+On Tue, Apr 06, 2010 at 05:19:49PM +0100, David Howells wrote:
 > 
-> Yeah.  If we wanted commonality, we could make a balloon_core.c that 
-> contains the common code.  IMO that's premature, but perhaps there's 
+> Hi,
+> 
+> I think I've made a bad assumption over my usage of radix_tree_tag_get() in
+> fs/fscache/page.c.
+> 
+> I've assumed that radix_tree_tag_get() is protected from radix_tree_tag_set()
+> and radix_tree_tag_clear() by the RCU read lock.  However, now I'm not so
+> sure.  I think it's only protected against removal of part of the tree.
+> 
+> Can you confirm?
 
-I really not sure if it makes much sense. Ripping out virtdev/virtqueue
-from virtio_balloon leaves pretty much nothing.
-
-> some meat there (like suspend/resume support and /proc//sys interface).
-
-We do not need any special suspend/resume support - the freezeable
-workqueue is stopped when suspending.
-
-Thanks.
-
--- 
-Dmitry
+It is safe. Synchronization requirements for using the radix tree API
+are documented.
