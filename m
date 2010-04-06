@@ -1,143 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757826Ab0DFXlp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 19:41:45 -0400
-Received: from kroah.org ([198.145.64.141]:48463 "EHLO coco.kroah.org"
+	id S1757862Ab0DFXly (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 19:41:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48838 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757777Ab0DFXlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 19:41:40 -0400
-Date: Tue, 6 Apr 2010 16:40:38 -0700
-From: Greg KH <greg@kroah.com>
-To: Stefan Lippers-Hollmann <s.L-H@gmx.de>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suokkos@gmail.com,
-       airlied@redhat.com, stable@kernel.org
-Subject: Re: patch
- drm-radeon-kms-fix-null-pointer-dereference-if-memory-allocation-failed.patch
- added to 2.6.33-stable tree
-Message-ID: <20100406234035.GA5413@kroah.com>
-References: <1270231240946@site>
- <201004062345.40988.s.L-H@gmx.de>
+	id S1757789Ab0DFXln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 19:41:43 -0400
+Message-ID: <4BBBC470.4050002@zytor.com>
+Date: Tue, 06 Apr 2010 16:32:00 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201004062345.40988.s.L-H@gmx.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Youngwhan Song <breadncup@gmail.com>
+CC: Venkatram Tummala <venkatram867@gmail.com>,
+       Joel Fernandes <agnel.joel@gmail.com>,
+       Frank Hu <frank.hu.2001@gmail.com>,
+       hayfeng Lee <teklife.kernel@gmail.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-kernel@zh-kernel.org" <linux-kernel@zh-kernel.org>,
+       "kernelnewbies@nl.linux.org" <kernelnewbies@nl.linux.org>
+Subject: Re: why choose 896MB to the start point of ZONE_HIGHMEM
+References: <l2y5f6c52c61004060737me670f6e2t6071444c4fd1318b@mail.gmail.com>  	<g2s9ff7a3bc1004060802va38aa361s6abd07e8c992dd56@mail.gmail.com>  	<4BBB7AC9.5060008@zytor.com> <o2m8f84f9951004061220x16f3aa8by9cf19ec28ea492d7@mail.gmail.com>  	<4BBB8F07.60401@zytor.com> <w2p9ff7a3bc1004061301v6cc76e1g1e573468b1b8807d@mail.gmail.com> 	<q2iacff6c2b1004061528t28f1337eq977aabf8fe71bc22@mail.gmail.com> <3715922601579231267@unknownmsgid>
+In-Reply-To: <3715922601579231267@unknownmsgid>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 06, 2010 at 11:45:38PM +0200, Stefan Lippers-Hollmann wrote:
-> Hi
+On 04/06/2010 04:27 PM, Youngwhan Song wrote:
+> Nice explanation, Venkatram,
 > 
-> On Tuesday 06 April 2010, gregkh@suse.de wrote:
-> > This is a note to let you know that we have just queued up the patch titled
-> > 
-> >     Subject: drm/radeon/kms: Fix NULL pointer dereference if memory allocation failed.
-> > 
-> > to the 2.6.33-stable tree.  Its filename is
-> > 
-> >     drm-radeon-kms-fix-null-pointer-dereference-if-memory-allocation-failed.patch
-> > 
-> > A git repo of this tree can be found at 
-> >     http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
-> > 
-> > 
-> > From fcbc451ba1948fba967198bd150ecbd10bbb7075 Mon Sep 17 00:00:00 2001
-> > From: Pauli Nieminen <suokkos@gmail.com>
-> > Date: Fri, 19 Mar 2010 07:44:33 +0000
-> > Subject: drm/radeon/kms: Fix NULL pointer dereference if memory allocation failed.
-> > 
-> > From: Pauli Nieminen <suokkos@gmail.com>
-> > 
-> > commit fcbc451ba1948fba967198bd150ecbd10bbb7075 upstream.
-> > 
-> > When there is allocation failure in radeon_cs_parser_relocs parser->nrelocs
-> > is not cleaned. This causes NULL pointer defeference in radeon_cs_parser_fini
-> > when clean up code is trying to loop over the relocation array and free the
-> > objects.
-> > 
-> > Fix adds a check for a possible NULL pointer in clean up code.
-> [...]
+> Just one question pop up mind.
 > 
-> This patch breaks compiling kernel 2.6.33 + the current stable queue:
+> What if actual physical memory is only 256MB? How does kernel divide
+> virtual memory? Do we need to specify the region to kernel? Or will
+> kernel itself decide it automatically? 
 > 
->   CC [M]  drivers/gpu/drm/radeon/radeon_cs.o
-> /tmp/buildd/linux-sidux-2.6-2.6.33/debian/build/source_amd64_none/drivers/gpu/drm/radeon/radeon_cs.c: In function 'radeon_cs_parser_fini':
-> /tmp/buildd/linux-sidux-2.6-2.6.33/debian/build/source_amd64_none/drivers/gpu/drm/radeon/radeon_cs.c:200: error: implicit declaration of function 'drm_gem_object_unreference_unlocked'
-> make[6]: *** [drivers/gpu/drm/radeon/radeon_cs.o] Error 1
-> 
-> as it depends on the introduction of drm_gem_object_unreference_unlocked()
-> in:
-> 
-> Commit:     c3ae90c099bb62387507e86da7cf799850444b08
-> Author:     Luca Barbieri <luca@luca-barbieri.com>
-> AuthorDate: Tue Feb 9 05:49:11 2010 +0000
-> 
->     drm: introduce drm_gem_object_[handle_]unreference_unlocked
->     
->     This patch introduces the drm_gem_object_unreference_unlocked
->     and drm_gem_object_handle_unreference_unlocked functions that
->     do not require holding struct_mutex.
->     
->     drm_gem_object_unreference_unlocked calls the new
->     ->gem_free_object_unlocked entry point if available, and
->     otherwise just takes struct_mutex and just calls ->gem_free_object
-> 
-> which in turn suggests:
-> 
-> Commit:     bc9025bdc4e2b591734cca17697093845007b63d
-> Author:     Luca Barbieri <luca@luca-barbieri.com>
-> AuthorDate: Tue Feb 9 05:49:12 2010 +0000
-> 
->     Use drm_gem_object_[handle_]unreference_unlocked where possible
->     
->     Mostly obvious simplifications.
->     
->     The i915 pread/pwrite ioctls, intel_overlay_put_image and
->     nouveau_gem_new were incorrectly using the locked versions
->     without locking: this is also fixed in this patch.
-> 
-> which don't really look like candidates for 2.6.33-stable.
-> 
-> > --- a/drivers/gpu/drm/radeon/radeon_cs.c
-> > +++ b/drivers/gpu/drm/radeon/radeon_cs.c
-> > @@ -193,11 +193,13 @@ static void radeon_cs_parser_fini(struct
-> >  		radeon_bo_list_fence(&parser->validated, parser->ib->fence);
-> >  	}
-> >  	radeon_bo_list_unreserve(&parser->validated);
-> > -	for (i = 0; i < parser->nrelocs; i++) {
-> > -		if (parser->relocs[i].gobj) {
-> > -			mutex_lock(&parser->rdev->ddev->struct_mutex);
-> > -			drm_gem_object_unreference(parser->relocs[i].gobj);
-> > -			mutex_unlock(&parser->rdev->ddev->struct_mutex);
-> > +	if (parser->relocs != NULL) {
->    	^ the only important part, the rest merely covers the new indentation 
->   	  level
-> 
-> > +		for (i = 0; i < parser->nrelocs; i++) {
-> > +			if (parser->relocs[i].gobj) {
-> > +				mutex_lock(&parser->rdev->ddev->struct_mutex);
-> > +				drm_gem_object_unreference_unlocked(parser->relocs[i].gobj);
->   				^ drm_gem_object_unreference_unlocked() doesn't exist in 2.6.33, yet
->   				  we can use drm_gem_object_unreference() instead.
-> 
-> > +				mutex_unlock(&parser->rdev->ddev->struct_mutex);
-> > +			}
-> >  		}
-> >  	}
-> >  	kfree(parser->track);
-> 
-> As a consequence, I'd suggest to merely backport the NULL pointer check,
-> while ignoring the simplification of using the newly introduced 
-> drm_gem_object_unreference_unlocked() from 2.6.34:
-> 
-> Signed-off-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
 
-Very cool, thanks for doing this, I just noticed it failing to build
-here as well when you sent this.
+If there is less than 896 MB of physical memory, the vmalloc region is
+automatically extended (in your case, it will be 768 MB in size.)  There
+will be no HIGHMEM in such a case, and if you are compiling your own
+kernel you will gain considerable speed by disabling HIGHMEM support
+completely.
 
-I've queued up your version as it makes more sense.
+This, of course, was the norm back when Linux was first created, and a
+typical amount of memory was 8 MB or so.  That we'd have gigabytes of
+memory seemed very distant at the time.
 
-thanks,
-
-greg k-h
+	-hpa
