@@ -1,93 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756892Ab0DFB1u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 21:27:50 -0400
-Received: from mga11.intel.com ([192.55.52.93]:6742 "EHLO mga11.intel.com"
+	id S1756976Ab0DFB2H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 21:28:07 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55680 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756532Ab0DFB1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 21:27:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,368,1267430400"; 
-   d="scan'208";a="555220369"
-Date: Tue, 6 Apr 2010 09:27:41 +0800
-From: Shaohua Li <shaohua.li@intel.com>
-To: "Wu, Fengguang" <fengguang.wu@intel.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
-Message-ID: <20100406012741.GA22749@sli10-desk.sh.intel.com>
-References: <20100331045348.GA3396@sli10-desk.sh.intel.com>
- <20100331142708.039E.A69D9226@jp.fujitsu.com>
- <20100331145030.03A1.A69D9226@jp.fujitsu.com>
- <20100402065052.GA28027@sli10-desk.sh.intel.com>
- <20100404004838.GA6390@localhost>
+	id S1756532Ab0DFB2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 21:28:01 -0400
+Message-ID: <4BBA8DF9.8010409@kernel.org>
+Date: Tue, 06 Apr 2010 10:27:21 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100404004838.GA6390@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: Christoph Lameter <cl@linux-foundation.org>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>, alex.shi@intel.com,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
+References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>	 <alpine.DEB.2.00.1003250942080.2670@router.home>	 <1269570902.9614.92.camel@alexs-hp.sh.intel.com>	 <1270114166.2078.107.camel@ymzhang.sh.intel.com>	 <alpine.DEB.2.00.1004011050340.16531@router.home>	 <1270195589.2078.116.camel@ymzhang.sh.intel.com>	 <alpine.DEB.2.00.1004050853300.23149@router.home> <i2z84144f021004051030k7ff5190cyc083aa12c552dfac@mail.gmail.com>
+In-Reply-To: <i2z84144f021004051030k7ff5190cyc083aa12c552dfac@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 06 Apr 2010 01:27:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 04, 2010 at 08:48:38AM +0800, Wu, Fengguang wrote:
-> On Fri, Apr 02, 2010 at 02:50:52PM +0800, Li, Shaohua wrote:
-> > On Wed, Mar 31, 2010 at 01:53:27PM +0800, KOSAKI Motohiro wrote:
-> > > > > On Tue, Mar 30, 2010 at 02:08:53PM +0800, KOSAKI Motohiro wrote:
-> > > > > > Hi
-> > > > > > 
-> > > > > > > Commit 84b18490d1f1bc7ed5095c929f78bc002eb70f26 introduces a regression.
-> > > > > > > With it, our tmpfs test always oom. The test has a lot of rotated anon
-> > > > > > > pages and cause percent[0] zero. Actually the percent[0] is a very small
-> > > > > > > value, but our calculation round it to zero. The commit makes vmscan
-> > > > > > > completely skip anon pages and cause oops.
-> > > > > > > An option is if percent[x] is zero in get_scan_ratio(), forces it
-> > > > > > > to 1. See below patch.
-> > > > > > > But the offending commit still changes behavior. Without the commit, we scan
-> > > > > > > all pages if priority is zero, below patch doesn't fix this. Don't know if
-> > > > > > > It's required to fix this too.
-> > > > > > 
-> > > > > > Can you please post your /proc/meminfo and reproduce program? I'll digg it.
-> > > > > > 
-> > > > > > Very unfortunately, this patch isn't acceptable. In past time, vmscan 
-> > > > > > had similar logic, but 1% swap-out made lots bug reports. 
-> > > > > if 1% is still big, how about below patch?
-> > > > 
-> > > > This patch makes a lot of sense than previous. however I think <1% anon ratio
-> > > > shouldn't happen anyway because file lru doesn't have reclaimable pages.
-> > > > <1% seems no good reclaim rate.
-> > > 
-> > > Oops, the above mention is wrong. sorry. only 1 page is still too big.
-> > > because under streaming io workload, the number of scanning anon pages should
-> > > be zero. this is very strong requirement. if not, backup operation will makes
-> > > a lot of swapping out.
-> > Sounds there is no big impact for the workload which you mentioned with the patch.
-> > please see below descriptions.
-> > I updated the description of the patch as fengguang suggested.
-> > 
-> > 
-> > 
-> > Commit 84b18490d introduces a regression. With it, our tmpfs test always oom.
-> > The test uses a 6G tmpfs in a system with 3G memory. In the tmpfs, there are
-> > 6 copies of kernel source and the test does kbuild for each copy. My
-> > investigation shows the test has a lot of rotated anon pages and quite few
-> > file pages, so get_scan_ratio calculates percent[0] to be zero. Actually
-> > the percent[0] shoule be a very small value, but our calculation round it
-> > to zero. The commit makes vmscan completely skip anon pages and cause oops.
-> > 
-> > To avoid underflow, we don't use percentage, instead we directly calculate
-> > how many pages should be scaned. In this way, we should get several scan pages
-> > for < 1% percent. With this fix, my test doesn't oom any more.
-> > 
-> > Note, this patch doesn't really change logics, but just increase precise. For
-> > system with a lot of memory, this might slightly changes behavior. For example,
-> > in a sequential file read workload, without the patch, we don't swap any anon
-> > pages. With it, if anon memory size is bigger than 16G, we will say one anon page
-> 
->                                                                   see?
-Thanks, will send a updated against -mm since we reverted the offending patch.
+Hello,
 
-Thanks,
-Shaohua
+On 04/06/2010 02:30 AM, Pekka Enberg wrote:
+>> Hmnmmm... The dynamic percpu areas use page tables and that data is used
+>> in the fast path. Maybe the high thread count causes tlb trashing?
+> 
+> Hmm indeed. I don't see anything particularly funny in the SLUB percpu
+> conversion so maybe this is a more issue with the new percpu
+> allocator?
+
+By default, percpu allocator embeds the first chunk in the kernel
+linear mapping and accesses there shouldn't involve any TLB overhead.
+>From the second chunk on, they're mapped page-by-page into vmalloc
+area.  This can be updated to use larger page mapping but 2M page
+per-cpu is pretty large and the trade off hasn't been right yet.
+
+The amount reserved for dynamic allocation in the first chunk is
+determined by PERCPU_DYNAMIC_RESERVE constant in
+include/linux/percpu.h.  It's currently 20k on 64bit machines and 12k
+on 32bit.  The intention was to size this such that most common stuff
+is allocated from this area.  The 20k and 12k are numbers that I
+pulled out of my ass :-) with the custom config I used.  Now that more
+stuff has been converted to dynamic percpu, it's quite possible that
+the area is too small.  Can you please try to increase the size of the
+area (say 2 or 4 times) and see whether the performance regression
+goes away?
+
+Thanks.
+
+-- 
+tejun
