@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab0DFOjt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 10:39:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43823 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752951Ab0DFOjn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 10:39:43 -0400
-Message-ID: <4BBB475A.7070002@redhat.com>
-Date: Tue, 06 Apr 2010 10:38:18 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
+	id S1755085Ab0DFOoh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 10:44:37 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60757 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754497Ab0DFOob (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 10:44:31 -0400
+Date: Tue, 6 Apr 2010 07:40:12 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jamie Lokier <jamie@shareable.org>
+cc: Scott Lurndal <scott.lurndal@3leafsystems.com>,
+       David Howells <dhowells@redhat.com>, mingo@elte.hu, tglx@linutronix.de,
+       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] X86: Optimise fls(), ffs() and fls64()
+In-Reply-To: <20100406135732.GC24003@shareable.org>
+Message-ID: <alpine.LFD.2.00.1004060732490.3487@i5.linux-foundation.org>
+References: <20100326144241.8583.95617.stgit@warthog.procyon.org.uk> <alpine.LFD.2.00.1003261005490.3721@i5.linux-foundation.org> <20100326173730.GA27489@pendragon.3leafnetworks.com> <alpine.LFD.2.00.1003261038160.3721@i5.linux-foundation.org>
+ <20100406135732.GC24003@shareable.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-       Borislav Petkov <bp@alien8.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Minchan Kim <minchan.kim@gmail.com>, Nick Piggin <npiggin@suse.de>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>
-Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux 2.6.34-rc3)
-References: <20100402175937.GA19690@liondog.tnic> <alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org> <20100406173754.7E5A.A69D9226@jp.fujitsu.com>
-In-Reply-To: <20100406173754.7E5A.A69D9226@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2010 04:53 AM, KOSAKI Motohiro wrote:
 
-> Today, I've reviewed this patch carefully. but I haven't found any bug.
 
-> Also, I've runned stress workload with shrink_all_memory() today. but
-> I couldn't reproduce the issue. hmm..  (perhaps I'm no lucky guy.
-> I'm frequently fail to reproduce)
->
-> I'll continue to work.
+On Tue, 6 Apr 2010, Jamie Lokier wrote:
+> 
+> On the same subject of relying on undocumented features:
+> 
+>   /* If SMP and !X86_PPRO_FENCE. */
+>   #define smp_rmb()      barrier()
+> 
+> I've seen documentation, links posted to lkml ages ago, which implies
+> this is fine on 64-bit for both Intel and AMD.
+> 
+> But it appears to be relying on undocumented behaviour on 32-bit...
 
-My status with this bug is the same - I have gone through
-the code from all angles, but have not found any other bugs
-yet (except for that leak - which could leave invalid
-pointers behind).
+That memory ordering whitepaper is very much supposed to cover all the 
+32-bit CPU's too. The people involved were convinced that neither AMD nor 
+Intel had ever produced anything that would do anything that broke the 
+rules. 
 
-This makes me wonder if perhaps the bug is a side effect
-of something Borislav (and the other reproducers) have
-in their kernel configuration, which we do not have.
+In fact, at least the Intel "memory ordering whitepaper" doesn't even 
+exist any more. Go to intel.com and search, and you'll find:
 
-Another (unlikely) thing is that the fix for the leak
-makes the bug go away.  Yes, very unlikely.
+  "Intel® 64 Architecture Memory Ordering White Paper
 
-Borislav, could you please send us your .config ?
+   This document has been merged into Volume 3A of Intel 64 and IA-32 
+   Architectures Software Developers Manual."
 
-Also, if you have the time, could you try out the
-patch (-v2) I mailed in a little up this thread
-that fixes the memory leak in anon_vma_fork?
+which makes it pretty clear that it's not a 64-bit vs 32-bit issue.
 
-I suspect it should not change anything, but it
-could be useful to rule out anyway.
+> Are you sure it is ok?  Has anyone from Intel/AMD ever confirmed it is
+> ok?  Has it been tested?  Clones?
+
+No clones need apply - nobody ever did very aggressive memory re-ordering, 
+and clones generally never did SMP either.
+
+There is a VIA chip (I think) that had some relaxed cache mode, but that 
+needed a cr4 bit enable or similar, and since it wasn't SMP it only 
+mattered for DMA (and possibly nontemporal stores).
+
+Anyway, it all boils down to: yes, we can depend on the memory ordering.
+
+		Linus
