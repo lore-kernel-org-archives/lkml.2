@@ -1,32 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757036Ab0DFBgk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 21:36:40 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55508 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756437Ab0DFBgf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 21:36:35 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
-Cc: kosaki.motohiro@jp.fujitsu.com, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+	id S932126Ab0DFBuz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 21:50:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:7489 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756236Ab0DFBus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 21:50:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,368,1267430400"; 
+   d="scan'208";a="610483626"
+Date: Tue, 6 Apr 2010 09:50:45 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: "Li, Shaohua" <shaohua.li@intel.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "Wu, Fengguang" <fengguang.wu@intel.com>
-In-Reply-To: <20100406012536.GB18672@sli10-desk.sh.intel.com>
-References: <20100404231558.7E00.A69D9226@jp.fujitsu.com> <20100406012536.GB18672@sli10-desk.sh.intel.com>
-Message-Id: <20100406103500.7E2D.A69D9226@jp.fujitsu.com>
+       Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
+Message-ID: <20100406015045.GA7870@localhost>
+References: <20100402181307.6470.A69D9226@jp.fujitsu.com> <20100402092441.GA21100@sli10-desk.sh.intel.com> <20100404231558.7E00.A69D9226@jp.fujitsu.com> <20100406012536.GB18672@sli10-desk.sh.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue,  6 Apr 2010 10:36:32 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100406012536.GB18672@sli10-desk.sh.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 06, 2010 at 09:25:36AM +0800, Li, Shaohua wrote:
 > On Sun, Apr 04, 2010 at 10:19:06PM +0800, KOSAKI Motohiro wrote:
 > > > On Fri, Apr 02, 2010 at 05:14:38PM +0800, KOSAKI Motohiro wrote:
 > > > > > > > This patch makes a lot of sense than previous. however I think <1% anon ratio
@@ -49,12 +52,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > > > calculation precision, right?
 > > 
 > > no, you shouldn't ignore the regression case.
+
 > I don't think this is serious. In my calculation, there is only 1 page swapped out
 > for 6G anonmous memory. 1 page should haven't any performance impact.
 
-there is. I had received exactly opposite claim. because shrink_zone()
-is not called only once. it is called very much time.
+1 anon page scanned for every N file pages scanned?
 
+Is N a _huge_ enough ratio so that the anon list will be very light scanned?
 
+Rik: here is a little background.
 
+Under streaming IO, the current get_scan_ratio() will get a percent[0]
+that is (much) less than 1, so underflows to 0.
 
+It has the bad effect of completely disabling the scan of anon list,
+which leads to OOM in Shaohua's test case. OTOH, it also has the good
+side effect of keeping anon pages in memory and totally prevent swap
+IO.
+
+Shaohua's patch improves the computation precision by computing nr[]
+directly in get_scan_ratio(). This is good in general, however will
+enable light scan of the anon list on streaming IO.
+
+Thanks,
+Fengguang
