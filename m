@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab0DFMqM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 08:46:12 -0400
-Received: from cluster-d.mailcontrol.com ([85.115.60.190]:40057 "EHLO
+	id S1755387Ab0DFMqW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 08:46:22 -0400
+Received: from cluster-d.mailcontrol.com ([85.115.60.190]:40065 "EHLO
 	cluster-d.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753426Ab0DFMqC (ORCPT
+	with ESMTP id S1754426Ab0DFMqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 08:46:02 -0400
-Message-ID: <4BBB2CC3.5010300@csr.com>
-Date: Tue, 06 Apr 2010 13:44:51 +0100
+	Tue, 6 Apr 2010 08:46:04 -0400
+Message-ID: <4BBB2C52.7080905@csr.com>
+Date: Tue, 06 Apr 2010 13:42:58 +0100
 From: David Vrabel <david.vrabel@csr.com>
 User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+To: David Miller <davem@davemloft.net>
+CC: joe@perches.com, akpm@linux-foundation.org, netdev@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/11] drivers/usb/wusbcore/wusbhc.h: Remove unused dev_info
- from struct wusb_port
-References: <20100304232928.2e45bdd1.akpm@linux-foundation.org> <8ec25276e62c8b9669ad8e46a6f5f9cbb0f507c3.1270493677.git.joe@perches.com>
-In-Reply-To: <8ec25276e62c8b9669ad8e46a6f5f9cbb0f507c3.1270493677.git.joe@perches.com>
+Subject: Re: [PATCH 11/11] drivers/uwb: Rename dev_info to wdi
+References: <20100304232928.2e45bdd1.akpm@linux-foundation.org>	<6bd4d4dacf32631b72c3827a3b133a26e2e8b889.1270493677.git.joe@perches.com>	<1270503858.31062.43.camel@Joe-Laptop.home> <20100405.145144.207421561.davem@davemloft.net>
+In-Reply-To: <20100405.145144.207421561.davem@davemloft.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Apr 2010 12:44:51.0613 (UTC) FILETIME=[F334ACD0:01CAD586]
+X-OriginalArrivalTime: 06 Apr 2010 12:42:59.0270 (UTC) FILETIME=[B03E7E60:01CAD586]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches wrote:
-> There is a macro called dev_info that prints struct device specific
-> information.  Having variables with the same name can be confusing and
-> prevents conversion of the macro to a function.
+David Miller wrote:
+> From: Joe Perches <joe@perches.com>
+> Date: Mon, 05 Apr 2010 14:44:18 -0700
 > 
-> Rename the existing dev_info variables to something else in preparation
-> to converting the dev_info macro to a function.
+>> On Mon, 2010-04-05 at 12:05 -0700, Joe Perches wrote:
+>>> There is a macro called dev_info that prints struct device specific
+>>> information.  Having variables with the same name can be confusing and
+>>> prevents conversion of the macro to a function.
+>>>
+>>> Rename the existing dev_info variables to something else in preparation
+>>> to converting the dev_info macro to a function.
+>> http://patchwork.ozlabs.org/patch/49421/
+>>
+>> This marked as RFC in patchwork.
+>> It's not intended to be.
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> Because I can't apply the entire set, I'd like someone else
+> to take this in since it's not really a networking specific
+> patch.
 
-This commit message isn't strictly correct but otherwise,
-
-Acked-by: David Vrabel <david.vrabel@csr.com>
-
-Not sure what this field was ever for...
+I've taken it.
 
 David
 -- 
