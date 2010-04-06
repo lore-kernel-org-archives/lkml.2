@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756973Ab0DFTYS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 15:24:18 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:27204 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653Ab0DFTYK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 15:24:10 -0400
-Subject: [PATCH] x86/PCI: ignore Consumer/Producer bit in ACPI window
-	descriptions
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Thomas Renninger <trenn@suse.de>
-Date: Tue, 06 Apr 2010 13:24:08 -0600
-Message-ID: <20100406192408.14676.17106.stgit@bob.kio>
-User-Agent: StGit/0.15
+	id S1757138Ab0DFTcB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 15:32:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12302 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753224Ab0DFTby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 15:31:54 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] radix_tree_tag_get() is not as safe as the docs make out
+To: torvalds@osdl.org, akpm@linux-foundation.org, npiggin@suse.de
+Cc: paulmck@linux.vnet.ibm.com, corbet@lwn.net, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       David Howells <dhowells@redhat.com>
+Date: Tue, 06 Apr 2010 20:31:34 +0100
+Message-ID: <20100406193134.26429.78585.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
@@ -23,39 +26,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+radix_tree_tag_get() is not safe to use concurrently with radix_tree_tag_set()
+or radix_tree_tag_clear().  The problem is that the double tag_get() in
+radix_tree_tag_get():
 
-ACPI Address Space Descriptors (used in _CRS) have a Consumer/Producer
-bit that is supposed to distinguish regions that are consumed directly
-by a device from those that are forwarded ("produced") by a bridge.
-But BIOSes have apparently not used this consistently, and Windows
-seems to ignore it, so I think Linux should ignore it as well.
+		if (!tag_get(node, tag, offset))
+			saw_unset_tag = 1;
+		if (height == 1) {
+			int ret = tag_get(node, tag, offset);
 
-I can't point to any of these supposed broken BIOSes, but since we
-now rely on _CRS by default, I think it's safer to ignore this bit
-from the start.
+may see the value change due to the action of set/clear.  RCU is no protection
+against this as no pointers are being changed, no nodes are being replaced
+according to a COW protocol - set/clear alter the node directly.
 
-Here are details of my experiments with how Windows handles it:
-    https://bugzilla.kernel.org/show_bug.cgi?id=15701
+The documentation in linux/radix-tree.h, however, proclaims that
+radix_tree_tag_get() is an exception to the rule that "any function modifying
+the tree or tags (...) must exclude other modifications, and exclude any
+functions reading the tree".
 
-Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To this end, remove radix_tree_tag_get() from that list, and comment on its
+definition that the caller is responsible for preventing concurrent access with
+set/clear.
+
+Furthermore, radix_tree_tag_get() is not safe with respect to
+radix_tree_delete() either as that also modifies the tags directly.
+
+An alternative would be to drop the BUG_ON() from radix_tree_tag_get() and note
+that it may produce an untrustworthy answer if not so protected.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- arch/x86/pci/acpi.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ include/linux/radix-tree.h |    3 +--
+ lib/radix-tree.c           |    4 ++++
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index c7b1ebf..334153c 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -71,8 +71,7 @@ resource_to_addr(struct acpi_resource *resource,
- 	if (ACPI_SUCCESS(status) &&
- 	    (addr->resource_type == ACPI_MEMORY_RANGE ||
- 	    addr->resource_type == ACPI_IO_RANGE) &&
--	    addr->address_length > 0 &&
--	    addr->producer_consumer == ACPI_PRODUCER) {
-+	    addr->address_length > 0) {
- 		return AE_OK;
- 	}
- 	return AE_ERROR;
+diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
+index c5da749..33daa70 100644
+--- a/include/linux/radix-tree.h
++++ b/include/linux/radix-tree.h
+@@ -100,14 +100,13 @@ do {									\
+  * The notable exceptions to this rule are the following functions:
+  * radix_tree_lookup
+  * radix_tree_lookup_slot
+- * radix_tree_tag_get
+  * radix_tree_gang_lookup
+  * radix_tree_gang_lookup_slot
+  * radix_tree_gang_lookup_tag
+  * radix_tree_gang_lookup_tag_slot
+  * radix_tree_tagged
+  *
+- * The first 7 functions are able to be called locklessly, using RCU. The
++ * The first 6 functions are able to be called locklessly, using RCU. The
+  * caller must ensure calls to these functions are made within rcu_read_lock()
+  * regions. Other readers (lock-free or otherwise) and modifications may be
+  * running concurrently.
+diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+index 6b9670d..795a3bb 100644
+--- a/lib/radix-tree.c
++++ b/lib/radix-tree.c
+@@ -556,6 +556,10 @@ EXPORT_SYMBOL(radix_tree_tag_clear);
+  *
+  *  0: tag not present or not set
+  *  1: tag set
++ *
++ * The caller must make sure this function does not run concurrently with
++ * radix_tree_tag_set/clear() or radix_tree_delete() as these modify the nodes
++ * directly to alter the tags.
+  */
+ int radix_tree_tag_get(struct radix_tree_root *root,
+ 			unsigned long index, unsigned int tag)
 
