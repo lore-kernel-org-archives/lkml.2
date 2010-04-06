@@ -1,111 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185Ab0DFWAX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 18:00:23 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:49156 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757519Ab0DFWAB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 18:00:01 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Tue, 6 Apr 2010 23:59:45 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [PATCH] firewire: cdev: fix information leak
-To: linux1394-devel@lists.sourceforge.net
-cc: Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <tkrat.630b7e060062afa9@s5r6.in-berlin.de>
-Message-ID: <tkrat.30d7a4f8f7a97b2b@s5r6.in-berlin.de>
-References: <4BBAD1BC.2070100@ladisch.de> <4BBADAA1.9050508@s5r6.in-berlin.de>
- <4BBAF7EE.5000804@ladisch.de> <4BBB8851.6000509@s5r6.in-berlin.de>
- <tkrat.0047dfa7530926c0@s5r6.in-berlin.de>
- <tkrat.630b7e060062afa9@s5r6.in-berlin.de>
+	id S1757571Ab0DFWAj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 18:00:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63659 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757551Ab0DFV7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 17:59:14 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+Subject: [PATCH -tip v2 4/8] perf probe: Query basic types from debuginfo
+To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
+Cc: systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Date: Tue, 06 Apr 2010 18:06:09 -0400
+Message-ID: <20100406220609.13329.39249.stgit@localhost6.localdomain6>
+In-Reply-To: <20100406220542.13329.45837.stgit@localhost6.localdomain6>
+References: <20100406220542.13329.45837.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A userspace client got to see uninitialized stack-allocated memory if it
-specified an _IOC_READ type of ioctl and an argument size larger than
-expected by firewire-core's ioctl handlers (but not larger than the
-core's union ioctl_arg).
+Query the basic type information (byte-size and signed-flag) from
+debuginfo and pass that to kprobe-tracer. This is especially useful
+for tracing the members of data structure, because each member has
+different byte-size on the memory.
 
-Fix this by clearing the requested buffer size to zero, but only at _IOR
-ioctls.  This way, there is almost no runtime penalty to legit ioctls.
-The only legit _IOR is FW_CDEV_IOC_GET_CYCLE_TIMER with 12...16 bytes to
-memset.
-
-[Another way to fix this would be strict checking of argument size (and
-possibly direction) vs. command number.  However, we then need a lookup
-table, and we need to allow for slight size deviations in case of 32bit
-userland on 64bit kernel.]
-
-Reported-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- drivers/firewire/core-cdev.c |   18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
 
-Index: b/drivers/firewire/core-cdev.c
-===================================================================
---- a/drivers/firewire/core-cdev.c
-+++ b/drivers/firewire/core-cdev.c
-@@ -1346,41 +1346,43 @@ static int (* const ioctl_handlers[])(st
- static int dispatch_ioctl(struct client *client,
- 			  unsigned int cmd, void __user *arg)
+ tools/perf/util/probe-event.c  |    9 +++++
+ tools/perf/util/probe-event.h  |    1 +
+ tools/perf/util/probe-finder.c |   78 ++++++++++++++++++++++++++++++++++++----
+ 3 files changed, 80 insertions(+), 8 deletions(-)
+
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 19de8b7..05ca4a9 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -740,6 +740,13 @@ static int synthesize_kprobe_trace_arg(struct kprobe_trace_arg *arg,
+ 		buf += ret;
+ 		buflen -= ret;
+ 	}
++	/* Print argument type */
++	if (arg->type) {
++		ret = e_snprintf(buf, buflen, ":%s", arg->type);
++		if (ret <= 0)
++			return ret;
++		buf += ret;
++	}
+ 
+ 	return buf - tmp;
+ }
+@@ -848,6 +855,8 @@ void clear_kprobe_trace_event(struct kprobe_trace_event *tev)
+ 			free(tev->args[i].name);
+ 		if (tev->args[i].value)
+ 			free(tev->args[i].value);
++		if (tev->args[i].type)
++			free(tev->args[i].type);
+ 		ref = tev->args[i].ref;
+ 		while (ref) {
+ 			next = ref->next;
+diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
+index a73ede6..0759db6 100644
+--- a/tools/perf/util/probe-event.h
++++ b/tools/perf/util/probe-event.h
+@@ -23,6 +23,7 @@ struct kprobe_trace_arg_ref {
+ struct kprobe_trace_arg {
+ 	char				*name;	/* Argument name */
+ 	char				*value;	/* Base value */
++	char				*type;	/* Type name */
+ 	struct kprobe_trace_arg_ref	*ref;	/* Referencing offset */
+ };
+ 
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index 105e95c..ebeb413 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -84,6 +84,9 @@ const char *x86_64_regs_table[X86_64_MAX_REGS] = {
+ #define arch_regs_table x86_32_regs_table
+ #endif
+ 
++/* Kprobe tracer basic type is up to u64 */
++#define MAX_BASIC_TYPE_BITS	64
++
+ /* Return architecture dependent register string (for kprobe-tracer) */
+ static const char *get_arch_regstr(unsigned int n)
  {
- 	union ioctl_arg buffer;
+@@ -230,6 +233,31 @@ static Dwarf_Die *die_get_real_type(Dwarf_Die *vr_die, Dwarf_Die *die_mem)
+ 	return die_mem;
+ }
+ 
++static bool die_is_signed_type(Dwarf_Die *tp_die)
++{
++	Dwarf_Attribute attr;
++	Dwarf_Word ret;
++
++	if (dwarf_attr(tp_die, DW_AT_encoding, &attr) == NULL ||
++	    dwarf_formudata(&attr, &ret) != 0)
++		return false;
++
++	return (ret == DW_ATE_signed_char || ret == DW_ATE_signed ||
++		ret == DW_ATE_signed_fixed);
++}
++
++static int die_get_byte_size(Dwarf_Die *tp_die)
++{
++	Dwarf_Attribute attr;
++	Dwarf_Word ret;
++
++	if (dwarf_attr(tp_die, DW_AT_byte_size, &attr) == NULL ||
++	    dwarf_formudata(&attr, &ret) != 0)
++		return 0;
++
++	return (int)ret;
++}
++
+ /* Return values for die_find callbacks */
+ enum {
+ 	DIE_FIND_CB_FOUND = 0,		/* End of Search */
+@@ -406,13 +434,42 @@ static void convert_location(Dwarf_Op *op, struct probe_finder *pf)
+ 	}
+ }
+ 
++static void convert_variable_type(Dwarf_Die *vr_die,
++				  struct kprobe_trace_arg *targ)
++{
++	Dwarf_Die type;
++	char buf[16];
++	int ret;
++
++	if (die_get_real_type(vr_die, &type) == NULL)
++		die("Failed to get a type information of %s.",
++		    dwarf_diename(vr_die));
++
++	ret = die_get_byte_size(&type) * 8;
++	if (ret) {
++		/* Check the bitwidth */
++		if (ret > MAX_BASIC_TYPE_BITS) {
++			pr_warning("  Warning: %s exceeds max-bitwidth."
++				   " Cut down to %d bits.\n",
++				   dwarf_diename(&type), MAX_BASIC_TYPE_BITS);
++			ret = MAX_BASIC_TYPE_BITS;
++		}
++
++		ret = snprintf(buf, 16, "%c%d",
++			       die_is_signed_type(&type) ? 's' : 'u', ret);
++		if (ret < 0 || ret >= 16)
++			die("Failed to convert variable type.");
++		targ->type = xstrdup(buf);
++	}
++}
++
+ static void convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
+ 				    struct perf_probe_arg_field *field,
+-				    struct kprobe_trace_arg_ref **ref_ptr)
++				    struct kprobe_trace_arg_ref **ref_ptr,
++				    Dwarf_Die *die_mem)
+ {
+ 	struct kprobe_trace_arg_ref *ref = *ref_ptr;
+ 	Dwarf_Attribute attr;
+-	Dwarf_Die member;
+ 	Dwarf_Die type;
+ 	Dwarf_Word offs;
+ 
+@@ -450,26 +507,27 @@ static void convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
+ 			die("Structure on a register is not supported yet.");
+ 	}
+ 
+-	if (die_find_member(&type, field->name, &member) == NULL)
++	if (die_find_member(&type, field->name, die_mem) == NULL)
+ 		die("%s(tyep:%s) has no member %s.", varname,
+ 		    dwarf_diename(&type), field->name);
+ 
+ 	/* Get the offset of the field */
+-	if (dwarf_attr(&member, DW_AT_data_member_location, &attr) == NULL ||
++	if (dwarf_attr(die_mem, DW_AT_data_member_location, &attr) == NULL ||
+ 	    dwarf_formudata(&attr, &offs) != 0)
+ 		die("Failed to get the offset of %s.", field->name);
+ 	ref->offset += (long)offs;
+ 
+ 	/* Converting next field */
+ 	if (field->next)
+-		convert_variable_fields(&member, field->name, field->next,
+-					&ref);
++		convert_variable_fields(die_mem, field->name, field->next,
++					&ref, die_mem);
+ }
+ 
+ /* Show a variables in kprobe event format */
+ static void convert_variable(Dwarf_Die *vr_die, struct probe_finder *pf)
+ {
+ 	Dwarf_Attribute attr;
++	Dwarf_Die die_mem;
+ 	Dwarf_Op *expr;
+ 	size_t nexpr;
  	int ret;
+@@ -483,9 +541,13 @@ static void convert_variable(Dwarf_Die *vr_die, struct probe_finder *pf)
  
- 	if (fw_device_is_shutdown(client->device))
- 		return -ENODEV;
+ 	convert_location(expr, pf);
  
- 	if (_IOC_TYPE(cmd) != '#' ||
- 	    _IOC_NR(cmd) >= ARRAY_SIZE(ioctl_handlers))
- 		return -EINVAL;
- 
--	if (_IOC_DIR(cmd) & _IOC_WRITE) {
--		if (_IOC_SIZE(cmd) > sizeof(buffer) ||
--		    copy_from_user(&buffer, arg, _IOC_SIZE(cmd)))
-+	if (_IOC_SIZE(cmd) > sizeof(buffer))
-+		return -EFAULT;
-+
-+	if (_IOC_DIR(cmd) == _IOC_READ)
-+		memset(&buffer, 0, _IOC_SIZE(cmd));
-+
-+	if (_IOC_DIR(cmd) & _IOC_WRITE)
-+		if (copy_from_user(&buffer, arg, _IOC_SIZE(cmd)))
- 			return -EFAULT;
--	}
- 
- 	ret = ioctl_handlers[_IOC_NR(cmd)](client, &buffer);
- 	if (ret < 0)
- 		return ret;
- 
--	if (_IOC_DIR(cmd) & _IOC_READ) {
--		if (_IOC_SIZE(cmd) > sizeof(buffer) ||
--		    copy_to_user(arg, &buffer, _IOC_SIZE(cmd)))
-+	if (_IOC_DIR(cmd) & _IOC_READ)
-+		if (copy_to_user(arg, &buffer, _IOC_SIZE(cmd)))
- 			return -EFAULT;
--	}
- 
- 	return ret;
- }
- 
- static long fw_device_op_ioctl(struct file *file,
- 			       unsigned int cmd, unsigned long arg)
- {
- 	return dispatch_ioctl(file->private_data, cmd, (void __user *)arg);
- }
- 
- #ifdef CONFIG_COMPAT
- static long fw_device_op_compat_ioctl(struct file *file,
- 				      unsigned int cmd, unsigned long arg)
+-	if (pf->pvar->field)
++	if (pf->pvar->field) {
+ 		convert_variable_fields(vr_die, pf->pvar->var,
+-					pf->pvar->field, &pf->tvar->ref);
++					pf->pvar->field, &pf->tvar->ref,
++					&die_mem);
++		vr_die = &die_mem;
++	}
++	convert_variable_type(vr_die, pf->tvar);
+ 	/* *expr will be cached in libdw. Don't free it. */
+ 	return ;
+ error:
+
 
 -- 
-Stefan Richter
--=====-==-=- -=-- --==-
-http://arcgraph.de/sr/
-
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
