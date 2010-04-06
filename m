@@ -1,115 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444Ab0DFTQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 15:16:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19332 "EHLO mx1.redhat.com"
+	id S1757407Ab0DFTSo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 15:18:44 -0400
+Received: from claw.goop.org ([74.207.240.146]:40648 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756920Ab0DFTQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 15:16:25 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <25610.1270579965@redhat.com>
-References: <25610.1270579965@redhat.com> <20100406170903.GH5288@laptop> <23428.1270570789@redhat.com>
-To: Nick Piggin <npiggin@suse.de>
-Cc: dhowells@redhat.com, paulmck@linux.vnet.ibm.com, corbet@lwn.net,
-       linux-kernel@vger.kernel.org, linux-cachefs@redhat.com
-Subject: Re: An incorrect assumption over radix_tree_tag_get()
-Date: Tue, 06 Apr 2010 20:16:11 +0100
-Message-ID: <26067.1270581371@redhat.com>
+	id S1756693Ab0DFTSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 15:18:40 -0400
+Message-ID: <4BBB890E.5040808@goop.org>
+Date: Tue, 06 Apr 2010 12:18:38 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Dmitry Torokhov <dtor@vmware.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "pv-drivers@vmware.com" <pv-drivers@vmware.com>
+Subject: Re: [PATCH] VMware Balloon driver
+References: <20100404215202.GA13020@dtor-ws.eng.vmware.com> <20100405142419.2c9bea3d.akpm@linux-foundation.org> <20100405225833.GA25970@dtor-ws.eng.vmware.com> <4BBB622F.4070501@redhat.com> <4BBB7CA3.2060802@goop.org> <4BBB7F1E.3030307@redhat.com>
+In-Reply-To: <4BBB7F1E.3030307@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> wrote:
+On 04/06/2010 11:36 AM, Avi Kivity wrote:
+> On 04/06/2010 09:25 PM, Jeremy Fitzhardinge wrote:
+>> On 04/06/2010 09:32 AM, Avi Kivity wrote:
+>>> Yeah.  If we wanted commonality, we could make a balloon_core.c that 
+>>> contains the common code.  IMO that's premature, but perhaps there's 
+>>> some meat there (like suspend/resume support and /proc//sys interface).
+>>
+>> I think it would be useful to have common:
+>>
+>>   1. User and kernel mode ABIs for controlling ballooning.  It assumes
+>>      that the different balloon implementations are sufficiently
+>>      similar in semantics.   (Once there's a kernel ABI, adding a
+>>      common user ABI is trivial.)
+>>   2. Policy driving the ballooning driver, at least from the guest
+>>      side.  That is, some good metrics from the vm subsystem about
+>>      memory pressure (both positive and negative), and something to
+>>      turn those metrics into requests to the balloon driver.
+>>
+>> 1) is not a huge amount of code, but something consistent would be 
+>> nice.  2) is something we've been missing and is a bit of an open 
+>> question/research project anyway.
+>
+> 3) Code that attempts to reclaim 2MB pages when possible
 
-> Nick Piggin <npiggin@suse.de> wrote:
-> 
-> > It is safe. Synchronization requirements for using the radix tree API
-> > are documented.
-> 
-> I presume you mean the big comment on it in radix-tree.h.
-> 
-> According to that, it is not safe:
-> 
->  * - any function _modifying_ the tree or tags (inserting or deleting
->  *   items, setting or clearing tags) must exclude other modifications, and
->  *   exclude any functions reading the tree.
+Yes.  Ballooning in 4k units is a bit silly.
 
-Having said that, the next few lines, say that it is:
+     J
 
- * The notable exceptions to this rule are the following functions:
- * radix_tree_lookup
- * radix_tree_lookup_slot
- * radix_tree_tag_get
- * radix_tree_gang_lookup
- * radix_tree_gang_lookup_slot
- * radix_tree_gang_lookup_tag
- * radix_tree_gang_lookup_tag_slot
- * radix_tree_tagged
-
-However, I'm not sure I agree that radix_tree_tag_get() belongs in this list.
-
-The bug symptoms are this:
-
-Someone is seeing is a bug with an apparently corrupt radix tree tag chain
-being observed in radix_tree_tag_get().  Leastways, the BUG() on line 602 in
-radix_tree_tag_get() trips once in a while:
-
-	kernel BUG at
-		/usr/src/linux-2.6-2.6.33/debian/build/source_i386_none/lib/radix-tree.c:602!
-	RIP: 0010:[<ffffffff81182040>] radix_tree_tag_get+0xbc/0xe3
-	 [<ffffffffa0247b67>] ? __fscache_maybe_release_page+0x42/0x115
-	 [<ffffffffa0372e7d>] ? nfs_fscache_release_page+0x66/0x99 [nfs]
-	 [<ffffffff810b6dee>] ? invalidate_inode_pages2_range+0x15a/0x262
-	 [<ffffffffa035312f>] ? nfs_invalidate_mapping_nolock+0x18/0xb4
-	 [<ffffffffa0354097>] ? nfs_revalidate_mapping+0x85/0x99 [nfs]
-	 [<ffffffffa0351158>] ? nfs_file_splice_read+0x5b/0x8e [nfs]
-	 [<ffffffff811043d3>] ? splice_direct_to_actor+0xbe/0x188
-	 [<ffffffff81104a1c>] ? direct_splice_actor+0x0/0x1e
-	 [<ffffffff81113274>] ? ep_scan_ready_list+0x132/0x151
-	 [<ffffffff811044e7>] ? do_splice_direct+0x4a/0x64
-	 [<ffffffff810e8fa8>] ? do_sendfile+0x12d/0x1a8
-	 [<ffffffff8106685b>] ? getnstimeofday+0x55/0xaf
-	 [<ffffffff810e906c>] ? sys_sendfile64+0x49/0x88
-	 [<ffffffff8103145f>] ? sysenter_dispatch+0x7/0x2e
-
-which is this:
-
-		if (!tag_get(node, tag, offset))
-			saw_unset_tag = 1;
-		if (height == 1) {
-			int ret = tag_get(node, tag, offset);
-
-	-->		BUG_ON(ret && saw_unset_tag);
-			return !!ret;
-		}
-
-In fs/fscache/page.c, __fscache_maybe_release_page() does a radix_tree_lookup()
-with just the RCU read lock held, and then calls radix_tree_tag_get() a couple
-of times.  In this case, it's the first instance, before we grab the
-stores_lock spinlock (which is used to serialise alteration of the radix tree)
-that is the problem:
-
-	/* see if the page is actually undergoing storage - if so we can't get
-	 * rid of it till the cache has finished with it */
-	if (radix_tree_tag_get(&cookie->stores, page->index,
-			       FSCACHE_COOKIE_STORING_TAG)) {
-		rcu_read_unlock();
-		goto page_busy;
-	}
-
-Looking at radix_tree_tag_get(), I can see that it carefully uses
-rcu_dereference_raw() to protect itself against pointer modification - but
-looking at radix_tree_tag_set/clear(), no pointers are modified, no nodes are
-replaced.  radix_tree_tag_get()'s attempts to protect itself count for nothing
-as set/clear() modify the node directly.
-
-So, what I'm seeing is that the two calls to tag_get() on the same bit
-occasionally show a different value, and, looking at the code, I can't see any
-reason for the confidence displayed in the documenation that this cannot
-happen.
-
-David
