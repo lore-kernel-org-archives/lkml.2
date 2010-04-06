@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090Ab0DFPhm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 11:37:42 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34231 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753100Ab0DFPhg (ORCPT
+	id S1754845Ab0DFPll (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 11:41:41 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:35134 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752951Ab0DFPlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 11:37:36 -0400
-Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive
- spinning
-From: Peter Zijlstra <peterz@infradead.org>
-To: Darren Hart <dvhltc@us.ibm.com>
-Cc: Ulrich Drepper <drepper@gmail.com>, Avi Kivity <avi@redhat.com>,
-       linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
-       "Peter W. Morreale" <pmorreale@novell.com>,
-       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Gregory Haskins <ghaskins@novell.com>,
-       Sven-Thorsten Dietrich <sdietrich@novell.com>,
-       Chris Mason <chris.mason@oracle.com>,
-       John Cooper <john.cooper@third-harmonic.com>,
-       Chris Wright <chrisw@sous-sol.org>
-In-Reply-To: <4BBB5433.3060005@us.ibm.com>
-References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com>
-	 <4BBA5305.7010002@redhat.com> <1270543721.1597.748.camel@laptop>
-	 <m2ua36005b51004060747y1abf15edj28227274844db2e7@mail.gmail.com>
-	 <1270565478.1595.529.camel@laptop>  <4BBB5433.3060005@us.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 06 Apr 2010 17:37:29 +0200
-Message-ID: <1270568249.20295.37.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Apr 2010 11:41:35 -0400
+Date: Tue, 6 Apr 2010 11:40:47 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Btrfs updates
+Message-ID: <20100406154047.GE5413@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20100405193637.GC21620@think>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100405193637.GC21620@think>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4BBB5609.0138:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-06 at 08:33 -0700, Darren Hart wrote:
-> Peter Zijlstra wrote:
-> > On Tue, 2010-04-06 at 07:47 -0700, Ulrich Drepper wrote:
-> >> On Tue, Apr 6, 2010 at 01:48, Peter Zijlstra <peterz@infradead.org>
-> >> wrote:
-> >>>  try
-> >>>  spin
-> >>>  try
-> >>>  syscall
-> >> This is available for a long time in the mutex implementation
-> >> (PTHREAD_MUTEX_ADAPTIVE_NP mutex type).  It hasn't show much
-> >> improvement if any.  There were some people demanding this support for
-> >> as far as I know they are not using it now.  This is adaptive
-> >> spinning, learning from previous calls how long to wait.  But it's
-> >> still unguided.  There is no way to get information like "the owner
-> >> has been descheduled". 
-> > 
-> > That's where the FUTEX_LOCK thing comes in, it does all those, the above
-> > was a single spin loop to amortize the syscall overhead.
-> > 
-> > I wouldn't make it any more complex than a single pause ins, syscalls
-> > are terribly cheap these days.
+On Mon, Apr 05, 2010 at 03:36:37PM -0400, Chris Mason wrote:
+> Hello everyone,
 > 
-> And yet they still seem to have a real impact on the futex_lock 
-> benchmark. Perhaps I am just still looking at pathological cases, but 
-> there is a strong correlation between high syscall counts and really low 
-> iterations per second. Granted this also correlates with lock 
-> contention. However, when using the same period and duty-cycle I find 
-> that a locking mechanism that makes significantly fewer syscalls also 
-> significantly outperforms one that makes more. Kind of handwavy stilly, 
-> I'll have more numbers this afternoon.
+> The master branch of the btrfs-unstable repo has a collection of fixes:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git master
+> 
 
-Sure, but I'm still not sure why FUTEX_LOCK ends up making more syscalls
-than FUTEX_WAIT based locking. Both should only do the syscall when the
-lock is contended, both should only ever do 1 syscall per acquire,
-right?
+That pull request was missing another enospc fix from Josef, and Yan
+Zheng noticed we were sometimes trying to allocate zero sized chunks
+from the disk pool.  I've updated the git tree with two new commits,
+here is the corrected shortlog:
 
+Josef Bacik (5) commits (+47/-96):
+    Btrfs: fail to mount if we have problems reading the block groups (+12/-4)
+    Btrfs: fix small race with delalloc flushing waitqueue's (+4/-5)
+    Btrfs: fix chunk allocate size calculation (+3/-1)
+    Btrfs: fix data enospc check overflow (+15/-5)
+    Btrfs: kill max_extent mount option (+13/-81)
 
+Zhao Lei (3) commits (+9/-12):
+    Btrfs: Simplify num_stripes's calculation logical for __btrfs_alloc_chunk() (+2/-2)
+    Btrfs: Add error handle for btrfs_search_slot() in btrfs_read_chunk_tree() (+2/-0)
+    Btrfs: Remove unnecessary finish_wait() in wait_current_trans() (+5/-10)
 
+Dan Carpenter (3) commits (+5/-1):
+    Btrfs: handle kmalloc() failure in inode lookup ioctl (+3/-0)
+    Btrfs: check btrfs_get_extent return for IS_ERR() (+1/-1)
+    Btrfs: dereferencing freed memory (+1/-0)
+
+Chris Mason (2) commits (+10/-0):
+    Btrfs: make sure the chunk allocator doesn't create zero length chunks (+6/-0)
+    Btrfs: add check for changed leaves in setup_leaf_for_split (+4/-0)
+
+Sage Weil (1) commits (+31/-66):
+    Btrfs: create snapshot references in same commit as snapshot
+
+Andrea Gelmini (1) commits (+0/-1):
+    Btrfs: remove duplicate include in ioctl.c
+
+Miao Xie (1) commits (+4/-1):
+    Btrfs: add NULL check for do_walk_down()
+
+Nick Piggin (1) commits (+5/-32):
+    Btrfs: use add_to_page_cache_lru, use __page_cache_alloc
+
+Total: (17) commits
+
+ fs/btrfs/transaction.c  |  112 +++++++++++++++---------------------------------
+ fs/btrfs/inode.c        |   59 +------------------------
+ fs/btrfs/extent-tree.c  |   43 ++++++++++++------
+ fs/btrfs/super.c        |   23 +--------
+ fs/btrfs/compression.c  |   22 +--------
+ fs/btrfs/volumes.c      |   16 +++++-
+ fs/btrfs/extent_io.c    |   15 ------
+ fs/btrfs/disk-io.c      |   12 +++--
+ fs/btrfs/ioctl.c        |    7 ++-
+ fs/btrfs/ordered-data.c |    6 +-
+ fs/btrfs/ctree.c        |    4 +
+ fs/btrfs/ctree.h        |    1 
+ 12 files changed, 111 insertions(+), 209 deletions(-)
