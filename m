@@ -1,182 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab0DFRy6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 13:54:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55570 "EHLO mx2.suse.de"
+	id S1757435Ab0DFR4A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 13:56:00 -0400
+Received: from fifo99.com ([67.223.236.141]:47247 "EHLO fifo99.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757274Ab0DFRyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 13:54:52 -0400
-Message-ID: <4BBB756A.1020502@suse.com>
-Date: Tue, 06 Apr 2010 13:54:50 -0400
-From: Jeff Mahoney <jeffm@suse.com>
-Organization: SUSE Labs, Novell, Inc
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-2.1 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Edward Shishkin <edward.shishkin@gmail.com>
-Cc: ReiserFS Devel <reiserfs-devel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [patch 3/3] reiserfs: remove privroot hiding in lookup
-References: <20090505193014.926371851@suse.com> <20090505193206.968741619@suse.com> <4BB60BA9.20607@gmail.com>
-In-Reply-To: <4BB60BA9.20607@gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753072Ab0DFRzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 13:55:53 -0400
+X-Greylist: delayed 395 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Apr 2010 13:55:53 EDT
+Subject: Re: [RFC][PATCH] sched: cpuacct: Track cpuusage per cpu frequency
+From: Daniel Walker <dwalker@fifo99.com>
+To: Mike Chan <mike@android.com>
+Cc: menage@google.com, balbir@in.ibm.com, cpufreq@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <1270496004-9715-1-git-send-email-mike@android.com>
+References: <1270496004-9715-1-git-send-email-mike@android.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 06 Apr 2010 10:48:47 -0700
+Message-ID: <1270576127.9066.8.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 04/02/2010 11:22 AM, Edward Shishkin wrote:
-> Jeff Mahoney wrote:
->>  With Al Viro's patch to move privroot lookup to fs mount, there's no
->> need
->>  to have special code to hide the privroot in reiserfs_lookup.
->>   
+On Mon, 2010-04-05 at 12:33 -0700, Mike Chan wrote:
+> New file: cpuacct.cpufreq when CONFIG_CPU_FREQ_STATS is enabled.
 > 
-> Jeff, this implication looks strange. IMHO Viro's patch just pins this in
-> the cache for mount session, while after your "cleanup" everyone can
-> walk here (including non-privileged users) and do what they want. Um?
-
-
-Oh hey. Yeah that's bad. I can reproduce that on my system. The privroot
-lookup was supposed to be poisoned but apparently that's not working as
-expected.
-
-I'll take a look.
-
-- -Jeff
-
-> Edward.
+> cpuacct.cpufreq accounts for cpu time per-cpu frequency, time is exported
+> in nano-seconds
 > 
->>  I've also cleaned up the privroot hiding in reiserfs_readdir_dentry and
->>  removed the last user of reiserfs_xattrs().
->>
->> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
->> ---
->>  fs/reiserfs/dir.c              |   24 +++++++++++++-----------
->>  fs/reiserfs/namei.c            |   17 ++---------------
->>  fs/reiserfs/xattr.c            |    2 +-
->>  include/linux/reiserfs_fs_sb.h |    1 -
->>  4 files changed, 16 insertions(+), 28 deletions(-)
->>
->> --- a/fs/reiserfs/dir.c
->> +++ b/fs/reiserfs/dir.c
->> @@ -41,6 +41,18 @@ static int reiserfs_dir_fsync(struct fil
->>  
->>  #define store_ih(where,what) copy_item_head (where, what)
->>  
->> +static inline bool is_privroot_deh(struct dentry *dir,
->> +                   struct reiserfs_de_head *deh)
->> +{
->> +    int ret = 0;
->> +#ifdef CONFIG_REISERFS_FS_XATTR
->> +    struct dentry *privroot = REISERFS_SB(dir->d_sb)->priv_root;
->> +    ret = (dir == dir->d_parent && privroot->d_inode &&
->> +           deh->deh_objectid ==
->> INODE_PKEY(privroot->d_inode)->k_objectid);
->> +#endif
->> +    return ret;
->> +}
->> +
->>  int reiserfs_readdir_dentry(struct dentry *dentry, void *dirent,
->>                 filldir_t filldir, loff_t *pos)
->>  {
->> @@ -138,18 +150,8 @@ int reiserfs_readdir_dentry(struct dentr
->>                  }
->>  
->>                  /* Ignore the .reiserfs_priv entry */
->> -                if (reiserfs_xattrs(inode->i_sb) &&
->> -                    !old_format_only(inode->i_sb) &&
->> -                    dentry == inode->i_sb->s_root &&
->> -                    REISERFS_SB(inode->i_sb)->priv_root &&
->> -                    REISERFS_SB(inode->i_sb)->priv_root->d_inode
->> -                    && deh_objectid(deh) ==
->> -                    le32_to_cpu(INODE_PKEY
->> -                        (REISERFS_SB(inode->i_sb)->
->> -                         priv_root->d_inode)->
->> -                        k_objectid)) {
->> +                if (is_privroot_deh(dentry, deh))
->>                      continue;
->> -                }
->>  
->>                  d_off = deh_offset(deh);
->>                  *pos = d_off;
->> --- a/fs/reiserfs/namei.c
->> +++ b/fs/reiserfs/namei.c
->> @@ -338,21 +338,8 @@ static struct dentry *reiserfs_lookup(st
->>                  &path_to_entry, &de);
->>      pathrelse(&path_to_entry);
->>      if (retval == NAME_FOUND) {
->> -        /* Hide the .reiserfs_priv directory */
->> -        if (reiserfs_xattrs(dir->i_sb) &&
->> -            !old_format_only(dir->i_sb) &&
->> -            REISERFS_SB(dir->i_sb)->priv_root &&
->> -            REISERFS_SB(dir->i_sb)->priv_root->d_inode &&
->> -            de.de_objectid ==
->> -            le32_to_cpu(INODE_PKEY
->> -                (REISERFS_SB(dir->i_sb)->priv_root->d_inode)->
->> -                k_objectid)) {
->> -            reiserfs_write_unlock(dir->i_sb);
->> -            return ERR_PTR(-EACCES);
->> -        }
->> -
->> -        inode =
->> -            reiserfs_iget(dir->i_sb, (struct cpu_key *)&(de.de_dir_id));
->> +        inode = reiserfs_iget(dir->i_sb,
->> +                      (struct cpu_key *)&(de.de_dir_id));
->>          if (!inode || IS_ERR(inode)) {
->>              reiserfs_write_unlock(dir->i_sb);
->>              return ERR_PTR(-EACCES);
->> --- a/fs/reiserfs/xattr.c
->> +++ b/fs/reiserfs/xattr.c
->> @@ -841,7 +841,7 @@ ssize_t reiserfs_listxattr(struct dentry
->>      if (!dentry->d_inode)
->>          return -EINVAL;
->>  
->> -    if (!reiserfs_xattrs(dentry->d_sb) ||
->> +    if (!dentry->d_sb->s_xattr ||
->>          get_inode_sd_version(dentry->d_inode) == STAT_DATA_V1)
->>          return -EOPNOTSUPP;
->>  
->> --- a/include/linux/reiserfs_fs_sb.h
->> +++ b/include/linux/reiserfs_fs_sb.h
->> @@ -488,7 +488,6 @@ enum reiserfs_mount_options {
->>  #define reiserfs_data_log(s) (REISERFS_SB(s)->s_mount_opt & (1 <<
->> REISERFS_DATA_LOG))
->>  #define reiserfs_data_ordered(s) (REISERFS_SB(s)->s_mount_opt & (1 <<
->> REISERFS_DATA_ORDERED))
->>  #define reiserfs_data_writeback(s) (REISERFS_SB(s)->s_mount_opt & (1
->> << REISERFS_DATA_WRITEBACK))
->> -#define reiserfs_xattrs(s) ((s)->s_xattr != NULL)
->>  #define reiserfs_xattrs_user(s) (REISERFS_SB(s)->s_mount_opt & (1 <<
->> REISERFS_XATTRS_USER))
->>  #define reiserfs_posixacl(s) (REISERFS_SB(s)->s_mount_opt & (1 <<
->> REISERFS_POSIXACL))
->>  #define reiserfs_xattrs_optional(s) (reiserfs_xattrs_user(s) ||
->> reiserfs_posixacl(s))
->>
->>
->> -- 
->> To unsubscribe from this list: send the line "unsubscribe
->> reiserfs-devel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->>   
+> We do not know the cpufreq table size at compile time.
+> So a new config option CONFIG_CPUACCT_CPUFREQ_TABLE_MAX is intruduced,
+> to determine the cpufreq table per-cpu in the cpuacct struct.
 > 
+> Signed-off-by: Mike Chan <mike@android.com>
+> ---
+>  init/Kconfig   |    5 +++
+>  kernel/sched.c |   99 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 104 insertions(+), 0 deletions(-)
+> 
+> diff --git a/init/Kconfig b/init/Kconfig
+> index eb77e8c..e1e86df 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -534,6 +534,11 @@ config CGROUP_CPUACCT
+>  	  Provides a simple Resource Controller for monitoring the
+>  	  total CPU consumed by the tasks in a cgroup.
+>  
+> +config CPUACCT_CPUFREQ_TABLE_MAX
+> +	int "Max CPUFREQ table size"
+> +	depends on CGROUP_CPUACCT && CPU_FREQ_TABLE
+> +	default 32
+> +
 
+I'd say make it just a regular define unless you can think of a reason
+why a non-developer would want to touch this value.
 
-- -- 
-Jeff Mahoney
-SUSE Labs
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.14 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
+>  config RESOURCE_COUNTERS
+>  	bool "Resource counters"
+>  	help
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 528a105..a0b56b5 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -71,6 +71,7 @@
+>  #include <linux/debugfs.h>
+>  #include <linux/ctype.h>
+>  #include <linux/ftrace.h>
+> +#include <linux/cpufreq.h>
+>  
+>  #include <asm/tlb.h>
+>  #include <asm/irq_regs.h>
+> @@ -8817,6 +8818,11 @@ struct cgroup_subsys cpu_cgroup_subsys = {
+>   * (balbir@in.ibm.com).
+>   */
+>  
+> +#ifdef CONFIG_CPU_FREQ_STAT
+> +/* The alloc_percpu macro uses typeof so we must define a type here. */
+> +typedef struct { u64 usage[CONFIG_CPUACCT_CPUFREQ_TABLE_MAX]; } cpufreq_usage_t;
+> +#endif
 
-iEYEARECAAYFAku7dWoACgkQLPWxlyuTD7J8twCfeOXZTZot0wocKnhDoSy/ED/s
-IrwAniBOs1YcTC67mH4dD+ggyx65ZA3X
-=uKLG
------END PGP SIGNATURE-----
+you should be able to send it a regular struct . I found this usage,
+
+lport->dev_stats = alloc_percpu(struct fcoe_dev_stats);
+
+as an example.
+
+Daniel
+
