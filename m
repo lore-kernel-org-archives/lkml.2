@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756987Ab0DFAFR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Apr 2010 20:05:17 -0400
-Received: from sh.osrg.net ([192.16.179.4]:51854 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756717Ab0DFAFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Apr 2010 20:05:12 -0400
-Date: Tue, 6 Apr 2010 09:05:02 +0900
-To: fujita.tomonori@lab.ntt.co.jp
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: Re: [PATCH -mm 2/5] asm-generic: add NEED_SG_DMA_LENGTH to define
- sg_dma_len()
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100406084603B.fujita.tomonori@lab.ntt.co.jp>
-References: <1270391153-17519-3-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-	<20100405163541.aa10c605.akpm@linux-foundation.org>
-	<20100406084603B.fujita.tomonori@lab.ntt.co.jp>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100406090434K.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 06 Apr 2010 09:05:02 +0900 (JST)
+	id S1757043Ab0DFAGd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Apr 2010 20:06:33 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:59556 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756717Ab0DFAG1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Apr 2010 20:06:27 -0400
+Date: Tue, 6 Apr 2010 02:06:24 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Ben Dooks <ben-linux@fluff.org>
+Cc: kernel-janitors@vger.kernel.org, linux-i2c@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: i2c-drivers: Remove dangling pointers
+Message-ID: <20100406000624.GA2893@pengutronix.de>
+References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de> <20100405225925.GC32401@fluff.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4Ckj6UjgE2iN1+kY"
+Content-Disposition: inline
+In-Reply-To: <20100405225925.GC32401@fluff.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Apr 2010 08:46:38 +0900
-FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
 
-> On Mon, 5 Apr 2010 16:35:41 -0700
-> Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> > On Sun,  4 Apr 2010 23:25:50 +0900
-> > FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
-> > 
-> > > There are only two ways to define sg_dma_len(); use sg->dma_length or
-> > > sg->length. This patch introduces NEED_SG_DMA_LENGTH that enables
-> > > architectures to choose sg->dma_length or sg->length.
-> > 
-> > i386 allnoconfig:
-> > 
-> > arch/x86/kernel/pci-nommu.c: In function 'nommu_map_sg':
-> > arch/x86/kernel/pci-nommu.c:71: error: 'struct scatterlist' has no member named 'dma_length'
-> > 
-> > So I enabled NEED_SG_DMA_LENGTH on x86_32 as well.  It compiles...
-> 
-> Sorry about that. The fix is fine by me. We can remove dma_length in
-> pci-nommu.c though (there is no point of setting dma_length here).
+--4Ckj6UjgE2iN1+kY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Oops, I forgot that pci-nommu.c is also used on x86_64.
+Hi Ben,
 
-There is no point of setting dma_length here on x86_32 but we need to
-do on x86_64 since x86_64 uses dma_length. Your fix is correct.
+> > here is a patch series fixing I2C drivers which free their private data
+> > structure and leave the clientdata pointer dangling or do the cleanup i=
+n the
+> > wrong order. All occurences were found using coccinelle [1] and the sem=
+antic
+> > patch below. The matches have been reviewed, and sometimes adapted.
 
-Sorry again.
+[...]
+
+> From the list of things here, there's nothing in here that I should be
+> worried about (just checking) ?
+
+Correct. Just ignore this series.
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--4Ckj6UjgE2iN1+kY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAku6ewAACgkQD27XaX1/VRvttgCgin2BILMMKf22Dl1cEG/KCBi/
+UcEAn2btQWLqN9K0+4x7hl1iT22zsRlp
+=nHqp
+-----END PGP SIGNATURE-----
+
+--4Ckj6UjgE2iN1+kY--
