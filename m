@@ -1,23 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471Ab0DFJAk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 05:00:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44706 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab0DFJAe (ORCPT
+	id S1752650Ab0DFJA7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 05:00:59 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:48694 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752173Ab0DFJAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 05:00:34 -0400
-Subject: Re: [PATCH] lockdep: Make lockstats counting per cpu
+	Tue, 6 Apr 2010 05:00:37 -0400
+Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive
+ spinning
 From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <1270505417-8144-1-git-send-regression-fweisbec@gmail.com>
-References: <1269736197-10958-1-git-send-regression-fweisbec@gmail.com>
-	 <1270505417-8144-1-git-send-regression-fweisbec@gmail.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Darren Hart <dvhltc@us.ibm.com>, linux-kernel@vger.kernel.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>
+In-Reply-To: <4BBA5305.7010002@redhat.com>
+References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com>
+	 <4BBA5305.7010002@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 06 Apr 2010 10:46:27 +0200
-Message-ID: <1270543587.1597.742.camel@laptop>
+Date: Tue, 06 Apr 2010 10:48:41 +0200
+Message-ID: <1270543721.1597.748.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -25,30 +34,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-06 at 00:10 +0200, Frederic Weisbecker wrote:
-> Locking statistics are implemented using global atomic variables.
-> This is usually fine unless some path write them very often.
+On Tue, 2010-04-06 at 00:15 +0300, Avi Kivity wrote:
 > 
-> This is the case for the function and function graph tracers
-> that disable irqs for each entry saved (except if the function
-> tracer is in preempt disabled only mode).
-> And calls to local_irq_save/restore() increment hardirqs_on_events
-> and hardirqs_off_events stats (or similar stats for redundant
-> versions).
-> 
-> Incrementing these global vars for each function ends up in too
-> much cache bouncing if lockstats are enabled.
-> 
-> To solve this, implement the debug_atomic_*() operations using
-> per cpu vars.
-> 
-> 
+> An interesting (but perhaps difficult to achieve) optimization would be 
+> to spin in userspace. 
 
-So I really have to ask, why?
+System call overhead isn't that large, but if you want to amortize that
+you can do a very small spin in userspace and then take the syscall:
 
-This is CONFIG_DEBUG_LOCKDEP code, so its default off, and used to debug
-lockdep. Debug code should be as simple as possible, and preferably
-should not care about performance where possible.
+  try
+  spin
+  try
+  syscall
 
-So why complicate this?
+like.
+
+Complicating anything beyond that is just not worth it.
 
