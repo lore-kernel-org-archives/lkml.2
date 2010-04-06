@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749Ab0DFQAB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 12:00:01 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48934 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751682Ab0DFP7z (ORCPT
+	id S1755578Ab0DFQHG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 12:07:06 -0400
+Received: from exhub016-3.exch016.msoutlookonline.net ([207.5.72.226]:43036
+	"EHLO EXHUB016-3.exch016.msoutlookonline.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751665Ab0DFQHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 11:59:55 -0400
-Date: Tue, 6 Apr 2010 08:55:01 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-cc: Rik van Riel <riel@redhat.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Borislav Petkov <bp@alien8.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>
-Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
- 2.6.34-rc3)
-In-Reply-To: <1270568096.1814.145.camel@barrios-desktop>
-Message-ID: <alpine.LFD.2.00.1004060841460.3487@i5.linux-foundation.org>
-References: <20100402175937.GA19690@liondog.tnic>  <alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org>  <20100406173754.7E5A.A69D9226@jp.fujitsu.com> <4BBB475A.7070002@redhat.com> <1270568096.1814.145.camel@barrios-desktop>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Tue, 6 Apr 2010 12:07:02 -0400
+Message-ID: <4BBB5C1F.5060407@cfl.rr.com>
+Date: Tue, 6 Apr 2010 12:06:55 -0400
+From: Phillip Susi <psusi@cfl.rr.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Karel Zak <kzak@redhat.com>
+CC: Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Extended partition mapping wrong size
+References: <4BB0D12B.6060701@cfl.rr.com> <20100406114706.GA30340@nb.net.home> <4BBB3E0F.1030309@cfl.rr.com> <20100406153348.GE7858@nb.net.home>
+In-Reply-To: <20100406153348.GE7858@nb.net.home>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 7 Apr 2010, Minchan Kim wrote:
+On 4/6/2010 11:33 AM, Karel Zak wrote:
+> You have to care about the partition table (EBR).
 > 
-> Let's see the unlink_anon_vmas. 
+> The current 1024 bytes is completely useless size, if you enlarge the
+> size of the partition (for example to 1MiB) you will see reports from
+> people who lost their extended partitions. (I don't believe that all
+> mkfs programs are able to detect/skip EBR.)
+
+Good point... mke2fs won't damage it since it leaves the first sector
+intact and places its boot sector in sector 1 ( or was it 2? ), but FAT
+and NTFS won't be so kind.
+
+>> Then again, I could swear that once upon a time the kernel simply
+>> did not bother creating a dev node for the extended partition, and
+>> this seems to be a hack that was put in to make it easy for LILO to
+>> install to one.  Personally I'd prefer going back to the old
+>> behavior of just not having a useless device there.
 > 
-> 1. list_for_each_entry_safe(avc,next, vma->anon_vma_chain, same_vma)
-> 2. 	anon_vma_unlink
-> 3. 		spin_lock(anon_vma->lock) <-- HERE LOCK.
-> 4.		list_del(anon_vma_chain->same_anon_vma);
-> 
-> What if anon_vma is destroyed and reuse by SLAB_XXX_RCU for another
-> anon_vma object between 2 and 3?
-> I mean how to make sure 3) does lock valid anon_vma? 
-> 
-> I hope it is culprit.
+> This is probably better idea than enlarge the size :-)
 
-I don't think so. That isn't the racy case. We're working with a 
-anon_vma_chain, so the anonvma is all there.
-
-The racy case is when we look up an anonvma by the page, and the page gets 
-unmapped at the same time because somebody else is travelling over the LRU 
-list of the page itself, isn't it?
-
-I do wonder if "page_lock_anon_vma()" should check the whole 
-"page_mapped()" case _after_ taking the anon_vma lock. Because if the race 
-happens, we're following a anon_vma list that has nothing to do with that 
-page (it's stilla _valid_ list, since we locked the anon_vma, but will it 
-be ok?)
-
-IOW, what is it that really keeps the anon_vma list reliable _and_ 
-relevant wrt the page? We know we may get a stale anon_vma, are we ok if 
-that anon_vma list doesn't actually have anything to do with the page any 
-more?
-
-I think the first check in "page_address_in_vma()" protects us, but 
-whatever.
-
-However, that made me look at the PAGE_MIGRATION case. That seems to be 
-just broken. It's doing that page_anon_vma() + spin_lock without holding 
-any RCU locks, so there is no guarantee that anon_vma there is at all 
-valid.
-
-Is that function always called with rcu_read_lock()? 
-
-			Linus
+Aye, I'd prefer the useless device to be removed, but at the very least
+it should not use a size of 2 when the second sector is not actually
+there because it is the first sector of the logical partition, though we
+just patched parted to reserve that second sector anyhow even though you
+are using none alignment mode, just to avoid running into this problem.
