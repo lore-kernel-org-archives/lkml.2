@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab0DFKvm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 06:51:42 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46290 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751617Ab0DFKvf (ORCPT
+	id S1754216Ab0DFLEN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 07:04:13 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:45177 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753240Ab0DFLEG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 06:51:35 -0400
-Date: Tue, 6 Apr 2010 11:51:33 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Todd Fischer <todd.fischer@ridgerun.com>
-Cc: linux-kernel@vger.kernel.org,
-       davinci-linux-open-source@linux.davincidsp.com, sameo@linux.intel.com,
-       lrg@slimlogic.co.uk
-Subject: Re: [PATCH 0/4]-V3 TPS6507x MFD driver
-Message-ID: <20100406105132.GC2688@rakim.wolfsonmicro.main>
-References: <1270520639-20516-1-git-send-email-todd.fischer@ridgerun.com>
+	Tue, 6 Apr 2010 07:04:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=nzjQAdGmZhNldXHGA8N2QBQIVcp7vasvSytaNix6QZcuXsAYmUA6t2cT96r2SWoAQK
+         B+O5UffaPcfbAatsFqkfsIDAIYlkeG3qtLIKvwHSuHbt5FefHB/ZiKWdKEpAPssi/QlG
+         06eP9Zv8IDJCuhj2LCoZc5GfNCuSa5CFxhqSI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1270520639-20516-1-git-send-email-todd.fischer@ridgerun.com>
-X-Cookie: On the eighth day, God created FORTRAN.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100406104539.GC21229@bicker>
+References: <20100406104539.GC21229@bicker>
+Date: Tue, 6 Apr 2010 20:04:03 +0900
+Message-ID: <v2p28c262361004060404u63146873x725d8927c47a3329@mail.gmail.com>
+Subject: Re: [patch] proc: copy_to_user() returns unsigned
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Dan Carpenter <error27@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Minchan Kim <minchan.kim@gmail.com>, Matt Mackall <mpm@selenic.com>,
+       David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05, 2010 at 08:23:55PM -0600, Todd Fischer wrote:
+I got confused when I see the title of patch.
+That's because I understood copy_to_user returns unsigned.
+Please, change title to describe your patch.
 
-> This is the third posting of the TPS6507x driver set.  I have
-> resolved the concurrent access issue identified by Mark Brown.
-> Instead of using a mutex, I used the i2c_transfer() as done in
-> the similar routine in the wm8400-core.c file.
+[PATCH] proc : fix wrong usage of copy_to_user's return value.
 
-All
+Maybe you could name it well than me who is a not native English.
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+On Tue, Apr 6, 2010 at 7:45 PM, Dan Carpenter <error27@gmail.com> wrote:
+> copy_to_user() returns the number of bytes left to be copied.
+>
+> This was a typo from: d82ef020cf31504c816803b1def94eb5ff173363
+> "proc: pagemap: Hold mmap_sem during page walk".
+>
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-When reposting a patch series that has previously been reviewed it's
-useful to record any acks and similar that were given for patches that
-have been reposted unmodified - this makes life easier for reviewers
-since it saves having to re-review previously posted patches.
+
+
+-- 
+Kind regards,
+Minchan Kim
