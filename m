@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739Ab0DFR3y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 13:29:54 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:37099 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756620Ab0DFR3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 13:29:47 -0400
-Date: Tue, 6 Apr 2010 10:29:44 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Trond.Myklebust@netapp.com,
-       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS: Fix RCU warnings in
- nfs_inode_return_delegation_noreclaim() [ver #2]
-Message-ID: <20100406172944.GB2553@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <26760.1269903543@redhat.com>
- <20100329232636.GT2569@linux.vnet.ibm.com>
- <2440.1269967151@redhat.com>
- <21972.1269993064@redhat.com>
- <10818.1270044273@redhat.com>
- <15371.1270057054@redhat.com>
- <19556.1270076008@redhat.com>
- <14003.1270122314@redhat.com>
- <4161.1270133211@redhat.com>
- <23331.1270570443@redhat.com>
+	id S1756780Ab0DFRen (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 13:34:43 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42713 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756620Ab0DFRei convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 13:34:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=ftmoghHmA4HOdTilF0I088E3s4fEhXQiuYp1Tv8Pk1gBqCfNA+DehN85hPNBHVkMRa
+         okkW+pSdQd/pev0kfAeNSIjyvcSzLm0AETdBXbyiqwelA8M+ZBjXmGvu8WIfaM2/hV2b
+         bDVmKUqqLMAQUlcJISWU9xte0wDYvaJmm2FxE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <23331.1270570443@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100406174459.60088461@lxorguk.ukuu.org.uk>
+References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com> 
+	<4BBA5305.7010002@redhat.com> <4BBA5C00.4090703@us.ibm.com> 
+	<4BBA6279.20802@redhat.com> <4BBA6B6F.7040201@us.ibm.com> 
+	<4BBB36FA.4020008@redhat.com> <1270560931.1595.342.camel@laptop> 
+	<20100406145128.6324ac9a@lxorguk.ukuu.org.uk> <4BBB531A.4070500@us.ibm.com> 
+	<20100406174459.60088461@lxorguk.ukuu.org.uk>
+From: Ulrich Drepper <drepper@gmail.com>
+Date: Tue, 6 Apr 2010 10:34:08 -0700
+Message-ID: <j2ia36005b51004061034p8c59ecag87c4d90660f33562@mail.gmail.com>
+Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive 
+	spinning
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Darren Hart <dvhltc@us.ibm.com>, Peter Zijlstra <peterz@infradead.org>,
+       Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 06, 2010 at 05:14:03PM +0100, David Howells wrote:
-> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > > > So you have objected to needless memory barriers.  How do you feel
-> > > > about possibly needless ACCESS_ONCE() calls?
-> > > 
-> > > That would work here since it shouldn't emit any excess instructions.
-> > 
-> > And here is the corresponding patch.  Seem reasonable?
-> 
-> Actually, now I've thought about it some more.  No, it's not reasonable.
-> You've written:
-> 
->     This patch adds a variant of rcu_dereference() that handles situations
->     where the RCU-protected data structure cannot change, perhaps due to
->     our holding the update-side lock, or where the RCU-protected pointer is
->     only to be tested, not dereferenced.
-> 
-> But if we hold the update-side lock, then why should we be forced to use
-> ACCESS_ONCE()?
-> 
-> In fact, if we don't hold the lock, but we want to test the pointer twice in
-> succession, why should we be required to use ACCESS_LOCK()?
+On Tue, Apr 6, 2010 at 09:44, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> That gives you something along the lines of
+>
+>        runaddr = find_run_flag(lock);
+>        do {
+>                while(*runaddr == RUNNING) {
+>                        if (trylock(lock))
+>                                return WHOOPEE;
+>                        cpu relax
+>                }
+>                yield (_on(thread));
+>        } while(*runaddr != DEAD);
 
-OK, just to make sure I understand you...  You are asking for two additional
-RCU API members:
+There still has to be an upper limit in the number of rounds of the
+wait loop )some locks are held for a long time) since otherwise CPUs
+are unnecessarily long tied up.  And the DEAD case is only for robust
+mutex handling.  But in theory I agree.
 
-1.	rcu_access_pointer() or some such that includes ACCESS_ONCE(),
-	but not smp_read_barrier_depends(), which may be used when
-	we are simply examining the value of the RCU-protected pointer
-	(as in the NFS case).  It could also be used when the
-	appropriate update-side lock is held, but for that we have:
+We already have the set_tid_address syscall.  This could be
+generalized with a new syscall which can provide the kernel with more
+than one pointer to store "stuff" in: TIDs, scheduling info, etc.
 
-2.	rcu_dereference_protected() or some such that includes neither
-	ACCESS_ONCE() nor smp_read_barrier_depends(), and that may
-	only be used if updates are prevented, for example, by holding
-	the appropriate update-side lock.
-
-Does this fit?
-
-							Thanx, Paul
+The non-swappable part will be tricky.  One doesn't know how many
+threads will be created in a process.  This mechanism shouldn't put an
+arbitrary limit in place.  So where to allocate the memory?  Perhaps
+it's better to implicitly mark the memory page pointed to by the new
+syscall as non-swappable?  This could mean one page per thread...
