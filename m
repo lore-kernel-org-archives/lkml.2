@@ -1,112 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672Ab0DFTss (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 15:48:48 -0400
-Received: from mail-qy0-f179.google.com ([209.85.221.179]:48096 "EHLO
-	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752187Ab0DFTsl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 15:48:41 -0400
+	id S1756038Ab0DFTtJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 15:49:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58554 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752187Ab0DFTtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 15:49:05 -0400
+Date: Wed, 7 Apr 2010 05:48:43 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: David Howells <dhowells@redhat.com>
+Cc: torvalds@osdl.org, akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+       corbet@lwn.net, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] radix_tree_tag_get() is not as safe as the docs make
+ out
+Message-ID: <20100406194843.GJ5288@laptop>
+References: <20100406193134.26429.78585.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1270576127.9066.8.camel@c-dwalke-linux.qualcomm.com>
-References: <1270496004-9715-1-git-send-email-mike@android.com>
-	 <1270576127.9066.8.camel@c-dwalke-linux.qualcomm.com>
-Date: Tue, 6 Apr 2010 12:43:15 -0700
-Message-ID: <p2n8bb80c381004061243w44590616jc2040bd7914d4d24@mail.gmail.com>
-Subject: Re: [RFC][PATCH] sched: cpuacct: Track cpuusage per cpu frequency
-From: Mike Chan <mike@android.com>
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: menage@google.com, balbir@in.ibm.com, cpufreq@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100406193134.26429.78585.stgit@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 6, 2010 at 10:48 AM, Daniel Walker <dwalker@fifo99.com> wrote:
-> On Mon, 2010-04-05 at 12:33 -0700, Mike Chan wrote:
->> New file: cpuacct.cpufreq when CONFIG_CPU_FREQ_STATS is enabled.
->>
->> cpuacct.cpufreq accounts for cpu time per-cpu frequency, time is exported
->> in nano-seconds
->>
->> We do not know the cpufreq table size at compile time.
->> So a new config option CONFIG_CPUACCT_CPUFREQ_TABLE_MAX is intruduced,
->> to determine the cpufreq table per-cpu in the cpuacct struct.
->>
->> Signed-off-by: Mike Chan <mike@android.com>
->> ---
->>  init/Kconfig   |    5 +++
->>  kernel/sched.c |   99 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->>  2 files changed, 104 insertions(+), 0 deletions(-)
->>
->> diff --git a/init/Kconfig b/init/Kconfig
->> index eb77e8c..e1e86df 100644
->> --- a/init/Kconfig
->> +++ b/init/Kconfig
->> @@ -534,6 +534,11 @@ config CGROUP_CPUACCT
->>         Provides a simple Resource Controller for monitoring the
->>         total CPU consumed by the tasks in a cgroup.
->>
->> +config CPUACCT_CPUFREQ_TABLE_MAX
->> +     int "Max CPUFREQ table size"
->> +     depends on CGROUP_CPUACCT && CPU_FREQ_TABLE
->> +     default 32
->> +
->
-> I'd say make it just a regular define unless you can think of a reason
-> why a non-developer would want to touch this value.
+On Tue, Apr 06, 2010 at 08:31:34PM +0100, David Howells wrote:
+> radix_tree_tag_get() is not safe to use concurrently with radix_tree_tag_set()
+> or radix_tree_tag_clear().  The problem is that the double tag_get() in
+> radix_tree_tag_get():
+> 
+> 		if (!tag_get(node, tag, offset))
+> 			saw_unset_tag = 1;
+> 		if (height == 1) {
+> 			int ret = tag_get(node, tag, offset);
+> 
+> may see the value change due to the action of set/clear.  RCU is no protection
+> against this as no pointers are being changed, no nodes are being replaced
+> according to a COW protocol - set/clear alter the node directly.
+> 
+> The documentation in linux/radix-tree.h, however, proclaims that
+> radix_tree_tag_get() is an exception to the rule that "any function modifying
+> the tree or tags (...) must exclude other modifications, and exclude any
+> functions reading the tree".
+> 
+> To this end, remove radix_tree_tag_get() from that list, and comment on its
+> definition that the caller is responsible for preventing concurrent access with
+> set/clear.
+> 
+> Furthermore, radix_tree_tag_get() is not safe with respect to
+> radix_tree_delete() either as that also modifies the tags directly.
+> 
+> An alternative would be to drop the BUG_ON() from radix_tree_tag_get() and note
+> that it may produce an untrustworthy answer if not so protected.
+> 
+> Signed-off-by: David Howells <dhowells@redhat.com>
 
-I originally thought about doing this, but my concern here is for
-future (or existing) cpu's that have more than 32 speed stepping. This
-will have to be updated as new cpu's are supported in mainline (if
-they exceed the max). Which might be acceptable or not.
+Nack, just drop the BUG_ON.
 
-Ideally it would be nice to be able to pull the table size from the
-board-file, or determine the size at run-time instead of compile time.
+I don't know what you mean by "untrustworthy answer".
 
--- Mike
+radix_tree_tag_get, when called under RCU, will always return 1 if the
+tag is guaranteed to have been set. And always 0 if it was clear. If it
+can have been flipped at some point, then radix_tree_tag_get might
+return either.
 
->
->>  config RESOURCE_COUNTERS
->>       bool "Resource counters"
->>       help
->> diff --git a/kernel/sched.c b/kernel/sched.c
->> index 528a105..a0b56b5 100644
->> --- a/kernel/sched.c
->> +++ b/kernel/sched.c
->> @@ -71,6 +71,7 @@
->>  #include <linux/debugfs.h>
->>  #include <linux/ctype.h>
->>  #include <linux/ftrace.h>
->> +#include <linux/cpufreq.h>
->>
->>  #include <asm/tlb.h>
->>  #include <asm/irq_regs.h>
->> @@ -8817,6 +8818,11 @@ struct cgroup_subsys cpu_cgroup_subsys = {
->>   * (balbir@in.ibm.com).
->>   */
->>
->> +#ifdef CONFIG_CPU_FREQ_STAT
->> +/* The alloc_percpu macro uses typeof so we must define a type here. */
->> +typedef struct { u64 usage[CONFIG_CPUACCT_CPUFREQ_TABLE_MAX]; } cpufreq_usage_t;
->> +#endif
->
-> you should be able to send it a regular struct . I found this usage,
->
-> lport->dev_stats = alloc_percpu(struct fcoe_dev_stats);
->
-> as an example.
->
+This would be the same whether you are using "COW protocol" or whatever
+to do the RCU protection. And it is the same for all other RCU radix
+tree operations.
 
-True, I shouldn't need the typedef. Actually I think I can get away
-with getting rid of this statement all together and just define an
-anonymous struct in the alloc_percpu function.
+No, rcu_read_lock does not give atomicity over multiple operations
+because it can't prevent writers from modifying the data structure. This
+shouldn't be surprising, but feel free to add a comment that a lock or
+seqlock is required to give such atomicity.
 
-ca->cpufreq_usage = alloc_percpu(struct { u64
-usage[CONFIG_CPUACCT_CPUFREQ_TABLE_MAX]; });
-
-> Daniel
->
->
+> ---
+> 
+>  include/linux/radix-tree.h |    3 +--
+>  lib/radix-tree.c           |    4 ++++
+>  2 files changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
+> index c5da749..33daa70 100644
+> --- a/include/linux/radix-tree.h
+> +++ b/include/linux/radix-tree.h
+> @@ -100,14 +100,13 @@ do {									\
+>   * The notable exceptions to this rule are the following functions:
+>   * radix_tree_lookup
+>   * radix_tree_lookup_slot
+> - * radix_tree_tag_get
+>   * radix_tree_gang_lookup
+>   * radix_tree_gang_lookup_slot
+>   * radix_tree_gang_lookup_tag
+>   * radix_tree_gang_lookup_tag_slot
+>   * radix_tree_tagged
+>   *
+> - * The first 7 functions are able to be called locklessly, using RCU. The
+> + * The first 6 functions are able to be called locklessly, using RCU. The
+>   * caller must ensure calls to these functions are made within rcu_read_lock()
+>   * regions. Other readers (lock-free or otherwise) and modifications may be
+>   * running concurrently.
+> diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+> index 6b9670d..795a3bb 100644
+> --- a/lib/radix-tree.c
+> +++ b/lib/radix-tree.c
+> @@ -556,6 +556,10 @@ EXPORT_SYMBOL(radix_tree_tag_clear);
+>   *
+>   *  0: tag not present or not set
+>   *  1: tag set
+> + *
+> + * The caller must make sure this function does not run concurrently with
+> + * radix_tree_tag_set/clear() or radix_tree_delete() as these modify the nodes
+> + * directly to alter the tags.
+>   */
+>  int radix_tree_tag_get(struct radix_tree_root *root,
+>  			unsigned long index, unsigned int tag)
