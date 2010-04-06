@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757468Ab0DFSpN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 14:45:13 -0400
-Received: from THUNK.ORG ([69.25.196.29]:57368 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756888Ab0DFSpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 14:45:08 -0400
-Date: Tue, 6 Apr 2010 14:45:05 -0400
-From: tytso@mit.edu
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>, Jan Kara <jack@suse.cz>,
-       linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-       jens.axboe@oracle.com, esandeen@redhat.com
-Subject: Re: [patch/rft] jbd2: tag journal writes as metadata I/O
-Message-ID: <20100406184505.GL23670@thunk.org>
-Mail-Followup-To: tytso@mit.edu, Vivek Goyal <vgoyal@redhat.com>,
-	Jeff Moyer <jmoyer@redhat.com>, Jan Kara <jack@suse.cz>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-	jens.axboe@oracle.com, esandeen@redhat.com
-References: <x49iq8b9ep5.fsf@segfault.boston.devel.redhat.com>
- <20100401194822.GA8401@atrey.karlin.mff.cuni.cz>
- <x49tyrpkjmq.fsf@segfault.boston.devel.redhat.com>
- <20100405174603.GA24493@thunk.org>
- <20100406182527.GF3029@redhat.com>
+	id S1757535Ab0DFSqT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 14:46:19 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:44527 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756888Ab0DFSqL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 14:46:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=T0YztbumF+Dxbva2iuolkLvkT4SWamFaT8h6+tBjH78rSzD2VLMtFqb5LAEtka2ebW
+         nkPhK1EPART/BiG/agkf0TM2KvNRaHoIBMW6DAH8aj10X8+2AUOcYDDDXNspUpA6PHxo
+         muZW60LF56QgQf1ucvmBdb2QIXNi5//uNaDBU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100406182527.GF3029@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <20100406104429.GB21229@bicker>
+References: <20100406104429.GB21229@bicker>
+Date: Tue, 6 Apr 2010 20:46:06 +0200
+Message-ID: <p2x71cd59b01004061146x25f04dfy82e1aba72ddfd3ff@mail.gmail.com>
+Subject: Re: [patch] asus: don't modify bluetooth/wlan on boot
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Dan Carpenter <error27@gmail.com>, Corentin Chary <corentincj@iksaif.net>,
+       Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
+       Alan Jenkins <alan-jenkins@tuffmail.co.uk>,
+       acpi4asus-user@lists.sourceforge.net,
+       platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> CFQ currently seems to be preempting any thread doing IO if a request has
-> been marked as metadata. I think this is going to be bad for any other IO
-> going on.
-> 
-> I wrote a small fio script which is doing buffered writes with bs=32K and I
-> am doing fsync on file after every 20 IOs (fsync=20). I am assuming that this
-> something close to writting a small file and then doing fsync on that. 
-> 
-> With that fio script running I launched firefox and measured the
-> time it takes.....  it looks like that firefox launching times have
-> seems to just almost doubled.
+On Tue, Apr 6, 2010 at 12:44 PM, Dan Carpenter <error27@gmail.com> wrote:
+> We were storing -1 as an unsigned int and as a result the effect of
+> passing -1 was the same as using 1.
+>
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
+>
+> diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
+> index 475ab50..f532336 100644
+> --- a/drivers/platform/x86/asus-laptop.c
+> +++ b/drivers/platform/x86/asus-laptop.c
+> @@ -78,15 +78,15 @@ static uint wapf = 1;
+>  module_param(wapf, uint, 0644);
+>  MODULE_PARM_DESC(wapf, "WAPF value");
+>
+> -static uint wlan_status = 1;
+> -static uint bluetooth_status = 1;
+> +static int wlan_status = 1;
+> +static int bluetooth_status = 1;
+>
+> -module_param(wlan_status, uint, 0644);
+> +module_param(wlan_status, int, 0644);
+>  MODULE_PARM_DESC(wlan_status, "Set the wireless status on boot "
+>                 "(0 = disabled, 1 = enabled, -1 = don't do anything). "
+>                 "default is 1");
+>
+> -module_param(bluetooth_status, uint, 0644);
+> +module_param(bluetooth_status, int, 0644);
+>  MODULE_PARM_DESC(bluetooth_status, "Set the wireless status on boot "
+>                 "(0 = disabled, 1 = enabled, -1 = don't do anything). "
+>                 "default is 1");
+> --
 
-Vivek, thanks for pointing this out.  Sounds like we need to think
-carefully about whether the potential unfairness that this patch might
-impose on other workloads sharing the file system dominates the
-improvements that Jeff found when there's only a single workload
-running on the file system.
+Thanks !
+Acked-by: Corentin Chary <corentincj@iksaif.net>
 
-I'm tentatively leaning towards pulling this patch so we can do more
-testing / benchmarking.   Jeff, any thoughts or comments?
 
-						- Ted
+-- 
+Corentin Chary
+http://xf.iksaif.net
