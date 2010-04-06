@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab0DFLrU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 07:47:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51758 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753461Ab0DFLrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 07:47:13 -0400
-Date: Tue, 6 Apr 2010 13:47:07 +0200
-From: Karel Zak <kzak@redhat.com>
-To: Phillip Susi <psusi@cfl.rr.com>
-Cc: Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Extended partition mapping wrong size
-Message-ID: <20100406114706.GA30340@nb.net.home>
-References: <4BB0D12B.6060701@cfl.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BB0D12B.6060701@cfl.rr.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1754895Ab0DFLwH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 07:52:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34477 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753461Ab0DFLwB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 07:52:01 -0400
+Subject: Re: Random scheduler/unaligned accesses crashes with perf lock
+ events on sparc 64
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: David Miller <davem@davemloft.net>, sparclinux@vger.kernel.org,
+       linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
+       paulus@samba.org, Mike Galbraith <efault@gmx.de>
+In-Reply-To: <20100406113830.GF5147@nowhere>
+References: <20100405065701.GC5127@nowhere>
+	 <20100405.122233.188421941.davem@davemloft.net>
+	 <20100405194055.GA5265@nowhere>
+	 <20100406.025049.267615796.davem@davemloft.net>
+	 <20100406113830.GF5147@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 06 Apr 2010 13:51:56 +0200
+Message-ID: <1270554716.1595.134.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 12:11:23PM -0400, Phillip Susi wrote:
-> I've been investigating a problem I ran into trying to create partitions
-> in sector mode and found that the first logical partition can not begin
-> on the very first sector of the extended partition, immediately
-> following the EBR.  This apparently is because the kernel creates a dev
-> node to represent the extended partition and sizes it to two sectors.
-
-This is probably kernel bug. It's really insane that the extended
-pseudo partition overflows to the next logical partition.
-
-> could have sworn that the kernel did not used to create a device for the
-> extended partition itself, but I wondered why it was 2 sectors long.  I
-> found this:
+On Tue, 2010-04-06 at 13:38 +0200, Frederic Weisbecker wrote:
+> On Tue, Apr 06, 2010 at 02:50:49AM -0700, David Miller wrote:
+> > From: Frederic Weisbecker <fweisbec@gmail.com>
+> > Date: Mon, 5 Apr 2010 21:40:58 +0200
+> > 
+> > > It happens without CONFIG_FUNCTION_TRACER as well (but it happens
+> > > when the function tracer runs). And I hadn't your
+> > > perf_arch_save_caller_regs() when I triggered this.
+> > 
+> > I figured out the problem, it's NMIs.  As soon as I disable all of the
+> > NMI watchdog code, the problem goes away.
+> > 
+> > This is because some parts of the NMI interrupt handling path are not
+> > marked with "notrace" and the various tracer code paths use
+> > local_irq_disable() (either directly or indirectly) which doesn't work
+> > with sparc64's NMI scheme.  These essentially turn NMIs back on in the
+> > NMI handler before the NMI condition has been cleared, and thus we can
+> > re-enter with another NMI interrupt.
+> > 
+> > We went through this for perf events, and we just made sure that
+> > local_irq_{enable,disable}() never occurs in any of the code paths in
+> > perf events that can be reached via the NMI interrupt handler.  (the
+> > only one we had was sched_clock() and that was easily fixed)
 > 
-> from fs/partitions/msdos.c:
 > 
->             /* prevent someone doing mkfs or mkswap on an
->                extended partition, but leave room for LILO */
->             put_partition(state, slot, start, size == 1 ? 1 : 2);
->
-> This appears to set the size of the device to 2 sectors, unless the
-> extended partition is only 1 sector long.  Shouldn't the size be
-> whatever length there is between the start of the extended partition,
-> and the first logical partition it contains?  So if there are 63 sectors
-> there, as is the usual case when using cylinder alignment, then the
+> 
+> That reminds me we have a new pair of local_irq_disable/enable
+> in perf_event_task_output(), which path can be taken by hardware
+> pmu events.
+> 
+> See this patch:
+> 
+> 8bb39f9aa068262732fe44b965d7a6eb5a5a7d67
+> perf: Fix 'perf sched record' deadlock
 
- Please no. I think the size should not be more than 2 sectors (1024
- bytes). The current concept works for years and we have in userspace 
- /etc/partitions parsers that use "if (blocks <= 1)" to detect
- extended partitions.
+ARGH.. yes
 
- The other problem are mkfs programs, the space used for alignment
- could be 1MiB (or more) -- it's enough many mkfs programs.
+Also, I guess that should live in perf_output_lock/unlock() not in
+perf_event_task_output().
 
+Egads, how to fix that
 
- BTW, Linux does not use this policy for the others nested partition
- tables (e.g. Solaris, BSD, Minix, ...). The extended dos partition
- table is exception. The primary partitions for the others nested PT
- are exported to the system with its real size :-)
-
-    Karel
-
--- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
