@@ -1,71 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918Ab0DFP6v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 11:58:51 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50221 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751682Ab0DFP6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 11:58:45 -0400
-Date: Tue, 6 Apr 2010 15:57:36 GMT
-From: tip-bot for Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, paulus@samba.org,
-       hpa@zytor.com, mingo@redhat.com, arjan@linux.intel.com,
-       a.p.zijlstra@chello.nl, ming.m.lin@intel.com, tglx@linutronix.de,
-       vweaver1@eecs.utk.edu, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org, acme@redhat.com,
-       linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-       arjan@linux.intel.com, ming.m.lin@intel.com, tglx@linutronix.de,
-       vweaver1@eecs.utk.edu, mingo@elte.hu
-In-Reply-To: <alpine.DEB.2.00.1004060956580.1417@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1004060956580.1417@cl320.eecs.utk.edu>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf, x86: Enable Nehalem-EX support
-Message-ID: <tip-134fbadf028a5977a1b06b0253d3ee33e6f0c642@git.kernel.org>
-Git-Commit-ID: 134fbadf028a5977a1b06b0253d3ee33e6f0c642
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 06 Apr 2010 15:57:37 +0000 (UTC)
+	id S1756214Ab0DFP7Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 11:59:16 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61448 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751682Ab0DFP7E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 11:59:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Rz1ANlGLxWq7/1haMlr3NWX+2FnlIVIfplL8X7PhPK3upZ5RDgsRnThwXKjvND325r
+         XAfvu85+WkTJd/F1//sUt67UH8qQUWDQBAq0kflMyJQT1yaYvHLs6H+4e1tyqwkh+Uv6
+         JCfYbnchX6yxJGvnw17OL3sF7t1Fr4+C7KEUs=
+Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
+ 2.6.34-rc3)
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Borislav Petkov <bp@alien8.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>
+In-Reply-To: <4BBB55DC.8070509@redhat.com>
+References: <20100402175937.GA19690@liondog.tnic>
+	 <alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org>
+	 <20100406173754.7E5A.A69D9226@jp.fujitsu.com> <4BBB475A.7070002@redhat.com>
+	 <1270568096.1814.145.camel@barrios-desktop> <4BBB55DC.8070509@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 07 Apr 2010 00:58:54 +0900
+Message-ID: <1270569534.1814.151.camel@barrios-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  134fbadf028a5977a1b06b0253d3ee33e6f0c642
-Gitweb:     http://git.kernel.org/tip/134fbadf028a5977a1b06b0253d3ee33e6f0c642
-Author:     Vince Weaver <vweaver1@eecs.utk.edu>
-AuthorDate: Tue, 6 Apr 2010 10:01:19 -0400
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 6 Apr 2010 17:52:59 +0200
+On Tue, 2010-04-06 at 11:40 -0400, Rik van Riel wrote:
+> On 04/06/2010 11:34 AM, Minchan Kim wrote:
+> 
+> > Let's see the unlink_anon_vmas.
+> >
+> > 1. list_for_each_entry_safe(avc,next, vma->anon_vma_chain, same_vma)
+> > 2. 	anon_vma_unlink
+> > 3. 		spin_lock(anon_vma->lock)<-- HERE LOCK.
+> > 4.		list_del(anon_vma_chain->same_anon_vma);
+> >
+> > What if anon_vma is destroyed and reuse by SLAB_XXX_RCU for another
+> > anon_vma object between 2 and 3?
+> > I mean how to make sure 3) does lock valid anon_vma?
+> >
+> > I hope it is culprit.
+> 
+> How can the anon_vma get destroyed and reused, when this
+> anon_vma_chain still has a reference to it (and the
 
-perf, x86: Enable Nehalem-EX support
+Doesn't anon_vma_chain have a ref counter on anon_vma?
 
-According to Intel Software Devel Manual Volume 3B, the
-Nehalem-EX PMU is just like regular Nehalem (except for the
-uncore support, which is completely different).
+> anon_vma has not been freed yet)?
 
-Signed-off-by:  Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Lin Ming <ming.m.lin@intel.com>
-LKML-Reference: <alpine.DEB.2.00.1004060956580.1417@cl320.eecs.utk.edu>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/perf_event_intel.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+AFAIK, anon_vma can be reused without free by SLAB_XXX_RCU.
+So we always use it carefully by page_lock_anon_vma or manual check
+with RCU and page_mapped. 
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 84bfde6..9c794ac 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -936,6 +936,7 @@ static __init int intel_pmu_init(void)
- 
- 	case 26: /* 45 nm nehalem, "Bloomfield" */
- 	case 30: /* 45 nm nehalem, "Lynnfield" */
-+	case 46: /* 45 nm nehalem-ex, "Beckton" */
- 		memcpy(hw_cache_event_ids, nehalem_hw_cache_event_ids,
- 		       sizeof(hw_cache_event_ids));
- 
+What am I missing?
+
+> 
+> What combination of circumstances is necessary for
+> your bug hypothetical to happen?
+
+
+	CPU A				CPU B
+
+unlink_anon_vmas
+list_for_each_entry 
+				
+					free_pgtable
+					anon_vma_unlink
+  <crazy stall>				spin_lock(anon_vma);
+					list_del(same_anon_vma)
+					spin_unlock(anon_vma)
+anon_vma_unlink
+					anon_vma_free
+					reuse for another anon_vma
+spin_lock(another anon_vma)
+list_del(another anon_vma)
+
+If my assumption is wrong, please correct me. 
+Thanks, Rik. 
+
+-- 
+Kind regards,
+Minchan Kim
+
+
