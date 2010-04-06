@@ -1,40 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751828Ab0DFIfH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 04:35:07 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:62666 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229Ab0DFIfD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 04:35:03 -0400
-Date: Tue, 6 Apr 2010 01:35:00 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Wolfram Sang <w.sang@pengutronix.de>
-cc: LKML <linux-kernel@vger.kernel.org>, ebiederm@xmission.com
-Subject: Re: 2.6.34-rc: key ffff8801fefc0310 not in .data!
-In-Reply-To: <20100406081912.GC5102@pengutronix.de>
-Message-ID: <alpine.DEB.2.01.1004060133030.29272@bogon.housecafe.de>
-References: <alpine.DEB.2.01.1004052344210.29272@bogon.housecafe.de> <20100406081912.GC5102@pengutronix.de>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1751879Ab0DFIkM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 04:40:12 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43506 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751157Ab0DFIkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 04:40:09 -0400
+Date: Tue, 6 Apr 2010 10:40:06 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>, rvinyard@cs.nmsu.edu,
+       =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+Subject: Re: [PATCH mmotm] hid-picolcd: depends on LCD_CLASS_DEVICE
+In-Reply-To: <20100405220414.9d90da83.randy.dunlap@oracle.com>
+Message-ID: <alpine.LNX.2.00.1004061038510.8345@pobox.suse.cz>
+References: <201004052336.o35NaeSE015814@imap1.linux-foundation.org> <20100405220414.9d90da83.randy.dunlap@oracle.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V01U2FsdGVkX1/T2SPoWnnrdyKnJNIXHJm2W9likltJ6akgKHJ
- sVmwXOXCsViO/vnb9dfy/IWMMiGu3RVRdNqFpYi2usocz8ZYVd
- 7KrhPPj0+2zdHKMB+QESg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Apr 2010 at 10:19, Wolfram Sang wrote:
-> Should have been fixed by ebd09ec93c90c8ec571d7e166832fb1fc705bf5e
-> (which came after -rc3).
 
-Ah, now I see it. I've pulled on April 5, but apparently before Linus 
-merged even more stuff.
+[ adding Bruno to CC ]
 
-Thanks,
-Christian.
+On Mon, 5 Apr 2010, Randy Dunlap wrote:
+
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> HID_PICOLCD should depend on LCD_CLASS_DEVICE, otherwise the
+> build fails when HID_PICOLCD=y and LCD_CLASS_DEVICE=m:
+> 
+> hid-picolcd.c:(.text+0x84523f): undefined reference to `lcd_device_unregister'
+> hid-picolcd.c:(.text+0x8478ab): undefined reference to `lcd_device_register'
+> hid-picolcd.c:(.text+0x84c15f): undefined reference to `lcd_device_unregister'
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> ---
+>  drivers/hid/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> --- mmotm-2010-0405-1609.orig/drivers/hid/Kconfig
+> +++ mmotm-2010-0405-1609/drivers/hid/Kconfig
+> @@ -265,6 +265,7 @@ config HID_PETALYNX
+>  config HID_PICOLCD
+>  	tristate "PicoLCD (graphic version)"
+>  	depends on USB_HID
+> +	depends on LCD_CLASS_DEVICE
+>  	select FB_DEFERRED_IO if FB
+>  	select FB_SYS_FILLRECT if FB
+>  	select FB_SYS_COPYAREA if FB
+
+Thanks Randy. We'll have to take care of the other dependencies as well 
+though (CONFIG_LCD_CLASS_DEVICE, CONFIG_LEDS_CLASS).
+
 -- 
-BOFH excuse #336:
-
-the xy axis in the trackball is coordinated with the summer solstice
+Jiri Kosina
+SUSE Labs, Novell Inc.
