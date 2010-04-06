@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755085Ab0DFOoh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 10:44:37 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60757 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754497Ab0DFOob (ORCPT
+	id S1754474Ab0DFOsM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 10:48:12 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:45267 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754729Ab0DFOsF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 10:44:31 -0400
-Date: Tue, 6 Apr 2010 07:40:12 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jamie Lokier <jamie@shareable.org>
-cc: Scott Lurndal <scott.lurndal@3leafsystems.com>,
-       David Howells <dhowells@redhat.com>, mingo@elte.hu, tglx@linutronix.de,
-       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] X86: Optimise fls(), ffs() and fls64()
-In-Reply-To: <20100406135732.GC24003@shareable.org>
-Message-ID: <alpine.LFD.2.00.1004060732490.3487@i5.linux-foundation.org>
-References: <20100326144241.8583.95617.stgit@warthog.procyon.org.uk> <alpine.LFD.2.00.1003261005490.3721@i5.linux-foundation.org> <20100326173730.GA27489@pendragon.3leafnetworks.com> <alpine.LFD.2.00.1003261038160.3721@i5.linux-foundation.org>
- <20100406135732.GC24003@shareable.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Tue, 6 Apr 2010 10:48:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=QGRt6+TuMRdFejvBh+fyyeP7BMYRvGkfXvHwgz/SNguNVphRR64UVaKpiDrn1o14wO
+         CeS3jjWiZXlGg50f4VNI2wo7/ywzRReZ3dXKn5eEub1YXrJrrsyVsxBLEFmju4xTqZYW
+         51Epxulb5xGiv+iseM/3ZTMcTpDEqmn0d+peE=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+In-Reply-To: <1270543721.1597.748.camel@laptop>
+References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com> 
+	<4BBA5305.7010002@redhat.com> <1270543721.1597.748.camel@laptop>
+From: Ulrich Drepper <drepper@gmail.com>
+Date: Tue, 6 Apr 2010 07:47:41 -0700
+Message-ID: <m2ua36005b51004060747y1abf15edj28227274844db2e7@mail.gmail.com>
+Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive 
+	spinning
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Avi Kivity <avi@redhat.com>, Darren Hart <dvhltc@us.ibm.com>,
+       linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 6, 2010 at 01:48, Peter Zijlstra <peterz@infradead.org> wrote:
+>  try
+>  spin
+>  try
+>  syscall
 
-
-On Tue, 6 Apr 2010, Jamie Lokier wrote:
-> 
-> On the same subject of relying on undocumented features:
-> 
->   /* If SMP and !X86_PPRO_FENCE. */
->   #define smp_rmb()      barrier()
-> 
-> I've seen documentation, links posted to lkml ages ago, which implies
-> this is fine on 64-bit for both Intel and AMD.
-> 
-> But it appears to be relying on undocumented behaviour on 32-bit...
-
-That memory ordering whitepaper is very much supposed to cover all the 
-32-bit CPU's too. The people involved were convinced that neither AMD nor 
-Intel had ever produced anything that would do anything that broke the 
-rules. 
-
-In fact, at least the Intel "memory ordering whitepaper" doesn't even 
-exist any more. Go to intel.com and search, and you'll find:
-
-  "Intel� 64 Architecture Memory Ordering White Paper
-
-   This document has been merged into Volume 3A of Intel 64 and IA-32 
-   Architectures Software Developers Manual."
-
-which makes it pretty clear that it's not a 64-bit vs 32-bit issue.
-
-> Are you sure it is ok?  Has anyone from Intel/AMD ever confirmed it is
-> ok?  Has it been tested?  Clones?
-
-No clones need apply - nobody ever did very aggressive memory re-ordering, 
-and clones generally never did SMP either.
-
-There is a VIA chip (I think) that had some relaxed cache mode, but that 
-needed a cr4 bit enable or similar, and since it wasn't SMP it only 
-mattered for DMA (and possibly nontemporal stores).
-
-Anyway, it all boils down to: yes, we can depend on the memory ordering.
-
-		Linus
+This is available for a long time in the mutex implementation
+(PTHREAD_MUTEX_ADAPTIVE_NP mutex type).  It hasn't show much
+improvement if any.  There were some people demanding this support for
+as far as I know they are not using it now.  This is adaptive
+spinning, learning from previous calls how long to wait.  But it's
+still unguided.  There is no way to get information like "the owner
+has been descheduled".
