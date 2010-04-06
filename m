@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750976Ab0DFN6A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 09:58:00 -0400
-Received: from mail2.shareable.org ([80.68.89.115]:60003 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab0DFN5x (ORCPT
+	id S1752747Ab0DFN6w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 09:58:52 -0400
+Received: from exhub016-4.exch016.msoutlookonline.net ([207.5.72.225]:10110
+	"EHLO EXHUB016-4.exch016.msoutlookonline.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751296Ab0DFN6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 09:57:53 -0400
-Date: Tue, 6 Apr 2010 14:57:32 +0100
-From: Jamie Lokier <jamie@shareable.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Scott Lurndal <scott.lurndal@3leafsystems.com>,
-       David Howells <dhowells@redhat.com>, mingo@elte.hu, tglx@linutronix.de,
-       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] X86: Optimise fls(), ffs() and fls64()
-Message-ID: <20100406135732.GC24003@shareable.org>
-References: <20100326144241.8583.95617.stgit@warthog.procyon.org.uk> <alpine.LFD.2.00.1003261005490.3721@i5.linux-foundation.org> <20100326173730.GA27489@pendragon.3leafnetworks.com> <alpine.LFD.2.00.1003261038160.3721@i5.linux-foundation.org>
+	Tue, 6 Apr 2010 09:58:45 -0400
+Message-ID: <4BBB3E0F.1030309@cfl.rr.com>
+Date: Tue, 6 Apr 2010 09:58:39 -0400
+From: Phillip Susi <psusi@cfl.rr.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1003261038160.3721@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: Karel Zak <kzak@redhat.com>
+CC: Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Extended partition mapping wrong size
+References: <4BB0D12B.6060701@cfl.rr.com> <20100406114706.GA30340@nb.net.home>
+In-Reply-To: <20100406114706.GA30340@nb.net.home>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds wrote:
-> On Fri, 26 Mar 2010, Scott Lurndal wrote:
-> > 
-> > I wonder if Intel's EM64 stuff makes this more deterministic, perhaps
-> > David's implementation would work for x86_64 only?
-> 
-> Limiting it to x86-64 would certainly remove all the worries about all the 
-> historical x86 clones.
-> 
-> I'd still worry about it for future Intel chips, though. I absolutely 
-> _detest_ relying on undocumented features - it pretty much always ends up 
-> biting you eventually. And conditional writeback is actually pretty nasty 
-> from a microarchitectural standpoint.
+On 4/6/2010 7:47 AM, Karel Zak wrote:
+> This is probably kernel bug. It's really insane that the extended
+> pseudo partition overflows to the next logical partition.
 
-On the same subject of relying on undocumented features:
+Indeed.
 
-  /* If SMP and !X86_PPRO_FENCE. */
-  #define smp_rmb()      barrier()
+>  Please no. I think the size should not be more than 2 sectors (1024
+>  bytes). The current concept works for years and we have in userspace 
+>  /etc/partitions parsers that use "if (blocks <= 1)" to detect
+>  extended partitions.
 
-I've seen documentation, links posted to lkml ages ago, which implies
-this is fine on 64-bit for both Intel and AMD.
+Could you elaborate a bit on this?  What programs have such tests and
+what would they do differently if it were larger?
 
-But it appears to be relying on undocumented behaviour on 32-bit...
+>  The other problem are mkfs programs, the space used for alignment
+>  could be 1MiB (or more) -- it's enough many mkfs programs.
 
-Are you sure it is ok?  Has anyone from Intel/AMD ever confirmed it is
-ok?  Has it been tested?  Clones?
+What's wrong with that?  If you REALLY want to, there's no reason you
+can't create a tiny fs there.  Then again, I could swear that once upon
+a time the kernel simply did not bother creating a dev node for the
+extended partition, and this seems to be a hack that was put in to make
+it easy for LILO to install to one.  Personally I'd prefer going back to
+the old behavior of just not having a useless device there.
 
--- Jamie
+>  BTW, Linux does not use this policy for the others nested partition
+>  tables (e.g. Solaris, BSD, Minix, ...). The extended dos partition
+>  table is exception. The primary partitions for the others nested PT
+>  are exported to the system with its real size :-)
+
+Indeed, also the hidden space in the logical partitions is also not
+exposed, otherwise you would have two dev nodes per logical partition.
