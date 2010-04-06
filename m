@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868Ab0DFPeD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 11:34:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18974 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751212Ab0DFPdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 11:33:55 -0400
-Date: Tue, 6 Apr 2010 17:33:48 +0200
-From: Karel Zak <kzak@redhat.com>
-To: Phillip Susi <psusi@cfl.rr.com>
-Cc: Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Extended partition mapping wrong size
-Message-ID: <20100406153348.GE7858@nb.net.home>
-References: <4BB0D12B.6060701@cfl.rr.com> <20100406114706.GA30340@nb.net.home> <4BBB3E0F.1030309@cfl.rr.com>
+	id S1756301Ab0DFPeU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 11:34:20 -0400
+Received: from mail-yw0-f172.google.com ([209.85.211.172]:62391 "EHLO
+	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669Ab0DFPeM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 11:34:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=v5cmI+bemnJZXQ8UWN9bsBmmUEkadg5TfHdXUBW9V/zAMoHo3MYs+GcWfGo03fAwzc
+         ZCe3NYMHrlfQGsfaihkFMzp23i3zUg5X2+CgcqUNERC+2TTYbRmn7PjewHp62TzifXNm
+         b0aB+FJ1Ly1X+gj4LXIUuyBKyRT5zjUmSexOQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BBB3E0F.1030309@cfl.rr.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20100406063051.GB1895@core.coreip.homeip.net>
+References: <20100406063051.GB1895@core.coreip.homeip.net>
+From: Cory Maccarrone <darkstar6262@gmail.com>
+Date: Tue, 6 Apr 2010 08:33:50 -0700
+Message-ID: <m2j6cb013311004060833k76a89ad4r4ee848ea8f5492d4@mail.gmail.com>
+Subject: Re: [git pull] Input updates for 2.6.34-rc3
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-input@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 06, 2010 at 09:58:39AM -0400, Phillip Susi wrote:
-> On 4/6/2010 7:47 AM, Karel Zak wrote:
-> > This is probably kernel bug. It's really insane that the extended
-> > pseudo partition overflows to the next logical partition.
-> 
-> Indeed.
-> 
-> >  Please no. I think the size should not be more than 2 sectors (1024
-> >  bytes). The current concept works for years and we have in userspace 
-> >  /etc/partitions parsers that use "if (blocks <= 1)" to detect
+On Mon, Apr 5, 2010 at 11:30 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> Hi Linus,
+>
+> Please pull from:
+>
+>        git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+> or
+>        master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+>
+> to receive updates for the input subsystem.
+>
+> Changelog:
+> ---------
+>
+> Chase Douglas (1):
+>      Input: ALPS - add signature for HP Pavilion dm3 laptops
+>
+> Dmitry Torokhov (1):
+>      Input: sparse-keymap - implement safer freeing of the keymap
+>
+> Dominik Brodowski (1):
+>      Input: i8042 - spelling fix
+>
+> H Hartley Sweeten (1):
+>      Input: matrix_keypad - allow platform to disable key autorepeat
+>
+> Henrik Rydberg (3):
+>      Input: bcm5974 - retract efi-broken suspend_resume
+>      Input: clarify the no-finger event in multitouch protocol
+>      Input: update the status of the Multitouch X driver project
+>
+> Yong Wang (1):
+>      Input: sparse-keymap - free the right keymap on error
+>
+>
+> Diffstat:
+> --------
+>
+>  Documentation/input/multi-touch-protocol.txt |   23 ++++++++---
+>  drivers/input/input.c                        |    9 ++++-
+>  drivers/input/keyboard/matrix_keypad.c       |    4 +-
+>  drivers/input/mouse/alps.c                   |    1 +
+>  drivers/input/mouse/bcm5974.c                |    1 -
+>  drivers/input/serio/i8042.c                  |    2 +-
+>  drivers/input/sparse-keymap.c                |   52 ++++++++++++++++---------
+>  include/linux/input/matrix_keypad.h          |    2 +
+>  8 files changed, 65 insertions(+), 29 deletions(-)
+>
+> --
+> Dmitry
+>
 
-Sorry, /proc/partitions
+I'm still waiting on some review for my TSC2046 touchscreen driver.
+Last time I inquired about it, I was told it would be reviewed, but
+there has not been any movement at all on it, and it's been out for
+review for several months now.  Do I need to do more work on it?  Is
+there something else needed?
 
-> >  extended partitions.
-> 
-> Could you elaborate a bit on this?  What programs have such tests and
-> what would they do differently if it were larger?
-
-I know about libblkid in e2fsprogs and util-linux-ng. It scans
-/proc/partitions to get list of "normal" block devices.
-
-We have no clue how many programs/scripts depend on this behaviour.
-
-> >  The other problem are mkfs programs, the space used for alignment
-> >  could be 1MiB (or more) -- it's enough many mkfs programs.
-> 
-> What's wrong with that? 
-
-Irrelevant question ;-) It's there for years and it's well know kernel
-feature. 
-
-I understand that from a pedantic point of view the current solution is
-not perfect, but I don't see any practical reason why we need to change
-anything. There is no issue. Right?
-
-> If you REALLY want to, there's no reason you can't create a tiny fs there. 
-
-You have to care about the partition table (EBR).
-
-The current 1024 bytes is completely useless size, if you enlarge the
-size of the partition (for example to 1MiB) you will see reports from
-people who lost their extended partitions. (I don't believe that all
-mkfs programs are able to detect/skip EBR.)
-
-> Then again, I could swear that once upon a time the kernel simply
-> did not bother creating a dev node for the extended partition, and
-> this seems to be a hack that was put in to make it easy for LILO to
-> install to one.  Personally I'd prefer going back to the old
-> behavior of just not having a useless device there.
-
-This is probably better idea than enlarge the size :-)
-
-    Karel
-
--- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+- Cory
