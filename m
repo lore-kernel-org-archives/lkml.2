@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab0DFQwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 12:52:55 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:53634 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757078Ab0DFQwn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 12:52:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=JZNVuDmEXYUuaHeK+AmX17VPcVDcGJD1/uvFU2fPzWYrbibSk6xdUh27mdPtJ8uZ9O
-         P++DOe3ZJCtYvdHKCGQHIQtIMghwOVWSmKajTFW3dX1e+S1TZTD5TP1bzxEnQ/nadsBt
-         IEMfgxq78lWl51eIDyIcaN4tsrY/Omufww/2k=
-Date: Tue, 6 Apr 2010 20:52:37 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] power_supply: Use genirq in wm831x_power
-Message-ID: <20100406165237.GA29083@oksana.dev.rtsoft.ru>
-References: <1268245660-19140-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1757299Ab0DFQxH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 12:53:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4826 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757244Ab0DFQwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 12:52:49 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: linux-ext4@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-kernel@vger.kernel.org, jens.axboe@oracle.com,
+       Jan Kara <jack@ucw.cz>
+Subject: [patch] jbd: tag journal writes as metadata I/O
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 06 Apr 2010 12:52:37 -0400
+Message-ID: <x49eiisr0a2.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1268245660-19140-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 10, 2010 at 06:27:40PM +0000, Mark Brown wrote:
-> Since the WM831x core has been converted to use genirq for the
-> interrupt controller there is no longer any need for chip specific
-> wrappers for IRQ operations. Convert to use genirq directly.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Hi,
 
-Applied, thanks!
+In running iozone for writes to small files, we noticed a pretty big
+discrepency between the performance of the deadline and cfq I/O
+schedulers.  Investigation showed that I/O was being issued from 2
+different contexts: the iozone process itself, and the jbd/sdh-8 thread
+(as expected).  Because of the way cfq performs slice idling, the delays
+introduced between the metadata and data I/Os were significant.  For
+example, cfq would see about 7MB/s versus deadline's 35 for the same
+workload.  I also tested fs_mark with writing and fsyncing 1000 64k
+files, and a similar 5x performance difference was observed.  Eric
+Sandeen suggested that I flag the journal writes as metadata, and once I
+did that, the performance difference went away completely (cfq has
+special logic to prioritize metadata I/O).
 
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+This is similar to the jbd2 patch I posted earlier that Ted has accepted
+into his patch queue.  Comments, as always, are appreciated.
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+
+diff --git a/fs/jbd/commit.c b/fs/jbd/commit.c
+index 4bd8825..e9f1369 100644
+--- a/fs/jbd/commit.c
++++ b/fs/jbd/commit.c
+@@ -318,7 +318,7 @@ void journal_commit_transaction(journal_t *journal)
+ 	int first_tag = 0;
+ 	int tag_flag;
+ 	int i;
+-	int write_op = WRITE;
++	int write_op = WRITE_META;
+ 
+ 	/*
+ 	 * First job: lock down the current transaction and wait for
+@@ -357,7 +357,7 @@ void journal_commit_transaction(journal_t *journal)
+ 	 * instead we rely on sync_buffer() doing the unplug for us.
+ 	 */
+ 	if (commit_transaction->t_synchronous_commit)
+-		write_op = WRITE_SYNC_PLUG;
++		write_op = WRITE_SYNC_PLUG | (1<<BIO_RW_META);
+ 	spin_lock(&commit_transaction->t_handle_lock);
+ 	while (commit_transaction->t_updates) {
+ 		DEFINE_WAIT(wait);
