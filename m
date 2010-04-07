@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932529Ab0DGHZh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 03:25:37 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:38197 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932474Ab0DGHZb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 03:25:31 -0400
-Subject: Re: [PATCH 1/2] sparc64: Implement local_irq_save_nmi().
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Miller <davem@davemloft.net>
-Cc: mingo@elte.hu, acme@redhat.com, paulus@samba.org, efault@gmx.de,
-       fweisbec@gmail.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-       sparclinux@vger.kernel.org, linux-arch@vger.kernel.org
-In-Reply-To: <20100407.000625.203083228.davem@davemloft.net>
-References: <20100406.163955.28809295.davem@davemloft.net>
-	 <1270623146.5109.532.camel@twins>
-	 <20100407.000625.203083228.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 07 Apr 2010 09:24:19 +0200
-Message-ID: <1270625059.5109.537.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S932525Ab0DGH3M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 03:29:12 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50659 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757499Ab0DGH3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 03:29:08 -0400
+Date: Wed, 7 Apr 2010 09:29:03 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
+ 2.6.34-rc3)
+Message-ID: <20100407072903.GB11220@a1.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+	Nick Piggin <npiggin@suse.de>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+References: <alpine.LFD.2.00.1004060951030.3487@i5.linux-foundation.org>
+ <4BBB69A9.5090906@redhat.com>
+ <alpine.LFD.2.00.1004061053450.3487@i5.linux-foundation.org>
+ <20100406120315.53ad7390.akpm@linux-foundation.org>
+ <20100406194238.GB20357@a1.tnic>
+ <alpine.LFD.2.00.1004061243240.3487@i5.linux-foundation.org>
+ <20100406205123.GC20357@a1.tnic>
+ <alpine.LFD.2.00.1004061403170.3487@i5.linux-foundation.org>
+ <20100406225925.GA3446@liondog.tnic>
+ <alpine.LFD.2.00.1004061609320.3487@i5.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1004061609320.3487@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-07 at 00:06 -0700, David Miller wrote:
-> From: Peter Zijlstra <peterz@infradead.org>
-> Date: Wed, 07 Apr 2010 08:52:26 +0200
-> 
-> > On Tue, 2010-04-06 at 16:39 -0700, David Miller wrote:
-> >> @@ -49,6 +49,16 @@ static inline void raw_local_irq_disable(void)
-> >>  	);
-> >>  }
-> >>  
-> >> +static inline void raw_local_irq_disable_nmi(void)
-> >> +{
-> >> +	__asm__ __volatile__(
-> >> +		"wrpr	%0, %%pil"
-> >> +		: /* no outputs */
-> >> +		: "i" (PIL_NMI)
-> >> +		: "memory"
-> >> +	);
-> >> +}
-> >> +
-> > 
-> > Isn't this wrong when used from !NMI context?
-> > 
-> > Should this thing do something like:
-> > 
-> >   if (rdpr() < PIL_NORMAL_MAX)
-> >     wrpr(PIL_NORMAL_MAX);
-> > 
-> > so that it only disables IRQs, but doesn't enable NMIs.
-> 
-> It's immaterial, local_irq_restore() will do the right thing,
-> and it's ok to disable NMIs in these few cases I think.
-> 
-> I desperately want to avoid that "test and maybe change the
-> value %pil value we write" business, and honestly that's
-> the whole point of this exercise.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, Apr 06, 2010 at 04:27:42PM -0700
 
-Sure, its your architecture.. but could you explain why you're trying to
-avoid that compare so desperately, the local_irq_save_nmi() calls are
-few so surely they could carry that overhead.
+> No, you're mis-reading the asm. It's again the first iteration, and the 
+> code above it is again the end of the loop. And %rax is once more a kernel 
+> pointer, not the return value of 'page_referenced_one()'. 
+> 
+> So it once more is 'anon_vma->head.next' that is crap, but now it's not 
+> NULL, it's that very odd 0x002e2e2e002e2e2e pattern (the %r13 has had 0x20 
+> subtracted from it, so that LSB of "0x0e" is actually _also_ a 0x2e).
 
-Also, doesn't __raw_local_irq_save_flags() already do the read? So its
-really just the compare that's gone missing.
+No, maybe I expressed myself wrong (it was late an' all) - I was
+basically trying to confirm your assessment that anon_vma->head.next
+is crap but the code had changed since I had added the debugging 'if
+(!anon_vma->head.next)' and that was the value that was already in %r13
+before iterating over the list chain.
+
+Yeah, just a minor nitpick and not that it matters. Nevermind though,
+we're on the same page.
+
+-- 
+Regards/Gruss,
+Boris.
