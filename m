@@ -1,64 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758160Ab0DGSo1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 14:44:27 -0400
-Received: from soto.provo.novell.com ([137.65.250.214]:37053 "EHLO
-	soto.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758049Ab0DGSoZ convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-ghaskins@novell.com:12:1>);
-	Wed, 7 Apr 2010 14:44:25 -0400
-Message-Id: <4BBC9A3B0200005A00063E34@soto.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 07 Apr 2010 12:44:11 -0600
-From: "Gregory Haskins" <ghaskins@novell.com>
-To: "Thomas Gleixner" <tglx@linutronix.de>, "Darren Hart" <dvhltc@us.ibm.com>
-Cc: "Ingo Molnar" <mingo@elte.hu>, "Eric Dumazet" <eric.dumazet@gmail.com>,
-       "Steven Rostedt" <rostedt@goodmis.org>,
-       "Peter Zijlstra" <peterz@infradead.org>,
-       "Peter Morreale" <PMorreale@novell.com>,
-       "Sven Dietrich" <SDietrich@novell.com>,
-       "Chris Mason" <chris.mason@oracle.com>, "Avi Kivity" <avi@redhat.com>,
-       "Rik van Riel" <riel@redhat.com>, "Chris Wright" <chrisw@sous-sol.org>,
-       "John Cooper" <john.cooper@third-harmonic.com>,
-       <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/6] futex: handle timeout inside adaptive lock
-	 spin
-References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com>
- <1270499039-23728-6-git-send-email-dvhltc@us.ibm.com>
- <alpine.LFD.2.00.1004061022080.32352@localhost.localdomain>
- <4BBCC174.7020409@us.ibm.com>
-In-Reply-To: <4BBCC174.7020409@us.ibm.com>
+	id S1758162Ab0DGS4i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 14:56:38 -0400
+Received: from vpnflf.ccur.com ([12.192.68.2]:42885 "EHLO gamx.iccur.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752109Ab0DGS4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 14:56:37 -0400
+Date: Wed, 7 Apr 2010 14:53:18 -0400
+From: Joe Korty <joe.korty@ccur.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] Tweak SMI sniffer commentary
+Message-ID: <20100407185318.GA11442@typhoon.ccur.com>
+Reply-To: Joe Korty <joe.korty@ccur.com>
+References: <20100406200605.GA16586@typhoon.ccur.com> <20100407110507.3c8a3aea.randy.dunlap@oracle.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20100407110507.3c8a3aea.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 4/7/2010 at 01:31 PM, in message <4BBCC174.7020409@us.ibm.com>, Darren Hart
-<dvhltc@us.ibm.com> wrote: 
-> Thomas Gleixner wrote:
->> On Mon, 5 Apr 2010, Darren Hart wrote:
->> 
->>> Signed-off-by: Darren Hart <dvhltc@us.ibm.com>
-
->>> +		if (timeout) {
->>> +			now = ktime_get();
->> 
->>   Hmm. Calling that in every iteration might hurt especially on non
->>   TSC systems, but well...
+On Wed, Apr 07, 2010 at 02:05:07PM -0400, Randy Dunlap wrote:
+> > +			to detect otherwise undetectable SMIs.  Not available
+> > +			unless CONFIG_DEBUG_SMI_SNIFFER=y.
 > 
-> I haven't come across a better alternative since arming the timer before 
-> setting TASK_INTERRUPTIBLE isn't appropriate.
-
-Hey Darren,
-
-I remember we tried something similar in early versions of the adaptive locks and this was definitely bad. :(
-
-It ended up putting so much contention on the xtime_lock (IIRC) that it resulted in adaptive locks hurting overall performance verses not using adaptive at all.  Alternative mechanisms employed a hybrid where the inner loops used a pseudo calibrated counter loop, and the outer loop checks periodically against a real clock.  It all plays into "you are burning CPU cycles anyway, so might as well put them to use" theory.  Hacky, yes, but it did relieve the pressure on the time subsystem locks and freed up a _lot_ of performance.  Without this, the concept of timeouts+adaptive was unworkable.  I think Steven ultimately rejected the timeout related patches outright when he merged adaptive to -rt, but I think Sven pulled them into SLERT if you would like a potential code reference to a working solution.
-
--Greg
+> preferable:		Only available when CONFIG_DEBUG_SMI_SNIFFER=y.
 
 
+> drop "to" (redundant) ^^
+> s/cpu/CPU/ throughout
+> drop "to" (redundant)
+> s/ie/i.e./
 
+> > +the applications running underneath it. For many uses this is unimportant,
+> (or on top of it ;)
+
+
+> > +their occurrence via the setting of a per-cpu 'system interrupt occured' flag.
+>                                                                    occurred
+
+
+Hi Randy,
+Thanks!  I've created a follow-on patch containing the suggested rewordings.
+Joe
+
+[PATCH] Tweak some SMI sniffer commentary
+
+Thanks go to Randy Dunlap for these suggestions.
+
+Signed-off-by: Joe Korty <joe.korty@ccur.com>
+
+
+Index: 2.6.34-rc3/Documentation/kernel-parameters.txt
+===================================================================
+--- 2.6.34-rc3.orig/Documentation/kernel-parameters.txt	2010-04-05 14:30:06.000000000 -0400
++++ 2.6.34-rc3/Documentation/kernel-parameters.txt	2010-04-07 14:39:50.000000000 -0400
+@@ -947,8 +947,8 @@
+ 			will use a lot of power and make the system run hot.
+ 			Not recommended.
+ 			idle=smi: variant of idle=poll that uses the spin-time
+-			to detect otherwise undetectable SMIs.  Not available
+-			unless CONFIG_DEBUG_SMI_SNIFFER=y.
++			to detect otherwise undetectable SMIs.  Only available
++			when CONFIG_DEBUG_SMI_SNIFFER=y.
+ 			idle=mwait: On systems which support MONITOR/MWAIT but
+ 			the kernel chose to not use it because it doesn't save
+ 			as much power as a normal idle loop, use the
+Index: 2.6.34-rc3/Documentation/x86/smi-sniffer.txt
+===================================================================
+--- 2.6.34-rc3.orig/Documentation/x86/smi-sniffer.txt	2010-04-05 14:30:06.000000000 -0400
++++ 2.6.34-rc3/Documentation/x86/smi-sniffer.txt	2010-04-07 14:49:19.000000000 -0400
+@@ -8,17 +8,17 @@
+ interrupt that goes directly to the BIOS. They are used by motherboard
+ manufacturers to, for example, 1) simulate missing hardware in software,
+ such as an RTC or emulating a missing PS2 mouse/keyboard using a USB
+-mouse/keyboard, 2) to perform critical motherboard duties, such as periodic
+-DRAM memory refresh or slowing the cpu down whenever it gets too hot, and 3)
+-to work around in software (ie, in the BIOS) deficiencies discovered after
++mouse/keyboard, 2) perform critical motherboard duties, such as periodic
++DRAM memory refresh or slowing the CPU down whenever it gets too hot, and 3)
++work around in software (i.e., in the BIOS) deficiencies discovered after
+ a board has been manufactured and shipped to customers.
+ 
+ The OS is not involved with nor even informed of these interrupts when
+ they occur, and indeed it is difficult for the OS to detect that they have
+ occurred at all. The only signature an SMI leaves behind is the time that it
+-consumes. These 'time slices', taken randomly out of the running time of a cpu,
++consumes. These 'time slices', taken randomly out of the running time of a CPU,
+ compromise the ability of the OS to provide reasonable latency guarantees to
+-the applications running underneath it. For many uses this is unimportant,
++the applications running on top of it. For many uses this is unimportant,
+ but for real time systems, the occurrence of an SMI during the run of some
+ critically-timed piece of code could shatter the correct running of the system.
+ 
+@@ -36,8 +36,8 @@
+ routine is in use, by an "echo 1 >/proc/sys/kernel/smi_sniffer_enable" command.
+ 
+ The sniffer adds a pair of lines to /proc/interrupts.  The "SMI" line shows
+-the number of SMIs detected (per-cpu) so far. The "DSMI" line gives the
+-duration, in microseconds, of the most recent SMI (for each cpu).
++the number of SMIs detected (per-CPU) so far. The "DSMI" line gives the
++duration, in microseconds, of the most recent SMI (for each CPU).
+ 
+ These lines appear only while the sniffer is running. If it is disabled later,
+ say with an "echo 0 >/proc/sys/kernel/smi_sniffer_enable", then the lines
+@@ -66,7 +66,7 @@
+ longer than 125 usecs by the time it took to process the interrupt.
+ 
+ The OS is modified so that all normal system interrupts, including NMI, mark
+-their occurrence via the setting of a per-cpu 'system interrupt occured' flag.
++their occurrence via the setting of a per-CPU 'system interrupt occurred' flag.
+ We can therefore detect SMIs by assuming that if a period significantly longer
+ than 125 usecs is seen, and this 'system interrupt happened' flag is not set,
+ that it was an SMI that lengthened the period.
