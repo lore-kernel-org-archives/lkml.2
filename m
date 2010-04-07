@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757718Ab0DGMJQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 08:09:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43170 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751216Ab0DGMJN (ORCPT
+	id S1757901Ab0DGMJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 08:09:26 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:62587 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757867Ab0DGMJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 08:09:13 -0400
-Subject: Re: [PATCH] perf: Store active software events in a hashlist
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
+	Wed, 7 Apr 2010 08:09:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=BbpmaL4AJsxN0HMrPwkPlRciaMua1/xVZfrvF2gXQ2j+8Yb+ELJuASwyFPFQbpZ96g
+         CIoJYC//HkvWuKFrdwH6TTUMhMJKMNsKj3da6sgrJr2AGk32KqyVgljrAx1xFsgPy7SN
+         QGLLHTFKnvPzL/a+Gu5AKqP4Mz2c6nqTIW2yw=
+Date: Wed, 7 Apr 2010 14:09:10 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
 Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
        Paul Mackerras <paulus@samba.org>
-In-Reply-To: <20100407115839.GE5143@nowhere>
-References: <1270476502-6214-1-git-send-regression-fweisbec@gmail.com>
-	 <1270567653.20295.11.camel@laptop> <1270631093.5109.569.camel@twins>
-	 <20100407115839.GE5143@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 07 Apr 2010 14:09:10 +0200
-Message-ID: <1270642150.20295.831.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] perf: Store active software events in a hashlist
+Message-ID: <20100407120909.GG5143@nowhere>
+References: <1270476502-6214-1-git-send-regression-fweisbec@gmail.com> <1270630946.5109.566.camel@twins> <20100407115251.GC5143@nowhere> <1270641405.20295.803.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1270641405.20295.803.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-07 at 13:58 +0200, Frederic Weisbecker wrote:
-> On Wed, Apr 07, 2010 at 11:04:53AM +0200, Peter Zijlstra wrote:
-> > On Tue, 2010-04-06 at 17:27 +0200, Peter Zijlstra wrote:
+On Wed, Apr 07, 2010 at 01:56:45PM +0200, Peter Zijlstra wrote:
+> On Wed, 2010-04-07 at 13:52 +0200, Frederic Weisbecker wrote:
+> > On Wed, Apr 07, 2010 at 11:02:26AM +0200, Peter Zijlstra wrote:
 > > > On Mon, 2010-04-05 at 16:08 +0200, Frederic Weisbecker wrote:
-> > > > Each time a software event triggers, we need to walk through
-> > > > the entire list of events from the current cpu and task contexts
-> > > > to retrieve a running perf event that matches.
-> > > > We also need to check a matching perf event is actually counting.
-> > > > 
-> > > > This walk is wasteful and makes the event fast path scaling
-> > > > down with a growing number of events running on the same
-> > > > contexts.
-> > > > 
-> > > > To solve this, we store the running perf events in a hashlist to
-> > > > get an immediate access to them against their type:event_id when
-> > > > they trigger. 
+> > > > +#define SWEVENT_HLIST_BITS     8
+> > > > +#define SWEVENT_HLIST_SIZE     ((1 << (SWEVENT_HLIST_BITS + 1)) - 1)
 > > > 
-> > > So we have a hash-table per-cpu, each event takes a ref on the hash
-> > > table, when the thing is empty we free it.
-> > > 
-> > > When the event->cpu == -1 (all cpus) we take a ref on all possible cpu's
-> > > hash-table (should be online I figure, but that requires adding a
-> > > hotplug handler).
-> > > 
-> > > Then on event enable/disable we actually add the event to the hash-table
-> > > belonging to the cpu the event/task gets scheduled on, since each event
-> > > can only ever be active on one cpu.
-> > > 
-> > > Right?
-> > > 
-> > > So looks good, altough I think we want to do that online/hotplug thing.
+> > > That seems to result in 9 bits worth, doesn't it?
 > > 
-> > Alternatively, you can simply but the hash table into the per-cpu
-> > structure and not allocate it, its only a single page (half a page if
-> > you use 32bit or actually use 8 bits.
+> > 
+> > Oh right, I was confused, will zapp the + 1.
+> > 
 > 
+> Also, what you're computing seems to be a mask, not a size
 > 
-> As you prefer. This would indeed make it more simple, but that would also
-> make these pages unused most of the time.
+> So with BITS = 8, you want
+> SIZE = 1<<BITS = 256
+> MASK = SIZE-1 = 255
+> 
+> right? 
 
-True I suppose,.. have a go at that hotplug stuff, the only thing I
-worried about was that refcount stuff getting rather ugly.
+
+Oh right... damn I suck in maths...
 
