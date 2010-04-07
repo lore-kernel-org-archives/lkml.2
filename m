@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779Ab0DGVup (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 17:50:45 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37783 "EHLO ogre.sisk.pl"
+	id S1756095Ab0DGVut (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 17:50:49 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37796 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755978Ab0DGVuf convert rfc822-to-8bit (ORCPT
+	id S1754983Ab0DGVuj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 17:50:35 -0400
+	Wed, 7 Apr 2010 17:50:39 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Norbert Preining" <preining@logic.at>
+       "Daniel J Blueman" <daniel.blueman@gmail.com>
 References: <6Pphclm24fK.A.lSF.qsPvLB@chimera>
 In-Reply-To: <6Pphclm24fK.A.lSF.qsPvLB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <JVS2s9dmTsP.A.27G.TtPvLB@chimera>
-Subject: [Bug #15671] intel graphic card hanging (Hangcheck timer elapsed... GPU hung)
+Message-ID: <JVS2s9dmTsP.A.inG.KtPvLB@chimera>
+Subject: [Bug #15674] [2.6.34-rc2 NFS4 oops] open error path failure...
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed,  7 Apr 2010 23:13:51 +0200 (CEST)
+Date: Wed,  7 Apr 2010 23:13:52 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,11 +33,11 @@ from 2.6.33.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15671
-Subject		: intel graphic card hanging (Hangcheck timer elapsed... GPU hung)
-Submitter	: Norbert Preining <preining@logic.at>
-Date		: 2010-03-27 16:11 (12 days old)
-Message-ID	: <20100327161104.GA12043@gamma.logic.tuwien.ac.at>
-References	: http://marc.info/?l=linux-kernel&m=126970883105262&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15674
+Subject		: [2.6.34-rc2 NFS4 oops] open error path failure...
+Submitter	: Daniel J Blueman <daniel.blueman@gmail.com>
+Date		: 2010-03-29 18:36 (10 days old)
+Message-ID	: <6278d2221003291136p6481fe8emfb039403343c082@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=126988782722711&w=2
 
 
