@@ -1,102 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab0DGSDu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 14:03:50 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:56259 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753270Ab0DGSDs (ORCPT
+	id S1755491Ab0DGSFy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 14:05:54 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:35156 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692Ab0DGSFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 14:03:48 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Andrew Morton <akpm@linux-foundation.org>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-       Patrick McHardy <kaber@trash.net>,
-       "David S. Miller" <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-       netdev@vger.kernel.org
-Subject: Re: mmotm 2010-04-05-16-09 uploaded
-In-Reply-To: Your message of "Mon, 05 Apr 2010 16:09:45 PDT."
-             <201004052336.o35NaeSE015814@imap1.linux-foundation.org>
-From: Valdis.Kletnieks@vt.edu
-References: <201004052336.o35NaeSE015814@imap1.linux-foundation.org>
+	Wed, 7 Apr 2010 14:05:53 -0400
+Date: Wed, 7 Apr 2010 11:05:07 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Joe Korty <joe.korty@ccur.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2.6.34-rc3] A nonintrusive SMI sniffer for x86 (resend)
+Message-Id: <20100407110507.3c8a3aea.randy.dunlap@oracle.com>
+In-Reply-To: <20100406200605.GA16586@typhoon.ccur.com>
+References: <20100406200605.GA16586@typhoon.ccur.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1270663309_3901P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Date: Wed, 07 Apr 2010 14:01:49 -0400
-Message-ID: <13074.1270663309@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Info: (45) HELO_LOCALHOST
-X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020201.4BBCC88E.0044,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4BBCC95D.0151:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1270663309_3901P
-Content-Type: text/plain; charset=us-ascii
+On Tue, 6 Apr 2010 16:06:05 -0400 Joe Korty wrote:
 
-On Mon, 05 Apr 2010 16:09:45 PDT, akpm@linux-foundation.org said:
-> The mm-of-the-moment snapshot 2010-04-05-16-09 has been uploaded to
+> [PATCH 2.6.34-rc3] A nonintrusive SMI sniffer for x86.
 > 
->    http://userweb.kernel.org/~akpm/mmotm/
+> The smi sniffer is not 'on' until compiled in (CONFIG_DEBUG_SMI_SNIFFER=y)
+> and enabled (poll=smi on the boot command line, or after boot, echo 1
+> >/proc/sys/kernel/smi_sniffer_enable).  More details may be found in
+> Documentation/x86/smi-sniffer.txt
+> 
+> [Developed and tested on 2.6.31 then forward-ported to 2.6.34-rc3]
+> 
+> Signed-off-by: Joe Korty <joe.korty@ccur.com>
+> 
+> Index: 2.6.34-rc3/Documentation/kernel-parameters.txt
+> ===================================================================
+> --- 2.6.34-rc3.orig/Documentation/kernel-parameters.txt	2010-04-05 14:25:10.000000000 -0400
+> +++ 2.6.34-rc3/Documentation/kernel-parameters.txt	2010-04-05 14:30:06.000000000 -0400
+> @@ -940,11 +940,15 @@
+>  			Claim all unknown PCI IDE storage controllers.
+>  
+>  	idle=		[X86]
+> -			Format: idle=poll, idle=mwait, idle=halt, idle=nomwait
+> -			Poll forces a polling idle loop that can slightly
+> +			Format: idle=poll, idle=smi, idle=mwait, idle=halt,
+> +			idle=nomwait
+> +			idle=poll: forces a polling idle loop that can slightly
+>  			improve the performance of waking up a idle CPU, but
+>  			will use a lot of power and make the system run hot.
+>  			Not recommended.
+> +			idle=smi: variant of idle=poll that uses the spin-time
+> +			to detect otherwise undetectable SMIs.  Not available
+> +			unless CONFIG_DEBUG_SMI_SNIFFER=y.
 
-Seen in dmesg, 2.6.34-rc2-mmotm0323 didn't do this. Tossing it at all the
-likely suspects, hopefully somebody will recognize it and save me the
-bisecting. ;)
+preferable:		Only available when CONFIG_DEBUG_SMI_SNIFFER=y.
 
-[   11.488535] ctnetlink v0.93: registering with nfnetlink.
-[   11.488579] 
-[   11.488579] ===================================================
-[   11.489529] [ INFO: suspicious rcu_dereference_check() usage. ]
-[   11.489988] ---------------------------------------------------
-[   11.490494] net/netfilter/nf_conntrack_ecache.c:88 invoked rcu_dereference_check() without protection!
-[   11.491024] 
-[   11.491024] other info that might help us debug this:
-[   11.491025] 
-[   11.492834] 
-[   11.492835] rcu_scheduler_active = 1, debug_locks = 0
-[   11.494124] 1 lock held by swapper/1:
-[   11.494776]  #0:  (nf_ct_ecache_mutex){+.+...}, at: [<ffffffff8148c606>] nf_conntrack_register_notifier+0x1a/0x76
-[   11.495505] 
-[   11.495506] stack backtrace:
-[   11.496927] Pid: 1, comm: swapper Not tainted 2.6.34-rc3-mmotm0405 #1
-[   11.497668] Call Trace:
-[   11.498419]  [<ffffffff810638c5>] lockdep_rcu_dereference+0xaa/0xb2
-[   11.499185]  [<ffffffff8148c629>] nf_conntrack_register_notifier+0x3d/0x76
-[   11.499967]  [<ffffffff81b5dd7b>] ctnetlink_init+0x71/0xd5
-[   11.500775]  [<ffffffff81b5dd0a>] ? ctnetlink_init+0x0/0xd5
-[   11.501579]  [<ffffffff810001ef>] do_one_initcall+0x59/0x14e
-[   11.502396]  [<ffffffff81b3268a>] kernel_init+0x144/0x1ce
-[   11.503218]  [<ffffffff81003514>] kernel_thread_helper+0x4/0x10
-[   11.504047]  [<ffffffff8159cc00>] ? restore_args+0x0/0x30
-[   11.504882]  [<ffffffff81b32546>] ? kernel_init+0x0/0x1ce
-[   11.505715]  [<ffffffff81003510>] ? kernel_thread_helper+0x0/0x10
-[   11.506636] ip_tables: (C) 2000-2006 Netfilter Core Team
-[   11.507372] TCP bic registered
+>  			idle=mwait: On systems which support MONITOR/MWAIT but
+>  			the kernel chose to not use it because it doesn't save
+>  			as much power as a normal idle loop, use the
+> Index: 2.6.34-rc3/Documentation/x86/smi-sniffer.txt
+> ===================================================================
+> --- /dev/null	1970-01-01 00:00:00.000000000 +0000
+> +++ 2.6.34-rc3/Documentation/x86/smi-sniffer.txt	2010-04-05 14:30:06.000000000 -0400
+> @@ -0,0 +1,79 @@
+> +[Original written March, 2010]
+> +
+> +			The SMI Sniffer
+> +
+> +Background
+> +----------
+> +A System Management Mode Interrupt (SMI) is a special kind of NMI-like
+> +interrupt that goes directly to the BIOS. They are used by motherboard
+> +manufacturers to, for example, 1) simulate missing hardware in software,
+> +such as an RTC or emulating a missing PS2 mouse/keyboard using a USB
+> +mouse/keyboard, 2) to perform critical motherboard duties, such as periodic
+
+drop "to" (redundant) ^^
+
+> +DRAM memory refresh or slowing the cpu down whenever it gets too hot, and 3)
+
+s/cpu/CPU/ throughout
+
+> +to work around in software (ie, in the BIOS) deficiencies discovered after
+
+drop "to" (redundant)
+s/ie/i.e./
+
+> +a board has been manufactured and shipped to customers.
+> +
+> +The OS is not involved with nor even informed of these interrupts when
+> +they occur, and indeed it is difficult for the OS to detect that they have
+> +occurred at all. The only signature an SMI leaves behind is the time that it
+> +consumes. These 'time slices', taken randomly out of the running time of a cpu,
+> +compromise the ability of the OS to provide reasonable latency guarantees to
+> +the applications running underneath it. For many uses this is unimportant,
+
+(or on top of it ;)
+
+> +but for real time systems, the occurrence of an SMI during the run of some
+> +critically-timed piece of code could shatter the correct running of the system.
+> +
+> +Since SMI generation is a side effect of motherboard design, the only recourse
+> +a user has for avoiding them is to search for and acquire motherboards which
+> +do not use SMIs at all, or which do use them, but in ways their occurrence
+> +can be avoided by a proper setting up of the system. This can be a fruitful
+> +approach, as SMI usage indeed varies widely across products.
+> +
+> +The SMI sniffer
+> +---------------
+> +For a kernel compiled with CONFIG_DEBUG_SMI_SNIFFER=y, a new idle method,
+> +"smi", will show up in the list of available idle methods.  It can be enabled
+> +by either adding "idle=smi" to the boot command line, or, if the default idle
+> +routine is in use, by an "echo 1 >/proc/sys/kernel/smi_sniffer_enable" command.
+> +
+> +The sniffer adds a pair of lines to /proc/interrupts.  The "SMI" line shows
+> +the number of SMIs detected (per-cpu) so far. The "DSMI" line gives the
+> +duration, in microseconds, of the most recent SMI (for each cpu).
+> +
+> +These lines appear only while the sniffer is running. If it is disabled later,
+> +say with an "echo 0 >/proc/sys/kernel/smi_sniffer_enable", then the lines
+> +will no longer show up. This is a nice way to verify whether the sniffer is
+> +actually running or not.
+> +
+> +The sniffer does suffer from some defects. It only sniffs out SMIs that last
+> +15 usecs or longer.  It can only discover SMIs that occur on cpus that are
+> +idle. It will therefore miss any SMI that occurs while a user application is
+> +running, while a system call is running, or while a normal system interrupt
+> +is being processed. It will also miss a few SMIs that interrupt idle: those
+> +that occur 'too close' to a normal system interrupt, those that occur while
+> +the sniffer self-calibrates, and those that occur in the interval between
+> +successive sniffer 125 usec sampling periods.  Therefore one must not regard
+> +the sniffer as a precision tool for diagnosing SMI problems.
+> +
+> +The Method
+> +----------
+> +The sniffer divides idle time into 125 usec periods. This is measured out
+> +by a countdown on the basic need_resched() loop, whose initial value is such
+> +that when the count reaches zero, we expect to find that 125 usecs has passed.
+> +
+> +The actual time is found by sampling the TSC before and after the period. This
+> +will be the same as the expected time of 125 usec unless an interrupt (SMI
+> +or normal system interrupt) occurs.  In that case the actual time will be
+> +longer than 125 usecs by the time it took to process the interrupt.
+> +
+> +The OS is modified so that all normal system interrupts, including NMI, mark
+> +their occurrence via the setting of a per-cpu 'system interrupt occured' flag.
+
+                                                                   occurred
+
+> +We can therefore detect SMIs by assuming that if a period significantly longer
+> +than 125 usecs is seen, and this 'system interrupt happened' flag is not set,
+> +that it was an SMI that lengthened the period.
+> +
+> +Additional Limitations
+> +----------------------
+> +The sniffer is sensitive to variable-frequency TSCs and to TSCs which can
+> +stop-and-go.  Therefore it cannot be compiled in when CONFIG_CPU_FREQ=y.
+> +For some platforms, much of power management may need to be turned off in
+> +order to get reliable results.
 
 
---==_Exmh_1270663309_3901P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFLvMiNcC3lWbTT17ARAn4kAJ9/0RdAq3s0dOuASnNdracwxYzltACdFoxk
-awnQo03tntDhlr0YT0ahASU=
-=dQIQ
------END PGP SIGNATURE-----
-
---==_Exmh_1270663309_3901P--
-
+---
+~Randy
