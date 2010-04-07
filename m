@@ -1,192 +1,364 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530Ab0DGHi4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 03:38:56 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49501 "EHLO mga09.intel.com"
+	id S1752683Ab0DGHlh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 03:41:37 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:58525 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751013Ab0DGHiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 03:38:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,377,1267430400"; 
-   d="scan'208";a="610872087"
-Date: Wed, 7 Apr 2010 15:38:47 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Taras Glek <tglek@mozilla.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
-Message-ID: <20100407073847.GB17892@localhost>
-References: <4BBA6776.5060804@mozilla.com> <20100406095135.GB5183@cmpxchg.org> <20100407022456.GA9468@localhost> <4BBBF402.70403@mozilla.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BBBF402.70403@mozilla.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751013Ab0DGHla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 03:41:30 -0400
+Date: Wed, 7 Apr 2010 17:41:23 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for April 7
+Message-Id: <20100407174123.81b32310.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__7_Apr_2010_17_41_23_+1000_4m_PZRjlyuB43aVj"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 07, 2010 at 10:54:58AM +0800, Taras Glek wrote:
-> On 04/06/2010 07:24 PM, Wu Fengguang wrote:
-> > Hi Taras,
-> >
-> > On Tue, Apr 06, 2010 at 05:51:35PM +0800, Johannes Weiner wrote:
-> >    
-> >> On Mon, Apr 05, 2010 at 03:43:02PM -0700, Taras Glek wrote:
-> >>      
-> >>> Hello,
-> >>> I am working on improving Mozilla startup times. It turns out that page
-> >>> faults(caused by lack of cooperation between user/kernelspace) are the
-> >>> main cause of slow startup. I need some insights from someone who
-> >>> understands linux vm behavior.
-> >>>        
-> > How about improve Fedora (and other distros) to preload Mozilla (and
-> > other apps the user run at the previous boot) with fadvise() at boot
-> > time? This sounds like the most reasonable option.
-> >    
-> That's a slightly different usecase. I'd rather have all large apps 
-> startup as efficiently as possible without any hacks. Though until we 
-> get there, we'll be using all of the hacks we can.
+--Signature=_Wed__7_Apr_2010_17_41_23_+1000_4m_PZRjlyuB43aVj
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Boot time user space readahead can do better than kernel heuristic
-readahead in several ways:
+Hi all,
 
-- it can collect better knowledge on which files/pages will be used
-  which lead to high readahead hit ratio and less cache consumption
+Changes since 20100401:
 
-- it can submit readahead requests for many files in parallel,
-  which enables queuing (elevator, NCQ etc.) optimizations
+Dropped tree: tmio-mmc (long unresolved conflicts and unable to fetch)
+	hwlat (at the maintainers request)
 
-So I won't call it dirty hack :)
+My fixes tree contains:
+	a patch for a pktcdvd build error from Arnd Bergmann
+	a fix for the commit that broke virtual consoles on PowerPC
 
-> > As for the kernel readahead, I have a patchset to increase default
-> > mmap read-around size from 128kb to 512kb (except for small memory
-> > systems).  This should help your case as well.
-> >    
-> Yes. Is the current readahead really doing read-around(ie does it read 
-> pages before the one being faulted)? From what I've seen, having the 
+The ceph tree lost its conflicts.
 
-Sure. It will do read-around from current fault offset - 64kb to +64kb.
+The hid tree lost its build failure.
 
-> dynamic linker read binary sections backwards causes faults.
-> http://sourceware.org/bugzilla/show_bug.cgi?id=11447
+The v4l-dvb tree gained a conflict against Linus' tree.
 
-There are too many data in
-http://people.mozilla.com/~tglek/startup/systemtap_graphs/ld_bug/report.txt
-Can you show me the relevant lines? (wondering if I can ever find such lines..)
+The kvm tree gained a build failure so I reverted the tree for today.
 
-> >    
-> >>> Current Situation:
-> >>> The dynamic linker mmap()s  executable and data sections of our
-> >>> executable but it doesn't call madvise().
-> >>> By default page faults trigger 131072byte reads. To make matters worse,
-> >>> the compile-time linker + gcc lay out code in a manner that does not
-> >>> correspond to how the resulting executable will be executed(ie the
-> >>> layout is basically random). This means that during startup 15-40mb
-> >>> binaries are read in basically random fashion. Even if one orders the
-> >>> binary optimally, throughput is still suboptimal due to the puny readahead.
-> >>>
-> >>> IO Hints:
-> >>> Fortunately when one specifies madvise(WILLNEED) pagefaults trigger 2mb
-> >>> reads and a binary that tends to take 110 page faults(ie program stops
-> >>> execution and waits for disk) can be reduced down to 6. This has the
-> >>> potential to double application startup of large apps without any clear
-> >>> downsides.
-> >>>
-> >>> Suse ships their glibc with a dynamic linker patch to fadvise()
-> >>> dynamic libraries(not sure why they switched from doing madvise
-> >>> before).
-> >>>        
-> > This is interesting. I wonder how SuSE implements the policy.
-> > Do you have the patch or some strace output that demonstrates the
-> > fadvise() call?
-> >    
-> glibc-2.3.90-ld.so-madvise.diff in 
-> http://www.rpmseek.com/rpm/glibc-2.4-31.12.3.src.html?hl=com&cba=0:G:0:3732595:0:15:0: 
+The net tree gained 2 conflicts against Linus' tree and a build failure
+for which I reverted 2 commits.
 
-550 Can't open
-/pub/linux/distributions/suse/pub/suse/update/10.1/rpm/src/glibc-2.4-31.12.3.src.rpm:
-No such file or directory
+The wireless tree gained a conflict against the wireless-current tree.
 
-OK I give up.
+The sound tree gained a conflict against Linus' tree and a build failure
+so I used the version from next-20100401.
 
-> As I recall they just fadvise the filedescriptor before accessing it.
+The rr tree gained a conflict against the net tree.
 
-Obviously this is a bit risky for small memory systems..
+The pcmcia tree gained a conflict against the net tree.
 
-> >>> I filed a glibc bug about this at
-> >>> http://sourceware.org/bugzilla/show_bug.cgi?id=11431 . Uli commented
-> >>> with his concern about wasting memory resources. What is the impact of
-> >>> madvise(WILLNEED) or the fadvise equivalent on systems under memory
-> >>> pressure? Does the kernel simply start ignoring these hints?
-> >>>        
-> >> It will throttle based on memory pressure.  In idle situations it will
-> >> eat your file cache, however, to satisfy the request.
-> >>
-> >> Now, the file cache should be much bigger than the amount of unneeded
-> >> pages you prefault with the hint over the whole library, so I guess the
-> >> benefit of prefaulting the right pages outweighs the downside of evicting
-> >> some cache for unused library pages.
-> >>
-> >> Still, it's a workaround for deficits in the demand-paging/readahead
-> >> heuristics and thus a bit ugly, I feel.  Maybe Wu can help.
-> >>      
-> > Program page faults are inherently random, so the straightforward
-> > solution would be to increase the mmap read-around size (for desktops
-> > with reasonable large memory), rather than to improve program layout
-> > or readahead heuristics :)
-> >    
-> Program page faults may exhibit random behavior once they've started.
+The mfd tree gained 2 build failures so I used the version from
+next-20100401.
 
-Right.
+The slabh tree lost its build failure and all its conflicts.
 
-> During startup page-in pattern of over-engineered OO applications is 
-> very predictable. Programs are laid out based on compilation units, 
-> which have no relation to how they are executed. Another problem is that 
-> any large old application will have lots of code that is either rarely 
-> executed or completely dead. Random sprinkling of live code among mostly 
-> unneeded code is a problem.
+----------------------------------------------------------------------------
 
-Agreed.
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
 
-> I'm able to reduce startup pagefaults by 2.5x and mem usage by a few MB 
-> with proper binary layout. Even if one lays out a program wrongly, the 
-> worst-case pagein pattern will be pretty similar to what it is by default.
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
 
-That's great. When will we enjoy your research fruits? :)
+Below is a summary of the state of the merge.
 
-> But yes, I completely agree that it would be awesome to increase the 
-> readahead size proportionally to available memory. It's a little silly 
-> to be reading tens of megabytes in 128kb increments :)  You rock for 
-> trying to modernize this.
+We are up to 160 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
 
-Thank you. I guess the 128kb is more than ten years old..
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
 
+Thanks to Jan Dittmer for adding the linux-next tree to his build tests
+at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
+Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
 Cheers,
-Fengguang
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> >    
-> >>> Also, once an application is started is it reasonable to keep it
-> >>> madvise(WILLNEED)ed or should the madvise flags be reset?
-> >>>        
-> >> It's a one-time operation that starts immediate readahead, no permanent
-> >> changes are done.
-> >>      
-> > Right. The kernel regard WILLNEED as a readahead request from userspace.
-> >
-> >    
-> >>> Perhaps the kernel could monitor the page-in patterns to increase the
-> >>> readahead sizes? This may already happen, I've noticed that a handful of
-> >>> pagefaults trigger>  131072bytes of IO, perhaps this just needs tweaking.
-> >>>        
-> >> CCd the man :-)
-> >>      
-> > Thank you :)
-> >
-> > Cheers,
-> > Fengguang
-> >    
-> 
-> Cheers,
-> Taras
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Applying: ar9170: fix for driver-core ABI change
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/for-linus
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+Applying: arm: update gfp/slab.h includes
+Merging davinci/davinci-next
+Applying: davinci: update gfp/slab.h includes
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+Merging s390/features
+CONFLICT (content): Merge conflict in drivers/s390/char/vmcp.c
+Merging sh/master
+Merging genesis/master
+Merging sparc/master
+Merging xtensa/master
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Applying: ocfs2: update gfp/slab.h includes
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+CONFLICT (content): Merge conflict in fs/9p/vfs_super.c
+Merging ubifs/linux-next
+Merging xfs/master
+Merging reiserfs-bkl/reiserfs/kill-bkl
+Merging vfs/for-next
+CONFLICT (content): Merge conflict in fs/namei.c
+CONFLICT (content): Merge conflict in fs/nfs/inode.c
+CONFLICT (content): Merge conflict in fs/nfsd/nfs4xdr.c
+CONFLICT (content): Merge conflict in fs/nfsd/vfs.c
+CONFLICT (content): Merge conflict in fs/ufs/inode.c
+CONFLICT (content): Merge conflict in fs/xfs/linux-2.6/xfs_super.c
+CONFLICT (content): Merge conflict in security/tomoyo/realpath.c
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+CONFLICT (content): Merge conflict in drivers/media/video/meye.c
+CONFLICT (content): Merge conflict in drivers/media/video/soc_camera.c
+CONFLICT (content): Merge conflict in drivers/staging/cx25821/cx25821-audio=
+-upstream.c
+Applying: v4l-dvb: update gfp/slab.h includes
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Applying: acpi: update gfp/slab.h includes
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in drivers/net/bonding/bond_main.c
+CONFLICT (content): Merge conflict in drivers/net/via-velocity.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-agn.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/wl12xx/wl1271_cm=
+d.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/wl12xx/wl1271_ma=
+in.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/wl12xx/wl1271_sp=
+i.c
+CONFLICT (content): Merge conflict in net/mac80211/scan.c
+Merging wireless/master
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-4965=
+.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-core=
+.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-core=
+.h
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-tx.c
+Applying: wireless: update gfp/slab.h includes
+[master cb7ede2] Revert "net: Hook up cxgb4 to Kconfig and Makefile"
+[master a824553] Revert "cxgb4: Add main driver file and driver Makefile"
+Merging mtd/master
+Applying: mtd: update gfp/slab.h includes
+Merging crypto/master
+Merging sound/for-next
+CONFLICT (delete/modify): sound/soc/codecs/ad1938.c deleted in sound/for-ne=
+xt and modified in HEAD. Version HEAD of sound/soc/codecs/ad1938.c left in =
+tree.
+$ git rm -f sound/soc/codecs/ad1938.c
+Applying: sound: ASoC; merge fixup for slab.h changes
+$ git reset --hard HEAD^
+Merging refs/next/20100401/sound
+CONFLICT (delete/modify): sound/soc/codecs/ad1938.c deleted in refs/next/20=
+100401/sound and modified in HEAD. Version HEAD of sound/soc/codecs/ad1938.=
+c left in tree.
+$ git rm -f sound/soc/codecs/ad1938.c
+Applying: sound: ASoC; merge fixup for slab.h changes
+Merging cpufreq/next
+Merging quilt/rr
+CONFLICT (content): Merge conflict in include/linux/mod_devicetable.h
+CONFLICT (content): Merge conflict in scripts/mod/file2alias.c
+Merging mmc/next
+Merging input/next
+CONFLICT (content): Merge conflict in drivers/char/sysrq.c
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+CONFLICT (content): Merge conflict in drivers/net/pcmcia/3c589_cs.c
+CONFLICT (content): Merge conflict in drivers/pcmcia/pcmcia_resource.c
+Merging battery/master
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging kgdb/kgdb-next
+Applying: kgdb: update for sysrq handling change
+Applying: kdb: update gfp/slab.h includes
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Applying: gpio: janz-ttl: using kzalloc/kfree requires including slab.h
+$ git reset --hard HEAD^
+Merging refs/next/20100401/mfd
+Applying: mfd: update gfp/slab.h includes
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+Merging bluetooth/master
+Merging fsnotify/for-next
+CONFLICT (content): Merge conflict in fs/notify/inotify/inotify_user.c
+CONFLICT (content): Merge conflict in include/linux/fsnotify.h
+CONFLICT (content): Merge conflict in kernel/audit_tree.c
+CONFLICT (content): Merge conflict in kernel/audit_watch.c
+CONFLICT (content): Merge conflict in kernel/sysctl.c
+Applying: fsnotify: update gfp/slab.h includes
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging drbd/for-jens
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Applying: vbus: use of kzalloc/kfree requires the include of slab.h
+Applying: vbus: update gfp/slab.h includes
+Merging i7core_edac/linux_next
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging limits/writable_limits
+CONFLICT (content): Merge conflict in arch/x86/ia32/ia32entry.S
+CONFLICT (content): Merge conflict in arch/x86/include/asm/unistd_32.h
+CONFLICT (content): Merge conflict in arch/x86/include/asm/unistd_64.h
+CONFLICT (content): Merge conflict in arch/x86/kernel/syscall_table_32.S
+Merging omap_dss2/for-next
+Merging tip/auto-latest
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging quilt/driver-core
+CONFLICT (content): Merge conflict in drivers/base/platform.c
+Merging quilt/tty
+Merging quilt/usb
+Applying: usb: update gfp/slab.h includes
+Merging quilt/staging
+Applying: staging: update gfp/slab.h includes
+Merging slabh/slabh
+Merging scsi-post-merge/master
+[master 6ec6c54] Revert "Merge remote branch 'kvm/linux-next'"
+
+--Signature=_Wed__7_Apr_2010_17_41_23_+1000_4m_PZRjlyuB43aVj
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAku8NyMACgkQjjKRsyhoI8wlmACglYSm70ed6B3V+N0pe42CFsx9
+MWIAoJYhIR//3q1zmc1h4zddzvru9v1h
+=yCn0
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__7_Apr_2010_17_41_23_+1000_4m_PZRjlyuB43aVj--
