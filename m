@@ -1,151 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482Ab0DGGj1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 02:39:27 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:50001 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071Ab0DGGjU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 02:39:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Yy21npjh1f+WWRfgBKGiV5iIP2J5PEEMNhT8Dqs0H+qbtjkpFK2ptpf/AnGxzYbKYw
-         4o2SSttKAtB/HuRaRsGBUaarytTbixvygGaC7VZ5URiMDaizN2Bwm2/eT3lUJ4AU3n06
-         zJ9SXd3oTZHwBsTyk52+aq3PvQz+QjhxvU17s=
-Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-       netdev <netdev@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, alex.shi@intel.com,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1270607668.2078.259.camel@ymzhang.sh.intel.com>
-References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
-	 <alpine.DEB.2.00.1003250942080.2670@router.home>
-	 <1269570902.9614.92.camel@alexs-hp.sh.intel.com>
-	 <1270114166.2078.107.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004011050340.16531@router.home>
-	 <1270195589.2078.116.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004050853300.23149@router.home>
-	 <i2z84144f021004051030k7ff5190cyc083aa12c552dfac@mail.gmail.com>
-	 <4BBA8DF9.8010409@kernel.org>
-	 <1270542497.2078.123.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004061033330.18750@router.home>
-	 <alpine.DEB.2.00.1004061552500.19151@router.home>
-	 <1270591841.2091.170.camel@edumazet-laptop>
-	 <1270607668.2078.259.camel@ymzhang.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 07 Apr 2010 08:39:12 +0200
-Message-ID: <1270622352.2091.702.camel@edumazet-laptop>
+	id S932508Ab0DGGkl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 02:40:41 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:40695 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932071Ab0DGGke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 02:40:34 -0400
+Date: Wed, 7 Apr 2010 16:40:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Alexander Graf <agraf@suse.de>
+Subject: linux-next: build failure after merge of the final tree (kvm tree
+ related)
+Message-Id: <20100407164027.deda6daf.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__7_Apr_2010_16_40_27_+1000_FtHSZ5dMBOuWUPTn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 07 avril 2010 à 10:34 +0800, Zhang, Yanmin a écrit :
+--Signature=_Wed__7_Apr_2010_16_40_27_+1000_FtHSZ5dMBOuWUPTn
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I collected retired instruction, dtlb miss and LLC miss.
-> Below is data of LLC miss.
-> 
-> Kernel 2.6.33:
-> # Samples: 11639436896 LLC-load-misses
-> #
-> # Overhead          Command                                           Shared Object  Symbol
-> # ........  ...............  ......................................................  ......
-> #
->     20.94%        hackbench  [kernel.kallsyms]                                       [k] copy_user_generic_string
->     14.56%        hackbench  [kernel.kallsyms]                                       [k] unix_stream_recvmsg
->     12.88%        hackbench  [kernel.kallsyms]                                       [k] kfree
->      7.37%        hackbench  [kernel.kallsyms]                                       [k] kmem_cache_free
->      7.18%        hackbench  [kernel.kallsyms]                                       [k] kmem_cache_alloc_node
->      6.78%        hackbench  [kernel.kallsyms]                                       [k] kfree_skb
->      6.27%        hackbench  [kernel.kallsyms]                                       [k] __kmalloc_node_track_caller
->      2.73%        hackbench  [kernel.kallsyms]                                       [k] __slab_free
->      2.21%        hackbench  [kernel.kallsyms]                                       [k] get_partial_node
->      2.01%        hackbench  [kernel.kallsyms]                                       [k] _raw_spin_lock
->      1.59%        hackbench  [kernel.kallsyms]                                       [k] schedule
->      1.27%        hackbench  hackbench                                               [.] receiver
->      0.99%        hackbench  libpthread-2.9.so                                       [.] __read
->      0.87%        hackbench  [kernel.kallsyms]                                       [k] unix_stream_sendmsg
-> 
-> 
-> 
-> 
-> Kernel 2.6.34-rc3:
-> # Samples: 13079611308 LLC-load-misses
-> #
-> # Overhead          Command                                                         Shared Object  Symbol
-> # ........  ...............  ....................................................................  ......
-> #
->     18.55%        hackbench  [kernel.kallsyms]                                                     [k] copy_user_generic_str
-> ing
->     13.19%        hackbench  [kernel.kallsyms]                                                     [k] unix_stream_recvmsg
->     11.62%        hackbench  [kernel.kallsyms]                                                     [k] kfree
->      8.54%        hackbench  [kernel.kallsyms]                                                     [k] kmem_cache_free
->      7.88%        hackbench  [kernel.kallsyms]                                                     [k] __kmalloc_node_track_
-> caller
->      6.54%        hackbench  [kernel.kallsyms]                                                     [k] kmem_cache_alloc_node
->      5.94%        hackbench  [kernel.kallsyms]                                                     [k] kfree_skb
->      3.48%        hackbench  [kernel.kallsyms]                                                     [k] __slab_free
->      2.15%        hackbench  [kernel.kallsyms]                                                     [k] _raw_spin_lock
->      1.83%        hackbench  [kernel.kallsyms]                                                     [k] schedule
->      1.82%        hackbench  [kernel.kallsyms]                                                     [k] get_partial_node
->      1.59%        hackbench  hackbench                                                             [.] receiver
->      1.37%        hackbench  libpthread-2.9.so                                                     [.] __read
-> 
-> 
+Hi all,
 
-Please check values of /proc/sys/net/core/rmem_default
-and /proc/sys/net/core/wmem_default on your machines.
+After merging the final tree, today's linux-next build (powerpc ppc44x_defc=
+onfig)
+failed like this:
 
-Their values can also change hackbench results, because increasing
-wmem_default allows af_unix senders to consume much more skbs and stress
-slab allocators (__slab_free), way beyond slub_min_order can tune them.
+arch/powerpc/kvm/built-in.o: In function `kvm_vcpu_ioctl_interrupt':
+(.text+0x4840): undefined reference to `kvmppc_core_dequeue_external'
 
-When 2000 senders are running (and 2000 receivers), we might consume
-something like 2000 * 100.000 bytes of kernel memory for skbs. TLB
-trashing is expected, because all these skbs can span many 2MB pages.
-Maybe some node imbalance happens too.
+Caused by commit 6fc1eb3ee0ad1667b217d993e9bd26089f2b0b32 ("KVM: PPC:
+Allow userspace to unset the IRQ line") from the kvm tree.  I guess an
+implementation was forgotten.
 
+I reverted the whole kvm tree for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Wed__7_Apr_2010_16_40_27_+1000_FtHSZ5dMBOuWUPTn
+Content-Type: application/pgp-signature
 
-You could try to boot your machine with less ram per node and check :
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-# cat /proc/buddyinfo 
-Node 0, zone      DMA      2      1      2      2      1      1      1      0      1      1      3 
-Node 0, zone    DMA32    219    298    143    584    145     57     44     41     31     26    517 
-Node 1, zone    DMA32      4      1     17      1      0      3      2      2      2      2    123 
-Node 1, zone   Normal    126    169     83      8      7      5     59     59     49     28    459 
+iEYEARECAAYFAku8KNsACgkQjjKRsyhoI8yNogCfborwRwW0c7oO36IZr5AJn4on
+YooAmwSpcH9n+CPHmmetocYQyjEPXuB1
+=Y5cZ
+-----END PGP SIGNATURE-----
 
-
-One experiment on your Nehalem machine would be to change hackbench so
-that each group (20 senders/ 20 receivers) run on a particular NUMA
-node.
-
-x86info -c ->
-
-CPU #1
-EFamily: 0 EModel: 1 Family: 6 Model: 26 Stepping: 5
-CPU Model: Core i7 (Nehalem)
-Processor name string: Intel(R) Xeon(R) CPU           X5570  @ 2.93GHz
-Type: 0 (Original OEM)	Brand: 0 (Unsupported)
-Number of cores per physical package=8
-Number of logical processors per socket=16
-Number of logical processors per core=2
-APIC ID: 0x10	Package: 0  Core: 1   SMT ID 0
-Cache info
- L1 Instruction cache: 32KB, 4-way associative. 64 byte line size.
- L1 Data cache: 32KB, 8-way associative. 64 byte line size.
- L2 (MLC): 256KB, 8-way associative. 64 byte line size.
-TLB info
- Data TLB: 4KB pages, 4-way associative, 64 entries
- 64 byte prefetching.
-Found unknown cache descriptors: 55 5a b2 ca e4 
-
-
+--Signature=_Wed__7_Apr_2010_16_40_27_+1000_FtHSZ5dMBOuWUPTn--
