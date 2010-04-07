@@ -1,130 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932487Ab0DGBwq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 21:52:46 -0400
-Received: from imr1.ericy.com ([198.24.6.9]:53841 "EHLO imr1.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932456Ab0DGBwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 21:52:39 -0400
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: linux-kernel@vger.kernel.org, hpa@zytor.com
-CC: mingo@redhat.com, x86@kernel.org,
-       Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [PATCH v2] x86: Call setup_early_printk before first call to early_printk
-Date: Tue, 6 Apr 2010 18:42:32 -0700
-Message-ID: <1270604552-10051-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: git-send-email 1.7.0.87.g0901d
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932491Ab0DGB6G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 21:58:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:57639 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932412Ab0DGB57 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 21:57:59 -0400
+X-Authority-Analysis: v=1.1 cv=1G73JCAd+9Vhhx30tk0+Sc/rngIYAy4Ia+6Xn7XSY0k= c=1 sm=0 a=WnmCEawLP7YA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=stkexhm8AAAA:8 a=vmLDa1wCAAAA:8 a=meVymXHHAAAA:8 a=W_0wKJI25PAUMmnWhpIA:9 a=ee1otBIoTRs1GaKok8Rx0QTHeaEA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=DV8Pb4sAe4kA:10 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: [PATCH][GIT PULL] tracing/mac80211: Move TRACE_SYSTEM out of #if
+ protection
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+       Johannes Berg <johannes@sipsolutions.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Tue, 06 Apr 2010 21:57:57 -0400
+Message-ID: <1270605477.19685.15613.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code calls setup_early_printk() too late to catch the initial calls
-to early_printk(). This results in those early messages not to be printed on a
-serial console. Also, if there is no VGA device in the system, it will cause
-bad writes into VGA memory space. This can cause problems if the VGA memory
-space is used by another device in such a system.
 
-Fix the problem by calling setup_early_printk() immediately after the boot
-command line is available, and by preventing early_printk() to print anything
-before setup_early_printk() was executed.
+John,
 
-Also removed conditional output "Kernel alive".
+You can pull this or just use this patch. Which ever you prefer.
 
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
----
-The first version of this patch used the headline
-    x86: Do not write to VGA memory space if CONFIG_VGA_CONSOLE is undefined
-I changed the headline to reflect its expanded scope.
+Please pull the latest wireless tree, which can be found at:
 
-I removed the "Kernel alive" message because I don't see how console_loglevel
-can ever be equal to 10 when the code is executed. An alternative might be
-(if that possibility exists after all) to move it after the call to
-setup_early_printk().
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+wireless
 
- arch/x86/include/asm/setup.h   |    2 ++
- arch/x86/kernel/early_printk.c |    5 ++++-
- arch/x86/kernel/head32.c       |    4 ++++
- arch/x86/kernel/head64.c       |    7 ++++---
- 4 files changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
-index 86b1506..83847af 100644
---- a/arch/x86/include/asm/setup.h
-+++ b/arch/x86/include/asm/setup.h
-@@ -93,6 +93,8 @@ void *extend_brk(size_t size, size_t align);
- 			: : "i" (sz));					\
- 	}
- 
-+int __init setup_early_printk(char *buf);
+Steven Rostedt (1):
+      tracing/mac80211: Move TRACE_SYSTEM out of #if protection
+
+----
+ net/mac80211/driver-trace.h |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+---------------------------
+commit 27322da6e367b9e83d6b734f9a9ca3b8827d7b24
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Tue Apr 6 21:50:55 2010 -0400
+
+    tracing/mac80211: Move TRACE_SYSTEM out of #if protection
+    
+    As explained in:
+    
+    commit d0b6e04a4cd8360e3c9c419f7c30a3081a0c142a
+    tracing/events: Move TRACE_SYSTEM outside of include guard
+    
+    The TRACE_SYSTEM must be outside the #if include protection.
+    
+    Cc: Johannes Berg <johannes@sipsolutions.net>
+    Cc: John W. Linville <linville@tuxdriver.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/net/mac80211/driver-trace.h b/net/mac80211/driver-trace.h
+index 41baf73..f5a4239 100644
+--- a/net/mac80211/driver-trace.h
++++ b/net/mac80211/driver-trace.h
+@@ -1,3 +1,6 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM mac80211
 +
- #ifdef __i386__
+ #if !defined(__MAC80211_DRIVER_TRACE) || defined(TRACE_HEADER_MULTI_READ)
+ #define __MAC80211_DRIVER_TRACE
  
- void __init i386_start_kernel(void);
-diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
-index b9c830c..873f1cd 100644
---- a/arch/x86/kernel/early_printk.c
-+++ b/arch/x86/kernel/early_printk.c
-@@ -170,6 +170,9 @@ asmlinkage void early_printk(const char *fmt, ...)
- 	int n;
- 	va_list ap;
+@@ -11,9 +14,6 @@
+ static inline void trace_ ## name(proto) {}
+ #endif
  
-+	if (!early_console_initialized)
-+		return;
-+
- 	va_start(ap, fmt);
- 	n = vscnprintf(buf, sizeof(buf), fmt, ap);
- 	early_console->write(early_console, buf, n);
-@@ -191,7 +194,7 @@ static inline void early_console_register(struct console *con, int keep_early)
- 	register_console(early_console);
- }
- 
--static int __init setup_early_printk(char *buf)
-+int __init setup_early_printk(char *buf)
- {
- 	int keep;
- 
-diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
-index b2e2460..e2e9c2b 100644
---- a/arch/x86/kernel/head32.c
-+++ b/arch/x86/kernel/head32.c
-@@ -30,6 +30,10 @@ static void __init i386_default_early_setup(void)
- 
- void __init i386_start_kernel(void)
- {
-+#ifdef CONFIG_EARLY_PRINTK
-+	setup_early_printk(boot_command_line);
-+#endif
-+
- #ifdef CONFIG_X86_TRAMPOLINE
- 	/*
- 	 * But first pinch a few for the stack/trampoline stuff
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index 7147143..1b4d6b2 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -88,9 +88,6 @@ void __init x86_64_start_kernel(char * real_mode_data)
- 	}
- 	load_idt((const struct desc_ptr *)&idt_descr);
- 
--	if (console_loglevel == 10)
--		early_printk("Kernel alive\n");
+-#undef TRACE_SYSTEM
+-#define TRACE_SYSTEM mac80211
 -
- 	x86_64_start_reservations(real_mode_data);
- }
- 
-@@ -98,6 +95,10 @@ void __init x86_64_start_reservations(char *real_mode_data)
- {
- 	copy_bootdata(__va(real_mode_data));
- 
-+#ifdef CONFIG_EARLY_PRINTK
-+	setup_early_printk(boot_command_line);
-+#endif
-+
- 	reserve_early(__pa_symbol(&_text), __pa_symbol(&__bss_stop), "TEXT DATA BSS");
- 
- #ifdef CONFIG_BLK_DEV_INITRD
--- 
-1.7.0.87.g0901d
+ #define MAXNAME		32
+ #define LOCAL_ENTRY	__array(char, wiphy_name, 32)
+ #define LOCAL_ASSIGN	strlcpy(__entry->wiphy_name, wiphy_name(local->hw.wiphy), MAXNAME)
+
 
