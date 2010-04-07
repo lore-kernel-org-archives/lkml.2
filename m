@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370Ab0DGBXh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 21:23:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:38093 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932411Ab0DGBXa (ORCPT
+	id S932445Ab0DGB3A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 21:29:00 -0400
+Received: from straum.hexapodia.org ([207.7.131.186]:46134 "EHLO
+	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932412Ab0DGB2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 21:23:30 -0400
-X-Authority-Analysis: v=1.1 cv=1G73JCAd+9Vhhx30tk0+Sc/rngIYAy4Ia+6Xn7XSY0k= c=1 sm=0 a=b8JJ-gGZIcIA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=z_nE5Eej0Be4saINjvMA:9 a=XrwZ1X--5_yUuQBHYPkuxSLF8owA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [patch 1/3] kernel: local_irq_{save,restore}_nmi()
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: David Miller <davem@davemloft.net>
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, acme@redhat.com, paulus@samba.org,
-       efault@gmx.de, fweisbec@gmail.com, tglx@linutronix.de,
-       linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
-       linux-arch@vger.kernel.org
-In-Reply-To: <20100406.181906.89249649.davem@davemloft.net>
-References: <20100406132807.698467930@chello.nl>
-	 <20100406133140.903644813@chello.nl>
-	 <1270602790.19685.15603.camel@gandalf.stny.rr.com>
-	 <20100406.181906.89249649.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Tue, 06 Apr 2010 21:23:26 -0400
-Message-ID: <1270603406.19685.15609.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Apr 2010 21:28:54 -0400
+Date: Tue, 6 Apr 2010 18:28:53 -0700
+From: Andy Isaacson <adi@hexapodia.org>
+To: Yinghai <yinghai.lu@oracle.com>
+Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Chris Wright <chrisw@sous-sol.org>,
+       Matthew Wilcox <willy@linux.intel.com>
+Subject: Re: [2.6.34-rc1 REGRESSION] ahci 0000:00:1f.2: controller reset
+	failed (0xffffffff)
+Message-ID: <20100407012853.GE29192@hexapodia.org>
+References: <20100406225425.GA8292@hexapodia.org> <4BBBDAF4.4020304@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BBBDAF4.4020304@oracle.com>
+X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
+X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
+X-Domestic-Surveillance: money launder bomb tax evasion
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-06 at 18:19 -0700, David Miller wrote:
-
-> That's the whole point, so that the problem is more easily noticed and
-> it gets fixed long before I end up accidently testing the code on my
-> machines :-)
+On Tue, Apr 06, 2010 at 06:08:04PM -0700, Yinghai wrote:
+> > [    3.094038] pci 0000:00:1f.2: no compatible bridge window for [mem 0xff970000-0xff9707ff]
+> > [    3.103001] pci 0000:00:1f.2: can't reserve [mem 0xff970000-0xff9707ff]
+> > 
+> > so I've CCed a few recent committers to setup-res.c.
 > 
-> To be honest, the fix is so trivial, you just need to add '_nmi' to
-> the local_irq_{save,restore}() calls that warn like this.
-> 
-> I'm even willing to have you forward all of those reports to me and
-> I'll be responsible for fixing them.
-> 
-> How's that? :-)
+> can you try to boot with pci=nocrs ?
 
-Sure.
+That boots and configures the AHCI just fine.
 
-/me sets up his procmailrc to search for the WARN_ON line in
-trace_irqsoff.c and have it forward to davem.
+> also please check with -rc4.
 
--- Steve
+All I see in git is -rc3 + 299 commits ending with 0fdf867...
 
+That still fails with the same "controller reset failed" message from
+ahci.
 
+-andy
