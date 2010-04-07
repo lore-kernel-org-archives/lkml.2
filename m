@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757928Ab0DGOFg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 10:05:36 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:37377 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752556Ab0DGOFf (ORCPT
+	id S1757982Ab0DGOFk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 10:05:40 -0400
+Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:46290 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757940Ab0DGOFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 10:05:35 -0400
-Message-ID: <4BBC9126.10601@monstr.eu>
-Date: Wed, 07 Apr 2010 16:05:26 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Wed, 7 Apr 2010 10:05:38 -0400
+Date: Thu, 8 Apr 2010 00:05:23 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: John Berthels <john@humyo.com>
+Cc: linux-kernel@vger.kernel.org, Nick Gregory <nick@humyo.com>,
+       Rob Sanderson <rob@humyo.com>, xfs@oss.sgi.com
+Subject: Re: PROBLEM + POSS FIX: kernel stack overflow, xfs, many disks,
+ heavy write load, 8k stack, x86-64
+Message-ID: <20100407140523.GJ11036@dastard>
+References: <4BBC6719.7080304@humyo.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-       Grant Likely <grant.likely@secretlab.ca>,
-       John Williams <john.williams@petalogix.com>,
-       John Linn <John.Linn@xilinx.com>
-Subject: [GIT PULL] arch/microblaze fixes for 2.6.34-rc4
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BBC6719.7080304@humyo.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Apr 07, 2010 at 12:06:01PM +0100, John Berthels wrote:
+> Hi folks,
+> 
+> [I'm afraid that I'm not subscribed to the list, please cc: me on
+> any reply].
+> 
+> Problem: kernel.org 2.6.33.2 x86_64 kernel locks up under
+> write-heavy I/O load. It is "fixed" by changing THREAD_ORDER to 2.
+> 
+> Is this an OK long-term solution/should this be needed? As far as I
+> can see from searching, there is an expectation that xfs would
+> generally work with 8k stacks (THREAD_ORDER 1). We don't have xfs
+> stacked over LVM or anything else.
 
-please pull the following changes.
+I'm not seeing stacks deeper than about 5.6k on XFS under heavy write
+loads. That's nowhere near blowing an 8k stack, so there must be
+something special about what you are doing. Can you post the stack
+traces that are being generated for the deepest stack generated -
+/sys/kernel/debug/tracing/stack_trace should contain it.
 
-Thanks,
-Michal
+> Background: We have a cluster of systems with roughly the following
+> specs (2GB RAM, 24 (twenty-four) 1TB+ disks, Intel Core2 Duo @
+> 2.2GHz).
+> 
+> Following a the addition of three new servers to the cluster, we
+> started seeing a high incidence of intermittent lockups (up to
+> several times per day for some servers) across both the old and new
+> servers. Prior to that, we saw this problem only rarely (perhaps
+> once per 3 months).
 
+What is generating the write load?
 
-The following changes since commit 0fdf86754f70e813845af4abaa805165ce57a0bb:
-   Linus Torvalds (1):
-         Merge branch 'urgent' of git://git.kernel.org/.../brodo/pcmcia-2.6
+Cheers,
 
-are available in the git repository at:
-
-   git://git.monstr.eu/linux-2.6-microblaze.git for-linus
-
-John Linn (1):
-       microblaze: io.h: Add io big-endian function
-
-Michal Simek (3):
-       microblaze: Fix futex code
-       microblaze: Enable memory leak detector
-       microblaze: Remove unused variable from ptrace
-
-Steven J. Magnani (1):
-       microblaze: Fix ftrace_update_ftrace_func panic
-
-  arch/microblaze/include/asm/futex.h |    2 +-
-  arch/microblaze/include/asm/io.h    |    5 +++++
-  arch/microblaze/kernel/ftrace.c     |   12 +++---------
-  arch/microblaze/kernel/ptrace.c     |    1 -
-  lib/Kconfig.debug                   |    2 +-
-  5 files changed, 10 insertions(+), 12 deletions(-)
-
-
+Dave.
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Dave Chinner
+david@fromorbit.com
