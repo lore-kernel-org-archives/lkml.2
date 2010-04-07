@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932827Ab0DGQQK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 12:16:10 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:32978 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932539Ab0DGQQI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 12:16:08 -0400
-Date: Wed, 7 Apr 2010 18:16:03 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-       Pedro Ribeiro <pedrib@gmail.com>, akpm@linux-foundation.org,
-       Greg KH <gregkh@suse.de>, alsa-devel@alsa-project.org,
-       linux-usb@vger.kernel.org
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-Message-ID: <20100407161603.GL30801@buzzloop.caiaq.de>
-References: <20100407153154.GC13425@kroah.com>
- <Pine.LNX.4.44L0.1004071149140.1779-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1004071149140.1779-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932823Ab0DGQT7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 12:19:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1192 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932539Ab0DGQT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 12:19:58 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1270656035.8141.23.camel@edumazet-laptop>
+References: <1270656035.8141.23.camel@edumazet-laptop> <1270652210.8141.9.camel@edumazet-laptop> <20100407135732.12414.16416.stgit@warthog.procyon.org.uk> <25990.1270654809@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: dhowells@redhat.com, paulmck@linux.vnet.ibm.com,
+       Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] rcu: add rcu_access_pointer and rcu_dereference_protect
+Date: Wed, 07 Apr 2010 17:19:53 +0100
+Message-ID: <26698.1270657193@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 07, 2010 at 11:55:19AM -0400, Alan Stern wrote:
-> On Wed, 7 Apr 2010, Greg KH wrote:
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
+
+> > You've missed the point.
 > 
-> > Alan, any objection to just using usb_buffer_alloc() for every driver?
-> > Or is that too much overhead?
+> You already claimed I dont understand RCU. I find this claim funny.
 > 
-> I don't know what the overhead is.  But usb_buffer_alloc() requires the 
-> caller to keep track of the buffer's DMA address, so it's not a simple 
-> plug-in replacement.  In addition, the consistent memory that 
-> usb_buffer_alloc() provides is a scarce resource on some platforms.
+> > For rcu_access_pointer(), _nothing_ protects the data, not only that, we
+> > don't care: we're only checking the pointer.
 > 
-> Writing new functions is the way to go.
+> How can you state this ?
+> 
+> Thats pretty simple, "always true" is a fine condition.
+> 
+> What's the problem with this ?
 
-Ok, I'll write some dummies for usb_malloc() and usb_zalloc() which
-will just call kmalloc() with GFP_DMA32 for now. And while at it,
-usb_alloc_buffer() will be renamed to usb_alloc_consistent(). Then I'll
-try to clean up all existing drivers to use this new interface and
-follow the changes.
+If the condition for rcu_access_pointer() is always "always true", then it's
+redundant, right?  rcu_access_pointer() is for checking the pointer only, not
+checking the payload that pointer might point to.  So, what condition are you
+supposed to be checking?
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-In a next step, we should fine-tune when GFP_DMA32 is really needed.
-And I'll leave all occurances of usb_alloc_consistent() as they are now.
+> > but if 'c' is supposed to be the locks that protect the data, is this a
+> > valid check?
+> 
+> 'c' is not a lock. Its a condition.
 
-Does that sound ok?
+Sorry, I meant the state of the relevant locking context.
 
-Thanks,
-Daniel
+To take your example:
 
+> filter = rcu_dereference_check(sk->sk_filter,
+> 			       atomic_read(&sk->sk_wmem_alloc) == 0);
+
+what is the value of sk->sk_wmem_alloc to the lock context of sk->sk_filter?
+Why would lockdep be interested in sk_wmem_alloc?
+
+Surely, the assertion that the value of sk->sk_filter is related to
+sk_wmem_alloc being 0 is independent of the need to dereference sk_filter for
+RCU purposes.  So why are these being combined?
+
+Why not:
+
+	ASSERT(atomic_read(&sk->sk_wmem_alloc) == 0);
+	filter = rcu_dereference(sk->sk_filter);
+
+This is much clearer, and you're not combining an unrelated assertion with the
+RCU dereference.
+
+David
