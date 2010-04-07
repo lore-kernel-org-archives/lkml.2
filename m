@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932620Ab0DGOBI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 10:01:08 -0400
-Received: from saraswathi.solana.com ([198.99.130.12]:44326 "EHLO
-	saraswathi.solana.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932283Ab0DGOBH (ORCPT
+	id S1757928Ab0DGOFg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 10:05:36 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:37377 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752556Ab0DGOFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 10:01:07 -0400
-Date: Wed, 7 Apr 2010 09:59:10 -0400
-From: Jeff Dike <jdike@addtoit.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "Xin, Xiaohui" <xiaohui.xin@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix vq_memory_access_ok error checking
-Message-ID: <20100407135910.GA18268@c-98-229-117-200.hsd1.ma.comcast.net>
-References: <20100406201414.GA6528@c-98-229-117-200.hsd1.ma.comcast.net> <20100407074907.GA7084@redhat.com>
+	Wed, 7 Apr 2010 10:05:35 -0400
+Message-ID: <4BBC9126.10601@monstr.eu>
+Date: Wed, 07 Apr 2010 16:05:26 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100407074907.GA7084@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+       Grant Likely <grant.likely@secretlab.ca>,
+       John Williams <john.williams@petalogix.com>,
+       John Linn <John.Linn@xilinx.com>
+Subject: [GIT PULL] arch/microblaze fixes for 2.6.34-rc4
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 07, 2010 at 10:49:07AM +0300, Michael S. Tsirkin wrote:
-> Thanks!
-> Can you add a Signed-off-by line?
+Hi Linus,
 
-Oops, I was in a hurry...
+please pull the following changes.
 
-commit 7938779d9f357ede8bc3c122fd0dc9d5ec4fcf1d
-Author: Jeff Dike <jdike@addtoit.com>
-Date:   Wed Mar 31 15:05:08 2010 -0400
+Thanks,
+Michal
 
-    vq_memory_access_ok needs to check whether mem == NULL
 
-    Signed-off-by: Jeff Dike <jdike@linux.intel.com>
+The following changes since commit 0fdf86754f70e813845af4abaa805165ce57a0bb:
+   Linus Torvalds (1):
+         Merge branch 'urgent' of git://git.kernel.org/.../brodo/pcmcia-2.6
 
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 7bd7a1e..b8e1127 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -235,6 +235,10 @@ static int vq_memory_access_ok(void __user *log_base, struct vhost_memory *mem,
- 			       int log_all)
- {
- 	int i;
-+
-+        if (!mem)
-+                return 0;
-+
- 	for (i = 0; i < mem->nregions; ++i) {
- 		struct vhost_memory_region *m = mem->regions + i;
- 		unsigned long a = m->userspace_addr;
+are available in the git repository at:
+
+   git://git.monstr.eu/linux-2.6-microblaze.git for-linus
+
+John Linn (1):
+       microblaze: io.h: Add io big-endian function
+
+Michal Simek (3):
+       microblaze: Fix futex code
+       microblaze: Enable memory leak detector
+       microblaze: Remove unused variable from ptrace
+
+Steven J. Magnani (1):
+       microblaze: Fix ftrace_update_ftrace_func panic
+
+  arch/microblaze/include/asm/futex.h |    2 +-
+  arch/microblaze/include/asm/io.h    |    5 +++++
+  arch/microblaze/kernel/ftrace.c     |   12 +++---------
+  arch/microblaze/kernel/ptrace.c     |    1 -
+  lib/Kconfig.debug                   |    2 +-
+  5 files changed, 10 insertions(+), 12 deletions(-)
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
