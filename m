@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab0DGXGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 19:06:13 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:57510 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756048Ab0DGXGJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 19:06:09 -0400
-Date: Thu, 8 Apr 2010 00:06:07 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Network Development <netdev@vger.kernel.org>,
-       Linux ACPI <linux-acpi@vger.kernel.org>,
-       Linux PM List <linux-pm@lists.linux-foundation.org>,
-       Linux SCSI List <linux-scsi@vger.kernel.org>,
-       Linux Wireless List <linux-wireless@vger.kernel.org>,
-       DRI <dri-devel@lists.sourceforge.net>
-Subject: Re: 2.6.34-rc3-git6: Reported regressions from 2.6.33
-Message-ID: <20100407230607.GM30031@ZenIV.linux.org.uk>
-References: <6Pphclm24fK.A.lSF.qsPvLB@chimera>
- <alpine.LFD.2.00.1004071444440.3586@i5.linux-foundation.org>
- <20100407221941.GL30031@ZenIV.linux.org.uk>
- <alpine.LFD.2.00.1004071521500.3586@i5.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004071521500.3586@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1756207Ab0DGXMu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 19:12:50 -0400
+Received: from mail.df.lth.se ([194.47.250.12]:65396 "EHLO df.lth.se"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754771Ab0DGXMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 19:12:46 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: akpm@linux-foundation.org,
+       Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       Grant Likely <grant.likely@secretlab.ca>,
+       Dan Williams <dan.j.williams@intel.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
+       STEricsson_nomadik_linux@list.st.com, linux-kernel@vger.kernel.org,
+       Linus Walleij <linus.walleij@stericsson.com>
+Subject: [PATCH 00/11] ARM: PrimeCell DMA Interface v5
+Date: Thu,  8 Apr 2010 01:12:00 +0200
+Message-Id: <1270681920-4461-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.6.2.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 07, 2010 at 03:22:20PM -0700, Linus Torvalds wrote:
-> 
-> 
-> On Wed, 7 Apr 2010, Al Viro wrote:
-> > 
-> > No, it's not the same thing; the fix is to have nfs ->d_revalidate()
-> > return an error on failing open attempt (in insane codepath that has
-> > ->d_revalidate() handling open()).  Confirmed to work by reporter...
-> 
-> Ok, can you do the proper changelog description and sign-offs etc?
+This is the fifth iteration of this ever growing patch set
+for PrimeCell DMA support, reposting the entire series.
 
-[PATCH] Have nfs ->d_revalidate() report errors properly
+This now depend on stuff pending in Dan Williams async_tx
+(DMA Devices/Engine) tree and Andrew Mortons tree where
+the new DMA40 driver for U8500 is queued.
 
-	If nfs atomic open implementation ends up doing open request from
-->d_revalidate() codepath and gets an error from server, return that error
-to caller explicitly and don't bother with lookup_instantiate_filp() at all.
-->d_revalidate() can return an error itself just fine...
+I suggest putting these into Andrews tree now, since:
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index d79a7b3..fe0cd9e 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -2068,8 +2068,7 @@ nfs4_open_revalidate(struct inode *dir, struct dentry *dentry, int openflags, st
- 			case -EDQUOT:
- 			case -ENOSPC:
- 			case -EROFS:
--				lookup_instantiate_filp(nd, (struct dentry *)state, NULL);
--				return 1;
-+				return PTR_ERR(state);
- 			default:
- 				goto out_drop;
- 		}
+A) 4 of the patches it touches MMCI code which is hanled
+   by Andrew
+
+B) It extends the DMA40 driver which is now pending in
+   his tree as well.
+
+C) Since there doesn't seem to be any consensus of whether
+   this is the right way forward, it needs some wider
+   testing I believe.
+
+OK?
+
+Yours,
+Linus Walleij
