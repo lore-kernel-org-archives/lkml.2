@@ -1,73 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758131Ab0DGSiN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 14:38:13 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:53416 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757477Ab0DGSiL (ORCPT
+	id S1758150Ab0DGSku (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 14:40:50 -0400
+Received: from ey-out-2122.google.com ([74.125.78.24]:52883 "EHLO
+	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757004Ab0DGSks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 14:38:11 -0400
+	Wed, 7 Apr 2010 14:40:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=DQ/Mfs8L4+cZD/c+oNxV1ZFdL/eiHbv43QluVvGbH5OHSJndgI8b2y45cBbb6TE1KS
-         NMxG8Ykod+58jav6wkvCfnSVNDCHFuf0obnL6E/0q6bC/ekVAtfY7OAZYXX9yoxghr6L
-         lngqLq1gepaVyLuYvzMWHfLeF6wQ0nWkldLR4=
-Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       netdev <netdev@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-       alex.shi@intel.com,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1004071319320.16159@router.home>
-References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
-	 <alpine.DEB.2.00.1003250942080.2670@router.home>
-	 <1269570902.9614.92.camel@alexs-hp.sh.intel.com>
-	 <1270114166.2078.107.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004011050340.16531@router.home>
-	 <1270195589.2078.116.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004050853300.23149@router.home>
-	 <i2z84144f021004051030k7ff5190cyc083aa12c552dfac@mail.gmail.com>
-	 <4BBA8DF9.8010409@kernel.org>
-	 <1270542497.2078.123.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004061033330.18750@router.home>
-	 <alpine.DEB.2.00.1004061552500.19151@router.home>
-	 <1270591841.2091.170.camel@edumazet-laptop>
-	 <1270607668.2078.259.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004071130260.13261@router.home>
-	 <4BBCB7B7.4040901@cs.helsinki.fi> <4BBCB868.2000705@cs.helsinki.fi>
-	 <alpine.DEB.2.00.1004071319320.16159@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 07 Apr 2010 20:38:04 +0200
-Message-ID: <1270665484.8141.47.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=mQsV/h30Rj0hVD2854Sk5jU+qQZ66GXYNymK+dZ0/jDSDKHEIrSdVCMP7Lj7vYK6o6
+         i2E3NAex4AAqsQ8/6IvtowC5OgX0XOYUe2uZGnDdAOfScKs2bu2vBJa439QKXGORK54+
+         3MabFdZzeAADyKIW9EkUHqLfC9Szrj475S13Y=
+From: John Kacur <jkacur@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+       rt-users <linux-rt-users@vger.kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+       Clark Williams <williams@redhat.com>, John Kacur <jkacur@redhat.com>
+Subject: [rt: PATCH - resend] Fix-up boot-up warnings surrounding CONFIG_STACK_TRACER
+Date: Wed,  7 Apr 2010 20:40:39 +0200
+Message-Id: <1270665640-8520-1-git-send-email-jkacur@redhat.com>
+X-Mailer: git-send-email 1.6.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 07 avril 2010 à 13:20 -0500, Christoph Lameter a écrit :
-> On Wed, 7 Apr 2010, Pekka Enberg wrote:
-> 
-> > Oh, sorry, I think it's actually '____cacheline_aligned_in_smp' (with four
-> > underscores) for per-cpu data. Confusing...
-> 
-> This does not particulary help to clarify the situation since we are
-> dealing with data that can either be allocated via the percpu allocator or
-> be statically present (kmalloc bootstrap situation).
-> 
-> --
+Thomas
 
-Do we have a user program to check actual L1 cache size of a machine ?
+I respun this against 2.6.33.2-rt13 and combined the two original patches
+into one as suggested by Steven Rostedt, and added his Acked-by.
 
-I remember my HP blades have many BIOS options, I would like to make
-sure they are properly set.
+Please consider this patch for the next -rt release.
 
+Thanks
 
+John Kacur (1):
+  rt: This fixes the boot-up messages related to CONFIG_STACK_TRACER
+
+ init/main.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
