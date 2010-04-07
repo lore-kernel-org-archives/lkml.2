@@ -1,119 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab0DGVqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 17:46:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14919 "EHLO mx1.redhat.com"
+	id S1754860Ab0DGVtQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 17:49:16 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37714 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752640Ab0DGVql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 17:46:41 -0400
-Date: Wed, 7 Apr 2010 17:46:31 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, jens.axboe@oracle.com,
-       linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch,rfc v2] ext3/4: enhance fsync performance when using cfq
-Message-ID: <20100407214631.GL3206@redhat.com>
-References: <x49ochv7yi3.fsf@segfault.boston.devel.redhat.com>
+	id S1752798Ab0DGVtK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 17:49:10 -0400
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       "Christian Kujau" <lists@nerdbynature.de>
+References: <6Pphclm24fK.A.lSF.qsPvLB@chimera>
+In-Reply-To: <6Pphclm24fK.A.lSF.qsPvLB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <x49ochv7yi3.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <JVS2s9dmTsP.A.ZW.JuPvLB@chimera>
+Subject: [Bug #15589] 2.6.34-rc1: Badness at fs/proc/generic.c:316
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed,  7 Apr 2010 23:13:47 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 07, 2010 at 05:18:12PM -0400, Jeff Moyer wrote:
-> Hi again,
-> 
-> So, here's another stab at fixing this.  This patch is very much an RFC,
-> so do not pull it into anything bound for Linus.  ;-)  For those new to
-> this topic, here is the original posting:  http://lkml.org/lkml/2010/4/1/344
-> 
-> The basic problem is that, when running iozone on smallish files (up to
-> 8MB in size) and including fsync in the timings, deadline outperforms
-> CFQ by a factor of about 5 for 64KB files, and by about 10% for 8MB
-> files.  From examining the blktrace data, it appears that iozone will
-> issue an fsync() call, and will have to wait until it's CFQ timeslice
-> has expired before the journal thread can run to actually commit data to
-> disk.
-> 
-> The approach below puts an explicit call into the filesystem-specific
-> fsync code to yield the disk so that the jbd[2] process has a chance to
-> issue I/O.  This bring performance of CFQ in line with deadline.
-> 
-> There is one outstanding issue with the patch that Vivek pointed out.
-> Basically, this could starve out the sync-noidle workload if there is a
-> lot of fsync-ing going on.  I'll address that in a follow-on patch.  For
-> now, I wanted to get the idea out there for others to comment on.
-> 
-> Thanks a ton to Vivek for spotting the problem with the initial
-> approach, and for his continued review.
-> 
+This message has been generated automatically as a part of a summary report
+of recent regressions.
 
-Thanks Jeff. Conceptually this appraoch makes lot of sense to me. Higher
-layers explicitly telling CFQ not to idle/yield the slice.
-
-My firefox timing test is perfoming much better now.
-
-real	0m15.957s
-user	0m0.608s
-sys	0m0.165s
-
-real	0m12.984s
-user	0m0.602s
-sys	0m0.148s
-
-real	0m13.057s
-user	0m0.624s
-sys	0m0.145s
-
-So we got to take care of two issues now.
-
-- Make it work with dm/md devices also. Somehow shall have to propogate
-  this yield semantic down the stack.
-
-- The issue of making sure we don't yield if we are servicing sync-noidle
-  tree and there is other IO going on which relies on sync-noidle tree
-  idling (as you have already mentioned).
+The following bug entry is on the current list of known regressions
+from 2.6.33.  Please verify if it still should be listed and let the tracking team
+know (either way).
 
 
-[..]
-> +static void cfq_yield(struct request_queue *q)
-> +{
-> +	struct cfq_data *cfqd = q->elevator->elevator_data;
-> +	struct cfq_io_context *cic;
-> +	struct cfq_queue *cfqq;
-> +	unsigned long flags;
-> +
-> +	cic = cfq_cic_lookup(cfqd, current->io_context);
-> +	if (!cic)
-> +		return;
-> +
-> +	spin_lock_irqsave(q->queue_lock, flags);
-> +
-> +	/*
-> +	 * This is primarily called to ensure that the long synchronous
-> +	 * time slice does not prevent other I/O happenning (like journal
-> +	 * commits) while we idle waiting for it.  Thus, check to see if the
-> +	 * current cfqq is the sync cfqq for this process.
-> +	 */
-> +	cfqq = cic_to_cfqq(cic, 1);
-> +	if (!cfqq)
-> +		goto out_unlock;
-> +
-> +	if (cfqd->active_queue != cfqq)
-> +		goto out_unlock;
-> +
-> +	cfq_log_cfqq(cfqd, cfqq, "yielding queue");
-> +
-> +	__cfq_slice_expired(cfqd, cfqq, 1);
-> +	__blk_run_queue(cfqd->queue);
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15589
+Subject		: 2.6.34-rc1: Badness at fs/proc/generic.c:316
+Submitter	: Christian Kujau <lists@nerdbynature.de>
+Date		: 2010-03-13 23:53 (26 days old)
+Message-ID	: <alpine.DEB.2.01.1003131544340.5493@bogon.housecafe.de>
+References	: http://marc.info/?l=linux-kernel&m=126852442903680&w=2
 
-I think it would be good if we also check that cfqq is empty or not. If cfqq
-is not empty we don't want to give up slice? But this is a minor point. At
-least in case of fsync, we seem to be waiting for all the iozone request
-to finish and then calling yield. So cfqq should be empty at this point of
-time. 
 
-Vivek
