@@ -1,36 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab0DGSIg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 14:08:36 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:40372 "EHLO h5.dl5rb.org.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751724Ab0DGSIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 14:08:35 -0400
-X-Greylist: delayed 3796 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Apr 2010 14:08:35 EDT
-Date: Wed, 7 Apr 2010 18:04:32 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Julia Lawall <julia@diku.dk>
-Cc: peterz@infradead.org, mingo@elte.hu, tglx@linutronix.de, oleg@redhat.com,
-       linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 4/7] arch/mips/kernel: Use set_cpus_allowed_ptr
-Message-ID: <20100407170432.GB26242@linux-mips.org>
-References: <Pine.LNX.4.64.1003262302480.6480@ask.diku.dk>
+	id S1757435Ab0DGSIx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 14:08:53 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:20378 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724Ab0DGSIw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 14:08:52 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Andy Isaacson <adi@hexapodia.org>
+Subject: Re: [2.6.34-rc1 REGRESSION] ahci 0000:00:1f.2: controller reset failed (0xffffffff)
+Date: Wed, 7 Apr 2010 12:08:49 -0600
+User-Agent: KMail/1.9.10
+Cc: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Chris Wright <chrisw@sous-sol.org>,
+       Matthew Wilcox <willy@linux.intel.com>, Yinghai Lu <yinghai@kernel.org>
+References: <20100406225425.GA8292@hexapodia.org> <1270614080.8518.26.camel@dc7800.home> <20100407171610.GH29192@hexapodia.org>
+In-Reply-To: <20100407171610.GH29192@hexapodia.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1003262302480.6480@ask.diku.dk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Message-Id: <201004071208.50483.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 11:03:07PM +0100, Julia Lawall wrote:
-
-> From: Julia Lawall <julia@diku.dk>
+On Wednesday 07 April 2010 11:16:10 am Andy Isaacson wrote:
+> On Tue, Apr 06, 2010 at 10:21:20PM -0600, Bjorn Helgaas wrote:
+> > > The machine only has Linux installed, but I may have access to another
+> > > T3400 that can dual-boot.  Any preference for XP versus Win7?
+> > 
+> > Nope, whatever's more convenient for you should be fine.
 > 
-> Use set_cpus_allowed_ptr rather than set_cpus_allowed.
+> On another T3400 with BIOS A03, Win7's Device Manager -> IDE ATA/ATAPI
+> controllers -> Standard AHCI 1.0 -> Resources -> Memory Range setting is
+> ff97f800-ff97ffff.
 
-Thanks Julia, queued for 2.6.35.
+Assuming this is the same AHCI controller (probably is, because I only
+see one mentioned in your logs), I think Win7 moved it from where BIOS
+left it.  It probably started at 0xff970000, and Win7 moved it into one
+of the host bridge windows (but not the legacy VGA one):
 
-  Ralf
+  pci_root PNP0A03:00: host bridge window [mem 0xff980800-0xff980bff]
+  pci_root PNP0A03:00: host bridge window [mem 0xff97c000-0xff97ffff]
+  pci 0000:00:1f.2: no compatible bridge window for [mem 0xff970000-0xff9707ff]
+
+Bjorn
