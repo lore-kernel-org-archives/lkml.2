@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab0DGALV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 20:11:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57871 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932182Ab0DGALP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 20:11:15 -0400
-Message-ID: <4BBBCD6F.3050707@redhat.com>
-Date: Tue, 06 Apr 2010 20:10:23 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
+	id S932252Ab0DGAOm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 20:14:42 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51378 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932182Ab0DGAOh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 20:14:37 -0400
+Date: Tue, 6 Apr 2010 17:10:15 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+cc: Borislav Petkov <bp@alien8.de>, Andrew Morton <akpm@linux-foundation.org>,
        Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 03/14] mm: Share the anon_vma ref counts between KSM and
- page migration
-References: <1270224168-14775-1-git-send-email-mel@csn.ul.ie>	<1270224168-14775-4-git-send-email-mel@csn.ul.ie> <20100406170528.ecb30941.akpm@linux-foundation.org>
-In-Reply-To: <20100406170528.ecb30941.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
+ 2.6.34-rc3)
+In-Reply-To: <4BBBC240.3090302@redhat.com>
+Message-ID: <alpine.LFD.2.00.1004061707250.3487@i5.linux-foundation.org>
+References: <alpine.LFD.2.00.1004060841460.3487@i5.linux-foundation.org> <1270571019.1814.163.camel@barrios-desktop> <alpine.LFD.2.00.1004060926430.3487@i5.linux-foundation.org> <1270572327.1711.3.camel@barrios-desktop> <alpine.LFD.2.00.1004060951030.3487@i5.linux-foundation.org>
+ <4BBB69A9.5090906@redhat.com> <alpine.LFD.2.00.1004061053450.3487@i5.linux-foundation.org> <20100406120315.53ad7390.akpm@linux-foundation.org> <20100406194238.GB20357@a1.tnic> <alpine.LFD.2.00.1004061243240.3487@i5.linux-foundation.org> <20100406205123.GC20357@a1.tnic>
+ <alpine.LFD.2.00.1004061403170.3487@i5.linux-foundation.org> <4BBBC240.3090302@redhat.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2010 08:05 PM, Andrew Morton wrote:
-> On Fri,  2 Apr 2010 17:02:37 +0100
-> Mel Gorman<mel@csn.ul.ie>  wrote:
 
->> +#if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
->> +
->> +	/*
->> +	 * The external_refcount is taken by either KSM or page migration
->> +	 * to take a reference to an anon_vma when there is no
->> +	 * guarantee that the vma of page tables will exist for
->> +	 * the duration of the operation. A caller that takes
->> +	 * the reference is responsible for clearing up the
->> +	 * anon_vma if they are the last user on release
->> +	 */
->> +	atomic_t external_refcount;
->>   #endif
->
-> hah.
 
->> +	anonvma_external_refcount_init(anon_vma);
->
-> What a mouthful.  Can we do s/external_//g?
+On Tue, 6 Apr 2010, Rik van Riel wrote:
+> 
+> It gets more fun.  It looks like the anon_vma is only
+> allocated through anon_vma_alloc() and only handled
+> by the functions in rmap.c
+> 
+> By themselves, all of those functions look alright.
 
-For the function, sure.
+Yes. Very trivially so, in fact.
 
-However, I believe it would be good to keep the variable
-inside the anon_vma as "external_refcount", because the
-VMAs attached to the anon_vma take a reference by being
-on the list (and leave the refcount alone).
+> However, I think I may have found a possible bug in
+> the interplay between anon_vma_prepare() and vma_adjust(),
+> across several mprotect invocations.
+> 
+> Let me explain what I think may be going on in small
+> steps, since it is quite subtle (assuming I am right).
+
+Sounds at least possible. Way more likely than any of the "trivially 
+obvious" code being buggy, or the SLUB layer suddenly having a serious bug 
+that only the new user could trigger.
+
+That said, the code that _really_ confuses me is the stuff that uses 
+"anon_vma_clone()". Could you please also explain the code flow of 
+vma_adjust() to mere mortals, please?
+
+I suspect Borislav is sleeping. But at least we have a patch for him to 
+test when he wakes up ;)
+
+		Linus
