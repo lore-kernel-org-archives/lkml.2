@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab0DGXFO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 19:05:14 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:24332 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755960Ab0DGXFJ (ORCPT
+	id S1756151Ab0DGXGN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 19:06:13 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57510 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756048Ab0DGXGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 19:05:09 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yinghai <yinghai.lu@oracle.com>
-Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well as x86_32
-Date: Wed, 7 Apr 2010 17:05:06 -0600
-User-Agent: KMail/1.9.10
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org,
-       x86@kernel.org, linux-kernel@vger.kernel.org,
-       Andy Isaacson <adi@hexapodia.org>, Thomas Renninger <trenn@suse.de>
-References: <20100407210628.28364.96982.stgit@bob.kio> <4BBD0B0A.3090702@oracle.com>
-In-Reply-To: <4BBD0B0A.3090702@oracle.com>
+	Wed, 7 Apr 2010 19:06:09 -0400
+Date: Thu, 8 Apr 2010 00:06:07 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Network Development <netdev@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Linux SCSI List <linux-scsi@vger.kernel.org>,
+       Linux Wireless List <linux-wireless@vger.kernel.org>,
+       DRI <dri-devel@lists.sourceforge.net>
+Subject: Re: 2.6.34-rc3-git6: Reported regressions from 2.6.33
+Message-ID: <20100407230607.GM30031@ZenIV.linux.org.uk>
+References: <6Pphclm24fK.A.lSF.qsPvLB@chimera>
+ <alpine.LFD.2.00.1004071444440.3586@i5.linux-foundation.org>
+ <20100407221941.GL30031@ZenIV.linux.org.uk>
+ <alpine.LFD.2.00.1004071521500.3586@i5.linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201004071705.07176.bjorn.helgaas@hp.com>
+In-Reply-To: <alpine.LFD.2.00.1004071521500.3586@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 07 April 2010 04:45:30 pm Yinghai wrote:
-> On 04/07/2010 02:06 PM, Bjorn Helgaas wrote:
-> > 
-> > Currently, we only reserve the legacy VGA area [mem 0xa0000-0xbffff] on
-> > x86_32.  But this legacy area is also used on x86_64, so this patch
-> > reserves it there, too.
-> > 
-> > If we don't reserve it, we may mistakenly move a PCI device to that area,
-> > as we did here:
-> > 
-> >   pci_root PNP0A03:00: host bridge window [mem 0xff980800-0xff980bff]
-> >   pci_root PNP0A03:00: host bridge window [mem 0xff97c000-0xff97ffff]
-> >   pci 0000:00:1f.2: no compatible bridge window for [mem 0xff970000-0xff9707ff]
-> >   pci 0000:00:1f.2: BAR 5: assigned [mem 0x000a0000-0x000a07ff]
-> > 
-> > as reported by Andy Isaacson at http://lkml.org/lkml/2010/4/6/375
-> > 
-> > I think the fact that the BAR is not within a host bridge window is a
-> > BIOS defect, and it's now more visible because we have "pci=use_crs" as
-> > the default.  Using "pci=nocrs" is a workaround, because then we won't
-> > attempt to move the device.
+On Wed, Apr 07, 2010 at 03:22:20PM -0700, Linus Torvalds wrote:
 > 
-> that doesn't look right.
 > 
-> It seem another thread, erission has one model without VGA, and they use that area for other device MMIO.
+> On Wed, 7 Apr 2010, Al Viro wrote:
+> > 
+> > No, it's not the same thing; the fix is to have nfs ->d_revalidate()
+> > return an error on failing open attempt (in insane codepath that has
+> > ->d_revalidate() handling open()).  Confirmed to work by reporter...
 > 
-> current for 64bit, We remove [0xa0000, 0x100000) from e820 map if those area is E820_RAM.
-> 
-> in e820_reserve_resources(), kernel will reserve range < 1M according to e820 map.
-> that is before pci BAR is claimed.
-> 
-> or you can add
-> boot_params.screen_info.orig_video_isVGA == 1
-> or double check scan pci tree to see if video is there or not
+> Ok, can you do the proper changelog description and sign-offs etc?
 
-I'm sorry, I can't understand what you're saying.
+[PATCH] Have nfs ->d_revalidate() report errors properly
 
-It seems like you're saying we already have a mechanism to keep us
-from assigning that VGA range to another device, but obviously it's
-not working.
+	If nfs atomic open implementation ends up doing open request from
+->d_revalidate() codepath and gets an error from server, return that error
+to caller explicitly and don't bother with lookup_instantiate_filp() at all.
+->d_revalidate() can return an error itself just fine...
 
-Maybe it will be clearer if you propose a different patch that prevents
-us from assigning 0xa0000 to the USB controller.
-
-Bjorn
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index d79a7b3..fe0cd9e 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -2068,8 +2068,7 @@ nfs4_open_revalidate(struct inode *dir, struct dentry *dentry, int openflags, st
+ 			case -EDQUOT:
+ 			case -ENOSPC:
+ 			case -EROFS:
+-				lookup_instantiate_filp(nd, (struct dentry *)state, NULL);
+-				return 1;
++				return PTR_ERR(state);
+ 			default:
+ 				goto out_drop;
+ 		}
