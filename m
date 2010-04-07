@@ -1,104 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932904Ab0DGQnj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 12:43:39 -0400
-Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:42733 "EHLO
-	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932754Ab0DGQnh (ORCPT
+	id S932916Ab0DGQpp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 12:45:45 -0400
+Received: from tomts43-srv.bellnexxia.net ([209.226.175.110]:53943 "EHLO
+	tomts43-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932798Ab0DGQpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 12:43:37 -0400
-Date: Wed, 7 Apr 2010 11:43:21 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-cc: Eric Dumazet <eric.dumazet@gmail.com>, netdev <netdev@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-       alex.shi@intel.com,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
-In-Reply-To: <1270607668.2078.259.camel@ymzhang.sh.intel.com>
-Message-ID: <alpine.DEB.2.00.1004071130260.13261@router.home>
-References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>  <alpine.DEB.2.00.1003250942080.2670@router.home>  <1269570902.9614.92.camel@alexs-hp.sh.intel.com>  <1270114166.2078.107.camel@ymzhang.sh.intel.com>  <alpine.DEB.2.00.1004011050340.16531@router.home>
-  <1270195589.2078.116.camel@ymzhang.sh.intel.com>  <alpine.DEB.2.00.1004050853300.23149@router.home>  <i2z84144f021004051030k7ff5190cyc083aa12c552dfac@mail.gmail.com>  <4BBA8DF9.8010409@kernel.org>  <1270542497.2078.123.camel@ymzhang.sh.intel.com> 
- <alpine.DEB.2.00.1004061033330.18750@router.home>  <alpine.DEB.2.00.1004061552500.19151@router.home>  <1270591841.2091.170.camel@edumazet-laptop> <1270607668.2078.259.camel@ymzhang.sh.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 7 Apr 2010 12:45:44 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAD9SvEtGGOL4/2dsb2JhbACbIXK8RYJjgiYE
+Date: Wed, 7 Apr 2010 12:45:42 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
+       peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+       dhowells@redhat.com, eric.dumazet@gmail.com
+Subject: Re: [PATCH tip/urgent] rcu: add rcu_access_pointer and
+	rcu_dereference_protected
+Message-ID: <20100407164542.GB21378@Krystal>
+References: <20100407162620.GA11543@linux.vnet.ibm.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20100407162620.GA11543@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 12:44:44 up  2:38,  1 user,  load average: 0.04, 0.06, 0.04
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Apr 2010, Zhang, Yanmin wrote:
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> This patch adds variants of rcu_dereference() that handle situations
+> where the RCU-protected data structure cannot change, perhaps due to
+> our holding the update-side lock, or where the RCU-protected pointer is
+> only to be fetched, not dereferenced.  These are needed due to some
+> performance concerns with using rcu_dereference() where it is not
+> required, aside from the need for lockdep/sparse checking.
+> 
+> The new rcu_access_pointer() primitive is for the case where the pointer
+> is be fetch and not dereferenced.  This primitive may be used without
+> protection, RCU or otherwise, due to the fact that it uses ACCESS_ONCE().
+> 
+> The new rcu_dereference_protected() primitive is for the case where updates
+> are prevented, for example, due to holding the update-side lock.  This
+> primitive does neither ACCESS_ONCE() nor smp_read_barrier_depends(), so
+> can only be used when updates are somehow prevented.
+> 
+> Suggested-by: David Howells <dhowells@redhat.com>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-> I collected retired instruction, dtlb miss and LLC miss.
-> Below is data of LLC miss.
->
-> Kernel 2.6.33:
->     20.94%        hackbench  [kernel.kallsyms]                                       [k] copy_user_generic_string
->     14.56%        hackbench  [kernel.kallsyms]                                       [k] unix_stream_recvmsg
->     12.88%        hackbench  [kernel.kallsyms]                                       [k] kfree
->      7.37%        hackbench  [kernel.kallsyms]                                       [k] kmem_cache_free
->      7.18%        hackbench  [kernel.kallsyms]                                       [k] kmem_cache_alloc_node
->      6.78%        hackbench  [kernel.kallsyms]                                       [k] kfree_skb
->      6.27%        hackbench  [kernel.kallsyms]                                       [k] __kmalloc_node_track_caller
->      2.73%        hackbench  [kernel.kallsyms]                                       [k] __slab_free
->      2.21%        hackbench  [kernel.kallsyms]                                       [k] get_partial_node
->      2.01%        hackbench  [kernel.kallsyms]                                       [k] _raw_spin_lock
->      1.59%        hackbench  [kernel.kallsyms]                                       [k] schedule
->      1.27%        hackbench  hackbench                                               [.] receiver
->      0.99%        hackbench  libpthread-2.9.so                                       [.] __read
->      0.87%        hackbench  [kernel.kallsyms]                                       [k] unix_stream_sendmsg
->
-> Kernel 2.6.34-rc3:
->     18.55%        hackbench  [kernel.kallsyms]                                                     [k] copy_user_generic_str
-> ing
->     13.19%        hackbench  [kernel.kallsyms]                                                     [k] unix_stream_recvmsg
->     11.62%        hackbench  [kernel.kallsyms]                                                     [k] kfree
->      8.54%        hackbench  [kernel.kallsyms]                                                     [k] kmem_cache_free
->      7.88%        hackbench  [kernel.kallsyms]                                                     [k] __kmalloc_node_track_
-> caller
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-Seems that the overhead of __kmalloc_node_track_caller was increased. The
-function inlines slab_alloc().
+We should probably pull this in liburcu eventually too (renaming
+ACCESS_ONCE() into LOAD_SHARED()).
 
->      6.54%        hackbench  [kernel.kallsyms]                                                     [k] kmem_cache_alloc_node
->      5.94%        hackbench  [kernel.kallsyms]                                                     [k] kfree_skb
->      3.48%        hackbench  [kernel.kallsyms]                                                     [k] __slab_free
->      2.15%        hackbench  [kernel.kallsyms]                                                     [k] _raw_spin_lock
->      1.83%        hackbench  [kernel.kallsyms]                                                     [k] schedule
->      1.82%        hackbench  [kernel.kallsyms]                                                     [k] get_partial_node
->      1.59%        hackbench  hackbench                                                             [.] receiver
->      1.37%        hackbench  libpthread-2.9.so                                                     [.] __read
+Thanks,
 
-I wonder if this is not related to the kmem_cache_cpu structure straggling
-cache line boundaries under some conditions. On 2.6.33 the kmem_cache_cpu
-structure was larger and therefore tight packing resulted in different
-alignment.
+Mathieu
 
-Could you see how the following patch affects the results. It attempts to
-increase the size of kmem_cache_cpu to a power of 2 bytes. There is also
-the potential that other per cpu fetches to neighboring objects affect the
-situation. We could cacheline align the whole thing.
+> 
+>  rcupdate.h |   38 ++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 38 insertions(+)
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 872a98e..3f06b3d 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -209,9 +209,47 @@ static inline int rcu_read_lock_sched_held(void)
+>  		rcu_dereference_raw(p); \
+>  	})
+>  
+> +/**
+> + * rcu_access_pointer - fetch RCU pointer with no dereferencing
+> + *
+> + * Return the value of the specified RCU-protected pointer, but omit the
+> + * smp_read_barrier_depends() and keep the ACCESS_ONCE().  This is useful
+> + * when the value of this pointer is accessed, but the pointer is not
+> + * dereferenced, for example, when testing an RCU-protected pointer against
+> + * NULL.  This may also be used in cases where update-side locks prevent
+> + * the value of the pointer from changing, but rcu_dereference_protected()
+> + * is a lighter-weight primitive for this use case.
+> + */
+> +#define rcu_access_pointer(p, c) \
+> +	({ \
+> +		if (debug_lockdep_rcu_enabled() && !(c)) \
+> +			lockdep_rcu_dereference(__FILE__, __LINE__); \
+> +		ACCESS_ONCE(p); \
+> +	})
+> +
+> +/**
+> + * rcu_dereference_protected - fetch RCU pointer when updates prevented
+> + *
+> + * Return the value of the specified RCU-protected pointer, but omit
+> + * both the smp_read_barrier_depends() and the ACCESS_ONCE().  This
+> + * is useful in cases where update-side locks prevent the value of the
+> + * pointer from changing.  Please note that this primitive does -not-
+> + * prevent the compiler from repeating this reference or combining it
+> + * with other references, so it should not be used without protection
+> + * of appropriate locks.
+> + */
+> +#define rcu_dereference_protected(p, c) \
+> +	({ \
+> +		if (debug_lockdep_rcu_enabled() && !(c)) \
+> +			lockdep_rcu_dereference(__FILE__, __LINE__); \
+> +		(p); \
+> +	})
+> +
+>  #else /* #ifdef CONFIG_PROVE_RCU */
+>  
+>  #define rcu_dereference_check(p, c)	rcu_dereference_raw(p)
+> +#define rcu_access_pointer(p, c)	ACCESS_ONCE(p)
+> +#define rcu_dereference_protected(p, c) (p)
+>  
+>  #endif /* #else #ifdef CONFIG_PROVE_RCU */
+>  
 
----
- include/linux/slub_def.h |    5 +++++
- 1 file changed, 5 insertions(+)
-
-Index: linux-2.6/include/linux/slub_def.h
-===================================================================
---- linux-2.6.orig/include/linux/slub_def.h	2010-04-07 11:33:50.000000000 -0500
-+++ linux-2.6/include/linux/slub_def.h	2010-04-07 11:35:18.000000000 -0500
-@@ -38,6 +38,11 @@ struct kmem_cache_cpu {
- 	void **freelist;	/* Pointer to first free per cpu object */
- 	struct page *page;	/* The slab from which we are allocating */
- 	int node;		/* The node of the page (or -1 for debug) */
-+#ifndef CONFIG_64BIT
-+	int dummy1;
-+#endif
-+	unsigned long dummy2;
-+
- #ifdef CONFIG_SLUB_STATS
- 	unsigned stat[NR_SLUB_STAT_ITEMS];
- #endif
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
