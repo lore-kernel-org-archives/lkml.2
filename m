@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932430Ab0DGBXR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 21:23:17 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48723 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932370Ab0DGBXJ (ORCPT
+	id S932370Ab0DGBXh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 21:23:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:38093 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932411Ab0DGBXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 21:23:09 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 7 Apr 2010 10:19:13 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 10/14] Add /sys trigger for per-node memory compaction
-Message-Id: <20100407101913.58d1855b.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100406175601.b131e9d2.akpm@linux-foundation.org>
-References: <1270224168-14775-1-git-send-email-mel@csn.ul.ie>
-	<1270224168-14775-11-git-send-email-mel@csn.ul.ie>
-	<20100406170559.52093bd5.akpm@linux-foundation.org>
-	<20100407093148.d5d1c42f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100406175601.b131e9d2.akpm@linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+	Tue, 6 Apr 2010 21:23:30 -0400
+X-Authority-Analysis: v=1.1 cv=1G73JCAd+9Vhhx30tk0+Sc/rngIYAy4Ia+6Xn7XSY0k= c=1 sm=0 a=b8JJ-gGZIcIA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=z_nE5Eej0Be4saINjvMA:9 a=XrwZ1X--5_yUuQBHYPkuxSLF8owA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [patch 1/3] kernel: local_irq_{save,restore}_nmi()
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: David Miller <davem@davemloft.net>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, acme@redhat.com, paulus@samba.org,
+       efault@gmx.de, fweisbec@gmail.com, tglx@linutronix.de,
+       linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
+       linux-arch@vger.kernel.org
+In-Reply-To: <20100406.181906.89249649.davem@davemloft.net>
+References: <20100406132807.698467930@chello.nl>
+	 <20100406133140.903644813@chello.nl>
+	 <1270602790.19685.15603.camel@gandalf.stny.rr.com>
+	 <20100406.181906.89249649.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Tue, 06 Apr 2010 21:23:26 -0400
+Message-ID: <1270603406.19685.15609.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Apr 2010 17:56:01 -0400
-Andrew Morton <akpm@linux-foundation.org> wrote:
+On Tue, 2010-04-06 at 18:19 -0700, David Miller wrote:
 
-> On Wed, 7 Apr 2010 09:31:48 +0900 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> That's the whole point, so that the problem is more easily noticed and
+> it gets fixed long before I end up accidently testing the code on my
+> machines :-)
 > 
-> > A cgroup which controls placement of memory is cpuset.
+> To be honest, the fix is so trivial, you just need to add '_nmi' to
+> the local_irq_{save,restore}() calls that warn like this.
 > 
-> err, yes, that.
+> I'm even willing to have you forward all of those reports to me and
+> I'll be responsible for fixing them.
 > 
-> > One idea is per cpuset. But per-node seems ok.
-> 
-> Which is superior?
-> 
-> Which maps best onto the way systems are used (and onto ways in which
-> we _intend_ that systems be used)?
-> 
+> How's that? :-)
 
-node has hugepage interface now.
+Sure.
 
-[root@bluextal qemu-kvm-0.12.3]# ls /sys/devices/system/node/node0/hugepages/
-hugepages-2048kB
+/me sets up his procmailrc to search for the WARN_ON line in
+trace_irqsoff.c and have it forward to davem.
 
-So, per-node knob is straightforward. 
-
-> Is the physical node really the best unit-of-administration?  And is
-> direct access to physical nodes the best means by which admins will
-> manage things?
-
-In these days, we tend to use "setup tool" for using cpuset, etc.
-(as libcgroup.)
-
-Considering control by userland-support-soft, I think pernode is not bad.
-And per-cpuset requires users to mount cpuset.
-(Now, most of my customer doesn't use cpuset.)
-
-
-Thanks,
--Kame
+-- Steve
 
 
