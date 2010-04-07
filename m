@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758128Ab0DGRPZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 13:15:25 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:44040 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932931Ab0DGRPV (ORCPT
+	id S932913Ab0DGRQB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 13:16:01 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:46343 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758073Ab0DGRP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 13:15:21 -0400
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] davinci fixes for 2.6.34-rc
-From: Kevin Hilman <khilman@deeprootsystems.com>
-Organization: Deep Root Systems, LLC
-Date: Wed, 07 Apr 2010 10:15:18 -0700
-Message-ID: <876343dw0p.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 7 Apr 2010 13:15:58 -0400
+Date: Wed, 7 Apr 2010 10:15:46 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for April 7 (other build fixes)
+Message-Id: <20100407101546.0c41e418.randy.dunlap@oracle.com>
+In-Reply-To: <20100407174123.81b32310.sfr@canb.auug.org.au>
+References: <20100407174123.81b32310.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4BBCBDC7.004B:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Wed, 7 Apr 2010 17:41:23 +1000 Stephen Rothwell wrote:
 
-Please pull the following fixes for 2.6.34-rc.
+> Hi all,
+> 
+> Changes since 20100401:
+> 
+> My fixes tree contains:
+> 	a patch for a pktcdvd build error from Arnd Bergmann
+> 	a fix for the commit that broke virtual consoles on PowerPC
 
-Thanks,
 
-Kevin
+My fixes series (not-a-tree) contains:
+. build fix for gspca=m, INPUT=[mn] (from me)
+. build fix for hid-picolcd=y and other dependencies=m (from bonbons@linux-vserver.org)
+. build fix for staging/dt3155/ when builtin (from me)
+. build fix for usbserial generic.c when CONFIG_MAGIC_SYSRQ is not enabled (from me)
+. build fix for xen/manage.c when CONFIG_MAGIC_SYSRQ is not enabled (from me)
 
 
-The following changes since commit 2eaa9cfdf33b8d7fb7aff27792192e0019ae8fc6:
-  Linus Torvalds (1):
-        Linux 2.6.34-rc3
-
-are available in the git repository at:
-
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/khilman/linux-davinci.git davinci-fixes-for-linus
-
-Brian Niebuhr (1):
-      davinci: edma: clear events in edma_start()
-
-Kevin Hilman (2):
-      davinci: timers: don't enable timer until clocksource is initialized
-      davinci: DM365: fix duplicate default IRQ priorities
-
-Sekhar Nori (1):
-      davinci: da8xx/omap-l1: fix build error when CONFIG_DAVINCI_MUX is undefined
-
-Sergei Shtylyov (1):
-      davinci: fix compile warning: <mach/da8xx.h>: #include <linux/platform_device.h>
-
- arch/arm/mach-davinci/dm365.c              |    1 -
- arch/arm/mach-davinci/dma.c                |    3 ++-
- arch/arm/mach-davinci/include/mach/da8xx.h |    8 +++++++-
- arch/arm/mach-davinci/time.c               |    6 ++++--
- 4 files changed, 13 insertions(+), 5 deletions(-)
+---
+~Randy
