@@ -1,97 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab0DGWCx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 18:02:53 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:59517 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756001Ab0DGWCt (ORCPT
+	id S1756967Ab0DGWJO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 18:09:14 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35069 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754398Ab0DGWJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 18:02:49 -0400
-From: "Hans-Peter Jansen" <hpj@urpla.net>
-To: Dave Chinner <david@fromorbit.com>
-Subject: Re: 2.6.34-rc3: simple du (on a big xfs tree) triggers oom killer [bisected: 57817c68229984818fea9e614d6f95249c3fb098]
-Date: Thu, 8 Apr 2010 00:02:20 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-kernel@vger.kernel.org, opensuse-kernel@opensuse.org,
-       xfs@oss.sgi.com
-References: <201004050049.17952.hpj@urpla.net> <20100406231144.GF11036@dastard> <20100407014533.GI11036@dastard>
-In-Reply-To: <20100407014533.GI11036@dastard>
+	Wed, 7 Apr 2010 18:09:09 -0400
+Date: Wed, 7 Apr 2010 15:04:46 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Network Development <netdev@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Linux SCSI List <linux-scsi@vger.kernel.org>,
+       Linux Wireless List <linux-wireless@vger.kernel.org>,
+       DRI <dri-devel@lists.sourceforge.net>,
+       Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: 2.6.34-rc3-git6: Reported regressions from 2.6.33
+In-Reply-To: <6Pphclm24fK.A.lSF.qsPvLB@chimera>
+Message-ID: <alpine.LFD.2.00.1004071444440.3586@i5.linux-foundation.org>
+References: <6Pphclm24fK.A.lSF.qsPvLB@chimera>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201004080002.21137.hpj@urpla.net>
-X-Provags-ID: V01U2FsdGVkX197M18KGpUX7uUmnxZc6J9eCX6ED6IYN/wr73m
- tPiaCkMYBPj//rLT07G+QxIH/hR0MxL8ogacyRVh7u0h/Prpen
- KIRcP24/g6IjVWUHiO5tr625N+5YtI+
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 07 April 2010, 03:45:33 Dave Chinner wrote:
->
-> However, if the memory pressure is purely inode cache (creating zero
-> length files or read-only traversal), then the OOM killer kicks a
-> while after the slab cache fills memory.  This doesn't need highmem;
-> I used a x86_64 kernel on a VM w/ 1GB RAM to reliably reproduce
-> this.  I'll add zero length file tests and traversals to my low
-> memory testing.
 
-I'm glad, that you're able to reproduce it. My initial failure was during 
-disk to disk backup (with a simple cp -al & rsync combination).
 
-> The best way to fix this, I think, is to trigger a shrinker callback
-> when memory is low to run the background inode reclaim. The problem
-> is that these inode caches and the reclaim state are per-filesystem,
-> not global state, and the current shrinker interface only works with
-> global state.
->
-> Hence there are two patches to this fix - the first adds a context
-> to the shrinker callout, and the second adds the XFS infrastructure
-> to track the number of reclaimable inodes per filesystem and
-> register/unregister shrinkers for each filesystem.
+On Wed, 7 Apr 2010, Rafael J. Wysocki wrote:
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15718
+> Subject		: File corruption regression on NFS related to commit 1f36f774
+> Submitter	: Boaz Harrosh <bharrosh@panasas.com>
+> Date		: 2010-03-24 15:49 (15 days old)
+> First-Bad-Commit: http://git.kernel.org/git/linus/1f36f774b22a0ceb7dd33eca626746c81a97b6a5
+> Message-ID	: <4BAA3493.1030802@panasas.com>
+> References	: http://marc.info/?l=linux-kernel&m=126944579810350&w=4
+> Handled-By	: Al Viro <viro@zeniv.linux.org.uk>
 
-I see, the first one will be interesting to get into mainline, given the 
-number of projects, that are involved. 
+I think this one is fixed by commit 3e297b61349.
 
-> With these patches, my reproducable test case which locked the
-> machine up with a OOM panic in a couple of minutes has been running
-> for over half an hour. I have much more confidence in this change
-> with limited testing than the reverting of the background inode
-> reclaim as the revert introduces
->
-> The patches below apply to the xfs-dev tree, which is currently at
-> 34-rc1. If they don't apply, let me know and I'll redo them against
-> a vanilla kernel tree. Can you test them to see if the problem goes
-> away? If the problem is fixed, I'll push them for a proper review
-> cycle...
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15716
+> Subject		: ata2: lost interrupt with kernel 2.6.34-rc1
+> Submitter	: Andrew Benton <b3nton@gmail.com>
+> Date		: 2010-03-11 16:57 (28 days old)
+> Message-ID	: <4B992110.2090300@gmail.com>
+> References	: http://marc.info/?l=linux-kernel&m=126832670609705&w=4
+> Handled-By	: Jeff Garzik <jeff@garzik.org>
 
-Of course, you did the original patch for a reason... Therefor I would love 
-to test your patches. I've tried to apply them to 2.6.33.2, but after 
-fixing the same reject as noted below, I'm stuck here:
+And isn't this the already long-fixed commit 332ac7ff77cd?
 
-/usr/src/packages/BUILD/kernel-default-2.6.33.2/linux-2.6.33/fs/xfs/linux-2.6/xfs_sync.c: 
-In function 'xfs_reclaim_inode_shrink':
-/usr/src/packages/BUILD/kernel-default-2.6.33.2/linux-2.6.33/fs/xfs/linux-2.6/xfs_sync.c:805: 
-error: implicit declaration of function 'xfs_perag_get'
-/usr/src/packages/BUILD/kernel-default-2.6.33.2/linux-2.6.33/fs/xfs/linux-2.6/xfs_sync.c:805: 
-warning: assignment makes pointer from integer without a cast
-/usr/src/packages/BUILD/kernel-default-2.6.33.2/linux-2.6.33/fs/xfs/linux-2.6/xfs_sync.c:807: 
-error: implicit declaration of function 'xfs_perag_put'
+That bugzilla entry is a duplicate of 
 
-Now I see, that there happened a rename of the offending functions, but also 
-they've grown a radix_tree structure and locking. How do I handle that?
+	https://bugzilla.kernel.org/show_bug.cgi?id=15537
 
-BTW, your patches do not apply to Linus' current git tree either:
-patching file fs/xfs/quota/xfs_qm.c
-Hunk #1 succeeded at 72 (offset 3 lines).
-Hunk #2 FAILED at 2120.
-1 out of 2 hunks FAILED -- saving rejects to file fs/xfs/quota/xfs_qm.c.rej
-I'm able to resolve this, but 2.6.34-current does give me some other 
-trouble, that I need to get by (PS2 keyboard stops working eventually)..
+as far as I can see.
 
-Anyway, thanks for your great support, Dave. This is much appreciated.
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15715
+> Subject		: vmscan: underflow for get_scan_ratio
+> Submitter	: Shaohua Li <shaohua.li@intel.com>
+> Date		: 2010-03-30 5:53 (9 days old)
+> First-Bad-Commit: http://git.kernel.org/git/linus/84b18490d1f1bc7ed5095c929f78bc002eb70f26
+> Message-ID	: <20100330055304.GA2983@sli10-desk.sh.intel.com>
+> References	: http://marc.info/?l=linux-kernel&m=126992842105754&w=4
+> Handled-By	: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> 		  Wu Fengguang <fengguang.wu@intel.com>
 
-Cheers,
-Pete
+That commit got reverted. See commit d6da1a5abc.
+
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15674
+> Subject		: [2.6.34-rc2 NFS4 oops] open error path failure...
+> Submitter	: Daniel J Blueman <daniel.blueman@gmail.com>
+> Date		: 2010-03-29 18:36 (10 days old)
+> Message-ID	: <6278d2221003291136p6481fe8emfb039403343c082@mail.gmail.com>
+> References	: http://marc.info/?l=linux-kernel&m=126988782722711&w=2
+
+This smells like the same LOOKUP_DIRECTORY thing as the first entry, but.. 
+
+Al?
+
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15600
+> Subject		: CONFIG_NO_BOOTMEM woes, 2.6.34-rc1
+> Submitter	: Avi Kivity <avi@redhat.com>
+> Date		: 2010-03-15 15:28 (24 days old)
+> Message-ID	: <4B9E5211.9000204@redhat.com>
+> References	: http://marc.info/?l=linux-kernel&m=126866691701926&w=2
+
+These should hopefully be all fixed. There was some confusion over this, 
+but the report that said it wasn't fixed in -rc3 was apparently not true 
+after all. Several commits, but mainly commit eed63519e, iirc.
+
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15518
+> Subject		: CONFIG_NO_BOOTMEM=y breaks boot on 32bit
+> Submitter	: Daniel Vetter <daniel@ffwll.ch>
+> Date		: 2010-03-11 15:37 (28 days old)
+
+Duplicate entry. See above.
+
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15480
+> Subject		: [regression] Fails to boot properly unless given pci=nocrs
+> Submitter	: Yanko Kaneti <yaneti@declera.com>
+> Date		: 2010-03-09 01:24 (30 days old)
+> Handled-By	: Bjorn Helgaas <bjorn.helgaas@hp.com>
+> Patch		: http://lkml.org/lkml/2010/3/11/512
+
+These are merged already. Commits d558b483d5, eb9fc8ef7cb etc.
+
+		Linus
