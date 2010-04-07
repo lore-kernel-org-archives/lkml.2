@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757922Ab0DGNPd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 09:15:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50116 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757580Ab0DGNPb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 09:15:31 -0400
-Subject: Re: [PATCH] perf_events: add PERF_SAMPLE_BRANCH_STACK
-From: Peter Zijlstra <peterz@infradead.org>
-To: eranian@google.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-       davem@davemloft.net, fweisbec@gmail.com, robert.richter@amd.com,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com
-In-Reply-To: <4bbc7fcf.100db80a.6b9f.fffffb14@mx.google.com>
-References: <4bbc7fcf.100db80a.6b9f.fffffb14@mx.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 07 Apr 2010 15:15:27 +0200
-Message-ID: <1270646127.20295.976.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1757940Ab0DGNWx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 09:22:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48462 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753355Ab0DGNWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 09:22:50 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100407000203.GI2553@linux.vnet.ibm.com>
+References: <20100407000203.GI2553@linux.vnet.ibm.com> <20100329232636.GT2569@linux.vnet.ibm.com> <2440.1269967151@redhat.com> <21972.1269993064@redhat.com> <10818.1270044273@redhat.com> <15371.1270057054@redhat.com> <19556.1270076008@redhat.com> <14003.1270122314@redhat.com> <4161.1270133211@redhat.com> <23331.1270570443@redhat.com> <26510.1270582446@redhat.com> 
+To: paulmck@linux.vnet.ibm.com
+Cc: dhowells@redhat.com, Eric Dumazet <eric.dumazet@gmail.com>,
+       Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFS: Fix RCU warnings in nfs_inode_return_delegation_noreclaim() [ver #2]
+Date: Wed, 07 Apr 2010 14:22:41 +0100
+Message-ID: <24225.1270646561@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-07 at 14:45 +0200, Stephane Eranian wrote:
->         LBR is configured by default to record ALL taken branches.  On some
->         processors, it is possible to filter the type of branches. This will
->         be supported in a subsequent patch.
-> 
->         On other processors, the sample type is allowed but will generate a
->         sample where nr=0 as is the case with other sampling types.
+Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-Right, so I already posted a patch like that:
-  http://lkml.org/lkml/2010/3/4/160
+> +#define rcu_access_pointer(p, c) \
 
-and the reason its not merged is because there is no perf use-case for
-it. Ingo wants to avoid merging ABI bits for which there is no userspace
-around. We already have a few such things and we find that its too easy
-to regress on those part.
+Why is there a need for 'c'?
 
-So if you want this, please also implement a useful use-case in perf.
+> +#define rcu_dereference_protect(p, c) \
 
+I'd prefer rcu_dereference_protected(), I think.  This macro doesn't protect
+anything.  Also, again, why the need for 'c'?
+
+For instance, in:
+
+	static struct nfs_delegation *nfs_detach_delegation_locked(struct nfs_inode *nfsi, const nfs4_stateid *stateid)
+	{
+		struct nfs_delegation *delegation =
+			rcu_dereference_protected(nfsi->delegation, ????);
+
+what would be the condition?  That the spinlock is held?  That's a condition
+for calling the function.
+
+And in:
+
+	void nfs_inode_return_delegation_noreclaim(struct inode *inode)
+	{
+		struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
+		struct nfs_inode *nfsi = NFS_I(inode);
+		struct nfs_delegation *delegation;
+
+		if (rcu_access_pointer(nfsi->delegation, ????) != NULL) {
+
+what would be the condition here?  There's no lock to check - that's the whole
+point of the macro.  I also can't give it nfsi->delegation to check as the
+value may change between the two accesses.
+
+David
