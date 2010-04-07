@@ -1,52 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab0DGCmG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 22:42:06 -0400
-Received: from mga11.intel.com ([192.55.52.93]:54736 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751212Ab0DGCl5 convert rfc822-to-8bit (ORCPT
+	id S1754730Ab0DGCzI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 22:55:08 -0400
+Received: from dm-mail02.mozilla.org ([63.245.208.176]:51546 "EHLO
+	dm-mail02.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921Ab0DGCzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 22:41:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,376,1267430400"; 
-   d="scan'208";a="555624365"
-From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "mingo@elte.hu" <mingo@elte.hu>,
-       "jdike@c2.user-mode-linux.org" <jdike@c2.user-mode-linux.org>,
-       "yzhao81@gmail.com" <yzhao81@gmail.com>
-Date: Wed, 7 Apr 2010 10:41:08 +0800
-Subject: RE: [PATCH 1/3] A device for zero-copy based on KVM virtio-net.
-Thread-Topic: [PATCH 1/3] A device for zero-copy based on KVM virtio-net.
-Thread-Index: AcrRjDzWloLq/tseTwCC82REc7j2hQEbxINg
-Message-ID: <97F6D3BD476C464182C1B7BABF0B0AF5C183234A@shzsmsx502.ccr.corp.intel.com>
-References: <20100308112849.GI7482@redhat.com>
- <1270114038-5048-1-git-send-email-xiaohui.xin@intel.com>
- <20100401110841.GE3323@redhat.com>
-In-Reply-To: <20100401110841.GE3323@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 6 Apr 2010 22:55:00 -0400
+Message-ID: <4BBBF402.70403@mozilla.com>
+Date: Tue, 06 Apr 2010 19:54:58 -0700
+From: Taras Glek <tglek@mozilla.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
+To: Wu Fengguang <fengguang.wu@intel.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
+References: <4BBA6776.5060804@mozilla.com> <20100406095135.GB5183@cmpxchg.org> <20100407022456.GA9468@localhost>
+In-Reply-To: <20100407022456.GA9468@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael,
- 
->> Qemu needs a userspace write, is that a synchronous one or
->>asynchronous one?
+On 04/06/2010 07:24 PM, Wu Fengguang wrote:
+> Hi Taras,
+>
+> On Tue, Apr 06, 2010 at 05:51:35PM +0800, Johannes Weiner wrote:
+>    
+>> On Mon, Apr 05, 2010 at 03:43:02PM -0700, Taras Glek wrote:
+>>      
+>>> Hello,
+>>> I am working on improving Mozilla startup times. It turns out that page
+>>> faults(caused by lack of cooperation between user/kernelspace) are the
+>>> main cause of slow startup. I need some insights from someone who
+>>> understands linux vm behavior.
+>>>        
+> How about improve Fedora (and other distros) to preload Mozilla (and
+> other apps the user run at the previous boot) with fadvise() at boot
+> time? This sounds like the most reasonable option.
+>    
+That's a slightly different usecase. I'd rather have all large apps 
+startup as efficiently as possible without any hacks. Though until we 
+get there, we'll be using all of the hacks we can.
+> As for the kernel readahead, I have a patchset to increase default
+> mmap read-around size from 128kb to 512kb (except for small memory
+> systems).  This should help your case as well.
+>    
+Yes. Is the current readahead really doing read-around(ie does it read 
+pages before the one being faulted)? From what I've seen, having the 
+dynamic linker read binary sections backwards causes faults.
+http://sourceware.org/bugzilla/show_bug.cgi?id=11447
+>    
+>>> Current Situation:
+>>> The dynamic linker mmap()s  executable and data sections of our
+>>> executable but it doesn't call madvise().
+>>> By default page faults trigger 131072byte reads. To make matters worse,
+>>> the compile-time linker + gcc lay out code in a manner that does not
+>>> correspond to how the resulting executable will be executed(ie the
+>>> layout is basically random). This means that during startup 15-40mb
+>>> binaries are read in basically random fashion. Even if one orders the
+>>> binary optimally, throughput is still suboptimal due to the puny readahead.
+>>>
+>>> IO Hints:
+>>> Fortunately when one specifies madvise(WILLNEED) pagefaults trigger 2mb
+>>> reads and a binary that tends to take 110 page faults(ie program stops
+>>> execution and waits for disk) can be reduced down to 6. This has the
+>>> potential to double application startup of large apps without any clear
+>>> downsides.
+>>>
+>>> Suse ships their glibc with a dynamic linker patch to fadvise()
+>>> dynamic libraries(not sure why they switched from doing madvise
+>>> before).
+>>>        
+> This is interesting. I wonder how SuSE implements the policy.
+> Do you have the patch or some strace output that demonstrates the
+> fadvise() call?
+>    
+glibc-2.3.90-ld.so-madvise.diff in 
+http://www.rpmseek.com/rpm/glibc-2.4-31.12.3.src.html?hl=com&cba=0:G:0:3732595:0:15:0: 
 
->It's a synchronous non-blocking write.
-Sorry, why the Qemu live migration needs the device have a userspace write?
-how does the write operation work? And why a read operation is not cared here?
 
-Thanks
-Xiaohui
+As I recall they just fadvise the filedescriptor before accessing it.
+>    
+>>> I filed a glibc bug about this at
+>>> http://sourceware.org/bugzilla/show_bug.cgi?id=11431 . Uli commented
+>>> with his concern about wasting memory resources. What is the impact of
+>>> madvise(WILLNEED) or the fadvise equivalent on systems under memory
+>>> pressure? Does the kernel simply start ignoring these hints?
+>>>        
+>> It will throttle based on memory pressure.  In idle situations it will
+>> eat your file cache, however, to satisfy the request.
+>>
+>> Now, the file cache should be much bigger than the amount of unneeded
+>> pages you prefault with the hint over the whole library, so I guess the
+>> benefit of prefaulting the right pages outweighs the downside of evicting
+>> some cache for unused library pages.
+>>
+>> Still, it's a workaround for deficits in the demand-paging/readahead
+>> heuristics and thus a bit ugly, I feel.  Maybe Wu can help.
+>>      
+> Program page faults are inherently random, so the straightforward
+> solution would be to increase the mmap read-around size (for desktops
+> with reasonable large memory), rather than to improve program layout
+> or readahead heuristics :)
+>    
+Program page faults may exhibit random behavior once they've started.
+
+During startup page-in pattern of over-engineered OO applications is 
+very predictable. Programs are laid out based on compilation units, 
+which have no relation to how they are executed. Another problem is that 
+any large old application will have lots of code that is either rarely 
+executed or completely dead. Random sprinkling of live code among mostly 
+unneeded code is a problem.
+I'm able to reduce startup pagefaults by 2.5x and mem usage by a few MB 
+with proper binary layout. Even if one lays out a program wrongly, the 
+worst-case pagein pattern will be pretty similar to what it is by default.
+
+But yes, I completely agree that it would be awesome to increase the 
+readahead size proportionally to available memory. It's a little silly 
+to be reading tens of megabytes in 128kb increments :)  You rock for 
+trying to modernize this.
+
+>    
+>>> Also, once an application is started is it reasonable to keep it
+>>> madvise(WILLNEED)ed or should the madvise flags be reset?
+>>>        
+>> It's a one-time operation that starts immediate readahead, no permanent
+>> changes are done.
+>>      
+> Right. The kernel regard WILLNEED as a readahead request from userspace.
+>
+>    
+>>> Perhaps the kernel could monitor the page-in patterns to increase the
+>>> readahead sizes? This may already happen, I've noticed that a handful of
+>>> pagefaults trigger>  131072bytes of IO, perhaps this just needs tweaking.
+>>>        
+>> CCd the man :-)
+>>      
+> Thank you :)
+>
+> Cheers,
+> Fengguang
+>    
+
+Cheers,
+Taras
