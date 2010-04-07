@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758198Ab0DGRLV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 13:11:21 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:30848 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758105Ab0DGRLL convert rfc822-to-8bit (ORCPT
+	id S1758187Ab0DGRML (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 13:12:11 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:10465 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757863Ab0DGRMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 13:11:11 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Wed, 07 Apr 2010 19:11:12 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH 3/8] USB: f_fs: the FunctionFS driver
-In-reply-to: <d8e956ce78914750460877b87ba2b0f707ab8a0f.1270644740.git.mina86@mina86.com>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-usb@vger.kernel.org
-Cc: Peter Korsgaard <jacmet@sunsite.dk>,
-       Rupesh Gujare <rupeshgujare@gmail.com>, linux-kernel@vger.kernel.org,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>
-Message-id: <op.vasx0y1d7p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.10 (Linux)
-References: <cover.1270644740.git.mina86@mina86.com>
- <033ad254a3bba337e7a37cc6071b7debc7051801.1270644740.git.mina86@mina86.com>
- <b866157fc128769a3cdf9ae76f9fc21743776778.1270644740.git.mina86@mina86.com>
- <d8e956ce78914750460877b87ba2b0f707ab8a0f.1270644740.git.mina86@mina86.com>
+	Wed, 7 Apr 2010 13:12:07 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=CdIWQdN56bF+4cQ1LrjTi8F4kpCSLvJaLKqM+MKT96Audg/VGBSbCY8jpNK39DcSG
+	l3UTaXccIpjYIqj7jMArA==
+MIME-Version: 1.0
+In-Reply-To: <4BAB027D.7000405@cn.fujitsu.com>
+References: <4B8DFFD7.2000908@cn.fujitsu.com>
+	 <20100303154748.GC2866@redhat.com>
+	 <e98e18941003031519v14d4f79cg33da5c3cf1f5ac03@mail.gmail.com>
+	 <1786ab031003031825m5467c86jf5c355df10001dd2@mail.gmail.com>
+	 <4B8F27BD.2020704@cn.fujitsu.com> <4B8F62B7.3080401@cn.fujitsu.com>
+	 <20100304152400.GB18786@redhat.com> <4B906BB6.3080104@cn.fujitsu.com>
+	 <20100305141300.GA3296@redhat.com> <4BAB027D.7000405@cn.fujitsu.com>
+Date: Wed, 7 Apr 2010 10:12:03 -0700
+Message-ID: <i2o1786ab031004071012t51ae0a10t3b4f30bece40d8a6@mail.gmail.com>
+Subject: Re: [PATCH 1/2 V3] io-controller: Add a new interface "weight_device" 
+	for IO-Controller
+From: Chad Talbott <ctalbott@google.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: jens.axboe@oracle.com, Vivek Goyal <vgoyal@redhat.com>,
+       linux-kernel@vger.kernel.org, Nauman Rafique <nauman@google.com>,
+       Li Zefan <lizf@cn.fujitsu.com>, Divyesh Shah <dpshah@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 07 Apr 2010 15:41:30 +0200, Michal Nazarewicz <m.nazarewicz@samsung.com> wrote:
-> +static ssize_t __ffs_ep0_read_events(struct ffs_data *ffs, char __user *buf,
-> +				     size_t n)
-> +{
-> +	/* We are holding ffs->ev.waitq.lock and ffs->mutex and we need
-> +	 * to release them. */
-> +
-> +	struct usb_functionfs_event events[n];
-> +	unsigned i = 0;
-> +
-> +	memset(events, 0, sizeof events);
-> +
-> +	do {
-> +		events[i].type = ffs->ev.types[i];
-> +		if (events[i].type == FUNCTIONFS_SETUP) {
-> +			events[i].u.setup = ffs->ev.setup;
-> +			ffs->setup_state = FFS_SETUP_PENDING;
-> +		}
-> +	} while (++i < n);
-> +
-> +	ffs->ev.count = 0;
+On Wed, Mar 24, 2010 at 11:28 PM, Gui Jianfeng
+<guijianfeng@cn.fujitsu.com> wrote:
+> Vivek Goyal wrote:
+>> On Fri, Mar 05, 2010 at 10:25:58AM +0800, Gui Jianfeng wrote:
+>>> V2->V3 changes:
+>>> - Move policy_*_node() functions up to get rid of forward declarations
+>>> - rename related functions by adding prefix "blkio_"
+>>>
+>>
+>> Thanks for the changes Gui. Looks good to me.
+>>
+>> Acked-by: Vivek Goyal <vgoyal@redhat.com>
+>
+> Hi Jens,
+>
+> This patchset seems to get lost. Just for reminding. Any comments?
 
-I've just noticed.  This line should instead read:
+Hi Jens,
 
-+	if (n < ffs->ev.count) {
-+		ffs->ev.count -= n;
-+		memmove(ffs->ev.types, ffs->ev.types + n,
-+			ffs->ev.count * sizeof *ffs->ev.types);
-+	} else {
-+		ffs->ev.count = 0;
-+	}
+Just want to add a quick note that we're excited about this
+functionality and are hoping to see it go in.
 
-This is a minor bug which should be rather hard to observe (and only
-if user-space reads() less then 4 * sizeof(struct usb_functionfs_event)
-bytes when reading from "ep0") so posted code is good for testing.
-(I'll post a fixed version later on with possibly other fixes and
-changes.)
-
-> +
-> +	spin_unlock_irq(&ffs->ev.waitq.lock);
-> +	mutex_unlock(&ffs->mutex);
-> +
-> +	return unlikely(__copy_to_user(buf, events, sizeof events))
-> +		? -EFAULT : sizeof events;
-> +}
-
--- 
-Best regards,                                           _     _
-  .o. | Liege of Serenely Enlightened Majesty of       o' \,=./ `o
-  ..o | Computer Science,  Michał "mina86" Nazarewicz     (o o)
-  ooo +---[mina86@mina86.com]---[mina86@jabber.org]---ooO--(_)--Ooo--
+Chad
