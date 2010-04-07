@@ -1,117 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539Ab0DGUBZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 16:01:25 -0400
-Received: from www.tglx.de ([62.245.132.106]:58762 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751132Ab0DGUBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 16:01:23 -0400
-Date: Wed, 7 Apr 2010 21:59:20 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Darren Hart <dvhltc@us.ibm.com>
-cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-       Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
-       "Peter W. Morreale" <pmorreale@novell.com>,
-       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Gregory Haskins <ghaskins@novell.com>,
-       Sven-Thorsten Dietrich <sdietrich@novell.com>,
-       Chris Mason <chris.mason@oracle.com>,
-       John Cooper <john.cooper@third-harmonic.com>,
-       Chris Wright <chrisw@sous-sol.org>, Avi Kivity <avi@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 4/6] futex: Add FUTEX_LOCK with optional adaptive
- spinning
-In-Reply-To: <4BBCC02C.5090000@us.ibm.com>
-Message-ID: <alpine.LFD.2.00.1004072124250.32352@localhost.localdomain>
-References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com> <1270499039-23728-5-git-send-email-dvhltc@us.ibm.com> <alpine.LFD.2.00.1004061818250.32352@localhost.localdomain> <4BBCC02C.5090000@us.ibm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751760Ab0DGUNP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 16:13:15 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:32654 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038Ab0DGUNL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 16:13:11 -0400
+Date: Wed, 7 Apr 2010 13:12:04 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Bruno =?ISO-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+       linux-input@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       rvinyard@cs.nmsu.edu
+Subject: Re: [PATCH mmotm] hid-picolcd: depends on LCD_CLASS_DEVICE
+Message-Id: <20100407131204.10759584.randy.dunlap@oracle.com>
+In-Reply-To: <20100407204404.5233ba6b@neptune.home>
+References: <201004052336.o35NaeSE015814@imap1.linux-foundation.org>
+	<20100405220414.9d90da83.randy.dunlap@oracle.com>
+	<alpine.LNX.2.00.1004061038510.8345@pobox.suse.cz>
+	<20100406105635.5384a087@pluto.restena.lu>
+	<20100406082614.79aaf1c5.randy.dunlap@oracle.com>
+	<20100406183535.7de3c628@neptune.home>
+	<20100406095633.49ec957a.randy.dunlap@oracle.com>
+	<20100407204404.5233ba6b@neptune.home>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4BBCE723.000C:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Apr 2010, Darren Hart wrote:
-> Thomas Gleixner wrote:
-> > On Mon, 5 Apr 2010, Darren Hart wrote:
-> > Hmm. The order is weird. Why don't you do that simpler ?
+On Wed, 7 Apr 2010 20:44:04 +0200 Bruno Prémont wrote:
+
+> On Tue, 06 April 2010 Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> > > 
+> > > One of my attempts did end up with a circular loop with regard to FB
+> > > (some of the FB drivers did select INPUT)?  
 > > 
-> > Get the uval, the tid and the thread_info pointer outside of the
-> > loop. Also task_pid_vnr(current) just needs a one time lookup.
-> 
-> Eeek. Having the owner in the loop is a good way to negate the benefits
-> of adaptive spinning by spinning forever (unlikely, but it could
-> certainly spin across multiple owners). Nice catch.
-> 
-> As for the uval.... I'm not sure what you mean. You get curval below
-> inside the loop, and there is no "uval" in the my version of the code.
-
-Well, you need a first time lookup of owner and ownertid for which you
-need the user space value (uval), but thinking more about it it's not
-even necessary. Just initialize ownertid to 0 so it will drop into the
-lookup code when we did not acquire the futex in the cmpxchg.
- 
-> As for the order, I had put the initial spin prior to the cmpxchg to
-> avoid doing too many cmpxchg's in a row as they are rather expensive.
-> However, since this is (now) the first opportunity to do try and acquire
-> the lock atomically after entering the futex syscall, I think you're
-> right, it should be the first thing in the loop.
-> 
+> >   (not that I can find)
 > > 
-> > change the loop to do:
-> > 
-> >        for (;;) {
-> >        	   curval = cmpxchg_futex_value_locked(uaddr, 0, curtid);
-> >   	   if (!curval)
-> > 	      return 1;
+> > CONFIG_VT does select INPUT
+> > and CONFIG_DRM_I915 does
+> > 	select INPUT if ACPI
 > 
-> Single return point makes instrumentation so much easier. Unless folks
-> _really_ object, I'll leave it as is until we're closer to merging.
-
-I don't care either way. That was just example code.
- 
-> > 	   if ((curval & FUTEX_TID_MASK) != ownertid) {
-> > 	      ownertid = curval & FUTEX_TID_MASK;
-> > 	      owner = update_owner(ownertid);
-> > 	   }
+> A newer attempt still produces the same result:
 > 
+> drivers/input/Kconfig:9:error: found recursive dependency: INPUT ->
+>        HID_SUPPORT -> HID_PICOLCD_FB -> FB -> FB_STI -> VT -> INPUT
 > 
-> Hrm... at this point the owner has changed... so we should break and go
-> to sleep, not update the owner and start spinning again. The
-> futex_spin_on_owner() will detect this and abort, so I'm not seeing the
-> purpose of the above if() block.
+> (it's only FB which causes the loop, LEDS, LCD and BACKLIGHT are fine)
 
-Why ? If the owner has changed and the new owner is running on another
-cpu then why not spin further ?
+  (yes, so I see)
 
-> > > +		hrtimer_init_sleeper(to, current);
-> > > +		hrtimer_set_expires(&to->timer, *time);
-> > > +	}
-> > 
-> >   Why setup all this _before_ trying the adaptive spin ?
+> This is with following patch on top of the improved deps patch I sent
+> a few minutes ago deeper in this thread.
 > 
+> Is there a way around this?
 > 
-> I placed the retry: label above the adaptive spin loop. This way if we wake a
-> task and the lock is "stolen" it doesn't just go right back to sleep. This
-> should aid in fairness and also performance in less contended cases. I didn't
-> think it was worth a "if (first_time_through && time)" sort of block to be
-> able to setup the timer after the spin loop.
 
-Hmm, ok.
- 
-> > 
-> > Do we really need all this code ? A simple owner->on_cpu (owner needs
-> > to be the task_struct then) would be sufficient to figure that out,
-> > wouldn't it?
+Well, lesson #1 is that select is evil^W^W should only be used to enable
+library-like code, or as Documentation/kbuild/kconfig-language.txt says:
+
+  Note:
+	select should be used with care. select will force
+	a symbol to a value without visiting the dependencies.
+	By abusing select you are able to select a symbol FOO even
+	if FOO depends on BAR that is not set.
+	In general use select only for non-visible symbols
+	(no prompts anywhere) and for symbols with no dependencies.
+	That will limit the usefulness but on the other hand avoid
+	the illegal configurations all over.
+	kconfig should one day warn about such things.
+
+
+
+(more below)
+
 > 
-> As Peter pointed out in IRC, p->oncpu isn't generic. I'll go trolling through
-> the mutex_spin_on_owner() discussions to see if I can determine why that's the
-> case.
+> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+> index 782a34e..711c091 100644
+> --- a/drivers/hid/Kconfig
+> +++ b/drivers/hid/Kconfig
+> @@ -285,7 +285,7 @@ config HID_PICOLCD_FB
+>  	bool "Framebuffer support"
+>  	default !EMBEDDED
+>  	depends on HID_PICOLCD
+> -	depends on HID_PICOLCD=FB || FB=y
+> +	select FB
 
-AFAICT p->oncpu is the correct thing to use when CONFIG_SMP=y. All it
-needs is a simple accessor function and you can keep all the futex
-cruft in futex.c where it belongs.
+If you'll go back to the unpatched (by this patch) version here,
+it seems to work OK.
 
-Thanks,
+>  	select FB_DEFERRED_IO
+>  	select FB_SYS_FILLRECT
+>  	select FB_SYS_COPYAREA
+> @@ -299,7 +299,8 @@ config HID_PICOLCD_BACKLIGHT
+>  	bool "Backlight control"
+>  	default !EMBEDDED
+>  	depends on HID_PICOLCD
+> -	depends on HID_PICOLCD=BACKLIGHT_CLASS_DEVICE || BACKLIGHT_CLASS_DEVICE=y
+> +	select BACKLIGHT_LCD_SUPPORT
+> +	select BACKLIGHT_CLASS_DEVICE
+>  	---help---
+>  	  Provide access to PicoLCD's backlight control via backlight
+>  	  class.
+> @@ -308,7 +309,8 @@ config HID_PICOLCD_LCD
+>  	bool "Contrast control"
+>  	default !EMBEDDED
+>  	depends on HID_PICOLCD
+> -	depends on HID_PICOLCD=LCD_CLASS_DEVICE || LCD_CLASS_DEVICE=y
+> +	select BACKLIGHT_LCD_SUPPORT
+> +	select LCD_CLASS_DEVICE
+>  	---help---
+>  	  Provide access to PicoLCD's LCD contrast via lcd class.
+>  
+> @@ -316,7 +318,8 @@ config HID_PICOLCD_LEDS
+>  	bool "GPO via leds class"
+>  	default !EMBEDDED
+>  	depends on HID_PICOLCD
+> -	depends on HID_PICOLCD=LEDS_CLASS || LEDS_CLASS=y
+> +	select NEW_LEDS
+> +	select LEDS_CLASS
+>  	---help---
+>  	  Provide access to PicoLCD's GPO pins via leds class.
 
-	tglx
+
+---
+~Randy
