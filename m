@@ -1,484 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932605Ab0DGNo2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 09:44:28 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:41812 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757945Ab0DGNmT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 09:42:19 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Wed, 07 Apr 2010 15:41:34 +0200
-From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCH 7/8] USB: testusb: imported David Brownell's USB testing
- application
-In-reply-to: <15d6fb76583235c380569d11d904cc0e8d019067.1270644740.git.mina86@mina86.com>
-To: linux-usb@vger.kernel.org
-Cc: Peter Korsgaard <jacmet@sunsite.dk>,
-       Rupesh Gujare <rupeshgujare@gmail.com>, linux-kernel@vger.kernel.org,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       Michal Nazarewicz <m.nazarewicz@samsung.com>
-Message-id: <3c4f11cdfb08952e964879c343d6ed7ceedc9542.1270644740.git.mina86@mina86.com>
-X-Mailer: git-send-email 1.7.0
-References: <cover.1270644740.git.mina86@mina86.com>
- <033ad254a3bba337e7a37cc6071b7debc7051801.1270644740.git.mina86@mina86.com>
- <b866157fc128769a3cdf9ae76f9fc21743776778.1270644740.git.mina86@mina86.com>
- <d8e956ce78914750460877b87ba2b0f707ab8a0f.1270644740.git.mina86@mina86.com>
- <a5ed8238af68738effaf1610f4653d98b9435098.1270644740.git.mina86@mina86.com>
- <922265f162fd3b45408c234d0d17e924b6f61671.1270644740.git.mina86@mina86.com>
- <15d6fb76583235c380569d11d904cc0e8d019067.1270644740.git.mina86@mina86.com>
+	id S932584Ab0DGN5f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 09:57:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12844 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752556Ab0DGN5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 09:57:34 -0400
+Date: Wed, 7 Apr 2010 15:54:56 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Gautham R Shenoy <ego@in.ibm.com>, Rusty Russell <rusty@rustcorp.com.au>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Ingo Molnar <mingo@elte.hu>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Nathan Fontenot <nfont@austin.ibm.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Sachin Sant <sachinp@in.ibm.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Shane Wang <shane.wang@intel.com>,
+       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] cpuhotplug: make get_online_cpus() scalability by
+	using percpu counter
+Message-ID: <20100407135456.GA12029@redhat.com>
+References: <4BB9BD8A.9040209@cn.fujitsu.com> <20100405162901.GA3567@redhat.com> <20100406120039.GC5680@redhat.com> <4BBC8A11.3040501@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BBC8A11.3040501@cn.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The testusb application can be used to test various USB gadget
-that implment the source/sink intrerface.
+On 04/07, Lai Jiangshan wrote:
+>
+> Oleg Nesterov wrote:
+> > On 04/05, Oleg Nesterov wrote:
+> >> On 04/05, Lai Jiangshan wrote:
+> >>> 1) get_online_cpus() must be allowed to be called recursively, so I added
+> >>>    get_online_cpus_nest for every task for new code.
+> >> Well, iirc one of the goals of
+> >>
+> >> 	cpu-hotplug: replace lock_cpu_hotplug() with get_online_cpus()
+> >> 	86ef5c9a8edd78e6bf92879f32329d89b2d55b5a
+> >>
+> >> was avoiding the new members in task_struct. I leave this up to you
+> >> and Gautham.
+>
+> Old get_online_cpus() is read-preference, I think the goal of this ability
+> is allow get_online_cpus()/put_online_cpus() to be called nested.
 
-Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
----
- tools/usb/testusb.c |  427 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 427 insertions(+), 0 deletions(-)
- create mode 100644 tools/usb/testusb.c
+Sure, I understand why you added task_struct->get_online_cpus_nest.
 
-diff --git a/tools/usb/testusb.c b/tools/usb/testusb.c
-new file mode 100644
-index 0000000..28e25ca
---- /dev/null
-+++ b/tools/usb/testusb.c
-@@ -0,0 +1,427 @@
-+/* $(CROSS_COMPILE)cc -Wall -g -lpthread -o testusb testusb.c */
-+
-+/*
-+ * Copyright (c) 2002 by David Brownell
-+ * 
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2 of the License, or (at your
-+ * option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-+ * for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software Foundation,
-+ * Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#include <stdio.h>
-+#include <string.h>
-+#include <ftw.h>
-+#include <stdlib.h>
-+#include <pthread.h>
-+#include <unistd.h>
-+#include <errno.h>
-+
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <fcntl.h>
-+
-+#include <sys/ioctl.h>
-+#include <linux/usbdevice_fs.h>
-+
-+/*-------------------------------------------------------------------------*/
-+
-+#define	TEST_CASES	30
-+
-+// FIXME make these public somewhere; usbdevfs.h?
-+
-+struct usbtest_param {
-+	// inputs
-+	unsigned		test_num;	/* 0..(TEST_CASES-1) */
-+	unsigned		iterations;
-+	unsigned		length;
-+	unsigned		vary;
-+	unsigned		sglen;
-+
-+	// outputs
-+	struct timeval		duration;
-+};
-+#define USBTEST_REQUEST	_IOWR('U', 100, struct usbtest_param)
-+
-+/*-------------------------------------------------------------------------*/
-+
-+/* #include <linux/usb_ch9.h> */
-+
-+struct usb_device_descriptor {
-+	__u8  bLength;
-+	__u8  bDescriptorType;
-+	__u16 bcdUSB;
-+	__u8  bDeviceClass;
-+	__u8  bDeviceSubClass;
-+	__u8  bDeviceProtocol;
-+	__u8  bMaxPacketSize0;
-+	__u16 idVendor;
-+	__u16 idProduct;
-+	__u16 bcdDevice;
-+	__u8  iManufacturer;
-+	__u8  iProduct;
-+	__u8  iSerialNumber;
-+	__u8  bNumConfigurations;
-+} __attribute__ ((packed));
-+
-+enum usb_device_speed {
-+	USB_SPEED_UNKNOWN = 0,			/* enumerating */
-+	USB_SPEED_LOW, USB_SPEED_FULL,		/* usb 1.1 */
-+	USB_SPEED_HIGH				/* usb 2.0 */
-+};
-+
-+/*-------------------------------------------------------------------------*/
-+
-+static char *speed (enum usb_device_speed s)
-+{
-+	switch (s) {
-+	case USB_SPEED_UNKNOWN:	return "unknown";
-+	case USB_SPEED_LOW:	return "low";
-+	case USB_SPEED_FULL:	return "full";
-+	case USB_SPEED_HIGH:	return "high";
-+	default:		return "??";
-+	}
-+}
-+
-+struct testdev {
-+	struct testdev		*next;
-+	char			*name;
-+	pthread_t		thread;
-+	enum usb_device_speed	speed;
-+	unsigned		ifnum : 8;
-+	unsigned		forever : 1;
-+	int			test;
-+
-+	struct usbtest_param	param;
-+};
-+static struct testdev		*testdevs;
-+
-+static int is_testdev (struct usb_device_descriptor *dev)
-+{
-+	/* FX2 with (tweaked) bulksrc firmware */
-+	if (dev->idVendor == 0x0547 && dev->idProduct == 0x1002)
-+		return 1;
-+
-+	/*----------------------------------------------------*/
-+
-+	/* devices that start up using the EZ-USB default device and
-+	 * which we can use after loading simple firmware.  hotplug
-+	 * can fxload it, and then run this test driver.
-+	 *
-+	 * we return false positives in two cases:
-+	 * - the device has a "real" driver (maybe usb-serial) that
-+	 *   renumerates.  the device should vanish quickly.
-+	 * - the device doesn't have the test firmware installed.
-+	 */
-+
-+	/* generic EZ-USB FX controller */
-+	if (dev->idVendor == 0x0547 && dev->idProduct == 0x2235)
-+		return 1;
-+
-+	/* generic EZ-USB FX2 controller */
-+	if (dev->idVendor == 0x04b4 && dev->idProduct == 0x8613)
-+		return 1;
-+
-+	/* CY3671 development board with EZ-USB FX */
-+	if (dev->idVendor == 0x0547 && dev->idProduct == 0x0080)
-+		return 1;
-+
-+	/* Keyspan 19Qi uses an21xx (original EZ-USB) */
-+	if (dev->idVendor == 0x06cd && dev->idProduct == 0x010b)
-+		return 1;
-+
-+	/*----------------------------------------------------*/
-+
-+	/* "gadget zero", Linux-USB test software */
-+	if (dev->idVendor == 0x0525 && dev->idProduct == 0xa4a0)
-+		return 1;
-+
-+	/* user mode subset of that */
-+	if (dev->idVendor == 0x0525 && dev->idProduct == 0xa4a4)
-+		return 1;
-+
-+	/* iso version of usermode code */
-+	if (dev->idVendor == 0x0525 && dev->idProduct == 0xa4a3)
-+		return 1;
-+
-+	/* some GPL'd test firmware uses these IDs */
-+
-+	if (dev->idVendor == 0xfff0 && dev->idProduct == 0xfff0)
-+		return 1;
-+
-+	/*----------------------------------------------------*/
-+
-+	/* iBOT2 high speed webcam */
-+	if (dev->idVendor == 0x0b62 && dev->idProduct == 0x0059)
-+		return 1;
-+
-+	return 0;
-+}
-+
-+static int find_testdev (const char *name, const struct stat *sb, int flag)
-+{
-+	int				fd;
-+	struct usb_device_descriptor	dev;
-+
-+	if (flag != FTW_F)
-+		return 0;
-+	/* ignore /proc/bus/usb/{devices,drivers} */
-+	if (strrchr (name, '/')[1] == 'd')
-+		return 0;
-+
-+	if ((fd = open (name, O_RDONLY)) < 0) {
-+		perror ("can't open dev file r/o");
-+		return 0;
-+	}
-+	if (read (fd, &dev, sizeof dev) != sizeof dev)
-+		fputs ("short devfile read!\n", stderr);
-+	else if (is_testdev (&dev)) {
-+		struct testdev		*entry;
-+
-+		if ((entry = calloc (1, sizeof *entry)) == 0) {
-+			fputs ("no mem!\n", stderr);
-+			goto done;
-+		}
-+		entry->name = strdup (name);
-+		if (!entry->name) {
-+			free (entry);
-+			goto done;
-+		}
-+
-+		// FIXME better to look at each interface and ask if it's
-+		// bound to 'usbtest', rather than assume interface 0
-+		entry->ifnum = 0;
-+
-+		// FIXME ask usbfs what speed; update USBDEVFS_CONNECTINFO
-+		// so it tells about high speed etc
-+
-+		fprintf (stderr, "%s speed\t%s\n",
-+				speed (entry->speed), entry->name);
-+
-+		entry->next = testdevs;
-+		testdevs = entry;
-+	}
-+
-+done:
-+	close (fd);
-+	return 0;
-+}
-+
-+static int
-+usbdev_ioctl (int fd, int ifno, unsigned request, void *param)
-+{
-+	struct usbdevfs_ioctl	wrapper;
-+
-+	wrapper.ifno = ifno;
-+	wrapper.ioctl_code = request;
-+	wrapper.data = param;
-+
-+	return ioctl (fd, USBDEVFS_IOCTL, &wrapper);
-+}
-+
-+static void *handle_testdev (void *arg)
-+{
-+	struct testdev		*dev = arg;
-+	int			fd, i;
-+	int			status;
-+
-+	if ((fd = open (dev->name, O_RDWR)) < 0) {
-+		perror ("can't open dev file r/w");
-+		return 0;
-+	}
-+
-+restart:
-+	for (i = 0; i < TEST_CASES; i++) {
-+		if (dev->test != -1 && dev->test != i)
-+			continue;
-+		dev->param.test_num = i;
-+
-+		status = usbdev_ioctl (fd, dev->ifnum,
-+				USBTEST_REQUEST, &dev->param);
-+		if (status < 0 && errno == EOPNOTSUPP)
-+			continue;
-+
-+		/* FIXME need a "syslog it" option for background testing */
-+
-+		/* NOTE: each thread emits complete lines; no fragments! */
-+		if (status < 0) {
-+			char	buf [80];
-+			int	err = errno;
-+
-+			if (strerror_r (errno, buf, sizeof buf)) {
-+				snprintf (buf, sizeof buf, "error %d", err);
-+				errno = err;
-+			}
-+			printf ("%s test %d --> %d (%s)\n",
-+				dev->name, i, errno, buf);
-+		} else
-+			printf ("%s test %d, %4d.%.06d secs\n", dev->name, i,
-+				(int) dev->param.duration.tv_sec,
-+				(int) dev->param.duration.tv_usec);
-+
-+		fflush (stdout);
-+	}
-+	if (dev->forever)
-+		goto restart;
-+
-+	close (fd);
-+	return arg;
-+}
-+
-+int main (int argc, char **argv)
-+{
-+	int			c;
-+	struct testdev		*entry;
-+	char			*device;
-+	int			all = 0, forever = 0, not = 0;
-+	int			test = -1 /* all */;
-+	struct usbtest_param	param;
-+
-+	/* pick defaults that works with all speeds, without short packets.
-+	 *
-+	 * Best per-frame data rates:
-+	 *     high speed, bulk       512 * 13 * 8 = 53248
-+	 *                 interrupt 1024 *  3 * 8 = 24576
-+	 *     full speed, bulk/intr   64 * 19     =  1216
-+	 *                 interrupt   64 *  1     =    64
-+	 *      low speed, interrupt    8 *  1     =     8
-+	 */
-+	param.iterations = 1000;
-+	param.length = 512;
-+	param.vary = 512;
-+	param.sglen = 32;
-+
-+	/* for easy use when hotplugging */
-+	device = getenv ("DEVICE");
-+
-+	while ((c = getopt (argc, argv, "D:ac:g:hns:t:v:")) != EOF)
-+	switch (c) {
-+	case 'D':	/* device, if only one */
-+		device = optarg;
-+		continue;
-+	case 'a':	/* use all devices */
-+		device = 0;
-+		all = 1;
-+		continue;
-+	case 'c':	/* count iterations */
-+		param.iterations = atoi (optarg);
-+		if (param.iterations < 0)
-+			goto usage;
-+		continue;
-+	case 'g':	/* scatter/gather entries */
-+		param.sglen = atoi (optarg);
-+		if (param.sglen < 0)
-+			goto usage;
-+		continue;
-+	case 'l':	/* loop forever */
-+		forever = 1;
-+		continue;
-+	case 'n':	/* no test running! */
-+		not = 1;
-+		continue;
-+	case 's':	/* size of packet */
-+		param.length = atoi (optarg);
-+		if (param.length < 0)
-+			goto usage;
-+		continue;
-+	case 't':	/* run just one test */
-+		test = atoi (optarg);
-+		if (test < 0)
-+			goto usage;
-+		continue;
-+	case 'v':	/* vary packet size by ... */
-+		param.vary = atoi (optarg);
-+		if (param.vary < 0)
-+			goto usage;
-+		continue;
-+	case '?':
-+	case 'h':
-+	default:
-+usage:
-+		fprintf (stderr, "usage: %s [-an] [-D dev]\n"
-+			"\t[-c iterations]  [-t testnum]\n"
-+			"\t[-s packetsize] [-g sglen] [-v vary]\n",
-+			argv [0]);
-+		return 1;
-+	}
-+	if (optind != argc)
-+		goto usage;
-+	if (!all && !device) {
-+		fprintf (stderr, "must specify '-a' or '-D dev', "
-+			"or DEVICE=/proc/bus/usb/BBB/DDD in env\n");
-+		goto usage;
-+	}
-+
-+	if ((c = open ("/proc/bus/usb/devices", O_RDONLY)) < 0) {
-+		fputs ("usbfs files are missing\n", stderr);
-+		return -1;
-+	}
-+
-+	/* collect and list the test devices */
-+	if (ftw ("/proc/bus/usb", find_testdev, 3) != 0) {
-+		fputs ("ftw failed; is usbfs missing?\n", stderr);
-+		return -1;
-+	}
-+
-+	/* quit, run single test, or create test threads */
-+	if (!testdevs && !device) {
-+		fputs ("no test devices recognized\n", stderr);
-+		return -1;
-+	}
-+	if (not)
-+		return 0;
-+	if (testdevs && testdevs->next == 0 && !device)
-+		device = testdevs->name;
-+	for (entry = testdevs; entry; entry = entry->next) {
-+		int	status;
-+
-+		entry->param = param;
-+		entry->forever = forever;
-+		entry->test = test;
-+
-+		if (device) {
-+			if (strcmp (entry->name, device))
-+				continue;
-+			return handle_testdev (entry) != entry;
-+		}
-+		status = pthread_create (&entry->thread, 0, handle_testdev, entry);
-+		if (status) {
-+			perror ("pthread_create");
-+			continue;
-+		}
-+	}
-+	if (device) {
-+		struct testdev		dev;
-+
-+		/* kernel can recognize test devices we don't */
-+		fprintf (stderr, "%s: %s may see only control tests\n",
-+				argv [0], device);
-+
-+		memset (&dev, 0, sizeof dev);
-+		dev.name = device;
-+		dev.param = param;
-+		dev.forever = forever;
-+		dev.test = test;
-+		return handle_testdev (&dev) != &dev;
-+	}
-+
-+	/* wait for tests to complete */
-+	for (entry = testdevs; entry; entry = entry->next) {
-+		void	*retval;
-+
-+		if (pthread_join (entry->thread, &retval))
-+			perror ("pthread_join");
-+		/* testing errors discarded! */
-+	}
-+
-+	return 0;
-+}
--- 
-1.7.0
+> and use per-task counter for allowing get_online_cpus()/put_online_cpus()
+> to be called nested, I think this deal is absolutely worth.
+
+As I said, I am not going to argue. I can't justify this tradeoff.
+
+> >>>  void put_online_cpus(void)
+> >>>  {
+> >>> ...
+> >>> +	if (!--current->get_online_cpus_nest) {
+> >>> +		preempt_disable();
+> >>> +		__get_cpu_var(refcount)--;
+> >>> +		if (cpu_hotplug_task)
+> >>> +			wake_up_process(cpu_hotplug_task);
+> >> This looks unsafe. In theory nothing protects cpu_hotplug_task from
+> >> exiting if refcount_sum() becomes zero, this means wake_up_process()
+> >> can hit the freed/reused/unmapped task_struct. Probably cpu_hotplug_done()
+> >> needs another synhronize_sched() before return.
+> >
+> > Yes, I think this is true, at least in theory.
+>
+> preempt_disable() prevent cpu_hotplug_task from exiting.
+
+If the cpu_down() is the caller of cpu_hotplug_begin/done, then yes.
+
+But unless I missed something, nothing protects from cpu_up() which
+takes this lock too.
+
+Just in case... I am not saying this is really possible in practice.
+
+Oleg.
 
