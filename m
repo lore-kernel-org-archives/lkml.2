@@ -1,132 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932912Ab0DGQbb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 12:31:31 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:33540 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932695Ab0DGQb2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 12:31:28 -0400
-Date: Wed, 7 Apr 2010 09:20:10 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Bruno =?ISO-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-       linux-input@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-       rvinyard@cs.nmsu.edu
-Subject: Re: [PATCH mmotm] hid-picolcd: depends on LCD_CLASS_DEVICE
-Message-Id: <20100407092010.4cd60ece.randy.dunlap@oracle.com>
-In-Reply-To: <20100406230434.1336c317@neptune.home>
-References: <201004052336.o35NaeSE015814@imap1.linux-foundation.org>
-	<20100405220414.9d90da83.randy.dunlap@oracle.com>
-	<alpine.LNX.2.00.1004061038510.8345@pobox.suse.cz>
-	<20100406105635.5384a087@pluto.restena.lu>
-	<20100406082614.79aaf1c5.randy.dunlap@oracle.com>
-	<20100406183535.7de3c628@neptune.home>
-	<20100406095633.49ec957a.randy.dunlap@oracle.com>
-	<20100406230434.1336c317@neptune.home>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0204.4BBCB125.0116:SCFMA4539814,ss=1,fgs=0
+	id S932766Ab0DGQcj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 12:32:39 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:53255 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932581Ab0DGQch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 12:32:37 -0400
+Date: Wed, 7 Apr 2010 17:32:18 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 13/14] Do not compact within a preferred zone after a
+	compaction failure
+Message-ID: <20100407163217.GV17882@csn.ul.ie>
+References: <1270224168-14775-1-git-send-email-mel@csn.ul.ie> <1270224168-14775-14-git-send-email-mel@csn.ul.ie> <20100406170616.7d0f24b1.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100406170616.7d0f24b1.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Apr 2010 23:04:34 +0200 Bruno Prémont wrote:
-
-> On Tue, 06 April 2010 Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> > > It triggers the issue by having PicoLCD built-in while one of the
-> > > optional dependencies as a module.
+On Tue, Apr 06, 2010 at 05:06:16PM -0700, Andrew Morton wrote:
+> On Fri,  2 Apr 2010 17:02:47 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
+> 
+> > The fragmentation index may indicate that a failure is due to external
+> > fragmentation but after a compaction run completes, it is still possible
+> > for an allocation to fail. There are two obvious reasons as to why
 > > 
-> > Yes, basically what the patch description said.
-> 
-> Oops, sorry I didn't completely read the patch description.
-> 
-> > > Any idea of how this can be solved with kbuild in order to keep the
-> > > dependencies optional?
-> > > 
-> > > Something that would satisfy the following pseudocode:
-> > >   if CONFIG_HID_PICOLCD == y
-> > >     assert(CONFIG_LCD_CLASS_DEVICE != m)
-> > > 
+> >   o Page migration cannot move all pages so fragmentation remains
+> >   o A suitable page may exist but watermarks are not met
 > > 
-> > If you don't want the kconfig machinery to do that (it appears that you don't),
-> > then I guess that you'll need to expand the source code to handle
-> > CONFIG_LCD_CLASS_DEVICE=y and CONFIG_LCD_CLASS_DEVICE=m differently.
-> > Or only handle them differently if HID_PICOLCD=y.  :(
+> > In the event of compaction followed by an allocation failure, this patch
+> > defers further compaction in the zone for a period of time. The zone that
+> > is deferred is the first zone in the zonelist - i.e. the preferred zone.
+> > To defer compaction in the other zones, the information would need to be
+> > stored in the zonelist or implemented similar to the zonelist_cache.
+> > This would impact the fast-paths and is not justified at this time.
+> > 
 > 
-> Below a patch (against 2.6.34-rc3 + Jiri's picolcd branch) which
-> should fix above issue keeping the deps optional.
+> Your patch, it sucks!
 > 
-> With it it's not yet possible to select the deps from HID menu.
+> > ---
+> >  include/linux/compaction.h |   35 +++++++++++++++++++++++++++++++++++
+> >  include/linux/mmzone.h     |    7 +++++++
+> >  mm/page_alloc.c            |    5 ++++-
+> >  3 files changed, 46 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+> > index ae98afc..2a02719 100644
+> > --- a/include/linux/compaction.h
+> > +++ b/include/linux/compaction.h
+> > @@ -18,6 +18,32 @@ extern int sysctl_extfrag_handler(struct ctl_table *table, int write,
+> >  extern int fragmentation_index(struct zone *zone, unsigned int order);
+> >  extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
+> >  			int order, gfp_t gfp_mask, nodemask_t *mask);
+> > +
+> > +/* defer_compaction - Do not compact within a zone until a given time */
+> > +static inline void defer_compaction(struct zone *zone, unsigned long resume)
+> > +{
+> > +	/*
+> > +	 * This function is called when compaction fails to result in a page
+> > +	 * allocation success. This is somewhat unsatisfactory as the failure
+> > +	 * to compact has nothing to do with time and everything to do with
+> > +	 * the requested order, the number of free pages and watermarks. How
+> > +	 * to wait on that is more unclear, but the answer would apply to
+> > +	 * other areas where the VM waits based on time.
+> > +	 */
 > 
-> I did a few oldconfig and compile-tests with PICOLCD=y/m and same for
-> the deps (not switched FB for those tests).
+> c'mon, let's not make this rod for our backs.
 > 
-> Bruno
+> The "A suitable page may exist but watermarks are not met" case can be
+> addressed by testing the watermarks up-front, surely?
 > 
-> 
-> 
-> 
-> 
-> HID_PICOLCD should depend on LCD_CLASS_DEVICE, otherwise the
-> build fails when HID_PICOLCD=y and LCD_CLASS_DEVICE=m:
-> 
-> hid-picolcd.c:(.text+0x84523f): undefined reference to `lcd_device_unregister'
-> hid-picolcd.c:(.text+0x8478ab): undefined reference to `lcd_device_register'
-> hid-picolcd.c:(.text+0x84c15f): undefined reference to `lcd_device_unregister'
-> 
-> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
-> 
-> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-> index a2ecd83..39df4f5 100644
-> --- a/drivers/hid/Kconfig
-> +++ b/drivers/hid/Kconfig
-> @@ -285,6 +285,35 @@ config HID_PICOLCD
->  	  Features that are not (yet) supported:
->  	  - IR
->  
 
-All of these user-visible kconfig options need help text also...
+Nope, because the number of pages free at each order changes before and
+after compaction and you don't know by how much in advance. It wouldn't
+be appropriate to assume perfect compaction because unmovable and
+reclaimable pages are free.
 
-> +config HID_PICOLCD_FB
-> +	bool "Framebuffer support"
-> +	default !EMBEDDED
-> +	depends on HID_PICOLCD
-> +	depends on HID_PICOLCD=FB || FB=y
-> +	select FB_DEFERRED_IO
-> +	select FB_SYS_FILLRECT
-> +	select FB_SYS_COPYAREA
-> +	select FB_SYS_IMAGEBLIT
-> +	select FB_SYS_FOPS
-> +
-> +config HID_PICOLCD_BACKLIGHT
-> +	bool "Backlight control"
-> +	default !EMBEDDED
-> +	depends on HID_PICOLCD
-> +	depends on HID_PICOLCD=BACKLIGHT_CLASS_DEVICE || BACKLIGHT_CLASS_DEVICE=y
-> +
-> +config HID_PICOLCD_LCD
-> +	bool "Contrast control"
-> +	default !EMBEDDED
-> +	depends on HID_PICOLCD
-> +	depends on HID_PICOLCD=LCD_CLASS_DEVICE || LCD_CLASS_DEVICE=y
-> +
-> +config HID_PICOLCD_LEDS
-> +	bool "GPO via leds class"
-> +	default !EMBEDDED
-> +	depends on HID_PICOLCD
-> +	depends on HID_PICOLCD=LEDS_CLASS || LEDS_CLASS=y
-> +
->  config HID_QUANTA
->  	tristate "Quanta Optical Touch"
->  	depends on USB_HID
+> I bet the "Page migration cannot move all pages so fragmentation
+> remains" case can be addressed by setting some metric in the zone, and
+> suitably modifying that as a result on ongoing activity. 
+> To tell the
+> zone "hey, compaction migth be worth trying now".  that sucks too, but not
+> so much.
+> 
+> Or something.  Putting a wallclock-based throttle on it like this
+> really does reduce the usefulness of the whole feature.
+> 
 
+When it gets down to it, this patch was about paranoia. If the
+heuristics on compaction-avoidance didn't work out, I didn't want
+compaction to keep pounding.
 
----
-~Randy
+That said, this patch would also hide the bug report telling us this happened
+and was a mistake. A bug report detailing high oprofile usage in compaction
+will be much easier to come across than a report on defer_compaction()
+being called too often.
+
+Please drop this patch.
+
+> Internet: "My application works OK on a hard disk but fails when I use an SSD!". 
+> 
+> akpm: "Tell Mel!"
+> 
+
+Mel is in and he is listening.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
