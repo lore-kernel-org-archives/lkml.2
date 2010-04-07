@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757713Ab0DGMd5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 08:33:57 -0400
-Received: from ks309829.kimsufi.com ([94.23.13.159]:50474 "EHLO pomoc.dhsi.pl"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753503Ab0DGMdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 08:33:55 -0400
-Message-ID: <7fd37aac5d7a6eaecc063f985aefe998.squirrel@dhsi.pl>
-Date: Tue, 6 Apr 2010 01:56:36 +0200
-Subject: Lieber Freund!!!
-From: "Weber Dito" <joe@smit1.dhsi.pl>
-Reply-To: bankas27@aim.com
-User-Agent: SquirrelMail/1.4.20-RC2
+	id S932532Ab0DGMsG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 08:48:06 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:33988 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757718Ab0DGMsB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 08:48:01 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzab9bhzz1202hzz6d525hz32i6bh2a8h87h43h62h)
+X-Spam-TCS-SCL: 1:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L0IBJL-02-96L-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Ingo Molnar <mingo@redhat.com>
+CC: x86@kernel.org, iommu@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>,
+       Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 01/12] x86/amd-iommu: Remove double NULL check in check_device
+Date: Wed, 7 Apr 2010 14:46:38 +0200
+Message-ID: <1270644409-10123-2-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1270644409-10123-1-git-send-email-joerg.roedel@amd.com>
+References: <1270644409-10123-1-git-send-email-joerg.roedel@amd.com>
+X-OriginalArrivalTime: 07 Apr 2010 12:46:55.0773 (UTC) FILETIME=[679FBCD0:01CAD650]
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Julia Lawall <julia@diku.dk>
 
+dev was tested just above, so drop the second test.
 
+Signed-off-by: Julia Lawall <julia@diku.dk>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ arch/x86/kernel/amd_iommu.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Lieber Freund!!!
+diff --git a/arch/x86/kernel/amd_iommu.c b/arch/x86/kernel/amd_iommu.c
+index adb0ba0..2c4a501 100644
+--- a/arch/x86/kernel/amd_iommu.c
++++ b/arch/x86/kernel/amd_iommu.c
+@@ -118,7 +118,7 @@ static bool check_device(struct device *dev)
+ 		return false;
+ 
+ 	/* No device or no PCI device */
+-	if (!dev || dev->bus != &pci_bus_type)
++	if (dev->bus != &pci_bus_type)
+ 		return false;
+ 
+ 	devid = get_device_id(dev);
+-- 
+1.7.0.4
 
-Ich vermute das diese E-Mail eine Überraschung für Sie sein wird, aber es
-ist wahr.Ich bin bei einer routinen Überprüfung in meiner Bank (Standard
-Bank von Süd Afrika) wo ich arbeite, auf einem Konto gestoßen, was nicht
-in anspruch genommen worden ist, wo derzeit $12,500,000
-(zwölfmillionenfünfhundert US Dollar) gutgeschrieben sind.
-
-Dieses Konto gehörte Herrn Manfred Becker, der ein Kunde in unsere Bank
-war, der leider verstorben ist. Herr Becker war ein gebürtiger
-Deutscher.Damit es mir möglich ist dieses Geld $12,500,000 inanspruch
-zunehmen, benötige ich die zusammenarbeit eines Ausländischen Partners wie
-Sie,den ich als Verwandter und Erbe des verstorbenen Herrn Becker
-vorstellen kann,damit wir das Geld inanspruch nehmen können.
-
-Für diese Unterstützung erhalten Sie 30% der Erbschaftsumme und die
-restlichen 70% teile ich mir mit meinen zwei Arbeitskollegen, die mich bei
-dieser Transaktion ebenfalls unterstützen.Wenn Sie interessiert sind,
-können Sie mir bitte eine E-Mail schicken, damit ich Ihnen mehr Details
-zukommen lassen kann.Schicken Sie bitte Ihre Antwort auf diese E-Mail
-Adresse: (ditoweber@aim.com)
-
-Mit freundlichen Grüßen
-
-Herr MARTINS WEBER DITO
 
