@@ -1,15 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756299Ab0DGVva (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 17:51:30 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37832 "EHLO ogre.sisk.pl"
+	id S1756374Ab0DGVve (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 17:51:34 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37836 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756122Ab0DGVvR convert rfc822-to-8bit (ORCPT
+	id S1754212Ab0DGVvT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 17:51:17 -0400
+	Wed, 7 Apr 2010 17:51:19 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Andrew Benton" <b3nton@gmail.com>, "Jeff Garzik" <jeff@garzik.org>
+       "David S. Miller" <davem@davemloft.net>,
+       "Rusty Russell" <rusty@rustcorp.com.au>,
+       "Shirley Ma" <mashirle@us.ibm.com>, "Shirley Ma" <xma@us.ibm.com>,
+       "=?utf-8?q?Thomas=20M=C3=BCller?=" <thomas@mathtm.de>
 References: <6Pphclm24fK.A.lSF.qsPvLB@chimera>
 In-Reply-To: <6Pphclm24fK.A.lSF.qsPvLB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,10 +20,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <JVS2s9dmTsP.A.g3F.4sPvLB@chimera>
-Subject: [Bug #15716] ata2: lost interrupt with kernel 2.6.34-rc1
+Message-ID: <JVS2s9dmTsP.A.6eF.xsPvLB@chimera>
+Subject: [Bug #15719] virtio_net causing kernel BUG when running under VirtualBox
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed,  7 Apr 2010 23:13:53 +0200 (CEST)
+Date: Wed,  7 Apr 2010 23:13:54 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,12 +36,13 @@ from 2.6.33.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15716
-Subject		: ata2: lost interrupt with kernel 2.6.34-rc1
-Submitter	: Andrew Benton <b3nton@gmail.com>
-Date		: 2010-03-11 16:57 (28 days old)
-Message-ID	: <4B992110.2090300@gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=126832670609705&w=4
-Handled-By	: Jeff Garzik <jeff@garzik.org>
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15719
+Subject		: virtio_net causing kernel BUG when running under VirtualBox
+Submitter	: Thomas Müller <thomas@mathtm.de>
+Date		: 2010-03-27 14:32 (12 days old)
+First-Bad-Commit: http://git.kernel.org/git/linus/9ab86bbcf8be755256f0a5e994e0b38af6b4d399
+Message-ID	: <4BAE1707.2050803@mathtm.de>
+References	: http://marc.info/?l=linux-kernel&m=126970039227740&w=4
+Handled-By	: Shirley Ma <mashirle@us.ibm.com>
 
 
