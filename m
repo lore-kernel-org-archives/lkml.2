@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab0DGWeE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 18:34:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50961 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752002Ab0DGWeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 18:34:00 -0400
-Message-ID: <4BBD07F9.5060106@zytor.com>
-Date: Wed, 07 Apr 2010 15:32:25 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1755552Ab0DGWet (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 18:34:49 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:39028 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab0DGWer (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 18:34:47 -0400
+Date: Thu, 8 Apr 2010 08:34:46 +1000
+From: Simon Horman <horms@verge.net.au>
+To: Patrick McHardy <kaber@trash.net>
+Cc: wzt.wzt@gmail.com, linux-kernel@vger.kernel.org,
+       Wensong Zhang <wensong@linux-vs.org>, Julian Anastasov <ja@ssi.bg>,
+       netdev@vger.kernel.org, lvs-devel@vger.kernel.org
+Subject: Re: [PATCH] IPVS: replace sprintf to snprintf to avoid stack
+ buffer overflow
+Message-ID: <20100407223445.GA15810@verge.net.au>
+References: <20100406025020.GA2741@localhost.localdomain>
+ <20100406032248.GF30359@verge.net.au>
+ <4BBCAE52.9080501@trash.net>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>, Rabin Vincent <rabin@rab.in>,
-       Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [Bug #15668] start_kernel(): bug: interrupts were enabled early
-References: <6Pphclm24fK.A.lSF.qsPvLB@chimera> <JVS2s9dmTsP.A.4LH.YtPvLB@chimera>
-In-Reply-To: <JVS2s9dmTsP.A.4LH.YtPvLB@chimera>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BBCAE52.9080501@trash.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2010 02:13 PM, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
+On Wed, Apr 07, 2010 at 06:09:54PM +0200, Patrick McHardy wrote:
+> Simon Horman wrote:
+> > On Tue, Apr 06, 2010 at 10:50:20AM +0800, wzt.wzt@gmail.com wrote:
+> >> IPVS not check the length of pp->name, use sprintf will cause stack buffer overflow.
+> >> struct ip_vs_protocol{} declare name as char *, if register a protocol as:
+> >> struct ip_vs_protocol ip_vs_test = {
+> >>         .name =			"aaaaaaaa....128...aaa",
+> >> 	.debug_packet =         ip_vs_tcpudp_debug_packet,
+> >> };
+> >>
+> >> when called ip_vs_tcpudp_debug_packet(), sprintf(buf, "%s TRUNCATED", pp->name); 
+> >> will cause stack buffer overflow.
+> >>
+> >> Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
+> > 
+> > I think that the simple answer is, don't do that.
 > 
-> The following bug entry is on the current list of known regressions
-> from 2.6.33.  Please verify if it still should be listed and let the tracking team
-> know (either way).
+> Indeed.
 > 
+> > But your patch seems entirely reasonable to me.
+> > 
+> > Acked-by: Simon Horman <horms@verge.net.au>
+> > 
+> > Patrick, please consider merging this.
 > 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15668
-> Subject		: start_kernel(): bug: interrupts were enabled early
-> Submitter	: Rabin Vincent <rabin@rab.in>
-> Date		: 2010-03-25 19:53 (14 days old)
-> First-Bad-Commit: http://git.kernel.org/git/linus/773e3eb7b81e5ba13b5155dfb3bb75b8ce37f8f9
-                                         ^^^^
+> I think this fix is a bit silly, we can simply print the name in
+> the pr_debug() statement and avoid both the potential overflow
+> and truncation.
+> 
+> How does this look?
 
-FWIW, this /git is redundant.
+Looks good to me:
 
-	-hpa
+Acked-by: Simon Horman <horms@verge.net.au>
+
