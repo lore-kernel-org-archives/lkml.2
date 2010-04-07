@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758038Ab0DGQMF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 12:12:05 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:37294 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757430Ab0DGQMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 12:12:03 -0400
-Date: Wed, 7 Apr 2010 17:11:43 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 12/14] Add a tunable that decides when memory should be
-	compacted and when it should be reclaimed
-Message-ID: <20100407161143.GU17882@csn.ul.ie>
-References: <1270224168-14775-1-git-send-email-mel@csn.ul.ie> <1270224168-14775-13-git-send-email-mel@csn.ul.ie> <20100406170613.9b80c7ea.akpm@linux-foundation.org>
+	id S932827Ab0DGQQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 12:16:10 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:32978 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932539Ab0DGQQI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 12:16:08 -0400
+Date: Wed, 7 Apr 2010 18:16:03 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+       Pedro Ribeiro <pedrib@gmail.com>, akpm@linux-foundation.org,
+       Greg KH <gregkh@suse.de>, alsa-devel@alsa-project.org,
+       linux-usb@vger.kernel.org
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+Message-ID: <20100407161603.GL30801@buzzloop.caiaq.de>
+References: <20100407153154.GC13425@kroah.com>
+ <Pine.LNX.4.44L0.1004071149140.1779-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100406170613.9b80c7ea.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <Pine.LNX.4.44L0.1004071149140.1779-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 06, 2010 at 05:06:13PM -0700, Andrew Morton wrote:
-> On Fri,  2 Apr 2010 17:02:46 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
+On Wed, Apr 07, 2010 at 11:55:19AM -0400, Alan Stern wrote:
+> On Wed, 7 Apr 2010, Greg KH wrote:
 > 
-> > The kernel applies some heuristics when deciding if memory should be
-> > compacted or reclaimed to satisfy a high-order allocation. One of these
-> > is based on the fragmentation. If the index is below 500, memory will
-> > not be compacted. This choice is arbitrary and not based on data. To
-> > help optimise the system and set a sensible default for this value, this
-> > patch adds a sysctl extfrag_threshold. The kernel will only compact
-> > memory if the fragmentation index is above the extfrag_threshold.
+> > Alan, any objection to just using usb_buffer_alloc() for every driver?
+> > Or is that too much overhead?
 > 
-> Was this the most robust, reliable, no-2am-phone-calls thing we could
-> have done?
+> I don't know what the overhead is.  But usb_buffer_alloc() requires the 
+> caller to keep track of the buffer's DMA address, so it's not a simple 
+> plug-in replacement.  In addition, the consistent memory that 
+> usb_buffer_alloc() provides is a scarce resource on some platforms.
 > 
-> What about, say, just doing a bit of both until something worked? 
+> Writing new functions is the way to go.
 
-I guess you could but that is not a million miles away from what
-currently happens.
+Ok, I'll write some dummies for usb_malloc() and usb_zalloc() which
+will just call kmalloc() with GFP_DMA32 for now. And while at it,
+usb_alloc_buffer() will be renamed to usb_alloc_consistent(). Then I'll
+try to clean up all existing drivers to use this new interface and
+follow the changes.
 
-This heuristic is basically "based on free memory layout, how likely is
-compaction to succeed?". It makes a decision based on that. A later
-patch then checks if the guess was right. If not, just try direct
-reclaim for a bit before trying compaction again.
+In a next step, we should fine-tune when GFP_DMA32 is really needed.
+And I'll leave all occurances of usb_alloc_consistent() as they are now.
 
-> For
-> extra smarts we could remember what worked best last time, and make
-> ourselves more likely to try that next time.
-> 
+Does that sound ok?
 
-With the later patch, this is essentially what we do. Granted we
-remember the opposite "If the kernel guesses wrong, then don't compact
-for a short while before trying again".
+Thanks,
+Daniel
 
-> Or whatever, but extfrag_threshold must die!  And replacing it with a
-> hardwired constant doesn't count ;)
-> 
-
-I think what you have in mind is "just try compaction every time" but my
-concern about that is we'll hit a corner case where a lot of CPU time is
-taken scanning zones uselessly. That is what this heuristic and the
-back-off logic in a later patch was meant to avoid. I haven't thought of
-a better alternative :/
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
