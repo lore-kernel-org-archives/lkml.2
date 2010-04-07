@@ -1,96 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162Ab0DGFYX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 01:24:23 -0400
-Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:39769 "EHLO
-	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751854Ab0DGFYR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 01:24:17 -0400
-Subject: Re: [PATCH] relay: move remove_buf_file inside relay_close_buf
-From: Tom Zanussi <zanussi@comcast.net>
-To: Dmitry Monakhov <dmonakhov@openvz.org>
-Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, dwilder@us.ibm.com,
-       lkessler@us.ibm.com
-In-Reply-To: <87hbnox6ty.fsf@openvz.org>
-References: <1267292137-12930-1-git-send-email-dmonakhov@openvz.org>
-	 <87hbnox6ty.fsf@openvz.org>
-Content-Type: text/plain
-Date: Wed, 07 Apr 2010 00:24:14 -0500
-Message-Id: <1270617854.6416.21.camel@tropicana>
+	id S1752448Ab0DGF2W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 01:28:22 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:56062 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752091Ab0DGF2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 01:28:16 -0400
+Date: Wed, 7 Apr 2010 15:28:09 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, dm@chelsio.com, jpirko@redhat.com
+Subject: Re: linux-next: build failure after merge of the net tree
+Message-Id: <20100407152809.b684539e.sfr@canb.auug.org.au>
+In-Reply-To: <20100406.201220.195404728.davem@davemloft.net>
+References: <20100407125817.e8e1d174.sfr@canb.auug.org.au>
+	<20100406.201220.195404728.davem@davemloft.net>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__7_Apr_2010_15_28_09_+1000_JuKlPbJam7eVql12"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-06 at 13:34 +0400, Dmitry Monakhov wrote:
-> add Tom Zanussi to recipients.
-> Tom, please take a look at the patch, it is simple and clean and it able
-> to solve long standing blktrace related bug.
+--Signature=_Wed__7_Apr_2010_15_28_09_+1000_JuKlPbJam7eVql12
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi,
+Hi Dave,
 
-It looks ok to me - I don't see any problems with it, but you should
-probably get the official relay maintainer(s?) to take a look at it as
-well - adding them to the cc: list.
+On Tue, 06 Apr 2010 20:12:20 -0700 (PDT) David Miller <davem@davemloft.net>=
+ wrote:
+>
+> Thanks, I'll merge net-2.6 into net-next-2.6 and fix this build
+> failure in the latter.
 
-Tom
+Thanks for that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> Dmitry Monakhov <dmonakhov@openvz.org> writes:
-> > Currently remove_buf_file callback is called from from kobject
-> > release method. This result in follow issue:
-> > # blktrace -d /dev/sda1 -d /dev/sda -o test
-> > blktrace_setup()
-> >  dir = create_dir()
-> >  rchan = relay_open(dir,...)
-> >  ->create_buf_file_callback
-> >     buf_file  = debugfs_create_file(dir, )
-> >
-> > Userspace will open buf_file.
-> > Later we make a decision to stop tracing
-> > blktrace_down()
-> >   relay_close(rhcan)  /* just decrement kobj reference  */
-> >                       /* since it is not zero then callback not called */
-> >   debugfs_remove(dir) /* FAIL due to non empty dir   */
-> >
-> > Later user space will close the file and file will be deleted,
-> > but directory still exist.
-> > user_space_close()
-> >  ->file_release
-> >    ->release_buf_file_callback
-> >      ->debugfs_remove(buf_file)
-> >
-> > In fact this is general issue, blktrace is just one of examples.
-> > We can not reliably remove parent dir until all users close the
-> > buf_file.
-> >
-> > We don't have to wait this long. File may be deleted
-> > inside relay_close_buf().
-> >
-> > Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-> > ---
-> >  kernel/relay.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/kernel/relay.c b/kernel/relay.c
-> > index c705a41..dcf71c8 100644
-> > --- a/kernel/relay.c
-> > +++ b/kernel/relay.c
-> > @@ -237,7 +237,6 @@ static void relay_destroy_buf(struct rchan_buf *buf)
-> >  static void relay_remove_buf(struct kref *kref)
-> >  {
-> >  	struct rchan_buf *buf = container_of(kref, struct rchan_buf, kref);
-> > -	buf->chan->cb->remove_buf_file(buf->dentry);
-> >  	relay_destroy_buf(buf);
-> >  }
-> >  
-> > @@ -487,6 +486,7 @@ static void relay_close_buf(struct rchan_buf *buf)
-> >  {
-> >  	buf->finalized = 1;
-> >  	del_timer_sync(&buf->timer);
-> > +	buf->chan->cb->remove_buf_file(buf->dentry);
-> >  	kref_put(&buf->kref, relay_remove_buf);
-> >  }
+--Signature=_Wed__7_Apr_2010_15_28_09_+1000_JuKlPbJam7eVql12
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAku8F+kACgkQjjKRsyhoI8xzHgCgoC2XN98m9GqOV0sh9JJts055
+izcAni41W+NnfZDxmgFrm4/lWY2VbUDl
+=YCBT
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__7_Apr_2010_15_28_09_+1000_JuKlPbJam7eVql12--
