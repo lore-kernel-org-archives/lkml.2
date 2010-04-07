@@ -1,106 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510Ab0DGI6I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 04:58:08 -0400
-Received: from mga03.intel.com ([143.182.124.21]:61311 "EHLO mga03.intel.com"
+	id S932541Ab0DGI6T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 04:58:19 -0400
+Received: from gate.crashing.org ([63.228.1.57]:48039 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932238Ab0DGI55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 04:57:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,377,1267430400"; 
-   d="scan'208";a="262910094"
-From: xiaohui.xin@intel.com
-To: mst@redhat.com
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, jdike@linux.intel.com,
-       Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: Re:[PATCH 1/3] A device for zero-copy based on KVM virtio-net.
-Date: Wed,  7 Apr 2010 17:00:39 +0800
-Message-Id: <1270630839-19876-1-git-send-email-xiaohui.xin@intel.com>
-X-Mailer: git-send-email 1.5.4.4
-In-Reply-To: <20100407081532.GB9550@redhat.com>
-References: <20100407081532.GB9550@redhat.com>
+	id S932517Ab0DGI6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 04:58:13 -0400
+Subject: Re: Arch specific mmap attributes
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: David Miller <davem@davemloft.net>
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+In-Reply-To: <20100407.000343.181989028.davem@davemloft.net>
+References: <20100406185246.7E63.A69D9226@jp.fujitsu.com>
+	 <1270592111.13812.88.camel@pasglop>
+	 <20100407095145.FB70.A69D9226@jp.fujitsu.com>
+	 <20100407.000343.181989028.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 07 Apr 2010 18:58:00 +1000
+Message-ID: <1270630680.2300.91.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xin Xiaohui <xiaohui.xin@intel.com>
+On Wed, 2010-04-07 at 00:03 -0700, David Miller wrote:
+> > I'm not against changing kernel internal. I only disagree mmu
+> > attribute fashion will be become used widely.
+> 
+> Desktop already uses similar features via PCI mmap
+> attributes and such, not to mention MSR settings on
+> x86.
 
----
+This is a very good point, we've had all sort of trouble hacking that in
+for PCI mmap, between trying to get write combine in, which we got
+on /proc via a tweak I think we never got over to sysfs, and the ability
+to control cachability, for which we used to have O_SYNC hacks
+in /dev/mem, I think there is room for some nice and clean set of
+attributes here.
 
-Michael,
-Thanks a lot for the explanation. I have drafted a patch for the qemu write
-after I looked into tun driver. Does it do in right way?
+Cheers,
+Ben.
 
-Thanks
-Xiaohui
-
- drivers/vhost/mpassthru.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 45 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/vhost/mpassthru.c b/drivers/vhost/mpassthru.c
-index e9449ac..1cde097 100644
---- a/drivers/vhost/mpassthru.c
-+++ b/drivers/vhost/mpassthru.c
-@@ -1065,6 +1065,49 @@ static unsigned int mp_chr_poll(struct file *file, poll_table * wait)
- 	return mask;
- }
- 
-+static ssize_t mp_chr_aio_write(struct kiocb *iocb, const struct iovec *iov,
-+				unsigned long count, loff_t pos)
-+{
-+	struct file *file = iocb->ki_filp;
-+	struct mp_struct *mp = mp_get(file->private_data);
-+	struct sock *sk = mp->socket.sk;
-+	struct sk_buff *skb;
-+	int len, err;
-+	ssize_t result;
-+
-+	if (!mp)
-+		return -EBADFD;
-+
-+	/* currently, async is not supported */
-+	if (!is_sync_kiocb(iocb))
-+		return -EFAULT;
-+
-+	len = iov_length(iov, count);
-+	skb = sock_alloc_send_skb(sk, len + NET_IP_ALIGN,
-+				  file->f_flags & O_NONBLOCK, &err);
-+
-+	if (!skb)
-+		return -EFAULT;
-+
-+	skb_reserve(skb, NET_IP_ALIGN);
-+	skb_put(skb, len);
-+
-+	if (skb_copy_datagram_from_iovec(skb, 0, iov, 0, len)) {
-+		kfree_skb(skb);
-+		return -EFAULT;
-+	}
-+	skb_set_network_header(skb, ETH_HLEN);
-+	skb->protocol = *((__be16 *)(skb->data) + ETH_ALEN);
-+	skb->dev = mp->dev;
-+
-+	dev_queue_xmit(skb);
-+	mp->dev->stats.tx_packets++;
-+	mp->dev->stats.tx_bytes += len;
-+
-+	mp_put(mp);
-+	return result;
-+}
-+
- static int mp_chr_close(struct inode *inode, struct file *file)
- {
- 	struct mp_file *mfile = file->private_data;
-@@ -1084,6 +1127,8 @@ static int mp_chr_close(struct inode *inode, struct file *file)
- static const struct file_operations mp_fops = {
- 	.owner  = THIS_MODULE,
- 	.llseek = no_llseek,
-+	.write  = do_sync_write,
-+	.aio_write = mp_chr_aio_write,
- 	.poll   = mp_chr_poll,
- 	.unlocked_ioctl = mp_chr_ioctl,
- 	.open   = mp_chr_open,
--- 
-1.5.4.4
 
