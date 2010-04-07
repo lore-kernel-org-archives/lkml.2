@@ -1,71 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758094Ab0DGQxE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 12:53:04 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:43060 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756399Ab0DGQxA (ORCPT
+	id S1758105Ab0DGQyI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 12:54:08 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33816 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756955Ab0DGQyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 12:53:00 -0400
-Message-ID: <4BBCB868.2000705@cs.helsinki.fi>
-Date: Wed, 07 Apr 2010 19:52:56 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux-foundation.org>
-CC: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>, netdev <netdev@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, alex.shi@intel.com,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
-References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>  <alpine.DEB.2.00.1003250942080.2670@router.home>  <1269570902.9614.92.camel@alexs-hp.sh.intel.com>  <1270114166.2078.107.camel@ymzhang.sh.intel.com>  <alpine.DEB.2.00.1004011050340.16531@router.home>  <1270195589.2078.116.camel@ymzhang.sh.intel.com>  <alpine.DEB.2.00.1004050853300.23149@router.home>  <i2z84144f021004051030k7ff5190cyc083aa12c552dfac@mail.gmail.com>  <4BBA8DF9.8010409@kernel.org>  <1270542497.2078.123.camel@ymzhang.sh.intel.com>  <alpine.DEB.2.00.1004061033330.18750@router.home>  <alpine.DEB.2.00.1004061552500.19151@router.home>  <1270591841.2091.170.camel@edumazet-laptop> <1270607668.2078.259.camel@ymzhang.sh.intel.com> <alpine.DEB.2.00.1004071130260.13261@router.home> <4BBCB7B7.4040901@cs.helsinki.fi>
-In-Reply-To: <4BBCB7B7.4040901@cs.helsinki.fi>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 7 Apr 2010 12:54:07 -0400
+Subject: Re: [PATCH] perf_events: add PERF_SAMPLE_BRANCH_STACK
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+       davem@davemloft.net, fweisbec@gmail.com, robert.richter@amd.com,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com
+In-Reply-To: <l2kbd4cb8901004070948zcc0fd6dcv8eb2431edd271c4e@mail.gmail.com>
+References: <4bbc7fcf.100db80a.6b9f.fffffb14@mx.google.com>
+	 <1270646127.20295.976.camel@laptop>
+	 <l2kbd4cb8901004070948zcc0fd6dcv8eb2431edd271c4e@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 07 Apr 2010 18:54:03 +0200
+Message-ID: <1270659243.20295.1011.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pekka Enberg wrote:
-> Christoph Lameter wrote:
->> I wonder if this is not related to the kmem_cache_cpu structure 
->> straggling
->> cache line boundaries under some conditions. On 2.6.33 the kmem_cache_cpu
->> structure was larger and therefore tight packing resulted in different
->> alignment.
->>
->> Could you see how the following patch affects the results. It attempts to
->> increase the size of kmem_cache_cpu to a power of 2 bytes. There is also
->> the potential that other per cpu fetches to neighboring objects affect 
->> the
->> situation. We could cacheline align the whole thing.
->>
->> ---
->>  include/linux/slub_def.h |    5 +++++
->>  1 file changed, 5 insertions(+)
->>
->> Index: linux-2.6/include/linux/slub_def.h
->> ===================================================================
->> --- linux-2.6.orig/include/linux/slub_def.h    2010-04-07 
->> 11:33:50.000000000 -0500
->> +++ linux-2.6/include/linux/slub_def.h    2010-04-07 
->> 11:35:18.000000000 -0500
->> @@ -38,6 +38,11 @@ struct kmem_cache_cpu {
->>      void **freelist;    /* Pointer to first free per cpu object */
->>      struct page *page;    /* The slab from which we are allocating */
->>      int node;        /* The node of the page (or -1 for debug) */
->> +#ifndef CONFIG_64BIT
->> +    int dummy1;
->> +#endif
->> +    unsigned long dummy2;
->> +
->>  #ifdef CONFIG_SLUB_STATS
->>      unsigned stat[NR_SLUB_STAT_ITEMS];
->>  #endif
+On Wed, 2010-04-07 at 18:48 +0200, Stephane Eranian wrote:
+> Then, why didn't you extend perf to leverage your patch?
 > 
-> Would __cacheline_aligned_in_smp do the trick here?
+Because I couldn't come up with a sensible use case.
 
-Oh, sorry, I think it's actually '____cacheline_aligned_in_smp' (with 
-four underscores) for per-cpu data. Confusing...
