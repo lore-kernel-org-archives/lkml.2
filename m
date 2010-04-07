@@ -1,42 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758194Ab0DGRBr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 13:01:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49766 "EHLO mx1.redhat.com"
+	id S1758080Ab0DGRKx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 13:10:53 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:33307 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758018Ab0DGRBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 13:01:46 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100407162620.GA11543@linux.vnet.ibm.com>
-References: <20100407162620.GA11543@linux.vnet.ibm.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-       laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, eric.dumazet@gmail.com
-Subject: Re: [PATCH tip/urgent] rcu: add rcu_access_pointer and rcu_dereference_protected
-Date: Wed, 07 Apr 2010 18:00:27 +0100
-Message-ID: <27310.1270659627@redhat.com>
+	id S1753474Ab0DGRKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 13:10:51 -0400
+Date: Wed, 7 Apr 2010 10:10:48 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Trond.Myklebust@netapp.com,
+       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: RCU condition checks
+Message-ID: <20100407171048.GE2481@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <21972.1269993064@redhat.com>
+ <10818.1270044273@redhat.com>
+ <15371.1270057054@redhat.com>
+ <19556.1270076008@redhat.com>
+ <14003.1270122314@redhat.com>
+ <4161.1270133211@redhat.com>
+ <23331.1270570443@redhat.com>
+ <26510.1270582446@redhat.com>
+ <24225.1270646561@redhat.com>
+ <26884.1270658130@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <26884.1270658130@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+On Wed, Apr 07, 2010 at 05:35:30PM +0100, David Howells wrote:
+> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > > Why is there a need for 'c'?
+> > 
+> > An example use is where rcu_access_pointer() is legal because we are
+> > either initializing or cleaning up, so that no other CPU has access
+> > to the pointer.  In these cases, you might do something like:
+> > 
+> > 	q = rcu_access_pointer(p->a, p->refcnt == 0);
+> 
+> I think the main problem I have with this is that the fact that p->refcnt
+> should be 0 here is unrelated to the fact that we're wanting to look at the
+> value of p->a.  I'd say that this should be two separate statements, for
+> example:
+> 
+> 	ASSERT(p->refcnt == 0);
+> 	q = rcu_access_pointer(p->a);
+> 
+> I could see using a lockdep-managed ASSERT here would work, though.
+> 
+> The other problem I have with this is that I'm assuming rcu_access_pointer()
+> is simply for looking at the value of the pointer without dereferencing it -
+> in which case, is there any need for the lock-describing condition?
 
-> The new rcu_access_pointer() primitive is for the case where the pointer
-> is be fetch and not dereferenced.  This primitive may be used without
-> protection, RCU or otherwise, due to the fact that it uses ACCESS_ONCE().
-> ...
-> +#define rcu_access_pointer(p, c) \
+I agree that in many cases there won't be a reasonable condition.
+In which case, using "1" and an explanatory comment makes sense.
+In other cases, the fact that the value is zero can mean that no one
+else can possibly have a reference.
 
-NAK.  This shouldn't have the conditional parameter 'c'.  Given that 'c' (by
-analogy to rcu_dereference_check()) is there to describe the conditions under
-which it's permitted to dereference the pointer, why is that relevant here?
-What is it you're proving?
+All that aside, I fully expect that uses of rcu_access_pointer() will
+require more than the usual code-review effort, as these sorts of
+unprotected accesses are notoriously error-prone.
 
-David
+> I agree, though, that:
+> 
+> 	q = rcu_dereference_check(p->a,
+> 				  rcu_read_lock_held() || (
+> 				   lockdep_is_held(p->lock) &&
+> 				   lockdep_is_held(q->lock)));
+> 
+> is a reasonable way of keeping the dereference and the lock checks together,
+> though that could equally well be written, say:
+> 
+> 	LOCKDEP_ASSERT(rcu_read_lock_held() || (
+> 		        lockdep_is_held(p->lock) &&
+> 			lockdep_is_held(q->lock)));
+> 	q = rcu_dereference_protected(p->a);
+> 
+> but combining those makes it easier to ensure people to write lock checking.
+
+Glad you like it!
+
+							Thanx, Paul
