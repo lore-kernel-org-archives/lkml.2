@@ -1,135 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab0DGJwp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 05:52:45 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57145 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751216Ab0DGJwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 05:52:39 -0400
-Message-ID: <4BBC55DD.2010201@kernel.org>
-Date: Wed, 07 Apr 2010 18:52:29 +0900
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1751719Ab0DGJxG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 05:53:06 -0400
+Received: from mail66.messagelabs.com ([193.109.254.35]:37286 "HELO
+	mail66.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756262Ab0DGJw5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 05:52:57 -0400
+X-VirusChecked: Checked
+X-Env-Sender: davide.ferrari@atrapalo.com
+X-Msg-Ref: server-14.tower-66.messagelabs.com!1270633974!57966369!1
+X-StarScan-Version: 6.2.4; banners=-,-,-
+X-Originating-IP: [88.87.214.78]
+From: Davide Ferrari <davide.ferrari@atrapalo.com>
+Organization: Atrapalo S.L.
+To: linux-kernel@vger.kernel.org
+Subject: INFO: task apache2:7601 blocked for more than 120 seconds.
+Date: Wed, 7 Apr 2010 11:53:42 +0200
+User-Agent: KMail/1.13.1 (Linux/2.6.32-18-generic; KDE/4.4.2; x86_64; ; )
+Cc: Davide Ferrari <davide.ferrari@atrapalo.com>
 MIME-Version: 1.0
-To: Jens Axboe <jens.axboe@oracle.com>, lkml <linux-kernel@vger.kernel.org>,
-       Kay Sievers <kay.sievers@vrfy.org>,
-       Matthias-Christian Ott <ott@mirix.org>
-Subject: [PATCH 1/2] block: factor out bd_may_claim()
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 07 Apr 2010 09:52:32 +0000 (UTC)
+Message-Id: <201004071153.42752.davide.ferrari@atrapalo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factor out bd_may_claim() from bd_claim(), add comments and apply a
-couple of cosmetic edits.  This is to prepare for further updates to
-claim path.
+Hi
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
-Jens, these two patches fix a subtle problem in block device open path
-where O_EXCL open attempts can interfere with an already exclusively
-open device.
+I've just installed some new webservers (Apache + mod_php5) on Debian Lenny 
+and on some machines I see this message appearing from time to time in the 
+kernel log.
 
-These definitely are not for this merge window and need to get good
-amount testing in linux-next.
+[  840.319551] INFO: task apache2:7601 blocked for more than 120 seconds.
+[  840.336259] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables 
+this message.
+[  840.353598] apache2       D 0000000000000000     0  7601   6041 0x00000000
+[  840.353602]  ffffffff814451f0 0000000000000082 0000000000000000 
+0000000000000000
+[  840.353605]  0000000000000000 000000000000f8a0 ffff8802126bffd8 
+00000000000155c0
+[  840.353608]  00000000000155c0 ffff88021158b880 ffff88021158bb78 
+00000000126bfe24
+[  840.353611] Call Trace:
+[  840.353620]  [<ffffffff8110bb35>] ? __getblk+0x26/0x29a
+[  840.353623]  [<ffffffff8110c57f>] ? sync_buffer+0x0/0x40
+[  840.353629]  [<ffffffff812edf7d>] ? io_schedule+0x73/0xb7
+[  840.353631]  [<ffffffff8110c5ba>] ? sync_buffer+0x3b/0x40
+[  840.353633]  [<ffffffff812ee380>] ? __wait_on_bit_lock+0x3f/0x84
+[  840.353636]  [<ffffffff8110c57f>] ? sync_buffer+0x0/0x40
+[  840.353638]  [<ffffffff812ee430>] ? out_of_line_wait_on_bit_lock+0x6b/0x77
+[  840.353642]  [<ffffffff81064a64>] ? wake_bit_function+0x0/0x23
+[  840.353652]  [<ffffffffa0104657>] ? journal_invalidatepage+0x8e/0x282 [jbd]
+[  840.353657]  [<ffffffff810bbd4a>] ? truncate_inode_page+0x45/0x84
+[  840.353660]  [<ffffffff810bbe33>] ? truncate_inode_pages_range+0xaa/0x2b0
+[  840.353666]  [<ffffffffa01262d6>] ? __ext3_journal_dirty_metadata+0x1e/0x46 
+[ext3]
+[  840.353669]  [<ffffffff812ee7b5>] ? mutex_lock+0xd/0x31
+[  840.353674]  [<ffffffff8111513a>] ? fsnotify_clear_marks_by_inode+0x20/0xcd
+[  840.353679]  [<ffffffffa011ccd0>] ? ext3_delete_inode+0x0/0xd0 [ext3]
+[  840.353683]  [<ffffffffa011cce7>] ? ext3_delete_inode+0x17/0xd0 [ext3]
+[  840.353687]  [<ffffffffa011ccd0>] ? ext3_delete_inode+0x0/0xd0 [ext3]
+[  840.353692]  [<ffffffff810fee24>] ? generic_delete_inode+0xdc/0x168
+[  840.353695]  [<ffffffff810f7c4a>] ? do_unlinkat+0xe2/0x134
+[  840.353700]  [<ffffffff81010b42>] ? system_call_fastpath+0x16/0x1b
 
-Thanks.
 
- fs/block_dev.c |   65 +++++++++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 47 insertions(+), 18 deletions(-)
+Moreover, this server reaches incredibly high load value (> 150), cause almost 
+every Apache process is waiting IO.
+It happen both with Lenny (backport) kernel 2.6.30 and 2.6.32. 
+I've seen a similiar problem here
 
-Index: work/fs/block_dev.c
-===================================================================
---- work.orig/fs/block_dev.c
-+++ work/fs/block_dev.c
-@@ -660,41 +660,70 @@ void bd_forget(struct inode *inode)
- 		iput(bdev->bd_inode);
- }
+http://lkml.org/lkml/2009/1/11/70
 
--int bd_claim(struct block_device *bdev, void *holder)
-+/**
-+ * bd_may_claim - test whether a block device can be claimed
-+ * @bdev: block device of interest
-+ * @whole: whole block device containing @bdev, may equal @bdev
-+ * @holder: holder trying to claim @bdev
-+ *
-+ * Test whther @bdev can be claimed by @holder.
-+ *
-+ * CONTEXT:
-+ * spin_lock(&bdev_lock).
-+ *
-+ * RETURNS:
-+ * %true if @bdev can be claimed, %false otherwise.
-+ */
-+static bool bd_may_claim(struct block_device *bdev, struct block_device *whole,
-+			 void *holder)
- {
--	int res;
--	spin_lock(&bdev_lock);
--
--	/* first decide result */
- 	if (bdev->bd_holder == holder)
--		res = 0;	 /* already a holder */
-+		return true;	 /* already a holder */
- 	else if (bdev->bd_holder != NULL)
--		res = -EBUSY; 	 /* held by someone else */
-+		return false; 	 /* held by someone else */
- 	else if (bdev->bd_contains == bdev)
--		res = 0;  	 /* is a whole device which isn't held */
-+		return true;  	 /* is a whole device which isn't held */
+and the patch is already applied in my kernel. Anyway it doesn't matter what 
+elevator I use (CFQ, deadline), the CPUs are almost always on a high iowait 
+(70-80%). The machines it's 8-cores with Hyperthreading and a single SATA 
+disk. It doesn't do too much disk activity (circa 200MB logs per day, that's 
+no big deal). Any idea? Do you need more info?
 
--	else if (bdev->bd_contains->bd_holder == bd_claim)
--		res = 0; 	 /* is a partition of a device that is being partitioned */
--	else if (bdev->bd_contains->bd_holder != NULL)
--		res = -EBUSY;	 /* is a partition of a held device */
-+	else if (whole->bd_holder == bd_claim)
-+		return true; 	 /* is a partition of a device that is being partitioned */
-+	else if (whole->bd_holder != NULL)
-+		return false;	 /* is a partition of a held device */
- 	else
--		res = 0;	 /* is a partition of an un-held device */
-+		return true;	 /* is a partition of an un-held device */
-+}
+Thanks in advance
 
--	/* now impose change */
--	if (res==0) {
-+/**
-+ * bd_claim - claim a block device
-+ * @bdev: block device to claim
-+ * @holder: holder trying to claim @bdev
-+ *
-+ * Try to claim @bdev.
-+ *
-+ * RETURNS:
-+ * 0 if successful, -EBUSY if @bdev is already claimed.
-+ */
-+int bd_claim(struct block_device *bdev, void *holder)
-+{
-+	struct block_device *whole = bdev->bd_contains;
-+	int res = -EBUSY;
-+
-+	spin_lock(&bdev_lock);
-+
-+	if (bd_may_claim(bdev, whole, holder)) {
- 		/* note that for a whole device bd_holders
- 		 * will be incremented twice, and bd_holder will
- 		 * be set to bd_claim before being set to holder
- 		 */
--		bdev->bd_contains->bd_holders ++;
--		bdev->bd_contains->bd_holder = bd_claim;
-+		whole->bd_holders++;
-+		whole->bd_holder = bd_claim;
- 		bdev->bd_holders++;
- 		bdev->bd_holder = holder;
-+		res = 0;
- 	}
-+
- 	spin_unlock(&bdev_lock);
- 	return res;
- }
--
- EXPORT_SYMBOL(bd_claim);
+PS: Please CC me when replying cause I'm not subscribed to the LKML
 
- void bd_release(struct block_device *bdev)
+-- 
+Davide Ferrari
+Atrapalo.com System Administrator
