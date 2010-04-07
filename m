@@ -1,30 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756967Ab0DGWJO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 18:09:14 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35069 "EHLO
+	id S1757118Ab0DGWJo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 18:09:44 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45063 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754398Ab0DGWJJ (ORCPT
+	by vger.kernel.org with ESMTP id S1755286Ab0DGWJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 18:09:09 -0400
-Date: Wed, 7 Apr 2010 15:04:46 -0700 (PDT)
+	Wed, 7 Apr 2010 18:09:41 -0400
+Date: Wed, 7 Apr 2010 15:05:25 -0700 (PDT)
 From: Linus Torvalds <torvalds@linux-foundation.org>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
 cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Network Development <netdev@vger.kernel.org>,
-       Linux ACPI <linux-acpi@vger.kernel.org>,
-       Linux PM List <linux-pm@lists.linux-foundation.org>,
-       Linux SCSI List <linux-scsi@vger.kernel.org>,
-       Linux Wireless List <linux-wireless@vger.kernel.org>,
-       DRI <dri-devel@lists.sourceforge.net>,
-       Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: 2.6.34-rc3-git6: Reported regressions from 2.6.33
-In-Reply-To: <6Pphclm24fK.A.lSF.qsPvLB@chimera>
-Message-ID: <alpine.LFD.2.00.1004071444440.3586@i5.linux-foundation.org>
-References: <6Pphclm24fK.A.lSF.qsPvLB@chimera>
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Shaohua Li <shaohua.li@intel.com>,
+       Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [Bug #15715] vmscan: underflow for get_scan_ratio
+In-Reply-To: <JVS2s9dmTsP.A.2EG.7sPvLB@chimera>
+Message-ID: <alpine.LFD.2.00.1004071505100.3586@i5.linux-foundation.org>
+References: <6Pphclm24fK.A.lSF.qsPvLB@chimera> <JVS2s9dmTsP.A.2EG.7sPvLB@chimera>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -35,34 +31,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 On Wed, 7 Apr 2010, Rafael J. Wysocki wrote:
+>
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
 > 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15718
-> Subject		: File corruption regression on NFS related to commit 1f36f774
-> Submitter	: Boaz Harrosh <bharrosh@panasas.com>
-> Date		: 2010-03-24 15:49 (15 days old)
-> First-Bad-Commit: http://git.kernel.org/git/linus/1f36f774b22a0ceb7dd33eca626746c81a97b6a5
-> Message-ID	: <4BAA3493.1030802@panasas.com>
-> References	: http://marc.info/?l=linux-kernel&m=126944579810350&w=4
-> Handled-By	: Al Viro <viro@zeniv.linux.org.uk>
-
-I think this one is fixed by commit 3e297b61349.
-
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15716
-> Subject		: ata2: lost interrupt with kernel 2.6.34-rc1
-> Submitter	: Andrew Benton <b3nton@gmail.com>
-> Date		: 2010-03-11 16:57 (28 days old)
-> Message-ID	: <4B992110.2090300@gmail.com>
-> References	: http://marc.info/?l=linux-kernel&m=126832670609705&w=4
-> Handled-By	: Jeff Garzik <jeff@garzik.org>
-
-And isn't this the already long-fixed commit 332ac7ff77cd?
-
-That bugzilla entry is a duplicate of 
-
-	https://bugzilla.kernel.org/show_bug.cgi?id=15537
-
-as far as I can see.
-
+> The following bug entry is on the current list of known regressions
+> from 2.6.33.  Please verify if it still should be listed and let the tracking team
+> know (either way).
+> 
+> 
 > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15715
 > Subject		: vmscan: underflow for get_scan_ratio
 > Submitter	: Shaohua Li <shaohua.li@intel.com>
@@ -73,44 +50,6 @@ as far as I can see.
 > Handled-By	: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 > 		  Wu Fengguang <fengguang.wu@intel.com>
 
-That commit got reverted. See commit d6da1a5abc.
+Reverted by commit d6da1a5abc2bf3a06a5bda08e0f6833409234666
 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15674
-> Subject		: [2.6.34-rc2 NFS4 oops] open error path failure...
-> Submitter	: Daniel J Blueman <daniel.blueman@gmail.com>
-> Date		: 2010-03-29 18:36 (10 days old)
-> Message-ID	: <6278d2221003291136p6481fe8emfb039403343c082@mail.gmail.com>
-> References	: http://marc.info/?l=linux-kernel&m=126988782722711&w=2
-
-This smells like the same LOOKUP_DIRECTORY thing as the first entry, but.. 
-
-Al?
-
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15600
-> Subject		: CONFIG_NO_BOOTMEM woes, 2.6.34-rc1
-> Submitter	: Avi Kivity <avi@redhat.com>
-> Date		: 2010-03-15 15:28 (24 days old)
-> Message-ID	: <4B9E5211.9000204@redhat.com>
-> References	: http://marc.info/?l=linux-kernel&m=126866691701926&w=2
-
-These should hopefully be all fixed. There was some confusion over this, 
-but the report that said it wasn't fixed in -rc3 was apparently not true 
-after all. Several commits, but mainly commit eed63519e, iirc.
-
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15518
-> Subject		: CONFIG_NO_BOOTMEM=y breaks boot on 32bit
-> Submitter	: Daniel Vetter <daniel@ffwll.ch>
-> Date		: 2010-03-11 15:37 (28 days old)
-
-Duplicate entry. See above.
-
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15480
-> Subject		: [regression] Fails to boot properly unless given pci=nocrs
-> Submitter	: Yanko Kaneti <yaneti@declera.com>
-> Date		: 2010-03-09 01:24 (30 days old)
-> Handled-By	: Bjorn Helgaas <bjorn.helgaas@hp.com>
-> Patch		: http://lkml.org/lkml/2010/3/11/512
-
-These are merged already. Commits d558b483d5, eb9fc8ef7cb etc.
-
-		Linus
+			Linus
