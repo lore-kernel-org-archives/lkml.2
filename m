@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940Ab0DGNWx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 09:22:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48462 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753355Ab0DGNWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 09:22:50 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100407000203.GI2553@linux.vnet.ibm.com>
-References: <20100407000203.GI2553@linux.vnet.ibm.com> <20100329232636.GT2569@linux.vnet.ibm.com> <2440.1269967151@redhat.com> <21972.1269993064@redhat.com> <10818.1270044273@redhat.com> <15371.1270057054@redhat.com> <19556.1270076008@redhat.com> <14003.1270122314@redhat.com> <4161.1270133211@redhat.com> <23331.1270570443@redhat.com> <26510.1270582446@redhat.com> 
-To: paulmck@linux.vnet.ibm.com
-Cc: dhowells@redhat.com, Eric Dumazet <eric.dumazet@gmail.com>,
-       Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS: Fix RCU warnings in nfs_inode_return_delegation_noreclaim() [ver #2]
-Date: Wed, 07 Apr 2010 14:22:41 +0100
-Message-ID: <24225.1270646561@redhat.com>
+	id S1757966Ab0DGN3f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 09:29:35 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:63172 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756943Ab0DGN3b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 09:29:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=mAYjSx2yy7L3aYtgzpRJEaiEBeiYAW5SpVYWsNUKyS1piYe0LIYJg6sT0WHrloXvgj
+         DzWFrFhTe2sEbvWyxZxy85758JeALrjsxFq/LcAQ3Mdv6rzxhCF8f9zkEVe7iDGkCx5J
+         lK3R/7n9VgD7oxAF+phwpkNLNV9IPnXLyYDlo=
+Message-ID: <4BBC88F4.3080406@gmail.com>
+Date: Wed, 07 Apr 2010 06:30:28 -0700
+From: "Justin P. mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+MIME-Version: 1.0
+To: =?UTF-8?B?w4Frb3MgTWFyw7N5?= <akos@maroy.hu>
+CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: system does not power off - how to debug?
+References: <4BBC2E3E.40308@maroy.hu> <4BBC30B3.1000209@gmail.com> <4BBC7998.5080106@maroy.hu>
+In-Reply-To: <4BBC7998.5080106@maroy.hu>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+On 04/07/2010 05:24 AM, Ákos Maróy wrote:
+> Justin,
+>
+>> Since this issue seems easily reproducible
+>> the best way to find the issue is through
+>> a bisect(hardest part is finding the last
+>> good kernel),
+>> http://www.kernel.org/pub/software/scm/git/docs/user-manual.html
+>>
+>> hope this helps,
+>
+> hm, but wouldn't this assume that there is a kernel version, which
+> actually works?
+>
+>
+> Akos
+>
+>
 
-> +#define rcu_access_pointer(p, c) \
 
-Why is there a need for 'c'?
+nice!!, so there never was a good kernel version.
+In this case I guess the right question is, is
+what/where is the shutdown mechanism(in the kernel)
+responsible for this and if possible is there already
+some mechanism in place for this machine with this issue
+i.g. I had to add my machines dmi info to reboot.c
+in order for it to reboot properly.
 
-> +#define rcu_dereference_protect(p, c) \
+Now keep in mind this could have nothing todo with
+adding some dmi entry, this could somewhere else
+(which the bisect could reveal(hopefully)).
 
-I'd prefer rcu_dereference_protected(), I think.  This macro doesn't protect
-anything.  Also, again, why the need for 'c'?
+as for debugging I normally use ohci1394_dma=early
+you might be able to catch some strace towards the end
+with this.
 
-For instance, in:
 
-	static struct nfs_delegation *nfs_detach_delegation_locked(struct nfs_inode *nfsi, const nfs4_stateid *stateid)
-	{
-		struct nfs_delegation *delegation =
-			rcu_dereference_protected(nfsi->delegation, ????);
-
-what would be the condition?  That the spinlock is held?  That's a condition
-for calling the function.
-
-And in:
-
-	void nfs_inode_return_delegation_noreclaim(struct inode *inode)
-	{
-		struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
-		struct nfs_inode *nfsi = NFS_I(inode);
-		struct nfs_delegation *delegation;
-
-		if (rcu_access_pointer(nfsi->delegation, ????) != NULL) {
-
-what would be the condition here?  There's no lock to check - that's the whole
-point of the macro.  I also can't give it nfsi->delegation to check as the
-value may change between the two accesses.
-
-David
+Justin P. Mattock
