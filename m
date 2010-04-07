@@ -1,106 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab0DGRka (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 13:40:30 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:53105 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab0DGRk3 (ORCPT
+	id S1756232Ab0DGRnM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 13:43:12 -0400
+Received: from 64-131-60-146.usfamily.net ([64.131.60.146]:41724 "EHLO
+	mail.sandeen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752226Ab0DGRnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 13:40:29 -0400
-Date: Wed, 7 Apr 2010 10:38:13 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Eric B Munson <ebmunson@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org,
-       rolandd@cisco.com, peterz@infradead.org, pavel@ucw.cz, mingo@elte.hu
-Subject: Re: [PATCH] [RFC] ummunotify: Userspace support for MMU
- notifications
-Message-Id: <20100407103813.74b54a87.randy.dunlap@oracle.com>
-In-Reply-To: <1270643429-20688-1-git-send-email-ebmunson@us.ibm.com>
-References: <1270643429-20688-1-git-send-email-ebmunson@us.ibm.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 7 Apr 2010 13:43:11 -0400
+Message-ID: <4BBCC42E.2000409@sandeen.net>
+Date: Wed, 07 Apr 2010 12:43:10 -0500
+From: Eric Sandeen <sandeen@sandeen.net>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+MIME-Version: 1.0
+To: John Berthels <john@humyo.com>
+CC: Dave Chinner <david@fromorbit.com>, Nick Gregory <nick@humyo.com>,
+       xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
+       Rob Sanderson <rob@humyo.com>
+Subject: Re: PROBLEM + POSS FIX: kernel stack overflow, xfs, many disks, heavy
+ write load, 8k stack, x86-64
+References: <4BBC6719.7080304@humyo.com> <20100407140523.GJ11036@dastard> <4BBCAB57.3000106@humyo.com>
+In-Reply-To: <4BBCAB57.3000106@humyo.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4BBCC374.0045:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  7 Apr 2010 13:30:29 +0100 Eric B Munson wrote:
-
-> Signed-off-by: Roland Dreier <rolandd <at> cisco.com>
-
-Use unobfuscated @.
-
-> Signed-off-by: Eric B Munson <ebmunson@us.ibm.com>
+John Berthels wrote:
+> Dave Chinner wrote:
+>> I'm not seeing stacks deeper than about 5.6k on XFS under heavy write
+>> loads. That's nowhere near blowing an 8k stack, so there must be
+>> something special about what you are doing. Can you post the stack
+>> traces that are being generated for the deepest stack generated -
+>> /sys/kernel/debug/tracing/stack_trace should contain it.
+>>   
+> Appended below. That doesn't seem to reach 8192 but the box it's from
+> has logged:
 > 
-> ---
+> [74649.579386] apache2 used greatest stack depth: 7024 bytes left
+
+but that's -left- (out of 8k or is that from a THREAD_ORDER=2 box?)
+
+I guess it must be out of 16k...
+
+>        Depth    Size   Location    (47 entries)
+>        -----    ----   --------
+>  0)     7568      16   mempool_alloc_slab+0x16/0x20
+>  1)     7552     144   mempool_alloc+0x65/0x140
+>  2)     7408      96   get_request+0x124/0x370
+>  3)     7312     144   get_request_wait+0x29/0x1b0
+>  4)     7168      96   __make_request+0x9b/0x490
+>  5)     7072     208   generic_make_request+0x3df/0x4d0
+>  6)     6864      80   submit_bio+0x7c/0x100
+>  7)     6784      96   _xfs_buf_ioapply+0x128/0x2c0 [xfs]
+>  8)     6688      48   xfs_buf_iorequest+0x75/0xd0 [xfs]
+>  9)     6640      32   _xfs_buf_read+0x36/0x70 [xfs]
+> 10)     6608      48   xfs_buf_read+0xda/0x110 [xfs]
+> 11)     6560      80   xfs_trans_read_buf+0x2a7/0x410 [xfs]
+> 12)     6480      80   xfs_btree_read_buf_block+0x5d/0xb0 [xfs]
+> 13)     6400      80   xfs_btree_lookup_get_block+0x84/0xf0 [xfs]
+> 14)     6320     176   xfs_btree_lookup+0xd7/0x490 [xfs]
+> 15)     6144      16   xfs_alloc_lookup_eq+0x19/0x20 [xfs]
+> 16)     6128      96   xfs_alloc_fixup_trees+0xee/0x350 [xfs]
+> 17)     6032     144   xfs_alloc_ag_vextent_near+0x916/0xb30 [xfs]
+> 18)     5888      32   xfs_alloc_ag_vextent+0xe5/0x140 [xfs]
+> 19)     5856      96   xfs_alloc_vextent+0x49f/0x630 [xfs]
+> 20)     5760     160   xfs_bmbt_alloc_block+0xbe/0x1d0 [xfs]
+> 21)     5600     208   xfs_btree_split+0xb3/0x6a0 [xfs]
+> 22)     5392      96   xfs_btree_make_block_unfull+0x151/0x190 [xfs]
+> 23)     5296     224   xfs_btree_insrec+0x39c/0x5b0 [xfs]
+> 24)     5072     128   xfs_btree_insert+0x86/0x180 [xfs]
+> 25)     4944     352   xfs_bmap_add_extent_delay_real+0x41e/0x1660 [xfs]
+> 26)     4592     208   xfs_bmap_add_extent+0x41c/0x450 [xfs]
+> 27)     4384     448   xfs_bmapi+0x982/0x1200 [xfs]
+
+This one, I'm afraid, has always been big.
+
+> 28)     3936     256   xfs_iomap_write_allocate+0x248/0x3c0 [xfs]
+> 29)     3680     208   xfs_iomap+0x3d8/0x410 [xfs]
+> 30)     3472      32   xfs_map_blocks+0x2c/0x30 [xfs]
+> 31)     3440     256   xfs_page_state_convert+0x443/0x730 [xfs]
+> 32)     3184      64   xfs_vm_writepage+0xab/0x160 [xfs]
+> 33)     3120     384   shrink_page_list+0x65e/0x840
+> 34)     2736     528   shrink_zone+0x63f/0xe10
+
+that's a nice one  (actually the two together at > 900 bytes, ouch)
+
+> 35)     2208     112   do_try_to_free_pages+0xc2/0x3c0
+> 36)     2096     128   try_to_free_pages+0x77/0x80
+> 37)     1968     240   __alloc_pages_nodemask+0x3e4/0x710
+> 38)     1728      48   alloc_pages_current+0x8c/0xe0
+> 39)     1680      16   __get_free_pages+0xe/0x50
+> 40)     1664      48   __pollwait+0xca/0x110
+> 41)     1616      32   unix_poll+0x28/0xc0
+> 42)     1584      16   sock_poll+0x1d/0x20
+> 43)     1568     912   do_select+0x3d6/0x700
+
+912, ouch!
+
+int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+{
+        ktime_t expire, *to = NULL;
+        struct poll_wqueues table;
+
+(gdb) p sizeof(struct poll_wqueues)
+$1 = 624
+
+I guess that's been there forever, though.
+
+> 44)      656     416   core_sys_select+0x18c/0x2c0
+
+416 hurts too.
+
+The xfs callchain is deep, no doubt, but the combination of the select path
+and the shrink calls is almost 2k in just a few calls, and that doesn't
+help much.
+
+-Eric
+
+> 45)      240     112   sys_select+0x4f/0x110
+> 46)      128     128   system_call_fastpath+0x16/0x1b
 > 
-> Changes since v3:
->  - Fixed replaced [get|put] user with copy_[from|to]_user to fix x86
->    builds
-> ---
->  Documentation/Makefile    |    3 +-
->  drivers/char/Kconfig      |   12 +
->  drivers/char/Makefile     |    1 +
->  drivers/char/ummunotify.c |  567 +++++++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 582 insertions(+), 1 deletions(-)
->  create mode 100644 drivers/char/ummunotify.c
 > 
-> diff --git a/Documentation/Makefile b/Documentation/Makefile
-> index 6fc7ea1..27ba76a 100644
-> --- a/Documentation/Makefile
-> +++ b/Documentation/Makefile
-> @@ -1,3 +1,4 @@
->  obj-m := DocBook/ accounting/ auxdisplay/ connector/ \
->  	filesystems/ filesystems/configfs/ ia64/ laptops/ networking/ \
-> -	pcmcia/ spi/ timers/ video4linux/ vm/ watchdog/src/
-> +	pcmcia/ spi/ timers/ video4linux/ vm/ ummunotify/ \
-> +	watchdog/src/
+> ------------------------------------------------------------------------
+> 
+> _______________________________________________
+> xfs mailing list
+> xfs@oss.sgi.com
+> http://oss.sgi.com/mailman/listinfo/xfs
 
-What is this change to Documentation/Makefile for?
-Is there some file that should be added in Documentation/ummunotify/ ?
-
-
-> diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
-> index 3141dd3..cf26019 100644
-> --- a/drivers/char/Kconfig
-> +++ b/drivers/char/Kconfig
-> @@ -1111,6 +1111,18 @@ config DEVPORT
->  	depends on ISA || PCI
->  	default y
->  
-> +config UMMUNOTIFY
-> +       tristate "Userspace MMU notifications"
-> +       select MMU_NOTIFIER
-> +       help
-> +         The ummunotify (userspace MMU notification) driver creates a
-> +         character device that can be used by userspace libraries to
-> +         get notifications when an application's memory mapping
-> +         changed.  This is used, for example, by RDMA libraries to
-> +         improve the reliability of memory registration caching, since
-> +         the kernel's MMU notifications can be used to know precisely
-> +         when to shoot down a cached registration.
-> +
->  source "drivers/s390/char/Kconfig"
->  
->  endmenu
-> diff --git a/drivers/char/Makefile b/drivers/char/Makefile
-> index f957edf..521e5de 100644
-> --- a/drivers/char/Makefile
-> +++ b/drivers/char/Makefile
-> @@ -97,6 +97,7 @@ obj-$(CONFIG_NSC_GPIO)		+= nsc_gpio.o
->  obj-$(CONFIG_CS5535_GPIO)	+= cs5535_gpio.o
->  obj-$(CONFIG_GPIO_TB0219)	+= tb0219.o
->  obj-$(CONFIG_TELCLOCK)		+= tlclk.o
-> +obj-$(CONFIG_UMMUNOTIFY)	+= ummunotify.o
->  
->  obj-$(CONFIG_MWAVE)		+= mwave/
->  obj-$(CONFIG_AGP)		+= agp/
-
-
----
-~Randy
