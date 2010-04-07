@@ -1,35 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757350Ab0DGXwY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 19:52:24 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48221
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753199Ab0DGXwX (ORCPT
+	id S1756630Ab0DGXyH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 19:54:07 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:54169 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753199Ab0DGXyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 19:52:23 -0400
-Date: Wed, 07 Apr 2010 16:52:26 -0700 (PDT)
-Message-Id: <20100407.165226.123994506.davem@davemloft.net>
-To: mst@redhat.com
-Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, jdike@linux.intel.com
-Subject: Re: [GIT PULL] vhost-net fix for 2.6.34-rc3
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100407173502.GA26061@redhat.com>
-References: <20100318095355.GA24194@redhat.com>
-	<20100407173502.GA26061@redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Wed, 7 Apr 2010 19:54:01 -0400
+Message-ID: <4BBD1AA3.4000204@oracle.com>
+Date: Wed, 07 Apr 2010 16:52:03 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: akpm@linux-foundation.org
+CC: liang.li@windriver.com, hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de,
+       wangchen@cn.fujitsu.com,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: + x86-fix-handling-of-the-reservetop-boot-option.patch added
+ to -mm tree
+References: <201004072200.o37M0d19009878@imap1.linux-foundation.org>
+In-Reply-To: <201004072200.o37M0d19009878@imap1.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4BBD1B01.0007:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Wed, 7 Apr 2010 20:35:02 +0300
+On 04/07/2010 03:00 PM, akpm@linux-foundation.org wrote:
+> The patch titled
+>      x86: fix handling of the 'reservetop' boot option
+> has been added to the -mm tree.  Its filename is
+>      x86-fix-handling-of-the-reservetop-boot-option.patch
+> 
+> Before you just go and hit "reply", please:
+>    a) Consider who else should be cc'ed
+>    b) Prefer to cc a suitable mailing list as well
+>    c) Ideally: find the original patch on the mailing list and do a
+>       reply-to-all to that, adding suitable additional cc's
+> 
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> 
+> See http://userweb.kernel.org/~akpm/stuff/added-to-mm.txt to find
+> out what to do about this
+> 
+> The current -mm tree may be found at http://userweb.kernel.org/~akpm/mmotm/
+> 
+> ------------------------------------------------------
+> Subject: x86: fix handling of the 'reservetop' boot option
+> From: Liang Li <liang.li@windriver.com>
+> 
+> When specifying the 'reservetop=0xbadc0de' kernel parameter, the kernel
+> will stop booting due to a early_ioremap bug that relate to commit
+> 8827247ff ("x86: don't define __this_fixmap_does_not_exist()").
+> 
+> The root cause of boot failure problem is the value of 'slot_virt[i]' was
+> initialized in setup_arch->early_ioremap_init.  But later in setup_arch,
+> the function 'parse_early_param' will modify 'FIXADDR_TOP' when
+> 'reservetop=0xbadc0de' being specified.
+> 
+> The simplest fix might be use __fix_to_virt(idx0) to get updated value
+> of 'FIXADDR_TOP' in '__early_ioremap' instead of reference old value
+> from slot_virt[slot] directly.
+> 
+> Signed-off-by: Liang Li <liang.li@windriver.com>
+> Cc: Wang Chen <wangchen@cn.fujitsu.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  arch/x86/mm/ioremap.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff -puN arch/x86/mm/ioremap.c~x86-fix-handling-of-the-reservetop-boot-option arch/x86/mm/ioremap.c
+> --- a/arch/x86/mm/ioremap.c~x86-fix-handling-of-the-reservetop-boot-option
+> +++ a/arch/x86/mm/ioremap.c
+> @@ -537,9 +537,9 @@ __early_ioremap(resource_size_t phys_add
+>  		--nrpages;
+>  	}
+>  	if (early_ioremap_debug)
+> -		printk(KERN_CONT "%08lx + %08lx\n", offset, slot_virt[slot]);
+> +		printk(KERN_CONT "%08lx + %08lx\n", offset, __fix_to_virt(idx0));
+>  
+> -	prev_map[slot] = (void __iomem *)(offset + slot_virt[slot]);
+> +	prev_map[slot] = (void __iomem *)(offset + __fix_to_virt(idx0));
+>  	return prev_map[slot];
+>  }
+>  
+> _
 
-> David,
-> The following tree includes a patch fixing an issue with vhost-net in
-> 2.6.34-rc3.  Please pull for 2.6.34.
+not that simple. but it looks like correct direction.
 
-Pulled, thanks Michael.
+please consider:
+when early_parsing reserve_top, double check if there is left over in prev_map[], and 
+reinitialize slot_virt[] and clear old PMD and  setup new PMD if needed.
+
+Thanks
+
+Yinghai
+
+
+
+
+
