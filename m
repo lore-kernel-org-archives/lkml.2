@@ -1,139 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757998Ab0DGMu2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 08:50:28 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:34136 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753503Ab0DGMsF (ORCPT
+	id S932548Ab0DGMvh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 08:51:37 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:59809 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757580Ab0DGMvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 08:48:05 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzab9bhzz1202hzzz32i87h6bh2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-SS: 5,
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L0IBJS-01-9UO-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Ingo Molnar <mingo@redhat.com>
-CC: x86@kernel.org, iommu@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 04/12] x86/amd-iommu: Report errors in acpi parsing functions upstream
-Date: Wed, 7 Apr 2010 14:46:41 +0200
-Message-ID: <1270644409-10123-5-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1270644409-10123-1-git-send-email-joerg.roedel@amd.com>
-References: <1270644409-10123-1-git-send-email-joerg.roedel@amd.com>
-X-OriginalArrivalTime: 07 Apr 2010 12:46:55.0836 (UTC) FILETIME=[67A959C0:01CAD650]
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	Wed, 7 Apr 2010 08:51:33 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
+	b=Y+cNT0DzfPdUnB/SY7bRFtL+OpzQYtOHsrUjiM41J4ZvDlaaFfRVpGm4y++Sbyb27
+	Z4sVVGDYcCoWc+kyaMENA==
+Message-ID: <4bbc7fcf.100db80a.6b9f.fffffb14@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Wed, 7 Apr 2010 14:45:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+       fweisbec@gmail.com, robert.richter@amd.com, perfmon2-devel@lists.sf.net,
+       eranian@gmail.com, eranian@google.com
+Subject: [PATCH] perf_events: add PERF_SAMPLE_BRANCH_STACK
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since acpi_table_parse ignores the return values of the
-parsing function this patch introduces a workaround and
-reports these errors upstream via a global variable.
+	This patch exposes the branch trace buffer to users for sampling.
+	There are measurements where it is very useful to couple the
+	instruction address with some path information, e.g, basic
+	block profiling.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- arch/x86/kernel/amd_iommu_init.c |   38 +++++++++++++++++++++++++++-----------
- 1 files changed, 27 insertions(+), 11 deletions(-)
+	On recent Intel processors, the branch stack is implemented using
+	the LBR registers. LBR was already used to fixup PEBS. This
+	patch still allows PEBS fixups with LBR and also exposes LBR
+	to applications.
 
-diff --git a/arch/x86/kernel/amd_iommu_init.c b/arch/x86/kernel/amd_iommu_init.c
-index 9dc91b4..feaf471 100644
---- a/arch/x86/kernel/amd_iommu_init.c
-+++ b/arch/x86/kernel/amd_iommu_init.c
-@@ -138,9 +138,9 @@ int amd_iommus_present;
- bool amd_iommu_np_cache __read_mostly;
+	There is a new PERF_SAMPLE_BRANCH_STACK sample type. It creates
+	a sample in the buffer which has the following layout:
+
+	   { u64 nr;
+	      { u64 from, to, flags } lbr[nr]; } && PERF_SAMPLE_BRANCH_STACK
+ 	   };
+
+	Refer to include/linux/perf_event.h to figure out the layout ordering
+	information.
+
+	LBR is configured by default to record ALL taken branches.  On some
+	processors, it is possible to filter the type of branches. This will
+	be supported in a subsequent patch.
+
+	On other processors, the sample type is allowed but will generate a
+	sample where nr=0 as is the case with other sampling types.
+
+	Signed-off-by: Stephane Eranian <eranian@google.com>
+
+--
+ arch/x86/kernel/cpu/perf_event_intel.c    |   13 +++++++++++++
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |    5 +++++
+ include/linux/perf_event.h                |    8 +++++++-
+ kernel/perf_event.c                       |   25 +++++++++++++++++++++++++
+ 4 files changed, 50 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index f168b40..6b8aa7d 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -562,8 +562,13 @@ static void intel_pmu_disable_event(struct perf_event *event)
  
- /*
-- * Set to true if ACPI table parsing and hardware intialization went properly
-+ * The ACPI table parsing functions set this variable on an error
-  */
--static bool amd_iommu_initialized;
-+static int __initdata amd_iommu_init_err;
+ 	x86_pmu_disable_event(event);
  
- /*
-  * List of protection domains - used during resume
-@@ -391,9 +391,11 @@ static int __init find_last_devid_acpi(struct acpi_table_header *table)
- 	 */
- 	for (i = 0; i < table->length; ++i)
- 		checksum += p[i];
--	if (checksum != 0)
-+	if (checksum != 0) {
- 		/* ACPI table corrupt */
--		return -ENODEV;
-+		amd_iommu_init_err = -ENODEV;
-+		return 0;
-+	}
- 
- 	p += IVRS_HEADER_LENGTH;
- 
-@@ -920,11 +922,16 @@ static int __init init_iommu_all(struct acpi_table_header *table)
- 				    h->mmio_phys);
- 
- 			iommu = kzalloc(sizeof(struct amd_iommu), GFP_KERNEL);
--			if (iommu == NULL)
--				return -ENOMEM;
-+			if (iommu == NULL) {
-+				amd_iommu_init_err = -ENOMEM;
-+				return 0;
-+			}
-+
- 			ret = init_iommu_one(iommu, h);
--			if (ret)
--				return ret;
-+			if (ret) {
-+				amd_iommu_init_err = ret;
-+				return 0;
-+			}
- 			break;
- 		default:
- 			break;
-@@ -934,8 +941,6 @@ static int __init init_iommu_all(struct acpi_table_header *table)
- 	}
- 	WARN_ON(p != end);
- 
--	amd_iommu_initialized = true;
--
- 	return 0;
++	/*
++	 * PEBS implies LBR
++	 */
+ 	if (unlikely(event->attr.precise))
+ 		intel_pmu_pebs_disable(event);
++	else if (unlikely(event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK))
++		intel_pmu_lbr_disable(event);
  }
  
-@@ -1211,6 +1216,10 @@ static int __init amd_iommu_init(void)
- 	if (acpi_table_parse("IVRS", find_last_devid_acpi) != 0)
- 		return -ENODEV;
+ static void intel_pmu_enable_fixed(struct hw_perf_event *hwc)
+@@ -614,8 +619,13 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ 		return;
+ 	}
  
-+	ret = amd_iommu_init_err;
-+	if (ret)
-+		goto out;
++	/*
++	 * PEBS implies LBR
++	 */
+ 	if (unlikely(event->attr.precise))
+ 		intel_pmu_pebs_enable(event);
++	else if (unlikely(event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK))
++		intel_pmu_lbr_enable(event);
+ 
+ 	__x86_pmu_enable_event(hwc);
+ }
+@@ -710,6 +720,9 @@ again:
+ 
+ 		data.period = event->hw.last_period;
+ 
++		if (event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK)
++			data.br_stack = &cpuc->lbr_stack;
 +
- 	dev_table_size     = tbl_size(DEV_TABLE_ENTRY_SIZE);
- 	alias_table_size   = tbl_size(ALIAS_TABLE_ENTRY_SIZE);
- 	rlookup_table_size = tbl_size(RLOOKUP_TABLE_ENTRY_SIZE);
-@@ -1270,12 +1279,19 @@ static int __init amd_iommu_init(void)
- 	if (acpi_table_parse("IVRS", init_iommu_all) != 0)
- 		goto free;
+ 		if (perf_event_overflow(event, 1, &data, regs))
+ 			x86_pmu_stop(event);
+ 	}
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 2fea362..ed62d35 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -505,6 +505,8 @@ static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
+ 		data.raw = &raw;
+ 	}
  
--	if (!amd_iommu_initialized)
-+	if (amd_iommu_init_err) {
-+		ret = amd_iommu_init_err;
- 		goto free;
-+	}
++	if (event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK)
++		data.br_stack = &cpuc->lbr_stack;
+ 	/*
+ 	 * We use the interrupt regs as a base because the PEBS record
+ 	 * does not contain a full regs set, specifically it seems to
+@@ -591,6 +593,9 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+ 			data.raw = &raw;
+ 		}
  
- 	if (acpi_table_parse("IVRS", init_memory_definitions) != 0)
- 		goto free;
++		if (event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK)
++			data.br_stack = &cpuc->lbr_stack;
++
+ 		/*
+ 		 * See the comment in intel_pmu_drain_pebs_core()
+ 		 */
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 6e96cc8..3a8288f 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -125,8 +125,9 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_PERIOD			= 1U << 8,
+ 	PERF_SAMPLE_STREAM_ID			= 1U << 9,
+ 	PERF_SAMPLE_RAW				= 1U << 10,
++	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
  
-+	if (amd_iommu_init_err) {
-+		ret = amd_iommu_init_err;
-+		goto free;
+-	PERF_SAMPLE_MAX = 1U << 11,		/* non-ABI */
++	PERF_SAMPLE_MAX = 1U << 12,		/* non-ABI */
+ };
+ 
+ /*
+@@ -415,6 +416,9 @@ enum perf_event_type {
+ 	 *
+ 	 *	{ u32			size;
+ 	 *	  char                  data[size];}&& PERF_SAMPLE_RAW
++	 *
++	 *	{ u64 nr;
++	 *	  { u64 from, to, flags } lbr[nr]; } && PERF_SAMPLE_BRANCH_STACK
+ 	 * };
+ 	 */
+ 	PERF_RECORD_SAMPLE			= 9,
+@@ -819,6 +823,7 @@ struct perf_sample_data {
+ 	u64				period;
+ 	struct perf_callchain_entry	*callchain;
+ 	struct perf_raw_record		*raw;
++	struct perf_branch_stack	*br_stack;
+ };
+ 
+ static inline
+@@ -826,6 +831,7 @@ void perf_sample_data_init(struct perf_sample_data *data, u64 addr)
+ {
+ 	data->addr = addr;
+ 	data->raw  = NULL;
++	data->br_stack = NULL;
+ }
+ 
+ extern void perf_output_sample(struct perf_output_handle *handle,
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 63fbce1..8143e77 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -3211,6 +3211,22 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 			perf_output_put(handle, raw);
+ 		}
+ 	}
++
++	if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
++		if (data->br_stack) {
++			size_t size;
++
++			size = data->br_stack->nr
++			     * sizeof(struct perf_branch_entry);
++
++			perf_output_put(handle, data->br_stack->nr);
++			perf_output_copy(handle, data->br_stack->entries, size);
++		} else {
++			u64 nr = 0;
++			perf_output_put(handle, nr);
++		}
 +	}
 +
- 	ret = sysdev_class_register(&amd_iommu_sysdev_class);
- 	if (ret)
- 		goto free;
--- 
-1.7.0.4
-
-
+ }
+ 
+ void perf_prepare_sample(struct perf_event_header *header,
+@@ -3298,6 +3314,15 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 		WARN_ON_ONCE(size & (sizeof(u64)-1));
+ 		header->size += size;
+ 	}
++
++	if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
++		int size = sizeof(u64);
++		if (data->br_stack) {
++			size += data->br_stack->nr
++			      * sizeof(struct perf_branch_entry);
++		}
++		header->size += size;
++	}
+ }
+ 
+ static void perf_event_output(struct perf_event *event, int nmi,
