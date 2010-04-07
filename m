@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283Ab0DGMsE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 08:48:04 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:20567 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753503Ab0DGMr7 (ORCPT
+	id S1757998Ab0DGMu2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 08:50:28 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:34136 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753503Ab0DGMsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 08:47:59 -0400
+	Wed, 7 Apr 2010 08:48:05 -0400
 X-SpamScore: 1
-X-BigFish: VPS1(zzab9bhzz1202hzzz32i87h6bh2a8h62h)
-X-Spam-TCS-SCL: 1:0
+X-BigFish: VPS1(zzab9bhzz1202hzzz32i87h6bh2a8h61h)
+X-Spam-TCS-SCL: 0:0
 X-FB-SS: 5,
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L0IBJK-02-96G-02
+X-WSS-ID: 0L0IBJS-01-9UO-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Ingo Molnar <mingo@redhat.com>
 CC: x86@kernel.org, iommu@lists.linux-foundation.org,
        linux-kernel@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 02/12] x86/amd-iommu: Protect IOMMU-API map/unmap path
-Date: Wed, 7 Apr 2010 14:46:39 +0200
-Message-ID: <1270644409-10123-3-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 04/12] x86/amd-iommu: Report errors in acpi parsing functions upstream
+Date: Wed, 7 Apr 2010 14:46:41 +0200
+Message-ID: <1270644409-10123-5-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1270644409-10123-1-git-send-email-joerg.roedel@amd.com>
 References: <1270644409-10123-1-git-send-email-joerg.roedel@amd.com>
-X-OriginalArrivalTime: 07 Apr 2010 12:46:55.0773 (UTC) FILETIME=[679FBCD0:01CAD650]
+X-OriginalArrivalTime: 07 Apr 2010 12:46:55.0836 (UTC) FILETIME=[67A959C0:01CAD650]
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Reverse-DNS: ausb3extmailp02.amd.com
@@ -32,83 +32,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a mutex to lock page table updates in
-the IOMMU-API path. We can't use the spin_lock here because
-this patch might sleep.
+Since acpi_table_parse ignores the return values of the
+parsing function this patch introduces a workaround and
+reports these errors upstream via a global variable.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/amd_iommu_types.h |    2 ++
- arch/x86/kernel/amd_iommu.c            |    9 +++++++++
- 2 files changed, 11 insertions(+), 0 deletions(-)
+ arch/x86/kernel/amd_iommu_init.c |   38 +++++++++++++++++++++++++++-----------
+ 1 files changed, 27 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/include/asm/amd_iommu_types.h b/arch/x86/include/asm/amd_iommu_types.h
-index ba19ad4..5e46e78 100644
---- a/arch/x86/include/asm/amd_iommu_types.h
-+++ b/arch/x86/include/asm/amd_iommu_types.h
-@@ -21,6 +21,7 @@
- #define _ASM_X86_AMD_IOMMU_TYPES_H
+diff --git a/arch/x86/kernel/amd_iommu_init.c b/arch/x86/kernel/amd_iommu_init.c
+index 9dc91b4..feaf471 100644
+--- a/arch/x86/kernel/amd_iommu_init.c
++++ b/arch/x86/kernel/amd_iommu_init.c
+@@ -138,9 +138,9 @@ int amd_iommus_present;
+ bool amd_iommu_np_cache __read_mostly;
  
- #include <linux/types.h>
-+#include <linux/mutex.h>
- #include <linux/list.h>
- #include <linux/spinlock.h>
+ /*
+- * Set to true if ACPI table parsing and hardware intialization went properly
++ * The ACPI table parsing functions set this variable on an error
+  */
+-static bool amd_iommu_initialized;
++static int __initdata amd_iommu_init_err;
  
-@@ -237,6 +238,7 @@ struct protection_domain {
- 	struct list_head list;  /* for list of all protection domains */
- 	struct list_head dev_list; /* List of all devices in this domain */
- 	spinlock_t lock;	/* mostly used to lock the page table*/
-+	struct mutex api_lock;	/* protect page tables in the iommu-api path */
- 	u16 id;			/* the domain id written to the device table */
- 	int mode;		/* paging mode (0-6 levels) */
- 	u64 *pt_root;		/* page table root pointer */
-diff --git a/arch/x86/kernel/amd_iommu.c b/arch/x86/kernel/amd_iommu.c
-index 2c4a501..b97f2f1 100644
---- a/arch/x86/kernel/amd_iommu.c
-+++ b/arch/x86/kernel/amd_iommu.c
-@@ -2327,6 +2327,7 @@ static struct protection_domain *protection_domain_alloc(void)
- 		return NULL;
+ /*
+  * List of protection domains - used during resume
+@@ -391,9 +391,11 @@ static int __init find_last_devid_acpi(struct acpi_table_header *table)
+ 	 */
+ 	for (i = 0; i < table->length; ++i)
+ 		checksum += p[i];
+-	if (checksum != 0)
++	if (checksum != 0) {
+ 		/* ACPI table corrupt */
+-		return -ENODEV;
++		amd_iommu_init_err = -ENODEV;
++		return 0;
++	}
  
- 	spin_lock_init(&domain->lock);
-+	mutex_init(&domain->api_lock);
- 	domain->id = domain_id_alloc();
- 	if (!domain->id)
- 		goto out_err;
-@@ -2456,6 +2457,8 @@ static int amd_iommu_map_range(struct iommu_domain *dom,
- 	iova  &= PAGE_MASK;
- 	paddr &= PAGE_MASK;
+ 	p += IVRS_HEADER_LENGTH;
  
-+	mutex_lock(&domain->api_lock);
+@@ -920,11 +922,16 @@ static int __init init_iommu_all(struct acpi_table_header *table)
+ 				    h->mmio_phys);
+ 
+ 			iommu = kzalloc(sizeof(struct amd_iommu), GFP_KERNEL);
+-			if (iommu == NULL)
+-				return -ENOMEM;
++			if (iommu == NULL) {
++				amd_iommu_init_err = -ENOMEM;
++				return 0;
++			}
 +
- 	for (i = 0; i < npages; ++i) {
- 		ret = iommu_map_page(domain, iova, paddr, prot, PM_MAP_4k);
- 		if (ret)
-@@ -2465,6 +2468,8 @@ static int amd_iommu_map_range(struct iommu_domain *dom,
- 		paddr += PAGE_SIZE;
+ 			ret = init_iommu_one(iommu, h);
+-			if (ret)
+-				return ret;
++			if (ret) {
++				amd_iommu_init_err = ret;
++				return 0;
++			}
+ 			break;
+ 		default:
+ 			break;
+@@ -934,8 +941,6 @@ static int __init init_iommu_all(struct acpi_table_header *table)
  	}
+ 	WARN_ON(p != end);
  
-+	mutex_unlock(&domain->api_lock);
-+
+-	amd_iommu_initialized = true;
+-
  	return 0;
  }
  
-@@ -2477,12 +2482,16 @@ static void amd_iommu_unmap_range(struct iommu_domain *dom,
+@@ -1211,6 +1216,10 @@ static int __init amd_iommu_init(void)
+ 	if (acpi_table_parse("IVRS", find_last_devid_acpi) != 0)
+ 		return -ENODEV;
  
- 	iova  &= PAGE_MASK;
- 
-+	mutex_lock(&domain->api_lock);
++	ret = amd_iommu_init_err;
++	if (ret)
++		goto out;
 +
- 	for (i = 0; i < npages; ++i) {
- 		iommu_unmap_page(domain, iova, PM_MAP_4k);
- 		iova  += PAGE_SIZE;
- 	}
+ 	dev_table_size     = tbl_size(DEV_TABLE_ENTRY_SIZE);
+ 	alias_table_size   = tbl_size(ALIAS_TABLE_ENTRY_SIZE);
+ 	rlookup_table_size = tbl_size(RLOOKUP_TABLE_ENTRY_SIZE);
+@@ -1270,12 +1279,19 @@ static int __init amd_iommu_init(void)
+ 	if (acpi_table_parse("IVRS", init_iommu_all) != 0)
+ 		goto free;
  
- 	iommu_flush_tlb_pde(domain);
+-	if (!amd_iommu_initialized)
++	if (amd_iommu_init_err) {
++		ret = amd_iommu_init_err;
+ 		goto free;
++	}
+ 
+ 	if (acpi_table_parse("IVRS", init_memory_definitions) != 0)
+ 		goto free;
+ 
++	if (amd_iommu_init_err) {
++		ret = amd_iommu_init_err;
++		goto free;
++	}
 +
-+	mutex_unlock(&domain->api_lock);
- }
- 
- static phys_addr_t amd_iommu_iova_to_phys(struct iommu_domain *dom,
+ 	ret = sysdev_class_register(&amd_iommu_sysdev_class);
+ 	if (ret)
+ 		goto free;
 -- 
 1.7.0.4
 
