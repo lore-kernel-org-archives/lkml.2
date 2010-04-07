@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932759Ab0DGP3c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 11:29:32 -0400
-Received: from kroah.org ([198.145.64.141]:52669 "EHLO coco.kroah.org"
+	id S932768Ab0DGPbl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 11:31:41 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:53643 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932650Ab0DGP33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 11:29:29 -0400
-Date: Wed, 7 Apr 2010 08:29:22 -0700
-From: Greg KH <greg@kroah.com>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-usb@vger.kernel.org, Peter Korsgaard <jacmet@sunsite.dk>,
-       Rupesh Gujare <rupeshgujare@gmail.com>, linux-kernel@vger.kernel.org,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH 2/8] sched: __wake_up_locked() exported
-Message-ID: <20100407152922.GB13425@kroah.com>
-References: <cover.1270644740.git.mina86@mina86.com>
- <033ad254a3bba337e7a37cc6071b7debc7051801.1270644740.git.mina86@mina86.com>
- <b866157fc128769a3cdf9ae76f9fc21743776778.1270644740.git.mina86@mina86.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <b866157fc128769a3cdf9ae76f9fc21743776778.1270644740.git.mina86@mina86.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932684Ab0DGPbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 11:31:39 -0400
+Date: Thu, 8 Apr 2010 01:31:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Zhu Yi <yi.zhu@intel.com>
+Subject: Re: linux-next: manual merge of the wireless tree with the
+ wireless-current tree
+Message-Id: <20100408013132.a904a8c4.sfr@canb.auug.org.au>
+In-Reply-To: <20100407144434.GC3146@tuxdriver.com>
+References: <20100407125828.d9f03281.sfr@canb.auug.org.au>
+	<20100407144434.GC3146@tuxdriver.com>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__8_Apr_2010_01_31_32_+1000_pJzWM+Kl1ea4kTG1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 07, 2010 at 03:41:29PM +0200, Michal Nazarewicz wrote:
-> The __wake_up_locked() function has been exported in case modules need it.
+--Signature=_Thu__8_Apr_2010_01_31_32_+1000_pJzWM+Kl1ea4kTG1
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-What module needs it?
+Hi John,
 
-Why is it needed?
+On Wed, 7 Apr 2010 10:44:34 -0400 "John W. Linville" <linville@tuxdriver.co=
+m> wrote:
+>
+> OK, I'll try to negotiate this today.
 
-Why is it needed now, and was not previously?
+Excellent, thanks.
 
-Are you sure that you really need it?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-thanks,
+--Signature=_Thu__8_Apr_2010_01_31_32_+1000_pJzWM+Kl1ea4kTG1
+Content-Type: application/pgp-signature
 
-greg k-h
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAku8pVUACgkQjjKRsyhoI8yBawCdE1oiCeSF/r3fwBnSO3msilhY
+4nYAoKuwyHHBGWWy+bQEx8//85DDQeSH
+=dkHp
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__8_Apr_2010_01_31_32_+1000_pJzWM+Kl1ea4kTG1--
