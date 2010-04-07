@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab0DGWtq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 18:49:46 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:48696 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627Ab0DGWto (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 18:49:44 -0400
-Message-ID: <4BBD0B0A.3090702@oracle.com>
-Date: Wed, 07 Apr 2010 15:45:30 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S1755885Ab0DGWu3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 18:50:29 -0400
+Received: from lucidpixels.com ([75.144.35.66]:50923 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754251Ab0DGWu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 18:50:27 -0400
+Date: Wed, 7 Apr 2010 18:50:25 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: 2.6.33.2: USB Quickcam Pro 9000 (usb resets)?
+In-Reply-To: <alpine.DEB.2.00.1004061108100.20297@p34.internal.lan>
+Message-ID: <alpine.DEB.2.00.1004071850001.23408@p34.internal.lan>
+References: <Pine.LNX.4.44L0.1004061057240.1722-100000@iolanthe.rowland.org> <alpine.DEB.2.00.1004061108100.20297@p34.internal.lan>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org,
-       x86@kernel.org, linux-kernel@vger.kernel.org,
-       Andy Isaacson <adi@hexapodia.org>, Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well
- as x86_32
-References: <20100407210628.28364.96982.stgit@bob.kio>
-In-Reply-To: <20100407210628.28364.96982.stgit@bob.kio>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4BBD0BC6.0155:SCFMA4539814,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2010 02:06 PM, Bjorn Helgaas wrote:
-> 
-> Currently, we only reserve the legacy VGA area [mem 0xa0000-0xbffff] on
-> x86_32.  But this legacy area is also used on x86_64, so this patch
-> reserves it there, too.
-> 
-> If we don't reserve it, we may mistakenly move a PCI device to that area,
-> as we did here:
-> 
->   pci_root PNP0A03:00: host bridge window [mem 0xff980800-0xff980bff]
->   pci_root PNP0A03:00: host bridge window [mem 0xff97c000-0xff97ffff]
->   pci 0000:00:1f.2: no compatible bridge window for [mem 0xff970000-0xff9707ff]
->   pci 0000:00:1f.2: BAR 5: assigned [mem 0x000a0000-0x000a07ff]
-> 
-> as reported by Andy Isaacson at http://lkml.org/lkml/2010/4/6/375
-> 
-> I think the fact that the BAR is not within a host bridge window is a
-> BIOS defect, and it's now more visible because we have "pci=use_crs" as
-> the default.  Using "pci=nocrs" is a workaround, because then we won't
-> attempt to move the device.
 
-that doesn't look right.
 
-It seem another thread, erission has one model without VGA, and they use that area for other device MMIO.
+On Tue, 6 Apr 2010, Justin Piszcz wrote:
 
-current for 64bit, We remove [0xa0000, 0x100000) from e820 map if those area is E820_RAM.
+>
+>
+> On Tue, 6 Apr 2010, Alan Stern wrote:
+>
+>> On Tue, 6 Apr 2010, Justin Piszcz wrote:
+>> 
+>>> So the USB hub is shared amongst the ports in the back of the board that
+>>> I am using:
+>
+> Hi Alan,
+>
+> Will try a different port (so its on BUS 2) for the PC.
+> The d-Link hub is a brand new hub (fyi) with only 1 device attached, the 
+> webcam but will give it a try, thanks.
+>
+> Justin.
+>
 
-in e820_reserve_resources(), kernel will reserve range < 1M according to e820 map.
-that is before pci BAR is claimed.
+Once I put it on bus 2, no errors or resets yet, interesting..
 
-or you can add
-boot_params.screen_info.orig_video_isVGA == 1
-or double check scan pci tree to see if video is there or not
-
-YH
+Justin.
