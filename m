@@ -1,97 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932790Ab0DGPqT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 11:46:19 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37688 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932650Ab0DGPqS (ORCPT
+	id S932794Ab0DGPsc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 11:48:32 -0400
+Received: from web114307.mail.gq1.yahoo.com ([98.136.183.37]:41860 "HELO
+	web114307.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932662Ab0DGPsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 11:46:18 -0400
-Date: Wed, 7 Apr 2010 11:46:17 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Daniel Mack <daniel@caiaq.de>
-cc: linux-kernel@vger.kernel.org, Pedro Ribeiro <pedrib@gmail.com>,
-       <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>,
-       <alsa-devel@alsa-project.org>, <linux-usb@vger.kernel.org>
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-In-Reply-To: <20100407151125.GJ30801@buzzloop.caiaq.de>
-Message-ID: <Pine.LNX.4.44L0.1004071120200.1779-100000@iolanthe.rowland.org>
+	Wed, 7 Apr 2010 11:48:30 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=OZeJD9Z9lebTk2h71uBeWNAfGMufb3toaKpEMQgUSvX3Spsb81FxmjB1N2ovQBMjU6ifVr81v41+Cv+jvNtSuDoLNLX7LIygdcQlfj7b1ywJcIEDh0phkS0UJZutA/Qdu5UuPoxaHAt7CE2F+hFKoz6wHI6D7IKR63OPxf1555E=;
+Message-ID: <190529.78750.qm@web114307.mail.gq1.yahoo.com>
+X-YMail-OSG: 70Uk6cYVM1l1muDGk6IVb8DURAIF5g5xdp5fr6Im_LuimUt
+ HgFucFwprsKeVyUJxxmtEYO6bz61SHtuRK56MQa9LhTuMKber6xbPGknbKEK
+ QaWxfzEaPMOX2wXW0k6n5uN9TF8kGWJhEzhQNucmhMv4oDVUCuLls_hkKsiR
+ GSbEt9NiOkKzu1IRsU69jcRYl4tHf_Ub.kr5_ZmDsurFxNmb9FVLirR9WFT1
+ AvmBjgLMybxfQtlAx6X1vy_tze_bXQyv_63QPR_lzF51bVcVEGP.lqF_E2cJ
+ CqZ1zR5AamqtjR6QbZhit_Q--
+X-Mailer: YahooMailClassic/10.0.8 YahooMailWebService/0.8.100.260964
+Date: Wed, 7 Apr 2010 08:48:30 -0700 (PDT)
+From: Rick Sherm <rick.sherm@yahoo.com>
+Subject: Re: Memory policy question for NUMA arch....
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-numa@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20100407090014.GD18855@one.firstfloor.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Apr 2010, Daniel Mack wrote:
+Hi Andy,
 
-> > > The fix is to use usb_buffer_alloc() for that purpose which ensures
-> > > memory that is suitable for DMA. And on x86_64, this also means that the
-> > > upper 32 bits of the address returned are all 0's.
-> > 
-> > That is not a good fix.  usb_buffer_alloc() provides coherent memory, 
-> > which is not what we want.  I believe the correct fix is to specify the 
-> > GFP_DMA32 flag in the kzalloc() call.
-> > 
-> > Of course, some EHCI hardware _is_ capable of using 64-bit addresses.  
-> > But not all, and other controller types aren't.  In principle we could
-> > create a new allocation routine, which would take a pointer to the USB
-> > bus as an additional argument and use it to decide whether the memory 
-> > needs to lie below 4 GB.  I'm not sure adding this extra complexity 
-> > would be worthwhile.
+--- On Wed, 4/7/10, Andi Kleen <andi@firstfloor.org> wrote:
+> On Tue, Apr 06, 2010 at 01:46:44PM -0700, Rick Sherm wrote:
+> > On a NUMA host, if a driver calls __get_free_pages()
+> then 
+> > it will eventually invoke
+> ->alloc_pages_current(..). The comment 
+> > above/within alloc_pages_current() says
+> 'current->mempolicy' will be 
+> > used.So what memory policy will kick-in if the driver
+> is trying to 
+> > allocate some memory blocks during driver load
+> time(say from probe_one)? System-wide default
+> policy,correct?
 > 
-> Well, I thought this is exactly what the usb_buffer_alloc() abstraction
-> functions are there for. We already pass a pointer to a struct
-> usb_device, so the routine knows which host controller it operates on.
-> So we can safely dispatch all the magic inside this function, no?
-
-No.  It says so right in the title line of the kerneldoc:
-
- * usb_buffer_alloc - allocate dma-consistent buffer for URB_NO_xxx_DMA_MAP
-
-That is not what people want when they call kzalloc or kmalloc.
-
-> If not, I would rather introduce a new function than adding GFP_ flags
-> to all existing drivers.
-
-All right.  But there would have to be _two_ new functions: one acting 
-like kmalloc and another acting like kzalloc.  I guess they should take 
-a pointer to struct usb_device as an argument, like usb_buffer_alloc.
-
-> I vote for a clean solution, a fixup of existing implementations and
-> a clear note about how to allocate buffers for USB drivers. I believe
-> faulty allocations of this kind can explain quite a lot of problems on
-> x86_64 machines.
-
-There is one awkward aspect of usb_buffer_alloc which perhaps could
-be fixed at the same time.  Under some conditions (for example, if the
-controller needs to use internal bounce buffers) it will return
-ordinary memory obtained using kmalloc rather than consistent memory.  
-But it doesn't tell the caller when it has done so, and consequently
-the caller will always specify URB_NO_TRANSFER_DMA_MAP when using the
-buffer.  The proper flag to use should be returned to the caller.
-
-Or alternatively, instead of allocating regular memory the routine
-could simply fail.  Then the caller would be responsible for checking
-and using regular memory instead of dma-consistent memory.  Of course,
-that would put an even larger burden on the caller than just forcing it
-to keep track of what flag to use.
-
-> > > If what I've stated is true, there are quite some more drivers affected
-> > > by this issue.
-> > 
-> > Practically every USB driver, I should think.  And maybe a lot of 
-> > non-USB drivers too.
+> Actually the policy of the modprobe or the kernel boot up
+> if built in
+> (which is interleaving)
 > 
-> I found many such problems in drivers/media/{dvb,video},
-> drivers/usb/serial, sound/usb and even in the USB core. If we agree on
-> how to fix that nicely, I can take some of them.
 
-I guess we could rename usb_buffer_alloc().  A more accurate name would
-be something like usb_alloc_consistent() (except for the fact that
-the routine falls back to regular memory if the controller can't use
-consistent memory.)  Then we could have usb_malloc() and usb_zalloc()
-in addition.
+Interleaving,yup that's what I thought. I've tight control on the environment.So for one driver I need high throughput and I will use the interleaving-policy.But for the other 2-3 drivers, I need low latency.So I would like to restrict it to the local node.These are just my thoughts but I'll have to experiment and see what the numbers look like. Once I've some numbers I will post them in a few weeks.
 
-Alan Stern
+> > 
+> > What if the driver wishes to i) stay confined to a
+> 'cpulist' OR ii) use a different mem-policy? How 
+> > do I achieve this?
+> > I will choose the 'cpulist' after I am successfuly
+> able to affinitize the MSI-X vectors.
+> 
+> You can do that right now by running numactl ... modprobe
+> ...
+> 
+Perfect.Ok, then I'll probably write a simple user-space wrapper:
+  1)set mem-policy type depending on driver-foo-M.
+  2)load driver-foo-M.
+  3)goto 1) and repeat for other driver[s]-foo-X
+BTW - I would know before hand which adapter is placed in which slot and so I will be able to deduce its proximity to a Node.
 
+> Yes there should be probably a better way, like using a
+> policy
+> based on the affinity of the PCI device.
+> 
+
+> -Andi
+> 
+
+Thanks
+Rick
+
+
+      
