@@ -1,138 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932205Ab0DGACM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 20:02:12 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:40752 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932085Ab0DGACG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 20:02:06 -0400
-Date: Tue, 6 Apr 2010 17:02:03 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Trond.Myklebust@netapp.com,
-       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS: Fix RCU warnings in
- nfs_inode_return_delegation_noreclaim() [ver #2]
-Message-ID: <20100407000203.GI2553@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100329232636.GT2569@linux.vnet.ibm.com>
- <2440.1269967151@redhat.com>
- <21972.1269993064@redhat.com>
- <10818.1270044273@redhat.com>
- <15371.1270057054@redhat.com>
- <19556.1270076008@redhat.com>
- <14003.1270122314@redhat.com>
- <4161.1270133211@redhat.com>
- <23331.1270570443@redhat.com>
- <26510.1270582446@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <26510.1270582446@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932219Ab0DGAGY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 20:06:24 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37010 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932085Ab0DGAGS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 20:06:18 -0400
+Date: Tue, 6 Apr 2010 17:05:28 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 03/14] mm: Share the anon_vma ref counts between KSM and
+ page migration
+Message-Id: <20100406170528.ecb30941.akpm@linux-foundation.org>
+In-Reply-To: <1270224168-14775-4-git-send-email-mel@csn.ul.ie>
+References: <1270224168-14775-1-git-send-email-mel@csn.ul.ie>
+	<1270224168-14775-4-git-send-email-mel@csn.ul.ie>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 06, 2010 at 08:34:06PM +0100, David Howells wrote:
-> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+On Fri,  2 Apr 2010 17:02:37 +0100
+Mel Gorman <mel@csn.ul.ie> wrote:
+
+> For clarity of review, KSM and page migration have separate refcounts on
+> the anon_vma. While clear, this is a waste of memory. This patch gets
+> KSM and page migration to share their toys in a spirit of harmony.
 > 
-> > OK, just to make sure I understand you...  You are asking for two additional
-> > RCU API members:
-> > 
-> > 1.	rcu_access_pointer() or some such that includes ACCESS_ONCE(),
-> > 	but not smp_read_barrier_depends(), which may be used when
-> > 	we are simply examining the value of the RCU-protected pointer
-> > 	(as in the NFS case).  It could also be used when the
-> > 	appropriate update-side lock is held, but for that we have:
-> > 
-> > 2.	rcu_dereference_protected() or some such that includes neither
-> > 	ACCESS_ONCE() nor smp_read_barrier_depends(), and that may
-> > 	only be used if updates are prevented, for example, by holding
-> > 	the appropriate update-side lock.
-> > 
-> > Does this fit?
-> 
-> Yep.  I think so.
+> ...
+>
+> @@ -26,11 +26,17 @@
+>   */
+>  struct anon_vma {
+>  	spinlock_t lock;	/* Serialize access to vma list */
+> -#ifdef CONFIG_KSM
+> -	atomic_t ksm_refcount;
+> -#endif
+> -#ifdef CONFIG_MIGRATION
+> -	atomic_t migrate_refcount;
+> +#if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
+> +
+> +	/*
+> +	 * The external_refcount is taken by either KSM or page migration
+> +	 * to take a reference to an anon_vma when there is no
+> +	 * guarantee that the vma of page tables will exist for
+> +	 * the duration of the operation. A caller that takes
+> +	 * the reference is responsible for clearing up the
+> +	 * anon_vma if they are the last user on release
+> +	 */
+> +	atomic_t external_refcount;
+>  #endif
 
-OK.  How about the following?
+hah.
 
-							Thanx, Paul
+> @@ -653,7 +653,7 @@ skip_unmap:
+>  rcu_unlock:
+>  
+>  	/* Drop an anon_vma reference if we took one */
+> -	if (anon_vma && atomic_dec_and_lock(&anon_vma->migrate_refcount, &anon_vma->lock)) {
+> +	if (anon_vma && atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->lock)) {
+>  		int empty = list_empty(&anon_vma->head);
+>  		spin_unlock(&anon_vma->lock);
+>  		if (empty)
 
-------------------------------------------------------------------------
+So we now _do_ test ksm_refcount.  Perhaps that fixed a bug added in [1/14]
 
-commit 104e6c5f16ca5fc23af1b3f3e6197d3f599f934a
-Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Date:   Mon Apr 5 10:52:53 2010 -0700
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index 578d0fe..af35b75 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -248,8 +248,7 @@ static void anon_vma_unlink(struct anon_vma_chain *anon_vma_chain)
+>  	list_del(&anon_vma_chain->same_anon_vma);
+>  
+>  	/* We must garbage collect the anon_vma if it's empty */
+> -	empty = list_empty(&anon_vma->head) && !ksm_refcount(anon_vma) &&
+> -					!migrate_refcount(anon_vma);
+> +	empty = list_empty(&anon_vma->head) && !anonvma_external_refcount(anon_vma);
+>  	spin_unlock(&anon_vma->lock);
+>  
+>  	if (empty)
+> @@ -273,8 +272,7 @@ static void anon_vma_ctor(void *data)
+>  	struct anon_vma *anon_vma = data;
+>  
+>  	spin_lock_init(&anon_vma->lock);
+> -	ksm_refcount_init(anon_vma);
+> -	migrate_refcount_init(anon_vma);
+> +	anonvma_external_refcount_init(anon_vma);
 
-    rcu: add rcu_access_pointer and rcu_dereference_protect
-    
-    This patch adds variants of rcu_dereference() that handle situations
-    where the RCU-protected data structure cannot change, perhaps due to
-    our holding the update-side lock, or where the RCU-protected pointer is
-    only to be fetched, not dereferenced.
-    
-    The new rcu_access_pointer() primitive is for the case where the pointer
-    is be fetch and not dereferenced.  This primitive may be used without
-    protection, RCU or otherwise, due to the fact that it uses ACCESS_ONCE().
-    
-    The new rcu_dereference_protect() primitive is for the case where updates
-    are prevented, for example, due to holding the update-side lock.  This
-    primitive does neither ACCESS_ONCE() nor smp_read_barrier_depends(), so
-    can only be used when updates are somehow prevented.
-    
-    Suggested-by: David Howells <dhowells@redhat.com>
-    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 872a98e..ed7539f 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -209,9 +209,47 @@ static inline int rcu_read_lock_sched_held(void)
- 		rcu_dereference_raw(p); \
- 	})
- 
-+/**
-+ * rcu_access_pointer - fetch RCU pointer with no dereferencing
-+ *
-+ * Return the value of the specified RCU-protected pointer, but omit the
-+ * smp_read_barrier_depends() and keep the ACCESS_ONCE().  This is useful
-+ * when the value of this pointer is accessed, but the pointer is not
-+ * dereferenced, for example, when testing an RCU-protected pointer against
-+ * NULL.  This may also be used in cases where update-side locks prevent
-+ * the value of the pointer from changing, but rcu_dereference_protect()
-+ * is a lighter-weight primitive for this use case.
-+ */
-+#define rcu_access_pointer(p, c) \
-+	({ \
-+		if (debug_lockdep_rcu_enabled() && !(c)) \
-+			lockdep_rcu_dereference(__FILE__, __LINE__); \
-+		ACCESS_ONCE(p); \
-+	})
-+
-+/**
-+ * rcu_dereference_protect - fetch RCU pointer when updates prevented
-+ *
-+ * Return the value of the specified RCU-protected pointer, but omit
-+ * both the smp_read_barrier_depends() and the ACCESS_ONCE().  This
-+ * is useful in cases where update-side locks prevent the value of the
-+ * pointer from changing.  Please note that this primitive does -not-
-+ * prevent the compiler from repeating this reference or combining it
-+ * with other references, so it should not be used without protection
-+ * of appropriate locks.
-+ */
-+#define rcu_dereference_protect(p, c) \
-+	({ \
-+		if (debug_lockdep_rcu_enabled() && !(c)) \
-+			lockdep_rcu_dereference(__FILE__, __LINE__); \
-+		(p); \
-+	})
-+
- #else /* #ifdef CONFIG_PROVE_RCU */
- 
- #define rcu_dereference_check(p, c)	rcu_dereference_raw(p)
-+#define rcu_access_pointer(p, c)	ACCESS_ONCE(p)
-+#define rcu_dereference_protect(p, c) (p)
- 
- #endif /* #else #ifdef CONFIG_PROVE_RCU */
- 
+What a mouthful.  Can we do s/external_//g?
