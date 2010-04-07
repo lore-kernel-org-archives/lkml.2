@@ -1,100 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932838Ab0DGP4A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 11:56:00 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:33960 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932762Ab0DGPz7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 11:55:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=L8+T6VtMiAbIsMDDnRyztNMEbIwH5N8rHDR+GhW2D+sGs9U4ISoGSbRYWP+UUyXlxE
-         LSDG9TFERwQsIv+hgRE/bAsy92afpX0KLoaxyExl+QsWAh2l6DU4pGvgEefzkQyhvQat
-         jHXMbITGZV2M8QHQkvq0PYjOTSZV5MNB8AGhg=
+	id S932844Ab0DGP5g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 11:57:36 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:59415 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932729Ab0DGP5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 11:57:32 -0400
+Date: Wed, 7 Apr 2010 08:57:29 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Trond.Myklebust@netapp.com,
+       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFS: Fix RCU warnings in
+ nfs_inode_return_delegation_noreclaim() [ver #2]
+Message-ID: <20100407155729.GA2481@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <2440.1269967151@redhat.com>
+ <21972.1269993064@redhat.com>
+ <10818.1270044273@redhat.com>
+ <15371.1270057054@redhat.com>
+ <19556.1270076008@redhat.com>
+ <14003.1270122314@redhat.com>
+ <4161.1270133211@redhat.com>
+ <23331.1270570443@redhat.com>
+ <26510.1270582446@redhat.com>
+ <24225.1270646561@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20100407142245.GA8714@elte.hu>
-References: <k2h9c2470ce1004070257z7c45897o10fb7f4d7d1de8f@mail.gmail.com>
-	 <20100407142245.GA8714@elte.hu>
-Date: Wed, 7 Apr 2010 17:55:56 +0200
-Message-ID: <z2g9c2470ce1004070855g7965443cl6d807051bb386dbb@mail.gmail.com>
-Subject: Re: [PATCH] eepc-wmi.c: Fix build error
-From: Jan III Sobieski <jan3sobi3ski@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Matthew Garrett <mjg@redhat.com>, Dmitry Torokhov <dtor@mail.ru>,
-       Yong Wang <yong.y.wang@linux.intel.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <24225.1270646561@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/4/7 Ingo Molnar <mingo@elte.hu>:
->
-> * Jan III Sobieski <jan3sobi3ski@gmail.com> wrote:
->
->> Hi,
->>
->>   GEN     .version
->>   CHK     include/generated/compile.h
->>   UPD     include/generated/compile.h
->>   CC      init/version.o
->>   LD      init/built-in.o
->>   LD      .tmp_vmlinux1
->> drivers/built-in.o: In function `eeepc_wmi_notify':
->> /home/test/linux-2.6/drivers/platform/x86/eeepc-wmi.c:86: undefined
->> reference to `sparse_keymap_report_event'
->
-> -tip testing has triggered this bug too, see the fix below.
+On Wed, Apr 07, 2010 at 02:22:41PM +0100, David Howells wrote:
+> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > +#define rcu_access_pointer(p, c) \
+> 
+> Why is there a need for 'c'?
 
-Works here. Thanks!
+An example use is where rcu_access_pointer() is legal because we are
+either initializing or cleaning up, so that no other CPU has access
+to the pointer.  In these cases, you might do something like:
 
-Tested-by: Jan III Sobieski <jan3sobi3ski@gmail.com>
+	q = rcu_access_pointer(p->a, p->refcnt == 0);
 
->
->        Ingo
->
-> --------------------------->
-> From 763400ebb305711ebbd468c030db76d631400fe1 Mon Sep 17 00:00:00 2001
-> From: Ingo Molnar <mingo@elte.hu>
-> Date: Wed, 7 Apr 2010 16:15:51 +0200
-> Subject: [PATCH] eepc-wmi.c: Fix build error
->
-> -tip testing found:
->
-> eeepc-wmi.c:(.text+0x36673c): undefined reference to `sparse_keymap_report_event'
-> drivers/built-in.o: In function `eeepc_wmi_init':
-> eeepc-wmi.c:(.init.text+0x19cd0): undefined reference to `sparse_keymap_setup'
-> eeepc-wmi.c:(.init.text+0x19cf0): undefined reference to `sparse_keymap_free'
-> eeepc-wmi.c:(.init.text+0x19d0b): undefined reference to `sparse_keymap_free'
-> drivers/built-in.o: In function `eeepc_wmi_exit':
-> eeepc-wmi.c:(.exit.text+0x2e87): undefined reference to `sparse_keymap_free'
->
-> To fix this select INPUT_SPARSEKMAP, like the ASUS driver does.
->
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> ---
->  drivers/platform/x86/Kconfig |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-> index 3046776..301e379 100644
-> --- a/drivers/platform/x86/Kconfig
-> +++ b/drivers/platform/x86/Kconfig
-> @@ -392,6 +392,7 @@ config EEEPC_WMI
->        depends on ACPI_WMI
->        depends on INPUT
->        depends on EXPERIMENTAL
-> +       select INPUT_SPARSEKMAP
->        ---help---
->          Say Y here if you want to support WMI-based hotkeys on Eee PC laptops.
->
->
+> > +#define rcu_dereference_protect(p, c) \
+> 
+> I'd prefer rcu_dereference_protected(), I think.  This macro doesn't protect
+> anything.  Also, again, why the need for 'c'?
 
+Agreed on rcu_dereference_protected().  I succumbed to a fit of "make
+the identifier shorter", please accept my apologies.
 
+> For instance, in:
+> 
+> 	static struct nfs_delegation *nfs_detach_delegation_locked(struct nfs_inode *nfsi, const nfs4_stateid *stateid)
+> 	{
+> 		struct nfs_delegation *delegation =
+> 			rcu_dereference_protected(nfsi->delegation, ????);
+> 
+> what would be the condition?  That the spinlock is held?  That's a condition
+> for calling the function.
 
--- 
-Jan III Sobieski
+Yep, that the spinlock is held.  I agree that it is a bit obvious in
+this case, but I have come across a number of RCU uses where the lock
+in question was acquired many function calls removed from the access,
+and where there other locks were held for other purposes.
+
+> And in:
+> 
+> 	void nfs_inode_return_delegation_noreclaim(struct inode *inode)
+> 	{
+> 		struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
+> 		struct nfs_inode *nfsi = NFS_I(inode);
+> 		struct nfs_delegation *delegation;
+> 
+> 		if (rcu_access_pointer(nfsi->delegation, ????) != NULL) {
+> 
+> what would be the condition here?  There's no lock to check - that's the whole
+> point of the macro.  I also can't give it nfsi->delegation to check as the
+> value may change between the two accesses.
+
+I suggest something like the following:
+
+		/* protected by double-check lock pattern. */
+		if (rcu_access_pointer(nfsi->delegation, 1) != NULL) {
+
+							Thanx, Paul
