@@ -1,119 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758209Ab0DGTCW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 15:02:22 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:32078 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab0DGTCV (ORCPT
+	id S1757493Ab0DGTJZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 15:09:25 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:53945 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753576Ab0DGTJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 15:02:21 -0400
-Date: Wed, 7 Apr 2010 12:00:30 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Joe Korty <joe.korty@ccur.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] Tweak SMI sniffer commentary
-Message-Id: <20100407120030.26d53073.randy.dunlap@oracle.com>
-In-Reply-To: <20100407185318.GA11442@typhoon.ccur.com>
-References: <20100406200605.GA16586@typhoon.ccur.com>
-	<20100407110507.3c8a3aea.randy.dunlap@oracle.com>
-	<20100407185318.GA11442@typhoon.ccur.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4BBCD698.0108:SCFMA4539814,ss=1,fgs=0
+	Wed, 7 Apr 2010 15:09:21 -0400
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Yinghai Lu <yinghai@kernel.org>, Rabin Vincent <rabin@rab.in>,
+       lkml <linux-kernel@vger.kernel.org>, penberg@cs.helsinki.fi,
+       cl@linux-foundation.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       linux-arch@vger.kernel.org, David Howells <dhowells@redhat.com>
+Subject: Re: start_kernel(): bug: interrupts were enabled early
+References: <20100325194100.GA2364@debian>
+	<20100331134048.da4e35a7.akpm@linux-foundation.org>
+	<4BB3B4DB.7040904@kernel.org>
+	<20100331135220.c6695a51.akpm@linux-foundation.org>
+	<4BB3BAD6.50308@zytor.com>
+	<alpine.LFD.2.00.1004010904540.3707@i5.linux-foundation.org>
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Organization: Deep Root Systems, LLC
+Date: Wed, 07 Apr 2010 12:09:17 -0700
+In-Reply-To: <alpine.LFD.2.00.1004010904540.3707@i5.linux-foundation.org> (Linus Torvalds's message of "Thu\, 1 Apr 2010 09\:13\:31 -0700 \(PDT\)")
+Message-ID: <878w8zcc6a.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Apr 2010 14:53:18 -0400 Joe Korty wrote:
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-> Hi Randy,
-> Thanks!  I've created a follow-on patch containing the suggested rewordings.
-> Joe
-> 
-> [PATCH] Tweak some SMI sniffer commentary
-> 
-> Thanks go to Randy Dunlap for these suggestions.
-> 
-> Signed-off-by: Joe Korty <joe.korty@ccur.com>
-> 
+> On Wed, 31 Mar 2010, H. Peter Anvin wrote:
+>> 
+>> The obvious way to fix this would be to use
+>> spin_lock_irqsave..spin_lock_irqrestore in __down_read as well as in the
+>> other locations; I don't have a good feel for what the cost of doing so
+>> would be, though.  On x86 it's fairly expensive simply because the only
+>> way to save the state is to push it on the stack, which the compiler
+>> doesn't deal well with, but this code isn't used on x86.
+>
 
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+[...]
 
-Thanks.
+> So making the slow-path do the spin_[un]lock_irq{save,restore}() versions 
+> sounds like the right thing. It won't be a performance issue: it _is_ the 
+> slow-path, and we're already doing the expensive part (the spinlock itself 
+> and the irq thing).
+>
+> So ACK on the idea. Who wants to write the trivial patch and test it? 
 
+OK, I'll bite since I was seeing boot-time hangs on ARM (TI OMAP3) due
+to this.  Patch below.
 
-> 
-> Index: 2.6.34-rc3/Documentation/kernel-parameters.txt
-> ===================================================================
-> --- 2.6.34-rc3.orig/Documentation/kernel-parameters.txt	2010-04-05 14:30:06.000000000 -0400
-> +++ 2.6.34-rc3/Documentation/kernel-parameters.txt	2010-04-07 14:39:50.000000000 -0400
-> @@ -947,8 +947,8 @@
->  			will use a lot of power and make the system run hot.
->  			Not recommended.
->  			idle=smi: variant of idle=poll that uses the spin-time
-> -			to detect otherwise undetectable SMIs.  Not available
-> -			unless CONFIG_DEBUG_SMI_SNIFFER=y.
-> +			to detect otherwise undetectable SMIs.  Only available
-> +			when CONFIG_DEBUG_SMI_SNIFFER=y.
->  			idle=mwait: On systems which support MONITOR/MWAIT but
->  			the kernel chose to not use it because it doesn't save
->  			as much power as a normal idle loop, use the
-> Index: 2.6.34-rc3/Documentation/x86/smi-sniffer.txt
-> ===================================================================
-> --- 2.6.34-rc3.orig/Documentation/x86/smi-sniffer.txt	2010-04-05 14:30:06.000000000 -0400
-> +++ 2.6.34-rc3/Documentation/x86/smi-sniffer.txt	2010-04-07 14:49:19.000000000 -0400
-> @@ -8,17 +8,17 @@
->  interrupt that goes directly to the BIOS. They are used by motherboard
->  manufacturers to, for example, 1) simulate missing hardware in software,
->  such as an RTC or emulating a missing PS2 mouse/keyboard using a USB
-> -mouse/keyboard, 2) to perform critical motherboard duties, such as periodic
-> -DRAM memory refresh or slowing the cpu down whenever it gets too hot, and 3)
-> -to work around in software (ie, in the BIOS) deficiencies discovered after
-> +mouse/keyboard, 2) perform critical motherboard duties, such as periodic
-> +DRAM memory refresh or slowing the CPU down whenever it gets too hot, and 3)
-> +work around in software (i.e., in the BIOS) deficiencies discovered after
->  a board has been manufactured and shipped to customers.
->  
->  The OS is not involved with nor even informed of these interrupts when
->  they occur, and indeed it is difficult for the OS to detect that they have
->  occurred at all. The only signature an SMI leaves behind is the time that it
-> -consumes. These 'time slices', taken randomly out of the running time of a cpu,
-> +consumes. These 'time slices', taken randomly out of the running time of a CPU,
->  compromise the ability of the OS to provide reasonable latency guarantees to
-> -the applications running underneath it. For many uses this is unimportant,
-> +the applications running on top of it. For many uses this is unimportant,
->  but for real time systems, the occurrence of an SMI during the run of some
->  critically-timed piece of code could shatter the correct running of the system.
->  
-> @@ -36,8 +36,8 @@
->  routine is in use, by an "echo 1 >/proc/sys/kernel/smi_sniffer_enable" command.
->  
->  The sniffer adds a pair of lines to /proc/interrupts.  The "SMI" line shows
-> -the number of SMIs detected (per-cpu) so far. The "DSMI" line gives the
-> -duration, in microseconds, of the most recent SMI (for each cpu).
-> +the number of SMIs detected (per-CPU) so far. The "DSMI" line gives the
-> +duration, in microseconds, of the most recent SMI (for each CPU).
->  
->  These lines appear only while the sniffer is running. If it is disabled later,
->  say with an "echo 0 >/proc/sys/kernel/smi_sniffer_enable", then the lines
-> @@ -66,7 +66,7 @@
->  longer than 125 usecs by the time it took to process the interrupt.
->  
->  The OS is modified so that all normal system interrupts, including NMI, mark
-> -their occurrence via the setting of a per-cpu 'system interrupt occured' flag.
-> +their occurrence via the setting of a per-CPU 'system interrupt occurred' flag.
->  We can therefore detect SMIs by assuming that if a period significantly longer
->  than 125 usecs is seen, and this 'system interrupt happened' flag is not set,
->  that it was an SMI that lengthened the period.
-> --
+Kevin
 
 
+>From 7baff4008353bbfd2a2e2a4da22b87bc4efa4194 Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Date: Wed, 7 Apr 2010 11:52:46 -0700
+Subject: [PATCH] rwsem generic spinlock: use IRQ save/restore spinlocks
+
+rwsems can be used with IRQs disabled, particularily in early boot
+before IRQs are enabled.  Currently the spin_unlock_irq() usage in the
+slow-patch will unconditionally enable interrupts and cause problems
+since interrupts are not yet initialized or enabled.
+
+This patch uses save/restore versions of IRQ spinlocks in the slowpath
+to ensure interrupts are not unintentionally disabled.
+
+Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
 ---
-~Randy
+ lib/rwsem-spinlock.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
+index ccf95bf..ffc9fc7 100644
+--- a/lib/rwsem-spinlock.c
++++ b/lib/rwsem-spinlock.c
+@@ -143,13 +143,14 @@ void __sched __down_read(struct rw_semaphore *sem)
+ {
+ 	struct rwsem_waiter waiter;
+ 	struct task_struct *tsk;
++	unsigned long flags;
+ 
+-	spin_lock_irq(&sem->wait_lock);
++	spin_lock_irqsave(&sem->wait_lock, flags);
+ 
+ 	if (sem->activity >= 0 && list_empty(&sem->wait_list)) {
+ 		/* granted */
+ 		sem->activity++;
+-		spin_unlock_irq(&sem->wait_lock);
++		spin_unlock_irqrestore(&sem->wait_lock, flags);
+ 		goto out;
+ 	}
+ 
+@@ -164,7 +165,7 @@ void __sched __down_read(struct rw_semaphore *sem)
+ 	list_add_tail(&waiter.list, &sem->wait_list);
+ 
+ 	/* we don't need to touch the semaphore struct anymore */
+-	spin_unlock_irq(&sem->wait_lock);
++	spin_unlock_irqrestore(&sem->wait_lock, flags);
+ 
+ 	/* wait to be given the lock */
+ 	for (;;) {
+@@ -209,13 +210,14 @@ void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
+ {
+ 	struct rwsem_waiter waiter;
+ 	struct task_struct *tsk;
++	unsigned long flags;
+ 
+-	spin_lock_irq(&sem->wait_lock);
++	spin_lock_irqsave(&sem->wait_lock, flags);
+ 
+ 	if (sem->activity == 0 && list_empty(&sem->wait_list)) {
+ 		/* granted */
+ 		sem->activity = -1;
+-		spin_unlock_irq(&sem->wait_lock);
++		spin_unlock_irqrestore(&sem->wait_lock, flags);
+ 		goto out;
+ 	}
+ 
+@@ -230,7 +232,7 @@ void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
+ 	list_add_tail(&waiter.list, &sem->wait_list);
+ 
+ 	/* we don't need to touch the semaphore struct anymore */
+-	spin_unlock_irq(&sem->wait_lock);
++	spin_unlock_irqrestore(&sem->wait_lock, flags);
+ 
+ 	/* wait to be given the lock */
+ 	for (;;) {
+-- 
+1.7.0.2
+
