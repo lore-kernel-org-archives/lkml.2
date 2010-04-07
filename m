@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932894Ab0DGQaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 12:30:06 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:35662 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932852Ab0DGQaB (ORCPT
+	id S932900Ab0DGQbN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 12:31:13 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:59372 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932695Ab0DGQbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 12:30:01 -0400
-Message-ID: <4BBCB304.2050500@cs.helsinki.fi>
-Date: Wed, 07 Apr 2010 19:29:56 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	Wed, 7 Apr 2010 12:31:12 -0400
+Date: Wed, 7 Apr 2010 11:30:23 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, netdev <netdev@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       alex.shi@intel.com,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
+In-Reply-To: <1270607668.2078.259.camel@ymzhang.sh.intel.com>
+Message-ID: <alpine.DEB.2.00.1004071128240.13261@router.home>
+References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>  <alpine.DEB.2.00.1003250942080.2670@router.home>  <1269570902.9614.92.camel@alexs-hp.sh.intel.com>  <1270114166.2078.107.camel@ymzhang.sh.intel.com>  <alpine.DEB.2.00.1004011050340.16531@router.home>
+  <1270195589.2078.116.camel@ymzhang.sh.intel.com>  <alpine.DEB.2.00.1004050853300.23149@router.home>  <i2z84144f021004051030k7ff5190cyc083aa12c552dfac@mail.gmail.com>  <4BBA8DF9.8010409@kernel.org>  <1270542497.2078.123.camel@ymzhang.sh.intel.com> 
+ <alpine.DEB.2.00.1004061033330.18750@router.home>  <alpine.DEB.2.00.1004061552500.19151@router.home>  <1270591841.2091.170.camel@edumazet-laptop> <1270607668.2078.259.camel@ymzhang.sh.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Nick Piggin <npiggin@suse.de>, Andi Kleen <andi@firstfloor.org>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org, haicheng.li@intel.com,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [patch v2] slab: add memory hotplug support
-References: <alpine.DEB.2.00.1002242357450.26099@chino.kir.corp.google.com> <alpine.DEB.2.00.1002251228140.18861@router.home> <20100226114136.GA16335@basil.fritz.box> <alpine.DEB.2.00.1002260904311.6641@router.home> <20100226155755.GE16335@basil.fritz.box> <alpine.DEB.2.00.1002261123520.7719@router.home> <alpine.DEB.2.00.1002261555030.32111@chino.kir.corp.google.com> <alpine.DEB.2.00.1003010224170.26824@chino.kir.corp.google.com> <20100305062002.GV8653@laptop> <alpine.DEB.2.00.1003081502400.30456@chino.kir.corp.google.com> <20100309134633.GM8653@laptop> <alpine.DEB.2.00.1003271849260.7249@chino.kir.corp.google.com> <alpine.DEB.2.00.1003271940190.8399@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1003271940190.8399@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Rientjes wrote:
-> Slab lacks any memory hotplug support for nodes that are hotplugged
-> without cpus being hotplugged.  This is possible at least on x86
-> CONFIG_MEMORY_HOTPLUG_SPARSE kernels where SRAT entries are marked
-> ACPI_SRAT_MEM_HOT_PLUGGABLE and the regions of RAM represent a seperate
-> node.  It can also be done manually by writing the start address to
-> /sys/devices/system/memory/probe for kernels that have
-> CONFIG_ARCH_MEMORY_PROBE set, which is how this patch was tested, and
-> then onlining the new memory region.
-> 
-> When a node is hotadded, a nodelist for that node is allocated and 
-> initialized for each slab cache.  If this isn't completed due to a lack
-> of memory, the hotadd is aborted: we have a reasonable expectation that
-> kmalloc_node(nid) will work for all caches if nid is online and memory is
-> available.  
-> 
-> Since nodelists must be allocated and initialized prior to the new node's
-> memory actually being online, the struct kmem_list3 is allocated off-node
-> due to kmalloc_node()'s fallback.
-> 
-> When an entire node would be offlined, its nodelists are subsequently
-> drained.  If slab objects still exist and cannot be freed, the offline is
-> aborted.  It is possible that objects will be allocated between this
-> drain and page isolation, so it's still possible that the offline will
-> still fail, however.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
+On Wed, 7 Apr 2010, Zhang, Yanmin wrote:
 
-I queued this up for 2.6.35. Thanks!
+> > booting with slub_min_order=3 do change hackbench results for example ;)
+> By default, slub_min_order=3 on my Nehalem machines. I also tried different
+> larger slub_min_order and didn't find help.
+
+Lets stop fiddling with kernel command line parameters for these test.
+Leave as default. That is how I tested.
