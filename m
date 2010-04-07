@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932538Ab0DGKq5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 06:46:57 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:43400 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757730Ab0DGKqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 06:46:52 -0400
-Date: Wed, 7 Apr 2010 11:46:32 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 06/14] Export fragmentation index via
-	/proc/extfrag_index
-Message-ID: <20100407104632.GP17882@csn.ul.ie>
-References: <1270224168-14775-1-git-send-email-mel@csn.ul.ie> <1270224168-14775-7-git-send-email-mel@csn.ul.ie> <20100406170542.fe9b9f33.akpm@linux-foundation.org>
+	id S1757816Ab0DGKrq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 06:47:46 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:36952 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752556Ab0DGKrk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 06:47:40 -0400
+Message-ID: <4BBC62C9.80802@cs.helsinki.fi>
+Date: Wed, 07 Apr 2010 13:47:37 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100406170542.fe9b9f33.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       netdev <netdev@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+       alex.shi@intel.com,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>, mingo@elte.hu
+Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
+References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>	 <alpine.DEB.2.00.1003250942080.2670@router.home>	 <1269570902.9614.92.camel@alexs-hp.sh.intel.com>	 <1270114166.2078.107.camel@ymzhang.sh.intel.com>	 <alpine.DEB.2.00.1004011050340.16531@router.home>	 <1270195589.2078.116.camel@ymzhang.sh.intel.com>	 <alpine.DEB.2.00.1004050853300.23149@router.home>	 <i2z84144f021004051030k7ff5190cyc083aa12c552dfac@mail.gmail.com>	 <4BBA8DF9.8010409@kernel.org>	 <1270542497.2078.123.camel@ymzhang.sh.intel.com>	 <alpine.DEB.2.00.1004061033330.18750@router.home>	 <alpine.DEB.2.00.1004061552500.19151@router.home>	 <1270591841.2091.170.camel@edumazet-laptop> <1270607668.2078.259.camel@ymzhang.sh.intel.com>
+In-Reply-To: <1270607668.2078.259.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 06, 2010 at 05:05:42PM -0700, Andrew Morton wrote:
-> On Fri,  2 Apr 2010 17:02:40 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
-> 
-> > Fragmentation index is a value that makes sense when an allocation of a
-> > given size would fail. The index indicates whether an allocation failure is
-> > due to a lack of memory (values towards 0) or due to external fragmentation
-> > (value towards 1).  For the most part, the huge page size will be the size
-> > of interest but not necessarily so it is exported on a per-order and per-zone
-> > basis via /proc/extfrag_index
-> 
-> (/proc/sys/vm?)
-> 
+Zhang, Yanmin kirjoitti:
+> Kernel 2.6.34-rc3:
+> # Samples: 13079611308 LLC-load-misses
+> #
+> # Overhead          Command                                                         Shared Object  Symbol
+> # ........  ...............  ....................................................................  ......
+> #
+>     18.55%        hackbench  [kernel.kallsyms]                                                     [k] copy_user_generic_str
+> ing
+>     13.19%        hackbench  [kernel.kallsyms]                                                     [k] unix_stream_recvmsg
+>     11.62%        hackbench  [kernel.kallsyms]                                                     [k] kfree
+>      8.54%        hackbench  [kernel.kallsyms]                                                     [k] kmem_cache_free
+>      7.88%        hackbench  [kernel.kallsyms]                                                     [k] __kmalloc_node_track_
+> caller
+>      6.54%        hackbench  [kernel.kallsyms]                                                     [k] kmem_cache_alloc_node
+>      5.94%        hackbench  [kernel.kallsyms]                                                     [k] kfree_skb
+>      3.48%        hackbench  [kernel.kallsyms]                                                     [k] __slab_free
+>      2.15%        hackbench  [kernel.kallsyms]                                                     [k] _raw_spin_lock
+>      1.83%        hackbench  [kernel.kallsyms]                                                     [k] schedule
+>      1.82%        hackbench  [kernel.kallsyms]                                                     [k] get_partial_node
+>      1.59%        hackbench  hackbench                                                             [.] receiver
+>      1.37%        hackbench  libpthread-2.9.so                                                     [.] __read
 
-It can move.
-
-> Like unusable_index, this seems awfully specialised. 
-
-Except in this case, the fragmentation index is used by the kernel when
-deciding in advance whether compaction will do the job or if lumpy
-reclaim is required.
-
-I could avoid exposing this to userspace but it would make it harder to
-decide what needs to happen with extfrag_threshold later. i.e. does the
-threshold need a different value (proc would help gather the data) or
-is a new heuristic needed.
-
-> Perhaps we could
-> hide it under CONFIG_MEL, or even put it in debugfs with the intention
-> of removing it in 6 or 12 months time.  Either way, it's hard to
-> justify permanently adding this stuff to every kernel in the world?
-> 
-
-Moving it to debugfs would satisfy the requirement of tuning extfrag_threshold
-without adding it to every kernel but it could also be just removed.
-
-> 
-> I have a suspicion that all the info in unusable_index and
-> extfrag_index could be computed from userspace using /proc/kpageflags
-
-It can be computed from buddyinfo. I used a perl script to calculate it
-in the past. I exposed the information from in-kernel in these patches so
-people would be guaranteed to have the same information as me.
-
-> (and perhaps a bit of dmesg-diddling to find the zones). 
-
-Can be figured out from buddyinfo too.
-
-> If that can't
-> be done today, I bet it'd be pretty easy to arrange for it.
-> 
-
-It is. Will I just remove the proc files, keep the internal calculation
-for fragmentation_index and kick that perl script into shape to produce
-the same information from buddyinfo?
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Btw, you might want to try out "perf record -g" and "perf report 
+--callchain fractal,5" to get a better view of where we're spending 
+time. Perhaps you can spot the difference with that more easily.
