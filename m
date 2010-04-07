@@ -1,55 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362Ab0DGCTk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 22:19:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48215 "EHLO mail.zytor.com"
+	id S1752726Ab0DGCZH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 22:25:07 -0400
+Received: from mga11.intel.com ([192.55.52.93]:11932 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751153Ab0DGCTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 22:19:35 -0400
-Message-ID: <4BBBE976.1000603@zytor.com>
-Date: Tue, 06 Apr 2010 19:09:58 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1751448Ab0DGCY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 22:24:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,376,1267430400"; 
+   d="scan'208";a="555621463"
+Date: Wed, 7 Apr 2010 10:24:56 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Taras Glek <tglek@mozilla.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
+Message-ID: <20100407022456.GA9468@localhost>
+References: <4BBA6776.5060804@mozilla.com> <20100406095135.GB5183@cmpxchg.org>
 MIME-Version: 1.0
-To: Venkatram Tummala <venkatram867@gmail.com>
-CC: Xianghua Xiao <xiaoxianghua@gmail.com>,
-       Youngwhan Song <breadncup@gmail.com>,
-       Joel Fernandes <agnel.joel@gmail.com>,
-       Frank Hu <frank.hu.2001@gmail.com>,
-       hayfeng Lee <teklife.kernel@gmail.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-kernel@zh-kernel.org" <linux-kernel@zh-kernel.org>,
-       "kernelnewbies@nl.linux.org" <kernelnewbies@nl.linux.org>
-Subject: Re: why choose 896MB to the start point of ZONE_HIGHMEM
-References: <l2y5f6c52c61004060737me670f6e2t6071444c4fd1318b@mail.gmail.com> 	<g2s9ff7a3bc1004060802va38aa361s6abd07e8c992dd56@mail.gmail.com> 	<4BBB7AC9.5060008@zytor.com> <o2m8f84f9951004061220x16f3aa8by9cf19ec28ea492d7@mail.gmail.com> 	<4BBB8F07.60401@zytor.com> <w2p9ff7a3bc1004061301v6cc76e1g1e573468b1b8807d@mail.gmail.com> 	<q2iacff6c2b1004061528t28f1337eq977aabf8fe71bc22@mail.gmail.com> 	<3715922601579231267@unknownmsgid> <4BBBC470.4050002@zytor.com> 	<q2he6bf505b1004061847l31b2fe15v31d1556862d3a2f9@mail.gmail.com> <n2uacff6c2b1004061904v5d290fa6v909e2e5fe32ff910@mail.gmail.com>
-In-Reply-To: <n2uacff6c2b1004061904v5d290fa6v909e2e5fe32ff910@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100406095135.GB5183@cmpxchg.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2010 07:04 PM, Venkatram Tummala wrote:
-> Hey Xiao,
+Hi Taras,
+
+On Tue, Apr 06, 2010 at 05:51:35PM +0800, Johannes Weiner wrote:
+> On Mon, Apr 05, 2010 at 03:43:02PM -0700, Taras Glek wrote:
+> > Hello,
+> > I am working on improving Mozilla startup times. It turns out that page 
+> > faults(caused by lack of cooperation between user/kernelspace) are the 
+> > main cause of slow startup. I need some insights from someone who 
+> > understands linux vm behavior.
+
+How about improve Fedora (and other distros) to preload Mozilla (and
+other apps the user run at the previous boot) with fadvise() at boot
+time? This sounds like the most reasonable option.
+
+As for the kernel readahead, I have a patchset to increase default
+mmap read-around size from 128kb to 512kb (except for small memory
+systems).  This should help your case as well.
+
+> > Current Situation:
+> > The dynamic linker mmap()s  executable and data sections of our 
+> > executable but it doesn't call madvise().
+> > By default page faults trigger 131072byte reads. To make matters worse, 
+> > the compile-time linker + gcc lay out code in a manner that does not 
+> > correspond to how the resulting executable will be executed(ie the 
+> > layout is basically random). This means that during startup 15-40mb 
+> > binaries are read in basically random fashion. Even if one orders the 
+> > binary optimally, throughput is still suboptimal due to the puny readahead.
+> > 
+> > IO Hints:
+> > Fortunately when one specifies madvise(WILLNEED) pagefaults trigger 2mb 
+> > reads and a binary that tends to take 110 page faults(ie program stops 
+> > execution and waits for disk) can be reduced down to 6. This has the 
+> > potential to double application startup of large apps without any clear 
+> > downsides.
+> >
+> > Suse ships their glibc with a dynamic linker patch to fadvise()
+> > dynamic libraries(not sure why they switched from doing madvise
+> > before).
+
+This is interesting. I wonder how SuSE implements the policy.
+Do you have the patch or some strace output that demonstrates the
+fadvise() call?
+
+> > I filed a glibc bug about this at 
+> > http://sourceware.org/bugzilla/show_bug.cgi?id=11431 . Uli commented 
+> > with his concern about wasting memory resources. What is the impact of 
+> > madvise(WILLNEED) or the fadvise equivalent on systems under memory 
+> > pressure? Does the kernel simply start ignoring these hints?
 > 
-> last 128MB is not used for highmem. last 128MB is used for data
-> structures(page tables etc.) to support highmem .  Highmem is not
-> something which is "INSIDE" Kernel's Virtual Address space. Highmem
-> refers to a region of "Physical memory" which can be mapped into
-> kernel's virtual address space through page tables.
+> It will throttle based on memory pressure.  In idle situations it will
+> eat your file cache, however, to satisfy the request.
 > 
-> Regards,
-> Venkatram Tummala
+> Now, the file cache should be much bigger than the amount of unneeded
+> pages you prefault with the hint over the whole library, so I guess the
+> benefit of prefaulting the right pages outweighs the downside of evicting
+> some cache for unused library pages.
 > 
+> Still, it's a workaround for deficits in the demand-paging/readahead
+> heuristics and thus a bit ugly, I feel.  Maybe Wu can help.
 
-Not quite.
+Program page faults are inherently random, so the straightforward
+solution would be to increase the mmap read-around size (for desktops
+with reasonable large memory), rather than to improve program layout
+or readahead heuristics :)
 
-The vmalloc region is for *anything which is dynamically mapped*, which
-includes I/O, vmalloc, and HIGHMEM (kmap).
+> > Also, once an application is started is it reasonable to keep it 
+> > madvise(WILLNEED)ed or should the madvise flags be reset?
+> 
+> It's a one-time operation that starts immediate readahead, no permanent
+> changes are done.
 
-	-hpa
+Right. The kernel regard WILLNEED as a readahead request from userspace.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+> > Perhaps the kernel could monitor the page-in patterns to increase the 
+> > readahead sizes? This may already happen, I've noticed that a handful of 
+> > pagefaults trigger > 131072bytes of IO, perhaps this just needs tweaking.
+> 
+> CCd the man :-)
 
+Thank you :)
+
+Cheers,
+Fengguang
