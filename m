@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756475Ab0DGWAX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 18:00:23 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:48991 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755885Ab0DGWAR (ORCPT
+	id S1756713Ab0DGWCs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 18:02:48 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:11378 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756001Ab0DGWCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 18:00:17 -0400
-Date: Wed, 7 Apr 2010 17:53:19 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
+	Wed, 7 Apr 2010 18:02:44 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [Bug #15480] [regression] Fails to boot properly unless given pci=nocrs
+Date: Wed, 7 Apr 2010 16:02:21 -0600
+User-Agent: KMail/1.9.10
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
        Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Network Development <netdev@vger.kernel.org>,
-       Linux ACPI <linux-acpi@vger.kernel.org>,
-       Linux PM List <linux-pm@lists.linux-foundation.org>,
-       Linux SCSI List <linux-scsi@vger.kernel.org>,
-       Linux Wireless List <linux-wireless@vger.kernel.org>,
-       DRI <dri-devel@lists.sourceforge.net>
-Subject: Re: 2.6.34-rc3-git6: Reported regressions from 2.6.33
-Message-ID: <20100407215319.GA25932@tuxdriver.com>
-References: <6Pphclm24fK.A.lSF.qsPvLB@chimera>
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       "Yanko Kaneti" <yaneti@declera.com>
+References: <6Pphclm24fK.A.lSF.qsPvLB@chimera> <JVS2s9dmTsP.A.pr.JvPvLB@chimera>
+In-Reply-To: <JVS2s9dmTsP.A.pr.JvPvLB@chimera>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <6Pphclm24fK.A.lSF.qsPvLB@chimera>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Message-Id: <201004071602.22200.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 07, 2010 at 11:08:30PM +0200, Rafael J. Wysocki wrote:
+On Wednesday 07 April 2010 03:08:37 pm Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
+> 
+> The following bug entry is on the current list of known regressions
+> from 2.6.33.  Please verify if it still should be listed and let the tracking team
+> know (either way).
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15480
+> Subject		: [regression] Fails to boot properly unless given pci=nocrs
+> Submitter	: Yanko Kaneti <yaneti@declera.com>
+> Date		: 2010-03-09 01:24 (30 days old)
+> Handled-By	: Bjorn Helgaas <bjorn.helgaas@hp.com>
+> Patch		: http://lkml.org/lkml/2010/3/11/512
 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15551
-> Subject		: WARNING: at net/mac80211/work.c:811 ieee80211_work_work+0x7f/0xde8 [mac80211]()
-> Submitter	: Alex Zhavnerchik <alex.vizor@gmail.com>
-> Date		: 2010-03-16 22:03 (23 days old)
+This should be closed.  The fix is in Linus' tree:
 
-I sent a pull request with the patch for this to Dave M. today. :-)
-
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=d558b483d5a73f5718705b270cb2090f66ea48c8
