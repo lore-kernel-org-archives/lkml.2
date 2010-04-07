@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757350Ab0DGXp6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 19:45:58 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:50170 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756060Ab0DGXpz convert rfc822-to-8bit (ORCPT
+	id S1757435Ab0DGXqh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 19:46:37 -0400
+Received: from mail-yw0-f172.google.com ([209.85.211.172]:38059 "EHLO
+	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756144Ab0DGXqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 19:45:55 -0400
+	Wed, 7 Apr 2010 19:46:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=AmBbQOox59MaQ7wqetiQ5RbTr7KPWRUb3iYz6HzCiF/doyjl4KB9IWpZbXvtP6NuiR
-         pXKkz7Qr98Ba5NvJnIBzcZ5dhTsYYxpfsDcYgLqkcqwXj7nFB0WJliXfhWGeTZfdUl/e
-         /JdfSzvRdj4C7eD87uPOYesVofS1+1Iq+lq28=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=YYwFAEwdOwD5EmbkHI1keUhCkRMzmE7DpVfX3S1Hnm0zxFvAc5bU7ugdHLATDLuUlP
+         T/zGt7ND2sPiKs9673W3Exy19MMQ2winocyM6hlNX/JZGvq0bLcL1MX+UhKe+fKMED4I
+         M/h88gUcgOpwgNYY4ijzrJk+zDdicoFIEYsZ8=
+Message-ID: <4BBD1957.90502@gmail.com>
+Date: Wed, 07 Apr 2010 17:46:31 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1270681920-4461-1-git-send-email-linus.walleij@stericsson.com>
-References: <1270681920-4461-1-git-send-email-linus.walleij@stericsson.com>
-Date: Wed, 7 Apr 2010 16:45:54 -0700
-X-Google-Sender-Auth: 65dd6ff7654fc8f1
-Message-ID: <v2se9c3a7c21004071645u8180f4d7p3b4b1f96de11303e@mail.gmail.com>
-Subject: Re: [PATCH 00/11] ARM: PrimeCell DMA Interface v5
-From: Dan Williams <dan.j.williams@intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: akpm@linux-foundation.org,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       Grant Likely <grant.likely@secretlab.ca>,
-       linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
-       STEricsson_nomadik_linux@list.st.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Mark Knecht <markknecht@gmail.com>
+CC: Clemens Ladisch <clemens@ladisch.de>,
+       Linux Kernel List <linux-kernel@vger.kernel.org>
+Subject: Re: Failed to initialize MSI interrupts && ioremap reserve_memtype
+  failed -22
+References: <x2w5bdc1c8b1004051355o3f803c75t2515ef46320e00bd@mail.gmail.com>	 <4BBC9CA1.5080102@ladisch.de> <m2l5bdc1c8b1004070857r823821ack6cc99354db73eaa0@mail.gmail.com>
+In-Reply-To: <m2l5bdc1c8b1004070857r823821ack6cc99354db73eaa0@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus, back online now.
-
-On Wed, Apr 7, 2010 at 4:12 PM, Linus Walleij
-<linus.walleij@stericsson.com> wrote:
-> This is the fifth iteration of this ever growing patch set
-> for PrimeCell DMA support, reposting the entire series.
+On 04/07/2010 09:57 AM, Mark Knecht wrote:
+> On Wed, Apr 7, 2010 at 7:54 AM, Clemens Ladisch<clemens@ladisch.de>  wrote:
+>> Mark Knecht wrote:
+>>>     New hardware and I haven't seen these messages before so I thought
+>>> I'd post them.
+>>
+>> Both might be harmless.  Please show the entire boot log.
+>>
+>>
+>> Regards,
+>> Clemens
+>>
 >
-> This now depend on stuff pending in Dan Williams async_tx
-> (DMA Devices/Engine) tree and Andrew Mortons tree where
-> the new DMA40 driver for U8500 is queued.
+> Hopefully you mean the contents of dmesg. If it's something else let me know.
 >
-> I suggest putting these into Andrews tree now, since:
->
-> A) 4 of the patches it touches MMCI code which is hanled
->   by Andrew
->
+> If the mail server deletes the text file attachment I'll reply again
+> pasting the text in by hand.
 
-Ok, but it looks like they do not have a build dependency on dma bits
-so they could be merged separately i.e. on top of the async_tx branch.
-
-> B) It extends the DMA40 driver which is now pending in
->   his tree as well.
->
-> C) Since there doesn't seem to be any consensus of whether
->   this is the right way forward, it needs some wider
->   testing I believe.
-
-No consensus with respect to which pieces, the Primecell driver or
-something outside of drivers/dma?  Forgive me for missing recent
-conversations if this has been discussed to death already.
-
-> OK?
-
-I can go ahead and queue up the dma bits unless you would prefer, and
-Andrew agrees, to take this all through the -mm tree?
-
---
-Dan
+Looks like the start of the log was truncated. Can you check if your 
+distro writes the bootup kernel output somewhere (like /var/log/dmesg)?
