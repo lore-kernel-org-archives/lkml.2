@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996Ab0DGWU3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 18:20:29 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42304 "EHLO
+	id S1756060Ab0DGW0d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 18:26:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43143 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751929Ab0DGWU1 (ORCPT
+	by vger.kernel.org with ESMTP id S1753883Ab0DGW0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 18:20:27 -0400
-Date: Wed, 7 Apr 2010 15:15:21 -0700 (PDT)
+	Wed, 7 Apr 2010 18:26:30 -0400
+Date: Wed, 7 Apr 2010 15:22:20 -0700 (PDT)
 From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Borislav Petkov <bp@alien8.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
+To: Al Viro <viro@ZenIV.linux.org.uk>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com,
-       hannes@cmpxchg.org
-Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas
- of a mergeable VMA
-In-Reply-To: <alpine.LFD.2.00.1004071505510.3586@i5.linux-foundation.org>
-Message-ID: <alpine.LFD.2.00.1004071510080.3586@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1004061609320.3487@i5.linux-foundation.org> <20100406195459.554265e7@annuminas.surriel.com> <20100407151357.FB7E.A69D9226@jp.fujitsu.com> <20100407105454.2e7ab9bf@annuminas.surriel.com> <alpine.LFD.2.00.1004070827140.3487@i5.linux-foundation.org>
- <4BBCAA5B.7080603@redhat.com> <alpine.LFD.2.00.1004070951330.3487@i5.linux-foundation.org> <alpine.LFD.2.00.1004071415170.3586@i5.linux-foundation.org> <4BBCFE8A.1030602@redhat.com> <alpine.LFD.2.00.1004071505510.3586@i5.linux-foundation.org>
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Network Development <netdev@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Linux SCSI List <linux-scsi@vger.kernel.org>,
+       Linux Wireless List <linux-wireless@vger.kernel.org>,
+       DRI <dri-devel@lists.sourceforge.net>
+Subject: Re: 2.6.34-rc3-git6: Reported regressions from 2.6.33
+In-Reply-To: <20100407221941.GL30031@ZenIV.linux.org.uk>
+Message-ID: <alpine.LFD.2.00.1004071521500.3586@i5.linux-foundation.org>
+References: <6Pphclm24fK.A.lSF.qsPvLB@chimera> <alpine.LFD.2.00.1004071444440.3586@i5.linux-foundation.org> <20100407221941.GL30031@ZenIV.linux.org.uk>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -34,19 +34,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On Wed, 7 Apr 2010, Linus Torvalds wrote:
+On Wed, 7 Apr 2010, Al Viro wrote:
 > 
-> In the long run, it would be nicer to actually return an error from the 
-> mmap() that fails, but that's more complicated, and as mentioned, it's not 
-> what the old code used to do either (since the failure point was always at 
-> the page fault stage).
+> No, it's not the same thing; the fix is to have nfs ->d_revalidate()
+> return an error on failing open attempt (in insane codepath that has
+> ->d_revalidate() handling open()).  Confirmed to work by reporter...
 
-Put another way: I'm not proud of it, but the new code isn't any worse 
-than what we used to have, and I think the new code is _fixable_.
+Ok, can you do the proper changelog description and sign-offs etc?
 
-The easiest way to do that would likely be to pre-allocate the anon_vma 
-struct (and anon_vma_chain), and pass it down to anon_vma_prepare. That 
-way anon_vma_prepare() itself can never fail, and all we need to do is a 
-simple allocation earlier in the call-chain.
-
-			Linus
+		Linus
