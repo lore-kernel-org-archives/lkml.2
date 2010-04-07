@@ -1,159 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421Ab0DGJF6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 05:05:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:31312 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751229Ab0DGJFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 05:05:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,377,1267430400"; 
-   d="scan'208";a="610891354"
-Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-       netdev <netdev@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, alex.shi@intel.com,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1270622352.2091.702.camel@edumazet-laptop>
-References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
-	 <alpine.DEB.2.00.1003250942080.2670@router.home>
-	 <1269570902.9614.92.camel@alexs-hp.sh.intel.com>
-	 <1270114166.2078.107.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004011050340.16531@router.home>
-	 <1270195589.2078.116.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004050853300.23149@router.home>
-	 <i2z84144f021004051030k7ff5190cyc083aa12c552dfac@mail.gmail.com>
-	 <4BBA8DF9.8010409@kernel.org>
-	 <1270542497.2078.123.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004061033330.18750@router.home>
-	 <alpine.DEB.2.00.1004061552500.19151@router.home>
-	 <1270591841.2091.170.camel@edumazet-laptop>
-	 <1270607668.2078.259.camel@ymzhang.sh.intel.com>
-	 <1270622352.2091.702.camel@edumazet-laptop>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Wed, 07 Apr 2010 17:07:47 +0800
-Message-Id: <1270631267.2078.380.camel@ymzhang.sh.intel.com>
+	id S932521Ab0DGJGN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 05:06:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46632 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932489Ab0DGJGG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 05:06:06 -0400
+Subject: Re: [PATCH] perf: Store active software events in a hashlist
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>
+In-Reply-To: <1270567653.20295.11.camel@laptop>
+References: <1270476502-6214-1-git-send-regression-fweisbec@gmail.com>
+	 <1270567653.20295.11.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 07 Apr 2010 11:04:53 +0200
+Message-ID: <1270631093.5109.569.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-07 at 08:39 +0200, Eric Dumazet wrote:
-> Le mercredi 07 avril 2010 à 10:34 +0800, Zhang, Yanmin a écrit :
+On Tue, 2010-04-06 at 17:27 +0200, Peter Zijlstra wrote:
+> On Mon, 2010-04-05 at 16:08 +0200, Frederic Weisbecker wrote:
+> > Each time a software event triggers, we need to walk through
+> > the entire list of events from the current cpu and task contexts
+> > to retrieve a running perf event that matches.
+> > We also need to check a matching perf event is actually counting.
+> > 
+> > This walk is wasteful and makes the event fast path scaling
+> > down with a growing number of events running on the same
+> > contexts.
+> > 
+> > To solve this, we store the running perf events in a hashlist to
+> > get an immediate access to them against their type:event_id when
+> > they trigger. 
 > 
-> > I collected retired instruction, dtlb miss and LLC miss.
-> > Below is data of LLC miss.
-> > 
-> > Kernel 2.6.33:
-> > # Samples: 11639436896 LLC-load-misses
-> > #
-> > # Overhead          Command                                           Shared Object  Symbol
-> > # ........  ...............  ......................................................  ......
-> > #
-> >     20.94%        hackbench  [kernel.kallsyms]                                       [k] copy_user_generic_string
-> >     14.56%        hackbench  [kernel.kallsyms]                                       [k] unix_stream_recvmsg
-> >     12.88%        hackbench  [kernel.kallsyms]                                       [k] kfree
-> >      7.37%        hackbench  [kernel.kallsyms]                                       [k] kmem_cache_free
-> >      7.18%        hackbench  [kernel.kallsyms]                                       [k] kmem_cache_alloc_node
-> >      6.78%        hackbench  [kernel.kallsyms]                                       [k] kfree_skb
-> >      6.27%        hackbench  [kernel.kallsyms]                                       [k] __kmalloc_node_track_caller
-> >      2.73%        hackbench  [kernel.kallsyms]                                       [k] __slab_free
-> >      2.21%        hackbench  [kernel.kallsyms]                                       [k] get_partial_node
-> >      2.01%        hackbench  [kernel.kallsyms]                                       [k] _raw_spin_lock
-> >      1.59%        hackbench  [kernel.kallsyms]                                       [k] schedule
-> >      1.27%        hackbench  hackbench                                               [.] receiver
-> >      0.99%        hackbench  libpthread-2.9.so                                       [.] __read
-> >      0.87%        hackbench  [kernel.kallsyms]                                       [k] unix_stream_sendmsg
-> > 
-> > 
-> > 
-> > 
-> > Kernel 2.6.34-rc3:
-> > # Samples: 13079611308 LLC-load-misses
-> > #
-> > # Overhead          Command                                                         Shared Object  Symbol
-> > # ........  ...............  ....................................................................  ......
-> > #
-> >     18.55%        hackbench  [kernel.kallsyms]                                                     [k] copy_user_generic_str
-> > ing
-> >     13.19%        hackbench  [kernel.kallsyms]                                                     [k] unix_stream_recvmsg
-> >     11.62%        hackbench  [kernel.kallsyms]                                                     [k] kfree
-> >      8.54%        hackbench  [kernel.kallsyms]                                                     [k] kmem_cache_free
-> >      7.88%        hackbench  [kernel.kallsyms]                                                     [k] __kmalloc_node_track_
-> > caller
-> >      6.54%        hackbench  [kernel.kallsyms]                                                     [k] kmem_cache_alloc_node
-> >      5.94%        hackbench  [kernel.kallsyms]                                                     [k] kfree_skb
-> >      3.48%        hackbench  [kernel.kallsyms]                                                     [k] __slab_free
-> >      2.15%        hackbench  [kernel.kallsyms]                                                     [k] _raw_spin_lock
-> >      1.83%        hackbench  [kernel.kallsyms]                                                     [k] schedule
-> >      1.82%        hackbench  [kernel.kallsyms]                                                     [k] get_partial_node
-> >      1.59%        hackbench  hackbench                                                             [.] receiver
-> >      1.37%        hackbench  libpthread-2.9.so                                                     [.] __read
-> > 
-> > 
+> So we have a hash-table per-cpu, each event takes a ref on the hash
+> table, when the thing is empty we free it.
 > 
-> Please check values of /proc/sys/net/core/rmem_default
-> and /proc/sys/net/core/wmem_default on your machines.
+> When the event->cpu == -1 (all cpus) we take a ref on all possible cpu's
+> hash-table (should be online I figure, but that requires adding a
+> hotplug handler).
 > 
-> Their values can also change hackbench results, because increasing
-> wmem_default allows af_unix senders to consume much more skbs and stress
-> slab allocators (__slab_free), way beyond slub_min_order can tune them.
+> Then on event enable/disable we actually add the event to the hash-table
+> belonging to the cpu the event/task gets scheduled on, since each event
+> can only ever be active on one cpu.
 > 
-> When 2000 senders are running (and 2000 receivers), we might consume
-> something like 2000 * 100.000 bytes of kernel memory for skbs. TLB
-> trashing is expected, because all these skbs can span many 2MB pages.
-> Maybe some node imbalance happens too.
-It's a good pointer. rmem_default and wmem_default are about 116k on my machine.
-I changed them to 52K and it seems there is no improvement.
+> Right?
+> 
+> So looks good, altough I think we want to do that online/hotplug thing.
 
-> 
-> 
-> 
-> You could try to boot your machine with less ram per node and check :
-> 
-> # cat /proc/buddyinfo 
-> Node 0, zone      DMA      2      1      2      2      1      1      1      0      1      1      3 
-> Node 0, zone    DMA32    219    298    143    584    145     57     44     41     31     26    517 
-> Node 1, zone    DMA32      4      1     17      1      0      3      2      2      2      2    123 
-> Node 1, zone   Normal    126    169     83      8      7      5     59     59     49     28    459 
-> 
-> 
-> One experiment on your Nehalem machine would be to change hackbench so
-> that each group (20 senders/ 20 receivers) run on a particular NUMA
-> node.
-I expect process scheduler to work well in scheduling different groups
-to different nodes.
-
-I suspected dynamic percpu data didn't take care of NUMA, but kernel dump shows
-it does take care of NUMA.
-
-> 
-> x86info -c ->
-> 
-> CPU #1
-> EFamily: 0 EModel: 1 Family: 6 Model: 26 Stepping: 5
-> CPU Model: Core i7 (Nehalem)
-> Processor name string: Intel(R) Xeon(R) CPU           X5570  @ 2.93GHz
-> Type: 0 (Original OEM)	Brand: 0 (Unsupported)
-> Number of cores per physical package=8
-> Number of logical processors per socket=16
-> Number of logical processors per core=2
-> APIC ID: 0x10	Package: 0  Core: 1   SMT ID 0
-> Cache info
->  L1 Instruction cache: 32KB, 4-way associative. 64 byte line size.
->  L1 Data cache: 32KB, 8-way associative. 64 byte line size.
->  L2 (MLC): 256KB, 8-way associative. 64 byte line size.
-> TLB info
->  Data TLB: 4KB pages, 4-way associative, 64 entries
->  64 byte prefetching.
-> Found unknown cache descriptors: 55 5a b2 ca e4 
-> 
-> 
+Alternatively, you can simply but the hash table into the per-cpu
+structure and not allocate it, its only a single page (half a page if
+you use 32bit or actually use 8 bits.
 
 
