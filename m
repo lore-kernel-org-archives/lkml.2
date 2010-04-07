@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757368Ab0DGXNd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 19:13:33 -0400
-Received: from mail.df.lth.se ([194.47.250.12]:65459 "EHLO df.lth.se"
+	id S1757707Ab0DGXNr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 19:13:47 -0400
+Received: from mail.df.lth.se ([194.47.250.12]:65478 "EHLO df.lth.se"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757185Ab0DGXNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 19:13:25 -0400
+	id S1756144Ab0DGXNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 19:13:43 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: akpm@linux-foundation.org,
        Russell King - ARM Linux <linux@arm.linux.org.uk>,
@@ -14,315 +14,206 @@ To: akpm@linux-foundation.org,
 Cc: linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
        STEricsson_nomadik_linux@list.st.com, linux-kernel@vger.kernel.org,
        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH 05/11] ARM: add generic PrimeCell interface to COH 901 318 v5
-Date: Thu,  8 Apr 2010 01:12:53 +0200
-Message-Id: <1270681973-5763-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 06/11] ARM: add generic PrimeCell interface to DMA40 v1
+Date: Thu,  8 Apr 2010 01:13:05 +0200
+Message-Id: <1270681985-6022-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.6.2.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This extends the DMA engine driver for the COH 901 318 used in the
-U300 platform with the generic PrimeCell interface.
+This extends the DMA engine driver for the DMA40 used in the
+U8500 platform with the generic PrimeCell interface,
 
 Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- drivers/dma/coh901318.c     |  146 +++++++++++++++++++++++++++++++++++++++++++
- drivers/dma/coh901318_lli.c |   78 ++++++++++++++++++++++-
- 2 files changed, 221 insertions(+), 3 deletions(-)
+This is new in this patch set and applies on top of the
+driver queued in Andrew Mortons tree.
+---
+ drivers/dma/ste_dma40.c |  128 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 125 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
-index 4233440..1d5ed16 100644
---- a/drivers/dma/coh901318.c
-+++ b/drivers/dma/coh901318.c
-@@ -21,6 +21,7 @@
- #include <linux/uaccess.h>
- #include <linux/debugfs.h>
- #include <mach/coh901318.h>
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index e4295a2..f86b99f 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -14,6 +14,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/clk.h>
+ #include <linux/delay.h>
 +#include <linux/amba/dma.h>
  
- #include "coh901318_lli.h"
+ #include <plat/ste_dma40.h>
  
-@@ -72,6 +73,9 @@ struct coh901318_chan {
- 	unsigned long nbr_active_done;
- 	unsigned long busy;
- 
-+	u32 amba_addr;
-+	u32 amba_ctrl;
-+
- 	struct coh901318_base *base;
+@@ -205,6 +206,9 @@ struct d40_chan {
+ 	struct d40_def_lcsp		 log_def;
+ 	struct d40_lcla_elem		 lcla;
+ 	struct d40_log_lli_full		*lcpa;
++	/* AMBA extensions */
++	dma_addr_t			amba_addr;
++	enum dma_data_direction		amba_direction;
  };
  
-@@ -190,6 +194,9 @@ static inline struct coh901318_chan *to_coh901318_chan(struct dma_chan *chan)
- static inline dma_addr_t
- cohc_dev_addr(struct coh901318_chan *cohc)
+ /**
+@@ -1830,7 +1834,10 @@ static int d40_prep_slave_sg_log(struct d40_desc *d40d,
+ 			lli_max = 1;
+ 
+ 	if (direction == DMA_FROM_DEVICE) {
+-		dev_addr = d40c->base->plat_data->dev_rx[d40c->dma_cfg.src_dev_type];
++		if (d40c->amba_addr)
++			dev_addr = d40c->amba_addr;
++		else
++			dev_addr = d40c->base->plat_data->dev_rx[d40c->dma_cfg.src_dev_type];
+ 		total_size = d40_log_sg_to_dev(&d40c->lcla,
+ 					       sgl, sg_len,
+ 					       &d40d->lli_log,
+@@ -1842,7 +1849,10 @@ static int d40_prep_slave_sg_log(struct d40_desc *d40d,
+ 					       dev_addr, lli_max,
+ 					       d40c->base->plat_data->llis_per_log);
+ 	} else if (direction == DMA_TO_DEVICE) {
+-		dev_addr = d40c->base->plat_data->dev_tx[d40c->dma_cfg.dst_dev_type];
++		if (d40c->amba_addr)
++			dev_addr = d40c->amba_addr;
++		else
++			dev_addr = d40c->base->plat_data->dev_tx[d40c->dma_cfg.dst_dev_type];
+ 		total_size = d40_log_sg_to_dev(&d40c->lcla,
+ 					       sgl, sg_len,
+ 					       &d40d->lli_log,
+@@ -1973,14 +1983,29 @@ static enum dma_status d40_tx_status(struct dma_chan *chan,
+ 				     struct dma_tx_state *txstate)
  {
-+	/* PrimeCell supplied address will take precedence */
-+	if (cohc->amba_addr)
-+		return cohc->amba_addr;
- 	return cohc->base->platform->chan_conf[cohc->id].dev_addr;
+ 	struct d40_chan *d40c = container_of(chan, struct d40_chan, chan);
++	void __iomem *active_reg;
+ 	dma_cookie_t last_used;
+ 	dma_cookie_t last_complete;
++	u32 status;
+ 	int ret;
+ 
+ 	last_complete = d40c->completed;
+ 	last_used = chan->cookie;
+ 
+-	ret = dma_async_is_complete(cookie, last_complete, last_used);
++	/* check for pause first */
++	if (d40c->phy_chan->num % 2 == 0)
++		active_reg = d40c->base->virtbase + D40_DREG_ACTIVE;
++	else
++		active_reg = d40c->base->virtbase + D40_DREG_ACTIVO;
++
++	status = (readl(active_reg) &
++		  D40_CHAN_POS_MASK(d40c->phy_chan->num)) >>
++		D40_CHAN_POS(d40c->phy_chan->num);
++
++	if (status == D40_DMA_SUSPENDED)
++		ret = DMA_PAUSED;
++	else
++		ret = dma_async_is_complete(cookie, last_complete, last_used);
+ 
+ 	if (txstate) {
+ 		txstate->last = last_complete;
+@@ -2026,6 +2051,103 @@ static int d40_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd)
+ 	return -ENXIO;
  }
  
-@@ -1055,6 +1062,14 @@ coh901318_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 
- 	params = cohc_chan_param(cohc);
- 	config = params->config;
-+	/*
-+	 * Add primecell-specific control on top, make
-+	 * sure the bits you set per peripheral channel are
-+	 * cleared in the default config from the platform.
-+	 */
-+	ctrl_chained |= cohc->amba_ctrl;
-+	ctrl_last |= cohc->amba_ctrl;
-+	ctrl |= cohc->amba_ctrl;
- 
- 	if (direction == DMA_TO_DEVICE) {
- 		u32 tx_flags = COH901318_CX_CTRL_PRDD_SOURCE |
-@@ -1113,6 +1128,12 @@ coh901318_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 	if (ret)
- 		goto err_lli_fill;
- 
-+	/*
-+	 * Set the default ctrl for the channel to the one from the lli,
-+	 * things may have changed due to odd buffer alignment etc.
-+	 */
-+	coh901318_set_ctrl(cohc, lli->control);
-+
- 	COH_DBG(coh901318_list_print(cohc, lli));
- 
- 	/* Pick a descriptor to handle this transfer */
-@@ -1239,6 +1260,131 @@ coh901318_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd)
- 
- 	return 0;
- }
-+
-+/*
-+ * Here we wrap in the PrimeCell dma interface
-+ */
-+struct burst_table {
-+	int burst_8bit;
-+	int burst_16bit;
-+	int burst_32bit;
-+	u32 reg;
-+};
-+
-+static const struct burst_table burst_sizes[] = {
-+	{
-+		.burst_8bit = 64,
-+		.burst_16bit = 32,
-+		.burst_32bit = 16,
-+		.reg = COH901318_CX_CTRL_BURST_COUNT_64_BYTES,
-+	},
-+	{
-+		.burst_8bit = 48,
-+		.burst_16bit = 24,
-+		.burst_32bit = 12,
-+		.reg = COH901318_CX_CTRL_BURST_COUNT_48_BYTES,
-+	},
-+	{
-+		.burst_8bit = 32,
-+		.burst_16bit = 16,
-+		.burst_32bit = 8,
-+		.reg = COH901318_CX_CTRL_BURST_COUNT_32_BYTES,
-+	},
-+	{
-+		.burst_8bit = 16,
-+		.burst_16bit = 8,
-+		.burst_32bit = 4,
-+		.reg = COH901318_CX_CTRL_BURST_COUNT_16_BYTES,
-+	},
-+	{
-+		.burst_8bit = 8,
-+		.burst_16bit = 4,
-+		.burst_32bit = 2,
-+		.reg = COH901318_CX_CTRL_BURST_COUNT_8_BYTES,
-+	},
-+	{
-+		.burst_8bit = 4,
-+		.burst_16bit = 2,
-+		.burst_32bit = 1,
-+		.reg = COH901318_CX_CTRL_BURST_COUNT_4_BYTES,
-+	},
-+	{
-+		.burst_8bit = 2,
-+		.burst_16bit = 1,
-+		.burst_32bit = 0,
-+		.reg = COH901318_CX_CTRL_BURST_COUNT_2_BYTES,
-+	},
-+	{
-+		.burst_8bit = 1,
-+		.burst_16bit = 0,
-+		.burst_32bit = 0,
-+		.reg = COH901318_CX_CTRL_BURST_COUNT_1_BYTE,
-+	},
-+};
-+
++/* PrimeCell DMA extension */
 +void dma_set_ambaconfig(struct dma_chan *chan,
 +			struct amba_dma_channel_config *config)
 +{
-+	struct coh901318_chan *cohc = to_coh901318_chan(chan);
-+	int maxburst = config->maxburst;
-+	u32 amba_ctrl = 0;
-+	int i = 0;
++	struct d40_chan *d40c = container_of(chan, struct d40_chan, chan);
++	struct stedma40_chan_cfg *cfg = &d40c->dma_cfg;
++	enum stedma40_periph_data_width addr_width;
++	int psize;
 +
-+	dev_dbg(COHC_2_DEV(cohc), "configure channel for %d byte transfers\n",
-+		config->addr_width);
-+	switch (config->addr_width)  {
++	switch (config->addr_width) {
 +	case 1:
-+		amba_ctrl |=
-+			COH901318_CX_CTRL_SRC_BUS_SIZE_8_BITS |
-+			COH901318_CX_CTRL_DST_BUS_SIZE_8_BITS;
-+
-+		while (i < ARRAY_SIZE(burst_sizes)) {
-+			if (burst_sizes[i].burst_8bit <= maxburst)
-+				break;
-+			i++;
-+		}
-+
++		addr_width = STEDMA40_BYTE_WIDTH;
 +		break;
 +	case 2:
-+		amba_ctrl |=
-+			COH901318_CX_CTRL_SRC_BUS_SIZE_16_BITS |
-+			COH901318_CX_CTRL_DST_BUS_SIZE_16_BITS;
-+
-+		while (i < ARRAY_SIZE(burst_sizes)) {
-+			if (burst_sizes[i].burst_16bit <= maxburst)
-+				break;
-+			i++;
-+		}
-+
++		addr_width = STEDMA40_HALFWORD_WIDTH;
 +		break;
 +	case 4:
-+		/* Direction doesn't matter here, it's 32/32 bits */
-+		amba_ctrl |=
-+			COH901318_CX_CTRL_SRC_BUS_SIZE_32_BITS |
-+			COH901318_CX_CTRL_DST_BUS_SIZE_32_BITS;
-+
-+		while (i < ARRAY_SIZE(burst_sizes)) {
-+			if (burst_sizes[i].burst_32bit <= maxburst)
-+				break;
-+			i++;
-+		}
-+
++		addr_width = STEDMA40_WORD_WIDTH;
++		break;
++	case 8:
++		addr_width = STEDMA40_DOUBLEWORD_WIDTH;
 +		break;
 +	default:
-+		dev_err(COHC_2_DEV(cohc),
-+			"bad ambaconfig: alien address width\n");
++		dev_err(d40c->base->dev,
++			"illegal peripheral address width requested (%d)\n",
++			config->addr_width);
 +		return;
 +	}
 +
-+	amba_ctrl |= burst_sizes[i].reg;
-+	dev_dbg(COHC_2_DEV(cohc),
-+		"selected burst size %d bytes for address width %d bytes, maxburst %d\n",
-+		burst_sizes[i].burst_8bit, config->addr_width, maxburst);
++	if (config->maxburst >= 16)
++		psize = STEDMA40_PSIZE_LOG_16;
++	else if (config->maxburst >= 8)
++		psize = STEDMA40_PSIZE_LOG_8;
++	else if (config->maxburst >= 4)
++		psize = STEDMA40_PSIZE_LOG_4;
++	else
++		psize = STEDMA40_PSIZE_LOG_1;
 +
-+	cohc->amba_addr = config->addr;
-+	cohc->amba_ctrl = amba_ctrl;
++	if (config->direction == DMA_FROM_DEVICE) {
++		dma_addr_t dev_addr_rx =
++			d40c->base->plat_data->dev_rx[cfg->src_dev_type];
++
++		if (dev_addr_rx)
++			dev_warn(d40c->base->dev,
++				 "channel has a pre-wired RX address %08x "
++				 "overriding with %08x\n",
++				 dev_addr_rx, config->addr);
++		if (cfg->dir != STEDMA40_PERIPH_TO_MEM)
++			dev_warn(d40c->base->dev,
++				 "channel was not configured for peripheral "
++				 "to memory transfer (%d) overriding\n",
++				 cfg->dir);
++		cfg->dir = STEDMA40_PERIPH_TO_MEM;
++	} else if (config->direction == DMA_TO_DEVICE) {
++		dma_addr_t dev_addr_tx =
++			d40c->base->plat_data->dev_tx[cfg->dst_dev_type];
++
++		if (dev_addr_tx)
++			dev_warn(d40c->base->dev,
++				 "channel has a pre-wired TX address %08x "
++				 "overriding with %08x\n",
++				 dev_addr_tx, config->addr);
++		if (cfg->dir != STEDMA40_MEM_TO_PERIPH)
++			dev_warn(d40c->base->dev,
++				 "channel was not configured for memory "
++				 "to peripheral transfer (%d) overriding\n",
++				 cfg->dir);
++		cfg->dir = STEDMA40_MEM_TO_PERIPH;
++	} else {
++		dev_err(d40c->base->dev,
++			"unrecognized channel direction %d\n",
++			config->direction);
++		return;
++	}
++
++	/* Set up all the endpoint configs */
++	cfg->src_info.data_width = addr_width;
++	cfg->src_info.psize = psize;
++	cfg->src_info.endianess = STEDMA40_LITTLE_ENDIAN;
++	cfg->src_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL;
++	cfg->dst_info.data_width = addr_width;
++	cfg->dst_info.psize = psize;
++	cfg->dst_info.endianess = STEDMA40_LITTLE_ENDIAN;
++	cfg->dst_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL;
++
++	/* These settings will take precedence later */
++	d40c->amba_addr = config->addr;
++	d40c->amba_direction = config->direction;
++	dev_dbg(d40c->base->dev,
++		"configured channel %s for %s, data width %d, "
++		"maxburst %d bytes, LE, no flow control\n",
++		dma_chan_name(chan),
++		(config->direction == DMA_FROM_DEVICE) ? "RX" : "TX",
++		config->addr_width,
++		config->maxburst);
 +}
 +
- void coh901318_base_init(struct dma_device *dma, const int *pick_chans,
- 			 struct coh901318_base *base)
- {
-diff --git a/drivers/dma/coh901318_lli.c b/drivers/dma/coh901318_lli.c
-index 9f7e0e6..f37db49 100644
---- a/drivers/dma/coh901318_lli.c
-+++ b/drivers/dma/coh901318_lli.c
-@@ -153,6 +153,39 @@ coh901318_lli_fill_memcpy(struct coh901318_pool *pool,
- 	lli->src_addr = src;
- 	lli->dst_addr = dst;
+ /* Initialization functions */
  
-+	/*
-+	 * The DMA hardware will increase its pointer by 1,
-+	 * 2 or 4 bytes at a time depending on configuration.
-+	 * If using som oddly-aligned buffer this will cause
-+	 * performance problems.
-+	 */
-+#if 0
-+	ctrl_chained &= ~COH901318_CX_CTRL_SRC_BUS_SIZE_MASK;
-+	ctrl_eom &= ~COH901318_CX_CTRL_SRC_BUS_SIZE_MASK;
-+	ctrl_chained &= ~COH901318_CX_CTRL_DST_BUS_SIZE_MASK;
-+	ctrl_eom &= ~COH901318_CX_CTRL_DST_BUS_SIZE_MASK;
-+	if (src & 0x01) {
-+		ctrl_chained |= COH901318_CX_CTRL_SRC_BUS_SIZE_8_BITS;
-+		ctrl_eom |= COH901318_CX_CTRL_SRC_BUS_SIZE_8_BITS;
-+	} else if (src & 0x02) {
-+		ctrl_chained |= COH901318_CX_CTRL_SRC_BUS_SIZE_16_BITS;
-+		ctrl_eom |= COH901318_CX_CTRL_SRC_BUS_SIZE_16_BITS;
-+	} else {
-+		ctrl_chained |= COH901318_CX_CTRL_SRC_BUS_SIZE_32_BITS;
-+		ctrl_eom |= COH901318_CX_CTRL_SRC_BUS_SIZE_32_BITS;
-+	}
-+	if (dst & 0x01) {
-+		ctrl_chained |= COH901318_CX_CTRL_DST_BUS_SIZE_8_BITS;
-+		ctrl_eom |= COH901318_CX_CTRL_SRC_DST_SIZE_8_BITS;
-+	} else if (dst & 0x02) {
-+		ctrl_chained |= COH901318_CX_CTRL_DST_BUS_SIZE_16_BITS;
-+		ctrl_eom |= COH901318_CX_CTRL_DST_BUS_SIZE_16_BITS;
-+	} else {
-+		ctrl_chained |= COH901318_CX_CTRL_DST_BUS_SIZE_32_BITS;
-+		ctrl_eom |= COH901318_CX_CTRL_DST_BUS_SIZE_32_BITS;
-+	}
-+#endif
-+
- 	while (lli->link_addr) {
- 		lli->control = ctrl_chained | MAX_DMA_PACKET_SIZE;
- 		lli->src_addr = src;
-@@ -268,13 +301,52 @@ coh901318_lli_fill_sg(struct coh901318_pool *pool,
- 		else
- 			ctrl_sg = ctrl ? ctrl : ctrl_last;
- 
--
--		if (dir == DMA_TO_DEVICE)
-+		/*
-+		 * If the physical address is only divisible by 1 or
-+		 * two, we have to lower the destination bus size to
-+		 * the least common denominator
-+		 */
-+		if (dir == DMA_TO_DEVICE) {
- 			/* increment source address */
- 			src = sg_phys(sg);
--		else
-+#if 0
-+			ctrl_sg &= ~COH901318_CX_CTRL_SRC_BUS_SIZE_MASK;
-+			ctrl_chained &= ~COH901318_CX_CTRL_SRC_BUS_SIZE_MASK;
-+			if (src & 0x01) {
-+				pr_err("Aligned src buffer to 8bit access\n");
-+				ctrl_sg |= COH901318_CX_CTRL_SRC_BUS_SIZE_8_BITS;
-+				ctrl_chained |= COH901318_CX_CTRL_SRC_BUS_SIZE_8_BITS;
-+			} else if (src & 0x02) {
-+				pr_err("Aligned src buffer to 16bit access\n");
-+				ctrl_sg |= COH901318_CX_CTRL_SRC_BUS_SIZE_16_BITS;
-+				ctrl_chained |= COH901318_CX_CTRL_SRC_BUS_SIZE_16_BITS;
-+			} else {
-+				pr_err("Aligned src buffer to 32bit access\n");
-+				ctrl_sg |= COH901318_CX_CTRL_SRC_BUS_SIZE_32_BITS;
-+				ctrl_chained |= COH901318_CX_CTRL_SRC_BUS_SIZE_32_BITS;
-+			}
-+#endif
-+		} else {
- 			/* increment destination address */
- 			dst =  sg_phys(sg);
-+#if 0
-+			ctrl_sg &= ~COH901318_CX_CTRL_DST_BUS_SIZE_MASK;
-+			ctrl_chained &= ~COH901318_CX_CTRL_DST_BUS_SIZE_MASK;
-+			if (dst & 0x01) {
-+				pr_err("Aligned dst buffer to 8bit access\n");
-+				ctrl_sg |= COH901318_CX_CTRL_DST_BUS_SIZE_8_BITS;
-+				ctrl_chained |= COH901318_CX_CTRL_DST_BUS_SIZE_8_BITS;
-+			} else if (dst & 0x02) {
-+				pr_err("Aligned dst buffer to 16bit access\n");
-+				ctrl_sg |= COH901318_CX_CTRL_DST_BUS_SIZE_16_BITS;
-+				ctrl_chained |= COH901318_CX_CTRL_DST_BUS_SIZE_16_BITS;
-+			} else {
-+				pr_err("Aligned dst buffer to 32bit access\n");
-+				ctrl_sg |= COH901318_CX_CTRL_DST_BUS_SIZE_32_BITS;
-+				ctrl_chained |= COH901318_CX_CTRL_DST_BUS_SIZE_32_BITS;
-+			}
-+#endif
-+		}
- 
- 		bytes_to_transfer = sg_dma_len(sg);
- 
+ static void __init d40_chan_init(struct d40_base *base, struct dma_device *dma,
 -- 
 1.6.3.3
 
