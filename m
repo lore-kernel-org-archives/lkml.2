@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769Ab0DGDEl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 23:04:41 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:41819 "EHLO elrond.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752951Ab0DGDEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 23:04:33 -0400
-Message-ID: <4BBBF638.1090102@interlog.com>
-Date: Tue, 06 Apr 2010 23:04:24 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
-MIME-Version: 1.0
-To: SCSI development list <linux-scsi@vger.kernel.org>
-CC: =?ISO-8859-1?Q?Dan_Hor=E1k?= <dhorak@redhat.com>,
-       Eric Schwartz <emschwar@debian.org>,
-       "Robin H. Johnson" <robbat2@gentoo.org>, Martin Pitt <mpitt@debian.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [Announce] sg3_utils-1.29 available
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756245Ab0DGDMX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 23:12:23 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55118
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753100Ab0DGDMR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 23:12:17 -0400
+Date: Tue, 06 Apr 2010 20:12:20 -0700 (PDT)
+Message-Id: <20100406.201220.195404728.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, dm@chelsio.com, jpirko@redhat.com
+Subject: Re: linux-next: build failure after merge of the net tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100407125817.e8e1d174.sfr@canb.auug.org.au>
+References: <20100407125817.e8e1d174.sfr@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sg3_utils is a package of command line utilities for sending
-SCSI and some ATA commands to devices. This package targets
-the linux kernel (lk) 2.6 and lk 2.4 series. Also included are
-ports to FreeBSD, Tru64, Solaris, and Windows (cygwin and mingw).
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 7 Apr 2010 12:58:17 +1000
 
-This version tracks various changes made by www.t10.org
-since October 2009. More thin provisioning support has
-been added. There is a copy of ChangeLog below.
+> After merging the wireless tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+> 
+> drivers/net/cxgb4/cxgb4_main.c: In function 'set_addr_filters':
+> drivers/net/cxgb4/cxgb4_main.c:264: error: dereferencing pointer to incomplete type
+> drivers/net/cxgb4/cxgb4_main.c:265: error: dereferencing pointer to incomplete type
+> 
+> Caused by commit b8ff05a9c3237f694a1c3bf8ceec3bf6c3c14b15 ("cxgb4: Add
+> main driver file and driver Makefile") from Linus' tree interacting with
+> commit 22bedad3ce112d5ca1eaf043d4990fa2ed698c87 ("net: convert multicast
+> list to list_head").  The latter removed struct dev_addr_list.
+> 
+> I have reverted commit b8ff05a9c3237f694a1c3bf8ceec3bf6c3c14b15 (and
+> 43e9da8d782b8a40d5127fcc59ac2e543cf16d7d ("net: Hook up cxgb4 to Kconfig
+> and Makefile") that depended on it) for today.
 
-For an overview of sg3_utils and downloads see this page:
-     http://sg.danny.cz/sg/sg3_utils.html
-The sg_dd utility has its own page at:
-     http://sg.danny.cz/sg/sg_dd.html
-The SG_IO ioctl is discussed at:
-     http://sg.danny.cz/sg/sg_io.html
-A full changelog can be found at:
-     http://sg.danny.cz/sg/p/sg3_utils.ChangeLog
+Thanks, I'll merge net-2.6 into net-next-2.6 and fix this build
+failure in the latter.
 
-A release announcement will be sent to freshmeat.net .
-
-Changelog for sg3_utils-1.29 [20100406] [svn: r334]
-   - sg_rtpg: new logical block dependent state and bit (spc4r23)
-   - sg_start: add '--readonly' option for ATA disks
-   - sg_lib: update asc/ascq list to spc4r23
-   - sg_inq: update version descriptor list to spc4r23
-   - sg_vpd: block device characteristics page: fix form factor
-     - update Extended Inquiry VPD page to spc4r23
-     - update Block Limits VPD page to sbc3r22
-     - update Thin Provisioning VPD page to sbc3r22
-     - Automation device serial number and Data transfer device
-       element VPD pages (ssc4r01)
-     - add Referrals VPD page (sbc3r22)
-   - sg_logs: add thin provisioning and solid state media log pages
-     - addition of IBM LTO specific log pages
-   - sg_modes: new page names from ssc4r01
-   - sg_ses: sync with ses3r02 (SAS-2.1 connector types)
-   - sg_unmap: add '--anchor' option (sbc3r22)
-   - sg_write_same: add '--anchor' option (sbc3r22)
-   - sg_pt interface: add set_scsi_pt_flags() to permit passing
-     through SCSI_PT_FLAGS_QUEUE_AT_TAIL and AT_HEAD flags
-   - add examples/sg_queue_tst+bsg_queue_tst for SG_FLAG_Q_AT_TAIL
-   - add AM_MAINTAINER_MODE to configure.ac to lessen build issues
-   - add BSD_LICENSE file to this and lib directories, refer to
-     it from source and header files. Some source has GPL license
-
-Changelog for sg3_utils-1.28 [20091002] [svn: r315]
-...
-
-Doug Gilbert
