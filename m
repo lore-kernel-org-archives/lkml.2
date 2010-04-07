@@ -1,59 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758214Ab0DGR2q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 13:28:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44239 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758100Ab0DGR2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 13:28:44 -0400
-Date: Wed, 7 Apr 2010 13:28:33 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Chad Talbott <ctalbott@google.com>
-Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>, jens.axboe@oracle.com,
-       linux-kernel@vger.kernel.org, Nauman Rafique <nauman@google.com>,
-       Li Zefan <lizf@cn.fujitsu.com>, Divyesh Shah <dpshah@google.com>
-Subject: Re: [PATCH 1/2 V3] io-controller: Add a new interface
-	"weight_device" for IO-Controller
-Message-ID: <20100407172833.GB3206@redhat.com>
-References: <20100303154748.GC2866@redhat.com> <e98e18941003031519v14d4f79cg33da5c3cf1f5ac03@mail.gmail.com> <1786ab031003031825m5467c86jf5c355df10001dd2@mail.gmail.com> <4B8F27BD.2020704@cn.fujitsu.com> <4B8F62B7.3080401@cn.fujitsu.com> <20100304152400.GB18786@redhat.com> <4B906BB6.3080104@cn.fujitsu.com> <20100305141300.GA3296@redhat.com> <4BAB027D.7000405@cn.fujitsu.com> <i2o1786ab031004071012t51ae0a10t3b4f30bece40d8a6@mail.gmail.com>
+	id S1751908Ab0DGRbt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 13:31:49 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:60026 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210Ab0DGRbr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 13:31:47 -0400
+Message-ID: <4BBCC174.7020409@us.ibm.com>
+Date: Wed, 07 Apr 2010 10:31:32 -0700
+From: Darren Hart <dvhltc@us.ibm.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <i2o1786ab031004071012t51ae0a10t3b4f30bece40d8a6@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+       Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH 5/6] futex: handle timeout inside adaptive lock spin
+References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com> <1270499039-23728-6-git-send-email-dvhltc@us.ibm.com> <alpine.LFD.2.00.1004061022080.32352@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1004061022080.32352@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 07, 2010 at 10:12:03AM -0700, Chad Talbott wrote:
-> On Wed, Mar 24, 2010 at 11:28 PM, Gui Jianfeng
-> <guijianfeng@cn.fujitsu.com> wrote:
-> > Vivek Goyal wrote:
-> >> On Fri, Mar 05, 2010 at 10:25:58AM +0800, Gui Jianfeng wrote:
-> >>> V2->V3 changes:
-> >>> - Move policy_*_node() functions up to get rid of forward declarations
-> >>> - rename related functions by adding prefix "blkio_"
-> >>>
-> >>
-> >> Thanks for the changes Gui. Looks good to me.
-> >>
-> >> Acked-by: Vivek Goyal <vgoyal@redhat.com>
-> >
-> > Hi Jens,
-> >
-> > This patchset seems to get lost. Just for reminding. Any comments?
+Thomas Gleixner wrote:
+> On Mon, 5 Apr 2010, Darren Hart wrote:
 > 
-> Hi Jens,
+>> Signed-off-by: Darren Hart <dvhltc@us.ibm.com>
+>> ---
+>>  kernel/futex.c |   24 +++++++++++++++++++++---
+>>  1 files changed, 21 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/kernel/futex.c b/kernel/futex.c
+>> index c33ac2a..af61dcd 100644
+>> --- a/kernel/futex.c
+>> +++ b/kernel/futex.c
+>> @@ -2385,6 +2385,7 @@ out:
+>>  /**
+>>   * trylock_futex_adaptive() - Try to acquire the futex lock in a busy loop
+>>   * @uaddr: the futex user address
+>> + * @timeout: absolute timeout or NULL if none
+>>   *
+>>   * Try to acquire a futex lock in a loop until the owner changes or the owner
+>>   * is descheduled. To lock the futex, set the value to the current TID.
+>> @@ -2394,10 +2395,11 @@ out:
+>>   *  1 - Futex lock acquired
+>>   * <0 - On error
+>>   */
+>> -static int trylock_futex_adaptive(u32 __user *uaddr)
+>> +static int trylock_futex_adaptive(u32 __user *uaddr, ktime_t *timeout)
+>>  {
+>>  	int ret = 0;
+>>  	u32 curval;
+>> +	ktime_t now;
+>>  
+>>  	for (;;) {
+>>  		struct thread_info *owner;
+>> @@ -2433,6 +2435,22 @@ static int trylock_futex_adaptive(u32 __user *uaddr)
+>>  		if (need_resched())
+>>  			break;
+>>  
+>> +		if (timeout) {
+>> +			now = ktime_get();
 > 
-> Just want to add a quick note that we're excited about this
-> functionality and are hoping to see it go in.
+>   Hmm. Calling that in every iteration might hurt especially on non
+>   TSC systems, but well...
+
+I haven't come across a better alternative since arming the timer before 
+setting TASK_INTERRUPTIBLE isn't appropriate.
+
 > 
+>> +/* FIXME: consider creating ktime_less_than(lhs, rhs) */
+> 
+>   No need. The .tv64 comparison works in both cases. :)
 
-I guess this patchset is now going to conflict with Divyesh's changes.
+Ah, for some reason I was thinking that was only the case if 
+CONFIG_KTIME_SCALAR was set. Very nice, thanks.
 
-Gui, once blkio stat patches (cleaned up ones) are committed may be you
-can rebase your changes on top of that. It will become easier for Jens.
-(Until and unless he has some objections to this patchset).
-
-Thanks
-Vivek
+-- 
+Darren Hart
+IBM Linux Technology Center
+Real-Time Linux Team
