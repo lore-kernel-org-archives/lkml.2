@@ -1,63 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758071Ab0DGQuF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 12:50:05 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:48058 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab0DGQuD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 12:50:03 -0400
-Message-ID: <4BBCB7B7.4040901@cs.helsinki.fi>
-Date: Wed, 07 Apr 2010 19:49:59 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	id S1758085Ab0DGQuO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 12:50:14 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:53015 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758073Ab0DGQuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 12:50:11 -0400
+Date: Wed, 7 Apr 2010 17:49:51 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 14/14] mm,migration: Allow the migration of
+	PageSwapCache pages
+Message-ID: <20100407164951.GW17882@csn.ul.ie>
+References: <1270224168-14775-1-git-send-email-mel@csn.ul.ie> <1270224168-14775-15-git-send-email-mel@csn.ul.ie> <20100406170623.50631eb8.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux-foundation.org>
-CC: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>, netdev <netdev@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, alex.shi@intel.com,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
-References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>  <alpine.DEB.2.00.1003250942080.2670@router.home>  <1269570902.9614.92.camel@alexs-hp.sh.intel.com>  <1270114166.2078.107.camel@ymzhang.sh.intel.com>  <alpine.DEB.2.00.1004011050340.16531@router.home>  <1270195589.2078.116.camel@ymzhang.sh.intel.com>  <alpine.DEB.2.00.1004050853300.23149@router.home>  <i2z84144f021004051030k7ff5190cyc083aa12c552dfac@mail.gmail.com>  <4BBA8DF9.8010409@kernel.org>  <1270542497.2078.123.camel@ymzhang.sh.intel.com>  <alpine.DEB.2.00.1004061033330.18750@router.home>  <alpine.DEB.2.00.1004061552500.19151@router.home>  <1270591841.2091.170.camel@edumazet-laptop> <1270607668.2078.259.camel@ymzhang.sh.intel.com> <alpine.DEB.2.00.1004071130260.13261@router.home>
-In-Reply-To: <alpine.DEB.2.00.1004071130260.13261@router.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100406170623.50631eb8.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Lameter wrote:
-> I wonder if this is not related to the kmem_cache_cpu structure straggling
-> cache line boundaries under some conditions. On 2.6.33 the kmem_cache_cpu
-> structure was larger and therefore tight packing resulted in different
-> alignment.
+On Tue, Apr 06, 2010 at 05:06:23PM -0700, Andrew Morton wrote:
+> On Fri,  2 Apr 2010 17:02:48 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
 > 
-> Could you see how the following patch affects the results. It attempts to
-> increase the size of kmem_cache_cpu to a power of 2 bytes. There is also
-> the potential that other per cpu fetches to neighboring objects affect the
-> situation. We could cacheline align the whole thing.
+> > PageAnon pages that are unmapped may or may not have an anon_vma so are
+> > not currently migrated. However, a swap cache page can be migrated and
+> > fits this description. This patch identifies page swap caches and allows
+> > them to be migrated but ensures that no attempt to made to remap the pages
+> > would would potentially try to access an already freed anon_vma.
+> > 
+> > ...
+> >
+> > @@ -484,7 +484,8 @@ static int fallback_migrate_page(struct address_space *mapping,
+> >   *   < 0 - error code
+> >   *  == 0 - success
+> >   */
+> > -static int move_to_new_page(struct page *newpage, struct page *page)
+> > +static int move_to_new_page(struct page *newpage, struct page *page,
+> > +						int remap_swapcache)
 > 
-> ---
->  include/linux/slub_def.h |    5 +++++
->  1 file changed, 5 insertions(+)
+> You're not a fan of `bool'.
 > 
-> Index: linux-2.6/include/linux/slub_def.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/slub_def.h	2010-04-07 11:33:50.000000000 -0500
-> +++ linux-2.6/include/linux/slub_def.h	2010-04-07 11:35:18.000000000 -0500
-> @@ -38,6 +38,11 @@ struct kmem_cache_cpu {
->  	void **freelist;	/* Pointer to first free per cpu object */
->  	struct page *page;	/* The slab from which we are allocating */
->  	int node;		/* The node of the page (or -1 for debug) */
-> +#ifndef CONFIG_64BIT
-> +	int dummy1;
-> +#endif
-> +	unsigned long dummy2;
-> +
->  #ifdef CONFIG_SLUB_STATS
->  	unsigned stat[NR_SLUB_STAT_ITEMS];
->  #endif
 
-Would __cacheline_aligned_in_smp do the trick here?
+This function existed before compaction and returns an error code rather
+than a true/false value.
+
+> >  {
+> >  	struct address_space *mapping;
+> >  	int rc;
+> > @@ -519,10 +520,12 @@ static int move_to_new_page(struct page *newpage, struct page *page)
+> >  	else
+> >  		rc = fallback_migrate_page(mapping, newpage, page);
+> >  
+> > -	if (!rc)
+> > -		remove_migration_ptes(page, newpage);
+> > -	else
+> > +	if (rc) {
+> >  		newpage->mapping = NULL;
+> > +	} else {
+> > +		if (remap_swapcache) 
+> > +			remove_migration_ptes(page, newpage);
+> > +	}
+> >  
+> >  	unlock_page(newpage);
+> >  
+> > @@ -539,6 +542,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+> >  	int rc = 0;
+> >  	int *result = NULL;
+> >  	struct page *newpage = get_new_page(page, private, &result);
+> > +	int remap_swapcache = 1;
+> >  	int rcu_locked = 0;
+> >  	int charge = 0;
+> >  	struct mem_cgroup *mem = NULL;
+> > @@ -600,18 +604,27 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+> >  		rcu_read_lock();
+> >  		rcu_locked = 1;
+> >  
+> > -		/*
+> > -		 * If the page has no mappings any more, just bail. An
+> > -		 * unmapped anon page is likely to be freed soon but worse,
+> > -		 * it's possible its anon_vma disappeared between when
+> > -		 * the page was isolated and when we reached here while
+> > -		 * the RCU lock was not held
+> > -		 */
+> > -		if (!page_mapped(page))
+> > -			goto rcu_unlock;
+> > +		/* Determine how to safely use anon_vma */
+> > +		if (!page_mapped(page)) {
+> > +			if (!PageSwapCache(page))
+> > +				goto rcu_unlock;
+> >  
+> > -		anon_vma = page_anon_vma(page);
+> > -		atomic_inc(&anon_vma->external_refcount);
+> > +			/*
+> > +			 * We cannot be sure that the anon_vma of an unmapped
+> > +			 * swapcache page is safe to use.
+> 
+> Why not?  A full explanation here would be nice.
+
+Patch below.
+
+> 
+> > 			   In this case, the
+> > +			 * swapcache page gets migrated but the pages are not
+> > +			 * remapped
+> > +			 */
+> > +			remap_swapcache = 0;
+> > +		} else { 
+> > +			/*
+> > +			 * Take a reference count on the anon_vma if the
+> > +			 * page is mapped so that it is guaranteed to
+> > +			 * exist when the page is remapped later
+> > +			 */
+> > +			anon_vma = page_anon_vma(page);
+> > +			atomic_inc(&anon_vma->external_refcount);
+> > +		}
+> >  	}
+> >  
+> >  	/*
+> > @@ -646,9 +659,9 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+> >  
+> >  skip_unmap:
+> >  	if (!page_mapped(page))
+> > -		rc = move_to_new_page(newpage, page);
+> > +		rc = move_to_new_page(newpage, page, remap_swapcache);
+> >  
+> > -	if (rc)
+> > +	if (rc && remap_swapcache)
+> >  		remove_migration_ptes(page, page);
+> >  rcu_unlock:
+> 
+
+Patch that updates the comment if you prefer it is as follows
+
+==== CUT HERE ====
+mm,compaction: Expand comment on unmapped page swap cache
+
+The comment on the handling of anon_vma for unmapped pages is a bit
+sparse. Expand it.
+
+This is a fix to the patch "mm,migration: Allow the migration of
+PageSwapCache pages"
+
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+---
+ mm/migrate.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 0356e64..281a239 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -611,9 +611,15 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 
+ 			/*
+ 			 * We cannot be sure that the anon_vma of an unmapped
+-			 * swapcache page is safe to use. In this case, the
+-			 * swapcache page gets migrated but the pages are not
+-			 * remapped
++			 * swapcache page is safe to use because we don't
++			 * know in advance if the VMA that this page belonged
++			 * to still exists. If the VMA and others sharing the
++			 * data have been freed, then the anon_vma could
++			 * already be invalid.
++			 *
++			 * To avoid this possibility, swapcache pages get
++			 * migrated but are not remapped when migration
++			 * completes
+ 			 */
+ 			remap_swapcache = 0;
+ 		} else { 
