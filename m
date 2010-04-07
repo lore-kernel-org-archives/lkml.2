@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757869Ab0DGKjP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 06:39:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34753 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757730Ab0DGKjJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 06:39:09 -0400
-Date: Wed, 7 Apr 2010 07:38:55 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Floating point exception by perf record
-Message-ID: <20100407103855.GC3908@ghostprotocols.net>
-References: <4BB84991.5080301@dcl.info.waseda.ac.jp>
- <20100405183127.GA3677@ghostprotocols.net>
- <4BBC4318.1070702@dcl.info.waseda.ac.jp>
+	id S932538Ab0DGKq5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 06:46:57 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:43400 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757730Ab0DGKqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 06:46:52 -0400
+Date: Wed, 7 Apr 2010 11:46:32 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 06/14] Export fragmentation index via
+	/proc/extfrag_index
+Message-ID: <20100407104632.GP17882@csn.ul.ie>
+References: <1270224168-14775-1-git-send-email-mel@csn.ul.ie> <1270224168-14775-7-git-send-email-mel@csn.ul.ie> <20100406170542.fe9b9f33.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <4BBC4318.1070702@dcl.info.waseda.ac.jp>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20100406170542.fe9b9f33.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Apr 07, 2010 at 05:32:24PM +0900, Hitoshi Mitake escreveu:
-> On 04/06/10 03:31, Arnaldo Carvalho de Melo wrote:
-> > Em Sun, Apr 04, 2010 at 05:10:57PM +0900, Hitoshi Mitake escreveu:
-> > [root@doppio ~]# perf lock report | head -3
-> >    Warning: Error: expected 'data' but read 'overwrite'
-> >                  ID                 Name   acquired  contended
-> total wait (ns)   max wait (ns)   min wait (ns)
-> >
-> > 0xffff8800029d4b28&q->lock          0          0               0
-> 0               0
-> > [root@doppio ~]#
-> >
-> > My system details:
-> >
-> > [root@doppio ~]# uname -a
-> > Linux doppio.ghostprotocols.net 2.6.34-rc3-tip+ #1 SMP Mon Apr 5
-> 13:49:42 BRT 2010 x86_64 x86_64 x86_64 GNU/Linux
-> > [root@doppio ~]# rpm -q newt
-> > newt-0.52.10-4.fc11.x86_64
-> > [root@doppio ~]#
-> >
-> > No segfaults here :-\
-> >
-> > - Arnaldo
-> >
+On Tue, Apr 06, 2010 at 05:05:42PM -0700, Andrew Morton wrote:
+> On Fri,  2 Apr 2010 17:02:40 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
 > 
-> I tested perf lock trace and got a similar error (but different).
-> % sudo ./perf lock trace
->   Fatal: reading input file (size expected=3 received=0)
-> It seems that perf.data is broken :( I'll search the cause.
+> > Fragmentation index is a value that makes sense when an allocation of a
+> > given size would fail. The index indicates whether an allocation failure is
+> > due to a lack of memory (values towards 0) or due to external fragmentation
+> > (value towards 1).  For the most part, the huge page size will be the size
+> > of interest but not necessarily so it is exported on a per-order and per-zone
+> > basis via /proc/extfrag_index
+> 
+> (/proc/sys/vm?)
+> 
 
-Take a look at:
+It can move.
 
-http://git.kernel.org/?p=linux/kernel/git/acme/linux-2.6.git;a=summary
+> Like unusable_index, this seems awfully specialised. 
 
-"perf" branch, there is at least one fix there, the "overwrite" one.
+Except in this case, the fragmentation index is used by the kernel when
+deciding in advance whether compaction will do the job or if lumpy
+reclaim is required.
 
-- Arnaldo
+I could avoid exposing this to userspace but it would make it harder to
+decide what needs to happen with extfrag_threshold later. i.e. does the
+threshold need a different value (proc would help gather the data) or
+is a new heuristic needed.
+
+> Perhaps we could
+> hide it under CONFIG_MEL, or even put it in debugfs with the intention
+> of removing it in 6 or 12 months time.  Either way, it's hard to
+> justify permanently adding this stuff to every kernel in the world?
+> 
+
+Moving it to debugfs would satisfy the requirement of tuning extfrag_threshold
+without adding it to every kernel but it could also be just removed.
+
+> 
+> I have a suspicion that all the info in unusable_index and
+> extfrag_index could be computed from userspace using /proc/kpageflags
+
+It can be computed from buddyinfo. I used a perl script to calculate it
+in the past. I exposed the information from in-kernel in these patches so
+people would be guaranteed to have the same information as me.
+
+> (and perhaps a bit of dmesg-diddling to find the zones). 
+
+Can be figured out from buddyinfo too.
+
+> If that can't
+> be done today, I bet it'd be pretty easy to arrange for it.
+> 
+
+It is. Will I just remove the proc files, keep the internal calculation
+for fragmentation_index and kick that perl script into shape to produce
+the same information from buddyinfo?
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
