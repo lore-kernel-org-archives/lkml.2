@@ -1,102 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758056Ab0DGQ00 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 12:26:26 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:37407 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753535Ab0DGQ0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 12:26:25 -0400
-Date: Wed, 7 Apr 2010 09:26:20 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
-Subject: [PATCH tip/urgent] rcu: add rcu_access_pointer and
- rcu_dereference_protected
-Message-ID: <20100407162620.GA11543@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	id S932867Ab0DGQ1j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 12:27:39 -0400
+Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:17492 "HELO
+	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753535Ab0DGQ1i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 12:27:38 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Apr 2010 12:27:37 EDT
+Message-ID: <4BBCB0E7.9000701@draigBrady.com>
+Date: Wed, 07 Apr 2010 17:20:55 +0100
+From: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Simon Kagstrom <simon.kagstrom@netinsight.net>
+CC: linux-kernel@vger.kernel.org, wim@iguana.be, seth.heasley@intel.com
+Subject: Re: [PATCH] iTCO_wdt: Don't double the requested timeout
+References: <20100223164019.60a6de1a@marrow.netinsight.se>	<4B840154.1010501@draigBrady.com>	<4B840BC6.9090809@draigBrady.com> <20100224101618.39c3468b@marrow.netinsight.se> <4B855140.7030408@draigBrady.com>
+In-Reply-To: <4B855140.7030408@draigBrady.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds variants of rcu_dereference() that handle situations
-where the RCU-protected data structure cannot change, perhaps due to
-our holding the update-side lock, or where the RCU-protected pointer is
-only to be fetched, not dereferenced.  These are needed due to some
-performance concerns with using rcu_dereference() where it is not
-required, aside from the need for lockdep/sparse checking.
+On 24/02/10 16:18, Pádraig Brady wrote:
+> On 24/02/10 09:16, Simon Kagstrom wrote:
+>> On Tue, 23 Feb 2010 17:09:26 +0000
+>> Pádraig Brady<P@draigBrady.com>  wrote:
+>>
+>>> Actually looking at that code I noticed that it wasn't
+>>> accounting for the timer counting down twice before reboot,
+>>> which I thought was the case for ICH4 at least.
+>>> The following is not even compiled, nor am I sure it
+>>> applies to TCO v2. Testing/info appreciated.
+>>
+>> I tested your change on our TCO v1-based board, and it doubles the time
+>> until the watchdog triggers. So:
+> 
+> Well it should be halving the timeout :)
+> I amended the patch and Simon retested to verify
+> that it now honors the requested timeout.
+> 
+> I also checked an ICH7 box here and it doesn't
+> seem to need the adjustment, so I've amended the patch accordingly.
+> 
+> Wim, please apply, thanks...
 
-The new rcu_access_pointer() primitive is for the case where the pointer
-is be fetch and not dereferenced.  This primitive may be used without
-protection, RCU or otherwise, due to the fact that it uses ACCESS_ONCE().
+In further testing it was seen that the "timer status" bit
+needs to be cleared at each pat of the watchdog so as
+to support timeouts in the 34s to 76s range.
+This was done with: outb (0x08, TCO1_STS);
+The updated patch is below.
 
-The new rcu_dereference_protected() primitive is for the case where updates
-are prevented, for example, due to holding the update-side lock.  This
-primitive does neither ACCESS_ONCE() nor smp_read_barrier_depends(), so
-can only be used when updates are somehow prevented.
+cheers,
+Pádraig.
 
-Suggested-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+iTCO_wdt: fix TCO V1 timeout values and limits
 
- rcupdate.h |   38 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
+For TCO V1 devices the programmed timeout was twice too long
+because the fact that the TCO V1 timer needs to count down
+twice before triggering the watchdog, wasn't accounted for.
+Also the timeout values in the module description and error
+message were clarified.
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 872a98e..3f06b3d 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -209,9 +209,47 @@ static inline int rcu_read_lock_sched_held(void)
- 		rcu_dereference_raw(p); \
- 	})
- 
-+/**
-+ * rcu_access_pointer - fetch RCU pointer with no dereferencing
-+ *
-+ * Return the value of the specified RCU-protected pointer, but omit the
-+ * smp_read_barrier_depends() and keep the ACCESS_ONCE().  This is useful
-+ * when the value of this pointer is accessed, but the pointer is not
-+ * dereferenced, for example, when testing an RCU-protected pointer against
-+ * NULL.  This may also be used in cases where update-side locks prevent
-+ * the value of the pointer from changing, but rcu_dereference_protected()
-+ * is a lighter-weight primitive for this use case.
-+ */
-+#define rcu_access_pointer(p, c) \
-+	({ \
-+		if (debug_lockdep_rcu_enabled() && !(c)) \
-+			lockdep_rcu_dereference(__FILE__, __LINE__); \
-+		ACCESS_ONCE(p); \
-+	})
+Signed-off-by: Pádraig Brady <P@draigBrady.com>
+Tested-by: Simon Kagstrom <simon.kagstrom@netinsight.se>
+
+--- a/iTCO_wdt.c	2010-04-06 15:00:41.000000000 +0000
++++ b/iTCO_wdt.c	2010-04-07 16:08:27.000000000 +0000
+@@ -391,8 +391,8 @@
+ #define WATCHDOG_HEARTBEAT 30	/* 30 sec default heartbeat */
+ static int heartbeat = WATCHDOG_HEARTBEAT;  /* in seconds */
+ module_param(heartbeat, int, 0);
+-MODULE_PARM_DESC(heartbeat, "Watchdog heartbeat in seconds. "
+-	"(2<heartbeat<39 (TCO v1) or 613 (TCO v2), default="
++MODULE_PARM_DESC(heartbeat, "Watchdog timeout in seconds. "
++	"5..76 (TCO v1) or 3..614 (TCO v2), default="
+ 				__MODULE_STRING(WATCHDOG_HEARTBEAT) ")");
+
+ static int nowayout = WATCHDOG_NOWAYOUT;
+@@ -408,8 +408,12 @@
+ static inline unsigned int seconds_to_ticks(int seconds)
+ {
+ 	/* the internal timer is stored as ticks which decrement
+-	 * every 0.6 seconds */
+-	return (seconds * 10) / 6;
++	 * every 0.6 seconds. For TCO v1 the timer counts down
++	 * twice before triggering the watchdog */
++	if (iTCO_wdt_private.iTCO_version == 1)
++		return (seconds * 5) / 6;
++	else
++		return (seconds * 10) / 6;
+ }
+
+ static void iTCO_wdt_set_NO_REBOOT_bit(void)
+@@ -521,10 +525,15 @@
+ 	iTCO_vendor_pre_keepalive(iTCO_wdt_private.ACPIBASE, heartbeat);
+
+ 	/* Reload the timer by writing to the TCO Timer Counter register */
+-	if (iTCO_wdt_private.iTCO_version == 2)
+-		outw(0x01, TCO_RLD);
+-	else if (iTCO_wdt_private.iTCO_version == 1)
++	if (iTCO_wdt_private.iTCO_version == 1) {
++		/* Reset the timeout status bit so that the timer
++		 * needs to count down twice again before rebooting */
++		outb (0x08, TCO1_STS); /* write 1 to clear bit */
 +
-+/**
-+ * rcu_dereference_protected - fetch RCU pointer when updates prevented
-+ *
-+ * Return the value of the specified RCU-protected pointer, but omit
-+ * both the smp_read_barrier_depends() and the ACCESS_ONCE().  This
-+ * is useful in cases where update-side locks prevent the value of the
-+ * pointer from changing.  Please note that this primitive does -not-
-+ * prevent the compiler from repeating this reference or combining it
-+ * with other references, so it should not be used without protection
-+ * of appropriate locks.
-+ */
-+#define rcu_dereference_protected(p, c) \
-+	({ \
-+		if (debug_lockdep_rcu_enabled() && !(c)) \
-+			lockdep_rcu_dereference(__FILE__, __LINE__); \
-+		(p); \
-+	})
-+
- #else /* #ifdef CONFIG_PROVE_RCU */
- 
- #define rcu_dereference_check(p, c)	rcu_dereference_raw(p)
-+#define rcu_access_pointer(p, c)	ACCESS_ONCE(p)
-+#define rcu_dereference_protected(p, c) (p)
- 
- #endif /* #else #ifdef CONFIG_PROVE_RCU */
- 
+ 		outb(0x01, TCO_RLD);
++	} else if (iTCO_wdt_private.iTCO_version == 2)
++		outw(0x01, TCO_RLD);
++	}
+
+ 	spin_unlock(&iTCO_wdt_private.io_lock);
+ 	return 0;
+@@ -843,9 +852,14 @@
+ 	   if not reset to the default */
+ 	if (iTCO_wdt_set_heartbeat(heartbeat)) {
+ 		iTCO_wdt_set_heartbeat(WATCHDOG_HEARTBEAT);
++		int tco_min=5; int tco_max=76; /* TCO V1 */
++		if (iTCO_wdt_private.iTCO_version == 2) {
++			tco_min=3; tco_max=614;
++		}
+ 		printk(KERN_INFO PFX
+-			"heartbeat value must be 2 < heartbeat < 39 (TCO v1) "
+-				"or 613 (TCO v2), using %d\n", heartbeat);
++			"timeout value %d is not between %d and %d"
++			" inclusive, using %d\n",
++			heartbeat, tco_min, tco_max, WATCHDOG_HEARTBEAT);
+ 	}
+
+ 	ret = misc_register(&iTCO_wdt_miscdev);
