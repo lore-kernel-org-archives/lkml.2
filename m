@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757140Ab0DGImm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 04:42:42 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47425 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750943Ab0DGImg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 04:42:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,377,1267430400"; 
-   d="scan'208";a="507039100"
-Date: Wed, 7 Apr 2010 10:43:06 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Todd Fischer <todd.fischer@ridgerun.com>
-Cc: linux-kernel@vger.kernel.org,
-       davinci-linux-open-source@linux.davincidsp.com, lrg@slimlogic.co.uk,
-       broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 0/4]-V3 TPS6507x MFD driver
-Message-ID: <20100407084305.GA2962@sortiz.org>
-References: <1270520639-20516-1-git-send-email-todd.fischer@ridgerun.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1270520639-20516-1-git-send-email-todd.fischer@ridgerun.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757344Ab0DGIoQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 04:44:16 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:49726 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750943Ab0DGIoJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 04:44:09 -0400
+Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
+ 2.6.34-rc3)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Borislav Petkov <bp@alien8.de>, Andrew Morton <akpm@linux-foundation.org>,
+       Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+In-Reply-To: <alpine.LFD.2.00.1004061243240.3487@i5.linux-foundation.org>
+References: <4BBB475A.7070002@redhat.com>
+	 <1270568096.1814.145.camel@barrios-desktop>
+	 <alpine.LFD.2.00.1004060841460.3487@i5.linux-foundation.org>
+	 <1270571019.1814.163.camel@barrios-desktop>
+	 <alpine.LFD.2.00.1004060926430.3487@i5.linux-foundation.org>
+	 <1270572327.1711.3.camel@barrios-desktop>
+	 <alpine.LFD.2.00.1004060951030.3487@i5.linux-foundation.org>
+	 <4BBB69A9.5090906@redhat.com>
+	 <alpine.LFD.2.00.1004061053450.3487@i5.linux-foundation.org>
+	 <20100406120315.53ad7390.akpm@linux-foundation.org>
+	 <20100406194238.GB20357@a1.tnic>
+	 <alpine.LFD.2.00.1004061243240.3487@i5.linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 07 Apr 2010 10:41:55 +0200
+Message-ID: <1270629715.5109.556.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Todd,
-
-On Mon, Apr 05, 2010 at 08:23:55PM -0600, Todd Fischer wrote:
+On Tue, 2010-04-06 at 13:02 -0700, Linus Torvalds wrote:
+>  - Related to the above: perhaps the RCU freeing isn't working, or 
+>    slub/slab/slob ends up reusing the allocations for something else than 
+>    anonvma's, so together with the race _and_ an unlucky re-use, you get 
+>    some odd crud.
 > 
-> This is the third posting of the TPS6507x driver set.  I have
-> resolved the concurrent access issue identified by Mark Brown.
-> Instead of using a mutex, I used the i2c_transfer() as done in
-> the similar routine in the wm8400-core.c file.
-> 
-> The TPS6507x family of Texas Instruments power management ICs (pmic) are
-> multi-function chips that include voltage regulation and touch screen
-> controller capabilities.  This patch set adds a TPS6507x multi-function
-> device driver and change the TPS6507x regulator driver to use the
-> TPS6507x MFD driver instead of interacting with the chip directly.  The
-> changes are needed before a touch screen driver can be added.
-> 
-> The patch set applies cleanly to the MFD repository:
-> git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-2.6.git  If the
-> MFD and voltage regulator maintainer would prefer I post patches for a
-> different repository, please let me know.
-All 4 patches applied to my for-next branch.
-Some nit picking advices for your future patches:
-- Include the Signed-off-by and Acked-by you collect along the review cycles.
-- Have shorter patch subject, they typically are less than 80 chars.
-- Describe the changes when moving from patchset vN to patchset vN+1. Also we
-prefer "[PATCH vN]" to "[PATCH]-vN", it makes our life easier when applying
-your patches.
+>    I haven't looked at the kernel config files: do they perhaps share the 
+>    same (odd?) SLUB/SLAB/SLOB config? 
 
-Thanks a lot for your work.
+Right, so anon_vma uses SLAB_DESTROY_BY_RCU and as the huge comment in
+rmap.c explains, that doesn't mean the objects themself get RCU grace
+period delays in freeing, only the SLAB that backs these objects does.
 
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+So the moment you do kmem_cache_free() on the anon_vma it can be re-used
+for another allocation. The only guarantee given by RCU is that the
+backing storage doesn't go away and hence you can 'safely' deref
+pointers, you still very much have to revalidate you got the object you
+were looking for.
