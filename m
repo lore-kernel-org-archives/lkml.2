@@ -1,126 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530Ab0DGESX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 00:18:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63776 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751324Ab0DGESQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 00:18:16 -0400
-Message-ID: <4BBC0811.6000203@redhat.com>
-Date: Wed, 07 Apr 2010 12:20:33 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
+	id S1751594Ab0DGEVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 00:21:15 -0400
+Received: from qw-out-2122.google.com ([74.125.92.26]:3251 "EHLO
+	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802Ab0DGEVF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 00:21:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=jr7XaDag4gIwJxaZuad4/83qKlG/Ad2cz66jJQxWOyjAmgxN/VsZpGRGsWUjeoR785
+         pKO6yZm3GoSJ3eY77zT9gSA69g/mIhpaTZ3LLna8ZcaznPvZTG/h9W0CdAlZ9efg03he
+         DijuYGzvkqw30aGsPKAS6UoAGhfFwWaCehaT0=
+Date: Wed, 7 Apr 2010 12:24:45 +0800
+From: Amerigo Wang <xiyou.wangcong@gmail.com>
+To: Jan III Sobieski <jan3sobi3ski@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] add random binaries to .gitignore
+Message-ID: <20100407042445.GB3830@cr0.nay.redhat.com>
+References: <4BAF4DAF.70609@gmail.com>
+ <20100328133500.GB3622@core2>
+ <4BAF5BD7.1060208@gmail.com>
+ <20100328141957.GA3689@core2>
+ <4BAF618E.2010604@gmail.com>
+ <q2s9c2470ce1004062111hba0a067dwa9705a26d31b47f@mail.gmail.com>
 MIME-Version: 1.0
-To: Andy Gospodarek <andy@greyhouse.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Matt Mackall <mpm@selenic.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "bridge@lists.linux-foundation.org" 
-	<bridge@lists.linux-foundation.org>,
-       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-       Jeff Moyer <jmoyer@redhat.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       "bonding-devel@lists.sourceforge.net" 
-	<bonding-devel@lists.sourceforge.net>,
-       Jay Vosburgh <fubar@us.ibm.com>, David Miller <davem@davemloft.net>
-Subject: Re: [v2 Patch 3/3] bonding: make bonding support netpoll
-References: <20100405091605.4890.31181.sendpatchset@localhost.localdomain> 	<20100405091628.4890.30541.sendpatchset@localhost.localdomain> 	<20100405194356.GA10488@gospo.rdu.redhat.com> <4BBA9FDB.4040909@redhat.com> 	<4BBABAB8.4010401@redhat.com> <20100406144824.GB10488@gospo.rdu.redhat.com> 	<4BBBEEAA.1050100@redhat.com> <70501020920527933@unknownmsgid>
-In-Reply-To: <70501020920527933@unknownmsgid>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <q2s9c2470ce1004062111hba0a067dwa9705a26d31b47f@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Gospodarek wrote:
-> On Apr 6, 2010, at 10:32 PM, Cong Wang <amwang@redhat.com> wrote:
-> 
->> Andy Gospodarek wrote:
->>> On Tue, Apr 06, 2010 at 12:38:16PM +0800, Cong Wang wrote:
->>>> Cong Wang wrote:
->>>>> Before I try to reproduce it, could you please try to replace
->>>>> the  'read_lock()'
->>>>> in slaves_support_netpoll() with 'read_lock_bh()'? (read_unlock()
->>>>> too)  Try if this helps.
+On Wed, Apr 07, 2010 at 06:11:18AM +0200, Jan III Sobieski wrote:
+>2010/3/28 Jan III Sobieski <jan3sobi3ski@gmail.com>:
+>> W dniu 2010-03-28 16:19, Alexey Dobriyan pisze:
+>>> On Sun, Mar 28, 2010 at 03:38:31PM +0200, Jan III Sobieski wrote:
+>>>> W dniu 2010-03-28 15:35, Alexey Dobriyan pisze:
+>>>>> On Sun, Mar 28, 2010 at 02:38:07PM +0200, Jan III Sobieski wrote:
+>>>>>> +# random binary files
+>>>>>> +Documentation/filesystems/dnotify_test
+>>>>>> +Documentation/laptops/dslm
+>>>>>> +Documentation/timers/hpet_example
+>>>>>> +Documentation/vm/hugepage-mmap
+>>>>>> +Documentation/vm/hugepage-shm
+>>>>>> +Documentation/vm/map_hugetlb
+>>>>>> +arch/x86/boot/compressed/vmlinux
+>>>>>> +arch/x86/tools/test_get_len
 >>>>>
->>>> Confirmed. Please use the attached patch instead, for your testing.
+>>>>> This should go to per-directory gitiignores.
 >>>>
->>>> Thanks!
->>>>
->>> Moving those locks to bh-locks will not resolve this.  I tried that
->>> yesterday and tried your new patch today without success.  That
->>> warning
->>> is a WARN_ON_ONCE so you need to reboot to see that it is still a
->>> problem.  Simply unloading and loading the new module is not an
->>> accurate
->>> test.
->>> Also, my system still hangs when removing the bonding module.  I do
->>> not
->>> think you intended to fix this with the patch, but wanted it to be
->>> clear
->>> to everyone on the list.
+>>>> I agree that it is not the best solution. But one directory one
+>>>> .gitignore also isn't the best, so I propose this
+>>>
+>>> .gitignore in leaf directory is the status quo.
+>>>
+>>>       find . -type f -name '\.gitignore'
 >>
->> Actually I did reboot and then tested the module. I didn't get any
->> warning.
->> I just tried again today, and no warnings at all.
->>
->> For removing bonding module, you may need another fix of mine,
->> which is to fix a potential deadlock of workqueue. Try:
->>
->> http://lkml.org/lkml/2010/4/1/58
->>
->>> You should also configure your kernel with a some of the lock
->>> debugging
->>> enabled.  I've been using the following:
->>> CONFIG_DETECT_HUNG_TASK=y
->>> CONFIG_DEBUG_SPINLOCK=y
->>> CONFIG_DEBUG_MUTEXES=y
->>> CONFIG_DEBUG_LOCK_ALLOC=y
->>> CONFIG_PROVE_LOCKING=y
->>> CONFIG_LOCKDEP=y
->>> CONFIG_LOCK_STAT=y
->>> CONFIG_DEBUG_LOCKDEP=y
->>
->> Sure, I always keep these.
->>
->>> Here is the output when I remove a slave from the bond.  My
->>> xmit_roundrobin patch from earlier (replacing read_lock with
->>> read_trylock) was applied.  It might be helpful for you when
->>> debugging
->>> these issues.
->>
->> I don't apply your patch, just tested my patch.
->>
->>> Dead loop on virtual device bond0, fix it urgently!
->> Please provide your bonding configuration and steps to reproduce it.
->>
-> 
-> My first response in this thread provides the commands and
-> configuration needed to reproduce this.
+>> Ok
+>
+>Anyone out there care to take this patches?
 
+I think you need to Cc kbuild people. (Done.)
 
-Then I should do the right thing.
+This patch looks fine for me, we need this, especially
+the x86 piece, I met it several times.
 
-> 
->> What I did is:
+Thanks!
+
+>
 >>
->> 1. Load bonding module with "mode=0 miimon=100"
->> 2. Enslave eth0 and active bond0
->> 3. Load netconsole and send messages via bond0
->> 4. Remove eth0 from bond0
->> 5. Remove bonding module
->> 6. Remove netconsole module
-> 
-> Thanks for sending your configuration.
-> 
-> What values are in /proc/sys/kernel/printk?
-> 
-
-I use default values on RHEL5:
-
-6 4 1 7
-
-I don't think this is related with loglevel, what I checked
-is dmesg, not just the console screen.
-
-Thanks.
+>> --
+>> Jan III Sobieski
+>>
+>> Signed-off-by: Jan III Sobieski <jan3sobi3ski@gmail.com>
+>>
+>> diff --git a/Documentation/filesystems/.gitignore
+>> b/Documentation/filesystems/.gitignore
+>> new file mode 100644
+>> index 0000000..1ddd62a
+>> --- /dev/null
+>> +++ b/Documentation/filesystems/.gitignore
+>> @@ -0,0 +1,2 @@
+>> +dnotify_test
+>> +
+>> diff --git a/Documentation/laptops/.gitignore
+>> b/Documentation/laptops/.gitignore
+>> new file mode 100644
+>> index 0000000..f6bb9d0
+>> --- /dev/null
+>> +++ b/Documentation/laptops/.gitignore
+>> @@ -0,0 +1,2 @@
+>> +dslm
+>> +
+>> diff --git a/Documentation/timers/.gitignore
+>> b/Documentation/timers/.gitignore
+>> new file mode 100644
+>> index 0000000..f710cba
+>> --- /dev/null
+>> +++ b/Documentation/timers/.gitignore
+>> @@ -0,0 +1,2 @@
+>> +hpet_example
+>> +
+>> diff --git a/Documentation/vm/.gitignore b/Documentation/vm/.gitignore
+>> index 09b164a..3c65a46 100644
+>> --- a/Documentation/vm/.gitignore
+>> +++ b/Documentation/vm/.gitignore
+>> @@ -1,2 +1,6 @@
+>>  page-types
+>>  slabinfo
+>> +hugepage-mmap
+>> +hugepage-shm
+>> +map_hugetlb
+>> +
+>> diff --git a/arch/x86/boot/compressed/.gitignore
+>> b/arch/x86/boot/compressed/.gitignore
+>> index 4a46fab..b71c8ca 100644
+>> --- a/arch/x86/boot/compressed/.gitignore
+>> +++ b/arch/x86/boot/compressed/.gitignore
+>> @@ -1,4 +1,5 @@
+>>  relocs
+>> +vmlinux
+>>  vmlinux.bin.all
+>>  vmlinux.relocs
+>>  vmlinux.lds
+>> diff --git a/arch/x86/tools/.gitignore b/arch/x86/tools/.gitignore
+>> new file mode 100644
+>> index 0000000..b1ac2dc
+>> --- /dev/null
+>> +++ b/arch/x86/tools/.gitignore
+>> @@ -0,0 +1,2 @@
+>> +test_get_len
+>> +
+>>
+>
+>
+>
+>-- 
+>Jan III Sobieski
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>Please read the FAQ at  http://www.tux.org/lkml/
