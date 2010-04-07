@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932798Ab0DGQeh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 12:34:37 -0400
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:58837 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932723Ab0DGQef (ORCPT
+	id S932818Ab0DGQfr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 12:35:47 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:41173 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757966Ab0DGQfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 12:34:35 -0400
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-       Matt Mackall <mpm@selenic.com>, Nick Piggin <npiggin@suse.de>
-Subject: [PATCH 2/2] slub: Fix kmem_ptr_validate() for non-kernel pointers
-Date: Wed,  7 Apr 2010 19:23:41 +0300
-Message-Id: <1270657421-1937-2-git-send-email-penberg@cs.helsinki.fi>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1270657421-1937-1-git-send-email-penberg@cs.helsinki.fi>
-References: <1270657421-1937-1-git-send-email-penberg@cs.helsinki.fi>
+	Wed, 7 Apr 2010 12:35:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=oILXhSly7xbRUA6IBLxvNrHlTBiS9aEhRJPVlu+18EIGSmX4MxvLSbAO7ZOwXDGVF1
+         3cB1bknFh7JV1u4Wnp5EL/Y3vIxGzPw2e+bY6ef/Q6R0l+GOpL5l+OjixxKdzOSwx/F0
+         9oBjQ3VVsIh13i43i2qItyyQaDmmRX7ui+iIs=
+Subject: Re: [PATCH 1/2] rcu: add rcu_access_pointer and
+ rcu_dereference_protect
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: paulmck@linux.vnet.ibm.com, Trond.Myklebust@netapp.com,
+       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <26698.1270657193@redhat.com>
+References: <1270656035.8141.23.camel@edumazet-laptop>
+	 <1270652210.8141.9.camel@edumazet-laptop>
+	 <20100407135732.12414.16416.stgit@warthog.procyon.org.uk>
+	 <25990.1270654809@redhat.com>  <26698.1270657193@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 07 Apr 2010 18:35:38 +0200
+Message-ID: <1270658138.8141.36.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As suggested by Linus, fix up kmem_ptr_validate() to handle non-kernel pointers
-more graciously. The patch changes kmem_ptr_validate() to use the newly
-introduced kern_ptr_validate() helper to check that a pointer is a valid kernel
-pointer before we attempt to convert it into a 'struct page'.
+Le mercredi 07 avril 2010 à 17:19 +0100, David Howells a écrit :
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Nick Piggin <npiggin@suse.de>
-Signed-off-by: Pekka Enberg <penberg@cs.helsinki.fi>
----
- mm/slub.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+> what is the value of sk->sk_wmem_alloc to the lock context of sk->sk_filter?
+> Why would lockdep be interested in sk_wmem_alloc?
+> 
+> Surely, the assertion that the value of sk->sk_filter is related to
+> sk_wmem_alloc being 0 is independent of the need to dereference sk_filter for
+> RCU purposes.  So why are these being combined?
 
-diff --git a/mm/slub.c b/mm/slub.c
-index b364844..7d6c8b1 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2386,6 +2386,9 @@ int kmem_ptr_validate(struct kmem_cache *s, const void *object)
- {
- 	struct page *page;
- 
-+	if (!kern_ptr_validate(object, s->size))
-+		return 0;
-+
- 	page = get_object_page(object);
- 
- 	if (!page || s != page->slab)
--- 
-1.6.3.3
+Because when sk->sk_filter is eventually written by some thread, this
+thread _must_ own a reference on the socket, that is sk_wmem_alloc > 0
+
+So when reading sk->sk_filter, the general condition is : 
+- We own the rcu lock 
+- But on the particular case of __sk_free(),
+  we owned the very last reference to sk (we are going to kfree it), so
+nobody can possibly change sk->sk_filter under us.
+
+
 
