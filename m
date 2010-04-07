@@ -1,210 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932452Ab0DGHUd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 03:20:33 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:38955 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757209Ab0DGHUZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 03:20:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=YJRwL0S4f0Iag4Hv2XBGgM6OI7tiyE6wv2vNYUAIqgGM1uPXcmm+ttg4xfXX/kDtB9
-         QHzg5hpLT7S9rSoaldE5rdtpzy4Z4eUIqPa8x1zZSDJUKdy+sVwq6e50ZI1pYmLTa4/n
-         bHhGWYCmtGiRT5aGUVvCLnmE+KebU1+g/SrJE=
-Message-ID: <4BBC30B3.1000209@gmail.com>
-Date: Wed, 07 Apr 2010 00:13:55 -0700
-From: "Justin P. mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	id S932521Ab0DGHWV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 03:22:21 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50019 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932506Ab0DGHWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 03:22:15 -0400
+Date: Wed, 7 Apr 2010 09:22:11 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
+ 2.6.34-rc3)
+Message-ID: <20100407072211.GA11220@a1.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Rik van Riel <riel@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Minchan Kim <minchan.kim@gmail.com>,
+	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+	Nick Piggin <npiggin@suse.de>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+References: <4BBB69A9.5090906@redhat.com>
+ <alpine.LFD.2.00.1004061053450.3487@i5.linux-foundation.org>
+ <20100406120315.53ad7390.akpm@linux-foundation.org>
+ <20100406194238.GB20357@a1.tnic>
+ <alpine.LFD.2.00.1004061243240.3487@i5.linux-foundation.org>
+ <20100406205123.GC20357@a1.tnic>
+ <alpine.LFD.2.00.1004061403170.3487@i5.linux-foundation.org>
+ <4BBBC240.3090302@redhat.com>
+ <alpine.LFD.2.00.1004061707250.3487@i5.linux-foundation.org>
+ <4BBBDD64.9030800@redhat.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?w4Frb3MgTWFyw7N5?= <akos@maroy.hu>
-CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: system does not power off - how to debug?
-References: <4BBC2E3E.40308@maroy.hu>
-In-Reply-To: <4BBC2E3E.40308@maroy.hu>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4BBBDD64.9030800@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2010 12:03 AM, Ákos Maróy wrote:
-> Hi,
->
-> I'm sorry, I've asked this question before, but I received no useful
-> response, and I don't know how to debug the issue further. Thus I'm
-> asking again - maybe more info could be provided?
->
-> My system, an HP Envy 15 laptop, just does not power off after shutdown.
->    one needs to press the power button for 6 seconds to make the laptop
-> power off. the same effect exists on ubuntu 9.10 with kernel 2.6.32.9
-> and .10, and also with ubuntu 10.04, which also uses kernel 2.6.32.
->
-> interestingly, ACPI does not list the states in /proc/acpi/info:
->
-> $ cat /proc/acpi/info
-> version: 20090903
->
-> but ACPI is recognized on boot:
->
-> $ dmesg | grep ACPI
-> [ 0.000000] BIOS-e820: 00000000bf75c000 - 00000000bf7bf000 (ACPI NVS)
-> [ 0.000000] BIOS-e820: 00000000bf7e4000 - 00000000bf7ff000 (ACPI data)
-> [ 0.000000] modified: 00000000bf75c000 - 00000000bf7bf000 (ACPI NVS)
-> [ 0.000000] modified: 00000000bf7e4000 - 00000000bf7ff000 (ACPI data)
-> [ 0.000000] ACPI: RSDP 00000000000fe020 00024 (v02 HP )
-> [ 0.000000] ACPI: XSDT 00000000bf7fe120 0009C (v01 HPQOEM SLIC-MPC
-> 00000001 01000013)
-> [ 0.000000] ACPI: FACP 00000000bf7fc000 000F4 (v04 HP SLIC-MPC 00000001
-> MSFT 01000013)
-> [ 0.000000] ACPI: DSDT 00000000bf7ee000 0ABEA (v02 HP SLIC-MPC 00000001
-> MSFT 01000013)
-> [ 0.000000] ACPI: FACS 00000000bf76e000 00040
-> [ 0.000000] ACPI: ASF! 00000000bf7fd000 000A5 (v32 HPQOEM SLIC-MPC
-> 00000001 MSFT 01000013)
-> [ 0.000000] ACPI: HPET 00000000bf7fb000 00038 (v01 HPQOEM SLIC-MPC
-> 00000001 MSFT 01000013)
-> [ 0.000000] ACPI: APIC 00000000bf7fa000 0008C (v02 HPQOEM SLIC-MPC
-> 00000001 MSFT 01000013)
-> [ 0.000000] ACPI: MCFG 00000000bf7f9000 0003C (v01 HPQOEM SLIC-MPC
-> 00000001 MSFT 01000013)
-> [ 0.000000] ACPI: SLIC 00000000bf7ed000 00176 (v01 HPQOEM SLIC-MPC
-> 00000001 MSFT 01000013)
-> [ 0.000000] ACPI: SSDT 00000000bf7ec000 0073D (v01 TrmRef PtidDevc
-> 00001000 INTL 20051117)
-> [ 0.000000] ACPI: SSDT 00000000bf7eb000 00172 (v01 VaRef Va_Acpi
-> 00003000 INTL 20051117)
-> [ 0.000000] ACPI: BOOT 00000000bf7ea000 00028 (v01 HPQOEM SLIC-MPC
-> 00000001 MSFT 01000013)
-> [ 0.000000] ACPI: SSDT 00000000bf7e9000 00C39 (v01 INTEL SataPri
-> 00001000 INTL 20051117)
-> [ 0.000000] ACPI: SSDT 00000000bf7e8000 006C5 (v01 INTEL SataSec
-> 00001000 INTL 20051117)
-> [ 0.000000] ACPI: SPCR 00000000bf7e7000 00050 (v01 HPQOEM SLIC-MPC
-> 00000000 MSFT 01000013)
-> [ 0.000000] ACPI: ASPT 00000000bf7e6000 00034 (v04 HPQOEM SLIC-MPC
-> 00000001 MSFT 01000013)
-> [ 0.000000] ACPI: WDAT 00000000bf7e5000 00224 (v01 HPQOEM SLIC-MPC
-> 00000001 MSFT 01000013)
-> [ 0.000000] ACPI: SSDT 00000000bf7e4000 009F1 (v01 PmRef CpuPm 00003000
-> INTL 20051117)
-> [ 0.000000] ACPI: Local APIC address 0xfee00000
-> [ 0.000000] ACPI: PM-Timer IO Port: 0x408
-> [ 0.000000] ACPI: Local APIC address 0xfee00000
-> [ 0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x00] enabled)
-> [ 0.000000] ACPI: LAPIC (acpi_id[0x02] lapic_id[0x02] enabled)
-> [ 0.000000] ACPI: LAPIC (acpi_id[0x03] lapic_id[0x04] enabled)
-> [ 0.000000] ACPI: LAPIC (acpi_id[0x04] lapic_id[0x06] enabled)
-> [ 0.000000] ACPI: LAPIC (acpi_id[0x05] lapic_id[0x01] enabled)
-> [ 0.000000] ACPI: LAPIC (acpi_id[0x06] lapic_id[0x03] enabled)
-> [ 0.000000] ACPI: LAPIC (acpi_id[0x07] lapic_id[0x05] enabled)
-> [ 0.000000] ACPI: LAPIC (acpi_id[0x08] lapic_id[0x07] enabled)
-> [ 0.000000] ACPI: IOAPIC (id[0x02] address[0xfec00000] gsi_base[0])
-> [ 0.000000] ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 dfl dfl)
-> [ 0.000000] ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
-> [ 0.000000] ACPI: IRQ0 used by override.
-> [ 0.000000] ACPI: IRQ2 used by override.
-> [ 0.000000] ACPI: IRQ9 used by override.
-> [ 0.000000] Using ACPI (MADT) for SMP configuration information
-> [ 0.000000] ACPI: HPET id: 0x8086a201 base: 0xfed00000
-> [ 0.006523] ACPI: Core revision 20090903
-> [ 1.960797] ACPI FADT declares the system doesn't support PCIe ASPM, so
-> disable it
-> [ 1.960800] ACPI: bus type pci registered
-> [ 1.974043] ACPI: EC: Look up EC in DSDT
-> [ 1.976370] ACPI: Executed 1 blocks of module-level executable AML code
-> [ 1.981579] ACPI: BIOS _OSI(Linux) query ignored
-> [ 1.994098] ACPI Error (psargs-0359): [\_PR_.CPU0._PPC] Namespace lookup
-> failure, AE_NOT_FOUND
-> [ 1.994105] ACPI Error (psparse-0537): Method parse/execution failed
-> [\CPUT] (Node ffff8802370570a0), AE_NOT_FOUND
-> [ 1.994152] ACPI Error (psparse-0537): Method parse/execution failed
-> [\PSSC] (Node ffff8802370570c0), AE_NOT_FOUND
-> [ 1.994198] ACPI Error (psparse-0537): Method parse/execution failed
-> [\_SB_.PCI0.LPCB.EC0_._REG] (Node ffff88023703fa60), AE_NOT_FOUND
-> [ 1.994359] ACPI: Interpreter enabled
-> [ 1.994363] ACPI: (supports S0 S3 S4 S5)
-> [ 1.994412] ACPI: Using IOAPIC for interrupt routing
-> [ 1.995249] PM: Adding info for acpi:ACPI0003:00
-> [ 1.998706] PM: Adding info for acpi:ACPI0008:00
-> [ 2.008847] ACPI: EC: GPE = 0x16, I/O: command/status = 0x66, data = 0x62
-> [ 2.009883] ACPI: ACPI Dock Station Driver: 1 docks/bays found
-> [ 2.011080] ACPI: PCI Root Bridge [PCI0] (0000:00)
-> [ 2.014835] ACPI: PCI Interrupt Routing Table [\_SB_.PCI0._PRT]
-> [ 2.015134] ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.P0P1._PRT]
-> [ 2.015372] ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.RP01._PRT]
-> [ 2.015514] ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.RP02._PRT]
-> [ 2.015700] ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.PEG3._PRT]
-> [ 2.015841] ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.PEG5._PRT]
-> [ 2.030468] ACPI: PCI Root Bridge [CPBG] (0000:ff)
-> [ 2.031652] ACPI: PCI Interrupt Link [LNKA] (IRQs 1 3 4 5 6 7 10 12 14
-> 15) *11
-> [ 2.031847] ACPI: PCI Interrupt Link [LNKB] (IRQs 1 3 4 5 6 7 *11 12 14 15)
-> [ 2.032038] ACPI: PCI Interrupt Link [LNKC] (IRQs 1 3 4 5 6 7 10 12 14
-> 15) *0, disabled.
-> [ 2.032231] ACPI: PCI Interrupt Link [LNKD] (IRQs 1 3 4 5 6 7 11 12 14
-> 15) *10
-> [ 2.032422] ACPI: PCI Interrupt Link [LNKE] (IRQs 1 3 4 5 6 7 10 12 14
-> 15) *11
-> [ 2.032610] ACPI: PCI Interrupt Link [LNKF] (IRQs 1 3 4 5 6 7 11 12 14
-> 15) *0, disabled.
-> [ 2.032800] ACPI: PCI Interrupt Link [LNKG] (IRQs 1 3 4 5 6 7 10 12 14
-> 15) *11
-> [ 2.032992] ACPI: PCI Interrupt Link [LNKH] (IRQs 1 3 4 5 6 7 11 12 14
-> 15) *0, disabled.
-> [ 2.033596] ACPI: WMI: Mapper loaded
-> [ 2.033598] PCI: Using ACPI for IRQ routing
-> [ 2.097696] pnp: PnP ACPI init
-> [ 2.097709] ACPI: bus type pnp registered
-> [ 2.103392] pnp: PnP ACPI: found 12 devices
-> [ 2.103394] ACPI: ACPI bus type pnp unregistered
-> [ 2.776520] ACPI Error (psargs-0359): [\_PR_.CPU0._PPC] Namespace lookup
-> failure, AE_NOT_FOUND
-> [ 2.776531] ACPI Error (psparse-0537): Method parse/execution failed
-> [\CPUT] (Node ffff8802370570a0), AE_NOT_FOUND
-> [ 2.776599] ACPI Error (psparse-0537): Method parse/execution failed
-> [\_TZ_.TZ01.OTHD] (Node ffff880237055f00), AE_NOT_FOUND
-> [ 2.776671] ACPI Error (psparse-0537): Method parse/execution failed
-> [\_SB_.PCI0.LPCB.EC0_._Q80] (Node ffff88023703fb60), AE_NOT_FOUND
-> [ 3.998797] ACPI: AC Adapter [ACAD] (on-line)
-> [ 3.998883] ACPI: Power Button [PWRB]
-> [ 3.999290] ACPI: Lid Switch [LID0]
-> [ 3.999355] ACPI: Power Button [PWRF]
-> [ 4.001246] ACPI: SSDT 00000000bf691a98 002DA (v01 PmRef Cpu0Ist
-> 00003000 INTL 20051117)
-> [ 4.002138] ACPI: SSDT 00000000bf690618 005CD (v01 PmRef Cpu0Cst
-> 00003001 INTL 20051117)
-> [ 4.003788] ACPI: SSDT 00000000bf691718 00303 (v01 PmRef ApIst 00003000
-> INTL 20051117)
-> [ 4.004676] ACPI: SSDT 00000000bf68fd98 00119 (v01 PmRef ApCst 00003000
-> INTL 20051117)
-> [ 4.021543] ACPI: Thermal Zone [TZ01] (44 C)
-> [ 4.028907] ACPI: Battery Slot [BAT0] (battery present)
-> [ 4.029277] ACPI: Battery Slot [BAT1] (battery absent)
-> [ 5.696586] ACPI: Video Device [VGA1] (multi-head: yes rom: no post: no)
-> [ 6.918810] pci 0000:01:00.0: power state changed by ACPI to D0
->
->
-> how can I debug this issue further?
->
->
-> Akos
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+From: Rik van Riel <riel@redhat.com>
+Date: Tue, Apr 06, 2010 at 09:18:28PM -0400
 
+Hi Rik,
 
-Since this issue seems easily reproducible
-the best way to find the issue is through
-a bisect(hardest part is finding the last
-good kernel),
-http://www.kernel.org/pub/software/scm/git/docs/user-manual.html
+I think your patch needs a bit more baking, see below :)
 
-hope this helps,
+> >I suspect Borislav is sleeping. But at least we have a patch for him to
+> >test when he wakes up ;)
+> 
+> I am looking forward to the test results.
 
-Justin P. Mattock
+This happens when starting X, I haven't even started hibernating.
+
+  [By the way, further testing will have to wait till tonight since I
+   have a job, you know :) ]
+
+Also, mm/rmap.c:745 is
+
+	BUG_ON(!anon_vma);
+
+in __page_set_anon_rmap().
+
+---
+[   43.142371] ------------[ cut here ]------------
+[   43.142411] kernel BUG at mm/rmap.c:745!
+[   43.142436] invalid opcode: 0000 [#1] PREEMPT SMP 
+[   43.142514] last sysfs file: /sys/devices/virtual/vtconsole/vtcon0/uevent
+[   43.142537] CPU 0 
+[   43.142559] Modules linked in: powernow_k8 cpufreq_ondemand cpufreq_powersave cpufreq_userspace freq_table cpufreq_conservative binfmt_misc kvm_amd kvm ipv6 vfat fat dm_crypt dm_mod 8250_pnp 8250 edac_core serial_core k10temp ohci_hcd pcspkr
+[   43.142997] 
+[   43.143012] Pid: 1940, comm: console-kit-dae Not tainted 2.6.34-rc3-00289-gae1ed76 #5 M3A78 PRO/System Product Name
+[   43.143012] RIP: 0010:[<ffffffff810c08e7>]  [<ffffffff810c08e7>] page_add_new_anon_rmap+0x3b/0x89
+[   43.143012] RSP: 0000:ffff88022c019da8  EFLAGS: 00010246
+[   43.143012] RAX: 0000000000000000 RBX: ffffea000774ff78 RCX: 000000002ce900f4
+[   43.143012] RDX: ffff88000a1d5dc8 RSI: 0000000000000007 RDI: ffffffff816e8740
+[   43.143012] RBP: ffff88022c019dc8 R08: 00007f29e3cfd928 R09: 000000000062c318
+[   43.143012] R10: 0000000000000000 R11: 0000000000000002 R12: ffff88022bbad960
+[   43.143012] R13: 00007f29e3cfd928 R14: 00007f29e3cfd928 R15: 80000002216d9067
+[   43.143012] FS:  00007f29e3d0f790(0000) GS:ffff88000a000000(0000) knlGS:0000000000000000
+[   43.143012] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   43.143012] CR2: 00007f29e3cfd928 CR3: 000000022dfd3000 CR4: 00000000000006f0
+[   43.143012] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   43.143012] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   43.143012] Process console-kit-dae (pid: 1940, threadinfo ffff88022c018000, task ffff88022ce90000)
+[   43.143012] Stack:
+[   43.143012]  ffffffff810b8802 ffff88022bbad960 ffff88022ea3c600 ffff88022bb6d7e8
+[   43.143012] <0> ffff88022c019e48 ffffffff810b8823 ffff88022ea3c6b8 0000000000000246
+[   43.143012] <0> ffffea000774ff78 0000000000000001 00000001e3cfd928 ffff88022fdb58f0
+[   43.143012] Call Trace:
+[   43.143012]  [<ffffffff810b8802>] ? handle_mm_fault+0x2af/0x64e
+[   43.143012]  [<ffffffff810b8823>] handle_mm_fault+0x2d0/0x64e
+[   43.143012]  [<ffffffff8101f392>] do_page_fault+0x30b/0x32d
+[   43.143012]  [<ffffffff810615ce>] ? put_lock_stats+0xe/0x27
+[   43.143012]  [<ffffffff81062a55>] ? lock_release_holdtime+0x104/0x109
+[   43.143012]  [<ffffffff813f93e3>] ? error_sti+0x5/0x6
+[   43.143012]  [<ffffffff813f7de2>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+[   43.143012]  [<ffffffff813f91ff>] page_fault+0x1f/0x30
+[   43.143012] Code: 00 00 48 89 fb 49 89 f4 49 89 d5 f0 80 4f 02 10 be 07 00 00 00 c7 47 0c 00 00 00 00 e8 c5 30 ff ff 49 8b 44 24 78 48 85 c0 75 04 <0f> 0b eb fe 48 ff c0 4c 89 e6 48 89 df 48 89 43 18 4d 2b 6c 24 
+[   43.143012] RIP  [<ffffffff810c08e7>] page_add_new_anon_rmap+0x3b/0x89
+[   43.143012]  RSP <ffff88022c019da8>
+[   43.145276] ---[ end trace d6305f6e826dbd53 ]---
+[   43.145314] note: console-kit-dae[1940] exited with preempt_count 1
+[   73.644201] ------------[ cut here ]------------
+[   73.644218] kernel BUG at mm/rmap.c:745!
+[   73.644226] invalid opcode: 0000 [#2] PREEMPT SMP 
+[   73.644266] last sysfs file: /sys/devices/system/cpu/cpu3/cpufreq/scaling_cur_freq
+[   73.644278] CPU 0 
+[   73.644287] Modules linked in: powernow_k8 cpufreq_ondemand cpufreq_powersave cpufreq_userspace freq_table cpufreq_conservative binfmt_misc kvm_amd kvm ipv6 vfat fat dm_crypt dm_mod 8250_pnp 8250 edac_core serial_core k10temp ohci_hcd pcspkr
+[   73.644509] 
+[   73.644520] Pid: 2018, comm: iceowl-bin Tainted: G      D    2.6.34-rc3-00289-gae1ed76 #5 M3A78 PRO/System Product Name
+[   73.644534] RIP: 0010:[<ffffffff810c08e7>]  [<ffffffff810c08e7>] page_add_new_anon_rmap+0x3b/0x89
+[   73.644553] RSP: 0000:ffff88022cd37da8  EFLAGS: 00010246
+[   73.644562] RAX: 0000000000000000 RBX: ffffea000764dfa8 RCX: 0000000000000002
+[   73.644572] RDX: ffff88000a1d5dc8 RSI: 0000000000000007 RDI: ffffffff816e8740
+[   73.644589] RBP: ffff88022cd37dc8 R08: 00007f2ce0aab928 R09: 0000000000000000
+[   73.644603] R10: 0000000000000000 R11: 000000000011da32 R12: ffff88022d5894b0
+[   73.644615] R13: 00007f2ce0aab928 R14: 00007f2ce0aab928 R15: 800000021cd23067
+[   73.644628] FS:  00007f2cee88b7b0(0000) GS:ffff88000a000000(0000) knlGS:0000000000000000
+[   73.644639] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   73.644652] CR2: 00007f2ce0aab928 CR3: 000000022b1b5000 CR4: 00000000000006f0
+[   73.644664] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   73.644675] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   73.644690] Process iceowl-bin (pid: 2018, threadinfo ffff88022cd36000, task ffff88022a74a5c0)
+[   73.644701] Stack:
+[   73.644708]  ffffffff810b8802 ffff88022d5894b0 ffff88022ce41e00 ffff88022d4b0558
+[   73.644745] <0> ffff88022cd37e48 ffffffff810b8823 ffff88022ce41eb8 0000000000000246
+[   73.644801] <0> ffffea000764dfa8 0000000000000001 00000001e0aab928 ffff88022c0a4828
+[   73.644862] Call Trace:
+[   73.644874]  [<ffffffff810b8802>] ? handle_mm_fault+0x2af/0x64e
+[   73.644885]  [<ffffffff810b8823>] handle_mm_fault+0x2d0/0x64e
+[   73.644895]  [<ffffffff8101f392>] do_page_fault+0x30b/0x32d
+[   73.644909]  [<ffffffff810be3c2>] ? do_mmap_pgoff+0x290/0x2f3
+[   73.644921]  [<ffffffff813f93e3>] ? error_sti+0x5/0x6
+[   73.644932]  [<ffffffff81062b97>] ? trace_hardirqs_off_caller+0x1f/0xa9
+[   73.644943]  [<ffffffff813f7de2>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+[   73.644952]  [<ffffffff813f91ff>] page_fault+0x1f/0x30
+[   73.644963] Code: 00 00 48 89 fb 49 89 f4 49 89 d5 f0 80 4f 02 10 be 07 00 00 00 c7 47 0c 00 00 00 00 e8 c5 30 ff ff 49 8b 44 24 78 48 85 c0 75 04 <0f> 0b eb fe 48 ff c0 4c 89 e6 48 89 df 48 89 43 18 4d 2b 6c 24 
+[   73.645001] RIP  [<ffffffff810c08e7>] page_add_new_anon_rmap+0x3b/0x89
+[   73.645001]  RSP <ffff88022cd37da8>
+[   73.645610] ---[ end trace d6305f6e826dbd54 ]---
+[   73.645621] note: iceowl-bin[2018] exited with preempt_count 1
+[   77.562222] SysRq : HELP : loglevel(0-9) reBoot Crash show-all-locks(D) terminate-all-tasks(E) memory-full-oom-kill(F) kill-all-tasks(I) thaw-filesystems(J) saK show-backtrace-all-active-cpus(L) show-memory-usage(M) nice-all-RT-tasks(N) powerOff show-registers(P) show-all-timers(Q) unRaw Sync show-task-states(T) Unmount show-blocked-tasks(W) dump-ftrace-buffer(Z) 
+[   78.014120] SysRq : Emergency Sync
+[   78.016864] Emergency Sync complete
+[   78.585045] SysRq : Emergency Remount R/O
+[   78.663367] Emergency Remount complete
+[   79.098126] SysRq : Resetting
+
+-- 
+Regards/Gruss,
+Boris.
