@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757982Ab0DGOFk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 10:05:40 -0400
-Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:46290 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757940Ab0DGOFi (ORCPT
+	id S1758015Ab0DGOF4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 10:05:56 -0400
+Received: from bipbip.grupopie.com ([195.23.16.24]:57857 "EHLO
+	bipbip.grupopie.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757990Ab0DGOFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 10:05:38 -0400
-Date: Thu, 8 Apr 2010 00:05:23 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: John Berthels <john@humyo.com>
-Cc: linux-kernel@vger.kernel.org, Nick Gregory <nick@humyo.com>,
-       Rob Sanderson <rob@humyo.com>, xfs@oss.sgi.com
-Subject: Re: PROBLEM + POSS FIX: kernel stack overflow, xfs, many disks,
- heavy write load, 8k stack, x86-64
-Message-ID: <20100407140523.GJ11036@dastard>
-References: <4BBC6719.7080304@humyo.com>
+	Wed, 7 Apr 2010 10:05:53 -0400
+Message-ID: <4BBC913E.5050703@grupopie.com>
+Date: Wed, 07 Apr 2010 15:05:50 +0100
+From: Paulo Marques <pmarques@grupopie.com>
+Organization: Grupo PIE
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BBC6719.7080304@humyo.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Borislav Petkov <bp@alien8.de>, Andrew Morton <akpm@linux-foundation.org>,
+       Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux 2.6.34-rc3)
+References: <alpine.LFD.2.00.1004060926430.3487@i5.linux-foundation.org> <1270572327.1711.3.camel@barrios-desktop> <alpine.LFD.2.00.1004060951030.3487@i5.linux-foundation.org> <4BBB69A9.5090906@redhat.com> <alpine.LFD.2.00.1004061053450.3487@i5.linux-foundation.org> <20100406120315.53ad7390.akpm@linux-foundation.org> <20100406194238.GB20357@a1.tnic> <alpine.LFD.2.00.1004061243240.3487@i5.linux-foundation.org> <20100406205123.GC20357@a1.tnic> <alpine.LFD.2.00.1004061403170.3487@i5.linux-foundation.org> <20100406225925.GA3446@liondog.tnic> <alpine.LFD.2.00.1004061609320.3487@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1004061609320.3487@i5.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 07, 2010 at 12:06:01PM +0100, John Berthels wrote:
-> Hi folks,
+Linus Torvalds wrote:
+> [...]
+> So it once more is 'anon_vma->head.next' that is crap, but now it's not 
+> NULL, it's that very odd 0x002e2e2e002e2e2e pattern (the %r13 has had 0x20 
+> subtracted from it, so that LSB of "0x0e" is actually _also_ a 0x2e).
 > 
-> [I'm afraid that I'm not subscribed to the list, please cc: me on
-> any reply].
-> 
-> Problem: kernel.org 2.6.33.2 x86_64 kernel locks up under
-> write-heavy I/O load. It is "fixed" by changing THREAD_ORDER to 2.
-> 
-> Is this an OK long-term solution/should this be needed? As far as I
-> can see from searching, there is an expectation that xfs would
-> generally work with 8k stacks (THREAD_ORDER 1). We don't have xfs
-> stacked over LVM or anything else.
+> What does '0x2e' mean? It's ASCII '.', but that doesn't really mean 
+> anything either.
 
-I'm not seeing stacks deeper than about 5.6k on XFS under heavy write
-loads. That's nowhere near blowing an 8k stack, so there must be
-something special about what you are doing. Can you post the stack
-traces that are being generated for the deepest stack generated -
-/sys/kernel/debug/tracing/stack_trace should contain it.
+Just a wild shot in the dark: it can be a couple of gray pixels with
+intensity 0x2e at some 32 bits per pixel mode. I say this because of the
+zero bytes there and someone mentioning seeing the problem when starting X.
 
-> Background: We have a cluster of systems with roughly the following
-> specs (2GB RAM, 24 (twenty-four) 1TB+ disks, Intel Core2 Duo @
-> 2.2GHz).
-> 
-> Following a the addition of three new servers to the cluster, we
-> started seeing a high incidence of intermittent lockups (up to
-> several times per day for some servers) across both the old and new
-> servers. Prior to that, we saw this problem only rarely (perhaps
-> once per 3 months).
-
-What is generating the write load?
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Paulo Marques - www.grupopie.com
+
+"Don't worry, you'll be fine; I saw it work in a cartoon once..."
