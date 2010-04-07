@@ -1,98 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184Ab0DGU0u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 16:26:50 -0400
-Received: from atreides.gradator.net ([212.85.155.42]:53656 "EHLO
-	atreides.gradator.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab0DGU0q (ORCPT
+	id S1751929Ab0DGU3p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 16:29:45 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:42396 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717Ab0DGU3n convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 16:26:46 -0400
-Date: Wed, 7 Apr 2010 21:57:24 +0200
-From: Sylvain Rochet <gradator@gradator.net>
-To: linux-kernel@vger.kernel.org
-Message-ID: <20100407195724.GA4830@gradator.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="H1spWtNR+x+ondvy"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.13 (2006-08-11)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: gradator@atreides.gradator.net
-Subject: PATCH: 2.4.37.9 MTU change for TUN/TAP interfaces
-X-SA-Exim-Version: 4.2.1 (built Tue, 09 Jan 2007 17:51:29 +0000)
-X-SA-Exim-Scanned: Yes (on atreides.gradator.net)
+	Wed, 7 Apr 2010 16:29:43 -0400
+Date: Wed, 7 Apr 2010 22:29:37 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+       linux-input@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       rvinyard@cs.nmsu.edu
+Subject: Re: [PATCH mmotm] hid-picolcd: depends on LCD_CLASS_DEVICE
+Message-ID: <20100407222937.73ed530b@neptune.home>
+In-Reply-To: <20100407131204.10759584.randy.dunlap@oracle.com>
+References: <201004052336.o35NaeSE015814@imap1.linux-foundation.org>
+	<20100405220414.9d90da83.randy.dunlap@oracle.com>
+	<alpine.LNX.2.00.1004061038510.8345@pobox.suse.cz>
+	<20100406105635.5384a087@pluto.restena.lu>
+	<20100406082614.79aaf1c5.randy.dunlap@oracle.com>
+	<20100406183535.7de3c628@neptune.home>
+	<20100406095633.49ec957a.randy.dunlap@oracle.com>
+	<20100407204404.5233ba6b@neptune.home>
+	<20100407131204.10759584.randy.dunlap@oracle.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 07 April 2010 Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> On Wed, 7 Apr 2010 20:44:04 +0200 Bruno Prémont wrote:
+> 
+> > On Tue, 06 April 2010 Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> > > > 
+> > > > One of my attempts did end up with a circular loop with regard to FB
+> > > > (some of the FB drivers did select INPUT)?  
+> > > 
+> > >   (not that I can find)
+> > > 
+> > > CONFIG_VT does select INPUT
+> > > and CONFIG_DRM_I915 does
+> > > 	select INPUT if ACPI
+> > 
+> > A newer attempt still produces the same result:
+> > 
+> > drivers/input/Kconfig:9:error: found recursive dependency: INPUT ->
+> >        HID_SUPPORT -> HID_PICOLCD_FB -> FB -> FB_STI -> VT -> INPUT
+> > 
+> > (it's only FB which causes the loop, LEDS, LCD and BACKLIGHT are fine)
+> 
+>   (yes, so I see)
+> 
+> > This is with following patch on top of the improved deps patch I sent
+> > a few minutes ago deeper in this thread.
+> > 
+> > Is there a way around this?
+> > 
+> 
+> Well, lesson #1 is that select is evil^W^W should only be used to enable
+> library-like code, or as Documentation/kbuild/kconfig-language.txt says:
+> 
+>   Note:
+> 	select should be used with care. select will force
+> 	a symbol to a value without visiting the dependencies.
+> 	By abusing select you are able to select a symbol FOO even
+> 	if FOO depends on BAR that is not set.
+> 	In general use select only for non-visible symbols
+> 	(no prompts anywhere) and for symbols with no dependencies.
+> 	That will limit the usefulness but on the other hand avoid
+> 	the illegal configurations all over.
+> 	kconfig should one day warn about such things.
 
---H1spWtNR+x+ondvy
-Content-Type: multipart/mixed; boundary="y0ulUmNC+osPPQO6"
-Content-Disposition: inline
+I've read that paragraph and I would definitely prefer not to have to
+use select for what this patch should achieve!
 
+It should really be a helper for the user going through menuconfig like
+"please check all what is needed to satisfy this item's dependencies"
+A "try-select-deep" or whatever it could be called.
 
---y0ulUmNC+osPPQO6
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+A well-behaved "GUI" implementation of this would show what would get newly
+checked and give the user the opportunity to not proceed or fine-tune
+y/m choices.
 
-Hi,
+> (more below)
+> 
+> > 
+> > diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+> > index 782a34e..711c091 100644
+> > --- a/drivers/hid/Kconfig
+> > +++ b/drivers/hid/Kconfig
+> > @@ -285,7 +285,7 @@ config HID_PICOLCD_FB
+> >  	bool "Framebuffer support"
+> >  	default !EMBEDDED
+> >  	depends on HID_PICOLCD
+> > -	depends on HID_PICOLCD=FB || FB=y
+> > +	select FB
+> 
+> If you'll go back to the unpatched (by this patch) version here,
+> it seems to work OK.
 
-This patch add the ability to change the MTU of TUN/TAP interfaces for=20
-the 2.4.x kernels series.
+So best is probably to just forget about all of this non-leaf select
+usage for now. (and not have one half doing one way and the other half
+doing it the other way)
 
-Best regards,
-Sylvain
+Thanks,
+Bruno
 
---y0ulUmNC+osPPQO6
-Content-Type: text/x-diff; charset=iso-8859-15
-Content-Disposition: attachment; filename="tuntap-change-mtu-2.4.37.9.patch"
-Content-Transfer-Encoding: quoted-printable
-
-diff -Nru linux-2.4.36.6.a/drivers/net/tun.c linux-2.4.36.6.b/drivers/net/t=
-un.c
---- linux-2.4.36.6.a/drivers/net/tun.c	2008-06-06 18:25:34.000000000 +0200
-+++ linux-2.4.36.6.b/drivers/net/tun.c	2010-04-07 17:51:33.000000000 +0200
-@@ -118,6 +118,17 @@
- 	return &tun->stats;
- }
-=20
-+#define MIN_MTU 68
-+#define MAX_MTU 65535
-+
-+static int tun_net_change_mtu(struct net_device *dev, int new_mtu)  {
-+	if (new_mtu < MIN_MTU || new_mtu + dev->hard_header_len > MAX_MTU)
-+		return -EINVAL;
-+	dev->mtu =3D new_mtu;
-+	return 0;
-+}
-+
-+
- /* Initialize net device. */
- int tun_net_init(struct net_device *dev)
- {
-@@ -156,6 +167,7 @@
- 		break;
- 	};
-=20
-+	dev->change_mtu =3D tun_net_change_mtu;
- 	return 0;
- }
-=20
-
---y0ulUmNC+osPPQO6--
-
---H1spWtNR+x+ondvy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.6 (GNU/Linux)
-
-iD8DBQFLvOOkDFub3qtEsS8RAt6CAKCUBiOMthSa4Lcq9OBWtRjfwxCE2QCeKUGc
-kYZ7dhH0W8lCCzNHH8+OfFA=
-=0lad
------END PGP SIGNATURE-----
-
---H1spWtNR+x+ondvy--
