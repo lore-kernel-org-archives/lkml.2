@@ -1,150 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab0DGCzI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 22:55:08 -0400
-Received: from dm-mail02.mozilla.org ([63.245.208.176]:51546 "EHLO
-	dm-mail02.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab0DGCzA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 22:55:00 -0400
-Message-ID: <4BBBF402.70403@mozilla.com>
-Date: Tue, 06 Apr 2010 19:54:58 -0700
-From: Taras Glek <tglek@mozilla.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Wu Fengguang <fengguang.wu@intel.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
-References: <4BBA6776.5060804@mozilla.com> <20100406095135.GB5183@cmpxchg.org> <20100407022456.GA9468@localhost>
-In-Reply-To: <20100407022456.GA9468@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755370Ab0DGC5X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 22:57:23 -0400
+Received: from gate.crashing.org ([63.228.1.57]:53645 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750921Ab0DGC5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 22:57:16 -0400
+Subject: Re: [PATCH][GIT PULL] powerpc/tracing: Move TRACE_SYSTEM out of
+ #if protection
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: rostedt@goodmis.org
+Cc: LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>,
+       Hollis Blanchard <hollisb@us.ibm.com>, Jeremy Kerr <jk@ozlabs.org>,
+       Christoph Hellwig <hch@lst.de>
+In-Reply-To: <1270606195.19685.15615.camel@gandalf.stny.rr.com>
+References: <1270606195.19685.15615.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 07 Apr 2010 12:56:48 +1000
+Message-ID: <1270609008.13812.118.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2010 07:24 PM, Wu Fengguang wrote:
-> Hi Taras,
->
-> On Tue, Apr 06, 2010 at 05:51:35PM +0800, Johannes Weiner wrote:
->    
->> On Mon, Apr 05, 2010 at 03:43:02PM -0700, Taras Glek wrote:
->>      
->>> Hello,
->>> I am working on improving Mozilla startup times. It turns out that page
->>> faults(caused by lack of cooperation between user/kernelspace) are the
->>> main cause of slow startup. I need some insights from someone who
->>> understands linux vm behavior.
->>>        
-> How about improve Fedora (and other distros) to preload Mozilla (and
-> other apps the user run at the previous boot) with fadvise() at boot
-> time? This sounds like the most reasonable option.
->    
-That's a slightly different usecase. I'd rather have all large apps 
-startup as efficiently as possible without any hacks. Though until we 
-get there, we'll be using all of the hacks we can.
-> As for the kernel readahead, I have a patchset to increase default
-> mmap read-around size from 128kb to 512kb (except for small memory
-> systems).  This should help your case as well.
->    
-Yes. Is the current readahead really doing read-around(ie does it read 
-pages before the one being faulted)? From what I've seen, having the 
-dynamic linker read binary sections backwards causes faults.
-http://sourceware.org/bugzilla/show_bug.cgi?id=11447
->    
->>> Current Situation:
->>> The dynamic linker mmap()s  executable and data sections of our
->>> executable but it doesn't call madvise().
->>> By default page faults trigger 131072byte reads. To make matters worse,
->>> the compile-time linker + gcc lay out code in a manner that does not
->>> correspond to how the resulting executable will be executed(ie the
->>> layout is basically random). This means that during startup 15-40mb
->>> binaries are read in basically random fashion. Even if one orders the
->>> binary optimally, throughput is still suboptimal due to the puny readahead.
->>>
->>> IO Hints:
->>> Fortunately when one specifies madvise(WILLNEED) pagefaults trigger 2mb
->>> reads and a binary that tends to take 110 page faults(ie program stops
->>> execution and waits for disk) can be reduced down to 6. This has the
->>> potential to double application startup of large apps without any clear
->>> downsides.
->>>
->>> Suse ships their glibc with a dynamic linker patch to fadvise()
->>> dynamic libraries(not sure why they switched from doing madvise
->>> before).
->>>        
-> This is interesting. I wonder how SuSE implements the policy.
-> Do you have the patch or some strace output that demonstrates the
-> fadvise() call?
->    
-glibc-2.3.90-ld.so-madvise.diff in 
-http://www.rpmseek.com/rpm/glibc-2.4-31.12.3.src.html?hl=com&cba=0:G:0:3732595:0:15:0: 
+On Tue, 2010-04-06 at 22:09 -0400, Steven Rostedt wrote:
+> Ben,
+> 
+> You can pull this or just use this patch, which ever you prefer.
+> 
+> Please pull the latest powerpc tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> powerpc
 
+Ah good timing, I'm right in the middle of preparing my -next branch :-)
 
-As I recall they just fadvise the filedescriptor before accessing it.
->    
->>> I filed a glibc bug about this at
->>> http://sourceware.org/bugzilla/show_bug.cgi?id=11431 . Uli commented
->>> with his concern about wasting memory resources. What is the impact of
->>> madvise(WILLNEED) or the fadvise equivalent on systems under memory
->>> pressure? Does the kernel simply start ignoring these hints?
->>>        
->> It will throttle based on memory pressure.  In idle situations it will
->> eat your file cache, however, to satisfy the request.
->>
->> Now, the file cache should be much bigger than the amount of unneeded
->> pages you prefault with the hint over the whole library, so I guess the
->> benefit of prefaulting the right pages outweighs the downside of evicting
->> some cache for unused library pages.
->>
->> Still, it's a workaround for deficits in the demand-paging/readahead
->> heuristics and thus a bit ugly, I feel.  Maybe Wu can help.
->>      
-> Program page faults are inherently random, so the straightforward
-> solution would be to increase the mmap read-around size (for desktops
-> with reasonable large memory), rather than to improve program layout
-> or readahead heuristics :)
->    
-Program page faults may exhibit random behavior once they've started.
-
-During startup page-in pattern of over-engineered OO applications is 
-very predictable. Programs are laid out based on compilation units, 
-which have no relation to how they are executed. Another problem is that 
-any large old application will have lots of code that is either rarely 
-executed or completely dead. Random sprinkling of live code among mostly 
-unneeded code is a problem.
-I'm able to reduce startup pagefaults by 2.5x and mem usage by a few MB 
-with proper binary layout. Even if one lays out a program wrongly, the 
-worst-case pagein pattern will be pretty similar to what it is by default.
-
-But yes, I completely agree that it would be awesome to increase the 
-readahead size proportionally to available memory. It's a little silly 
-to be reading tens of megabytes in 128kb increments :)  You rock for 
-trying to modernize this.
-
->    
->>> Also, once an application is started is it reasonable to keep it
->>> madvise(WILLNEED)ed or should the madvise flags be reset?
->>>        
->> It's a one-time operation that starts immediate readahead, no permanent
->> changes are done.
->>      
-> Right. The kernel regard WILLNEED as a readahead request from userspace.
->
->    
->>> Perhaps the kernel could monitor the page-in patterns to increase the
->>> readahead sizes? This may already happen, I've noticed that a handful of
->>> pagefaults trigger>  131072bytes of IO, perhaps this just needs tweaking.
->>>        
->> CCd the man :-)
->>      
-> Thank you :)
->
-> Cheers,
-> Fengguang
->    
+Thanks.
 
 Cheers,
-Taras
+Ben.
+
+> Steven Rostedt (1):
+>       powerpc/tracing: Move TRACE_SYSTEM out of #if protection
+> 
+> ----
+>  arch/powerpc/kvm/trace.h                     |   13 ++++++++-----
+>  arch/powerpc/platforms/cell/spufs/sputrace.h |    7 ++++---
+>  2 files changed, 12 insertions(+), 8 deletions(-)
+> ---------------------------
+> commit 2ce066a4ff9869681f8819c76f0c58af4333ec58
+> Author: Steven Rostedt <srostedt@redhat.com>
+> Date:   Tue Apr 6 22:04:21 2010 -0400
+> 
+>     powerpc/tracing: Move TRACE_SYSTEM out of #if protection
+>     
+>     As explained in:
+>     
+>     commit d0b6e04a4cd8360e3c9c419f7c30a3081a0c142a
+>     tracing/events: Move TRACE_SYSTEM outside of include guard
+>     
+>     The TRACE_SYSTEM must be outside the #if include protection.
+>     
+>     Cc: Christoph Hellwig <hch@lst.de>
+>     Cc: Jeremy Kerr <jk@ozlabs.org>
+>     Cc: Hollis Blanchard <hollisb@us.ibm.com>
+>     Cc: Marcelo Tosatti <mtosatti@redhat.com>
+>     Cc: Avi Kivity <avi@redhat.com>
+>     Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>     Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> diff --git a/arch/powerpc/kvm/trace.h b/arch/powerpc/kvm/trace.h
+> index a8e8400..fcc6a6b 100644
+> --- a/arch/powerpc/kvm/trace.h
+> +++ b/arch/powerpc/kvm/trace.h
+> @@ -1,13 +1,11 @@
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM kvm
+> +
+>  #if !defined(_TRACE_KVM_H) || defined(TRACE_HEADER_MULTI_READ)
+>  #define _TRACE_KVM_H
+>  
+>  #include <linux/tracepoint.h>
+>  
+> -#undef TRACE_SYSTEM
+> -#define TRACE_SYSTEM kvm
+> -#define TRACE_INCLUDE_PATH .
+> -#define TRACE_INCLUDE_FILE trace
+> -
+>  /*
+>   * Tracepoint for guest mode entry.
+>   */
+> @@ -100,5 +98,10 @@ TRACE_EVENT(kvm_gtlb_write,
+>  
+>  #endif /* _TRACE_KVM_H */
+>  
+> +#undef TRACE_INCLUDE_PATH
+> +#undef TRACE_INCLUDE_FILE
+> +#define TRACE_INCLUDE_PATH .
+> +#define TRACE_INCLUDE_FILE trace
+> +
+>  /* This part must be outside protection */
+>  #include <trace/define_trace.h>
+> diff --git a/arch/powerpc/platforms/cell/spufs/sputrace.h b/arch/powerpc/platforms/cell/spufs/sputrace.h
+> index db2656a..12a469a 100644
+> --- a/arch/powerpc/platforms/cell/spufs/sputrace.h
+> +++ b/arch/powerpc/platforms/cell/spufs/sputrace.h
+> @@ -1,11 +1,11 @@
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM spufs
+> +
+>  #if !defined(_TRACE_SPUFS_H) || defined(TRACE_HEADER_MULTI_READ)
+>  #define _TRACE_SPUFS_H
+>  
+>  #include <linux/tracepoint.h>
+>  
+> -#undef TRACE_SYSTEM
+> -#define TRACE_SYSTEM spufs
+> -
+>  TRACE_EVENT(spufs_context,
+>  	TP_PROTO(struct spu_context *ctx, struct spu *spu, const char *name),
+>  	TP_ARGS(ctx, spu, name),
+> @@ -34,6 +34,7 @@ TRACE_EVENT(spufs_context,
+>  #endif /* _TRACE_SPUFS_H */
+>  
+>  #undef TRACE_INCLUDE_PATH
+> +#undef TRACE_INCLUDE_FILE
+>  #define TRACE_INCLUDE_PATH .
+>  #define TRACE_INCLUDE_FILE sputrace
+>  #include <trace/define_trace.h>
+> 
+
+
