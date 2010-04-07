@@ -1,81 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751218Ab0DGEF0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 00:05:26 -0400
-Received: from mail-ew0-f222.google.com ([209.85.219.222]:61995 "EHLO
-	mail-ew0-f222.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750696Ab0DGEFU convert rfc822-to-8bit (ORCPT
+	id S1751281Ab0DGEGR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 00:06:17 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:35681 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750696Ab0DGEGJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 00:05:20 -0400
+	Wed, 7 Apr 2010 00:06:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=SLPXweTO8UWpeMGbMGU50TugRaf5PoG5itfyoXB6fqVCrwYK7mnSprKisf3jfY4gX5
-         M2v9iMfgRtcShRve+eTEdO3OU5ZvHpoSrRBaaPUCJHSCQYflBwhbJ5T8RB7gVAPCAO8K
-         m0VmRhgJrcbZfuFBqEtubGhgtR7DUbdJ5Ocbk=
+         :cc:content-type:content-transfer-encoding;
+        b=d+lD8OA7QlBc8rlr0jUKWs+27s2StSky1gk2Db/Grs8Fk3sJCKcirHIzSoM6m0dGOl
+         gp/6m4CzJvZlfEXDXdu7+VcyfrntaLud4zRBUGoyW16LaSB3x7vKk/yHJPEEiE0uReBn
+         ppPz6RnGiKGemSdlW1gg0z+sX0vbdBH45tlJs=
 MIME-Version: 1.0
-In-Reply-To: <p2r9c2470ce1004062104ra6b9c662uf303fb1b9e82cd6@mail.gmail.com>
-References: <p2r9c2470ce1004062104ra6b9c662uf303fb1b9e82cd6@mail.gmail.com>
-Date: Wed, 7 Apr 2010 06:05:18 +0200
-Message-ID: <x2t9c2470ce1004062105g83a050d0gc2269e4a8af7ae05@mail.gmail.com>
-Subject: Re: [PATCH] build error drivers/staging/dt3155/dt3155_drv.c
-From: Jan III Sobieski <jan3sobi3ski@gmail.com>
-To: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
-Content-Type: text/plain; charset=ISO-8859-2
+In-Reply-To: <4BBBF402.70403@mozilla.com>
+References: <4BBA6776.5060804@mozilla.com> <20100406095135.GB5183@cmpxchg.org>
+	 <20100407022456.GA9468@localhost> <4BBBF402.70403@mozilla.com>
+Date: Wed, 7 Apr 2010 13:06:07 +0900
+Message-ID: <u2p28c262361004062106neea0a64ax2ee0d1e1caf7fce5@mail.gmail.com>
+Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Taras Glek <tglek@mozilla.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+       Johannes Weiner <hannes@cmpxchg.org>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 7 kwietnia 2010 06:04 u¿ytkownik Jan III Sobieski
-<jan3sobi3ski@gmail.com> napisa³:
-> Hi,
+On Wed, Apr 7, 2010 at 11:54 AM, Taras Glek <tglek@mozilla.com> wrote:
+> On 04/06/2010 07:24 PM, Wu Fengguang wrote:
+>>
+>> Hi Taras,
+>>
+>> On Tue, Apr 06, 2010 at 05:51:35PM +0800, Johannes Weiner wrote:
+>>
+>>>
+>>> On Mon, Apr 05, 2010 at 03:43:02PM -0700, Taras Glek wrote:
+>>>
+>>>>
+>>>> Hello,
+>>>> I am working on improving Mozilla startup times. It turns out that page
+>>>> faults(caused by lack of cooperation between user/kernelspace) are the
+>>>> main cause of slow startup. I need some insights from someone who
+>>>> understands linux vm behavior.
+>>>>
+>>
+>> How about improve Fedora (and other distros) to preload Mozilla (and
+>> other apps the user run at the previous boot) with fadvise() at boot
+>> time? This sounds like the most reasonable option.
+>>
 >
->  CC      drivers/staging/dt3155/dt3155_drv.o
-> drivers/staging/dt3155/dt3155_drv.c: In function 'init_module':
-> drivers/staging/dt3155/dt3155_drv.c:1047: error: implicit declaration
-> of function 'request_irq'
-> drivers/staging/dt3155/dt3155_drv.c:1048: error: 'IRQF_SHARED'
-> undeclared (first use in this function)
-> drivers/staging/dt3155/dt3155_drv.c:1048: error: (Each undeclared
-> identifier is reported only once
-> drivers/staging/dt3155/dt3155_drv.c:1048: error: for each function it
-> appears in.)
-> drivers/staging/dt3155/dt3155_drv.c:1048: error: 'IRQF_DISABLED'
-> undeclared (first use in this function)
-> drivers/staging/dt3155/dt3155_drv.c: In function 'cleanup_module':
-> drivers/staging/dt3155/dt3155_drv.c:1091: error: implicit declaration
-> of function 'free_irq'
-> make[3]: *** [drivers/staging/dt3155/dt3155_drv.o] B³±d 1
-> make[2]: *** [drivers/staging/dt3155] B³±d 2
-> make[1]: *** [drivers/staging] B³±d 2
-> make: *** [drivers] B³±d 2
+> That's a slightly different usecase. I'd rather have all large apps startup
+> as efficiently as possible without any hacks. Though until we get there,
+> we'll be using all of the hacks we can.
+>>
+>> As for the kernel readahead, I have a patchset to increase default
+>> mmap read-around size from 128kb to 512kb (except for small memory
+>> systems). Â This should help your case as well.
+>>
+>
+> Yes. Is the current readahead really doing read-around(ie does it read pages
+> before the one being faulted)? From what I've seen, having the dynamic
+> linker read binary sections backwards causes faults.
+> http://sourceware.org/bugzilla/show_bug.cgi?id=11447
+>>
+>>
+>>>>
+>>>> Current Situation:
+>>>> The dynamic linker mmap()s Â executable and data sections of our
+>>>> executable but it doesn't call madvise().
+>>>> By default page faults trigger 131072byte reads. To make matters worse,
+>>>> the compile-time linker + gcc lay out code in a manner that does not
+>>>> correspond to how the resulting executable will be executed(ie the
+>>>> layout is basically random). This means that during startup 15-40mb
+>>>> binaries are read in basically random fashion. Even if one orders the
+>>>> binary optimally, throughput is still suboptimal due to the puny
+>>>> readahead.
+>>>>
+>>>> IO Hints:
+>>>> Fortunately when one specifies madvise(WILLNEED) pagefaults trigger 2mb
+>>>> reads and a binary that tends to take 110 page faults(ie program stops
+>>>> execution and waits for disk) can be reduced down to 6. This has the
+>>>> potential to double application startup of large apps without any clear
+>>>> downsides.
+>>>>
+>>>> Suse ships their glibc with a dynamic linker patch to fadvise()
+>>>> dynamic libraries(not sure why they switched from doing madvise
+>>>> before).
+>>>>
+>>
+>> This is interesting. I wonder how SuSE implements the policy.
+>> Do you have the patch or some strace output that demonstrates the
+>> fadvise() call?
+>>
+>
+> glibc-2.3.90-ld.so-madvise.diff in
+> http://www.rpmseek.com/rpm/glibc-2.4-31.12.3.src.html?hl=com&cba=0:G:0:3732595:0:15:0:
+>
+> As I recall they just fadvise the filedescriptor before accessing it.
+>>
+>>
+>>>>
+>>>> I filed a glibc bug about this at
+>>>> http://sourceware.org/bugzilla/show_bug.cgi?id=11431 . Uli commented
+>>>> with his concern about wasting memory resources. What is the impact of
+>>>> madvise(WILLNEED) or the fadvise equivalent on systems under memory
+>>>> pressure? Does the kernel simply start ignoring these hints?
+>>>>
+>>>
+>>> It will throttle based on memory pressure. Â In idle situations it will
+>>> eat your file cache, however, to satisfy the request.
+>>>
+>>> Now, the file cache should be much bigger than the amount of unneeded
+>>> pages you prefault with the hint over the whole library, so I guess the
+>>> benefit of prefaulting the right pages outweighs the downside of evicting
+>>> some cache for unused library pages.
+>>>
+>>> Still, it's a workaround for deficits in the demand-paging/readahead
+>>> heuristics and thus a bit ugly, I feel. Â Maybe Wu can help.
+>>>
+>>
+>> Program page faults are inherently random, so the straightforward
+>> solution would be to increase the mmap read-around size (for desktops
+>> with reasonable large memory), rather than to improve program layout
+>> or readahead heuristics :)
+>>
+>
+> Program page faults may exhibit random behavior once they've started.
+>
+> During startup page-in pattern of over-engineered OO applications is very
+> predictable. Programs are laid out based on compilation units, which have no
+> relation to how they are executed. Another problem is that any large old
+> application will have lots of code that is either rarely executed or
+> completely dead. Random sprinkling of live code among mostly unneeded code
+> is a problem.
+> I'm able to reduce startup pagefaults by 2.5x and mem usage by a few MB with
+> proper binary layout. Even if one lays out a program wrongly, the worst-case
+> pagein pattern will be pretty similar to what it is by default.
+>
+> But yes, I completely agree that it would be awesome to increase the
+> readahead size proportionally to available memory. It's a little silly to be
+> reading tens of megabytes in 128kb increments :) Â You rock for trying to
+> modernize this.
 
-BTW. Kernel 2.6.34-rc3-git6
+Hi, Wu and Taras.
 
->
->
-> --
-> Jan III Sobieski
->
-> Signed-off-by: Jan III Sobieski <jan3sobi3ski@gmail.com>
->
-> --- linux-2.6-git/drivers/staging/dt3155/dt3155_drv.c   2010-03-27
-> 22:34:58.000000000 +0100
-> +++ linux-2.6/drivers/staging/dt3155/dt3155_drv.c       2010-04-07
-> 05:54:07.000000000 +0200
-> @@ -74,6 +74,7 @@ MODULE_LICENSE("GPL");
->  #include <linux/types.h>
->  #include <linux/poll.h>
->  #include <linux/sched.h>
-> +#include <linux/interrupt.h>
->
->  #include <asm/io.h>
->  #include <asm/uaccess.h>
->
+I have been watched at this thread.
+That's because I had a experience on reducing startup latency of application
+in embedded system.
 
+I think sometime increasing of readahead size wouldn't good in embedded.
+Many of embedded system has nand as storage and compression file system.
+About nand, as you know, random read effect isn't rather big than hdd.
+About compression file system, as one has a big compression,
+it would make startup late(big block read and decompression).
+We had to disable readahead of code page with kernel hacking.
+And it would make application slow as time goes by.
+But at that time we thought latency is more important than performance
+on our application.
 
+Of course, it is different whenever what is file system and
+compression ratio we use .
+So I think increasing of readahead size might always be not good.
+
+Please, consider embedded system when you have a plan to tweak
+readahead, too. :)
 
 -- 
-Jan III Sobieski
+Kind regards,
+Minchan Kim
