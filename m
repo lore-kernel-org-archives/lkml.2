@@ -1,76 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932653Ab0DGO3U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 10:29:20 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:34868 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932574Ab0DGO3S (ORCPT
+	id S932667Ab0DGOc7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 10:32:59 -0400
+Received: from exprod5og109.obsmtp.com ([64.18.0.188]:34307 "EHLO
+	exprod5og109.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932574Ab0DGOc6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 10:29:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :x-operating-system:user-agent;
-        b=xRZIdmAWbP2ICeTwSZgbYLq01KV0XnLSAhBm/c8wIaa9P0OzHKckOGnNEY23iFloVt
-         GNWYvAqhhZnmaxcHaSeetb8udeaLxFgN+7aY8TnDUzIeatsqJmeptQzTG2Tw3QoijRWz
-         AseBIzQ7qarIJpTk0SH2cESILjde+bNjLq7Sk=
-Date: Wed, 7 Apr 2010 22:20:58 +0800
-From: Li Hong <lihong.hi@gmail.com>
-To: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
-       linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] nilfs2: add a print message after loading nilfs2
-Message-ID: <20100407142058.GA27224@xhl>
-Mail-Followup-To: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
-	linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20100405173402.GA22644@xhl>
- <20100405173534.GB22644@xhl>
+	Wed, 7 Apr 2010 10:32:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100405173534.GB22644@xhl>
-X-Operating-System: Linux xhl 2.6.31-14-generic
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <u2i5f4a33681004051824n7c9e70f9pe532c260cb9c7fd2@mail.gmail.com>
+References: <k2s4810ea571004020021hade8123mb571b803b8472aef@mail.gmail.com>
+	 <u2i5f4a33681004051824n7c9e70f9pe532c260cb9c7fd2@mail.gmail.com>
+Date: Wed, 7 Apr 2010 22:32:55 +0800
+Message-ID: <y2g5f4a33681004070732pea50dd2cid6c1de95cbbac3c4@mail.gmail.com>
+Subject: Re: [PATCH] Fix missing of last user while dumping slab corruption 
+	log
+From: TAO HU <tghk48@motorola.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: linux-kernel@vger.kernel.org, cl@linux-foundation.org, mpm@selenic.com,
+       linux-mm@kvack.org, ShiYong LI <shi-yong.li@motorola.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi KONISHI Ryusuke,
+Hi, Pekka Enberg
 
-Any feedbacks on these patches?
+Can we assume you have no objection for this patch? :)
 
-Thanks,
-Li Hong
-On Tue, Apr 06, 2010 at 01:35:34AM +0800, Li Hong wrote:
-> From b4e426f77cd05bd6046c1fa67c51ee06368ea23e Mon Sep 17 00:00:00 2001
-> From: Li Hong <lihong.hi@gmail.com>
-> Date: Tue, 6 Apr 2010 01:23:04 +0800
-> Subject: [PATCH] nilfs2: add a print message after loading nilfs2
-> 
-> 
-> Signed-off-by: Li Hong <lihong.hi@gmail.com>
-> ---
->  fs/nilfs2/super.c |    7 ++++++-
->  1 files changed, 6 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/nilfs2/super.c b/fs/nilfs2/super.c
-> index 2e767bc..9f91765 100644
-> --- a/fs/nilfs2/super.c
-> +++ b/fs/nilfs2/super.c
-> @@ -1186,7 +1186,12 @@ static int __init init_nilfs_fs(void)
->  		return err;
->  
->  	err = register_filesystem(&nilfs_fs_type);
-> -	return err;
-> +	if (err)
-> +		return err;
-> +
-> +	printk(KERN_INFO "nilfs2 file system loaded!\n");
-> +	return 0;
-> +
->  }
->  
->  static void __exit exit_nilfs_fs(void)
-> -- 
-> 1.6.3.3
-> 
+-- 
+Best Regards
+Hu Tao
+
+On Tue, Apr 6, 2010 at 9:24 AM, TAO HU <tghk48@motorola.com> wrote:
+> Hi, Pekka Enberg
+>
+> This is the updated version with format fix and comments refinement.
+> Let us know whether you still have comments.
+>
+> --
+> Best Regards
+> Hu Tao
+>
+> On Fri, Apr 2, 2010 at 3:21 PM, ShiYong LI <shi-yong.li@motorola.com> wrote:
+>> Hi,
+>>
+>> Even with SLAB_RED_ZONE and SLAB_STORE_USER enabled, kernel would NOT
+>> store redzone and last user data around allocated memory space if arch
+>> cache line > sizeof(unsigned long long). As a result, last user information
+>> is unexpectedly MISSED while dumping slab corruption log.
+>>
+>> This patch makes sure that redzone and last user tags get stored whatever
+>> arch cache line.
+>>
+>> Compared to original codes, the change surely affects head redzone (redzone1).
+>> Actually, with SLAB_RED_ZONE and SLAB_STORE_USER enabled,
+>> allocated memory layout is as below:
+>>
+>> [ redzone1 ]   <--------- Affected area.
+>> [ real object space ]
+>> [ redzone2 ]
+>> [ last user ]
+>> [ ... ]
+>>
+>> Let's do some analysis: (whatever SLAB_STORE_USER is).
+>>
+>> 1) With SLAB_RED_ZONE on, "align" >= sizeof(unsigned long long) according to
+>>    the following codes:
+>>        /* 2) arch mandated alignment */
+>>        if (ralign < ARCH_SLAB_MINALIGN) {
+>>                ralign = ARCH_SLAB_MINALIGN;
+>>        }
+>>        /* 3) caller mandated alignment */
+>>        if (ralign < align) {
+>>                ralign = align;
+>>        }
+>>        ...
+>>        /*
+>>         * 4) Store it.
+>>         */
+>>        align = ralign;
+>>
+>>    That's to say, could guarantee that redzone1 does NOT get broken
+>> at all. Meanwhile,
+>>    Real object space could meet the need of cache line size by using
+>> "align"  argument.
+>>
+>> 2) With SLAB_RED_ZONE off, the change has no impact.
+>>
+>>
+>> From 03b28964311090533643acd267abe0cbc3c9b0a5 Mon Sep 17 00:00:00 2001
+>> From: Shiyong Li <shi-yong.li@motorola.com>
+>> Date: Fri, 2 Apr 2010 14:50:30 +0800
+>> Subject: [PATCH] Fix missing of last user info while getting
+>> DEBUG_SLAB config enabled.
+>>
+>> Even with SLAB_RED_ZONE and SLAB_STORE_USER enabled, kernel would NOT
+>> store redzone and last user data around allocated memory space if arch
+>> cache line > sizeof(unsigned long long). As a result, last user information
+>> is unexpectedly MISSED while dumping slab corruption log.
+>>
+>> This fix makes sure that redzone and last user tags get stored whatever
+>> cache line.
+>>
+>> Signed-off-by: Shiyong Li <shi-yong.li@motorola.com>
+>> ---
+>>  mm/slab.c |    7 ++-----
+>>  1 files changed, 2 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/mm/slab.c b/mm/slab.c
+>> index a8a38ca..84af997 100644
+>> --- a/mm/slab.c
+>> +++ b/mm/slab.c
+>> @@ -2267,9 +2267,6 @@ kmem_cache_create (const char *name, size_t
+>> size, size_t align,
+>>        if (ralign < align) {
+>>                ralign = align;
+>>        }
+>> -       /* disable debug if necessary */
+>> -       if (ralign > __alignof__(unsigned long long))
+>> -               flags &= ~(SLAB_RED_ZONE | SLAB_STORE_USER);
+>>        /*
+>>         * 4) Store it.
+>>         */
+>> @@ -2289,8 +2286,8 @@ kmem_cache_create (const char *name, size_t
+>> size, size_t align,
+>>         */
+>>        if (flags & SLAB_RED_ZONE) {
+>>                /* add space for red zone words */
+>> -               cachep->obj_offset += sizeof(unsigned long long);
+>> -               size += 2 * sizeof(unsigned long long);
+>> +               cachep->obj_offset += align;
+>> +               size += align + sizeof(unsigned long long);
+>>        }
+>>        if (flags & SLAB_STORE_USER) {
+>>                /* user store requires one word storage behind the end of
+>> --
+>> 1.6.0.4
+>>
+>>
+>> Thanks & Best Regards
+>> Shiyong
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>
+>
