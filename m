@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500Ab0DGHQe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 03:16:34 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:50324 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932071Ab0DGHQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 03:16:27 -0400
-Date: Wed, 7 Apr 2010 17:16:20 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Risto Suominen <Risto.Suominen@gmail.com>
-Subject: Re: linux-next: build failure after merge of the sound tree
-Message-Id: <20100407171620.59de8d51.sfr@canb.auug.org.au>
-In-Reply-To: <s5hzl1fdcfe.wl%tiwai@suse.de>
-References: <20100407133919.94b44bf1.sfr@canb.auug.org.au>
-	<s5hzl1fdcfe.wl%tiwai@suse.de>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
+	id S932510Ab0DGHSv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 03:18:51 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33439
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932452Ab0DGHSq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 03:18:46 -0400
+Date: Wed, 07 Apr 2010 00:18:48 -0700 (PDT)
+Message-Id: <20100407.001848.257489037.davem@davemloft.net>
+To: kosaki.motohiro@jp.fujitsu.com
+Cc: benh@kernel.crashing.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: Arch specific mmap attributes
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100407161203.FB81.A69D9226@jp.fujitsu.com>
+References: <20100407095145.FB70.A69D9226@jp.fujitsu.com>
+	<20100407.000343.181989028.davem@davemloft.net>
+	<20100407161203.FB81.A69D9226@jp.fujitsu.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__7_Apr_2010_17_16_20_+1000_vi0ZDkaAhr2cZ5sL"
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__7_Apr_2010_17_16_20_+1000_vi0ZDkaAhr2cZ5sL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Wed,  7 Apr 2010 16:14:29 +0900 (JST)
 
-Hi Takashi,
+>> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> Date: Wed,  7 Apr 2010 15:03:45 +0900 (JST)
+>> 
+>> > I'm not against changing kernel internal. I only disagree mmu
+>> > attribute fashion will be become used widely.
+>> 
+>> Desktop already uses similar features via PCI mmap
+>> attributes and such, not to mention MSR settings on
+>> x86.
+> 
+> Probably I haven't catch your mention. Why userland process
+> need to change PCI mmap attribute by mmap(2)? It seems kernel issue.
 
-On Wed, 07 Apr 2010 08:06:13 +0200 Takashi Iwai <tiwai@suse.de> wrote:
->
-> Fixed now.  Thanks.
+It uses PCI specific fd ioctls to change the attributes.
 
-OK, thanks.
+It's the same thing as extending the mmap() attribute space, but in a
+device specific way.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+I think evice and platform specific mmap() attributes are basically
+inevitable, at any level, embedded or desktop or whatever.  The
+fact that we've hacked around the issue with device specific
+interfaces like the PCI device ioctls, is no excuse to not
+tackle the issue directly and come up with something usable.
 
---Signature=_Wed__7_Apr_2010_17_16_20_+1000_vi0ZDkaAhr2cZ5sL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAku8MUQACgkQjjKRsyhoI8yCeACdF2FK/MeTw+m4CtxR2t62Qat4
-9n8AnAqRkVgjZpq0qljeYrWZpWAWvK3L
-=5+HQ
------END PGP SIGNATURE-----
-
---Signature=_Wed__7_Apr_2010_17_16_20_+1000_vi0ZDkaAhr2cZ5sL--
