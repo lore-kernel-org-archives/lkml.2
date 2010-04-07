@@ -1,30 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757938Ab0DGMt3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 08:49:29 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:30320 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757815Ab0DGMsH (ORCPT
+	id S1757973Ab0DGMtm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 08:49:42 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:14514
+	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932539Ab0DGMsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 Apr 2010 08:48:07 -0400
 X-SpamScore: 1
-X-BigFish: VPS1(zzab9bhzz1202hzzz32i6bh2a8h87h43h63h)
-X-Spam-TCS-SCL: 2:0
+X-BigFish: VPS1(zzab9bhzz1202hzzz32i6bh87h2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
 X-FB-SS: 5,
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L0IBJT-01-9UR-02
+X-WSS-ID: 0L0IBJN-01-9UD-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Ingo Molnar <mingo@redhat.com>
 CC: x86@kernel.org, iommu@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 12/12] x86/gart: Disable GART explicitly before initialization
-Date: Wed, 7 Apr 2010 14:46:49 +0200
-Message-ID: <1270644409-10123-13-git-send-email-joerg.roedel@amd.com>
+       linux-kernel@vger.kernel.org, Chris Wright <chrisw@sous-sol.org>,
+       stable@kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
+       Eric Biederman <ebiederm@xmission.com>,
+       Neil Horman <nhorman@tuxdriver.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: [PATCH 08/12] Revert "x86: disable IOMMUs on kernel crash"
+Date: Wed, 7 Apr 2010 14:46:45 +0200
+Message-ID: <1270644409-10123-9-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1270644409-10123-1-git-send-email-joerg.roedel@amd.com>
 References: <1270644409-10123-1-git-send-email-joerg.roedel@amd.com>
-X-OriginalArrivalTime: 07 Apr 2010 12:46:56.0164 (UTC) FILETIME=[67DB6640:01CAD650]
+X-OriginalArrivalTime: 07 Apr 2010 12:46:56.0054 (UTC) FILETIME=[67CA9D60:01CAD650]
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Reverse-DNS: unknown
@@ -32,65 +35,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we boot into a crash-kernel the gart might still be
-enabled and its caches might be dirty. This can result in
-undefined behavior later. Fix it by explicitly disabling the
-gart hardware before initialization and flushing the caches
-after enablement.
+From: Chris Wright <chrisw@sous-sol.org>
 
+This effectively reverts commit 61d047be99757fd9b0af900d7abce9a13a337488.
+
+Disabling the IOMMU can potetially allow DMA transactions to
+complete without being translated.  Leave it enabled, and allow
+crash kernel to do the IOMMU reinitialization properly.
+
+Cc: stable@kernel.org
+Cc: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Eric Biederman <ebiederm@xmission.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Chris Wright <chrisw@sous-sol.org>
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/kernel/aperture_64.c |   15 ++++++++++++++-
- arch/x86/kernel/pci-gart_64.c |    3 +++
- 2 files changed, 17 insertions(+), 1 deletions(-)
+ arch/x86/kernel/crash.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
-index 3704997..b5d8b0b 100644
---- a/arch/x86/kernel/aperture_64.c
-+++ b/arch/x86/kernel/aperture_64.c
-@@ -393,6 +393,7 @@ void __init gart_iommu_hole_init(void)
- 	for (i = 0; i < ARRAY_SIZE(bus_dev_ranges); i++) {
- 		int bus;
- 		int dev_base, dev_limit;
-+		u32 ctl;
+diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
+index a4849c1..ebd4c51 100644
+--- a/arch/x86/kernel/crash.c
++++ b/arch/x86/kernel/crash.c
+@@ -27,7 +27,6 @@
+ #include <asm/cpu.h>
+ #include <asm/reboot.h>
+ #include <asm/virtext.h>
+-#include <asm/x86_init.h>
  
- 		bus = bus_dev_ranges[i].bus;
- 		dev_base = bus_dev_ranges[i].dev_base;
-@@ -406,7 +407,19 @@ void __init gart_iommu_hole_init(void)
- 			gart_iommu_aperture = 1;
- 			x86_init.iommu.iommu_init = gart_iommu_init;
+ #if defined(CONFIG_SMP) && defined(CONFIG_X86_LOCAL_APIC)
  
--			aper_order = (read_pci_config(bus, slot, 3, AMD64_GARTAPERTURECTL) >> 1) & 7;
-+			ctl = read_pci_config(bus, slot, 3,
-+					      AMD64_GARTAPERTURECTL);
-+
-+			/*
-+			 * Before we do anything else disable the GART. It may
-+			 * still be enabled if we boot into a crash-kernel here.
-+			 * Reconfiguring the GART while it is enabled could have
-+			 * unknown side-effects.
-+			 */
-+			ctl &= ~GARTEN;
-+			write_pci_config(bus, slot, 3, AMD64_GARTAPERTURECTL, ctl);
-+
-+			aper_order = (ctl >> 1) & 7;
- 			aper_size = (32 * 1024 * 1024) << aper_order;
- 			aper_base = read_pci_config(bus, slot, 3, AMD64_GARTAPERTUREBASE) & 0x7fff;
- 			aper_base <<= 25;
-diff --git a/arch/x86/kernel/pci-gart_64.c b/arch/x86/kernel/pci-gart_64.c
-index f3af115..0ae24d9 100644
---- a/arch/x86/kernel/pci-gart_64.c
-+++ b/arch/x86/kernel/pci-gart_64.c
-@@ -564,6 +564,9 @@ static void enable_gart_translations(void)
- 
- 		enable_gart_translation(dev, __pa(agp_gatt_table));
- 	}
-+
-+	/* Flush the GART-TLB to remove stale entries */
-+	k8_flush_garts();
+@@ -103,10 +102,5 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
+ #ifdef CONFIG_HPET_TIMER
+ 	hpet_disable();
+ #endif
+-
+-#ifdef CONFIG_X86_64
+-	x86_platform.iommu_shutdown();
+-#endif
+-
+ 	crash_save_cpu(regs, safe_smp_processor_id());
  }
- 
- /*
 -- 
 1.7.0.4
 
