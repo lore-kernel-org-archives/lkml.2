@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932766Ab0DGQ4q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 12:56:46 -0400
-Received: from mail-yx0-f171.google.com ([209.85.210.171]:51774 "EHLO
-	mail-yx0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758118Ab0DGQ4f (ORCPT
+	id S1758187Ab0DGRAN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 13:00:13 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:35493 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758103Ab0DGRAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 12:56:35 -0400
-X-Greylist: delayed 1339 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Apr 2010 12:56:34 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=GEDvwxC3+Lyv3DLS5g/wRl7JeJetsVhU9zF8qdtP8eTLI7S52jVE7V0SAdDI47ebSk
-         H9AgqkSxesNcQfxCHe23TAbywKSEEWZqvNmgegizPi1EP3PADEmnjfFSrevtj2cSM4hV
-         94l02nMpC1CmunWG1d6aq22bk8vYZ+A3C8o8Q=
+	Wed, 7 Apr 2010 13:00:10 -0400
+Date: Wed, 7 Apr 2010 19:00:01 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+       Pedro Ribeiro <pedrib@gmail.com>, akpm@linux-foundation.org,
+       Greg KH <gregkh@suse.de>, alsa-devel@alsa-project.org,
+       linux-usb@vger.kernel.org
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+Message-ID: <20100407170001.GM30801@buzzloop.caiaq.de>
+References: <Pine.LNX.4.44L0.1004071036060.1779-100000@iolanthe.rowland.org>
+ <201004071854.55530.oliver@neukum.org>
 MIME-Version: 1.0
-In-Reply-To: <20100407152254.GQ23670@thunk.org>
-References: <j2oac8f92701004070651xf35cfb9bsedcdd25169427515@mail.gmail.com>
-	 <20100407152254.GQ23670@thunk.org>
-Date: Thu, 8 Apr 2010 00:56:30 +0800
-Message-ID: <g2xac8f92701004070956j9b70ec83x215f444b21650949@mail.gmail.com>
-Subject: Re: [PATCH] ext4: BUG_ON could be triggered in ext4_mb_normalize_request()
-From: jing zhang <zj.barak@gmail.com>
-To: tytso@mit.edu
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004071854.55530.oliver@neukum.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/4/7, tytso@mit.edu <tytso@mit.edu>:
-> On Wed, Apr 07, 2010 at 09:51:46PM +0800, jing zhang wrote:
->> From: Jing Zhang <zj.barak@gmail.com>
->>
->> Date: Wed Apr 7 21:34:48     2010
->>
->> BUG_ON at [line: 2912] could be triggered,
->>      if (pa->pa_deleted == 0 && pa->pa_free == 0)
->> as checked at [line: 3111] and [line: 3122].
->
-> Please don't use line numbers, as line numbers may not be the same in
-> your version and my version.  Secondly, please give a high-level
-> scenario where this could happen.
->
-> 					- Ted
->
+On Wed, Apr 07, 2010 at 06:54:55PM +0200, Oliver Neukum wrote:
+> Am Mittwoch, 7. April 2010 16:59:47 schrieb Alan Stern:
+> > > The fix is to use usb_buffer_alloc() for that purpose which ensures
+> > > memory that is suitable for DMA. And on x86_64, this also means that the
+> > > upper 32 bits of the address returned are all 0's.
+> > 
+> > That is not a good fix.  usb_buffer_alloc() provides coherent memory, 
+> > which is not what we want.  I believe the correct fix is to specify the 
+> > GFP_DMA32 flag in the kzalloc() call.
+> > 
+> > Of course, some EHCI hardware is capable of using 64-bit addresses.  
+> > But not all, and other controller types aren't.  In principle we could
+> > create a new allocation routine, which would take a pointer to the USB
+> > bus as an additional argument and use it to decide whether the memory 
+> > needs to lie below 4 GB.  I'm not sure adding this extra complexity 
+> > would be worthwhile.
+> 
+> What about XHCI? Do you really want to limit it to 32bits?
 
-My duty is not over, and I think, more check seems necessary.
+No. Once we have the abstraction functions, we can well decide what to
+do in there, depending on the actual controller we're running on.
 
-          - zj
+Daniel
+
