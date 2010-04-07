@@ -1,111 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726Ab0DGCZH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 22:25:07 -0400
-Received: from mga11.intel.com ([192.55.52.93]:11932 "EHLO mga11.intel.com"
+	id S1753862Ab0DGC2y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 22:28:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42159 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751448Ab0DGCY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 22:24:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,376,1267430400"; 
-   d="scan'208";a="555621463"
-Date: Wed, 7 Apr 2010 10:24:56 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Taras Glek <tglek@mozilla.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
-Message-ID: <20100407022456.GA9468@localhost>
-References: <4BBA6776.5060804@mozilla.com> <20100406095135.GB5183@cmpxchg.org>
+	id S1752242Ab0DGC2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 22:28:49 -0400
+Message-ID: <4BBBEEAA.1050100@redhat.com>
+Date: Wed, 07 Apr 2010 10:32:10 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100406095135.GB5183@cmpxchg.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Andy Gospodarek <andy@greyhouse.net>
+CC: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+       netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
+       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+       Jeff Moyer <jmoyer@redhat.com>,
+       Stephen Hemminger <shemminger@linux-foundation.org>,
+       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
+       David Miller <davem@davemloft.net>
+Subject: Re: [v2 Patch 3/3] bonding: make bonding support netpoll
+References: <20100405091605.4890.31181.sendpatchset@localhost.localdomain> <20100405091628.4890.30541.sendpatchset@localhost.localdomain> <20100405194356.GA10488@gospo.rdu.redhat.com> <4BBA9FDB.4040909@redhat.com> <4BBABAB8.4010401@redhat.com> <20100406144824.GB10488@gospo.rdu.redhat.com>
+In-Reply-To: <20100406144824.GB10488@gospo.rdu.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Taras,
-
-On Tue, Apr 06, 2010 at 05:51:35PM +0800, Johannes Weiner wrote:
-> On Mon, Apr 05, 2010 at 03:43:02PM -0700, Taras Glek wrote:
-> > Hello,
-> > I am working on improving Mozilla startup times. It turns out that page 
-> > faults(caused by lack of cooperation between user/kernelspace) are the 
-> > main cause of slow startup. I need some insights from someone who 
-> > understands linux vm behavior.
-
-How about improve Fedora (and other distros) to preload Mozilla (and
-other apps the user run at the previous boot) with fadvise() at boot
-time? This sounds like the most reasonable option.
-
-As for the kernel readahead, I have a patchset to increase default
-mmap read-around size from 128kb to 512kb (except for small memory
-systems).  This should help your case as well.
-
-> > Current Situation:
-> > The dynamic linker mmap()s  executable and data sections of our 
-> > executable but it doesn't call madvise().
-> > By default page faults trigger 131072byte reads. To make matters worse, 
-> > the compile-time linker + gcc lay out code in a manner that does not 
-> > correspond to how the resulting executable will be executed(ie the 
-> > layout is basically random). This means that during startup 15-40mb 
-> > binaries are read in basically random fashion. Even if one orders the 
-> > binary optimally, throughput is still suboptimal due to the puny readahead.
-> > 
-> > IO Hints:
-> > Fortunately when one specifies madvise(WILLNEED) pagefaults trigger 2mb 
-> > reads and a binary that tends to take 110 page faults(ie program stops 
-> > execution and waits for disk) can be reduced down to 6. This has the 
-> > potential to double application startup of large apps without any clear 
-> > downsides.
-> >
-> > Suse ships their glibc with a dynamic linker patch to fadvise()
-> > dynamic libraries(not sure why they switched from doing madvise
-> > before).
-
-This is interesting. I wonder how SuSE implements the policy.
-Do you have the patch or some strace output that demonstrates the
-fadvise() call?
-
-> > I filed a glibc bug about this at 
-> > http://sourceware.org/bugzilla/show_bug.cgi?id=11431 . Uli commented 
-> > with his concern about wasting memory resources. What is the impact of 
-> > madvise(WILLNEED) or the fadvise equivalent on systems under memory 
-> > pressure? Does the kernel simply start ignoring these hints?
+Andy Gospodarek wrote:
+> On Tue, Apr 06, 2010 at 12:38:16PM +0800, Cong Wang wrote:
+>> Cong Wang wrote:
+>>> Before I try to reproduce it, could you please try to replace the  
+>>> 'read_lock()'
+>>> in slaves_support_netpoll() with 'read_lock_bh()'? (read_unlock() too)  
+>>> Try if this helps.
+>>>
+>> Confirmed. Please use the attached patch instead, for your testing.
+>>
+>> Thanks!
+>>
 > 
-> It will throttle based on memory pressure.  In idle situations it will
-> eat your file cache, however, to satisfy the request.
+> Moving those locks to bh-locks will not resolve this.  I tried that
+> yesterday and tried your new patch today without success.  That warning
+> is a WARN_ON_ONCE so you need to reboot to see that it is still a
+> problem.  Simply unloading and loading the new module is not an accurate
+> test.
 > 
-> Now, the file cache should be much bigger than the amount of unneeded
-> pages you prefault with the hint over the whole library, so I guess the
-> benefit of prefaulting the right pages outweighs the downside of evicting
-> some cache for unused library pages.
+> Also, my system still hangs when removing the bonding module.  I do not
+> think you intended to fix this with the patch, but wanted it to be clear
+> to everyone on the list.
+
+
+Actually I did reboot and then tested the module. I didn't get any warning.
+I just tried again today, and no warnings at all.
+
+For removing bonding module, you may need another fix of mine,
+which is to fix a potential deadlock of workqueue. Try:
+
+http://lkml.org/lkml/2010/4/1/58
+
 > 
-> Still, it's a workaround for deficits in the demand-paging/readahead
-> heuristics and thus a bit ugly, I feel.  Maybe Wu can help.
-
-Program page faults are inherently random, so the straightforward
-solution would be to increase the mmap read-around size (for desktops
-with reasonable large memory), rather than to improve program layout
-or readahead heuristics :)
-
-> > Also, once an application is started is it reasonable to keep it 
-> > madvise(WILLNEED)ed or should the madvise flags be reset?
+> You should also configure your kernel with a some of the lock debugging
+> enabled.  I've been using the following:
 > 
-> It's a one-time operation that starts immediate readahead, no permanent
-> changes are done.
+> CONFIG_DETECT_HUNG_TASK=y
+> CONFIG_DEBUG_SPINLOCK=y
+> CONFIG_DEBUG_MUTEXES=y
+> CONFIG_DEBUG_LOCK_ALLOC=y
+> CONFIG_PROVE_LOCKING=y
+> CONFIG_LOCKDEP=y
+> CONFIG_LOCK_STAT=y
+> CONFIG_DEBUG_LOCKDEP=y
 
-Right. The kernel regard WILLNEED as a readahead request from userspace.
 
-> > Perhaps the kernel could monitor the page-in patterns to increase the 
-> > readahead sizes? This may already happen, I've noticed that a handful of 
-> > pagefaults trigger > 131072bytes of IO, perhaps this just needs tweaking.
+Sure, I always keep these.
+
 > 
-> CCd the man :-)
+> Here is the output when I remove a slave from the bond.  My
+> xmit_roundrobin patch from earlier (replacing read_lock with
+> read_trylock) was applied.  It might be helpful for you when debugging
+> these issues.
 
-Thank you :)
 
-Cheers,
-Fengguang
+I don't apply your patch, just tested my patch.
+
+> 
+> Dead loop on virtual device bond0, fix it urgently!
+> 
+
+Please provide your bonding configuration and steps to reproduce it.
+
+What I did is:
+
+1. Load bonding module with "mode=0 miimon=100"
+2. Enslave eth0 and active bond0
+3. Load netconsole and send messages via bond0
+4. Remove eth0 from bond0
+5. Remove bonding module
+6. Remove netconsole module
+
+And no deadlocks, no warnings.
+
+Thanks.
