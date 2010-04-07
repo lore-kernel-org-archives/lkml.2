@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757966Ab0DGN3f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 09:29:35 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:63172 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756943Ab0DGN3b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 09:29:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=mAYjSx2yy7L3aYtgzpRJEaiEBeiYAW5SpVYWsNUKyS1piYe0LIYJg6sT0WHrloXvgj
-         DzWFrFhTe2sEbvWyxZxy85758JeALrjsxFq/LcAQ3Mdv6rzxhCF8f9zkEVe7iDGkCx5J
-         lK3R/7n9VgD7oxAF+phwpkNLNV9IPnXLyYDlo=
-Message-ID: <4BBC88F4.3080406@gmail.com>
-Date: Wed, 07 Apr 2010 06:30:28 -0700
-From: "Justin P. mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	id S1757978Ab0DGNbX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 09:31:23 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:35394 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756943Ab0DGNbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 09:31:21 -0400
+Date: Wed, 7 Apr 2010 15:34:39 +0200
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Herbert Xu <herbert@gondor.apana.org.au>,
+       Henrik Kretzschmar <henne@nachtwindheim.de>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] padata: section cleanup
+Message-ID: <20100407133439.GB10132@secunet.com>
+References: <1269672826-1102-1-git-send-email-henne@nachtwindheim.de>
+ <20100329081550.GA22334@gondor.apana.org.au>
+ <20100331145817.bd0a1a08.akpm@linux-foundation.org>
+ <20100401081126.GC23247@secunet.com>
+ <20100406120015.2ec46ba7@bike.lwn.net>
 MIME-Version: 1.0
-To: =?UTF-8?B?w4Frb3MgTWFyw7N5?= <akos@maroy.hu>
-CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: system does not power off - how to debug?
-References: <4BBC2E3E.40308@maroy.hu> <4BBC30B3.1000209@gmail.com> <4BBC7998.5080106@maroy.hu>
-In-Reply-To: <4BBC7998.5080106@maroy.hu>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100406120015.2ec46ba7@bike.lwn.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 07 Apr 2010 13:31:19.0788 (UTC) FILETIME=[9B802AC0:01CAD656]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2010 05:24 AM, Ákos Maróy wrote:
-> Justin,
->
->> Since this issue seems easily reproducible
->> the best way to find the issue is through
->> a bisect(hardest part is finding the last
->> good kernel),
->> http://www.kernel.org/pub/software/scm/git/docs/user-manual.html
->>
->> hope this helps,
->
-> hm, but wouldn't this assume that there is a kernel version, which
-> actually works?
->
->
-> Akos
->
->
+On Tue, Apr 06, 2010 at 12:00:15PM -0600, Jonathan Corbet wrote:
+> On Thu, 1 Apr 2010 10:11:26 +0200
+> Steffen Klassert <steffen.klassert@secunet.com> wrote:
+> 
+> > I'm about to write some documentation for padata/pcrypt.
+> 
+> I hope that nobody minds if I went ahead and bashed something out?
+> 
+> 	http://lwn.net/SubscriberLink/382257/fe415ce242a12c15/
+> 
+> Comments welcome.  
 
+I think your article reflects patada and it's API as it
+is quite good.
 
-nice!!, so there never was a good kernel version.
-In this case I guess the right question is, is
-what/where is the shutdown mechanism(in the kernel)
-responsible for this and if possible is there already
-some mechanism in place for this machine with this issue
-i.g. I had to add my machines dmi info to reboot.c
-in order for it to reboot properly.
+> I'd be happy to rework it into a Documentation/ file
+> if that would be useful.
+> 
 
-Now keep in mind this could have nothing todo with
-adding some dmi entry, this could somewhere else
-(which the bisect could reveal(hopefully)).
+That would be great! I'd be glad to provide you with further
+information if you need it.
 
-as for debugging I normally use ohci1394_dma=early
-you might be able to catch some strace towards the end
-with this.
+Thanks a lot,
 
-
-Justin P. Mattock
+Steffen
