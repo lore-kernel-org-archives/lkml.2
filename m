@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976Ab0DGXAR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 19:00:17 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:42684 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755825Ab0DGXAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 19:00:13 -0400
-Date: Wed, 7 Apr 2010 16:00:09 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, eric.dumazet@gmail.com
-Subject: Re: [PATCH tip/urgent] rcu: add rcu_access_pointer and
- rcu_dereference_protected
-Message-ID: <20100407230009.GK2481@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100407171342.GF2481@linux.vnet.ibm.com>
- <20100407162620.GA11543@linux.vnet.ibm.com>
- <27310.1270659627@redhat.com>
- <27837.1270660848@redhat.com>
+	id S1756085Ab0DGXFO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 19:05:14 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:24332 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755960Ab0DGXFJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 19:05:09 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Yinghai <yinghai.lu@oracle.com>
+Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well as x86_32
+Date: Wed, 7 Apr 2010 17:05:06 -0600
+User-Agent: KMail/1.9.10
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org,
+       x86@kernel.org, linux-kernel@vger.kernel.org,
+       Andy Isaacson <adi@hexapodia.org>, Thomas Renninger <trenn@suse.de>
+References: <20100407210628.28364.96982.stgit@bob.kio> <4BBD0B0A.3090702@oracle.com>
+In-Reply-To: <4BBD0B0A.3090702@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <27837.1270660848@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <201004071705.07176.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 07, 2010 at 06:20:48PM +0100, David Howells wrote:
-> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+On Wednesday 07 April 2010 04:45:30 pm Yinghai wrote:
+> On 04/07/2010 02:06 PM, Bjorn Helgaas wrote:
+> > 
+> > Currently, we only reserve the legacy VGA area [mem 0xa0000-0xbffff] on
+> > x86_32.  But this legacy area is also used on x86_64, so this patch
+> > reserves it there, too.
+> > 
+> > If we don't reserve it, we may mistakenly move a PCI device to that area,
+> > as we did here:
+> > 
+> >   pci_root PNP0A03:00: host bridge window [mem 0xff980800-0xff980bff]
+> >   pci_root PNP0A03:00: host bridge window [mem 0xff97c000-0xff97ffff]
+> >   pci 0000:00:1f.2: no compatible bridge window for [mem 0xff970000-0xff9707ff]
+> >   pci 0000:00:1f.2: BAR 5: assigned [mem 0x000a0000-0x000a07ff]
+> > 
+> > as reported by Andy Isaacson at http://lkml.org/lkml/2010/4/6/375
+> > 
+> > I think the fact that the BAR is not within a host bridge window is a
+> > BIOS defect, and it's now more visible because we have "pci=use_crs" as
+> > the default.  Using "pci=nocrs" is a workaround, because then we won't
+> > attempt to move the device.
 > 
-> > In other cases, there will be a reference counter or a "not yet fully
-> > initialized" flag that can (and should) be tested.
+> that doesn't look right.
 > 
-> Why would you be using rcu_access_pointer() there?  Why wouldn't you be using
-> rcu_dereference_protected()?
+> It seem another thread, erission has one model without VGA, and they use that area for other device MMIO.
+> 
+> current for 64bit, We remove [0xa0000, 0x100000) from e820 map if those area is E820_RAM.
+> 
+> in e820_reserve_resources(), kernel will reserve range < 1M according to e820 map.
+> that is before pci BAR is claimed.
+> 
+> or you can add
+> boot_params.screen_info.orig_video_isVGA == 1
+> or double check scan pci tree to see if video is there or not
 
-Excellent question.  I am writing up the documentation now, and will
-either (1) have a good use case or (2) remove the condition.
+I'm sorry, I can't understand what you're saying.
 
-> Also, one other thing:  Should the default versions of these functions make
-> some reference to 'c' to prevent compiler warnings?  Should:
-> 
-> 	#define rcu_dereference_check(p, c)	rcu_dereference_raw(p)
-> 
-> for example, be:
-> 
-> 	#define rcu_dereference_check(p, c)	\
-> 	({					\
-> 		if (1 || !(c))			\
-> 			rcu_dereference_raw(p);	\
-> 	})
-> 
-> I'm not sure it's necessary, but it's possible to envisage a situation where
-> someone calculates something specifically for use in 'c', which will cause an
-> warning from the compiler if c isn't then checked.
+It seems like you're saying we already have a mechanism to keep us
+from assigning that VGA range to another device, but obviously it's
+not working.
 
-I did try this.  The problem is that it breaks the build for non-lockdep
-configurations due to the lockdep-check primitives not being defined.  :-(
+Maybe it will be clearer if you propose a different patch that prevents
+us from assigning 0xa0000 to the USB controller.
 
-							Thanx, Paul
+Bjorn
