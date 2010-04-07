@@ -1,357 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab0DGJyR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 05:54:17 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57312 "EHLO hera.kernel.org"
+	id S1757238Ab0DGJ5B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 05:57:01 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:37991 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751371Ab0DGJyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 05:54:09 -0400
-Message-ID: <4BBC5637.1020604@kernel.org>
-Date: Wed, 07 Apr 2010 18:53:59 +0900
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1753020Ab0DGJ4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 05:56:55 -0400
+Date: Wed, 7 Apr 2010 10:56:36 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 01/14] mm,migration: Take a reference to the anon_vma
+	before migrating
+Message-ID: <20100407095635.GL17882@csn.ul.ie>
+References: <1270224168-14775-1-git-send-email-mel@csn.ul.ie> <1270224168-14775-2-git-send-email-mel@csn.ul.ie> <20100406170520.1e29648c.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Jens Axboe <jens.axboe@oracle.com>, lkml <linux-kernel@vger.kernel.org>,
-       Kay Sievers <kay.sievers@vrfy.org>,
-       Matthias-Christian Ott <ott@mirix.org>
-Subject: [PATCH 2/2] block: implement bd_claiming and claiming block
-References: <4BBC55DD.2010201@kernel.org>
-In-Reply-To: <4BBC55DD.2010201@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 07 Apr 2010 09:54:02 +0000 (UTC)
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100406170520.1e29648c.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, device claiming for exclusive open is done after low level
-open - disk->fops->open() - has completed successfully.  This means
-that exclusive open attempts while a device is already exclusively
-open will fail only after disk->fops->open() is called.
+On Tue, Apr 06, 2010 at 05:05:20PM -0700, Andrew Morton wrote:
+> On Fri,  2 Apr 2010 17:02:35 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
+> 
+> > rmap_walk_anon() does not use page_lock_anon_vma() for looking up and
+> > locking an anon_vma and it does not appear to have sufficient locking to
+> > ensure the anon_vma does not disappear from under it.
+> > 
+> > This patch copies an approach used by KSM to take a reference on the
+> > anon_vma while pages are being migrated. This should prevent rmap_walk()
+> > running into nasty surprises later because anon_vma has been freed.
+> > 
+> 
+> The code didn't exactly bend over backwards making itself easy for
+> others to understand...
+> 
 
-cdrom driver issues commands during open() which means that O_EXCL
-open attempt can unintentionally inject commands to in-progress
-command stream for burning thus disturbing burning process.  In most
-cases, this doesn't cause problems because the first command to be
-issued is TUR which most devices can process in the middle of burning.
-However, depending on how a device replies to TUR during burning,
-cdrom driver may end up issuing further commands.
+anon_vma in general is not perfectly straight-forward. I clarify the
+situation somewhat in Patch 3/14.
 
-This can't be resolved trivially by moving bd_claim() before doing
-actual open() because that means an open attempt which will end up
-failing could interfere other legit O_EXCL open attempts.
-ie. unconfirmed open attempts can fail others.
+> > 
+> > diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+> > index d25bd22..567d43f 100644
+> > --- a/include/linux/rmap.h
+> > +++ b/include/linux/rmap.h
+> > @@ -29,6 +29,9 @@ struct anon_vma {
+> >  #ifdef CONFIG_KSM
+> >  	atomic_t ksm_refcount;
+> >  #endif
+> > +#ifdef CONFIG_MIGRATION
+> > +	atomic_t migrate_refcount;
+> > +#endif
+> 
+> Some documentation here describing the need for this thing and its
+> runtime semantics would be appropriate.
+> 
 
-This patch resolves the problem by introducing claiming block which is
-started by bd_start_claiming() and terminated either by bd_claim() or
-bd_abort_claiming().  bd_claim() from inside a claiming block is
-guaranteed to succeed and once a claiming block is started, other
-bd_start_claiming() or bd_claim() attempts block till the current
-claiming block is terminated.
+Will come to that in Patch 3.
 
-bd_claim() can still be used standalone although now it always
-synchronizes against claiming blocks, so the existing users will keep
-working without any change.
+> >  	/*
+> >  	 * NOTE: the LSB of the head.next is set by
+> >  	 * mm_take_all_locks() _after_ taking the above lock. So the
+> > @@ -81,6 +84,26 @@ static inline int ksm_refcount(struct anon_vma *anon_vma)
+> >  	return 0;
+> >  }
+> >  #endif /* CONFIG_KSM */
+> > +#ifdef CONFIG_MIGRATION
+> > +static inline void migrate_refcount_init(struct anon_vma *anon_vma)
+> > +{
+> > +	atomic_set(&anon_vma->migrate_refcount, 0);
+> > +}
+> > +
+> > +static inline int migrate_refcount(struct anon_vma *anon_vma)
+> > +{
+> > +	return atomic_read(&anon_vma->migrate_refcount);
+> > +}
+> > +#else
+> > +static inline void migrate_refcount_init(struct anon_vma *anon_vma)
+> > +{
+> > +}
+> > +
+> > +static inline int migrate_refcount(struct anon_vma *anon_vma)
+> > +{
+> > +	return 0;
+> > +}
+> > +#endif /* CONFIG_MIGRATE */
+> >  
+> >  static inline struct anon_vma *page_anon_vma(struct page *page)
+> >  {
+> > diff --git a/mm/migrate.c b/mm/migrate.c
+> > index 6903abf..06e6316 100644
+> > --- a/mm/migrate.c
+> > +++ b/mm/migrate.c
+> > @@ -542,6 +542,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+> >  	int rcu_locked = 0;
+> >  	int charge = 0;
+> >  	struct mem_cgroup *mem = NULL;
+> > +	struct anon_vma *anon_vma = NULL;
+> >  
+> >  	if (!newpage)
+> >  		return -ENOMEM;
+> > @@ -598,6 +599,8 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+> >  	if (PageAnon(page)) {
+> >  		rcu_read_lock();
+> >  		rcu_locked = 1;
+> > +		anon_vma = page_anon_vma(page);
+> > +		atomic_inc(&anon_vma->migrate_refcount);
+> 
+> So no helper function for this.  I guess a grep for `migrate_refcount'
+> will find it OK.
+> 
 
-blkdev_open() and open_bdev_exclusive() are converted to use claiming
-blocks so that exclusive open attempts from these functions don't
-interfere with the existing exclusive open.
+It will, again I will expand on this in my response on patch 3.
 
-This problem was discovered while investigating bko#15403.
+> Can this count ever have a value > 1?   I guess so..
+> 
 
-  https://bugzilla.kernel.org/show_bug.cgi?id=15403
+KSM and migration could both conceivably take a refcount.
 
-The burning problem itself can be resolved by updating userspace
-probing tools to always open w/ O_EXCL.
+> >  	}
+> >  
+> >  	/*
+> > @@ -637,6 +640,15 @@ skip_unmap:
+> >  	if (rc)
+> >  		remove_migration_ptes(page, page);
+> >  rcu_unlock:
+> > +
+> > +	/* Drop an anon_vma reference if we took one */
+> > +	if (anon_vma && atomic_dec_and_lock(&anon_vma->migrate_refcount, &anon_vma->lock)) {
+> > +		int empty = list_empty(&anon_vma->head);
+> > +		spin_unlock(&anon_vma->lock);
+> > +		if (empty)
+> > +			anon_vma_free(anon_vma);
+> > +	}
+> > +
+> 
+> So...  Why shouldn't this be testing ksm_refcount() too?
+> 
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Matthias-Christian Ott <ott@mirix.org>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
----
- fs/block_dev.c     |  198 ++++++++++++++++++++++++++++++++++++++++++++++-------
- include/linux/fs.h |    1
- 2 files changed, 175 insertions(+), 24 deletions(-)
+It will in patch 3.
 
-Index: work/include/linux/fs.h
-===================================================================
---- work.orig/include/linux/fs.h
-+++ work/include/linux/fs.h
-@@ -651,6 +651,7 @@ struct block_device {
- 	int			bd_openers;
- 	struct mutex		bd_mutex;	/* open/close mutex */
- 	struct list_head	bd_inodes;
-+	void *			bd_claiming;
- 	void *			bd_holder;
- 	int			bd_holders;
- #ifdef CONFIG_SYSFS
-Index: work/fs/block_dev.c
-===================================================================
---- work.orig/fs/block_dev.c
-+++ work/fs/block_dev.c
-@@ -693,11 +693,144 @@ static bool bd_may_claim(struct block_de
- }
+> Can we consolidate ksm_refcount and migrate_refcount into, err, `refcount'?
+> 
 
- /**
-+ * bd_prepare_to_claim - prepare to claim a block device
-+ * @bdev: block device of interest
-+ * @whole: the whole device containing @bdev, may equal @bdev
-+ * @holder: holder trying to claim @bdev
-+ *
-+ * Prepare to claim @bdev.  This function fails if @bdev is already
-+ * claimed by another holder and waits if another claiming is in
-+ * progress.  This function doesn't actually claim.  On successful
-+ * return, the caller has ownership of bd_claiming and bd_holder[s].
-+ *
-+ * CONTEXT:
-+ * spin_lock(&bdev_lock).  Might release bdev_lock, sleep and regrab
-+ * it multiple times.
-+ *
-+ * RETURNS:
-+ * 0 if @bdev can be claimed, -EBUSY otherwise.
-+ */
-+static int bd_prepare_to_claim(struct block_device *bdev,
-+			       struct block_device *whole, void *holder)
-+{
-+retry:
-+	/* if someone else claimed, fail */
-+	if (!bd_may_claim(bdev, whole, holder))
-+		return -EBUSY;
-+
-+	/* if someone else is claiming, wait for it to finish */
-+	if (whole->bd_claiming && whole->bd_claiming != holder) {
-+		wait_queue_head_t *wq = bit_waitqueue(&whole->bd_claiming, 0);
-+		DEFINE_WAIT(wait);
-+
-+		prepare_to_wait(wq, &wait, TASK_UNINTERRUPTIBLE);
-+		spin_unlock(&bdev_lock);
-+		schedule();
-+		finish_wait(wq, &wait);
-+		spin_lock(&bdev_lock);
-+		goto retry;
-+	}
-+
-+	/* yay, all mine */
-+	return 0;
-+}
-+
-+/**
-+ * bd_start_claiming - start claiming a block device
-+ * @bdev: block device of interest
-+ * @holder: holder trying to claim @bdev
-+ *
-+ * @bdev is about to be opened exclusively.  Check @bdev can be opened
-+ * exclusively and mark that an exclusive open is in progress.  Each
-+ * successful call to this function must be matched with a call to
-+ * either bd_claim() or bd_abort_claiming().  If this function
-+ * succeeds, the matching bd_claim() is guaranteed to succeed.
-+ *
-+ * CONTEXT:
-+ * Might sleep.
-+ *
-+ * RETURNS:
-+ * Pointer to the block device containing @bdev on success, ERR_PTR()
-+ * value on failure.
-+ */
-+static struct block_device *bd_start_claiming(struct block_device *bdev,
-+					      void *holder)
-+{
-+	struct gendisk *disk;
-+	struct block_device *whole;
-+	int partno, err;
-+
-+	might_sleep();
-+
-+	/*
-+	 * @bdev might not have been initialized properly yet, look up
-+	 * and grab the outer block device the hard way.
-+	 */
-+	disk = get_gendisk(bdev->bd_dev, &partno);
-+	if (!disk)
-+		return ERR_PTR(-ENXIO);
-+
-+	whole = bdget_disk(disk, 0);
-+	put_disk(disk);
-+	if (!whole)
-+		return ERR_PTR(-ENOMEM);
-+
-+	/* prepare to claim, if successful, mark claiming in progress */
-+	spin_lock(&bdev_lock);
-+
-+	err = bd_prepare_to_claim(bdev, whole, holder);
-+	if (err == 0) {
-+		whole->bd_claiming = holder;
-+		spin_unlock(&bdev_lock);
-+		return whole;
-+	} else {
-+		spin_unlock(&bdev_lock);
-+		bdput(whole);
-+		return ERR_PTR(err);
-+	}
-+}
-+
-+/* releases bdev_lock */
-+static void __bd_abort_claiming(struct block_device *whole, void *holder)
-+{
-+	BUG_ON(whole->bd_claiming != holder);
-+	whole->bd_claiming = NULL;
-+	wake_up_bit(&whole->bd_claiming, 0);
-+
-+	spin_unlock(&bdev_lock);
-+	bdput(whole);
-+}
-+
-+/**
-+ * bd_abort_claiming - abort claiming a block device
-+ * @whole: whole block device returned by bd_start_claiming()
-+ * @holder: holder trying to claim @bdev
-+ *
-+ * Abort a claiming block started by bd_start_claiming().  Note that
-+ * @whole is not the block device to be claimed but the whole device
-+ * returned by bd_start_claiming().
-+ *
-+ * CONTEXT:
-+ * Grabs and releases bdev_lock.
-+ */
-+static void bd_abort_claiming(struct block_device *whole, void *holder)
-+{
-+	spin_lock(&bdev_lock);
-+	__bd_abort_claiming(whole, holder);		/* releases bdev_lock */
-+}
-+
-+/**
-  * bd_claim - claim a block device
-  * @bdev: block device to claim
-  * @holder: holder trying to claim @bdev
-  *
-- * Try to claim @bdev.
-+ * Try to claim @bdev which must have been opened successfully.  This
-+ * function may be called with or without preceding
-+ * blk_start_claiming().  In the former case, this function is always
-+ * successful and terminates the claiming block.
-+ *
-+ * CONTEXT:
-+ * Might sleep.
-  *
-  * RETURNS:
-  * 0 if successful, -EBUSY if @bdev is already claimed.
-@@ -705,11 +838,14 @@ static bool bd_may_claim(struct block_de
- int bd_claim(struct block_device *bdev, void *holder)
- {
- 	struct block_device *whole = bdev->bd_contains;
--	int res = -EBUSY;
-+	int res;
-+
-+	might_sleep();
+Will expand on this again in the response to patch 3.
 
- 	spin_lock(&bdev_lock);
+> >  	if (rcu_locked)
+> >  		rcu_read_unlock();
+> >  uncharge:
+> > diff --git a/mm/rmap.c b/mm/rmap.c
+> > index fcd593c..578d0fe 100644
+> 
 
--	if (bd_may_claim(bdev, whole, holder)) {
-+	res = bd_prepare_to_claim(bdev, whole, holder);
-+	if (res == 0) {
- 		/* note that for a whole device bd_holders
- 		 * will be incremented twice, and bd_holder will
- 		 * be set to bd_claim before being set to holder
-@@ -718,10 +854,13 @@ int bd_claim(struct block_device *bdev,
- 		whole->bd_holder = bd_claim;
- 		bdev->bd_holders++;
- 		bdev->bd_holder = holder;
--		res = 0;
- 	}
-
--	spin_unlock(&bdev_lock);
-+	if (whole->bd_claiming)
-+		__bd_abort_claiming(whole, holder);	/* releases bdev_lock */
-+	else
-+		spin_unlock(&bdev_lock);
-+
- 	return res;
- }
- EXPORT_SYMBOL(bd_claim);
-@@ -1337,6 +1476,7 @@ EXPORT_SYMBOL(blkdev_get);
-
- static int blkdev_open(struct inode * inode, struct file * filp)
- {
-+	struct block_device *whole = NULL;
- 	struct block_device *bdev;
- 	int res;
-
-@@ -1359,22 +1499,25 @@ static int blkdev_open(struct inode * in
- 	if (bdev == NULL)
- 		return -ENOMEM;
-
-+	if (filp->f_mode & FMODE_EXCL) {
-+		whole = bd_start_claiming(bdev, filp);
-+		if (IS_ERR(whole)) {
-+			bdput(bdev);
-+			return PTR_ERR(whole);
-+		}
-+	}
-+
- 	filp->f_mapping = bdev->bd_inode->i_mapping;
-
- 	res = blkdev_get(bdev, filp->f_mode);
--	if (res)
--		return res;
-
--	if (filp->f_mode & FMODE_EXCL) {
--		res = bd_claim(bdev, filp);
--		if (res)
--			goto out_blkdev_put;
-+	if (whole) {
-+		if (res == 0)
-+			BUG_ON(bd_claim(bdev, filp) != 0);
-+		else
-+			bd_abort_claiming(whole, filp);
- 	}
-
--	return 0;
--
-- out_blkdev_put:
--	blkdev_put(bdev, filp->f_mode);
- 	return res;
- }
-
-@@ -1585,27 +1728,34 @@ EXPORT_SYMBOL(lookup_bdev);
-  */
- struct block_device *open_bdev_exclusive(const char *path, fmode_t mode, void *holder)
- {
--	struct block_device *bdev;
--	int error = 0;
-+	struct block_device *bdev, *whole;
-+	int error;
-
- 	bdev = lookup_bdev(path);
- 	if (IS_ERR(bdev))
- 		return bdev;
-
-+	whole = bd_start_claiming(bdev, holder);
-+	if (IS_ERR(whole)) {
-+		bdput(bdev);
-+		return whole;
-+	}
-+
- 	error = blkdev_get(bdev, mode);
- 	if (error)
--		return ERR_PTR(error);
-+		goto out_abort_claiming;
-+
- 	error = -EACCES;
- 	if ((mode & FMODE_WRITE) && bdev_read_only(bdev))
--		goto blkdev_put;
--	error = bd_claim(bdev, holder);
--	if (error)
--		goto blkdev_put;
-+		goto out_blkdev_put;
-
-+	BUG_ON(bd_claim(bdev, holder) != 0);
- 	return bdev;
--	
--blkdev_put:
-+
-+out_blkdev_put:
- 	blkdev_put(bdev, mode);
-+out_abort_claiming:
-+	bd_abort_claiming(whole, holder);
- 	return ERR_PTR(error);
- }
-
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
