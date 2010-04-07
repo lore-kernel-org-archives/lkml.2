@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab0DGF2W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 01:28:22 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:56062 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752091Ab0DGF2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 01:28:16 -0400
-Date: Wed, 7 Apr 2010 15:28:09 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, dm@chelsio.com, jpirko@redhat.com
-Subject: Re: linux-next: build failure after merge of the net tree
-Message-Id: <20100407152809.b684539e.sfr@canb.auug.org.au>
-In-Reply-To: <20100406.201220.195404728.davem@davemloft.net>
-References: <20100407125817.e8e1d174.sfr@canb.auug.org.au>
-	<20100406.201220.195404728.davem@davemloft.net>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__7_Apr_2010_15_28_09_+1000_JuKlPbJam7eVql12"
+	id S1752581Ab0DGF2q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 01:28:46 -0400
+Received: from ks309829.kimsufi.com ([94.23.13.159]:51009 "EHLO pomoc.dhsi.pl"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752291Ab0DGF2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 01:28:42 -0400
+Message-ID: <d629d3565e98f95e9ea050fd5f16e811.squirrel@dhsi.pl>
+Date: Wed, 7 Apr 2010 07:26:16 +0200
+Subject: Lieber Freund!!!
+From: "Weber Dito" <joe@smit1.dhsi.pl>
+Reply-To: bankas27@aim.com
+User-Agent: SquirrelMail/1.4.20-RC2
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__7_Apr_2010_15_28_09_+1000_JuKlPbJam7eVql12
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Dave,
+Lieber Freund!!!
 
-On Tue, 06 Apr 2010 20:12:20 -0700 (PDT) David Miller <davem@davemloft.net>=
- wrote:
->
-> Thanks, I'll merge net-2.6 into net-next-2.6 and fix this build
-> failure in the latter.
+Ich vermute das diese E-Mail eine Überraschung für Sie sein wird, aber es
+ist wahr.Ich bin bei einer routinen Überprüfung in meiner Bank (Standard
+Bank von Süd Afrika) wo ich arbeite, auf einem Konto gestoßen, was nicht
+in anspruch genommen worden ist, wo derzeit $12,500,000
+(zwölfmillionenfünfhundert US Dollar) gutgeschrieben sind.
 
-Thanks for that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Dieses Konto gehörte Herrn Manfred Becker, der ein Kunde in unsere Bank
+war, der leider verstorben ist. Herr Becker war ein gebürtiger
+Deutscher.Damit es mir möglich ist dieses Geld $12,500,000 inanspruch
+zunehmen, benötige ich die zusammenarbeit eines Ausländischen Partners wie
+Sie,den ich als Verwandter und Erbe des verstorbenen Herrn Becker
+vorstellen kann,damit wir das Geld inanspruch nehmen können.
 
---Signature=_Wed__7_Apr_2010_15_28_09_+1000_JuKlPbJam7eVql12
-Content-Type: application/pgp-signature
+Für diese Unterstützung erhalten Sie 30% der Erbschaftsumme und die
+restlichen 70% teile ich mir mit meinen zwei Arbeitskollegen, die mich bei
+dieser Transaktion ebenfalls unterstützen.Wenn Sie interessiert sind,
+können Sie mir bitte eine E-Mail schicken, damit ich Ihnen mehr Details
+zukommen lassen kann.Schicken Sie bitte Ihre Antwort auf diese E-Mail
+Adresse: (ditoweber@aim.com)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Mit freundlichen Grüßen
 
-iEYEARECAAYFAku8F+kACgkQjjKRsyhoI8xzHgCgoC2XN98m9GqOV0sh9JJts055
-izcAni41W+NnfZDxmgFrm4/lWY2VbUDl
-=YCBT
------END PGP SIGNATURE-----
+Herr MARTINS WEBER DITO
 
---Signature=_Wed__7_Apr_2010_15_28_09_+1000_JuKlPbJam7eVql12--
+
+
