@@ -1,38 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab0DGWzo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 18:55:44 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:35335 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753619Ab0DGWzk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 18:55:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=BkRnR8s1UIGNrgDIdCMVF1lC7L+oafyAjnY+ehqCXEEINo7hMNmh/FxCcS852W6qwG
-         T1JqYm20ZPTK2NlcBNI9R6/Guxy8ncbD+MJ1MNRyIDyRzgKN42f1Z5PVzGlrleJDLsSb
-         YAMw+mUS+5p/Kb9jDTI+cgKZ2hVvbbGG4qRcM=
+	id S1755976Ab0DGXAR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 19:00:17 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:42684 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755825Ab0DGXAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 19:00:13 -0400
+Date: Wed, 7 Apr 2010 16:00:09 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, eric.dumazet@gmail.com
+Subject: Re: [PATCH tip/urgent] rcu: add rcu_access_pointer and
+ rcu_dereference_protected
+Message-ID: <20100407230009.GK2481@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100407171342.GF2481@linux.vnet.ibm.com>
+ <20100407162620.GA11543@linux.vnet.ibm.com>
+ <27310.1270659627@redhat.com>
+ <27837.1270660848@redhat.com>
 MIME-Version: 1.0
-Date: Wed, 7 Apr 2010 19:55:40 -0300
-Message-ID: <l2ubad58e961004071555ke71d0fa4mf5a369c68b33cf47@mail.gmail.com>
-Subject: hey
-From: Trevor Pace <trevorpace@gmail.com>
-To: k.strowbridge@gmail.com, kristie.burton.cbv@gmail.com,
-       kristieb_6@hotmail.com, kristinaboka@gmail.com, kyle.capstick@gmail.com,
-       lesleywhite28@hotmail.com, lindsay_doucet@hotmail.com,
-       linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-       ribsy_friend@hotmail.com, lisa.s.morrison@gmail.com, lori.baker@dal.ca,
-       labramson@eastlink.ca, majordomo@vger.kernel.org,
-       bird.malcolm@gmail.com, mark_frank@hotmail.com,
-       mark_frank@mail2superman.com, MR334805@dal.ca,
-       maryclaire.3tions@gmail.com, logistics08@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <27837.1270660848@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://sites.google.com/site/6g5f3ersd/ilff1w
+On Wed, Apr 07, 2010 at 06:20:48PM +0100, David Howells wrote:
+> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > In other cases, there will be a reference counter or a "not yet fully
+> > initialized" flag that can (and should) be tested.
+> 
+> Why would you be using rcu_access_pointer() there?  Why wouldn't you be using
+> rcu_dereference_protected()?
 
--- 
-Trevor Pace
+Excellent question.  I am writing up the documentation now, and will
+either (1) have a good use case or (2) remove the condition.
+
+> Also, one other thing:  Should the default versions of these functions make
+> some reference to 'c' to prevent compiler warnings?  Should:
+> 
+> 	#define rcu_dereference_check(p, c)	rcu_dereference_raw(p)
+> 
+> for example, be:
+> 
+> 	#define rcu_dereference_check(p, c)	\
+> 	({					\
+> 		if (1 || !(c))			\
+> 			rcu_dereference_raw(p);	\
+> 	})
+> 
+> I'm not sure it's necessary, but it's possible to envisage a situation where
+> someone calculates something specifically for use in 'c', which will cause an
+> warning from the compiler if c isn't then checked.
+
+I did try this.  The problem is that it breaks the build for non-lockdep
+configurations due to the lockdep-check primitives not being defined.  :-(
+
+							Thanx, Paul
