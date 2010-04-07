@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064Ab0DGDTC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 23:19:02 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52666 "EHLO smtps.tip.net.au"
+	id S1756358Ab0DGDjc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 23:39:32 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:37687 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751893Ab0DGDS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 23:18:56 -0400
-Date: Wed, 7 Apr 2010 13:18:54 +1000
+	id S1753472Ab0DGDjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 23:39:24 -0400
+Date: Wed, 7 Apr 2010 13:39:19 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Takashi Iwai <tiwai@suse.de>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Barry Song <21cnbao@gmail.com>
-Subject: linux-next: manual merge of the sound tree with Linus' tree
-Message-Id: <20100407131854.d58079df.sfr@canb.auug.org.au>
+       Risto Suominen <Risto.Suominen@gmail.com>
+Subject: linux-next: build failure after merge of the sound tree
+Message-Id: <20100407133919.94b44bf1.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__7_Apr_2010_13_39_19_+1000_nj6+M+JRERoLuB2r"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Wed__7_Apr_2010_13_39_19_+1000_nj6+M+JRERoLuB2r
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
 Hi Takashi,
 
-Today's linux-next merge of the sound tree got a conflict in
-sound/soc/codecs/ad1938.c between commit
-5a0e3ad6af8660be21ca98a971cd00f331318c05 ("include cleanup: Update gfp.h
-and slab.h includes to prepare for breaking implicit slab.h inclusion
-from percpu.h") from Linus' tree and commit
-a1533d94c6b930ef4263941adfd1e1132ca95627 ("ASoC: rename ad1938 to ad193x
-and add support for ad1936/7/8/9") from the sound tree.
+After merging the sound tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-The latter moved the file that the former modified.  I applied the
-following merge fixup patch for today.
+sound/ppc/tumbler.c: In function 'tumbler_find_device':
+sound/ppc/tumbler.c:1143: error: implicit declaration of function 'machine_=
+is_compatible'
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 7 Apr 2010 13:09:13 +1000
-Subject: [PATCH] sound: ASoC; merge fixup for slab.h changes
+Caused by commit 819ef70b135ba66cd1659c913255686bf931e3d4 ("ALSA:
+powermac - Reverse HP detection on G4 DA").  machine_is_compatible was
+renamed to of_machine_is_compatible by commit
+71a157e8edca55198e808f8561dd49017a54ee34 ("of: add 'of_' prefix to
+machine_is_compatible()") in Linus' tree since Feb 26, 2010 (and is in
+v2.6.34-rc1).
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- sound/soc/codecs/ad193x.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+I have used the version of the sound tree from next-20100401 for today.
 
-diff --git a/sound/soc/codecs/ad193x.c b/sound/soc/codecs/ad193x.c
-index 4bfd66b..08c7e10 100644
---- a/sound/soc/codecs/ad193x.c
-+++ b/sound/soc/codecs/ad193x.c
-@@ -7,6 +7,7 @@
-  */
- 
- #include <linux/init.h>
-+#include <linux/slab.h>
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/device.h>
--- 
-1.7.0.3
-
--- 
+--=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__7_Apr_2010_13_39_19_+1000_nj6+M+JRERoLuB2r
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAku7/mcACgkQjjKRsyhoI8yDWwCfVbKiae0E2LPZaW01/29CfBa/
+lLsAoLg0BABHvTiAIB3STDX9YywcYfCx
+=x/dj
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__7_Apr_2010_13_39_19_+1000_nj6+M+JRERoLuB2r--
