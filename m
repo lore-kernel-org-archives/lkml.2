@@ -1,79 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756470Ab0DGJug (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 05:50:36 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:51198 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790Ab0DGJu3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 05:50:29 -0400
-Subject: Re: [lm-sensors] regulator: regulator_get behaviour without
- CONFIG_REGULATOR set
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>, Jean Delvare <khali@linux-fr.org>,
-       lm-sensors <lm-sensors@lm-sensors.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1F9C625F-0467-4C6D-B57F-2E4FCAC76031@opensource.wolfsonmicro.com>
-References: <2122967437.461270223106350.JavaMail.root@mail.savoirfairelinux.com>
-	 <1779783481.621270223270264.JavaMail.root@mail.savoirfairelinux.com>
-	 <20100402160058.GE27613@sirena.org.uk>
-	 <20100402184403.2ea1263e@hyperion.delvare>
-	 <20100402185138.GA12817@opensource.wolfsonmicro.com>
-	 <20100402213010.4a64e50f@hyperion.delvare>
-	 <20100402204503.GA15237@opensource.wolfsonmicro.com>
-	 <20100403173745.2bf17ee6@hyperion.delvare>
-	 <20100405132347.GA6580@rakim.wolfsonmicro.main>
-	 <1270567639.3229.56.camel@odin> <4BBB6083.2070903@cam.ac.uk>
-	 (sfid-20100406_172304_064433_7FBC3A75)  <1F9C625F-0467-4C6D-B57F-2E4FCAC76031@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 07 Apr 2010 10:50:23 +0100
-Message-ID: <1270633823.3248.38.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1754929Ab0DGJwp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 05:52:45 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57145 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751216Ab0DGJwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 05:52:39 -0400
+Message-ID: <4BBC55DD.2010201@kernel.org>
+Date: Wed, 07 Apr 2010 18:52:29 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Jens Axboe <jens.axboe@oracle.com>, lkml <linux-kernel@vger.kernel.org>,
+       Kay Sievers <kay.sievers@vrfy.org>,
+       Matthias-Christian Ott <ott@mirix.org>
+Subject: [PATCH 1/2] block: factor out bd_may_claim()
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 07 Apr 2010 09:52:32 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-06 at 19:19 +0100, Mark Brown wrote:
-> On 6 Apr 2010, at 17:25, Jonathan Cameron <jic23@cam.ac.uk> wrote:
-> 
-> > On 04/06/10 16:27, Liam Girdwood wrote:
-> >>>
-> >>>
-> >>>
-> >>
-> >> I suppose this is something we may look into more when we have more
-> >> clients.
-> > Makes sense.  There will probably be quite a few IIO drivers over  
-> > the next
-> > few months doing much the same as sht15, where the voltage ref for  
-> > devices
-> > may well be fed by a regulator.  In that case, we may only offer the  
-> > option
-> > of using an external v_ref if the regulator is available.  Many  
-> > devices have
-> > an internal regulator to provide it so typically we'll start them up  
-> > using that
-> > and provide an interface to switch to external regulator if one is  
-> > available.
-> > I haven't thought through exactly how this will work as yet. I'll cc  
-> > people in
-> > when this comes up.
-> 
-> TBH this seems like a very vanilla use case - there may be some small  
-> advantage to representing the internal regulator via the regulator API  
-> but that's about the only thing I can think might be a bit odd.
-> --
+Factor out bd_may_claim() from bd_claim(), add comments and apply a
+couple of cosmetic edits.  This is to prepare for further updates to
+claim path.
 
-Although may be quite useful here for any mfd devices where the core has
-regulators that only supply the other on chip functions.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+Jens, these two patches fix a subtle problem in block device open path
+where O_EXCL open attempts can interfere with an already exclusively
+open device.
 
-Liam 
+These definitely are not for this merge window and need to get good
+amount testing in linux-next.
 
--- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
+Thanks.
 
+ fs/block_dev.c |   65 +++++++++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 47 insertions(+), 18 deletions(-)
+
+Index: work/fs/block_dev.c
+===================================================================
+--- work.orig/fs/block_dev.c
++++ work/fs/block_dev.c
+@@ -660,41 +660,70 @@ void bd_forget(struct inode *inode)
+ 		iput(bdev->bd_inode);
+ }
+
+-int bd_claim(struct block_device *bdev, void *holder)
++/**
++ * bd_may_claim - test whether a block device can be claimed
++ * @bdev: block device of interest
++ * @whole: whole block device containing @bdev, may equal @bdev
++ * @holder: holder trying to claim @bdev
++ *
++ * Test whther @bdev can be claimed by @holder.
++ *
++ * CONTEXT:
++ * spin_lock(&bdev_lock).
++ *
++ * RETURNS:
++ * %true if @bdev can be claimed, %false otherwise.
++ */
++static bool bd_may_claim(struct block_device *bdev, struct block_device *whole,
++			 void *holder)
+ {
+-	int res;
+-	spin_lock(&bdev_lock);
+-
+-	/* first decide result */
+ 	if (bdev->bd_holder == holder)
+-		res = 0;	 /* already a holder */
++		return true;	 /* already a holder */
+ 	else if (bdev->bd_holder != NULL)
+-		res = -EBUSY; 	 /* held by someone else */
++		return false; 	 /* held by someone else */
+ 	else if (bdev->bd_contains == bdev)
+-		res = 0;  	 /* is a whole device which isn't held */
++		return true;  	 /* is a whole device which isn't held */
+
+-	else if (bdev->bd_contains->bd_holder == bd_claim)
+-		res = 0; 	 /* is a partition of a device that is being partitioned */
+-	else if (bdev->bd_contains->bd_holder != NULL)
+-		res = -EBUSY;	 /* is a partition of a held device */
++	else if (whole->bd_holder == bd_claim)
++		return true; 	 /* is a partition of a device that is being partitioned */
++	else if (whole->bd_holder != NULL)
++		return false;	 /* is a partition of a held device */
+ 	else
+-		res = 0;	 /* is a partition of an un-held device */
++		return true;	 /* is a partition of an un-held device */
++}
+
+-	/* now impose change */
+-	if (res==0) {
++/**
++ * bd_claim - claim a block device
++ * @bdev: block device to claim
++ * @holder: holder trying to claim @bdev
++ *
++ * Try to claim @bdev.
++ *
++ * RETURNS:
++ * 0 if successful, -EBUSY if @bdev is already claimed.
++ */
++int bd_claim(struct block_device *bdev, void *holder)
++{
++	struct block_device *whole = bdev->bd_contains;
++	int res = -EBUSY;
++
++	spin_lock(&bdev_lock);
++
++	if (bd_may_claim(bdev, whole, holder)) {
+ 		/* note that for a whole device bd_holders
+ 		 * will be incremented twice, and bd_holder will
+ 		 * be set to bd_claim before being set to holder
+ 		 */
+-		bdev->bd_contains->bd_holders ++;
+-		bdev->bd_contains->bd_holder = bd_claim;
++		whole->bd_holders++;
++		whole->bd_holder = bd_claim;
+ 		bdev->bd_holders++;
+ 		bdev->bd_holder = holder;
++		res = 0;
+ 	}
++
+ 	spin_unlock(&bdev_lock);
+ 	return res;
+ }
+-
+ EXPORT_SYMBOL(bd_claim);
+
+ void bd_release(struct block_device *bdev)
