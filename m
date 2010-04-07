@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751132Ab0DGTbm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 15:31:42 -0400
-Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:59989 "EHLO
-	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705Ab0DGTbk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 15:31:40 -0400
-Date: Wed, 7 Apr 2010 14:30:51 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-cc: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>, netdev <netdev@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, alex.shi@intel.com,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
-In-Reply-To: <4BBCCE03.5050104@cs.helsinki.fi>
-Message-ID: <alpine.DEB.2.00.1004071344160.16159@router.home>
-References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>  <alpine.DEB.2.00.1003250942080.2670@router.home>  <1269570902.9614.92.camel@alexs-hp.sh.intel.com>  <1270114166.2078.107.camel@ymzhang.sh.intel.com>  <alpine.DEB.2.00.1004011050340.16531@router.home>
-  <1270195589.2078.116.camel@ymzhang.sh.intel.com>  <alpine.DEB.2.00.1004050853300.23149@router.home>  <i2z84144f021004051030k7ff5190cyc083aa12c552dfac@mail.gmail.com>  <4BBA8DF9.8010409@kernel.org>  <1270542497.2078.123.camel@ymzhang.sh.intel.com> 
- <alpine.DEB.2.00.1004061033330.18750@router.home>  <alpine.DEB.2.00.1004061552500.19151@router.home>  <1270591841.2091.170.camel@edumazet-laptop> <1270607668.2078.259.camel@ymzhang.sh.intel.com> <alpine.DEB.2.00.1004071130260.13261@router.home>
- <4BBCB7B7.4040901@cs.helsinki.fi> <4BBCB868.2000705@cs.helsinki.fi> <alpine.DEB.2.00.1004071319320.16159@router.home> <4BBCCE03.5050104@cs.helsinki.fi>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1751451Ab0DGTq0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 15:46:26 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37430 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750741Ab0DGTqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 15:46:24 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Michal Hocko <mhocko@suse.cz>
+Subject: Re: commit 9630bdd9 changes behavior of the poweroff - bug?
+Date: Wed, 7 Apr 2010 21:49:23 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+References: <20100401133923.GA4104@tiehlicka.suse.cz> <201004022131.47787.rjw@sisk.pl> <20100407073414.GA5174@tiehlicka.suse.cz>
+In-Reply-To: <20100407073414.GA5174@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004072149.23791.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Apr 2010, Pekka Enberg wrote:
+On Wednesday 07 April 2010, Michal Hocko wrote:
+> Sorry for late reply, but I was AFK during holiday.
+> 
+> On Fri 02-04-10 21:31:47, Rafael J. Wysocki wrote:
+> > On Thursday 01 April 2010, Michal Hocko wrote:
+> > > On Thu 01-04-10 14:45:35, Matthew Garrett wrote:
+> > > > On Thu, Apr 01, 2010 at 03:39:23PM +0200, Michal Hocko wrote:
+> > > > > Hi Rafael, Matthew,
+> > > > > my laptop changed behavior during poweroff recently (after upgrading
+> > > > > from .33 to .34-rc1). The system seems to be powered off (status display
+> > > > > is off) at first glance but when I close the lid then I can hear a noise
+> > > > > which sounds like HDD parking and when I open lid again it starts
+> > > > > booting without poweroff button (same like when I suspend to RAM).
+> > > > 
+> > > > Hm. At a guess, we're somehow managing to leave the lid GPE enabled at 
+> > > > poweroff. Can you send the output of the acpidump command?
+> > > 
+> > > Sure, see attached.
+> > 
+> > Thanks.
+> > 
+> > Please also send the contents of /proc/acpi/wakeup.
+> 
+> See attached. I have checked both kernels (with and without reverted
+> 9630bdd) and the output looks pretty much same. 2.6.34-rc3, however,
+> looks different a bit, so I am attaching it as well.
 
-> Yes, I am an idiot. :-)
+Well, I fail to see the possible failure scenario, so let's first try a blind
+shot.
 
-Plato said it in another way:
+Please check if this patch helps:
+https://patchwork.kernel.org/patch/86238/
 
-"As for me, all I know is that I know nothing."
-
-
-
+Rafael
