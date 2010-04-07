@@ -1,123 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751321Ab0DGEIg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 00:08:36 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:40186 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750696Ab0DGEI2 (ORCPT
+	id S1751378Ab0DGELZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 00:11:25 -0400
+Received: from mail-ew0-f222.google.com ([209.85.219.222]:39844 "EHLO
+	mail-ew0-f222.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750696Ab0DGELT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 00:08:28 -0400
-X-Greylist: delayed 342 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Apr 2010 00:08:28 EDT
-References: <20100405091605.4890.31181.sendpatchset@localhost.localdomain> 
-	<20100405091628.4890.30541.sendpatchset@localhost.localdomain> 
-	<20100405194356.GA10488@gospo.rdu.redhat.com> <4BBA9FDB.4040909@redhat.com> 
-	<4BBABAB8.4010401@redhat.com> <20100406144824.GB10488@gospo.rdu.redhat.com> 
-	<4BBBEEAA.1050100@redhat.com>
-From: Andy Gospodarek <andy@greyhouse.net>
-In-Reply-To: <4BBBEEAA.1050100@redhat.com>
-Mime-Version: 1.0 (iPhone Mail 7E18)
-Date: Wed, 7 Apr 2010 00:02:39 -0400
-Message-ID: <70501020920527933@unknownmsgid>
-Subject: Re: [v2 Patch 3/3] bonding: make bonding support netpoll
-To: Cong Wang <amwang@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Matt Mackall <mpm@selenic.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "bridge@lists.linux-foundation.org" 
-	<bridge@lists.linux-foundation.org>,
-       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-       Jeff Moyer <jmoyer@redhat.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       "bonding-devel@lists.sourceforge.net" 
-	<bonding-devel@lists.sourceforge.net>,
-       Jay Vosburgh <fubar@us.ibm.com>, David Miller <davem@davemloft.net>
+	Wed, 7 Apr 2010 00:11:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=lLhjIbcXFsOPVQxVSq9V2ZqR6pmoGTFBYmqP4kJkAUjKGaeSwny1dsachjcIerLGtk
+         xEo9DBR2oyms4LWVSydEvbBquMrDoqVqtNgFvUg4HVYhrelNnMOlDtgjgmbzdW/TD60f
+         P1OxyHg3WfFbddHLK0EUJi2A6CZI0BKOMQPB4=
+MIME-Version: 1.0
+In-Reply-To: <4BAF618E.2010604@gmail.com>
+References: <4BAF4DAF.70609@gmail.com> <20100328133500.GB3622@core2>
+	 <4BAF5BD7.1060208@gmail.com> <20100328141957.GA3689@core2>
+	 <4BAF618E.2010604@gmail.com>
+Date: Wed, 7 Apr 2010 06:11:18 +0200
+Message-ID: <q2s9c2470ce1004062111hba0a067dwa9705a26d31b47f@mail.gmail.com>
+Subject: Re: [PATCH] add random binaries to .gitignore
+From: Jan III Sobieski <jan3sobi3ski@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 6, 2010, at 10:32 PM, Cong Wang <amwang@redhat.com> wrote:
-
-> Andy Gospodarek wrote:
->> On Tue, Apr 06, 2010 at 12:38:16PM +0800, Cong Wang wrote:
->>> Cong Wang wrote:
->>>> Before I try to reproduce it, could you please try to replace
->>>> the  'read_lock()'
->>>> in slaves_support_netpoll() with 'read_lock_bh()'? (read_unlock()
->>>> too)  Try if this helps.
+2010/3/28 Jan III Sobieski <jan3sobi3ski@gmail.com>:
+> W dniu 2010-03-28 16:19, Alexey Dobriyan pisze:
+>> On Sun, Mar 28, 2010 at 03:38:31PM +0200, Jan III Sobieski wrote:
+>>> W dniu 2010-03-28 15:35, Alexey Dobriyan pisze:
+>>>> On Sun, Mar 28, 2010 at 02:38:07PM +0200, Jan III Sobieski wrote:
+>>>>> +# random binary files
+>>>>> +Documentation/filesystems/dnotify_test
+>>>>> +Documentation/laptops/dslm
+>>>>> +Documentation/timers/hpet_example
+>>>>> +Documentation/vm/hugepage-mmap
+>>>>> +Documentation/vm/hugepage-shm
+>>>>> +Documentation/vm/map_hugetlb
+>>>>> +arch/x86/boot/compressed/vmlinux
+>>>>> +arch/x86/tools/test_get_len
 >>>>
->>> Confirmed. Please use the attached patch instead, for your testing.
+>>>> This should go to per-directory gitiignores.
 >>>
->>> Thanks!
->>>
->> Moving those locks to bh-locks will not resolve this.  I tried that
->> yesterday and tried your new patch today without success.  That
->> warning
->> is a WARN_ON_ONCE so you need to reboot to see that it is still a
->> problem.  Simply unloading and loading the new module is not an
->> accurate
->> test.
->> Also, my system still hangs when removing the bonding module.  I do
->> not
->> think you intended to fix this with the patch, but wanted it to be
->> clear
->> to everyone on the list.
+>>> I agree that it is not the best solution. But one directory one
+>>> .gitignore also isn't the best, so I propose this
+>>
+>> .gitignore in leaf directory is the status quo.
+>>
+>>       find . -type f -name '\.gitignore'
 >
+> Ok
+
+Anyone out there care to take this patches?
+
 >
-> Actually I did reboot and then tested the module. I didn't get any
-> warning.
-> I just tried again today, and no warnings at all.
+> --
+> Jan III Sobieski
 >
-> For removing bonding module, you may need another fix of mine,
-> which is to fix a potential deadlock of workqueue. Try:
+> Signed-off-by: Jan III Sobieski <jan3sobi3ski@gmail.com>
 >
-> http://lkml.org/lkml/2010/4/1/58
->
->> You should also configure your kernel with a some of the lock
->> debugging
->> enabled.  I've been using the following:
->> CONFIG_DETECT_HUNG_TASK=y
->> CONFIG_DEBUG_SPINLOCK=y
->> CONFIG_DEBUG_MUTEXES=y
->> CONFIG_DEBUG_LOCK_ALLOC=y
->> CONFIG_PROVE_LOCKING=y
->> CONFIG_LOCKDEP=y
->> CONFIG_LOCK_STAT=y
->> CONFIG_DEBUG_LOCKDEP=y
->
->
-> Sure, I always keep these.
->
->> Here is the output when I remove a slave from the bond.  My
->> xmit_roundrobin patch from earlier (replacing read_lock with
->> read_trylock) was applied.  It might be helpful for you when
->> debugging
->> these issues.
->
->
-> I don't apply your patch, just tested my patch.
->
->> Dead loop on virtual device bond0, fix it urgently!
->
-> Please provide your bonding configuration and steps to reproduce it.
+> diff --git a/Documentation/filesystems/.gitignore
+> b/Documentation/filesystems/.gitignore
+> new file mode 100644
+> index 0000000..1ddd62a
+> --- /dev/null
+> +++ b/Documentation/filesystems/.gitignore
+> @@ -0,0 +1,2 @@
+> +dnotify_test
+> +
+> diff --git a/Documentation/laptops/.gitignore
+> b/Documentation/laptops/.gitignore
+> new file mode 100644
+> index 0000000..f6bb9d0
+> --- /dev/null
+> +++ b/Documentation/laptops/.gitignore
+> @@ -0,0 +1,2 @@
+> +dslm
+> +
+> diff --git a/Documentation/timers/.gitignore
+> b/Documentation/timers/.gitignore
+> new file mode 100644
+> index 0000000..f710cba
+> --- /dev/null
+> +++ b/Documentation/timers/.gitignore
+> @@ -0,0 +1,2 @@
+> +hpet_example
+> +
+> diff --git a/Documentation/vm/.gitignore b/Documentation/vm/.gitignore
+> index 09b164a..3c65a46 100644
+> --- a/Documentation/vm/.gitignore
+> +++ b/Documentation/vm/.gitignore
+> @@ -1,2 +1,6 @@
+>  page-types
+>  slabinfo
+> +hugepage-mmap
+> +hugepage-shm
+> +map_hugetlb
+> +
+> diff --git a/arch/x86/boot/compressed/.gitignore
+> b/arch/x86/boot/compressed/.gitignore
+> index 4a46fab..b71c8ca 100644
+> --- a/arch/x86/boot/compressed/.gitignore
+> +++ b/arch/x86/boot/compressed/.gitignore
+> @@ -1,4 +1,5 @@
+>  relocs
+> +vmlinux
+>  vmlinux.bin.all
+>  vmlinux.relocs
+>  vmlinux.lds
+> diff --git a/arch/x86/tools/.gitignore b/arch/x86/tools/.gitignore
+> new file mode 100644
+> index 0000000..b1ac2dc
+> --- /dev/null
+> +++ b/arch/x86/tools/.gitignore
+> @@ -0,0 +1,2 @@
+> +test_get_len
+> +
 >
 
-My first response in this thread provides the commands and
-configuration needed to reproduce this.
 
-> What I did is:
->
-> 1. Load bonding module with "mode=0 miimon=100"
-> 2. Enslave eth0 and active bond0
-> 3. Load netconsole and send messages via bond0
-> 4. Remove eth0 from bond0
-> 5. Remove bonding module
-> 6. Remove netconsole module
 
-Thanks for sending your configuration.
-
-What values are in /proc/sys/kernel/printk?
-
-> And no deadlocks, no warnings.
->
-> Thanks.
+-- 
+Jan III Sobieski
