@@ -1,64 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932252Ab0DGAOm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 20:14:42 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51378 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932182Ab0DGAOh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 20:14:37 -0400
-Date: Tue, 6 Apr 2010 17:10:15 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-cc: Borislav Petkov <bp@alien8.de>, Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
- 2.6.34-rc3)
-In-Reply-To: <4BBBC240.3090302@redhat.com>
-Message-ID: <alpine.LFD.2.00.1004061707250.3487@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1004060841460.3487@i5.linux-foundation.org> <1270571019.1814.163.camel@barrios-desktop> <alpine.LFD.2.00.1004060926430.3487@i5.linux-foundation.org> <1270572327.1711.3.camel@barrios-desktop> <alpine.LFD.2.00.1004060951030.3487@i5.linux-foundation.org>
- <4BBB69A9.5090906@redhat.com> <alpine.LFD.2.00.1004061053450.3487@i5.linux-foundation.org> <20100406120315.53ad7390.akpm@linux-foundation.org> <20100406194238.GB20357@a1.tnic> <alpine.LFD.2.00.1004061243240.3487@i5.linux-foundation.org> <20100406205123.GC20357@a1.tnic>
- <alpine.LFD.2.00.1004061403170.3487@i5.linux-foundation.org> <4BBBC240.3090302@redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S932272Ab0DGARQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Apr 2010 20:17:16 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39074 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932227Ab0DGARE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 20:17:04 -0400
+From: "Madhusudhan" <madhu.cr@ti.com>
+To: "'Nishanth Menon'" <nm@ti.com>
+Cc: <felipe.balbi@nokia.com>, <me@felipebalbi.com>,
+       "'kishore kadiyala'" <kishorek.kadiyala@gmail.com>,
+       "'Vimal Singh'" <vimal.newwork@gmail.com>, <tony@atomide.com>,
+       "'S, Venkatraman'" <svenkatr@ti.com>, <linux-omap@vger.kernel.org>,
+       <linux-kernel@vger.kernel.org>,
+       "'Lavinen Jarkko \(Nokia-D/Helsinki\)'" <jarkko.lavinen@nokia.com>
+References: <003b01cad0f0$6ea78040$544ff780@am.dhcp.ti.com> <g2s7f9d1ffb1003312331o149df218g651c3e4349ac9a77@mail.gmail.com> <003c01cad1b1$da2cdbf0$544ff780@am.dhcp.ti.com> <m2n7f9d1ffb1004050556o1ed2eec8ief66d60fc85f96de@mail.gmail.com> <20100405164839.GB17388@gandalf> <007c01cad4e4$26c5a700$544ff780@am.dhcp.ti.com> <20100406050035.GA32537@gandalf> <003901cad5a4$730264d0$544ff780@am.dhcp.ti.com> <20100406163211.GA29117@nokia.com> <4BBB6767.7010202@ti.com> <20100406165720.GA17916@nokia.com> <00b401cad5e0$1d1868d0$544ff780@am.dhcp.ti.com> <4BBBC628.9030207@ti.com>
+Subject: RE: [PATCH v3] OMAP: Fix for bus width which improves SD card's peformance.
+Date: Tue, 6 Apr 2010 19:16:49 -0500
+Message-ID: <00c901cad5e7$9de54350$544ff780@am.dhcp.ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <4BBBC628.9030207@ti.com>
+Thread-Index: AcrV4ng7ofnE6IXdQc6MCuE9OglWyQAAmbGw
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3198
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On Tue, 6 Apr 2010, Rik van Riel wrote:
+> -----Original Message-----
+> From: Nishanth Menon [mailto:nm@ti.com]
+> Sent: Tuesday, April 06, 2010 6:39 PM
+> To: Chikkature Rajashekar, Madhusudhan
+> Cc: felipe.balbi@nokia.com; me@felipebalbi.com; 'kishore kadiyala'; 'Vimal
+> Singh'; tony@atomide.com; S, Venkatraman; linux-omap@vger.kernel.org;
+> linux-kernel@vger.kernel.org; 'Lavinen Jarkko (Nokia-D/Helsinki)'
+> Subject: Re: [PATCH v3] OMAP: Fix for bus width which improves SD card's
+> peformance.
 > 
-> It gets more fun.  It looks like the anon_vma is only
-> allocated through anon_vma_alloc() and only handled
-> by the functions in rmap.c
-> 
-> By themselves, all of those functions look alright.
+> Chikkature Rajashekar, Madhusudhan had written, on 04/06/2010 06:23 PM,
+> the following:
+> >
+> >> -----Original Message-----
+> >> From: Felipe Balbi [mailto:felipe.balbi@nokia.com]
+> >> Sent: Tuesday, April 06, 2010 11:57 AM
+> >> To: ext Nishanth Menon
+> >> Cc: Balbi Felipe (Nokia-D/Helsinki); Chikkature Rajashekar,
+> Madhusudhan;
+> >> me@felipebalbi.com; 'kishore kadiyala'; 'Vimal Singh';
+> tony@atomide.com;
+> >> S, Venkatraman; linux-omap@vger.kernel.org; linux-
+> kernel@vger.kernel.org;
+> >> Lavinen Jarkko (Nokia-D/Helsinki)
+> >> Subject: Re: [PATCH v3] OMAP: Fix for bus width which improves SD
+> card's
+> >> peformance.
+> >>
+> >> On Tue, Apr 06, 2010 at 06:55:03PM +0200, ext Nishanth Menon wrote:
+> >>> some reasons why i love switch statements ;) since I dont expect other
+> >>> than precisely 4 and 8 (do we expect 5,6,7 - i might be wrong).. but
+> if
+> >>> it is so, wont the following be better?
+> >>>
+> >>> switch (mmc_slot(host).wires)
+> >>> {
+> >>> case 8:
+> >>> 	mmc->caps |= MMC_CAP_8_BIT_DATA;
+> >>> 	/* fall thru*/
+> >>> case 4:
+> >>> 	mmc->caps |= MMC_CAP_4_BIT_DATA;
+> >>> 		break;
+> >>> default:
+> >>> 	WARN("bad width");
+> >>> }
+> >> I like that, but I remember Madhu (or someone else) saying he thinks
+> >> it's less readable this way. Go figure...
+> >>
+> > Well, I did not comment on the usage of switch here. Note we only need
+> to
+> > handle 8-bit and 4-bit.The board files need not setup 8-bit or 4-bit if
+> the
+> > configuration of that board is 1-bit. The driver will still work in 1-
+> bit
+> > mode which would mean there is nothing to do in default case and should
+> not
+> > err out.
+> check the attachment out.. hope that takes care of it.. just as a
+> reference alone ofcourse..
 
-Yes. Very trivially so, in fact.
+Nope. The default case is wrong. The assumption followed by controller
+drivers is that if the board file says 4-bit or 8-bit set the capabilities
+otherwise don't do any thing. The host will continue to work in 1-bit mode
+which is a must. Your patch violates that (can not design a board without
+connecting one data line at least :))
 
-> However, I think I may have found a possible bug in
-> the interplay between anon_vma_prepare() and vma_adjust(),
-> across several mprotect invocations.
-> 
-> Let me explain what I think may be going on in small
-> steps, since it is quite subtle (assuming I am right).
+Also you can not say 1-bit is non-optimal because the board file dictates
+the configuration based on what it is capable of. Why through a warning?
+It is subjective.
 
-Sounds at least possible. Way more likely than any of the "trivially 
-obvious" code being buggy, or the SLUB layer suddenly having a serious bug 
-that only the new user could trigger.
+Regards,
+Madhu
 
-That said, the code that _really_ confuses me is the stuff that uses 
-"anon_vma_clone()". Could you please also explain the code flow of 
-vma_adjust() to mere mortals, please?
+> --
+> Regards,
+> Nishanth Menon
 
-I suspect Borislav is sleeping. But at least we have a patch for him to 
-test when he wakes up ;)
-
-		Linus
