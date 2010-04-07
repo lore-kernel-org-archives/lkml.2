@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab0DGW0d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 18:26:33 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43143 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753883Ab0DGW0a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 18:26:30 -0400
-Date: Wed, 7 Apr 2010 15:22:20 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Network Development <netdev@vger.kernel.org>,
-       Linux ACPI <linux-acpi@vger.kernel.org>,
-       Linux PM List <linux-pm@lists.linux-foundation.org>,
-       Linux SCSI List <linux-scsi@vger.kernel.org>,
-       Linux Wireless List <linux-wireless@vger.kernel.org>,
-       DRI <dri-devel@lists.sourceforge.net>
-Subject: Re: 2.6.34-rc3-git6: Reported regressions from 2.6.33
-In-Reply-To: <20100407221941.GL30031@ZenIV.linux.org.uk>
-Message-ID: <alpine.LFD.2.00.1004071521500.3586@i5.linux-foundation.org>
-References: <6Pphclm24fK.A.lSF.qsPvLB@chimera> <alpine.LFD.2.00.1004071444440.3586@i5.linux-foundation.org> <20100407221941.GL30031@ZenIV.linux.org.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754811Ab0DGWeE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 18:34:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50961 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752002Ab0DGWeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 18:34:00 -0400
+Message-ID: <4BBD07F9.5060106@zytor.com>
+Date: Wed, 07 Apr 2010 15:32:25 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>, Rabin Vincent <rabin@rab.in>,
+       Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [Bug #15668] start_kernel(): bug: interrupts were enabled early
+References: <6Pphclm24fK.A.lSF.qsPvLB@chimera> <JVS2s9dmTsP.A.4LH.YtPvLB@chimera>
+In-Reply-To: <JVS2s9dmTsP.A.4LH.YtPvLB@chimera>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 7 Apr 2010, Al Viro wrote:
+On 04/07/2010 02:13 PM, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
 > 
-> No, it's not the same thing; the fix is to have nfs ->d_revalidate()
-> return an error on failing open attempt (in insane codepath that has
-> ->d_revalidate() handling open()).  Confirmed to work by reporter...
+> The following bug entry is on the current list of known regressions
+> from 2.6.33.  Please verify if it still should be listed and let the tracking team
+> know (either way).
+> 
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15668
+> Subject		: start_kernel(): bug: interrupts were enabled early
+> Submitter	: Rabin Vincent <rabin@rab.in>
+> Date		: 2010-03-25 19:53 (14 days old)
+> First-Bad-Commit: http://git.kernel.org/git/linus/773e3eb7b81e5ba13b5155dfb3bb75b8ce37f8f9
+                                         ^^^^
 
-Ok, can you do the proper changelog description and sign-offs etc?
+FWIW, this /git is redundant.
 
-		Linus
+	-hpa
