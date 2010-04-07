@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932904Ab0DGROd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 13:14:33 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:37501 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932873Ab0DGROb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 13:14:31 -0400
-Date: Wed, 7 Apr 2010 09:58:45 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for April 7 (net/core/dev_addr_lists)
-Message-Id: <20100407095845.f29ebf48.randy.dunlap@oracle.com>
-In-Reply-To: <20100407174123.81b32310.sfr@canb.auug.org.au>
-References: <20100407174123.81b32310.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932924Ab0DGRPL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 13:15:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14384 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932825Ab0DGRPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 13:15:08 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] RCU: Better explain the condition parameter of
+	rcu_dereference_check()
+To: paulmck@linux.vnet.ibm.com, eric.dumazet@gmail.com
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
+Date: Wed, 07 Apr 2010 18:15:00 +0100
+Message-ID: <20100407171500.27710.88994.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4BBCB9F6.00F6:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Apr 2010 17:41:23 +1000 Stephen Rothwell wrote:
+Better explain the condition parameter of rcu_dereference_check() that
+describes the conditions under which the dereference is permitted to take
+place.  This condition is only checked under lockdep proving.
 
-> Hi all,
-> 
-> Changes since 20100401:
-
-
-when CONFIG_PROC_FS is disabled:
-
-linux-next-20100407/net/core/dev_addr_lists.c: In function 'dev_mc_net_init':
-linux-next-20100407/net/core/dev_addr_lists.c:722: error: implicit declaration of function 'proc_net_fops_create'
-linux-next-20100407/net/core/dev_addr_lists.c:722: error: 'dev_mc_seq_fops' undeclared (first use in this function)
-linux-next-20100407/net/core/dev_addr_lists.c:722: error: (Each undeclared identifier is reported only once
-linux-next-20100407/net/core/dev_addr_lists.c:722: error: for each function it appears in.)
-linux-next-20100407/net/core/dev_addr_lists.c: In function 'dev_mc_net_exit':
-linux-next-20100407/net/core/dev_addr_lists.c:729: error: implicit declaration of function 'proc_net_remove'
-make[3]: *** [net/core/dev_addr_lists.o] Error 1
-
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
-~Randy
+
+ include/linux/rcupdate.h |   28 +++++++++++++++++++++++-----
+ 1 files changed, 23 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 872a98e..acf9958 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -195,12 +195,30 @@ static inline int rcu_read_lock_sched_held(void)
+ 
+ /**
+  * rcu_dereference_check - rcu_dereference with debug checking
++ * @p: The pointer to read, prior to dereferencing
++ * @c: The conditions under which the dereference will take place
+  *
+- * Do an rcu_dereference(), but check that the context is correct.
+- * For example, rcu_dereference_check(gp, rcu_read_lock_held()) to
+- * ensure that the rcu_dereference_check() executes within an RCU
+- * read-side critical section.  It is also possible to check for
+- * locks being held, for example, by using lockdep_is_held().
++ * Do an rcu_dereference(), but check that the conditions under which the
++ * dereference will take place are correct.  Typically the conditions indicate
++ * the various locking conditions that should be held at that point.  The check
++ * should return true if the conditions are satisfied.
++ *
++ * For example:
++ *
++ *	bar = rcu_dereference_check(foo->bar, rcu_read_lock_held() ||
++ *					      lockdep_is_held(&foo->lock));
++ *
++ * could be used to indicate to lockdep that foo->bar may only be dereferenced
++ * if either the RCU read lock is held, or that the lock required to replace
++ * the bar struct at foo->bar is held.
++ *
++ * Note that the list of conditions may also include indications of when a lock
++ * need not be held, for example during initialisation or destruction of the
++ * target struct:
++ *
++ *	bar = rcu_dereference_check(foo->bar, rcu_read_lock_held() ||
++ *					      lockdep_is_held(&foo->lock),
++ *					      atomic_read(&foo->usage) == 0);
+  */
+ #define rcu_dereference_check(p, c) \
+ 	({ \
+
