@@ -1,83 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757086Ab0DGGbS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 02:31:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55232 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756970Ab0DGGbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 02:31:12 -0400
-Message-ID: <4BBC23C2.4080100@third-harmonic.com>
-Date: Wed, 07 Apr 2010 02:18:42 -0400
-From: john cooper <john.cooper@third-harmonic.com>
-User-Agent: Thunderbird 2.0.0.9 (X11/20071115)
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Darren Hart <dvhltc@us.ibm.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
-       "Peter W. Morreale" <pmorreale@novell.com>,
-       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Gregory Haskins <ghaskins@novell.com>,
-       Sven-Thorsten Dietrich <sdietrich@novell.com>,
-       Chris Mason <chris.mason@oracle.com>,
-       Chris Wright <chrisw@sous-sol.org>,
-       john cooper <john.cooper@redhat.com>
-Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive
- spinning
-References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com> <4BBA5305.7010002@redhat.com> <4BBA5C00.4090703@us.ibm.com> <4BBA6279.20802@redhat.com> <4BBA6B6F.7040201@us.ibm.com> <4BBB36FA.4020008@redhat.com> <1270560931.1595.342.camel@laptop> <20100406145128.6324ac9a@lxorguk.ukuu.org.uk> <4BBB531A.4070500@us.ibm.com> <4BBB5C0D.8050602@redhat.com> <alpine.LFD.2.00.1004061809080.32352@localhost.localdomain> <4BBB5F52.4000403@redhat.com>
-In-Reply-To: <4BBB5F52.4000403@redhat.com>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932482Ab0DGGj1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 02:39:27 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:50001 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932071Ab0DGGjU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 02:39:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Yy21npjh1f+WWRfgBKGiV5iIP2J5PEEMNhT8Dqs0H+qbtjkpFK2ptpf/AnGxzYbKYw
+         4o2SSttKAtB/HuRaRsGBUaarytTbixvygGaC7VZ5URiMDaizN2Bwm2/eT3lUJ4AU3n06
+         zJ9SXd3oTZHwBsTyk52+aq3PvQz+QjhxvU17s=
+Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+       netdev <netdev@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>, alex.shi@intel.com,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1270607668.2078.259.camel@ymzhang.sh.intel.com>
+References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
+	 <alpine.DEB.2.00.1003250942080.2670@router.home>
+	 <1269570902.9614.92.camel@alexs-hp.sh.intel.com>
+	 <1270114166.2078.107.camel@ymzhang.sh.intel.com>
+	 <alpine.DEB.2.00.1004011050340.16531@router.home>
+	 <1270195589.2078.116.camel@ymzhang.sh.intel.com>
+	 <alpine.DEB.2.00.1004050853300.23149@router.home>
+	 <i2z84144f021004051030k7ff5190cyc083aa12c552dfac@mail.gmail.com>
+	 <4BBA8DF9.8010409@kernel.org>
+	 <1270542497.2078.123.camel@ymzhang.sh.intel.com>
+	 <alpine.DEB.2.00.1004061033330.18750@router.home>
+	 <alpine.DEB.2.00.1004061552500.19151@router.home>
+	 <1270591841.2091.170.camel@edumazet-laptop>
+	 <1270607668.2078.259.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 07 Apr 2010 08:39:12 +0200
+Message-ID: <1270622352.2091.702.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avi Kivity wrote:
-> On 04/06/2010 07:14 PM, Thomas Gleixner wrote:
->>
->>> IMO the best solution is to spin in userspace while the lock holder is
->>> running, fall into the kernel when it is scheduled out.
->>>      
->> That's just not realistic as user space has no idea whether the lock
->> holder is running or not and when it's scheduled out without a syscall :)
->>    
+Le mercredi 07 avril 2010 à 10:34 +0800, Zhang, Yanmin a écrit :
+
+> I collected retired instruction, dtlb miss and LLC miss.
+> Below is data of LLC miss.
 > 
-> The kernel could easily expose this information by writing into the
-> thread's TLS area.
+> Kernel 2.6.33:
+> # Samples: 11639436896 LLC-load-misses
+> #
+> # Overhead          Command                                           Shared Object  Symbol
+> # ........  ...............  ......................................................  ......
+> #
+>     20.94%        hackbench  [kernel.kallsyms]                                       [k] copy_user_generic_string
+>     14.56%        hackbench  [kernel.kallsyms]                                       [k] unix_stream_recvmsg
+>     12.88%        hackbench  [kernel.kallsyms]                                       [k] kfree
+>      7.37%        hackbench  [kernel.kallsyms]                                       [k] kmem_cache_free
+>      7.18%        hackbench  [kernel.kallsyms]                                       [k] kmem_cache_alloc_node
+>      6.78%        hackbench  [kernel.kallsyms]                                       [k] kfree_skb
+>      6.27%        hackbench  [kernel.kallsyms]                                       [k] __kmalloc_node_track_caller
+>      2.73%        hackbench  [kernel.kallsyms]                                       [k] __slab_free
+>      2.21%        hackbench  [kernel.kallsyms]                                       [k] get_partial_node
+>      2.01%        hackbench  [kernel.kallsyms]                                       [k] _raw_spin_lock
+>      1.59%        hackbench  [kernel.kallsyms]                                       [k] schedule
+>      1.27%        hackbench  hackbench                                               [.] receiver
+>      0.99%        hackbench  libpthread-2.9.so                                       [.] __read
+>      0.87%        hackbench  [kernel.kallsyms]                                       [k] unix_stream_sendmsg
 > 
-> So:
 > 
-> - the kernel maintains a current_cpu field in a thread's tls
-> - lock() atomically writes a pointer to the current thread's current_cpu
-> when acquiring
-> - the kernel writes an invalid value to current_cpu when switching out
-> - a contended lock() retrieves the current_cpu pointer, and spins as
-> long as it is a valid cpu
+> 
+> 
+> Kernel 2.6.34-rc3:
+> # Samples: 13079611308 LLC-load-misses
+> #
+> # Overhead          Command                                                         Shared Object  Symbol
+> # ........  ...............  ....................................................................  ......
+> #
+>     18.55%        hackbench  [kernel.kallsyms]                                                     [k] copy_user_generic_str
+> ing
+>     13.19%        hackbench  [kernel.kallsyms]                                                     [k] unix_stream_recvmsg
+>     11.62%        hackbench  [kernel.kallsyms]                                                     [k] kfree
+>      8.54%        hackbench  [kernel.kallsyms]                                                     [k] kmem_cache_free
+>      7.88%        hackbench  [kernel.kallsyms]                                                     [k] __kmalloc_node_track_
+> caller
+>      6.54%        hackbench  [kernel.kallsyms]                                                     [k] kmem_cache_alloc_node
+>      5.94%        hackbench  [kernel.kallsyms]                                                     [k] kfree_skb
+>      3.48%        hackbench  [kernel.kallsyms]                                                     [k] __slab_free
+>      2.15%        hackbench  [kernel.kallsyms]                                                     [k] _raw_spin_lock
+>      1.83%        hackbench  [kernel.kallsyms]                                                     [k] schedule
+>      1.82%        hackbench  [kernel.kallsyms]                                                     [k] get_partial_node
+>      1.59%        hackbench  hackbench                                                             [.] receiver
+>      1.37%        hackbench  libpthread-2.9.so                                                     [.] __read
+> 
+> 
 
-There are certainly details to sort through in the packaging
-of the mechanism but conceptually that should do the job.
-So here the application has chosen a blocking lock as being
-the optimal synchronization operation and we're detecting a
-scenario where we can factor out the aggregate overhead of two
-context switch operations.
+Please check values of /proc/sys/net/core/rmem_default
+and /proc/sys/net/core/wmem_default on your machines.
 
-There is also the case where the application requires a
-polled lock with the rational being the assumed lock
-hold/wait time is substantially less than the above context
-switch overhead.  But here we're otherwise completely
-open to indiscriminate scheduling preemption even though
-we may be holding a userland lock.
+Their values can also change hackbench results, because increasing
+wmem_default allows af_unix senders to consume much more skbs and stress
+slab allocators (__slab_free), way beyond slub_min_order can tune them.
 
-The adaptive mutex above is an optimization beyond what
-is normally expected for the associated model.  The preemption
-of a polled lock OTOH can easily inflict latency several orders
-of magnitude beyond what is expected in that model.  Two use
-cases exist here which IMO aren't related except for the latter
-unintentionally degenerating into the former.
+When 2000 senders are running (and 2000 receivers), we might consume
+something like 2000 * 100.000 bytes of kernel memory for skbs. TLB
+trashing is expected, because all these skbs can span many 2MB pages.
+Maybe some node imbalance happens too.
 
--john
 
--- 
-john.cooper@third-harmonic.com
+
+You could try to boot your machine with less ram per node and check :
+
+# cat /proc/buddyinfo 
+Node 0, zone      DMA      2      1      2      2      1      1      1      0      1      1      3 
+Node 0, zone    DMA32    219    298    143    584    145     57     44     41     31     26    517 
+Node 1, zone    DMA32      4      1     17      1      0      3      2      2      2      2    123 
+Node 1, zone   Normal    126    169     83      8      7      5     59     59     49     28    459 
+
+
+One experiment on your Nehalem machine would be to change hackbench so
+that each group (20 senders/ 20 receivers) run on a particular NUMA
+node.
+
+x86info -c ->
+
+CPU #1
+EFamily: 0 EModel: 1 Family: 6 Model: 26 Stepping: 5
+CPU Model: Core i7 (Nehalem)
+Processor name string: Intel(R) Xeon(R) CPU           X5570  @ 2.93GHz
+Type: 0 (Original OEM)	Brand: 0 (Unsupported)
+Number of cores per physical package=8
+Number of logical processors per socket=16
+Number of logical processors per core=2
+APIC ID: 0x10	Package: 0  Core: 1   SMT ID 0
+Cache info
+ L1 Instruction cache: 32KB, 4-way associative. 64 byte line size.
+ L1 Data cache: 32KB, 8-way associative. 64 byte line size.
+ L2 (MLC): 256KB, 8-way associative. 64 byte line size.
+TLB info
+ Data TLB: 4KB pages, 4-way associative, 64 entries
+ 64 byte prefetching.
+Found unknown cache descriptors: 55 5a b2 ca e4 
+
+
