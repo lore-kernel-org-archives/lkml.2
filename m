@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932785Ab0DGPkW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 11:40:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27212 "EHLO mx1.redhat.com"
+	id S932776Ab0DGPm1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 11:42:27 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:40677 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932751Ab0DGPkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 11:40:19 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1270652210.8141.9.camel@edumazet-laptop>
-References: <1270652210.8141.9.camel@edumazet-laptop> <20100407135732.12414.16416.stgit@warthog.procyon.org.uk>
-To: Eric Dumazet <eric.dumazet@gmail.com>, paulmck@linux.vnet.ibm.com
-Cc: dhowells@redhat.com, Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] rcu: add rcu_access_pointer and rcu_dereference_protect
-Date: Wed, 07 Apr 2010 16:40:09 +0100
-Message-ID: <25990.1270654809@redhat.com>
+	id S932662Ab0DGPm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 11:42:26 -0400
+Date: Wed, 7 Apr 2010 16:42:06 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 10/14] Add /sys trigger for per-node memory compaction
+Message-ID: <20100407154206.GS17882@csn.ul.ie>
+References: <1270224168-14775-1-git-send-email-mel@csn.ul.ie> <1270224168-14775-11-git-send-email-mel@csn.ul.ie> <20100406170559.52093bd5.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100406170559.52093bd5.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet <eric.dumazet@gmail.com> wrote:
-
-> This is not the version Paul posted. 
+On Tue, Apr 06, 2010 at 05:05:59PM -0700, Andrew Morton wrote:
+> On Fri,  2 Apr 2010 17:02:44 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
 > 
-> Removing checks just to shutup warnings ?
-
-No.  I don't see the point in the condition.
-
-> All the point is to get lockdep assistance, and you throw it away.
+> > This patch adds a per-node sysfs file called compact. When the file is
+> > written to, each zone in that node is compacted. The intention that this
+> > would be used by something like a job scheduler in a batch system before
+> > a job starts so that the job can allocate the maximum number of
+> > hugepages without significant start-up cost.
 > 
-> We want to explicit the condition, so that RCU users can explicitly
-> state what protects their data.
+> Would it make more sense if this was a per-memcg thing rather than a
+> per-node thing?
+> 
 
-You've missed the point.
+Kamezawa Hiroyuki covered this perfectly. memcg doesn't care and while
+cpuset might, there are a lot more people working with nodes than there
+are with cpuset.
 
-For rcu_access_pointer(), _nothing_ protects the data, not only that, we don't
-care: we're only checking the pointer.
-
-For rcu_dereference_protect[ed](), I don't see that the check helps.  You
-don't need to be holding the RCU lock to call it, but you do need to hold all
-the requisite locks required to exclude others modifying it.  That's a
-precondition for calling this function, so is there any point in testing it
-again?
-
-For instance, consider the following pseudocode:
-
-	do_something(struct foo *p)
-	{
-		struct bar *b;
-		spin_lock(&foo->lock);
-		b = rcu_dereference_protected(
-			foo->bar, lockdep_is_held(&foo->lock));
-		do_something_to_bar(b);
-		spin_unlock(&foo->lock);
-	}
-
-is there any need for the condition?  Does lockdep_is_held() have any side
-effects beyond those listed in the Documentation directory or on its attached
-banner comments?
-
-
-Furthermore, I think the condition in rcu_dereference_check() may well be
-misused.  For instance, Paul suggested:
-
-	cred = rcu_dereference_check(delegation->cred,
-				     delegation->inode == NULL);
-
-but if 'c' is supposed to be the locks that protect the data, is this a valid
-check?
-
-David
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
