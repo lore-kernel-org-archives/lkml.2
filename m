@@ -1,112 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757580Ab0DGJ0s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 05:26:48 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:57300 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756799Ab0DGJ0l (ORCPT
+	id S932421Ab0DGJjH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 05:39:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44695 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790Ab0DGJi6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 05:26:41 -0400
-Date: Wed, 7 Apr 2010 11:26:36 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: suman <vijayendra.suman@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Pedro Ribeiro <pedrib@gmail.com>,
-       akpm@linux-foundation.org, Greg KH <gregkh@suse.de>,
-       Alan Stern <stern@rowland.harvard.edu>, alsa-devel@alsa-project.org,
-       linux-usb@vger.kernel.org
-Subject: USB HID gadget driver (was: Re: USB transfer_buffer allocations on
- 64bit systems)
-Message-ID: <20100407092636.GF30801@buzzloop.caiaq.de>
-References: <20100407090623.GN30807@buzzloop.caiaq.de>
- <p2g581ef6d61004070220z1153d40ez955b356e01220848@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <p2g581ef6d61004070220z1153d40ez955b356e01220848@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 7 Apr 2010 05:38:58 -0400
+Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
+ 2.6.34-rc3)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Borislav Petkov <bp@alien8.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>
+In-Reply-To: <20100407091611.GC5183@cmpxchg.org>
+References: <4BBB475A.7070002@redhat.com>
+	 <1270568096.1814.145.camel@barrios-desktop>
+	 <alpine.LFD.2.00.1004060841460.3487@i5.linux-foundation.org>
+	 <1270571019.1814.163.camel@barrios-desktop>
+	 <alpine.LFD.2.00.1004060926430.3487@i5.linux-foundation.org>
+	 <1270572327.1711.3.camel@barrios-desktop>
+	 <alpine.LFD.2.00.1004060951030.3487@i5.linux-foundation.org>
+	 <4BBB69A9.5090906@redhat.com>
+	 <alpine.LFD.2.00.1004061053450.3487@i5.linux-foundation.org>
+	 <1270629403.5109.552.camel@twins>  <20100407091611.GC5183@cmpxchg.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 07 Apr 2010 11:37:23 +0200
+Message-ID: <1270633043.5109.575.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 07, 2010 at 06:20:53PM +0900, suman wrote:
-> I am sorry if this is a lame question, I am in Ignorance. I have little time
-> to make a USB driver.
-
-1. Please do not hijack email threads for unrelated subjects. Your
-question has nothing to do with the original topic and you copy the
-wrong people for your question. Start a new thread for that.
-
-2. Do not reply on top.
-
-> I need to make a board work in device mode which acts as a keyboard and
-> mouse device, So when my device is connected to a windows system it
-> will recognize as a keyboard and a mouse device. I need a pointer for it. I
-> do not find much documentation on it other than gadget driver which belongs
-> to bulk class driver.
-> I know my USB controller supports OTG and supports both device and host
-> mode.
-
-You need to write your own gadget driver for that. See the ones that
-already exist in the tree and see which parts you can recycle for your
-purpose. The protocol you want to talk is HID.
-
-Daniel
-
-
-
-> If you have any pointer can you please give. I'm all ears.
+On Wed, 2010-04-07 at 11:16 +0200, Johannes Weiner wrote:
+> On Wed, Apr 07, 2010 at 10:36:43AM +0200, Peter Zijlstra wrote:
+> > On Tue, 2010-04-06 at 11:28 -0700, Linus Torvalds wrote:
+> > > Just as an example of the kind of code that makes me worry:
+> > > 
+> > >         void unlink_anon_vmas(struct vm_area_struct *vma)
+> > >         {
+> > >                 struct anon_vma_chain *avc, *next;
+> > >                         
+> > >                 /* Unlink each anon_vma chained to the VMA. */
+> > >                 list_for_each_entry_safe(avc, next, &vma->anon_vma_chain, same_vma) {
+> > >                         anon_vma_unlink(avc);
+> > >                         list_del(&avc->same_vma);
+> > >                         anon_vma_chain_free(avc);
+> > >                 }
+> > >         }
+> > > 
+> > > Now, think about what happens for the *last* entry in that avc chain. It 
+> > > will call that "anon_vma_unlink()" thing, which will delete perhaps the 
+> > > last entry in the "same_anon_vma" one, and then it does
+> > > 
+> > >         if (empty)
+> > >                 anon_vma_free(anon_vma);
+> > > 
+> > > *before* unlink_anon_vma's has actually does that
+> > > 
+> > >         list_del(&avc->same_vma);
+> > > 
+> > > and what we essentially have is a stale anon_vma_chain entry that still 
+> > > exists on that same_vma list, and points to an anon_vma that already got 
+> > > deleted.
+> > > 
+> > > Does it matter? I really can't see that it does. 
+> > 
+> > I think it does, the anon_vma thing has an RCU destroyed slab, but that
+> > doesn't mean the anon_vma object itself is rcu delayed. The moment we
+> > free it it can be re-used. So the above use after free is a bug.
 > 
-> On Wed, Apr 7, 2010 at 6:06 PM, Daniel Mack <daniel@caiaq.de> wrote:
+> It frees avc->anon_vma, not avc.
+
+Sure, freeing avc does not involve RCU in any way.
+
+>   So the sequence is
 > 
-> > Hi,
-> >
-> > I was pointed to https://bugzilla.kernel.org/show_bug.cgi?id=15580 by
-> > Pedro Ribeiro, and unfortunately I'm pretty late in the game. I wasn't
-> > aware of that thread until yesterday.
-> >
-> > While the report is quite confusing, the reason seams pretty clear to me
-> > as I've been thru quite some time-demanding debugging of a very similar
-> > issue on Mac OS X. But I'm not totally sure whether we really hit the
-> > same issue here, so I'd like to have your opinions first.
-> >
-> > The problem is appearantly the way the transfer buffer is allocated in
-> > the drivers. In the snd-usb-caiaq driver, I used kzalloc() to get memory
-> > which works fine on 32bit systems. On x86_64, however, it seems that
-> > kzalloc() hands out memory beyond the 32bit addressable boundary, which
-> > the DMA controller of the 32bit PCI-connected EHCI controller is unable
-> > to write to or read from. Am I correct on this conclusion?
-> >
-> > Depending on the condition of the memory management, things might work
-> > or not, and especially right after a reboot, there's a better chance to
-> > get lower memory.
-> >
-> > The fix is to use usb_buffer_alloc() for that purpose which ensures
-> > memory that is suitable for DMA. And on x86_64, this also means that the
-> > upper 32 bits of the address returned are all 0's.
-> >
-> > If what I've stated is true, there are quite some more drivers affected
-> > by this issue. I collected a list of places where similar fixes are
-> > needed, and I can send patches if I get a thumbs-up.
-> >
-> > Pedro is currently testing a patch I sent out yesterday.
-> >
-> > Thanks,
-> > Daniel
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
+> 	free(avc->anon_vma) in anon_vma_unlink()
+> 	list_del(&avc->same_vma) in unlink_anon_vmas()
 > 
+> It's not a use-after free.  A problem would be if somebody should find the
+> avc through this list (it is the vma->anon_vma_chain list) when its anon_vma
+> pointer is invalid.
 > 
-> 
-> -- 
-> Rgds
-> Vijayendra Suman
-> 
-> The only basis for a true and lasting unity of all humanity is the religion
-> of the heart. The religion of the heart is the religion of love. People can
-> only be united if they are free from jealousy, hatred and petty-mindedness.
-> Purify your heart first. Meet hatred with love and malice with goodwill. The
-> purer you make your heart, the greater will be the power of your love.
+> I don't think this can happen, however.  Both the unlinking and the looking
+> at the list happen under vma->vm_mm's mmap_sem held for writing.
+
+What I was worried about was it freeing anon_vma and then still having
+the avc on list. But I guess that cannot happen because it only frees if
+its actually empty.
+
+
