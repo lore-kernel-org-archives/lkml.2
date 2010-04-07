@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932788Ab0DGPup (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 11:50:45 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48688 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932649Ab0DGPuo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 11:50:44 -0400
-Date: Wed, 7 Apr 2010 08:46:16 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Borislav Petkov <bp@alien8.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>
-Subject: Re: Ugly rmap NULL ptr deref oopsie on hibernate (was Linux
- 2.6.34-rc3)
-In-Reply-To: <1270629403.5109.552.camel@twins>
-Message-ID: <alpine.LFD.2.00.1004070843060.3487@i5.linux-foundation.org>
-References: <20100402175937.GA19690@liondog.tnic>  <alpine.LFD.2.00.1004021059010.3634@i5.linux-foundation.org>  <20100406173754.7E5A.A69D9226@jp.fujitsu.com> <4BBB475A.7070002@redhat.com>    <1270568096.1814.145.camel@barrios-desktop> 
- <alpine.LFD.2.00.1004060841460.3487@i5.linux-foundation.org>  <1270571019.1814.163.camel@barrios-desktop>  <alpine.LFD.2.00.1004060926430.3487@i5.linux-foundation.org>  <1270572327.1711.3.camel@barrios-desktop>  <alpine.LFD.2.00.1004060951030.3487@i5.linux-foundation.org>
-  <4BBB69A9.5090906@redhat.com>  <alpine.LFD.2.00.1004061053450.3487@i5.linux-foundation.org> <1270629403.5109.552.camel@twins>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S932805Ab0DGPvq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 11:51:46 -0400
+Received: from kroah.org ([198.145.64.141]:54208 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932649Ab0DGPvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 11:51:45 -0400
+Date: Wed, 7 Apr 2010 08:51:22 -0700
+From: Greg KH <greg@kroah.com>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+       Pedro Ribeiro <pedrib@gmail.com>, akpm@linux-foundation.org,
+       Greg KH <gregkh@suse.de>, alsa-devel@alsa-project.org,
+       linux-usb@vger.kernel.org
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+Message-ID: <20100407155122.GA13974@kroah.com>
+References: <20100407090623.GN30807@buzzloop.caiaq.de>
+ <Pine.LNX.4.44L0.1004071036060.1779-100000@iolanthe.rowland.org>
+ <20100407151125.GJ30801@buzzloop.caiaq.de>
+ <20100407153154.GC13425@kroah.com>
+ <20100407153551.GK30801@buzzloop.caiaq.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100407153551.GK30801@buzzloop.caiaq.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 7 Apr 2010, Peter Zijlstra wrote:
-
-> On Tue, 2010-04-06 at 11:28 -0700, Linus Torvalds wrote:
-> > Just as an example of the kind of code that makes me worry:
+On Wed, Apr 07, 2010 at 05:35:51PM +0200, Daniel Mack wrote:
+> On Wed, Apr 07, 2010 at 08:31:54AM -0700, Greg KH wrote:
+> > On Wed, Apr 07, 2010 at 05:11:25PM +0200, Daniel Mack wrote:
+> > > I vote for a clean solution, a fixup of existing implementations and
+> > > a clear note about how to allocate buffers for USB drivers. I believe
+> > > faulty allocations of this kind can explain quite a lot of problems on
+> > > x86_64 machines.
 > > 
-> >         void unlink_anon_vmas(struct vm_area_struct *vma)
-> >         {
-> >                 struct anon_vma_chain *avc, *next;
-> >                         
-> >                 /* Unlink each anon_vma chained to the VMA. */
-> >                 list_for_each_entry_safe(avc, next, &vma->anon_vma_chain, same_vma) {
-> >                         anon_vma_unlink(avc);
-> >                         list_del(&avc->same_vma);
-> >                         anon_vma_chain_free(avc);
-> >                 }
-> >         }
+> > Yeah, I really don't want to have to change every driver in different
+> > ways just depending on if someone thinks it is going to need to run on
+> > this wierd hardware.
 > > 
-> > Now, think about what happens for the *last* entry in that avc chain. It 
-> > will call that "anon_vma_unlink()" thing, which will delete perhaps the 
-> > last entry in the "same_anon_vma" one, and then it does
-> > 
-> >         if (empty)
-> >                 anon_vma_free(anon_vma);
-> > 
-> > *before* unlink_anon_vma's has actually does that
-> > 
-> >         list_del(&avc->same_vma);
-> > 
-> > and what we essentially have is a stale anon_vma_chain entry that still 
-> > exists on that same_vma list, and points to an anon_vma that already got 
-> > deleted.
-> > 
-> > Does it matter? I really can't see that it does. 
+> > Alan, any objection to just using usb_buffer_alloc() for every driver?
+> > Or is that too much overhead?
 > 
-> I think it does, the anon_vma thing has an RCU destroyed slab, but that
-> doesn't mean the anon_vma object itself is rcu delayed. The moment we
-> free it it can be re-used. So the above use after free is a bug.
+> FWIW, most drivers I've seen in the past hours use a wild mix of
+> kmalloc(), kzalloc(), kcalloc() and usb_buffer_alloc(). That should
+> really be unified.
 
-Well, it's not really a "use after free" - it's just that a stale pointer 
-still exists in a live data structure that is linked into the list. I 
-don't think there is a real bug there, simply because I don't think 
-anybody will be accessing that list (we should hopefully have all the 
-sufficient mutual exclusion in place).
+Yes, if it is necessary that we have to handle this type of crappy
+hardware, then it all needs to be unified.  Or at least unified into 2
+types of calls, one that needs the bounce buffer fun (what
+usb_buffer_alloc() does today), and one that doesn't (usb_kzalloc()
+perhaps?)
 
-So I just think it is bad form to potentially free something before we get 
-rid of all pointers to it. So to me it's a cleanliness issue: good code 
-shouldn't do things like that, and it would be much cleaner to remove the 
-AVC entry that has a pointer to the anon_vma _before_ we might be freeing 
-the anon_vma.
+thanks,
 
-Maybe I'm just anal.
-
-		Linus
+greg k-h
