@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757216Ab0DGSoN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 14:44:13 -0400
-Received: from legolas.restena.lu ([158.64.1.34]:58638 "EHLO
-	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753756Ab0DGSoL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 14:44:11 -0400
-Date: Wed, 7 Apr 2010 20:44:04 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-       linux-input@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-       rvinyard@cs.nmsu.edu
-Subject: Re: [PATCH mmotm] hid-picolcd: depends on LCD_CLASS_DEVICE
-Message-ID: <20100407204404.5233ba6b@neptune.home>
-In-Reply-To: <20100406095633.49ec957a.randy.dunlap@oracle.com>
-References: <201004052336.o35NaeSE015814@imap1.linux-foundation.org>
-	<20100405220414.9d90da83.randy.dunlap@oracle.com>
-	<alpine.LNX.2.00.1004061038510.8345@pobox.suse.cz>
-	<20100406105635.5384a087@pluto.restena.lu>
-	<20100406082614.79aaf1c5.randy.dunlap@oracle.com>
-	<20100406183535.7de3c628@neptune.home>
-	<20100406095633.49ec957a.randy.dunlap@oracle.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
+	id S1758160Ab0DGSo1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 14:44:27 -0400
+Received: from soto.provo.novell.com ([137.65.250.214]:37053 "EHLO
+	soto.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758049Ab0DGSoZ convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-ghaskins@novell.com:12:1>);
+	Wed, 7 Apr 2010 14:44:25 -0400
+Message-Id: <4BBC9A3B0200005A00063E34@soto.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 07 Apr 2010 12:44:11 -0600
+From: "Gregory Haskins" <ghaskins@novell.com>
+To: "Thomas Gleixner" <tglx@linutronix.de>, "Darren Hart" <dvhltc@us.ibm.com>
+Cc: "Ingo Molnar" <mingo@elte.hu>, "Eric Dumazet" <eric.dumazet@gmail.com>,
+       "Steven Rostedt" <rostedt@goodmis.org>,
+       "Peter Zijlstra" <peterz@infradead.org>,
+       "Peter Morreale" <PMorreale@novell.com>,
+       "Sven Dietrich" <SDietrich@novell.com>,
+       "Chris Mason" <chris.mason@oracle.com>, "Avi Kivity" <avi@redhat.com>,
+       "Rik van Riel" <riel@redhat.com>, "Chris Wright" <chrisw@sous-sol.org>,
+       "John Cooper" <john.cooper@third-harmonic.com>,
+       <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/6] futex: handle timeout inside adaptive lock
+	 spin
+References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com>
+ <1270499039-23728-6-git-send-email-dvhltc@us.ibm.com>
+ <alpine.LFD.2.00.1004061022080.32352@localhost.localdomain>
+ <4BBCC174.7020409@us.ibm.com>
+In-Reply-To: <4BBCC174.7020409@us.ibm.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 06 April 2010 Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> > 
-> > One of my attempts did end up with a circular loop with regard to FB
-> > (some of the FB drivers did select INPUT)?  
+>>> On 4/7/2010 at 01:31 PM, in message <4BBCC174.7020409@us.ibm.com>, Darren Hart
+<dvhltc@us.ibm.com> wrote: 
+> Thomas Gleixner wrote:
+>> On Mon, 5 Apr 2010, Darren Hart wrote:
+>> 
+>>> Signed-off-by: Darren Hart <dvhltc@us.ibm.com>
+
+>>> +		if (timeout) {
+>>> +			now = ktime_get();
+>> 
+>>   Hmm. Calling that in every iteration might hurt especially on non
+>>   TSC systems, but well...
 > 
->   (not that I can find)
-> 
-> CONFIG_VT does select INPUT
-> and CONFIG_DRM_I915 does
-> 	select INPUT if ACPI
+> I haven't come across a better alternative since arming the timer before 
+> setting TASK_INTERRUPTIBLE isn't appropriate.
 
-A newer attempt still produces the same result:
+Hey Darren,
 
-drivers/input/Kconfig:9:error: found recursive dependency: INPUT ->
-       HID_SUPPORT -> HID_PICOLCD_FB -> FB -> FB_STI -> VT -> INPUT
+I remember we tried something similar in early versions of the adaptive locks and this was definitely bad. :(
 
-(it's only FB which causes the loop, LEDS, LCD and BACKLIGHT are fine)
+It ended up putting so much contention on the xtime_lock (IIRC) that it resulted in adaptive locks hurting overall performance verses not using adaptive at all.  Alternative mechanisms employed a hybrid where the inner loops used a pseudo calibrated counter loop, and the outer loop checks periodically against a real clock.  It all plays into "you are burning CPU cycles anyway, so might as well put them to use" theory.  Hacky, yes, but it did relieve the pressure on the time subsystem locks and freed up a _lot_ of performance.  Without this, the concept of timeouts+adaptive was unworkable.  I think Steven ultimately rejected the timeout related patches outright when he merged adaptive to -rt, but I think Sven pulled them into SLERT if you would like a potential code reference to a working solution.
 
-This is with following patch on top of the improved deps patch I sent
-a few minutes ago deeper in this thread.
-
-Is there a way around this?
+-Greg
 
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 782a34e..711c091 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -285,7 +285,7 @@ config HID_PICOLCD_FB
- 	bool "Framebuffer support"
- 	default !EMBEDDED
- 	depends on HID_PICOLCD
--	depends on HID_PICOLCD=FB || FB=y
-+	select FB
- 	select FB_DEFERRED_IO
- 	select FB_SYS_FILLRECT
- 	select FB_SYS_COPYAREA
-@@ -299,7 +299,8 @@ config HID_PICOLCD_BACKLIGHT
- 	bool "Backlight control"
- 	default !EMBEDDED
- 	depends on HID_PICOLCD
--	depends on HID_PICOLCD=BACKLIGHT_CLASS_DEVICE || BACKLIGHT_CLASS_DEVICE=y
-+	select BACKLIGHT_LCD_SUPPORT
-+	select BACKLIGHT_CLASS_DEVICE
- 	---help---
- 	  Provide access to PicoLCD's backlight control via backlight
- 	  class.
-@@ -308,7 +309,8 @@ config HID_PICOLCD_LCD
- 	bool "Contrast control"
- 	default !EMBEDDED
- 	depends on HID_PICOLCD
--	depends on HID_PICOLCD=LCD_CLASS_DEVICE || LCD_CLASS_DEVICE=y
-+	select BACKLIGHT_LCD_SUPPORT
-+	select LCD_CLASS_DEVICE
- 	---help---
- 	  Provide access to PicoLCD's LCD contrast via lcd class.
- 
-@@ -316,7 +318,8 @@ config HID_PICOLCD_LEDS
- 	bool "GPO via leds class"
- 	default !EMBEDDED
- 	depends on HID_PICOLCD
--	depends on HID_PICOLCD=LEDS_CLASS || LEDS_CLASS=y
-+	select NEW_LEDS
-+	select LEDS_CLASS
- 	---help---
- 	  Provide access to PicoLCD's GPO pins via leds class.
- 
+
