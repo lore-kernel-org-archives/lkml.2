@@ -1,137 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757667Ab0DGKBu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 06:01:50 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:55460 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753020Ab0DGKBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 06:01:44 -0400
-Date: Wed, 7 Apr 2010 11:01:24 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 03/14] mm: Share the anon_vma ref counts between KSM
-	and page migration
-Message-ID: <20100407100124.GM17882@csn.ul.ie>
-References: <1270224168-14775-1-git-send-email-mel@csn.ul.ie> <1270224168-14775-4-git-send-email-mel@csn.ul.ie> <20100406170528.ecb30941.akpm@linux-foundation.org>
+	id S1757580Ab0DGKFk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 06:05:40 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:24983 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753362Ab0DGKFd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 06:05:33 -0400
+X-SpamScore: -13
+X-BigFish: VPS-13(zzab9bh1432P98dNzz1202hzzz32i87h6bh2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L0I40S-01-282-02
+X-M-MSG: 
+Date: Wed, 7 Apr 2010 12:05:12 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Dan Carpenter <error27@gmail.com>, Joerg Roedel <joro@8bytes.org>,
+       Ingo Molnar <mingo@elte.hu>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       Shaun Ruffell <sruffell@digium.com>, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [patch v2] dma-debug: cleanup for loop
+Message-ID: <20100407100512.GJ28166@amd.com>
+References: <20100402112843.GI5265@bicker>
+ <20100403204717.GS24846@8bytes.org>
+ <20100405125329.GA16197@bicker>
+ <20100405140215.GA29758@8bytes.org>
+ <20100405140909.GB29758@8bytes.org>
+ <20100406164512.GF21229@bicker>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20100406170528.ecb30941.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20100406164512.GF21229@bicker>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 07 Apr 2010 10:05:13.0486 (UTC) FILETIME=[D09C3AE0:01CAD639]
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 06, 2010 at 05:05:28PM -0700, Andrew Morton wrote:
-> On Fri,  2 Apr 2010 17:02:37 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
+On Tue, Apr 06, 2010 at 07:45:12PM +0300, Dan Carpenter wrote:
+> Earlier in this function we set the last byte of "buf" to NULL so we 
+> always hit the break statement and "i" is never equal to NAME_MAX_LEN.  
+> This patch doesn't change how the driver works but it silences a Smatch 
+> warning and it makes it clearer that we don't write past the end of the 
+> array.
 > 
-> > For clarity of review, KSM and page migration have separate refcounts on
-> > the anon_vma. While clear, this is a waste of memory. This patch gets
-> > KSM and page migration to share their toys in a spirit of harmony.
-> > 
-> > ...
-> >
-> > @@ -26,11 +26,17 @@
-> >   */
-> >  struct anon_vma {
-> >  	spinlock_t lock;	/* Serialize access to vma list */
-> > -#ifdef CONFIG_KSM
-> > -	atomic_t ksm_refcount;
-> > -#endif
-> > -#ifdef CONFIG_MIGRATION
-> > -	atomic_t migrate_refcount;
-> > +#if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
-> > +
-> > +	/*
-> > +	 * The external_refcount is taken by either KSM or page migration
-> > +	 * to take a reference to an anon_vma when there is no
-> > +	 * guarantee that the vma of page tables will exist for
-> > +	 * the duration of the operation. A caller that takes
-> > +	 * the reference is responsible for clearing up the
-> > +	 * anon_vma if they are the last user on release
-> > +	 */
-> > +	atomic_t external_refcount;
-> >  #endif
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
 > 
-> hah.
-> 
+> diff --git a/lib/dma-debug.c b/lib/dma-debug.c
+> index ba8b670..01e6427 100644
+> --- a/lib/dma-debug.c
+> +++ b/lib/dma-debug.c
+> @@ -570,7 +570,7 @@ static ssize_t filter_write(struct file *file, const char __user *userbuf,
+>  	 * Now parse out the first token and use it as the name for the
+>  	 * driver to filter for.
+>  	 */
+> -	for (i = 0; i < NAME_MAX_LEN; ++i) {
+> +	for (i = 0; i < NAME_MAX_LEN - 1; ++i) {
+>  		current_driver_name[i] = buf[i];
+>  		if (isspace(buf[i]) || buf[i] == ' ' || buf[i] == 0)
+>  			break;
 
-hah indeed. There is a very strong case for merging patch 1 and 3 into
-the same patch. They were kept separate because the combined patch was
-going to be tricky to review. The expansion of the comment in patch 3
-was to avoid a full explanation that was then editted in a later patch.
+Applied, thanks.
 
-> > @@ -653,7 +653,7 @@ skip_unmap:
-> >  rcu_unlock:
-> >  
-> >  	/* Drop an anon_vma reference if we took one */
-> > -	if (anon_vma && atomic_dec_and_lock(&anon_vma->migrate_refcount, &anon_vma->lock)) {
-> > +	if (anon_vma && atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->lock)) {
-> >  		int empty = list_empty(&anon_vma->head);
-> >  		spin_unlock(&anon_vma->lock);
-> >  		if (empty)
-> 
-> So we now _do_ test ksm_refcount.  Perhaps that fixed a bug added in [1/14]
-> 
 
-Would you like to make patch 3 patch 2 instead and then merge them when
-going upstream?
-
-As it is you are right in that there could be a bug if just 1 was merged
-but not 3 because both refcounts are not taken. I could fix up patch 1
-but a merge would make a lot more sense.
-
-> > diff --git a/mm/rmap.c b/mm/rmap.c
-> > index 578d0fe..af35b75 100644
-> > --- a/mm/rmap.c
-> > +++ b/mm/rmap.c
-> > @@ -248,8 +248,7 @@ static void anon_vma_unlink(struct anon_vma_chain *anon_vma_chain)
-> >  	list_del(&anon_vma_chain->same_anon_vma);
-> >  
-> >  	/* We must garbage collect the anon_vma if it's empty */
-> > -	empty = list_empty(&anon_vma->head) && !ksm_refcount(anon_vma) &&
-> > -					!migrate_refcount(anon_vma);
-> > +	empty = list_empty(&anon_vma->head) && !anonvma_external_refcount(anon_vma);
-> >  	spin_unlock(&anon_vma->lock);
-> >  
-> >  	if (empty)
-> > @@ -273,8 +272,7 @@ static void anon_vma_ctor(void *data)
-> >  	struct anon_vma *anon_vma = data;
-> >  
-> >  	spin_lock_init(&anon_vma->lock);
-> > -	ksm_refcount_init(anon_vma);
-> > -	migrate_refcount_init(anon_vma);
-> > +	anonvma_external_refcount_init(anon_vma);
-> 
-> What a mouthful.  Can we do s/external_//g?
-> 
-
-We could, but it would be misleading.
-
-anon_vma has an explicit and implicit refcount. The implicit reference
-is a VMA being on the anon_vma list. The explicit count is
-external_refcount. Just "refcount" implies that it is properly reference
-counted which is not the case. Someone looking at memory.c might
-conclude that there is a refcounting bug because just the list is
-checked.
-
-Now, the right thing to do here is to get rid of implicit reference
-counting. Peter Ziljstra has posted an RFC patch series on mm preempt
-and the first two patches of that cover using proper reference counting.
-When/if that gets merged, a rename from external_refcount to refcount
-would be appropriate.
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
