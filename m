@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932336Ab0DGIOB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 04:14:01 -0400
-Received: from mga09.intel.com ([134.134.136.24]:57047 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932115Ab0DGINy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 04:13:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,377,1267430400"; 
-   d="scan'208";a="507031835"
-Date: Wed, 7 Apr 2010 16:13:51 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Taras Glek <tglek@mozilla.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
-Message-ID: <20100407081351.GA20322@localhost>
-References: <4BBA6776.5060804@mozilla.com> <20100406095135.GB5183@cmpxchg.org> <20100407022456.GA9468@localhost> <4BBBF402.70403@mozilla.com> <u2p28c262361004062106neea0a64ax2ee0d1e1caf7fce5@mail.gmail.com> <20100407071408.GA17892@localhost> <v2r28c262361004070033z43fc5f07jcb5581a7a8c48310@mail.gmail.com> <20100407074732.GC17892@localhost> <g2q28c262361004070106le671ad63u965e8137ad2e4f41@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <g2q28c262361004070106le671ad63u965e8137ad2e4f41@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756662Ab0DGIPL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 04:15:11 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:53013 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756064Ab0DGIPF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 04:15:05 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 7 Apr 2010 17:11:13 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
+       Larry Woodman <lwoodman@redhat.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: RFC [Patch] Remove
+ "please try 'cgroup_disable=memory' option if you don't want memory cgroups"
+ printk at boot time.
+Message-Id: <20100407171113.1029d6d4.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100407080014.GB2446@osiris.boeblingen.de.ibm.com>
+References: <1270049283.3551.281.camel@dhcp-100-19-198.bos.redhat.com>
+	<1270050899.3551.283.camel@dhcp-100-19-198.bos.redhat.com>
+	<4BB38D1A.7050204@redhat.com>
+	<20100401104859.e0deeca8.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100401045310.GB6337@balbir.in.ibm.com>
+	<20100407080014.GB2446@osiris.boeblingen.de.ibm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minchan,
+On Wed, 7 Apr 2010 10:00:14 +0200
+Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
 
-> A few month ago, I saw your patch about enhancing readahead.
-> At that time, many guys tested several size of USB and SSD which are
-> consist of nand device.
-> The result is good if we does readahead untile some crossover point.
-> So I think we need readahead about file I/O in non-rotation device, too.
+> On Thu, Apr 01, 2010 at 10:23:10AM +0530, Balbir Singh wrote:
+> > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-04-01 10:48:59]:
+> > I've seen this issue come up on multiple machines, I think the printk
+> > is useful. However, we might need to change the panic() to a big fat
+> > warning and disable the memcg controller if we fail to allocate memory
+> > in page_cgroup_init_flatmem(). 
 > 
-> But startup latency is important than file I/O performance in some machine.
-> With analysis at that time, code readahead of application affected slow startup.
-> In addition, during bootup, cache hit ratio was very small.
-> 
-> So I hoped we can disable readahead just only code section(ie, roughly
-> exec vma's filemap fault). :)
-> 
-> I don't want you to solve this problem right now.
-> Just let you understand embedded system's some problem
-> for enhancing readahead in future.  :)
+> Probably a stupid question: but isn't it possible to allocate the huge
+> amounts of memory only if somebody activates memcg during runtime?
 
-Yeah, I've never heard of such a demand, definitely good to know it!
+Activation can occur only at boot but page_cgroup allocation happens at
+memory hotplug.
+
+> And then allocate everything using vmalloc?
+No.
+
+> But that probably doesn't work, since you need to record everything
+> from the boot of the system, I would guess?
+
+The story was..
+
+1. at first, page_cgroup was allocated on demand. but we need to have
+   page->page_cgroup pointer. Then, we pay 8bytes per page even if we
+   disable memory cgroup.
+   All page behavior was tracked since boot time.
+
+2. Fedora maintaienr said "we never enable memcg if you contiue to use
+   page->page_cgroup pointer, 8bytes per page costs!".
+   Then, we decieded to allocate page_cgroup at boot time, and allocate
+   all at once at boot time. This makes memcg runtime robust. And we
+   got rid of page->page_cgroup pointer.
+   cgroup_disable=memory user have no waste of memory now.
+
+> Just wondering because we do everything to not even waste a single bit
+> in struct page and all of a sudden on the enterprise distros we allocate
+> (by default!) 40 additional bytes per page.
+
+3. Then, I added warning when I wrote a patch to allocate page_cgroup at boot.
+   It's easy to avoid extra 40bytes.
+   For enterprise, I have no concern. Enterprise admin tend to be careful and
+   check all default value when he use a new kernel.
+   That message was for desktop guys using desktop distro.
+
+   Disabling memory cgroup at default may be a choice. But no one send such kind
+   of patch until now.
 
 Thanks,
-Fengguang
+-Kame
+
