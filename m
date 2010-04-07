@@ -1,135 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760Ab0DGUNP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 16:13:15 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:32654 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038Ab0DGUNL convert rfc822-to-8bit (ORCPT
+	id S1751929Ab0DGUXm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 16:23:42 -0400
+Received: from atreides.gradator.net ([212.85.155.42]:57277 "EHLO
+	atreides.gradator.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038Ab0DGUXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 16:13:11 -0400
-Date: Wed, 7 Apr 2010 13:12:04 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Bruno =?ISO-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-       linux-input@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-       rvinyard@cs.nmsu.edu
-Subject: Re: [PATCH mmotm] hid-picolcd: depends on LCD_CLASS_DEVICE
-Message-Id: <20100407131204.10759584.randy.dunlap@oracle.com>
-In-Reply-To: <20100407204404.5233ba6b@neptune.home>
-References: <201004052336.o35NaeSE015814@imap1.linux-foundation.org>
-	<20100405220414.9d90da83.randy.dunlap@oracle.com>
-	<alpine.LNX.2.00.1004061038510.8345@pobox.suse.cz>
-	<20100406105635.5384a087@pluto.restena.lu>
-	<20100406082614.79aaf1c5.randy.dunlap@oracle.com>
-	<20100406183535.7de3c628@neptune.home>
-	<20100406095633.49ec957a.randy.dunlap@oracle.com>
-	<20100407204404.5233ba6b@neptune.home>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4BBCE723.000C:SCFMA4539814,ss=1,fgs=0
+	Wed, 7 Apr 2010 16:23:40 -0400
+X-Greylist: delayed 1574 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Apr 2010 16:23:40 EDT
+Date: Wed, 7 Apr 2010 22:23:39 +0200
+From: Sylvain Rochet <gradator@gradator.net>
+To: linux-kernel@vger.kernel.org
+Message-ID: <20100407202339.GB4830@gradator.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fXStkuK2IQBfcDe+"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.13 (2006-08-11)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: gradator@atreides.gradator.net
+Subject: PROBLEM: 2.4.37.9 destroying an Ethernet interface with permanent NUD leaves the kernels with undestroyable interfaces when ATM is compiled in
+X-SA-Exim-Version: 4.2.1 (built Tue, 09 Jan 2007 17:51:29 +0000)
+X-SA-Exim-Scanned: Yes (on atreides.gradator.net)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Apr 2010 20:44:04 +0200 Bruno Prémont wrote:
 
-> On Tue, 06 April 2010 Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> > > 
-> > > One of my attempts did end up with a circular loop with regard to FB
-> > > (some of the FB drivers did select INPUT)?  
-> > 
-> >   (not that I can find)
-> > 
-> > CONFIG_VT does select INPUT
-> > and CONFIG_DRM_I915 does
-> > 	select INPUT if ACPI
-> 
-> A newer attempt still produces the same result:
-> 
-> drivers/input/Kconfig:9:error: found recursive dependency: INPUT ->
->        HID_SUPPORT -> HID_PICOLCD_FB -> FB -> FB_STI -> VT -> INPUT
-> 
-> (it's only FB which causes the loop, LEDS, LCD and BACKLIGHT are fine)
-
-  (yes, so I see)
-
-> This is with following patch on top of the improved deps patch I sent
-> a few minutes ago deeper in this thread.
-> 
-> Is there a way around this?
-> 
-
-Well, lesson #1 is that select is evil^W^W should only be used to enable
-library-like code, or as Documentation/kbuild/kconfig-language.txt says:
-
-  Note:
-	select should be used with care. select will force
-	a symbol to a value without visiting the dependencies.
-	By abusing select you are able to select a symbol FOO even
-	if FOO depends on BAR that is not set.
-	In general use select only for non-visible symbols
-	(no prompts anywhere) and for symbols with no dependencies.
-	That will limit the usefulness but on the other hand avoid
-	the illegal configurations all over.
-	kconfig should one day warn about such things.
+--fXStkuK2IQBfcDe+
+Content-Type: multipart/mixed; boundary="/Uq4LBwYP4y1W6pO"
+Content-Disposition: inline
 
 
+--/Uq4LBwYP4y1W6pO
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-(more below)
+Hi,
 
-> 
-> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-> index 782a34e..711c091 100644
-> --- a/drivers/hid/Kconfig
-> +++ b/drivers/hid/Kconfig
-> @@ -285,7 +285,7 @@ config HID_PICOLCD_FB
->  	bool "Framebuffer support"
->  	default !EMBEDDED
->  	depends on HID_PICOLCD
-> -	depends on HID_PICOLCD=FB || FB=y
-> +	select FB
-
-If you'll go back to the unpatched (by this patch) version here,
-it seems to work OK.
-
->  	select FB_DEFERRED_IO
->  	select FB_SYS_FILLRECT
->  	select FB_SYS_COPYAREA
-> @@ -299,7 +299,8 @@ config HID_PICOLCD_BACKLIGHT
->  	bool "Backlight control"
->  	default !EMBEDDED
->  	depends on HID_PICOLCD
-> -	depends on HID_PICOLCD=BACKLIGHT_CLASS_DEVICE || BACKLIGHT_CLASS_DEVICE=y
-> +	select BACKLIGHT_LCD_SUPPORT
-> +	select BACKLIGHT_CLASS_DEVICE
->  	---help---
->  	  Provide access to PicoLCD's backlight control via backlight
->  	  class.
-> @@ -308,7 +309,8 @@ config HID_PICOLCD_LCD
->  	bool "Contrast control"
->  	default !EMBEDDED
->  	depends on HID_PICOLCD
-> -	depends on HID_PICOLCD=LCD_CLASS_DEVICE || LCD_CLASS_DEVICE=y
-> +	select BACKLIGHT_LCD_SUPPORT
-> +	select LCD_CLASS_DEVICE
->  	---help---
->  	  Provide access to PicoLCD's LCD contrast via lcd class.
->  
-> @@ -316,7 +318,8 @@ config HID_PICOLCD_LEDS
->  	bool "GPO via leds class"
->  	default !EMBEDDED
->  	depends on HID_PICOLCD
-> -	depends on HID_PICOLCD=LEDS_CLASS || LEDS_CLASS=y
-> +	select NEW_LEDS
-> +	select LEDS_CLASS
->  	---help---
->  	  Provide access to PicoLCD's GPO pins via leds class.
+When ATM and Ethernet are compiled in, ATM and Ethernet create their=20
+NEIGH/ARP tables, they are both assigned to family AF_INET.
 
 
----
-~Randy
+int neigh_add(....) {
+
+ ...
+        for (tbl=3Dneigh_tables; tbl; tbl =3D tbl->next) {
+                if (tbl->family !=3D ndm->ndm_family)
+                        continue;
+  ...
+}
+
+
+As ATM table is created before Ethernet(main?) table,=20
+net/core/neighbour.c::neigh_add() function add all permanent IP ARP=20
+Ethernet NUD to the IP ATM table, which is wrong.
+
+Therefore, when net/core/neighbour.c::neigh_ifdown() is called ARP=20
+entries are not cleared, leaving dev->refcnt to a value that will never=20
+be able to reach 0 anymore.
+
+So, when net/core/dev.c::unregister_netdevice() is called it stalls=20
+without being able to destroy the interface leaving the system with no=20
+network tools working anymore.
+
+
+This is really easy to reproduce:
+
+openvpn --mktun --dev tap10
+ip addr add 10.20.30.20/24 dev tap10
+ip link set up dev tap10
+ip neighbour add 10.20.30.40 lladdr 01:02:03:04:05:06 nud permanent dev tap=
+10
+ip link set down dev tap10
+openvpn --rmtun --dev tap10
+
+and then kernel log starts being filled by:
+
+unregister_netdevice: waiting for tap10 to become free. Usage count =3D 2
+unregister_netdevice: waiting for tap10 to become free. Usage count =3D 2
+unregister_netdevice: waiting for tap10 to become free. Usage count =3D 2
+unregister_netdevice: waiting for tap10 to become free. Usage count =3D 2
+
+
+I changed the family of the ATM table to AF_ATMPVC, of course it fixes=20
+the issue but I guess this is the wrong way to fix that.
+
+
+Best regard,
+Sylvain
+
+--/Uq4LBwYP4y1W6pO
+Content-Type: text/x-diff; charset=iso-8859-15
+Content-Disposition: attachment; filename="wrongfamily-atm-2.5.36.6.patch"
+Content-Transfer-Encoding: quoted-printable
+
+diff -Nru linux-2.4.36.6.a/net/atm/clip.c linux-2.4.36.6.b/net/atm/clip.c
+--- linux-2.4.36.6.a/net/atm/clip.c	2008-06-06 18:25:34.000000000 +0200
++++ linux-2.4.36.6.b/net/atm/clip.c	2010-04-07 21:33:38.000000000 +0200
+@@ -277,7 +277,7 @@
+=20
+=20
+ static struct neigh_ops clip_neigh_ops =3D {
+-	family:			AF_INET,
++	family:			AF_ATMPVC,
+ 	destructor:		clip_neigh_destroy,
+ 	solicit:		clip_neigh_solicit,
+ 	error_report:		clip_neigh_error,
+@@ -316,7 +316,7 @@
+=20
+ static struct neigh_table clip_tbl =3D {
+ 	NULL,			/* next */
+-	AF_INET,		/* family */
++	AF_ATMPVC,		/* family */
+ 	sizeof(struct neighbour)+sizeof(struct atmarp_entry), /* entry_size */
+ 	4,			/* key_len */
+ 	clip_hash,
+
+--/Uq4LBwYP4y1W6pO--
+
+--fXStkuK2IQBfcDe+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.6 (GNU/Linux)
+
+iD8DBQFLvOnLDFub3qtEsS8RAqQ6AJ4o/31BgKPJBWqhUc26nDynPLAI1ACgnjD0
+qJ5JgEu8Yim+X1PM74NbvBM=
+=19QH
+-----END PGP SIGNATURE-----
+
+--fXStkuK2IQBfcDe+--
