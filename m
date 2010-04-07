@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758187Ab0DGR2a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 13:28:30 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:47880 "EHLO e9.ny.us.ibm.com"
+	id S1758214Ab0DGR2q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 13:28:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44239 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751125Ab0DGR22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 13:28:28 -0400
-Date: Wed, 7 Apr 2010 10:28:24 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: eric.dumazet@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] RCU: Better explain the condition parameter of
- rcu_dereference_check()
-Message-ID: <20100407172824.GG2481@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100407171500.27710.88994.stgit@warthog.procyon.org.uk>
+	id S1758100Ab0DGR2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 13:28:44 -0400
+Date: Wed, 7 Apr 2010 13:28:33 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Chad Talbott <ctalbott@google.com>
+Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>, jens.axboe@oracle.com,
+       linux-kernel@vger.kernel.org, Nauman Rafique <nauman@google.com>,
+       Li Zefan <lizf@cn.fujitsu.com>, Divyesh Shah <dpshah@google.com>
+Subject: Re: [PATCH 1/2 V3] io-controller: Add a new interface
+	"weight_device" for IO-Controller
+Message-ID: <20100407172833.GB3206@redhat.com>
+References: <20100303154748.GC2866@redhat.com> <e98e18941003031519v14d4f79cg33da5c3cf1f5ac03@mail.gmail.com> <1786ab031003031825m5467c86jf5c355df10001dd2@mail.gmail.com> <4B8F27BD.2020704@cn.fujitsu.com> <4B8F62B7.3080401@cn.fujitsu.com> <20100304152400.GB18786@redhat.com> <4B906BB6.3080104@cn.fujitsu.com> <20100305141300.GA3296@redhat.com> <4BAB027D.7000405@cn.fujitsu.com> <i2o1786ab031004071012t51ae0a10t3b4f30bece40d8a6@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100407171500.27710.88994.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <i2o1786ab031004071012t51ae0a10t3b4f30bece40d8a6@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 07, 2010 at 06:15:00PM +0100, David Howells wrote:
-> Better explain the condition parameter of rcu_dereference_check() that
-> describes the conditions under which the dereference is permitted to take
-> place.  This condition is only checked under lockdep proving.
+On Wed, Apr 07, 2010 at 10:12:03AM -0700, Chad Talbott wrote:
+> On Wed, Mar 24, 2010 at 11:28 PM, Gui Jianfeng
+> <guijianfeng@cn.fujitsu.com> wrote:
+> > Vivek Goyal wrote:
+> >> On Fri, Mar 05, 2010 at 10:25:58AM +0800, Gui Jianfeng wrote:
+> >>> V2->V3 changes:
+> >>> - Move policy_*_node() functions up to get rid of forward declarations
+> >>> - rename related functions by adding prefix "blkio_"
+> >>>
+> >>
+> >> Thanks for the changes Gui. Looks good to me.
+> >>
+> >> Acked-by: Vivek Goyal <vgoyal@redhat.com>
+> >
+> > Hi Jens,
+> >
+> > This patchset seems to get lost. Just for reminding. Any comments?
+> 
+> Hi Jens,
+> 
+> Just want to add a quick note that we're excited about this
+> functionality and are hoping to see it go in.
+> 
 
-Very good, I have queued this.  Thank you!
+I guess this patchset is now going to conflict with Divyesh's changes.
 
-							Thanx, Paul
+Gui, once blkio stat patches (cleaned up ones) are committed may be you
+can rebase your changes on top of that. It will become easier for Jens.
+(Until and unless he has some objections to this patchset).
 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> ---
-> 
->  include/linux/rcupdate.h |   28 +++++++++++++++++++++++-----
->  1 files changed, 23 insertions(+), 5 deletions(-)
-> 
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index 872a98e..acf9958 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -195,12 +195,30 @@ static inline int rcu_read_lock_sched_held(void)
-> 
->  /**
->   * rcu_dereference_check - rcu_dereference with debug checking
-> + * @p: The pointer to read, prior to dereferencing
-> + * @c: The conditions under which the dereference will take place
->   *
-> - * Do an rcu_dereference(), but check that the context is correct.
-> - * For example, rcu_dereference_check(gp, rcu_read_lock_held()) to
-> - * ensure that the rcu_dereference_check() executes within an RCU
-> - * read-side critical section.  It is also possible to check for
-> - * locks being held, for example, by using lockdep_is_held().
-> + * Do an rcu_dereference(), but check that the conditions under which the
-> + * dereference will take place are correct.  Typically the conditions indicate
-> + * the various locking conditions that should be held at that point.  The check
-> + * should return true if the conditions are satisfied.
-> + *
-> + * For example:
-> + *
-> + *	bar = rcu_dereference_check(foo->bar, rcu_read_lock_held() ||
-> + *					      lockdep_is_held(&foo->lock));
-> + *
-> + * could be used to indicate to lockdep that foo->bar may only be dereferenced
-> + * if either the RCU read lock is held, or that the lock required to replace
-> + * the bar struct at foo->bar is held.
-> + *
-> + * Note that the list of conditions may also include indications of when a lock
-> + * need not be held, for example during initialisation or destruction of the
-> + * target struct:
-> + *
-> + *	bar = rcu_dereference_check(foo->bar, rcu_read_lock_held() ||
-> + *					      lockdep_is_held(&foo->lock),
-> + *					      atomic_read(&foo->usage) == 0);
->   */
->  #define rcu_dereference_check(p, c) \
->  	({ \
-> 
+Thanks
+Vivek
