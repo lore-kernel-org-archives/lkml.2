@@ -1,143 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab0DGDv3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Apr 2010 23:51:29 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:54856 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753472Ab0DGDvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Apr 2010 23:51:23 -0400
-Date: Wed, 7 Apr 2010 13:51:17 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       David Woodhouse <dwmw2@infradead.org>,
-       Ben Hutchings <ben@decadent.org.uk>, David Miller <davem@davemloft.net>,
-       <netdev@vger.kernel.org>, Ondrej Zary <linux@rainbow-software.org>
-Subject: linux-next: manual merge of the rr tree with the net tree
-Message-Id: <20100407135117.1111c4a0.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
+	id S1756706Ab0DGEAC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 00:00:02 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:35827 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752478Ab0DGD7z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Apr 2010 23:59:55 -0400
+Subject: Re: [2.6.34-rc1 REGRESSION] ahci 0000:00:1f.2: controller reset
+	failed (0xffffffff)
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Andy Isaacson <adi@hexapodia.org>
+Cc: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Chris Wright <chrisw@sous-sol.org>,
+       Matthew Wilcox <willy@linux.intel.com>, Yinghai Lu <yinghai@kernel.org>
+In-Reply-To: <20100406225425.GA8292@hexapodia.org>
+References: <20100406225425.GA8292@hexapodia.org>
+Content-Type: text/plain
+Date: Tue, 06 Apr 2010 21:59:43 -0600
+Message-Id: <1270612783.8518.15.camel@dc7800.home>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rusty,
+On Tue, 2010-04-06 at 15:54 -0700, Andy Isaacson wrote:
+> This Dell Precision WorkStation T3400 doesn't boot 2.6.34-rc1 (tried
+> 522dba71).  2.6.33 was fine, and it's been running various stable
+> kernels for the last 18 months.  Unfortunately I can't reasonably bisect
+> as I need this machine to be usable, but I can test specific patches or
+> options.  (three or four reboots is fine, 15 is not.)
+> 
+> full dmesg from failing boot and a successful boot at
+> http://web.hexapodia.org/~adi/tmp/20100406-pci-ahci-reset-fail/
+> 
+> I suspect it's due to:
+> 
+> [    3.094038] pci 0000:00:1f.2: no compatible bridge window for [mem 0xff970000-0xff9707ff]
+> [    3.103001] pci 0000:00:1f.2: can't reserve [mem 0xff970000-0xff9707ff]
 
-Today's linux-next merge of the rr tree got a conflict in
-include/linux/mod_devicetable.h scripts/mod/file2alias.c between commit
-8626d3b4328061f5b82b11ae1d6918a0c3602f42 ("phylib: Support phy module
-autoloading") from the net tree and commits
-df73f69d6a29eb5a22327009627f23c7ae4be007
-("modules:isapnp-mod_devicetable.h") and a8e67afa03daca8b570115ba9b33f508cc5a9133 ("MODULE_DEVICE_TABLE(isapnp, ...) does nothing") from the rr tree.
+Thanks a lot for reporting this!
 
-Just overlapping additions.  I fixed it up (see below) and can carry the
-fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+No need to bisect it.  I'm pretty sure 2.6.34-rc1 will boot fine if you
+use "pci=use_crs" (obviously that's only a temporary workaround until we
+fix the real problem).
 
-diff --cc include/linux/mod_devicetable.h
-index 55f1f9c,e69d69f..0000000
---- a/include/linux/mod_devicetable.h
-+++ b/include/linux/mod_devicetable.h
-@@@ -474,30 -474,11 +474,37 @@@ struct platform_device_id 
-  			__attribute__((aligned(sizeof(kernel_ulong_t))));
-  };
-  
- +#define MDIO_MODULE_PREFIX	"mdio:"
- +
- +#define MDIO_ID_FMT "%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d"
- +#define MDIO_ID_ARGS(_id) \
- +	(_id)>>31, ((_id)>>30) & 1, ((_id)>>29) & 1, ((_id)>>28) & 1,	\
- +	((_id)>>27) & 1, ((_id)>>26) & 1, ((_id)>>25) & 1, ((_id)>>24) & 1, \
- +	((_id)>>23) & 1, ((_id)>>22) & 1, ((_id)>>21) & 1, ((_id)>>20) & 1, \
- +	((_id)>>19) & 1, ((_id)>>18) & 1, ((_id)>>17) & 1, ((_id)>>16) & 1, \
- +	((_id)>>15) & 1, ((_id)>>14) & 1, ((_id)>>13) & 1, ((_id)>>12) & 1, \
- +	((_id)>>11) & 1, ((_id)>>10) & 1, ((_id)>>9) & 1, ((_id)>>8) & 1, \
- +	((_id)>>7) & 1, ((_id)>>6) & 1, ((_id)>>5) & 1, ((_id)>>4) & 1, \
- +	((_id)>>3) & 1, ((_id)>>2) & 1, ((_id)>>1) & 1, (_id) & 1
- +
- +/**
- + * struct mdio_device_id - identifies PHY devices on an MDIO/MII bus
- + * @phy_id: The result of
- + *     (mdio_read(&MII_PHYSID1) << 16 | mdio_read(&PHYSID2)) & @phy_id_mask
- + *     for this PHY type
- + * @phy_id_mask: Defines the significant bits of @phy_id.  A value of 0
- + *     is used to terminate an array of struct mdio_device_id.
- + */
- +struct mdio_device_id {
- +	__u32 phy_id;
- +	__u32 phy_id_mask;
- +};
- +
-+ #define ISAPNP_ANY_ID		0xffff
-+ struct isapnp_device_id {
-+ 	unsigned short card_vendor, card_device;
-+ 	unsigned short vendor, function;
-+ 	kernel_ulong_t driver_data;	/* data private to the driver */
-+ };
-+ 
-  #endif /* LINUX_MOD_DEVICETABLE_H */
-diff --cc scripts/mod/file2alias.c
-index 36a60a8,6494f5b..0000000
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@@ -796,28 -796,19 +796,41 @@@ static int do_platform_entry(const cha
-  	return 1;
-  }
-  
- +static int do_mdio_entry(const char *filename,
- +			 struct mdio_device_id *id, char *alias)
- +{
- +	int i;
- +
- +	alias += sprintf(alias, MDIO_MODULE_PREFIX);
- +
- +	for (i = 0; i < 32; i++) {
- +		if (!((id->phy_id_mask >> (31-i)) & 1))
- +			*(alias++) = '?';
- +		else if ((id->phy_id >> (31-i)) & 1)
- +			*(alias++) = '1';
- +		else
- +			*(alias++) = '0';
- +	}
- +
- +	/* Terminate the string */
- +	*alias = 0;
- +
- +	return 1;
- +}
- +
-+ /* looks like: "pnp:dD" */
-+ static int do_isapnp_entry(const char *filename,
-+ 			   struct isapnp_device_id *id, char *alias)
-+ {
-+ 	sprintf(alias, "pnp:d%c%c%c%x%x%x%x*",
-+ 		'A' + ((id->vendor >> 2) & 0x3f) - 1,
-+ 		'A' + (((id->vendor & 3) << 3) | ((id->vendor >> 13) & 7)) - 1,
-+ 		'A' + ((id->vendor >> 8) & 0x1f) - 1,
-+ 		(id->function >> 4) & 0x0f, id->function & 0x0f,
-+ 		(id->function >> 12) & 0x0f, (id->function >> 8) & 0x0f);
-+ 	return 1;
-+ }
-+ 
-  /* Ignore any prefix, eg. some architectures prepend _ */
-  static inline int sym_is(const char *symbol, const char *name)
-  {
-@@@ -965,10 -956,10 +978,14 @@@ void handle_moddevtable(struct module *
-  		do_table(symval, sym->st_size,
-  			 sizeof(struct platform_device_id), "platform",
-  			 do_platform_entry, mod);
- +	else if (sym_is(symname, "__mod_mdio_device_table"))
- +		do_table(symval, sym->st_size,
- +			 sizeof(struct mdio_device_id), "mdio",
- +			 do_mdio_entry, mod);
-+ 	else if (sym_is(symname, "__mod_isapnp_device_table"))
-+ 		do_table(symval, sym->st_size,
-+ 			sizeof(struct isapnp_device_id), "isa",
-+ 			do_isapnp_entry, mod);
-  	free(zeros);
-  }
-  
+The BIOS apparently reported this window:
+
+  pci_root PNP0A03:00: host bridge window [mem 0xff97c000-0xff97ffff]
+
+which doesn't enclose the [mem 0xff970000-0xff9707ff] region where BIOS
+put AHCI device, so we moved the AHCI device.  Unfortunately, we put it
+at [mem 0x000a0000-0x000a07ff], which wasn't a very good choice because
+that's probably already used by a VGA device.
+
+If you happen to have Windows on this box, I'd love to know whether *it*
+moves the AHCI device, too, or whether Windows interprets the BIOS
+information differently than we do.  If you have Windows and can collect
+screenshots of the Device Manager resources for the PCI bus and the AHCI
+controller, that would be a good start.
+
+Would you mind trying the patch below and the patch and kernel args
+here:
+  https://bugzilla.kernel.org/show_bug.cgi?id=15533#c5
+
+This will (1) reserve the VGA area, so we should put the AHCI device
+elsewhere, and (2) collect a few more details about exactly what the
+BIOS is reporting.
+
+Bjorn
+
+
+commit 46b6e80aae2ec1d073767c92bba1d98896bce700
+Author: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Date:   Tue Apr 6 21:44:12 2010 -0600
+
+diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
+index 86b1506..f4c0fe4 100644
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -44,7 +44,6 @@ static inline void visws_early_detect(void) { }
+ extern unsigned long saved_video_mode;
+ 
+ extern void reserve_standard_io_resources(void);
+-extern void i386_reserve_resources(void);
+ extern void setup_default_timer_irq(void);
+ 
+ #ifdef CONFIG_X86_MRST
+diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
+index b2e2460..966b37f 100644
+--- a/arch/x86/kernel/head32.c
++++ b/arch/x86/kernel/head32.c
+@@ -22,7 +22,6 @@ static void __init i386_default_early_setup(void)
+ {
+ 	/* Initilize 32bit specific setup functions */
+ 	x86_init.resources.probe_roms = probe_roms;
+-	x86_init.resources.reserve_resources = i386_reserve_resources;
+ 	x86_init.mpparse.setup_ioapic_ids = setup_ioapic_ids_from_mpc;
+ 
+ 	reserve_ebda_region();
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 9570541..24d9113 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -575,6 +575,13 @@ static struct resource standard_io_resources[] = {
+ 		.flags = IORESOURCE_BUSY | IORESOURCE_IO }
+ };
+ 
++static struct resource video_ram_resource = {
++	.name	= "Video RAM area",
++	.start	= 0xa0000,
++	.end	= 0xbffff,
++	.flags	= IORESOURCE_BUSY | IORESOURCE_MEM
++};
++
+ void __init reserve_standard_io_resources(void)
+ {
+ 	int i;
+@@ -583,6 +590,7 @@ void __init reserve_standard_io_resources(void)
+ 	for (i = 0; i < ARRAY_SIZE(standard_io_resources); i++)
+ 		request_resource(&ioport_resource, &standard_io_resources[i]);
+ 
++	request_resource(&iomem_resource, &video_ram_resource);
+ }
+ 
+ /*
+@@ -1042,20 +1050,3 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	mcheck_init();
+ }
+-
+-#ifdef CONFIG_X86_32
+-
+-static struct resource video_ram_resource = {
+-	.name	= "Video RAM area",
+-	.start	= 0xa0000,
+-	.end	= 0xbffff,
+-	.flags	= IORESOURCE_BUSY | IORESOURCE_MEM
+-};
+-
+-void __init i386_reserve_resources(void)
+-{
+-	request_resource(&iomem_resource, &video_ram_resource);
+-	reserve_standard_io_resources();
+-}
+-
+-#endif /* CONFIG_X86_32 */
+
+
