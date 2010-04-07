@@ -1,42 +1,702 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757867Ab0DGMZe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 08:25:34 -0400
-Received: from khc.piap.pl ([195.187.100.11]:46384 "EHLO khc.piap.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757713Ab0DGMZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 08:25:31 -0400
-X-Greylist: delayed 541 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Apr 2010 08:25:30 EDT
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Frank Hu <frank.hu.2001@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Joel Fernandes <agnel.joel@gmail.com>,
-       hayfeng Lee <teklife.kernel@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-kernel@zh-kernel.org, kernelnewbies@nl.linux.org
-Subject: Re: why choose 896MB to the start point of ZONE_HIGHMEM
-References: <l2y5f6c52c61004060737me670f6e2t6071444c4fd1318b@mail.gmail.com>
-	<g2s9ff7a3bc1004060802va38aa361s6abd07e8c992dd56@mail.gmail.com>
-	<4BBB7AC9.5060008@zytor.com>
-	<o2m8f84f9951004061220x16f3aa8by9cf19ec28ea492d7@mail.gmail.com>
-	<4BBB8F07.60401@zytor.com>
-	<p2q8f84f9951004061315z7d2be34aj41b5052cf20879f3@mail.gmail.com>
-Date: Wed, 07 Apr 2010 14:16:27 +0200
-In-Reply-To: <p2q8f84f9951004061315z7d2be34aj41b5052cf20879f3@mail.gmail.com>
-	(Frank Hu's message of "Tue, 6 Apr 2010 13:15:49 -0700")
-Message-ID: <m34ojn8nl0.fsf@intrepid.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757351Ab0DGMap (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 08:30:45 -0400
+Received: from mail-ew0-f220.google.com ([209.85.219.220]:36761 "EHLO
+	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216Ab0DGMam (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 08:30:42 -0400
+From: Eric B Munson <ebmunson@us.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-rdma@vger.kernel.org, rolandd@cisco.com, peterz@infradead.org,
+       pavel@ucw.cz, mingo@elte.hu, Eric B Munson <ebmunson@us.ibm.com>
+Subject: [PATCH] [RFC] ummunotify: Userspace support for MMU notifications
+Date: Wed,  7 Apr 2010 13:30:29 +0100
+Message-Id: <1270643429-20688-1-git-send-email-ebmunson@us.ibm.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frank Hu <frank.hu.2001@gmail.com> writes:
+I am resubmitting this to try and restart the discussion about how
+this should be implemented properly.  As the dicsussion was left
+I see two possible solutions, one is a new class of perf event that
+would be setup to prioritize catching every event over resource
+consumption that would monitor MMU events filtered by registered
+address ranges.  The other option is the one presented below, a
+character device that uses ioctl and read to register address ranges
+and return MMU events.  I want to try and pick the best solution
+so I can move forward with it.
 
-> thought that you can only configure how to split the VM like 1G/3G or
-> 2G/2G. But the DMA zone size, the 128MB space for I/O is not
-> configurable. The NORMAL zone size will be deducted based on the VM
-> Split and some hard coded DMA zone and 128 MB space size.
+From: Roland Dreier <rolandd <at> cisco.com>
 
-Only the DMA zone size if fixed - a hardware property of PC/AT-style DMA
-controllers and ISA bus.
+As discussed in <http://article.gmane.org/gmane.linux.drivers.openib/61925>
+and follow-up messages, libraries using RDMA would like to track
+precisely when application code changes memory mapping via free(),
+munmap(), etc.  Current pure-userspace solutions using malloc hooks
+and other tricks are not robust, and the feeling among experts is that
+the issue is unfixable without kernel help.
+
+We solve this not by implementing the full API proposed in the email
+linked above but rather with a simpler and more generic interface,
+which may be useful in other contexts.  Specifically, we implement a
+new character device driver, ummunotify, that creates a /dev/ummunotify
+node.  A userspace process can open this node read-only and use the fd
+as follows:
+
+ 1. ioctl() to register/unregister an address range to watch in the
+    kernel (cf struct ummunotify_register_ioctl in <linux/ummunotify.h>).
+
+ 2. read() to retrieve events generated when a mapping in a watched
+    address range is invalidated (cf struct ummunotify_event in
+    <linux/ummunotify.h>).  select()/poll()/epoll() and SIGIO are
+    handled for this IO.
+
+ 3. mmap() one page at offset 0 to map a kernel page that contains a
+    generation counter that is incremented each time an event is
+    generated.  This allows userspace to have a fast path that checks
+    that no events have occurred without a system call.
+
+Thanks to Jason Gunthorpe <jgunthorpe <at> obsidianresearch.com> for
+suggestions on the interface design.  Also thanks to Jeff Squyres
+<jsquyres <at> cisco.com> for prototyping support for this in Open MPI, which
+helped find several bugs during development.
+
+Signed-off-by: Roland Dreier <rolandd <at> cisco.com>
+Signed-off-by: Eric B Munson <ebmunson@us.ibm.com>
+
+---
+
+Changes since v3:
+ - Fixed replaced [get|put] user with copy_[from|to]_user to fix x86
+   builds
+---
+ Documentation/Makefile    |    3 +-
+ drivers/char/Kconfig      |   12 +
+ drivers/char/Makefile     |    1 +
+ drivers/char/ummunotify.c |  567 +++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 582 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/char/ummunotify.c
+
+diff --git a/Documentation/Makefile b/Documentation/Makefile
+index 6fc7ea1..27ba76a 100644
+--- a/Documentation/Makefile
++++ b/Documentation/Makefile
+@@ -1,3 +1,4 @@
+ obj-m := DocBook/ accounting/ auxdisplay/ connector/ \
+ 	filesystems/ filesystems/configfs/ ia64/ laptops/ networking/ \
+-	pcmcia/ spi/ timers/ video4linux/ vm/ watchdog/src/
++	pcmcia/ spi/ timers/ video4linux/ vm/ ummunotify/ \
++	watchdog/src/
+diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+index 3141dd3..cf26019 100644
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -1111,6 +1111,18 @@ config DEVPORT
+ 	depends on ISA || PCI
+ 	default y
+ 
++config UMMUNOTIFY
++       tristate "Userspace MMU notifications"
++       select MMU_NOTIFIER
++       help
++         The ummunotify (userspace MMU notification) driver creates a
++         character device that can be used by userspace libraries to
++         get notifications when an application's memory mapping
++         changed.  This is used, for example, by RDMA libraries to
++         improve the reliability of memory registration caching, since
++         the kernel's MMU notifications can be used to know precisely
++         when to shoot down a cached registration.
++
+ source "drivers/s390/char/Kconfig"
+ 
+ endmenu
+diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+index f957edf..521e5de 100644
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -97,6 +97,7 @@ obj-$(CONFIG_NSC_GPIO)		+= nsc_gpio.o
+ obj-$(CONFIG_CS5535_GPIO)	+= cs5535_gpio.o
+ obj-$(CONFIG_GPIO_TB0219)	+= tb0219.o
+ obj-$(CONFIG_TELCLOCK)		+= tlclk.o
++obj-$(CONFIG_UMMUNOTIFY)	+= ummunotify.o
+ 
+ obj-$(CONFIG_MWAVE)		+= mwave/
+ obj-$(CONFIG_AGP)		+= agp/
+diff --git a/drivers/char/ummunotify.c b/drivers/char/ummunotify.c
+new file mode 100644
+index 0000000..c14df3f
+--- /dev/null
++++ b/drivers/char/ummunotify.c
+@@ -0,0 +1,567 @@
++/*
++ * Copyright (c) 2009 Cisco Systems.  All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version
++ * 2 as published by the Free Software Foundation.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
++ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
++ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
++ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++ * SOFTWARE.
++ */
++
++#include <linux/fs.h>
++#include <linux/init.h>
++#include <linux/list.h>
++#include <linux/miscdevice.h>
++#include <linux/mm.h>
++#include <linux/mmu_notifier.h>
++#include <linux/module.h>
++#include <linux/poll.h>
++#include <linux/rbtree.h>
++#include <linux/sched.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
++#include <linux/uaccess.h>
++#include <linux/ummunotify.h>
++
++#include <asm/cacheflush.h>
++
++MODULE_AUTHOR("Roland Dreier");
++MODULE_DESCRIPTION("Userspace MMU notifiers");
++MODULE_LICENSE("GPL v2");
++
++/*
++ * Information about an address range userspace has asked us to watch.
++ *
++ * user_cookie: Opaque cookie given to us when userspace registers the
++ *   address range.
++ *
++ * start, end: Address range; start is inclusive, end is exclusive.
++ *
++ * hint_start, hint_end: If a single MMU notification event
++ *   invalidates the address range, we hold the actual range of
++ *   addresses that were invalidated (and set UMMUNOTIFY_FLAG_HINT).
++ *   If another event hits this range before userspace reads the
++ *   event, we give up and don't try to keep track of which subsets
++ *   got invalidated.
++ *
++ * flags: Holds the INVALID flag for ranges that are on the invalid
++ *   list and/or the HINT flag for ranges where the hint range holds
++ *   good information.
++ *
++ * node: Used to put the range into an rbtree we use to be able to
++ *   scan address ranges in order.
++ *
++ * list: Used to put the range on the invalid list when an MMU
++ *   notification event hits the range.
++ */
++enum {
++	UMMUNOTIFY_FLAG_INVALID	= 1,
++	UMMUNOTIFY_FLAG_HINT	= 2,
++};
++
++struct ummunotify_reg {
++	u64			user_cookie;
++	unsigned long		start;
++	unsigned long		end;
++	unsigned long		hint_start;
++	unsigned long		hint_end;
++	unsigned long		flags;
++	struct rb_node		node;
++	struct list_head	list;
++};
++
++/*
++ * Context attached to each file that userspace opens.
++ *
++ * mmu_notifier: MMU notifier registered for this context.
++ *
++ * mm: mm_struct for process that created the context; we use this to
++ *   hold a reference to the mm to make sure it doesn't go away until
++ *   we're done with it.
++ *
++ * reg_tree: RB tree of address ranges being watched, sorted by start
++ *   address.
++ *
++ * invalid_list: List of address ranges that have been invalidated by
++ *   MMU notification events; as userspace reads events, the address
++ *   range corresponding to the event is removed from the list.
++ *
++ * counter: Page that can be mapped read-only by userspace, which
++ *   holds a generation count that is incremented each time an event
++ *   occurs.
++ *
++ * lock: Spinlock used to protect all context.
++ *
++ * read_wait: Wait queue used to wait for data to become available in
++ *   blocking read()s.
++ *
++ * async_queue: Used to implement fasync().
++ *
++ * need_empty: Set when userspace reads an invalidation event, so that
++ *   read() knows it must generate an "empty" event when userspace
++ *   drains the invalid_list.
++ *
++ * used: Set after userspace does anything with the file, so that the
++ *   "exchange flags" ioctl() knows it's too late to change anything.
++ */
++struct ummunotify_file {
++	struct mmu_notifier	mmu_notifier;
++	struct mm_struct       *mm;
++	struct rb_root		reg_tree;
++	struct list_head	invalid_list;
++	u64		       *counter;
++	spinlock_t		lock;
++	wait_queue_head_t	read_wait;
++	struct fasync_struct   *async_queue;
++	int			need_empty;
++	int			used;
++};
++
++static void ummunotify_handle_notify(struct mmu_notifier *mn,
++				     unsigned long start, unsigned long end)
++{
++	struct ummunotify_file *priv =
++		container_of(mn, struct ummunotify_file, mmu_notifier);
++	struct rb_node *n;
++	struct ummunotify_reg *reg;
++	unsigned long flags;
++	int hit = 0;
++
++	spin_lock_irqsave(&priv->lock, flags);
++
++	for (n = rb_first(&priv->reg_tree); n; n = rb_next(n)) {
++		reg = rb_entry(n, struct ummunotify_reg, node);
++
++		/*
++		 * Ranges overlap if they're not disjoint; and they're
++		 * disjoint if the end of one is before the start of
++		 * the other one.  So if both disjointness comparisons
++		 * fail then the ranges overlap.
++		 *
++		 * Since we keep the tree of regions we're watching
++		 * sorted by start address, we can end this loop as
++		 * soon as we hit a region that starts past the end of
++		 * the range for the event we're handling.
++		 */
++		if (reg->start >= end)
++			break;
++
++		/*
++		 * Just go to the next region if the start of the
++		 * range is after the end of the region -- there
++		 * might still be more overlapping ranges that have a
++		 * greater start.
++		 */
++		if (start >= reg->end)
++			continue;
++
++		hit = 1;
++
++		if (test_and_set_bit(UMMUNOTIFY_FLAG_INVALID, &reg->flags)) {
++			/* Already on invalid list */
++			clear_bit(UMMUNOTIFY_FLAG_HINT, &reg->flags);
++		} else {
++			list_add_tail(&reg->list, &priv->invalid_list);
++			set_bit(UMMUNOTIFY_FLAG_HINT, &reg->flags);
++			reg->hint_start = start;
++			reg->hint_end   = end;
++		}
++	}
++
++	if (hit) {
++		++(*priv->counter);
++		flush_dcache_page(virt_to_page(priv->counter));
++		wake_up_interruptible(&priv->read_wait);
++		kill_fasync(&priv->async_queue, SIGIO, POLL_IN);
++	}
++
++	spin_unlock_irqrestore(&priv->lock, flags);
++}
++
++static void ummunotify_invalidate_page(struct mmu_notifier *mn,
++				       struct mm_struct *mm,
++				       unsigned long addr)
++{
++	ummunotify_handle_notify(mn, addr, addr + PAGE_SIZE);
++}
++
++static void ummunotify_invalidate_range_start(struct mmu_notifier *mn,
++					      struct mm_struct *mm,
++					      unsigned long start,
++					      unsigned long end)
++{
++	ummunotify_handle_notify(mn, start, end);
++}
++
++static const struct mmu_notifier_ops ummunotify_mmu_notifier_ops = {
++	.invalidate_page	= ummunotify_invalidate_page,
++	.invalidate_range_start	= ummunotify_invalidate_range_start,
++};
++
++static int ummunotify_open(struct inode *inode, struct file *filp)
++{
++	struct ummunotify_file *priv;
++	int ret;
++
++	if (filp->f_mode & FMODE_WRITE)
++		return -EINVAL;
++
++	priv = kmalloc(sizeof *priv, GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	priv->counter = (void *) get_zeroed_page(GFP_KERNEL);
++	if (!priv->counter) {
++		ret = -ENOMEM;
++		goto err;
++	}
++
++	priv->reg_tree = RB_ROOT;
++	INIT_LIST_HEAD(&priv->invalid_list);
++	spin_lock_init(&priv->lock);
++	init_waitqueue_head(&priv->read_wait);
++	priv->async_queue = NULL;
++	priv->need_empty  = 0;
++	priv->used	  = 0;
++
++	priv->mmu_notifier.ops = &ummunotify_mmu_notifier_ops;
++	/*
++	 * Register notifier last, since notifications can occur as
++	 * soon as we register....
++	 */
++	ret = mmu_notifier_register(&priv->mmu_notifier, current->mm);
++	if (ret)
++		goto err_page;
++
++	priv->mm = current->mm;
++	atomic_inc(&priv->mm->mm_count);
++
++	filp->private_data = priv;
++
++	return 0;
++
++err_page:
++	free_page((unsigned long) priv->counter);
++
++err:
++	kfree(priv);
++	return ret;
++}
++
++static int ummunotify_close(struct inode *inode, struct file *filp)
++{
++	struct ummunotify_file *priv = filp->private_data;
++	struct rb_node *n;
++	struct ummunotify_reg *reg;
++
++	mmu_notifier_unregister(&priv->mmu_notifier, priv->mm);
++	mmdrop(priv->mm);
++	free_page((unsigned long) priv->counter);
++
++	for (n = rb_first(&priv->reg_tree); n; n = rb_next(n)) {
++		reg = rb_entry(n, struct ummunotify_reg, node);
++		kfree(reg);
++	}
++
++	kfree(priv);
++
++	return 0;
++}
++
++static bool ummunotify_readable(struct ummunotify_file *priv)
++{
++	return priv->need_empty || !list_empty(&priv->invalid_list);
++}
++
++static ssize_t ummunotify_read(struct file *filp, char __user *buf,
++			       size_t count, loff_t *pos)
++{
++	struct ummunotify_file *priv = filp->private_data;
++	struct ummunotify_reg *reg;
++	ssize_t ret;
++	struct ummunotify_event *events;
++	int max;
++	int n;
++
++	priv->used = 1;
++
++	events = (void *) get_zeroed_page(GFP_KERNEL);
++	if (!events) {
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	spin_lock_irq(&priv->lock);
++
++	while (!ummunotify_readable(priv)) {
++		spin_unlock_irq(&priv->lock);
++
++		if (filp->f_flags & O_NONBLOCK) {
++			ret = -EAGAIN;
++			goto out;
++		}
++
++		if (wait_event_interruptible(priv->read_wait,
++					     ummunotify_readable(priv))) {
++			ret = -ERESTARTSYS;
++			goto out;
++		}
++
++		spin_lock_irq(&priv->lock);
++	}
++
++	max = min_t(size_t, PAGE_SIZE, count) / sizeof *events;
++
++	for (n = 0; n < max; ++n) {
++		if (list_empty(&priv->invalid_list)) {
++			events[n].type = UMMUNOTIFY_EVENT_TYPE_LAST;
++			events[n].user_cookie_counter = *priv->counter;
++			++n;
++			priv->need_empty = 0;
++			break;
++		}
++
++		reg = list_first_entry(&priv->invalid_list,
++				       struct ummunotify_reg, list);
++
++		events[n].type = UMMUNOTIFY_EVENT_TYPE_INVAL;
++		if (test_bit(UMMUNOTIFY_FLAG_HINT, &reg->flags)) {
++			events[n].flags	     = UMMUNOTIFY_EVENT_FLAG_HINT;
++			events[n].hint_start = max(reg->start, reg->hint_start);
++			events[n].hint_end   = min(reg->end, reg->hint_end);
++		} else {
++			events[n].hint_start = reg->start;
++			events[n].hint_end   = reg->end;
++		}
++		events[n].user_cookie_counter = reg->user_cookie;
++
++		list_del(&reg->list);
++		reg->flags = 0;
++		priv->need_empty = 1;
++	}
++
++	spin_unlock_irq(&priv->lock);
++
++	if (copy_to_user(buf, events, n * sizeof *events))
++		ret = -EFAULT;
++	else
++		ret = n * sizeof *events;
++
++out:
++	free_page((unsigned long) events);
++	return ret;
++}
++
++static unsigned int ummunotify_poll(struct file *filp,
++				    struct poll_table_struct *wait)
++{
++	struct ummunotify_file *priv = filp->private_data;
++
++	poll_wait(filp, &priv->read_wait, wait);
++
++	return ummunotify_readable(priv) ? (POLLIN | POLLRDNORM) : 0;
++}
++
++static long ummunotify_exchange_features(struct ummunotify_file *priv,
++					 __u32 __user *arg)
++{
++	u32 feature_mask;
++
++	if (priv->used)
++		return -EINVAL;
++
++	priv->used = 1;
++
++	if (copy_from_user(&feature_mask, arg, sizeof(feature_mask)))
++		return -EFAULT;
++
++	/* No extensions defined at present. */
++	feature_mask = 0;
++
++	if (copy_to_user(arg, &feature_mask, sizeof(feature_mask)))
++		return -EFAULT;
++
++	return 0;
++}
++
++static long ummunotify_register_region(struct ummunotify_file *priv,
++				       void __user *arg)
++{
++	struct ummunotify_register_ioctl parm;
++	struct ummunotify_reg *reg, *treg;
++	struct rb_node **n = &priv->reg_tree.rb_node;
++	struct rb_node *pn;
++	int ret = 0;
++
++	if (copy_from_user(&parm, arg, sizeof parm))
++		return -EFAULT;
++
++	priv->used = 1;
++
++	reg = kmalloc(sizeof *reg, GFP_KERNEL);
++	if (!reg)
++		return -ENOMEM;
++
++	reg->user_cookie	= parm.user_cookie;
++	reg->start		= parm.start;
++	reg->end		= parm.end;
++	reg->flags		= 0;
++
++	spin_lock_irq(&priv->lock);
++
++	for (pn = rb_first(&priv->reg_tree); pn; pn = rb_next(pn)) {
++		treg = rb_entry(pn, struct ummunotify_reg, node);
++
++		if (treg->user_cookie == parm.user_cookie) {
++			kfree(reg);
++			ret = -EINVAL;
++			goto out;
++		}
++	}
++
++	pn = NULL;
++	while (*n) {
++		pn = *n;
++		treg = rb_entry(pn, struct ummunotify_reg, node);
++
++		if (reg->start <= treg->start)
++			n = &pn->rb_left;
++		else
++			n = &pn->rb_right;
++	}
++
++	rb_link_node(&reg->node, pn, n);
++	rb_insert_color(&reg->node, &priv->reg_tree);
++
++out:
++	spin_unlock_irq(&priv->lock);
++
++	return ret;
++}
++
++static long ummunotify_unregister_region(struct ummunotify_file *priv,
++					 __u64 __user *arg)
++{
++	u64 user_cookie;
++	struct rb_node *n;
++	struct ummunotify_reg *reg;
++	int ret = -EINVAL;
++
++	if (copy_from_user(&user_cookie, arg, sizeof(user_cookie)))
++		return -EFAULT;
++
++	spin_lock_irq(&priv->lock);
++
++	for (n = rb_first(&priv->reg_tree); n; n = rb_next(n)) {
++		reg = rb_entry(n, struct ummunotify_reg, node);
++
++		if (reg->user_cookie == user_cookie) {
++			rb_erase(n, &priv->reg_tree);
++			if (test_bit(UMMUNOTIFY_FLAG_INVALID, &reg->flags))
++				list_del(&reg->list);
++			kfree(reg);
++			ret = 0;
++			break;
++		}
++	}
++
++	spin_unlock_irq(&priv->lock);
++
++	return ret;
++}
++
++static long ummunotify_ioctl(struct file *filp, unsigned int cmd,
++			     unsigned long arg)
++{
++	struct ummunotify_file *priv = filp->private_data;
++	void __user *argp = (void __user *) arg;
++
++	switch (cmd) {
++	case UMMUNOTIFY_EXCHANGE_FEATURES:
++		return ummunotify_exchange_features(priv, argp);
++	case UMMUNOTIFY_REGISTER_REGION:
++		return ummunotify_register_region(priv, argp);
++	case UMMUNOTIFY_UNREGISTER_REGION:
++		return ummunotify_unregister_region(priv, argp);
++	default:
++		return -ENOIOCTLCMD;
++	}
++}
++
++static int ummunotify_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
++{
++	struct ummunotify_file *priv = vma->vm_private_data;
++
++	if (vmf->pgoff != 0)
++		return VM_FAULT_SIGBUS;
++
++	vmf->page = virt_to_page(priv->counter);
++	get_page(vmf->page);
++
++	return 0;
++
++}
++
++static struct vm_operations_struct ummunotify_vm_ops = {
++	.fault		= ummunotify_fault,
++};
++
++static int ummunotify_mmap(struct file *filp, struct vm_area_struct *vma)
++{
++	struct ummunotify_file *priv = filp->private_data;
++
++	if (vma->vm_end - vma->vm_start != PAGE_SIZE || vma->vm_pgoff != 0)
++		return -EINVAL;
++
++	vma->vm_ops		= &ummunotify_vm_ops;
++	vma->vm_private_data	= priv;
++
++	return 0;
++}
++
++static int ummunotify_fasync(int fd, struct file *filp, int on)
++{
++	struct ummunotify_file *priv = filp->private_data;
++
++	return fasync_helper(fd, filp, on, &priv->async_queue);
++}
++
++static const struct file_operations ummunotify_fops = {
++	.owner		= THIS_MODULE,
++	.open		= ummunotify_open,
++	.release	= ummunotify_close,
++	.read		= ummunotify_read,
++	.poll		= ummunotify_poll,
++	.unlocked_ioctl	= ummunotify_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= ummunotify_ioctl,
++#endif
++	.mmap		= ummunotify_mmap,
++	.fasync		= ummunotify_fasync,
++};
++
++static struct miscdevice ummunotify_misc = {
++	.minor	= MISC_DYNAMIC_MINOR,
++	.name	= "ummunotify",
++	.fops	= &ummunotify_fops,
++};
++
++static int __init ummunotify_init(void)
++{
++	return misc_register(&ummunotify_misc);
++}
++
++static void __exit ummunotify_cleanup(void)
++{
++	misc_deregister(&ummunotify_misc);
++}
++
++module_init(ummunotify_init);
++module_exit(ummunotify_cleanup);
 -- 
-Krzysztof Halasa
+1.6.3.3
+
