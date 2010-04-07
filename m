@@ -1,165 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab0DGHBM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 03:01:12 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:49229 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757160Ab0DGHBE (ORCPT
+	id S1757169Ab0DGHDB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 03:03:01 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:38237 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866Ab0DGHCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 03:01:04 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] rmap: make anon_vma_prepare link in all the anon_vmas of a mergeable VMA
-Cc: kosaki.motohiro@jp.fujitsu.com,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Borislav Petkov <bp@alien8.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com,
-       hannes@cmpxchg.org
-In-Reply-To: <20100406195459.554265e7@annuminas.surriel.com>
-References: <alpine.LFD.2.00.1004061609320.3487@i5.linux-foundation.org> <20100406195459.554265e7@annuminas.surriel.com>
-Message-Id: <20100407151357.FB7E.A69D9226@jp.fujitsu.com>
+	Wed, 7 Apr 2010 03:02:55 -0400
+Date: Wed, 7 Apr 2010 09:02:01 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de
+Subject: Re: [tip:core/hweight] x86: Add optimized popcnt variants
+Message-ID: <20100407070201.GA11384@aftab>
+References: <20100318112015.GC11152@aftab>
+ <tip-d61931d89be506372d01a90d1755f6d0a9fafe2d@git.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed,  7 Apr 2010 16:00:58 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tip-d61931d89be506372d01a90d1755f6d0a9fafe2d@git.kernel.org>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> When a new VMA has a mergeable anon_vma with a neighboring VMA,
-> make sure all of the neighbor's old anon_vma structs are also
-> linked in.
-> 
-> This is necessary because at some point the VMAs could get merged,
-> and we want to ensure no anon_vma structs get freed prematurely,
-> while the system still has anonymous pages that belong to those
-> structs.
+From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
+Date: Tue, Apr 06, 2010 at 11:04:07PM +0000
 
-Ahhhh, I'm shame myself. sure, neighbor vma might have lots avc ;-)
-few comments are blow.
+> Commit-ID:  d61931d89be506372d01a90d1755f6d0a9fafe2d
+> Gitweb:     http://git.kernel.org/tip/d61931d89be506372d01a90d1755f6d0a9fafe2d
+> Author:     Borislav Petkov <borislav.petkov@amd.com>
+> AuthorDate: Fri, 5 Mar 2010 17:34:46 +0100
+> Committer:  H. Peter Anvin <hpa@zytor.com>
+> CommitDate: Tue, 6 Apr 2010 15:52:11 -0700
 
-> 
-> Reported-by: Borislav Petkov <bp@alien8.de>
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> 
-> --- 
->  include/linux/mm.h |    2 +-
->  mm/mmap.c          |    6 +++---
->  mm/rmap.c          |   20 +++++++++++++-------
->  3 files changed, 17 insertions(+), 11 deletions(-)
-> 
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index e70f21b..90ac50e 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -1228,7 +1228,7 @@ extern struct vm_area_struct *vma_merge(struct mm_struct *,
->  	struct vm_area_struct *prev, unsigned long addr, unsigned long end,
->  	unsigned long vm_flags, struct anon_vma *, struct file *, pgoff_t,
->  	struct mempolicy *);
-> -extern struct anon_vma *find_mergeable_anon_vma(struct vm_area_struct *);
-> +extern struct vm_area_struct *find_mergeable_anon_vma(struct vm_area_struct *);
->  extern int split_vma(struct mm_struct *,
->  	struct vm_area_struct *, unsigned long addr, int new_below);
->  extern int insert_vm_struct(struct mm_struct *, struct vm_area_struct *);
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index 75557c6..bf0600c 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -832,7 +832,7 @@ struct vm_area_struct *vma_merge(struct mm_struct *mm,
->   * anon_vmas being allocated, preventing vma merge in subsequent
->   * mprotect.
->   */
-> -struct anon_vma *find_mergeable_anon_vma(struct vm_area_struct *vma)
-> +struct vm_area_struct *find_mergeable_anon_vma(struct vm_area_struct *vma)
->  {
->  	struct vm_area_struct *near;
->  	unsigned long vm_flags;
-> @@ -855,7 +855,7 @@ struct anon_vma *find_mergeable_anon_vma(struct vm_area_struct *vma)
->  			can_vma_merge_before(near, vm_flags,
->  				NULL, vma->vm_file, vma->vm_pgoff +
->  				((vma->vm_end - vma->vm_start) >> PAGE_SHIFT)))
-> -		return near->anon_vma;
-> +		return near;
->  try_prev:
->  	/*
->  	 * It is potentially slow to have to call find_vma_prev here.
-> @@ -875,7 +875,7 @@ try_prev:
->    			mpol_equal(vma_policy(near), vma_policy(vma)) &&
->  			can_vma_merge_after(near, vm_flags,
->  				NULL, vma->vm_file, vma->vm_pgoff))
-> -		return near->anon_vma;
-> +		return near;
->  none:
->  	/*
->  	 * There's no absolute need to look only at touching neighbours:
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index eaa7a09..60616db 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -119,20 +119,26 @@ int anon_vma_prepare(struct vm_area_struct *vma)
->  	might_sleep();
->  	if (unlikely(!anon_vma)) {
->  		struct mm_struct *mm = vma->vm_mm;
-> +		struct vm_area_struct *merge_vma;
->  		struct anon_vma *allocated;
->  
-> +		merge_vma = find_mergeable_anon_vma(vma);
-> +		if (merge_vma) {
-> +			if (anon_vma_clone(vma, merge_vma))
-> +				goto out_enomem;
-> +			return 0;
-> +		}
-> +
+Just so you know, Andrew picked those up already, along with Peter's
+multi-arch-touching patch.
 
-Hmm.. probably I'm moron.
-I'm also confusing this locking rule as same as linus said.
+-- 
+Regards/Gruss,
+Boris.
 
-after this patch, new locking order are
-
-	down_read(mmap_sem)
-		anon_vma_clone(vma, merge_vma)
-			list_add(&avc->same_vma, &vma->anon_vma_chain);
-			spin_lock(&anon_vma->lock);
-			list_add_tail(&avc->same_anon_vma, &anon_vma->head);
-			spin_unlock(&anon_vma->lock);
-		spin_lock(&anon_vma->lock);
-		spin_lock(&mm->page_table_lock);
-
-So, Why mmap_sem read lock can protect vma->anon_vma_chain?
-An another threads seems to be able to change avc list concurrentlly and freely.
-
-plus, Why don't we need "vma->anon_vma = merge_vma->anon_vma" assignment?
-if vma->anon_vma keep NULL, I think anon_vma_prepare() call anon_vma_clone() 
-multiple times.
-
-
->  		avc = anon_vma_chain_alloc();
->  		if (!avc)
->  			goto out_enomem;
->  
-> -		anon_vma = find_mergeable_anon_vma(vma);
->  		allocated = NULL;
-> -		if (!anon_vma) {
-> -			anon_vma = anon_vma_alloc();
-> -			if (unlikely(!anon_vma))
-> -				goto out_enomem_free_avc;
-> -			allocated = anon_vma;
-> -		}
-> +		anon_vma = anon_vma_alloc();
-> +		if (unlikely(!anon_vma))
-> +			goto out_enomem_free_avc;
-> +		allocated = anon_vma;
-> +
->  		spin_lock(&anon_vma->lock);
->  
->  		/* page_table_lock to protect against threads */
-
-
-
+--
+Advanced Micro Devices, Inc.
+Operating Systems Research Center
