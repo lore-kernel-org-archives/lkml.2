@@ -1,355 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab0DGVoa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 17:44:30 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37684 "EHLO ogre.sisk.pl"
+	id S1753745Ab0DGVqn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 17:46:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14919 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753133Ab0DGVoM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 17:44:12 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: 2.6.34-rc3-git6: Reported regressions from 2.6.33
-Cc: Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Network Development <netdev@vger.kernel.org>,
-       Linux ACPI <linux-acpi@vger.kernel.org>,
-       Linux PM List <linux-pm@lists.linux-foundation.org>,
-       Linux SCSI List <linux-scsi@vger.kernel.org>,
-       Linux Wireless List <linux-wireless@vger.kernel.org>,
-       DRI <dri-devel@lists.sourceforge.net>
+	id S1752640Ab0DGVql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 17:46:41 -0400
+Date: Wed, 7 Apr 2010 17:46:31 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, jens.axboe@oracle.com,
+       linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch,rfc v2] ext3/4: enhance fsync performance when using cfq
+Message-ID: <20100407214631.GL3206@redhat.com>
+References: <x49ochv7yi3.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <6Pphclm24fK.A.lSF.qsPvLB@chimera>
-Date: Wed,  7 Apr 2010 23:08:30 +0200 (CEST)
+In-Reply-To: <x49ochv7yi3.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[NOTE:
- The summary report of post-2.6.32 regressions will be sent later
- (hopefully tomorrow).]
-
-This message contains a list of some regressions from 2.6.33,
-for which there are no fixes in the mainline known to the tracking team.
-If any of them have been fixed already, please let us know.
-
-If you know of any other unresolved regressions from 2.6.33, please let us
-know either and we'll add them to the list.  Also, please let us know
-if any of the entries below are invalid.
-
-Each entry from the list will be sent additionally in an automatic reply
-to this message with CCs to the people involved in reporting and handling
-the issue.
-
-
-Listed regressions statistics:
-
-  Date          Total  Pending  Unresolved
-  ----------------------------------------
-  2010-04-07       48       35          33
-  2010-03-21       15       13          10
-
-
-Unresolved regressions
-----------------------
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15719
-Subject		: virtio_net causing kernel BUG when running under VirtualBox
-Submitter	: Thomas Müller <thomas@mathtm.de>
-Date		: 2010-03-27 14:32 (12 days old)
-First-Bad-Commit: http://git.kernel.org/git/linus/9ab86bbcf8be755256f0a5e994e0b38af6b4d399
-Message-ID	: <4BAE1707.2050803@mathtm.de>
-References	: http://marc.info/?l=linux-kernel&m=126970039227740&w=4
-Handled-By	: Shirley Ma <mashirle@us.ibm.com>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15718
-Subject		: File corruption regression on NFS related to commit 1f36f774
-Submitter	: Boaz Harrosh <bharrosh@panasas.com>
-Date		: 2010-03-24 15:49 (15 days old)
-First-Bad-Commit: http://git.kernel.org/git/linus/1f36f774b22a0ceb7dd33eca626746c81a97b6a5
-Message-ID	: <4BAA3493.1030802@panasas.com>
-References	: http://marc.info/?l=linux-kernel&m=126944579810350&w=4
-Handled-By	: Al Viro <viro@zeniv.linux.org.uk>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15717
-Subject		: bluetooth oops
-Submitter	: Pavel Machek <pavel@ucw.cz>
-Date		: 2010-03-14 20:14 (25 days old)
-Message-ID	: <20100314201434.GE22059@elf.ucw.cz>
-References	: http://marc.info/?l=linux-kernel&m=126859771528426&w=4
-Handled-By	: Marcel Holtmann <marcel@holtmann.org>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15716
-Subject		: ata2: lost interrupt with kernel 2.6.34-rc1
-Submitter	: Andrew Benton <b3nton@gmail.com>
-Date		: 2010-03-11 16:57 (28 days old)
-Message-ID	: <4B992110.2090300@gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=126832670609705&w=4
-Handled-By	: Jeff Garzik <jeff@garzik.org>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15715
-Subject		: vmscan: underflow for get_scan_ratio
-Submitter	: Shaohua Li <shaohua.li@intel.com>
-Date		: 2010-03-30 5:53 (9 days old)
-First-Bad-Commit: http://git.kernel.org/git/linus/84b18490d1f1bc7ed5095c929f78bc002eb70f26
-Message-ID	: <20100330055304.GA2983@sli10-desk.sh.intel.com>
-References	: http://marc.info/?l=linux-kernel&m=126992842105754&w=4
-Handled-By	: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-		  Wu Fengguang <fengguang.wu@intel.com>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15713
-Subject		: hackbench regression due to commit 9dfc6e68bfe6e
-Submitter	: Alex Shi <alex.shi@intel.com>
-Date		: 2010-03-25 8:40 (14 days old)
-First-Bad-Commit: http://git.kernel.org/git/linus/9dfc6e68bfe6ee452efb1a4e9ca26a9007f2b864
-Message-ID	: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
-References	: http://marc.info/?l=linux-kernel&m=126950632920682&w=4
-Handled-By	: Christoph Lameter <cl@linux-foundation.org>
-		  Pekka Enberg <penberg@cs.helsinki.fi>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15712
-Subject		: [regression] 2.6.34-rc1 to -rc3 on zaurus: no longer boots
-Submitter	: Pavel Machek <pavel@ucw.cz>
-Date		: 2010-04-01 6:06 (7 days old)
-Message-ID	: <20100401060624.GA1329@ucw.cz>
-References	: http://marc.info/?l=linux-kernel&m=127010200817402&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15711
-Subject		: 2.6.34-rc3, BUG at mm/slab.c:2989
-Submitter	: Heinz Diehl <htd@fancy-poultry.org>
-Date		: 2010-04-01 17:52 (7 days old)
-Message-ID	: <20100401175225.GA6581@fancy-poultry.org>
-References	: http://marc.info/?l=linux-kernel&m=127014437406250&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15704
-Subject		: [r8169] WARNING: at net/sched/sch_generic.c
-Submitter	: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Date		: 2010-03-31 10:21 (8 days old)
-Message-ID	: <20100331102142.GA3294@swordfish.minsk.epam.com>
-References	: http://marc.info/?l=linux-kernel&m=127003090406108&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15674
-Subject		: [2.6.34-rc2 NFS4 oops] open error path failure...
-Submitter	: Daniel J Blueman <daniel.blueman@gmail.com>
-Date		: 2010-03-29 18:36 (10 days old)
-Message-ID	: <6278d2221003291136p6481fe8emfb039403343c082@mail.gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=126988782722711&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15673
-Subject		: 2.6.34-rc2: "ima_dec_counts: open/free imbalance"?
-Submitter	: Thomas Meyer <thomas@m3y3r.de>
-Date		: 2010-03-28 11:31 (11 days old)
-Message-ID	: <1269775909.5301.4.camel@localhost.localdomain>
-References	: http://marc.info/?l=linux-kernel&m=126977593326800&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15672
-Subject		: KVM bug, git bisected
-Submitter	: Kent Overstreet <kent.overstreet@gmail.com>
-Date		: 2010-03-27 12:43 (12 days old)
-First-Bad-Commit: http://git.kernel.org/git/linus/5beb49305251e5669852ed541e8e2f2f7696c53e
-Message-ID	: <4BADFD74.8060904@gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=126969385121711&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15671
-Subject		: intel graphic card hanging (Hangcheck timer elapsed... GPU hung)
-Submitter	: Norbert Preining <preining@logic.at>
-Date		: 2010-03-27 16:11 (12 days old)
-Message-ID	: <20100327161104.GA12043@gamma.logic.tuwien.ac.at>
-References	: http://marc.info/?l=linux-kernel&m=126970883105262&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15669
-Subject		: INFO: suspicious rcu_dereference_check()
-Submitter	: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-Date		: 2010-03-08 1:26 (31 days old)
-Message-ID	: <c4e36d111003250348q678eb2e6w4f3e8133e7fd6e58@mail.gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=126801163107713&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15668
-Subject		: start_kernel(): bug: interrupts were enabled early
-Submitter	: Rabin Vincent <rabin@rab.in>
-Date		: 2010-03-25 19:53 (14 days old)
-First-Bad-Commit: http://git.kernel.org/git/linus/773e3eb7b81e5ba13b5155dfb3bb75b8ce37f8f9
-Message-ID	: <20100325194100.GA2364@debian>
-References	: http://marc.info/?l=linux-kernel&m=126954607216519&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15664
-Subject		: Graphics hang and kernel backtrace when starting Azureus with Compiz enabled
-Submitter	: Alex Villacis Lasso <avillaci@ceibo.fiec.espol.edu.ec>
-Date		: 2010-04-01 01:09 (7 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15661
-Subject		: PROBLEM: crash on halt with 2.6.34-0.16.rc2.git0.fc14.x86_64
-Submitter	: Jon Masters <jonathan@jonmasters.org>
-Date		: 2010-03-26 15:29 (13 days old)
-Message-ID	: <1269617372.3779.234.camel@localhost>
-References	: http://marc.info/?l=linux-kernel&m=126961739803949&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15659
-Subject		: [Regresion] [2.6.34-rc1] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
-Submitter	: Maciej Rutecki <maciej.rutecki@gmail.com>
-Date		: 2010-03-25 20:04 (14 days old)
-Message-ID	: <201003252104.24965.maciej.rutecki@gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=126954749618319&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15655
-Subject		: corrupt ext3 fs and partial freeze
-Submitter	: Alban Browaeys <prahal@yahoo.com>
-Date		: 2010-03-30 08:25 (9 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15625
-Subject		: BUG: 2.6.34-rc1, RIP is (null)
-Submitter	: Randy Dunlap <randy.dunlap@oracle.com>
-Date		: 2010-03-18 22:22 (21 days old)
-Message-ID	: <4BA2A7A9.4080503@oracle.com>
-References	: http://marc.info/?l=linux-kernel&m=126895098217351&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15624
-Subject		: [BUG] percpu misaligned allocation
-Submitter	: Frederic Weisbecker <fweisbec@gmail.com>
-Date		: 2010-03-18 4:49 (21 days old)
-Message-ID	: <20100318044930.GC5045@nowhere>
-References	: http://marc.info/?l=linux-kernel&m=126888780031992&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15619
-Subject		: Regression - Linux 2.6.34-rc1 - i915 - Render error detected
-Submitter	: Fabio Comolli <fabio.comolli@gmail.com>
-Date		: 2010-03-17 21:58 (22 days old)
-Message-ID	: <b637ec0b1003171458t524d168fiab52ce2b3431e3c9@mail.gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=126886311908558&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15615
-Subject		: NULL pointer deref in task_is_waking
-Submitter	: Amit Shah <shahamit@gmail.com>
-Date		: 2010-03-23 04:04 (16 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15611
-Subject		: Failure with the 2.6.34-rc1 kernel
-Submitter	: Rupjyoti Sarmah <rsarmah@amcc.com>
-Date		: 2010-03-16 15:45 (23 days old)
-Message-ID	: <AC311A8E81420D4EBC1F26E6479848FE065B7D3D@SDCEXCHANGE01.ad.amcc.com>
-References	: http://marc.info/?l=linux-kernel&m=126875435718396&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15610
-Subject		: fsck leads to swapper - BUG: unable to handle kernel NULL pointer dereference & panic
-Submitter	: Ozgur Yuksel <ozgur.yuksel@oracle.com>
-Date		: 2010-03-22 15:59 (17 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15603
-Subject		: lockdep warning at boot time when determining whether to resume
-Submitter	: Sami Liedes <sliedes@cc.hut.fi>
-Date		: 2010-03-22 00:03 (17 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15601
-Subject		: [BUG] SLOB breaks Crypto
-Submitter	: michael-dev@fami-braun.de
-Date		: 2010-03-15 13:39 (24 days old)
-Message-ID	: <4B9E38AF.70309@fami-braun.de>
-References	: http://marc.info/?l=linux-kernel&m=126866044724539&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15600
-Subject		: CONFIG_NO_BOOTMEM woes, 2.6.34-rc1
-Submitter	: Avi Kivity <avi@redhat.com>
-Date		: 2010-03-15 15:28 (24 days old)
-Message-ID	: <4B9E5211.9000204@redhat.com>
-References	: http://marc.info/?l=linux-kernel&m=126866691701926&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15590
-Subject		: 2.6.34-rc1: regression: ^Z no longer stops sound
-Submitter	: Pavel Machek <pavel@ucw.cz>
-Date		: 2010-03-14 7:58 (25 days old)
-Message-ID	: <20100314075831.GA13457@elf.ucw.cz>
-References	: http://marc.info/?l=linux-kernel&m=126855353122623&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15589
-Subject		: 2.6.34-rc1: Badness at fs/proc/generic.c:316
-Submitter	: Christian Kujau <lists@nerdbynature.de>
-Date		: 2010-03-13 23:53 (26 days old)
-Message-ID	: <alpine.DEB.2.01.1003131544340.5493@bogon.housecafe.de>
-References	: http://marc.info/?l=linux-kernel&m=126852442903680&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15553
-Subject		: Screen backlight doesn't come back on after lid was closed (GM45)
-Submitter	:  <bugs@kaijauch.de>
-Date		: 2010-03-17 14:35 (22 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15551
-Subject		: WARNING: at net/mac80211/work.c:811 ieee80211_work_work+0x7f/0xde8 [mac80211]()
-Submitter	: Alex Zhavnerchik <alex.vizor@gmail.com>
-Date		: 2010-03-16 22:03 (23 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15518
-Subject		: CONFIG_NO_BOOTMEM=y breaks boot on 32bit
-Submitter	: Daniel Vetter <daniel@ffwll.ch>
-Date		: 2010-03-11 15:37 (28 days old)
-
-
-Regressions with patches
-------------------------
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15505
-Subject		: No more b43 wireless interface since 2.6.34-rc1
-Submitter	: Christian Casteyde <casteyde.christian@free.fr>
-Date		: 2010-03-10 06:59 (29 days old)
-Handled-By	: Yinghai Lu <yinghai@kernel.org>
-Patch		: https://bugzilla.kernel.org/show_bug.cgi?id=15505#c11
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15480
-Subject		: [regression] Fails to boot properly unless given pci=nocrs
-Submitter	: Yanko Kaneti <yaneti@declera.com>
-Date		: 2010-03-09 01:24 (30 days old)
-Handled-By	: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Patch		: http://lkml.org/lkml/2010/3/11/512
-
-
-For details, please visit the bug entries and follow the links given in
-references.
-
-As you can see, there is a Bugzilla entry for each of the listed regressions.
-There also is a Bugzilla entry used for tracking the regressions from 2.6.33,
-unresolved as well as resolved, at:
-
-http://bugzilla.kernel.org/show_bug.cgi?id=15310
-
-Please let the tracking team know if there are any Bugzilla entries that
-should be added to the list in there.
-
-Thanks!
-
+On Wed, Apr 07, 2010 at 05:18:12PM -0400, Jeff Moyer wrote:
+> Hi again,
+> 
+> So, here's another stab at fixing this.  This patch is very much an RFC,
+> so do not pull it into anything bound for Linus.  ;-)  For those new to
+> this topic, here is the original posting:  http://lkml.org/lkml/2010/4/1/344
+> 
+> The basic problem is that, when running iozone on smallish files (up to
+> 8MB in size) and including fsync in the timings, deadline outperforms
+> CFQ by a factor of about 5 for 64KB files, and by about 10% for 8MB
+> files.  From examining the blktrace data, it appears that iozone will
+> issue an fsync() call, and will have to wait until it's CFQ timeslice
+> has expired before the journal thread can run to actually commit data to
+> disk.
+> 
+> The approach below puts an explicit call into the filesystem-specific
+> fsync code to yield the disk so that the jbd[2] process has a chance to
+> issue I/O.  This bring performance of CFQ in line with deadline.
+> 
+> There is one outstanding issue with the patch that Vivek pointed out.
+> Basically, this could starve out the sync-noidle workload if there is a
+> lot of fsync-ing going on.  I'll address that in a follow-on patch.  For
+> now, I wanted to get the idea out there for others to comment on.
+> 
+> Thanks a ton to Vivek for spotting the problem with the initial
+> approach, and for his continued review.
+> 
+
+Thanks Jeff. Conceptually this appraoch makes lot of sense to me. Higher
+layers explicitly telling CFQ not to idle/yield the slice.
+
+My firefox timing test is perfoming much better now.
+
+real	0m15.957s
+user	0m0.608s
+sys	0m0.165s
+
+real	0m12.984s
+user	0m0.602s
+sys	0m0.148s
+
+real	0m13.057s
+user	0m0.624s
+sys	0m0.145s
+
+So we got to take care of two issues now.
+
+- Make it work with dm/md devices also. Somehow shall have to propogate
+  this yield semantic down the stack.
+
+- The issue of making sure we don't yield if we are servicing sync-noidle
+  tree and there is other IO going on which relies on sync-noidle tree
+  idling (as you have already mentioned).
+
+
+[..]
+> +static void cfq_yield(struct request_queue *q)
+> +{
+> +	struct cfq_data *cfqd = q->elevator->elevator_data;
+> +	struct cfq_io_context *cic;
+> +	struct cfq_queue *cfqq;
+> +	unsigned long flags;
+> +
+> +	cic = cfq_cic_lookup(cfqd, current->io_context);
+> +	if (!cic)
+> +		return;
+> +
+> +	spin_lock_irqsave(q->queue_lock, flags);
+> +
+> +	/*
+> +	 * This is primarily called to ensure that the long synchronous
+> +	 * time slice does not prevent other I/O happenning (like journal
+> +	 * commits) while we idle waiting for it.  Thus, check to see if the
+> +	 * current cfqq is the sync cfqq for this process.
+> +	 */
+> +	cfqq = cic_to_cfqq(cic, 1);
+> +	if (!cfqq)
+> +		goto out_unlock;
+> +
+> +	if (cfqd->active_queue != cfqq)
+> +		goto out_unlock;
+> +
+> +	cfq_log_cfqq(cfqd, cfqq, "yielding queue");
+> +
+> +	__cfq_slice_expired(cfqd, cfqq, 1);
+> +	__blk_run_queue(cfqd->queue);
+
+I think it would be good if we also check that cfqq is empty or not. If cfqq
+is not empty we don't want to give up slice? But this is a minor point. At
+least in case of fsync, we seem to be waiting for all the iozone request
+to finish and then calling yield. So cfqq should be empty at this point of
+time. 
+
+Vivek
