@@ -1,136 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab0DGUXm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 16:23:42 -0400
-Received: from atreides.gradator.net ([212.85.155.42]:57277 "EHLO
-	atreides.gradator.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038Ab0DGUXk (ORCPT
+	id S1752003Ab0DGU0j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 16:26:39 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:34712 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038Ab0DGU0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 16:23:40 -0400
-X-Greylist: delayed 1574 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Apr 2010 16:23:40 EDT
-Date: Wed, 7 Apr 2010 22:23:39 +0200
-From: Sylvain Rochet <gradator@gradator.net>
-To: linux-kernel@vger.kernel.org
-Message-ID: <20100407202339.GB4830@gradator.net>
+	Wed, 7 Apr 2010 16:26:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=H5yxke1eortH84tTlU2YcxgbROn63H1tfw6+zttxLN2JsrEKv8Ezkb4/VzD2UDEAgO
+         IEl7r3ZI8eYwc2v/uTJKJKOOAn15kfVUuVYDRmJdjSCQVpnZS+iC6x3+Fx7HDOSHO9Ul
+         7s7GpXopHy2TQQQ84EIomAV73P/zuHU+bHrB4=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: [regression] 2.6.34-rc1 to -rc3 on zaurus: no longer boots
+Date: Wed, 7 Apr 2010 22:26:34 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3; KDE/4.3.4; i686; ; )
+Cc: Cyril Hrubis <metan@ucw.cz>, rpurdie@rpsys.net, lenz@cs.wisc.edu,
+       kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
+       thommycheck@gmail.com,
+       "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+       dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
+       utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+References: <20100313122754.GD2192@elf.ucw.cz> <20100315102830.GA10288@atrey.karlin.mff.cuni.cz> <20100401060624.GA1329@ucw.cz>
+In-Reply-To: <20100401060624.GA1329@ucw.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fXStkuK2IQBfcDe+"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.13 (2006-08-11)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: gradator@atreides.gradator.net
-Subject: PROBLEM: 2.4.37.9 destroying an Ethernet interface with permanent NUD leaves the kernels with undestroyable interfaces when ATM is compiled in
-X-SA-Exim-Version: 4.2.1 (built Tue, 09 Jan 2007 17:51:29 +0000)
-X-SA-Exim-Scanned: Yes (on atreides.gradator.net)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004072226.34272.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On czwartek, 1 kwietnia 2010 o 08:06:25 Pavel Machek wrote:
+> Hi!
+> 
+> > > I tried compiling 2.6.34-rc1, and it does not boot :-(. It does not
+> > > seem to even reset the framebuffer (I'm using kexec -- so it stays
+> > > stuck on on previous screen).
+> 
+> Tried again with -rc2 and -rc3, and neither boots :-(. I did not have
+> time to set up serial console, yet :-(. Any ideas?
+> 								Pavel
+> 
 
---fXStkuK2IQBfcDe+
-Content-Type: multipart/mixed; boundary="/Uq4LBwYP4y1W6pO"
-Content-Disposition: inline
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=15712
+for your bug report, please add your address to the CC list in there, thanks!
 
-
---/Uq4LBwYP4y1W6pO
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-When ATM and Ethernet are compiled in, ATM and Ethernet create their=20
-NEIGH/ARP tables, they are both assigned to family AF_INET.
-
-
-int neigh_add(....) {
-
- ...
-        for (tbl=3Dneigh_tables; tbl; tbl =3D tbl->next) {
-                if (tbl->family !=3D ndm->ndm_family)
-                        continue;
-  ...
-}
-
-
-As ATM table is created before Ethernet(main?) table,=20
-net/core/neighbour.c::neigh_add() function add all permanent IP ARP=20
-Ethernet NUD to the IP ATM table, which is wrong.
-
-Therefore, when net/core/neighbour.c::neigh_ifdown() is called ARP=20
-entries are not cleared, leaving dev->refcnt to a value that will never=20
-be able to reach 0 anymore.
-
-So, when net/core/dev.c::unregister_netdevice() is called it stalls=20
-without being able to destroy the interface leaving the system with no=20
-network tools working anymore.
-
-
-This is really easy to reproduce:
-
-openvpn --mktun --dev tap10
-ip addr add 10.20.30.20/24 dev tap10
-ip link set up dev tap10
-ip neighbour add 10.20.30.40 lladdr 01:02:03:04:05:06 nud permanent dev tap=
-10
-ip link set down dev tap10
-openvpn --rmtun --dev tap10
-
-and then kernel log starts being filled by:
-
-unregister_netdevice: waiting for tap10 to become free. Usage count =3D 2
-unregister_netdevice: waiting for tap10 to become free. Usage count =3D 2
-unregister_netdevice: waiting for tap10 to become free. Usage count =3D 2
-unregister_netdevice: waiting for tap10 to become free. Usage count =3D 2
-
-
-I changed the family of the ATM table to AF_ATMPVC, of course it fixes=20
-the issue but I guess this is the wrong way to fix that.
-
-
-Best regard,
-Sylvain
-
---/Uq4LBwYP4y1W6pO
-Content-Type: text/x-diff; charset=iso-8859-15
-Content-Disposition: attachment; filename="wrongfamily-atm-2.5.36.6.patch"
-Content-Transfer-Encoding: quoted-printable
-
-diff -Nru linux-2.4.36.6.a/net/atm/clip.c linux-2.4.36.6.b/net/atm/clip.c
---- linux-2.4.36.6.a/net/atm/clip.c	2008-06-06 18:25:34.000000000 +0200
-+++ linux-2.4.36.6.b/net/atm/clip.c	2010-04-07 21:33:38.000000000 +0200
-@@ -277,7 +277,7 @@
-=20
-=20
- static struct neigh_ops clip_neigh_ops =3D {
--	family:			AF_INET,
-+	family:			AF_ATMPVC,
- 	destructor:		clip_neigh_destroy,
- 	solicit:		clip_neigh_solicit,
- 	error_report:		clip_neigh_error,
-@@ -316,7 +316,7 @@
-=20
- static struct neigh_table clip_tbl =3D {
- 	NULL,			/* next */
--	AF_INET,		/* family */
-+	AF_ATMPVC,		/* family */
- 	sizeof(struct neighbour)+sizeof(struct atmarp_entry), /* entry_size */
- 	4,			/* key_len */
- 	clip_hash,
-
---/Uq4LBwYP4y1W6pO--
-
---fXStkuK2IQBfcDe+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.6 (GNU/Linux)
-
-iD8DBQFLvOnLDFub3qtEsS8RAqQ6AJ4o/31BgKPJBWqhUc26nDynPLAI1ACgnjD0
-qJ5JgEu8Yim+X1PM74NbvBM=
-=19QH
------END PGP SIGNATURE-----
-
---fXStkuK2IQBfcDe+--
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
