@@ -1,126 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab0DGLVQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 07:21:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48836 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753355Ab0DGLVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 07:21:14 -0400
-Date: Wed, 7 Apr 2010 14:17:22 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: xiaohui.xin@intel.com
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, jdike@linux.intel.com
-Subject: Re: [PATCH 1/3] A device for zero-copy based on KVM virtio-net.
-Message-ID: <20100407111722.GA10711@redhat.com>
-References: <20100407081532.GB9550@redhat.com> <1270630839-19876-1-git-send-email-xiaohui.xin@intel.com>
+	id S1757056Ab0DGLVZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 07:21:25 -0400
+Received: from ppsw-0.csi.cam.ac.uk ([131.111.8.130]:51518 "EHLO
+	ppsw-0.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756734Ab0DGLVW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 07:21:22 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4BBC6B52.5030908@cam.ac.uk>
+Date: Wed, 07 Apr 2010 12:24:02 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20100109 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1270630839-19876-1-git-send-email-xiaohui.xin@intel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@slimlogic.co.uk>, Jean Delvare <khali@linux-fr.org>,
+       lm-sensors <lm-sensors@lm-sensors.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [lm-sensors] regulator: regulator_get behaviour without CONFIG_REGULATOR
+ set
+References: <2122967437.461270223106350.JavaMail.root@mail.savoirfairelinux.com>	<1779783481.621270223270264.JavaMail.root@mail.savoirfairelinux.com>	<20100402160058.GE27613@sirena.org.uk>	<20100402184403.2ea1263e@hyperion.delvare>	<20100402185138.GA12817@opensource.wolfsonmicro.com>	<20100402213010.4a64e50f@hyperion.delvare>	<20100402204503.GA15237@opensource.wolfsonmicro.com>	<20100403173745.2bf17ee6@hyperion.delvare>	<20100405132347.GA6580@rakim.wolfsonmicro.main> <1270567639.3229.56.camel@odin> <4BBB6083.2070903@cam.ac.uk> (sfid-20100406_172304_064433_7FBC3A75) <1F9C625F-0467-4C6D-B57F-2E4FCAC76031@opensource.wolfsonmicro.com>
+In-Reply-To: <1F9C625F-0467-4C6D-B57F-2E4FCAC76031@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 07, 2010 at 05:00:39PM +0800, xiaohui.xin@intel.com wrote:
-> From: Xin Xiaohui <xiaohui.xin@intel.com>
+On 04/06/10 19:19, Mark Brown wrote:
+> On 6 Apr 2010, at 17:25, Jonathan Cameron <jic23@cam.ac.uk> wrote:
 > 
-> ---
+>> On 04/06/10 16:27, Liam Girdwood wrote:
+>>>>
+>>>>
+>>>>
+>>>
+>>> I suppose this is something we may look into more when we have more
+>>> clients.
+>> Makes sense.  There will probably be quite a few IIO drivers over the
+>> next
+>> few months doing much the same as sht15, where the voltage ref for
+>> devices
+>> may well be fed by a regulator.  In that case, we may only offer the
+>> option
+>> of using an external v_ref if the regulator is available.  Many
+>> devices have
+>> an internal regulator to provide it so typically we'll start them up
+>> using that
+>> and provide an interface to switch to external regulator if one is
+>> available.
+>> I haven't thought through exactly how this will work as yet. I'll cc
+>> people in
+>> when this comes up.
 > 
-> Michael,
-> Thanks a lot for the explanation. I have drafted a patch for the qemu write
-> after I looked into tun driver. Does it do in right way?
+> TBH this seems like a very vanilla use case - there may be some small
+> advantage to representing the internal regulator via the regulator API
+> but that's about the only thing I can think might be a bit odd.
 > 
-> Thanks
-> Xiaohui
-> 
->  drivers/vhost/mpassthru.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 45 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/vhost/mpassthru.c b/drivers/vhost/mpassthru.c
-> index e9449ac..1cde097 100644
-> --- a/drivers/vhost/mpassthru.c
-> +++ b/drivers/vhost/mpassthru.c
-> @@ -1065,6 +1065,49 @@ static unsigned int mp_chr_poll(struct file *file, poll_table * wait)
->  	return mask;
->  }
->  
-> +static ssize_t mp_chr_aio_write(struct kiocb *iocb, const struct iovec *iov,
-> +				unsigned long count, loff_t pos)
-> +{
-> +	struct file *file = iocb->ki_filp;
-> +	struct mp_struct *mp = mp_get(file->private_data);
-> +	struct sock *sk = mp->socket.sk;
-> +	struct sk_buff *skb;
-> +	int len, err;
-> +	ssize_t result;
-> +
-> +	if (!mp)
-> +		return -EBADFD;
-> +
+I wasn't thinking of representing the internal regulator using the regulator
+framework (though if it is externally available I guess that would make sense
+though probably only if anyone is actually using this to supply something else
+- most likely case I can think of is daisy chaining multiple adc's and ensuring
+they have the same reference value).
 
-Can this happen? When?
+The case I'm interested in is the externally supplied voltage reference. This
+typically comes off a fixed regulator or a spare regulator on a pmic.
+The use case is getting this voltage (and indeed buffering it using the
+same notifier approach as in sht15). This is needed to provide api compliant info
+to userspace (which needs sufficient info to work out what the actual value is).
 
-> +	/* currently, async is not supported */
-> +	if (!is_sync_kiocb(iocb))
-> +		return -EFAULT;
+I'd imagine similar cases occur in some hwmon devices.
 
-Really necessary? I think do_sync_write handles all this.
+Basically all these uses look just like that in sht15.
 
-> +
-> +	len = iov_length(iov, count);
-> +	skb = sock_alloc_send_skb(sk, len + NET_IP_ALIGN,
-> +				  file->f_flags & O_NONBLOCK, &err);
-> +
-> +	if (!skb)
-> +		return -EFAULT;
+Nothing new here, but there will be a number of consumers that care about changes
+in voltage (rather than typically controlling it.)  Hence I'm welcoming the change
+just agreed upon.
 
-Surely not EFAULT. -EAGAIN?
+Thanks,
 
-> +
-> +	skb_reserve(skb, NET_IP_ALIGN);
-> +	skb_put(skb, len);
-> +
-> +	if (skb_copy_datagram_from_iovec(skb, 0, iov, 0, len)) {
-> +		kfree_skb(skb);
-> +		return -EFAULT;
-> +	}
-> +	skb_set_network_header(skb, ETH_HLEN);
-
-Is this really right or necessary? Also,
-probably need to check that length is at least ETH_ALEN before
-doing this.
-
-> +	skb->protocol = *((__be16 *)(skb->data) + ETH_ALEN);
-
-eth_type_trans?
-
-> +	skb->dev = mp->dev;
-> +
-> +	dev_queue_xmit(skb);
-> +	mp->dev->stats.tx_packets++;
-> +	mp->dev->stats.tx_bytes += len;
-
-Doesn't the hard start xmit function for the device
-increment the counters?
-
-> +
-> +	mp_put(mp);
-> +	return result;
-> +}
-> +
->  static int mp_chr_close(struct inode *inode, struct file *file)
->  {
->  	struct mp_file *mfile = file->private_data;
-> @@ -1084,6 +1127,8 @@ static int mp_chr_close(struct inode *inode, struct file *file)
->  static const struct file_operations mp_fops = {
->  	.owner  = THIS_MODULE,
->  	.llseek = no_llseek,
-> +	.write  = do_sync_write,
-> +	.aio_write = mp_chr_aio_write,
->  	.poll   = mp_chr_poll,
->  	.unlocked_ioctl = mp_chr_ioctl,
->  	.open   = mp_chr_open,
-> -- 
-> 1.5.4.4
+Jonathan
