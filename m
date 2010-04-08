@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758598Ab0DHLFh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 07:05:37 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:57731 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758455Ab0DHLFd (ORCPT
+	id S1758605Ab0DHLHv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 07:07:51 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:32784 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758571Ab0DHLHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 07:05:33 -0400
-Date: Thu, 8 Apr 2010 13:05:32 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: Marek Vasut <marek.vasut@gmail.com>, linux-arm-kernel@lists.infradead.org,
-       maciej.rutecki@gmail.com, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       thommycheck@gmail.com, dbaryshkov@gmail.com,
-       Cyril Hrubis <metan@ucw.cz>, arminlitzel@web.de,
-       kernel list <linux-kernel@vger.kernel.org>, utx@penguin.cz,
-       lenz@cs.wisc.edu, rpurdie@rpsys.net, omegamoon@gmail.com,
-       zaurus-devel@www.linuxtogo.org
-Subject: Re: [regression] 2.6.34-rc1 to -rc3 on zaurus: no longer boots
-Message-ID: <20100408110532.GA14451@atrey.karlin.mff.cuni.cz>
-References: <20100313122754.GD2192@elf.ucw.cz> <20100401060624.GA1329@ucw.cz> <201004072226.34272.maciej.rutecki@gmail.com> <201004072252.08354.marek.vasut@gmail.com> <20100408044409.GA14982@elf.ucw.cz> <i2mf17812d71004080353oa8459642v33f88993eee87a99@mail.gmail.com>
+	Thu, 8 Apr 2010 07:07:48 -0400
+Date: Thu, 8 Apr 2010 13:07:43 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: Greg KH <greg@kroah.com>, Alan Stern <stern@rowland.harvard.edu>,
+       linux-kernel@vger.kernel.org, Pedro Ribeiro <pedrib@gmail.com>,
+       akpm@linux-foundation.org, Greg KH <gregkh@suse.de>,
+       alsa-devel@alsa-project.org, linux-usb@vger.kernel.org
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+Message-ID: <20100408110743.GP30807@buzzloop.caiaq.de>
+References: <20100407090623.GN30807@buzzloop.caiaq.de>
+ <20100407153154.GC13425@kroah.com>
+ <20100407153551.GK30801@buzzloop.caiaq.de>
+ <201004080809.11756.oliver@neukum.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-2
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <i2mf17812d71004080353oa8459642v33f88993eee87a99@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <201004080809.11756.oliver@neukum.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> >> > > > > I tried compiling 2.6.34-rc1, and it does not boot :-(. It does not
-> >> > > > > seem to even reset the framebuffer (I'm using kexec -- so it stays
-> >> > > > > stuck on on previous screen).
-> >> > >
-> >> > > Tried again with -rc2 and -rc3, and neither boots :-(. I did not have
-> >> > > time to set up serial console, yet :-(. Any ideas?
-> >> >
-> >> > I created a Bugzilla entry at
-> >> > https://bugzilla.kernel.org/show_bug.cgi?id=15712
-> >> > for your bug report, please add your address to the CC list in there,
-> >> >  thanks!
-> >> >
-> >> Pavel, you broke it ... and here you say something about sane arm maintainers
-> >> ;-)
-> >
-> > ? You know which patch causes it ?
+On Thu, Apr 08, 2010 at 08:09:11AM +0200, Oliver Neukum wrote:
+> Am Mittwoch, 7. April 2010 17:35:51 schrieb Daniel Mack:
+> > > Alan, any objection to just using usb_buffer_alloc() for every driver?
+> > > Or is that too much overhead?
+> > 
+> > FWIW, most drivers I've seen in the past hours use a wild mix of
+> > kmalloc(), kzalloc(), kcalloc() and usb_buffer_alloc(). That should
+> > really be unified.
 > 
-> Just have some time to try this out on my corgi, and the kernel runs
-> happily.
-> 
-> Pavel,
-> 
-> Which exact model are you running your kernel?
+> kmalloc() & friends != usb_buffer_alloc(). They do different things.
 
-It is Zaurus SL-C3000 (aka spitz). I'm using kexec, but that used to
-work. Should I try minimal config?
-									Pavel
+I know. I just believe that many developers used usb_buffer_alloc() even
+though they don't really need coherent DMA memory. The function's name
+is misleading, and copy'n paste does the rest.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> It makes no sense to unify them. If you really need an ordinary
+> buffer DMA will surely work on, this needs a third primitive.
+
+I think it will help a lot to rename usb_buffer_alloc() in the first
+place and then reconsider where coherent memory is really needed.
+
+Daniel
