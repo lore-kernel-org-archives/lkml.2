@@ -1,100 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933704Ab0DHUzG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 16:55:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34577 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933234Ab0DHUzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 16:55:03 -0400
-Message-ID: <4BBE42A9.2010506@suse.com>
-Date: Thu, 08 Apr 2010 16:55:05 -0400
-From: Jeff Mahoney <jeffm@suse.com>
-Organization: SUSE Labs, Novell, Inc
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-2.1 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Edward Shishkin <edward.shishkin@gmail.com>
-Cc: ReiserFS Mailing List <reiserfs-devel@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH #3] reiserfs: Fix permissions on .reiserfs_priv
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933713Ab0DHUzo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 16:55:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39244 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933234Ab0DHUzk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 16:55:40 -0400
+Subject: Re: [PATCH] perf_events: fix bogus warn_on(_once) in
+ perf_prepare_sample()
+From: Peter Zijlstra <peterz@infradead.org>
+To: eranian@google.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+       davem@davemloft.net, fweisbec@gmail.com, robert.richter@amd.com,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com
+In-Reply-To: <4bbe4175.5124cc0a.5bd3.22d6@mx.google.com>
+References: <4bbe4175.5124cc0a.5bd3.22d6@mx.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 08 Apr 2010 22:55:36 +0200
+Message-ID: <1270760136.20295.3121.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Commit 677c9b2e393a0cd203bd54e9c18b012b2c73305a removed the magic
- from the lookup code to hide the .reiserfs_priv directory since it
- was getting loaded at mount-time instead. The intent was that the
- entry would be hidden from the user via a poisoned d_compare, but
- this was faulty.
+On Thu, 2010-04-08 at 22:45 +0200, Stephane Eranian wrote:
+> 	There is a warn_on_once() check for PERF_SAMPLE_RAW which trips
+> 	when using PEBS on both Core and Nehalem. Core PEBS sample size is 144
+> 	bytes and 176 bytes for Nehalem. Both are multiples of 8, but the size
+> 	field is encoded as int, thus the total is never a multiple of 8 which
+> 	trips the check. I think the size should have been u64, but now it is
+> 	too late to change given it is ABI.
 
- This introduced a security issue where unpriviledged users could
- access and modify extended attributes or ACLs belonging to other
- users, including root.
+PEBS hasn't seen -linus yet, so we can fix that.
 
- This patch resolves the issue by properly hiding .reiserfs_priv. This
- was the intent of the xattr poisoning code, but it appears to have
- never worked as expected. This is fixed by using d_revalidate instead
- of d_compare.
+There's various things that do indeed rely on the perf buffer to always
+be u64 aligned, so this warning isn't bogus at all.
 
- This patch makes -oexpose_privroot a no-op. I'm fine leaving it this
- way. The effort involved in working out the corner cases wrt permissions
- and caching outweigh the benefit of the feature.
-
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
----
-
- fs/reiserfs/dir.c   |    2 --
- fs/reiserfs/xattr.c |   17 ++++-------------
- 2 files changed, 4 insertions(+), 15 deletions(-)
-
---- a/fs/reiserfs/dir.c
-+++ b/fs/reiserfs/dir.c
-@@ -45,8 +45,6 @@ static inline bool is_privroot_deh(struc
- 				   struct reiserfs_de_head *deh)
- {
- 	struct dentry *privroot = REISERFS_SB(dir->d_sb)->priv_root;
--	if (reiserfs_expose_privroot(dir->d_sb))
--		return 0;
- 	return (dir == dir->d_parent && privroot->d_inode &&
- 	        deh->deh_objectid == INODE_PKEY(privroot->d_inode)->k_objectid);
- }
---- a/fs/reiserfs/xattr.c
-+++ b/fs/reiserfs/xattr.c
-@@ -972,21 +972,13 @@ int reiserfs_permission(struct inode *in
- 	return generic_permission(inode, mask, NULL);
- }
- 
--/* This will catch lookups from the fs root to .reiserfs_priv */
--static int
--xattr_lookup_poison(struct dentry *dentry, struct qstr *q1, struct qstr *name)
-+static int xattr_hide_revalidate(struct dentry *dentry, struct nameidata *nd)
- {
--	struct dentry *priv_root = REISERFS_SB(dentry->d_sb)->priv_root;
--	if (container_of(q1, struct dentry, d_name) == priv_root)
--		return -ENOENT;
--	if (q1->len == name->len &&
--		   !memcmp(q1->name, name->name, name->len))
--		return 0;
--	return 1;
-+	return -EPERM;
- }
- 
- static const struct dentry_operations xattr_lookup_poison_ops = {
--	.d_compare = xattr_lookup_poison,
-+	.d_revalidate = xattr_hide_revalidate,
- };
- 
- int reiserfs_lookup_privroot(struct super_block *s)
-@@ -1000,8 +992,7 @@ int reiserfs_lookup_privroot(struct supe
- 				strlen(PRIVROOT_NAME));
- 	if (!IS_ERR(dentry)) {
- 		REISERFS_SB(s)->priv_root = dentry;
--		if (!reiserfs_expose_privroot(s))
--			s->s_root->d_op = &xattr_lookup_poison_ops;
-+		dentry->d_op = &xattr_lookup_poison_ops;
- 		if (dentry->d_inode)
- 			dentry->d_inode->i_flags |= S_PRIVATE;
- 	} else
