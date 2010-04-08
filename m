@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758595Ab0DHLVV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 07:21:21 -0400
-Received: from ns.netcenter.hu ([195.228.254.57]:36479 "EHLO mail.netcenter.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752792Ab0DHLVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 07:21:20 -0400
-Message-ID: <00bb01cad70d$a814c2c0$0400a8c0@dcccs>
-From: "Janos Haar" <janos.haar@netcenter.hu>
-To: "Dave Chinner" <david@fromorbit.com>
-Cc: <xiyou.wangcong@gmail.com>, <linux-kernel@vger.kernel.org>,
-       <kamezawa.hiroyu@jp.fujitsu.com>, <linux-mm@kvack.org>,
-       <xfs@oss.sgi.com>, <axboe@kernel.dk>
-References: <02c101cacbf8$d21d1650$0400a8c0@dcccs> <179901cad182$5f87f620$0400a8c0@dcccs> <t2h2375c9f91004010337p618c4d5yc739fa25b5f842fa@mail.gmail.com> <1fe901cad2b0$d39d0300$0400a8c0@dcccs> <20100402230905.GW3335@dastard> <22c901cad333$7a67db60$0400a8c0@dcccs> <20100404103701.GX3335@dastard> <2bd101cad4ec$5a425f30$0400a8c0@dcccs> <20100405224522.GZ3335@dastard> <3a5f01cad6c5$8a722c00$0400a8c0@dcccs> <20100408025822.GL11036@dastard>
-Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look please!...)
-Date: Thu, 8 Apr 2010 13:21:34 +0200
+	id S1758619Ab0DHL2f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 07:28:35 -0400
+Received: from smtp1.infomaniak.ch ([84.16.68.89]:51743 "EHLO
+	smtp1.infomaniak.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758569Ab0DHL2c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 07:28:32 -0400
+X-Greylist: delayed 1631 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Apr 2010 07:28:32 EDT
+Message-ID: <4BBDB6CB.6000202@free.fr>
+Date: Thu, 08 Apr 2010 12:58:19 +0200
+From: =?UTF-8?B?UmFwaGHDq2wgRG91cnNlbmF1ZA==?= <rdoursenaud@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100406 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.3598
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
+To: jkosina@suse.cz
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH 2.6.33.2 1/1] hid: add support for cymotion master solar keyboard
+X-Enigmail-Version: 1.0.1
+Content-Type: multipart/mixed;
+ boundary="------------020604080200020203060107"
+X-Antivirus: Dr.Web (R) for Mail Servers on smtp1 host
+X-Antivirus-Code: 100000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a multi-part message in MIME format.
+--------------020604080200020203060107
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
------ Original Message ----- 
-From: "Dave Chinner" <david@fromorbit.com>
-To: "Janos Haar" <janos.haar@netcenter.hu>
-Cc: <xiyou.wangcong@gmail.com>; <linux-kernel@vger.kernel.org>; 
-<kamezawa.hiroyu@jp.fujitsu.com>; <linux-mm@kvack.org>; <xfs@oss.sgi.com>; 
-<axboe@kernel.dk>
-Sent: Thursday, April 08, 2010 4:58 AM
-Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look 
-please!...)
+Support the solar version of the Cherry's cymotion keyboard line using
+existing cherry driver.
 
+Signed-off-by: Raphaël Doursenaud <rdoursenaud@free.fr>
 
-> On Thu, Apr 08, 2010 at 04:45:13AM +0200, Janos Haar wrote:
->> Hello,
->>
->> Sorry, but still have the problem with 2.6.33.2.
->
-> Yeah, these still a fix that needs to be back ported to .33
-> to solve this problem. It's in the series for 2.6.32.x, so maybe
-> pulling the 2.6.32-stable-queue tree in the meantime is your best
-> bet.
+--------------020604080200020203060107
+Content-Type: text/plain;
+ name="cymotionsolar.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="cymotionsolar.patch"
 
-Ok, thank you.
-But where can i find this tree?
-
-Thanks,
-Janos
-
->
-> Cheers,
->
-> Dave.
-> -- 
-> Dave Chinner
-> david@fromorbit.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/ 
-
+LS0tIGxpbnV4LTIuNi4zMy4yLnZhbmlsbGEvZHJpdmVycy9oaWQvaGlkLWNoZXJyeS5jCTIw
+MTAtMDItMjQgMTk6NTI6MTcuMDAwMDAwMDAwICswMTAwCisrKyBsaW51eC0yLjYuMzMuMi5j
+aGVycnkvZHJpdmVycy9oaWQvaGlkLWNoZXJyeS5jCTIwMTAtMDQtMDIgMDQ6MzY6MDguOTU1
+OTI1ODM4ICswMjAwCkBAIC01OSw2ICs1OSw3IEBAIHN0YXRpYyBpbnQgY2hfaW5wdXRfbWFw
+cGluZyhzdHJ1Y3QgaGlkX2QKIAogc3RhdGljIGNvbnN0IHN0cnVjdCBoaWRfZGV2aWNlX2lk
+IGNoX2RldmljZXNbXSA9IHsKIAl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQ0hF
+UlJZLCBVU0JfREVWSUNFX0lEX0NIRVJSWV9DWU1PVElPTikgfSwKKwl7IEhJRF9VU0JfREVW
+SUNFKFVTQl9WRU5ET1JfSURfQ0hFUlJZLCBVU0JfREVWSUNFX0lEX0NIRVJSWV9DWU1PVElP
+Tl9TT0xBUikgfSwKIAl7IH0KIH07CiBNT0RVTEVfREVWSUNFX1RBQkxFKGhpZCwgY2hfZGV2
+aWNlcyk7Ci0tLSBsaW51eC0yLjYuMzMuMi52YW5pbGxhL2RyaXZlcnMvaGlkL2hpZC1jb3Jl
+LmMJMjAxMC0wNC0wNyAyMTo0NjozMS41ODMxMTUzNzIgKzAyMDAKKysrIGxpbnV4LTIuNi4z
+My4zLmNoZXJyeS9kcml2ZXJzL2hpZC9oaWQtY29yZS5jCTIwMTAtMDQtMDIgMDQ6MzM6MDUu
+Nzk2OTU1MDQxICswMjAwCkBAIC0xMjkyLDYgKzEyOTIsNyBAQCBzdGF0aWMgY29uc3Qgc3Ry
+dWN0IGhpZF9kZXZpY2VfaWQgaGlkX2JsCiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9S
+X0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX0dFWVNFUjFfVFBfT05MWSkgfSwKIAl7
+IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQkVMS0lOLCBVU0JfREVWSUNFX0lEX0ZM
+SVBfS1ZNKSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9DSEVSUlksIFVT
+Ql9ERVZJQ0VfSURfQ0hFUlJZX0NZTU9USU9OKSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNC
+X1ZFTkRPUl9JRF9DSEVSUlksIFVTQl9ERVZJQ0VfSURfQ0hFUlJZX0NZTU9USU9OX1NPTEFS
+KSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9DSElDT05ZLCBVU0JfREVW
+SUNFX0lEX0NISUNPTllfVEFDVElDQUxfUEFEKSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNC
+X1ZFTkRPUl9JRF9DWVBSRVNTLCBVU0JfREVWSUNFX0lEX0NZUFJFU1NfQkFSQ09ERV8xKSB9
+LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9DWVBSRVNTLCBVU0JfREVWSUNF
+X0lEX0NZUFJFU1NfQkFSQ09ERV8yKSB9LAotLS0gbGludXgtMi42LjMzLjIudmFuaWxsYS9k
+cml2ZXJzL2hpZC9oaWQtaWRzLmgJMjAxMC0wNC0wNyAyMTo0NjozMS41ODMxMTUzNzIgKzAy
+MDAKKysrIGxpbnV4LTIuNi4zMy4xLmNoZXJyeS9kcml2ZXJzL2hpZC9oaWQtaWRzLmgJMjAx
+MC0wNC0wMiAwNDozMToyMS42OTY4MTQyMzkgKzAyMDAKQEAgLTEyNCw2ICsxMjQsNyBAQAog
+CiAjZGVmaW5lIFVTQl9WRU5ET1JfSURfQ0hFUlJZCQkweDA0NmEKICNkZWZpbmUgVVNCX0RF
+VklDRV9JRF9DSEVSUllfQ1lNT1RJT04JMHgwMDIzCisjZGVmaW5lIFVTQl9ERVZJQ0VfSURf
+Q0hFUlJZX0NZTU9USU9OX1NPTEFSCTB4MDAyNwogCiAjZGVmaW5lIFVTQl9WRU5ET1JfSURf
+Q0hJQwkJMHgwNWZlCiAjZGVmaW5lIFVTQl9ERVZJQ0VfSURfQ0hJQ19HQU1FUEFECTB4MDAx
+NAo=
+--------------020604080200020203060107--
