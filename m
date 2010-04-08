@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933864Ab0DHXki (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 19:40:38 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41645 "EHLO ogre.sisk.pl"
+	id S933218Ab0DHXkv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 19:40:51 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:41644 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933849Ab0DHXke convert rfc822-to-8bit (ORCPT
+	id S933532Ab0DHXkd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 19:40:34 -0400
+	Thu, 8 Apr 2010 19:40:33 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>, "okias" <d.okias@gmail.com>
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       "Jody Bruchon" <jody@nctritech.com>, "Takashi Iwai" <tiwai@suse.de>
 References: <cjwJ7Pf9h0L.A.9pB.1DmvLB@chimera>
 In-Reply-To: <cjwJ7Pf9h0L.A.9pB.1DmvLB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -16,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <onZ81XwyNTD.A.m3D.XHmvLB@chimera>
-Subject: [Bug #15076] System panic under load with clockevents_program_event
+Message-ID: <onZ81XwyNTD.A.DzD.AGmvLB@chimera>
+Subject: [Bug #15244] PROBLEM: hda-intel divide by zero kernel crash in azx_position_ok()
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri,  9 Apr 2010 01:04:27 +0200 (CEST)
+Date: Fri,  9 Apr 2010 01:04:28 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,9 +33,12 @@ introduced between 2.6.32 and 2.6.33.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15076
-Subject		: System panic under load with clockevents_program_event
-Submitter	: okias <d.okias@gmail.com>
-Date		: 2010-01-17 13:03 (82 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15244
+Subject		: PROBLEM: hda-intel divide by zero kernel crash in azx_position_ok()
+Submitter	: Jody Bruchon <jody@nctritech.com>
+Date		: 2010-02-06 0:32 (62 days old)
+References	: http://marc.info/?l=linux-kernel&m=126541276028173&w=2
+Handled-By	: Takashi Iwai <tiwai@suse.de>
+		  Jody Bruchon <jody@nctritech.com>
 
 
