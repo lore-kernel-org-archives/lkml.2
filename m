@@ -1,119 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932872Ab0DHQRB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 12:17:01 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:48486 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758583Ab0DHQRA (ORCPT
+	id S1758860Ab0DHQRh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 12:17:37 -0400
+Received: from mail.gmx.net ([213.165.64.20]:41469 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1758583Ab0DHQRc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 12:17:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=cIJ+1nbNNpfko2xMbQqJBFw/ECu9dtPuA4Uqqzxq3CXPhR9nPKPi55H8ugpXoS1MtQ
-         o7j9pspHOxspVAJKud5UeFcw0DK4aKqmwvHLbflIPK3I6OtlmOeDMv90ZnoYKMolQwO2
-         3O3fT77bdjVjrSHhpsYjUS9qKYzI8k4OWtcMY=
+	Thu, 8 Apr 2010 12:17:32 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1+61fQ3wWG6hcdLVWoLudqMdkKi+TTxpkbI3Mhvo+
+	U2ivKkU13n3Ck4
+From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: my KDE-4.4.2 Battery Monitor ppplet dislikes the ACPI changes in 2.6.34-rc3 betweeen f5284e7..cf90bfe
+Date: Thu, 8 Apr 2010 18:17:29 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.34-rc3-00406-gcf90bfe; KDE/4.4.2; i686; ; )
+References: <201004081812.10656.toralf.foerster@gmx.de>
+In-Reply-To: <201004081812.10656.toralf.foerster@gmx.de>
 MIME-Version: 1.0
-In-Reply-To: <y2z4bc8bc021004051214qf2adadf6u54862990349a7433@mail.gmail.com>
-References: <y2z4bc8bc021004051214qf2adadf6u54862990349a7433@mail.gmail.com>
-Date: Thu, 8 Apr 2010 18:16:58 +0200
-Message-ID: <n2j4bc8bc021004080916k54ab3f1an140ed2bd00bd327f@mail.gmail.com>
-Subject: Re: [PATCH] compal-laptop.c: added JHL90, battery & hwmon interface
-From: Roald Frederickx <roald.frederickx@gmail.com>
-To: mingo@redhat.com, superm1@ubuntu.com, mario_limonciello@dell.com,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201004081817.29561.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.53000000000000003
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I overlooked a patch (I reverted back to an older kernel for an
-unrelated issue), this should be applied for the current kernel:
 
---- compal-laptop.c     2010-04-05 20:44:22.727791103 +0200
-+++ compal-laptop-new.c 2010-04-06 16:29:00.799286626 +0200
-@@ -928,12 +928,15 @@
-      /* Register backlight stuff */
+Toralf Förster wrote at 18:12:09
+> because now it tells me that my ThinkPad T400 has 0 cpus and 0 batteries
+> ...
 
-      if (!acpi_video_backlight_support()) {
--               compalbl_device = backlight_device_register(DRIVER_NAME,
--                                               NULL, NULL, &compalbl_ops);
-+               struct backlight_properties props;
-+               memset(&props, 0, sizeof(struct backlight_properties));
-+               props.max_brightness = BACKLIGHT_LEVEL_MAX;
-+               compalbl_device = backlight_device_register(DRIVER_NAME,
-+                                                           NULL, NULL,
-+                                                           &compalbl_ops,
-+                                                           &props);
-              if (IS_ERR(compalbl_device))
-                      return PTR_ERR(compalbl_device);
--
--               compalbl_device->props.max_brightness = BACKLIGHT_LEVEL_MAX;
-      }
+FWIW : 
 
-      ret = platform_driver_register(&compal_driver);
+tfoerste@n22 ~/tmp $ grep "ACPI E" dmesg-2.6.34-rc3-00406-gcf90bfe
+ACPI Error: Null Object! Obj=(null) State=f676bc00 Num=0 
+(20100121/dswstate-183)
+ACPI Error (psparse-0537): Method parse/execution failed 
+[\_SB_.PCI0.LPC_.EC__.GBIF] (Node f70d4e28), AE_BAD_PARAMETER
+ACPI Error (psparse-0537): Method parse/execution failed 
+[\_SB_.PCI0.LPC_.EC__.BAT0._BIF] (Node f70d4d60), AE_BAD_PARAMETER
+ACPI Exception: AE_BAD_PARAMETER, Evaluating _BIF (20100121/battery-405)
+thinkpad_acpi: ThinkPad ACPI Extras v0.24
 
 
-2010/4/5 Roald Frederickx <roald.frederickx@gmail.com>:
-> Dear kernel developers,
->
-> On February the fourth I have contacted Cezary Jackiewicz regarding a
-> (large) addition to the compal-laptop driver (he is listed in the
-> maintainers file as the person to contact). However I still haven't
-> received any reply to date. I have recently checked the github commits
-> on this driver and I saw some activity during February and March. I
-> have patched my original addition to the driver to reflect the changes
-> that were made to the driver in the meantime. This mail is sent to all
-> the people that were involved in those github commits (excluding
-> Linus) and to the kernel mailing list.
->
->
-> About the additions:
->
-> The driver now supports the Compal JHL90 (which I use) and it has some
-> added features. The biggest novelties are a battery interface
-> (power_supply) and a temperature and fan control interface (hmwon).
->
-> Much of the original code of the old features is still there, but I've
-> changed some names to keep the naming more coherent with the added
-> functionalities.
->
-> This is my first kernel patch, so I'm new to this. I've added my name
-> and email address as an author (I'm willing to respond to questions,
-> and/or to test future versions on a JHL90 platform). I also bumped up
-> the version number to 0.2.7 as this is quite a big change.
->
->
-> Some technical stuff about the new driver:
->
-> NOTE: First of all, I'm not sure if the extra features also work on
-> the other Compal boards. If it turns out they only work on the JHL90,
-> then the driver can easily be altered to only enable them if the DMI
-> detection find such a board. (I can make those changes, should this be
-> needed.)
->
-> I've noticed a quirk in my fan controller. I have to re-send the
-> wanted pwm-level to the controller every so often. If I don't do this,
-> the fanspeed will slowly rise until after a couple of minutes it's at
-> full speed. (Note that every normal userland application will probably
-> update the pwm-level every so often anyway, based on temperature
-> readings, so this might not be an issue in practice) If this turns out
-> to be a problem with all the controllers, maybe we should implement a
-> kernel timer and have the driver re-send the pwm level every XX
-> seconds to make this transparent to userspace? (However, I couldn't
-> immediately find a way to do this *cleanly*.)
->
-> Additional information can be found in the source comments.
->
->
-> Lastly: the code. I've just inserted the entire source code. A diff
-> wouldn't be of much use given the amount of code that was altered and
-> added. It's attached as a bzipped tarball containing two files:
-> compal-laptop.c and the advised README.
->
->
-> Kind regards,
->
-> Roald Frederickx
->
+-- 
+MfG/Sincerely
+Toralf Förster
+
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+
