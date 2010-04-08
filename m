@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757750Ab0DHGc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 02:32:56 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:51360 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755527Ab0DHGcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 02:32:55 -0400
-Date: Thu, 8 Apr 2010 08:32:36 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: James Morris <jmorris@namei.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-       linux-kernel@vger.kernel.org, airlied@linux.ie,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: Config NO_BOOTMEM breaks my amd64 box
-Message-ID: <20100408063236.GA23489@elte.hu>
-References: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org>
- <4BB2EB1B.8090303@zytor.com>
- <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org>
- <20100331185916.GA12306@elte.hu>
- <alpine.LRH.2.00.1004010952080.31957@tundra.namei.org>
- <4BB3DC4E.7030504@zytor.com>
- <alpine.LRH.2.00.1004011042460.32618@tundra.namei.org>
- <4BB3DF46.8080008@zytor.com>
- <alpine.LRH.2.00.1004011200020.365@tundra.namei.org>
- <20100401125210.GA2445@elte.hu>
+	id S1758225Ab0DHGep (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 02:34:45 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:35132 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756151Ab0DHGel (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 02:34:41 -0400
+Date: Thu, 8 Apr 2010 09:34:03 +0300
+From: Heikki Krogerus <ext-heikki.krogerus@nokia.com>
+To: ext Greg KH <greg@kroah.com>
+Cc: ext Michal Nazarewicz <m.nazarewicz@samsung.com>,
+       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+       Peter Korsgaard <jacmet@sunsite.dk>,
+       Rupesh Gujare <rupeshgujare@gmail.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 7/8] USB: testusb: imported David Brownell's USB
+ testing application
+Message-ID: <20100408063403.GA9915@esdhcp042221.research.nokia.com>
+References: <cover.1270644740.git.mina86@mina86.com>
+ <033ad254a3bba337e7a37cc6071b7debc7051801.1270644740.git.mina86@mina86.com>
+ <b866157fc128769a3cdf9ae76f9fc21743776778.1270644740.git.mina86@mina86.com>
+ <d8e956ce78914750460877b87ba2b0f707ab8a0f.1270644740.git.mina86@mina86.com>
+ <a5ed8238af68738effaf1610f4653d98b9435098.1270644740.git.mina86@mina86.com>
+ <922265f162fd3b45408c234d0d17e924b6f61671.1270644740.git.mina86@mina86.com>
+ <15d6fb76583235c380569d11d904cc0e8d019067.1270644740.git.mina86@mina86.com>
+ <3c4f11cdfb08952e964879c343d6ed7ceedc9542.1270644740.git.mina86@mina86.com>
+ <20100408061000.GA7606@esdhcp042221.research.nokia.com>
+ <20100408061846.GA29184@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100401125210.GA2445@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20100408061846.GA29184@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 08 Apr 2010 06:34:10.0074 (UTC) FILETIME=[7F0AA7A0:01CAD6E5]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ingo Molnar <mingo@elte.hu> wrote:
-
-> * James Morris <jmorris@namei.org> wrote:
-> 
-> > On Wed, 31 Mar 2010, H. Peter Anvin wrote:
+On Thu, Apr 08, 2010 at 08:18:46AM +0200, ext Greg KH wrote:
+> On Thu, Apr 08, 2010 at 09:10:00AM +0300, Heikki Krogerus wrote:
+> > Hi,
 > > 
-> > > On 03/31/2010 04:43 PM, James Morris wrote:
-> > > >>
-> > > >> Upgraded how?  The problem no longer happens?
-> > > > 
-> > > > Upgraded to the latest rawhide userland -- I have not since tested with 
-> > > > bootmem off.  I'll try and do so again when I get a chance.
-> > > > 
-> > > 
-> > > That would be great.  The sooner the better, obviously.
+> > If this is going into kernel then..
 > > 
-> > I'm not seeing any problems now, with current Linus and rawhide.  I'll leave 
-> > bootmem off and see if anything comes up again.
+> > On Wed, Apr 07, 2010 at 03:41:34PM +0200, ext Michal Nazarewicz wrote:
+> > 
+> > ...
+> > 
+> > > +       if ((c = open ("/proc/bus/usb/devices", O_RDONLY)) < 0) {
+> > > +               fputs ("usbfs files are missing\n", stderr);
+> > > +               return -1;
+> > > +       }
+> > 
+> > Is this needed?
+> > 
+> > > +
+> > > +       /* collect and list the test devices */
+> > > +       if (ftw ("/proc/bus/usb", find_testdev, 3) != 0) {
+> > 
+> > How about "/dev/bus/usb" instead? Some distributions do not enable
+> > sysfs in their default kernels anymore.
 > 
-> (a current bootlog would still be nice)
-> 
-> Dave, can you reproduce any of these problems with Linus's latest?
+> You mean 'usbfs' not 'sysfs', right?
 
-ping? Can you or Dave reproduce the bug with -rc3 or later kernels? (If not 
-then it probably means that the bug you triggered was already fixed at the 
-time you reported it, as hpa suspected.)
+Yes, usbfs of cource :)
 
-Thanks,
-
-	Ingo
+-- 
+heikki
