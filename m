@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758220Ab0DHJdP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 05:33:15 -0400
-Received: from mga06.intel.com ([134.134.136.21]:54939 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755681Ab0DHJdM (ORCPT
+	id S1758248Ab0DHJeo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 05:34:44 -0400
+Received: from mga05.intel.com ([192.55.52.89]:57774 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755681Ab0DHJem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 05:33:12 -0400
+	Thu, 8 Apr 2010 05:34:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.52,169,1270450800"; 
-   d="scan'208";a="611246833"
-Date: Thu, 8 Apr 2010 11:33:46 +0200
+   d="scan'208";a="556075845"
+Date: Thu, 8 Apr 2010 11:35:17 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Todd Fischer <todd.fischer@ridgerun.com>
-Subject: Re: linux-next: build failure after merge of the mfd tree
-Message-ID: <20100408093345.GB3075@sortiz.org>
-References: <20100408125721.f93c1225.sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: Fix WM831x I2C suspend prototype
+Message-ID: <20100408093516.GC3075@sortiz.org>
+References: <1270642522-17468-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100408125721.f93c1225.sfr@canb.auug.org.au>
+In-Reply-To: <1270642522-17468-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
-
-On Thu, Apr 08, 2010 at 12:57:21PM +1000, Stephen Rothwell wrote:
-> Hi Samuel,
-> 
-> After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> drivers/mfd/tps6507x.c: In function 'tps6507x_i2c_probe':
-> drivers/mfd/tps6507x.c:90: error: implicit declaration of function 'kzalloc'
-> drivers/mfd/tps6507x.c:90: warning: assignment makes pointer from integer without a cast
-> drivers/mfd/tps6507x.c:92: error: implicit declaration of function 'kfree'
-> 
-> Caused by commit 353dd1bf937f319eb6fdf35a461bf0bea1361d23 ("mfd: Add
-> TPS6507x support").
-Fixed in my for-next branch, thanks for the report.
+On Wed, Apr 07, 2010 at 01:15:22PM +0100, Mark Brown wrote:
+> Sorry about the oversight.
+No problem. I wonder how that slipped through my compile tests...
+Anyway, I merged it with your last wm831x-core patch.
 
 Cheers,
 Samuel.
 
  
-> I applied the following patch for today.
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Thu, 8 Apr 2010 12:53:32 +1000
-> Subject: [PATCH] mfd: TPS6507x: using kzalloc/kfree requires including slab.h
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 > ---
->  drivers/mfd/tps6507x.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+>  drivers/mfd/wm831x-core.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/mfd/tps6507x.c b/drivers/mfd/tps6507x.c
-> index dcddef0..d859dff 100644
-> --- a/drivers/mfd/tps6507x.c
-> +++ b/drivers/mfd/tps6507x.c
-> @@ -17,6 +17,7 @@
->  #include <linux/module.h>
->  #include <linux/moduleparam.h>
->  #include <linux/init.h>
-> +#include <linux/slab.h>
->  #include <linux/i2c.h>
->  #include <linux/mfd/core.h>
->  #include <linux/mfd/tps6507x.h>
+> diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
+> index d4331b2..1a968f3 100644
+> --- a/drivers/mfd/wm831x-core.c
+> +++ b/drivers/mfd/wm831x-core.c
+> @@ -1767,7 +1767,7 @@ static int wm831x_i2c_remove(struct i2c_client *i2c)
+>  	return 0;
+>  }
+>  
+> -static int wm831x_i2c_suspend(struct i2c_client *i2c)
+> +static int wm831x_i2c_suspend(struct i2c_client *i2c, pm_message_t mesg)
+>  {
+>  	struct wm831x *wm831x = i2c_get_clientdata(i2c);
+>  
 > -- 
-> 1.7.0.4
+> 1.7.0.3
 > 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
 
 -- 
 Intel Open Source Technology Centre
