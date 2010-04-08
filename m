@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756969Ab0DHJbP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 05:31:15 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:60831 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904Ab0DHJbL convert rfc822-to-8bit (ORCPT
+	id S1758220Ab0DHJdP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 05:33:15 -0400
+Received: from mga06.intel.com ([134.134.136.21]:54939 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755681Ab0DHJdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 05:31:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=qm0xfDdzamGB5Ken9DE39KbDE45GSj/52cfuu41p3zNUB9btt3fPL/PCm5JJHy/i8i
-         H/Z5JQ6WNpWbXUUIXlM4q4Mujf7487URfo02B80G7bGMTQwmIIdSA68YUSvrKKFVJwUZ
-         0nF5MwdIvXOyWNcaq/WL8ZeQ/C78nUiO/XhxM=
+	Thu, 8 Apr 2010 05:33:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,169,1270450800"; 
+   d="scan'208";a="611246833"
+Date: Thu, 8 Apr 2010 11:33:46 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Todd Fischer <todd.fischer@ridgerun.com>
+Subject: Re: linux-next: build failure after merge of the mfd tree
+Message-ID: <20100408093345.GB3075@sortiz.org>
+References: <20100408125721.f93c1225.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <20100329104838.49c18075@feng-i7>
-References: <1269340105-6503-1-git-send-email-chripell@fsfe.org>
-	 <1269340170-6558-1-git-send-email-chripell@fsfe.org>
-	 <20100329104838.49c18075@feng-i7>
-Date: Thu, 8 Apr 2010 11:31:09 +0200
-X-Google-Sender-Auth: b6c76b27548466d9
-Message-ID: <v2ocabda6421004080231r7b7a734ao9fce206a82bf944b@mail.gmail.com>
-Subject: Re: [PATCH v1 3/4] max3100: adds console support for MAX3100
-From: christian pellegrin <chripell@fsfe.org>
-To: Feng Tang <feng.tang@intel.com>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "greg@kroah.com" <greg@kroah.com>,
-       "david-b@pacbell.net" <david-b@pacbell.net>,
-       "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-       "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-       "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-       "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100408125721.f93c1225.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 4:48 AM, Feng Tang <feng.tang@intel.com> wrote:
+Hi Stephen,
 
->> +             tx |= MAX3100_WD | MAX3100_RTS;
->
-> Does this imply to have to work with HW flow control? on my platform
-> I have to remove the RTS bit to make it work.
->
+On Thu, Apr 08, 2010 at 12:57:21PM +1000, Stephen Rothwell wrote:
+> Hi Samuel,
+> 
+> After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+> 
+> drivers/mfd/tps6507x.c: In function 'tps6507x_i2c_probe':
+> drivers/mfd/tps6507x.c:90: error: implicit declaration of function 'kzalloc'
+> drivers/mfd/tps6507x.c:90: warning: assignment makes pointer from integer without a cast
+> drivers/mfd/tps6507x.c:92: error: implicit declaration of function 'kfree'
+> 
+> Caused by commit 353dd1bf937f319eb6fdf35a461bf0bea1361d23 ("mfd: Add
+> TPS6507x support").
+Fixed in my for-next branch, thanks for the report.
 
-Finally I had time to check this. If you compare the 8250 (or similar)
-data-sheet with the MAX31x0 one you see that the handling of the
-RTX/CTS bits is exactly the same (8250 about RTS bit for example:
-"When any of these bits are cleared, the associated output is forced
-high." and MAX3110: "Request-to-Send Bit. Controls the state of the
-RTS output. This bit is reset on power-up (RTS
-bit = 0 sets the RTS pin = logic high)."). If you look at the 8250.c
-driver (grep for UART_MCR_RTS) you notice that the bit is set on
-device open (together with DTR of course). So I think the driver is
-doing the right thing here.
+Cheers,
+Samuel.
+
+ 
+> I applied the following patch for today.
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Thu, 8 Apr 2010 12:53:32 +1000
+> Subject: [PATCH] mfd: TPS6507x: using kzalloc/kfree requires including slab.h
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  drivers/mfd/tps6507x.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/mfd/tps6507x.c b/drivers/mfd/tps6507x.c
+> index dcddef0..d859dff 100644
+> --- a/drivers/mfd/tps6507x.c
+> +++ b/drivers/mfd/tps6507x.c
+> @@ -17,6 +17,7 @@
+>  #include <linux/module.h>
+>  #include <linux/moduleparam.h>
+>  #include <linux/init.h>
+> +#include <linux/slab.h>
+>  #include <linux/i2c.h>
+>  #include <linux/mfd/core.h>
+>  #include <linux/mfd/tps6507x.h>
+> -- 
+> 1.7.0.4
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
 
 -- 
-Christian Pellegrin, see http://www.evolware.org/chri/
-"Real Programmers don't play tennis, or any other sport which requires
-you to change clothes. Mountain climbing is OK, and Real Programmers
-wear their climbing boots to work in case a mountain should suddenly
-spring up in the middle of the computer room."
+Intel Open Source Technology Centre
+http://oss.intel.com/
