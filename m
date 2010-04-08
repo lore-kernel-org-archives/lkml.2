@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758728Ab0DHOXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 10:23:15 -0400
-Received: from mx4.sophos.com ([74.202.89.161]:50880 "EHLO mx4.sophos.com"
+	id S1758653Ab0DHOY3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 10:24:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57567 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755235Ab0DHOXJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 10:23:09 -0400
-X-Greylist: delayed 427 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Apr 2010 10:23:09 EDT
-From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Organization: Sophos Plc
+	id S1750768Ab0DHOY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 10:24:27 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
 To: Jens Axboe <jens.axboe@oracle.com>
-Subject: Re: [PATCH] loop: Update mtime when writing using aops
-Date: Thu, 8 Apr 2010 15:15:55 +0100
-User-Agent: KMail/1.9.10
-CC: Nikanth Karthikesan <knikanth@suse.de>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <201004081551.37824.knikanth@suse.de> <20100408124539.GM10103@kernel.dk>
-In-Reply-To: <20100408124539.GM10103@kernel.dk>
+Cc: Vivek Goyal <vgoyal@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+       linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch,rfc v2] ext3/4: enhance fsync performance when using cfq
+References: <x49ochv7yi3.fsf@segfault.boston.devel.redhat.com>
+	<20100407214631.GL3206@redhat.com> <20100408110442.GK10103@kernel.dk>
+	<20100408140515.GB10879@redhat.com> <20100408140944.GQ10103@kernel.dk>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 08 Apr 2010 10:24:18 -0400
+In-Reply-To: <20100408140944.GQ10103@kernel.dk> (Jens Axboe's message of "Thu,
+	8 Apr 2010 16:09:44 +0200")
+Message-ID: <x49ljcy9g4t.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Message-ID: <201004081515.56161.tvrtko.ursulin@sophos.com>
-X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 08/04/2010 15:15:56,
-	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 08/04/2010 15:15:57,
-	Serialize complete at 08/04/2010 15:15:57
-X-TNEFEvaluated: 1
-Content-Transfer-Encoding: 7BIT
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 April 2010 13:45:39 Jens Axboe wrote:
-> On Thu, Apr 08 2010, Nikanth Karthikesan wrote:
-> > Update mtime when writing to backing filesystem using the address space
-> > operations write_begin and write_end.
->
-> You forgot to include a 'why' :-)
->
-> Not that I disagree with the patch, just curious what made you make the
-> change.
+Jens Axboe <jens.axboe@oracle.com> writes:
 
-You mean how the bug was found? I originally reported this problem against
-openSUSE 11.2 kernel, where when you have a dm-crypt loop filesystem the
-container file modification time does not get updated with use. Consequence
-of that is that backup runs would miss the fact container has changed.
+> Precisely. The next question would be how to control the yielding. In
+> this particular case, you want to be yielding to a specific cfqq. IOW,
+> you essentially want to pass your slide on to that queue. The way the
+> above is implemented, you could easily just switch to another unrelated
+> queue. And if that is done, fairness is skewed without helping the
+> yielding process at all (which was the intention).
 
-Maybe one could argue it is a security feature in this scenario :), but as the
-problem turns out to be unrelated to the crypto case, rather contained in the
-loop driver itself, it looks like that would not hold.
+Well, that's true in part.  Prior to this patch, the process would idle,
+keeping all other cfq_queues on the system from making progress.  With
+this patch, at least *somebody* else makes progress, getting you closer
+to running the journal thread that you're blocked on.  Ideally, you'd
+want the thread you're waiting on to get disk time next, sure.  You
+would have to pass the process information down to the I/O scheduler for
+that, and I'm not sure that the file system code knows which process to
+hand off to.  Does it?
 
-Tvrtko
+Do we really want to go down this road at all?  I'm not convinced.
 
-Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
-Company Reg No 2096520. VAT Reg No GB 348 3873 20.
+Cheers,
+Jeff
