@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759144Ab0DHVYi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 17:24:38 -0400
-Received: from smtp-out002.kontent.com ([81.88.40.216]:40497 "EHLO
-	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759123Ab0DHVYe (ORCPT
+	id S1759110Ab0DHV1w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 17:27:52 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:55939 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759046Ab0DHV1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 17:24:34 -0400
-From: Oliver Neukum <oliver@neukum.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-Date: Thu, 8 Apr 2010 23:24:31 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-0.1-default; KDE/4.3.5; x86_64; ; )
-Cc: Daniel Mack <daniel@caiaq.de>, linux-kernel@vger.kernel.org,
-       Pedro Ribeiro <pedrib@gmail.com>, akpm@linux-foundation.org,
-       Greg KH <gregkh@suse.de>, alsa-devel@alsa-project.org,
-       linux-usb@vger.kernel.org
-References: <Pine.LNX.4.44L0.1004081257450.1720-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1004081257450.1720-100000@iolanthe.rowland.org>
+	Thu, 8 Apr 2010 17:27:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jan Blunck <jblunck@suse.de>
+Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
+Date: Thu, 8 Apr 2010 23:27:26 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.31-19-generic; KDE/4.4.2; x86_64; ; )
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>, Jiri Kosina <jkosina@suse.cz>,
+       Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+       Matthew Wilcox <matthew@wil.cx>, Thomas Gleixner <tglx@linutronix.de>,
+       Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+       John Kacur <jkacur@redhat.com>
+References: <201003242240.54907.arnd@arndb.de> <201003282205.50886.arnd@arndb.de> <20100408204545.GM10776@bolzano.suse.de>
+In-Reply-To: <20100408204545.GM10776@bolzano.suse.de>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004082324.31481.oliver@neukum.org>
+Message-Id: <201004082327.26731.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX19tprhuqkEazDLkdIIRVg2i5QZkkgL7GG8GdPe
+ crw+g5V5VYOVM4TzNN8WsA3WP+ixXMnAX9rzHcpkehIVqUzxSL
+ 3aCb5YZO7qV/uSWN/gBfA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 8. April 2010 18:59:38 schrieb Alan Stern:
-> On Thu, 8 Apr 2010, Oliver Neukum wrote:
-> 
-> > Am Mittwoch, 7. April 2010 17:46:17 schrieb Alan Stern:
-> > > Or alternatively, instead of allocating regular memory the routine
-> > > could simply fail.  Then the caller would be responsible for checking
-> > > and using regular memory instead of dma-consistent memory.  Of course,
-> > > that would put an even larger burden on the caller than just forcing it
-> > > to keep track of what flag to use.
+On Thursday 08 April 2010 22:45:45 Jan Blunck wrote:
+> On Sun, Mar 28, Arnd Bergmann wrote:
+> > > General thoughts:
+> > > 
+> > > ".llseek = NULL," so far meant "do the Right Thing on lseek() and
+> > > friends, as far as the fs core can tell".  Shouldn't we keep it that
+> > > way?  It's as close to other ".method = NULL," as it can get, which
+> > > either mean "silently skip this method if it doesn't matter" (e.g.
+> > > .flush) or "fail attempts to use this method with a fitting errno" (e.g.
+> > > .write).
 > > 
-> > Then it would be sensible to pass it a filled URB, modify it or return
-> > an error code.
+> > My series changes the default from 'default_llseek' to 'generic_file_llseek',
 > 
-> That would work, but it doesn't match the way existing drivers use the
-> interface.  For example, the audio driver allocates a 16-byte coherent
-> buffer and then uses four bytes from it for each of four different 
-> URBs.
+> That is not that easy. generic_file_llseek() is testing against 'offset <
+> inode->i_sb->s_maxbytes'. This is not necessarily true when you think about
+> directories with random offset cookies. I know that seeking on directories is
+> stupid but don't blame me.
 
-That will not work with any fallback that does not yield a coherent buffer.
+Oh, I see. Would it work if we extend generic_file_llseek to only check s_maxbytes
+if S_ISREG(inode->i_mode)))?
 
-	Regards
-		Oliver
+> > Yes, that also sounds like a good idea. I believe that Jan actually posted
+> > a patch to do that at some point.
+> 
+> Yes, it is in
+> 
+> http://git.infradead.org/users/jblunck/linux-2.6.git bkl/default-lseek
+> 
+> There are some other patches in that branch that are not upstream yet. Mind to
+> take them for your bkl-removal branch?
+
+Frederic is now collecting the new patches. Your default-lseek series looks
+good to me, except for the obvious one that says 'FIXME' in the subject.
+
+Maybe Frederic can add your series except for that one as another branch to
+get pulled into his kill-the-bkl master branch.
+
+	Arnd
