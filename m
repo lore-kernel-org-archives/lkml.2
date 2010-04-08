@@ -1,84 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab0DHE7p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 00:59:45 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:65464 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab0DHE7m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 00:59:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=c9TSv6XOu6xpvFJqQ4F0vAUoDcyMNwnFIeCspyVwjjuBzqY5+aFuFKn3bY7SxtWWyc
-         bUbNKUNG9zh/Etd7IdXQGV77VUv3e9njwsgAoaconMPFnl2acAyiTFOJUVOlegE9OqZN
-         T3QNKROGkHqcEwksPb2Z98yP9QK6DoXTfs0JI=
-Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, netdev <netdev@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, alex.shi@intel.com,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1270688747.2078.383.camel@ymzhang.sh.intel.com>
-References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
-	 <alpine.DEB.2.00.1003250942080.2670@router.home>
-	 <1269570902.9614.92.camel@alexs-hp.sh.intel.com>
-	 <1270114166.2078.107.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004011050340.16531@router.home>
-	 <1270195589.2078.116.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004050853300.23149@router.home>
-	 <i2z84144f021004051030k7ff5190cyc083aa12c552dfac@mail.gmail.com>
-	 <4BBA8DF9.8010409@kernel.org>
-	 <1270542497.2078.123.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004061033330.18750@router.home>
-	 <alpine.DEB.2.00.1004061552500.19151@router.home>
-	 <1270591841.2091.170.camel@edumazet-laptop>
-	 <1270607668.2078.259.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004071130260.13261@router.home>
-	 <4BBCB7B7.4040901@cs.helsinki.fi> <4BBCB868.2000705@cs.helsinki.fi>
-	 <alpine.DEB.2.00.1004071319320.16159@router.home>
-	 <1270665484.8141.47.camel@edumazet-laptop>
-	 <1270688747.2078.383.camel@ymzhang.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Apr 2010 06:59:34 +0200
-Message-ID: <1270702774.8141.49.camel@edumazet-laptop>
+	id S1753319Ab0DHFAd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 01:00:33 -0400
+Received: from sh.osrg.net ([192.16.179.4]:33696 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750831Ab0DHFAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 01:00:32 -0400
+Date: Thu, 8 Apr 2010 14:00:22 +0900
+To: vapier.adi@gmail.com
+Cc: fujita.tomonori@lab.ntt.co.jp, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm 09/12] blackfin: use use asm-generic/scatterlist.h
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <y2z8bd0f97a1004072051i3d309852zf3dc1b3ffb06d0ac@mail.gmail.com>
+References: <1270511567-18567-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+	<1270511567-18567-10-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+	<y2z8bd0f97a1004072051i3d309852zf3dc1b3ffb06d0ac@mail.gmail.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100408135958F.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 08 Apr 2010 14:00:23 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 08 avril 2010 à 09:05 +0800, Zhang, Yanmin a écrit :
+On Wed, 7 Apr 2010 23:51:04 -0400
+Mike Frysinger <vapier.adi@gmail.com> wrote:
 
-> > Do we have a user program to check actual L1 cache size of a machine ?
-> If there is no, it's easy to write it as kernel exports the cache stat by
-> /sys/devices/system/cpu/cpuXXX/cache/indexXXX/
+> > #define ISA_DMA_THRESHOLD (0xffffffff)
+> 
+> this is the same value as the common asm-generic one, so this define
+> should be punted, especially since this would probably introduce
+> redefined warnings.
 
-Yes, this is what advertizes my L1 cache having 64bytes lines, but I
-would like to check that in practice, this is not 128bytes...
+I removed ISA_DMA_THRESHOLD in the common asm-generic one since it
+doesn't work for powerpc.
 
-./index0/type:Data
-./index0/level:1
-./index0/coherency_line_size:64
-./index0/physical_line_partition:1
-./index0/ways_of_associativity:8
-./index0/number_of_sets:64
-./index0/size:32K
-./index0/shared_cpu_map:00000101
-./index0/shared_cpu_list:0,8
-./index1/type:Instruction
-./index1/level:1
-./index1/coherency_line_size:64
-./index1/physical_line_partition:1
-./index1/ways_of_associativity:4
-./index1/number_of_sets:128
-./index1/size:32K
-./index1/shared_cpu_map:00000101
-./index1/shared_cpu_list:0,8
+I've attached the common asm-generic in -mm below.
+
+> once that is done, this header is simply a redirect, so it'd be better
+> if it was just one line:
+> #include <asm-generic/scatterlist.h>
+> 
+> one of the reasons i hadnt converted sooner was that it seems like the
+> common header introduces bloat.  the Blackfin header has just "length"
+
+I took care of it. Blackfin doesn't define
+CONFIG_NEED_SG_DMA_LENGTH so doesn't get "dma_length".
 
 
+> while the asm-generic has both "length" and "dma_length".  unless i
+> missed something, this hasnt been a problem for us.  perhaps the
+> common header should have something like:
+> #if __BITS_PER_LONG == 64
+>     unsigned int    dma_length;
+> #endif
+
+'#if __BITS_PER_LONG == 64' doesn't work since some 32-bit
+architectures need it. So I invented CONFIG_NEED_SG_DMA_LENGTH.
+
+=
+#ifndef __ASM_GENERIC_SCATTERLIST_H
+#define __ASM_GENERIC_SCATTERLIST_H
+
+#include <linux/types.h>
+
+struct scatterlist {
+#ifdef CONFIG_DEBUG_SG
+	unsigned long	sg_magic;
+#endif
+	unsigned long	page_link;
+	unsigned int	offset;
+	unsigned int	length;
+	dma_addr_t	dma_address;
+#ifdef CONFIG_NEED_SG_DMA_LENGTH
+	unsigned int	dma_length;
+#endif
+};
+
+/*
+ * These macros should be used after a dma_map_sg call has been done
+ * to get bus addresses of each of the SG entries and their lengths.
+ * You should only work with the number of sg entries pci_map_sg
+ * returns, or alternatively stop on the first sg_dma_len(sg) which
+ * is 0.
+ */
+#define sg_dma_address(sg)	((sg)->dma_address)
+
+#ifdef CONFIG_NEED_SG_DMA_LENGTH
+#define sg_dma_len(sg)		((sg)->dma_length)
+#else
+#define sg_dma_len(sg)		((sg)->length)
+#endif
+
+#endif /* __ASM_GENERIC_SCATTERLIST_H */
