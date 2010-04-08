@@ -1,103 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab0DHFjW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 01:39:22 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:45449 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab0DHFjU (ORCPT
+	id S1754860Ab0DHFoQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 01:44:16 -0400
+Received: from mail-pz0-f193.google.com ([209.85.222.193]:55361 "EHLO
+	mail-pz0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753655Ab0DHFoP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 01:39:20 -0400
+	Thu, 8 Apr 2010 01:44:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=C3S9fzeKLyRMhX0CvlZvLhsGfNDeelBubEJNV6q1FHICvCf4cHW30l3ncrbtJQDg1v
-         57ydBIbOX4pshyG1MzZQbqjrKI4oKGjdLsRlnGywMp4lpkBZ4mWcb8Tk2dL7mvgPh1Qt
-         Ve6ot7IkKjDfU9BgahZd8UkNKtmyo5yfxZLhM=
-Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, netdev <netdev@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, alex.shi@intel.com,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1270702774.8141.49.camel@edumazet-laptop>
-References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
-	 <alpine.DEB.2.00.1003250942080.2670@router.home>
-	 <1269570902.9614.92.camel@alexs-hp.sh.intel.com>
-	 <1270114166.2078.107.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004011050340.16531@router.home>
-	 <1270195589.2078.116.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004050853300.23149@router.home>
-	 <i2z84144f021004051030k7ff5190cyc083aa12c552dfac@mail.gmail.com>
-	 <4BBA8DF9.8010409@kernel.org>
-	 <1270542497.2078.123.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004061033330.18750@router.home>
-	 <alpine.DEB.2.00.1004061552500.19151@router.home>
-	 <1270591841.2091.170.camel@edumazet-laptop>
-	 <1270607668.2078.259.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004071130260.13261@router.home>
-	 <4BBCB7B7.4040901@cs.helsinki.fi> <4BBCB868.2000705@cs.helsinki.fi>
-	 <alpine.DEB.2.00.1004071319320.16159@router.home>
-	 <1270665484.8141.47.camel@edumazet-laptop>
-	 <1270688747.2078.383.camel@ymzhang.sh.intel.com>
-	 <1270702774.8141.49.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Apr 2010 07:39:13 +0200
-Message-ID: <1270705153.8141.58.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Ntlo6JgMHB3BpEQNHuGbDjSIF5vKQM2hpSqloCo1pYQk3JDFNfkHhlYsji17q60wr9
+         +EovZtaVPiUck2dUTUlrKQZokW/9PS7A7D6wqqEyJsS2IZ0Nw3BvNl29ajjBaeYNh4ap
+         qv8GhdMmaC9zK5PtUtX+bZnxr5z27Epvt5GBg=
+MIME-Version: 1.0
+In-Reply-To: <1270604552-10051-1-git-send-email-guenter.roeck@ericsson.com>
+References: <1270604552-10051-1-git-send-email-guenter.roeck@ericsson.com>
+Date: Wed, 7 Apr 2010 22:44:14 -0700
+X-Google-Sender-Auth: 1478f8797610d81b
+Message-ID: <z2j86802c441004072244ma8035defi49a8e729ea9fba9c@mail.gmail.com>
+Subject: Re: [PATCH v2] x86: Call setup_early_printk before first call to 
+	early_printk
+From: Yinghai Lu <yinghai@kernel.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 6, 2010 at 6:42 PM, Guenter Roeck
+<guenter.roeck@ericsson.com> wrote:
+> Current code calls setup_early_printk() too late to catch the initial calls
+> to early_printk(). This results in those early messages not to be printed on a
+> serial console. Also, if there is no VGA device in the system, it will cause
+> bad writes into VGA memory space. This can cause problems if the VGA memory
+> space is used by another device in such a system.
+>
+> Fix the problem by calling setup_early_printk() immediately after the boot
+> command line is available, and by preventing early_printk() to print anything
+> before setup_early_printk() was executed.
+>
+> Also removed conditional output "Kernel alive".
+>
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> ---
+> The first version of this patch used the headline
+>    x86: Do not write to VGA memory space if CONFIG_VGA_CONSOLE is undefined
+> I changed the headline to reflect its expanded scope.
+>
+> I removed the "Kernel alive" message because I don't see how console_loglevel
+> can ever be equal to 10 when the code is executed. An alternative might be
+> (if that possibility exists after all) to move it after the call to
+> setup_early_printk().
+>
+>  arch/x86/include/asm/setup.h   |    2 ++
+>  arch/x86/kernel/early_printk.c |    5 ++++-
+>  arch/x86/kernel/head32.c       |    4 ++++
+>  arch/x86/kernel/head64.c       |    7 ++++---
+>  4 files changed, 14 insertions(+), 4 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
+> index 86b1506..83847af 100644
+> --- a/arch/x86/include/asm/setup.h
+> +++ b/arch/x86/include/asm/setup.h
+> @@ -93,6 +93,8 @@ void *extend_brk(size_t size, size_t align);
+>                        : : "i" (sz));                                  \
+>        }
+>
+> +int __init setup_early_printk(char *buf);
+> +
+>  #ifdef __i386__
+>
+>  void __init i386_start_kernel(void);
+> diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
+> index b9c830c..873f1cd 100644
+> --- a/arch/x86/kernel/early_printk.c
+> +++ b/arch/x86/kernel/early_printk.c
+> @@ -170,6 +170,9 @@ asmlinkage void early_printk(const char *fmt, ...)
+>        int n;
+>        va_list ap;
+>
+> +       if (!early_console_initialized)
+> +               return;
+> +
 
-I suspect NUMA is completely out of order on current kernel, or my
-Nehalem machine NUMA support is a joke
+if someone specify "earlyprintk", early_console will still point to
+early_vga_console...
 
-# numactl --hardware
-available: 2 nodes (0-1)
-node 0 size: 3071 MB
-node 0 free: 2637 MB
-node 1 size: 3062 MB
-node 1 free: 2909 MB
+prefer to set early_console to NULL,
 
+and here change to
 
-# cat try.sh
-hackbench 50 process 5000
-numactl --cpubind=0 --membind=0 hackbench 25 process 5000 >RES0 &
-numactl --cpubind=1 --membind=1 hackbench 25 process 5000 >RES1 &
-wait
-echo node0 results
-cat RES0
-echo node1 results
-cat RES1
-
-numactl --cpubind=0 --membind=1 hackbench 25 process 5000 >RES0_1 &
-numactl --cpubind=1 --membind=0 hackbench 25 process 5000 >RES1_0 &
-wait
-echo node0 on mem1 results
-cat RES0_1
-echo node1 on mem0 results
-cat RES1_0
-
-# ./try.sh
-Running with 50*40 (== 2000) tasks.
-Time: 16.865
-node0 results
-Running with 25*40 (== 1000) tasks.
-Time: 16.767
-node1 results
-Running with 25*40 (== 1000) tasks.
-Time: 16.564
-node0 on mem1 results
-Running with 25*40 (== 1000) tasks.
-Time: 16.814
-node1 on mem0 results
-Running with 25*40 (== 1000) tasks.
-Time: 16.896
+if (!early_console) {
+    printk(fmt, vargs)
+    return;
+}
 
 
+>        va_start(ap, fmt);
+>        n = vscnprintf(buf, sizeof(buf), fmt, ap);
+>        early_console->write(early_console, buf, n);
+> @@ -191,7 +194,7 @@ static inline void early_console_register(struct console *con, int keep_early)
+>        register_console(early_console);
+>  }
+>
+> -static int __init setup_early_printk(char *buf)
+> +int __init setup_early_printk(char *buf)
+>  {
+>        int keep;
+>
+> diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
+> index b2e2460..e2e9c2b 100644
+> --- a/arch/x86/kernel/head32.c
+> +++ b/arch/x86/kernel/head32.c
+> @@ -30,6 +30,10 @@ static void __init i386_default_early_setup(void)
+>
+>  void __init i386_start_kernel(void)
+>  {
+> +#ifdef CONFIG_EARLY_PRINTK
+> +       setup_early_printk(boot_command_line);
+> +#endif
+> +
+>  #ifdef CONFIG_X86_TRAMPOLINE
+>        /*
+>         * But first pinch a few for the stack/trampoline stuff
+> diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+> index 7147143..1b4d6b2 100644
+> --- a/arch/x86/kernel/head64.c
+> +++ b/arch/x86/kernel/head64.c
+> @@ -88,9 +88,6 @@ void __init x86_64_start_kernel(char * real_mode_data)
+>        }
+>        load_idt((const struct desc_ptr *)&idt_descr);
+>
+> -       if (console_loglevel == 10)
+> -               early_printk("Kernel alive\n");
+> -
+>        x86_64_start_reservations(real_mode_data);
+>  }
+>
+> @@ -98,6 +95,10 @@ void __init x86_64_start_reservations(char *real_mode_data)
+>  {
+>        copy_bootdata(__va(real_mode_data));
+>
+> +#ifdef CONFIG_EARLY_PRINTK
+> +       setup_early_printk(boot_command_line);
+> +#endif
+
+you may need to search "earlyprintk" and cut the "earlyprintk=....."
+string out at first, and then use that
+string to call setup_early_printk()
+
+YH
