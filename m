@@ -1,240 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933683Ab0DHXjO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 19:39:14 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41598 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758912Ab0DHXit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 19:38:49 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Len Brown <lenb@kernel.org>
-Subject: [PATCH 1/2] ACPI / EC / PM: Fix race between EC transactions and system suspend
-Date: Fri, 9 Apr 2010 01:39:40 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Alexey Starikovskiy <astarikovskiy@suse.de>,
-       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       pm list <linux-pm@lists.linux-foundation.org>,
-       Maxim Levitsky <maximlevitsky@gmail.com>
-References: <201004090138.13522.rjw@sisk.pl>
-In-Reply-To: <201004090138.13522.rjw@sisk.pl>
+	id S933170Ab0DHXjU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 19:39:20 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:49175 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759011Ab0DHXi4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 19:38:56 -0400
+Date: Fri, 9 Apr 2010 09:38:37 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: John Berthels <john@humyo.com>
+Cc: linux-kernel@vger.kernel.org, Nick Gregory <nick@humyo.com>,
+       Rob Sanderson <rob@humyo.com>, xfs@oss.sgi.com, linux-mm@kvack.org
+Subject: Re: PROBLEM + POSS FIX: kernel stack overflow, xfs, many disks,
+ heavy write load, 8k stack, x86-64
+Message-ID: <20100408233837.GP11036@dastard>
+References: <4BBC6719.7080304@humyo.com>
+ <20100407140523.GJ11036@dastard>
+ <4BBCAB57.3000106@humyo.com>
+ <20100407234341.GK11036@dastard>
+ <20100408030347.GM11036@dastard>
+ <4BBDC92D.8060503@humyo.com>
+ <4BBDEC9A.9070903@humyo.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004090139.40251.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BBDEC9A.9070903@humyo.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There still is a race that may result in suspending the system in
-the middle of an EC transaction in progress, which leads to problems
-(like the kernel thinking that the ACPI global lock is held during
-resume while in fact it's not).
+On Thu, Apr 08, 2010 at 03:47:54PM +0100, John Berthels wrote:
+> John Berthels wrote:
+> >I'll reply again after it's been running long enough to draw conclusions.
+> We're getting pretty close on the 8k stack on this box now. It's
+> running 2.6.33.2 + your patch, with THREAD_ORDER 1, stack tracing
+> and CONFIG_LOCKDEP=y. (Sorry that LOCKDEP is on, please advise if
+> that's going to throw the figures and we'll restart the test systems
+> with new kernels).
+> 
+> This is significantly more than 5.6K, so it shows a potential
+> problem? Or is 720 bytes enough headroom?
+> 
+> jb
+> 
+> [ 4005.541869] apache2 used greatest stack depth: 2480 bytes left
+> [ 4005.541973] apache2 used greatest stack depth: 2240 bytes left
+> [ 4005.542070] apache2 used greatest stack depth: 1936 bytes left
+> [ 4005.542614] apache2 used greatest stack depth: 1616 bytes left
+> [ 5531.406529] apache2 used greatest stack depth: 720 bytes left
+> 
+> $ cat /sys/kernel/debug/tracing/stack_trace
+>        Depth    Size   Location    (55 entries)
+>        -----    ----   --------
+>  0)     7440      48   add_partial+0x26/0x90
+>  1)     7392      64   __slab_free+0x1a9/0x380
+>  2)     7328      64   kmem_cache_free+0xb9/0x160
+>  3)     7264      16   free_buffer_head+0x25/0x50
+>  4)     7248      64   try_to_free_buffers+0x79/0xc0
+>  5)     7184     160   xfs_vm_releasepage+0xda/0x130 [xfs]
+>  6)     7024      16   try_to_release_page+0x33/0x60
+>  7)     7008     384   shrink_page_list+0x585/0x860
+>  8)     6624     528   shrink_zone+0x636/0xdc0
+>  9)     6096     112   do_try_to_free_pages+0xc2/0x3c0
+> 10)     5984     112   try_to_free_pages+0x64/0x70
+> 11)     5872     256   __alloc_pages_nodemask+0x3d2/0x710
+> 12)     5616      48   alloc_pages_current+0x8c/0xe0
+> 13)     5568      32   __page_cache_alloc+0x67/0x70
+> 14)     5536      80   find_or_create_page+0x50/0xb0
+> 15)     5456     160   _xfs_buf_lookup_pages+0x145/0x350 [xfs]
+> 16)     5296      64   xfs_buf_get+0x74/0x1d0 [xfs]
+> 17)     5232      48   xfs_buf_read+0x2f/0x110 [xfs]
+> 18)     5184      80   xfs_trans_read_buf+0x2bf/0x430 [xfs]
 
-To remove the race condition, modify the ACPI platform suspend and
-hibernate callbacks so that EC transactions are blocked right after
-executing the _PTS global control method and are allowed to happen
-again right after the low-level wakeup.
+We're entering memory reclaim with almost 6k of stack already in
+use. If we get down into the IO layer and then have to do a memory
+reclaim, then we'll have even less stack to work with. It looks like
+memory allocation needs at least 2KB of stack to work with now,
+so if we enter anywhere near the top of the stack we can blow it...
 
-Introduce acpi_pm_freeze() that will disable GPEs, wait until the
-event queues are empty and block EC transactions.  Use it wherever
-GPEs are disabled in preparation for switching local interrupts off.
-Introduce acpi_pm_thaw() that will allow EC transactions to happen
-again and enable runtime GPEs.  Use it to balance acpi_pm_freeze()
-wherever necessary.
+Basically this trace is telling us the stack we have to work with
+is:
 
-In addition to that use acpi_ec_resume_transactions_early() to
-unblock EC transactions as early as reasonably possible during
-resume.  Also unblock EC transactions in acpi_hibernation_finish()
-and in the analogous suspend routine to make sure that the EC
-transactions are enabled in all error paths.
+	2KB memory allocation
+	4KB page writeback
+	2KB write foreground throttling path
 
-Fixes https://bugzilla.kernel.org/show_bug.cgi?id=14668
+So effectively the storage subsystem (NFS, filesystem, DM, MD,
+device drivers) have about 4K of stack to work in now. That seems to
+be a lot less than last time I looked at this, and we've been really
+careful not to increase XFS's stack usage for quite some time now.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Reported-and-tested-by: Maxim Levitsky <maximlevitsky@gmail.com>
----
- drivers/acpi/ec.c       |   10 ++++++++
- drivers/acpi/internal.h |    1 
- drivers/acpi/sleep.c    |   55 +++++++++++++++++++++++++-----------------------
- 3 files changed, 40 insertions(+), 26 deletions(-)
+Hence I'm not sure exactly what to do about this, John. I can't
+really do much about the stack footprint of XFS as all the
+low-hanging fruit has already been trimmed. Even if I convert the
+foreground throttling to not issue IO, the background flush threads
+still have roughly the same stack usage, so a memory allocation and
+reclaim in the wrong place could still blow the stack....
 
-Index: linux-2.6/drivers/acpi/ec.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/ec.c
-+++ linux-2.6/drivers/acpi/ec.c
-@@ -485,6 +485,16 @@ void acpi_ec_resume_transactions(void)
- 	mutex_unlock(&ec->lock);
- }
- 
-+void acpi_ec_resume_transactions_early(void)
-+{
-+	/*
-+	 * Allow transactions to happen again (this function is called from
-+	 * atomic context during wakeup, so we don't need to acquire the mutex).
-+	 */
-+	if (first_ec)
-+		clear_bit(EC_FLAGS_FROZEN, &first_ec->flags);
-+}
-+
- static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 * data)
- {
- 	int result;
-Index: linux-2.6/drivers/acpi/internal.h
-===================================================================
---- linux-2.6.orig/drivers/acpi/internal.h
-+++ linux-2.6/drivers/acpi/internal.h
-@@ -51,6 +51,7 @@ int acpi_ec_ecdt_probe(void);
- int acpi_boot_ec_enable(void);
- void acpi_ec_suspend_transactions(void);
- void acpi_ec_resume_transactions(void);
-+void acpi_ec_resume_transactions_early(void);
- 
- /*--------------------------------------------------------------------------
-                                   Suspend/Resume
-Index: linux-2.6/drivers/acpi/sleep.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/sleep.c
-+++ linux-2.6/drivers/acpi/sleep.c
-@@ -110,11 +110,13 @@ void __init acpi_old_suspend_ordering(vo
- }
- 
- /**
-- *	acpi_pm_disable_gpes - Disable the GPEs.
-+ * acpi_pm_freeze - Disable the GPEs and suspend EC transactions.
-  */
--static int acpi_pm_disable_gpes(void)
-+static int acpi_pm_freeze(void)
- {
- 	acpi_disable_all_gpes();
-+	acpi_os_wait_events_complete(NULL);
-+	acpi_ec_suspend_transactions();
- 	return 0;
- }
- 
-@@ -142,7 +144,8 @@ static int acpi_pm_prepare(void)
- 	int error = __acpi_pm_prepare();
- 
- 	if (!error)
--		acpi_disable_all_gpes();
-+		acpi_pm_freeze();
-+
- 	return error;
- }
- 
-@@ -275,6 +278,8 @@ static int acpi_suspend_enter(suspend_st
- 	 * acpi_leave_sleep_state will reenable specific GPEs later
- 	 */
- 	acpi_disable_all_gpes();
-+	/* Allow EC transactions to happen. */
-+	acpi_ec_resume_transactions_early();
- 
- 	local_irq_restore(flags);
- 	printk(KERN_DEBUG "Back to C!\n");
-@@ -286,6 +291,12 @@ static int acpi_suspend_enter(suspend_st
- 	return ACPI_SUCCESS(status) ? 0 : -EFAULT;
- }
- 
-+static void acpi_suspend_finish(void)
-+{
-+	acpi_ec_resume_transactions();
-+	acpi_pm_finish();
-+}
-+
- static int acpi_suspend_state_valid(suspend_state_t pm_state)
- {
- 	u32 acpi_state;
-@@ -307,7 +318,7 @@ static struct platform_suspend_ops acpi_
- 	.begin = acpi_suspend_begin,
- 	.prepare_late = acpi_pm_prepare,
- 	.enter = acpi_suspend_enter,
--	.wake = acpi_pm_finish,
-+	.wake = acpi_suspend_finish,
- 	.end = acpi_pm_end,
- };
- 
-@@ -333,9 +344,9 @@ static int acpi_suspend_begin_old(suspen
- static struct platform_suspend_ops acpi_suspend_ops_old = {
- 	.valid = acpi_suspend_state_valid,
- 	.begin = acpi_suspend_begin_old,
--	.prepare_late = acpi_pm_disable_gpes,
-+	.prepare_late = acpi_pm_freeze,
- 	.enter = acpi_suspend_enter,
--	.wake = acpi_pm_finish,
-+	.wake = acpi_suspend_finish,
- 	.end = acpi_pm_end,
- 	.recover = acpi_pm_finish,
- };
-@@ -530,6 +541,7 @@ static int acpi_hibernation_enter(void)
- static void acpi_hibernation_finish(void)
- {
- 	hibernate_nvs_free();
-+	acpi_ec_resume_transactions();
- 	acpi_pm_finish();
- }
- 
-@@ -550,17 +562,11 @@ static void acpi_hibernation_leave(void)
- 	}
- 	/* Restore the NVS memory area */
- 	hibernate_nvs_restore();
-+	/* Allow EC transactions to happen. */
-+	acpi_ec_resume_transactions_early();
- }
- 
--static int acpi_pm_pre_restore(void)
--{
--	acpi_disable_all_gpes();
--	acpi_os_wait_events_complete(NULL);
--	acpi_ec_suspend_transactions();
--	return 0;
--}
--
--static void acpi_pm_restore_cleanup(void)
-+static void acpi_pm_thaw(void)
- {
- 	acpi_ec_resume_transactions();
- 	acpi_enable_all_runtime_gpes();
-@@ -574,8 +580,8 @@ static struct platform_hibernation_ops a
- 	.prepare = acpi_pm_prepare,
- 	.enter = acpi_hibernation_enter,
- 	.leave = acpi_hibernation_leave,
--	.pre_restore = acpi_pm_pre_restore,
--	.restore_cleanup = acpi_pm_restore_cleanup,
-+	.pre_restore = acpi_pm_freeze,
-+	.restore_cleanup = acpi_pm_thaw,
- };
- 
- /**
-@@ -607,12 +613,9 @@ static int acpi_hibernation_begin_old(vo
- 
- static int acpi_hibernation_pre_snapshot_old(void)
- {
--	int error = acpi_pm_disable_gpes();
--
--	if (!error)
--		hibernate_nvs_save();
--
--	return error;
-+	acpi_pm_freeze();
-+	hibernate_nvs_save();
-+	return 0;
- }
- 
- /*
-@@ -624,11 +627,11 @@ static struct platform_hibernation_ops a
- 	.end = acpi_pm_end,
- 	.pre_snapshot = acpi_hibernation_pre_snapshot_old,
- 	.finish = acpi_hibernation_finish,
--	.prepare = acpi_pm_disable_gpes,
-+	.prepare = acpi_pm_freeze,
- 	.enter = acpi_hibernation_enter,
- 	.leave = acpi_hibernation_leave,
--	.pre_restore = acpi_pm_pre_restore,
--	.restore_cleanup = acpi_pm_restore_cleanup,
-+	.pre_restore = acpi_pm_freeze,
-+	.restore_cleanup = acpi_pm_thaw,
- 	.recover = acpi_pm_finish,
- };
- #endif /* CONFIG_HIBERNATION */
+I'll have to have a bit of a think on this one - if you could
+provide further stack traces as they get deeper (esp. if they go
+past 8k) that would be really handy.
 
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
