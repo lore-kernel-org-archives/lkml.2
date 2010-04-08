@@ -1,104 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758539Ab0DHHuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 03:50:12 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42054 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757897Ab0DHHuJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 03:50:09 -0400
-Date: Thu, 8 Apr 2010 15:50:03 +0800
-From: Yong Zhang <yong.zhang@windriver.com>
-To: Liang Li <liang.li@windriver.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Amit Shah <shahamit@gmail.com>
-Subject: Re: [Bug #15615] NULL pointer deref in task_is_waking
-Message-ID: <20100408075003.GC12905@windriver.com>
-Reply-To: Yong Zhang <yong.zhang@windriver.com>
-References: <6Pphclm24fK.A.lSF.qsPvLB@chimera>
- <JVS2s9dmTsP.A.ivH.2tPvLB@chimera>
- <20100408071617.GC26543@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100408071617.GC26543@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 08 Apr 2010 07:50:04.0966 (UTC) FILETIME=[19F80460:01CAD6F0]
+	id S1751539Ab0DHHwu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 03:52:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:9518 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751001Ab0DHHws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 03:52:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,169,1270450800"; 
+   d="scan'208";a="611226150"
+Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>, netdev <netdev@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, alex.shi@intel.com,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1270710019.2215.4.camel@edumazet-laptop>
+References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
+	 <alpine.DEB.2.00.1003250942080.2670@router.home>
+	 <1269570902.9614.92.camel@alexs-hp.sh.intel.com>
+	 <1270114166.2078.107.camel@ymzhang.sh.intel.com>
+	 <alpine.DEB.2.00.1004011050340.16531@router.home>
+	 <1270195589.2078.116.camel@ymzhang.sh.intel.com>
+	 <alpine.DEB.2.00.1004050853300.23149@router.home>
+	 <i2z84144f021004051030k7ff5190cyc083aa12c552dfac@mail.gmail.com>
+	 <4BBA8DF9.8010409@kernel.org>
+	 <1270542497.2078.123.camel@ymzhang.sh.intel.com>
+	 <alpine.DEB.2.00.1004061033330.18750@router.home>
+	 <alpine.DEB.2.00.1004061552500.19151@router.home>
+	 <1270591841.2091.170.camel@edumazet-laptop>
+	 <1270607668.2078.259.camel@ymzhang.sh.intel.com>
+	 <alpine.DEB.2.00.1004071130260.13261@router.home>
+	 <4BBCB7B7.4040901@cs.helsinki.fi> <4BBCB868.2000705@cs.helsinki.fi>
+	 <alpine.DEB.2.00.1004071319320.16159@router.home>
+	 <1270665484.8141.47.camel@edumazet-laptop>
+	 <1270688747.2078.383.camel@ymzhang.sh.intel.com>
+	 <1270702774.8141.49.camel@edumazet-laptop>
+	 <1270705153.8141.58.camel@edumazet-laptop>
+	 <1270710019.2215.4.camel@edumazet-laptop>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 08 Apr 2010 15:54:50 +0800
+Message-Id: <1270713290.2078.402.camel@ymzhang.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 08, 2010 at 03:16:17PM +0800, Liang Li wrote:
-> On Wed, Apr 07, 2010 at 11:13:48PM +0200, Rafael J. Wysocki wrote:
-> > This message has been generated automatically as a part of a summary report
-> > of recent regressions.
+On Thu, 2010-04-08 at 09:00 +0200, Eric Dumazet wrote:
+> Le jeudi 08 avril 2010 à 07:39 +0200, Eric Dumazet a écrit :
+> > I suspect NUMA is completely out of order on current kernel, or my
+> > Nehalem machine NUMA support is a joke
 > > 
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.33.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
+> > # numactl --hardware
+> > available: 2 nodes (0-1)
+> > node 0 size: 3071 MB
+> > node 0 free: 2637 MB
+> > node 1 size: 3062 MB
+> > node 1 free: 2909 MB
+> > 
+> > 
+> > # cat try.sh
+> > hackbench 50 process 5000
+> > numactl --cpubind=0 --membind=0 hackbench 25 process 5000 >RES0 &
+> > numactl --cpubind=1 --membind=1 hackbench 25 process 5000 >RES1 &
+> > wait
+> > echo node0 results
+> > cat RES0
+> > echo node1 results
+> > cat RES1
+> > 
+> > numactl --cpubind=0 --membind=1 hackbench 25 process 5000 >RES0_1 &
+> > numactl --cpubind=1 --membind=0 hackbench 25 process 5000 >RES1_0 &
+> > wait
+> > echo node0 on mem1 results
+> > cat RES0_1
+> > echo node1 on mem0 results
+> > cat RES1_0
+> > 
+> > # ./try.sh
+> > Running with 50*40 (== 2000) tasks.
+> > Time: 16.865
+> > node0 results
+> > Running with 25*40 (== 1000) tasks.
+> > Time: 16.767
+> > node1 results
+> > Running with 25*40 (== 1000) tasks.
+> > Time: 16.564
+> > node0 on mem1 results
+> > Running with 25*40 (== 1000) tasks.
+> > Time: 16.814
+> > node1 on mem0 results
+> > Running with 25*40 (== 1000) tasks.
+> > Time: 16.896
 > 
-> The bug still there. I just met it. And seems its quite simple to get it
-> fixed.
-> 
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index a3dff1f..2df1a76 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -913,7 +913,7 @@ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
->   */
->  static inline int task_is_waking(struct task_struct *p)
->  {
-> -	return unlikely((p->state == TASK_WAKING) && !(p->flags & PF_STARTING));
-> +	return unlikely(p && (p->state == TASK_WAKING) && !(p->flags & PF_STARTING));
->  }
+> If run individually, the tests results are more what we would expect
+> (slow), but if machine runs the two set of process concurrently, each
+> group runs much faster...
+If there are 2 nodes in the machine, processes on node 0 will contact MCH of
+node 1 to access memory of node 1. I suspect the MCH of node 1 might enter
+a power-saving mode when all the cpus of node 1 are free. So the transactions
+from MCH 1 to MCH 0 has a larger latency.
 
-Oh, NO. This is wrong. It will introduce other bugs.
-The right direction is showed in the bug entry.
+> 
+> 
+> # numactl --cpubind=0 --membind=1 hackbench 25 process 5000
+> Running with 25*40 (== 1000) tasks.
+> Time: 21.810
+> 
+> # numactl --cpubind=1 --membind=0 hackbench 25 process 5000
+> Running with 25*40 (== 1000) tasks.
+> Time: 20.679
+> 
+> # numactl --cpubind=0 --membind=1 hackbench 25 process 5000 >RES0_1 &
+> [1] 9177
+> # numactl --cpubind=1 --membind=0 hackbench 25 process 5000 >RES1_0 &
+> [2] 9196
+> # wait
+> [1]-  Done                    numactl --cpubind=0 --membind=1 hackbench
+> 25 process 5000 >RES0_1
+> [2]+  Done                    numactl --cpubind=1 --membind=0 hackbench
+> 25 process 5000 >RES1_0
+> # echo node0 on mem1 results
+> node0 on mem1 results
+> # cat RES0_1
+> Running with 25*40 (== 1000) tasks.
+> Time: 13.818
+> # echo node1 on mem0 results
+> node1 on mem0 results
+> # cat RES1_0
+> Running with 25*40 (== 1000) tasks.
+> Time: 11.633
+> 
+> Oh well...
+> 
+> 
 
-Thanks,
-Yong
 
->  
->  /*
-> 
-> But seems commitid 0017d735092844118bef006696a750a0e4ef6ebd in tip tree
-> also touched task_is_waking. So the patch for tip tree should be:
-> 
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 3acf694..d259641 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -920,7 +920,7 @@ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
->   */
->  static inline int task_is_waking(struct task_struct *p)
->  {
-> -	return unlikely(p->state == TASK_WAKING);
-> +	return unlikely(p && p->state == TASK_WAKING);
->  }
->  
->  /*
-> 
-> Regards,
-> 	-Liang Li
-> 
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15615
-> > Subject		: NULL pointer deref in task_is_waking
-> > Submitter	: Amit Shah <shahamit@gmail.com>
-> > Date		: 2010-03-23 04:04 (16 days old)
-> > 
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
