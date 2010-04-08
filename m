@@ -1,40 +1,418 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933722Ab0DHU4Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 16:56:25 -0400
-Received: from sj-iport-4.cisco.com ([171.68.10.86]:32590 "EHLO
-	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933234Ab0DHU4V (ORCPT
+	id S933464Ab0DHVDZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 17:03:25 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:33421 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933234Ab0DHVDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 16:56:21 -0400
-Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAAfgvUurR7H+/2dsb2JhbACbOXGibJk3hQkEgyQ
-X-IronPort-AV: E=Sophos;i="4.52,172,1270425600"; 
-   d="scan'208";a="112554524"
-From: Roland Dreier <rdreier@cisco.com>
-To: Yinghai <yinghai.lu@oracle.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Chris Wright <chrisw@sous-sol.org>, David.Woodhouse@intel.com,
-       fenghua.yu@intel.com, linux-kernel@vger.kernel.org,
-       linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: Re: [PATCH 4/6] pci/dmar/sriov: use physfn to search drhd for VF
-References: <1270753107-15881-1-git-send-email-yinghai@kernel.org>
-	<1270753107-15881-5-git-send-email-yinghai@kernel.org>
-	<adawrwhwyiq.fsf@roland-alpha.cisco.com> <4BBE4209.3080900@oracle.com>
-X-Message-Flag: Warning: May contain useful information
-Date: Thu, 08 Apr 2010 13:56:17 -0700
-In-Reply-To: <4BBE4209.3080900@oracle.com> (Yinghai's message of "Thu, 08 Apr
-	2010 13:52:25 -0700")
-Message-ID: <adaaatdwtn2.fsf@roland-alpha.cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 8 Apr 2010 17:03:24 -0400
+Subject: Re: [PATCH] perf_events: fix bogus warn_on(_once) in
+ perf_prepare_sample()
+From: Peter Zijlstra <peterz@infradead.org>
+To: eranian@google.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+       davem@davemloft.net, fweisbec@gmail.com, robert.richter@amd.com,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com
+In-Reply-To: <1270760136.20295.3121.camel@laptop>
+References: <4bbe4175.5124cc0a.5bd3.22d6@mx.google.com>
+	 <1270760136.20295.3121.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 08 Apr 2010 23:03:19 +0200
+Message-ID: <1270760599.20295.3144.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good to me.
--- 
-Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
-http://www.cisco.com/web/about/doing_business/legal/cri/index.html
+On Thu, 2010-04-08 at 22:55 +0200, Peter Zijlstra wrote:
+> On Thu, 2010-04-08 at 22:45 +0200, Stephane Eranian wrote:
+> > 	There is a warn_on_once() check for PERF_SAMPLE_RAW which trips
+> > 	when using PEBS on both Core and Nehalem. Core PEBS sample size is 144
+> > 	bytes and 176 bytes for Nehalem. Both are multiples of 8, but the size
+> > 	field is encoded as int, thus the total is never a multiple of 8 which
+> > 	trips the check. I think the size should have been u64, but now it is
+> > 	too late to change given it is ABI.
+> 
+> PEBS hasn't seen -linus yet, so we can fix that.
+> 
+> There's various things that do indeed rely on the perf buffer to always
+> be u64 aligned, so this warning isn't bogus at all.
+
+On the subject of PEBS, we need to change the ABI before it does hit
+-linus, I've got something like the below,. but I'm not quite sure of
+it.
+
+We could keep the PERF_RECORD_MISC_EXACT bit and allow non-fixed up IPs
+in PERF_SAMPLE_EVENT_IP fields, that way we can avoid having to add both
+IP and EVENT_IP to samples.
+
+---
+Subject: perf: Change the PEBS interface
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Tue Mar 30 13:35:58 CEST 2010
+
+This patch changes the PEBS interface from perf_event_attr::precise
+and PERF_RECORD_MISC_EXACT to perf_event_attr::precise and
+PERF_SAMPLE_EVENT_IP.
+
+The rationale is that .precise=1 !PERF_SAMPLE_EVENT_IP could be used
+to implement buffered PEBS.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <new-submission>
+---
+ arch/x86/include/asm/perf_event.h         |    9 --
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |  133 +++++++++++++-----------------
+ include/linux/perf_event.h                |    7 +
+ kernel/perf_event.c                       |    6 +
+ tools/perf/builtin-top.c                  |    9 +-
+ 5 files changed, 79 insertions(+), 85 deletions(-)
+
+Index: linux-2.6/arch/x86/include/asm/perf_event.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/perf_event.h
++++ linux-2.6/arch/x86/include/asm/perf_event.h
+@@ -128,21 +128,12 @@ extern void perf_events_lapic_init(void)
+ 
+ #define PERF_EVENT_INDEX_OFFSET			0
+ 
+-/*
+- * Abuse bit 3 of the cpu eflags register to indicate proper PEBS IP fixups.
+- * This flag is otherwise unused and ABI specified to be 0, so nobody should
+- * care what we do with it.
+- */
+-#define PERF_EFLAGS_EXACT	(1UL << 3)
+-
+ #define perf_misc_flags(regs)				\
+ ({	int misc = 0;					\
+ 	if (user_mode(regs))				\
+ 		misc |= PERF_RECORD_MISC_USER;		\
+ 	else						\
+ 		misc |= PERF_RECORD_MISC_KERNEL;	\
+-	if (regs->flags & PERF_EFLAGS_EXACT)		\
+-		misc |= PERF_RECORD_MISC_EXACT;		\
+ 	misc; })
+ 
+ #define perf_instruction_pointer(regs)	((regs)->ip)
+Index: linux-2.6/arch/x86/kernel/cpu/perf_event_intel_ds.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ linux-2.6/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -330,7 +330,8 @@ static void intel_pmu_pebs_enable(struct
+ 	cpuc->pebs_enabled |= 1ULL << hwc->idx;
+ 	WARN_ON_ONCE(cpuc->enabled);
+ 
+-	if (x86_pmu.intel_cap.pebs_trap)
++	if (x86_pmu.intel_cap.pebs_trap &&
++			(event->attr.sample_type & PERF_SAMPLE_EVENT_IP))
+ 		intel_pmu_lbr_enable(event);
+ }
+ 
+@@ -345,7 +346,8 @@ static void intel_pmu_pebs_disable(struc
+ 
+ 	hwc->config |= ARCH_PERFMON_EVENTSEL_INT;
+ 
+-	if (x86_pmu.intel_cap.pebs_trap)
++	if (x86_pmu.intel_cap.pebs_trap &&
++			(event->attr.sample_type & PERF_SAMPLE_EVENT_IP))
+ 		intel_pmu_lbr_disable(event);
+ }
+ 
+@@ -376,12 +378,12 @@ static inline bool kernel_ip(unsigned lo
+ #endif
+ }
+ 
+-static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
++static int intel_pmu_pebs_fixup_ip(unsigned long *ipp)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	unsigned long from = cpuc->lbr_entries[0].from;
+ 	unsigned long old_to, to = cpuc->lbr_entries[0].to;
+-	unsigned long ip = regs->ip;
++	unsigned long ip = *ipp;
+ 
+ 	/*
+ 	 * We don't need to fixup if the PEBS assist is fault like
+@@ -412,7 +414,7 @@ static int intel_pmu_pebs_fixup_ip(struc
+ 	 * We sampled a branch insn, rewind using the LBR stack
+ 	 */
+ 	if (ip == to) {
+-		regs->ip = from;
++		*ipp = from;
+ 		return 1;
+ 	}
+ 
+@@ -439,7 +441,7 @@ static int intel_pmu_pebs_fixup_ip(struc
+ 	} while (to < ip);
+ 
+ 	if (to == ip) {
+-		regs->ip = old_to;
++		*ipp = old_to;
+ 		return 1;
+ 	}
+ 
+@@ -452,15 +454,62 @@ static int intel_pmu_pebs_fixup_ip(struc
+ 
+ static int intel_pmu_save_and_restart(struct perf_event *event);
+ 
++static void __intel_pmu_pebs_event(struct perf_event *event,
++				   struct pt_regs *iregs, void *__pebs)
++{
++	/*
++	 * We cast to pebs_record_core since that is a subset of
++	 * both formats and we don't use the other fields in this
++	 * routine.
++	 */
++	struct pebs_record_core *pebs = __pebs;
++	struct perf_sample_data data;
++	struct perf_raw_record raw;
++	struct pt_regs regs;
++
++	if (!intel_pmu_save_and_restart(event))
++		return;
++
++	perf_sample_data_init(&data, 0);
++	data.period = event->hw.last_period;
++
++	if (event->attr.sample_type & PERF_SAMPLE_RAW) {
++		raw.size = x86_pmu.pebs_record_size;
++		raw.data = pebs;
++		data.raw = &raw;
++	}
++
++	/*
++	 * We use the interrupt regs as a base because the PEBS record
++	 * does not contain a full regs set, specifically it seems to
++	 * lack segment descriptors, which get used by things like
++	 * user_mode().
++	 *
++	 * In the simple case fix up only the IP and BP,SP regs, for
++	 * PERF_SAMPLE_IP and PERF_SAMPLE_CALLCHAIN to function properly.
++	 * A possible PERF_SAMPLE_REGS will have to transfer all regs.
++	 */
++	regs = *iregs;
++	regs.ip = pebs->ip;
++	regs.bp = pebs->bp;
++	regs.sp = pebs->sp;
++
++	if (event->attr.sample_type & PERF_SAMPLE_EVENT_IP) {
++		unsigned long event_ip = pebs->ip;
++		if (intel_pmu_pebs_fixup_ip(&event_ip))
++			data.event_ip = event_ip;
++	}
++
++	if (perf_event_overflow(event, 1, &data, &regs))
++		x86_pmu_stop(event);
++}
++
+ static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct debug_store *ds = cpuc->ds;
+ 	struct perf_event *event = cpuc->events[0]; /* PMC0 only */
+ 	struct pebs_record_core *at, *top;
+-	struct perf_sample_data data;
+-	struct perf_raw_record raw;
+-	struct pt_regs regs;
+ 	int n;
+ 
+ 	if (!ds || !x86_pmu.pebs)
+@@ -486,9 +535,6 @@ static void intel_pmu_drain_pebs_core(st
+ 	if (n <= 0)
+ 		return;
+ 
+-	if (!intel_pmu_save_and_restart(event))
+-		return;
+-
+ 	/*
+ 	 * Should not happen, we program the threshold at 1 and do not
+ 	 * set a reset value.
+@@ -496,37 +542,7 @@ static void intel_pmu_drain_pebs_core(st
+ 	WARN_ON_ONCE(n > 1);
+ 	at += n - 1;
+ 
+-	perf_sample_data_init(&data, 0);
+-	data.period = event->hw.last_period;
+-
+-	if (event->attr.sample_type & PERF_SAMPLE_RAW) {
+-		raw.size = x86_pmu.pebs_record_size;
+-		raw.data = at;
+-		data.raw = &raw;
+-	}
+-
+-	/*
+-	 * We use the interrupt regs as a base because the PEBS record
+-	 * does not contain a full regs set, specifically it seems to
+-	 * lack segment descriptors, which get used by things like
+-	 * user_mode().
+-	 *
+-	 * In the simple case fix up only the IP and BP,SP regs, for
+-	 * PERF_SAMPLE_IP and PERF_SAMPLE_CALLCHAIN to function properly.
+-	 * A possible PERF_SAMPLE_REGS will have to transfer all regs.
+-	 */
+-	regs = *iregs;
+-	regs.ip = at->ip;
+-	regs.bp = at->bp;
+-	regs.sp = at->sp;
+-
+-	if (intel_pmu_pebs_fixup_ip(&regs))
+-		regs.flags |= PERF_EFLAGS_EXACT;
+-	else
+-		regs.flags &= ~PERF_EFLAGS_EXACT;
+-
+-	if (perf_event_overflow(event, 1, &data, &regs))
+-		x86_pmu_stop(event);
++	__intel_pmu_pebs_event(event, iregs, at);
+ }
+ 
+ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+@@ -534,10 +550,7 @@ static void intel_pmu_drain_pebs_nhm(str
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct debug_store *ds = cpuc->ds;
+ 	struct pebs_record_nhm *at, *top;
+-	struct perf_sample_data data;
+ 	struct perf_event *event = NULL;
+-	struct perf_raw_record raw;
+-	struct pt_regs regs;
+ 	u64 status = 0;
+ 	int bit, n;
+ 
+@@ -579,33 +592,7 @@ static void intel_pmu_drain_pebs_nhm(str
+ 		if (!event || bit >= MAX_PEBS_EVENTS)
+ 			continue;
+ 
+-		if (!intel_pmu_save_and_restart(event))
+-			continue;
+-
+-		perf_sample_data_init(&data, 0);
+-		data.period = event->hw.last_period;
+-
+-		if (event->attr.sample_type & PERF_SAMPLE_RAW) {
+-			raw.size = x86_pmu.pebs_record_size;
+-			raw.data = at;
+-			data.raw = &raw;
+-		}
+-
+-		/*
+-		 * See the comment in intel_pmu_drain_pebs_core()
+-		 */
+-		regs = *iregs;
+-		regs.ip = at->ip;
+-		regs.bp = at->bp;
+-		regs.sp = at->sp;
+-
+-		if (intel_pmu_pebs_fixup_ip(&regs))
+-			regs.flags |= PERF_EFLAGS_EXACT;
+-		else
+-			regs.flags &= ~PERF_EFLAGS_EXACT;
+-
+-		if (perf_event_overflow(event, 1, &data, &regs))
+-			x86_pmu_stop(event);
++		__intel_pmu_pebs_event(event, iregs, at);
+ 	}
+ }
+ 
+Index: linux-2.6/include/linux/perf_event.h
+===================================================================
+--- linux-2.6.orig/include/linux/perf_event.h
++++ linux-2.6/include/linux/perf_event.h
+@@ -125,8 +125,9 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_PERIOD			= 1U << 8,
+ 	PERF_SAMPLE_STREAM_ID			= 1U << 9,
+ 	PERF_SAMPLE_RAW				= 1U << 10,
++	PERF_SAMPLE_EVENT_IP			= 1U << 11,
+ 
+-	PERF_SAMPLE_MAX = 1U << 11,		/* non-ABI */
++	PERF_SAMPLE_MAX = 1U << 12,		/* non-ABI */
+ };
+ 
+ /*
+@@ -294,7 +295,6 @@ struct perf_event_mmap_page {
+ #define PERF_RECORD_MISC_USER			(2 << 0)
+ #define PERF_RECORD_MISC_HYPERVISOR		(3 << 0)
+ 
+-#define PERF_RECORD_MISC_EXACT			(1 << 14)
+ /*
+  * Reserve the last bit to indicate some extended misc field
+  */
+@@ -389,6 +389,7 @@ enum perf_event_type {
+ 	 *	struct perf_event_header	header;
+ 	 *
+ 	 *	{ u64			ip;	  } && PERF_SAMPLE_IP
++	 *	{ u64			event_ip; } && PERF_SAMPLE_EVENT_IP
+ 	 *	{ u32			pid, tid; } && PERF_SAMPLE_TID
+ 	 *	{ u64			time;     } && PERF_SAMPLE_TIME
+ 	 *	{ u64			addr;     } && PERF_SAMPLE_ADDR
+@@ -804,6 +805,7 @@ struct perf_sample_data {
+ 	u64				type;
+ 
+ 	u64				ip;
++	u64				event_ip;
+ 	struct {
+ 		u32	pid;
+ 		u32	tid;
+@@ -824,6 +826,7 @@ struct perf_sample_data {
+ static inline
+ void perf_sample_data_init(struct perf_sample_data *data, u64 addr)
+ {
++	data->event_ip = 0;
+ 	data->addr = addr;
+ 	data->raw  = NULL;
+ }
+Index: linux-2.6/kernel/perf_event.c
+===================================================================
+--- linux-2.6.orig/kernel/perf_event.c
++++ linux-2.6/kernel/perf_event.c
+@@ -3158,6 +3158,9 @@ void perf_output_sample(struct perf_outp
+ 	if (sample_type & PERF_SAMPLE_IP)
+ 		perf_output_put(handle, data->ip);
+ 
++	if (sample_type & PERF_SAMPLE_EVENT_IP)
++		perf_output_put(handle, data->event_ip);
++
+ 	if (sample_type & PERF_SAMPLE_TID)
+ 		perf_output_put(handle, data->tid_entry);
+ 
+@@ -3237,6 +3240,9 @@ void perf_prepare_sample(struct perf_eve
+ 		header->size += sizeof(data->ip);
+ 	}
+ 
++	if (sample_type & PERF_SAMPLE_EVENT_IP)
++		header->size += sizeof(data->event_ip);
++
+ 	if (sample_type & PERF_SAMPLE_TID) {
+ 		/* namespace issues */
+ 		data->tid_entry.pid = perf_event_pid(event, current);
+Index: linux-2.6/tools/perf/builtin-top.c
+===================================================================
+--- linux-2.6.orig/tools/perf/builtin-top.c
++++ linux-2.6/tools/perf/builtin-top.c
+@@ -975,8 +975,10 @@ static void event__process_sample(const 
+ 		return;
+ 	}
+ 
+-	if (self->header.misc & PERF_RECORD_MISC_EXACT)
++	if (ip)
+ 		exact_samples++;
++	else
++		return;
+ 
+ 	if (event__preprocess_sample(self, session, &al, symbol_filter) < 0 ||
+ 	    al.filtered)
+@@ -1169,6 +1171,11 @@ static void start_counter(int i, int cou
+ 
+ 	attr->sample_type	= PERF_SAMPLE_IP | PERF_SAMPLE_TID;
+ 
++	if (attr->precise) {
++		attr->sample_type &= ~PERF_SAMPLE_IP;
++		attr->sample_type |= PERF_SAMPLE_EVENT_IP;
++	}
++
+ 	if (freq) {
+ 		attr->sample_type	|= PERF_SAMPLE_PERIOD;
+ 		attr->freq		= 1;
+
+
