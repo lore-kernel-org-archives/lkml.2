@@ -1,37 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933290Ab0DHU1d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 16:27:33 -0400
-Received: from kroah.org ([198.145.64.141]:42605 "EHLO coco.kroah.org"
+	id S933588Ab0DHUdh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 16:33:37 -0400
+Received: from kroah.org ([198.145.64.141]:42620 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755333Ab0DHU1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 16:27:32 -0400
-Date: Thu, 8 Apr 2010 12:07:12 -0700
+	id S1758869Ab0DHU1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 16:27:34 -0400
+Date: Thu, 8 Apr 2010 12:16:24 -0700
 From: Greg KH <greg@kroah.com>
-To: Chihau Chau <chihau@gmail.com>
-Cc: gregkh@suse.de, pavel@ucw.cz, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: staging: dream: pmem: fix some code style issues
-Message-ID: <20100408190712.GA4890@kroah.com>
-References: <1267487415-22061-1-git-send-email-chihau@gmail.com>
+To: Jakob Penzien <jwpenzie@mtu.edu>
+Cc: gregkh@suse.de, wfp5p@virginia.edu, bart@cs.pdx.edu,
+       linux@dominikbrodowski.net, keil@b1-systems.de,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: PATCH: ni_labpc_cs.c 2
+Message-ID: <20100408191624.GD31571@kroah.com>
+References: <4B8DF681.4050903@mtu.edu>
+ <4B8E0DFE.2040603@mtu.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1267487415-22061-1-git-send-email-chihau@gmail.com>
+In-Reply-To: <4B8E0DFE.2040603@mtu.edu>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 01, 2010 at 08:50:15PM -0300, Chihau Chau wrote:
-> From: Chihau Chau <chihau@gmail.com>
-> 
-> This fixes some code style issues like some braces {} deleted becouse
-> are not necessary for a single statement blocks and to include KERN_
-> facility level in the printk() functions.
-> 
-> Signed-off-by: Chihau Chau <chihau@gmail.com>
+On Wed, Mar 03, 2010 at 02:21:34AM -0500, Jakob Penzien wrote:
+> From b8eff3ab872920c733981fa475220c0b6169d058 Mon Sep 17 00:00:00 2001
+> From: Jakob Penzien <jakob@bloodmoon.(none)>
 
-Sorry, someone else already did this change to the tree.
+I don't think that's your email address :)
+
+And it's signed, and can't be applied :(
+
+Care to try again?
+
+thanks,
 
 greg k-h
