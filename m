@@ -1,40 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759032Ab0DHVS1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 17:18:27 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:59738 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061Ab0DHVS0 (ORCPT
+	id S1759055Ab0DHVWG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 17:22:06 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36167 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759024Ab0DHVWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 17:18:26 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=jWbmeyTX4bTfMsC6sFm+WbPTrk9gglo1TA2Cc1KxX5lYdRfGVo/ZNISd4CFDjMHnI
-	Fn/sSQQQ1bzMoL64tPkoQ==
-MIME-Version: 1.0
-In-Reply-To: <1270760599.20295.3144.camel@laptop>
-References: <4bbe4175.5124cc0a.5bd3.22d6@mx.google.com>
-	 <1270760136.20295.3121.camel@laptop>
-	 <1270760599.20295.3144.camel@laptop>
-Date: Thu, 8 Apr 2010 23:18:21 +0200
-Message-ID: <w2ibd4cb8901004081418zf82adbfcu21316a5c8483b755@mail.gmail.com>
-Subject: Re: [PATCH] perf_events: fix bogus warn_on(_once) in 
-	perf_prepare_sample()
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-       davem@davemloft.net, fweisbec@gmail.com, robert.richter@amd.com,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	Thu, 8 Apr 2010 17:22:00 -0400
+Date: Thu, 8 Apr 2010 14:20:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 02/13] mm: Revalidate anon_vma in page_lock_anon_vma()
+Message-Id: <20100408142051.717b278c.akpm@linux-foundation.org>
+In-Reply-To: <20100408192722.687144862@chello.nl>
+References: <20100408191737.296180458@chello.nl>
+	<20100408192722.687144862@chello.nl>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o38LIgmE021420
 
-On Thu, Apr 8, 2010 at 11:03 PM, Peter Zijlstra <peterz@infradead.org> wrote:> On Thu, 2010-04-08 at 22:55 +0200, Peter Zijlstra wrote:>> On Thu, 2010-04-08 at 22:45 +0200, Stephane Eranian wrote:>> >     There is a warn_on_once() check for PERF_SAMPLE_RAW which trips>> >     when using PEBS on both Core and Nehalem. Core PEBS sample size is 144>> >     bytes and 176 bytes for Nehalem. Both are multiples of 8, but the size>> >     field is encoded as int, thus the total is never a multiple of 8 which>> >     trips the check. I think the size should have been u64, but now it is>> >     too late to change given it is ABI.>>>> PEBS hasn't seen -linus yet, so we can fix that.>>>> There's various things that do indeed rely on the perf buffer to always>> be u64 aligned, so this warning isn't bogus at all.>> On the subject of PEBS, we need to change the ABI before it does hit> -linus, I've got something like the below,. but I'm not quite sure of> it.>> We could keep the PERF_RECORD_MISC_EXACT bit and allow non-fixed up IPs> in PERF_SAMPLE_EVENT_IP fields, that way we can avoid having to add both> IP and EVENT_IP to samples.>You always have the original IP in the PEBS sample, so why add yet another wayof getting to the same data?
-> ---> Subject: perf: Change the PEBS interface> From: Peter Zijlstra <a.p.zijlstra@chello.nl>> Date: Tue Mar 30 13:35:58 CEST 2010>> This patch changes the PEBS interface from perf_event_attr::precise> and PERF_RECORD_MISC_EXACT to perf_event_attr::precise and> PERF_SAMPLE_EVENT_IP.>> The rationale is that .precise=1 !PERF_SAMPLE_EVENT_IP could be used> to implement buffered PEBS.>I am not sure I understand what you mean by buffered PEBS. Are you talkingabout using PEBS buffer bigger than one entry?If so, how can you do:  - the LBR based fixups for multiple samples (on PMU interrupt)  - attribute PID/TID in system-wide mode
+On Thu, 08 Apr 2010 21:17:39 +0200
+Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>> LKML-Reference: <new-submission>> --->  arch/x86/include/asm/perf_event.h         |    9 -->  arch/x86/kernel/cpu/perf_event_intel_ds.c |  133 +++++++++++++----------------->  include/linux/perf_event.h                |    7 +>  kernel/perf_event.c                       |    6 +>  tools/perf/builtin-top.c                  |    9 +->  5 files changed, 79 insertions(+), 85 deletions(-)>> Index: linux-2.6/arch/x86/include/asm/perf_event.h> ===================================================================> --- linux-2.6.orig/arch/x86/include/asm/perf_event.h> +++ linux-2.6/arch/x86/include/asm/perf_event.h> @@ -128,21 +128,12 @@ extern void perf_events_lapic_init(void)>>  #define PERF_EVENT_INDEX_OFFSET                        0>> -/*> - * Abuse bit 3 of the cpu eflags register to indicate proper PEBS IP fixups.> - * This flag is otherwise unused and ABI specified to be 0, so nobody should> - * care what we do with it.> - */> -#define PERF_EFLAGS_EXACT      (1UL << 3)> ->  #define perf_misc_flags(regs)                          \>  ({     int misc = 0;                                   \>        if (user_mode(regs))                            \>                misc |= PERF_RECORD_MISC_USER;          \>        else                                            \>                misc |= PERF_RECORD_MISC_KERNEL;        \> -       if (regs->flags & PERF_EFLAGS_EXACT)            \> -               misc |= PERF_RECORD_MISC_EXACT;         \>        misc; })>>  #define perf_instruction_pointer(regs) ((regs)->ip)> Index: linux-2.6/arch/x86/kernel/cpu/perf_event_intel_ds.c> ===================================================================> --- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_intel_ds.c> +++ linux-2.6/arch/x86/kernel/cpu/perf_event_intel_ds.c> @@ -330,7 +330,8 @@ static void intel_pmu_pebs_enable(struct>        cpuc->pebs_enabled |= 1ULL << hwc->idx;>        WARN_ON_ONCE(cpuc->enabled);>> -       if (x86_pmu.intel_cap.pebs_trap)> +       if (x86_pmu.intel_cap.pebs_trap &&> +                       (event->attr.sample_type & PERF_SAMPLE_EVENT_IP))>                intel_pmu_lbr_enable(event);>  }>> @@ -345,7 +346,8 @@ static void intel_pmu_pebs_disable(struc>>        hwc->config |= ARCH_PERFMON_EVENTSEL_INT;>> -       if (x86_pmu.intel_cap.pebs_trap)> +       if (x86_pmu.intel_cap.pebs_trap &&> +                       (event->attr.sample_type & PERF_SAMPLE_EVENT_IP))>                intel_pmu_lbr_disable(event);>  }>> @@ -376,12 +378,12 @@ static inline bool kernel_ip(unsigned lo>  #endif>  }>> -static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)> +static int intel_pmu_pebs_fixup_ip(unsigned long *ipp)>  {>        struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);>        unsigned long from = cpuc->lbr_entries[0].from;>        unsigned long old_to, to = cpuc->lbr_entries[0].to;> -       unsigned long ip = regs->ip;> +       unsigned long ip = *ipp;>>        /*>         * We don't need to fixup if the PEBS assist is fault like> @@ -412,7 +414,7 @@ static int intel_pmu_pebs_fixup_ip(struc>         * We sampled a branch insn, rewind using the LBR stack>         */>        if (ip == to) {> -               regs->ip = from;> +               *ipp = from;>                return 1;>        }>> @@ -439,7 +441,7 @@ static int intel_pmu_pebs_fixup_ip(struc>        } while (to < ip);>>        if (to == ip) {> -               regs->ip = old_to;> +               *ipp = old_to;>                return 1;>        }>> @@ -452,15 +454,62 @@ static int intel_pmu_pebs_fixup_ip(struc>>  static int intel_pmu_save_and_restart(struct perf_event *event);>> +static void __intel_pmu_pebs_event(struct perf_event *event,> +                                  struct pt_regs *iregs, void *__pebs)> +{> +       /*> +        * We cast to pebs_record_core since that is a subset of> +        * both formats and we don't use the other fields in this> +        * routine.> +        */> +       struct pebs_record_core *pebs = __pebs;> +       struct perf_sample_data data;> +       struct perf_raw_record raw;> +       struct pt_regs regs;> +> +       if (!intel_pmu_save_and_restart(event))> +               return;> +> +       perf_sample_data_init(&data, 0);> +       data.period = event->hw.last_period;> +> +       if (event->attr.sample_type & PERF_SAMPLE_RAW) {> +               raw.size = x86_pmu.pebs_record_size;> +               raw.data = pebs;> +               data.raw = &raw;> +       }> +> +       /*> +        * We use the interrupt regs as a base because the PEBS record> +        * does not contain a full regs set, specifically it seems to> +        * lack segment descriptors, which get used by things like> +        * user_mode().> +        *> +        * In the simple case fix up only the IP and BP,SP regs, for> +        * PERF_SAMPLE_IP and PERF_SAMPLE_CALLCHAIN to function properly.> +        * A possible PERF_SAMPLE_REGS will have to transfer all regs.> +        */> +       regs = *iregs;> +       regs.ip = pebs->ip;> +       regs.bp = pebs->bp;> +       regs.sp = pebs->sp;> +> +       if (event->attr.sample_type & PERF_SAMPLE_EVENT_IP) {> +               unsigned long event_ip = pebs->ip;> +               if (intel_pmu_pebs_fixup_ip(&event_ip))> +                       data.event_ip = event_ip;> +       }> +> +       if (perf_event_overflow(event, 1, &data, &regs))> +               x86_pmu_stop(event);> +}> +>  static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)>  {>        struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);>        struct debug_store *ds = cpuc->ds;>        struct perf_event *event = cpuc->events[0]; /* PMC0 only */>        struct pebs_record_core *at, *top;> -       struct perf_sample_data data;> -       struct perf_raw_record raw;> -       struct pt_regs regs;>        int n;>>        if (!ds || !x86_pmu.pebs)> @@ -486,9 +535,6 @@ static void intel_pmu_drain_pebs_core(st>        if (n <= 0)>                return;>> -       if (!intel_pmu_save_and_restart(event))> -               return;> ->        /*>         * Should not happen, we program the threshold at 1 and do not>         * set a reset value.> @@ -496,37 +542,7 @@ static void intel_pmu_drain_pebs_core(st>        WARN_ON_ONCE(n > 1);>        at += n - 1;>> -       perf_sample_data_init(&data, 0);> -       data.period = event->hw.last_period;> -> -       if (event->attr.sample_type & PERF_SAMPLE_RAW) {> -               raw.size = x86_pmu.pebs_record_size;> -               raw.data = at;> -               data.raw = &raw;> -       }> -> -       /*> -        * We use the interrupt regs as a base because the PEBS record> -        * does not contain a full regs set, specifically it seems to> -        * lack segment descriptors, which get used by things like> -        * user_mode().> -        *> -        * In the simple case fix up only the IP and BP,SP regs, for> -        * PERF_SAMPLE_IP and PERF_SAMPLE_CALLCHAIN to function properly.> -        * A possible PERF_SAMPLE_REGS will have to transfer all regs.> -        */> -       regs = *iregs;> -       regs.ip = at->ip;> -       regs.bp = at->bp;> -       regs.sp = at->sp;> -> -       if (intel_pmu_pebs_fixup_ip(&regs))> -               regs.flags |= PERF_EFLAGS_EXACT;> -       else> -               regs.flags &= ~PERF_EFLAGS_EXACT;> -> -       if (perf_event_overflow(event, 1, &data, &regs))> -               x86_pmu_stop(event);> +       __intel_pmu_pebs_event(event, iregs, at);>  }>>  static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)> @@ -534,10 +550,7 @@ static void intel_pmu_drain_pebs_nhm(str>        struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);>        struct debug_store *ds = cpuc->ds;>        struct pebs_record_nhm *at, *top;> -       struct perf_sample_data data;>        struct perf_event *event = NULL;> -       struct perf_raw_record raw;> -       struct pt_regs regs;>        u64 status = 0;>        int bit, n;>> @@ -579,33 +592,7 @@ static void intel_pmu_drain_pebs_nhm(str>                if (!event || bit >= MAX_PEBS_EVENTS)>                        continue;>> -               if (!intel_pmu_save_and_restart(event))> -                       continue;> -> -               perf_sample_data_init(&data, 0);> -               data.period = event->hw.last_period;> -> -               if (event->attr.sample_type & PERF_SAMPLE_RAW) {> -                       raw.size = x86_pmu.pebs_record_size;> -                       raw.data = at;> -                       data.raw = &raw;> -               }> -> -               /*> -                * See the comment in intel_pmu_drain_pebs_core()> -                */> -               regs = *iregs;> -               regs.ip = at->ip;> -               regs.bp = at->bp;> -               regs.sp = at->sp;> -> -               if (intel_pmu_pebs_fixup_ip(&regs))> -                       regs.flags |= PERF_EFLAGS_EXACT;> -               else> -                       regs.flags &= ~PERF_EFLAGS_EXACT;> -> -               if (perf_event_overflow(event, 1, &data, &regs))> -                       x86_pmu_stop(event);> +               __intel_pmu_pebs_event(event, iregs, at);>        }>  }>> Index: linux-2.6/include/linux/perf_event.h> ===================================================================> --- linux-2.6.orig/include/linux/perf_event.h> +++ linux-2.6/include/linux/perf_event.h> @@ -125,8 +125,9 @@ enum perf_event_sample_format {>        PERF_SAMPLE_PERIOD                      = 1U << 8,>        PERF_SAMPLE_STREAM_ID                   = 1U << 9,>        PERF_SAMPLE_RAW                         = 1U << 10,> +       PERF_SAMPLE_EVENT_IP                    = 1U << 11,>> -       PERF_SAMPLE_MAX = 1U << 11,             /* non-ABI */> +       PERF_SAMPLE_MAX = 1U << 12,             /* non-ABI */>  };>>  /*> @@ -294,7 +295,6 @@ struct perf_event_mmap_page {>  #define PERF_RECORD_MISC_USER                  (2 << 0)>  #define PERF_RECORD_MISC_HYPERVISOR            (3 << 0)>> -#define PERF_RECORD_MISC_EXACT                 (1 << 14)>  /*>  * Reserve the last bit to indicate some extended misc field>  */> @@ -389,6 +389,7 @@ enum perf_event_type {>         *      struct perf_event_header        header;>         *>         *      { u64                   ip;       } && PERF_SAMPLE_IP> +        *      { u64                   event_ip; } && PERF_SAMPLE_EVENT_IP>         *      { u32                   pid, tid; } && PERF_SAMPLE_TID>         *      { u64                   time;     } && PERF_SAMPLE_TIME>         *      { u64                   addr;     } && PERF_SAMPLE_ADDR> @@ -804,6 +805,7 @@ struct perf_sample_data {>        u64                             type;>>        u64                             ip;> +       u64                             event_ip;>        struct {>                u32     pid;>                u32     tid;> @@ -824,6 +826,7 @@ struct perf_sample_data {>  static inline>  void perf_sample_data_init(struct perf_sample_data *data, u64 addr)>  {> +       data->event_ip = 0;>        data->addr = addr;>        data->raw  = NULL;>  }> Index: linux-2.6/kernel/perf_event.c> ===================================================================> --- linux-2.6.orig/kernel/perf_event.c> +++ linux-2.6/kernel/perf_event.c> @@ -3158,6 +3158,9 @@ void perf_output_sample(struct perf_outp>        if (sample_type & PERF_SAMPLE_IP)>                perf_output_put(handle, data->ip);>> +       if (sample_type & PERF_SAMPLE_EVENT_IP)> +               perf_output_put(handle, data->event_ip);> +>        if (sample_type & PERF_SAMPLE_TID)>                perf_output_put(handle, data->tid_entry);>> @@ -3237,6 +3240,9 @@ void perf_prepare_sample(struct perf_eve>                header->size += sizeof(data->ip);>        }>> +       if (sample_type & PERF_SAMPLE_EVENT_IP)> +               header->size += sizeof(data->event_ip);> +>        if (sample_type & PERF_SAMPLE_TID) {>                /* namespace issues */>                data->tid_entry.pid = perf_event_pid(event, current);> Index: linux-2.6/tools/perf/builtin-top.c> ===================================================================> --- linux-2.6.orig/tools/perf/builtin-top.c> +++ linux-2.6/tools/perf/builtin-top.c> @@ -975,8 +975,10 @@ static void event__process_sample(const>                return;>        }>> -       if (self->header.misc & PERF_RECORD_MISC_EXACT)> +       if (ip)>                exact_samples++;> +       else> +               return;>>        if (event__preprocess_sample(self, session, &al, symbol_filter) < 0 ||>            al.filtered)> @@ -1169,6 +1171,11 @@ static void start_counter(int i, int cou>>        attr->sample_type       = PERF_SAMPLE_IP | PERF_SAMPLE_TID;>> +       if (attr->precise) {> +               attr->sample_type &= ~PERF_SAMPLE_IP;> +               attr->sample_type |= PERF_SAMPLE_EVENT_IP;> +       }> +>        if (freq) {>                attr->sample_type       |= PERF_SAMPLE_PERIOD;>                attr->freq              = 1;>>>���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+> There is nothing preventing the anon_vma from being detached while we
+> are spinning to acquire the lock.
+
+Well.  The comment there clearly implies (or states) that RCU
+protection is used to "guard against races".  If that's inaccurate
+or incomplete, can we please get it fixed?
+
+
+The whole function makes be a bit queasy.
+
+- Fails to explain why it pulls all these party tricks to read
+  page->mapping a single time.  What code path are we defending against
+  here?
+
+- Then checks page_mapped() without having any apparent defence
+  against page_mapped() becoming untrue one nanosecond later.
+
+- Checks page_mapped() inside the rcu_read_locked() section for
+  inscrutable reasons.
+
+> Most (all?) current users end up
+> calling something like vma_address(page, vma) on it, which has a
+> fairly good chance of weeding out wonky vmas.
+> 
+> However suppose the anon_vma got freed and re-used while we were
+> waiting to acquire the lock, and the new anon_vma fits with the
+> page->index (because that is the only thing vma_address() uses to
+> determine if the page fits in a particular vma, we could end up
+> traversing faulty anon_vma chains.
+> 
+> Close this hole for good by re-validating that page->mapping still
+> holds the very same anon_vma pointer after we acquire the lock, if not
+> be utterly paranoid and retry the whole operation (which will very
+> likely bail, because it's unlikely the page got attached to a different
+> anon_vma in the meantime).
+> 
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> ---
+>  mm/rmap.c |    7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> Index: linux-2.6/mm/rmap.c
+> ===================================================================
+> --- linux-2.6.orig/mm/rmap.c
+> +++ linux-2.6/mm/rmap.c
+> @@ -294,6 +294,7 @@ struct anon_vma *page_lock_anon_vma(stru
+>  	unsigned long anon_mapping;
+>  
+>  	rcu_read_lock();
+> +again:
+>  	anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
+>  	if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)
+>  		goto out;
+> @@ -302,6 +303,12 @@ struct anon_vma *page_lock_anon_vma(stru
+>  
+>  	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
+>  	spin_lock(&anon_vma->lock);
+> +
+> +	if (page_rmapping(page) != anon_vma) {
+> +		spin_unlock(&anon_vma->lock);
+> +		goto again;
+> +	}
+> +
+>  	return anon_vma;
+>  out:
+>  	rcu_read_unlock();
+> 
+
+A comment here explaining how this situation could come about would
+be helpful.
+
