@@ -1,212 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932755Ab0DHRor (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 13:44:47 -0400
-Received: from dm-mail01.mozilla.org ([63.245.208.150]:46991 "EHLO
-	dm-mail01.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092Ab0DHRoo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 13:44:44 -0400
-Message-ID: <4BBE1609.6080308@mozilla.com>
-Date: Thu, 08 Apr 2010 10:44:41 -0700
-From: Taras Glek <tglek@mozilla.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Wu Fengguang <fengguang.wu@intel.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
-References: <4BBA6776.5060804@mozilla.com> <20100406095135.GB5183@cmpxchg.org> <20100407022456.GA9468@localhost> <4BBBF402.70403@mozilla.com> <20100407073847.GB17892@localhost>
-In-Reply-To: <20100407073847.GB17892@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932948Ab0DHRxw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 13:53:52 -0400
+Received: from mga14.intel.com ([143.182.124.37]:35764 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758238Ab0DHRxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 13:53:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,171,1270450800"; 
+   d="scan'208,223";a="263538100"
+Subject: Re: [REVERT] be6b38bcb175613f239e0b302607db346472c6b6.
+ v2.6.34-rc3-406 oops with 4965AGN wireless
+From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       "Zhao, Shanyu" <shanyu.zhao@intel.com>,
+       "Chatre, Reinette" <reinette.chatre@intel.com>,
+       "stable@kernel.org" <stable@kernel.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <Pine.LNX.4.64.1004090104570.7829@boston.corp.fedex.com>
+References: <Pine.LNX.4.64.1004090104570.7829@boston.corp.fedex.com>
+Content-Type: multipart/mixed; boundary="=-nUvKoqY6KtHDgcmFght6"
+Date: Thu, 08 Apr 2010 11:50:19 -0700
+Message-Id: <1270752619.11853.4.camel@wwguy-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2010 12:38 AM, Wu Fengguang wrote:
-> On Wed, Apr 07, 2010 at 10:54:58AM +0800, Taras Glek wrote:
->    
->> On 04/06/2010 07:24 PM, Wu Fengguang wrote:
->>      
->>> Hi Taras,
->>>
->>> On Tue, Apr 06, 2010 at 05:51:35PM +0800, Johannes Weiner wrote:
->>>
->>>        
->>>> On Mon, Apr 05, 2010 at 03:43:02PM -0700, Taras Glek wrote:
->>>>
->>>>          
->>>>> Hello,
->>>>> I am working on improving Mozilla startup times. It turns out that page
->>>>> faults(caused by lack of cooperation between user/kernelspace) are the
->>>>> main cause of slow startup. I need some insights from someone who
->>>>> understands linux vm behavior.
->>>>>
->>>>>            
->>> How about improve Fedora (and other distros) to preload Mozilla (and
->>> other apps the user run at the previous boot) with fadvise() at boot
->>> time? This sounds like the most reasonable option.
->>>
->>>        
->> That's a slightly different usecase. I'd rather have all large apps
->> startup as efficiently as possible without any hacks. Though until we
->> get there, we'll be using all of the hacks we can.
->>      
-> Boot time user space readahead can do better than kernel heuristic
-> readahead in several ways:
->
-> - it can collect better knowledge on which files/pages will be used
->    which lead to high readahead hit ratio and less cache consumption
->
-> - it can submit readahead requests for many files in parallel,
->    which enables queuing (elevator, NCQ etc.) optimizations
->
-> So I won't call it dirty hack :)
->
->    
-Fair enough.
->>> As for the kernel readahead, I have a patchset to increase default
->>> mmap read-around size from 128kb to 512kb (except for small memory
->>> systems).  This should help your case as well.
->>>
->>>        
->> Yes. Is the current readahead really doing read-around(ie does it read
->> pages before the one being faulted)? From what I've seen, having the
->>      
-> Sure. It will do read-around from current fault offset - 64kb to +64kb.
->    
-That's excellent.
->    
->> dynamic linker read binary sections backwards causes faults.
->> http://sourceware.org/bugzilla/show_bug.cgi?id=11447
->>      
-> There are too many data in
-> http://people.mozilla.com/~tglek/startup/systemtap_graphs/ld_bug/report.txt
-> Can you show me the relevant lines? (wondering if I can ever find such lines..)
->    
-The first part of the file lists sections in a file and their hex 
-offset+size.
 
-lines like 0 512 offset(#1) mean a read at position 0 of 512 bytes. 
-Incidentally this first read is coming from vfs_read, so the log doesn't 
-take account readahead (unlike the other reads caused by mmap page faults).
+--=-nUvKoqY6KtHDgcmFght6
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 
-So
-15310848 131072 offset(#2)=====================
-eaa73c 1523c .bss
-eaa73c 19d1e .comment
+Hi Jeff,
 
-15142912 131072 offset(#3)=====================
-e810d4 200 .dynamic
-e812d4 470 .got
-e81744 3b50 .got.plt
-e852a0 2549c .data
+On Thu, 2010-04-08 at 10:16 -0700, Jeff Chua wrote:
+> Linus,
+> 
+> I'm having problem with the latest git pull 2 days ago with the 4965AGN 
+> wireless.
+> 
+> Starting the wireless with WPA2 resulted in system hard freeze. Reverting 
+> the commit below solves the problem.
+> 
+> 
+> Thanks,
+> Jeff
+> 
+> 
+Sorry for the problem caused by this patch, it is my mistake using the
+similar approach for 4965 like the newer devices. could you try the
+attach patch to see if this fix your system freeze problem.
 
-Shows 2 reads where the dynamic linker first seeks to the end of the 
-file(to zero out .bss, causing IO via COW) and the backtracks to
-read in .dynamic. However you are right, all of the backtracking reads 
-are over 64K.
-Thanks for explaining that. I am guessing your change to boost 
-readaround will fix this issue nicely for firefox.
+Regards
+Wey
 
->>>
->>>        
->>>>> Current Situation:
->>>>> The dynamic linker mmap()s  executable and data sections of our
->>>>> executable but it doesn't call madvise().
->>>>> By default page faults trigger 131072byte reads. To make matters worse,
->>>>> the compile-time linker + gcc lay out code in a manner that does not
->>>>> correspond to how the resulting executable will be executed(ie the
->>>>> layout is basically random). This means that during startup 15-40mb
->>>>> binaries are read in basically random fashion. Even if one orders the
->>>>> binary optimally, throughput is still suboptimal due to the puny readahead.
->>>>>
->>>>> IO Hints:
->>>>> Fortunately when one specifies madvise(WILLNEED) pagefaults trigger 2mb
->>>>> reads and a binary that tends to take 110 page faults(ie program stops
->>>>> execution and waits for disk) can be reduced down to 6. This has the
->>>>> potential to double application startup of large apps without any clear
->>>>> downsides.
->>>>>
->>>>> Suse ships their glibc with a dynamic linker patch to fadvise()
->>>>> dynamic libraries(not sure why they switched from doing madvise
->>>>> before).
->>>>>
->>>>>            
->>> This is interesting. I wonder how SuSE implements the policy.
->>> Do you have the patch or some strace output that demonstrates the
->>> fadvise() call?
->>>
->>>        
->> glibc-2.3.90-ld.so-madvise.diff in
->> http://www.rpmseek.com/rpm/glibc-2.4-31.12.3.src.html?hl=com&cba=0:G:0:3732595:0:15:0:
->>      
-> 550 Can't open
-> /pub/linux/distributions/suse/pub/suse/update/10.1/rpm/src/glibc-2.4-31.12.3.src.rpm:
-> No such file or directory
->
-> OK I give up.
->
->    
->> As I recall they just fadvise the filedescriptor before accessing it.
->>      
-> Obviously this is a bit risky for small memory systems..
->
->    
->>>>> I filed a glibc bug about this at
->>>>> http://sourceware.org/bugzilla/show_bug.cgi?id=11431 . Uli commented
->>>>> with his concern about wasting memory resources. What is the impact of
->>>>> madvise(WILLNEED) or the fadvise equivalent on systems under memory
->>>>> pressure? Does the kernel simply start ignoring these hints?
->>>>>
->>>>>            
->>>> It will throttle based on memory pressure.  In idle situations it will
->>>> eat your file cache, however, to satisfy the request.
->>>>
->>>> Now, the file cache should be much bigger than the amount of unneeded
->>>> pages you prefault with the hint over the whole library, so I guess the
->>>> benefit of prefaulting the right pages outweighs the downside of evicting
->>>> some cache for unused library pages.
->>>>
->>>> Still, it's a workaround for deficits in the demand-paging/readahead
->>>> heuristics and thus a bit ugly, I feel.  Maybe Wu can help.
->>>>
->>>>          
->>> Program page faults are inherently random, so the straightforward
->>> solution would be to increase the mmap read-around size (for desktops
->>> with reasonable large memory), rather than to improve program layout
->>> or readahead heuristics :)
->>>
->>>        
->> Program page faults may exhibit random behavior once they've started.
->>      
-> Right.
->
->    
->> During startup page-in pattern of over-engineered OO applications is
->> very predictable. Programs are laid out based on compilation units,
->> which have no relation to how they are executed. Another problem is that
->> any large old application will have lots of code that is either rarely
->> executed or completely dead. Random sprinkling of live code among mostly
->> unneeded code is a problem.
->>      
-> Agreed.
->
->    
->> I'm able to reduce startup pagefaults by 2.5x and mem usage by a few MB
->> with proper binary layout. Even if one lays out a program wrongly, the
->> worst-case pagein pattern will be pretty similar to what it is by default.
->>      
-> That's great. When will we enjoy your research fruits? :)
->    
-Released it yesterday. Hopefully other bloated binaries will benefit 
-from this too.
+--=-nUvKoqY6KtHDgcmFght6
+Content-Disposition: attachment; filename*0=0001-iwlwifi-need-check-for-valid-qos-packet-before-free.patc; filename*1=h
+Content-Type: text/x-patch; name="0001-iwlwifi-need-check-for-valid-qos-packet-before-free.patch"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-http://blog.mozilla.com/tglek/2010/04/07/icegrind-valgrind-plugin-for-optimizing-cold-startup/
+>From 0c441b5c684709152cd322e91ce59914159ea513 Mon Sep 17 00:00:00 2001
+From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Date: Thu, 8 Apr 2010 11:41:24 -0700
+Subject: [PATCH 1/1] iwlwifi: need check for valid qos packet before free
 
-Thanks a lot Wu, I feel I understand the kernel side of what's happening 
-now.
+For 4965, need to check it is valid qos frame before free, only valid
+QoS frame has the tid used to free the packets.
 
-Taras
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+---
+ drivers/net/wireless/iwlwifi/iwl-4965.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/wireless/iwlwifi/iwl-4965.c b/drivers/net/wireless/iwlwifi/iwl-4965.c
+index c710b26..4113909 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-4965.c
++++ b/drivers/net/wireless/iwlwifi/iwl-4965.c
+@@ -2014,7 +2014,9 @@ static void iwl4965_rx_reply_tx(struct iwl_priv *priv,
+ 			IWL_DEBUG_TX_REPLY(priv, "Retry scheduler reclaim scd_ssn "
+ 					   "%d index %d\n", scd_ssn , index);
+ 			freed = iwlagn_tx_queue_reclaim(priv, txq_id, index);
+-			iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
++			if (qc && likely(sta_id != IWL_INVALID_STATION))
++				iwl_free_tfds_in_queue(priv, sta_id,
++						       tid, freed);
+ 
+ 			if (priv->mac80211_registered &&
+ 			    (iwl_queue_space(&txq->q) > txq->q.low_mark) &&
+@@ -2046,8 +2048,8 @@ static void iwl4965_rx_reply_tx(struct iwl_priv *priv,
+ 		    (iwl_queue_space(&txq->q) > txq->q.low_mark))
+ 			iwl_wake_queue(priv, txq_id);
+ 	}
+-
+-	iwlagn_txq_check_empty(priv, sta_id, tid, txq_id);
++	if (qc && likely(sta_id != IWL_INVALID_STATION))
++		iwlagn_txq_check_empty(priv, sta_id, tid, txq_id);
+ 
+ 	iwl_check_abort_status(priv, tx_resp->frame_count, status);
+ }
+-- 
+1.5.6.3
+
+
+--=-nUvKoqY6KtHDgcmFght6--
+
