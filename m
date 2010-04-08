@@ -1,30 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758240Ab0DHGgI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 02:36:08 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:51205 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756151Ab0DHGgC convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 02:36:02 -0400
-From: Linus WALLEIJ <linus.walleij@stericsson.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       Grant Likely <grant.likely@secretlab.ca>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 8 Apr 2010 08:35:08 +0200
-Subject: RE: [PATCH 00/11] ARM: PrimeCell DMA Interface v5
-Thread-Topic: [PATCH 00/11] ARM: PrimeCell DMA Interface v5
-Thread-Index: AcrWrHhQuI2f4vfkSZ6458GAPHFLWgANXicA
-Message-ID: <CEE6BB42CAD6E947908279175AF8470A03A50F78@EXDCVYMBSTM006.EQ1STM.local>
-References: <1270681920-4461-1-git-send-email-linus.walleij@stericsson.com>
- <v2se9c3a7c21004071645u8180f4d7p3b4b1f96de11303e@mail.gmail.com>
-In-Reply-To: <v2se9c3a7c21004071645u8180f4d7p3b4b1f96de11303e@mail.gmail.com>
+	id S1758263Ab0DHGgi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 02:36:38 -0400
+Received: from mga03.intel.com ([143.182.124.21]:41735 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756382Ab0DHGgh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 02:36:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,168,1270450800"; 
+   d="scan'208";a="263319107"
+From: "Zhao, Leifu" <leifu.zhao@intel.com>
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
+Date: Thu, 8 Apr 2010 14:36:15 +0800
+Subject: [PATCH] race condition between __purge_vmap_area_lazy() and
+ free_unmap_vmap_area_noflush()
+Thread-Topic: [PATCH] race condition between __purge_vmap_area_lazy() and
+ free_unmap_vmap_area_noflush()
+Thread-Index: AcrW5cmHmx1lHoLWTmGpK++oHrm6mw==
+Message-ID: <EAEEEBBE07F4F24C89FEF850CF8C77420142A21107@shzsmsx502.ccr.corp.intel.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -37,86 +34,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Dan]
+Hi all,
 
-> > I suggest putting these into Andrews tree now, since:
-> >
-> > A) 4 of the patches it touches MMCI code which is hanled
-> >   by Andrew
-> 
-> Ok, but it looks like they do not have a build dependency on dma bits
-> so they could be merged separately i.e. on top of the async_tx branch.
+I found a bug in 2.6.28 kernel and got the fix for it, see below bug description, log information and the patch. As I know this bug still exists in at least 2.6.32 kernel. I am new in the kernel development process, can someone tell me what should proceed next?
 
-Well:
+Bug description:
 
-[PATCH 04/11] ARM: define the PrimeCell DMA API v5
-Is independent. (One .h-file.)
+There is race condition between function __purge_vmap_area_lazy() and free_unmap_vmap_area_noflush() in vmalloc.c of kernel. In function free_unmap_vmap_area_noflush(), if  va->flags is updated and then is preempted to run __purge_vmap_area_lazy() before updating vmap_lazy_nr, then vmap_lazy_nr used in function __purge_vmap_area_lazy() has incorrect value, therefore cause the crash(due to run BUG_ON function). So the updating va->flags and vmap_lazy_nr must execute atomicly, the solution is to use spinlock to protect updating va->flags and vmap_lazy_nr.
 
-[PATCH 05/11] ARM: add generic PrimeCell interface to COH 901 318 v5
-[PATCH 06/11] ARM: add generic PrimeCell interface to DMA40 v1
-Depends on 04 AND has a merge dependency on the recent patches for generic
-channel control and status, and then the DMA40 driver which is now
-Picked into Andrews -mm. So the whole thing does depend on async_tx
-HEAD.
 
-Is it possible to move the two DMA40 patches over from -mm to async_tx
-to atleast lower the complexity a little bit? (Should be to just
-apply them...)
+Captured log information:
 
-If this is done, you could apply the above three patches to the
-async_tx tree.
+kernel BUG at mm/vmalloc.c:507!
+invalid opcode: 0000 [#1] PREEMPT 
+last sysfs file: /sys/class/sound/controlC0/dev
+Modules linked in: avcap_nxp(P) avcap_synthetic(P) avcap_core(P) pvrsrvkm
+alsa_shim(P) snd_usb_audio ]
 
-[PATCH 07/11] ARM: add PrimeCell generic DMA to MMCI/PL180 v5
-This is where is starts to get complicated because this patch
-Depends on 01, 02, 03, 04. So it has to be applied to a tree
-which contains all of it.
+Pid: 1022, comm: Audio_Timing Tainted: P           (2.6.28 #1) 
+EIP: 0060:[<c01537d5>] EFLAGS: 00010297 CPU: 0
+EIP is at __purge_vmap_area_lazy+0x1b1/0x1b5
+EAX: c4e1e000 EBX: c04e0cec ECX: c4e1fc9c EDX: c04e0d04
+ESI: 000001e2 EDI: c4e1fcc4 EBP: c4e1fcc0 ESP: c4e1fc98
 
-[PATCH 08/11] ARM: add PrimeCell generic DMA to PL011 v5
-Just depends on 04 (that's the idea, a generic PrimeCell interface)
-so could be applied to the async_tx tree
-if the others go in there.
 
-[PATCH 09/11] ARM: add PrimeCell generic DMA to PL022 v5
-Same thing, plus it is Acked-by: Grant and OK to merge into
-async_tx if 04 is there.
 
-[PATCH 10/11] ARM: config U300 PL180 PL011 PL022 for DMA v5
-[PATCH 11/11] ARM: config Ux500 PL011 PL022 for DMA v1
-These should go in through the ARM tree really, it's platform
-data.
+Patch:
 
-> > B) It extends the DMA40 driver which is now pending in
-> >   his tree as well.
-> >
-> > C) Since there doesn't seem to be any consensus of whether
-> >   this is the right way forward, it needs some wider
-> >   testing I believe.
-> 
-> No consensus with respect to which pieces, the Primecell driver or
-> something outside of drivers/dma?  Forgive me for missing recent
-> conversations if this has been discussed to death already.
+--- linux-2.6.28/mm/vmalloc.c.orig      2010-04-10 14:16:47.000000000 +0800
++++ linux-2.6.28/mm/vmalloc.c   2010-04-10 14:19:03.000000000 +0800
+@@ -467,6 +467,7 @@ static unsigned long lazy_max_pages(void
 
-Well, I'd want Russell to comment on that, I think from the
-PrimeCell point of view it is important that the file we put
-in place in <linux/amba/dma.h> is something that will really
-be likely to a good path forward for all PrimeCell and derivates.
-And I really would like Russell to ACK that first, he historically
-watches over the PrimeCell stuff.
+ static atomic_t vmap_lazy_nr = ATOMIC_INIT(0);
 
-But that said I think we're pretty solid:
-- Implementation for three vastly different PrimeCells
-- Implementation for two vastly different DMA engines
-- It works in these combos (we've had lots of internal testing on these)
++static DEFINE_SPINLOCK(purge_lock);
+ /*
+  * Purges all lazily-freed vmap areas.
+  *
+@@ -480,7 +481,6 @@ static atomic_t vmap_lazy_nr = ATOMIC_IN
+ static void __purge_vmap_area_lazy(unsigned long *start, unsigned long *end,
+                                        int sync, int force_flush)
+ {
+-       static DEFINE_SPINLOCK(purge_lock);
+        LIST_HEAD(valist);
+        struct vmap_area *va;
+        int nr = 0;
+@@ -556,8 +556,10 @@ static void purge_vmap_area_lazy(void)
+  */
+ static void free_unmap_vmap_area_noflush(struct vmap_area *va)
+ {
++       spin_lock(&purge_lock);
+        va->flags |= VM_LAZY_FREE;
+        atomic_add((va->va_end - va->va_start) >> PAGE_SHIFT, &vmap_lazy_nr);
++       spin_unlock(&purge_lock);
+        if (unlikely(atomic_read(&vmap_lazy_nr) > lazy_max_pages()))
+                try_purge_vmap_area_lazy();
+ }
 
-> I can go ahead and queue up the dma bits unless you would prefer, and
-> Andrew agrees, to take this all through the -mm tree?
 
-If it's OK with Russell, putting 04-06 plus 09 through async_tx 
-tree is a good starter.
 
-07 is problematic and require the entire series to be applied
-in one go, 08 could be applied as well but needs Russells ACK.
+Signed-off-by: Leifu Zhao <Leifu.zhao@intel.com>
 
-Yours,
-Linus Walleij
+
+
+Best regards,
+ 
+Leifu Zhao
 
