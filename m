@@ -1,93 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188Ab0DHCnm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 22:43:42 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54141 "EHLO hera.kernel.org"
+	id S1753516Ab0DHCpM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 22:45:12 -0400
+Received: from ns.netcenter.hu ([195.228.254.57]:39361 "EHLO mail.netcenter.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751289Ab0DHCnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 22:43:40 -0400
-Message-ID: <4BBD42BE.20307@kernel.org>
-Date: Thu, 08 Apr 2010 11:43:10 +0900
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1751289Ab0DHCpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 22:45:09 -0400
+Message-ID: <3a5f01cad6c5$8a722c00$0400a8c0@dcccs>
+From: "Janos Haar" <janos.haar@netcenter.hu>
+To: "Dave Chinner" <david@fromorbit.com>
+Cc: <xiyou.wangcong@gmail.com>, <linux-kernel@vger.kernel.org>,
+       <kamezawa.hiroyu@jp.fujitsu.com>, <linux-mm@kvack.org>,
+       <xfs@oss.sgi.com>, <axboe@kernel.dk>
+References: <2375c9f91003242029p1efbbea1v8e313e460b118f14@mail.gmail.com> <20100325153110.6be9a3df.kamezawa.hiroyu@jp.fujitsu.com> <02c101cacbf8$d21d1650$0400a8c0@dcccs> <179901cad182$5f87f620$0400a8c0@dcccs> <t2h2375c9f91004010337p618c4d5yc739fa25b5f842fa@mail.gmail.com> <1fe901cad2b0$d39d0300$0400a8c0@dcccs> <20100402230905.GW3335@dastard> <22c901cad333$7a67db60$0400a8c0@dcccs> <20100404103701.GX3335@dastard> <2bd101cad4ec$5a425f30$0400a8c0@dcccs> <20100405224522.GZ3335@dastard>
+Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look please!...)
+Date: Thu, 8 Apr 2010 04:45:13 +0200
 MIME-Version: 1.0
-To: Sonic Zhang <sonic.adi@gmail.com>
-CC: graff yang <graff.yang@gmail.com>, dhowells@redhat.com,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [PATCH] mm/nommu.c:Dynamic alloc/free percpu area for nommu
-References: <1268989324-7575-1-git-send-email-graff.yang@gmail.com>	 <4BA449E2.3080707@kernel.org>	 <7d86d44a1003211933h6628ae04vc9d1c393e1733ce5@mail.gmail.com>	 <4BB47367.8030305@kernel.org> <y2l4e5ebad51004060228t814129beqd0d90059e247e48d@mail.gmail.com>
-In-Reply-To: <y2l4e5ebad51004060228t814129beqd0d90059e247e48d@mail.gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------030705090603010602030506"
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 08 Apr 2010 02:43:13 +0000 (UTC)
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.3598
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030705090603010602030506
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Hello,
 
-Hello, Sonic.
+Sorry, but still have the problem with 2.6.33.2.
 
-> I tested your patch on NOMMU bf561 with SMP enabled. It is compiled
-> and boots without problem. Because there are few percpu data defined
-> in bf561 SMP kernel, the functions in mm/percpu-km.c may not be
-> executed with a simple test. But, since these functions are simple
-> malloc/free, I don't see any problem.
+Apr  8 03:04:51 alfa kernel: BUG: unable to handle kernel paging request at 
+000000610000008c
+Apr  8 03:04:51 alfa kernel: IP: [<ffffffff811f17c4>] 
+xfs_iflush_cluster+0x148/0x35a
+Apr  8 03:04:51 alfa kernel: PGD 22258a067 PUD 0
+Apr  8 03:04:51 alfa kernel: Oops: 0000 [#1] SMP
+Apr  8 03:04:51 alfa kernel: last sysfs file: /sys/class/misc/rfkill/dev
+Apr  8 03:04:51 alfa kernel: CPU 2
+Apr  8 03:04:51 alfa kernel: Pid: 3049, comm: xfssyncd Not tainted 2.6.33.2 
+#1 DP35DP/
+Apr  8 03:04:51 alfa kernel: RIP: 0010:[<ffffffff811f17c4>] 
+[<ffffffff811f17c4>] xfs_iflush_cluster+0x148/0x35a
+Apr  8 03:04:51 alfa kernel: RSP: 0018:ffff880228e3bca0  EFLAGS: 00010206
+Apr  8 03:04:51 alfa kernel: RAX: 0000006100000000 RBX: ffff880153795750 
+RCX: 000000000000001a
+Apr  8 03:04:51 alfa kernel: RDX: 0000000000000020 RSI: 00000000003dfdf4 
+RDI: 0000000000000005
+Apr  8 03:04:51 alfa kernel: RBP: ffff880228e3bd10 R08: ffff880228e3bc60 
+R09: ffff8801c5d6e1b8
+Apr  8 03:04:51 alfa kernel: R10: 00000000003dfdf4 R11: 0000000000000005 
+R12: 000000000000001a
+Apr  8 03:04:51 alfa kernel: R13: ffff8800b1d920d8 R14: ffff88022a7cabe0 
+R15: 00000000003ddf80
+Apr  8 03:04:51 alfa kernel: FS:  0000000000000000(0000) 
+GS:ffff880028300000(0000) knlGS:0000000000000000
+Apr  8 03:04:51 alfa kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 
+000000008005003b
+Apr  8 03:04:51 alfa kernel: CR2: 000000610000008c CR3: 00000002222db000 
+CR4: 00000000000006e0
+Apr  8 03:04:51 alfa kernel: DR0: 0000000000000000 DR1: 0000000000000000 
+DR2: 0000000000000000
+Apr  8 03:04:51 alfa kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 
+DR7: 0000000000000400
+Apr  8 03:04:51 alfa kernel: Process xfssyncd (pid: 3049, threadinfo 
+ffff880228e3a000, task ffff880228e66040)
+Apr  8 03:04:51 alfa kernel: Stack:
+Apr  8 03:04:51 alfa kernel:  ffff8800b1d920d8 ffff8800466bc100 
+ffff880228c32580 ffffffffffffffe0
+Apr  8 03:04:51 alfa kernel: <0> 0000000000000020 ffff880228e24930 
+0000002028e3bd10 0000000300000000
+Apr  8 03:04:51 alfa kernel: <0> ffff880228e24948 ffff8800b1d920d8 
+0000000000000002 ffff8800466bc100
+Apr  8 03:04:51 alfa kernel: Call Trace:
+Apr  8 03:04:51 alfa kernel:  [<ffffffff811f1bcd>] xfs_iflush+0x1f7/0x2aa
+Apr  8 03:04:51 alfa kernel:  [<ffffffff811ecc12>] ? xfs_ilock+0x66/0xb7
+Apr  8 03:04:51 alfa kernel:  [<ffffffff81214653>] 
+xfs_reclaim_inode+0xba/0xee
+Apr  8 03:04:51 alfa kernel:  [<ffffffff8121498d>] 
+xfs_inode_ag_walk+0x91/0xd7
+Apr  8 03:04:51 alfa kernel:  [<ffffffff81214599>] ? 
+xfs_reclaim_inode+0x0/0xee
+Apr  8 03:04:51 alfa kernel:  [<ffffffff81214a30>] 
+xfs_inode_ag_iterator+0x5d/0x8f
+Apr  8 03:04:51 alfa kernel:  [<ffffffff81214599>] ? 
+xfs_reclaim_inode+0x0/0xee
+Apr  8 03:04:51 alfa kernel:  [<ffffffff81214a81>] 
+xfs_reclaim_inodes+0x1f/0x21
+Apr  8 03:04:51 alfa kernel:  [<ffffffff81214ab6>] xfs_sync_worker+0x33/0x6f
+Apr  8 03:04:51 alfa kernel:  [<ffffffff812144cf>] xfssyncd+0x149/0x198
+Apr  8 03:04:51 alfa kernel:  [<ffffffff81214386>] ? xfssyncd+0x0/0x198
+Apr  8 03:04:51 alfa kernel:  [<ffffffff81057061>] kthread+0x82/0x8a
+Apr  8 03:04:51 alfa kernel:  [<ffffffff81002fd4>] 
+kernel_thread_helper+0x4/0x10
+Apr  8 03:04:51 alfa kernel:  [<ffffffff8179217c>] ? restore_args+0x0/0x30
+Apr  8 03:04:51 alfa kernel:  [<ffffffff81056fdf>] ? kthread+0x0/0x8a
+Apr  8 03:04:51 alfa kernel:  [<ffffffff81002fd0>] ? 
+kernel_thread_helper+0x0/0x10
+Apr  8 03:04:51 alfa kernel: Code: 8e eb 01 00 00 b8 01 00 00 00 48 d3 e0 ff 
+c8 23 43 18 48 23 45 a8 4c 39 f8 0f 85 ae 00 00 00 48 8b 83 80 00 00 00 48 
+85 c0
+74 0b <66> f7 80 8c 00 00 00 ff 01 75 13 80 bb 0a 02 00 00 00 75 0a 8b
+Apr  8 03:04:51 alfa kernel: RIP  [<ffffffff811f17c4>] 
+xfs_iflush_cluster+0x148/0x35a
+Apr  8 03:04:51 alfa kernel:  RSP <ffff880228e3bca0>
+Apr  8 03:04:51 alfa kernel: CR2: 000000610000008c
+Apr  8 03:04:51 alfa kernel: ---[ end trace d1fc6fbf3568ba3f ]---
+Apr  8 04:41:11 alfa syslogd 1.4.1: restart.
 
-Great, thanks for testing.  Just in case, can you please test with the
-attached module?  In test-pcpu.c, the cmds table directs the module
-what to allocate and free.  { size > 0, tag } entry makes it allocate
-an area with the specified size and tag and { 0, tag } entry makes it
-free all areas with the matching tag.  The existing table makes pretty
-large amount of allocations and might not work very well on nommu
-configuration.  There are also several DEFINE_PER_CPU() instances to
-test module static percpu area alloc/free.  Please insmod/rmmod in
-loop and make sure it doesn't leak any memory or crashes the machine.
 
-Thanks.
+----- Original Message ----- 
+From: "Dave Chinner" <david@fromorbit.com>
+To: "Janos Haar" <janos.haar@netcenter.hu>
+Cc: <xiyou.wangcong@gmail.com>; <linux-kernel@vger.kernel.org>; 
+<kamezawa.hiroyu@jp.fujitsu.com>; <linux-mm@kvack.org>; <xfs@oss.sgi.com>; 
+<axboe@kernel.dk>
+Sent: Tuesday, April 06, 2010 12:45 AM
+Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look 
+please!...)
 
--- 
-tejun
 
---------------030705090603010602030506
-Content-Type: application/x-gzip;
- name="test-pcpu.tar.gz"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="test-pcpu.tar.gz"
+> On Mon, Apr 05, 2010 at 08:17:27PM +0200, Janos Haar wrote:
+>> Dave,
+>>
+>> Thank you for your answer.
+>> Like i sad before, this is a productive server with important service.
+>> Can you please send the fix for me as soon as it is done even for
+>> testing it....
+>> Or point me to the right direction to get it?
+>
+> It's in 2.6.33 if you want to upgrade the kernel, or you if don't
+> want to wait for the next 2.6.32.x kernel, you can apply this series
+> of 19 patches yourself:
+>
+> http://oss.sgi.com/archives/xfs/2010-03/msg00125.html
+>
+> Cheers,
+>
+> Dave.
+> -- 
+> Dave Chinner
+> david@fromorbit.com
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/ 
 
-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
-BAQEBAQEBAQEBAQEBJbgP6JHIvcAUAAA
---------------030705090603010602030506--
