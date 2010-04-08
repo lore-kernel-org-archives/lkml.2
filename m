@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933488Ab0DHTb3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 15:31:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50013 "EHLO
+	id S933459Ab0DHTb4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 15:31:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50046 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933431Ab0DHTbC (ORCPT
+	with ESMTP id S933471Ab0DHTbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 15:31:02 -0400
-Message-Id: <20100408192722.772417072@chello.nl>
+	Thu, 8 Apr 2010 15:31:20 -0400
+Message-Id: <20100408192722.643778654@chello.nl>
 User-Agent: quilt/0.47-1
-Date: Thu, 08 Apr 2010 21:17:41 +0200
+Date: Thu, 08 Apr 2010 21:17:38 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
@@ -20,102 +20,55 @@ Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
        David Miller <davem@davemloft.net>,
        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
        Nick Piggin <npiggin@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 04/13] mm: Move anon_vma ref out from under CONFIG_KSM
+Subject: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast() implementation
 References: <20100408191737.296180458@chello.nl>
-Content-Disposition: inline; filename=mm-anon_vma-ref.patch
+Content-Disposition: inline; filename=powerpc-gup_fast-rcu.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need an anon_vma refcount for preemptible anon_vma->lock as well
-as memory compaction, so move it out into generic code.
+The powerpc page table freeing relies on the fact that IRQs hold off
+an RCU grace period, this is currently true for all existing RCU
+implementations but is not an assumption Paul wants to support.
 
+Therefore, also take the RCU read lock along with disabling IRQs to
+ensure the RCU grace period does at least cover these lookups.
+
+Requested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Nick Piggin <npiggin@suse.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
-Index: linux-2.6/include/linux/rmap.h
+ arch/powerpc/mm/gup.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+Index: linux-2.6/arch/powerpc/mm/gup.c
 ===================================================================
---- linux-2.6.orig/include/linux/rmap.h
-+++ linux-2.6/include/linux/rmap.h
-@@ -26,9 +26,7 @@
-  */
- struct anon_vma {
- 	spinlock_t lock;	/* Serialize access to vma list */
--#ifdef CONFIG_KSM
--	atomic_t ksm_refcount;
--#endif
-+	atomic_t ref;
- 	/*
- 	 * NOTE: the LSB of the head.next is set by
- 	 * mm_take_all_locks() _after_ taking the above lock. So the
-@@ -61,26 +59,6 @@ struct anon_vma_chain {
- };
+--- linux-2.6.orig/arch/powerpc/mm/gup.c
++++ linux-2.6/arch/powerpc/mm/gup.c
+@@ -142,6 +142,7 @@ int get_user_pages_fast(unsigned long st
+ 	 * So long as we atomically load page table pointers versus teardown,
+ 	 * we can follow the address down to the the page and take a ref on it.
+ 	 */
++	rcu_read_lock();
+ 	local_irq_disable();
  
- #ifdef CONFIG_MMU
--#ifdef CONFIG_KSM
--static inline void ksm_refcount_init(struct anon_vma *anon_vma)
--{
--	atomic_set(&anon_vma->ksm_refcount, 0);
--}
--
--static inline int ksm_refcount(struct anon_vma *anon_vma)
--{
--	return atomic_read(&anon_vma->ksm_refcount);
--}
--#else
--static inline void ksm_refcount_init(struct anon_vma *anon_vma)
--{
--}
--
--static inline int ksm_refcount(struct anon_vma *anon_vma)
--{
--	return 0;
--}
--#endif /* CONFIG_KSM */
+ 	pgdp = pgd_offset(mm, addr);
+@@ -162,6 +163,7 @@ int get_user_pages_fast(unsigned long st
+ 	} while (pgdp++, addr = next, addr != end);
  
- static inline struct anon_vma *page_anon_vma(struct page *page)
- {
-Index: linux-2.6/mm/ksm.c
-===================================================================
---- linux-2.6.orig/mm/ksm.c
-+++ linux-2.6/mm/ksm.c
-@@ -318,14 +318,14 @@ static void hold_anon_vma(struct rmap_it
- 			  struct anon_vma *anon_vma)
- {
- 	rmap_item->anon_vma = anon_vma;
--	atomic_inc(&anon_vma->ksm_refcount);
-+	atomic_inc(&anon_vma->ref);
- }
+ 	local_irq_enable();
++	rcu_read_unlock();
  
- static void drop_anon_vma(struct rmap_item *rmap_item)
- {
- 	struct anon_vma *anon_vma = rmap_item->anon_vma;
+ 	VM_BUG_ON(nr != (end - start) >> PAGE_SHIFT);
+ 	return nr;
+@@ -171,6 +173,7 @@ int get_user_pages_fast(unsigned long st
  
--	if (atomic_dec_and_lock(&anon_vma->ksm_refcount, &anon_vma->lock)) {
-+	if (atomic_dec_and_lock(&anon_vma->ref, &anon_vma->lock)) {
- 		int empty = list_empty(&anon_vma->head);
- 		spin_unlock(&anon_vma->lock);
- 		if (empty)
-Index: linux-2.6/mm/rmap.c
-===================================================================
---- linux-2.6.orig/mm/rmap.c
-+++ linux-2.6/mm/rmap.c
-@@ -248,7 +248,7 @@ static void anon_vma_unlink(struct anon_
- 	list_del(&anon_vma_chain->same_anon_vma);
- 
- 	/* We must garbage collect the anon_vma if it's empty */
--	empty = list_empty(&anon_vma->head) && !ksm_refcount(anon_vma);
-+	empty = list_empty(&anon_vma->head) && !atomic_read(&anon_vma->ref);
- 	spin_unlock(&anon_vma->lock);
- 
- 	if (empty)
-@@ -272,7 +272,7 @@ static void anon_vma_ctor(void *data)
- 	struct anon_vma *anon_vma = data;
- 
- 	spin_lock_init(&anon_vma->lock);
--	ksm_refcount_init(anon_vma);
-+	atomic_set(&anon_vma->ref, 0);
- 	INIT_LIST_HEAD(&anon_vma->head);
- }
+ slow:
+ 		local_irq_enable();
++		rcu_read_unlock();
+ slow_irqon:
+ 		pr_devel("  slow path ! nr = %d\n", nr);
  
 
 
