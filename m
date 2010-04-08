@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758459Ab0DHHE1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 03:04:27 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:61853 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758401Ab0DHHEZ (ORCPT
+	id S1758485Ab0DHHF6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 03:05:58 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34885
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758444Ab0DHHFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 03:04:25 -0400
-Message-ID: <4BBD7F18.1070205@oracle.com>
-Date: Thu, 08 Apr 2010 00:00:40 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: James Morris <jmorris@namei.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       linux-kernel@vger.kernel.org, airlied@linux.ie,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: Config NO_BOOTMEM breaks my amd64 box
-References: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org> <4BB2EB1B.8090303@zytor.com> <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org> <20100331185916.GA12306@elte.hu> <alpine.LRH.2.00.1004010952080.31957@tundra.namei.org> <4BB3DC4E.7030504@zytor.com> <alpine.LRH.2.00.1004011042460.32618@tundra.namei.org> <4BB3DF46.8080008@zytor.com> <alpine.LRH.2.00.1004011200020.365@tundra.namei.org> <20100401125210.GA2445@elte.hu> <20100408063236.GA23489@elte.hu>
-In-Reply-To: <20100408063236.GA23489@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 8 Apr 2010 03:05:54 -0400
+Date: Thu, 08 Apr 2010 00:05:57 -0700 (PDT)
+Message-Id: <20100408.000557.180546976.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: yanmin_zhang@linux.intel.com, cl@linux-foundation.org,
+       penberg@cs.helsinki.fi, netdev@vger.kernel.org, tj@kernel.org,
+       alex.shi@intel.com, linux-kernel@vger.kernel.org, ling.ma@intel.com,
+       tim.c.chen@intel.com, akpm@linux-foundation.org
+Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1270710019.2215.4.camel@edumazet-laptop>
+References: <1270702774.8141.49.camel@edumazet-laptop>
+	<1270705153.8141.58.camel@edumazet-laptop>
+	<1270710019.2215.4.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4BBD7FAE.014F:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2010 11:32 PM, Ingo Molnar wrote:
-> 
-> * Ingo Molnar <mingo@elte.hu> wrote:
-> 
->> * James Morris <jmorris@namei.org> wrote:
->>
->>> On Wed, 31 Mar 2010, H. Peter Anvin wrote:
->>>
->>>> On 03/31/2010 04:43 PM, James Morris wrote:
->>>>>>
->>>>>> Upgraded how?  The problem no longer happens?
->>>>>
->>>>> Upgraded to the latest rawhide userland -- I have not since tested with 
->>>>> bootmem off.  I'll try and do so again when I get a chance.
->>>>>
->>>>
->>>> That would be great.  The sooner the better, obviously.
->>>
->>> I'm not seeing any problems now, with current Linus and rawhide.  I'll leave 
->>> bootmem off and see if anything comes up again.
->>
->> (a current bootlog would still be nice)
->>
->> Dave, can you reproduce any of these problems with Linus's latest?
-> 
-> ping? Can you or Dave reproduce the bug with -rc3 or later kernels? (If not 
-> then it probably means that the bug you triggered was already fixed at the 
-> time you reported it, as hpa suspected.)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Thu, 08 Apr 2010 09:00:19 +0200
 
-James already reported -rc3 fix the problem for him.
+> If run individually, the tests results are more what we would expect
+> (slow), but if machine runs the two set of process concurrently, each
+> group runs much faster...
 
-Dave implied -rc3 fixed problem for him
+BTW, I just discovered (thanks to the function graph tracer, woo hoo!)
+that loopback TCP packets get fully checksum validated on receive.
 
-Thanks
+I'm trying to figure out why skb->ip_summed ends up being
+CHECKSUM_NONE in tcp_v4_rcv() even though it gets set to
+CHECKSUM_PARTIAL in tcp_sendmsg().
 
-Yinghai
+I wonder how much this accounts for some of the hackbench
+oddities... and other regressions in loopback tests we've seen.
+:-)
+
+Just FYI...
