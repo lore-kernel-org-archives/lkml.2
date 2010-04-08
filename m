@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933675Ab0DHUuc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 16:50:32 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:48639 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933234Ab0DHUu3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 16:50:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=FAKV7ZU1aG6OONnQrT4sXk3ssmwUnQIgdARP4Smr5u3B8qVfih94o1olyKIUmvjzjC
-         EqJxjhaOtsimLtPVWrW8AR6ZkqKQUwdw7oMq3+F9d48dAxd0dOF+HYktBelA3/V0m2ZL
-         RAhX9ldjGGkTv1ohz9fuxUNBNSZsb5Oafchog=
+	id S933664Ab0DHUwB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 16:52:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26522 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933241Ab0DHUv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 16:51:59 -0400
+Message-ID: <4BBE41AF.5050807@redhat.com>
+Date: Thu, 08 Apr 2010 16:50:55 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
 MIME-Version: 1.0
-In-Reply-To: <o2w12c511ca1004080919pa73e0552mec30ca706d9277a9@mail.gmail.com>
-References: <20100408131251.b69e2fa2.sfr@canb.auug.org.au>
-	 <alpine.DEB.2.00.1004080452150.11948@skynet.skynet.ie>
-	 <20100408141423.82e04416.sfr@canb.auug.org.au>
-	 <o2w12c511ca1004080919pa73e0552mec30ca706d9277a9@mail.gmail.com>
-Date: Thu, 8 Apr 2010 23:50:26 +0300
-Message-ID: <i2m548cdfc21004081350o2ba0ad71v23a10ab4c2156e0c@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the drm tree
-From: Pauli Nieminen <suokkos@gmail.com>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Dave Airlie <airlied@linux.ie>,
-       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jerome Glisse <jglisse@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       akpm@linux-foundation.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 02/13] mm: Revalidate anon_vma in page_lock_anon_vma()
+References: <20100408191737.296180458@chello.nl> <20100408192722.687144862@chello.nl>
+In-Reply-To: <20100408192722.687144862@chello.nl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 8, 2010 at 7:19 PM, Tony Luck <tony.luck@gmail.com> wrote:
-> Does anyone else see:
+On 04/08/2010 03:17 PM, Peter Zijlstra wrote:
+> There is nothing preventing the anon_vma from being detached while we
+> are spinning to acquire the lock. Most (all?) current users end up
+> calling something like vma_address(page, vma) on it, which has a
+> fairly good chance of weeding out wonky vmas.
 >
-> drivers/gpu/drm/ttm/ttm_page_alloc.c: In function ‘ttm_page_alloc_debugfs’:
-> drivers/gpu/drm/ttm/ttm_page_alloc.c:830: error: implicit declaration
-> of function ‘seq_printf’
+> However suppose the anon_vma got freed and re-used while we were
+> waiting to acquire the lock, and the new anon_vma fits with the
+> page->index (because that is the only thing vma_address() uses to
+> determine if the page fits in a particular vma, we could end up
+> traversing faulty anon_vma chains.
 >
-> when building the next-20100408 tag?
+> Close this hole for good by re-validating that page->mapping still
+> holds the very same anon_vma pointer after we acquire the lock, if not
+> be utterly paranoid and retry the whole operation (which will very
+> likely bail, because it's unlikely the page got attached to a different
+> anon_vma in the meantime).
 >
-> -Tony
->
+> Signed-off-by: Peter Zijlstra<a.p.zijlstra@chello.nl>
+> Cc: Hugh Dickins<hugh.dickins@tiscali.co.uk>
+> Cc: Linus Torvalds<torvalds@linux-foundation.org>
 
-http://marc.info/?l=dri-devel&m=127067975811418&w=2
+Reviewed-by: Rik van Riel <riel@redhat.com>
