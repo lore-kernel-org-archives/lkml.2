@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab0DHENU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 00:13:20 -0400
-Received: from hera.kernel.org ([140.211.167.34]:53244 "EHLO hera.kernel.org"
+	id S1751874Ab0DHEOc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 00:14:32 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:50366 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751506Ab0DHEMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 00:12:22 -0400
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org, graff.yang@gmail.com, dhowells@redhat.com,
-       akpm@linux-foundation.org, uclinux-dist-devel@blackfin.uclinux.org,
-       sonic.adi@gmail.com, cl@linux-foundation.org, mingo@elte.hu
-Subject: percpu: implement nommu support
-Date: Thu,  8 Apr 2010 13:11:00 +0900
-Message-Id: <1270699865-16954-1-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.6.4.2
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 08 Apr 2010 04:11:15 +0000 (UTC)
+	id S1751451Ab0DHEO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 00:14:28 -0400
+Date: Thu, 8 Apr 2010 14:14:23 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Pauli Nieminen <suokkos@gmail.com>, Jerome Glisse <jglisse@redhat.com>
+Subject: Re: linux-next: build failure after merge of the drm tree
+Message-Id: <20100408141423.82e04416.sfr@canb.auug.org.au>
+In-Reply-To: <alpine.DEB.2.00.1004080452150.11948@skynet.skynet.ie>
+References: <20100408131251.b69e2fa2.sfr@canb.auug.org.au>
+	<alpine.DEB.2.00.1004080452150.11948@skynet.skynet.ie>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__8_Apr_2010_14_14_23_+1000_NCqBxpih1b58i6ub"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--Signature=_Thu__8_Apr_2010_14_14_23_+1000_NCqBxpih1b58i6ub
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patchset implements nommu support in percpu allocator.  Chunk
-alloc/free/(de)populate codes are separated into a separate file so
-that different flavor can be included depending on configuration.  The
-default vmalloc area based version now lives in percpu-vm.c and the
-new kernel memory based one lives in percpu-km.c and can be selected
-by CONFIG_NEED_PER_CPU_KM.
+Hi Dave,
 
-percpu-km allocates each chunk as contigus area in kernel memory using
-alloc_pages().  For details on usage and limitations, please read the
-patch description and comment in mm/percpu-km.c.
-
-This patchset contains the following five patches.
-
- 0001-percpu-factor-out-pcpu_addr_in_first-reserved_chunk-.patch
- 0002-percpu-reorganize-chunk-creation-and-destruction.patch
- 0003-percpu-misc-preparations-for-nommu-support.patch
- 0004-percpu-move-vmalloc-based-chunk-management-into-perc.patch
- 0005-percpu-implement-kernel-memory-based-chunk-allocatio.patch
-
-0001-0003 prepare for future changes - factor things out, relocate,
-clean up.
-
-0004 separates out the default vmalloc based chunk management into
-percpu-vm.c.
-
-0005 implements percpu-km.c.
-
-The following git branch contains these patches.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git nommu
-
-I've tested percpu-km on x86_64 w/ configuration and percpu init code
-massged.  Sonic Zhang tested it on blackfin and reports it works fine
-there too (Sonic, please base further tests on these new patches).
-I'll wait several days for review and further test results and then
-push these patches to linux-next.
-
-This patchset contains the following changes.
-
- mm/percpu-km.c |  104 ++++++++++
- mm/percpu-vm.c |  451 ++++++++++++++++++++++++++++++++++++++++++++
- mm/percpu.c    |  584 ++++++++++-----------------------------------------------
- 3 files changed, 664 insertions(+), 475 deletions(-)
+On Thu, 8 Apr 2010 04:52:44 +0100 (IST) Dave Airlie <airlied@linux.ie> wrot=
+e:
+>
+> applied for next drm-next.
 
 Thanks.
 
---
-tejun
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__8_Apr_2010_14_14_23_+1000_NCqBxpih1b58i6ub
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAku9WB8ACgkQjjKRsyhoI8wJWwCgqVpuLasgO6zUETS5Fz0aD6zL
+zhMAoK+3oaxQ6zIxg2h5EV57v6aySi5r
+=zo3J
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__8_Apr_2010_14_14_23_+1000_NCqBxpih1b58i6ub--
