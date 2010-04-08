@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758282Ab0DHB2Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 21:28:24 -0400
-Received: from mail-qy0-f179.google.com ([209.85.221.179]:60089 "EHLO
-	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954Ab0DHB2X (ORCPT
+	id S1758292Ab0DHBie (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 21:38:34 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:34239 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758274Ab0DHBid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 21:28:23 -0400
+	Wed, 7 Apr 2010 21:38:33 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:reply-to:from:date:message-id:subject:to:cc
-         :content-type;
-        b=ToydaWDr9RmTtd5g1/XeqBY9HTIGna3x8VrPCjEWIwIlR93LRaY7rfjB5+qwxEI8OF
-         ZDIUMUNSbYcEBWgt3ha7OXy7xt1Ev9jW3UE150st8XM6eKxQsFMrdpDJHG4Bn3aH2N9Z
-         Pu0NiNU1cCNMVqtKhLtQakqrEoTGGcnVS7rLE=
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=aGtWNsY6xDVKkyyp8qYQkZz07oHJjTEJOfqYbHdeqUajB3JfEAMunW38DdHG5oo69X
+         SEZ+hNuAxWovJWVETvTRUgoH3/CJnDMLzbHJpc6k+xiolBgFndRutVFVG7W6GsiVNNSK
+         mPEt9tDSw6Qkk5Fh9dIoZNVZRWCqYdaI35Mgo=
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-From: Axel Lin <axel.lin@gmail.com>
-Date: Thu, 8 Apr 2010 09:28:02 +0800
-Message-ID: <p2z427d64721004071828w41cedeb5j1079ed4cdd04fbf2@mail.gmail.com>
-Subject: [PATCH] stmmac: Fix incorrect resource calculation
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-       "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Wed, 7 Apr 2010 19:38:32 -0600
+Message-ID: <x2sb985fb501004071838z51a832dftdfaece15e5a0e154@mail.gmail.com>
+Subject: [PATCH] increase pipe size/buffers/atomicity :D
+From: brian <knotwurk@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The size calculation is not correct.  It should be end - start + 1.
-Use resource_size for {request/release}_mem_region and ioremap.
+(tested and working with 2.6.32.8 kernel, on a Athlon/686)
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/net/stmmac/stmmac_main.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/stmmac/stmmac_main.c b/drivers/net/stmmac/stmmac_main.c
-index a214a16..f613a07 100644
---- a/drivers/net/stmmac/stmmac_main.c
-+++ b/drivers/net/stmmac/stmmac_main.c
-@@ -1686,7 +1686,7 @@ static int stmmac_dvr_probe(struct platform_device *pdev)
-        }
-        pr_info("done!\n");
+--- include/linux/pipe_fs_i.h.orig      2010-04-06 22:56:51.000000000 -0500
++++ include/linux/pipe_fs_i.h   2010-04-06 22:56:58.000000000 -0500
+@@ -3,7 +3,7 @@
 
--       if (!request_mem_region(res->start, (res->end - res->start),
-+       if (!request_mem_region(res->start, resource_size(res),
-                                pdev->name)) {
-                pr_err("%s: ERROR: memory allocation failed"
-                       "cannot get the I/O addr 0x%x\n",
-@@ -1695,7 +1695,7 @@ static int stmmac_dvr_probe(struct platform_device *pdev)
-                goto out;
-        }
+ #define PIPEFS_MAGIC 0x50495045
 
--       addr = ioremap(res->start, (res->end - res->start));
-+       addr = ioremap(res->start, resource_size(res));
-        if (!addr) {
-                pr_err("%s: ERROR: memory mapping failed \n", __func__);
-                ret = -ENOMEM;
-@@ -1775,7 +1775,7 @@ static int stmmac_dvr_probe(struct platform_device *pdev)
- out:
-        if (ret < 0) {
-                platform_set_drvdata(pdev, NULL);
--               release_mem_region(res->start, (res->end - res->start));
-+               release_mem_region(res->start, resource_size(res));
-                if (addr != NULL)
-                        iounmap(addr);
-        }
-@@ -1813,7 +1813,7 @@ static int stmmac_dvr_remove(struct platform_device *pdev)
+-#define PIPE_BUFFERS (16)
++#define PIPE_BUFFERS (32)
 
-        iounmap((void *)ndev->base_addr);
-        res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--       release_mem_region(res->start, (res->end - res->start));
-+       release_mem_region(res->start, resource_size(res));
+ #define PIPE_BUF_FLAG_LRU      0x01    /* page is on the LRU */
+ #define PIPE_BUF_FLAG_ATOMIC   0x02    /* was atomically mapped */
+--- include/asm-generic/page.h.orig     2010-04-06 22:57:08.000000000 -0500
++++ include/asm-generic/page.h  2010-04-06 22:57:23.000000000 -0500
+@@ -12,7 +12,7 @@
 
-        free_netdev(ndev);
+ /* PAGE_SHIFT determines the page size */
 
--- 
-1.5.4.3
+-#define PAGE_SHIFT     12
++#define PAGE_SHIFT     13
+ #ifdef __ASSEMBLY__
+ #define PAGE_SIZE      (1 << PAGE_SHIFT)
+ #else
+--- include/linux/limits.h.orig 2010-04-06 22:54:15.000000000 -0500
++++ include/linux/limits.h      2010-04-06 22:56:28.000000000 -0500
+@@ -10,7 +10,7 @@
+ #define MAX_INPUT        255   /* size of the type-ahead buffer */
+ #define NAME_MAX         255   /* # chars in a file name */
+ #define PATH_MAX        4096   /* # chars in a path name including nul */
+-#define PIPE_BUF        4096   /* # bytes in atomic write to a pipe */
++#define PIPE_BUF        8192   /* # bytes in atomic write to a pipe */
+ #define XATTR_NAME_MAX   255   /* # chars in an extended attribute name */
+ #define XATTR_SIZE_MAX 65536   /* size of an extended attribute value (64k) */
+ #define XATTR_LIST_MAX 65536   /* size of extended attribute namelist (64k) */
