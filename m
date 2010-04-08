@@ -1,24 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539Ab0DHHwu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 03:52:50 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9518 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751001Ab0DHHws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 03:52:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,169,1270450800"; 
-   d="scan'208";a="611226150"
+	id S1751904Ab0DHHyk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 03:54:40 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:53789 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092Ab0DHHyg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 03:54:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=GwgNONEoPsQxVOd/pShgaqG1tuF+zBu5QxkXg0KBnKtw+V5/FcD9DOGmTJpUX/pstK
+         sLzdXaS3Bxp2iEmnT/YbyinloT87Y/ajpsGShDCJp/2O/4d2QZhTqnewLIzZM66gLmYh
+         BJgchk85zhSssASL4po2dn1bttlbUrVNysLVY=
 Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
 Cc: Christoph Lameter <cl@linux-foundation.org>,
        Pekka Enberg <penberg@cs.helsinki.fi>, netdev <netdev@vger.kernel.org>,
        Tejun Heo <tj@kernel.org>, alex.shi@intel.com,
        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
        "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1270710019.2215.4.camel@edumazet-laptop>
+In-Reply-To: <1270713290.2078.402.camel@ymzhang.sh.intel.com>
 References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
 	 <alpine.DEB.2.00.1003250942080.2670@router.home>
 	 <1269570902.9614.92.camel@alexs-hp.sh.intel.com>
@@ -41,103 +46,25 @@ References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
 	 <1270702774.8141.49.camel@edumazet-laptop>
 	 <1270705153.8141.58.camel@edumazet-laptop>
 	 <1270710019.2215.4.camel@edumazet-laptop>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 08 Apr 2010 15:54:50 +0800
-Message-Id: <1270713290.2078.402.camel@ymzhang.sh.intel.com>
+	 <1270713290.2078.402.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 08 Apr 2010 09:54:32 +0200
+Message-ID: <1270713272.2215.6.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-08 at 09:00 +0200, Eric Dumazet wrote:
-> Le jeudi 08 avril 2010 à 07:39 +0200, Eric Dumazet a écrit :
-> > I suspect NUMA is completely out of order on current kernel, or my
-> > Nehalem machine NUMA support is a joke
-> > 
-> > # numactl --hardware
-> > available: 2 nodes (0-1)
-> > node 0 size: 3071 MB
-> > node 0 free: 2637 MB
-> > node 1 size: 3062 MB
-> > node 1 free: 2909 MB
-> > 
-> > 
-> > # cat try.sh
-> > hackbench 50 process 5000
-> > numactl --cpubind=0 --membind=0 hackbench 25 process 5000 >RES0 &
-> > numactl --cpubind=1 --membind=1 hackbench 25 process 5000 >RES1 &
-> > wait
-> > echo node0 results
-> > cat RES0
-> > echo node1 results
-> > cat RES1
-> > 
-> > numactl --cpubind=0 --membind=1 hackbench 25 process 5000 >RES0_1 &
-> > numactl --cpubind=1 --membind=0 hackbench 25 process 5000 >RES1_0 &
-> > wait
-> > echo node0 on mem1 results
-> > cat RES0_1
-> > echo node1 on mem0 results
-> > cat RES1_0
-> > 
-> > # ./try.sh
-> > Running with 50*40 (== 2000) tasks.
-> > Time: 16.865
-> > node0 results
-> > Running with 25*40 (== 1000) tasks.
-> > Time: 16.767
-> > node1 results
-> > Running with 25*40 (== 1000) tasks.
-> > Time: 16.564
-> > node0 on mem1 results
-> > Running with 25*40 (== 1000) tasks.
-> > Time: 16.814
-> > node1 on mem0 results
-> > Running with 25*40 (== 1000) tasks.
-> > Time: 16.896
-> 
-> If run individually, the tests results are more what we would expect
-> (slow), but if machine runs the two set of process concurrently, each
-> group runs much faster...
-If there are 2 nodes in the machine, processes on node 0 will contact MCH of
-node 1 to access memory of node 1. I suspect the MCH of node 1 might enter
-a power-saving mode when all the cpus of node 1 are free. So the transactions
-from MCH 1 to MCH 0 has a larger latency.
+Le jeudi 08 avril 2010 Ã  15:54 +0800, Zhang, Yanmin a Ã©crit :
 
+> If there are 2 nodes in the machine, processes on node 0 will contact MCH of
+> node 1 to access memory of node 1. I suspect the MCH of node 1 might enter
+> a power-saving mode when all the cpus of node 1 are free. So the transactions
+> from MCH 1 to MCH 0 has a larger latency.
 > 
-> 
-> # numactl --cpubind=0 --membind=1 hackbench 25 process 5000
-> Running with 25*40 (== 1000) tasks.
-> Time: 21.810
-> 
-> # numactl --cpubind=1 --membind=0 hackbench 25 process 5000
-> Running with 25*40 (== 1000) tasks.
-> Time: 20.679
-> 
-> # numactl --cpubind=0 --membind=1 hackbench 25 process 5000 >RES0_1 &
-> [1] 9177
-> # numactl --cpubind=1 --membind=0 hackbench 25 process 5000 >RES1_0 &
-> [2] 9196
-> # wait
-> [1]-  Done                    numactl --cpubind=0 --membind=1 hackbench
-> 25 process 5000 >RES0_1
-> [2]+  Done                    numactl --cpubind=1 --membind=0 hackbench
-> 25 process 5000 >RES1_0
-> # echo node0 on mem1 results
-> node0 on mem1 results
-> # cat RES0_1
-> Running with 25*40 (== 1000) tasks.
-> Time: 13.818
-> # echo node1 on mem0 results
-> node1 on mem0 results
-> # cat RES1_0
-> Running with 25*40 (== 1000) tasks.
-> Time: 11.633
-> 
-> Oh well...
-> 
-> 
+
+Hmm, thanks for the hint, I will investigate this.
 
 
