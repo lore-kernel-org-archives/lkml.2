@@ -1,77 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758619Ab0DHL2f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 07:28:35 -0400
-Received: from smtp1.infomaniak.ch ([84.16.68.89]:51743 "EHLO
-	smtp1.infomaniak.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758569Ab0DHL2c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 07:28:32 -0400
-X-Greylist: delayed 1631 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Apr 2010 07:28:32 EDT
-Message-ID: <4BBDB6CB.6000202@free.fr>
-Date: Thu, 08 Apr 2010 12:58:19 +0200
-From: =?UTF-8?B?UmFwaGHDq2wgRG91cnNlbmF1ZA==?= <rdoursenaud@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100406 Thunderbird/3.0.3
+	id S1753940Ab0DHLco (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 07:32:44 -0400
+Received: from cantor.suse.de ([195.135.220.2]:51716 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751703Ab0DHLcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 07:32:43 -0400
+Date: Thu, 8 Apr 2010 13:32:41 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?Rapha=EBl_Doursenaud?= <rdoursenaud@free.fr>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2.6.33.2 1/1] hid: add support for cymotion master solar
+ keyboard
+In-Reply-To: <4BBDB6CB.6000202@free.fr>
+Message-ID: <alpine.LNX.2.00.1004081332320.8345@pobox.suse.cz>
+References: <4BBDB6CB.6000202@free.fr>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: jkosina@suse.cz
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH 2.6.33.2 1/1] hid: add support for cymotion master solar keyboard
-X-Enigmail-Version: 1.0.1
-Content-Type: multipart/mixed;
- boundary="------------020604080200020203060107"
-X-Antivirus: Dr.Web (R) for Mail Servers on smtp1 host
-X-Antivirus-Code: 100000
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020604080200020203060107
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+On Thu, 8 Apr 2010, Raphaël Doursenaud wrote:
 
-Support the solar version of the Cherry's cymotion keyboard line using
-existing cherry driver.
+> Support the solar version of the Cherry's cymotion keyboard line using
+> existing cherry driver.
+> 
+> Signed-off-by: Raphaël Doursenaud <rdoursenaud@free.fr>
 
-Signed-off-by: Raphaël Doursenaud <rdoursenaud@free.fr>
+Applied, thank you Raphaël.
 
---------------020604080200020203060107
-Content-Type: text/plain;
- name="cymotionsolar.patch"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="cymotionsolar.patch"
-
-LS0tIGxpbnV4LTIuNi4zMy4yLnZhbmlsbGEvZHJpdmVycy9oaWQvaGlkLWNoZXJyeS5jCTIw
-MTAtMDItMjQgMTk6NTI6MTcuMDAwMDAwMDAwICswMTAwCisrKyBsaW51eC0yLjYuMzMuMi5j
-aGVycnkvZHJpdmVycy9oaWQvaGlkLWNoZXJyeS5jCTIwMTAtMDQtMDIgMDQ6MzY6MDguOTU1
-OTI1ODM4ICswMjAwCkBAIC01OSw2ICs1OSw3IEBAIHN0YXRpYyBpbnQgY2hfaW5wdXRfbWFw
-cGluZyhzdHJ1Y3QgaGlkX2QKIAogc3RhdGljIGNvbnN0IHN0cnVjdCBoaWRfZGV2aWNlX2lk
-IGNoX2RldmljZXNbXSA9IHsKIAl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQ0hF
-UlJZLCBVU0JfREVWSUNFX0lEX0NIRVJSWV9DWU1PVElPTikgfSwKKwl7IEhJRF9VU0JfREVW
-SUNFKFVTQl9WRU5ET1JfSURfQ0hFUlJZLCBVU0JfREVWSUNFX0lEX0NIRVJSWV9DWU1PVElP
-Tl9TT0xBUikgfSwKIAl7IH0KIH07CiBNT0RVTEVfREVWSUNFX1RBQkxFKGhpZCwgY2hfZGV2
-aWNlcyk7Ci0tLSBsaW51eC0yLjYuMzMuMi52YW5pbGxhL2RyaXZlcnMvaGlkL2hpZC1jb3Jl
-LmMJMjAxMC0wNC0wNyAyMTo0NjozMS41ODMxMTUzNzIgKzAyMDAKKysrIGxpbnV4LTIuNi4z
-My4zLmNoZXJyeS9kcml2ZXJzL2hpZC9oaWQtY29yZS5jCTIwMTAtMDQtMDIgMDQ6MzM6MDUu
-Nzk2OTU1MDQxICswMjAwCkBAIC0xMjkyLDYgKzEyOTIsNyBAQCBzdGF0aWMgY29uc3Qgc3Ry
-dWN0IGhpZF9kZXZpY2VfaWQgaGlkX2JsCiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9S
-X0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX0dFWVNFUjFfVFBfT05MWSkgfSwKIAl7
-IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQkVMS0lOLCBVU0JfREVWSUNFX0lEX0ZM
-SVBfS1ZNKSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9DSEVSUlksIFVT
-Ql9ERVZJQ0VfSURfQ0hFUlJZX0NZTU9USU9OKSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNC
-X1ZFTkRPUl9JRF9DSEVSUlksIFVTQl9ERVZJQ0VfSURfQ0hFUlJZX0NZTU9USU9OX1NPTEFS
-KSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9DSElDT05ZLCBVU0JfREVW
-SUNFX0lEX0NISUNPTllfVEFDVElDQUxfUEFEKSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNC
-X1ZFTkRPUl9JRF9DWVBSRVNTLCBVU0JfREVWSUNFX0lEX0NZUFJFU1NfQkFSQ09ERV8xKSB9
-LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9DWVBSRVNTLCBVU0JfREVWSUNF
-X0lEX0NZUFJFU1NfQkFSQ09ERV8yKSB9LAotLS0gbGludXgtMi42LjMzLjIudmFuaWxsYS9k
-cml2ZXJzL2hpZC9oaWQtaWRzLmgJMjAxMC0wNC0wNyAyMTo0NjozMS41ODMxMTUzNzIgKzAy
-MDAKKysrIGxpbnV4LTIuNi4zMy4xLmNoZXJyeS9kcml2ZXJzL2hpZC9oaWQtaWRzLmgJMjAx
-MC0wNC0wMiAwNDozMToyMS42OTY4MTQyMzkgKzAyMDAKQEAgLTEyNCw2ICsxMjQsNyBAQAog
-CiAjZGVmaW5lIFVTQl9WRU5ET1JfSURfQ0hFUlJZCQkweDA0NmEKICNkZWZpbmUgVVNCX0RF
-VklDRV9JRF9DSEVSUllfQ1lNT1RJT04JMHgwMDIzCisjZGVmaW5lIFVTQl9ERVZJQ0VfSURf
-Q0hFUlJZX0NZTU9USU9OX1NPTEFSCTB4MDAyNwogCiAjZGVmaW5lIFVTQl9WRU5ET1JfSURf
-Q0hJQwkJMHgwNWZlCiAjZGVmaW5lIFVTQl9ERVZJQ0VfSURfQ0hJQ19HQU1FUEFECTB4MDAx
-NAo=
---------------020604080200020203060107--
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
