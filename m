@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933116Ab0DHSRb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 14:17:31 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36683 "EHLO arroyo.ext.ti.com"
+	id S933128Ab0DHSRq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 14:17:46 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36682 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933085Ab0DHSRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 14:17:20 -0400
+	id S933084Ab0DHSRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 14:17:19 -0400
 From: pavan_savoy@ti.com
 To: gregkh@suse.de, alan@lxorguk.ukuu.org.uk
 Cc: linux-kernel@vger.kernel.org, npelly@google.com, pavan_savoy@yahoo.co.in,
        Pavan Savoy <pavan_savoy@ti.com>
-Subject: [PATCH] bluetooth: BT driver using ST for TI combo devices
-Date: Thu,  8 Apr 2010 13:16:59 -0500
-Message-Id: <1270750619-19174-9-git-send-email-pavan_savoy@ti.com>
+Subject: [PATCH] drivers:staging: sources for HCI LL PM protocol
+Date: Thu,  8 Apr 2010 13:16:55 -0500
+Message-Id: <1270750619-19174-5-git-send-email-pavan_savoy@ti.com>
 X-Mailer: git-send-email 1.5.6.3
-In-Reply-To: <1270750619-19174-8-git-send-email-pavan_savoy@ti.com>
+In-Reply-To: <1270750619-19174-4-git-send-email-pavan_savoy@ti.com>
 References: <1270750619-19174-1-git-send-email-pavan_savoy@ti.com>
  <1270750619-19174-2-git-send-email-pavan_savoy@ti.com>
  <1270750619-19174-3-git-send-email-pavan_savoy@ti.com>
  <1270750619-19174-4-git-send-email-pavan_savoy@ti.com>
- <1270750619-19174-5-git-send-email-pavan_savoy@ti.com>
- <1270750619-19174-6-git-send-email-pavan_savoy@ti.com>
- <1270750619-19174-7-git-send-email-pavan_savoy@ti.com>
- <1270750619-19174-8-git-send-email-pavan_savoy@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pavan Savoy <pavan_savoy@ti.com>
 
-This is BlueZ driver making use of Shared Transport line
-discipline to communicate with the chip.
+Texas Instruments BT, FM and GPS combo chips/drivers
+make use of a single TTY to communicate with the chip.
+This module constitutes the proprietary power management
+protocol from TI for the BT/FM/GPS combo chips
 
 Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
 ---
- drivers/staging/ti-st/bt_drv.c |  502 ++++++++++++++++++++++++++++++++++++++++
- drivers/staging/ti-st/bt_drv.h |   61 +++++
- 2 files changed, 563 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/ti-st/bt_drv.c
- create mode 100644 drivers/staging/ti-st/bt_drv.h
+ drivers/staging/ti-st/st_ll.c |  147 +++++++++++++++++++++++++++++++++++++++++
+ drivers/staging/ti-st/st_ll.h |   62 +++++++++++++++++
+ 2 files changed, 209 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/ti-st/st_ll.c
+ create mode 100644 drivers/staging/ti-st/st_ll.h
 
-diff --git a/drivers/staging/ti-st/bt_drv.c b/drivers/staging/ti-st/bt_drv.c
+diff --git a/drivers/staging/ti-st/st_ll.c b/drivers/staging/ti-st/st_ll.c
 new file mode 100644
-index 0000000..d8420b5
+index 0000000..0685a10
 --- /dev/null
-+++ b/drivers/staging/ti-st/bt_drv.c
-@@ -0,0 +1,502 @@
++++ b/drivers/staging/ti-st/st_ll.c
+@@ -0,0 +1,147 @@
 +/*
-+ *  Texas Instrument's Bluetooth Driver For Shared Transport.
-+ *
-+ *  Bluetooth Driver acts as interface between HCI CORE and
-+ *  TI Shared Transport Layer.
-+ *
++ *  Shared Transport driver
++ *	HCI-LL module responsible for TI proprietary HCI_LL protocol
 + *  Copyright (C) 2009 Texas Instruments
 + *
 + *  This program is free software; you can redistribute it and/or modify
@@ -69,496 +64,141 @@ index 0000000..d8420b5
 + *
 + */
 +
-+#include <net/bluetooth/bluetooth.h>
-+#include <net/bluetooth/hci_core.h>
++#define pr_fmt(fmt) "(stll) :" fmt
++#include "st_ll.h"
 +
-+#include "st.h"
-+#include "bt_drv.h"
-+
-+/* Define this macro to get debug msg */
-+#undef DEBUG
-+
-+#ifdef DEBUG
-+#define BT_DRV_DBG(fmt, arg...)  printk(KERN_INFO "(btdrv):"fmt"\n" , ## arg)
-+#define BTDRV_API_START()        printk(KERN_INFO "(btdrv): %s Start\n", \
-+	__func__)
-+#define BTDRV_API_EXIT(errno)    printk(KERN_INFO "(btdrv): %s Exit(%d)\n", \
-+	__func__, errno)
-+#else
-+#define BT_DRV_DBG(fmt, arg...)
-+#define BTDRV_API_START()
-+#define BTDRV_API_EXIT(errno)
-+#endif
-+
-+#define BT_DRV_ERR(fmt, arg...)  printk(KERN_ERR "(btdrv):"fmt"\n" , ## arg)
-+
-+static int reset;
-+static struct hci_st *hst;
-+
-+/* Increments HCI counters based on pocket ID (cmd,acl,sco) */
-+static inline void hci_st_tx_complete(struct hci_st *hst, int pkt_type)
++/**********************************************************************/
++/* internal functions */
++static void send_ll_cmd(struct st_data_s *st_data,
++	unsigned char cmd)
 +{
-+	struct hci_dev *hdev;
 +
-+	BTDRV_API_START();
-+
-+	hdev = hst->hdev;
-+
-+	/* Update HCI stat counters */
-+	switch (pkt_type) {
-+	case HCI_COMMAND_PKT:
-+		hdev->stat.cmd_tx++;
-+		break;
-+
-+	case HCI_ACLDATA_PKT:
-+		hdev->stat.acl_tx++;
-+		break;
-+
-+	case HCI_SCODATA_PKT:
-+		hdev->stat.cmd_tx++;
-+		break;
-+	}
-+
-+	BTDRV_API_EXIT(0);
-+}
-+
-+/* ------- Interfaces to Shared Transport ------ */
-+
-+/* Called by ST layer to indicate protocol registration completion
-+ * status.hci_st_open() function will wait for signal from this
-+ * API when st_register() function returns ST_PENDING.
-+ */
-+static void hci_st_registration_completion_cb(char data)
-+{
-+	BTDRV_API_START();
-+
-+	/* hci_st_open() function needs value of 'data' to know
-+	 * the registration status(success/fail),So have a back
-+	 * up of it.
-+	 */
-+	hst->streg_cbdata = data;
-+
-+	/* Got a feedback from ST for BT driver registration
-+	 * request.Wackup hci_st_open() function to continue
-+	 * it's open operation.
-+	 */
-+	complete(&hst->wait_for_btdrv_reg_completion);
-+
-+	BTDRV_API_EXIT(0);
-+}
-+
-+/* Called by Shared Transport layer when receive data is
-+ * available */
-+static long hci_st_receive(struct sk_buff *skb)
-+{
-+	int err;
-+	int len;
-+
-+	BTDRV_API_START();
-+
-+	err = 0;
-+	len = 0;
-+
-+	if (skb == NULL) {
-+		BT_DRV_ERR("Invalid SKB received from ST");
-+		BTDRV_API_EXIT(-EFAULT);
-+		return -EFAULT;
-+	}
-+	if (!hst) {
-+		kfree_skb(skb);
-+		BT_DRV_ERR("Invalid hci_st memory,freeing SKB");
-+		BTDRV_API_EXIT(-EFAULT);
-+		return -EFAULT;
-+	}
-+	if (!test_bit(BT_DRV_RUNNING, &hst->flags)) {
-+		kfree_skb(skb);
-+		BT_DRV_ERR("Device is not running,freeing SKB");
-+		BTDRV_API_EXIT(-EINVAL);
-+		return -EINVAL;
-+	}
-+
-+	len = skb->len;
-+	skb->dev = (struct net_device *)hst->hdev;
-+
-+	/* Forward skb to HCI CORE layer */
-+	err = hci_recv_frame(skb);
-+	if (err) {
-+		kfree_skb(skb);
-+		BT_DRV_ERR("Unable to push skb to HCI CORE(%d),freeing SKB",
-+			   err);
-+		BTDRV_API_EXIT(err);
-+		return err;
-+	}
-+	hst->hdev->stat.byte_rx += len;
-+
-+	BTDRV_API_EXIT(0);
-+	return 0;
-+}
-+
-+/* ------- Interfaces to HCI layer ------ */
-+
-+/* Called from HCI core to initialize the device */
-+static int hci_st_open(struct hci_dev *hdev)
-+{
-+	static struct st_proto_s hci_st_proto;
-+	unsigned long timeleft;
-+	int err;
-+
-+	BTDRV_API_START();
-+
-+	err = 0;
-+
-+	BT_DRV_DBG("%s %p", hdev->name, hdev);
-+
-+	/* Already registered with ST ? */
-+	if (test_bit(BT_ST_REGISTERED, &hst->flags)) {
-+		BT_DRV_ERR("Registered with ST already,open called again?");
-+		BTDRV_API_EXIT(0);
-+		return 0;
-+	}
-+
-+	/* Populate BT driver info required by ST */
-+	memset(&hci_st_proto, 0, sizeof(hci_st_proto));
-+
-+	/* BT driver ID */
-+	hci_st_proto.type = ST_BT;
-+
-+	/* Receive function which called from ST */
-+	hci_st_proto.recv = hci_st_receive;
-+
-+	/* Packet match function may used in future */
-+	hci_st_proto.match_packet = NULL;
-+
-+	/* Callback to be called when registration is pending */
-+	hci_st_proto.reg_complete_cb = hci_st_registration_completion_cb;
-+
-+	/* This is write function pointer of ST. BT driver will make use of this
-+	 * for sending any packets to chip. ST will assign and give to us, so
-+	 * make it as NULL */
-+	hci_st_proto.write = NULL;
-+
-+	/* Register with ST layer */
-+	err = st_register(&hci_st_proto);
-+	if (err == ST_ERR_PENDING) {
-+		/* Prepare wait-for-completion handler data structures.
-+		 * Needed to syncronize this and st_registration_completion_cb()
-+		 * functions.
-+		 */
-+		init_completion(&hst->wait_for_btdrv_reg_completion);
-+
-+		/* Reset ST registration callback status flag , this value
-+		 * will be updated in hci_st_registration_completion_cb()
-+		 * function whenever it called from ST driver.
-+		 */
-+		hst->streg_cbdata = -EINPROGRESS;
-+
-+		/* ST is busy with other protocol registration(may be busy with
-+		 * firmware download).So,Wait till the registration callback
-+		 * (passed as a argument to st_register() function) getting
-+		 * called from ST.
-+		 */
-+		BT_DRV_DBG(" %s waiting for reg completion signal from ST",
-+			   __func__);
-+
-+		timeleft =
-+		    wait_for_completion_timeout
-+		    (&hst->wait_for_btdrv_reg_completion,
-+		     msecs_to_jiffies(BT_REGISTER_TIMEOUT));
-+		if (!timeleft) {
-+			BT_DRV_ERR("Timeout(%ld sec),didn't get reg"
-+				   "completion signal from ST",
-+				   BT_REGISTER_TIMEOUT / 1000);
-+			BTDRV_API_EXIT(-ETIMEDOUT);
-+			return -ETIMEDOUT;
-+		}
-+
-+		/* Is ST registration callback called with ERROR value? */
-+		if (hst->streg_cbdata != 0) {
-+			BT_DRV_ERR("ST reg completion CB called with invalid"
-+				   "status %d", hst->streg_cbdata);
-+			BTDRV_API_EXIT(-EAGAIN);
-+			return -EAGAIN;
-+		}
-+		err = 0;
-+	} else if (err == ST_ERR_FAILURE) {
-+		BT_DRV_ERR("st_register failed %d", err);
-+		BTDRV_API_EXIT(-EAGAIN);
-+		return -EAGAIN;
-+	}
-+
-+	/* Do we have proper ST write function? */
-+	if (hci_st_proto.write != NULL) {
-+		/* We need this pointer for sending any Bluetooth pkts */
-+		hst->st_write = hci_st_proto.write;
-+	} else {
-+		BT_DRV_ERR("failed to get ST write func pointer");
-+
-+		/* Undo registration with ST */
-+		err = st_unregister(ST_BT);
-+		if (err < 0)
-+			BT_DRV_ERR("st_unregister failed %d", err);
-+
-+		hst->st_write = NULL;
-+		BTDRV_API_EXIT(-EAGAIN);
-+		return -EAGAIN;
-+	}
-+
-+	/* Registration with ST layer is completed successfully,
-+	 * now chip is ready to accept commands from HCI CORE.
-+	 * Mark HCI Device flag as RUNNING
-+	 */
-+	set_bit(HCI_RUNNING, &hdev->flags);
-+
-+	/* Registration with ST successful */
-+	set_bit(BT_ST_REGISTERED, &hst->flags);
-+
-+	BTDRV_API_EXIT(err);
-+	return err;
-+}
-+
-+/* Close device */
-+static int hci_st_close(struct hci_dev *hdev)
-+{
-+	int err;
-+
-+	BTDRV_API_START();
-+
-+	err = 0;
-+
-+	/* Unregister from ST layer */
-+	if (test_and_clear_bit(BT_ST_REGISTERED, &hst->flags)) {
-+		err = st_unregister(ST_BT);
-+		if (err != ST_SUCCESS) {
-+			BT_DRV_ERR("st_unregister failed %d", err);
-+			BTDRV_API_EXIT(-EBUSY);
-+			return -EBUSY;
-+		}
-+	}
-+
-+	hst->st_write = NULL;
-+
-+	/* ST layer would have moved chip to inactive state.
-+	 * So,clear HCI device RUNNING flag.
-+	 */
-+	if (!test_and_clear_bit(HCI_RUNNING, &hdev->flags)) {
-+		BTDRV_API_EXIT(0);
-+		return 0;
-+	}
-+
-+	BTDRV_API_EXIT(err);
-+	return err;
-+}
-+
-+/* Called from HCI CORE , Sends frames to Shared Transport */
-+static int hci_st_send_frame(struct sk_buff *skb)
-+{
-+	struct hci_dev *hdev;
-+	struct hci_st *hst;
-+	long len;
-+
-+	BTDRV_API_START();
-+
-+	if (skb == NULL) {
-+		BT_DRV_ERR("Invalid skb received from HCI CORE");
-+		BTDRV_API_EXIT(-ENOMEM);
-+		return -ENOMEM;
-+	}
-+	hdev = (struct hci_dev *)skb->dev;
-+	if (!hdev) {
-+		BT_DRV_ERR("SKB received for invalid HCI Device (hdev=NULL)");
-+		BTDRV_API_EXIT(-ENODEV);
-+		return -ENODEV;
-+	}
-+	if (!test_bit(HCI_RUNNING, &hdev->flags)) {
-+		BT_DRV_ERR("Device is not running");
-+		BTDRV_API_EXIT(-EBUSY);
-+		return -EBUSY;
-+	}
-+
-+	hst = (struct hci_st *)hdev->driver_data;
-+
-+	/* Prepend skb with frame type */
-+	memcpy(skb_push(skb, 1), &bt_cb(skb)->pkt_type, 1);
-+
-+	BT_DRV_DBG(" %s: type %d len %d", hdev->name, bt_cb(skb)->pkt_type,
-+		   skb->len);
-+
-+	/* Insert skb to shared transport layer's transmit queue.
-+	 * Freeing skb memory is taken care in shared transport layer,
-+	 * so don't free skb memory here.
-+	 */
-+	if (!hst->st_write) {
-+		kfree_skb(skb);
-+		BT_DRV_ERR(" Can't write to ST, st_write null?");
-+		BTDRV_API_EXIT(-EAGAIN);
-+		return -EAGAIN;
-+	}
-+	len = hst->st_write(skb);
-+	if (len < 0) {
-+		/* Something went wrong in st write , free skb memory */
-+		kfree_skb(skb);
-+		BT_DRV_ERR(" ST write failed (%ld)", len);
-+		BTDRV_API_EXIT(-EAGAIN);
-+		return -EAGAIN;
-+	}
-+
-+	/* ST accepted our skb. So, Go ahead and do rest */
-+	hdev->stat.byte_tx += len;
-+	hci_st_tx_complete(hst, bt_cb(skb)->pkt_type);
-+
-+	BTDRV_API_EXIT(0);
-+	return 0;
-+}
-+
-+static void hci_st_destruct(struct hci_dev *hdev)
-+{
-+	BTDRV_API_START();
-+
-+	if (!hdev) {
-+		BT_DRV_ERR("Destruct called with invalid HCI Device"
-+			   "(hdev=NULL)");
-+		BTDRV_API_EXIT(0);
-+		return;
-+	}
-+
-+	BT_DRV_DBG("%s", hdev->name);
-+
-+	/* free hci_st memory */
-+	if (hdev->driver_data != NULL)
-+		kfree(hdev->driver_data);
-+
-+	BTDRV_API_EXIT(0);
++	pr_info("%s: writing %x", __func__, cmd);
++	st_int_write(st_data, &cmd, 1);
 +	return;
 +}
 +
-+/* Creates new HCI device */
-+static int hci_st_register_dev(struct hci_st *hst)
++static void ll_device_want_to_sleep(struct st_data_s *st_data)
 +{
-+	struct hci_dev *hdev;
++	pr_info("%s", __func__);
++	/* sanity check */
++	if (st_data->ll_state != ST_LL_AWAKE)
++		pr_err("ERR hcill: ST_LL_GO_TO_SLEEP_IND"
++			  "in state %ld", st_data->ll_state);
 +
-+	BTDRV_API_START();
++	send_ll_cmd(st_data, LL_SLEEP_ACK);
++	/* update state */
++	st_data->ll_state = ST_LL_ASLEEP;
++}
 +
-+	/* Initialize and register HCI device */
-+	hdev = hci_alloc_dev();
-+	if (!hdev) {
-+		BT_DRV_ERR("Can't allocate HCI device");
-+		BTDRV_API_EXIT(-ENOMEM);
-+		return -ENOMEM;
++static void ll_device_want_to_wakeup(struct st_data_s *st_data)
++{
++	/* diff actions in diff states */
++	switch (st_data->ll_state) {
++	case ST_LL_ASLEEP:
++		send_ll_cmd(st_data, LL_WAKE_UP_ACK);	/* send wake_ack */
++		break;
++	case ST_LL_ASLEEP_TO_AWAKE:
++		/* duplicate wake_ind */
++		pr_err("duplicate wake_ind while waiting for Wake ack");
++		break;
++	case ST_LL_AWAKE:
++		/* duplicate wake_ind */
++		pr_err("duplicate wake_ind already AWAKE");
++		break;
++	case ST_LL_AWAKE_TO_ASLEEP:
++		/* duplicate wake_ind */
++		pr_err("duplicate wake_ind");
++		break;
 +	}
-+	BT_DRV_DBG(" HCI device allocated. hdev= %p", hdev);
++	/* update state */
++	st_data->ll_state = ST_LL_AWAKE;
++}
 +
-+	hst->hdev = hdev;
-+	hdev->bus = HCI_UART;
-+	hdev->driver_data = hst;
-+	hdev->open = hci_st_open;
-+	hdev->close = hci_st_close;
-+	hdev->flush = NULL;
-+	hdev->send = hci_st_send_frame;
-+	hdev->destruct = hci_st_destruct;
-+	hdev->owner = THIS_MODULE;
++/**********************************************************************/
++/* functions invoked by ST Core */
 +
-+	if (reset)
-+		set_bit(HCI_QUIRK_NO_RESET, &hdev->quirks);
++/* called when ST Core wants to
++ * enable ST LL */
++void st_ll_enable(struct st_data_s *ll)
++{
++	ll->ll_state = ST_LL_AWAKE;
++}
 +
-+	if (hci_register_dev(hdev) < 0) {
-+		BT_DRV_ERR("Can't register HCI device");
-+		hci_free_dev(hdev);
-+		BTDRV_API_EXIT(-ENODEV);
-+		return -ENODEV;
++/* called when ST Core /local module wants to
++ * disable ST LL */
++void st_ll_disable(struct st_data_s *ll)
++{
++	ll->ll_state = ST_LL_INVALID;
++}
++
++/* called when ST Core wants to update the state */
++void st_ll_wakeup(struct st_data_s *ll)
++{
++	if (likely(ll->ll_state != ST_LL_AWAKE)) {
++		send_ll_cmd(ll, LL_WAKE_UP_IND);	/* WAKE_IND */
++		ll->ll_state = ST_LL_ASLEEP_TO_AWAKE;
++	} else {
++		/* don't send the duplicate wake_indication */
++		pr_err(" Chip already AWAKE ");
 +	}
++}
 +
-+	BT_DRV_DBG(" HCI device registered. hdev= %p", hdev);
-+	BTDRV_API_EXIT(0);
++/* called when ST Core wants the state */
++unsigned long st_ll_getstate(struct st_data_s *ll)
++{
++	pr_info(" returning state %ld", ll->ll_state);
++	return ll->ll_state;
++}
++
++/* called from ST Core, when a PM related packet arrives */
++unsigned long st_ll_sleep_state(struct st_data_s *st_data,
++	unsigned char cmd)
++{
++	switch (cmd) {
++	case LL_SLEEP_IND:	/* sleep ind */
++		pr_info("sleep indication recvd");
++		ll_device_want_to_sleep(st_data);
++		break;
++	case LL_SLEEP_ACK:	/* sleep ack */
++		pr_err("sleep ack rcvd: host shouldn't");
++		break;
++	case LL_WAKE_UP_IND:	/* wake ind */
++		pr_info("wake indication recvd");
++		ll_device_want_to_wakeup(st_data);
++		break;
++	case LL_WAKE_UP_ACK:	/* wake ack */
++		pr_info("wake ack rcvd");
++		st_data->ll_state = ST_LL_AWAKE;
++		break;
++	default:
++		pr_err(" unknown input/state ");
++		return ST_ERR_FAILURE;
++	}
++	return ST_SUCCESS;
++}
++
++/* Called from ST CORE to initialize ST LL */
++long st_ll_init(struct st_data_s *ll)
++{
++	/* set state to invalid */
++	ll->ll_state = ST_LL_INVALID;
 +	return 0;
 +}
 +
-+/* ------- Module Init interface ------ */
-+
-+static int __init bt_drv_init(void)
++/* Called from ST CORE to de-initialize ST LL */
++long st_ll_deinit(struct st_data_s *ll)
 +{
-+	int err;
-+
-+	BTDRV_API_START();
-+
-+	err = 0;
-+
-+	BT_DRV_DBG(" Bluetooth Driver Version %s", VERSION);
-+
-+	/* Allocate local resource memory */
-+	hst = kzalloc(sizeof(struct hci_st), GFP_KERNEL);
-+	if (!hst) {
-+		BT_DRV_ERR("Can't allocate control structure");
-+		BTDRV_API_EXIT(-ENFILE);
-+		return -ENFILE;
-+	}
-+
-+	/* Expose "hciX" device to user space */
-+	err = hci_st_register_dev(hst);
-+	if (err) {
-+		/* Release local resource memory */
-+		kfree(hst);
-+
-+		BT_DRV_ERR("Unable to expose hci0 device(%d)", err);
-+		BTDRV_API_EXIT(err);
-+		return err;
-+	}
-+	set_bit(BT_DRV_RUNNING, &hst->flags);
-+
-+	BTDRV_API_EXIT(err);
-+	return err;
++	return 0;
 +}
-+
-+/* ------- Module Exit interface ------ */
-+
-+static void __exit bt_drv_exit(void)
-+{
-+	BTDRV_API_START();
-+
-+	/* Deallocate local resource's memory  */
-+	if (hst) {
-+		struct hci_dev *hdev = hst->hdev;
-+
-+		if (hdev == NULL) {
-+			BT_DRV_ERR("Invalid hdev memory");
-+			kfree(hst);
-+		} else {
-+			hci_st_close(hdev);
-+			if (test_and_clear_bit(BT_DRV_RUNNING, &hst->flags)) {
-+				/* Remove HCI device (hciX) created
-+				 * in module init.
-+				 */
-+				hci_unregister_dev(hdev);
-+
-+				/* Free HCI device memory */
-+				hci_free_dev(hdev);
-+			}
-+		}
-+	}
-+	BTDRV_API_EXIT(0);
-+}
-+
-+module_init(bt_drv_init);
-+module_exit(bt_drv_exit);
-+
-+/* ------ Module Info ------ */
-+
-+module_param(reset, bool, 0644);
-+MODULE_PARM_DESC(reset, "Send HCI reset command on initialization");
-+MODULE_AUTHOR("Raja Mani <raja_mani@ti.com>");
-+MODULE_DESCRIPTION("Bluetooth Driver for TI Shared Transport" VERSION);
-+MODULE_VERSION(VERSION);
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/staging/ti-st/bt_drv.h b/drivers/staging/ti-st/bt_drv.h
+diff --git a/drivers/staging/ti-st/st_ll.h b/drivers/staging/ti-st/st_ll.h
 new file mode 100644
-index 0000000..a0beebe
+index 0000000..77dfbf0
 --- /dev/null
-+++ b/drivers/staging/ti-st/bt_drv.h
-@@ -0,0 +1,61 @@
++++ b/drivers/staging/ti-st/st_ll.h
+@@ -0,0 +1,62 @@
 +/*
-+ *  Texas Instrument's Bluetooth Driver For Shared Transport.
-+ *
-+ *  Bluetooth Driver acts as interface between HCI CORE and
-+ *  TI Shared Transport Layer.
++ *  Shared Transport Low Level (ST LL)
 + *
 + *  Copyright (C) 2009 Texas Instruments
 + *
@@ -577,44 +217,48 @@ index 0000000..a0beebe
 + *
 + */
 +
-+#ifndef _BT_DRV_H
-+#define _BT_DRV_H
++#ifndef ST_LL_H
++#define ST_LL_H
 +
-+/* Bluetooth Driver Version */
-+#define VERSION               "1.0"
++#include <linux/skbuff.h>
++#include "st.h"
++#include "st_core.h"
 +
-+/* Defines number of seconds to wait for reg completion
-+ * callback getting called from ST (in case,registration
-+ * with ST returns PENDING status)
++/* ST LL receiver states */
++#define ST_W4_PACKET_TYPE       0
++#define ST_BT_W4_EVENT_HDR      1
++#define ST_BT_W4_ACL_HDR        2
++#define ST_BT_W4_SCO_HDR        3
++#define ST_BT_W4_DATA           4
++#define ST_FM_W4_EVENT_HDR      5
++#define ST_GPS_W4_EVENT_HDR	6
++
++/* ST LL state machines */
++#define ST_LL_ASLEEP               0
++#define ST_LL_ASLEEP_TO_AWAKE      1
++#define ST_LL_AWAKE                2
++#define ST_LL_AWAKE_TO_ASLEEP      3
++#define ST_LL_INVALID		   4
++
++#define LL_SLEEP_IND	0x30
++#define LL_SLEEP_ACK	0x31
++#define LL_WAKE_UP_IND	0x32
++#define LL_WAKE_UP_ACK	0x33
++
++/* initialize and de-init ST LL */
++long st_ll_init(struct st_data_s *);
++long st_ll_deinit(struct st_data_s *);
++
++/* enable/disable ST LL along with KIM start/stop
++ * called by ST Core
 + */
-+#define BT_REGISTER_TIMEOUT   msecs_to_jiffies(6000)	/* 6 sec */
++void st_ll_enable(struct st_data_s *);
++void st_ll_disable(struct st_data_s *);
 +
-+/* BT driver's local status */
-+#define BT_DRV_RUNNING        0
-+#define BT_ST_REGISTERED      1
-+
-+/* BT driver operation structure */
-+struct hci_st {
-+
-+	/* hci device pointer which binds to bt driver */
-+	struct hci_dev *hdev;
-+
-+	/* used locally,to maintain various BT driver status */
-+	unsigned long flags;
-+
-+	/* to hold ST registration callback  status */
-+	char streg_cbdata;
-+
-+	/* write function pointer of ST driver */
-+	long (*st_write) (struct sk_buff *);
-+
-+	/* Wait on comepletion handler needed to synchronize
-+	 * hci_st_open() and hci_st_registration_completion_cb()
-+	 * functions.*/
-+	struct completion wait_for_btdrv_reg_completion;
-+};
-+
-+#endif
++unsigned long st_ll_getstate(struct st_data_s *);
++unsigned long st_ll_sleep_state(struct st_data_s *, unsigned char);
++void st_ll_wakeup(struct st_data_s *);
++#endif /* ST_LL_H */
 -- 
 1.5.4.3
 
