@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127Ab0DHE3j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 00:29:39 -0400
-Received: from mail-gx0-f217.google.com ([209.85.217.217]:62325 "EHLO
-	mail-gx0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092Ab0DHE3g (ORCPT
+	id S1751539Ab0DHEeH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 00:34:07 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:53755 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab0DHEeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 00:29:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:date:message-id:subject:in-reply-to:mime-version
-         :x-firegpg-version:content-type;
-        b=ciHupwtnOFR4FbPFaO1TYTpBjAk1Uu/tVrRVxJIHmpY+MeAsSrSJQdhdZuUwClHw4l
-         Swmhj/6M+gQOKu5lL/A0/1bo5rDkM1KWeQfjH7YgPqhpEEkkppjmeSdHJrCJTRmzG0JC
-         ptBKvMs85j3ZGFu+HBMbHyoBjn1eIgMCfxF9I=
-From: drepper@gmail.com
-To: Darren Hart <dvhltc@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
-       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       "Peter W. Morreale" <pmorreale@novell.com>,
-       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Gregory Haskins <ghaskins@novell.com>,
-       Sven-Thorsten Dietrich <sdietrich@novell.com>,
-       Chris Mason <chris.mason@oracle.com>,
-       John Cooper <john.cooper@third-harmonic.com>,
-       Chris Wright <chrisw@sous-sol.org>
-Date: Wed, 7 Apr 2010 21:29:19 -0700 (PST)
-Message-ID: <g7r2jjdprucn7idkn0UYAxe124vaj_firegpg@mail.gmail.com>
-Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive spinning
-In-Reply-To: <4BBD5062.4000300@us.ibm.com>
+	Thu, 8 Apr 2010 00:34:04 -0400
+Message-ID: <4BBD5BEF.3000406@oracle.com>
+Date: Wed, 07 Apr 2010 21:30:39 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-X-FireGPG-Version: 0.7.10
-Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="-----firegpg0710eqg7r2jjfitdi2ltjlzv"
+To: Liang Li <liang.li@windriver.com>
+CC: Yinghai <yinghai.lu@oracle.com>, akpm@linux-foundation.org, hpa@zytor.com,
+       mingo@elte.hu, tglx@linutronix.de, wangchen@cn.fujitsu.com,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: + x86-fix-handling-of-the-reservetop-boot-option.patch added
+ to -mm tree
+References: <201004072200.o37M0d19009878@imap1.linux-foundation.org> <4BBD1AA3.4000204@oracle.com> <20100408010558.GA4053@localhost> <4BBD2DD4.1060101@oracle.com> <20100408015353.GB4053@localhost>
+In-Reply-To: <20100408015353.GB4053@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4BBD5C9E.00EB:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
--------firegpg0710eqg7r2jjfitdi2ltjlzv
-Content-Type: text/plain; format=flowed; charset=UTF-8
-Content-Transfer-Encoding: base64
+On 04/07/2010 06:53 PM, Liang Li wrote:
+> Does this similar modification like this is more preferred?
+> 
+> diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+> index a1dcfa3..30a3e97 100644
+> --- a/arch/x86/include/asm/io.h
+> +++ b/arch/x86/include/asm/io.h
+> @@ -347,6 +347,7 @@ extern void __iomem *early_ioremap(resource_size_t phys_addr,
+>  extern void __iomem *early_memremap(resource_size_t phys_addr,
+>  				    unsigned long size);
+>  extern void early_iounmap(void __iomem *addr, unsigned long size);
+> +extern void fixup_early_ioremap(void);
+>  
+>  #define IO_SPACE_LIMIT 0xffff
+>  
+> diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+> index ea82ef0..fe06296 100644
+> --- a/arch/x86/mm/ioremap.c
+> +++ b/arch/x86/mm/ioremap.c
+> @@ -448,6 +448,23 @@ static inline void __init early_clear_fixmap(enum fixed_addresses idx)
+>  static void __iomem *prev_map[FIX_BTMAPS_SLOTS] __initdata;
+>  static unsigned long prev_size[FIX_BTMAPS_SLOTS] __initdata;
+>  
+> +void __init fixup_early_ioremap(void)
+> +{
+> +	int i;
+> +	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
+> +		if (prev_map[i])
+> +			break;
+> +	}
+> +
+> +	if (i == FIX_BTMAPS_SLOTS)
+<
+> +		WARN_ON(1);
+BUG_ON()
+> +
+> +	for (i = 0; i < FIX_BTMAPS_SLOTS; i++)
+> +		slot_virt[i] = __fix_to_virt(FIX_BTMAP_BEGIN - NR_FIX_BTMAPS * i);
+> +
+need to clear the old PMD, and set new PMD.
 
-T24gV2VkLCBBcHIgNywgMjAxMCBhdCAyMDo0MSwgRGFycmVuIEhhcnQgPGR2aGx0Y0B1cy5pYm0u
-Y29tPiB3cm90ZToNCj4gRm9yIGdlbmVyYWwgZnV0ZXhlcyBzdXJlLCBidXQgbm90IGZvciByb2J1
-c3Qgb3IgUEkgbXV0ZXhlcy4gSGF2aW5nIGFkYXB0aXZlDQo+IGZ1dGV4ZXMgYmUgYmFzZWQgb24g
-dGhlIFRJRHxXQUlURVJTX0ZMQUcgcG9saWN5IGNlcnRhaW5seSBpc24ndCBicmVha2luZyBuZXcN
-Cj4gZ3JvdW5kLCBhbmQgaXMgY29uc2lzdGVudCB3aXRoIHRoZSBvdGhlciBrZXJuZWwtc2lkZSBm
-dXRleCBsb2NraW5nDQo+IGltcGxlbWVudGF0aW9ucy4NCg0KUEkgbXV0ZXhlcyBhcmUgcmVhbGx5
-IHVuaW1wb3J0YW50IGluIHRoZSBiaWcgd29ybGQuICBJIGtub3cgeW91ciBlbXBsb3llciBjYXJl
-cyBidXQgb3ZlcmFsbCBpdCdzIGEgbWludXRlIGZyYWN0aW9uLiAgIFRoZSBmb2N1cyBzaG91bGQg
-YmUgcHJpbWFyaWx5IG9uIHRoZSBub3JtYWwgZnV0ZXhlcy4NCg0KQlRXLCB5b3Ugd2FudCB0byBz
-dHVmZiBhIGZsYWcgaW4gdGhlIGZ1dGV4IHdvcmQ/ICBUaGlzIGRvZXNuJ3Qgd29yayBpbiBnZW5l
-cmFsLiAgRm9yIGEgbXV0ZXggd2UgbmVlZCB0aHJlZSBkaXN0aW5jdCB2YWx1ZS4gIEZvciBQSSBm
-dXRleGVzIGl0J3MgMCwgVElEIGFuZCAtVElELiAgSWYgd2UgaGF2ZSAzMSBiaXQgVElEIHZhbHVl
-cyB0aGVyZSBpc24ndCBlbm91Z2ggcm9vbSBmb3IgYW5vdGhlciBiaXQuDQoNCg0KPiBXaGF0IGFi
-b3V0IHRoZSBjb25jZXJuIG9mIHRoaXMgVExTIGFwcHJvYWNoIG9ubHkgd29ya2luZyBmb3IgcHJv
-Y2VzcyBwcml2YXRlDQo+IGxvY2tzPyBJIHdvdWxkIHZlcnkgbXVjaCBsaWtlIHRvIG1ha2UgdGhp
-cyB3b3JrIGZvciBib3RoIHNoYXJlZCBhbmQgcHJpdmF0ZQ0KPiBsb2Nrcy4NCg0KQWdhaW4sIGhh
-cmRseSBhIGdlbmVyYWwgY29uY2Vybi4gIEl0J3MgYSBtaW51dGUgZnJhY3Rpb24gb2YgbXV0ZXhl
-cyB3aGljaCBpcyBzaGFyZWQuDQoNCkl0IHNob3VsZCBiZSBjbGVhciB0aGF0IHRoZSBrZXJuZWwg
-YXBwcm9hY2ggYW5kIHRoZSB1c2VybGV2ZWwgYXBwcm9hY2ggYXJlIGNvbXBsaW1lbnRhcnkgYW5k
-IGNvdWxkIGV2ZW4gYmUgdXNlZC4gIElmIHRoZSB1c2VybGV2ZWwgdmFyaWFudCBwcm92ZXMgc2ln
-bmlmaWNhbnRseSBmYXN0ZXIgKGFuZCBJIGFzc3VtZSBpdCB3aWxsKSB0aGVuIHRoZSBrZXJuZWwg
-dmFyaWFudCBjb3VsZCBiZSB1c2VkIGZvciBzaGFyZWQgbXV0ZXhlcyBldGMuDQo=
--------firegpg0710eqg7r2jjfitdi2ltjlzv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+so you can clear old PMD and call early_ioremap_init() in fixup_early_ioremap()
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Use GnuPG with Firefox : http://getfiregpg.org (Version: 0.7.10)
 
-iEYEARECAAYFAku9W6MACgkQ2ijCOnn/RHRUHACeOvoTNf9+kZf31ySQ6f8LFV2n
-hHIAnjVsTS4YXRgdvfB6bEbJzR0Pit8G
-=h9yB
------END PGP SIGNATURE-----
+Thanks
 
--------firegpg0710eqg7r2jjfitdi2ltjlzv--
-
+Yinghai
