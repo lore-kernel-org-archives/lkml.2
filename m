@@ -1,56 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933662Ab0DHVdT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 17:33:19 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:2529 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933038Ab0DHVdS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 17:33:18 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=v64FVAL1iSDqiIshq5thU4kkt8PnPqTcB2FRi5ikZXdWkgdIE51J3khjX0pvKYPq3
-	mWAAzMBUJAT+WtpzFW85w==
+	id S1759161Ab0DHVih (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 17:38:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58936 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756040Ab0DHVie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 17:38:34 -0400
+Message-ID: <4BBE4CE2.8030805@gmail.com>
+Date: Thu, 08 Apr 2010 23:38:42 +0200
+From: Edward Shishkin <edward.shishkin@gmail.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
 MIME-Version: 1.0
-In-Reply-To: <1270761860.20295.3162.camel@laptop>
-References: <4bbe4175.5124cc0a.5bd3.22d6@mx.google.com>
-	 <1270760136.20295.3121.camel@laptop>
-	 <1270760599.20295.3144.camel@laptop>
-	 <w2ibd4cb8901004081418zf82adbfcu21316a5c8483b755@mail.gmail.com>
-	 <1270761860.20295.3162.camel@laptop>
-Date: Thu, 8 Apr 2010 23:33:15 +0200
-Message-ID: <v2lbd4cb8901004081433l7bff8d3cq2f11ca6c222e8e87@mail.gmail.com>
-Subject: Re: [PATCH] perf_events: fix bogus warn_on(_once) in 
-	perf_prepare_sample()
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-       davem@davemloft.net, fweisbec@gmail.com, robert.richter@amd.com,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Jeff Mahoney <jeffm@suse.com>,
+       ReiserFS Mailing List <reiserfs-devel@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       matt@mattmccutchen.net
+Subject: Re: [PATCH #3] reiserfs: Fix permissions on .reiserfs_priv
+References: <4BBE42A9.2010506@suse.com>
+In-Reply-To: <4BBE42A9.2010506@suse.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 8, 2010 at 11:24 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2010-04-08 at 23:18 +0200, Stephane Eranian wrote:
->> I am not sure I understand what you mean by buffered PEBS. Are you talking
->> about using PEBS buffer bigger than one entry?
->
-> Yep.
->
->> If so, how can you do:
->>   - the LBR based fixups for multiple samples (on PMU interrupt)
->
-> Not, so it would be the offset on.
->
-Not sure I understand what you mean here.
+Acked-by: Edward Shishkin <edward.shishkin@gmail.com>
 
->>   - attribute PID/TID in system-wide mode
+Andrew, I think it should be applied ASAP.
+
+Thanks to Matt McCutchen who discovered this issue.
+
+Edward.
+
+
+Jeff Mahoney wrote:
+>  Commit 677c9b2e393a0cd203bd54e9c18b012b2c73305a removed the magic
+>  from the lookup code to hide the .reiserfs_priv directory since it
+>  was getting loaded at mount-time instead. The intent was that the
+>  entry would be hidden from the user via a poisoned d_compare, but
+>  this was faulty.
 >
-> flush on context switches.
+>  This introduced a security issue where unpriviledged users could
+>  access and modify extended attributes or ACLs belonging to other
+>  users, including root.
 >
-cost?
+>  This patch resolves the issue by properly hiding .reiserfs_priv. This
+>  was the intent of the xattr poisoning code, but it appears to have
+>  never worked as expected. This is fixed by using d_revalidate instead
+>  of d_compare.
+>
+>  This patch makes -oexpose_privroot a no-op. I'm fine leaving it this
+>  way. The effort involved in working out the corner cases wrt permissions
+>  and caching outweigh the benefit of the feature.
+>
+> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+> ---
+>
+>  fs/reiserfs/dir.c   |    2 --
+>  fs/reiserfs/xattr.c |   17 ++++-------------
+>  2 files changed, 4 insertions(+), 15 deletions(-)
+>
+> --- a/fs/reiserfs/dir.c
+> +++ b/fs/reiserfs/dir.c
+> @@ -45,8 +45,6 @@ static inline bool is_privroot_deh(struc
+>  				   struct reiserfs_de_head *deh)
+>  {
+>  	struct dentry *privroot = REISERFS_SB(dir->d_sb)->priv_root;
+> -	if (reiserfs_expose_privroot(dir->d_sb))
+> -		return 0;
+>  	return (dir == dir->d_parent && privroot->d_inode &&
+>  	        deh->deh_objectid == INODE_PKEY(privroot->d_inode)->k_objectid);
+>  }
+> --- a/fs/reiserfs/xattr.c
+> +++ b/fs/reiserfs/xattr.c
+> @@ -972,21 +972,13 @@ int reiserfs_permission(struct inode *in
+>  	return generic_permission(inode, mask, NULL);
+>  }
+>  
+> -/* This will catch lookups from the fs root to .reiserfs_priv */
+> -static int
+> -xattr_lookup_poison(struct dentry *dentry, struct qstr *q1, struct qstr *name)
+> +static int xattr_hide_revalidate(struct dentry *dentry, struct nameidata *nd)
+>  {
+> -	struct dentry *priv_root = REISERFS_SB(dentry->d_sb)->priv_root;
+> -	if (container_of(q1, struct dentry, d_name) == priv_root)
+> -		return -ENOENT;
+> -	if (q1->len == name->len &&
+> -		   !memcmp(q1->name, name->name, name->len))
+> -		return 0;
+> -	return 1;
+> +	return -EPERM;
+>  }
+>  
+>  static const struct dentry_operations xattr_lookup_poison_ops = {
+> -	.d_compare = xattr_lookup_poison,
+> +	.d_revalidate = xattr_hide_revalidate,
+>  };
+>  
+>  int reiserfs_lookup_privroot(struct super_block *s)
+> @@ -1000,8 +992,7 @@ int reiserfs_lookup_privroot(struct supe
+>  				strlen(PRIVROOT_NAME));
+>  	if (!IS_ERR(dentry)) {
+>  		REISERFS_SB(s)->priv_root = dentry;
+> -		if (!reiserfs_expose_privroot(s))
+> -			s->s_root->d_op = &xattr_lookup_poison_ops;
+> +		dentry->d_op = &xattr_lookup_poison_ops;
+>  		if (dentry->d_inode)
+>  			dentry->d_inode->i_flags |= S_PRIVATE;
+>  	} else
+>
+>   
+
