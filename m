@@ -1,31 +1,27 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab0DEBjU (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sun, 4 Apr 2010 21:39:20 -0400
-Received: from mail-pz0-f193.google.com ([209.85.222.193]:59357 "EHLO
-	mail-pz0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965Ab0DEBjM (ORCPT
+	id S1756321Ab0DHJ2K (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Thu, 8 Apr 2010 05:28:10 -0400
+Received: from smtp3.Stanford.EDU ([171.67.219.83]:60786 "EHLO
+	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751410Ab0DHJ2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Apr 2010 21:39:12 -0400
-X-Greylist: delayed 335 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Apr 2010 21:39:12 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=vF/Y/9wqRgCo6+WYT2phoCuyREcw+dY7NsSjh7L2xfU8uHlx1PwXbhRfxAXI8Da8KU
-         QWTm0q620ZQlUJVHL9F8FyS+p06KWKQUNfmGmv6WHAuVGskDRWZXGmS+wpp9GH2nhPX/
-         8GWViw+BQ3Lh7nfuLu/VZBVhh7wB0c+FqmXD4=
-MIME-Version: 1.0
-Date: Sun, 4 Apr 2010 18:33:36 -0700
-Message-ID: <u2l9aa54c261004041833u6743c670o7ee13e34268f25c2@mail.gmail.com>
+	Thu, 8 Apr 2010 05:28:05 -0400
+X-Greylist: delayed 349 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Apr 2010 05:28:05 EDT
+Date: Thu, 8 Apr 2010 02:22:09 -0700 (PDT)
+From: "Mr. Ling Tia Liu" <bkindle@stanford.edu>
+Reply-To: Ling Tia <icbc_liuling_001@yahoo.com.hk>
+Message-ID: <781752245.901571270718529337.JavaMail.root@zm04.stanford.edu>
 Subject: Hello
-From: Sujoy <sujoyg@gmail.com>
-To: KurtzJ@autonation.com, lalaine@google.com, lawrence.hing@xilinx.com,
-        sumantra.bhattacharya@gmail.com, lili.wangsa@gmail.com,
-        lili_mulder@hotmail.com, lili@cc.gatech.edu,
-        linux-kernel@vger.kernel.org, Jennifer1.Liu@ge.com,
-        liz@rentalsinsf.com
-Content-Type: text/plain; charset=ISO-8859-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [77.246.64.2]
+X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (zclient/5.0.21_GA_3150.RHEL4_64)
+X-Authenticated-User: bkindle@stanford.edu
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://sites.google.com/site/eryu74urjd/eghx3r
+Good Day,
+I have a Business Proposal of $21,300,000.00 for you to handle with me from my bank.please contact me on {icbc_liuling_001@yahoo.com.hk} with your Full names,occupation,private phone number,current residential address.
