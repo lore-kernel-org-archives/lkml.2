@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758576Ab0DHHas (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 03:30:48 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:36237 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758436Ab0DHHaq (ORCPT
+	id S1758563Ab0DHHjW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 03:39:22 -0400
+Received: from mail-bw0-f217.google.com ([209.85.218.217]:40911 "EHLO
+	mail-bw0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755232Ab0DHHjT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 03:30:46 -0400
-Date: Thu, 8 Apr 2010 09:30:41 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Robert Hancock <hancockrwd@gmail.com>, linux-kernel@vger.kernel.org,
-       Pedro Ribeiro <pedrib@gmail.com>, akpm@linux-foundation.org,
-       Greg KH <gregkh@suse.de>, alsa-devel@alsa-project.org,
-       linux-usb@vger.kernel.org
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-Message-ID: <20100408073041.GO30801@buzzloop.caiaq.de>
-References: <4BBD1B6F.3000205@gmail.com>
- <Pine.LNX.4.44L0.1004072207390.18281-100000@netrider.rowland.org>
+	Thu, 8 Apr 2010 03:39:19 -0400
+X-Greylist: delayed 383 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Apr 2010 03:39:18 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=geON2sXX9u4reh3gIIrTxtk2ORc3BFbgz32QIhx3ryEYCTJ+5G/BDe0V6JPqZqXTJv
+         buFR1kNHAdVdLDCfeN9jenRpAuxqGtxHWc72oqKpMSpcnxRN2HzZZuxfcr8U9vIYbG4X
+         emSnV6XqPZwjwcvijUbV9i4jUtVI1aCgWShUc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1004072207390.18281-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <JVS2s9dmTsP.A.ttH.0tPvLB@chimera>
+References: <6Pphclm24fK.A.lSF.qsPvLB@chimera>
+	 <JVS2s9dmTsP.A.ttH.0tPvLB@chimera>
+Date: Thu, 8 Apr 2010 09:32:53 +0200
+Message-ID: <w2vb637ec0b1004080032m12d2e9b7k5f0f2f4e49b68c7c@mail.gmail.com>
+Subject: Re: [Bug #15619] Regression - Linux 2.6.34-rc1 - i915 - Render error 
+	detected
+From: Fabio Comolli <fabio.comolli@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 07, 2010 at 10:10:17PM -0400, Alan Stern wrote:
-> On Wed, 7 Apr 2010, Robert Hancock wrote:
-> 
-> > >> The problem is appearantly the way the transfer buffer is allocated in
-> > >> the drivers. In the snd-usb-caiaq driver, I used kzalloc() to get memory
-> > >> which works fine on 32bit systems. On x86_64, however, it seems that
-> > >> kzalloc() hands out memory beyond the 32bit addressable boundary, which
-> > >> the DMA controller of the 32bit PCI-connected EHCI controller is unable
-> > >> to write to or read from. Am I correct on this conclusion?
-> > >
-> > > That seems like the right answer.  You are correct that an EHCI
-> > > controller capable only of 32-bit memory accesses would not be able to
-> > > use a buffer above the 4 GB line.
-> 
-> > AFAIK, the driver shouldn't have to worry about this at all. When the 
-> > buffer gets DMA-mapped for the controller, the DMA mapping code should 
-> > see that the device has a 32-bit DMA mask and either bounce or IOMMU-map 
-> > the memory so that it appears below 4GB.
-> 
-> That's true.  It would of course be more efficient for the buffer to be
-> allocated below 4 GB, but it should work okay either way.  Daniel, do
-> you have any idea why it fails?
+disappeared between -rc2 and -rc3
 
-No, and I can't do real tests as I lack a 64bit machine. I'll do some
-more investigation later today, but for now the only explanation I have
-is that not the remapped DMA buffer is used eventually by the EHCI code
-but the physical address of the original buffer.
-
-It would of course be best to fix the whole problem at this level, if
-possible.
-
-Daniel
+On Wed, Apr 7, 2010 at 11:13 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
+>
+> The following bug entry is on the current list of known regressions
+> from 2.6.33.  Please verify if it still should be listed and let the tracking team
+> know (either way).
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=15619
+> Subject         : Regression - Linux 2.6.34-rc1 - i915 - Render error detected
+> Submitter       : Fabio Comolli <fabio.comolli@gmail.com>
+> Date            : 2010-03-17 21:58 (22 days old)
+> Message-ID      : <b637ec0b1003171458t524d168fiab52ce2b3431e3c9@mail.gmail.com>
+> References      : http://marc.info/?l=linux-kernel&m=126886311908558&w=2
+>
+>
+>
