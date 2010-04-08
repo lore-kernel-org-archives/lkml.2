@@ -1,47 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757368Ab0DHATj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 20:19:39 -0400
-Received: from straum.hexapodia.org ([207.7.131.186]:50600 "EHLO
-	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755775Ab0DHATg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 20:19:36 -0400
-Date: Wed, 7 Apr 2010 17:19:35 -0700
-From: Andy Isaacson <adi@hexapodia.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai <yinghai.lu@oracle.com>, Bjorn Helgaas <bjorn.helgaas@hp.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       linux-pci@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-       Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well
-	as x86_32
-Message-ID: <20100408001935.GM29192@hexapodia.org>
-References: <20100407210628.28364.96982.stgit@bob.kio> <4BBD0B0A.3090702@oracle.com> <4BBD18B0.6010302@zytor.com>
+	id S1757266Ab0DHA0l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 20:26:41 -0400
+Received: from ozlabs.org ([203.10.76.45]:54693 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756119Ab0DHA0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 20:26:39 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Anton Blanchard <anton@samba.org>
+Subject: Re: [PATCH 4/7] hvc_console: Fix race between hvc_close and hvc_remove
+Date: Thu, 8 Apr 2010 09:56:32 +0930
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; i686; ; )
+Cc: Amit Shah <amit.shah@redhat.com>, Sachin Sant <sachinp@in.ibm.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       "Greg Kroah-Hartman" <gregkh@suse.de>, a.p.zijlstra@chello.nl,
+       linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+       tglx@linutronix.de, Linus Torvalds <torvalds@linux-foundation.org>,
+       mingo@elte.hu, Alan Cox <alan@lxorguk.ukuu.org.uk>
+References: <20100319151326.GC8541@kroah.com> <20100326124340.GB7039@amit-x200.redhat.com> <20100406114238.GN5594@kryten>
+In-Reply-To: <20100406114238.GN5594@kryten>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BBD18B0.6010302@zytor.com>
-X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
-X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
-X-Domestic-Surveillance: money launder bomb tax evasion
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004080956.33405.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 07, 2010 at 04:43:44PM -0700, H. Peter Anvin wrote:
-> > or you can add
-> > boot_params.screen_info.orig_video_isVGA == 1
-> > or double check scan pci tree to see if video is there or not
-> 
-> Perhaps boot_params.screen_info.orig_video_isVGA != 1 because he's not
-> booting in a text mode?
+On Tue, 6 Apr 2010 09:12:38 pm Anton Blanchard wrote:
+> The patch below changes things to call tty_kref_put once for every
+> hvc_close call, and with that my machine boots fine.
 
-It's a pretty standard grub2 install (Debian unstable,
-1.98~20100128-1.2) with something approaching the default config.  Grub
-does seem to put the console in some annoying framebuffer format to draw
-the boot menu, but IIRC it switches back to VGA textmode before booting
-the kernel.
+Thanks, applied.
 
--andy
+Cheers,
+Rusty.
