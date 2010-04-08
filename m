@@ -1,269 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab0DHJFH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 05:05:07 -0400
-Received: from mga09.intel.com ([134.134.136.24]:43213 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753799Ab0DHJFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 05:05:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,169,1270450800"; 
-   d="scan'208";a="611241921"
-From: xiaohui.xin@intel.com
-To: mst@mst.redhat.com
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       jdike@linux.intel.com, Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: Re:[PATCH v1 2/3] Provides multiple submits and asynchronous notifications.
-Date: Thu,  8 Apr 2010 17:07:55 +0800
-Message-Id: <1270717675-5041-1-git-send-email-xiaohui.xin@intel.com>
-X-Mailer: git-send-email 1.5.4.4
-In-Reply-To: <20100407081800.GC9550@redhat.com>
-References: <20100407081800.GC9550@redhat.com>
+	id S1757456Ab0DHJIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 05:08:13 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57603 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751410Ab0DHJIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 05:08:07 -0400
+Message-ID: <4BBD9C5A.90307@cn.fujitsu.com>
+Date: Thu, 08 Apr 2010 17:05:30 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Michel Lespinasse <walken@google.com>
+CC: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>, Ingo Molnar <mingo@elte.hu>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Ming Lei <tom.leiming@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: lock's trace events can improve mutex's performance in userspace?
+References: <4B98BB50.1000002@cn.fujitsu.com>	 <4B9B1416.5020101@dcl.info.waseda.ac.jp> <n2k8d20b11a1004050214m529fa5e7ke31a2213728ea511@mail.gmail.com>
+In-Reply-To: <n2k8d20b11a1004050214m529fa5e7ke31a2213728ea511@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xin Xiaohui <xiaohui.xin@intel.com>
+Hi Michel,
 
----
-Michael,
-This is a small patch for the write logging issue with async queue.
-I have made a __vhost_get_vq_desc() func which may compute the log
-info with any valid buffer index. The __vhost_get_vq_desc() is 
-coming from the code in vq_get_vq_desc().
-And I use it to recompute the log info when logging is enabled.
+Michel Lespinasse wrote:
+> Sorry for the late reply...
+> 
+> One thing to consider in locking micro-benchmarks is that often, code
+> changes that slow down parts of the contended code path where the lock
+> is not held, will result in an increase of the reported
+> micro-benchmark metric. This effect is particularly marked for
+> micro-benchmarks that consist of multiple threads doing empty
+> acquire/release loops.
+> 
+> As a thought experiment, imagine what would happen if you added a
+> one-millisecond sleep in the contended code path for mutex
+> acquisition. Soon all but one of your benchmark threads would be
+> sleeping, and the only non-sleeping thread would be able to spin on
+> that lock/unlock loop with no contention, resulting in very nice
+> results for the micro-benchmark. Remove the sleep and the lock/unlock
+> threads will have to contend, resulting in lower reported performance
+> metrics.
 
-Thanks
-Xiaohui
+Great thanks for your valuable reply that makes we see the
+issue more clearly.
 
- drivers/vhost/net.c   |   27 ++++++++---
- drivers/vhost/vhost.c |  115 ++++++++++++++++++++++++++++---------------------
- drivers/vhost/vhost.h |    5 ++
- 3 files changed, 90 insertions(+), 57 deletions(-)
+I've do the test address your conjecture that add usleep(1) in mutex
+acquisition path, the test result shows contention is reduced.
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 2aafd90..00a45ef 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -115,7 +115,8 @@ static void handle_async_rx_events_notify(struct vhost_net *net,
- 	struct kiocb *iocb = NULL;
- 	struct vhost_log *vq_log = NULL;
- 	int rx_total_len = 0;
--	int log, size;
-+	unsigned int head, log, in, out;
-+	int size;
- 
- 	if (vq->link_state != VHOST_VQ_LINK_ASYNC)
- 		return;
-@@ -130,14 +131,25 @@ static void handle_async_rx_events_notify(struct vhost_net *net,
- 				iocb->ki_pos, iocb->ki_nbytes);
- 		log = (int)iocb->ki_user_data;
- 		size = iocb->ki_nbytes;
-+		head = iocb->ki_pos;
- 		rx_total_len += iocb->ki_nbytes;
- 
- 		if (iocb->ki_dtor)
- 			iocb->ki_dtor(iocb);
- 		kmem_cache_free(net->cache, iocb);
- 
--		if (unlikely(vq_log))
-+		/* when log is enabled, recomputing the log info is needed,
-+		 * since these buffers are in async queue, and may not get
-+		 * the log info before.
-+		 */
-+		if (unlikely(vq_log)) {
-+			if (!log)
-+				__vhost_get_vq_desc(&net->dev, vq, vq->iov,
-+						    ARRAY_SIZE(vq->iov),
-+						    &out, &in, vq_log,
-+						    &log, head);
- 			vhost_log_write(vq, vq_log, log, size);
-+		}
- 		if (unlikely(rx_total_len >= VHOST_NET_WEIGHT)) {
- 			vhost_poll_queue(&vq->poll);
- 			break;
-@@ -313,14 +325,13 @@ static void handle_rx(struct vhost_net *net)
- 	vhost_disable_notify(vq);
- 	hdr_size = vq->hdr_size;
- 
--	/* In async cases, for write logging, the simple way is to get
--	 * the log info always, and really logging is decided later.
--	 * Thus, when logging enabled, we can get log, and when logging
--	 * disabled, we can get log disabled accordingly.
-+	/* In async cases, when write log is enabled, in case the submitted
-+	 * buffers did not get log info before the log enabling, so we'd
-+	 * better recompute the log info when needed. We do this in
-+	 * handle_async_rx_events_notify().
- 	 */
- 
--	vq_log = unlikely(vhost_has_feature(&net->dev, VHOST_F_LOG_ALL)) |
--		(vq->link_state == VHOST_VQ_LINK_ASYNC) ?
-+	vq_log = unlikely(vhost_has_feature(&net->dev, VHOST_F_LOG_ALL)) ?
- 		vq->log : NULL;
- 
- 	handle_async_rx_events_notify(net, vq);
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 97233d5..53dab80 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -715,66 +715,21 @@ static unsigned get_indirect(struct vhost_dev *dev, struct vhost_virtqueue *vq,
- 	return 0;
- }
- 
--/* This looks in the virtqueue and for the first available buffer, and converts
-- * it to an iovec for convenient access.  Since descriptors consist of some
-- * number of output then some number of input descriptors, it's actually two
-- * iovecs, but we pack them into one and note how many of each there were.
-- *
-- * This function returns the descriptor number found, or vq->num (which
-- * is never a valid descriptor number) if none was found. */
--unsigned vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
-+unsigned __vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
- 			   struct iovec iov[], unsigned int iov_size,
- 			   unsigned int *out_num, unsigned int *in_num,
--			   struct vhost_log *log, unsigned int *log_num)
-+			   struct vhost_log *log, unsigned int *log_num,
-+			   unsigned int head)
- {
- 	struct vring_desc desc;
--	unsigned int i, head, found = 0;
--	u16 last_avail_idx;
-+	unsigned int i = head, found = 0;
- 	int ret;
- 
--	/* Check it isn't doing very strange things with descriptor numbers. */
--	last_avail_idx = vq->last_avail_idx;
--	if (get_user(vq->avail_idx, &vq->avail->idx)) {
--		vq_err(vq, "Failed to access avail idx at %p\n",
--		       &vq->avail->idx);
--		return vq->num;
--	}
--
--	if ((u16)(vq->avail_idx - last_avail_idx) > vq->num) {
--		vq_err(vq, "Guest moved used index from %u to %u",
--		       last_avail_idx, vq->avail_idx);
--		return vq->num;
--	}
--
--	/* If there's nothing new since last we looked, return invalid. */
--	if (vq->avail_idx == last_avail_idx)
--		return vq->num;
--
--	/* Only get avail ring entries after they have been exposed by guest. */
--	rmb();
--
--	/* Grab the next descriptor number they're advertising, and increment
--	 * the index we've seen. */
--	if (get_user(head, &vq->avail->ring[last_avail_idx % vq->num])) {
--		vq_err(vq, "Failed to read head: idx %d address %p\n",
--		       last_avail_idx,
--		       &vq->avail->ring[last_avail_idx % vq->num]);
--		return vq->num;
--	}
--
--	/* If their number is silly, that's an error. */
--	if (head >= vq->num) {
--		vq_err(vq, "Guest says index %u > %u is available",
--		       head, vq->num);
--		return vq->num;
--	}
--
- 	/* When we start there are none of either input nor output. */
- 	*out_num = *in_num = 0;
- 	if (unlikely(log))
- 		*log_num = 0;
- 
--	i = head;
- 	do {
- 		unsigned iov_count = *in_num + *out_num;
- 		if (i >= vq->num) {
-@@ -833,8 +788,70 @@ unsigned vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
- 			*out_num += ret;
- 		}
- 	} while ((i = next_desc(&desc)) != -1);
-+	return head;
-+}
-+
-+/* This looks in the virtqueue and for the first available buffer, and converts
-+ * it to an iovec for convenient access.  Since descriptors consist of some
-+ * number of output then some number of input descriptors, it's actually two
-+ * iovecs, but we pack them into one and note how many of each there were.
-+ *
-+ * This function returns the descriptor number found, or vq->num (which
-+ * is never a valid descriptor number) if none was found. */
-+unsigned vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
-+			   struct iovec iov[], unsigned int iov_size,
-+			   unsigned int *out_num, unsigned int *in_num,
-+			   struct vhost_log *log, unsigned int *log_num)
-+{
-+	struct vring_desc desc;
-+	unsigned int i, head, found = 0;
-+	u16 last_avail_idx;
-+	unsigned int ret;
-+
-+	/* Check it isn't doing very strange things with descriptor numbers. */
-+	last_avail_idx = vq->last_avail_idx;
-+	if (get_user(vq->avail_idx, &vq->avail->idx)) {
-+		vq_err(vq, "Failed to access avail idx at %p\n",
-+		       &vq->avail->idx);
-+		return vq->num;
-+	}
-+
-+	if ((u16)(vq->avail_idx - last_avail_idx) > vq->num) {
-+		vq_err(vq, "Guest moved used index from %u to %u",
-+		       last_avail_idx, vq->avail_idx);
-+		return vq->num;
-+	}
-+
-+	/* If there's nothing new since last we looked, return invalid. */
-+	if (vq->avail_idx == last_avail_idx)
-+		return vq->num;
-+
-+	/* Only get avail ring entries after they have been exposed by guest. */
-+	rmb();
-+
-+	/* Grab the next descriptor number they're advertising, and increment
-+	 * the index we've seen. */
-+	if (get_user(head, &vq->avail->ring[last_avail_idx % vq->num])) {
-+		vq_err(vq, "Failed to read head: idx %d address %p\n",
-+		       last_avail_idx,
-+		       &vq->avail->ring[last_avail_idx % vq->num]);
-+		return vq->num;
-+	}
-+
-+	/* If their number is silly, that's an error. */
-+	if (head >= vq->num) {
-+		vq_err(vq, "Guest says index %u > %u is available",
-+		       head, vq->num);
-+		return vq->num;
-+	}
-+
-+	ret = __vhost_get_vq_desc(dev, vq, iov, iov_size,
-+				  out_num, in_num,
-+				  log, log_num, head);
- 
- 	/* On success, increment avail index. */
-+	if (ret == vq->num)
-+		return ret;
- 	vq->last_avail_idx++;
- 	return head;
- }
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index cffe39a..a74a6d4 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -132,6 +132,11 @@ unsigned vhost_get_vq_desc(struct vhost_dev *, struct vhost_virtqueue *,
- 			   struct iovec iov[], unsigned int iov_count,
- 			   unsigned int *out_num, unsigned int *in_num,
- 			   struct vhost_log *log, unsigned int *log_num);
-+unsigned __vhost_get_vq_desc(struct vhost_dev *, struct vhost_virtqueue *,
-+			   struct iovec iov[], unsigned int iov_count,
-+			   unsigned int *out_num, unsigned int *in_num,
-+			   struct vhost_log *log, unsigned int *log_num,
-+			   unsigned int head);
- void vhost_discard_vq_desc(struct vhost_virtqueue *);
- 
- int vhost_add_used(struct vhost_virtqueue *, unsigned int head, int len);
--- 
-1.5.4.4
+And i also do the test that does more work in mutex holding path, the
+result shows optimization ratio is decreased.
 
+Thanks,
+Xiao
