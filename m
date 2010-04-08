@@ -1,146 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933351Ab0DHT2a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 15:28:30 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:39681 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933106Ab0DHT2H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 15:28:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:x-x-sender:to:subject:message-id:mime-version
-         :content-type;
-        b=B3RCOLdUEVRX/wkRObEHHd+P3fKJjBT+s/sJy4dGWQYYII1/qx2vMYEYdTVthZL7P7
-         Honkk6//kd0lPAyMfnzazGi2BeuH401s1nepG5MN55B88XJj81YNoKkE4sbuP0hvACOX
-         SgCyPwsIiecSVr527RvCWUxRe7BYo6/zxC3Ss=
-Date: Fri, 9 Apr 2010 03:27:53 +0800 (SGT)
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-X-X-Sender: root@boston.corp.fedex.com
-To: Wey-Yi Guy <wey-yi.w.guy@intel.com>, Shanyu Zhao <shanyu.zhao@intel.com>,
-       Reinette Chatre <reinette.chatre@intel.com>, stable@kernel.org,
-       Linux Kernel <linux-kernel@vger.kernel.org>,
+	id S933360Ab0DHT2c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 15:28:32 -0400
+Received: from mga11.intel.com ([192.55.52.93]:37102 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933311Ab0DHT21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 15:28:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,172,1270450800"; 
+   d="scan'208,223";a="556241971"
+Subject: Re: [REVERT] be6b38bcb175613f239e0b302607db346472c6b6.
+ v2.6.34-rc3-406 oops with 4965AGN wireless
+From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Jeff Chua <jeff.chua.linux@gmail.com>,
        Linus Torvalds <torvalds@linux-foundation.org>,
-       Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [REVERT] be6b38bcb175613f239e0b302607db346472c6b6. v2.6.34-rc3-406
- oops with 4965AGN wireless
-Message-ID: <Pine.LNX.4.64.1004090251210.11582@boston.corp.fedex.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+       "Zhao, Shanyu" <shanyu.zhao@intel.com>,
+       "Chatre, Reinette" <reinette.chatre@intel.com>,
+       "stable@kernel.org" <stable@kernel.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100408181340.GN30031@ZenIV.linux.org.uk>
+References: <Pine.LNX.4.64.1004090104570.7829@boston.corp.fedex.com>
+	 <20100408181340.GN30031@ZenIV.linux.org.uk>
+Content-Type: multipart/mixed; boundary="=-v7/y33nWzMArKS48gcnM"
+Date: Thu, 08 Apr 2010 13:24:56 -0700
+Message-Id: <1270758296.11853.16.camel@wwguy-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--=-v7/y33nWzMArKS48gcnM
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 
-On Fri, Apr 9, 2010 at 1:19 AM, Linus Torvalds 
-<torvalds@linux-foundation.org> wrote:
+Hi Viro and Jeff,
 
-> I don't mind reverting patches, but I hate doing it blind and without 
-> _any_ chance for the guilty party to try to fix it first.
-
-> Can you post the oops that your subject implies happened? Maybe the 
-> driver authors can find the proper fix without a revert?
-
-The screen is so fast and never stops so I don't know how to capture that. 
-I just tried the patch from Wey and had to modify it slightly to make it 
-work.
-
-
-
-On Fri, Apr 9, 2010 at 2:50 AM, Guy, Wey-Yi <wey-yi.w.guy@intel.com> 
-wrote:
-
-> Sorry for the problem caused by this patch, it is my mistake using the
-similar approach for 4965 like the newer devices. could you try the
-attach patch to see if this fix your system freeze problem.
-
-Wey, the patch doesn't apply cleanly. I believe you meant "iwl_" instead 
-of "iwlagn_".
-
-Also, the checking for IWL_INVALID_STATION should be done after the "} 
-else {" as in the original code prior to your patch. I just verified this 
-with the patch below and it no longer oops.
-
-
-
-On Fri, Apr 9, 2010 at 2:13 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-
-> So what happens if we hit sta_id == IWL_INVALID_STATION and
-> !txq->sched_retry?
-
-> I'm not familiar with that code and I don't have the hardware, so this 
-> is just from RTFS, but... might make sense to replace that call of 
+On Thu, 2010-04-08 at 11:13 -0700, Al Viro wrote:
+> On Fri, Apr 09, 2010 at 01:16:43AM +0800, Jeff Chua wrote:
+> > 
+> > index 1bd2cd8..83c52a6 100644
+> > --- a/drivers/net/wireless/iwlwifi/iwl-4965.c
+> > +++ b/drivers/net/wireless/iwlwifi/iwl-4965.c
+> > @@ -2041,16 +2041,14 @@ static void iwl4965_rx_reply_tx(struct iwl_priv *priv,
+> >  				   tx_resp->failure_frame);
+> > 
+> >  		freed = iwl_tx_queue_reclaim(priv, txq_id, index);
+> > -		if (qc && likely(sta_id != IWL_INVALID_STATION))
+> > -			priv->stations[sta_id].tid[tid].tfds_in_queue -= freed;
+> > +		iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
+> 
+> So what happens if we hit sta_id == IWL_INVALID_STATION and !txq->sched_retry?
+> 
+> AFAICS, IWL_INVALID_STATION is 255 and priv->stations[] has only 32 elements.
+> And code around that place is
+>         if (txq->sched_retry && unlikely(sta_id == IWL_INVALID_STATION)) {
+>                 IWL_ERR(priv, "Station not known\n");
+>                 return;
+>         }
+>         if (txq->sched_retry) {
+> 		....
+> 	} else {
+> 		....
+> 		the code modified in that chunk
+> 		....
+> 	}
+> so this removal of check for sta_id doesn't look apriori safe...
+> 
+> I'm not familiar with that code and I don't have the hardware, so this is
+> just from RTFS, but... might make sense to replace that call of
 > iwl_free_tfds_in_queue with
->       if (sta_id == IWL_INVALID_STATION)
->              printk(KERN_ERR "buggered");
->       else
->              iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
+> 
+> 		if (sta_id == IWL_INVALID_STATION)
+> 			printk(KERN_ERR "buggered");
+> 		else
+> 			iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
+> 
+> and see if that helps and if printk gets triggered.
 
+Maybe this patch looks better, if sched_rety and sta_id ==
+IWL_INVALID_ID_STATION, this function already return before reach
+iwl_free_tfds_in_queue, so do not have to check for sta_id ==
+IWL_INVALID_ID_STATION. the other case, print log if sta_id ==
+IWL_INVALID_ID_STATION.
 
-I just tried that, but not seeing any invalid station messages. The 
-KERN_ERR has been added below.
+Wey
 
+--=-v7/y33nWzMArKS48gcnM
+Content-Disposition: attachment; filename*0=0001-iwlwifi-need-check-for-valid-qos-packet-before-free.patc; filename*1=h
+Content-Type: text/x-patch; name="0001-iwlwifi-need-check-for-valid-qos-packet-before-free.patch"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
+>From f3a5f691e32c0edfbc42a1e8687392dc3efe396e Mon Sep 17 00:00:00 2001
+From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Date: Thu, 8 Apr 2010 13:17:37 -0700
+Subject: [PATCH 1/1] iwlwifi: need check for valid qos packet before free
 
+For 4965, need to check it is valid qos frame before free, only valid
+QoS frame has the tid used to free the packets.
 
-On Fri, Apr 9, 2010 at 4:09 AM, Guy, Wey-Yi <wey-yi.w.guy@intel.com> 
-wrote:
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+---
+ drivers/net/wireless/iwlwifi/iwl-4965.c |   13 +++++++++----
+ 1 files changed, 9 insertions(+), 4 deletions(-)
 
-> We can check for IWL_INVALID_STATION and print log, but need to check
-> for qc to make sure it is valid; maybe something like
-
-
-Ok, added below.
-
-
-
-Thanks,
-Jeff
-
---- drivers/net/wireless/iwlwifi/iwl-4965.c.org	2010-04-09 02:11:45.000000000 +0800
-+++ drivers/net/wireless/iwlwifi/iwl-4965.c	2010-04-09 03:21:57.000000000 +0800
-@@ -2012,10 +2012,18 @@
-
-  		if (txq->q.read_ptr != (scd_ssn & 0xff)) {
-  			index = iwl_queue_dec_wrap(scd_ssn & 0xff, txq->q.n_bd);
--			IWL_DEBUG_TX_REPLY(priv, "Retry scheduler reclaim scd_ssn "
--					   "%d index %d\n", scd_ssn , index);
-+			IWL_DEBUG_TX_REPLY(priv,
-+					"Retry scheduler reclaim scd_ssn "
-+					"%d index %d\n", scd_ssn , index);
-  			freed = iwl_tx_queue_reclaim(priv, txq_id, index);
-  			iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
-+			if (qc && likely(sta_id != IWL_INVALID_STATION))
-+				iwl_free_tfds_in_queue(priv, sta_id, tid,
-+					freed);
-+			else {
-+				if (sta_id == IWL_INVALID_STATION)
-+				       IWL_ERR(priv, "invalid station");
-+			}
-
-  			if (priv->mac80211_registered &&
-  			    (iwl_queue_space(&txq->q) > txq->q.low_mark) &&
-@@ -2041,14 +2049,20 @@
-  				   tx_resp->failure_frame);
-
-  		freed = iwl_tx_queue_reclaim(priv, txq_id, index);
+diff --git a/drivers/net/wireless/iwlwifi/iwl-4965.c b/drivers/net/wireless/iwlwifi/iwl-4965.c
+index c710b26..2e3cda7 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-4965.c
++++ b/drivers/net/wireless/iwlwifi/iwl-4965.c
+@@ -2014,7 +2014,9 @@ static void iwl4965_rx_reply_tx(struct iwl_priv *priv,
+ 			IWL_DEBUG_TX_REPLY(priv, "Retry scheduler reclaim scd_ssn "
+ 					   "%d index %d\n", scd_ssn , index);
+ 			freed = iwlagn_tx_queue_reclaim(priv, txq_id, index);
+-			iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
++			if (qc)
++				iwl_free_tfds_in_queue(priv, sta_id,
++						       tid, freed);
+ 
+ 			if (priv->mac80211_registered &&
+ 			    (iwl_queue_space(&txq->q) > txq->q.low_mark) &&
+@@ -2040,14 +2042,17 @@ static void iwl4965_rx_reply_tx(struct iwl_priv *priv,
+ 				   tx_resp->failure_frame);
+ 
+ 		freed = iwlagn_tx_queue_reclaim(priv, txq_id, index);
 -		iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
 +		if (qc && likely(sta_id != IWL_INVALID_STATION))
 +			iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
-+		else {
-+			if (sta_id == IWL_INVALID_STATION)
-+			       IWL_ERR(priv, "invalid station");
-+		}
-
-  		if (priv->mac80211_registered &&
-  		    (iwl_queue_space(&txq->q) > txq->q.low_mark))
-  			iwl_wake_queue(priv, txq_id);
-  	}
-
--	iwl_txq_check_empty(priv, sta_id, tid, txq_id);
++		else if (sta_id == IWL_INVALID_STATION)
++			IWL_DEBUG_TX_REPLY(priv, "Station not known\n");
+ 
+ 		if (priv->mac80211_registered &&
+ 		    (iwl_queue_space(&txq->q) > txq->q.low_mark))
+ 			iwl_wake_queue(priv, txq_id);
+ 	}
+-
+-	iwlagn_txq_check_empty(priv, sta_id, tid, txq_id);
 +	if (qc && likely(sta_id != IWL_INVALID_STATION))
-+		iwl_txq_check_empty(priv, sta_id, tid, txq_id);
++		iwlagn_txq_check_empty(priv, sta_id, tid, txq_id);
+ 
+ 	iwl_check_abort_status(priv, tx_resp->frame_count, status);
+ }
+-- 
+1.5.6.3
 
-  	if (iwl_check_bits(status, TX_ABORT_REQUIRED_MSK))
-  		IWL_ERR(priv, "TODO:  Implement Tx ABORT REQUIRED!!!\n");
+
+--=-v7/y33nWzMArKS48gcnM--
+
