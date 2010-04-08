@@ -1,85 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933193Ab0DHTPv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 15:15:51 -0400
-Received: from LION.SEAS.upenn.edu ([158.130.12.194]:41552 "EHLO
-	lion.seas.upenn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932983Ab0DHTPs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 15:15:48 -0400
-Message-ID: <4BBE2B4D.9040808@seas.upenn.edu>
-Date: Thu, 08 Apr 2010 15:15:25 -0400
-From: Rafi Rubin <rafi@seas.upenn.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100316 Thunderbird/3.0.3
+	id S933207Ab0DHTQM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 15:16:12 -0400
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:59864 "EHLO sabe.cs.wisc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933132Ab0DHTQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 15:16:08 -0400
+Message-ID: <4BBE2B66.8090900@cs.wisc.edu>
+Date: Thu, 08 Apr 2010 14:15:50 -0500
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Michael Poole <mdpoole@troilus.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: mt: introduce MT event slots
-References: <1270685590-2204-1-git-send-email-rydberg@euromail.se> <87tyrmiqw2.fsf@troilus.org> <4BBDA555.1020003@euromail.se>
-In-Reply-To: <4BBDA555.1020003@euromail.se>
+To: open-iscsi@googlegroups.com
+CC: Rakesh Ranjan <rakesh@chelsio.com>, netdev@vger.kernel.org,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kxie@chelsio.com, davem@davemloft.net,
+       James.Bottomley@hansenpartnership.com
+Subject: Re: [PATCH 3/3] cxgb4i: iscsi and pdu processing part
+References: <1270728855-20951-1-git-send-email-rakesh@chelsio.com> <1270728855-20951-2-git-send-email-rakesh@chelsio.com> <1270728855-20951-3-git-send-email-rakesh@chelsio.com> <1270728855-20951-4-git-send-email-rakesh@chelsio.com>
+In-Reply-To: <1270728855-20951-4-git-send-email-rakesh@chelsio.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2010 05:43 AM, Henrik Rydberg wrote:
-> Michael Poole wrote:
-> [...]
->>
->> How would the slot number for a contact be chosen?
+On 04/08/2010 07:14 AM, Rakesh Ranjan wrote:
+> From: Rakesh Ranjan<rakesh@chelsio.com>
 >
-> The device driver determines how to use the slots. The driver calls
-> input_mt_slot(dev, slot), sends the data for the slot, picks another slot, and
-> repeats.
+>
+> Signed-off-by: Rakesh Ranjan<rakesh@chelsio.com>
+> ---
+>   drivers/scsi/cxgb4i/cxgb4i_iscsi.c |  715 ++++++++++++++++++++++++++++++++++++
+>   drivers/scsi/cxgb4i/cxgb4i_pdu.c   |  475 ++++++++++++++++++++++++
+>   drivers/scsi/cxgb4i/cxgb4i_pdu.h   |   61 +++
+>   3 files changed, 1251 insertions(+), 0 deletions(-)
+>   create mode 100644 drivers/scsi/cxgb4i/cxgb4i_iscsi.c
+>   create mode 100644 drivers/scsi/cxgb4i/cxgb4i_pdu.c
+>   create mode 100644 drivers/scsi/cxgb4i/cxgb4i_pdu.h
 >
 
-Is there any particular downside to defaulting to implicit slot ids?
+The code in these files looks like the code is the cxgb3i iscsi and pdu 
+code. Can you just make a common cxgb3i iscsi/pdu layer and add some 
+callouts?
 
-For drivers/hardware that don't handle tracking, SYN_MT_REPORT could 
-just result in dev->slot++ and a SYN_REPORT resets dev->slot to 0;
-
-For tracking hardware do you envision waiting for TRACKING_ID before 
-selecting a slot?  If so then either with explicit or implicit slot ids, 
-we would need to cache event until the tracking id is read, and either 
-use SYN_MT_SLOT or some other mechanism to denote known slot id.
-
-
-I like the idea and am just wondering if we can simplify the burden for 
-the drivers (and reduce the potential for mistakes).
-
->> If the kernel makes
->> that assignment, what should a "slot" correspond to from a computer
->> user's perspective? "Set[s] of identified sources" is a little vague:
->> Does it mean contacts from one hand, contacts in one displayed window
->> (assuming the touch surface is a screen), or something else?  (I assume
->> it would not duplicate the blob or tracking IDs already defined for MT
->> events.)
->
-> The slot is only used for data communication. Think of the slot as a combined,
-> unique identifier. For example, imagine a device driver dealing with contacts
-> labeled with both a USER_ID and a TRACKING_ID. The driver assigns every active
-> (USER_ID, TRACKING_ID) contact to a specific slot, and uses it to communicate
-> all changes to that contact. When the contact is destroyed (for instance by
-> sending a zero ABS_MT_PRESSURE on that slot), the slot is free to be used for
-> another contact.
->
->> It seems like those would be important aspects of the protocol
->> to document in Documentation/input/multi-touch-protocol.txt --
->> otherwise, driver implementers or application developers might get it
->> wrong.
->
-> Certainly.
->
- > Cheers,
- > Henrik
-
-Please clarify which slots are emitted to userspace.  At some point you 
-mentioned that if any are changed all will be emitted, is that still 
-your intent?  Have you reconsidered using an explicit event to signify 
-the end of a contact/slot?
-
-Rafi
+Something similar to what qla2xxx or lpfc has done to support multiple 
+cards. In their case they have common fc and driver stuff and then 
+callouts for hw specifics?
