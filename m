@@ -1,53 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758366Ab0DHGtP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 02:49:15 -0400
-Received: from mail-pz0-f193.google.com ([209.85.222.193]:48362 "EHLO
-	mail-pz0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758339Ab0DHGtO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 02:49:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=im0Una5fMNDQ1eBDGpaykQEnOdlDnBUtLWBaEBO5yL5DlSdD1mk2Tsd56arRiSaPO8
-         GZYE+Es+NqLscpmMjcwTEhDVXnh6Rar1uMMyA+c2dZyF8aLPUTu9ObS20qMFGcFwzfMg
-         M/YrbcoSvYcSW9S36OAiDB7aEK2bUetWmtYFU=
-MIME-Version: 1.0
-In-Reply-To: <EAEEEBBE07F4F24C89FEF850CF8C77420142A21107@shzsmsx502.ccr.corp.intel.com>
-References: <EAEEEBBE07F4F24C89FEF850CF8C77420142A21107@shzsmsx502.ccr.corp.intel.com>
-Date: Thu, 8 Apr 2010 15:49:13 +0900
-Message-ID: <z2s28c262361004072349xfb2ab477lc416d8d372f0a008@mail.gmail.com>
-Subject: Re: [PATCH] race condition between __purge_vmap_area_lazy() and 
-	free_unmap_vmap_area_noflush()
-From: Minchan Kim <minchan.kim@gmail.com>
-To: "Zhao, Leifu" <leifu.zhao@intel.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1758428Ab0DHG7A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 02:59:00 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:52555 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758408Ab0DHG65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 02:58:57 -0400
+Date: Thu, 8 Apr 2010 16:58:48 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       Timo =?UTF-8?B?VGVyw6Rz?= <timo.teras@iki.fi>
+Subject: linux-next: powerpc boot failure
+Message-Id: <20100408165848.38f75f40.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__8_Apr_2010_16_58_48_+1000_YAINVecS+pk+udO."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 8, 2010 at 3:36 PM, Zhao, Leifu <leifu.zhao@intel.com> wrote:
-> Hi all,
->
-> I found a bug in 2.6.28 kernel and got the fix for it, see below bug description, log information and the patch. As I know this bug still exists in at least 2.6.32 kernel. I am new in the kernel development process, can someone tell me what should proceed next?
->
+--Signature=_Thu__8_Apr_2010_16_58_48_+1000_YAINVecS+pk+udO.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Good catch!.
+Hi ,
 
-But it was already fixed.
+Today's linux-next (20100408) failed a powerpc boot test like this:
 
-https://patchwork.kernel.org/patch/89783/
+[While bringing up the network interfaces ...]
 
-Thanks.
+Unable to handle kernel paging request for data at address 0x200000025
+Faulting instruction address: 0xc00000000053d32c
+cpu 0x5: Vector: 300 (Data Access) at [c0000000bb277680]
+    pc: c00000000053d32c: .__xfrm_lookup+0x32c/0x4c0
+    lr: c0000000004e6e10: .ip_route_output_flow+0xb0/0x300
+    sp: c0000000bb277900
+   msr: 8000000000009032
+   dar: 200000025
+ dsisr: 40000000
+  current =3D 0xc0000000bce55640
+  paca    =3D 0xc000000007691a00
+    pid   =3D 4106, comm =3D ntpdate
+[c0000000bb277a20] c0000000004e6e10 .ip_route_output_flow+0xb0/0x300
+[c0000000bb277ad0] c0000000005158c8 .ip4_datagram_connect+0x1a8/0x2f0
+[c0000000bb277bd0] c000000000523dc0 .inet_dgram_connect+0x80/0x110
+[c0000000bb277c60] c0000000004a6904 .SyS_connect+0xa4/0xf0
+[c0000000bb277d90] c0000000004d5f48 .compat_sys_socketcall+0x128/0x2f0
+[c0000000bb277e30] c00000000000852c syscall_exit+0x0/0x40
 
+The most obvious suspect is commit
+80c802f3073e84c956846e921e8a0b02dfa3755f ("xfrm: cache bundles instead of
+policies for outgoing flows") and the couple of commits around that
+(these are new to linux-next today).
 
--- 
-Kind regards,
-Minchan Kim
+The above pc is in this piece of code (I think - I don't have the actual
+kernel) from __xfrm_lookup (in net/xfrm/xfrm_policy.c):
+
+        if ((flags & XFRM_LOOKUP_ICMP) &&
+            !(pols[0]->flags & XFRM_POLICY_ICMP)) {
+                err =3D -ENOENT;
+                goto error;
+        }
+
+        for (i =3D 0; i < num_pols; i++)
+                pols[i]->curlft.use_time =3D get_seconds(); <-------- (line=
+ 1845)
+
+And the 0x200000025 is probably &(pols[i]) (which actually seems unlikely
+since pols is an array on the stack).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__8_Apr_2010_16_58_48_+1000_YAINVecS+pk+udO.
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAku9fqgACgkQjjKRsyhoI8wiKQCfat2gTZuQik7gOjMylG7fmovw
+PQkAoI8+Oi+1/zWus+GaB5GahEQ+vZs5
+=ty+C
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__8_Apr_2010_16_58_48_+1000_YAINVecS+pk+udO.--
