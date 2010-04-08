@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758441Ab0DHJ5a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 05:57:30 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:53908 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754105Ab0DHJ50 (ORCPT
+	id S1758438Ab0DHKAZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 06:00:25 -0400
+Received: from smtprelay01.ispgateway.de ([80.67.18.43]:50713 "EHLO
+	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754105Ab0DHKAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 05:57:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=G0NvGsMbnBBdNnI7ueL8aE5gnpUfwYhrwaunfKpUW/jRRGT5r8g+bgYdWOeFNCha86
-         saR0jbDD8mh7DxwUEl4O56DEl5+3Zr+flBBLphn0KtGCvS4OI0tALRgb1XLzbmdBFq3T
-         HgA93RE9KtRF+hldN+Fz0q5eiu05vHks6Erqs=
-Subject: [BUG perf] perf_fetch_caller_regs / rewind_frame_pointer can panic
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>, David Miller <davem@davemloft.net>,
-       Archs <linux-arch@vger.kernel.org>
-In-Reply-To: <1269568362-13690-6-git-send-regression-fweisbec@gmail.com>
-References: <1269568362-13690-1-git-send-regression-fweisbec@gmail.com>
-	 <1269568362-13690-6-git-send-regression-fweisbec@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Apr 2010 11:57:20 +0200
-Message-ID: <1270720640.2215.43.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 8 Apr 2010 06:00:21 -0400
+X-Greylist: delayed 12187 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Apr 2010 06:00:21 EDT
+Message-ID: <4BBDA92B.8010505@ladisch.de>
+Date: Thu, 08 Apr 2010 12:00:11 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Tvrtko Ursulin <tvrtko@ursulin.net>, Takashi Iwai <tiwai@suse.de>
+CC: alsa-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: Ooops when working with USB MIDI (2.6.33.1)
+References: <201004051433.47171.tvrtko@ursulin.net>
+In-Reply-To: <201004051433.47171.tvrtko@ursulin.net>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+Tvrtko Ursulin wrote:
+> I had TuxGuitar running and an external USB MIDI device, which I then
+> turned off, on, and exited TuxGuitar at which point there was this oops.
+> ...
+> [321182.618342] IP: [<ffffffff81375d65>] _raw_spin_lock_irq+0x15/0x30                                                                               
+> [321182.618449]  [<ffffffffa01e2fca>] ? snd_usbmidi_output_drain+0x7a/0x100 [snd_usb_lib]
+> [321182.618462]  [<ffffffffa01b7699>] ? snd_rawmidi_drain_output+0x119/0x180 [snd_rawmidi]
 
-Current linux-2.6 tree panics on my dev machine
+I think that bug was introduced by this commit:
+http://git.kernel.org/linus/7a17daae8ed71bf3259d905a4fc48a5b424fa935
+which causes the driver to free many internal data structures when
+they might still be in use by userspace.
 
-64 bit kernel, 32bit user land
-CONFIG_FRAME_POINTER=y
+Please try to revert it.
 
-perf timechart record &
+I think a proper fix would be to free the URBs/buffers but not the
+driver's data structures.
 
-Instant crash
-
-Call Trace:
- perf_trace_sched_switch+0xd5/0x120
- schedule+0x6b5/0x860
- retint_careful+0xd/0x21
- 
-RIP ffffffff81010955 perf_arch_fetch_caller_regs+0x15/0x40
-CR2: 00000000d21f1422
-
-
-rewind_frame_pointer() is probably wrong.
-
-No test performed to check frame is in current stack, or
-that (!user_mode_vm(regs))
+Takashi, do you remember what the original problem was?
 
 
-static inline unsigned long rewind_frame_pointer(int n)
-{
-	struct stack_frame *frame;
-
-	get_bp(frame);
-
-#ifdef CONFIG_FRAME_POINTER
-	while (n--)
-		frame = frame->next_frame;
-#endif
-
-	return (unsigned long)frame;
-}
-
-
-
+Regards,
+Clemens
