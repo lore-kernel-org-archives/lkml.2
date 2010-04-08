@@ -1,102 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933308Ab0DHTvM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 15:51:12 -0400
-Received: from mail-pz0-f193.google.com ([209.85.222.193]:63488 "EHLO
-	mail-pz0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933211Ab0DHTvJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 15:51:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Gw7MmbFZ7q5Fgyh7HriDl0A3SR/qgUIy02rDe3zgJKiVRC+LLGvGSDAWlmeyGCQLMv
-         AyT73P/YpUf0CXZXavpfAqKYEQIDqy4WmhnlctdBJw6p4arAb6OqfMD3nBGc8yBLAKPu
-         21d5W0JBCZ0eMAUIMvxxMnShPPmtyFH9+Pq7I=
-MIME-Version: 1.0
-In-Reply-To: <j2s5bdc1c8b1004081201odd560a13z3a00c5c2325b4293@mail.gmail.com>
-References: <x2w5bdc1c8b1004051355o3f803c75t2515ef46320e00bd@mail.gmail.com>
-	 <4BBD1957.90502@gmail.com>
-	 <k2l5bdc1c8b1004072051h957c3f1crf0a139bd96a093a4@mail.gmail.com>
-	 <v2h51f3faa71004072054y4733bf9bq80a04574bebbadba@mail.gmail.com>
-	 <4BBD7997.1020803@ladisch.de>
-	 <l2v5bdc1c8b1004080753k7787e635p4a70d4a1a777984d@mail.gmail.com>
-	 <4BBDEF93.6070306@ladisch.de>
-	 <z2i5bdc1c8b1004080924q1b8d3994vd69c9c9dd0bb2f78@mail.gmail.com>
-	 <k2t51f3faa71004081040l326458e4zf89854ec32a57940@mail.gmail.com>
-	 <j2s5bdc1c8b1004081201odd560a13z3a00c5c2325b4293@mail.gmail.com>
-Date: Thu, 8 Apr 2010 12:51:09 -0700
-Message-ID: <i2w5bdc1c8b1004081251x2d5b031dtccb6d5726e820688@mail.gmail.com>
-Subject: Re: Failed to initialize MSI interrupts && ioremap reserve_memtype 
-	failed -22
-From: Mark Knecht <markknecht@gmail.com>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>,
-       Linux Kernel List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S933329Ab0DHTxg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 15:53:36 -0400
+Received: from mga02.intel.com ([134.134.136.20]:7599 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933059Ab0DHTxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 15:53:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,172,1270450800"; 
+   d="scan'208,223";a="507541309"
+Subject: Re: [REVERT] be6b38bcb175613f239e0b302607db346472c6b6.
+ v2.6.34-rc3-406 oops with 4965AGN wireless
+From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Cc: "Zhao, Shanyu" <shanyu.zhao@intel.com>,
+       "Chatre, Reinette" <reinette.chatre@intel.com>,
+       "stable@kernel.org" <stable@kernel.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Al Viro <viro@zeniv.linux.org.uk>
+In-Reply-To: <Pine.LNX.4.64.1004090336410.22139@boston.corp.fedex.com>
+References: <Pine.LNX.4.64.1004090251210.11582@boston.corp.fedex.com>
+	 <Pine.LNX.4.64.1004090336410.22139@boston.corp.fedex.com>
+Content-Type: multipart/mixed; boundary="=-qGsVv7IT84VMBWAtQBAQ"
+Date: Thu, 08 Apr 2010 13:50:00 -0700
+Message-Id: <1270759800.19330.19.camel@wwguy-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 8, 2010 at 12:01 PM, Mark Knecht <markknecht@gmail.com> wrote:
-> On Thu, Apr 8, 2010 at 10:40 AM, Robert Hancock <hancockrwd@gmail.com> wrote:
->> On Thu, Apr 8, 2010 at 10:24 AM, Mark Knecht <markknecht@gmail.com> wrote:
->>> On Thu, Apr 8, 2010 at 8:00 AM, Clemens Ladisch <clemens@ladisch.de> wrote:
->>>> Mark Knecht wrote:
->>>>> ioremap reserve_memtype failed -22
->>>>> phys_addr: 0xcf7fe000, size: 0x2000
->>>>
->>>> What is at this address in /proc/iomem?
->>>>
->>>>> Call Trace:
->>>>>  [<ffffffff8101b7ee>] ? __ioremap_caller+0x1e2/0x30e
->>>>>  [<ffffffffa052345b>] ? _nv006553rm+0x3a/0x40 [nvidia]
->>>>
->>>> I didn't find this function name in the kernel source ...
->>>>
->>>>
->>>> Regards,
->>>> Clemens
->>>>
->>>
->>> Is there a serious chance this is somehow related to the closed source
->>> nvidia driver? I could investigate switching to the in kernel driver
->>> although that might take me a little time to get to.
->>
->> Yeah, those symbols are from the NVIDIA driver. Seems like it's trying
->> to reserve part of memory in ACPI tables somehow?
->>
->> You might want to make sure you have the latest version (or just use
->> nouveau instead..)
->>
->
-> I spent a few minutes looking at the Gentoo nouveau guide. I think I
-> won't be able to do that before Sunday so if there's nothing else to
-> reasonably look at and you're >50% sure that's the reason then I'll
-> probably have to get back to you guys next Monday or so. (Assuming the
-> guides are correct and it actually works.
->
-> One question: If I simply remove the nvidia driver (either emerge -C
-> or blacklist it) then assuming it doesn't load if I don't see the
-> message we at least know it's involved in the problem, correct? That's
-> very easy to do right now as a test.
->
-> - Mark
->
 
-OK - final follow up for today. I removed the nvidia driver completely
-from the system and rebooted. No error messages in dmesg anymore, so
-we solved on (bad kernel config on my part) and we understand the
-second.
+--=-qGsVv7IT84VMBWAtQBAQ
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 
-As far as I can tell so far there hasn't been actual problem running
-nvidia and getting this error so I'll reinstall the driver for now and
-then look into either a newer version from them or doing the tricky
-stuff the Gentoo guide wants me to do for nouveau. (Or I suppose the
-less tricky nouveau setup on an 2.6.34 kernel.)
+Hi Jeff,
 
-Thanks!
 
-- Mark
+On Thu, 2010-04-08 at 12:42 -0700, Jeff Chua wrote:
+> 
+> On Fri, Apr 9, 2010 at 4:24 AM, Guy, Wey-Yi <wey-yi.w.guy@intel.com> 
+> wrote:
+> 
+> > Maybe this patch looks better, if sched_rety and sta_id ==
+> 
+> Wey,
+> 
+> I've updated your patch and tested it. Wireless seems ok now.
+> 
+> Please verify it and inform Linus once you sign-off on it.
+> 
+> 
+> Thanks,
+> Jeff
+> 
+> --- a/drivers/net/wireless/iwlwifi/iwl-4965.c.org	2010-04-09 02:11:45.000000000 +0800
+> +++ a/drivers/net/wireless/iwlwifi/iwl-4965.c	2010-04-09 03:33:43.000000000 +0800
+> @@ -2012,10 +2012,15 @@
+> 
+>   		if (txq->q.read_ptr != (scd_ssn & 0xff)) {
+>   			index = iwl_queue_dec_wrap(scd_ssn & 0xff, txq->q.n_bd);
+> -			IWL_DEBUG_TX_REPLY(priv, "Retry scheduler reclaim scd_ssn "
+> -					   "%d index %d\n", scd_ssn , index);
+> +			IWL_DEBUG_TX_REPLY(priv,
+> +					"Retry scheduler reclaim scd_ssn "
+> +					"%d index %d\n", scd_ssn , index);
+>   			freed = iwl_tx_queue_reclaim(priv, txq_id, index);
+> -			iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
+> +			if(qc)
+> +				iwl_free_tfds_in_queue(priv, sta_id, tid,
+> +					freed);
+> +			else if (sta_id == IWL_INVALID_STATION)
+> +				       IWL_ERR(priv, "invalid station");
+> 
+do not need to check sta_id == IWL_INVALID_STATION here since already
+check before.
+could you try my revised version of patch I send after my first attempt.
+to make sure it works. 
+
+I attach here again in case you did not get it.
+
+Thanks
+Wey
+
+
+
+--=-qGsVv7IT84VMBWAtQBAQ
+Content-Disposition: attachment; filename*0=0001-iwlwifi-need-check-for-valid-qos-packet-before-free.patc; filename*1=h
+Content-Type: text/x-patch; name="0001-iwlwifi-need-check-for-valid-qos-packet-before-free.patch"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+>From f3a5f691e32c0edfbc42a1e8687392dc3efe396e Mon Sep 17 00:00:00 2001
+From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Date: Thu, 8 Apr 2010 13:17:37 -0700
+Subject: [PATCH 1/1] iwlwifi: need check for valid qos packet before free
+
+For 4965, need to check it is valid qos frame before free, only valid
+QoS frame has the tid used to free the packets.
+
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+---
+ drivers/net/wireless/iwlwifi/iwl-4965.c |   13 +++++++++----
+ 1 files changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/wireless/iwlwifi/iwl-4965.c b/drivers/net/wireless/iwlwifi/iwl-4965.c
+index c710b26..2e3cda7 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-4965.c
++++ b/drivers/net/wireless/iwlwifi/iwl-4965.c
+@@ -2014,7 +2014,9 @@ static void iwl4965_rx_reply_tx(struct iwl_priv *priv,
+ 			IWL_DEBUG_TX_REPLY(priv, "Retry scheduler reclaim scd_ssn "
+ 					   "%d index %d\n", scd_ssn , index);
+ 			freed = iwlagn_tx_queue_reclaim(priv, txq_id, index);
+-			iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
++			if (qc)
++				iwl_free_tfds_in_queue(priv, sta_id,
++						       tid, freed);
+ 
+ 			if (priv->mac80211_registered &&
+ 			    (iwl_queue_space(&txq->q) > txq->q.low_mark) &&
+@@ -2040,14 +2042,17 @@ static void iwl4965_rx_reply_tx(struct iwl_priv *priv,
+ 				   tx_resp->failure_frame);
+ 
+ 		freed = iwlagn_tx_queue_reclaim(priv, txq_id, index);
+-		iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
++		if (qc && likely(sta_id != IWL_INVALID_STATION))
++			iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
++		else if (sta_id == IWL_INVALID_STATION)
++			IWL_DEBUG_TX_REPLY(priv, "Station not known\n");
+ 
+ 		if (priv->mac80211_registered &&
+ 		    (iwl_queue_space(&txq->q) > txq->q.low_mark))
+ 			iwl_wake_queue(priv, txq_id);
+ 	}
+-
+-	iwlagn_txq_check_empty(priv, sta_id, tid, txq_id);
++	if (qc && likely(sta_id != IWL_INVALID_STATION))
++		iwlagn_txq_check_empty(priv, sta_id, tid, txq_id);
+ 
+ 	iwl_check_abort_status(priv, tx_resp->frame_count, status);
+ }
+-- 
+1.5.6.3
+
+
+--=-qGsVv7IT84VMBWAtQBAQ--
+
