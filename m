@@ -1,29 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933578Ab0DHU2W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 16:28:22 -0400
-Received: from kroah.org ([198.145.64.141]:42711 "EHLO coco.kroah.org"
+	id S933594Ab0DHU2c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 16:28:32 -0400
+Received: from kroah.org ([198.145.64.141]:42722 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933333Ab0DHU14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 16:27:56 -0400
-Date: Thu, 8 Apr 2010 13:11:29 -0700
+	id S933536Ab0DHU17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 16:27:59 -0400
+Date: Thu, 8 Apr 2010 13:19:56 -0700
 From: Greg KH <greg@kroah.com>
-To: Benjamin Adolphi <b.adolphi@googlemail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-       Benjamin Adolphi <b.adolphi@gmail.com>
-Subject: Re: [PATCH] Staging: tm6000: Checkpatch cleanups
-Message-ID: <20100408201129.GX31571@kroah.com>
-References: <1268087126-6896-1-git-send-email-b.adolphi@gmail.com>
+To: John Church <j.church@ymail.com>
+Cc: gregkh@suse.de, bzolnier@gmail.com, Larry.Finger@lwfinger.net,
+       bernhard@schiffner-limbach.de, davem@davemloft.net,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: rtl8187se: fix coding style issues in
+ r8180_core.c
+Message-ID: <20100408201956.GA10896@kroah.com>
+References: <1268099027-29438-1-git-send-email-j.church@ymail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1268087126-6896-1-git-send-email-b.adolphi@gmail.com>
+In-Reply-To: <1268099027-29438-1-git-send-email-j.church@ymail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 08, 2010 at 11:25:26PM +0100, Benjamin Adolphi wrote:
-> This fixes some checkpatch issues in the tm6000 driver.
+On Tue, Mar 09, 2010 at 01:43:47AM +0000, John Church wrote:
+> ---
+>  drivers/staging/rtl8187se/r8180_core.c |   98 ++++++++++++++++----------------
+>  1 files changed, 49 insertions(+), 49 deletions(-)
 
-This patch doesn't apply :(
+This causes a build error, did you test your change?
+
+thanks,
+
+greg k-h
