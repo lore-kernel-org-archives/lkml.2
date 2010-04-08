@@ -1,135 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758267Ab0DHBS1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 21:18:27 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:29662 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954Ab0DHBSW (ORCPT
+	id S1758282Ab0DHB2Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 21:28:24 -0400
+Received: from mail-qy0-f179.google.com ([209.85.221.179]:60089 "EHLO
+	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752954Ab0DHB2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 21:18:22 -0400
-Message-ID: <4BBD2DD4.1060101@oracle.com>
-Date: Wed, 07 Apr 2010 18:13:56 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	Wed, 7 Apr 2010 21:28:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:from:date:message-id:subject:to:cc
+         :content-type;
+        b=ToydaWDr9RmTtd5g1/XeqBY9HTIGna3x8VrPCjEWIwIlR93LRaY7rfjB5+qwxEI8OF
+         ZDIUMUNSbYcEBWgt3ha7OXy7xt1Ev9jW3UE150st8XM6eKxQsFMrdpDJHG4Bn3aH2N9Z
+         Pu0NiNU1cCNMVqtKhLtQakqrEoTGGcnVS7rLE=
 MIME-Version: 1.0
-To: Liang Li <liang.li@windriver.com>
-CC: akpm@linux-foundation.org, hpa@zytor.com, mingo@elte.hu,
-       tglx@linutronix.de, wangchen@cn.fujitsu.com,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: + x86-fix-handling-of-the-reservetop-boot-option.patch added
- to -mm tree
-References: <201004072200.o37M0d19009878@imap1.linux-foundation.org> <4BBD1AA3.4000204@oracle.com> <20100408010558.GA4053@localhost>
-In-Reply-To: <20100408010558.GA4053@localhost>
+Reply-To: axel.lin@gmail.com
+From: Axel Lin <axel.lin@gmail.com>
+Date: Thu, 8 Apr 2010 09:28:02 +0800
+Message-ID: <p2z427d64721004071828w41cedeb5j1079ed4cdd04fbf2@mail.gmail.com>
+Subject: [PATCH] stmmac: Fix incorrect resource calculation
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+       "David S. Miller" <davem@davemloft.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B020A.4BBD2E8B.009F:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2010 06:05 PM, Liang Li wrote:
-> On Wed, Apr 07, 2010 at 04:52:03PM -0700, Yinghai wrote:
->> On 04/07/2010 03:00 PM, akpm@linux-foundation.org wrote:
->>> The patch titled
->>>      x86: fix handling of the 'reservetop' boot option
->>> has been added to the -mm tree.  Its filename is
->>>      x86-fix-handling-of-the-reservetop-boot-option.patch
->>>
->>> Before you just go and hit "reply", please:
->>>    a) Consider who else should be cc'ed
->>>    b) Prefer to cc a suitable mailing list as well
->>>    c) Ideally: find the original patch on the mailing list and do a
->>>       reply-to-all to that, adding suitable additional cc's
->>>
->>> *** Remember to use Documentation/SubmitChecklist when testing your code ***
->>>
->>> See http://userweb.kernel.org/~akpm/stuff/added-to-mm.txt to find
->>> out what to do about this
->>>
->>> The current -mm tree may be found at http://userweb.kernel.org/~akpm/mmotm/
->>>
->>> ------------------------------------------------------
->>> Subject: x86: fix handling of the 'reservetop' boot option
->>> From: Liang Li <liang.li@windriver.com>
->>>
->>> When specifying the 'reservetop=0xbadc0de' kernel parameter, the kernel
->>> will stop booting due to a early_ioremap bug that relate to commit
->>> 8827247ff ("x86: don't define __this_fixmap_does_not_exist()").
->>>
->>> The root cause of boot failure problem is the value of 'slot_virt[i]' was
->>> initialized in setup_arch->early_ioremap_init.  But later in setup_arch,
->>> the function 'parse_early_param' will modify 'FIXADDR_TOP' when
->>> 'reservetop=0xbadc0de' being specified.
->>>
->>> The simplest fix might be use __fix_to_virt(idx0) to get updated value
->>> of 'FIXADDR_TOP' in '__early_ioremap' instead of reference old value
->>> from slot_virt[slot] directly.
->>>
->>> Signed-off-by: Liang Li <liang.li@windriver.com>
->>> Cc: Wang Chen <wangchen@cn.fujitsu.com>
->>> Cc: Ingo Molnar <mingo@elte.hu>
->>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>> Cc: "H. Peter Anvin" <hpa@zytor.com>
->>> Cc: Yinghai Lu <yinghai@kernel.org>
->>> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->>> ---
->>>
->>>  arch/x86/mm/ioremap.c |    4 ++--
->>>  1 file changed, 2 insertions(+), 2 deletions(-)
->>>
->>> diff -puN arch/x86/mm/ioremap.c~x86-fix-handling-of-the-reservetop-boot-option arch/x86/mm/ioremap.c
->>> --- a/arch/x86/mm/ioremap.c~x86-fix-handling-of-the-reservetop-boot-option
->>> +++ a/arch/x86/mm/ioremap.c
->>> @@ -537,9 +537,9 @@ __early_ioremap(resource_size_t phys_add
->>>  		--nrpages;
->>>  	}
->>>  	if (early_ioremap_debug)
->>> -		printk(KERN_CONT "%08lx + %08lx\n", offset, slot_virt[slot]);
->>> +		printk(KERN_CONT "%08lx + %08lx\n", offset, __fix_to_virt(idx0));
->>>  
->>> -	prev_map[slot] = (void __iomem *)(offset + slot_virt[slot]);
->>> +	prev_map[slot] = (void __iomem *)(offset + __fix_to_virt(idx0));
->>>  	return prev_map[slot];
->>>  }
->>>  
->>> _
->>
->> not that simple. but it looks like correct direction.
->>
->> please consider:
->> when early_parsing reserve_top, double check if there is left over in prev_map[], and 
->> reinitialize slot_virt[] and clear old PMD and  setup new PMD if needed.
-> 
-> Hi Yinghai,
-> 
-> Thanks for your reply, its better to have eyes on then being ignored. :)
-> 
-> Your suggestions were considered before the patch to public, let me try
-> to explain:
-> 
-> #1 check/adjust prev_map[]?
-> In my tests, seems early_ioremap is untouched between early_ioremap_init
-> and parse_early_param so I did not check prev_map. Even its get touched,
-> I think we could do nothing to this mapping, since prev_map[i] just
-> record virt addr for clients of early_ioremap. We can check and adjust
-> prev_map but clients of early_ioremap won't realize the fact so nothing
-> being fixed or broken.
+The size calculation is not correct.  It should be end - start + 1.
+Use resource_size for {request/release}_mem_region and ioremap.
 
-efi related code need them
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/net/stmmac/stmmac_main.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-dmi 
+diff --git a/drivers/net/stmmac/stmmac_main.c b/drivers/net/stmmac/stmmac_main.c
+index a214a16..f613a07 100644
+--- a/drivers/net/stmmac/stmmac_main.c
++++ b/drivers/net/stmmac/stmmac_main.c
+@@ -1686,7 +1686,7 @@ static int stmmac_dvr_probe(struct platform_device *pdev)
+        }
+        pr_info("done!\n");
 
-you need to add bug_on if there is still have left over, and need the caller to re map it again later.
+-       if (!request_mem_region(res->start, (res->end - res->start),
++       if (!request_mem_region(res->start, resource_size(res),
+                                pdev->name)) {
+                pr_err("%s: ERROR: memory allocation failed"
+                       "cannot get the I/O addr 0x%x\n",
+@@ -1695,7 +1695,7 @@ static int stmmac_dvr_probe(struct platform_device *pdev)
+                goto out;
+        }
 
-> 
-> #2 reinitialize slot_virt and update PMD
-> I actually tried this approach, call early_ioremap_init again after
-> parse_early_param will do that work, it also works but I am not sure
-> that is the better solution or too heavy for solve the problem? So I
-> tend to say 'simplest' solution in git commit log.
+-       addr = ioremap(res->start, (res->end - res->start));
++       addr = ioremap(res->start, resource_size(res));
+        if (!addr) {
+                pr_err("%s: ERROR: memory mapping failed \n", __func__);
+                ret = -ENOMEM;
+@@ -1775,7 +1775,7 @@ static int stmmac_dvr_probe(struct platform_device *pdev)
+ out:
+        if (ret < 0) {
+                platform_set_drvdata(pdev, NULL);
+-               release_mem_region(res->start, (res->end - res->start));
++               release_mem_region(res->start, resource_size(res));
+                if (addr != NULL)
+                        iounmap(addr);
+        }
+@@ -1813,7 +1813,7 @@ static int stmmac_dvr_remove(struct platform_device *pdev)
 
-how about PMD? you don't need set PMD again.
+        iounmap((void *)ndev->base_addr);
+        res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-       release_mem_region(res->start, (res->end - res->start));
++       release_mem_region(res->start, resource_size(res));
 
-YH
+        free_netdev(ndev);
+
+-- 
+1.5.4.3
