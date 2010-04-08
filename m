@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345Ab0DHGZA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 02:25:00 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36159
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751838Ab0DHGY5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 02:24:57 -0400
-Date: Wed, 07 Apr 2010 23:25:00 -0700 (PDT)
-Message-Id: <20100407.232500.184442638.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, john.linn@xilinx.com, jtyner@cs.ucr.edu
-Subject: Re: linux-next: build failure after merge of the final tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100408153505.eb205158.sfr@canb.auug.org.au>
-References: <20100408153505.eb205158.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1757750Ab0DHGc4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 02:32:56 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:51360 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755527Ab0DHGcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 02:32:55 -0400
+Date: Thu, 8 Apr 2010 08:32:36 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: James Morris <jmorris@namei.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+       linux-kernel@vger.kernel.org, airlied@linux.ie,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: Config NO_BOOTMEM breaks my amd64 box
+Message-ID: <20100408063236.GA23489@elte.hu>
+References: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org>
+ <4BB2EB1B.8090303@zytor.com>
+ <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org>
+ <20100331185916.GA12306@elte.hu>
+ <alpine.LRH.2.00.1004010952080.31957@tundra.namei.org>
+ <4BB3DC4E.7030504@zytor.com>
+ <alpine.LRH.2.00.1004011042460.32618@tundra.namei.org>
+ <4BB3DF46.8080008@zytor.com>
+ <alpine.LRH.2.00.1004011200020.365@tundra.namei.org>
+ <20100401125210.GA2445@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100401125210.GA2445@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 8 Apr 2010 15:35:05 +1000
 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
+* Ingo Molnar <mingo@elte.hu> wrote:
+
+> * James Morris <jmorris@namei.org> wrote:
 > 
-> drivers/net/ll_temac_main.c: In function 'll_temac_recv':
-> drivers/net/ll_temac_main.c:695: error: implicit declaration of function 'virt_to_bus'
+> > On Wed, 31 Mar 2010, H. Peter Anvin wrote:
+> > 
+> > > On 03/31/2010 04:43 PM, James Morris wrote:
+> > > >>
+> > > >> Upgraded how?  The problem no longer happens?
+> > > > 
+> > > > Upgraded to the latest rawhide userland -- I have not since tested with 
+> > > > bootmem off.  I'll try and do so again when I get a chance.
+> > > > 
+> > > 
+> > > That would be great.  The sooner the better, obviously.
+> > 
+> > I'm not seeing any problems now, with current Linus and rawhide.  I'll leave 
+> > bootmem off and see if anything comes up again.
 > 
-> Caused by commit 459569145516f7967b916c57445feb02c600668c ("Add
-> non-Virtex5 support for LL TEMAC driver") from the net tree.
+> (a current bootlog would still be nice)
 > 
-> I have reverted that commit for today.
+> Dave, can you reproduce any of these problems with Linus's latest?
 
-And I'm reverting it too, it's illegal to use virt_to_bus()
-in new code in this day and age.
+ping? Can you or Dave reproduce the bug with -rc3 or later kernels? (If not 
+then it probably means that the bug you triggered was already fixed at the 
+time you reported it, as hpa suspected.)
 
-John, you'll need to use the DMA mapping APIs in this change when you
-resubmit it.
+Thanks,
 
-Thanks.
+	Ingo
