@@ -1,75 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933170Ab0DHTDT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 15:03:19 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:54035 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932642Ab0DHTDR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 15:03:17 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=nhCiLsJXYbDo3HSQZsuRc764rTtFpf1DFINAzRgOcCoj31Qx4TW8YQ7oH/INEUhi2
-	x9TFM0BLq+4x3qfk823yA==
-Date: Thu, 8 Apr 2010 12:03:10 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Xiaotian Feng <dfeng@redhat.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
-       Ingo Molnar <mingo@elte.hu>, Vegard Nossum <vegard.nossum@gmail.com>
-Subject: Re: [PATCH] slub: __kmalloc_node_track_caller should trace
- kmalloc_large_node case
-In-Reply-To: <1270718804-27268-1-git-send-email-dfeng@redhat.com>
-Message-ID: <alpine.DEB.2.00.1004081202570.21040@chino.kir.corp.google.com>
-References: <1270718804-27268-1-git-send-email-dfeng@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S933161Ab0DHTEz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 15:04:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42050 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932642Ab0DHTEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 15:04:54 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100408164615.GA4836@linux.vnet.ibm.com>
+References: <20100408164615.GA4836@linux.vnet.ibm.com> <20100407171342.GF2481@linux.vnet.ibm.com> <20100407162620.GA11543@linux.vnet.ibm.com> <27310.1270659627@redhat.com> <27837.1270660848@redhat.com> <20100407230009.GK2481@linux.vnet.ibm.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+       laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, eric.dumazet@gmail.com
+Subject: Re: [PATCH tip/urgent] rcu: add rcu_access_pointer and rcu_dereference_protected
+Date: Thu, 08 Apr 2010 20:04:07 +0100
+Message-ID: <12448.1270753447@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Apr 2010, Xiaotian Feng wrote:
+Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-> commit 94b528d (kmemtrace: SLUB hooks for caller-tracking functions)
-> missed tracing kmalloc_large_node in __kmalloc_node_track_caller. We
-> should trace it same as __kmalloc_node.
-> 
-> Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-> Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-> Cc: Matt Mackall <mpm@selenic.com>
-> Cc: David Rientjes <rientjes@google.com>
+> And all of the examples I could come up with that had c!=1 were contorted,
+> even by my standards.  So you were right, and I will drop the "c" on my
+> next set of patches.
 
-Acked-by: David Rientjes <rientjes@google.com>
+:-)
 
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Vegard Nossum <vegard.nossum@gmail.com>
-> ---
->  mm/slub.c |   11 +++++++++--
->  1 files changed, 9 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/slub.c b/mm/slub.c
-> index b364844..a3a5a18 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -3335,8 +3335,15 @@ void *__kmalloc_node_track_caller(size_t size, gfp_t gfpflags,
->  	struct kmem_cache *s;
->  	void *ret;
->  
-> -	if (unlikely(size > SLUB_MAX_SIZE))
-> -		return kmalloc_large_node(size, gfpflags, node);
-> +	if (unlikely(size > SLUB_MAX_SIZE)) {
-> +		ret = kmalloc_large_node(size, gfpflags, node);
-> +
-> +		trace_kmalloc_node(caller, ret,
-> +				   size, PAGE_SIZE << get_order(size),
-> +				   gfpflags, node);
-> +
-> +		return ret;
-> +	}
->  
->  	s = get_slab(size, gfpflags);
->  
+When it's done, I'll rebuild my keys and NFS patches on top of it.
+
+David
