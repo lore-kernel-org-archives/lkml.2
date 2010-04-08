@@ -1,109 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758878Ab0DHRab (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 13:30:31 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36154 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753847Ab0DHRa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 13:30:29 -0400
-Message-ID: <4BBE12B6.3000609@suse.com>
-Date: Thu, 08 Apr 2010 13:30:30 -0400
-From: Jeff Mahoney <jeffm@suse.com>
-Organization: SUSE Labs, Novell, Inc
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-2.1 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Edward Shishkin <edward.shishkin@gmail.com>
-Cc: ReiserFS Mailing List <reiserfs-devel@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH #2] reiserfs: Fix permissions on .reiserfs_priv
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1758888Ab0DHRcM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 13:32:12 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:62036 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754407Ab0DHRcJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 13:32:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=NIUBqNlcdumbJWaiOic81uh/0p6zVjfRzZ9U2uEKmmTCPGUGFKc7Fmqq7G+jig8Ltv
+         3hOyOL/9nml3Mv67ac3hqdG5mTEhHT5gebz2CGgqsSnmk7lUsSrbaALbYCKnJo1rV2oj
+         4/Ne2uuCJBPKikINdWEjyuWWmfAqPcZf6v3wY=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>, David Miller <davem@davemloft.net>,
+       Archs <linux-arch@vger.kernel.org>
+Subject: [GIT PULL] perf fix
+Date: Thu,  8 Apr 2010 19:31:59 +0200
+Message-Id: <1270747919-16685-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.6.2.3
+In-Reply-To: <1270734746.2215.56.camel@edumazet-laptop>
+References: <1270734746.2215.56.camel@edumazet-laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Commit 677c9b2e393a0cd203bd54e9c18b012b2c73305a removed the magic
- from the lookup code to hide the .reiserfs_priv directory since it
- was getting loaded at mount-time instead. The intent was that the
- entry would be hidden from the user via a poisoned d_compare, but
- this was faulty.
+Ingo,
 
- This introduced a security issue where unpriviledged users could
- access and modify extended attributes or ACLs belonging to other
- users, including root.
+Please pull the perf/urgent branch that can be found at:
 
- This patch resolves the issue by properly hiding .reiserfs_priv. This
- was the intent of the xattr poisoning code, but it appears to have
- never worked as expected. This is fixed by using d_revalidate instead
- of d_compare.
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	perf/urgent
 
- This patch makes -oexpose_privroot a no-op. I'm fine leaving it this
- way. The effort involved in working out the corner cases wrt permissions
- and caching outweigh the benefit of the feature.
-
- Re-sent because I forgot to turn off the GPG signing when I sent the first
- time.
-
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Thanks,
+	Frederic
 ---
 
- fs/reiserfs/dir.c   |    2 --
- fs/reiserfs/xattr.c |   17 ++++-------------
- 2 files changed, 4 insertions(+), 15 deletions(-)
+Frederic Weisbecker (1):
+      perf: Fix unsafe frame rewinding with hot regs fetching
 
---- a/fs/reiserfs/dir.c
-+++ b/fs/reiserfs/dir.c
-@@ -45,8 +45,6 @@ static inline bool is_privroot_deh(struc
- 				   struct reiserfs_de_head *deh)
- {
- 	struct dentry *privroot = REISERFS_SB(dir->d_sb)->priv_root;
--	if (reiserfs_expose_privroot(dir->d_sb))
--		return 0;
- 	return (dir == dir->d_parent && privroot->d_inode &&
- 	        deh->deh_objectid == INODE_PKEY(privroot->d_inode)->k_objectid);
- }
---- a/fs/reiserfs/xattr.c
-+++ b/fs/reiserfs/xattr.c
-@@ -972,21 +972,13 @@ int reiserfs_permission(struct inode *in
- 	return generic_permission(inode, mask, NULL);
- }
- - -/* This will catch lookups from the fs root to .reiserfs_priv */
--static int
--xattr_lookup_poison(struct dentry *dentry, struct qstr *q1, struct
-qstr *name)
-+static int xattr_hide_revalidate(struct dentry *dentry, struct
-nameidata *nd)
- {
--	struct dentry *priv_root = REISERFS_SB(dentry->d_sb)->priv_root;
--	if (container_of(q1, struct dentry, d_name) == priv_root)
--		return -ENOENT;
--	if (q1->len == name->len &&
--		   !memcmp(q1->name, name->name, name->len))
--		return 0;
--	return 1;
-+	return -EPERM;
- }
-  static const struct dentry_operations xattr_lookup_poison_ops = {
--	.d_compare = xattr_lookup_poison,
-+	.d_revalidate = xattr_hide_revalidate,
- };
-  int reiserfs_lookup_privroot(struct super_block *s)
-@@ -1000,8 +992,7 @@ int reiserfs_lookup_privroot(struct supe
- 				strlen(PRIVROOT_NAME));
- 	if (!IS_ERR(dentry)) {
- 		REISERFS_SB(s)->priv_root = dentry;
--		if (!reiserfs_expose_privroot(s))
--			s->s_root->d_op = &xattr_lookup_poison_ops;
-+		dentry->d_op = &xattr_lookup_poison_ops;
- 		if (dentry->d_inode)
- 			dentry->d_inode->i_flags |= S_PRIVATE;
- 	} else
--- 
-Jeff Mahoney
-SUSE Labs
---
-To unsubscribe from this list: send the line "unsubscribe reiserfs-devel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+ arch/x86/kernel/dumpstack.h |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
+
+---
+commit ab285f2b5290d92b7ec1a6f9aad54308dadf6157
+Author: Frederic Weisbecker <fweisbec@gmail.com>
+Date:   Thu Apr 8 14:05:50 2010 +0200
+
+    perf: Fix unsafe frame rewinding with hot regs fetching
+    
+    When we fetch the hot regs and rewind to the nth caller, it
+    might happen that we dereference a frame pointer outside the
+    kernel stack boundaries, like in this example:
+    
+    	perf_trace_sched_switch+0xd5/0x120
+            schedule+0x6b5/0x860
+            retint_careful+0xd/0x21
+    
+    Since we directly dereference a userspace frame pointer here while
+    rewinding behind retint_careful, this may end up in a crash.
+    
+    Fix this by simply using probe_kernel_address() when we rewind the
+    frame pointer.
+    
+    This issue will have a much more proper fix in the next version of the
+    perf_arch_fetch_caller_regs() API that will only need to rewind to the
+    first caller.
+    
+    Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
+    Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+    Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
+    Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+    Cc: Paul Mackerras <paulus@samba.org>
+    Cc: David Miller <davem@davemloft.net>
+    Cc: Archs <linux-arch@vger.kernel.org>
+
+diff --git a/arch/x86/kernel/dumpstack.h b/arch/x86/kernel/dumpstack.h
+index e39e771..e1a93be 100644
+--- a/arch/x86/kernel/dumpstack.h
++++ b/arch/x86/kernel/dumpstack.h
+@@ -14,6 +14,8 @@
+ #define get_bp(bp) asm("movq %%rbp, %0" : "=r" (bp) :)
+ #endif
+ 
++#include <linux/uaccess.h>
++
+ extern void
+ show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
+ 		unsigned long *stack, unsigned long bp, char *log_lvl);
+@@ -42,8 +44,10 @@ static inline unsigned long rewind_frame_pointer(int n)
+ 	get_bp(frame);
+ 
+ #ifdef CONFIG_FRAME_POINTER
+-	while (n--)
+-		frame = frame->next_frame;
++	while (n--) {
++		if (probe_kernel_address(&frame->next_frame, frame))
++			break;
++	}
+ #endif
+ 
+ 	return (unsigned long)frame;
