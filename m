@@ -1,102 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932981Ab0DHR4E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 13:56:04 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:48459 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755949Ab0DHR4A (ORCPT
+	id S933009Ab0DHR5O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 13:57:14 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:65037 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932309Ab0DHR5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 13:56:00 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-omap@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
+	Thu, 8 Apr 2010 13:57:02 -0400
+Message-ID: <4BBE180C.80901@oracle.com>
+Date: Thu, 08 Apr 2010 10:53:16 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH] rwsem generic spinlock: use IRQ save/restore spinlocks
-Date: Thu,  8 Apr 2010 10:55:50 -0700
-Message-Id: <1270749350-25152-1-git-send-email-khilman@deeprootsystems.com>
-X-Mailer: git-send-email 1.7.0.2
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+       Konrad Rzeszutek Wilk <konrad@kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>, Peter Jones <pjones@redhat.com>,
+       Jan Beulich <jbeulich@novell.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [LKML] Re: [PATCH 1/1] ibft, x86: Change reserve_ibft_region()
+ to find_ibft_region()
+References: <1270741936-1306-1-git-send-email-konrad@kernel.org> <1270741936-1306-2-git-send-email-konrad@kernel.org> <alpine.LFD.2.00.1004080852200.3558@i5.linux-foundation.org> <20100408161210.GA13382@phenom.dumpdata.com> <alpine.LFD.2.00.1004081027140.3558@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1004081027140.3558@i5.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4BBE1873.009C:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rwsems can be used with IRQs disabled, particularily in early boot
-before IRQs are enabled.  Currently the spin_unlock_irq() usage in the
-slow-path will unconditionally enable interrupts and cause problems
-early in boot where interrupts are not yet initialized or enabled.
+On 04/08/2010 10:28 AM, Linus Torvalds wrote:
+> 
+> 
+> On Thu, 8 Apr 2010, Konrad Rzeszutek Wilk wrote:
+>>
+>> Oh, I am definitely ACK-ing. Sorry about not explicitly stating that.
+>> The developer is Yinghai Lu, I am the co-maintainer of the iBFT driver.
+>>
+>> Linus, would you like me to modify the commit so that it has 'Acked-by:'
+>> by me in the git tree?
+> 
+> No, no, a sign-off is already an ack, and is "stronger" than an ack, since 
+> it actually also means that you send it onwards. A patch that you don't 
+> like you would obviously never sign off on either.
+> 
+> I was more looking for comments from other people who know what the heck 
+> that early reservation system does.
 
-This patch uses save/restore versions of IRQ spinlocks in the slowpath
-to ensure interrupts are not unintentionally enabled in the case where
-the rwsem is used with IRQs disabled.
+the patched is in mainline already in mainline through tip path by HPA.
 
-Idea for this fix suggested by H. Peter Anvin.
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=042be38e6106ed70b42d096ab4a1ed4187e510e6
 
-Tested on TI OMAP3-based platform (ARM Cortex-A8)
+Thanks
 
-Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: Rabin Vincent <rabin@rab.in>
-Cc: H. Peter Anvin <hpa@zytor.com>
-LKML-Reference: <alpine.LFD.2.00.1004010904540.3707@i5.linux-foundation.org>
-Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
----
- lib/rwsem-spinlock.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
-
-diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
-index ccf95bf..ffc9fc7 100644
---- a/lib/rwsem-spinlock.c
-+++ b/lib/rwsem-spinlock.c
-@@ -143,13 +143,14 @@ void __sched __down_read(struct rw_semaphore *sem)
- {
- 	struct rwsem_waiter waiter;
- 	struct task_struct *tsk;
-+	unsigned long flags;
- 
--	spin_lock_irq(&sem->wait_lock);
-+	spin_lock_irqsave(&sem->wait_lock, flags);
- 
- 	if (sem->activity >= 0 && list_empty(&sem->wait_list)) {
- 		/* granted */
- 		sem->activity++;
--		spin_unlock_irq(&sem->wait_lock);
-+		spin_unlock_irqrestore(&sem->wait_lock, flags);
- 		goto out;
- 	}
- 
-@@ -164,7 +165,7 @@ void __sched __down_read(struct rw_semaphore *sem)
- 	list_add_tail(&waiter.list, &sem->wait_list);
- 
- 	/* we don't need to touch the semaphore struct anymore */
--	spin_unlock_irq(&sem->wait_lock);
-+	spin_unlock_irqrestore(&sem->wait_lock, flags);
- 
- 	/* wait to be given the lock */
- 	for (;;) {
-@@ -209,13 +210,14 @@ void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
- {
- 	struct rwsem_waiter waiter;
- 	struct task_struct *tsk;
-+	unsigned long flags;
- 
--	spin_lock_irq(&sem->wait_lock);
-+	spin_lock_irqsave(&sem->wait_lock, flags);
- 
- 	if (sem->activity == 0 && list_empty(&sem->wait_list)) {
- 		/* granted */
- 		sem->activity = -1;
--		spin_unlock_irq(&sem->wait_lock);
-+		spin_unlock_irqrestore(&sem->wait_lock, flags);
- 		goto out;
- 	}
- 
-@@ -230,7 +232,7 @@ void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
- 	list_add_tail(&waiter.list, &sem->wait_list);
- 
- 	/* we don't need to touch the semaphore struct anymore */
--	spin_unlock_irq(&sem->wait_lock);
-+	spin_unlock_irqrestore(&sem->wait_lock, flags);
- 
- 	/* wait to be given the lock */
- 	for (;;) {
--- 
-1.7.0.2
-
+Yinghai
