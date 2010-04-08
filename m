@@ -1,129 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758897Ab0DHRkR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 13:40:17 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:54798 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758622Ab0DHRkM convert rfc822-to-8bit (ORCPT
+	id S932755Ab0DHRor (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 13:44:47 -0400
+Received: from dm-mail01.mozilla.org ([63.245.208.150]:46991 "EHLO
+	dm-mail01.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092Ab0DHRoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 13:40:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=HNcvCMl/iVlC70SK+dAYI7NhlsXr9aEykqYS2dl9horIsrKBHWi+j6HrLwTsPFZ/O/
-         IRLYEF8ubSN+RFd70OTColltiSRd8eqNU/J6B7J/S5Pe50KqUrYgz3cDkQgN0HRET0Iw
-         GxpvQC5UGkQY6kAsPjpyJ9eKMg4MLvKuTJCi8=
+	Thu, 8 Apr 2010 13:44:44 -0400
+Message-ID: <4BBE1609.6080308@mozilla.com>
+Date: Thu, 08 Apr 2010 10:44:41 -0700
+From: Taras Glek <tglek@mozilla.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <z2i5bdc1c8b1004080924q1b8d3994vd69c9c9dd0bb2f78@mail.gmail.com>
-References: <x2w5bdc1c8b1004051355o3f803c75t2515ef46320e00bd@mail.gmail.com>
-	 <4BBC9CA1.5080102@ladisch.de>
-	 <m2l5bdc1c8b1004070857r823821ack6cc99354db73eaa0@mail.gmail.com>
-	 <4BBD1957.90502@gmail.com>
-	 <k2l5bdc1c8b1004072051h957c3f1crf0a139bd96a093a4@mail.gmail.com>
-	 <v2h51f3faa71004072054y4733bf9bq80a04574bebbadba@mail.gmail.com>
-	 <4BBD7997.1020803@ladisch.de>
-	 <l2v5bdc1c8b1004080753k7787e635p4a70d4a1a777984d@mail.gmail.com>
-	 <4BBDEF93.6070306@ladisch.de>
-	 <z2i5bdc1c8b1004080924q1b8d3994vd69c9c9dd0bb2f78@mail.gmail.com>
-Date: Thu, 8 Apr 2010 11:40:07 -0600
-Message-ID: <k2t51f3faa71004081040l326458e4zf89854ec32a57940@mail.gmail.com>
-Subject: Re: Failed to initialize MSI interrupts && ioremap reserve_memtype 
-	failed -22
-From: Robert Hancock <hancockrwd@gmail.com>
-To: Mark Knecht <markknecht@gmail.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>,
-       Linux Kernel List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Wu Fengguang <fengguang.wu@intel.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
+References: <4BBA6776.5060804@mozilla.com> <20100406095135.GB5183@cmpxchg.org> <20100407022456.GA9468@localhost> <4BBBF402.70403@mozilla.com> <20100407073847.GB17892@localhost>
+In-Reply-To: <20100407073847.GB17892@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 8, 2010 at 10:24 AM, Mark Knecht <markknecht@gmail.com> wrote:
-> On Thu, Apr 8, 2010 at 8:00 AM, Clemens Ladisch <clemens@ladisch.de> wrote:
->> Mark Knecht wrote:
->>> ioremap reserve_memtype failed -22
->>> phys_addr: 0xcf7fe000, size: 0x2000
->>
->> What is at this address in /proc/iomem?
->>
->>> Call Trace:
->>>  [<ffffffff8101b7ee>] ? __ioremap_caller+0x1e2/0x30e
->>>  [<ffffffffa052345b>] ? _nv006553rm+0x3a/0x40 [nvidia]
->>
->> I didn't find this function name in the kernel source ...
->>
->>
->> Regards,
->> Clemens
->>
+On 04/07/2010 12:38 AM, Wu Fengguang wrote:
+> On Wed, Apr 07, 2010 at 10:54:58AM +0800, Taras Glek wrote:
+>    
+>> On 04/06/2010 07:24 PM, Wu Fengguang wrote:
+>>      
+>>> Hi Taras,
+>>>
+>>> On Tue, Apr 06, 2010 at 05:51:35PM +0800, Johannes Weiner wrote:
+>>>
+>>>        
+>>>> On Mon, Apr 05, 2010 at 03:43:02PM -0700, Taras Glek wrote:
+>>>>
+>>>>          
+>>>>> Hello,
+>>>>> I am working on improving Mozilla startup times. It turns out that page
+>>>>> faults(caused by lack of cooperation between user/kernelspace) are the
+>>>>> main cause of slow startup. I need some insights from someone who
+>>>>> understands linux vm behavior.
+>>>>>
+>>>>>            
+>>> How about improve Fedora (and other distros) to preload Mozilla (and
+>>> other apps the user run at the previous boot) with fadvise() at boot
+>>> time? This sounds like the most reasonable option.
+>>>
+>>>        
+>> That's a slightly different usecase. I'd rather have all large apps
+>> startup as efficiently as possible without any hacks. Though until we
+>> get there, we'll be using all of the hacks we can.
+>>      
+> Boot time user space readahead can do better than kernel heuristic
+> readahead in several ways:
 >
-> Is there a serious chance this is somehow related to the closed source
-> nvidia driver? I could investigate switching to the in kernel driver
-> although that might take me a little time to get to.
+> - it can collect better knowledge on which files/pages will be used
+>    which lead to high readahead hit ratio and less cache consumption
+>
+> - it can submit readahead requests for many files in parallel,
+>    which enables queuing (elevator, NCQ etc.) optimizations
+>
+> So I won't call it dirty hack :)
+>
+>    
+Fair enough.
+>>> As for the kernel readahead, I have a patchset to increase default
+>>> mmap read-around size from 128kb to 512kb (except for small memory
+>>> systems).  This should help your case as well.
+>>>
+>>>        
+>> Yes. Is the current readahead really doing read-around(ie does it read
+>> pages before the one being faulted)? From what I've seen, having the
+>>      
+> Sure. It will do read-around from current fault offset - 64kb to +64kb.
+>    
+That's excellent.
+>    
+>> dynamic linker read binary sections backwards causes faults.
+>> http://sourceware.org/bugzilla/show_bug.cgi?id=11447
+>>      
+> There are too many data in
+> http://people.mozilla.com/~tglek/startup/systemtap_graphs/ld_bug/report.txt
+> Can you show me the relevant lines? (wondering if I can ever find such lines..)
+>    
+The first part of the file lists sections in a file and their hex 
+offset+size.
 
-Yeah, those symbols are from the NVIDIA driver. Seems like it's trying
-to reserve part of memory in ACPI tables somehow?
+lines like 0 512 offset(#1) mean a read at position 0 of 512 bytes. 
+Incidentally this first read is coming from vfs_read, so the log doesn't 
+take account readahead (unlike the other reads caused by mmap page faults).
 
-You might want to make sure you have the latest version (or just use
-nouveau instead..)
+So
+15310848 131072 offset(#2)=====================
+eaa73c 1523c .bss
+eaa73c 19d1e .comment
 
+15142912 131072 offset(#3)=====================
+e810d4 200 .dynamic
+e812d4 470 .got
+e81744 3b50 .got.plt
+e852a0 2549c .data
+
+Shows 2 reads where the dynamic linker first seeks to the end of the 
+file(to zero out .bss, causing IO via COW) and the backtracks to
+read in .dynamic. However you are right, all of the backtracking reads 
+are over 64K.
+Thanks for explaining that. I am guessing your change to boost 
+readaround will fix this issue nicely for firefox.
+
+>>>
+>>>        
+>>>>> Current Situation:
+>>>>> The dynamic linker mmap()s  executable and data sections of our
+>>>>> executable but it doesn't call madvise().
+>>>>> By default page faults trigger 131072byte reads. To make matters worse,
+>>>>> the compile-time linker + gcc lay out code in a manner that does not
+>>>>> correspond to how the resulting executable will be executed(ie the
+>>>>> layout is basically random). This means that during startup 15-40mb
+>>>>> binaries are read in basically random fashion. Even if one orders the
+>>>>> binary optimally, throughput is still suboptimal due to the puny readahead.
+>>>>>
+>>>>> IO Hints:
+>>>>> Fortunately when one specifies madvise(WILLNEED) pagefaults trigger 2mb
+>>>>> reads and a binary that tends to take 110 page faults(ie program stops
+>>>>> execution and waits for disk) can be reduced down to 6. This has the
+>>>>> potential to double application startup of large apps without any clear
+>>>>> downsides.
+>>>>>
+>>>>> Suse ships their glibc with a dynamic linker patch to fadvise()
+>>>>> dynamic libraries(not sure why they switched from doing madvise
+>>>>> before).
+>>>>>
+>>>>>            
+>>> This is interesting. I wonder how SuSE implements the policy.
+>>> Do you have the patch or some strace output that demonstrates the
+>>> fadvise() call?
+>>>
+>>>        
+>> glibc-2.3.90-ld.so-madvise.diff in
+>> http://www.rpmseek.com/rpm/glibc-2.4-31.12.3.src.html?hl=com&cba=0:G:0:3732595:0:15:0:
+>>      
+> 550 Can't open
+> /pub/linux/distributions/suse/pub/suse/update/10.1/rpm/src/glibc-2.4-31.12.3.src.rpm:
+> No such file or directory
 >
-> Being that I'm not 100% sure which address you meant here's everything:
+> OK I give up.
 >
-> k2 ~ # cat /proc/iomem
-> 00000000-0008efff : System RAM
-> 0008f000-0008ffff : reserved
-> 00090000-0009cfff : System RAM
-> 0009d000-0009ffff : reserved
-> 000e0000-000fffff : reserved
-> 00100000-cf4bcfff : System RAM
->  01000000-013466b6 : Kernel code
->  013466b7-0166ab1f : Kernel data
->  016e3000-01737eb3 : Kernel bss
-> cf4bd000-cf4befff : reserved
-> cf4bf000-cf4c3fff : System RAM
-> cf4c4000-cf7befff : ACPI Non-volatile Storage
-> cf7bf000-cf7defff : System RAM
-> cf7df000-cf7fefff : ACPI Tables
-> cf7ff000-cf7fffff : System RAM
-> cf800000-cfffffff : reserved
-> d0000000-d2ffffff : PCI Bus 0000:02
->  d0000000-d1ffffff : 0000:02:00.0
->  d2000000-d2ffffff : 0000:02:00.0
->    d2000000-d2ffffff : nvidia
-> d3000000-d30fffff : PCI Bus 0000:07
->  d3000000-d3003fff : 0000:07:03.0
->  d3004000-d30047ff : 0000:07:03.0
->    d3004000-d30047ff : firewire_ohci
-> d3100000-d31fffff : PCI Bus 0000:06
->  d3100000-d31003ff : 0000:06:00.0
->    d3100000-d31003ff : ahci
-> d3200000-d321ffff : 0000:00:19.0
->  d3200000-d321ffff : e1000e
-> d3220000-d32207ff : 0000:00:1f.2
->  d3220000-d32207ff : ahci
-> d3221000-d32213ff : 0000:00:1d.7
->  d3221000-d32213ff : ehci_hcd
-> d3222000-d32223ff : 0000:00:1a.7
->  d3222000-d32223ff : ehci_hcd
-> d3223000-d3223fff : 0000:00:19.0
->  d3223000-d3223fff : e1000e
-> e0000000-efffffff : PCI Bus 0000:02
->  e0000000-efffffff : 0000:02:00.0
-> f0000000-f0003fff : 0000:00:1b.0
->  f0000000-f0003fff : ICH HD audio
-> f0004000-f00040ff : 0000:00:1f.3
-> f8000000-fcffffff : reserved
->  f8000000-fbffffff : PCI MMCONFIG 0000 [bus 00-3f]
-> fec00000-fec003ff : IOAPIC 0
-> fed00000-fed003ff : HPET 0
-> fee00000-fee00fff : Local APIC
-> ffe00000-ffffffff : reserved
-> 100000000-1afffffff : System RAM
-> k2 ~ #
+>    
+>> As I recall they just fadvise the filedescriptor before accessing it.
+>>      
+> Obviously this is a bit risky for small memory systems..
 >
-> Cheers,
-> Mark
+>    
+>>>>> I filed a glibc bug about this at
+>>>>> http://sourceware.org/bugzilla/show_bug.cgi?id=11431 . Uli commented
+>>>>> with his concern about wasting memory resources. What is the impact of
+>>>>> madvise(WILLNEED) or the fadvise equivalent on systems under memory
+>>>>> pressure? Does the kernel simply start ignoring these hints?
+>>>>>
+>>>>>            
+>>>> It will throttle based on memory pressure.  In idle situations it will
+>>>> eat your file cache, however, to satisfy the request.
+>>>>
+>>>> Now, the file cache should be much bigger than the amount of unneeded
+>>>> pages you prefault with the hint over the whole library, so I guess the
+>>>> benefit of prefaulting the right pages outweighs the downside of evicting
+>>>> some cache for unused library pages.
+>>>>
+>>>> Still, it's a workaround for deficits in the demand-paging/readahead
+>>>> heuristics and thus a bit ugly, I feel.  Maybe Wu can help.
+>>>>
+>>>>          
+>>> Program page faults are inherently random, so the straightforward
+>>> solution would be to increase the mmap read-around size (for desktops
+>>> with reasonable large memory), rather than to improve program layout
+>>> or readahead heuristics :)
+>>>
+>>>        
+>> Program page faults may exhibit random behavior once they've started.
+>>      
+> Right.
 >
+>    
+>> During startup page-in pattern of over-engineered OO applications is
+>> very predictable. Programs are laid out based on compilation units,
+>> which have no relation to how they are executed. Another problem is that
+>> any large old application will have lots of code that is either rarely
+>> executed or completely dead. Random sprinkling of live code among mostly
+>> unneeded code is a problem.
+>>      
+> Agreed.
+>
+>    
+>> I'm able to reduce startup pagefaults by 2.5x and mem usage by a few MB
+>> with proper binary layout. Even if one lays out a program wrongly, the
+>> worst-case pagein pattern will be pretty similar to what it is by default.
+>>      
+> That's great. When will we enjoy your research fruits? :)
+>    
+Released it yesterday. Hopefully other bloated binaries will benefit 
+from this too.
+
+http://blog.mozilla.com/tglek/2010/04/07/icegrind-valgrind-plugin-for-optimizing-cold-startup/
+
+Thanks a lot Wu, I feel I understand the kernel side of what's happening 
+now.
+
+Taras
