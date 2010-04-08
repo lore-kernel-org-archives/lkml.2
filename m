@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933966Ab0DHXmq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 19:42:46 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41734 "EHLO ogre.sisk.pl"
+	id S933982Ab0DHXoH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 19:44:07 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:41760 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933871Ab0DHXmc convert rfc822-to-8bit (ORCPT
+	id S1759203Ab0DHXmi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 19:42:32 -0400
+	Thu, 8 Apr 2010 19:42:38 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Sanjoy Mahajan" <sanjoy@mit.edu>
+       Maciej Rutecki <maciej.rutecki@gmail.com>, "" <abcd@gentoo.org>,
+       "Ivo van Doorn" <IvDoorn@gmail.com>
 References: <cjwJ7Pf9h0L.A.9pB.1DmvLB@chimera>
 In-Reply-To: <cjwJ7Pf9h0L.A.9pB.1DmvLB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <onZ81XwyNTD.A.5OC.UEmvLB@chimera>
-Subject: [Bug #15544] black screen upon S3 resume, syslog has "render error" and "page table error"
+Message-ID: <onZ81XwyNTD.A._9B.CEmvLB@chimera>
+Subject: [Bug #15699] rt2500usb driver cannot remain connected
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri,  9 Apr 2010 01:04:35 +0200 (CEST)
+Date: Fri,  9 Apr 2010 01:04:36 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,9 +33,10 @@ introduced between 2.6.32 and 2.6.33.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15544
-Subject		: black screen upon S3 resume, syslog has "render error" and "page table error"
-Submitter	: Sanjoy Mahajan <sanjoy@mit.edu>
-Date		: 2010-03-16 00:45 (24 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15699
+Subject		: rt2500usb driver cannot remain connected
+Submitter	:  <abcd@gentoo.org>
+Date		: 2010-04-05 19:30 (4 days old)
+Handled-By	: Ivo van Doorn <IvDoorn@gmail.com>
 
 
