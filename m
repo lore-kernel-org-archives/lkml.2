@@ -1,66 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423Ab0DHFBH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 01:01:07 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36552
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751715Ab0DHFBE (ORCPT
+	id S1753488Ab0DHFBn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 01:01:43 -0400
+Received: from mail.windriver.com ([147.11.1.11]:45519 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715Ab0DHFBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 01:01:04 -0400
-Date: Wed, 07 Apr 2010 22:01:07 -0700 (PDT)
-Message-Id: <20100407.220107.55136830.davem@davemloft.net>
-To: glaubitz@physik.fu-berlin.de
-Cc: joe@perches.com, grundler@parisc-linux.org, kyle@mcmartin.ca,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: tulip_stop_rxtx() failed (CSR5 0xf0260000 CSR6 0xb3862002) on
- DEC Alpha Personal Workstation 433au
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100407134228.GC31252@physik.fu-berlin.de>
-References: <20100405171318.GA18915@physik.fu-berlin.de>
-	<1270488982.31062.28.camel@Joe-Laptop.home>
-	<20100407134228.GC31252@physik.fu-berlin.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Apr 2010 01:01:42 -0400
+Date: Thu, 8 Apr 2010 12:59:45 +0800
+From: Liang Li <liang.li@windriver.com>
+To: Yinghai <yinghai.lu@oracle.com>
+Cc: akpm@linux-foundation.org, hpa@zytor.com, mingo@elte.hu,
+       tglx@linutronix.de, wangchen@cn.fujitsu.com,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: + x86-fix-handling-of-the-reservetop-boot-option.patch added to
+ -mm tree
+Message-ID: <20100408045945.GB26543@localhost>
+Reply-To: Liang Li <liang.li@windriver.com>
+References: <201004072200.o37M0d19009878@imap1.linux-foundation.org>
+ <4BBD1AA3.4000204@oracle.com>
+ <20100408010558.GA4053@localhost>
+ <4BBD2DD4.1060101@oracle.com>
+ <20100408015353.GB4053@localhost>
+ <4BBD5BEF.3000406@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BBD5BEF.3000406@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-OriginalArrivalTime: 08 Apr 2010 05:01:01.0071 (UTC) FILETIME=[7BBC79F0:01CAD6D8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
-Date: Wed, 7 Apr 2010 15:42:28 +0200
-
-> Hi,
+On Wed, Apr 07, 2010 at 09:30:39PM -0700, Yinghai wrote:
+> On 04/07/2010 06:53 PM, Liang Li wrote:
+> > Does this similar modification like this is more preferred?
+> > 
+> > diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+> > index a1dcfa3..30a3e97 100644
+> > --- a/arch/x86/include/asm/io.h
+> > +++ b/arch/x86/include/asm/io.h
+> > @@ -347,6 +347,7 @@ extern void __iomem *early_ioremap(resource_size_t phys_addr,
+> >  extern void __iomem *early_memremap(resource_size_t phys_addr,
+> >  				    unsigned long size);
+> >  extern void early_iounmap(void __iomem *addr, unsigned long size);
+> > +extern void fixup_early_ioremap(void);
+> >  
+> >  #define IO_SPACE_LIMIT 0xffff
+> >  
+> > diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+> > index ea82ef0..fe06296 100644
+> > --- a/arch/x86/mm/ioremap.c
+> > +++ b/arch/x86/mm/ioremap.c
+> > @@ -448,6 +448,23 @@ static inline void __init early_clear_fixmap(enum fixed_addresses idx)
+> >  static void __iomem *prev_map[FIX_BTMAPS_SLOTS] __initdata;
+> >  static unsigned long prev_size[FIX_BTMAPS_SLOTS] __initdata;
+> >  
+> > +void __init fixup_early_ioremap(void)
+> > +{
+> > +	int i;
+> > +	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
+> > +		if (prev_map[i])
+> > +			break;
+> > +	}
+> > +
+> > +	if (i == FIX_BTMAPS_SLOTS)
+> <
+> > +		WARN_ON(1);
+> BUG_ON()
+> > +
+> > +	for (i = 0; i < FIX_BTMAPS_SLOTS; i++)
+> > +		slot_virt[i] = __fix_to_virt(FIX_BTMAP_BEGIN - NR_FIX_BTMAPS * i);
+> > +
+> need to clear the old PMD, and set new PMD.
 > 
-> On Mon, Apr 05, 2010 at 10:36:22AM -0700, Joe Perches wrote:
->> On Mon, 2010-04-05 at 19:13 +0200, Adrian Glaubitz wrote:
->> > Hi guys,
->> > 
->> > I installed Debian unstable on an old digital workstation "DEC Digital
->> > Personal Workstation 433au" (Miata) which has an on-board tulip
->> > network controller. I'm not really using that network controller but
->> > an off-board intel e1000 controller. However, I found that the tulip
->> > driver produces a lot of noise in the message log, the following
->> > message is repated periodically and spams the whole message log:
->> > 
->> > 0000:00:03.0: tulip_stop_rxtx() failed (CSR5 0xf0260000 CSR6 0xb3862002)
->> > 
->> > Do you think this is related to the fact that no cable is connected to
->> > the network controller?
->> 
->> Probably something is trying periodically to open the device.
->> Maybe this helps reduce the message log noise:
->> 
->> Signed-off-by: Joe Perches <joe@perches.com>
-> 
-> Acked-by: Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
-> 
-> Patch works perfectly. Now the message log looks pretty normal.
+> so you can clear old PMD and call early_ioremap_init() in fixup_early_ioremap()
 
-This doesn't fix the problem, it just makes the message get
-emitted in a rate limited manner.
+Call early_ioremap_init will do the update PMD work. So the preferred
+patch would be:
+---------------
+>From 61fe7a116cbbf6eef98a49b88ed5861ed9ebd32d Mon Sep 17 00:00:00 2001
+From: Liang Li <liang.li@windriver.com>
+Date: Mon, 22 Mar 2010 18:38:14 +0800
+Subject: [PATCH] x86: let 'reservetop' functioning right
 
-I'm not going to apply this, we need to figure out what's causing
-this problem instead of merely papering over it.
+When specify 'reservetop=0xbadc0de' kernel parameter, the kernel will
+stop booting due to a early_ioremap bug that relate to commit 8827247ff.
 
-Thanks.
+The root cause of boot failure problem is the value of 'slot_virt[i]'
+was initialized in setup_arch->early_ioremap_init. But later in
+setup_arch, the function 'parse_early_param' will modify 'FIXADDR_TOP'
+when 'reservetop=0xbadc0de' being specified.
+
+When reservetop being handled then FIXADDR_TOP get adjusted, Hence check
+prev_map then re-initialize slot_virt and PMD based on new FIXADDR_TOP.
+
+Signed-off-by: Liang Li <liang.li@windriver.com>
+Cc: Wang Chen <wangchen@cn.fujitsu.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ arch/x86/include/asm/io.h |    1 +
+ arch/x86/mm/ioremap.c     |   15 +++++++++++++++
+ arch/x86/mm/pgtable.c     |    2 ++
+ 3 files changed, 18 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index a1dcfa3..30a3e97 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -347,6 +347,7 @@ extern void __iomem *early_ioremap(resource_size_t phys_addr,
+ extern void __iomem *early_memremap(resource_size_t phys_addr,
+ 				    unsigned long size);
+ extern void early_iounmap(void __iomem *addr, unsigned long size);
++extern void fixup_early_ioremap(void);
+ 
+ #define IO_SPACE_LIMIT 0xffff
+ 
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 5eb1ba7..e4ab706 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -448,6 +448,21 @@ static inline void __init early_clear_fixmap(enum fixed_addresses idx)
+ static void __iomem *prev_map[FIX_BTMAPS_SLOTS] __initdata;
+ static unsigned long prev_size[FIX_BTMAPS_SLOTS] __initdata;
+ 
++void __init fixup_early_ioremap(void)
++{
++	int i;
++	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
++		if (prev_map[i])
++			break;
++	}
++
++	if (i < FIX_BTMAPS_SLOTS)
++		BUG_ON(1);
++
++	early_ioremap_init();
++	return;
++}
++
+ static int __init check_early_ioremap_leak(void)
+ {
+ 	int count = 0;
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index 5c4ee42..ea4d54c 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -4,6 +4,7 @@
+ #include <asm/pgtable.h>
+ #include <asm/tlb.h>
+ #include <asm/fixmap.h>
++#include <asm/io.h>
+ 
+ #define PGALLOC_GFP GFP_KERNEL | __GFP_NOTRACK | __GFP_REPEAT | __GFP_ZERO
+ 
+@@ -351,6 +352,7 @@ void __init reserve_top_address(unsigned long reserve)
+ 	printk(KERN_INFO "Reserving virtual address space above 0x%08x\n",
+ 	       (int)-reserve);
+ 	__FIXADDR_TOP = -reserve - PAGE_SIZE;
++	fixup_early_ioremap();
+ #endif
+ }
+ 
+-----------
+Acceptable?
+
+Thanks and regards,
+	   -Liang Li
