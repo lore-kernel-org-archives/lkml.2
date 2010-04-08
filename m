@@ -1,27 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758762Ab0DHOdk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 10:33:40 -0400
-Received: from smtp1.Stanford.EDU ([171.67.219.81]:55728 "EHLO
-	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754695Ab0DHOdj (ORCPT
+	id S1758777Ab0DHOi4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 10:38:56 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:36200 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720Ab0DHOix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 10:33:39 -0400
-Date: Thu, 8 Apr 2010 07:30:09 -0700 (PDT)
-From: Liu Tia Ling <bkindle@zm04.stanford.edu>
-Reply-To: Liu Tia Ling <liutial@yahoo.com.hk>
-Message-ID: <1350926316.958381270737009953.JavaMail.root@zm04.stanford.edu>
-Subject: Business Proposal.
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [212.116.219.150]
-X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (zclient/5.0.21_GA_3150.RHEL4_64)
-X-Authenticated-User: bkindle@stanford.edu
-To: undisclosed-recipients:;
+	Thu, 8 Apr 2010 10:38:53 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org,
+       Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: [PATCH 0/6] Fixes and usability improvements
+Date: Thu,  8 Apr 2010 11:38:43 -0300
+Message-Id: <1270737529-24258-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good Day,
-I have a Business Proposal of $21,300,000.00 for you to handle with me from my bank.please contact me on {liutial@yahoo.com.hk} with your Full names,occupation,private phone number,current residential address.
+Hi Ingo,
+
+	Please consider pulling from:
+
+gi://gi.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
+
+	Freshly rebased from tip/perf/core,
+
+Thanks,
+
+- Arnaldo
+
+Arnaldo Carvalho de Melo (4):
+  perf TUI: Show filters on the title and add help line about how to zoom out
+  perf TUI: Move "Yes" button to before "No"
+  perf tools: Reorganize some structs to save space
+  perf trace: Ignore "overwrite" field if present in /events/header_page
+
+Randy Dunlap (2):
+  perf bench: fix spello
+  perf: cleanup some Documentation
+
+ tools/perf/Documentation/perf-bench.txt |    6 +-
+ tools/perf/Documentation/perf-sched.txt |    4 +-
+ tools/perf/bench/sched-pipe.c           |    2 +-
+ tools/perf/builtin-sched.c              |    2 +-
+ tools/perf/builtin-timechart.c          |    2 -
+ tools/perf/util/event.h                 |    4 +-
+ tools/perf/util/header.h                |    2 +-
+ tools/perf/util/newt.c                  |   98 ++++++++++++++++++++++---------
+ tools/perf/util/probe-event.h           |    2 +-
+ tools/perf/util/probe-finder.h          |    4 +-
+ tools/perf/util/trace-event-parse.c     |   49 +++++++++++-----
+ 11 files changed, 116 insertions(+), 59 deletions(-)
+
