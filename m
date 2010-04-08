@@ -1,47 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758871Ab0DHRXY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 13:23:24 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40139 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753847Ab0DHRXX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 13:23:23 -0400
-Date: Thu, 8 Apr 2010 10:19:21 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-cc: Wey-Yi Guy <wey-yi.w.guy@intel.com>, Shanyu Zhao <shanyu.zhao@intel.com>,
-       Reinette Chatre <reinette.chatre@intel.com>, stable@kernel.org,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [REVERT] be6b38bcb175613f239e0b302607db346472c6b6. v2.6.34-rc3-406
- oops with 4965AGN wireless
-In-Reply-To: <Pine.LNX.4.64.1004090104570.7829@boston.corp.fedex.com>
-Message-ID: <alpine.LFD.2.00.1004081017360.3558@i5.linux-foundation.org>
-References: <Pine.LNX.4.64.1004090104570.7829@boston.corp.fedex.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1758878Ab0DHRab (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 13:30:31 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36154 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753847Ab0DHRa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 13:30:29 -0400
+Message-ID: <4BBE12B6.3000609@suse.com>
+Date: Thu, 08 Apr 2010 13:30:30 -0400
+From: Jeff Mahoney <jeffm@suse.com>
+Organization: SUSE Labs, Novell, Inc
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-2.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Edward Shishkin <edward.shishkin@gmail.com>
+Cc: ReiserFS Mailing List <reiserfs-devel@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH #2] reiserfs: Fix permissions on .reiserfs_priv
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ Commit 677c9b2e393a0cd203bd54e9c18b012b2c73305a removed the magic
+ from the lookup code to hide the .reiserfs_priv directory since it
+ was getting loaded at mount-time instead. The intent was that the
+ entry would be hidden from the user via a poisoned d_compare, but
+ this was faulty.
 
+ This introduced a security issue where unpriviledged users could
+ access and modify extended attributes or ACLs belonging to other
+ users, including root.
 
-On Fri, 9 Apr 2010, Jeff Chua wrote:
-> 
-> I'm having problem with the latest git pull 2 days ago with the 4965AGN
-> wireless.
-> 
-> Starting the wireless with WPA2 resulted in system hard freeze. Reverting the
-> commit below solves the problem.
+ This patch resolves the issue by properly hiding .reiserfs_priv. This
+ was the intent of the xattr poisoning code, but it appears to have
+ never worked as expected. This is fixed by using d_revalidate instead
+ of d_compare.
 
-I don't mind reverting patches, but I hate doing it blind and without 
-_any_ chance for the guilty party to try to fix it first.
+ This patch makes -oexpose_privroot a no-op. I'm fine leaving it this
+ way. The effort involved in working out the corner cases wrt permissions
+ and caching outweigh the benefit of the feature.
 
-Can you post the oops that your subject implies happened? Maybe the driver 
-authors can find the proper fix without a revert?
+ Re-sent because I forgot to turn off the GPG signing when I sent the first
+ time.
 
-I'll revert if if I hear no updates in a couple of days - please remind 
-me.
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+---
 
-			Linus
+ fs/reiserfs/dir.c   |    2 --
+ fs/reiserfs/xattr.c |   17 ++++-------------
+ 2 files changed, 4 insertions(+), 15 deletions(-)
+
+--- a/fs/reiserfs/dir.c
++++ b/fs/reiserfs/dir.c
+@@ -45,8 +45,6 @@ static inline bool is_privroot_deh(struc
+ 				   struct reiserfs_de_head *deh)
+ {
+ 	struct dentry *privroot = REISERFS_SB(dir->d_sb)->priv_root;
+-	if (reiserfs_expose_privroot(dir->d_sb))
+-		return 0;
+ 	return (dir == dir->d_parent && privroot->d_inode &&
+ 	        deh->deh_objectid == INODE_PKEY(privroot->d_inode)->k_objectid);
+ }
+--- a/fs/reiserfs/xattr.c
++++ b/fs/reiserfs/xattr.c
+@@ -972,21 +972,13 @@ int reiserfs_permission(struct inode *in
+ 	return generic_permission(inode, mask, NULL);
+ }
+ - -/* This will catch lookups from the fs root to .reiserfs_priv */
+-static int
+-xattr_lookup_poison(struct dentry *dentry, struct qstr *q1, struct
+qstr *name)
++static int xattr_hide_revalidate(struct dentry *dentry, struct
+nameidata *nd)
+ {
+-	struct dentry *priv_root = REISERFS_SB(dentry->d_sb)->priv_root;
+-	if (container_of(q1, struct dentry, d_name) == priv_root)
+-		return -ENOENT;
+-	if (q1->len == name->len &&
+-		   !memcmp(q1->name, name->name, name->len))
+-		return 0;
+-	return 1;
++	return -EPERM;
+ }
+  static const struct dentry_operations xattr_lookup_poison_ops = {
+-	.d_compare = xattr_lookup_poison,
++	.d_revalidate = xattr_hide_revalidate,
+ };
+  int reiserfs_lookup_privroot(struct super_block *s)
+@@ -1000,8 +992,7 @@ int reiserfs_lookup_privroot(struct supe
+ 				strlen(PRIVROOT_NAME));
+ 	if (!IS_ERR(dentry)) {
+ 		REISERFS_SB(s)->priv_root = dentry;
+-		if (!reiserfs_expose_privroot(s))
+-			s->s_root->d_op = &xattr_lookup_poison_ops;
++		dentry->d_op = &xattr_lookup_poison_ops;
+ 		if (dentry->d_inode)
+ 			dentry->d_inode->i_flags |= S_PRIVATE;
+ 	} else
+-- 
+Jeff Mahoney
+SUSE Labs
+--
+To unsubscribe from this list: send the line "unsubscribe reiserfs-devel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
