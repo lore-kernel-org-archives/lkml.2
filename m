@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932967Ab0DHRQI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 13:16:08 -0400
-Received: from andromeda.dapyr.net ([206.212.254.10]:52911 "EHLO
-	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932943Ab0DHRQF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 13:16:05 -0400
-Date: Thu, 8 Apr 2010 13:14:42 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Konrad Rzeszutek Wilk <konrad@kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Yinghai Lu <yinghai@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-       Peter Jones <pjones@redhat.com>, Jan Beulich <jbeulich@novell.com>,
-       Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [LKML] Re: [PATCH 1/1] ibft, x86: Change reserve_ibft_region() to find_ibft_region()
-Message-ID: <20100408171442.GA1216@andromeda.dapyr.net>
-References: <1270741936-1306-1-git-send-email-konrad@kernel.org> <1270741936-1306-2-git-send-email-konrad@kernel.org> <alpine.LFD.2.00.1004080852200.3558@i5.linux-foundation.org> <20100408161210.GA13382@phenom.dumpdata.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100408161210.GA13382@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.9i
+	id S932981Ab0DHRQs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 13:16:48 -0400
+Received: from tex.lwn.net ([70.33.254.29]:46456 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932653Ab0DHRQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 13:16:44 -0400
+From: Jonathan Corbet <corbet@lwn.net>
+To: linux-kernel@vger.kernel.org
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+       Harald Welte <laforge@gnumonks.org>, JosephChan@via.com.tw,
+       ScottFang@viatech.com.cn, Deepak Saxena <dsaxena@laptop.org>,
+       linux-fbdev-devel@lists.sourceforge.net
+Subject: [RFC] Initial OLPC Viafb merge
+Date: Thu,  8 Apr 2010 11:15:30 -0600
+Message-Id: <1270746946-12467-1-git-send-email-corbet@lwn.net>
+X-Mailer: git-send-email 1.7.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > For all I know this is all perfectly fine, but I have _no_ idea about how 
-> > ibft is supposed to work, so I can't really judge it. As a result, I won't 
-> > pull it without some more acks from people who actually know what that 
-> > thing is..
-> 
-> Oh, I am definitely ACK-ing. Sorry about not explicitly stating that.
-> The developer is Yinghai Lu, I am the co-maintainer of the iBFT driver.
-> 
-> Linus, would you like me to modify the commit so that it has 'Acked-by:'
-> by me in the git tree?
+The following patches are the beginning of an effort to move work done for
+the OLPC XO 1.5 machine into the mainline.  What's here is basic support
+for the VX855 chipset, I2C, suspend/resume, and the OLPC panel display.
+What's coming in the future is a reworking of the viafb driver into
+something resembling a proper multifunction device, GPIO support, and
+camera support.  But I'd like to start here.
 
-I've gone ahead and done that. The git tree:
+If there's no objections, I'll start a tree and get it into linux-next in
+the near future, with an eye toward a 2.6.35 merge.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/konrad/ibft-2.6.git
-ibft-fixes.acked
+Thanks,
 
-has the patch that was acked (and reviewed + tested on my iBFT rig)
-by me.
+jon
 
-(The ibft-fixes has the old commit, with the Signed-off-by instead of
-Acked-by).
+Chris Ball (2):
+      viafb: Add 1200x900 DCON/LCD panel modes for OLPC XO-1.5
+      viafb: Do not probe for LVDS/TMDS on OLPC XO-1.5
 
+Deepak Saxena (3):
+      Minimal support for viafb suspend/resume
+      VIAFB: Update suspend/resume to selectively restore registers
+      Remove cursor restore hack in viafb
+
+Harald Welte (4):
+      [FB] viafb: Fix various resource leaks during module_init()
+      viafb: use proper pci config API
+      viafb: Determine type of 2D engine and store it in chip_info
+      viafb: rework the I2C support in the VIA framebuffer driver
+
+Jonathan Corbet (5):
+      viafb: Unmap the frame buffer on initialization error
+      viafb: Retain GEMODE reserved bits
+      viafb: complete support for VX800/VX855 accelerated framebuffer
+      viafb: rework suspend/resume
+      viafb: Only suspend/resume on VX855
+
+Paul Fox (2):
+      suppress verbose debug messages:  change printk() to DEBUG_MSG()
+      fix register save count, so it matches the restore count.
+
+ drivers/video/via/accel.c    |   87 ++++++++++++++-----
+ drivers/video/via/accel.h    |   40 +++++++++
+ drivers/video/via/chip.h     |    8 +
+ drivers/video/via/dvi.c      |   35 +++----
+ drivers/video/via/hw.c       |   84 +++++++++++++-----
+ drivers/video/via/hw.h       |    4 
+ drivers/video/via/ioctl.h    |    2 
+ drivers/video/via/lcd.c      |   29 ++++--
+ drivers/video/via/lcd.h      |    2 
+ drivers/video/via/share.h    |    8 +
+ drivers/video/via/via_i2c.c  |  172 ++++++++++++++++++++++++--------------
+ drivers/video/via/via_i2c.h  |   43 ++++++---
+ drivers/video/via/viafbdev.c |  191 +++++++++++++++++++++++++++++++++++++++----
+ drivers/video/via/viafbdev.h |    5 -
+ drivers/video/via/viamode.c  |   14 +++
+ drivers/video/via/vt1636.c   |   36 +++-----
+ drivers/video/via/vt1636.h   |    2 
+ 17 files changed, 568 insertions(+), 194 deletions(-)
