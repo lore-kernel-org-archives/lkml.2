@@ -1,151 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab0DHDNu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 23:13:50 -0400
-Received: from exprod5og104.obsmtp.com ([64.18.0.178]:60064 "EHLO
-	exprod5og104.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753545Ab0DHDNr convert rfc822-to-8bit (ORCPT
+	id S1755868Ab0DHDY3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 23:24:29 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:24121 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755395Ab0DHDY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 23:13:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <p2k84144f021004070825jd3530d04v9d339c8d50c4593d@mail.gmail.com>
-References: <k2s4810ea571004020021hade8123mb571b803b8472aef@mail.gmail.com>
-	 <p2k84144f021004070825jd3530d04v9d339c8d50c4593d@mail.gmail.com>
-Date: Thu, 8 Apr 2010 11:13:40 +0800
-Message-ID: <x2t5f4a33681004072013j696861caj5c90f8675e784fe0@mail.gmail.com>
-Subject: Re: [PATCH] Fix missing of last user while dumping slab corruption 
-	log
-From: TAO HU <tghk48@motorola.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: ShiYong LI <shi-yong.li@motorola.com>, linux-kernel@vger.kernel.org,
-       cl@linux-foundation.org, mpm@selenic.com, linux-mm@kvack.org,
-       TAO HU <taohu@motorola.com>, dwmw2@infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-CFilter-Loop: Reflected
+	Wed, 7 Apr 2010 23:24:27 -0400
+Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well
+	as x86_32
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Yinghai <yinghai.lu@oracle.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, linux-pci@vger.kernel.org,
+       x86@kernel.org, linux-kernel@vger.kernel.org,
+       Andy Isaacson <adi@hexapodia.org>, Thomas Renninger <trenn@suse.de>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>
+In-Reply-To: <4BBD13C3.2060404@oracle.com>
+References: <20100407210628.28364.96982.stgit@bob.kio>
+	 <4BBD0B0A.3090702@oracle.com> <201004071705.07176.bjorn.helgaas@hp.com>
+	 <4BBD13C3.2060404@oracle.com>
+Content-Type: text/plain
+Date: Wed, 07 Apr 2010 21:24:14 -0600
+Message-Id: <1270697054.25226.16.camel@dc7800.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Pekka Enberg
+On Wed, 2010-04-07 at 16:22 -0700, Yinghai wrote:
+> On 04/07/2010 04:05 PM, Bjorn Helgaas wrote:
+> > On Wednesday 07 April 2010 04:45:30 pm Yinghai wrote:
+> >> On 04/07/2010 02:06 PM, Bjorn Helgaas wrote:
+> >>>
+> >>> Currently, we only reserve the legacy VGA area [mem 0xa0000-0xbffff] on
+> >>> x86_32.  But this legacy area is also used on x86_64, so this patch
+> >>> reserves it there, too.
+> >>>
+> >>> If we don't reserve it, we may mistakenly move a PCI device to that area,
+> >>> as we did here:
+> >>>
+> >>>   pci_root PNP0A03:00: host bridge window [mem 0xff980800-0xff980bff]
+> >>>   pci_root PNP0A03:00: host bridge window [mem 0xff97c000-0xff97ffff]
+> >>>   pci 0000:00:1f.2: no compatible bridge window for [mem 0xff970000-0xff9707ff]
+> >>>   pci 0000:00:1f.2: BAR 5: assigned [mem 0x000a0000-0x000a07ff]
+> >>>
+> >>> as reported by Andy Isaacson at http://lkml.org/lkml/2010/4/6/375
+> >>>
+> >>> I think the fact that the BAR is not within a host bridge window is a
+> >>> BIOS defect, and it's now more visible because we have "pci=use_crs" as
+> >>> the default.  Using "pci=nocrs" is a workaround, because then we won't
+> >>> attempt to move the device.
+> >>
+> >> that doesn't look right.
+> >>
+> >> It seem another thread, erission has one model without VGA, and they use that area for other device MMIO.
+> >>
+> >> current for 64bit, We remove [0xa0000, 0x100000) from e820 map if those area is E820_RAM.
+> >>
+> >> in e820_reserve_resources(), kernel will reserve range < 1M according to e820 map.
+> >> that is before pci BAR is claimed.
+> >>
+> >> or you can add
+> >> boot_params.screen_info.orig_video_isVGA == 1
+> >> or double check scan pci tree to see if video is there or not
+> > 
+> > I'm sorry, I can't understand what you're saying.
+> 
+> for 64 bit, you may check boot_params.screen_info.orig_video_isVGA to see if you need to reserve that VGA range.
+> not sure if every bootloader fill that...
 
-We verified on OMAP3 (ARM V7).
-1 thing we're sure
-a) cachep->obj_offset will be aligned with "align" passed to
-kmem_cache_create ()
+If you're saying that on x86_64, you have a reliable way to determine
+whether to reserve the legacy VGA MMIO area, I hope you'll provide a
+patch, because I don't know about this sort of x86_32 vs x86_64
+difference.
 
-Are you concerned about alignment for red-zone obj?
-We'll double check.
+I actually did propose doing something in pci_setup_device(), similar to
+what we already do for legacy IDE resources, but HPA thought it should
+be done in the arch code instead, again for reasons I don't completely
+understand.
 
--- 
-Best Regards
-Hu Tao
+> when the system only have one peer root bus, can you skip the _CRS for it?
 
-On Wed, Apr 7, 2010 at 11:25 PM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
-> Hi,
->
-> (I'm cc'ing David who did some fixes in this area previously.)
->
-> On Fri, Apr 2, 2010 at 10:21 AM, ShiYong LI <a22381@motorola.com> wrote:
->> Even with SLAB_RED_ZONE and SLAB_STORE_USER enabled, kernel would NOT
->> store redzone and last user data around allocated memory space if arch
->> cache line > sizeof(unsigned long long). As a result, last user information
->> is unexpectedly MISSED while dumping slab corruption log.
->>
->> This patch makes sure that redzone and last user tags get stored whatever
->> arch cache line.
->>
->> Compared to original codes, the change surely affects head redzone (redzone1).
->> Actually, with SLAB_RED_ZONE and SLAB_STORE_USER enabled,
->> allocated memory layout is as below:
->>
->> [ redzone1 ]   <--------- Affected area.
->> [ real object space ]
->> [ redzone2 ]
->> [ last user ]
->> [ ... ]
->>
->> Let's do some analysis: (whatever SLAB_STORE_USER is).
->>
->> 1) With SLAB_RED_ZONE on, "align" >= sizeof(unsigned long long) according to
->>    the following codes:
->>        /* 2) arch mandated alignment */
->>        if (ralign < ARCH_SLAB_MINALIGN) {
->>                ralign = ARCH_SLAB_MINALIGN;
->>        }
->>        /* 3) caller mandated alignment */
->>        if (ralign < align) {
->>                ralign = align;
->>        }
->>        ...
->>        /*
->>         * 4) Store it.
->>         */
->>        align = ralign;
->>
->>    That's to say, could guarantee that redzone1 does NOT get broken
->> at all. Meanwhile,
->>    Real object space could meet the need of cache line size by using
->> "align"  argument.
->>
->> 2) With SLAB_RED_ZONE off, the change has no impact.
->>
->>
->> From 03b28964311090533643acd267abe0cbc3c9b0a5 Mon Sep 17 00:00:00 2001
->> From: Shiyong Li <shi-yong.li@motorola.com>
->> Date: Fri, 2 Apr 2010 14:50:30 +0800
->> Subject: [PATCH] Fix missing of last user info while getting
->> DEBUG_SLAB config enabled.
->>
->> Even with SLAB_RED_ZONE and SLAB_STORE_USER enabled, kernel would NOT
->> store redzone and last user data around allocated memory space if arch
->> cache line > sizeof(unsigned long long). As a result, last user information
->> is unexpectedly MISSED while dumping slab corruption log.
->>
->> This fix makes sure that redzone and last user tags get stored whatever
->> cache line.
->>
->> Signed-off-by: Shiyong Li <shi-yong.li@motorola.com>
->> ---
->>  mm/slab.c |    7 ++-----
->>  1 files changed, 2 insertions(+), 5 deletions(-)
->>
->> diff --git a/mm/slab.c b/mm/slab.c
->> index a8a38ca..84af997 100644
->> --- a/mm/slab.c
->> +++ b/mm/slab.c
->> @@ -2267,9 +2267,6 @@ kmem_cache_create (const char *name, size_t
->> size, size_t align,
->>        if (ralign < align) {
->>                ralign = align;
->>        }
->> -       /* disable debug if necessary */
->> -       if (ralign > __alignof__(unsigned long long))
->> -               flags &= ~(SLAB_RED_ZONE | SLAB_STORE_USER);
->>        /*
->>         * 4) Store it.
->>         */
->> @@ -2289,8 +2286,8 @@ kmem_cache_create (const char *name, size_t
->> size, size_t align,
->>         */
->>        if (flags & SLAB_RED_ZONE) {
->>                /* add space for red zone words */
->> -               cachep->obj_offset += sizeof(unsigned long long);
->> -               size += 2 * sizeof(unsigned long long);
->> +               cachep->obj_offset += align;
->> +               size += align + sizeof(unsigned long long);
->>        }
->>        if (flags & SLAB_STORE_USER) {
->>                /* user store requires one word storage behind the end of
->
-> The problem I have with this patch is that I am unable to convince
-> myself that it's correct.
->
-> The code in question is pretty hard to follow and it can break on
-> architectures with strict alignment requirements. I'm not sure I fully
-> understand why we've been disabling debugging in the first place.
->
-> On which architectures have you verified this fix?
->
->                        Pekka
->
+That's ugly.  When we discover the first host bridge, we have no idea
+whether there will be more.  I don't want to mess around with trying to
+count the number of bridges, then go back and add them in another pass.
+
+I think it's fairly clear from http://lkml.org/lkml/2010/4/7/284 that
+Windows is paying attention the _CRS, even though there's only one host
+bridge.  So we ought to be able to make it work, too.
+
+This is not a problem with pci=use_crs.  This is only a problem because
+we don't reserve the VGA area when we should.  That's the problem we
+should fix.
+
+Bjorn
+
+
