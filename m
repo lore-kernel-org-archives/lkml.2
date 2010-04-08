@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758311Ab0DHJoJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 05:44:09 -0400
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:34957 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756764Ab0DHJoF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 05:44:05 -0400
-Message-ID: <4BBDA555.1020003@euromail.se>
-Date: Thu, 08 Apr 2010 11:43:49 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	id S1758378Ab0DHJtL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 05:49:11 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47727 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754105Ab0DHJtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 05:49:08 -0400
+Date: Thu, 8 Apr 2010 11:49:05 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: commit 9630bdd9 changes behavior of the poweroff - bug?
+Message-ID: <20100408094905.GA3948@tiehlicka.suse.cz>
+References: <20100401133923.GA4104@tiehlicka.suse.cz>
+ <201004022131.47787.rjw@sisk.pl>
+ <20100407073414.GA5174@tiehlicka.suse.cz>
+ <201004072149.23791.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Michael Poole <mdpoole@troilus.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: mt: introduce MT event slots
-References: <1270685590-2204-1-git-send-email-rydberg@euromail.se> <87tyrmiqw2.fsf@troilus.org>
-In-Reply-To: <87tyrmiqw2.fsf@troilus.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.129.72
-X-Scan-Result: No virus found in message 1NzoH9-00016z-4x.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1NzoH9-00016z-4x c8a7e94744fc84b661c01ea449c4dd88
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004072149.23791.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Poole wrote:
-[...]
+On Wed 07-04-10 21:49:23, Rafael J. Wysocki wrote:
+> On Wednesday 07 April 2010, Michal Hocko wrote:
+> > Sorry for late reply, but I was AFK during holiday.
+> > 
+> > On Fri 02-04-10 21:31:47, Rafael J. Wysocki wrote:
+> > > On Thursday 01 April 2010, Michal Hocko wrote:
+> > > > On Thu 01-04-10 14:45:35, Matthew Garrett wrote:
+> > > > > On Thu, Apr 01, 2010 at 03:39:23PM +0200, Michal Hocko wrote:
+> > > > > > Hi Rafael, Matthew,
+> > > > > > my laptop changed behavior during poweroff recently (after upgrading
+> > > > > > from .33 to .34-rc1). The system seems to be powered off (status display
+> > > > > > is off) at first glance but when I close the lid then I can hear a noise
+> > > > > > which sounds like HDD parking and when I open lid again it starts
+> > > > > > booting without poweroff button (same like when I suspend to RAM).
+> > > > > 
+> > > > > Hm. At a guess, we're somehow managing to leave the lid GPE enabled at 
+> > > > > poweroff. Can you send the output of the acpidump command?
+> > > > 
+> > > > Sure, see attached.
+> > > 
+> > > Thanks.
+> > > 
+> > > Please also send the contents of /proc/acpi/wakeup.
+> > 
+> > See attached. I have checked both kernels (with and without reverted
+> > 9630bdd) and the output looks pretty much same. 2.6.34-rc3, however,
+> > looks different a bit, so I am attaching it as well.
 > 
-> How would the slot number for a contact be chosen?
+> Well, I fail to see the possible failure scenario, so let's first try a blind
+> shot.
+> 
+> Please check if this patch helps:
+> https://patchwork.kernel.org/patch/86238/
 
-The device driver determines how to use the slots. The driver calls
-input_mt_slot(dev, slot), sends the data for the slot, picks another slot, and
-repeats.
+No change, sorry. I have tried that on top of 0fdf867 which is not the
+most recent one (does it make sense to retest on the most recent one
+f5284e7?)
 
-> If the kernel makes
-> that assignment, what should a "slot" correspond to from a computer
-> user's perspective? "Set[s] of identified sources" is a little vague:
-> Does it mean contacts from one hand, contacts in one displayed window
-> (assuming the touch surface is a screen), or something else?  (I assume
-> it would not duplicate the blob or tracking IDs already defined for MT
-> events.)
+> 
+> Rafael
 
-The slot is only used for data communication. Think of the slot as a combined,
-unique identifier. For example, imagine a device driver dealing with contacts
-labeled with both a USER_ID and a TRACKING_ID. The driver assigns every active
-(USER_ID, TRACKING_ID) contact to a specific slot, and uses it to communicate
-all changes to that contact. When the contact is destroyed (for instance by
-sending a zero ABS_MT_PRESSURE on that slot), the slot is free to be used for
-another contact.
-
-> It seems like those would be important aspects of the protocol
-> to document in Documentation/input/multi-touch-protocol.txt --
-> otherwise, driver implementers or application developers might get it
-> wrong.
-
-Certainly.
-
-Cheers,
-Henrik
-
+-- 
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
