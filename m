@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758864Ab0DHQ1q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 12:27:46 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:57690 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758818Ab0DHQ1n (ORCPT
+	id S932887Ab0DHQff (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 12:35:35 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:54028 "HELO
+	outbound-mail-313.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758686Ab0DHQfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 12:27:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=JizzXN5YuzicrDKckf0okDtboRPfco0v/i1ISPt2NT5xS7TIpAjeEwflRyMfXfp4vq
-         QKl8yPpv8b0mCY5lwHjcg+uVCzHFfFIxdS2nJ5D00YbPH0WzsQ/LJCw8ZS0FhbKwfELH
-         OdavOYbYVPKkuqlwVHbZVq+cXO8E+xxV4m8CM=
-MIME-Version: 1.0
-In-Reply-To: <4BB64CDA.4000405@windriver.com>
-References: <1270233145-29335-1-git-send-email-jason.wessel@windriver.com>
-	 <1270233145-29335-2-git-send-email-jason.wessel@windriver.com>
-	 <1270233145-29335-3-git-send-email-jason.wessel@windriver.com>
-	 <1270233145-29335-4-git-send-email-jason.wessel@windriver.com>
-	 <1270233145-29335-5-git-send-email-jason.wessel@windriver.com>
-	 <alpine.LFD.2.00.1004021205080.3634@i5.linux-foundation.org>
-	 <4BB64762.6040806@windriver.com> <4BB649E3.5060606@windriver.com>
-	 <alpine.LFD.2.00.1004021246470.3634@i5.linux-foundation.org>
-	 <4BB64CDA.4000405@windriver.com>
-Date: Thu, 8 Apr 2010 18:27:41 +0200
-Message-ID: <p2gb647ffbd1004080927r6079414dof04ef128d8ff3bfd@mail.gmail.com>
-Subject: Re: [Kgdb-bugreport] [PATCH 4/5] kgdb: Use atomic operators whichuse 
-	barriers
-From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       kgdb-bugreport@lists.sourceforge.net, Will Deacon <will.deacon@arm.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       linux-arm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 8 Apr 2010 12:35:32 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Pdv0XLwHMDLM8APpRw3GqJtbZNQxEewUbPY/EiJG0qOP33tD348IiVzk7Q2tZYRVASTcT/57wePQo3AwDB44vYjvKr9L7PdCv/ivNiWfcVs/NCZ4JMsZJ92om+PxkSk7;
+Date: Thu, 8 Apr 2010 09:35:35 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Karsten Wiese <fzuuzf@googlemail.com>
+Cc: linux-kernel@vger.kernel.org, Eric Anholt <eric@anholt.net>
+Subject: Re: [RFC PATCH] drm/i915: Don't touch PORT_HOTPLUG_EN in
+ intel_dp_detect()
+Message-ID: <20100408093535.691d5846@virtuousgeek.org>
+In-Reply-To: <201003272248.34294.fzuuzf@googlemail.com>
+References: <201003272248.34294.fzuuzf@googlemail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 27 Mar 2010 22:48:33 +0100
+Karsten Wiese <fzuuzf@googlemail.com> wrote:
+
+> PORT_HOTPLUG_EN has allready been setup in i915_driver_irq_postinstall(),
+> when intel_dp_detect() runs.
+> 
+> Delete the DP[BCD]_HOTPLUG_INT_EN defines, they are not referenced anymore.
+> 
+> I found this while searching for a fix for
+>         https://bugzilla.redhat.com/show_bug.cgi?id=528312
+> 
+> Signed-off-by: Karsten Wiese <fzu@wemgehoertderstaat.de>
 > ---
-> From: Jason Wessel <jason.wessel@windriver.com>
-> Subject: [PATCH] kgdb: use atomic_inc and atomic_dec instead of atomic_set
->
-> Memory barriers should be used for the kgdb cpu synchronization.  The
-> atomic_set() does not imply a memory barrier.
+> See also 
+> "drm/i915: only enable hotplug for detected outputs"
+> b01f2c3a4a37d09a47ad73ccbb46d554d21cfeb0
+> 
+>  drivers/gpu/drm/i915/i915_reg.h |    3 ---
+>  drivers/gpu/drm/i915/intel_dp.c |   10 ----------
+>  2 files changed, 0 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+> index ab1bd2d..92f440d 100644
+> --- a/drivers/gpu/drm/i915/i915_reg.h
+> +++ b/drivers/gpu/drm/i915/i915_reg.h
+> @@ -854,11 +854,8 @@
+>  /* Hotplug control (945+ only) */
+>  #define PORT_HOTPLUG_EN                0x61110
+>  #define   HDMIB_HOTPLUG_INT_EN                 (1 << 29)
+> -#define   DPB_HOTPLUG_INT_EN                   (1 << 29)
+>  #define   HDMIC_HOTPLUG_INT_EN                 (1 << 28)
+> -#define   DPC_HOTPLUG_INT_EN                   (1 << 28)
+>  #define   HDMID_HOTPLUG_INT_EN                 (1 << 27)
+> -#define   DPD_HOTPLUG_INT_EN                   (1 << 27)
+>  #define   SDVOB_HOTPLUG_INT_EN                 (1 << 26)
+>  #define   SDVOC_HOTPLUG_INT_EN                 (1 << 25)
+>  #define   TV_HOTPLUG_INT_EN                    (1 << 18)
+> diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+> index 439506c..7a3b5c8 100644
+> --- a/drivers/gpu/drm/i915/intel_dp.c
+> +++ b/drivers/gpu/drm/i915/intel_dp.c
+> @@ -1179,16 +1179,6 @@ intel_dp_detect(struct drm_connector *connector)
+>         if (IS_IRONLAKE(dev))
+>                 return ironlake_dp_detect(connector);
+> 
+> -       temp = I915_READ(PORT_HOTPLUG_EN);
+> -
+> -       I915_WRITE(PORT_HOTPLUG_EN,
+> -              temp |
+> -              DPB_HOTPLUG_INT_EN |
+> -              DPC_HOTPLUG_INT_EN |
+> -              DPD_HOTPLUG_INT_EN);
+> -
+> -       POSTING_READ(PORT_HOTPLUG_EN);
+> -
+>         switch (dp_priv->output_reg) {
+>         case DP_B:
+>                 bit = DPB_HOTPLUG_INT_STATUS;
+> --
+> 
 
-Hmm, but as far as I can see [ Documentation/memory-barriers.txt and
-some actual implementations of atomic_inc/dec() ] atomic_inc/dec()
-does not imply memory barriers either.
+Yeah, looks like we already cover this with the hotplug_supported_mask
+setup we do here, so we should be able to drop these bits.
 
-Either I'm missing the real point of this change and the very category
-of "memory barriers" bears another meaning here or the following piece
-looks especially dubious...
+So assuming it's been tested with a real DP output + hotplug:
 
-[...]
-         * Make sure the above info reaches the primary CPU before
-         * our cpu_in_kgdb[] flag setting does:
-         */
--       smp_wmb();
--       atomic_set(&cpu_in_kgdb[cpu], 1);
-+       atomic_inc(&cpu_in_kgdb[cpu]);
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-so what ensures the "Make sure the above info reaches..." requirement here?
-
-TIA,
-
-
--- Dmitry
+-- 
+Jesse Barnes, Intel Open Source Technology Center
