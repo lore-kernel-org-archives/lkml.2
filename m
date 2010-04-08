@@ -1,50 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655Ab0DHCKX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 22:10:23 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:56510 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751015Ab0DHCKT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 22:10:19 -0400
-Date: Wed, 7 Apr 2010 22:10:17 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Robert Hancock <hancockrwd@gmail.com>
-cc: Daniel Mack <daniel@caiaq.de>, <linux-kernel@vger.kernel.org>,
-       Pedro Ribeiro <pedrib@gmail.com>, <akpm@linux-foundation.org>,
-       Greg KH <gregkh@suse.de>, <alsa-devel@alsa-project.org>,
-       <linux-usb@vger.kernel.org>
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-In-Reply-To: <4BBD1B6F.3000205@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1004072207390.18281-100000@netrider.rowland.org>
+	id S1751184Ab0DHCPa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 22:15:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22381 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750775Ab0DHCP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 22:15:27 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+X-Fcc: ~/Mail/linus
+Cc: Andrew Morton <akpm@linux-foundation.org>, Alan Cox <alan@linux.intel.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] move tty_kref_put() outside of __cleanup_signal()
+In-Reply-To: Oleg Nesterov's message of  Thursday, 18 March 2010 23:37:36 +0100 <20100318223736.GA12944@redhat.com>
+References: <20100318223736.GA12944@redhat.com>
+X-Shopping-List: (1) Cretaceous Deep-fried suction
+   (2) Logical exhibitions
+   (3) Incredulous lip friction
+   (4) Maoist Protrusions
+Message-Id: <20100408021516.5738FD25E@magilla.sf.frob.com>
+Date: Wed,  7 Apr 2010 19:15:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Apr 2010, Robert Hancock wrote:
+Acked-by: Roland McGrath <roland@redhat.com>
 
-> >> The problem is appearantly the way the transfer buffer is allocated in
-> >> the drivers. In the snd-usb-caiaq driver, I used kzalloc() to get memory
-> >> which works fine on 32bit systems. On x86_64, however, it seems that
-> >> kzalloc() hands out memory beyond the 32bit addressable boundary, which
-> >> the DMA controller of the 32bit PCI-connected EHCI controller is unable
-> >> to write to or read from. Am I correct on this conclusion?
-> >
-> > That seems like the right answer.  You are correct that an EHCI
-> > controller capable only of 32-bit memory accesses would not be able to
-> > use a buffer above the 4 GB line.
 
-> AFAIK, the driver shouldn't have to worry about this at all. When the 
-> buffer gets DMA-mapped for the controller, the DMA mapping code should 
-> see that the device has a 32-bit DMA mask and either bounce or IOMMU-map 
-> the memory so that it appears below 4GB.
-
-That's true.  It would of course be more efficient for the buffer to be
-allocated below 4 GB, but it should work okay either way.  Daniel, do
-you have any idea why it fails?
-
-Alan Stern
-
+Thanks,
+Roland
