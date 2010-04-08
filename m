@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932946Ab0DHQZz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 12:25:55 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:54712 "HELO
-	outbound-mail-01.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932896Ab0DHQZx (ORCPT
+	id S1758864Ab0DHQ1q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 12:27:46 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:57690 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758818Ab0DHQ1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 12:25:53 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=iC+9MxYk1KibHD8USlR1SVXMT7+P35jCD/VzvHmfo0vr4m+/fil2foGPw+eBraOd9IpJkS2b/gMnaRa1ezeN44rIq3ODCLeb1xbkTWciDeTqIIvS9oVHj7CQQcxZC1V0;
-Date: Thu, 8 Apr 2010 09:25:55 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH] x86/PCI: ignore Consumer/Producer bit in ACPI window
- descriptions
-Message-ID: <20100408092555.7933716a@virtuousgeek.org>
-In-Reply-To: <20100406192408.14676.17106.stgit@bob.kio>
-References: <20100406192408.14676.17106.stgit@bob.kio>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	Thu, 8 Apr 2010 12:27:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=JizzXN5YuzicrDKckf0okDtboRPfco0v/i1ISPt2NT5xS7TIpAjeEwflRyMfXfp4vq
+         QKl8yPpv8b0mCY5lwHjcg+uVCzHFfFIxdS2nJ5D00YbPH0WzsQ/LJCw8ZS0FhbKwfELH
+         OdavOYbYVPKkuqlwVHbZVq+cXO8E+xxV4m8CM=
+MIME-Version: 1.0
+In-Reply-To: <4BB64CDA.4000405@windriver.com>
+References: <1270233145-29335-1-git-send-email-jason.wessel@windriver.com>
+	 <1270233145-29335-2-git-send-email-jason.wessel@windriver.com>
+	 <1270233145-29335-3-git-send-email-jason.wessel@windriver.com>
+	 <1270233145-29335-4-git-send-email-jason.wessel@windriver.com>
+	 <1270233145-29335-5-git-send-email-jason.wessel@windriver.com>
+	 <alpine.LFD.2.00.1004021205080.3634@i5.linux-foundation.org>
+	 <4BB64762.6040806@windriver.com> <4BB649E3.5060606@windriver.com>
+	 <alpine.LFD.2.00.1004021246470.3634@i5.linux-foundation.org>
+	 <4BB64CDA.4000405@windriver.com>
+Date: Thu, 8 Apr 2010 18:27:41 +0200
+Message-ID: <p2gb647ffbd1004080927r6079414dof04ef128d8ff3bfd@mail.gmail.com>
+Subject: Re: [Kgdb-bugreport] [PATCH 4/5] kgdb: Use atomic operators whichuse 
+	barriers
+From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       kgdb-bugreport@lists.sourceforge.net, Will Deacon <will.deacon@arm.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       linux-arm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 06 Apr 2010 13:24:08 -0600
-Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
-
-> 
-> ACPI Address Space Descriptors (used in _CRS) have a Consumer/Producer
-> bit that is supposed to distinguish regions that are consumed directly
-> by a device from those that are forwarded ("produced") by a bridge.
-> But BIOSes have apparently not used this consistently, and Windows
-> seems to ignore it, so I think Linux should ignore it as well.
-> 
-> I can't point to any of these supposed broken BIOSes, but since we
-> now rely on _CRS by default, I think it's safer to ignore this bit
-> from the start.
-> 
-> Here are details of my experiments with how Windows handles it:
->     https://bugzilla.kernel.org/show_bug.cgi?id=15701
-> 
-> Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
 > ---
+> From: Jason Wessel <jason.wessel@windriver.com>
+> Subject: [PATCH] kgdb: use atomic_inc and atomic_dec instead of atomic_set
+>
+> Memory barriers should be used for the kgdb cpu synchronization.  The
+> atomic_set() does not imply a memory barrier.
 
-Applied to my for-linus branch, thanks.
+Hmm, but as far as I can see [ Documentation/memory-barriers.txt and
+some actual implementations of atomic_inc/dec() ] atomic_inc/dec()
+does not imply memory barriers either.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Either I'm missing the real point of this change and the very category
+of "memory barriers" bears another meaning here or the following piece
+looks especially dubious...
+
+[...]
+         * Make sure the above info reaches the primary CPU before
+         * our cpu_in_kgdb[] flag setting does:
+         */
+-       smp_wmb();
+-       atomic_set(&cpu_in_kgdb[cpu], 1);
++       atomic_inc(&cpu_in_kgdb[cpu]);
+
+so what ensures the "Make sure the above info reaches..." requirement here?
+
+TIA,
+
+
+-- Dmitry
