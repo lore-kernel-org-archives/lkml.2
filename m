@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759153Ab0DHV3h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 17:29:37 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:37116 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759076Ab0DHV3g convert rfc822-to-8bit (ORCPT
+	id S933547Ab0DHVax (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 17:30:53 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:45444 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759094Ab0DHVav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 17:29:36 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=jj2eZUbotOfrISIvJ3IxNDqMNOmNiAHCIVTtId4AyA8cWfa03fBeACQFOyAmwtkRQ
-	0RtAha0COer47NQVnBPxg==
+	Thu, 8 Apr 2010 17:30:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ollxeY6WAgSlYzA6Q/lDiwo5/uZdIFCLmZq0xhpxKRiWVpG57p0kYHu0qaaquLu8WZ
+         dIyQwQLoZAx3Fl8CkH7f/axM2bNQb7pxOzNCfmSON+y68C4xvzf/SUFmlIB1jK/3ZcRf
+         ianMPN71EzNbd/uGAqfO2K5iM3bMiKK75bbCI=
+Date: Thu, 8 Apr 2010 23:30:46 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jan Blunck <jblunck@suse.de>, Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+       Matthew Wilcox <matthew@wil.cx>, Thomas Gleixner <tglx@linutronix.de>,
+       Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+       John Kacur <jkacur@redhat.com>
+Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
+Message-ID: <20100408213043.GB7990@nowhere>
+References: <201003242240.54907.arnd@arndb.de> <201003282205.50886.arnd@arndb.de> <20100408204545.GM10776@bolzano.suse.de> <201004082327.26731.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <1270761341.20295.3160.camel@laptop>
-References: <4bbe4175.5124cc0a.5bd3.22d6@mx.google.com>
-	 <1270760136.20295.3121.camel@laptop>
-	 <v2xbd4cb8901004081408mf761d04ag5a365d068c58d64b@mail.gmail.com>
-	 <1270761341.20295.3160.camel@laptop>
-Date: Thu, 8 Apr 2010 23:29:31 +0200
-Message-ID: <g2ubd4cb8901004081429qc0386d6ftac5fed296920d05@mail.gmail.com>
-Subject: Re: [PATCH] perf_events: fix bogus warn_on(_once) in 
-	perf_prepare_sample()
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-       davem@davemloft.net, fweisbec@gmail.com, robert.richter@amd.com,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004082327.26731.arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 8, 2010 at 11:15 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2010-04-08 at 23:08 +0200, Stephane Eranian wrote:
->> On Thu, Apr 8, 2010 at 10:55 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Thu, 2010-04-08 at 22:45 +0200, Stephane Eranian wrote:
->> >>       There is a warn_on_once() check for PERF_SAMPLE_RAW which trips
->> >>       when using PEBS on both Core and Nehalem. Core PEBS sample size is 144
->> >>       bytes and 176 bytes for Nehalem. Both are multiples of 8, but the size
->> >>       field is encoded as int, thus the total is never a multiple of 8 which
->> >>       trips the check. I think the size should have been u64, but now it is
->> >>       too late to change given it is ABI.
->> >
->> > PEBS hasn't seen -linus yet, so we can fix that.
->> >
->> Are you suggesting you add some padding the PEBS raw sample you
->> return as PERF_SAMPLE_RAW? Then you need to define what RAW
->> actually means? Seems here, it would mean more than what the
->> HW returns.
->
-> The best fix here is to simply remove the PERF_SAMPLE_RAW support and
-> implement PERF_SAMPLE_REGS. Its just that we need to come up with a way
-> to deal with compat pt_regs muck.
->
->
-But isn't RAW already part of the ABI?
+On Thu, Apr 08, 2010 at 11:27:26PM +0200, Arnd Bergmann wrote:
+> On Thursday 08 April 2010 22:45:45 Jan Blunck wrote:
+> > On Sun, Mar 28, Arnd Bergmann wrote:
+> > > > General thoughts:
+> > > > 
+> > > > ".llseek = NULL," so far meant "do the Right Thing on lseek() and
+> > > > friends, as far as the fs core can tell".  Shouldn't we keep it that
+> > > > way?  It's as close to other ".method = NULL," as it can get, which
+> > > > either mean "silently skip this method if it doesn't matter" (e.g.
+> > > > .flush) or "fail attempts to use this method with a fitting errno" (e.g.
+> > > > .write).
+> > > 
+> > > My series changes the default from 'default_llseek' to 'generic_file_llseek',
+> > 
+> > That is not that easy. generic_file_llseek() is testing against 'offset <
+> > inode->i_sb->s_maxbytes'. This is not necessarily true when you think about
+> > directories with random offset cookies. I know that seeking on directories is
+> > stupid but don't blame me.
+> 
+> Oh, I see. Would it work if we extend generic_file_llseek to only check s_maxbytes
+> if S_ISREG(inode->i_mode)))?
+> 
+> > > Yes, that also sounds like a good idea. I believe that Jan actually posted
+> > > a patch to do that at some point.
+> > 
+> > Yes, it is in
+> > 
+> > http://git.infradead.org/users/jblunck/linux-2.6.git bkl/default-lseek
+> > 
+> > There are some other patches in that branch that are not upstream yet. Mind to
+> > take them for your bkl-removal branch?
+> 
+> Frederic is now collecting the new patches. Your default-lseek series looks
+> good to me, except for the obvious one that says 'FIXME' in the subject.
+> 
+> Maybe Frederic can add your series except for that one as another branch to
+> get pulled into his kill-the-bkl master branch.
 
-It is true that you need to also provide the interrupted state (or
-part of it) to the user, i.e.,
-beyond just the IP.
 
-But the interrupt state and PEBS state are distinct and should not be
-swapped. In fact,
-both may be useful at the same time to evaluate the skid.
+Ok, will have a look at this soon (I will also put a branch for the procfs
+series).
 
-So yes, you need PERF_SAMPLE_REGS. But just like your proposal with the two IPs.
-I think you need to export two versions of REGS: IREGS and PREGS for
-instance. The
-issue is that PEBS does not record the whole state but only a very small subset.
+Thanks.
 
-Then, on Nehalem, there is PEBS more where you collect more that just
-machine state,
-you collect cache miss information. That's not regs anymore.
