@@ -1,79 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932642Ab0DHP1v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 11:27:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40198 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932373Ab0DHP1u (ORCPT
+	id S932695Ab0DHPgN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 11:36:13 -0400
+Received: from stinky.trash.net ([213.144.137.162]:39412 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932655Ab0DHPgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 11:27:50 -0400
-Date: Thu, 8 Apr 2010 12:27:41 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 3/6] perf tools: Reorganize some structs to save space
-Message-ID: <20100408152741.GH3908@ghostprotocols.net>
-References: <1270737529-24258-1-git-send-email-acme@infradead.org>
- <1270737529-24258-4-git-send-email-acme@infradead.org>
- <1270739509.20295.2419.camel@laptop>
+	Thu, 8 Apr 2010 11:36:11 -0400
+Message-ID: <4BBDF7E7.708@trash.net>
+Date: Thu, 08 Apr 2010 17:36:07 +0200
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090701)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1270739509.20295.2419.camel@laptop>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Valdis.Kletnieks@vt.edu
+CC: Andrew Morton <akpm@linux-foundation.org>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+       netfilter-devel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: mmotm 2010-04-05-16-09 uploaded
+References: <201004052336.o35NaeSE015814@imap1.linux-foundation.org> <13074.1270663309@localhost>            <4BBDC0CC.7080305@trash.net> <6795.1270740197@localhost>
+In-Reply-To: <6795.1270740197@localhost>
+X-Enigmail-Version: 0.95.0
+Content-Type: multipart/mixed;
+ boundary="------------030403000004010505030202"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Apr 08, 2010 at 05:11:49PM +0200, Peter Zijlstra escreveu:
-> On Thu, 2010-04-08 at 11:38 -0300, Arnaldo Carvalho de Melo wrote:
-> > @@ -68,11 +68,11 @@ struct sample_data {
-> >         u64 addr;
-> >         u64 id;
-> >         u64 stream_id;
-> > -       u32 cpu;
-> >         u64 period;
-> > -       struct ip_callchain *callchain;
-> > +       u32 cpu;
-> >         u32 raw_size;
-> >         void *raw_data;
-> > +       struct ip_callchain *callchain;
-> >  }; 
+This is a multi-part message in MIME format.
+--------------030403000004010505030202
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+
+Valdis.Kletnieks@vt.edu wrote:
+> On Thu, 08 Apr 2010 13:41:00 +0200, Patrick McHardy said:
+>>> [   11.488579] ===================================================
+>>> [   11.489529] [ INFO: suspicious rcu_dereference_check() usage. ]
+>>> [   11.489988] ---------------------------------------------------
+>>> [   11.490494] net/netfilter/nf_conntrack_ecache.c:88 invoked rcu_dereference_check() without protection!
+>>> [   11.491024] 
+>> There are some unnecessary rcu_dereference() calls in the conntrack
+>> notifier registration and unregistration functions.
+>>
+>> Does this fix it?
 > 
-> If that is a struct that is to match a kernel produced record then this
-> is utterly broken.
+> Well, it *changed* it.  Does the rcu_defererence_check() only fire on the
+> first time it hits something, so we've fixed the first one and now we get to
+> see the second one?
 
-No, it is not, it is filled in userspace:
+It appears that way, otherwise you should have seen a second warning in
+nf_conntrack_ecache the last time.
 
-tools/perf/util/event.c:
+> (For what it's worth, if this is going to be one-at-a-time whack-a-mole, I'm
+> OK on that, just want to know up front.)
 
-int event__parse_sample(event_t *event, u64 type, struct sample_data *data)
-{
-        u64 *array = event->sample.array;
+I went through the other files and I believe this should be it.
+We already removed most of these incorrect rcu_dereference()
+calls a while back.
 
-        if (type & PERF_SAMPLE_IP) {
-                data->ip = event->ip.ip;
-                array++;
-        }
+> [    9.299425] ip_tables: (C) 2000-2006 Netfilter Core Team
+> [    9.299486] 
+> [    9.299486] ===================================================
+> [    9.300499] [ INFO: suspicious rcu_dereference_check() usage. ]
+> [    9.301001] ---------------------------------------------------
+> [    9.301523] net/netfilter/nf_log.c:55 invoked rcu_dereference_check() without protection!
+> [    9.302066] 
 
-        if (type & PERF_SAMPLE_TID) {
-                u32 *p = (u32 *)array;
-                data->pid = p[0];
-                data->tid = p[1];
-                array++;
-        }
 
-        if (type & PERF_SAMPLE_TIME) {
-                data->time = *array;
-                array++;
-        }
-<SNIP>
+--------------030403000004010505030202
+Content-Type: text/plain;
+ name="x"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename="x"
 
-We can reorder it at will and decoupled from any kernel changes.
+diff --git a/net/netfilter/nf_conntrack_ecache.c b/net/netfilter/nf_conntrack_ecache.c
+index d5a9bcd..849614a 100644
+--- a/net/netfilter/nf_conntrack_ecache.c
++++ b/net/netfilter/nf_conntrack_ecache.c
+@@ -81,11 +81,9 @@ EXPORT_SYMBOL_GPL(nf_ct_deliver_cached_events);
+ int nf_conntrack_register_notifier(struct nf_ct_event_notifier *new)
+ {
+ 	int ret = 0;
+-	struct nf_ct_event_notifier *notify;
+ 
+ 	mutex_lock(&nf_ct_ecache_mutex);
+-	notify = rcu_dereference(nf_conntrack_event_cb);
+-	if (notify != NULL) {
++	if (nf_conntrack_event_cb != NULL) {
+ 		ret = -EBUSY;
+ 		goto out_unlock;
+ 	}
+@@ -101,11 +99,8 @@ EXPORT_SYMBOL_GPL(nf_conntrack_register_notifier);
+ 
+ void nf_conntrack_unregister_notifier(struct nf_ct_event_notifier *new)
+ {
+-	struct nf_ct_event_notifier *notify;
+-
+ 	mutex_lock(&nf_ct_ecache_mutex);
+-	notify = rcu_dereference(nf_conntrack_event_cb);
+-	BUG_ON(notify != new);
++	BUG_ON(nf_conntrack_event_cb != new);
+ 	rcu_assign_pointer(nf_conntrack_event_cb, NULL);
+ 	mutex_unlock(&nf_ct_ecache_mutex);
+ }
+@@ -114,11 +109,9 @@ EXPORT_SYMBOL_GPL(nf_conntrack_unregister_notifier);
+ int nf_ct_expect_register_notifier(struct nf_exp_event_notifier *new)
+ {
+ 	int ret = 0;
+-	struct nf_exp_event_notifier *notify;
+ 
+ 	mutex_lock(&nf_ct_ecache_mutex);
+-	notify = rcu_dereference(nf_expect_event_cb);
+-	if (notify != NULL) {
++	if (nf_expect_event_cb != NULL) {
+ 		ret = -EBUSY;
+ 		goto out_unlock;
+ 	}
+@@ -134,11 +127,8 @@ EXPORT_SYMBOL_GPL(nf_ct_expect_register_notifier);
+ 
+ void nf_ct_expect_unregister_notifier(struct nf_exp_event_notifier *new)
+ {
+-	struct nf_exp_event_notifier *notify;
+-
+ 	mutex_lock(&nf_ct_ecache_mutex);
+-	notify = rcu_dereference(nf_expect_event_cb);
+-	BUG_ON(notify != new);
++	BUG_ON(nf_expect_event_cb != new);
+ 	rcu_assign_pointer(nf_expect_event_cb, NULL);
+ 	mutex_unlock(&nf_ct_ecache_mutex);
+ }
+diff --git a/net/netfilter/nf_log.c b/net/netfilter/nf_log.c
+index 015725a..908f599 100644
+--- a/net/netfilter/nf_log.c
++++ b/net/netfilter/nf_log.c
+@@ -35,7 +35,6 @@ static struct nf_logger *__find_logger(int pf, const char *str_logger)
+ /* return EEXIST if the same logger is registred, 0 on success. */
+ int nf_log_register(u_int8_t pf, struct nf_logger *logger)
+ {
+-	const struct nf_logger *llog;
+ 	int i;
+ 
+ 	if (pf >= ARRAY_SIZE(nf_loggers))
+@@ -52,8 +51,7 @@ int nf_log_register(u_int8_t pf, struct nf_logger *logger)
+ 	} else {
+ 		/* register at end of list to honor first register win */
+ 		list_add_tail(&logger->list[pf], &nf_loggers_l[pf]);
+-		llog = rcu_dereference(nf_loggers[pf]);
+-		if (llog == NULL)
++		if (nf_loggers[pf] == NULL)
+ 			rcu_assign_pointer(nf_loggers[pf], logger);
+ 	}
+ 
+@@ -65,13 +63,11 @@ EXPORT_SYMBOL(nf_log_register);
+ 
+ void nf_log_unregister(struct nf_logger *logger)
+ {
+-	const struct nf_logger *c_logger;
+ 	int i;
+ 
+ 	mutex_lock(&nf_log_mutex);
+ 	for (i = 0; i < ARRAY_SIZE(nf_loggers); i++) {
+-		c_logger = rcu_dereference(nf_loggers[i]);
+-		if (c_logger == logger)
++		if (nf_loggers[i] == logger)
+ 			rcu_assign_pointer(nf_loggers[i], NULL);
+ 		list_del(&logger->list[i]);
+ 	}
 
-- Arnaldo
+--------------030403000004010505030202--
