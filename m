@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933038Ab0DHRUB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 13:20:01 -0400
-Received: from tex.lwn.net ([70.33.254.29]:46505 "EHLO vena.lwn.net"
+	id S933105Ab0DHRU3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 13:20:29 -0400
+Received: from tex.lwn.net ([70.33.254.29]:46501 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932991Ab0DHRQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 13:16:55 -0400
+	id S932987Ab0DHRQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 13:16:54 -0400
 From: Jonathan Corbet <corbet@lwn.net>
 To: linux-kernel@vger.kernel.org
 Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
        Harald Welte <laforge@gnumonks.org>, JosephChan@via.com.tw,
        ScottFang@viatech.com.cn, Deepak Saxena <dsaxena@laptop.org>,
        linux-fbdev-devel@lists.sourceforge.net
-Subject: [PATCH 07/16] viafb: Add 1200x900 DCON/LCD panel modes for OLPC XO-1.5
-Date: Thu,  8 Apr 2010 11:15:37 -0600
-Message-Id: <1270746946-12467-8-git-send-email-corbet@lwn.net>
+Subject: [PATCH 06/16] viafb: complete support for VX800/VX855 accelerated framebuffer
+Date: Thu,  8 Apr 2010 11:15:36 -0600
+Message-Id: <1270746946-12467-7-git-send-email-corbet@lwn.net>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1270746946-12467-1-git-send-email-corbet@lwn.net>
 References: <1270746946-12467-1-git-send-email-corbet@lwn.net>
@@ -22,164 +22,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Ball <cjb@laptop.org>
+This patch is a painful merge of change
+a90bab567ece3e915d0ccd55ab00c9bb333fa8c0 (viafb: Add support for 2D
+accelerated framebuffer on VX800/VX855) in the OLPC tree, originally by
+Harald Welte.  Harald's changelog read:
 
-[jc: extensive merge conflict fixes]
-Signed-off-by: Chris Ball <cjb@laptop.org>
+	The VX800/VX820 and the VX855/VX875 chipsets have a different 2D
+    	acceleration engine called "M1".  The M1 engine has some subtle
+    	(and some not-so-subtle) differences to the previous engines, so
+    	support for accelerated framebuffer on those chipsets was disabled
+    	so far.
+
+This merge tries to preserve Harald's changes in the framework of the
+much-changed 2.6.34 viafb code.
+
+Signed-off-by: Jonathan Corbet <corbet@lwn.net>
 ---
- drivers/video/via/hw.c      |    1 +
- drivers/video/via/ioctl.h   |    2 +-
- drivers/video/via/lcd.c     |   10 ++++++++++
- drivers/video/via/lcd.h     |    2 ++
- drivers/video/via/share.h   |    8 ++++++++
- drivers/video/via/viamode.c |   14 ++++++++++++++
- 6 files changed, 36 insertions(+), 1 deletions(-)
+ drivers/video/via/accel.c |   39 +++++++++++++++++++++++++++++++++------
+ drivers/video/via/accel.h |   40 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 73 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
-index 963704e..7be462e 100644
---- a/drivers/video/via/hw.c
-+++ b/drivers/video/via/hw.c
-@@ -63,6 +63,7 @@ static struct pll_map pll_value[] = {
- 	 CX700_52_977M,	VX855_52_977M},
- 	{CLK_56_250M, CLE266_PLL_56_250M, K800_PLL_56_250M,
- 	 CX700_56_250M, VX855_56_250M},
-+	{CLK_57_275M, 0, 0, 0, VX855_57_275M},
- 	{CLK_60_466M, CLE266_PLL_60_466M, K800_PLL_60_466M,
- 	 CX700_60_466M, VX855_60_466M},
- 	{CLK_61_500M, CLE266_PLL_61_500M, K800_PLL_61_500M,
-diff --git a/drivers/video/via/ioctl.h b/drivers/video/via/ioctl.h
-index de89980..c430fa2 100644
---- a/drivers/video/via/ioctl.h
-+++ b/drivers/video/via/ioctl.h
-@@ -75,7 +75,7 @@
- /*SAMM operation flag*/
- #define OP_SAMM            0x80
+diff --git a/drivers/video/via/accel.c b/drivers/video/via/accel.c
+index 78c0a2b..7fe1c1d 100644
+--- a/drivers/video/via/accel.c
++++ b/drivers/video/via/accel.c
+@@ -328,6 +328,7 @@ int viafb_init_engine(struct fb_info *info)
+ {
+ 	struct viafb_par *viapar = info->par;
+ 	void __iomem *engine;
++	int highest_reg, i;
+ 	u32 vq_start_addr, vq_end_addr, vq_start_low, vq_end_low, vq_high,
+ 		vq_len, chip_name = viapar->shared->chip_info.gfx_chip_name;
  
--#define LCD_PANEL_ID_MAXIMUM	22
-+#define LCD_PANEL_ID_MAXIMUM	23
+@@ -339,6 +340,18 @@ int viafb_init_engine(struct fb_info *info)
+ 		return -ENOMEM;
+ 	}
  
- #define STATE_ON            0x1
- #define STATE_OFF           0x0
-diff --git a/drivers/video/via/lcd.c b/drivers/video/via/lcd.c
-index 71e3200..e0e2310 100644
---- a/drivers/video/via/lcd.c
-+++ b/drivers/video/via/lcd.c
-@@ -456,6 +456,16 @@ static int fp_id_to_vindex(int panel_id)
- 		viaparinfo->lvds_setting_info->LCDDithering = 1;
- 		return VIA_RES_480X640;
- 		break;
-+	case 0x17:
-+		/* OLPC XO-1.5 panel */
-+		viaparinfo->lvds_setting_info->lcd_panel_hres = 1200;
-+		viaparinfo->lvds_setting_info->lcd_panel_vres = 900;
-+		viaparinfo->lvds_setting_info->lcd_panel_id =
-+			LCD_PANEL_IDD_1200X900;
-+		viaparinfo->lvds_setting_info->device_lcd_dualedge = 0;
-+		viaparinfo->lvds_setting_info->LCDDithering = 0;
-+		return VIA_RES_1200X900;
++	/* Initialize registers to reset the 2D engine */
++	switch (viapar->shared->chip_info.twod_engine) {
++	case VIA_2D_ENG_M1:
++		highest_reg = 0x5c;
 +		break;
- 	default:
- 		viaparinfo->lvds_setting_info->lcd_panel_hres = 800;
- 		viaparinfo->lvds_setting_info->lcd_panel_vres = 600;
-diff --git a/drivers/video/via/lcd.h b/drivers/video/via/lcd.h
-index 071f47c..9762ec6 100644
---- a/drivers/video/via/lcd.h
-+++ b/drivers/video/via/lcd.h
-@@ -60,6 +60,8 @@
- #define     LCD_PANEL_IDB_1360X768     0x0B
- /* Resolution: 480x640,  Channel: single, Dithering: Enable */
- #define     LCD_PANEL_IDC_480X640      0x0C
-+/* Resolution: 1200x900,  Channel: single, Dithering: Disable */
-+#define     LCD_PANEL_IDD_1200X900      0x0D
- 
- 
- extern int viafb_LCD2_ON;
-diff --git a/drivers/video/via/share.h b/drivers/video/via/share.h
-index 7cd03e2..ecbbf93 100644
---- a/drivers/video/via/share.h
-+++ b/drivers/video/via/share.h
-@@ -86,6 +86,7 @@
- #define     VIA_RES_1920X1200              	38
- #define     VIA_RES_2048X1536              	39
- #define     VIA_RES_480X640                  	40
-+#define     VIA_RES_1200X900                	41
- 
- /*Reduce Blanking*/
- #define     VIA_RES_1360X768_RB          	131
-@@ -626,6 +627,10 @@
- #define M1200X720_R60_HSP       NEGATIVE
- #define M1200X720_R60_VSP       POSITIVE
- 
-+/* 1200x900@60 Sync Polarity (DCON) */
-+#define M1200X900_R60_HSP       NEGATIVE
-+#define M1200X900_R60_VSP       NEGATIVE
++	default:
++		highest_reg = 0x40;
++		break;
++	}
++	for (i = 0; i <= highest_reg; i+= 4)
++		writel(0x0, engine + i);
 +
- /* 1280x600@60 Sync Polarity (GTF Mode) */
- #define M1280x600_R60_HSP       NEGATIVE
- #define M1280x600_R60_VSP       POSITIVE
-@@ -707,6 +712,7 @@
- #define CLK_52_406M     52406000
- #define CLK_52_977M     52977000
- #define CLK_56_250M     56250000
-+#define CLK_57_275M     57275000
- #define CLK_60_466M     60466000
- #define CLK_61_500M     61500000
- #define CLK_65_000M     65000000
-@@ -995,6 +1001,7 @@
- #define VX855_52_406M     0x00580C03
- #define VX855_52_977M     0x00940C05
- #define VX855_56_250M     0x009D0C05
-+#define VX855_57_275M     0x009D8C85    /* Used by XO panel */
- #define VX855_60_466M     0x00A90C05
- #define VX855_61_500M     0x00AC0C05
- #define VX855_65_000M     0x006D0C03
-@@ -1121,6 +1128,7 @@
- #define RES_1600X1200_60HZ_PIXCLOCK  6172
- #define RES_1600X1200_75HZ_PIXCLOCK  4938
- #define RES_1280X720_60HZ_PIXCLOCK   13426
-+#define RES_1200X900_60HZ_PIXCLOCK   17459
- #define RES_1920X1080_60HZ_PIXCLOCK  5787
- #define RES_1400X1050_60HZ_PIXCLOCK  8214
- #define RES_1400X1050_75HZ_PIXCLOCK  6410
-diff --git a/drivers/video/via/viamode.c b/drivers/video/via/viamode.c
-index b74f8a6..46833b4 100644
---- a/drivers/video/via/viamode.c
-+++ b/drivers/video/via/viamode.c
-@@ -66,6 +66,7 @@ struct res_map_refresh res_map_refresh_tbl[] = {
- 	{1088, 612, RES_1088X612_60HZ_PIXCLOCK, 60},
- 	{1152, 720, RES_1152X720_60HZ_PIXCLOCK, 60},
- 	{1200, 720, RES_1200X720_60HZ_PIXCLOCK, 60},
-+	{1200, 900, RES_1200X900_60HZ_PIXCLOCK, 60},
- 	{1280, 600, RES_1280X600_60HZ_PIXCLOCK, 60},
- 	{1280, 720, RES_1280X720_50HZ_PIXCLOCK, 50},
- 	{1280, 768, RES_1280X768_50HZ_PIXCLOCK, 50},
-@@ -759,6 +760,16 @@ struct crt_mode_table CRTM1200x720[] = {
- 	 {1568, 1200, 1200, 368, 1256, 128, 746, 720, 720, 26, 721, 3} }
- };
+ 	switch (chip_name) {
+ 	case UNICHROME_CLE266:
+ 	case UNICHROME_K400:
+@@ -375,6 +388,8 @@ int viafb_init_engine(struct fb_info *info)
+ 	switch (chip_name) {
+ 	case UNICHROME_K8M890:
+ 	case UNICHROME_P4M900:
++	case UNICHROME_VX800:
++	case UNICHROME_VX855:
+ 		writel(0x00100000, engine + VIA_REG_CR_TRANSET);
+ 		writel(0x680A0000, engine + VIA_REG_CR_TRANSPACE);
+ 		writel(0x02000000, engine + VIA_REG_CR_TRANSPACE);
+@@ -409,6 +424,8 @@ int viafb_init_engine(struct fb_info *info)
+ 	switch (chip_name) {
+ 	case UNICHROME_K8M890:
+ 	case UNICHROME_P4M900:
++	case UNICHROME_VX800:
++	case UNICHROME_VX855:
+ 		vq_start_low |= 0x20000000;
+ 		vq_end_low |= 0x20000000;
+ 		vq_high |= 0x20000000;
+@@ -486,15 +503,25 @@ void viafb_wait_engine_idle(struct fb_info *info)
+ {
+ 	struct viafb_par *viapar = info->par;
+ 	int loop = 0;
++	u32 mask;
  
-+/* 1200x900 (DCON) */
-+struct crt_mode_table DCON1200x900[] = {
-+	/* r_rate,          vclk,               hsp,               vsp   */
-+	{REFRESH_60, CLK_57_275M, M1200X900_R60_HSP, M1200X900_R60_VSP,
-+	/* The correct htotal is 1240, but this doesn't raster on VX855. */
-+	/* Via suggested changing to a multiple of 16, hence 1264.       */
-+	/*  HT,   HA,  HBS, HBE,  HSS, HSE,  VT,  VA, VBS, VBE, VSS, VSE */
-+	 {1264, 1200, 1200,  64, 1211,  32, 912, 900, 900,  12, 901, 10} }
-+};
+-	while (!(readl(viapar->shared->engine_mmio + VIA_REG_STATUS) &
+-			VIA_VR_QUEUE_BUSY) && (loop < MAXLOOP)) {
+-		loop++;
+-		cpu_relax();
++	switch (viapar->shared->chip_info.twod_engine) {
++	case VIA_2D_ENG_H5:
++	case VIA_2D_ENG_M1:
++		mask = VIA_CMD_RGTR_BUSY_M1 | VIA_2D_ENG_BUSY_M1 |
++			      VIA_3D_ENG_BUSY_M1;
++		break;
++	default:
++		while (!(readl(viapar->shared->engine_mmio + VIA_REG_STATUS) &
++				VIA_VR_QUEUE_BUSY) && (loop < MAXLOOP)) {
++			loop++;
++			cpu_relax();
++		}
++		mask = VIA_CMD_RGTR_BUSY | VIA_2D_ENG_BUSY | VIA_3D_ENG_BUSY;
++		break;
+ 	}
+ 
+-	while ((readl(viapar->shared->engine_mmio + VIA_REG_STATUS) &
+-		    (VIA_CMD_RGTR_BUSY | VIA_2D_ENG_BUSY | VIA_3D_ENG_BUSY)) &&
++	while ((readl(viapar->shared->engine_mmio + VIA_REG_STATUS) & mask) &&
+ 		    (loop < MAXLOOP)) {
+ 		loop++;
+ 		cpu_relax();
+diff --git a/drivers/video/via/accel.h b/drivers/video/via/accel.h
+index 615c84a..2c122d2 100644
+--- a/drivers/video/via/accel.h
++++ b/drivers/video/via/accel.h
+@@ -67,6 +67,34 @@
+ /* from 0x100 to 0x1ff */
+ #define VIA_REG_COLORPAT        0x100
+ 
++/* defines for VIA 2D registers for vt3353/3409 (M1 engine)*/
++#define VIA_REG_GECMD_M1        0x000
++#define VIA_REG_GEMODE_M1       0x004
++#define VIA_REG_GESTATUS_M1     0x004       /* as same as VIA_REG_GEMODE */
++#define VIA_REG_PITCH_M1        0x008       /* pitch of src and dst */
++#define VIA_REG_DIMENSION_M1    0x00C       /* width and height */
++#define VIA_REG_DSTPOS_M1       0x010
++#define VIA_REG_LINE_XY_M1      0x010
++#define VIA_REG_DSTBASE_M1      0x014
++#define VIA_REG_SRCPOS_M1       0x018
++#define VIA_REG_LINE_K1K2_M1    0x018
++#define VIA_REG_SRCBASE_M1      0x01C
++#define VIA_REG_PATADDR_M1      0x020
++#define VIA_REG_MONOPAT0_M1     0x024
++#define VIA_REG_MONOPAT1_M1     0x028
++#define VIA_REG_OFFSET_M1       0x02C
++#define VIA_REG_LINE_ERROR_M1   0x02C
++#define VIA_REG_CLIPTL_M1       0x040       /* top and left of clipping */
++#define VIA_REG_CLIPBR_M1       0x044       /* bottom and right of clipping */
++#define VIA_REG_KEYCONTROL_M1   0x048       /* color key control */
++#define VIA_REG_FGCOLOR_M1      0x04C
++#define VIA_REG_DSTCOLORKEY_M1  0x04C       /* as same as VIA_REG_FG */
++#define VIA_REG_BGCOLOR_M1      0x050
++#define VIA_REG_SRCCOLORKEY_M1  0x050       /* as same as VIA_REG_BG */
++#define VIA_REG_MONOPATFGC_M1   0x058       /* Add BG color of Pattern. */
++#define VIA_REG_MONOPATBGC_M1   0x05C       /* Add FG color of Pattern. */
++#define VIA_REG_COLORPAT_M1     0x100       /* from 0x100 to 0x1ff */
 +
- /* 1280x600 (GTF) */
- struct crt_mode_table CRTM1280x600[] = {
- 	/* r_rate,          vclk,              hsp,             vsp   */
-@@ -946,6 +957,9 @@ struct VideoModeTable CLE266Modes[] = {
- 	/* Display : 1200x720 (GTF) */
- 	{VIA_RES_1200X720, CRTM1200x720, ARRAY_SIZE(CRTM1200x720)},
+ /* VIA_REG_PITCH(0x38): Pitch Setting */
+ #define VIA_PITCH_ENABLE        0x80000000
  
-+	/* Display : 1200x900 (DCON) */
-+	{VIA_RES_1200X900, DCON1200x900, ARRAY_SIZE(DCON1200x900)},
+@@ -157,6 +185,18 @@
+ /* Virtual Queue is busy */
+ #define VIA_VR_QUEUE_BUSY       0x00020000
+ 
++/* VIA_REG_STATUS(0x400): Engine Status for H5 */
++#define VIA_CMD_RGTR_BUSY_H5   0x00000010  /* Command Regulator is busy */
++#define VIA_2D_ENG_BUSY_H5     0x00000002  /* 2D Engine is busy */
++#define VIA_3D_ENG_BUSY_H5     0x00001FE1  /* 3D Engine is busy */
++#define VIA_VR_QUEUE_BUSY_H5   0x00000004  /* Virtual Queue is busy */
 +
- 	/* Display : 1280x600 (GTF) */
- 	{VIA_RES_1280X600, CRTM1280x600, ARRAY_SIZE(CRTM1280x600)},
++/* VIA_REG_STATUS(0x400): Engine Status for VT3353/3409 */
++#define VIA_CMD_RGTR_BUSY_M1   0x00000010  /* Command Regulator is busy */
++#define VIA_2D_ENG_BUSY_M1     0x00000002  /* 2D Engine is busy */
++#define VIA_3D_ENG_BUSY_M1     0x00001FE1  /* 3D Engine is busy */
++#define VIA_VR_QUEUE_BUSY_M1   0x00000004  /* Virtual Queue is busy */
++
+ #define MAXLOOP                 0xFFFFFF
  
+ #define VIA_BITBLT_COLOR	1
 -- 
 1.7.0.1
 
