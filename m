@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758518Ab0DHKM3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 06:12:29 -0400
-Received: from ns2.intersolute.de ([193.110.43.67]:45895 "EHLO
-	ns2.intersolute.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755821Ab0DHKM1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 06:12:27 -0400
-Message-ID: <4BBDAC02.500@lumino.de>
-Date: Thu, 08 Apr 2010 12:12:18 +0200
-From: Michael Schnell <mschnell@lumino.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-2.3 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Giuseppe Calderaro <giuseppecalderaro@gmail.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       nios2-dev <nios2-dev@sopc.et.ntust.edu.tw>
-Subject: Re: atomic RAM ?
-References: <4BBD86A5.5030109@lumino.de> <k2gbca41b4c1004080243nc45a10aereaae18557808c943@mail.gmail.com>
-In-Reply-To: <k2gbca41b4c1004080243nc45a10aereaae18557808c943@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1758552Ab0DHKMo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 06:12:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58909 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755821Ab0DHKMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 06:12:40 -0400
+From: Xiaotian Feng <dfeng@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dfeng@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
+       Vegard Nossum <vegard.nossum@gmail.com>,
+       Dmitry Monakhov <dmonakhov@openvz.org>,
+       Catalin Marinas <catalin.marinas@arm.com>,
+       David Rientjes <rientjes@google.com>
+Subject: [PATCH] slab: fix caller tracking on !CONFIG_DEBUG_SLAB && CONFIG_TRACING
+Date: Thu,  8 Apr 2010 18:11:33 +0800
+Message-Id: <1270721493-27820-1-git-send-email-dfeng@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2010 11:43 AM, Giuseppe Calderaro wrote:
->
-> In the past I used the mutex connected to the avalon bus to get atomic
-> test and set instructions:
-> http://www.altera.com/literature/hb/nios2/n2cpu_nii51020.pdf
->
-Of course I do know the Altera hardware Mutex, but same just implements
-a single Mutex. To allow for FUTEX, which is the base of doing threaded
-application with the pthread functions provided by libc, the application
-programmer can create any number of pthread_mutex'es (of course a decent
-restriction by hardware to some 1000 would usually not harm with typical
-embedded applications).
+In slab, all __xxx_track_caller is defined on CONFIG_DEBUG_SLAB || CONFIG_TRACING,
+thus caller tracking function should be worked for CONFIG_TRACING. But if
+CONFIG_DEBUG_SLAB is not set, include/linux/slab.h will define xxx_track_caller to
+__xxx() without consideration of CONFIG_TRACING. This will break the caller tracking
+behaviour then.
 
-Of course a multithreaded application should not be done in an
-architecture depending way, but should be compilable for any arch and
-thus the count of allowable pthread_mutex'es should not be greatly
-restricted by the underlying hardware (be it NIOS or whatever else).
+Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Vegard Nossum <vegard.nossum@gmail.com>
+Cc: Dmitry Monakhov <dmonakhov@openvz.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: David Rientjes <rientjes@google.com>
+---
+ include/linux/slab.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Of course you are right that using custom instructions to do a decent
-count of atomic (hardware-) mutex'es necessary for implementing decent
-SMP aware FUTEX (or even Kernel Mutex) stuff with NIOS and similar archs
-is not strictly necessary, but I think it's handy to use them instead of
-I/O-elements, as the MMU would disallow user space access to "normal"
-I/O addresses.
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index 4884462..1a0625c 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -267,7 +267,7 @@ static inline void *kmem_cache_alloc_node(struct kmem_cache *cachep,
+  * allocator where we care about the real place the memory allocation
+  * request comes from.
+  */
+-#if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_SLUB)
++#if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_SLUB) || defined(CONFIG_TRACING)
+ extern void *__kmalloc_track_caller(size_t, gfp_t, unsigned long);
+ #define kmalloc_track_caller(size, flags) \
+ 	__kmalloc_track_caller(size, flags, _RET_IP_)
+@@ -285,7 +285,7 @@ extern void *__kmalloc_track_caller(size_t, gfp_t, unsigned long);
+  * standard allocator where we care about the real place the memory
+  * allocation request comes from.
+  */
+-#if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_SLUB)
++#if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_SLUB) || defined(CONFIG_TRACING)
+ extern void *__kmalloc_node_track_caller(size_t, gfp_t, int, unsigned long);
+ #define kmalloc_node_track_caller(size, flags, node) \
+ 	__kmalloc_node_track_caller(size, flags, node, \
+-- 
+1.7.0.1
 
-Michael
