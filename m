@@ -1,91 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933124Ab0DHTNE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 15:13:04 -0400
-Received: from mga14.intel.com ([143.182.124.37]:40680 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932960Ab0DHTNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 15:13:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,172,1270450800"; 
-   d="scan'208";a="263569886"
-Subject: Re: [REVERT] be6b38bcb175613f239e0b302607db346472c6b6.
- v2.6.34-rc3-406 oops with 4965AGN wireless
-From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Jeff Chua <jeff.chua.linux@gmail.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       "Zhao, Shanyu" <shanyu.zhao@intel.com>,
-       "Chatre, Reinette" <reinette.chatre@intel.com>,
-       "stable@kernel.org" <stable@kernel.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100408181340.GN30031@ZenIV.linux.org.uk>
-References: <Pine.LNX.4.64.1004090104570.7829@boston.corp.fedex.com>
-	 <20100408181340.GN30031@ZenIV.linux.org.uk>
-Content-Type: text/plain
-Date: Thu, 08 Apr 2010 13:09:33 -0700
-Message-Id: <1270757373.11853.11.camel@wwguy-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.3 
-Content-Transfer-Encoding: 7bit
+	id S933174Ab0DHTP3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 15:15:29 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:50798 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932983Ab0DHTPY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 15:15:24 -0400
+Date: Thu, 8 Apr 2010 15:03:58 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Dan Williams <dcbw@redhat.com>
+Cc: Holger Schurig <hs4233@mail.mn-solutions.de>,
+       Daniel Mack <daniel@caiaq.de>, libertas-dev@lists.infradead.org,
+       netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/wireless/libertas: do not call wiphy_unregister()
+	w/o wiphy_register()
+Message-ID: <20100408190358.GB2999@tuxdriver.com>
+References: <1269875658-3324-1-git-send-email-daniel@caiaq.de> <201003301149.13462.hs4233@mail.mn-solutions.de> <20100330105029.GO30801@buzzloop.caiaq.de> <201003301259.23973.hs4233@mail.mn-solutions.de> <1269968673.3019.37.camel@localhost.localdomain> <20100330172008.GD13120@tuxdriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100330172008.GD13120@tuxdriver.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Thu, 2010-04-08 at 11:13 -0700, Al Viro wrote:
-> On Fri, Apr 09, 2010 at 01:16:43AM +0800, Jeff Chua wrote:
+On Tue, Mar 30, 2010 at 01:20:08PM -0400, John W. Linville wrote:
+> On Tue, Mar 30, 2010 at 10:04:33AM -0700, Dan Williams wrote:
+> > On Tue, 2010-03-30 at 12:59 +0200, Holger Schurig wrote:
+> > > > I don't get your point. The patch I submitted fixes an Ooops in the
+> > > > driver, due to wrong handling of an API. What does that have to do with
+> > > > principle discussions about the frameworks in use?
+> > > 
+> > > I asked if there is a better method, and you said that you would test a better 
+> > > solution. That means that someone else should make a better solution.
+> > > 
+> > > I just pointed out that I won't be the one who creates the better solution, 
+> > > because for fundamental reasons I don't see the libertas+cfg80211 approach 
+> > > going forward. That issue has nothing to do with you or your patch, so please 
+> > > don't feel offended or confused.
 > > 
-> > index 1bd2cd8..83c52a6 100644
-> > --- a/drivers/net/wireless/iwlwifi/iwl-4965.c
-> > +++ b/drivers/net/wireless/iwlwifi/iwl-4965.c
-> > @@ -2041,16 +2041,14 @@ static void iwl4965_rx_reply_tx(struct iwl_priv *priv,
-> >  				   tx_resp->failure_frame);
-> > 
-> >  		freed = iwl_tx_queue_reclaim(priv, txq_id, index);
-> > -		if (qc && likely(sta_id != IWL_INVALID_STATION))
-> > -			priv->stations[sta_id].tid[tid].tfds_in_queue -= freed;
-> > +		iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
+> > Fine; just rip out the mesh code and do the vanilla cfg80211 conversion
+> > for infra & adhoc, and we'll add the mesh code back later.  I don't have
+> > time to do the cfg80211 bits, neither do the OLPC guys (AFAIK), so lets
+> > take advantage of your willingness to do this and just move the driver
+> > forward.
 > 
-> So what happens if we hit sta_id == IWL_INVALID_STATION and !txq->sched_retry?
-> 
-> AFAICS, IWL_INVALID_STATION is 255 and priv->stations[] has only 32 elements.
-> And code around that place is
->         if (txq->sched_retry && unlikely(sta_id == IWL_INVALID_STATION)) {
->                 IWL_ERR(priv, "Station not known\n");
->                 return;
->         }
->         if (txq->sched_retry) {
-> 		....
-> 	} else {
-> 		....
-> 		the code modified in that chunk
-> 		....
-> 	}
-> so this removal of check for sta_id doesn't look apriori safe...
-> 
-> I'm not familiar with that code and I don't have the hardware, so this is
-> just from RTFS, but... might make sense to replace that call of
-> iwl_free_tfds_in_queue with
-> 
-> 		if (sta_id == IWL_INVALID_STATION)
-> 			printk(KERN_ERR "buggered");
-> 		else
-> 			iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
-> 
-> and see if that helps and if printk gets triggered.
+> Someone post a feature removal patch, please?
 
-We can check for IWL_INVALID_STATION and print log, but need to check
-for qc to make sure it is valid; maybe something like
-			if (qc && likely(sta_id != IWL_INVALID_STATION))
-				iwl_free_tfds_in_queue(priv, sta_id,
-						       tid, freed);
-			else {
-				if (sta_id == IWL_INVALID_STATION)
-					IWL_ERR(priv, "invalid station"");
-			} 
-	
-Wey
+Ping?
 
-
-
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
