@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933479Ab0DHTbX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 15:31:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50016 "EHLO
+	id S933488Ab0DHTb3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 15:31:29 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50013 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933448Ab0DHTbC (ORCPT
+	with ESMTP id S933431Ab0DHTbC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Apr 2010 15:31:02 -0400
-Message-Id: <20100408192722.815377075@chello.nl>
+Message-Id: <20100408192722.772417072@chello.nl>
 User-Agent: quilt/0.47-1
-Date: Thu, 08 Apr 2010 21:17:42 +0200
+Date: Thu, 08 Apr 2010 21:17:41 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
@@ -20,234 +20,102 @@ Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
        David Miller <davem@davemloft.net>,
        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
        Nick Piggin <npiggin@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 05/13] mm: Make use of the anon_vma ref count
+Subject: [PATCH 04/13] mm: Move anon_vma ref out from under CONFIG_KSM
 References: <20100408191737.296180458@chello.nl>
-Content-Disposition: inline; filename=mm-use-anon_vma-ref.patch
+Content-Disposition: inline; filename=mm-anon_vma-ref.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the anon_vma refcount to be 0 when the object is
-free. It does this by adding 1 ref to being in use in the anon_vma
-structure (iow. the anon_vma->head list is not empty).
-
-This allows a simpler release scheme without having to check both the
-refcount and the list as well as avoids taking a ref for each entry
-on the list.
-
-We then use this new refcount in the migration code to avoid a long
-RCU read side section and convert page_lock_anon_vma() over to use
-refcounts.
-
-This later is done for each of convertion of anon_vma from spinlock
-to mutex.
+We need an anon_vma refcount for preemptible anon_vma->lock as well
+as memory compaction, so move it out into generic code.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/rmap.h |    7 +++++++
- mm/ksm.c             |    9 +--------
- mm/migrate.c         |   17 ++++++-----------
- mm/rmap.c            |   45 ++++++++++++++++++++++++++++++---------------
- 4 files changed, 44 insertions(+), 34 deletions(-)
-
 Index: linux-2.6/include/linux/rmap.h
 ===================================================================
 --- linux-2.6.orig/include/linux/rmap.h
 +++ linux-2.6/include/linux/rmap.h
-@@ -100,6 +100,13 @@ static inline void anon_vma_merge(struct
- 	unlink_anon_vmas(next);
- }
- 
-+struct anon_vma *anon_vma_get(struct page *page);
-+static inline void anon_vma_put(struct anon_vma *anon_vma)
-+{
-+	if (atomic_dec_and_test(&anon_vma->ref))
-+		anon_vma_free(anon_vma);
-+}
-+
- /*
-  * rmap interfaces called when adding or removing pte of page
+@@ -26,9 +26,7 @@
   */
+ struct anon_vma {
+ 	spinlock_t lock;	/* Serialize access to vma list */
+-#ifdef CONFIG_KSM
+-	atomic_t ksm_refcount;
+-#endif
++	atomic_t ref;
+ 	/*
+ 	 * NOTE: the LSB of the head.next is set by
+ 	 * mm_take_all_locks() _after_ taking the above lock. So the
+@@ -61,26 +59,6 @@ struct anon_vma_chain {
+ };
+ 
+ #ifdef CONFIG_MMU
+-#ifdef CONFIG_KSM
+-static inline void ksm_refcount_init(struct anon_vma *anon_vma)
+-{
+-	atomic_set(&anon_vma->ksm_refcount, 0);
+-}
+-
+-static inline int ksm_refcount(struct anon_vma *anon_vma)
+-{
+-	return atomic_read(&anon_vma->ksm_refcount);
+-}
+-#else
+-static inline void ksm_refcount_init(struct anon_vma *anon_vma)
+-{
+-}
+-
+-static inline int ksm_refcount(struct anon_vma *anon_vma)
+-{
+-	return 0;
+-}
+-#endif /* CONFIG_KSM */
+ 
+ static inline struct anon_vma *page_anon_vma(struct page *page)
+ {
 Index: linux-2.6/mm/ksm.c
 ===================================================================
 --- linux-2.6.orig/mm/ksm.c
 +++ linux-2.6/mm/ksm.c
-@@ -323,14 +323,7 @@ static void hold_anon_vma(struct rmap_it
+@@ -318,14 +318,14 @@ static void hold_anon_vma(struct rmap_it
+ 			  struct anon_vma *anon_vma)
+ {
+ 	rmap_item->anon_vma = anon_vma;
+-	atomic_inc(&anon_vma->ksm_refcount);
++	atomic_inc(&anon_vma->ref);
+ }
  
  static void drop_anon_vma(struct rmap_item *rmap_item)
  {
--	struct anon_vma *anon_vma = rmap_item->anon_vma;
--
--	if (atomic_dec_and_lock(&anon_vma->ref, &anon_vma->lock)) {
--		int empty = list_empty(&anon_vma->head);
--		spin_unlock(&anon_vma->lock);
--		if (empty)
--			anon_vma_free(anon_vma);
--	}
-+	anon_vma_put(rmap_item->anon_vma);
- }
+ 	struct anon_vma *anon_vma = rmap_item->anon_vma;
  
- /*
-Index: linux-2.6/mm/migrate.c
-===================================================================
---- linux-2.6.orig/mm/migrate.c
-+++ linux-2.6/mm/migrate.c
-@@ -545,7 +545,7 @@ static int unmap_and_move(new_page_t get
- 	int rc = 0;
- 	int *result = NULL;
- 	struct page *newpage = get_new_page(page, private, &result);
--	int rcu_locked = 0;
-+	struct anon_vma *anon_vma = NULL;
- 	int charge = 0;
- 	struct mem_cgroup *mem = NULL;
- 
-@@ -601,10 +601,8 @@ static int unmap_and_move(new_page_t get
- 	 * File Caches may use write_page() or lock_page() in migration, then,
- 	 * just care Anon page here.
- 	 */
--	if (PageAnon(page)) {
--		rcu_read_lock();
--		rcu_locked = 1;
--	}
-+	if (PageAnon(page))
-+		anon_vma = anon_vma_get(page);
- 
- 	/*
- 	 * Corner case handling:
-@@ -622,10 +620,7 @@ static int unmap_and_move(new_page_t get
- 		if (!PageAnon(page) && page_has_private(page)) {
- 			/*
- 			 * Go direct to try_to_free_buffers() here because
--			 * a) that's what try_to_release_page() would do anyway
--			 * b) we may be under rcu_read_lock() here, so we can't
--			 *    use GFP_KERNEL which is what try_to_release_page()
--			 *    needs to be effective.
-+			 * that's what try_to_release_page() would do anyway
- 			 */
- 			try_to_free_buffers(page);
- 			goto rcu_unlock;
-@@ -643,8 +638,8 @@ skip_unmap:
- 	if (rc)
- 		remove_migration_ptes(page, page);
- rcu_unlock:
--	if (rcu_locked)
--		rcu_read_unlock();
-+	if (anon_vma)
-+		anon_vma_put(anon_vma);
- uncharge:
- 	if (!charge)
- 		mem_cgroup_end_migration(mem, page, newpage);
+-	if (atomic_dec_and_lock(&anon_vma->ksm_refcount, &anon_vma->lock)) {
++	if (atomic_dec_and_lock(&anon_vma->ref, &anon_vma->lock)) {
+ 		int empty = list_empty(&anon_vma->head);
+ 		spin_unlock(&anon_vma->lock);
+ 		if (empty)
 Index: linux-2.6/mm/rmap.c
 ===================================================================
 --- linux-2.6.orig/mm/rmap.c
 +++ linux-2.6/mm/rmap.c
-@@ -66,11 +66,18 @@ static struct kmem_cache *anon_vma_chain
- 
- static inline struct anon_vma *anon_vma_alloc(void)
- {
--	return kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL);
-+	struct anon_vma *anon_vma;
-+
-+	anon_vma = kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL);
-+	if (anon_vma)
-+		atomic_set(&anon_vma->ref, 1);
-+
-+	return anon_vma;
- }
- 
- void anon_vma_free(struct anon_vma *anon_vma)
- {
-+	VM_BUG_ON(atomic_read(&anon_vma->ref));
- 	kmem_cache_free(anon_vma_cachep, anon_vma);
- }
- 
-@@ -149,7 +156,7 @@ int anon_vma_prepare(struct vm_area_stru
- 
- 		spin_unlock(&anon_vma->lock);
- 		if (unlikely(allocated)) {
--			anon_vma_free(allocated);
-+			anon_vma_put(allocated);
- 			anon_vma_chain_free(avc);
- 		}
- 	}
-@@ -230,7 +237,7 @@ int anon_vma_fork(struct vm_area_struct 
- 	return 0;
- 
-  out_error_free_anon_vma:
--	anon_vma_free(anon_vma);
-+	anon_vma_put(anon_vma);
-  out_error:
- 	unlink_anon_vmas(vma);
- 	return -ENOMEM;
-@@ -247,13 +254,11 @@ static void anon_vma_unlink(struct anon_
- 
- 	spin_lock(&anon_vma->lock);
+@@ -248,7 +248,7 @@ static void anon_vma_unlink(struct anon_
  	list_del(&anon_vma_chain->same_anon_vma);
--
--	/* We must garbage collect the anon_vma if it's empty */
--	empty = list_empty(&anon_vma->head) && !atomic_read(&anon_vma->ref);
-+	empty = list_empty(&anon_vma->head);
+ 
+ 	/* We must garbage collect the anon_vma if it's empty */
+-	empty = list_empty(&anon_vma->head) && !ksm_refcount(anon_vma);
++	empty = list_empty(&anon_vma->head) && !atomic_read(&anon_vma->ref);
  	spin_unlock(&anon_vma->lock);
  
  	if (empty)
--		anon_vma_free(anon_vma);
-+		anon_vma_put(anon_vma);
+@@ -272,7 +272,7 @@ static void anon_vma_ctor(void *data)
+ 	struct anon_vma *anon_vma = data;
+ 
+ 	spin_lock_init(&anon_vma->lock);
+-	ksm_refcount_init(anon_vma);
++	atomic_set(&anon_vma->ref, 0);
+ 	INIT_LIST_HEAD(&anon_vma->head);
  }
  
- void unlink_anon_vmas(struct vm_area_struct *vma)
-@@ -286,11 +291,11 @@ void __init anon_vma_init(void)
- 
- /*
-  * Getting a lock on a stable anon_vma from a page off the LRU is
-- * tricky: page_lock_anon_vma rely on RCU to guard against the races.
-+ * tricky: page_lock_anon_vma relies on RCU to guard against the races.
-  */
--struct anon_vma *page_lock_anon_vma(struct page *page)
-+struct anon_vma *anon_vma_get(struct page *page)
- {
--	struct anon_vma *anon_vma;
-+	struct anon_vma *anon_vma = NULL;
- 	unsigned long anon_mapping;
- 
- 	rcu_read_lock();
-@@ -302,23 +307,33 @@ again:
- 		goto out;
- 
- 	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
--	spin_lock(&anon_vma->lock);
-+	if (!atomic_inc_not_zero(&anon_vma->ref))
-+		anon_vma = NULL;
- 
- 	if (page_rmapping(page) != anon_vma) {
--		spin_unlock(&anon_vma->lock);
-+		anon_vma_put(anon_vma);
- 		goto again;
- 	}
- 
--	return anon_vma;
- out:
- 	rcu_read_unlock();
--	return NULL;
-+	return anon_vma;
-+}
-+
-+struct anon_vma *page_lock_anon_vma(struct page *page)
-+{
-+	struct anon_vma *anon_vma = anon_vma_get(page);
-+
-+	if (anon_vma)
-+		spin_lock(&anon_vma->lock);
-+
-+	return anon_vma;
- }
- 
- void page_unlock_anon_vma(struct anon_vma *anon_vma)
- {
- 	spin_unlock(&anon_vma->lock);
--	rcu_read_unlock();
-+	anon_vma_put(anon_vma);
- }
- 
- /*
 
 
