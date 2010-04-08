@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933097Ab0DHShQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 14:37:16 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46006 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933009Ab0DHShM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 14:37:12 -0400
-Date: Thu, 8 Apr 2010 11:32:06 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-cc: Borislav Petkov <bp@alien8.de>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com,
-       hannes@cmpxchg.org
-Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas
- of a mergeable VMA
-In-Reply-To: <4BBE1F92.3060802@redhat.com>
-Message-ID: <alpine.LFD.2.00.1004081128470.3558@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1004071505510.3586@i5.linux-foundation.org> <alpine.LFD.2.00.1004071625490.3586@i5.linux-foundation.org> <20100408101925.FB9F.A69D9226@jp.fujitsu.com> <alpine.LFD.2.00.1004071929090.3586@i5.linux-foundation.org>
- <20100408054707.GA9299@a1.tnic> <alpine.LFD.2.00.1004080706500.3586@i5.linux-foundation.org> <4BBE1F92.3060802@redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S933113Ab0DHSka (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 14:40:30 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:33542 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933009Ab0DHSk3 (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 8 Apr 2010 14:40:29 -0400
+Date: Thu, 8 Apr 2010 14:38:06 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Yinghai <yinghai.lu@oracle.com>
+Cc: Liang Li <liang.li@windriver.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+       Rusty Russell <rusty@rustcorp.com.au>, akpm@linux-foundation.org,
+       hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de,
+       wangchen@cn.fujitsu.com,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [LKML] Re: +
+	x86-fix-handling-of-the-reservetop-boot-option.patch added to -mm
+	tree
+Message-ID: <20100408183806.GA30940@phenom.dumpdata.com>
+References: <4BBD1AA3.4000204@oracle.com> <20100408010558.GA4053@localhost> <4BBD2DD4.1060101@oracle.com> <20100408015353.GB4053@localhost> <4BBD5BEF.3000406@oracle.com> <20100408045945.GB26543@localhost> <4BBD7E52.80507@oracle.com> <20100408085814.GD26543@localhost> <4BBE0E61.5070401@goop.org> <4BBE1A6A.60500@oracle.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BBE1A6A.60500@oracle.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4BBE2302.0094:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 08, 2010 at 11:03:22AM -0700, Yinghai wrote:
+> On 04/08/2010 10:12 AM, Jeremy Fitzhardinge wrote:
+> > On 04/08/2010 01:58 AM, Liang Li wrote:
+> >>>     
+> >> When linux as vmi/xen/lguest guest OS, kernel call reserve_top_address
+> >> before start_kernel. It is far before the start_kernel hence far before
+> >> setup_arch->early_ioremap_init. So it is unsafe to place
+> >> fixup_early_ioremap inside reserve_top_address. So I think the patch
+> >> should be:
+> >>   
+> > 
+> > Yes indeed.  That looks better.
+> > 
+> > Acked-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
+I've also tested it today as PV Xen guest:
 
-On Thu, 8 Apr 2010, Rik van Riel wrote:
-> 
-> Reviewed-by: Rik van Riel <riel@redhat.com>
-
-Yeah, I think I'll commit it as-is, assuming we get confirmation that it 
-(along with your patch) actually ends up fixing the original problem.
-
-I had actually had lockdep etc on with that patch, but for some reason I'd 
-overlooked the SPINLOCK_SLEEP debugging, so I hadn't seen the stupid issue 
-that Borislav pointed out. I wonder if LOCKDEP or spinlock debugging hould 
-just select it. Small detail, but I should have caught that obvious bug 
-myself.
-
-> I haven't seen any places that insert VMAs by itself.
-> Several strange places that allocate them, but they
-> all appear to use the standard functions to insert them.
-
-Yeah, it's complicated enough to add a vma with all the rbtree etc stuff 
-that I hope nobody actually cooks their own. But I too grepped for vma 
-allocations, and there were more of them than I expected, so...
-
-		Linus
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
