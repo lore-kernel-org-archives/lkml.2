@@ -1,101 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868Ab0DHDY3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 23:24:29 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:24121 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755395Ab0DHDY1 (ORCPT
+	id S1756321Ab0DHDZS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 23:25:18 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:55054 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753700Ab0DHDZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 23:24:27 -0400
-Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well
-	as x86_32
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yinghai <yinghai.lu@oracle.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, linux-pci@vger.kernel.org,
-       x86@kernel.org, linux-kernel@vger.kernel.org,
-       Andy Isaacson <adi@hexapodia.org>, Thomas Renninger <trenn@suse.de>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>
-In-Reply-To: <4BBD13C3.2060404@oracle.com>
-References: <20100407210628.28364.96982.stgit@bob.kio>
-	 <4BBD0B0A.3090702@oracle.com> <201004071705.07176.bjorn.helgaas@hp.com>
-	 <4BBD13C3.2060404@oracle.com>
-Content-Type: text/plain
-Date: Wed, 07 Apr 2010 21:24:14 -0600
-Message-Id: <1270697054.25226.16.camel@dc7800.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Wed, 7 Apr 2010 23:25:14 -0400
+Message-ID: <4BBD4C92.8010701@us.ibm.com>
+Date: Wed, 07 Apr 2010 20:25:06 -0700
+From: Darren Hart <dvhltc@us.ibm.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+       Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>, Avi Kivity <avi@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 4/6] futex: Add FUTEX_LOCK with optional adaptive spinning
+References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com> <1270499039-23728-5-git-send-email-dvhltc@us.ibm.com> <alpine.LFD.2.00.1004061818250.32352@localhost.localdomain> <4BBCC02C.5090000@us.ibm.com> <alpine.LFD.2.00.1004072124250.32352@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1004072124250.32352@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-07 at 16:22 -0700, Yinghai wrote:
-> On 04/07/2010 04:05 PM, Bjorn Helgaas wrote:
-> > On Wednesday 07 April 2010 04:45:30 pm Yinghai wrote:
-> >> On 04/07/2010 02:06 PM, Bjorn Helgaas wrote:
-> >>>
-> >>> Currently, we only reserve the legacy VGA area [mem 0xa0000-0xbffff] on
-> >>> x86_32.  But this legacy area is also used on x86_64, so this patch
-> >>> reserves it there, too.
-> >>>
-> >>> If we don't reserve it, we may mistakenly move a PCI device to that area,
-> >>> as we did here:
-> >>>
-> >>>   pci_root PNP0A03:00: host bridge window [mem 0xff980800-0xff980bff]
-> >>>   pci_root PNP0A03:00: host bridge window [mem 0xff97c000-0xff97ffff]
-> >>>   pci 0000:00:1f.2: no compatible bridge window for [mem 0xff970000-0xff9707ff]
-> >>>   pci 0000:00:1f.2: BAR 5: assigned [mem 0x000a0000-0x000a07ff]
-> >>>
-> >>> as reported by Andy Isaacson at http://lkml.org/lkml/2010/4/6/375
-> >>>
-> >>> I think the fact that the BAR is not within a host bridge window is a
-> >>> BIOS defect, and it's now more visible because we have "pci=use_crs" as
-> >>> the default.  Using "pci=nocrs" is a workaround, because then we won't
-> >>> attempt to move the device.
-> >>
-> >> that doesn't look right.
-> >>
-> >> It seem another thread, erission has one model without VGA, and they use that area for other device MMIO.
-> >>
-> >> current for 64bit, We remove [0xa0000, 0x100000) from e820 map if those area is E820_RAM.
-> >>
-> >> in e820_reserve_resources(), kernel will reserve range < 1M according to e820 map.
-> >> that is before pci BAR is claimed.
-> >>
-> >> or you can add
-> >> boot_params.screen_info.orig_video_isVGA == 1
-> >> or double check scan pci tree to see if video is there or not
-> > 
-> > I'm sorry, I can't understand what you're saying.
+Thomas Gleixner wrote:
+> On Wed, 7 Apr 2010, Darren Hart wrote:
+>> Thomas Gleixner wrote:
+>>> On Mon, 5 Apr 2010, Darren Hart wrote:
+>>> Hmm. The order is weird. Why don't you do that simpler ?
+>>>
+>>> Get the uval, the tid and the thread_info pointer outside of the
+>>> loop. Also task_pid_vnr(current) just needs a one time lookup.
+>> Eeek. Having the owner in the loop is a good way to negate the benefits
+>> of adaptive spinning by spinning forever (unlikely, but it could
+>> certainly spin across multiple owners). Nice catch.
+>>
+>> As for the uval.... I'm not sure what you mean. You get curval below
+>> inside the loop, and there is no "uval" in the my version of the code.
 > 
-> for 64 bit, you may check boot_params.screen_info.orig_video_isVGA to see if you need to reserve that VGA range.
-> not sure if every bootloader fill that...
+> Well, you need a first time lookup of owner and ownertid for which you
+> need the user space value (uval),
+> but thinking more about it it's not
+> even necessary. Just initialize ownertid to 0 so it will drop into the
+> lookup code when we did not acquire the futex in the cmpxchg.
 
-If you're saying that on x86_64, you have a reliable way to determine
-whether to reserve the legacy VGA MMIO area, I hope you'll provide a
-patch, because I don't know about this sort of x86_32 vs x86_64
-difference.
+No need for ownertid at all really. The cmpxchg always tries to go from 
+0 to curtid. I've pushed the futex_owner() call outside the loop for a 
+one time lookup.
 
-I actually did propose doing something in pci_setup_device(), similar to
-what we already do for legacy IDE resources, but HPA thought it should
-be done in the arch code instead, again for reasons I don't completely
-understand.
+> 
+>> As for the order, I had put the initial spin prior to the cmpxchg to
+>> avoid doing too many cmpxchg's in a row as they are rather expensive.
+>> However, since this is (now) the first opportunity to do try and acquire
+>> the lock atomically after entering the futex syscall, I think you're
+>> right, it should be the first thing in the loop.
+>>
+>>> change the loop to do:
+>>>
+>>>        for (;;) {
+>>>        	   curval = cmpxchg_futex_value_locked(uaddr, 0, curtid);
+>>>   	   if (!curval)
+>>> 	      return 1;
+>> Single return point makes instrumentation so much easier. Unless folks
+>> _really_ object, I'll leave it as is until we're closer to merging.
+> 
+> I don't care either way. That was just example code.
+> 
+>>> 	   if ((curval & FUTEX_TID_MASK) != ownertid) {
+>>> 	      ownertid = curval & FUTEX_TID_MASK;
+>>> 	      owner = update_owner(ownertid);
+>>> 	   }
+>>
+>> Hrm... at this point the owner has changed... so we should break and go
+>> to sleep, not update the owner and start spinning again. The
+>> futex_spin_on_owner() will detect this and abort, so I'm not seeing the
+>> purpose of the above if() block.
+> 
+> Why ? If the owner has changed and the new owner is running on another
+> cpu then why not spin further ?
 
-> when the system only have one peer root bus, can you skip the _CRS for it?
+That's an interesting question, and I'm not sure what the right answer 
+is. The current approach of the adaptive spinning in the kernel is to 
+spin until the owner changes or deschedules, then stop and block. The 
+idea is that if you didn't get the lock before the owner changed, you 
+aren't going to get it in a very short period of time (you have at least 
+an entire critical section to wait through plus whatever time you've 
+already spent spinning). However, blocking just so another task can spin 
+doesn't really make sense either, and makes the lock less fair than it 
+could otherwise be.
 
-That's ugly.  When we discover the first host bridge, we have no idea
-whether there will be more.  I don't want to mess around with trying to
-count the number of bridges, then go back and add them in another pass.
+My goal in starting this is to provide a more intelligent mechanism than 
+sched_yield() for userspace to use to determine when to spin and when to 
+sleep. The current implementation allows for spinning up until the owner 
+changes, deschedules, or the timeslice expires. I believe these are much 
+better than spinning for some fixed number of cycles and then yield for 
+some unpredictable amount of time until CFS decides to schedule you back in.
 
-I think it's fairly clear from http://lkml.org/lkml/2010/4/7/284 that
-Windows is paying attention the _CRS, even though there's only one host
-bridge.  So we ought to be able to make it work, too.
+Still, the criteria for breaking the spin are something that needs more 
+eyes, and more numbers before I can be confident in any approach.
 
-This is not a problem with pci=use_crs.  This is only a problem because
-we don't reserve the VGA area when we should.  That's the problem we
-should fix.
+> 
+>>>> +		hrtimer_init_sleeper(to, current);
+>>>> +		hrtimer_set_expires(&to->timer, *time);
+>>>> +	}
+>>>   Why setup all this _before_ trying the adaptive spin ?
+>>
+>> I placed the retry: label above the adaptive spin loop. This way if we wake a
+>> task and the lock is "stolen" it doesn't just go right back to sleep. This
+>> should aid in fairness and also performance in less contended cases. I didn't
+>> think it was worth a "if (first_time_through && time)" sort of block to be
+>> able to setup the timer after the spin loop.
+> 
+> Hmm, ok.
+> 
+>>> Do we really need all this code ? A simple owner->on_cpu (owner needs
+>>> to be the task_struct then) would be sufficient to figure that out,
+>>> wouldn't it?
+>> As Peter pointed out in IRC, p->oncpu isn't generic. I'll go trolling through
+>> the mutex_spin_on_owner() discussions to see if I can determine why that's the
+>> case.
+> 
+> AFAICT p->oncpu is the correct thing to use when CONFIG_SMP=y. All it
+> needs is a simple accessor function and you can keep all the futex
+> cruft in futex.c where it belongs.
 
-Bjorn
+Noted.
 
-
+Thanks,
+-- 
+Darren Hart
+IBM Linux Technology Center
+Real-Time Linux Team
