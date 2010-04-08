@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758857Ab0DHQmO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 12:42:14 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:10646 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758686Ab0DHQmI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 12:42:08 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:from:date:message-id:
-	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=bhrRIQIUMERlbjPhCbKshT52dtDk5HIynLmcyx7pFAA/P/EDv+CZ99o2ho6hQSCRQ
-	3gvqa80BH40CBsItJ1XkA==
+	id S1758860Ab0DHQqZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 12:46:25 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:39094 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758745Ab0DHQqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 12:46:20 -0400
+Date: Thu, 8 Apr 2010 09:46:15 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, eric.dumazet@gmail.com
+Subject: Re: [PATCH tip/urgent] rcu: add rcu_access_pointer and
+ rcu_dereference_protected
+Message-ID: <20100408164615.GA4836@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100407171342.GF2481@linux.vnet.ibm.com>
+ <20100407162620.GA11543@linux.vnet.ibm.com>
+ <27310.1270659627@redhat.com>
+ <27837.1270660848@redhat.com>
+ <20100407230009.GK2481@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20100408124629.GN10103@kernel.dk>
-References: <20100406232533.25602.46349.stgit@austin.mtv.corp.google.com> 
-	<4BBD3DB9.8090006@cn.fujitsu.com> <20100408124629.GN10103@kernel.dk>
-From: Divyesh Shah <dpshah@google.com>
-Date: Thu, 8 Apr 2010 09:41:44 -0700
-Message-ID: <m2taf41c7c41004080941xb29833b0k42c9dab8901f16ca@mail.gmail.com>
-Subject: Re: [PATCH][v3.1] blkio: Add io controller stats like
-To: Jens Axboe <jens.axboe@oracle.com>
-Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>, vgoyal@redhat.com,
-       linux-kernel@vger.kernel.org, nauman@google.com, ctalbott@google.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100407230009.GK2481@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 8, 2010 at 5:46 AM, Jens Axboe <jens.axboe@oracle.com> wrote:
-> On Thu, Apr 08 2010, Gui Jianfeng wrote:
->> Divyesh Shah wrote:
->> > - io_service_time (the total time between request dispatch and completion for
->> >   all IOs in the cgroup)
->> > - io_wait_time (the total time spent waiting by all IOs in this cgroup in the IO
->> >   scheduler queues before getting serviced)
->> > - io_serviced (number of IOs serviced from this blkio_group)
->> > - io_service_bytes (Number of bytes served for this cgroup)
->> >
->> > These stats are accumulated per operation type helping us to distinguish between
->> > read and write, and sync and async IO. This patch does not increment any of
->> > these stats.
->> >
->> > Changelog from v3:
->> > o renamed blkiocg_reset_write to blkiocg_reset_stats
->> > o more clarification in the documentation on io_service_time and io_wait_time.
->> >
->> > Signed-off-by: Divyesh Shah<dpshah@google.com>
->>
->> Hi Divyesh,
->>
->> Jens has already applied previous patchset to for-2.6.35 branch, so v3 patchset
->> and this patch have conflicts with for-2.6.35 branch. I think it's better to make
->> new patch on top of for-2.6.35.
->
-> Thanks, was just about to ask. Please make an updated patch against what
-> I already have, so I don't have to revert/rebase to make this work.
+On Wed, Apr 07, 2010 at 04:00:09PM -0700, Paul E. McKenney wrote:
+> On Wed, Apr 07, 2010 at 06:20:48PM +0100, David Howells wrote:
+> > Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> > 
+> > > In other cases, there will be a reference counter or a "not yet fully
+> > > initialized" flag that can (and should) be tested.
+> > 
+> > Why would you be using rcu_access_pointer() there?  Why wouldn't you be using
+> > rcu_dereference_protected()?
+> 
+> Excellent question.  I am writing up the documentation now, and will
+> either (1) have a good use case or (2) remove the condition.
 
-Sure, I'll post an updated patch today.
+And all of the examples I could come up with that had c!=1 were contorted,
+even by my standards.  So you were right, and I will drop the "c" on my
+next set of patches.
 
->
-> --
-> Jens Axboe
->
->
+							Thanx, Paul
