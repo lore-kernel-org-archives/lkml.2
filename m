@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757868Ab0DGX7b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 19:59:31 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:48735 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831Ab0DGX7a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 19:59:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=GvwryX/v77QhuwvZaIX85EgQPjX3TSgBsPvvB13bKgs0+fImYhQ8pKi2Vv4YMcKKvY
-         cruqEqwrX2BfFnS4JBTeDr9NoGdG3+U5PG7BnVFhTtLHAZfGYohQmTN88UVLVHtYS8pw
-         wQfsGs7/8hXF/quQc1qyVlL8Vz7dUYN+fnpZQ=
-Message-ID: <4BBD1C5E.4050906@gmail.com>
-Date: Wed, 07 Apr 2010 17:59:26 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1756522Ab0DHALk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 20:11:40 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61514 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753823Ab0DHALj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 20:11:39 -0400
+Message-ID: <4BBD1F16.7040303@cn.fujitsu.com>
+Date: Thu, 08 Apr 2010 08:11:02 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Takashi Iwai <tiwai@suse.de>, Daniel Mack <daniel@caiaq.de>,
-       Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-       Pedro Ribeiro <pedrib@gmail.com>, akpm@linux-foundation.org,
-       Greg KH <gregkh@suse.de>, alsa-devel@alsa-project.org,
-       linux-usb@vger.kernel.org
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-References: <s5hhbnncflj.wl%tiwai@suse.de> <Pine.LNX.4.44L0.1004071452560.5760-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1004071452560.5760-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Chad Talbott <ctalbott@google.com>, jens.axboe@oracle.com,
+       linux-kernel@vger.kernel.org, Nauman Rafique <nauman@google.com>,
+       Li Zefan <lizf@cn.fujitsu.com>, Divyesh Shah <dpshah@google.com>
+Subject: Re: [PATCH 1/2 V3] io-controller: Add a new interface	"weight_device"
+ for IO-Controller
+References: <20100303154748.GC2866@redhat.com> <e98e18941003031519v14d4f79cg33da5c3cf1f5ac03@mail.gmail.com> <1786ab031003031825m5467c86jf5c355df10001dd2@mail.gmail.com> <4B8F27BD.2020704@cn.fujitsu.com> <4B8F62B7.3080401@cn.fujitsu.com> <20100304152400.GB18786@redhat.com> <4B906BB6.3080104@cn.fujitsu.com> <20100305141300.GA3296@redhat.com> <4BAB027D.7000405@cn.fujitsu.com> <i2o1786ab031004071012t51ae0a10t3b4f30bece40d8a6@mail.gmail.com> <20100407172833.GB3206@redhat.com>
+In-Reply-To: <20100407172833.GB3206@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2010 01:13 PM, Alan Stern wrote:
-> On Wed, 7 Apr 2010, Takashi Iwai wrote:
->
->>> Ok, I'll write some dummies for usb_malloc() and usb_zalloc() which
->>> will just call kmalloc() with GFP_DMA32 for now.
+Vivek Goyal wrote:
+> On Wed, Apr 07, 2010 at 10:12:03AM -0700, Chad Talbott wrote:
+>> On Wed, Mar 24, 2010 at 11:28 PM, Gui Jianfeng
+>> <guijianfeng@cn.fujitsu.com> wrote:
+>>> Vivek Goyal wrote:
+>>>> On Fri, Mar 05, 2010 at 10:25:58AM +0800, Gui Jianfeng wrote:
+>>>>> V2->V3 changes:
+>>>>> - Move policy_*_node() functions up to get rid of forward declarations
+>>>>> - rename related functions by adding prefix "blkio_"
+>>>>>
+>>>> Thanks for the changes Gui. Looks good to me.
+>>>>
+>>>> Acked-by: Vivek Goyal <vgoyal@redhat.com>
+>>> Hi Jens,
+>>>
+>>> This patchset seems to get lost. Just for reminding. Any comments?
+>> Hi Jens,
 >>
->> Can't we provide only zalloc() variant?  Zero'ing doesn't cost much,
->> and the buffer allocation shouldn't be called too often.
->
-> Linus specifically requested us to avoid using kzalloc in usbfs.  I
-> can't find the message in the email archives, but Greg KH should be
-> able to confirm it.
->
-> As long as we're imitating kmalloc for one use, we might as well make
-> it available to all.
->
->>> And while at it,
->>> usb_alloc_buffer() will be renamed to usb_alloc_consistent().
+>> Just want to add a quick note that we're excited about this
+>> functionality and are hoping to see it go in.
 >>
->> Most of recent functions are named with "coherent".
->
-> Yes, the terminology got a little confused between the PCI and DMA
-> realms.  I agree, "coherent" is better.
->
-> BTW, although some EHCI controllers may support 64-bit DMA, the driver
-> contains this:
->
-> 	if (HCC_64BIT_ADDR(hcc_params)) {
-> 		ehci_writel(ehci, 0,&ehci->regs->segment);
-> #if 0
-> // this is deeply broken on almost all architectures
-> 		if (!dma_set_mask(hcd->self.controller, DMA_BIT_MASK(64)))
-> 			ehci_info(ehci, "enabled 64bit DMA\n");
-> #endif
-> 	}
->
-> I don't know if the comment is still true, but until the "#if 0" is
-> removed, ehci-hcd won't make use of 64-bit DMA.
+> 
+> I guess this patchset is now going to conflict with Divyesh's changes.
+> 
+> Gui, once blkio stat patches (cleaned up ones) are committed may be you
+> can rebase your changes on top of that. It will become easier for Jens.
+> (Until and unless he has some objections to this patchset).
 
-The comment is wrong (or at least outdated or based on an incorrect 
-assumption), but you're right, currently 64-bit DMA is not used on any 
-EHCI controllers. It could be, but it sounded like the consensus was it 
-wasn't worth the risk. Apparently Windows 7 started using it, and then 
-had to put out a patch because some NVidia EHCI controllers indicated 
-64-bit support but it didn't work properly. So you'd have to blacklist 
-those controllers, at least.
+Sure, will do.
+
+Thanks,
+Gui
+
+> 
+> Thanks
+> Vivek
+> 
+> 
+
