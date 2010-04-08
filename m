@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759110Ab0DHV1w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 17:27:52 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:55939 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759046Ab0DHV1s (ORCPT
+	id S1759118Ab0DHV3B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 17:29:01 -0400
+Received: from mtagate3.de.ibm.com ([195.212.17.163]:54015 "EHLO
+	mtagate3.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759076Ab0DHV3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 17:27:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jan Blunck <jblunck@suse.de>
-Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
-Date: Thu, 8 Apr 2010 23:27:26 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.31-19-generic; KDE/4.4.2; x86_64; ; )
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>, Jiri Kosina <jkosina@suse.cz>,
-       Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-       Matthew Wilcox <matthew@wil.cx>, Thomas Gleixner <tglx@linutronix.de>,
-       Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-       John Kacur <jkacur@redhat.com>
-References: <201003242240.54907.arnd@arndb.de> <201003282205.50886.arnd@arndb.de> <20100408204545.GM10776@bolzano.suse.de>
-In-Reply-To: <20100408204545.GM10776@bolzano.suse.de>
+	Thu, 8 Apr 2010 17:29:00 -0400
+Date: Thu, 8 Apr 2010 23:29:18 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       Wu Fengguang <fengguang.wu@intel.com>, Andi Kleen <andi@firstfloor.org>,
+       Greg KH <greg@kroah.com>, Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+       stable@kernel.org
+Subject: Re: [PATCH] Revert "memory-hotplug: add 0x prefix to HEX
+ block_size_bytes"
+Message-ID: <20100408212918.GA2716@osiris.boeblingen.de.ibm.com>
+References: <20100408151006.GB2446@osiris.boeblingen.de.ibm.com>
+ <20100408153745.GA4213@hack>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004082327.26731.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX19tprhuqkEazDLkdIIRVg2i5QZkkgL7GG8GdPe
- crw+g5V5VYOVM4TzNN8WsA3WP+ixXMnAX9rzHcpkehIVqUzxSL
- 3aCb5YZO7qV/uSWN/gBfA==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100408153745.GA4213@hack>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 April 2010 22:45:45 Jan Blunck wrote:
-> On Sun, Mar 28, Arnd Bergmann wrote:
-> > > General thoughts:
-> > > 
-> > > ".llseek = NULL," so far meant "do the Right Thing on lseek() and
-> > > friends, as far as the fs core can tell".  Shouldn't we keep it that
-> > > way?  It's as close to other ".method = NULL," as it can get, which
-> > > either mean "silently skip this method if it doesn't matter" (e.g.
-> > > .flush) or "fail attempts to use this method with a fitting errno" (e.g.
-> > > .write).
-> > 
-> > My series changes the default from 'default_llseek' to 'generic_file_llseek',
+On Thu, Apr 08, 2010 at 11:41:24PM +0800, Américo Wang wrote:
+> On Thu, Apr 08, 2010 at 05:10:06PM +0200, Heiko Carstens wrote:
+> >From: Heiko Carstens <heiko.carstens@de.ibm.com>
+> >
+> >Revert ba168fc37dea145deeb8fa9e7e71c748d2e00d74 "memory-hotplug: add 0x prefix
+> >to HEX block_size_bytes" since it changes the user space visible sysfs interface
+> >/sys/devices/system/memory/block_size_bytes.
+> >The change breaks existing user space applications which rely on the fact that
+> >the output does not contain the "0x" prefix.
 > 
-> That is not that easy. generic_file_llseek() is testing against 'offset <
-> inode->i_sb->s_maxbytes'. This is not necessarily true when you think about
-> directories with random offset cookies. I know that seeking on directories is
-> stupid but don't blame me.
-
-Oh, I see. Would it work if we extend generic_file_llseek to only check s_maxbytes
-if S_ISREG(inode->i_mode)))?
-
-> > Yes, that also sounds like a good idea. I believe that Jan actually posted
-> > a patch to do that at some point.
+> Odd.
 > 
-> Yes, it is in
-> 
-> http://git.infradead.org/users/jblunck/linux-2.6.git bkl/default-lseek
-> 
-> There are some other patches in that branch that are not upstream yet. Mind to
-> take them for your bkl-removal branch?
+> Which application relies on this? Isn't the application which should
+> be fixed?? It should use something like strtoul() which doesn't
+> rely on '0x' prefix.
 
-Frederic is now collecting the new patches. Your default-lseek series looks
-good to me, except for the obvious one that says 'FIXME' in the subject.
-
-Maybe Frederic can add your series except for that one as another branch to
-get pulled into his kill-the-bkl master branch.
-
-	Arnd
+Ok, consider it the other way round: your application is doing strtoul()
+with a base of 0 (since you rely on the 0x prefix) and for no good reason
+it doesn't work on older kernels.
+I really can't see a reason for adding additional pitfalls by _changing_
+a long existing user space interface.
