@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933313Ab0DHVq2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 17:46:28 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:50724 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932086Ab0DHVqZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 17:46:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=mzrEgpbZHHuA94+qadPVDK3xrGkkHGickk3ceo6JH/r9q72sd5hvSovt2w0flp34US
-         Xt3hOTYiWI2xEG/xEYfqni7Sg2+LG/PMv4Px58aWduJt6Bg81X4/dMEdG1c2B+6AMtwv
-         g54uN1HLvUXvMyX7pCGsFKsVGYFwPyvyMyDJc=
-Date: Thu, 8 Apr 2010 23:46:18 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-       robert.richter@amd.com, perfmon2-devel@lists.sf.net, eranian@gmail.com
-Subject: Re: [PATCH] perf_events: fix bogus warn_on(_once) in
-	perf_prepare_sample()
-Message-ID: <20100408214616.GD7990@nowhere>
-References: <4bbe4175.5124cc0a.5bd3.22d6@mx.google.com> <1270760136.20295.3121.camel@laptop> <v2xbd4cb8901004081408mf761d04ag5a365d068c58d64b@mail.gmail.com> <1270761083.20295.3158.camel@laptop> <g2rbd4cb8901004081414l505e6b04td902794f381224af@mail.gmail.com> <20100408211727.GA7990@nowhere> <u2nbd4cb8901004081422pe7088569s430734577b576b43@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <u2nbd4cb8901004081422pe7088569s430734577b576b43@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932756Ab0DHVyJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 17:54:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36666 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758546Ab0DHVyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 17:54:07 -0400
+Subject: Re: [PATCH 1/3 ] SCSI: Support several features in arcmsr driver
+From: James Bottomley <James.Bottomley@suse.de>
+To: nick.cheng@areca.com.tw
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1C89D804FCDA41259DEBE60429B71A63@areca4e4f859d4>
+References: <1C89D804FCDA41259DEBE60429B71A63@areca4e4f859d4>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 08 Apr 2010 17:53:58 -0400
+Message-ID: <1270763638.2837.148.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 08, 2010 at 11:22:05PM +0200, Stephane Eranian wrote:
-> On Thu, Apr 8, 2010 at 11:17 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > On Thu, Apr 08, 2010 at 11:14:15PM +0200, Stephane Eranian wrote:
-> >> On Thu, Apr 8, 2010 at 11:11 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> >> > On Thu, 2010-04-08 at 23:08 +0200, Stephane Eranian wrote:
-> >> >>
-> >> >> Are you suggesting you add some padding the PEBS raw sample you
-> >> >> return as PERF_SAMPLE_RAW? Then you need to define what RAW
-> >> >> actually means? Seems here, it would mean more than what the
-> >> >> HW returns.
-> >> >
-> >> > Well, RAW doesn't mean anything much at all, its really a fugly pass
-> >> > some crap around thing.
-> >> >
-> >> > So yeah, adding padding seems just fine.
-> >> >
-> >> I would rather see size as u64. Who's using raw today anyway?
-> >
-> >
-> > The trace events. Hence the size of the size shouldn't be touched, it
-> > is an ABI now.
-> 
-> Given your alignment constraints, it seems like it was a bad choice to pick
-> u32 for size to begin with.
+On Fri, 2010-04-02 at 12:01 +0800, Nick Cheng wrote:
+> 1. To support instantaneous report for SCSU device change by periodic
+> polling
+> 2. In arcmsr_iop_xfer(), inform AP of F/W's deadlock state to prevent
+> endless waiting
+> 3. To block the coming SCSI command while the driver is handling bus reset
+> 4. To support HW reset in bus reset error handler
 
+Next time, one patch per feature, please ...
 
-Ah I remember now how we did that. We align the trace events raw sample size
-such that sizeof(raw_sample) + sizeof(size) is aligned to u64.
+I still need you to redo this one (and the SCSI reset one) in a non word
+wrapped format so they can be applied ... just do an attachment since
+getting outlook to attach patches inline seems to be close to
+impossible.
 
-Well, indeed that complexifies a bit the raw_sample size handling but at least
-it makes the traces a bit more compact.
+James
+
 
