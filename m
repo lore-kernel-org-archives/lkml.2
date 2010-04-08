@@ -1,125 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758702Ab0DHOF0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 10:05:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31835 "EHLO mx1.redhat.com"
+	id S1758675Ab0DHOGu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 10:06:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62645 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751628Ab0DHOFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 10:05:23 -0400
-Date: Thu, 8 Apr 2010 10:05:15 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <jens.axboe@oracle.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-       linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch,rfc v2] ext3/4: enhance fsync performance when using cfq
-Message-ID: <20100408140515.GB10879@redhat.com>
-References: <x49ochv7yi3.fsf@segfault.boston.devel.redhat.com> <20100407214631.GL3206@redhat.com> <20100408110442.GK10103@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100408110442.GK10103@kernel.dk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1751628Ab0DHOGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 10:06:49 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1270699865-16954-1-git-send-email-tj@kernel.org>
+References: <1270699865-16954-1-git-send-email-tj@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, graff.yang@gmail.com,
+       akpm@linux-foundation.org, uclinux-dist-devel@blackfin.uclinux.org,
+       sonic.adi@gmail.com, cl@linux-foundation.org, mingo@elte.hu
+Subject: Re: percpu: implement nommu support
+Date: Thu, 08 Apr 2010 15:06:16 +0100
+Message-ID: <20986.1270735576@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 08, 2010 at 01:04:42PM +0200, Jens Axboe wrote:
-> On Wed, Apr 07 2010, Vivek Goyal wrote:
-> > On Wed, Apr 07, 2010 at 05:18:12PM -0400, Jeff Moyer wrote:
-> > > Hi again,
-> > > 
-> > > So, here's another stab at fixing this.  This patch is very much an RFC,
-> > > so do not pull it into anything bound for Linus.  ;-)  For those new to
-> > > this topic, here is the original posting:  http://lkml.org/lkml/2010/4/1/344
-> > > 
-> > > The basic problem is that, when running iozone on smallish files (up to
-> > > 8MB in size) and including fsync in the timings, deadline outperforms
-> > > CFQ by a factor of about 5 for 64KB files, and by about 10% for 8MB
-> > > files.  From examining the blktrace data, it appears that iozone will
-> > > issue an fsync() call, and will have to wait until it's CFQ timeslice
-> > > has expired before the journal thread can run to actually commit data to
-> > > disk.
-> > > 
-> > > The approach below puts an explicit call into the filesystem-specific
-> > > fsync code to yield the disk so that the jbd[2] process has a chance to
-> > > issue I/O.  This bring performance of CFQ in line with deadline.
-> > > 
-> > > There is one outstanding issue with the patch that Vivek pointed out.
-> > > Basically, this could starve out the sync-noidle workload if there is a
-> > > lot of fsync-ing going on.  I'll address that in a follow-on patch.  For
-> > > now, I wanted to get the idea out there for others to comment on.
-> > > 
-> > > Thanks a ton to Vivek for spotting the problem with the initial
-> > > approach, and for his continued review.
-> > > 
-> > 
-> > Thanks Jeff. Conceptually this appraoch makes lot of sense to me. Higher
-> > layers explicitly telling CFQ not to idle/yield the slice.
-> > 
-> > My firefox timing test is perfoming much better now.
-> > 
-> > real	0m15.957s
-> > user	0m0.608s
-> > sys	0m0.165s
-> > 
-> > real	0m12.984s
-> > user	0m0.602s
-> > sys	0m0.148s
-> > 
-> > real	0m13.057s
-> > user	0m0.624s
-> > sys	0m0.145s
-> > 
-> > So we got to take care of two issues now.
-> > 
-> > - Make it work with dm/md devices also. Somehow shall have to propogate
-> >   this yield semantic down the stack.
-> 
-> The way that Jeff set it up, it's completely parallel to eg congestion
-> or unplugging. So that should be easily doable.
-> 
 
-Ok, so various dm targets now need to define "yield_fn" and propogate the
-yield call to all the component devices. 
+It looks reasonable (feel free to add my Reviewed-by).  But I can't test it as
+I don't have any SMP NOMMU hardware.
 
-> > - The issue of making sure we don't yield if we are servicing sync-noidle
-> >   tree and there is other IO going on which relies on sync-noidle tree
-> >   idling (as you have already mentioned).
-> 
-> Agree.
-> 
-> > > +	/*
-> > > +	 * This is primarily called to ensure that the long synchronous
-> > > +	 * time slice does not prevent other I/O happenning (like journal
-> > > +	 * commits) while we idle waiting for it.  Thus, check to see if the
-> > > +	 * current cfqq is the sync cfqq for this process.
-> > > +	 */
-> > > +	cfqq = cic_to_cfqq(cic, 1);
-> > > +	if (!cfqq)
-> > > +		goto out_unlock;
-> > > +
-> > > +	if (cfqd->active_queue != cfqq)
-> > > +		goto out_unlock;
-> > > +
-> > > +	cfq_log_cfqq(cfqd, cfqq, "yielding queue");
-> > > +
-> > > +	__cfq_slice_expired(cfqd, cfqq, 1);
-> > > +	__blk_run_queue(cfqd->queue);
-> > 
-> > I think it would be good if we also check that cfqq is empty or not. If cfqq
-> > is not empty we don't want to give up slice? But this is a minor point. At
-> > least in case of fsync, we seem to be waiting for all the iozone request
-> > to finish and then calling yield. So cfqq should be empty at this point of
-> > time. 
-> 
-> That's a bit of a problem. Say the queue has one request left, it'll
-> service that and the start idling. But we already got this hint that we
-> should yield, but as it happened before we reached the idling state,
-> we'll not yield. Perhaps it would be better to mark the cfqq as yielding
-> if it isn't ready to yield just yet.
-
-That makes sense. So another cfqq flag in place. As soon as all the
-request from cfqq are dispatched, yield the slice instead of idling. And
-clear the flag when slice is expiring.
-
-Vivek
+David
