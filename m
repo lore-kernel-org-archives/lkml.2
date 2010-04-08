@@ -1,90 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933719Ab0DHVyf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 17:54:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57116 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933631Ab0DHVyc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 17:54:32 -0400
-Subject: Re: [PATCH 02/13] mm: Revalidate anon_vma in page_lock_anon_vma()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-       Nick Piggin <npiggin@suse.de>
-In-Reply-To: <20100408142051.717b278c.akpm@linux-foundation.org>
-References: <20100408191737.296180458@chello.nl>
-	 <20100408192722.687144862@chello.nl>
-	 <20100408142051.717b278c.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Apr 2010 23:54:26 +0200
-Message-ID: <1270763666.20295.3198.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S933709Ab0DHWBv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 18:01:51 -0400
+Received: from mail.tmr.com ([64.65.253.246]:56771 "EHLO partygirl.tmr.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933255Ab0DHWBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 18:01:49 -0400
+Message-ID: <4BBE5240.3050606@tmr.com>
+Date: Thu, 08 Apr 2010 18:01:36 -0400
+From: Bill Davidsen <davidsen@tmr.com>
+Organization: TMR Associates Inc, Schenectady NY
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090507 Fedora/1.1.16-1.fc9 NOT Firefox/3.0.11 pango-text SeaMonkey/1.1.16
+MIME-Version: 1.0
+To: Andreas Mohr <andi@lisas.de>
+CC: Jens Axboe <axboe@kernel.dk>, Wu Fengguang <fengguang.wu@intel.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: 32GB SSD on USB1.1 P3/700 == ___HELL___ (2.6.34-rc3)
+References: <20100404221349.GA18036@rhlx01.hs-esslingen.de> <4BBE38B9.6020507@tmr.com> <20100408203526.GA15426@rhlx01.hs-esslingen.de>
+In-Reply-To: <20100408203526.GA15426@rhlx01.hs-esslingen.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-08 at 14:20 -0700, Andrew Morton wrote:
-> On Thu, 08 Apr 2010 21:17:39 +0200
-> Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> 
-> > There is nothing preventing the anon_vma from being detached while we
-> > are spinning to acquire the lock.
-> 
-> Well.  The comment there clearly implies (or states) that RCU
-> protection is used to "guard against races".  If that's inaccurate
-> or incomplete, can we please get it fixed?
+Andreas Mohr wrote:
+> On Thu, Apr 08, 2010 at 04:12:41PM -0400, Bill Davidsen wrote:
+>   
+>> Andreas Mohr wrote:
+>>     
+>>> Clearly there's a very, very important limiter somewhere in bio layer
+>>> missing or broken, a 300M dd /dev/zero should never manage to put
+>>> such an onerous penalty on a system, IMHO.
+>>>
+>>>       
+>> You are using a USB 1.1 connection, about the same speed as a floppy. If 
+>>     
+>
+> Ahahahaaa. A rather distant approximation given a speed of 20kB/s vs. 987kB/s ;)
+> (but I get the point you're making here)
+>
+> I'm not at all convinced that USB2.0 would fare any better here, though:
+> after all we are buffering the file that is written to the device
+> - after the fact!
+> (plus there are many existing complaints of people that copying of large files
+> manages to break entire machines, and I doubt many of those were using
+> USB1.1)
+> https://bugzilla.kernel.org/show_bug.cgi?id=13347
+> https://bugzilla.kernel.org/show_bug.cgi?id=7372
+> And many other reports.
+>
+>   
+>> you have not tuned your system to prevent all of the memory from being 
+>> used to cache writes, it will be used that way. I don't have my notes 
+>> handy, but I believe you need to tune the "dirty" parameters of 
+>> /proc/sys/vm so that it makes better use of memory.
+>>     
+>
+> Hmmmm. I don't believe that there should be much in need of being
+> tuned, especially in light of default settings being so problematic.
+> Of course things here are similar to the shell ulimit philosophy,
+> but IMHO default behaviour should be reasonable.
+>
+>   
+>> Of course putting a fast device like SSD on a super slow connection makes 
+>> no sense other than as a test of system behavior on misconfigured 
+>> machines.
+>>     
+>
+> "because I can" (tm) :)
+>
+> And because I like to break systems that happen to work moderately wonderfully
+> for the mainstream(?)(?!?) case of quad cores with 16GB of RAM ;)
+> [well in fact I don't, but of course that just happens to happen...]
+>   
 
-Good point, goes together with that last comment you made.
+I will tell you one more thing you can do to test my thought that you 
+are totally filling memory, copy data to the device using DIRECT to keep 
+from dirtying cache. It will slow the copy (to a slight degree) and keep 
+the system responsive. I used to have a USB 2.0 disk, and you are right, 
+it will show the same problems. That's why I have some ideas of tuning.
 
-> The whole function makes be a bit queasy.
-> 
-> - Fails to explain why it pulls all these party tricks to read
->   page->mapping a single time.  What code path are we defending against
->   here?
+And during the 2.5 development phase I played with "per fd" limits on 
+memory per file, which solved the problem for me. I had some educational 
+discussions with several developers, but this is one of those things 
+which has limited usefulness and development was very busy at that time 
+with things deemed more important, so I never tried to get it ready for 
+inclusion in the kernel.
 
->From what I understand we race with tear-down, anon_vma_unlock() takes
-anon_vma->lock, so holding the lock pins the anon_vma.
-
-So what we do to acquire a stable anon_vma from a page * is to, while
-holding RCU read lock, very carefully read page->mapping, extract the
-anon_vma and acquire the lock.
-
-Now, the RCU usage is a tad tricky here, anon_vma uses
-SLAB_DESTROY_BY_RCU, which means that the slab will be RCU freed,
-however not the objects allocated from it. This means that an anon_vma
-can be re-used directly after its gets freed, but the storage will
-remain valid for at least a grace period after the free.
-
-So once we do have the lock we need to revalidate that we indeed got the
-anon_vma we throught we got.
-
-So its:
-
-  page->mapping = NULL;
-  anon_vma_unlink();
-    spin_lock()
-    spin_unlock()
-    kmem_cache_free(anon_vma);
-
- VS
-
-  page_lock_anon_vma()'s trickery.
-
-> - Then checks page_mapped() without having any apparent defence
->   against page_mapped() becoming untrue one nanosecond later.
-> 
-> - Checks page_mapped() inside the rcu_read_locked() section for
->   inscrutable reasons.
-
-Right, I think the page_mapped() stuff is just an early bail out.
+-- 
+Bill Davidsen <davidsen@tmr.com>
+  "We can't solve today's problems by using the same thinking we
+   used in creating them." - Einstein
 
