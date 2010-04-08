@@ -1,109 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932948Ab0DHRxw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 13:53:52 -0400
-Received: from mga14.intel.com ([143.182.124.37]:35764 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758238Ab0DHRxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 13:53:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,171,1270450800"; 
-   d="scan'208,223";a="263538100"
-Subject: Re: [REVERT] be6b38bcb175613f239e0b302607db346472c6b6.
- v2.6.34-rc3-406 oops with 4965AGN wireless
-From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       "Zhao, Shanyu" <shanyu.zhao@intel.com>,
-       "Chatre, Reinette" <reinette.chatre@intel.com>,
-       "stable@kernel.org" <stable@kernel.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <Pine.LNX.4.64.1004090104570.7829@boston.corp.fedex.com>
-References: <Pine.LNX.4.64.1004090104570.7829@boston.corp.fedex.com>
-Content-Type: multipart/mixed; boundary="=-nUvKoqY6KtHDgcmFght6"
-Date: Thu, 08 Apr 2010 11:50:19 -0700
-Message-Id: <1270752619.11853.4.camel@wwguy-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.3 
+	id S932981Ab0DHR4E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 13:56:04 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:48459 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755949Ab0DHR4A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 13:56:00 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-omap@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
+       "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH] rwsem generic spinlock: use IRQ save/restore spinlocks
+Date: Thu,  8 Apr 2010 10:55:50 -0700
+Message-Id: <1270749350-25152-1-git-send-email-khilman@deeprootsystems.com>
+X-Mailer: git-send-email 1.7.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+rwsems can be used with IRQs disabled, particularily in early boot
+before IRQs are enabled.  Currently the spin_unlock_irq() usage in the
+slow-path will unconditionally enable interrupts and cause problems
+early in boot where interrupts are not yet initialized or enabled.
 
---=-nUvKoqY6KtHDgcmFght6
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
+This patch uses save/restore versions of IRQ spinlocks in the slowpath
+to ensure interrupts are not unintentionally enabled in the case where
+the rwsem is used with IRQs disabled.
 
-Hi Jeff,
+Idea for this fix suggested by H. Peter Anvin.
 
-On Thu, 2010-04-08 at 10:16 -0700, Jeff Chua wrote:
-> Linus,
-> 
-> I'm having problem with the latest git pull 2 days ago with the 4965AGN 
-> wireless.
-> 
-> Starting the wireless with WPA2 resulted in system hard freeze. Reverting 
-> the commit below solves the problem.
-> 
-> 
-> Thanks,
-> Jeff
-> 
-> 
-Sorry for the problem caused by this patch, it is my mistake using the
-similar approach for 4965 like the newer devices. could you try the
-attach patch to see if this fix your system freeze problem.
+Tested on TI OMAP3-based platform (ARM Cortex-A8)
 
-Regards
-Wey
-
---=-nUvKoqY6KtHDgcmFght6
-Content-Disposition: attachment; filename*0=0001-iwlwifi-need-check-for-valid-qos-packet-before-free.patc; filename*1=h
-Content-Type: text/x-patch; name="0001-iwlwifi-need-check-for-valid-qos-packet-before-free.patch"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
->From 0c441b5c684709152cd322e91ce59914159ea513 Mon Sep 17 00:00:00 2001
-From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Date: Thu, 8 Apr 2010 11:41:24 -0700
-Subject: [PATCH 1/1] iwlwifi: need check for valid qos packet before free
-
-For 4965, need to check it is valid qos frame before free, only valid
-QoS frame has the tid used to free the packets.
-
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Rabin Vincent <rabin@rab.in>
+Cc: H. Peter Anvin <hpa@zytor.com>
+LKML-Reference: <alpine.LFD.2.00.1004010904540.3707@i5.linux-foundation.org>
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
 ---
- drivers/net/wireless/iwlwifi/iwl-4965.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+ lib/rwsem-spinlock.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-4965.c b/drivers/net/wireless/iwlwifi/iwl-4965.c
-index c710b26..4113909 100644
---- a/drivers/net/wireless/iwlwifi/iwl-4965.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-4965.c
-@@ -2014,7 +2014,9 @@ static void iwl4965_rx_reply_tx(struct iwl_priv *priv,
- 			IWL_DEBUG_TX_REPLY(priv, "Retry scheduler reclaim scd_ssn "
- 					   "%d index %d\n", scd_ssn , index);
- 			freed = iwlagn_tx_queue_reclaim(priv, txq_id, index);
--			iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
-+			if (qc && likely(sta_id != IWL_INVALID_STATION))
-+				iwl_free_tfds_in_queue(priv, sta_id,
-+						       tid, freed);
+diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
+index ccf95bf..ffc9fc7 100644
+--- a/lib/rwsem-spinlock.c
++++ b/lib/rwsem-spinlock.c
+@@ -143,13 +143,14 @@ void __sched __down_read(struct rw_semaphore *sem)
+ {
+ 	struct rwsem_waiter waiter;
+ 	struct task_struct *tsk;
++	unsigned long flags;
  
- 			if (priv->mac80211_registered &&
- 			    (iwl_queue_space(&txq->q) > txq->q.low_mark) &&
-@@ -2046,8 +2048,8 @@ static void iwl4965_rx_reply_tx(struct iwl_priv *priv,
- 		    (iwl_queue_space(&txq->q) > txq->q.low_mark))
- 			iwl_wake_queue(priv, txq_id);
+-	spin_lock_irq(&sem->wait_lock);
++	spin_lock_irqsave(&sem->wait_lock, flags);
+ 
+ 	if (sem->activity >= 0 && list_empty(&sem->wait_list)) {
+ 		/* granted */
+ 		sem->activity++;
+-		spin_unlock_irq(&sem->wait_lock);
++		spin_unlock_irqrestore(&sem->wait_lock, flags);
+ 		goto out;
  	}
--
--	iwlagn_txq_check_empty(priv, sta_id, tid, txq_id);
-+	if (qc && likely(sta_id != IWL_INVALID_STATION))
-+		iwlagn_txq_check_empty(priv, sta_id, tid, txq_id);
  
- 	iwl_check_abort_status(priv, tx_resp->frame_count, status);
- }
+@@ -164,7 +165,7 @@ void __sched __down_read(struct rw_semaphore *sem)
+ 	list_add_tail(&waiter.list, &sem->wait_list);
+ 
+ 	/* we don't need to touch the semaphore struct anymore */
+-	spin_unlock_irq(&sem->wait_lock);
++	spin_unlock_irqrestore(&sem->wait_lock, flags);
+ 
+ 	/* wait to be given the lock */
+ 	for (;;) {
+@@ -209,13 +210,14 @@ void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
+ {
+ 	struct rwsem_waiter waiter;
+ 	struct task_struct *tsk;
++	unsigned long flags;
+ 
+-	spin_lock_irq(&sem->wait_lock);
++	spin_lock_irqsave(&sem->wait_lock, flags);
+ 
+ 	if (sem->activity == 0 && list_empty(&sem->wait_list)) {
+ 		/* granted */
+ 		sem->activity = -1;
+-		spin_unlock_irq(&sem->wait_lock);
++		spin_unlock_irqrestore(&sem->wait_lock, flags);
+ 		goto out;
+ 	}
+ 
+@@ -230,7 +232,7 @@ void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
+ 	list_add_tail(&waiter.list, &sem->wait_list);
+ 
+ 	/* we don't need to touch the semaphore struct anymore */
+-	spin_unlock_irq(&sem->wait_lock);
++	spin_unlock_irqrestore(&sem->wait_lock, flags);
+ 
+ 	/* wait to be given the lock */
+ 	for (;;) {
 -- 
-1.5.6.3
-
-
---=-nUvKoqY6KtHDgcmFght6--
+1.7.0.2
 
