@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758552Ab0DHKMo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 06:12:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58909 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755821Ab0DHKMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 06:12:40 -0400
-From: Xiaotian Feng <dfeng@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dfeng@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
-       Vegard Nossum <vegard.nossum@gmail.com>,
-       Dmitry Monakhov <dmonakhov@openvz.org>,
-       Catalin Marinas <catalin.marinas@arm.com>,
-       David Rientjes <rientjes@google.com>
-Subject: [PATCH] slab: fix caller tracking on !CONFIG_DEBUG_SLAB && CONFIG_TRACING
-Date: Thu,  8 Apr 2010 18:11:33 +0800
-Message-Id: <1270721493-27820-1-git-send-email-dfeng@redhat.com>
+	id S1758559Ab0DHKN1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 06:13:27 -0400
+Received: from hosting.visp.net.lb ([194.146.153.11]:55666 "EHLO
+	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758506Ab0DHKNY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 06:13:24 -0400
+From: Denys Fedorysychenko <nuclearcat@nuclearcat.com>
+To: Jan Kara <jack@suse.cz>
+Subject: Re: endless sync on bdi_sched_wait()? 2.6.33.1
+Date: Thu, 8 Apr 2010 13:12:05 +0300
+User-Agent: KMail/1.12.4 (Linux/2.6.31.12-rt21-home1; KDE/4.3.5; x86_64; ; )
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+References: <201003311907.31342.nuclearcat@nuclearcat.com> <20100408092850.GA20488@quack.suse.cz>
+In-Reply-To: <20100408092850.GA20488@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004081312.06018.nuclearcat@nuclearcat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In slab, all __xxx_track_caller is defined on CONFIG_DEBUG_SLAB || CONFIG_TRACING,
-thus caller tracking function should be worked for CONFIG_TRACING. But if
-CONFIG_DEBUG_SLAB is not set, include/linux/slab.h will define xxx_track_caller to
-__xxx() without consideration of CONFIG_TRACING. This will break the caller tracking
-behaviour then.
+> > SUPERPROXY ~ # cat /proc/1753/stack
+> > [<c019a93c>] bdi_sched_wait+0x8/0xc
+> > [<c019a807>] wait_on_bit+0x20/0x2c
+> > [<c019a9af>] sync_inodes_sb+0x6f/0x10a
+> > [<c019dd53>] __sync_filesystem+0x28/0x49
+> > [<c019ddf3>] sync_filesystems+0x7f/0xc0
+> > [<c019de7a>] sys_sync+0x1b/0x2d
+> > [<c02f7a25>] syscall_call+0x7/0xb
+> > [<ffffffff>] 0xffffffff
+> 
+>   Hmm, I guess you are observing the problem reported in
+> https://bugzilla.kernel.org/show_bug.cgi?id=14830
+>   There seem to be several issues in the per-bdi writeback code that
+> cause sync on a busy filesystem to last almost forever. To that bug are
+> attached two patches that fix two issues but apparently it's not all.
+> I'm still looking into it...
+> 
+> 								Honza
+> 
+Hi
 
-Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Vegard Nossum <vegard.nossum@gmail.com>
-Cc: Dmitry Monakhov <dmonakhov@openvz.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: David Rientjes <rientjes@google.com>
----
- include/linux/slab.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 4884462..1a0625c 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -267,7 +267,7 @@ static inline void *kmem_cache_alloc_node(struct kmem_cache *cachep,
-  * allocator where we care about the real place the memory allocation
-  * request comes from.
-  */
--#if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_SLUB)
-+#if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_SLUB) || defined(CONFIG_TRACING)
- extern void *__kmalloc_track_caller(size_t, gfp_t, unsigned long);
- #define kmalloc_track_caller(size, flags) \
- 	__kmalloc_track_caller(size, flags, _RET_IP_)
-@@ -285,7 +285,7 @@ extern void *__kmalloc_track_caller(size_t, gfp_t, unsigned long);
-  * standard allocator where we care about the real place the memory
-  * allocation request comes from.
-  */
--#if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_SLUB)
-+#if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_SLUB) || defined(CONFIG_TRACING)
- extern void *__kmalloc_node_track_caller(size_t, gfp_t, int, unsigned long);
- #define kmalloc_node_track_caller(size, flags, node) \
- 	__kmalloc_node_track_caller(size, flags, node, \
--- 
-1.7.0.1
-
+Thanks for info, i will try to test them as soon as i finish with my current 
+issues, and kernel will reach at least rc5, because servers where i test - 
+loaded and production.
