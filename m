@@ -1,56 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769Ab0DHDN2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 23:13:28 -0400
-Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:42014 "HELO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754006Ab0DHDN0 (ORCPT
+	id S1756174Ab0DHDNu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 23:13:50 -0400
+Received: from exprod5og104.obsmtp.com ([64.18.0.178]:60064 "EHLO
+	exprod5og104.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753545Ab0DHDNr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 23:13:26 -0400
-X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Apr 2010 23:13:26 EDT
-From: Michael Poole <mdpoole@troilus.org>
-To: "Henrik Rydberg" <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: mt: introduce MT event slots
-References: <1270685590-2204-1-git-send-email-rydberg@euromail.se>
-Date: Wed, 07 Apr 2010 23:07:09 -0400
-In-Reply-To: <1270685590-2204-1-git-send-email-rydberg@euromail.se> (Henrik
-	Rydberg's message of "Thu, 8 Apr 2010 02:13:10 +0200")
-Message-ID: <87tyrmiqw2.fsf@troilus.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 7 Apr 2010 23:13:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <p2k84144f021004070825jd3530d04v9d339c8d50c4593d@mail.gmail.com>
+References: <k2s4810ea571004020021hade8123mb571b803b8472aef@mail.gmail.com>
+	 <p2k84144f021004070825jd3530d04v9d339c8d50c4593d@mail.gmail.com>
+Date: Thu, 8 Apr 2010 11:13:40 +0800
+Message-ID: <x2t5f4a33681004072013j696861caj5c90f8675e784fe0@mail.gmail.com>
+Subject: Re: [PATCH] Fix missing of last user while dumping slab corruption 
+	log
+From: TAO HU <tghk48@motorola.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: ShiYong LI <shi-yong.li@motorola.com>, linux-kernel@vger.kernel.org,
+       cl@linux-foundation.org, mpm@selenic.com, linux-mm@kvack.org,
+       TAO HU <taohu@motorola.com>, dwmw2@infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Henrik Rydberg writes:
+Hi, Pekka Enberg
 
-> With the rapidly increasing number of intelligent multi-contact and
-> multi-user devices, the need to send digested, filtered information
-> from a set of different sources within the same device is imminent.
-> This patch adds the concept of slots to the MT protocol. The slots
-> enumerate a set of identified sources, such that all MT events
-> can be passed independently and selectively per identified source.
+We verified on OMAP3 (ARM V7).
+1 thing we're sure
+a) cachep->obj_offset will be aligned with "align" passed to
+kmem_cache_create ()
+
+Are you concerned about alignment for red-zone obj?
+We'll double check.
+
+-- 
+Best Regards
+Hu Tao
+
+On Wed, Apr 7, 2010 at 11:25 PM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
+> Hi,
 >
-> The protocol works like this: Instead of sending a SYN_MT_REPORT
-> event immediately after the contact data, one sends a SYN_MT_SLOT
-> event immediately before the contact data. The input core will only
-> emit events for the slots corresponding to the contacts that have
-> changed. It is assumed that the same slot is used for the duration
-> of an initiated contact.
-
-How would the slot number for a contact be chosen?  If the kernel makes
-that assignment, what should a "slot" correspond to from a computer
-user's perspective?  "Set[s] of identified sources" is a little vague:
-Does it mean contacts from one hand, contacts in one displayed window
-(assuming the touch surface is a screen), or something else?  (I assume
-it would not duplicate the blob or tracking IDs already defined for MT
-events.)  It seems like those would be important aspects of the protocol
-to document in Documentation/input/multi-touch-protocol.txt --
-otherwise, driver implementers or application developers might get it
-wrong.
-
-Michael Poole
+> (I'm cc'ing David who did some fixes in this area previously.)
+>
+> On Fri, Apr 2, 2010 at 10:21 AM, ShiYong LI <a22381@motorola.com> wrote:
+>> Even with SLAB_RED_ZONE and SLAB_STORE_USER enabled, kernel would NOT
+>> store redzone and last user data around allocated memory space if arch
+>> cache line > sizeof(unsigned long long). As a result, last user information
+>> is unexpectedly MISSED while dumping slab corruption log.
+>>
+>> This patch makes sure that redzone and last user tags get stored whatever
+>> arch cache line.
+>>
+>> Compared to original codes, the change surely affects head redzone (redzone1).
+>> Actually, with SLAB_RED_ZONE and SLAB_STORE_USER enabled,
+>> allocated memory layout is as below:
+>>
+>> [ redzone1 ]   <--------- Affected area.
+>> [ real object space ]
+>> [ redzone2 ]
+>> [ last user ]
+>> [ ... ]
+>>
+>> Let's do some analysis: (whatever SLAB_STORE_USER is).
+>>
+>> 1) With SLAB_RED_ZONE on, "align" >= sizeof(unsigned long long) according to
+>>    the following codes:
+>>        /* 2) arch mandated alignment */
+>>        if (ralign < ARCH_SLAB_MINALIGN) {
+>>                ralign = ARCH_SLAB_MINALIGN;
+>>        }
+>>        /* 3) caller mandated alignment */
+>>        if (ralign < align) {
+>>                ralign = align;
+>>        }
+>>        ...
+>>        /*
+>>         * 4) Store it.
+>>         */
+>>        align = ralign;
+>>
+>>    That's to say, could guarantee that redzone1 does NOT get broken
+>> at all. Meanwhile,
+>>    Real object space could meet the need of cache line size by using
+>> "align"  argument.
+>>
+>> 2) With SLAB_RED_ZONE off, the change has no impact.
+>>
+>>
+>> From 03b28964311090533643acd267abe0cbc3c9b0a5 Mon Sep 17 00:00:00 2001
+>> From: Shiyong Li <shi-yong.li@motorola.com>
+>> Date: Fri, 2 Apr 2010 14:50:30 +0800
+>> Subject: [PATCH] Fix missing of last user info while getting
+>> DEBUG_SLAB config enabled.
+>>
+>> Even with SLAB_RED_ZONE and SLAB_STORE_USER enabled, kernel would NOT
+>> store redzone and last user data around allocated memory space if arch
+>> cache line > sizeof(unsigned long long). As a result, last user information
+>> is unexpectedly MISSED while dumping slab corruption log.
+>>
+>> This fix makes sure that redzone and last user tags get stored whatever
+>> cache line.
+>>
+>> Signed-off-by: Shiyong Li <shi-yong.li@motorola.com>
+>> ---
+>>  mm/slab.c |    7 ++-----
+>>  1 files changed, 2 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/mm/slab.c b/mm/slab.c
+>> index a8a38ca..84af997 100644
+>> --- a/mm/slab.c
+>> +++ b/mm/slab.c
+>> @@ -2267,9 +2267,6 @@ kmem_cache_create (const char *name, size_t
+>> size, size_t align,
+>>        if (ralign < align) {
+>>                ralign = align;
+>>        }
+>> -       /* disable debug if necessary */
+>> -       if (ralign > __alignof__(unsigned long long))
+>> -               flags &= ~(SLAB_RED_ZONE | SLAB_STORE_USER);
+>>        /*
+>>         * 4) Store it.
+>>         */
+>> @@ -2289,8 +2286,8 @@ kmem_cache_create (const char *name, size_t
+>> size, size_t align,
+>>         */
+>>        if (flags & SLAB_RED_ZONE) {
+>>                /* add space for red zone words */
+>> -               cachep->obj_offset += sizeof(unsigned long long);
+>> -               size += 2 * sizeof(unsigned long long);
+>> +               cachep->obj_offset += align;
+>> +               size += align + sizeof(unsigned long long);
+>>        }
+>>        if (flags & SLAB_STORE_USER) {
+>>                /* user store requires one word storage behind the end of
+>
+> The problem I have with this patch is that I am unable to convince
+> myself that it's correct.
+>
+> The code in question is pretty hard to follow and it can break on
+> architectures with strict alignment requirements. I'm not sure I fully
+> understand why we've been disabling debugging in the first place.
+>
+> On which architectures have you verified this fix?
+>
+>                        Pekka
+>
