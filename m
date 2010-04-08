@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab0DHCvN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 22:51:13 -0400
-Received: from mail.windriver.com ([147.11.1.11]:61479 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753145Ab0DHCvI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 22:51:08 -0400
-Date: Thu, 8 Apr 2010 10:50:50 +0800
-From: Yong Zhang <yong.zhang@windriver.com>
-To: David Howells <dhowells@redhat.com>
-Cc: paulmck@linux.vnet.ibm.com, eric.dumazet@gmail.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] RCU: Better explain the condition parameter of
- rcu_dereference_check()
-Message-ID: <20100408025050.GB12905@windriver.com>
-Reply-To: Yong Zhang <yong.zhang@windriver.com>
-References: <20100407171500.27710.88994.stgit@warthog.procyon.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100407171500.27710.88994.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 08 Apr 2010 02:50:53.0311 (UTC) FILETIME=[4DF2D8F0:01CAD6C6]
+	id S1753880Ab0DHC5Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 22:57:25 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:54511 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753145Ab0DHC5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 22:57:23 -0400
+Date: Thu, 8 Apr 2010 12:57:21 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Todd Fischer <todd.fischer@ridgerun.com>
+Subject: linux-next: build failure after merge of the mfd tree
+Message-Id: <20100408125721.f93c1225.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 07, 2010 at 06:15:00PM +0100, David Howells wrote:
-> Better explain the condition parameter of rcu_dereference_check() that
-> describes the conditions under which the dereference is permitted to take
-> place.  This condition is only checked under lockdep proving.
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> ---
-> 
->  include/linux/rcupdate.h |   28 +++++++++++++++++++++++-----
->  1 files changed, 23 insertions(+), 5 deletions(-)
-> 
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index 872a98e..acf9958 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -195,12 +195,30 @@ static inline int rcu_read_lock_sched_held(void)
->  
->  /**
->   * rcu_dereference_check - rcu_dereference with debug checking
-> + * @p: The pointer to read, prior to dereferencing
-> + * @c: The conditions under which the dereference will take place
->   *
-> - * Do an rcu_dereference(), but check that the context is correct.
-> - * For example, rcu_dereference_check(gp, rcu_read_lock_held()) to
-> - * ensure that the rcu_dereference_check() executes within an RCU
-> - * read-side critical section.  It is also possible to check for
-> - * locks being held, for example, by using lockdep_is_held().
-> + * Do an rcu_dereference(), but check that the conditions under which the
-> + * dereference will take place are correct.  Typically the conditions indicate
-> + * the various locking conditions that should be held at that point.  The check
-> + * should return true if the conditions are satisfied.
-> + *
-> + * For example:
-> + *
-> + *	bar = rcu_dereference_check(foo->bar, rcu_read_lock_held() ||
-> + *					      lockdep_is_held(&foo->lock));
-> + *
-> + * could be used to indicate to lockdep that foo->bar may only be dereferenced
-> + * if either the RCU read lock is held, or that the lock required to replace
-> + * the bar struct at foo->bar is held.
-> + *
-> + * Note that the list of conditions may also include indications of when a lock
-> + * need not be held, for example during initialisation or destruction of the
-> + * target struct:
-> + *
-> + *	bar = rcu_dereference_check(foo->bar, rcu_read_lock_held() ||
-> + *					      lockdep_is_held(&foo->lock),
-                                                                        ^^
-									|| ?
+Hi Samuel,
 
-Thanks,
-Yong
+After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-> + *					      atomic_read(&foo->usage) == 0);
->   */
->  #define rcu_dereference_check(p, c) \
->  	({ \
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+drivers/mfd/tps6507x.c: In function 'tps6507x_i2c_probe':
+drivers/mfd/tps6507x.c:90: error: implicit declaration of function 'kzalloc'
+drivers/mfd/tps6507x.c:90: warning: assignment makes pointer from integer without a cast
+drivers/mfd/tps6507x.c:92: error: implicit declaration of function 'kfree'
+
+Caused by commit 353dd1bf937f319eb6fdf35a461bf0bea1361d23 ("mfd: Add
+TPS6507x support").
+
+I applied the following patch for today.
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 8 Apr 2010 12:53:32 +1000
+Subject: [PATCH] mfd: TPS6507x: using kzalloc/kfree requires including slab.h
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/mfd/tps6507x.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/mfd/tps6507x.c b/drivers/mfd/tps6507x.c
+index dcddef0..d859dff 100644
+--- a/drivers/mfd/tps6507x.c
++++ b/drivers/mfd/tps6507x.c
+@@ -17,6 +17,7 @@
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/init.h>
++#include <linux/slab.h>
+ #include <linux/i2c.h>
+ #include <linux/mfd/core.h>
+ #include <linux/mfd/tps6507x.h>
+-- 
+1.7.0.4
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
