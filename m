@@ -1,325 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933202Ab0DHXaV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 19:30:21 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41557 "EHLO ogre.sisk.pl"
+	id S933449Ab0DHXaZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 19:30:25 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51752 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757131Ab0DHXaO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 19:30:14 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: 2.6.34-rc3-git8: Reported regressions 2.6.32 -> 2.6.33
-Cc: Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Network Development <netdev@vger.kernel.org>,
-       Linux ACPI <linux-acpi@vger.kernel.org>,
-       Linux PM List <linux-pm@lists.linux-foundation.org>,
-       Linux SCSI List <linux-scsi@vger.kernel.org>,
-       Linux Wireless List <linux-wireless@vger.kernel.org>,
-       DRI <dri-devel@lists.sourceforge.net>
+	id S1757559Ab0DHXaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 19:30:15 -0400
+Message-ID: <4BBE67B9.9050700@kernel.org>
+Date: Fri, 09 Apr 2010 08:33:13 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <cjwJ7Pf9h0L.A.9pB.1DmvLB@chimera>
-Date: Fri,  9 Apr 2010 00:54:23 +0200 (CEST)
+To: Sonic Zhang <sonic.adi@gmail.com>
+CC: graff yang <graff.yang@gmail.com>, dhowells@redhat.com,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       uclinux-dist-devel@blackfin.uclinux.org
+Subject: Re: [PATCH] mm/nommu.c:Dynamic alloc/free percpu area for nommu
+References: <1268989324-7575-1-git-send-email-graff.yang@gmail.com>	 <4BA449E2.3080707@kernel.org>	 <7d86d44a1003211933h6628ae04vc9d1c393e1733ce5@mail.gmail.com>	 <4BB47367.8030305@kernel.org>	 <y2l4e5ebad51004060228t814129beqd0d90059e247e48d@mail.gmail.com>	 <4BBD42BE.20307@kernel.org> <x2p4e5ebad51004080240nc3f5846am27fa259debf04302@mail.gmail.com>
+In-Reply-To: <x2p4e5ebad51004080240nc3f5846am27fa259debf04302@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 08 Apr 2010 23:29:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message contains a list of some post-2.6.32 regressions introduced before
-2.6.33, for which there are no fixes in the mainline known to the tracking team.
-If any of them have been fixed already, please let us know.
-
-If you know of any other unresolved post-2.6.32 regressions, please let us know
-either and we'll add them to the list.  Also, please let us know if any
-of the entries below are invalid.
-
-Each entry from the list will be sent additionally in an automatic reply to
-this message with CCs to the people involved in reporting and handling the
-issue.
-
-
-Listed regressions statistics:
-
-  Date          Total  Pending  Unresolved
-  ----------------------------------------
-  2010-04-09      140       34          33
-  2010-03-21      133       38          34
-  2010-02-21      115       34          27
-  2010-02-15      112       34          31
-  2010-02-07       97       27          20
-  2010-02-01       85       26          21
-  2010-01-24       75       29          23
-  2010-01-10       55       33          21
-  2009-12-29       36       34          27
-
-
-Unresolved regressions
-----------------------
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15733
-Subject		: Crash when accessing nonexistent GTT entries in i915
-Submitter	: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
-Date		: 2010-03-10 22:09 (30 days old)
-Message-ID	: <1268258994.2183.14.camel@carter>
-References	: http://marc.info/?l=linux-kernel&m=126825901326111&w=4
-Handled-By	: Zhenyu Wang <zhenyuw@linux.intel.com>
-		  Andrew Morton <akpm@linux-foundation.org>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15714
-Subject		: PROBLEM: intelfb driver causes trace
-Submitter	: Troilo, Domenic <Domenic.Troilo@gwl.ca>
-Date		: 2010-04-01 14:52 (8 days old)
-Message-ID	: <CBF11783AA883E41A86C009F3AE5D47F0CAE08C1@GWCORPMAIL4.gwl.bz>
-References	: http://marc.info/?l=linux-kernel&m=127013359722664&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15710
-Subject		: NumLock LED stays on after PC poweroff.
-Submitter	: aceman <acelists@atlas.sk>
-Date		: 2010-04-07 15:13 (2 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15699
-Subject		: rt2500usb driver cannot remain connected
-Submitter	:  <abcd@gentoo.org>
-Date		: 2010-04-05 19:30 (4 days old)
-Handled-By	: Ivo van Doorn <IvDoorn@gmail.com>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15695
-Subject		: calling pm-suspend freezes system
-Submitter	: Werner Lemberg <wl@gnu.org>
-Date		: 2010-04-05 05:13 (4 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15693
-Subject		: Plugging or unplugging notebook charger renders Atheros card unusable
-Submitter	:  <registosites1@hotmail.com>
-Date		: 2010-04-04 21:03 (5 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15604
-Subject		: r8169: Reports incorrect link information
-Submitter	: Michael B. Trausch <mike@trausch.us>
-Date		: 2010-03-22 04:19 (18 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15585
-Subject		: [Bisected Regression in 2.6.32.8] i915 with KMS enabled causes memorycorruption when resuming from suspend-to-disk
-Submitter	: M. Vefa Bicakci <bicave@superonline.com>
-Date		: 2010-03-13 5:11 (27 days old)
-First-Bad-Commit: http://git.kernel.org/git/linus/d8e0902806c0bd2ccc4f6a267ff52565a3ec933b
-Message-ID	: <4B9B1E8F.5090806@superonline.com>
-References	: http://marc.info/?l=linux-kernel&m=126845754409543&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15544
-Subject		: black screen upon S3 resume, syslog has "render error" and "page table error"
-Submitter	: Sanjoy Mahajan <sanjoy@mit.edu>
-Date		: 2010-03-16 00:45 (24 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15534
-Subject		: 07ca:b808 crashing and breaking usb's
-Submitter	: Alex Fiestas <alex@eyeos.org>
-Date		: 2010-03-14 15:56 (26 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15525
-Subject		: Blank screen after some time, after hibernation/suspend
-Submitter	:  <capsel@matrix.inten.pl>
-Date		: 2010-03-12 17:24 (28 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15502
-Subject		: render error detected, EIR: 0x00000010
-Submitter	: Artem Anisimov <aanisimov@inbox.ru>
-Date		: 2010-03-10 05:45 (30 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15466
-Subject		: 2.6.33 dies on modprobe
-Submitter	: M G Berberich <berberic@fmi.uni-passau.de>
-Date		: 2010-02-28 22:12 (40 days old)
-Message-ID	: <20100228221257.GA8858@invalid>
-References	: http://marc.info/?l=linux-kernel&m=126739570819208&w=2
-Handled-By	: Américo Wang <xiyou.wangcong@gmail.com>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15465
-Subject		: 2.6.33 problems
-Submitter	: werner@guyane.dyn-o-saur.com
-Date		: 2010-02-27 17:09 (41 days old)
-Message-ID	: <1267290551.13148@guyane.dyn-o-saur.com>
-References	: http://marc.info/?l=linux-kernel&m=126729183719672&w=2
-Handled-By	: Tejun Heo <tj@kernel.org>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15454
-Subject		: r8169 exits with error -22 since 2.6.33
-Submitter	: Conrad Kostecki <ConiKost@gmx.de>
-Date		: 2010-03-05 22:32 (35 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15439
-Subject		: Laptop does consume more power when booted "cold" -- Thinkpad X200s
-Submitter	:  <johannes.schlatow@googlemail.com>
-Date		: 2010-03-03 23:09 (37 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15418
-Subject		: battery status info broken; missing entry in ec_dmi_table for specific MSI hardware (notebook)
-Submitter	: Tom-Steve Watzke <tswatzke@arcor.de>
-Date		: 2010-03-01 07:25 (39 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15392
-Subject		: The kernel does not start up.
-Submitter	: Kristóf Ralovich <kristof.ralovich@gmail.com>
-Date		: 2010-02-25 06:52 (43 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15376
-Subject		: regression (oops) with usb in 2.6.33-rc8
-Submitter	: Christophe Fergeau <cfergeau@mandriva.com>
-Date		: 2010-02-23 10:58 (45 days old)
-Handled-By	: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15317
-Subject		: Lockdep report while running aplay with pulse as the default
-Submitter	: Ed Tomlinson <edt@aei.ca>
-Date		: 2010-02-13 17:17 (55 days old)
-Message-ID	: <201002131217.10579.edt@aei.ca>
-References	: http://marc.info/?l=linux-kernel&m=126608146427546&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15311
-Subject		: Starting pulseaudio causes a NULL pointer hit
-Submitter	: Ed Tomlinson <edt@aei.ca>
-Date		: 2010-02-14 23:41 (54 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15305
-Subject		: Dell video dies when booting
-Submitter	: David Ronis <ronis@ronispc.chem.mcgill.ca>
-Date		: 2010-02-14 1:07 (54 days old)
-Message-ID	: <1266109622.11290.10.camel@montroll.chem.mcgill.ca>
-References	: http://marc.info/?l=linux-kernel&m=126611098225127&w=4
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15278
-Subject		: lockdep warning for iscsi in 2.6.33-rc6
-Submitter	: Tao Ma <tao.ma@oracle.com>
-Date		: 2010-02-09 6:59 (59 days old)
-Message-ID	: <4B7107CF.3060703@oracle.com>
-References	: http://marc.info/?l=linux-kernel&m=126569884330200&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15277
-Subject		: 2.6.33-rc6 crashes on resume
-Submitter	: Bill Davidsen <davidsen@roadwarrior3.tmr.com>
-Date		: 2010-02-08 23:03 (60 days old)
-Message-ID	: <4B70982F.8090208@roadwarrior3.tmr.com>
-References	: http://marc.info/?l=linux-kernel&m=126567021801935&w=2
-Handled-By	: Rafael J. Wysocki <rjw@sisk.pl>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15276
-Subject		: latest git kernel: general protection fault: 0000 [#1]
-Submitter	: Markus Trippelsdorf <markus@trippelsdorf.de>
-Date		: 2010-02-09 8:36 (59 days old)
-Message-ID	: <20100209083605.GA1766@arch.tripp.de>
-References	: http://marc.info/?l=linux-kernel&m=126570498804223&w=2
-Handled-By	: Jérôme Glisse <glisse@freedesktop.org>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15259
-Subject		: Corruption with OpenGL since Intel's big DRM push on i945
-Submitter	: Alexandre Demers <papouta@hotmail.com>
-Date		: 2010-02-08 13:19 (60 days old)
-First-Bad-Commit: http://git.kernel.org/git/linus/76446cac68568fc7f5168a27deaf803ed22a4360
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15246
-Subject		: BUG: Bad page state in process portageq
-Submitter	: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-Date		: 2010-02-07 0:45 (61 days old)
-References	: http://marc.info/?l=linux-kernel&m=126550356515887&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15244
-Subject		: PROBLEM: hda-intel divide by zero kernel crash in azx_position_ok()
-Submitter	: Jody Bruchon <jody@nctritech.com>
-Date		: 2010-02-06 0:32 (62 days old)
-References	: http://marc.info/?l=linux-kernel&m=126541276028173&w=2
-Handled-By	: Takashi Iwai <tiwai@suse.de>
-		  Jody Bruchon <jody@nctritech.com>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15076
-Subject		: System panic under load with clockevents_program_event
-Submitter	: okias <d.okias@gmail.com>
-Date		: 2010-01-17 13:03 (82 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15036
-Subject		: soft lockup in dmesg after suspend/resume
-Submitter	: ykzhao <yakui.zhao@intel.com>
-Date		: 2010-01-04 5:36 (95 days old)
-References	: http://marc.info/?l=linux-kernel&m=126258356202722&w=4
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=14950
-Subject		: tbench regression with 2.6.33-rc1
-Submitter	: Lin Ming <ming.m.lin@intel.com>
-Date		: 2009-12-25 11:11 (105 days old)
-References	: http://marc.info/?l=linux-kernel&m=126174044213172&w=4
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=14937
-Subject		: WARNING: at kernel/lockdep.c:2830
-Submitter	: Grant Wilson <grant.wilson@zen.co.uk>
-Date		: 2009-12-27 13:35 (103 days old)
-References	: http://marc.info/?l=linux-kernel&m=126192220404829&w=4
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=14792
-Subject		: Misdetection of the TV output
-Submitter	: Santi <santi@agolina.net>
-Date		: 2009-12-12 13:28 (118 days old)
-First-Bad-Commit: http://git.kernel.org/git/linus/27dfaf4f5825a119305db1bc63bef30ed400e376
-Handled-By	: Zhao Yakui <yakui.zhao@intel.com>
-
-
-Regressions with patches
-------------------------
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15328
-Subject		: high load avg, extreme sluggishness on T41 w/ Radeon Mobility M7
-Submitter	: John W. Linville <linville@tuxdriver.com>
-Date		: 2010-02-16 20:25 (52 days old)
-Handled-By	: Francisco Jerez <currojerez@riseup.net>
-Patch		: http://bugzilla.kernel.org/attachment.cgi?id=25118
-
-
-For details, please visit the bug entries and follow the links given in
-references.
-
-As you can see, there is a Bugzilla entry for each of the listed regressions.
-There also is a Bugzilla entry used for tracking the regressions introduced
-between 2.6.32 and 2.6.33, unresolved as well as resolved, at:
-
-http://bugzilla.kernel.org/show_bug.cgi?id=14885
-
-Please let the tracking teak know if there are any Bugzilla entries that
-should be added to the list in there.
-
-Thanks!
-
+Hello,
+
+On 04/08/2010 06:40 PM, Sonic Zhang wrote:
+> There is memory leak with you patch. Free memory continuously
+> decreases when running test_pcpu. After about 30 minutes, kernel hangs
+> in out_of_memory().
+> 
+> root/> while [ 1 ]; do modprobe test_pcpu; rmmod test_pcpu; cat
+> proc/meminfo; done
+
+Yeap, chunk->map wasn't freed in the original version.  In the updated
+split version I posted yesterday, it's fixed.  Can you please test
+that code?
+
+Thanks.
+
+-- 
+tejun
