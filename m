@@ -1,111 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933170Ab0DHXjU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 19:39:20 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:49175 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759011Ab0DHXi4 (ORCPT
+	id S933825Ab0DHXj2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 19:39:28 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:59853 "HELO
+	outbound-mail-158.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933759Ab0DHXjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 19:38:56 -0400
-Date: Fri, 9 Apr 2010 09:38:37 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: John Berthels <john@humyo.com>
-Cc: linux-kernel@vger.kernel.org, Nick Gregory <nick@humyo.com>,
-       Rob Sanderson <rob@humyo.com>, xfs@oss.sgi.com, linux-mm@kvack.org
-Subject: Re: PROBLEM + POSS FIX: kernel stack overflow, xfs, many disks,
- heavy write load, 8k stack, x86-64
-Message-ID: <20100408233837.GP11036@dastard>
-References: <4BBC6719.7080304@humyo.com>
- <20100407140523.GJ11036@dastard>
- <4BBCAB57.3000106@humyo.com>
- <20100407234341.GK11036@dastard>
- <20100408030347.GM11036@dastard>
- <4BBDC92D.8060503@humyo.com>
- <4BBDEC9A.9070903@humyo.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BBDEC9A.9070903@humyo.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 8 Apr 2010 19:39:19 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=bqaZLBZ+kMw8V2Hcu2I4jfVqXj0xNrwDNE4t0WktIDw1Jl3XRSvCiyfByZjFn4hz4IgGytx01tF9jUac25h6UrmKTAp5GVMdLoRfjULrLAsn8JutvGNOO8sOMBKEpX9c;
+Date: Thu, 8 Apr 2010 16:39:16 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       "Adam Jackson" <ajax@redhat.com>, "Eric Anholt" <eric@anholt.net>,
+       "Santi" <santi@agolina.net>, "Zhao Yakui" <yakui.zhao@intel.com>
+Subject: Re: [Bug #14792] Misdetection of the TV output
+Message-ID: <20100408163916.67d054ef@virtuousgeek.org>
+In-Reply-To: <onZ81XwyNTD.A.MXE.uJmvLB@chimera>
+References: <cjwJ7Pf9h0L.A.9pB.1DmvLB@chimera>
+	<onZ81XwyNTD.A.MXE.uJmvLB@chimera>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 08, 2010 at 03:47:54PM +0100, John Berthels wrote:
-> John Berthels wrote:
-> >I'll reply again after it's been running long enough to draw conclusions.
-> We're getting pretty close on the 8k stack on this box now. It's
-> running 2.6.33.2 + your patch, with THREAD_ORDER 1, stack tracing
-> and CONFIG_LOCKDEP=y. (Sorry that LOCKDEP is on, please advise if
-> that's going to throw the figures and we'll restart the test systems
-> with new kernels).
+On Fri,  9 Apr 2010 00:54:29 +0200 (CEST)
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.32 and 2.6.33.
 > 
-> This is significantly more than 5.6K, so it shows a potential
-> problem? Or is 720 bytes enough headroom?
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.32 and 2.6.33.  Please verify if it still should
+> be listed and let the tracking team know (either way).
 > 
-> jb
 > 
-> [ 4005.541869] apache2 used greatest stack depth: 2480 bytes left
-> [ 4005.541973] apache2 used greatest stack depth: 2240 bytes left
-> [ 4005.542070] apache2 used greatest stack depth: 1936 bytes left
-> [ 4005.542614] apache2 used greatest stack depth: 1616 bytes left
-> [ 5531.406529] apache2 used greatest stack depth: 720 bytes left
-> 
-> $ cat /sys/kernel/debug/tracing/stack_trace
->        Depth    Size   Location    (55 entries)
->        -----    ----   --------
->  0)     7440      48   add_partial+0x26/0x90
->  1)     7392      64   __slab_free+0x1a9/0x380
->  2)     7328      64   kmem_cache_free+0xb9/0x160
->  3)     7264      16   free_buffer_head+0x25/0x50
->  4)     7248      64   try_to_free_buffers+0x79/0xc0
->  5)     7184     160   xfs_vm_releasepage+0xda/0x130 [xfs]
->  6)     7024      16   try_to_release_page+0x33/0x60
->  7)     7008     384   shrink_page_list+0x585/0x860
->  8)     6624     528   shrink_zone+0x636/0xdc0
->  9)     6096     112   do_try_to_free_pages+0xc2/0x3c0
-> 10)     5984     112   try_to_free_pages+0x64/0x70
-> 11)     5872     256   __alloc_pages_nodemask+0x3d2/0x710
-> 12)     5616      48   alloc_pages_current+0x8c/0xe0
-> 13)     5568      32   __page_cache_alloc+0x67/0x70
-> 14)     5536      80   find_or_create_page+0x50/0xb0
-> 15)     5456     160   _xfs_buf_lookup_pages+0x145/0x350 [xfs]
-> 16)     5296      64   xfs_buf_get+0x74/0x1d0 [xfs]
-> 17)     5232      48   xfs_buf_read+0x2f/0x110 [xfs]
-> 18)     5184      80   xfs_trans_read_buf+0x2bf/0x430 [xfs]
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=14792
+> Subject		: Misdetection of the TV output
+> Submitter	: Santi <santi@agolina.net>
+> Date		: 2009-12-12 13:28 (118 days old)
+> First-Bad-Commit: http://git.kernel.org/git/linus/27dfaf4f5825a119305db1bc63bef30ed400e376
+> Handled-By	: Zhao Yakui <yakui.zhao@intel.com>
 
-We're entering memory reclaim with almost 6k of stack already in
-use. If we get down into the IO layer and then have to do a memory
-reclaim, then we'll have even less stack to work with. It looks like
-memory allocation needs at least 2KB of stack to work with now,
-so if we enter anywhere near the top of the stack we can blow it...
+Looks like Yakui just pushed the fix for this one, so hopefully we'll
+be able to close it soon.
 
-Basically this trace is telling us the stack we have to work with
-is:
-
-	2KB memory allocation
-	4KB page writeback
-	2KB write foreground throttling path
-
-So effectively the storage subsystem (NFS, filesystem, DM, MD,
-device drivers) have about 4K of stack to work in now. That seems to
-be a lot less than last time I looked at this, and we've been really
-careful not to increase XFS's stack usage for quite some time now.
-
-Hence I'm not sure exactly what to do about this, John. I can't
-really do much about the stack footprint of XFS as all the
-low-hanging fruit has already been trimmed. Even if I convert the
-foreground throttling to not issue IO, the background flush threads
-still have roughly the same stack usage, so a memory allocation and
-reclaim in the wrong place could still blow the stack....
-
-I'll have to have a bit of a think on this one - if you could
-provide further stack traces as they get deeper (esp. if they go
-past 8k) that would be really handy.
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Jesse Barnes, Intel Open Source Technology Center
