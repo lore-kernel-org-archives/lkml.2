@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758204Ab0DHJk2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 05:40:28 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36766 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753799Ab0DHJkZ convert rfc822-to-8bit (ORCPT
+	id S1758286Ab0DHJnQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 05:43:16 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:62087 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756382Ab0DHJnM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 05:40:25 -0400
+	Thu, 8 Apr 2010 05:43:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ZxpecjnldLTvuWDgK6Gp+cATwivCwhdBupHiewLzBhas3Pgf/V2Yg3oOx3d1ob4m6r
-         8j5JQ+3dullA4oI3SJepK4BcqBVQDEIl1iw0T/90aISTn6GoEyRbDqtjyUsnBMjSX8Wi
-         KO2BsvCy/XrTZvMuV7zrGskeqIwZ3X63C8k6s=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=N9milAMdJGMMBVHjHOH97tgzqr9OkeyCQo8KR6c39qbNu6sjBtcKSizl3+yxSbGbkx
+         IGABvcwTWfiN3OfnXsPRw6NLjFZcB9G+98EIun/3pOk5d1EgMtL6KQvzd/SCc+kBnUaK
+         YnJJjHf8n/z7RGyoSNlZ/pmTzaUTGnBh5SvK0=
 MIME-Version: 1.0
-In-Reply-To: <4BBD42BE.20307@kernel.org>
-References: <1268989324-7575-1-git-send-email-graff.yang@gmail.com>
-	 <4BA449E2.3080707@kernel.org>
-	 <7d86d44a1003211933h6628ae04vc9d1c393e1733ce5@mail.gmail.com>
-	 <4BB47367.8030305@kernel.org>
-	 <y2l4e5ebad51004060228t814129beqd0d90059e247e48d@mail.gmail.com>
-	 <4BBD42BE.20307@kernel.org>
-Date: Thu, 8 Apr 2010 17:40:24 +0800
-Message-ID: <x2p4e5ebad51004080240nc3f5846am27fa259debf04302@mail.gmail.com>
-Subject: Re: [PATCH] mm/nommu.c:Dynamic alloc/free percpu area for nommu
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: graff yang <graff.yang@gmail.com>, dhowells@redhat.com,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       uclinux-dist-devel@blackfin.uclinux.org
+In-Reply-To: <v2ocabda6421004080231r7b7a734ao9fce206a82bf944b@mail.gmail.com>
+References: <1269340105-6503-1-git-send-email-chripell@fsfe.org>
+	 <1269340170-6558-1-git-send-email-chripell@fsfe.org>
+	 <20100329104838.49c18075@feng-i7>
+	 <v2ocabda6421004080231r7b7a734ao9fce206a82bf944b@mail.gmail.com>
+Date: Thu, 8 Apr 2010 11:43:10 +0200
+X-Google-Sender-Auth: a889b3b547976127
+Message-ID: <h2xcabda6421004080243ifd2a47e4u8033a187b415d031@mail.gmail.com>
+Subject: Re: [PATCH v1 3/4] max3100: adds console support for MAX3100
+From: christian pellegrin <chripell@fsfe.org>
+To: Feng Tang <feng.tang@intel.com>
+Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "greg@kroah.com" <greg@kroah.com>,
+       "david-b@pacbell.net" <david-b@pacbell.net>,
+       "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+       "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+       "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+       "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 8, 2010 at 10:43 AM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, Sonic.
+On Thu, Apr 8, 2010 at 11:31 AM, christian pellegrin <chripell@fsfe.org> wrote:
+> On Mon, Mar 29, 2010 at 4:48 AM, Feng Tang <feng.tang@intel.com> wrote:
 >
->> I tested your patch on NOMMU bf561 with SMP enabled. It is compiled
->> and boots without problem. Because there are few percpu data defined
->> in bf561 SMP kernel, the functions in mm/percpu-km.c may not be
->> executed with a simple test. But, since these functions are simple
->> malloc/free, I don't see any problem.
+>>> +             tx |= MAX3100_WD | MAX3100_RTS;
+>>
+>> Does this imply to have to work with HW flow control? on my platform
+>> I have to remove the RTS bit to make it work.
+>>
 >
-> Great, thanks for testing.  Just in case, can you please test with the
-> attached module?  In test-pcpu.c, the cmds table directs the module
-> what to allocate and free.  { size > 0, tag } entry makes it allocate
-> an area with the specified size and tag and { 0, tag } entry makes it
-> free all areas with the matching tag.  The existing table makes pretty
-> large amount of allocations and might not work very well on nommu
-> configuration.  There are also several DEFINE_PER_CPU() instances to
-> test module static percpu area alloc/free.  Please insmod/rmmod in
-> loop and make sure it doesn't leak any memory or crashes the machine.
+> Finally I had time to check this. If you compare the 8250 (or similar)
+> data-sheet with the MAX31x0 one you see that the handling of the
+> RTX/CTS bits is exactly the same (8250 about RTS bit for example:
+> "When any of these bits are cleared, the associated output is forced
+> high." and MAX3110: "Request-to-Send Bit. Controls the state of the
+> RTS output. This bit is reset on power-up (RTS
+> bit = 0 sets the RTS pin = logic high)."). If you look at the 8250.c
+> driver (grep for UART_MCR_RTS) you notice that the bit is set on
+> device open (together with DTR of course). So I think the driver is
+> doing the right thing here.
 >
 
-Tejun,
-
-There is memory leak with you patch. Free memory continuously
-decreases when running test_pcpu. After about 30 minutes, kernel hangs
-in out_of_memory().
+anyway I'll set it to on only in case the flow control is enabled. So
+even if, for some reason, you have to keep it to off on your platform,
+it won't make troubles.
 
 
-root/> while [ 1 ]; do modprobe test_pcpu; rmmod test_pcpu; cat
-proc/meminfo; done
-
-
-Sonic
-
-> Thanks.
->
-> --
-> tejun
->
+-- 
+Christian Pellegrin, see http://www.evolware.org/chri/
+"Real Programmers don't play tennis, or any other sport which requires
+you to change clothes. Mountain climbing is OK, and Real Programmers
+wear their climbing boots to work in case a mountain should suddenly
+spring up in the middle of the computer room."
