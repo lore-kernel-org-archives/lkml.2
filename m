@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758605Ab0DHMOw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 08:14:52 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49038
+	id S1758609Ab0DHMSw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 08:18:52 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59029
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754341Ab0DHMOu (ORCPT
+	by vger.kernel.org with ESMTP id S1750771Ab0DHMSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 08:14:50 -0400
-Date: Thu, 08 Apr 2010 05:14:53 -0700 (PDT)
-Message-Id: <20100408.051453.231567150.davem@davemloft.net>
-To: mschnell@lumino.de
-Cc: alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org,
-       nios2-dev@sopc.et.ntust.edu.tw
-Subject: Re: atomic RAM ?
+	Thu, 8 Apr 2010 08:18:48 -0400
+Date: Thu, 08 Apr 2010 05:18:50 -0700 (PDT)
+Message-Id: <20100408.051850.51394263.davem@davemloft.net>
+To: rakesh@chelsio.com
+Cc: netdev@vger.kernel.org, linux-scsi@vger.kernel.org,
+       open-iscsi@googlegroups.com, linux-kernel@vger.kernel.org,
+       kxie@chelsio.com, James.Bottomley@hansenpartnership.com,
+       michaelc@cs.wisc.edu
+Subject: Re: cxgb4i submission
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <4BBDC7D4.6040301@lumino.de>
-References: <4BBD86A5.5030109@lumino.de>
-	<20100408114542.47b6589a@lxorguk.ukuu.org.uk>
-	<4BBDC7D4.6040301@lumino.de>
+In-Reply-To: <1270728855-20951-1-git-send-email-rakesh@chelsio.com>
+References: <1270728855-20951-1-git-send-email-rakesh@chelsio.com>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -26,24 +26,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Schnell <mschnell@lumino.de>
-Date: Thu, 08 Apr 2010 14:11:00 +0200
+From: Rakesh Ranjan <rakesh@chelsio.com>
+Date: Thu,  8 Apr 2010 17:44:12 +0530
 
-> If one thread locks the "cpu_atomic_instruction_lock" and now the Kernel
-> does a task switch and now a second thread tries to lock it as well,
-> same would need to do a kernel call to do the waiting.
+> This driver depends upon cxgb4 driver, posted recently on netdev and
+> now part of net-next repo.
 
-Using the spinlock array idea also doesn't work in userspace
-because any signal handler that tries to do an atomic on the
-same object will deadlock on the spinlock.
+It went into the net-2.6 repo, not net-next-2.6
 
-You'll have have to do this entirely in the kernel, and your
-FUTEX implementation will have to always make the futex()
-system call.
-
-It's the only way to do this and have it work completely.
-
-We have to do something similar on sparc32, and the signal handler
-deadlocks are very real, many glibc testcases that use threads
-and pthread mutexes will deadlock because of this very issue if
-you try to do the spinlock trick in userspace.
+And it is even in Linus's tree now.
