@@ -1,35 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933603Ab0DHU2j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 16:28:39 -0400
-Received: from kroah.org ([198.145.64.141]:42735 "EHLO coco.kroah.org"
+	id S933514Ab0DHU2r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 16:28:47 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:41103 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933552Ab0DHU2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 16:28:01 -0400
-Date: Thu, 8 Apr 2010 13:21:04 -0700
-From: Greg KH <greg@kroah.com>
-To: Eli Lindsey <eli@siliconsprawl.com>
-Cc: gregkh@suse.de, d@teklibre.com, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] staging: frontier: fix extra spaces in alphatrack.c
-Message-ID: <20100408202103.GA10941@kroah.com>
-References: <1268115333-7971-1-git-send-email-eli@siliconsprawl.com>
- <1268115333-7971-2-git-send-email-eli@siliconsprawl.com>
+	id S933580Ab0DHU2X convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 16:28:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
+Subject: Re: my KDE-4.4.2 Battery Monitor ppplet dislikes the ACPI changes in 2.6.34-rc3 betweeen f5284e7..cf90bfe
+Date: Thu, 8 Apr 2010 22:31:42 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+       Len Brown <lenb@kernel.org>
+References: <201004081812.10656.toralf.foerster@gmx.de> <201004081817.29561.toralf.foerster@gmx.de>
+In-Reply-To: <201004081817.29561.toralf.foerster@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1268115333-7971-2-git-send-email-eli@siliconsprawl.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201004082231.42327.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 09, 2010 at 12:15:31AM -0600, Eli Lindsey wrote:
-> This is a patch to alphatrack.c that removes three cases of unnecessary
-> whitespace before a quoted newline found by the checkpatch.pl tool
+On Thursday 08 April 2010, Toralf Förster wrote:
+> 
+> Toralf Förster wrote at 18:12:09
+> > because now it tells me that my ThinkPad T400 has 0 cpus and 0 batteries
+> > ...
+> 
+> FWIW : 
+> 
+> tfoerste@n22 ~/tmp $ grep "ACPI E" dmesg-2.6.34-rc3-00406-gcf90bfe
+> ACPI Error: Null Object! Obj=(null) State=f676bc00 Num=0 
+> (20100121/dswstate-183)
+> ACPI Error (psparse-0537): Method parse/execution failed 
+> [\_SB_.PCI0.LPC_.EC__.GBIF] (Node f70d4e28), AE_BAD_PARAMETER
+> ACPI Error (psparse-0537): Method parse/execution failed 
+> [\_SB_.PCI0.LPC_.EC__.BAT0._BIF] (Node f70d4d60), AE_BAD_PARAMETER
+> ACPI Exception: AE_BAD_PARAMETER, Evaluating _BIF (20100121/battery-405)
+> thinkpad_acpi: ThinkPad ACPI Extras v0.24
 
-This is already in the tree.
+Please always Cc linux-acpi when reporting ACPI problems (now added).
 
-thanks,
-
-greg k-h
+Thanks,
+Rafael
