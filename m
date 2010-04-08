@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758286Ab0DHMHN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 08:07:13 -0400
-Received: from qw-out-2122.google.com ([74.125.92.25]:31212 "EHLO
-	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804Ab0DHMHJ convert rfc822-to-8bit (ORCPT
+	id S1758567Ab0DHMLP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 08:11:15 -0400
+Received: from ns2.intersolute.de ([193.110.43.67]:45032 "EHLO
+	ns2.intersolute.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab0DHMLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 08:07:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Bvo3H7XT44nIAmole0YdmKgz8knK/6Bkkvtf2mPVvr8lN+Q56E1abgjGHDG89hdXmo
-         mpOiczM/eigodDB68iCXL5rwhfAW5jO7EITPSwAdfhqhcgbINZ8nrdXCIHK0gLmyc+f4
-         guUxTjbXxsN0i3X3eQUPI4jYh2/TTQPIyxSRw=
+	Thu, 8 Apr 2010 08:11:13 -0400
+Message-ID: <4BBDC7D4.6040301@lumino.de>
+Date: Thu, 08 Apr 2010 14:11:00 +0200
+From: Michael Schnell <mschnell@lumino.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-2.3 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20100408110532.GA14451@atrey.karlin.mff.cuni.cz>
-References: <20100313122754.GD2192@elf.ucw.cz> <20100401060624.GA1329@ucw.cz> 
-	<201004072226.34272.maciej.rutecki@gmail.com> <201004072252.08354.marek.vasut@gmail.com> 
-	<20100408044409.GA14982@elf.ucw.cz> <i2mf17812d71004080353oa8459642v33f88993eee87a99@mail.gmail.com> 
-	<20100408110532.GA14451@atrey.karlin.mff.cuni.cz>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Thu, 8 Apr 2010 20:06:48 +0800
-Message-ID: <k2pf17812d71004080506of67ae870qceb515f5038a9651@mail.gmail.com>
-Subject: Re: [regression] 2.6.34-rc1 to -rc3 on zaurus: no longer boots
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Marek Vasut <marek.vasut@gmail.com>, linux-arm-kernel@lists.infradead.org,
-       maciej.rutecki@gmail.com, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       thommycheck@gmail.com, dbaryshkov@gmail.com,
-       Cyril Hrubis <metan@ucw.cz>, arminlitzel@web.de,
-       kernel list <linux-kernel@vger.kernel.org>, utx@penguin.cz,
-       lenz@cs.wisc.edu, rpurdie@rpsys.net, omegamoon@gmail.com,
-       zaurus-devel@www.linuxtogo.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linux-kernel@vger.kernel.org, nios2-dev <nios2-dev@sopc.et.ntust.edu.tw>
+Subject: Re: atomic RAM ?
+References: <4BBD86A5.5030109@lumino.de> <20100408114542.47b6589a@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100408114542.47b6589a@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-14
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/4/8 Pavel Machek <pavel@ucw.cz>:
+On 04/08/2010 12:45 PM, Alan Cox wrote:
+> Take a look at sparc 32bit. That only has a single meaningful atomic
+> instruction (swap byte with 0xFF). It provides all the kernel atomic_t
+> operations via this: arch/sparc/lib/atomic32.c. That bitops are done a
+> similar way, which leaves spinlocks and the like.
+>   
+As the NIOS and similar "load/store" archs by the underlaying hardware
+design can't provide any atomic memory read-modify write operations
+(without or with bus lock) at all, we need to search for a completely
+CPU-hardware independent way of doing atomic stuff both with non-SMP and
+SMP designs. The new ARM processors provide "load locked" / "store
+conditional" instructions to overcome this with a combination of
+hardware and software means.
+> More importantly if your true locks in the FPGA are really fast in CPU
+> terms then you can think of every other atomic instructions as being
+> implemented using
 >
->> >> > > > > I tried compiling 2.6.34-rc1, and it does not boot :-(. It does not
->> >> > > > > seem to even reset the framebuffer (I'm using kexec -- so it stays
->> >> > > > > stuck on on previous screen).
->> >> > >
->> >> > > Tried again with -rc2 and -rc3, and neither boots :-(. I did not have
->> >> > > time to set up serial console, yet :-(. Any ideas?
->> >> >
->> >> > I created a Bugzilla entry at
->> >> > https://bugzilla.kernel.org/show_bug.cgi?id=15712
->> >> > for your bug report, please add your address to the CC list in there,
->> >> >  thanks!
->> >> >
->> >> Pavel, you broke it ... and here you say something about sane arm maintainers
->> >> ;-)
->> >
->> > ? You know which patch causes it ?
->>
->> Just have some time to try this out on my corgi, and the kernel runs
->> happily.
->>
->> Pavel,
->>
->> Which exact model are you running your kernel?
->
-> It is Zaurus SL-C3000 (aka spitz). I'm using kexec, but that used to
-> work. Should I try minimal config?
+> 		lock(cpu_atomic_instruction_lock)
+> 		do bits
+> 		unlock(cpu_atomic_instruction_lock)
+>   
+I feel that this does not help.
+The important task (for me right now) is providing decent FUTEX
+(multiple of those ! ). Here you need to do atomic instructions in user
+spaces on the (multiple) FUTEX handling word (so interrupt
+disabling/enabling  is not possible). If you try to implement this by
+using a _single_ lock (surrounding the would-be atomic instruction
+sequence), this IMHO only lifts the problem to another level:
 
-I'm using kexec as well, but on corgi. My akita is not on hands these
-days, otherwise I can give it a try. I guess there is nothing fundamentally
-wrong, so yes, I think it's feasible to try minimal config.
+If one thread locks the "cpu_atomic_instruction_lock" and now the Kernel
+does a task switch and now a second thread tries to lock it as well,
+same would need to do a kernel call to do the waiting. So the
+"cpu_atomic_instruction_lock" is nothing but a FUTEX itself and asks for
+the same complexity the FUTEX handling needs: (A) it needs an SMP-safe
+user space atomic read-modify-write <here of course only a single one
+instead of multiple> and (B) it needs the Kernel-infrastructure to
+handle this (see the multiple articles available on Futex being nasty ;)
+. The "cpu_atomic_instruction_lock" Futex only provides for atomic
+operations and thus the normal  (here: second level) Futex needs to stay
+in place, as well.
+
+I have no idea how the Kernel infrastructure for two-level Futex could
+be implemented.
+
+> So I don't actually think you need any kernel core changes to get going,
+> and given the kernel dynamically allocates a lot of locks I suspect
+> trying to dynamically manage atomic ram allocations is going to cost more
+> than executing a few instructions here and there under a single very fast
+> hardware assisted lock.
+>   
+
+I suppose the current NIOS _Kernel_ code implements atomic operations by
+disabling/enabling the interrupts. This of course is not possible with
+SMP designs and OTOH it's not possible in user space. That is why
+implementing FUTEX and SMP seems to ask for similar considerations.
+
+-Michael
