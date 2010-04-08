@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933294Ab0DHTrS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 15:47:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36475 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933243Ab0DHTrQ (ORCPT
+	id S933298Ab0DHTtj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 15:49:39 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43154 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933211Ab0DHTti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 15:47:16 -0400
-Subject: Re: [REVERT] be6b38bcb175613f239e0b302607db346472c6b6.
- v2.6.34-rc3-406 oops with 4965AGN wireless
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jeff Chua <jeff.chua.linux@gmail.com>, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-       Shanyu Zhao <shanyu.zhao@intel.com>,
-       Reinette Chatre <reinette.chatre@intel.com>, stable@kernel.org,
-       Linux Kernel <linux-kernel@vger.kernel.org>, johannes@sipsolutions.net
-In-Reply-To: <alpine.LFD.2.00.1004081017360.3558@i5.linux-foundation.org>
-References: <Pine.LNX.4.64.1004090104570.7829@boston.corp.fedex.com>
-	 <alpine.LFD.2.00.1004081017360.3558@i5.linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Apr 2010 21:47:13 +0200
-Message-ID: <1270756033.20295.2982.camel@laptop>
+	Thu, 8 Apr 2010 15:49:38 -0400
+Date: Thu, 8 Apr 2010 12:48:43 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: yauhen.kharuzhy@promwad.com, linux-kernel@vger.kernel.org,
+       Jeff Mahoney <jeffm@suse.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+       Sonic Zhang <sonic.adi@gmail.com>
+Subject: Re: [PATCH] IIO: Fix adding more than one iio device eventset
+Message-Id: <20100408124843.ed53e39d.akpm@linux-foundation.org>
+In-Reply-To: <4BBCCBDC.8080609@cam.ac.uk>
+References: <1270652625-30640-1-git-send-email-yauhen.kharuzhy@promwad.com>
+	<4BBCCBDC.8080609@cam.ac.uk>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-08 at 10:19 -0700, Linus Torvalds wrote:
-> 
-> On Fri, 9 Apr 2010, Jeff Chua wrote:
-> > 
-> > I'm having problem with the latest git pull 2 days ago with the 4965AGN
-> > wireless.
-> > 
-> > Starting the wireless with WPA2 resulted in system hard freeze. Reverting the
-> > commit below solves the problem.
-> 
-> I don't mind reverting patches, but I hate doing it blind and without 
-> _any_ chance for the guilty party to try to fix it first.
-> 
-> Can you post the oops that your subject implies happened? Maybe the driver 
-> authors can find the proper fix without a revert?
-> 
-> I'll revert if if I hear no updates in a couple of days - please remind 
-> me.
+On Wed, 07 Apr 2010 19:15:56 +0100
+Jonathan Cameron <jic23@cam.ac.uk> wrote:
 
-Does remind me of the iwlagn trouble I had, see
-https://bugzilla.kernel.org/show_bug.cgi?id=15667 and
-https://bugzilla.kernel.org/attachment.cgi?id=25881 for a patch that
-seems to have cured my laptop.
+> Thanks for the patch.  The first bug was fixed by a patch from Sonic Zhang.
+> Andrew Morton picked it up so it is in the mm tree.  Thanks for the report
+> of this particularly horrible bug though as had been there quite a while before
+> Sonic pointed it out!
 
+hm.  Is it a "horrible bug"?  I had assumed that it was a minor bug and
+had staged the patch for 2.6.35.  Was that a mistake?
