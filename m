@@ -1,51 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933323Ab0DHTvQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 15:51:16 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:40840 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933243Ab0DHTvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 15:51:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Subject: Re: [Bug #15480] [regression] Fails to boot properly unless given pci=nocrs
-Date: Thu, 8 Apr 2010 21:54:15 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Yanko Kaneti" <yaneti@declera.com>
-References: <6Pphclm24fK.A.lSF.qsPvLB@chimera> <JVS2s9dmTsP.A.pr.JvPvLB@chimera> <201004071602.22200.bjorn.helgaas@hp.com>
-In-Reply-To: <201004071602.22200.bjorn.helgaas@hp.com>
+	id S933308Ab0DHTvM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 15:51:12 -0400
+Received: from mail-pz0-f193.google.com ([209.85.222.193]:63488 "EHLO
+	mail-pz0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933211Ab0DHTvJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 15:51:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Gw7MmbFZ7q5Fgyh7HriDl0A3SR/qgUIy02rDe3zgJKiVRC+LLGvGSDAWlmeyGCQLMv
+         AyT73P/YpUf0CXZXavpfAqKYEQIDqy4WmhnlctdBJw6p4arAb6OqfMD3nBGc8yBLAKPu
+         21d5W0JBCZ0eMAUIMvxxMnShPPmtyFH9+Pq7I=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004082154.15714.rjw@sisk.pl>
+In-Reply-To: <j2s5bdc1c8b1004081201odd560a13z3a00c5c2325b4293@mail.gmail.com>
+References: <x2w5bdc1c8b1004051355o3f803c75t2515ef46320e00bd@mail.gmail.com>
+	 <4BBD1957.90502@gmail.com>
+	 <k2l5bdc1c8b1004072051h957c3f1crf0a139bd96a093a4@mail.gmail.com>
+	 <v2h51f3faa71004072054y4733bf9bq80a04574bebbadba@mail.gmail.com>
+	 <4BBD7997.1020803@ladisch.de>
+	 <l2v5bdc1c8b1004080753k7787e635p4a70d4a1a777984d@mail.gmail.com>
+	 <4BBDEF93.6070306@ladisch.de>
+	 <z2i5bdc1c8b1004080924q1b8d3994vd69c9c9dd0bb2f78@mail.gmail.com>
+	 <k2t51f3faa71004081040l326458e4zf89854ec32a57940@mail.gmail.com>
+	 <j2s5bdc1c8b1004081201odd560a13z3a00c5c2325b4293@mail.gmail.com>
+Date: Thu, 8 Apr 2010 12:51:09 -0700
+Message-ID: <i2w5bdc1c8b1004081251x2d5b031dtccb6d5726e820688@mail.gmail.com>
+Subject: Re: Failed to initialize MSI interrupts && ioremap reserve_memtype 
+	failed -22
+From: Mark Knecht <markknecht@gmail.com>
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>,
+       Linux Kernel List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 April 2010, Bjorn Helgaas wrote:
-> On Wednesday 07 April 2010 03:08:37 pm Rafael J. Wysocki wrote:
-> > This message has been generated automatically as a part of a summary report
-> > of recent regressions.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.33.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15480
-> > Subject		: [regression] Fails to boot properly unless given pci=nocrs
-> > Submitter	: Yanko Kaneti <yaneti@declera.com>
-> > Date		: 2010-03-09 01:24 (30 days old)
-> > Handled-By	: Bjorn Helgaas <bjorn.helgaas@hp.com>
-> > Patch		: http://lkml.org/lkml/2010/3/11/512
-> 
-> This should be closed.  The fix is in Linus' tree:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=d558b483d5a73f5718705b270cb2090f66ea48c8
+On Thu, Apr 8, 2010 at 12:01 PM, Mark Knecht <markknecht@gmail.com> wrote:
+> On Thu, Apr 8, 2010 at 10:40 AM, Robert Hancock <hancockrwd@gmail.com> wrote:
+>> On Thu, Apr 8, 2010 at 10:24 AM, Mark Knecht <markknecht@gmail.com> wrote:
+>>> On Thu, Apr 8, 2010 at 8:00 AM, Clemens Ladisch <clemens@ladisch.de> wrote:
+>>>> Mark Knecht wrote:
+>>>>> ioremap reserve_memtype failed -22
+>>>>> phys_addr: 0xcf7fe000, size: 0x2000
+>>>>
+>>>> What is at this address in /proc/iomem?
+>>>>
+>>>>> Call Trace:
+>>>>>  [<ffffffff8101b7ee>] ? __ioremap_caller+0x1e2/0x30e
+>>>>>  [<ffffffffa052345b>] ? _nv006553rm+0x3a/0x40 [nvidia]
+>>>>
+>>>> I didn't find this function name in the kernel source ...
+>>>>
+>>>>
+>>>> Regards,
+>>>> Clemens
+>>>>
+>>>
+>>> Is there a serious chance this is somehow related to the closed source
+>>> nvidia driver? I could investigate switching to the in kernel driver
+>>> although that might take me a little time to get to.
+>>
+>> Yeah, those symbols are from the NVIDIA driver. Seems like it's trying
+>> to reserve part of memory in ACPI tables somehow?
+>>
+>> You might want to make sure you have the latest version (or just use
+>> nouveau instead..)
+>>
+>
+> I spent a few minutes looking at the Gentoo nouveau guide. I think I
+> won't be able to do that before Sunday so if there's nothing else to
+> reasonably look at and you're >50% sure that's the reason then I'll
+> probably have to get back to you guys next Monday or so. (Assuming the
+> guides are correct and it actually works.
+>
+> One question: If I simply remove the nvidia driver (either emerge -C
+> or blacklist it) then assuming it doesn't load if I don't see the
+> message we at least know it's involved in the problem, correct? That's
+> very easy to do right now as a test.
+>
+> - Mark
+>
 
-Thanks, closing.
+OK - final follow up for today. I removed the nvidia driver completely
+from the system and rebooted. No error messages in dmesg anymore, so
+we solved on (bad kernel config on my part) and we understand the
+second.
 
-Rafael
+As far as I can tell so far there hasn't been actual problem running
+nvidia and getting this error so I'll reinstall the driver for now and
+then look into either a newer version from them or doing the tricky
+stuff the Gentoo guide wants me to do for nouveau. (Or I suppose the
+less tricky nouveau setup on an 2.6.34 kernel.)
+
+Thanks!
+
+- Mark
