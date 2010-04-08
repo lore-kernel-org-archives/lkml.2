@@ -1,16 +1,15 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab0DHJ2K (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Thu, 8 Apr 2010 05:28:10 -0400
-Received: from smtp3.Stanford.EDU ([171.67.219.83]:60786 "EHLO
+	id S932130Ab0DHKKk (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Thu, 8 Apr 2010 06:10:40 -0400
+Received: from smtp3.Stanford.EDU ([171.67.219.83]:37838 "EHLO
 	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751410Ab0DHJ2F (ORCPT
+	with ESMTP id S1758475Ab0DHKKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 05:28:05 -0400
-X-Greylist: delayed 349 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Apr 2010 05:28:05 EDT
-Date: Thu, 8 Apr 2010 02:22:09 -0700 (PDT)
-From: "Mr. Ling Tia Liu" <bkindle@stanford.edu>
-Reply-To: Ling Tia <icbc_liuling_001@yahoo.com.hk>
-Message-ID: <781752245.901571270718529337.JavaMail.root@zm04.stanford.edu>
+	Thu, 8 Apr 2010 06:10:36 -0400
+Date: Thu, 8 Apr 2010 03:10:34 -0700 (PDT)
+From: Liu Tia Ling <bkindle@stanford.edu>
+Reply-To: Liu Tia Ling <icbc_liuling_001@yahoo.com.hk>
+Message-ID: <235306073.909691270721434843.JavaMail.root@zm04.stanford.edu>
 Subject: Hello
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
