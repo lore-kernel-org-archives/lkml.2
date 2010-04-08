@@ -1,34 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933462Ab0DHUaH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 16:30:07 -0400
-Received: from kroah.org ([198.145.64.141]:42707 "EHLO coco.kroah.org"
+	id S933601Ab0DHUaO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 16:30:14 -0400
+Received: from kroah.org ([198.145.64.141]:42703 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933494Ab0DHU1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 16:27:55 -0400
-Date: Thu, 8 Apr 2010 13:10:43 -0700
+	id S933491Ab0DHU1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 16:27:54 -0400
+Date: Thu, 8 Apr 2010 13:07:47 -0700
 From: Greg KH <greg@kroah.com>
-To: Niadh <neilmunro@gmail.com>
-Cc: gregkh@suse.de, bzolnier@gmail.com, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] Staging: rt2860: Removes all errors from wpa.h.
-Message-ID: <20100408201043.GW31571@kroah.com>
-References: <1267932694-3254-1-git-send-email-neilmunro@gmail.com>
+To: Ali =?iso-8859-1?B?R/xuZPx6?= <gndz.ali@gmail.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, sd@sedf.de,
+       linux-kernel@vger.kernel.org, bzolnier@gmail.com
+Subject: Re: Staging-rt2860-fix-coding-style-issues-in-rt_linux.c.patch
+Message-ID: <20100408200747.GV31571@kroah.com>
+References: <20100307153329.29c44889@200>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1267932694-3254-1-git-send-email-neilmunro@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100307153329.29c44889@200>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 07, 2010 at 03:31:34AM +0000, Niadh wrote:
-> This patch cleans up all errors but leaves all but four warnings, these are mostly typedefs and I don't know how to clean those up yet. The final warning is an 80 character limit warning, but I've yet to figure out how to clean that line up.
-> 
-> All were detected by the checkpatch.pl tool.
+On Sun, Mar 07, 2010 at 03:33:29PM +0100, Ali Gündüz wrote:
+> Staging: rt2860: fix coding style issues in rt_linux.c
+> This is a patch to rt_linux.c that fixes various coding style issues
+> Signed-off-by: Ali Gündüz <gndz.ali@gmail.com>
+> diff --git a/drivers/staging/rt2860/rt_linux.c
 
-This patch caused a build error, did you test it out?
+This patch was in mime format and can't be applied.
+
+Care to try again?
 
 thanks,
 
