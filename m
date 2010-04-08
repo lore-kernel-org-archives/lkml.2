@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759198Ab0DHWUj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 18:20:39 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:32850 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751846Ab0DHWUh (ORCPT
+	id S933738Ab0DHWkm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 18:40:42 -0400
+Received: from hapkido.dreamhost.com ([66.33.216.122]:42045 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933717Ab0DHWkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 18:20:37 -0400
-Date: Thu, 8 Apr 2010 18:20:36 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Oliver Neukum <oliver@neukum.org>
-cc: Daniel Mack <daniel@caiaq.de>, <linux-kernel@vger.kernel.org>,
-       Pedro Ribeiro <pedrib@gmail.com>, <akpm@linux-foundation.org>,
-       Greg KH <gregkh@suse.de>, <alsa-devel@alsa-project.org>,
-       <linux-usb@vger.kernel.org>
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-In-Reply-To: <201004082324.31481.oliver@neukum.org>
-Message-ID: <Pine.LNX.4.44L0.1004081817230.21642-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 8 Apr 2010 18:40:40 -0400
+Subject: Re: [PATCH #3] reiserfs: Fix permissions on .reiserfs_priv
+From: Matt McCutchen <matt@mattmccutchen.net>
+To: ReiserFS Mailing List <reiserfs-devel@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Edward Shishkin <edward.shishkin@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jeff Mahoney <jeffm@suse.com>
+In-Reply-To: <4BBE4CE2.8030805@gmail.com>
+References: <4BBE42A9.2010506@suse.com>  <4BBE4CE2.8030805@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 08 Apr 2010 18:39:27 -0400
+Message-ID: <1270766367.3441.4.camel@mattlaptop2.local>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Apr 2010, Oliver Neukum wrote:
+On Thu, 2010-04-08 at 23:38 +0200, Edward Shishkin wrote:
+> Jeff Mahoney wrote:
+> >  [...] This patch resolves the issue by properly hiding .reiserfs_priv. This
+> >  was the intent of the xattr poisoning code, but it appears to have
+> >  never worked as expected. This is fixed by using d_revalidate instead
+> >  of d_compare. [...]
 
-> Am Donnerstag, 8. April 2010 18:59:38 schrieb Alan Stern:
-> > On Thu, 8 Apr 2010, Oliver Neukum wrote:
-> > 
-> > > Am Mittwoch, 7. April 2010 17:46:17 schrieb Alan Stern:
-> > > > Or alternatively, instead of allocating regular memory the routine
-> > > > could simply fail.  Then the caller would be responsible for checking
-> > > > and using regular memory instead of dma-consistent memory.  Of course,
-> > > > that would put an even larger burden on the caller than just forcing it
-> > > > to keep track of what flag to use.
-> > > 
-> > > Then it would be sensible to pass it a filled URB, modify it or return
-> > > an error code.
-> > 
-> > That would work, but it doesn't match the way existing drivers use the
-> > interface.  For example, the audio driver allocates a 16-byte coherent
-> > buffer and then uses four bytes from it for each of four different 
-> > URBs.
-> 
-> That will not work with any fallback that does not yield a coherent buffer.
+The patch seems to rely on the fact that the priv_root dentry is stuck
+in the dcache for as long as the filesystem is mounted, so that attempts
+to follow ".reiserfs_priv" are guaranteed to match that dentry in the
+cache and be refused by xattr_hide_revalidate.  Is my understanding
+correct?
 
-What you mean isn't entirely clear.  But it certainly does work in 
-various circumstances that don't yield coherent buffers.  For example, 
-it works if the controller uses PIO instead of DMA.  It also works if 
-the controller uses DMA and the URBs have to be bounced.
-
-Alan Stern
+-- 
+Matt
 
