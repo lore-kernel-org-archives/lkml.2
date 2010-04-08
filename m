@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933875Ab0DHXtN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 19:49:13 -0400
-Received: from qw-out-2122.google.com ([74.125.92.24]:34702 "EHLO
-	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932673Ab0DHXtI convert rfc822-to-8bit (ORCPT
+	id S933857Ab0DHXwN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 19:52:13 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:63193 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933505Ab0DHXwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 19:49:08 -0400
+	Thu, 8 Apr 2010 19:52:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=KnRyOPdXAt3Q1WrLbjw4DwtDrJN5wpGaSN+lYNkH6il3Op/udo1CjO/o7DbLJ09IDD
-         PIDGRGfk1OVrq5K4s4PzTign69+/p5ZDLF63F68zYfaBVHw7uCjQm2DbZNey+SIu7n1P
-         zbNpKI0+y3ESQx4wzqd7vSpigL2JFm0P+k9lc=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ZJganp3KubbTJKcYfqBxZnrKLcrZsmu3+zbxixsBuKTwCX1g8D9DXgUJgrfxYjs/lP
+         rZpkhxH5YwAhQ7PQG/A3X0DL0wbi/xdxq2nowrdtj2Yhnh2PU5/629V2Jvm/Dw3Lfi9h
+         efBy1zVtLcyU0QCKCxD5Q/o33Yjrz3MfB0/m4=
+Date: Fri, 9 Apr 2010 01:52:01 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>, mingo@elte.hu, peterz@infradead.org,
+       aris@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [watchdog] combine nmi_watchdog and softlockup
+Message-ID: <20100408235159.GB6672@nowhere>
+References: <20100323213338.GA29170@redhat.com> <20100406141321.GA8416@nowhere> <20100406153115.GB5744@lenovo>
 MIME-Version: 1.0
-In-Reply-To: <onZ81XwyNTD.A.9qC.9EmvLB@chimera>
-References: <cjwJ7Pf9h0L.A.9pB.1DmvLB@chimera> <onZ81XwyNTD.A.9qC.9EmvLB@chimera>
-From: =?UTF-8?B?IlJBTE9WSUNILCBLcmlzdMOzZiI=?= 
-	<kristof.ralovich@gmail.com>
-Date: Thu, 8 Apr 2010 19:48:46 -0400
-Message-ID: <i2h5712ce4f1004081648r35f74370k6109cb4dfa7a1e53@mail.gmail.com>
-Subject: Re: [Bug #15392] The kernel does not start up.
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100406153115.GB5744@lenovo>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The issue still exists!
+On Tue, Apr 06, 2010 at 07:31:15PM +0400, Cyrill Gorcunov wrote:
+> On Tue, Apr 06, 2010 at 04:13:30PM +0200, Frederic Weisbecker wrote:
+> [...]
+> > > +static int watchdog_enable(int cpu)
+> > > +{
+> > > +	struct perf_event_attr *wd_attr;
+> > > +	struct perf_event *event = per_cpu(watchdog_ev, cpu);
+> > > +	struct task_struct *p = per_cpu(softlockup_watchdog, cpu);
+> > > +
+> > > +	/* is it already setup and enabled? */
+> > > +	if (event && event->state > PERF_EVENT_STATE_OFF)
+> > > +		goto out;
+> > > +
+> > > +	/* it is setup but not enabled */
+> > > +	if (event != NULL)
+> > > +		goto out_enable;
+> > > +
+> > > +	/* Try to register using hardware perf events first */
+> > > +	wd_attr = &wd_hw_attr;
+> > > +	wd_attr->sample_period = hw_nmi_get_sample_period();
+> > > +	event = perf_event_create_kernel_counter(wd_attr, cpu, -1, watchdog_overflow_callback);
+> > > +	if (!IS_ERR(event)) {
+> > > +		printk(KERN_INFO "NMI watchdog enabled, takes one hw-pmu counter.\n");
+> > > +		goto out_save;
+> > > +	}
+> > > +
+> > > +	/* hardware doesn't exist or not supported, fallback to software events */
+> > > +	printk(KERN_INFO "NMI watchdog: hardware not available, trying software events\n");
+> > > +	wd_attr = &wd_sw_attr;
+> > > +	wd_attr->sample_period = softlockup_thresh * NSEC_PER_SEC;
+> > > +	event = perf_event_create_kernel_counter(wd_attr, cpu, -1, watchdog_overflow_callback);
+> > 
+> > I fear the cpu clock is not going to help you detecting any hard lockups.
+> > If you're stuck in an interrupt or an irq disabled loop, your cpu clock is
+> > not going to fire.
+> >
+> 
+> I guess it's not supposed to. For such cases only nmi irqs may help for which
+> the perf events are there (/me need to check if we program apic timer for anything
+> like that). But it should help for other deadlocks. Or I miss something?
 
-Kristof
 
-On Thu, Apr 8, 2010 at 19:04, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.32 and 2.6.33.
->
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.32 and 2.6.33.  Please verify if it still should
-> be listed and let the tracking team know (either way).
->
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=15392
-> Subject         : The kernel does not start up.
-> Submitter       : Kristóf Ralovich <kristof.ralovich@gmail.com>
-> Date            : 2010-02-25 06:52 (43 days old)
->
->
->
+Yeah but only a part of the hardlockup classes. Those that have interrupt
+enabled.
+
