@@ -1,112 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758888Ab0DHRcM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 13:32:12 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:62036 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754407Ab0DHRcJ (ORCPT
+	id S932950Ab0DHRcg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 13:32:36 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59444 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754407Ab0DHRcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 13:32:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=NIUBqNlcdumbJWaiOic81uh/0p6zVjfRzZ9U2uEKmmTCPGUGFKc7Fmqq7G+jig8Ltv
-         3hOyOL/9nml3Mv67ac3hqdG5mTEhHT5gebz2CGgqsSnmk7lUsSrbaALbYCKnJo1rV2oj
-         4/Ne2uuCJBPKikINdWEjyuWWmfAqPcZf6v3wY=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>, David Miller <davem@davemloft.net>,
-       Archs <linux-arch@vger.kernel.org>
-Subject: [GIT PULL] perf fix
-Date: Thu,  8 Apr 2010 19:31:59 +0200
-Message-Id: <1270747919-16685-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.6.2.3
-In-Reply-To: <1270734746.2215.56.camel@edumazet-laptop>
-References: <1270734746.2215.56.camel@edumazet-laptop>
+	Thu, 8 Apr 2010 13:32:35 -0400
+Date: Thu, 8 Apr 2010 10:28:13 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+cc: Konrad Rzeszutek Wilk <konrad@kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Yinghai Lu <yinghai@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       Peter Jones <pjones@redhat.com>, Jan Beulich <jbeulich@novell.com>,
+       Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [LKML] Re: [PATCH 1/1] ibft, x86: Change reserve_ibft_region()
+ to find_ibft_region()
+In-Reply-To: <20100408161210.GA13382@phenom.dumpdata.com>
+Message-ID: <alpine.LFD.2.00.1004081027140.3558@i5.linux-foundation.org>
+References: <1270741936-1306-1-git-send-email-konrad@kernel.org> <1270741936-1306-2-git-send-email-konrad@kernel.org> <alpine.LFD.2.00.1004080852200.3558@i5.linux-foundation.org> <20100408161210.GA13382@phenom.dumpdata.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
-
-Please pull the perf/urgent branch that can be found at:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-	perf/urgent
-
-Thanks,
-	Frederic
----
-
-Frederic Weisbecker (1):
-      perf: Fix unsafe frame rewinding with hot regs fetching
 
 
- arch/x86/kernel/dumpstack.h |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+On Thu, 8 Apr 2010, Konrad Rzeszutek Wilk wrote:
+> 
+> Oh, I am definitely ACK-ing. Sorry about not explicitly stating that.
+> The developer is Yinghai Lu, I am the co-maintainer of the iBFT driver.
+> 
+> Linus, would you like me to modify the commit so that it has 'Acked-by:'
+> by me in the git tree?
 
----
-commit ab285f2b5290d92b7ec1a6f9aad54308dadf6157
-Author: Frederic Weisbecker <fweisbec@gmail.com>
-Date:   Thu Apr 8 14:05:50 2010 +0200
+No, no, a sign-off is already an ack, and is "stronger" than an ack, since 
+it actually also means that you send it onwards. A patch that you don't 
+like you would obviously never sign off on either.
 
-    perf: Fix unsafe frame rewinding with hot regs fetching
-    
-    When we fetch the hot regs and rewind to the nth caller, it
-    might happen that we dereference a frame pointer outside the
-    kernel stack boundaries, like in this example:
-    
-    	perf_trace_sched_switch+0xd5/0x120
-            schedule+0x6b5/0x860
-            retint_careful+0xd/0x21
-    
-    Since we directly dereference a userspace frame pointer here while
-    rewinding behind retint_careful, this may end up in a crash.
-    
-    Fix this by simply using probe_kernel_address() when we rewind the
-    frame pointer.
-    
-    This issue will have a much more proper fix in the next version of the
-    perf_arch_fetch_caller_regs() API that will only need to rewind to the
-    first caller.
-    
-    Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
-    Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-    Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
-    Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-    Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-    Cc: Paul Mackerras <paulus@samba.org>
-    Cc: David Miller <davem@davemloft.net>
-    Cc: Archs <linux-arch@vger.kernel.org>
+I was more looking for comments from other people who know what the heck 
+that early reservation system does.
 
-diff --git a/arch/x86/kernel/dumpstack.h b/arch/x86/kernel/dumpstack.h
-index e39e771..e1a93be 100644
---- a/arch/x86/kernel/dumpstack.h
-+++ b/arch/x86/kernel/dumpstack.h
-@@ -14,6 +14,8 @@
- #define get_bp(bp) asm("movq %%rbp, %0" : "=r" (bp) :)
- #endif
- 
-+#include <linux/uaccess.h>
-+
- extern void
- show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
- 		unsigned long *stack, unsigned long bp, char *log_lvl);
-@@ -42,8 +44,10 @@ static inline unsigned long rewind_frame_pointer(int n)
- 	get_bp(frame);
- 
- #ifdef CONFIG_FRAME_POINTER
--	while (n--)
--		frame = frame->next_frame;
-+	while (n--) {
-+		if (probe_kernel_address(&frame->next_frame, frame))
-+			break;
-+	}
- #endif
- 
- 	return (unsigned long)frame;
+		Linus
