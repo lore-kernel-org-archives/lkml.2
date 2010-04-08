@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab0DHDMz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Apr 2010 23:12:55 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:39720 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751908Ab0DHDMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Apr 2010 23:12:54 -0400
-Date: Thu, 8 Apr 2010 13:12:51 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Pauli Nieminen <suokkos@gmail.com>, Jerome Glisse <jglisse@redhat.com>
-Subject: linux-next: build failure after merge of the drm tree
-Message-Id: <20100408131251.b69e2fa2.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.20.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755769Ab0DHDN2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Apr 2010 23:13:28 -0400
+Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:42014 "HELO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754006Ab0DHDN0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Apr 2010 23:13:26 -0400
+X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Apr 2010 23:13:26 EDT
+From: Michael Poole <mdpoole@troilus.org>
+To: "Henrik Rydberg" <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: mt: introduce MT event slots
+References: <1270685590-2204-1-git-send-email-rydberg@euromail.se>
+Date: Wed, 07 Apr 2010 23:07:09 -0400
+In-Reply-To: <1270685590-2204-1-git-send-email-rydberg@euromail.se> (Henrik
+	Rydberg's message of "Thu, 8 Apr 2010 02:13:10 +0200")
+Message-ID: <87tyrmiqw2.fsf@troilus.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+Henrik Rydberg writes:
 
-After merging the drm tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+> With the rapidly increasing number of intelligent multi-contact and
+> multi-user devices, the need to send digested, filtered information
+> from a set of different sources within the same device is imminent.
+> This patch adds the concept of slots to the MT protocol. The slots
+> enumerate a set of identified sources, such that all MT events
+> can be passed independently and selectively per identified source.
+>
+> The protocol works like this: Instead of sending a SYN_MT_REPORT
+> event immediately after the contact data, one sends a SYN_MT_SLOT
+> event immediately before the contact data. The input core will only
+> emit events for the slots corresponding to the contacts that have
+> changed. It is assumed that the same slot is used for the duration
+> of an initiated contact.
 
-drivers/gpu/drm/ttm/ttm_page_alloc.c: In function 'ttm_page_pool_free':
-drivers/gpu/drm/ttm/ttm_page_alloc.c:311: error: implicit declaration of function 'kmalloc'
-drivers/gpu/drm/ttm/ttm_page_alloc.c:312: warning: assignment makes pointer from integer without a cast
-drivers/gpu/drm/ttm/ttm_page_alloc.c:375: error: implicit declaration of function 'kfree'
-drivers/gpu/drm/ttm/ttm_page_alloc.c: In function 'ttm_alloc_new_pages':
-drivers/gpu/drm/ttm/ttm_page_alloc.c:483: warning: assignment makes pointer from integer without a cast
+How would the slot number for a contact be chosen?  If the kernel makes
+that assignment, what should a "slot" correspond to from a computer
+user's perspective?  "Set[s] of identified sources" is a little vague:
+Does it mean contacts from one hand, contacts in one displayed window
+(assuming the touch surface is a screen), or something else?  (I assume
+it would not duplicate the blob or tracking IDs already defined for MT
+events.)  It seems like those would be important aspects of the protocol
+to document in Documentation/input/multi-touch-protocol.txt --
+otherwise, driver implementers or application developers might get it
+wrong.
 
-Caused by commit 1403b1a38e8b19a4cc17e2c158e278628943a436 ("drm/ttm: add
-pool wc/uc page allocator V3") interacting with the removal of slab.h
-from percpu.h.
-
-I applied the following patch for today.
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 8 Apr 2010 13:05:05 +1000
-Subject: [PATCH] drm/ttm: using kmalloc/kfree requires including slab.h
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/gpu/drm/ttm/ttm_page_alloc.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-index 6ca9b27..d6c40bd 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-@@ -36,6 +36,7 @@
- #include <linux/mm_types.h>
- #include <linux/module.h>
- #include <linux/mm.h>
-+#include <linux/slab.h>
- 
- #include <asm/atomic.h>
- #include <asm/agp.h>
--- 
-1.7.0.4
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Michael Poole
