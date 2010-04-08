@@ -1,60 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758879Ab0DHRiv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 13:38:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13375 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758821Ab0DHRit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 13:38:49 -0400
-Message-ID: <4BBE1473.5050206@redhat.com>
-Date: Thu, 08 Apr 2010 13:37:55 -0400
-From: Peter Jones <pjones@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc14 Thunderbird/3.0.3
+	id S1758897Ab0DHRkR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 13:40:17 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54798 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758622Ab0DHRkM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 13:40:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=HNcvCMl/iVlC70SK+dAYI7NhlsXr9aEykqYS2dl9horIsrKBHWi+j6HrLwTsPFZ/O/
+         IRLYEF8ubSN+RFd70OTColltiSRd8eqNU/J6B7J/S5Pe50KqUrYgz3cDkQgN0HRET0Iw
+         GxpvQC5UGkQY6kAsPjpyJ9eKMg4MLvKuTJCi8=
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-       Konrad Rzeszutek Wilk <konrad@kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Yinghai Lu <yinghai@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-       Jan Beulich <jbeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [LKML] Re: [PATCH 1/1] ibft, x86: Change reserve_ibft_region()
- to find_ibft_region()
-References: <1270741936-1306-1-git-send-email-konrad@kernel.org> <1270741936-1306-2-git-send-email-konrad@kernel.org> <alpine.LFD.2.00.1004080852200.3558@i5.linux-foundation.org> <20100408161210.GA13382@phenom.dumpdata.com> <alpine.LFD.2.00.1004081027140.3558@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1004081027140.3558@i5.linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <z2i5bdc1c8b1004080924q1b8d3994vd69c9c9dd0bb2f78@mail.gmail.com>
+References: <x2w5bdc1c8b1004051355o3f803c75t2515ef46320e00bd@mail.gmail.com>
+	 <4BBC9CA1.5080102@ladisch.de>
+	 <m2l5bdc1c8b1004070857r823821ack6cc99354db73eaa0@mail.gmail.com>
+	 <4BBD1957.90502@gmail.com>
+	 <k2l5bdc1c8b1004072051h957c3f1crf0a139bd96a093a4@mail.gmail.com>
+	 <v2h51f3faa71004072054y4733bf9bq80a04574bebbadba@mail.gmail.com>
+	 <4BBD7997.1020803@ladisch.de>
+	 <l2v5bdc1c8b1004080753k7787e635p4a70d4a1a777984d@mail.gmail.com>
+	 <4BBDEF93.6070306@ladisch.de>
+	 <z2i5bdc1c8b1004080924q1b8d3994vd69c9c9dd0bb2f78@mail.gmail.com>
+Date: Thu, 8 Apr 2010 11:40:07 -0600
+Message-ID: <k2t51f3faa71004081040l326458e4zf89854ec32a57940@mail.gmail.com>
+Subject: Re: Failed to initialize MSI interrupts && ioremap reserve_memtype 
+	failed -22
+From: Robert Hancock <hancockrwd@gmail.com>
+To: Mark Knecht <markknecht@gmail.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>,
+       Linux Kernel List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2010 01:28 PM, Linus Torvalds wrote:
-> 
-> 
-> On Thu, 8 Apr 2010, Konrad Rzeszutek Wilk wrote:
+On Thu, Apr 8, 2010 at 10:24 AM, Mark Knecht <markknecht@gmail.com> wrote:
+> On Thu, Apr 8, 2010 at 8:00 AM, Clemens Ladisch <clemens@ladisch.de> wrote:
+>> Mark Knecht wrote:
+>>> ioremap reserve_memtype failed -22
+>>> phys_addr: 0xcf7fe000, size: 0x2000
 >>
->> Oh, I am definitely ACK-ing. Sorry about not explicitly stating that.
->> The developer is Yinghai Lu, I am the co-maintainer of the iBFT driver.
+>> What is at this address in /proc/iomem?
 >>
->> Linus, would you like me to modify the commit so that it has 'Acked-by:'
->> by me in the git tree?
-> 
-> No, no, a sign-off is already an ack, and is "stronger" than an ack, since 
-> it actually also means that you send it onwards. A patch that you don't 
-> like you would obviously never sign off on either.
-> 
-> I was more looking for comments from other people who know what the heck 
-> that early reservation system does.
+>>> Call Trace:
+>>>  [<ffffffff8101b7ee>] ? __ioremap_caller+0x1e2/0x30e
+>>>  [<ffffffffa052345b>] ? _nv006553rm+0x3a/0x40 [nvidia]
+>>
+>> I didn't find this function name in the kernel source ...
+>>
+>>
+>> Regards,
+>> Clemens
+>>
+>
+> Is there a serious chance this is somehow related to the closed source
+> nvidia driver? I could investigate switching to the in kernel driver
+> although that might take me a little time to get to.
 
-Just for the record, it also looks good to me (the other co-maintainer), so:
+Yeah, those symbols are from the NVIDIA driver. Seems like it's trying
+to reserve part of memory in ACPI tables somehow?
 
-Signed-Off-By: Peter Jones <pjones@redhat.com>
+You might want to make sure you have the latest version (or just use
+nouveau instead..)
 
-But obviously that doesn't actually constitute the acks you were /looking/
-for.
-
--- 
-        Peter
-
-What we need is either less corruption, or more chances to
-participate in it.
+>
+> Being that I'm not 100% sure which address you meant here's everything:
+>
+> k2 ~ # cat /proc/iomem
+> 00000000-0008efff : System RAM
+> 0008f000-0008ffff : reserved
+> 00090000-0009cfff : System RAM
+> 0009d000-0009ffff : reserved
+> 000e0000-000fffff : reserved
+> 00100000-cf4bcfff : System RAM
+>  01000000-013466b6 : Kernel code
+>  013466b7-0166ab1f : Kernel data
+>  016e3000-01737eb3 : Kernel bss
+> cf4bd000-cf4befff : reserved
+> cf4bf000-cf4c3fff : System RAM
+> cf4c4000-cf7befff : ACPI Non-volatile Storage
+> cf7bf000-cf7defff : System RAM
+> cf7df000-cf7fefff : ACPI Tables
+> cf7ff000-cf7fffff : System RAM
+> cf800000-cfffffff : reserved
+> d0000000-d2ffffff : PCI Bus 0000:02
+>  d0000000-d1ffffff : 0000:02:00.0
+>  d2000000-d2ffffff : 0000:02:00.0
+>    d2000000-d2ffffff : nvidia
+> d3000000-d30fffff : PCI Bus 0000:07
+>  d3000000-d3003fff : 0000:07:03.0
+>  d3004000-d30047ff : 0000:07:03.0
+>    d3004000-d30047ff : firewire_ohci
+> d3100000-d31fffff : PCI Bus 0000:06
+>  d3100000-d31003ff : 0000:06:00.0
+>    d3100000-d31003ff : ahci
+> d3200000-d321ffff : 0000:00:19.0
+>  d3200000-d321ffff : e1000e
+> d3220000-d32207ff : 0000:00:1f.2
+>  d3220000-d32207ff : ahci
+> d3221000-d32213ff : 0000:00:1d.7
+>  d3221000-d32213ff : ehci_hcd
+> d3222000-d32223ff : 0000:00:1a.7
+>  d3222000-d32223ff : ehci_hcd
+> d3223000-d3223fff : 0000:00:19.0
+>  d3223000-d3223fff : e1000e
+> e0000000-efffffff : PCI Bus 0000:02
+>  e0000000-efffffff : 0000:02:00.0
+> f0000000-f0003fff : 0000:00:1b.0
+>  f0000000-f0003fff : ICH HD audio
+> f0004000-f00040ff : 0000:00:1f.3
+> f8000000-fcffffff : reserved
+>  f8000000-fbffffff : PCI MMCONFIG 0000 [bus 00-3f]
+> fec00000-fec003ff : IOAPIC 0
+> fed00000-fed003ff : HPET 0
+> fee00000-fee00fff : Local APIC
+> ffe00000-ffffffff : reserved
+> 100000000-1afffffff : System RAM
+> k2 ~ #
+>
+> Cheers,
+> Mark
+>
