@@ -1,98 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758809Ab0DHPOz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 11:14:55 -0400
-Received: from mail.digidescorp.com ([66.244.163.200]:36623 "EHLO
-	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756848Ab0DHPOx (ORCPT
+	id S1758828Ab0DHPZQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 11:25:16 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:55290 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753954Ab0DHPZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 11:14:53 -0400
-X-Spam-Processed: digidescorp.com, Thu, 08 Apr 2010 10:14:52 -0500
-X-Authenticated-Sender: steve@digidescorp.com
-X-Return-Path: prvs=1714195e0c=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] increase pipe size/buffers/atomicity :D
-From: "Steven J. Magnani" <steve@digidescorp.com>
-Reply-To: steve@digidescorp.com
-To: brian <knotwurk@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <x2sb985fb501004071838z51a832dftdfaece15e5a0e154@mail.gmail.com>
-References: <x2sb985fb501004071838z51a832dftdfaece15e5a0e154@mail.gmail.com>
-Content-Type: text/plain
-Organization: Digital Design Corporation
-Date: Thu, 08 Apr 2010 10:14:47 -0500
-Message-Id: <1270739687.3066.16.camel@iscandar.digidescorp.com>
+	Thu, 8 Apr 2010 11:25:12 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Patrick McHardy <kaber@trash.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+       netfilter-devel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: mmotm 2010-04-05-16-09 uploaded
+In-Reply-To: Your message of "Thu, 08 Apr 2010 13:41:00 +0200."
+             <4BBDC0CC.7080305@trash.net>
+From: Valdis.Kletnieks@vt.edu
+References: <201004052336.o35NaeSE015814@imap1.linux-foundation.org> <13074.1270663309@localhost>
+            <4BBDC0CC.7080305@trash.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Type: multipart/signed; boundary="==_Exmh_1270740197_3956P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Thu, 08 Apr 2010 11:23:17 -0400
+Message-ID: <6795.1270740197@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020202.4BBDF4E7.0022,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Brian -
+--==_Exmh_1270740197_3956P
+Content-Type: text/plain; charset=us-ascii
 
-On Wed, 2010-04-07 at 19:38 -0600, brian wrote:
-> (tested and working with 2.6.32.8 kernel, on a Athlon/686)
+On Thu, 08 Apr 2010 13:41:00 +0200, Patrick McHardy said:
 
-It would be good to know what issue this addresses. Gives people a way
-to weigh any side-effects/drawbacks against the benefits, and an
-opportunity to suggest alternate/better approaches.
-
-> --- include/linux/pipe_fs_i.h.orig      2010-04-06 22:56:51.000000000 -0500
-> +++ include/linux/pipe_fs_i.h   2010-04-06 22:56:58.000000000 -0500
-> @@ -3,7 +3,7 @@
+> Valdis.Kletnieks@vt.edu wrote:
+> > On Mon, 05 Apr 2010 16:09:45 PDT, akpm@linux-foundation.org said:
+> >> The mm-of-the-moment snapshot 2010-04-05-16-09 has been uploaded to
+> >>
+> >>    http://userweb.kernel.org/~akpm/mmotm/
+> > 
+> > Seen in dmesg, 2.6.34-rc2-mmotm0323 didn't do this. Tossing it at all the
+> > likely suspects, hopefully somebody will recognize it and save me the
+> > bisecting. ;)
+> > 
+> > [   11.488535] ctnetlink v0.93: registering with nfnetlink.
+> > [   11.488579] 
+> > [   11.488579] ===================================================
+> > [   11.489529] [ INFO: suspicious rcu_dereference_check() usage. ]
+> > [   11.489988] ---------------------------------------------------
+> > [   11.490494] net/netfilter/nf_conntrack_ecache.c:88 invoked rcu_dereference_check() without protection!
+> > [   11.491024] 
+> > [   11.491024] other info that might help us debug this:
+> > [   11.491025] 
+> > [   11.492834] 
+> > [   11.492835] rcu_scheduler_active = 1, debug_locks = 0
+> > [   11.494124] 1 lock held by swapper/1:
+> > [   11.494776]  #0:  (nf_ct_ecache_mutex){+.+...}, at: [<ffffffff8148c606>] nf_conntrack_register_notifier+0x1a/0x76
+> > [   11.495505] 
 > 
->  #define PIPEFS_MAGIC 0x50495045
+> There are some unnecessary rcu_dereference() calls in the conntrack
+> notifier registration and unregistration functions.
 > 
-> -#define PIPE_BUFFERS (16)
-> +#define PIPE_BUFFERS (32)
+> Does this fix it?
 
-This worries me. In several places there are functions with 2 or 3
-pointer arrays of dimension [PIPE_BUFFERS] on the stack. So this adds
-anywhere from 128 to 384 bytes to the stack in these functions depending
-on sizeof(void*) and the number of arrays.
+Well, it *changed* it.  Does the rcu_defererence_check() only fire on the
+first time it hits something, so we've fixed the first one and now we get to
+see the second one?
 
-> 
->  #define PIPE_BUF_FLAG_LRU      0x01    /* page is on the LRU */
->  #define PIPE_BUF_FLAG_ATOMIC   0x02    /* was atomically mapped */
-> --- include/asm-generic/page.h.orig     2010-04-06 22:57:08.000000000 -0500
-> +++ include/asm-generic/page.h  2010-04-06 22:57:23.000000000 -0500
-> @@ -12,7 +12,7 @@
-> 
->  /* PAGE_SHIFT determines the page size */
-> 
-> -#define PAGE_SHIFT     12
-> +#define PAGE_SHIFT     13
+(For what it's worth, if this is going to be one-at-a-time whack-a-mole, I'm
+OK on that, just want to know up front.)
 
-This has pretty wide-ranging implications, both within and across
-arches. I don't think it's something that can be changed easily. Also I
-don't believe this #define used in your configuration (Athlon/686)
-unless you're running without a MMU.
-
->  #ifdef __ASSEMBLY__
->  #define PAGE_SIZE      (1 << PAGE_SHIFT)
->  #else
-> --- include/linux/limits.h.orig 2010-04-06 22:54:15.000000000 -0500
-> +++ include/linux/limits.h      2010-04-06 22:56:28.000000000 -0500
-> @@ -10,7 +10,7 @@
->  #define MAX_INPUT        255   /* size of the type-ahead buffer */
->  #define NAME_MAX         255   /* # chars in a file name */
->  #define PATH_MAX        4096   /* # chars in a path name including nul */
-> -#define PIPE_BUF        4096   /* # bytes in atomic write to a pipe */
-> +#define PIPE_BUF        8192   /* # bytes in atomic write to a pipe */
-
-I don't see this being used within the kernel, so I assume its a
-userspace representation of PAGE_SIZE (ARM seems to associate these
-explicitly). I would think you'd need to rebuild your glibc or
-equivalent to notice any difference from a change.
-
-Regards,
-------------------------------------------------------------------------
- Steven J. Magnani               "I claim this network for MARS!
- www.digidescorp.com              Earthling, return my space modulator!"
-
- #include <standard.disclaimer>
+[    9.299425] ip_tables: (C) 2000-2006 Netfilter Core Team
+[    9.299486] 
+[    9.299486] ===================================================
+[    9.300499] [ INFO: suspicious rcu_dereference_check() usage. ]
+[    9.301001] ---------------------------------------------------
+[    9.301523] net/netfilter/nf_log.c:55 invoked rcu_dereference_check() without protection!
+[    9.302066] 
+[    9.302066] other info that might help us debug this:
+[    9.302067] 
+[    9.303748] 
+[    9.303748] rcu_scheduler_active = 1, debug_locks = 0
+[    9.304990] 1 lock held by swapper/1:
+[    9.305645]  #0:  (nf_log_mutex){+.+...}, at: [<ffffffff8148427a>] nf_log_register+0x57/0x111
+[    9.306342] 
+[    9.306343] stack backtrace:
+[    9.307729] Pid: 1, comm: swapper Not tainted 2.6.34-rc3-mmotm0405 #2
+[    9.308447] Call Trace:
+[    9.309170]  [<ffffffff810638c5>] lockdep_rcu_dereference+0xaa/0xb2
+[    9.309935]  [<ffffffff81484301>] nf_log_register+0xde/0x111
+[    9.310688]  [<ffffffff81b6064b>] ? log_tg_init+0x0/0x29
+[    9.311465]  [<ffffffff81b60670>] log_tg_init+0x25/0x29
+[    9.312233]  [<ffffffff810001ef>] do_one_initcall+0x59/0x14e
+[    9.313030]  [<ffffffff81b3268a>] kernel_init+0x144/0x1ce
+[    9.313819]  [<ffffffff81003514>] kernel_thread_helper+0x4/0x10
+[    9.314625]  [<ffffffff8159cb80>] ? restore_args+0x0/0x30
+[    9.315434]  [<ffffffff81b32546>] ? kernel_init+0x0/0x1ce
+[    9.316224]  [<ffffffff81003510>] ? kernel_thread_helper+0x0/0x10
+[    9.317037] TCP bic registered
 
 
+--==_Exmh_1270740197_3956P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFLvfTlcC3lWbTT17ARAo1HAJ4yC0en5BctowrLleTYyxhKbpZ0CwCg3kzV
+257B3W+JglYzXi/NAzZL1Ws=
+=eqF5
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1270740197_3956P--
 
