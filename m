@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932810Ab0DHQ6v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 12:58:51 -0400
-Received: from havoc.gtf.org ([69.61.125.42]:57452 "EHLO havoc.gtf.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758158Ab0DHQ6t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 12:58:49 -0400
-Date: Thu, 8 Apr 2010 12:58:49 -0400
-From: Jeff Garzik <jeff@garzik.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [git patches] libata fix
-Message-ID: <20100408165848.GA14360@havoc.gtf.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S932937Ab0DHQ7m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 12:59:42 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:47194 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932728Ab0DHQ7i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 12:59:38 -0400
+Date: Thu, 8 Apr 2010 12:59:38 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Oliver Neukum <oliver@neukum.org>
+cc: Daniel Mack <daniel@caiaq.de>, <linux-kernel@vger.kernel.org>,
+       Pedro Ribeiro <pedrib@gmail.com>, <akpm@linux-foundation.org>,
+       Greg KH <gregkh@suse.de>, <alsa-devel@alsa-project.org>,
+       <linux-usb@vger.kernel.org>
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+In-Reply-To: <201004080812.04419.oliver@neukum.org>
+Message-ID: <Pine.LNX.4.44L0.1004081257450.1720-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 8 Apr 2010, Oliver Neukum wrote:
 
-Please pull from 'upstream-linus' branch of
-master.kernel.org:/pub/scm/linux/kernel/git/jgarzik/libata-dev.git upstream-linus
+> Am Mittwoch, 7. April 2010 17:46:17 schrieb Alan Stern:
+> > Or alternatively, instead of allocating regular memory the routine
+> > could simply fail.  Then the caller would be responsible for checking
+> > and using regular memory instead of dma-consistent memory.  Of course,
+> > that would put an even larger burden on the caller than just forcing it
+> > to keep track of what flag to use.
+> 
+> Then it would be sensible to pass it a filled URB, modify it or return
+> an error code.
 
-to receive the following updates:
+That would work, but it doesn't match the way existing drivers use the
+interface.  For example, the audio driver allocates a 16-byte coherent
+buffer and then uses four bytes from it for each of four different 
+URBs.
 
- include/linux/ata.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Alan Stern
 
-Mark Lord (1):
-      libata: Fix accesses at LBA28 boundary (old bug, but nasty) (v2)
-
-diff --git a/include/linux/ata.h b/include/linux/ata.h
-index b4c85e2..700c5b9 100644
---- a/include/linux/ata.h
-+++ b/include/linux/ata.h
-@@ -1025,8 +1025,8 @@ static inline int ata_ok(u8 status)
- 
- static inline int lba_28_ok(u64 block, u32 n_block)
- {
--	/* check the ending block number */
--	return ((block + n_block) < ((u64)1 << 28)) && (n_block <= 256);
-+	/* check the ending block number: must be LESS THAN 0x0fffffff */
-+	return ((block + n_block) < ((1 << 28) - 1)) && (n_block <= 256);
- }
- 
- static inline int lba_48_ok(u64 block, u32 n_block)
