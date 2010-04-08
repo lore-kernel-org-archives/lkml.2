@@ -1,139 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758466Ab0DHHA0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 03:00:26 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:54195 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758421Ab0DHHAZ (ORCPT
+	id S1758459Ab0DHHE1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 03:04:27 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:61853 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758401Ab0DHHEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 03:00:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=RMJsJg8xP0tBnUYR3YmwW4yJzLduuToLe6cFEECrwXCZcLcFRVq5+EDPhPdrA2KPTo
-         coO/xmRvehJRCYtqeaCHB6DS4rl8K6QYySxzXcXEjO0MDey+B51jrkT/y83LQmsKA+G2
-         0f6i8MHM/ejeoZoLcJG3B0naUCvcpiubGI1Sg=
-Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, netdev <netdev@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, alex.shi@intel.com,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1270705153.8141.58.camel@edumazet-laptop>
-References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
-	 <alpine.DEB.2.00.1003250942080.2670@router.home>
-	 <1269570902.9614.92.camel@alexs-hp.sh.intel.com>
-	 <1270114166.2078.107.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004011050340.16531@router.home>
-	 <1270195589.2078.116.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004050853300.23149@router.home>
-	 <i2z84144f021004051030k7ff5190cyc083aa12c552dfac@mail.gmail.com>
-	 <4BBA8DF9.8010409@kernel.org>
-	 <1270542497.2078.123.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004061033330.18750@router.home>
-	 <alpine.DEB.2.00.1004061552500.19151@router.home>
-	 <1270591841.2091.170.camel@edumazet-laptop>
-	 <1270607668.2078.259.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004071130260.13261@router.home>
-	 <4BBCB7B7.4040901@cs.helsinki.fi> <4BBCB868.2000705@cs.helsinki.fi>
-	 <alpine.DEB.2.00.1004071319320.16159@router.home>
-	 <1270665484.8141.47.camel@edumazet-laptop>
-	 <1270688747.2078.383.camel@ymzhang.sh.intel.com>
-	 <1270702774.8141.49.camel@edumazet-laptop>
-	 <1270705153.8141.58.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Apr 2010 09:00:19 +0200
-Message-ID: <1270710019.2215.4.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 8 Apr 2010 03:04:25 -0400
+Message-ID: <4BBD7F18.1070205@oracle.com>
+Date: Thu, 08 Apr 2010 00:00:40 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: James Morris <jmorris@namei.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       linux-kernel@vger.kernel.org, airlied@linux.ie,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: Config NO_BOOTMEM breaks my amd64 box
+References: <alpine.LRH.2.00.1003311539490.23281@tundra.namei.org> <4BB2EB1B.8090303@zytor.com> <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org> <20100331185916.GA12306@elte.hu> <alpine.LRH.2.00.1004010952080.31957@tundra.namei.org> <4BB3DC4E.7030504@zytor.com> <alpine.LRH.2.00.1004011042460.32618@tundra.namei.org> <4BB3DF46.8080008@zytor.com> <alpine.LRH.2.00.1004011200020.365@tundra.namei.org> <20100401125210.GA2445@elte.hu> <20100408063236.GA23489@elte.hu>
+In-Reply-To: <20100408063236.GA23489@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4BBD7FAE.014F:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 08 avril 2010 à 07:39 +0200, Eric Dumazet a écrit :
-> I suspect NUMA is completely out of order on current kernel, or my
-> Nehalem machine NUMA support is a joke
+On 04/07/2010 11:32 PM, Ingo Molnar wrote:
 > 
-> # numactl --hardware
-> available: 2 nodes (0-1)
-> node 0 size: 3071 MB
-> node 0 free: 2637 MB
-> node 1 size: 3062 MB
-> node 1 free: 2909 MB
+> * Ingo Molnar <mingo@elte.hu> wrote:
 > 
+>> * James Morris <jmorris@namei.org> wrote:
+>>
+>>> On Wed, 31 Mar 2010, H. Peter Anvin wrote:
+>>>
+>>>> On 03/31/2010 04:43 PM, James Morris wrote:
+>>>>>>
+>>>>>> Upgraded how?  The problem no longer happens?
+>>>>>
+>>>>> Upgraded to the latest rawhide userland -- I have not since tested with 
+>>>>> bootmem off.  I'll try and do so again when I get a chance.
+>>>>>
+>>>>
+>>>> That would be great.  The sooner the better, obviously.
+>>>
+>>> I'm not seeing any problems now, with current Linus and rawhide.  I'll leave 
+>>> bootmem off and see if anything comes up again.
+>>
+>> (a current bootlog would still be nice)
+>>
+>> Dave, can you reproduce any of these problems with Linus's latest?
 > 
-> # cat try.sh
-> hackbench 50 process 5000
-> numactl --cpubind=0 --membind=0 hackbench 25 process 5000 >RES0 &
-> numactl --cpubind=1 --membind=1 hackbench 25 process 5000 >RES1 &
-> wait
-> echo node0 results
-> cat RES0
-> echo node1 results
-> cat RES1
-> 
-> numactl --cpubind=0 --membind=1 hackbench 25 process 5000 >RES0_1 &
-> numactl --cpubind=1 --membind=0 hackbench 25 process 5000 >RES1_0 &
-> wait
-> echo node0 on mem1 results
-> cat RES0_1
-> echo node1 on mem0 results
-> cat RES1_0
-> 
-> # ./try.sh
-> Running with 50*40 (== 2000) tasks.
-> Time: 16.865
-> node0 results
-> Running with 25*40 (== 1000) tasks.
-> Time: 16.767
-> node1 results
-> Running with 25*40 (== 1000) tasks.
-> Time: 16.564
-> node0 on mem1 results
-> Running with 25*40 (== 1000) tasks.
-> Time: 16.814
-> node1 on mem0 results
-> Running with 25*40 (== 1000) tasks.
-> Time: 16.896
+> ping? Can you or Dave reproduce the bug with -rc3 or later kernels? (If not 
+> then it probably means that the bug you triggered was already fixed at the 
+> time you reported it, as hpa suspected.)
 
-If run individually, the tests results are more what we would expect
-(slow), but if machine runs the two set of process concurrently, each
-group runs much faster...
+James already reported -rc3 fix the problem for him.
 
+Dave implied -rc3 fixed problem for him
 
-# numactl --cpubind=0 --membind=1 hackbench 25 process 5000
-Running with 25*40 (== 1000) tasks.
-Time: 21.810
+Thanks
 
-# numactl --cpubind=1 --membind=0 hackbench 25 process 5000
-Running with 25*40 (== 1000) tasks.
-Time: 20.679
-
-# numactl --cpubind=0 --membind=1 hackbench 25 process 5000 >RES0_1 &
-[1] 9177
-# numactl --cpubind=1 --membind=0 hackbench 25 process 5000 >RES1_0 &
-[2] 9196
-# wait
-[1]-  Done                    numactl --cpubind=0 --membind=1 hackbench
-25 process 5000 >RES0_1
-[2]+  Done                    numactl --cpubind=1 --membind=0 hackbench
-25 process 5000 >RES1_0
-# echo node0 on mem1 results
-node0 on mem1 results
-# cat RES0_1
-Running with 25*40 (== 1000) tasks.
-Time: 13.818
-# echo node1 on mem0 results
-node1 on mem0 results
-# cat RES1_0
-Running with 25*40 (== 1000) tasks.
-Time: 11.633
-
-Oh well...
-
-
+Yinghai
