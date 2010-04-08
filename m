@@ -1,58 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab0DHOaL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 10:30:11 -0400
-Received: from cantor.suse.de ([195.135.220.2]:58670 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757413Ab0DHOaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 10:30:05 -0400
-Date: Thu, 8 Apr 2010 16:30:04 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Miroslav Zagorac <zaga@fly.cc.fer.hr>,
-       "James E.J. Bottomley" <James.Bottomley@suse.de>,
-       Adam Buchbinder <adam.buchbinder@gmail.com>, jgarzik@pobox.com,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [patch] wd7000: typo spin_unlock_irq() => spin_lock_irq()
-In-Reply-To: <20100401155516.GF5265@bicker>
-Message-ID: <alpine.LNX.2.00.1004081629350.8345@pobox.suse.cz>
-References: <20100401155516.GF5265@bicker>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932373Ab0DHOau (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 10:30:50 -0400
+Received: from sg2ehsobe002.messaging.microsoft.com ([207.46.51.76]:23727 "EHLO
+	SG2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757413Ab0DHOar convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 10:30:47 -0400
+X-Greylist: delayed 905 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Apr 2010 10:30:47 EDT
+X-SpamScore: -26
+X-BigFish: VPS-26(zz542N1432P4015L9371Pzz1202hzz6d525hz2dh6bh61h)
+X-Spam-TCS-SCL: 0:0
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: linux-next: build failure after merge of the final tree
+Date: Thu, 8 Apr 2010 08:15:12 -0600
+In-Reply-To: <20100407.232500.184442638.davem@davemloft.net>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: linux-next: build failure after merge of the final tree
+Thread-Index: AcrW5DeS4j8cwPulQAej1KgFKxPB9gAPEJLQ
+References: <20100408153505.eb205158.sfr@canb.auug.org.au> <20100407.232500.184442638.davem@davemloft.net>
+From: John Linn <John.Linn@xilinx.com>
+To: "David Miller" <davem@davemloft.net>, <sfr@canb.auug.org.au>
+CC: <netdev@vger.kernel.org>, <linux-next@vger.kernel.org>,
+       <linux-kernel@vger.kernel.org>, <jtyner@cs.ucr.edu>,
+       <grant.likely@secretlab.ca>
+X-OriginalArrivalTime: 08 Apr 2010 14:15:35.0048 (UTC) FILETIME=[F4927080:01CAD725]
+X-RCIS-Action: ALLOW
+Message-ID: <6125d80a-81d5-4699-ac6e-9408bd0c1145@SG2EHSMHS010.ehs.local>
+X-Reverse-DNS: unknown-60-83.xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Apr 2010, Dan Carpenter wrote:
-
-> This was introduced back in 2005 at the very start of the git era by:
-> 	df0ae2497ddefd72a87f3a3b34ff32455d7d4ae0
-> 	[SCSI] allow sleeping in ->eh_host_reset_handler()
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Thursday, April 08, 2010 12:25 AM
+> To: sfr@canb.auug.org.au
+> Cc: netdev@vger.kernel.org; linux-next@vger.kernel.org;
+linux-kernel@vger.kernel.org; John Linn;
+> jtyner@cs.ucr.edu
+> Subject: Re: linux-next: build failure after merge of the final tree
 > 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
-> ---
-> Also this driver was written before some of our youngest kernel hackers
-> were born.  Neat.  :)
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Thu, 8 Apr 2010 15:35:05 +1000
 > 
-> diff --git a/drivers/scsi/wd7000.c b/drivers/scsi/wd7000.c
-> index 2f6e9d8..bdfe59d 100644
-> --- a/drivers/scsi/wd7000.c
-> +++ b/drivers/scsi/wd7000.c
-> @@ -1588,7 +1588,7 @@ static int wd7000_host_reset(struct scsi_cmnd *SCpnt)
->  {
->  	Adapter *host = (Adapter *) SCpnt->device->host->hostdata;
->  
-> -	spin_unlock_irq(SCpnt->device->host->host_lock);
-> +	spin_lock_irq(SCpnt->device->host->host_lock);
->  
+> > After merging the final tree, today's linux-next build (powerpc
+> > allyesconfig) failed like this:
+> >
+> > drivers/net/ll_temac_main.c: In function 'll_temac_recv':
+> > drivers/net/ll_temac_main.c:695: error: implicit declaration of
+function 'virt_to_bus'
+> >
+> > Caused by commit 459569145516f7967b916c57445feb02c600668c ("Add
+> > non-Virtex5 support for LL TEMAC driver") from the net tree.
+> >
+> > I have reverted that commit for today.
+> 
+> And I'm reverting it too, it's illegal to use virt_to_bus()
+> in new code in this day and age.
 
-Doesn't seem to be present in today's linux-next, so I have queued it in 
-my tree so that it doesn't get lost.
+I'm not pushing back here, just trying to make sure I understand and do
+it better next time :)
 
-Thanks,
+I don't see that my patch has touched that part of the driver as that
+call was already in the driver before my patch (but maybe I'm just
+missing it).
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+My patch did change the dependency in the Kconfig so that it only
+depends on powerpc rather than powerpc DCR and maybe that exposed
+something that wasn't previously exposed.
+
+Maybe this is an issue in linux-next and I need to test against that,
+I'm pulling it now.  I was testing against Linus's tree.
+
+> 
+> John, you'll need to use the DMA mapping APIs in this change when you
+> resubmit it.
+
+Thanks, will spin it again and get that fixed.  My apologies for the
+hassles, appreciate the help.
+
+-- John
+
+> 
+> Thanks.
+
+
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+
+
