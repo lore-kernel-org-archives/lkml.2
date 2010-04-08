@@ -1,125 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758464Ab0DHHQk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 03:16:40 -0400
-Received: from mga09.intel.com ([134.134.136.24]:58100 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753799Ab0DHHQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 03:16:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,169,1270450800"; 
-   d="scan'208";a="611218881"
-Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, netdev <netdev@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-       alex.shi@intel.com,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Ma, Ling" <ling.ma@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1004071130260.13261@router.home>
-References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
-	 <alpine.DEB.2.00.1003250942080.2670@router.home>
-	 <1269570902.9614.92.camel@alexs-hp.sh.intel.com>
-	 <1270114166.2078.107.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004011050340.16531@router.home>
-	 <1270195589.2078.116.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004050853300.23149@router.home>
-	 <i2z84144f021004051030k7ff5190cyc083aa12c552dfac@mail.gmail.com>
-	 <4BBA8DF9.8010409@kernel.org>
-	 <1270542497.2078.123.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004061033330.18750@router.home>
-	 <alpine.DEB.2.00.1004061552500.19151@router.home>
-	 <1270591841.2091.170.camel@edumazet-laptop>
-	 <1270607668.2078.259.camel@ymzhang.sh.intel.com>
-	 <alpine.DEB.2.00.1004071130260.13261@router.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 08 Apr 2010 15:18:35 +0800
-Message-Id: <1270711115.2078.385.camel@ymzhang.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1758514Ab0DHHSO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 03:18:14 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35555 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758449Ab0DHHSK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 03:18:10 -0400
+Date: Thu, 8 Apr 2010 15:16:17 +0800
+From: Liang Li <liang.li@windriver.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Amit Shah <shahamit@gmail.com>
+Subject: Re: [Bug #15615] NULL pointer deref in task_is_waking
+Message-ID: <20100408071617.GC26543@localhost>
+Reply-To: Liang Li <liang.li@windriver.com>
+References: <6Pphclm24fK.A.lSF.qsPvLB@chimera>
+ <JVS2s9dmTsP.A.ivH.2tPvLB@chimera>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <JVS2s9dmTsP.A.ivH.2tPvLB@chimera>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-OriginalArrivalTime: 08 Apr 2010 07:17:35.0429 (UTC) FILETIME=[8FF44750:01CAD6EB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-07 at 11:43 -0500, Christoph Lameter wrote:
-> On Wed, 7 Apr 2010, Zhang, Yanmin wrote:
+On Wed, Apr 07, 2010 at 11:13:48PM +0200, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
 > 
-> > I collected retired instruction, dtlb miss and LLC miss.
-> > Below is data of LLC miss.
-> >
-> > Kernel 2.6.33:
-> >     20.94%        hackbench  [kernel.kallsyms]                                       [k] copy_user_generic_string
-> >     14.56%        hackbench  [kernel.kallsyms]                                       [k] unix_stream_recvmsg
-> >     12.88%        hackbench  [kernel.kallsyms]                                       [k] kfree
-> >      7.37%        hackbench  [kernel.kallsyms]                                       [k] kmem_cache_free
-> >      7.18%        hackbench  [kernel.kallsyms]                                       [k] kmem_cache_alloc_node
-> >      6.78%        hackbench  [kernel.kallsyms]                                       [k] kfree_skb
-> >      6.27%        hackbench  [kernel.kallsyms]                                       [k] __kmalloc_node_track_caller
-> >      2.73%        hackbench  [kernel.kallsyms]                                       [k] __slab_free
-> >      2.21%        hackbench  [kernel.kallsyms]                                       [k] get_partial_node
-> >      2.01%        hackbench  [kernel.kallsyms]                                       [k] _raw_spin_lock
-> >      1.59%        hackbench  [kernel.kallsyms]                                       [k] schedule
-> >      1.27%        hackbench  hackbench                                               [.] receiver
-> >      0.99%        hackbench  libpthread-2.9.so                                       [.] __read
-> >      0.87%        hackbench  [kernel.kallsyms]                                       [k] unix_stream_sendmsg
-> >
-> > Kernel 2.6.34-rc3:
-> >     18.55%        hackbench  [kernel.kallsyms]                                                     [k] copy_user_generic_str
-> > ing
-> >     13.19%        hackbench  [kernel.kallsyms]                                                     [k] unix_stream_recvmsg
-> >     11.62%        hackbench  [kernel.kallsyms]                                                     [k] kfree
-> >      8.54%        hackbench  [kernel.kallsyms]                                                     [k] kmem_cache_free
-> >      7.88%        hackbench  [kernel.kallsyms]                                                     [k] __kmalloc_node_track_
-> > caller
-> 
-> Seems that the overhead of __kmalloc_node_track_caller was increased. The
-> function inlines slab_alloc().
-> 
-> >      6.54%        hackbench  [kernel.kallsyms]                                                     [k] kmem_cache_alloc_node
-> >      5.94%        hackbench  [kernel.kallsyms]                                                     [k] kfree_skb
-> >      3.48%        hackbench  [kernel.kallsyms]                                                     [k] __slab_free
-> >      2.15%        hackbench  [kernel.kallsyms]                                                     [k] _raw_spin_lock
-> >      1.83%        hackbench  [kernel.kallsyms]                                                     [k] schedule
-> >      1.82%        hackbench  [kernel.kallsyms]                                                     [k] get_partial_node
-> >      1.59%        hackbench  hackbench                                                             [.] receiver
-> >      1.37%        hackbench  libpthread-2.9.so                                                     [.] __read
-> 
-> I wonder if this is not related to the kmem_cache_cpu structure straggling
-> cache line boundaries under some conditions. On 2.6.33 the kmem_cache_cpu
-> structure was larger and therefore tight packing resulted in different
-> alignment.
-> 
-> Could you see how the following patch affects the results. It attempts to
-> increase the size of kmem_cache_cpu to a power of 2 bytes. There is also
-> the potential that other per cpu fetches to neighboring objects affect the
-> situation. We could cacheline align the whole thing.
-I tested the patch against 2.6.33+9dfc6e68bfe6e and it seems it doesn't help.
+> The following bug entry is on the current list of known regressions
+> from 2.6.33.  Please verify if it still should be listed and let the tracking team
+> know (either way).
 
-I dumped percpu allocation info when booting kernel and didn't find clear sign.
+The bug still there. I just met it. And seems its quite simple to get it
+fixed.
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index a3dff1f..2df1a76 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -913,7 +913,7 @@ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
+  */
+ static inline int task_is_waking(struct task_struct *p)
+ {
+-	return unlikely((p->state == TASK_WAKING) && !(p->flags & PF_STARTING));
++	return unlikely(p && (p->state == TASK_WAKING) && !(p->flags & PF_STARTING));
+ }
+ 
+ /*
+
+But seems commitid 0017d735092844118bef006696a750a0e4ef6ebd in tip tree
+also touched task_is_waking. So the patch for tip tree should be:
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 3acf694..d259641 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -920,7 +920,7 @@ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
+  */
+ static inline int task_is_waking(struct task_struct *p)
+ {
+-	return unlikely(p->state == TASK_WAKING);
++	return unlikely(p && p->state == TASK_WAKING);
+ }
+ 
+ /*
+
+Regards,
+	-Liang Li
 
 > 
-> ---
->  include/linux/slub_def.h |    5 +++++
->  1 file changed, 5 insertions(+)
 > 
-> Index: linux-2.6/include/linux/slub_def.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/slub_def.h	2010-04-07 11:33:50.000000000 -0500
-> +++ linux-2.6/include/linux/slub_def.h	2010-04-07 11:35:18.000000000 -0500
-> @@ -38,6 +38,11 @@ struct kmem_cache_cpu {
->  	void **freelist;	/* Pointer to first free per cpu object */
->  	struct page *page;	/* The slab from which we are allocating */
->  	int node;		/* The node of the page (or -1 for debug) */
-> +#ifndef CONFIG_64BIT
-> +	int dummy1;
-> +#endif
-> +	unsigned long dummy2;
-> +
->  #ifdef CONFIG_SLUB_STATS
->  	unsigned stat[NR_SLUB_STAT_ITEMS];
->  #endif
-
-
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15615
+> Subject		: NULL pointer deref in task_is_waking
+> Submitter	: Amit Shah <shahamit@gmail.com>
+> Date		: 2010-03-23 04:04 (16 days old)
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
