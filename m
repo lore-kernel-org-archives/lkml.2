@@ -1,91 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933170Ab0DHSSB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 14:18:01 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36679 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933022Ab0DHSRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 14:17:17 -0400
-From: pavan_savoy@ti.com
-To: gregkh@suse.de, alan@lxorguk.ukuu.org.uk
-Cc: linux-kernel@vger.kernel.org, npelly@google.com, pavan_savoy@yahoo.co.in,
-       Pavan Savoy <pavan_savoy@ti.com>
-Subject: [PATCH] Documentation:staging: add TODO and ABI to ti-st
-Date: Thu,  8 Apr 2010 13:16:58 -0500
-Message-Id: <1270750619-19174-8-git-send-email-pavan_savoy@ti.com>
-X-Mailer: git-send-email 1.5.6.3
-In-Reply-To: <1270750619-19174-7-git-send-email-pavan_savoy@ti.com>
-References: <1270750619-19174-1-git-send-email-pavan_savoy@ti.com>
- <1270750619-19174-2-git-send-email-pavan_savoy@ti.com>
- <1270750619-19174-3-git-send-email-pavan_savoy@ti.com>
- <1270750619-19174-4-git-send-email-pavan_savoy@ti.com>
- <1270750619-19174-5-git-send-email-pavan_savoy@ti.com>
- <1270750619-19174-6-git-send-email-pavan_savoy@ti.com>
- <1270750619-19174-7-git-send-email-pavan_savoy@ti.com>
+	id S933190Ab0DHSSL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 14:18:11 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:58298 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933118Ab0DHSRm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 14:17:42 -0400
+Date: Thu, 8 Apr 2010 14:17:41 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Pedro Ribeiro <pedrib@gmail.com>
+cc: Daniel Mack <daniel@caiaq.de>, Robert Hancock <hancockrwd@gmail.com>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>,
+       USB list <linux-usb@vger.kernel.org>
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+In-Reply-To: <h2m74fd948d1004081017p6fe8652cpee34d79edf65508b@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1004081416560.1720-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavan Savoy <pavan_savoy@ti.com>
+On Thu, 8 Apr 2010, Pedro Ribeiro wrote:
 
-A TODO file and a ABI to list the things to be done,
-and user-space/kernel-space interface for this ldisc.
+> > Pedro, in the hope of tracking down the problem, can you apply this
+> > patch and see what output it produces in the system log when the
+> > "interference" happens?  (Warning: It will produce quite a lot of
+> > output whenever you send data to the audio device -- between 500 and
+> > 1000 lines per second.)
 
-Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
----
- drivers/staging/ti-st/TODO      |   19 +++++++++++++++++++
- drivers/staging/ti-st/sysfs-uim |   16 ++++++++++++++++
- 2 files changed, 35 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/ti-st/TODO
- create mode 100644 drivers/staging/ti-st/sysfs-uim
+> I'll do it tonight and send you the results tomorrow morning. Do you
+> want CONFIG_USB_DEBUG enabled or disabled?
 
-diff --git a/drivers/staging/ti-st/TODO b/drivers/staging/ti-st/TODO
-new file mode 100644
-index 0000000..2c4fe58
---- /dev/null
-+++ b/drivers/staging/ti-st/TODO
-@@ -0,0 +1,19 @@
-+TODO:
-+
-+1. A per-device/tty port context required to support multiple devices
-+on same platform.
-+
-+2. REMOVE the sysfs entry PID passing mechanism, since there should
-+be a better way to request user-space to install line discipline.
-+
-+3. Re-view/Re-work on the locking.
-+
-+4. Re-structure to make the ldisc driver more generic for chipsets which mux
-+multiple connectivity (BT, FM, GPS) upon 1 TTY port.
-+
-+5. Step up and maintain this driver to ensure that it continues
-+to work.  Having the hardware for this is pretty much a
-+requirement.  If this does not happen, the will be removed in
-+the 2.6.35 kernel release.
-+
-+Please send patches to Greg Kroah-Hartman <greg@kroah.com>.
-diff --git a/drivers/staging/ti-st/sysfs-uim b/drivers/staging/ti-st/sysfs-uim
-new file mode 100644
-index 0000000..10311af
---- /dev/null
-+++ b/drivers/staging/ti-st/sysfs-uim
-@@ -0,0 +1,16 @@
-+What:           /sys/class/rfkill/rfkill%d/
-+Date:           March 22
-+Contact:        Pavan Savoy <pavan_savoy@ti.com>
-+Description:
-+		Creates the rfkill entries for Radio apps like
-+		BT app, FM app or GPS app to toggle corresponding
-+		cores of the chip
-+
-+What:           /dev/rfkill
-+Date:           March 22
-+Contact:        Pavan Savoy <pavan_savoy@ti.com>
-+Description:
-+		A daemon which maintains the ldisc installation and
-+		uninstallation would be ppolling on this device and listening
-+		on events which would suggest either to install or un-install
-+		line discipline
--- 
-1.5.4.3
+It doesn't matter.
+
+Alan Stern
 
