@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758548Ab0DHKUS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 06:20:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39358 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758473Ab0DHKUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 06:20:10 -0400
-From: Nikanth Karthikesan <knikanth@suse.de>
-Organization: suse.de
-To: Jens Axboe <jens.axboe@oracle.com>
-Subject: [PATCH] loop: Update mtime when writing using aops
-Date: Thu, 8 Apr 2010 15:51:37 +0530
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-desktop; KDE/4.3.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004081551.37824.knikanth@suse.de>
+	id S1758325Ab0DHKny (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 06:43:54 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58162 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755212Ab0DHKnw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 06:43:52 -0400
+Date: Thu, 8 Apr 2010 11:45:42 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Michael Schnell <mschnell@lumino.de>
+Cc: linux-kernel@vger.kernel.org, nios2-dev <nios2-dev@sopc.et.ntust.edu.tw>
+Subject: Re: atomic RAM ?
+Message-ID: <20100408114542.47b6589a@lxorguk.ukuu.org.uk>
+In-Reply-To: <4BBD86A5.5030109@lumino.de>
+References: <4BBD86A5.5030109@lumino.de>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-14
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update mtime when writing to backing filesystem using the address space
-operations write_begin and write_end.
+>  - no normal processor "read-modify-write" instructions that by design
+> are not interrupted or even bus-locking
+>  - new "custom" processor instructions can be defined that might work
+> atomically, as well not interruptible as kind of bus-locking for SMP use
+>  - these custom instructions can't access the memory in normal way
+> (through the MMU and the cache).
+> 
+> So to implement atomic instructions a dedicated RAM area would be needed
+> to hold the atomically accessible data. Same can't be accessed by the
+> CPU in other ways. This RAM area would be implemented with the new
+> atomic instructions and be located within the FPGA and thus could
+> accessed very fast (no cache issues).
 
-Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
+Take a look at sparc 32bit. That only has a single meaningful atomic
+instruction (swap byte with 0xFF). It provides all the kernel atomic_t
+operations via this: arch/sparc/lib/atomic32.c. That bitops are done a
+similar way, which leaves spinlocks and the like.
 
----
+More importantly if your true locks in the FPGA are really fast in CPU
+terms then you can think of every other atomic instructions as being
+implemented using
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index cb69929..8546d12 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -237,6 +237,8 @@ static int do_lo_send_aops(struct loop_device *lo, struct bio_vec *bvec,
- 		if (ret)
- 			goto fail;
- 
-+		file_update_time(file);
-+
- 		transfer_result = lo_do_transfer(lo, WRITE, page, offset,
- 				bvec->bv_page, bv_offs, size, IV);
- 		copied = size;
+		lock(cpu_atomic_instruction_lock)
+		do bits
+		unlock(cpu_atomic_instruction_lock)
+
+(its just this is normally done in hardware/microcode)
+
+Doing it per instruction might be a bit naïve but I think you can
+reasonably do it so that things like spinlocks use a single (or a hashed
+set) of non kernel locks to implement "atomic" instructions, and as
+sparc32 shows you only need a tiny subset of them to implement the rest
+in their terms.
+
+So I don't actually think you need any kernel core changes to get going,
+and given the kernel dynamically allocates a lot of locks I suspect
+trying to dynamically manage atomic ram allocations is going to cost more
+than executing a few instructions here and there under a single very fast
+hardware assisted lock.
+
+Alan
