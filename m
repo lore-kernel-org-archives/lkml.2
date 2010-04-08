@@ -1,82 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758675Ab0DHMmK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 08:42:10 -0400
-Received: from stargate.chelsio.com ([67.207.112.58]:17191 "EHLO
-	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758420Ab0DHMmG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 08:42:06 -0400
-Message-ID: <4BBDCF05.80206@chelsio.com>
-Date: Thu, 08 Apr 2010 18:11:41 +0530
-From: Rakesh Ranjan <rakesh@chelsio.com>
-Organization: Chelsio Communications
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1758683Ab0DHMm6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 08:42:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45323 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757876Ab0DHMmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 08:42:55 -0400
+Date: Thu, 8 Apr 2010 14:42:47 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
+       linux-input@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       rvinyard@cs.nmsu.edu
+Subject: Re: [PATCH mmotm] hid-picolcd: depends on LCD_CLASS_DEVICE
+In-Reply-To: <20100407203132.7fe2d0f1@neptune.home>
+Message-ID: <alpine.LNX.2.00.1004081441460.8345@pobox.suse.cz>
+References: <201004052336.o35NaeSE015814@imap1.linux-foundation.org> <20100405220414.9d90da83.randy.dunlap@oracle.com> <alpine.LNX.2.00.1004061038510.8345@pobox.suse.cz> <20100406105635.5384a087@pluto.restena.lu> <20100406082614.79aaf1c5.randy.dunlap@oracle.com>
+ <20100406183535.7de3c628@neptune.home> <20100406095633.49ec957a.randy.dunlap@oracle.com> <20100406230434.1336c317@neptune.home> <20100407092010.4cd60ece.randy.dunlap@oracle.com> <20100407203132.7fe2d0f1@neptune.home>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: netdev@vger.kernel.org, linux-scsi@vger.kernel.org,
-       open-iscsi@googlegroups.com, linux-kernel@vger.kernel.org,
-       kxie@chelsio.com, James.Bottomley@hansenpartnership.com,
-       michaelc@cs.wisc.edu
-Subject: Re: cxgb4i submission
-References: <1270728855-20951-1-git-send-email-rakesh@chelsio.com> <20100408.051850.51394263.davem@davemloft.net>
-In-Reply-To: <20100408.051850.51394263.davem@davemloft.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enig6A3A66817034D5DB0FB78FFB"
-X-OriginalArrivalTime: 08 Apr 2010 12:44:51.0609 (UTC) FILETIME=[48079090:01CAD719]
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig6A3A66817034D5DB0FB78FFB
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, 7 Apr 2010, Bruno Prémont wrote:
 
-On 04/08/2010 05:48 PM, David Miller wrote:
-> From: Rakesh Ranjan <rakesh@chelsio.com>
-> Date: Thu,  8 Apr 2010 17:44:12 +0530
->=20
->> This driver depends upon cxgb4 driver, posted recently on netdev and
->> now part of net-next repo.
->=20
-> It went into the net-2.6 repo, not net-next-2.6
->=20
-> And it is even in Linus's tree now.
+> HID_PICOLCD should depend on LCD_CLASS_DEVICE, otherwise the
+> build fails when HID_PICOLCD=y and LCD_CLASS_DEVICE=m:
+> 
+> hid-picolcd.c:(.text+0x84523f): undefined reference to `lcd_device_unregister'
+> hid-picolcd.c:(.text+0x8478ab): undefined reference to `lcd_device_register'
+> hid-picolcd.c:(.text+0x84c15f): undefined reference to `lcd_device_unregister'
+> 
+> Same applies to FB, BACKLIGHT_CLASS_DEVICE and LEDS_CLASS.
+> 
+> Add suboptions for those features to handle the deps on kbuild side
+> and just check HID_PICOLCD_* in the code.
+> 
+> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+> ---
+> 
+> On Wed, 07 April 2010 Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> > All of these user-visible kconfig options need help text also...
+> > 
+> 
+> Here is a better patch, with added documentation and stripped
+> select clauses under HID_PICOLCD as they are handled by HID_PICOLCD_FB.
+> 
+> 
+> 
+> 
+>  drivers/hid/Kconfig       |   53 +++++++++++++++++++++++++++++++++++++-------
+>  drivers/hid/hid-picolcd.c |   40 +++++++++++++++++-----------------
+>  2 files changed, 64 insertions(+), 29 deletions(-)
+> 
+> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+> index a2ecd83..782a34e 100644
+> --- a/drivers/hid/Kconfig
+> +++ b/drivers/hid/Kconfig
+> @@ -265,11 +265,6 @@ config HID_PETALYNX
+>  config HID_PICOLCD
+>  	tristate "PicoLCD (graphic version)"
+>  	depends on USB_HID
+> -	select FB_DEFERRED_IO if FB
+> -	select FB_SYS_FILLRECT if FB
+> -	select FB_SYS_COPYAREA if FB
+> -	select FB_SYS_IMAGEBLIT if FB
+> -	select FB_SYS_FOPS if FB
+>  	---help---
+>  	  This provides support for Minibox PicoLCD devices, currently
+>  	  only the graphical ones are supported.
+> @@ -277,14 +272,54 @@ config HID_PICOLCD
+>  	  This includes support for the following device features:
+>  	  - Keypad
+>  	  - Switching between Firmware and Flash mode
+> -	  - Framebuffer for monochrome 256x64 display
+> -	  - Backlight control         (needs CONFIG_BACKLIGHT_CLASS_DEVICE)
+> -	  - Contrast control          (needs CONFIG_LCD_CLASS_DEVICE)
+> -	  - General purpose outputs   (needs CONFIG_LEDS_CLASS)
+>  	  - EEProm / Flash access     (via debugfs)
+> +	  Features to selectively enable:
+> +	  - Framebuffer for monochrome 256x64 display
+> +	  - Backlight control
+> +	  - Contrast control
+> +	  - General purpose outputs
+>  	  Features that are not (yet) supported:
+>  	  - IR
+>  
+> +config HID_PICOLCD_FB
+> +	bool "Framebuffer support"
+> +	default !EMBEDDED
+> +	depends on HID_PICOLCD
+> +	depends on HID_PICOLCD=FB || FB=y
+> +	select FB_DEFERRED_IO
+> +	select FB_SYS_FILLRECT
+> +	select FB_SYS_COPYAREA
+> +	select FB_SYS_IMAGEBLIT
+> +	select FB_SYS_FOPS
 
-Hi Dave,
+Could we perhaps also make the sub-choices for individual features 
+availabel only if !EMBEDDED as well?
 
-Thanks for updates, somehow I missed that part.
+It's probably too much to ask for a single device during oldconfig run, 
+for example ...
 
-Regards
-Rakesh Ranjan
+Thanks,
 
-
-
---------------enig6A3A66817034D5DB0FB78FFB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
-
-iQIcBAEBCgAGBQJLvc8FAAoJEBqoHbxtDU4JdH0P/RtWoO9iEmEPsNm2ZyDIz7JR
-rVZEorOVSmngsqaY63ll7+IC7HoA0gTX4djiV48YFzvloI6N3ZGLpmuJX+CC2Vpx
-y9h3veQLpTjkM35QceYVJC/721VeGgbdj0CxSFnFTnzIO6JDHc6yHmKqzoPKHIEU
-YMpDS+K/IpLzsTRkLutDEUY8ybrlTzkttVnQCTCj3CszhHv0mLB/9FbCEyA/JKtW
-SCfwFfGQJET3lHPhTIpGFYgIQNLRTO6k+lWzlToEkBH/taQxw6ZdKcDA+6WRHIDQ
-I1Z3aP6RNrJomhah30w0Zop1F+Nn6Oy9oGj81KuIfwRULxFJxA660xP2cE3yW4TG
-Vih4c4b2EbgeA/jarlCo32cAMxAMc9p4EJxBe7+1PiNYqKjks4P7dRolHV4auLOX
-GXog8BcJTHhCfpXvBd0AElppeQz+zf52P+4U3Fu5y5TV2K574z33NmJKFQn5h2hO
-+fpCObiDpT7RnY6JxIXn/lZyYppxFkSNcc/WEIJPNuZls5UiB6uxiZXc8mzIQpwA
-aBohlML5KJhtX76bnbwgN/l1WXdUeow5TcKmian1UpLPC4k1Eo4CtMzRZmyvt/OQ
-sNc9UTMuDrmjGvdvRZXoBbtCL6zt85nVMachiN8O3S2R6CcjSmfLzIk9luBIF3nu
-hUOiYJwrXCpTRxJUlnTu
-=GEQK
------END PGP SIGNATURE-----
-
---------------enig6A3A66817034D5DB0FB78FFB--
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
