@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758623Ab0DHL4x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 07:56:53 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:26485 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754340Ab0DHL4t (ORCPT
+	id S1758286Ab0DHMHN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 08:07:13 -0400
+Received: from qw-out-2122.google.com ([74.125.92.25]:31212 "EHLO
+	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804Ab0DHMHJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 07:56:49 -0400
-Message-ID: <4BBDC47E.1060405@panasas.com>
-Date: Thu, 08 Apr 2010 14:56:46 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	Thu, 8 Apr 2010 08:07:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Bvo3H7XT44nIAmole0YdmKgz8knK/6Bkkvtf2mPVvr8lN+Q56E1abgjGHDG89hdXmo
+         mpOiczM/eigodDB68iCXL5rwhfAW5jO7EITPSwAdfhqhcgbINZ8nrdXCIHK0gLmyc+f4
+         guUxTjbXxsN0i3X3eQUPI4jYh2/TTQPIyxSRw=
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [Bug #15718] File corruption regression on NFS related to commit
- 1f36f774
-References: <6Pphclm24fK.A.lSF.qsPvLB@chimera> <JVS2s9dmTsP.A.ApF.zsPvLB@chimera>
-In-Reply-To: <JVS2s9dmTsP.A.ApF.zsPvLB@chimera>
+In-Reply-To: <20100408110532.GA14451@atrey.karlin.mff.cuni.cz>
+References: <20100313122754.GD2192@elf.ucw.cz> <20100401060624.GA1329@ucw.cz> 
+	<201004072226.34272.maciej.rutecki@gmail.com> <201004072252.08354.marek.vasut@gmail.com> 
+	<20100408044409.GA14982@elf.ucw.cz> <i2mf17812d71004080353oa8459642v33f88993eee87a99@mail.gmail.com> 
+	<20100408110532.GA14451@atrey.karlin.mff.cuni.cz>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Thu, 8 Apr 2010 20:06:48 +0800
+Message-ID: <k2pf17812d71004080506of67ae870qceb515f5038a9651@mail.gmail.com>
+Subject: Re: [regression] 2.6.34-rc1 to -rc3 on zaurus: no longer boots
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Marek Vasut <marek.vasut@gmail.com>, linux-arm-kernel@lists.infradead.org,
+       maciej.rutecki@gmail.com, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       thommycheck@gmail.com, dbaryshkov@gmail.com,
+       Cyril Hrubis <metan@ucw.cz>, arminlitzel@web.de,
+       kernel list <linux-kernel@vger.kernel.org>, utx@penguin.cz,
+       lenz@cs.wisc.edu, rpurdie@rpsys.net, omegamoon@gmail.com,
+       zaurus-devel@www.linuxtogo.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Apr 2010 11:56:48.0355 (UTC) FILETIME=[9179EB30:01CAD712]
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2010 12:13 AM, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
-> 
-> The following bug entry is on the current list of known regressions
-> from 2.6.33.  Please verify if it still should be listed and let the tracking team
-> know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15718
-> Subject		: File corruption regression on NFS related to commit 1f36f774
-> Submitter	: Boaz Harrosh <bharrosh@panasas.com>
-> Date		: 2010-03-24 15:49 (15 days old)
-> First-Bad-Commit: http://git.kernel.org/git/linus/1f36f774b22a0ceb7dd33eca626746c81a97b6a5
-> Message-ID	: <4BAA3493.1030802@panasas.com>
-> References	: http://marc.info/?l=linux-kernel&m=126944579810350&w=4
-> Handled-By	: Al Viro <viro@zeniv.linux.org.uk>
-> 
-> 
+2010/4/8 Pavel Machek <pavel@ucw.cz>:
+>
+>> >> > > > > I tried compiling 2.6.34-rc1, and it does not boot :-(. It does not
+>> >> > > > > seem to even reset the framebuffer (I'm using kexec -- so it stays
+>> >> > > > > stuck on on previous screen).
+>> >> > >
+>> >> > > Tried again with -rc2 and -rc3, and neither boots :-(. I did not have
+>> >> > > time to set up serial console, yet :-(. Any ideas?
+>> >> >
+>> >> > I created a Bugzilla entry at
+>> >> > https://bugzilla.kernel.org/show_bug.cgi?id=15712
+>> >> > for your bug report, please add your address to the CC list in there,
+>> >> >  thanks!
+>> >> >
+>> >> Pavel, you broke it ... and here you say something about sane arm maintainers
+>> >> ;-)
+>> >
+>> > ? You know which patch causes it ?
+>>
+>> Just have some time to try this out on my corgi, and the kernel runs
+>> happily.
+>>
+>> Pavel,
+>>
+>> Which exact model are you running your kernel?
+>
+> It is Zaurus SL-C3000 (aka spitz). I'm using kexec, but that used to
+> work. Should I try minimal config?
 
-Fix already in main line: 3e297b613491f0d4928aa652a2cd266aa06dc409
-	Author: Al Viro <viro@zeniv.linux.org.uk>
-	Restore LOOKUP_DIRECTORY hint handling in final lookup on open()
-
-Boaz
+I'm using kexec as well, but on corgi. My akita is not on hands these
+days, otherwise I can give it a try. I guess there is nothing fundamentally
+wrong, so yes, I think it's feasible to try minimal config.
