@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758554Ab0DHH0A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 03:26:00 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:34062 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758509Ab0DHHZ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 03:25:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=n8NROewiopq0szTwZHJ8+EpNNL4vzV7cPaMARE+4uIdK2oxUheuSIdc4v6Kv3Iut52
-         w4GK8eGeuFiGopz4RN2Ntg7rh6q57nj68GoUshlMNA6hMa5dIbL6ciRT7DfAiVDQFwQK
-         P/GKTIHAVyKfrF/KdBPT73rrbLZA17uOtBQpw=
-Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: yanmin_zhang@linux.intel.com, cl@linux-foundation.org,
-       penberg@cs.helsinki.fi, netdev@vger.kernel.org, tj@kernel.org,
-       alex.shi@intel.com, linux-kernel@vger.kernel.org, ling.ma@intel.com,
-       tim.c.chen@intel.com, akpm@linux-foundation.org
-In-Reply-To: <20100408.000557.180546976.davem@davemloft.net>
-References: <1270702774.8141.49.camel@edumazet-laptop>
-	 <1270705153.8141.58.camel@edumazet-laptop>
-	 <1270710019.2215.4.camel@edumazet-laptop>
-	 <20100408.000557.180546976.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Apr 2010 09:25:51 +0200
-Message-ID: <1270711551.2215.5.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1758551Ab0DHH1u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 03:27:50 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:53701 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758509Ab0DHH1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 03:27:47 -0400
+Date: Thu, 8 Apr 2010 09:27:31 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Yinghai <yinghai.lu@oracle.com>
+Cc: James Morris <jmorris@namei.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       linux-kernel@vger.kernel.org, airlied@linux.ie,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: Config NO_BOOTMEM breaks my amd64 box
+Message-ID: <20100408072731.GA29866@elte.hu>
+References: <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org>
+ <20100331185916.GA12306@elte.hu>
+ <alpine.LRH.2.00.1004010952080.31957@tundra.namei.org>
+ <4BB3DC4E.7030504@zytor.com>
+ <alpine.LRH.2.00.1004011042460.32618@tundra.namei.org>
+ <4BB3DF46.8080008@zytor.com>
+ <alpine.LRH.2.00.1004011200020.365@tundra.namei.org>
+ <20100401125210.GA2445@elte.hu>
+ <20100408063236.GA23489@elte.hu>
+ <4BBD7F18.1070205@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BBD7F18.1070205@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 08 avril 2010 à 00:05 -0700, David Miller a écrit :
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Thu, 08 Apr 2010 09:00:19 +0200
-> 
-> > If run individually, the tests results are more what we would expect
-> > (slow), but if machine runs the two set of process concurrently, each
-> > group runs much faster...
-> 
-> BTW, I just discovered (thanks to the function graph tracer, woo hoo!)
-> that loopback TCP packets get fully checksum validated on receive.
-> 
-> I'm trying to figure out why skb->ip_summed ends up being
-> CHECKSUM_NONE in tcp_v4_rcv() even though it gets set to
-> CHECKSUM_PARTIAL in tcp_sendmsg().
-> 
-> I wonder how much this accounts for some of the hackbench
-> oddities... and other regressions in loopback tests we've seen.
-> :-)
-> 
-> Just FYI...
 
-Thanks !
+* Yinghai <yinghai.lu@oracle.com> wrote:
 
-But hackbench is a af_unix benchmark, so loopback stuff is not used that
-much :)
+> On 04/07/2010 11:32 PM, Ingo Molnar wrote:
+> > 
+> > * Ingo Molnar <mingo@elte.hu> wrote:
+> > 
+> >> * James Morris <jmorris@namei.org> wrote:
+> >>
+> >>> On Wed, 31 Mar 2010, H. Peter Anvin wrote:
+> >>>
+> >>>> On 03/31/2010 04:43 PM, James Morris wrote:
+> >>>>>>
+> >>>>>> Upgraded how?  The problem no longer happens?
+> >>>>>
+> >>>>> Upgraded to the latest rawhide userland -- I have not since tested with 
+> >>>>> bootmem off.  I'll try and do so again when I get a chance.
+> >>>>>
+> >>>>
+> >>>> That would be great.  The sooner the better, obviously.
+> >>>
+> >>> I'm not seeing any problems now, with current Linus and rawhide.  I'll leave 
+> >>> bootmem off and see if anything comes up again.
+> >>
+> >> (a current bootlog would still be nice)
+> >>
+> >> Dave, can you reproduce any of these problems with Linus's latest?
+> > 
+> > ping? Can you or Dave reproduce the bug with -rc3 or later kernels? (If not 
+> > then it probably means that the bug you triggered was already fixed at the 
+> > time you reported it, as hpa suspected.)
+> 
+> James already reported -rc3 fix the problem for him.
+> 
+> Dave implied -rc3 fixed problem for him
 
+Hm, i'm confused, does this mean that it was all fixed upstream already when 
+Dave and James sent their complaints?
 
+Would be nice to have a confirmation from Dave for that (beyond 'implying' 
+it), to not keep this thread open-ended.
+
+Thanks,
+
+	Ingo
