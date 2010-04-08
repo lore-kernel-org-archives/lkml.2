@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933668Ab0DHUc3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 16:32:29 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41147 "EHLO ogre.sisk.pl"
+	id S933598Ab0DHUdL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 16:33:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23179 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933582Ab0DHUcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 16:32:20 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Richard Zidlicky <rz@linux-m68k.org>
-Subject: Re: 2.6.33.2 circular locking, hibernate, dm-crypt
-Date: Thu, 8 Apr 2010 22:35:25 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
-Cc: dm-crypt@saout.de, pm-utils@lists.freedesktop.org,
-       linux-kernel@vger.kernel.org
-References: <20100408110607.GB1788@linux-m68k.org>
-In-Reply-To: <20100408110607.GB1788@linux-m68k.org>
+	id S933486Ab0DHUdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 16:33:01 -0400
+Message-ID: <4BBE3D2F.6030609@redhat.com>
+Date: Thu, 08 Apr 2010 16:31:43 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       akpm@linux-foundation.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast() implementation
+References: <20100408191737.296180458@chello.nl> <20100408192722.643778654@chello.nl>
+In-Reply-To: <20100408192722.643778654@chello.nl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004082235.25263.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 April 2010, Richard Zidlicky wrote:
-> Hi,
-> 
-> this might be a regression - have not seen this warning in 2.6.32 with identical
-> hardware. Btw the ageold usb-sound issue still appears present in 2.6.33.2, do not
-> think it is related but I mention it because it also frequently causes circular
-> locking warnings on my hardware.
+On 04/08/2010 03:17 PM, Peter Zijlstra wrote:
+> The powerpc page table freeing relies on the fact that IRQs hold off
+> an RCU grace period, this is currently true for all existing RCU
+> implementations but is not an assumption Paul wants to support.
+>
+> Therefore, also take the RCU read lock along with disabling IRQs to
+> ensure the RCU grace period does at least cover these lookups.
+>
+> Requested-by: Paul E. McKenney<paulmck@linux.vnet.ibm.com>
+> Signed-off-by: Peter Zijlstra<a.p.zijlstra@chello.nl>
+> Cc: Nick Piggin<npiggin@suse.de>
+> Cc: Benjamin Herrenschmidt<benh@kernel.crashing.org>
 
-Can you please check if this also is present in the latest 2.6.34-rc kernels
-(preferably 2.6.34-rc4 when it's out)?
-
-Rafael
+Reviewed-by: Rik van Riel <riel@redhat.com>
