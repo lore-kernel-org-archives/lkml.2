@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933633Ab0DHUia (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 16:38:30 -0400
-Received: from p01c12o148.mxlogic.net ([208.65.145.71]:46843 "EHLO
-	p01c12o148.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933428Ab0DHUi1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 16:38:27 -0400
-X-MXL-Hash: 4bbe3ec3069bb762-feb7064a82bdc08b304d420da7fd8972244d575b
-X-MXL-Hash: 4bbe3ebf3ff8c184-55f072bd2eeed37e384411b8a71b094eb298ea49
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Greg KH <greg@kroah.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-       "ss@aao.gov.au" <ss@aao.gov.au>
-Date: Thu, 8 Apr 2010 15:38:06 -0500
-Subject: RE: [PATCH] staging/dt3155: fix build error caused by {write|read}l
- change
-Thread-Topic: [PATCH] staging/dt3155: fix build error caused by
- {write|read}l change
-Thread-Index: AcrXWe7kbHyIOUHaQY6CiAVRf+i5ggAALk4g
-Message-ID: <0D753D10438DA54287A00B0270842697636D3679E8@AUSP01VMBX24.collaborationhost.net>
-References: <201003031124.06345.hartleys@visionengravers.com>
- <20100408191123.GB31571@kroah.com>
-In-Reply-To: <20100408191123.GB31571@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1759022Ab0DHUkA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 16:40:00 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:41193 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758869Ab0DHUj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 16:39:58 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Michal Hocko <mhocko@suse.cz>
+Subject: Re: commit 9630bdd9 changes behavior of the poweroff - bug?
+Date: Thu, 8 Apr 2010 22:43:18 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+       pm list <linux-pm@lists.linux-foundation.org>
+References: <20100401133923.GA4104@tiehlicka.suse.cz> <201004072149.23791.rjw@sisk.pl> <20100408094905.GA3948@tiehlicka.suse.cz>
+In-Reply-To: <20100408094905.GA3948@tiehlicka.suse.cz>
 MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010040801)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [216.166.12.178]
-X-AnalysisOut: [v=1.0 c=1 a=oMlvMfdrr0IA:10 a=VphdPIyG4kEA:10 a=kj9zAlcOel]
-X-AnalysisOut: [0A:10 a=N0rcUYRaQg3G+2kUXxmxxA==:17 a=aloHB68v5hUZolB0wNYA]
-X-AnalysisOut: [:9 a=QDu-xvxiT9qWymNUE2ZUsUIu5BEA:4 a=CjuIK1q_8ugA:10]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004082243.18393.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, April 08, 2010 12:11 PM, Greg KH wrote:
-> On Wed, Mar 03, 2010 at 11:24:06AM -0700, H Hartley Sweeten wrote:
->> This fixes a build error caused by replacing {Write | Read}MReg with 
->> {write | read}l.
->
-> Ick, can you merge this with your other patch so we don't have build
-> errors?  I just hit this and I had to drop all of your patches.
+On Thursday 08 April 2010, Michal Hocko wrote:
+> On Wed 07-04-10 21:49:23, Rafael J. Wysocki wrote:
+> > On Wednesday 07 April 2010, Michal Hocko wrote:
+> > > Sorry for late reply, but I was AFK during holiday.
+> > > 
+> > > On Fri 02-04-10 21:31:47, Rafael J. Wysocki wrote:
+> > > > On Thursday 01 April 2010, Michal Hocko wrote:
+> > > > > On Thu 01-04-10 14:45:35, Matthew Garrett wrote:
+> > > > > > On Thu, Apr 01, 2010 at 03:39:23PM +0200, Michal Hocko wrote:
+> > > > > > > Hi Rafael, Matthew,
+> > > > > > > my laptop changed behavior during poweroff recently (after upgrading
+> > > > > > > from .33 to .34-rc1). The system seems to be powered off (status display
+> > > > > > > is off) at first glance but when I close the lid then I can hear a noise
+> > > > > > > which sounds like HDD parking and when I open lid again it starts
+> > > > > > > booting without poweroff button (same like when I suspend to RAM).
+> > > > > > 
+> > > > > > Hm. At a guess, we're somehow managing to leave the lid GPE enabled at 
+> > > > > > poweroff. Can you send the output of the acpidump command?
+> > > > > 
+> > > > > Sure, see attached.
+> > > > 
+> > > > Thanks.
+> > > > 
+> > > > Please also send the contents of /proc/acpi/wakeup.
+> > > 
+> > > See attached. I have checked both kernels (with and without reverted
+> > > 9630bdd) and the output looks pretty much same. 2.6.34-rc3, however,
+> > > looks different a bit, so I am attaching it as well.
+> > 
+> > Well, I fail to see the possible failure scenario, so let's first try a blind
+> > shot.
+> > 
+> > Please check if this patch helps:
+> > https://patchwork.kernel.org/patch/86238/
+> 
+> No change, sorry. I have tried that on top of 0fdf867 which is not the
+> most recent one (does it make sense to retest on the most recent one
+> f5284e7?)
 
-I was expecting you to NAK all of them anyway after I saw all the code 
-cleanup patches coming in on LKML.
+There were no other changes in that area I know of, but the current git
+contains the above patch, so I'd recommend to use it for further testing.
 
-> Can you respin all of them please?
+I'll try to prepare a debug patch for this issue.
 
-Not a problem.  Are you planning on merging any of the dt3155 cleanup
-patches?  If so I will wait until they show up.
-
-Also, should staging patches be based on linux-next or on Linus' git tree?
-
-Regards,
-Hartley
+Rafael
