@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933693Ab0DHUyM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 16:54:12 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:20203 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933389Ab0DHUyJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 16:54:09 -0400
-Message-ID: <4BBE4209.3080900@oracle.com>
-Date: Thu, 08 Apr 2010 13:52:25 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S933704Ab0DHUzG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 16:55:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34577 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933234Ab0DHUzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 16:55:03 -0400
+Message-ID: <4BBE42A9.2010506@suse.com>
+Date: Thu, 08 Apr 2010 16:55:05 -0400
+From: Jeff Mahoney <jeffm@suse.com>
+Organization: SUSE Labs, Novell, Inc
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-2.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: Roland Dreier <rdreier@cisco.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Chris Wright <chrisw@sous-sol.org>, David.Woodhouse@intel.com,
-       fenghua.yu@intel.com, linux-kernel@vger.kernel.org,
-       linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: Re: [PATCH 4/6] pci/dmar/sriov: use physfn to search drhd for VF
-References: <1270753107-15881-1-git-send-email-yinghai@kernel.org>	<1270753107-15881-5-git-send-email-yinghai@kernel.org> <adawrwhwyiq.fsf@roland-alpha.cisco.com>
-In-Reply-To: <adawrwhwyiq.fsf@roland-alpha.cisco.com>
+To: Edward Shishkin <edward.shishkin@gmail.com>
+Cc: ReiserFS Mailing List <reiserfs-devel@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH #3] reiserfs: Fix permissions on .reiserfs_priv
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4BBE425A.00A1:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-please check
+ Commit 677c9b2e393a0cd203bd54e9c18b012b2c73305a removed the magic
+ from the lookup code to hide the .reiserfs_priv directory since it
+ was getting loaded at mount-time instead. The intent was that the
+ entry would be hidden from the user via a poisoned d_compare, but
+ this was faulty.
 
-Subject: [PATCH] pci/dmar/sriov: use physfn to search drhd for VF
+ This introduced a security issue where unpriviledged users could
+ access and modify extended attributes or ACLs belonging to other
+ users, including root.
 
-When virtfn is used, we should use physfn to find correct drhd
+ This patch resolves the issue by properly hiding .reiserfs_priv. This
+ was the intent of the xattr poisoning code, but it appears to have
+ never worked as expected. This is fixed by using d_revalidate instead
+ of d_compare.
 
--v2: add pci_physfn() Suggested by Roland Dreier <rdreier@cisco.com>
-     do can remove ifdef in dmar.c
+ This patch makes -oexpose_privroot a no-op. I'm fine leaving it this
+ way. The effort involved in working out the corner cases wrt permissions
+ and caching outweigh the benefit of the feature.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 ---
- drivers/pci/dmar.c  |    2 ++
- include/linux/pci.h |   10 ++++++++++
- 2 files changed, 12 insertions(+)
 
-Index: linux-2.6/drivers/pci/dmar.c
-===================================================================
---- linux-2.6.orig/drivers/pci/dmar.c
-+++ linux-2.6/drivers/pci/dmar.c
-@@ -534,6 +534,8 @@ dmar_find_matched_drhd_unit(struct pci_d
- 	struct dmar_drhd_unit *dmaru = NULL;
- 	struct acpi_dmar_hardware_unit *drhd;
+ fs/reiserfs/dir.c   |    2 --
+ fs/reiserfs/xattr.c |   17 ++++-------------
+ 2 files changed, 4 insertions(+), 15 deletions(-)
+
+--- a/fs/reiserfs/dir.c
++++ b/fs/reiserfs/dir.c
+@@ -45,8 +45,6 @@ static inline bool is_privroot_deh(struc
+ 				   struct reiserfs_de_head *deh)
+ {
+ 	struct dentry *privroot = REISERFS_SB(dir->d_sb)->priv_root;
+-	if (reiserfs_expose_privroot(dir->d_sb))
+-		return 0;
+ 	return (dir == dir->d_parent && privroot->d_inode &&
+ 	        deh->deh_objectid == INODE_PKEY(privroot->d_inode)->k_objectid);
+ }
+--- a/fs/reiserfs/xattr.c
++++ b/fs/reiserfs/xattr.c
+@@ -972,21 +972,13 @@ int reiserfs_permission(struct inode *in
+ 	return generic_permission(inode, mask, NULL);
+ }
  
-+	dev = pci_physfn(dev);
-+
- 	list_for_each_entry(dmaru, &dmar_drhd_units, list) {
- 		drhd = container_of(dmaru->hdr,
- 				    struct acpi_dmar_hardware_unit,
-Index: linux-2.6/include/linux/pci.h
-===================================================================
---- linux-2.6.orig/include/linux/pci.h
-+++ linux-2.6/include/linux/pci.h
-@@ -334,6 +334,16 @@ struct pci_dev {
- #endif
+-/* This will catch lookups from the fs root to .reiserfs_priv */
+-static int
+-xattr_lookup_poison(struct dentry *dentry, struct qstr *q1, struct qstr *name)
++static int xattr_hide_revalidate(struct dentry *dentry, struct nameidata *nd)
+ {
+-	struct dentry *priv_root = REISERFS_SB(dentry->d_sb)->priv_root;
+-	if (container_of(q1, struct dentry, d_name) == priv_root)
+-		return -ENOENT;
+-	if (q1->len == name->len &&
+-		   !memcmp(q1->name, name->name, name->len))
+-		return 0;
+-	return 1;
++	return -EPERM;
+ }
+ 
+ static const struct dentry_operations xattr_lookup_poison_ops = {
+-	.d_compare = xattr_lookup_poison,
++	.d_revalidate = xattr_hide_revalidate,
  };
  
-+static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
-+{
-+#ifdef CONFIG_PCI_IOV
-+	if (dev->is_virtfn)
-+		dev = dev->physfn;
-+#endif
-+
-+	return dev;
-+}
-+
- extern struct pci_dev *alloc_pci_dev(void);
- 
- #define pci_dev_b(n) list_entry(n, struct pci_dev, bus_list)
+ int reiserfs_lookup_privroot(struct super_block *s)
+@@ -1000,8 +992,7 @@ int reiserfs_lookup_privroot(struct supe
+ 				strlen(PRIVROOT_NAME));
+ 	if (!IS_ERR(dentry)) {
+ 		REISERFS_SB(s)->priv_root = dentry;
+-		if (!reiserfs_expose_privroot(s))
+-			s->s_root->d_op = &xattr_lookup_poison_ops;
++		dentry->d_op = &xattr_lookup_poison_ops;
+ 		if (dentry->d_inode)
+ 			dentry->d_inode->i_flags |= S_PRIVATE;
+ 	} else
