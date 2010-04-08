@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758805Ab0DHPGW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 11:06:22 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43504 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758728Ab0DHPGS (ORCPT
+	id S932616Ab0DHPJr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 11:09:47 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:40219 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932280Ab0DHPJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 11:06:18 -0400
-Date: Thu, 8 Apr 2010 08:02:45 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Miller <davem@davemloft.net>
-cc: akpm@linux-foundation.org, linux-ide@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [GIT] IDE
-In-Reply-To: <20100408.013628.171442882.davem@davemloft.net>
-Message-ID: <alpine.LFD.2.00.1004080800360.3586@i5.linux-foundation.org>
-References: <20100408.013628.171442882.davem@davemloft.net>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Thu, 8 Apr 2010 11:09:46 -0400
+Date: Thu, 8 Apr 2010 17:10:06 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Wu Fengguang <fengguang.wu@intel.com>,
+       Andi Kleen <andi@firstfloor.org>, Greg KH <greg@kroah.com>,
+       Gerald Schaefer <gerald.schaefer@de.ibm.com>, stable@kernel.org
+Subject: [PATCH] Revert "memory-hotplug: add 0x prefix to HEX
+ block_size_bytes"
+Message-ID: <20100408151006.GB2446@osiris.boeblingen.de.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
+Revert ba168fc37dea145deeb8fa9e7e71c748d2e00d74 "memory-hotplug: add 0x prefix
+to HEX block_size_bytes" since it changes the user space visible sysfs interface
+/sys/devices/system/memory/block_size_bytes.
+The change breaks existing user space applications which rely on the fact that
+the output does not contain the "0x" prefix.
 
-On Thu, 8 Apr 2010, David Miller wrote:
-> 
-> 2) taskfile ops with CFQ scheduler bomb because the taskfile
->    code allocates a request then changes it's direction (e.g.
->    READ vs. WRITE) and this makes CFQ explode.  Fix by allocating
->    the correct request type from the beginning.  From Mikulas Patocka.
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Greg KH <greg@kroah.com>
+Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Cc: stable@kernel.org
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+---
 
-Hmm. Isn't this -stable material too? At least ide-taskfile.c hasn't 
-changed since 2.6.33?
+ drivers/base/memory.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Or is the cfq behavior new, and nobody simply cared before? I looked a bit 
-at the cfq changes since 2.6.33, and none of them seemed to be relevant. 
-But I didn't look very closely.
-
-Hmm?
-
-		Linus
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 4f4aa58..933442f 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -313,7 +313,7 @@ static ssize_t
+ print_block_size(struct sysdev_class *class, struct sysdev_class_attribute *attr,
+ 		 char *buf)
+ {
+-	return sprintf(buf, "%#lx\n", (unsigned long)PAGES_PER_SECTION * PAGE_SIZE);
++	return sprintf(buf, "%lx\n", (unsigned long)PAGES_PER_SECTION * PAGE_SIZE);
+ }
+ 
+ static SYSDEV_CLASS_ATTR(block_size_bytes, 0444, print_block_size, NULL);
