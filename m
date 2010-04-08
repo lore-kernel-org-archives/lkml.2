@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933440Ab0DHUNJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 16:13:09 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59568
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758758Ab0DHUNC (ORCPT
+	id S1759003Ab0DHUPa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 16:15:30 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:51479 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754543Ab0DHUP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 16:13:02 -0400
-Date: Thu, 08 Apr 2010 13:13:04 -0700 (PDT)
-Message-Id: <20100408.131304.166360041.davem@davemloft.net>
-To: tony.luck@intel.com
-Cc: timo.teras@iki.fi, sfr@canb.auug.org.au, netdev@vger.kernel.org,
-       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: powerpc boot failure
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <o2s12c511ca1004081155o9b28c9f5hdfadd075913f1fcf@mail.gmail.com>
-References: <20100408174549.2f45ceea.sfr@canb.auug.org.au>
-	<4BBD966D.8020404@iki.fi>
-	<o2s12c511ca1004081155o9b28c9f5hdfadd075913f1fcf@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
+	Thu, 8 Apr 2010 16:15:29 -0400
+Date: Thu, 8 Apr 2010 16:02:18 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+Cc: Jeff Chua <jeff.chua.linux@gmail.com>,
+       "Zhao, Shanyu" <shanyu.zhao@intel.com>,
+       "Chatre, Reinette" <reinette.chatre@intel.com>,
+       "stable@kernel.org" <stable@kernel.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [REVERT] be6b38bcb175613f239e0b302607db346472c6b6.
+	v2.6.34-rc3-406 oops with 4965AGN wireless
+Message-ID: <20100408200218.GC2999@tuxdriver.com>
+References: <Pine.LNX.4.64.1004090251210.11582@boston.corp.fedex.com> <Pine.LNX.4.64.1004090336410.22139@boston.corp.fedex.com> <1270759800.19330.19.camel@wwguy-ubuntu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1270759800.19330.19.camel@wwguy-ubuntu>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o38KDfmE020446
 
-From: Tony Luck <tony.luck@intel.com>
-Date: Thu, 8 Apr 2010 11:55:34 -0700
+On Thu, Apr 08, 2010 at 01:50:00PM -0700, Guy, Wey-Yi wrote:
 
-> I tried the patch you just posted.  Compiling with it gave this warning:
+> I attach here again in case you did not get it.
 > 
-> net/xfrm/xfrm_policy.c: In function ¡__xfrm_lookup¢:
-> net/xfrm/xfrm_policy.c:1735: warning: ¡num_xfrms¢ may be used
-> uninitialized in this function
+> Thanks
+> Wey
+> 
+> 
 
-This is just because gcc is stupid, you can ignore this.
+> From f3a5f691e32c0edfbc42a1e8687392dc3efe396e Mon Sep 17 00:00:00 2001
+> From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+> Date: Thu, 8 Apr 2010 13:17:37 -0700
+> Subject: [PATCH 1/1] iwlwifi: need check for valid qos packet before free
+> 
+> For 4965, need to check it is valid qos frame before free, only valid
+> QoS frame has the tid used to free the packets.
+> 
+> Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
 
-It can't see that when a real 'err' error is returned we never end up
-referencing the num_xfrms value.
+I would prefer to take this through the normal wireless-2.6 route if
+you don't mind.  Are you satisifed with this version?
 
-> but the patched kernel booted ok.
+Thanks,
 
-Thanks for testing, I pushed Timo's fix to net-next-2.6 earlier today
-so it'll hopefully show up in the next linux-next.
+John
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+P.S.  In the future, I'm also quite open to revert requests as needed.
+It makes my life easier for things (even reverts) under wireless to
+come through my tree rather than trying to figure-out how something
+happened later...
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
