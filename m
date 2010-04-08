@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933960Ab0DHXmU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 19:42:20 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41702 "EHLO ogre.sisk.pl"
+	id S1759216Ab0DHXmj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 19:42:39 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:41740 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759182Ab0DHXlw convert rfc822-to-8bit (ORCPT
+	id S933870Ab0DHXmd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 19:41:52 -0400
+	Thu, 8 Apr 2010 19:42:33 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Christophe Fergeau" <cfergeau@mandriva.com>,
-       "Sarah Sharp" <sarah.a.sharp@linux.intel.com>
+       "Chris Wilson" <chris@chris-wilson.co.uk>,
+       "M. Vefa Bicakci" <bicave@superonline.com>
 References: <cjwJ7Pf9h0L.A.9pB.1DmvLB@chimera>
 In-Reply-To: <cjwJ7Pf9h0L.A.9pB.1DmvLB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,10 +18,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <onZ81XwyNTD.A.3vC.BFmvLB@chimera>
-Subject: [Bug #15376] regression (oops) with usb in 2.6.33-rc8
+Message-ID: <onZ81XwyNTD.A.ENC.QEmvLB@chimera>
+Subject: [Bug #15585] [Bisected Regression in 2.6.32.8] i915 with KMS enabled causes memorycorruption when resuming from suspend-to-disk
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri,  9 Apr 2010 01:04:30 +0200 (CEST)
+Date: Fri,  9 Apr 2010 01:04:35 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,10 +34,12 @@ introduced between 2.6.32 and 2.6.33.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15376
-Subject		: regression (oops) with usb in 2.6.33-rc8
-Submitter	: Christophe Fergeau <cfergeau@mandriva.com>
-Date		: 2010-02-23 10:58 (45 days old)
-Handled-By	: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15585
+Subject		: [Bisected Regression in 2.6.32.8] i915 with KMS enabled causes memorycorruption when resuming from suspend-to-disk
+Submitter	: M. Vefa Bicakci <bicave@superonline.com>
+Date		: 2010-03-13 5:11 (27 days old)
+First-Bad-Commit: http://git.kernel.org/git/linus/d8e0902806c0bd2ccc4f6a267ff52565a3ec933b
+Message-ID	: <4B9B1E8F.5090806@superonline.com>
+References	: http://marc.info/?l=linux-kernel&m=126845754409543&w=2
 
 
