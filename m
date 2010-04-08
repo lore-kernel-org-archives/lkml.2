@@ -1,82 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758978Ab0DHTMS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 15:12:18 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:56716 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758238Ab0DHTMQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 15:12:16 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=edEqGo6aKrbeWJ44cx8HptYGu+V6YGYMgGxAN9xUIrRTbc5tEKDp8EXpmb1wR+nKa
-	4Wt/WT13GWvM12QF8SfSg==
-Date: Thu, 8 Apr 2010 12:12:09 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Xiaotian Feng <dfeng@redhat.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
-       Vegard Nossum <vegard.nossum@gmail.com>,
-       Dmitry Monakhov <dmonakhov@openvz.org>,
-       Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH] slab: fix caller tracking on !CONFIG_DEBUG_SLAB &&
- CONFIG_TRACING
-In-Reply-To: <1270721493-27820-1-git-send-email-dfeng@redhat.com>
-Message-ID: <alpine.DEB.2.00.1004081209380.21040@chino.kir.corp.google.com>
-References: <1270721493-27820-1-git-send-email-dfeng@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S933124Ab0DHTNE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 15:13:04 -0400
+Received: from mga14.intel.com ([143.182.124.37]:40680 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932960Ab0DHTNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 15:13:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,172,1270450800"; 
+   d="scan'208";a="263569886"
+Subject: Re: [REVERT] be6b38bcb175613f239e0b302607db346472c6b6.
+ v2.6.34-rc3-406 oops with 4965AGN wireless
+From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Jeff Chua <jeff.chua.linux@gmail.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "Zhao, Shanyu" <shanyu.zhao@intel.com>,
+       "Chatre, Reinette" <reinette.chatre@intel.com>,
+       "stable@kernel.org" <stable@kernel.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100408181340.GN30031@ZenIV.linux.org.uk>
+References: <Pine.LNX.4.64.1004090104570.7829@boston.corp.fedex.com>
+	 <20100408181340.GN30031@ZenIV.linux.org.uk>
+Content-Type: text/plain
+Date: Thu, 08 Apr 2010 13:09:33 -0700
+Message-Id: <1270757373.11853.11.camel@wwguy-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Apr 2010, Xiaotian Feng wrote:
 
-> diff --git a/include/linux/slab.h b/include/linux/slab.h
-> index 4884462..1a0625c 100644
-> --- a/include/linux/slab.h
-> +++ b/include/linux/slab.h
-> @@ -267,7 +267,7 @@ static inline void *kmem_cache_alloc_node(struct kmem_cache *cachep,
->   * allocator where we care about the real place the memory allocation
->   * request comes from.
->   */
-> -#if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_SLUB)
-> +#if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_SLUB) || defined(CONFIG_TRACING)
->  extern void *__kmalloc_track_caller(size_t, gfp_t, unsigned long);
->  #define kmalloc_track_caller(size, flags) \
->  	__kmalloc_track_caller(size, flags, _RET_IP_)
-> @@ -285,7 +285,7 @@ extern void *__kmalloc_track_caller(size_t, gfp_t, unsigned long);
->   * standard allocator where we care about the real place the memory
->   * allocation request comes from.
->   */
-> -#if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_SLUB)
-> +#if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_SLUB) || defined(CONFIG_TRACING)
->  extern void *__kmalloc_node_track_caller(size_t, gfp_t, int, unsigned long);
->  #define kmalloc_node_track_caller(size, flags, node) \
->  	__kmalloc_node_track_caller(size, flags, node, \
+On Thu, 2010-04-08 at 11:13 -0700, Al Viro wrote:
+> On Fri, Apr 09, 2010 at 01:16:43AM +0800, Jeff Chua wrote:
+> > 
+> > index 1bd2cd8..83c52a6 100644
+> > --- a/drivers/net/wireless/iwlwifi/iwl-4965.c
+> > +++ b/drivers/net/wireless/iwlwifi/iwl-4965.c
+> > @@ -2041,16 +2041,14 @@ static void iwl4965_rx_reply_tx(struct iwl_priv *priv,
+> >  				   tx_resp->failure_frame);
+> > 
+> >  		freed = iwl_tx_queue_reclaim(priv, txq_id, index);
+> > -		if (qc && likely(sta_id != IWL_INVALID_STATION))
+> > -			priv->stations[sta_id].tid[tid].tfds_in_queue -= freed;
+> > +		iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
+> 
+> So what happens if we hit sta_id == IWL_INVALID_STATION and !txq->sched_retry?
+> 
+> AFAICS, IWL_INVALID_STATION is 255 and priv->stations[] has only 32 elements.
+> And code around that place is
+>         if (txq->sched_retry && unlikely(sta_id == IWL_INVALID_STATION)) {
+>                 IWL_ERR(priv, "Station not known\n");
+>                 return;
+>         }
+>         if (txq->sched_retry) {
+> 		....
+> 	} else {
+> 		....
+> 		the code modified in that chunk
+> 		....
+> 	}
+> so this removal of check for sta_id doesn't look apriori safe...
+> 
+> I'm not familiar with that code and I don't have the hardware, so this is
+> just from RTFS, but... might make sense to replace that call of
+> iwl_free_tfds_in_queue with
+> 
+> 		if (sta_id == IWL_INVALID_STATION)
+> 			printk(KERN_ERR "buggered");
+> 		else
+> 			iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
+> 
+> and see if that helps and if printk gets triggered.
 
-This doesn't work if the underlying slab allocator doesn't define 
-__kmalloc_node_track_caller() regardless of whether CONFIG_TRACING is 
-enabled or not.  SLOB, for example, never defines it, and that's why the 
-conditional exists in the way it currently does.
+We can check for IWL_INVALID_STATION and print log, but need to check
+for qc to make sure it is valid; maybe something like
+			if (qc && likely(sta_id != IWL_INVALID_STATION))
+				iwl_free_tfds_in_queue(priv, sta_id,
+						       tid, freed);
+			else {
+				if (sta_id == IWL_INVALID_STATION)
+					IWL_ERR(priv, "invalid station"");
+			} 
+	
+Wey
 
-This is your patch with CONFIG_EMBEDDED && CONFIG_SLOB:
 
-mm/built-in.o: In function `__krealloc':
-(.text+0x1283c): undefined reference to `__kmalloc_track_caller'
-mm/built-in.o: In function `kmemdup':
-(.text+0x128b4): undefined reference to `__kmalloc_track_caller'
-mm/built-in.o: In function `kstrndup':
-(.text+0x128fc): undefined reference to `__kmalloc_track_caller'
-mm/built-in.o: In function `kstrdup':
-(.text+0x12943): undefined reference to `__kmalloc_track_caller'
-mm/built-in.o: In function `memdup_user':
-(.text+0x129f7): undefined reference to `__kmalloc_track_caller'
-drivers/built-in.o:(.text+0xc48a4): more undefined references to `__kmalloc_track_caller' follow
-net/built-in.o: In function `__alloc_skb':
-(.text+0x8dc6): undefined reference to `__kmalloc_node_track_caller'
+
