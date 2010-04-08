@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933207Ab0DHTQM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 15:16:12 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:59864 "EHLO sabe.cs.wisc.edu"
+	id S933141Ab0DHTXk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 15:23:40 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:50847 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933132Ab0DHTQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 15:16:08 -0400
-Message-ID: <4BBE2B66.8090900@cs.wisc.edu>
-Date: Thu, 08 Apr 2010 14:15:50 -0500
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1754046Ab0DHTXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 15:23:38 -0400
+Date: Thu, 8 Apr 2010 21:23:36 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+       linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch,rfc v2] ext3/4: enhance fsync performance when using cfq
+Message-ID: <20100408192336.GV10103@kernel.dk>
+References: <x49ochv7yi3.fsf@segfault.boston.devel.redhat.com> <20100407214631.GL3206@redhat.com> <20100408110442.GK10103@kernel.dk> <20100408140515.GB10879@redhat.com> <20100408140944.GQ10103@kernel.dk> <x49ljcy9g4t.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
-To: open-iscsi@googlegroups.com
-CC: Rakesh Ranjan <rakesh@chelsio.com>, netdev@vger.kernel.org,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kxie@chelsio.com, davem@davemloft.net,
-       James.Bottomley@hansenpartnership.com
-Subject: Re: [PATCH 3/3] cxgb4i: iscsi and pdu processing part
-References: <1270728855-20951-1-git-send-email-rakesh@chelsio.com> <1270728855-20951-2-git-send-email-rakesh@chelsio.com> <1270728855-20951-3-git-send-email-rakesh@chelsio.com> <1270728855-20951-4-git-send-email-rakesh@chelsio.com>
-In-Reply-To: <1270728855-20951-4-git-send-email-rakesh@chelsio.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x49ljcy9g4t.fsf@segfault.boston.devel.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2010 07:14 AM, Rakesh Ranjan wrote:
-> From: Rakesh Ranjan<rakesh@chelsio.com>
->
->
-> Signed-off-by: Rakesh Ranjan<rakesh@chelsio.com>
-> ---
->   drivers/scsi/cxgb4i/cxgb4i_iscsi.c |  715 ++++++++++++++++++++++++++++++++++++
->   drivers/scsi/cxgb4i/cxgb4i_pdu.c   |  475 ++++++++++++++++++++++++
->   drivers/scsi/cxgb4i/cxgb4i_pdu.h   |   61 +++
->   3 files changed, 1251 insertions(+), 0 deletions(-)
->   create mode 100644 drivers/scsi/cxgb4i/cxgb4i_iscsi.c
->   create mode 100644 drivers/scsi/cxgb4i/cxgb4i_pdu.c
->   create mode 100644 drivers/scsi/cxgb4i/cxgb4i_pdu.h
->
+On Thu, Apr 08 2010, Jeff Moyer wrote:
+> Jens Axboe <jens.axboe@oracle.com> writes:
+> 
+> > Precisely. The next question would be how to control the yielding. In
+> > this particular case, you want to be yielding to a specific cfqq. IOW,
+> > you essentially want to pass your slide on to that queue. The way the
+> > above is implemented, you could easily just switch to another unrelated
+> > queue. And if that is done, fairness is skewed without helping the
+> > yielding process at all (which was the intention).
+> 
+> Well, that's true in part.  Prior to this patch, the process would idle,
+> keeping all other cfq_queues on the system from making progress.  With
+> this patch, at least *somebody* else makes progress, getting you closer
+> to running the journal thread that you're blocked on.  Ideally, you'd
+> want the thread you're waiting on to get disk time next, sure.  You
+> would have to pass the process information down to the I/O scheduler for
+> that, and I'm not sure that the file system code knows which process to
+> hand off to.  Does it?
+> 
+> Do we really want to go down this road at all?  I'm not convinced.
 
-The code in these files looks like the code is the cxgb3i iscsi and pdu 
-code. Can you just make a common cxgb3i iscsi/pdu layer and add some 
-callouts?
+Don't get me wrong, neither am I. I'm just thinking out loud and
+pondering. As a general mechanism, yield to a specific cfqq is going to
+be tricky and doing a generic yield to signal that _someone_ else must
+make progress before we can is better than nothing.
 
-Something similar to what qla2xxx or lpfc has done to support multiple 
-cards. In their case they have common fc and driver stuff and then 
-callouts for hw specifics?
+Continuing that train of thought, I don't think we'll ever need full
+'yield to X' functionality where 'X' is a really specific target. But
+for this fsync case, we know at least what we are yielding to and it
+seems like a shame to throw away that information. So you could include
+a hint of what to yield to, which cfq could factor in.
+
+Dunno, I need to think a bit about the cleanliness of such an approach.
+We can definitely use your patch as a starting point.
+
+-- 
+Jens Axboe
+
