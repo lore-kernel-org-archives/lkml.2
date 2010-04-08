@@ -1,40 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933690Ab0DHUwN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 16:52:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3384 "EHLO mx1.redhat.com"
+	id S933697Ab0DHUw4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 16:52:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64446 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933678Ab0DHUwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 16:52:09 -0400
-Message-ID: <4BBE41CD.1020802@redhat.com>
-Date: Thu, 08 Apr 2010 16:51:25 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
+	id S933229Ab0DHUwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 16:52:51 -0400
+Message-ID: <4BBE4227.7040206@gmail.com>
+Date: Thu, 08 Apr 2010 22:52:55 +0200
+From: Edward Shishkin <edward.shishkin@gmail.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 03/13] x86: Remove last traces of quicklist usage
-References: <20100408191737.296180458@chello.nl> <20100408192722.729787846@chello.nl>
-In-Reply-To: <20100408192722.729787846@chello.nl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Jeff Mahoney <jeffm@suse.com>
+CC: ReiserFS Mailing List <reiserfs-devel@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH #2] reiserfs: Fix permissions on .reiserfs_priv
+References: <4BBE12B6.3000609@suse.com>
+In-Reply-To: <4BBE12B6.3000609@suse.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2010 03:17 PM, Peter Zijlstra wrote:
-> We still have a stray quicklist header included even though we axed
-> quicklist usage quite a while back.
->
-> Signed-off-by: Peter Zijlstra<a.p.zijlstra@chello.nl>
+Jeff, it seems your MUA mangles patches,
+would you please send it by another tool?
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Thanks,
+Edward.
+
+
+Jeff Mahoney wrote:
+>  Commit 677c9b2e393a0cd203bd54e9c18b012b2c73305a removed the magic
+>  from the lookup code to hide the .reiserfs_priv directory since it
+>  was getting loaded at mount-time instead. The intent was that the
+>  entry would be hidden from the user via a poisoned d_compare, but
+>  this was faulty.
+>
+>  This introduced a security issue where unpriviledged users could
+>  access and modify extended attributes or ACLs belonging to other
+>  users, including root.
+>
+>  This patch resolves the issue by properly hiding .reiserfs_priv. This
+>  was the intent of the xattr poisoning code, but it appears to have
+>  never worked as expected. This is fixed by using d_revalidate instead
+>  of d_compare.
+>
+>  This patch makes -oexpose_privroot a no-op. I'm fine leaving it this
+>  way. The effort involved in working out the corner cases wrt permissions
+>  and caching outweigh the benefit of the feature.
+>
+>  Re-sent because I forgot to turn off the GPG signing when I sent the first
+>  time.
+>
+> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+> ---
+>
+>  fs/reiserfs/dir.c   |    2 --
+>  fs/reiserfs/xattr.c |   17 ++++-------------
+>  2 files changed, 4 insertions(+), 15 deletions(-)
+>
+> --- a/fs/reiserfs/dir.c
+> +++ b/fs/reiserfs/dir.c
+> @@ -45,8 +45,6 @@ static inline bool is_privroot_deh(struc
+>  				   struct reiserfs_de_head *deh)
+>  {
+>  	struct dentry *privroot = REISERFS_SB(dir->d_sb)->priv_root;
+> -	if (reiserfs_expose_privroot(dir->d_sb))
+> -		return 0;
+>  	return (dir == dir->d_parent && privroot->d_inode &&
+>  	        deh->deh_objectid == INODE_PKEY(privroot->d_inode)->k_objectid);
+>  }
+> --- a/fs/reiserfs/xattr.c
+> +++ b/fs/reiserfs/xattr.c
+> @@ -972,21 +972,13 @@ int reiserfs_permission(struct inode *in
+>  	return generic_permission(inode, mask, NULL);
+>  }
+>  - -/* This will catch lookups from the fs root to .reiserfs_priv */
+> -static int
+> -xattr_lookup_poison(struct dentry *dentry, struct qstr *q1, struct
+> qstr *name)
+> +static int xattr_hide_revalidate(struct dentry *dentry, struct
+> nameidata *nd)
+>  {
+> -	struct dentry *priv_root = REISERFS_SB(dentry->d_sb)->priv_root;
+> -	if (container_of(q1, struct dentry, d_name) == priv_root)
+> -		return -ENOENT;
+> -	if (q1->len == name->len &&
+> -		   !memcmp(q1->name, name->name, name->len))
+> -		return 0;
+> -	return 1;
+> +	return -EPERM;
+>  }
+>   static const struct dentry_operations xattr_lookup_poison_ops = {
+> -	.d_compare = xattr_lookup_poison,
+> +	.d_revalidate = xattr_hide_revalidate,
+>  };
+>   int reiserfs_lookup_privroot(struct super_block *s)
+> @@ -1000,8 +992,7 @@ int reiserfs_lookup_privroot(struct supe
+>  				strlen(PRIVROOT_NAME));
+>  	if (!IS_ERR(dentry)) {
+>  		REISERFS_SB(s)->priv_root = dentry;
+> -		if (!reiserfs_expose_privroot(s))
+> -			s->s_root->d_op = &xattr_lookup_poison_ops;
+> +		dentry->d_op = &xattr_lookup_poison_ops;
+>  		if (dentry->d_inode)
+>  			dentry->d_inode->i_flags |= S_PRIVATE;
+>  	} else
+>   
 
