@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758528Ab0DHHSs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 03:18:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16398 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758449Ab0DHHSq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 03:18:46 -0400
-Message-ID: <4BBD832C.6010002@redhat.com>
-Date: Thu, 08 Apr 2010 10:18:04 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>, Dmitry Torokhov <dtor@vmware.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "pv-drivers@vmware.com" <pv-drivers@vmware.com>
-Subject: Re: [PATCH] VMware Balloon driver
-References: <20100404215202.GA13020@dtor-ws.eng.vmware.com> <20100405142419.2c9bea3d.akpm@linux-foundation.org> <20100405225833.GA25970@dtor-ws.eng.vmware.com> <4BBB622F.4070501@redhat.com> <4BBB7CA3.2060802@goop.org> <4BBB7F1E.3030307@redhat.com> <4BBB890E.5040808@goop.org> <20100408053024.GA1472@ucw.cz>
-In-Reply-To: <20100408053024.GA1472@ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1758525Ab0DHHUO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 03:20:14 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35593
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758507Ab0DHHUI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 03:20:08 -0400
+Date: Thu, 08 Apr 2010 00:20:11 -0700 (PDT)
+Message-Id: <20100408.002011.121977482.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: yanmin_zhang@linux.intel.com, cl@linux-foundation.org,
+       penberg@cs.helsinki.fi, netdev@vger.kernel.org, tj@kernel.org,
+       alex.shi@intel.com, linux-kernel@vger.kernel.org, ling.ma@intel.com,
+       tim.c.chen@intel.com, akpm@linux-foundation.org
+Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100408.000557.180546976.davem@davemloft.net>
+References: <1270705153.8141.58.camel@edumazet-laptop>
+	<1270710019.2215.4.camel@edumazet-laptop>
+	<20100408.000557.180546976.davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2010 08:30 AM, Pavel Machek wrote:
-> Hi!
->
->    
->>>> 1) is not a huge amount of code, but something consistent would be
->>>> nice.  2) is something we've been missing and is a bit of an open
->>>> question/research project anyway.
->>>>          
->>> 3) Code that attempts to reclaim 2MB pages when possible
->>>        
->> Yes.  Ballooning in 4k units is a bit silly.
->>      
-> Does it make sense to treat ballooning as a form of memory hotplug?
->    
+From: David Miller <davem@davemloft.net>
+Date: Thu, 08 Apr 2010 00:05:57 -0700 (PDT)
 
-It's a fine granularity form of memory hotplug, yes.
+> From: Eric Dumazet <eric.dumazet@gmail.com>
+> Date: Thu, 08 Apr 2010 09:00:19 +0200
+> 
+>> If run individually, the tests results are more what we would expect
+>> (slow), but if machine runs the two set of process concurrently, each
+>> group runs much faster...
+> 
+> BTW, I just discovered (thanks to the function graph tracer, woo hoo!)
+> that loopback TCP packets get fully checksum validated on receive.
+> 
+> I'm trying to figure out why skb->ip_summed ends up being
+> CHECKSUM_NONE in tcp_v4_rcv() even though it gets set to
+> CHECKSUM_PARTIAL in tcp_sendmsg().
 
--- 
-error compiling committee.c: too many arguments to function
+Ok, it looks like it's only ACK packets that have this problem,
+but still :-)
 
+It's weird that we have a special ip_dev_loopback_xmit() for for
+ip_mc_output() NF_HOOK()s, which forces skb->ip_summed to
+CHECKSUM_UNNECESSARY, but the actual normal loopback xmit doesn't
+do that...
