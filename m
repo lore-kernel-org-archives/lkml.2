@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758031Ab0DIVoe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 17:44:34 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:51909 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757967Ab0DIVoc (ORCPT
+	id S1757766Ab0DIVzc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 17:55:32 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:61394 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752460Ab0DIVza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 17:44:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=omyqq4qRmwYkSqSfavHNuuPtNm/2giDCOy13NIbo+tQGqw/ix3PNHqkre+NJjyK7WF
-         KROhjUamqAxxbDqSkp0JGq3ORALqkQjNO9L6bSxHkWq1riV0G+Bb5DH0AMA+hCbqiE4m
-         D/qi5he3niaTbzPQKytBx1O0f5Wd+Ey4x20Dw=
-Message-ID: <4BBF9FBB.3020707@gmail.com>
-Date: Fri, 09 Apr 2010 23:44:27 +0200
-From: Till Kamppeter <till.kamppeter@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100404 Thunderbird/3.0.4
+	Fri, 9 Apr 2010 17:55:30 -0400
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Greg KH <greg@kroah.com>,
-       Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-       "Luis R. Rodriguez" <mcgrof@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-wireless <linux-wireless@vger.kernel.org>,
-       Witold Sowa <witold.sowa@gmail.com>,
-       Johannes Berg <johannes@sipsolutions.net>
-Subject: Google Summer of Code 2010 - Student Application Deadline has passed
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4BBF253A.8030406@redhat.com>
+References: <9e4733910912060952h4aad49dake8e8486acb6566bc@mail.gmail.com>
+	 <9e4733910912151338n62b30af5i35f8d0963e6591c@mail.gmail.com>
+	 <4BAB7659.1040408@redhat.com> <201004090821.10435.james@albanarts.com>
+	 <1270810226.3764.34.camel@palomino.walls.org>
+	 <4BBF253A.8030406@redhat.com>
+Date: Fri, 9 Apr 2010 17:55:28 -0400
+Message-ID: <g2k829197381004091455m20368cc6r63df4a4f00d36b45@mail.gmail.com>
+Subject: Re: [RFC] What are the goals for the architecture of an in-kernel IR 
+	system?
+From: Devin Heitmueller <dheitmueller@kernellabs.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Andy Walls <awalls@radix.net>, James Hogan <james@albanarts.com>,
+       Jon Smirl <jonsmirl@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Krzysztof Halasa <khc@pm.waw.pl>,
+       hermann pitton <hermann-pitton@arcor.de>,
+       Christoph Bartelmus <lirc@bartelmus.de>, j@jannau.net, jarod@redhat.com,
+       jarod@wilsonet.com, kraxel@redhat.com, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+       superm1@ubuntu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Apr 9, 2010 at 9:01 AM, Mauro Carvalho Chehab
+<mchehab@redhat.com> wrote:
+> [1] Basically, a keycode (like KEY_POWER) could be used to wake up the machine. So, by
+> associating some scancode to KEY_POWER via ir-core, the driver can program the hardware
+> to wake up the machine with the corresponding scancode. I can't see a need for a change at
+> ir-core to implement such behavior. Of course, some attributes at sysfs can be added
+> to enable or disable this feature, and to control the associated logic, but we first
+> need to implement the wakeup feature at the hardware driver, and then adding some logic
+> at ir-core to add the non-hardware specific code there.
 
-now we have a lot of student applications and to assure that we get 
-enough slots for all students we want to actually mentor, we need to 
-assign mentors to the students until MONDAY at the latest.
+Really?  Have you actually seen any hardware where a particular scan
+code can be used to wake up the hardware?  The only hardware I have
+seen has the ability to unsuspend on arrival of IR traffic, but you
+didn't have the granularity to dictate that it only wake up on
+particular scancodes.
 
-In addition, applications which are obviously spam should be marked 
-ineligible, also until MONDAY at the latest.
+Devin
 
-Incomplete proposals should only be ranked down, not marked ineligible.
-
-Please check which students are interesting for you to mentor, and feel 
-free to mentor more than one student if there are many good applications.
-
-If you are not registered as a mentor yet, do so ASAP. To do so, do the 
-following:
-
-1. Make sure you have a Google account and you are able to log in.
-
-2. Log in on http://socghop.appspot.com/ with your Google account.
-
-3. If you have no user profile for the Google Summer of Code yet, create 
-one. If you have a user profile already from one of the previous GSoCs, 
-reuse this profile.
-
-4. Under "Programs" -> "GSoC 2010" in the menu on the left you should 
-find an entry "Apply to become a Mentor" now. Click it. You will now 
-have to select the mentoring organization. It is the Linux Foundation 
-(Link ID: "lf"). After submitting your mentor application I will get a 
-notification so that I can approve it. You should get a notification 
-that I have approved you. After that you have to fill your mentor 
-profile. Only having done so you get a mentor and can assign yourself as 
-mentor for one or more students. To make it easier for me to recognize 
-your GSoC user name, send me an e-mail when you apply to get a mentor.
-
-5. Assure that every good student application has a mentor assigned (not 
-only proposed).
-
-Take more students than you really want to mentor for the case that the 
-"real" mentor is not available to assign some of the good students to 
-him until Monday. We can reassign mentors later, no we only need to 
-assign to secure good applications and slots.
-
-    Till
+-- 
+Devin J. Heitmueller - Kernel Labs
+http://www.kernellabs.com
