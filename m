@@ -1,80 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751295Ab0DIBFZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 21:05:25 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:60937 "EHLO smtps.tip.net.au"
+	id S1751197Ab0DIBOt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 21:14:49 -0400
+Received: from smtp.knology.net ([24.214.63.101]:41169 "EHLO smtp.knology.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750717Ab0DIBFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 21:05:22 -0400
-Date: Fri, 9 Apr 2010 11:05:20 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       "Wey-Yi Guy" <wey-yi.w.guy@intel.com>
-Subject: linux-next: manual merge of the wireless tree with the
- wireless-current tree
-Message-Id: <20100409110520.9d4be988.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.20.0; i486-pc-linux-gnu)
+	id S1750887Ab0DIBOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 21:14:47 -0400
+Subject: Re: [Bug #15454] r8169 exits with error -22 since 2.6.33
+From: David Dillow <dave@thedillows.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Conrad Kostecki <ConiKost@gmx.de>, romieu@fr.zoreil.com
+In-Reply-To: <onZ81XwyNTD.A.PlC.tEmvLB@chimera>
+References: <cjwJ7Pf9h0L.A.9pB.1DmvLB@chimera>
+	 <onZ81XwyNTD.A.PlC.tEmvLB@chimera>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 08 Apr 2010 21:14:43 -0400
+Message-ID: <1270775683.26861.4.camel@obelisk.thedillows.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+On Fri, 2010-04-09 at 01:04 +0200, Rafael J. Wysocki wrote:
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15454
+> Subject		: r8169 exits with error -22 since 2.6.33
+> Submitter	: Conrad Kostecki <ConiKost@gmx.de>
+> Date		: 2010-03-05 22:32 (35 days old)
 
-Today's linux-next merge of the wireless tree got a conflict in
-drivers/net/wireless/iwlwifi/iwl-4965.c between commit
-ece6444c2fe80dab679beb5f0d58b091f1933b00 ("iwlwifi: need check for valid
-qos packet before free") from the wireless-current tree and commit
-74bcdb33e99f49ef5202dd2f8109945b4570edc2 ("iwlwifi: move agn only tx
-functions from iwlcore to iwlagn") from the wireless tree.
+Francois attached a patch to the bugzilla entry that ignores the failure
+to enable MWI on the device. That may get the NIC up and running, but
+that area of the driver doesn't seem to have changed since 2.6.32, so
+perhaps this is just a canary -- I'm betting that the cache line size is
+not getting set properly, and it probably affects more than just this
+NIC.
 
-Just context changes.  I fixed it up (see below) and can carry the fix
-for a while.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/net/wireless/iwlwifi/iwl-4965.c
-index 89aba76,6edae9b..0000000
---- a/drivers/net/wireless/iwlwifi/iwl-4965.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-4965.c
-@@@ -2020,10 -2013,8 +2013,10 @@@ static void iwl4965_rx_reply_tx(struct 
-  			index = iwl_queue_dec_wrap(scd_ssn & 0xff, txq->q.n_bd);
-  			IWL_DEBUG_TX_REPLY(priv, "Retry scheduler reclaim scd_ssn "
-  					   "%d index %d\n", scd_ssn , index);
-- 			freed = iwl_tx_queue_reclaim(priv, txq_id, index);
-+ 			freed = iwlagn_tx_queue_reclaim(priv, txq_id, index);
- -			iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
- +			if (qc)
- +				iwl_free_tfds_in_queue(priv, sta_id,
- +						       tid, freed);
-  
-  			if (priv->mac80211_registered &&
-  			    (iwl_queue_space(&txq->q) > txq->q.low_mark) &&
-@@@ -2048,18 -2039,15 +2041,18 @@@
-  				   le32_to_cpu(tx_resp->rate_n_flags),
-  				   tx_resp->failure_frame);
-  
-- 		freed = iwl_tx_queue_reclaim(priv, txq_id, index);
-+ 		freed = iwlagn_tx_queue_reclaim(priv, txq_id, index);
- -		iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
- +		if (qc && likely(sta_id != IWL_INVALID_STATION))
- +			iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
- +		else if (sta_id == IWL_INVALID_STATION)
- +			IWL_DEBUG_TX_REPLY(priv, "Station not known\n");
-  
-  		if (priv->mac80211_registered &&
-  		    (iwl_queue_space(&txq->q) > txq->q.low_mark))
-  			iwl_wake_queue(priv, txq_id);
-  	}
- -
- -	iwlagn_txq_check_empty(priv, sta_id, tid, txq_id);
- +	if (qc && likely(sta_id != IWL_INVALID_STATION))
-- 		iwl_txq_check_empty(priv, sta_id, tid, txq_id);
-++		iwlagn_txq_check_empty(priv, sta_id, tid, txq_id);
-  
-  	if (iwl_check_bits(status, TX_ABORT_REQUIRED_MSK))
-  		IWL_ERR(priv, "TODO:  Implement Tx ABORT REQUIRED!!!\n");
