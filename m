@@ -1,83 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751244Ab0DIAvn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 20:51:43 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:49525 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831Ab0DIAvj (ORCPT
+	id S1751193Ab0DIAy7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 20:54:59 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57452 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750717Ab0DIAy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 20:51:39 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Patrick McHardy <kaber@trash.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-       netfilter-devel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: mmotm 2010-04-05-16-09 uploaded
-In-Reply-To: Your message of "Thu, 08 Apr 2010 17:36:07 +0200."
-             <4BBDF7E7.708@trash.net>
-From: Valdis.Kletnieks@vt.edu
-References: <201004052336.o35NaeSE015814@imap1.linux-foundation.org> <13074.1270663309@localhost> <4BBDC0CC.7080305@trash.net> <6795.1270740197@localhost>
-            <4BBDF7E7.708@trash.net>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1270774206_4354P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 08 Apr 2010 20:50:06 -0400
-Message-ID: <8356.1270774206@localhost>
-X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Info: (45) HELO_LOCALHOST
-X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020203.4BBE79C0.00F6,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
+	Thu, 8 Apr 2010 20:54:58 -0400
+Date: Thu, 8 Apr 2010 17:50:21 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Borislav Petkov <bp@alien8.de>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com,
+       hannes@cmpxchg.org
+Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas
+ of a mergeable VMA
+In-Reply-To: <20100408234721.GB25834@a1.tnic>
+Message-ID: <alpine.LFD.2.00.1004081744150.3558@i5.linux-foundation.org>
+References: <alpine.LFD.2.00.1004071505510.3586@i5.linux-foundation.org> <alpine.LFD.2.00.1004071625490.3586@i5.linux-foundation.org> <20100408101925.FB9F.A69D9226@jp.fujitsu.com> <alpine.LFD.2.00.1004071929090.3586@i5.linux-foundation.org>
+ <20100408054707.GA9299@a1.tnic> <alpine.LFD.2.00.1004080706500.3586@i5.linux-foundation.org> <20100408210035.GA25834@a1.tnic> <alpine.LFD.2.00.1004081610020.3558@i5.linux-foundation.org> <20100408234721.GB25834@a1.tnic>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1270774206_4354P
-Content-Type: text/plain; charset=us-ascii
 
-On Thu, 08 Apr 2010 17:36:07 +0200, Patrick McHardy said:
 
-> Valdis.Kletnieks@vt.edu wrote:
-
-> > Well, it *changed* it.  Does the rcu_defererence_check() only fire on the
-> > first time it hits something, so we've fixed the first one and now we get to
-> > see the second one?
+On Fri, 9 Apr 2010, Borislav Petkov wrote:
 > 
-> It appears that way, otherwise you should have seen a second warning in
-> nf_conntrack_ecache the last time.
-> 
-> > (For what it's worth, if this is going to be one-at-a-time whack-a-mole, I'm
-> > OK on that, just want to know up front.)
-> 
-> I went through the other files and I believe this should be it.
-> We already removed most of these incorrect rcu_dereference()
-> calls a while back.
+> Yep, looks good: its mmap_region()...
 
-Confirming - the second version of the patch fixes all the network-related
-RCU complaints I've been able to trigger...
+Can you double-check your current diffs - maybe something got corrupted.
 
---==_Exmh_1270774206_4354P
-Content-Type: application/pgp-signature
+mmap_region installs the vma with vma_link(), and the last thing 
+vma_link() does with my patch is that "anon_vma_prepare()".
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+Maybe with all the patches flying around, you had a reject or something, 
+and you lost that one anon_vma_prepare()?
 
-iD8DBQFLvnm+cC3lWbTT17ARAlV4AJ9LeqKJxNKJHopdR6TZztZiQKqb6wCfXlAs
-6+jWKabDR4mVLHFUHMYljSA=
-=guT+
------END PGP SIGNATURE-----
+Or maybe I screwed up somewhere and sent you the wrong patch. Here it is 
+again, just in case.
 
---==_Exmh_1270774206_4354P--
+[ I have a horrible cold, and can hardly think straight. So who knows, 
+  maybe I'm missing something. But if you have lost one of the 
+  'anon_vma_prepare()' call sites, that would certainly explain why you 
+  get NULL anon_vma's ]
 
+		Linus
+
+---
+ mm/memory.c |   12 +++---------
+ mm/mmap.c   |   17 ++++-------------
+ 2 files changed, 7 insertions(+), 22 deletions(-)
+
+diff --git a/mm/memory.c b/mm/memory.c
+index 833952d..08d4423 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2223,9 +2223,6 @@ reuse:
+ gotten:
+ 	pte_unmap_unlock(page_table, ptl);
+ 
+-	if (unlikely(anon_vma_prepare(vma)))
+-		goto oom;
+-
+ 	if (is_zero_pfn(pte_pfn(orig_pte))) {
+ 		new_page = alloc_zeroed_user_highpage_movable(vma, address);
+ 		if (!new_page)
+@@ -2766,8 +2763,6 @@ static int do_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	/* Allocate our own private page. */
+ 	pte_unmap(page_table);
+ 
+-	if (unlikely(anon_vma_prepare(vma)))
+-		goto oom;
+ 	page = alloc_zeroed_user_highpage_movable(vma, address);
+ 	if (!page)
+ 		goto oom;
+@@ -2863,10 +2858,6 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	if (flags & FAULT_FLAG_WRITE) {
+ 		if (!(vma->vm_flags & VM_SHARED)) {
+ 			anon = 1;
+-			if (unlikely(anon_vma_prepare(vma))) {
+-				ret = VM_FAULT_OOM;
+-				goto out;
+-			}
+ 			page = alloc_page_vma(GFP_HIGHUSER_MOVABLE,
+ 						vma, address);
+ 			if (!page) {
+@@ -3115,6 +3106,9 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	pmd_t *pmd;
+ 	pte_t *pte;
+ 
++	if (WARN_ONCE(!vma->anon_vma, "Mapping with no anon_vma"))
++		return VM_FAULT_SIGBUS;
++
+ 	__set_current_state(TASK_RUNNING);
+ 
+ 	count_vm_event(PGFAULT);
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 75557c6..82392c2 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -463,6 +463,8 @@ static void vma_link(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ 	mm->map_count++;
+ 	validate_mm(mm);
++
++	anon_vma_prepare(vma);
+ }
+ 
+ /*
+@@ -628,6 +630,8 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 	if (mapping)
+ 		spin_unlock(&mapping->i_mmap_lock);
+ 
++	anon_vma_prepare(vma);
++
+ 	if (remove_next) {
+ 		if (file) {
+ 			fput(file);
+@@ -1674,12 +1678,6 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+ 	if (!(vma->vm_flags & VM_GROWSUP))
+ 		return -EFAULT;
+ 
+-	/*
+-	 * We must make sure the anon_vma is allocated
+-	 * so that the anon_vma locking is not a noop.
+-	 */
+-	if (unlikely(anon_vma_prepare(vma)))
+-		return -ENOMEM;
+ 	anon_vma_lock(vma);
+ 
+ 	/*
+@@ -1720,13 +1718,6 @@ static int expand_downwards(struct vm_area_struct *vma,
+ {
+ 	int error;
+ 
+-	/*
+-	 * We must make sure the anon_vma is allocated
+-	 * so that the anon_vma locking is not a noop.
+-	 */
+-	if (unlikely(anon_vma_prepare(vma)))
+-		return -ENOMEM;
+-
+ 	address &= PAGE_MASK;
+ 	error = security_file_mmap(NULL, 0, 0, 0, address, 1);
+ 	if (error)
