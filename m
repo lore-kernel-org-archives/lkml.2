@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757479Ab0DIJXW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 05:23:22 -0400
-Received: from ns2.intersolute.de ([193.110.43.67]:38896 "EHLO
-	ns2.intersolute.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754319Ab0DIJXR (ORCPT
+	id S1757485Ab0DIJYZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 05:24:25 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:51709 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401Ab0DIJYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 05:23:17 -0400
-Message-ID: <4BBEF1FC.6060307@lumino.de>
-Date: Fri, 09 Apr 2010 11:23:08 +0200
-From: Michael Schnell <mschnell@lumino.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-2.3 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Mike Frysinger <vapier.adi@gmail.com>
-CC: linux-kernel@vger.kernel.org, nios2-dev <nios2-dev@sopc.et.ntust.edu.tw>
-Subject: Re: atomic RAM ?
-References: <4BBD86A5.5030109@lumino.de> <v2u8bd0f97a1004081836na92954bdu4ed473816dc831b9@mail.gmail.com>
-In-Reply-To: <v2u8bd0f97a1004081836na92954bdu4ed473816dc831b9@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Apr 2010 05:24:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=vnBXQQX79sxEAtxgPM3cGivNI4c6QoSAASuPD1r4sI/faK8l87ngOo0hDdXsINE/Cb
+         RhwsOg2bp2cOQnI2sg5EgJ25kcdn7eSsGBr20cJYqpjDjiMeEJdWSXGJ7L1kk+aQ1c9S
+         ffLMXyiHQ8pmtVAiGv3wM0+8o/WDXie6nyeV8=
+Subject: Re: [PATCH tip/core/urgent 1/4] rcu: add rcu_access_pointer and
+ rcu_dereference_protected
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu
+In-Reply-To: <23572.1270804211@redhat.com>
+References: <1270792042-9358-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <20100409054701.GA8833@linux.vnet.ibm.com>  <23572.1270804211@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 09 Apr 2010 11:24:18 +0200
+Message-ID: <1270805058.2623.72.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2010 03:36 AM, Mike Frysinger wrote:
-> i think you underestimate the task of customizing every userspace
-> point that may want atomic instructions.  
-I never said this would be easy ;) Maybe it's close to impossible :(
+Le vendredi 09 avril 2010 à 10:10 +0100, David Howells a écrit :
+> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > +#define rcu_access_pointer(p) ((void *)ACCESS_ONCE(p))
+> > ...
+> > +#define rcu_access_pointer(p)		((void *)ACCESS_ONCE(p))
+> 
+> There's no difference between your two versions of rcu_access_pointer(), so
+> you could move that whole construct outside of the #ifdef'ed section.
+> 
+> Other than that:
+> 
+> Acked-by: David Howells <dhowells@redhat.com>
 
-I had hoped modifying the "atomic" macros for the arch in question in a
-way that they use a handle instead of a pointer to the "atomic" variable
-in a compatible way and then modifying the code that uses these macros
-in a way that theses handles are created by additional macros that with
-other archs can be uses optionally (in a compatible way: returning the
-appropriate pointer) could work. But of course you are correct that a
-lot of code would need being inspected.
-> and no matter what sized
-> atomic region you pick, having it arbitrarily fail at runtime because
-> applications have "too many" locks is a poor solution.
->   
-Of course you are right, but not being able to allow for SMP is a poor
-solution, too.
+I also prefer to keep type checking if possible
 
-I suppose it's possible to generate a dedicated system error when an
-application runs out of "pthread_mutex" locks (i.e. when the
-atomic_malloc() function detects that the atomic RAM is exhausted). You
-also can unexpectedly get a normal "out of memory" system in an
-application error at any point (e.g. when opening a file) ;) I don't
-suppose any "normal" embedded application will use more than some 100.
-(In any case, it would be good to have a (of course no-SMP-)
-distribution that uses the "atomic region" software workaround, as well,
-in case the user does not want to implement the necessary custom
-instructions. This would be usable for applications excessively
-consuming of "atomic RAM", too.)
+#define rcu_access_pointer(p)		(ACCESS_ONCE(p))
 
--Michael
+Other than that:
+
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+
+
