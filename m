@@ -1,35 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab0DIOVk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 10:21:40 -0400
-Received: from hera.kernel.org ([140.211.167.34]:33479 "EHLO hera.kernel.org"
+	id S1753152Ab0DIOBc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 10:01:32 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45347 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753040Ab0DIOVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 10:21:36 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: linux-kernel@vger.kernel.org, gpxe-devel@etherboot.org
-Subject: [PATCH] Update iBFT to 1.03
-Date: Fri,  9 Apr 2010 14:21:26 +0000
-Message-Id: <1270822888-13192-1-git-send-email-konrad@kernel.org>
-X-Mailer: git-send-email 1.7.0.4
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 09 Apr 2010 14:21:33 +0000 (UTC)
+	id S1752567Ab0DIOBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 10:01:22 -0400
+From: Jan Blunck <jblunck@suse.de>
+To: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+       Alan Cox <alan@linux.intel.com>, Jan Blunck <jblunck@suse.de>
+Subject: [PATCH 02/12] flash_read should update ppos instead of file->f_pos
+Date: Fri,  9 Apr 2010 16:00:45 +0200
+Message-Id: <1270821655-4368-3-git-send-email-jblunck@suse.de>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1270821655-4368-1-git-send-email-jblunck@suse.de>
+References: <1270821655-4368-1-git-send-email-jblunck@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch writen by Peter Jones and Mike Christie expands on the
-iBFT firmware driver to support v1.03 of the spec. The spec in question is
-available at:
+flash_read() updates file->f_pos directly instead of the ppos given. The
+VFS later updates the file->f_pos and overwrites it with the unchanged
+value of ppos.
 
-ftp://ftp.software.ibm.com/systems/support/bladecenter/iscsi_boot_firmware_table_v1.03.pdf
+Signed-off-by: Jan Blunck <jblunck@suse.de>
+---
+ drivers/sbus/char/flash.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Linux kernel has support for the iBFT 1.0 spec and this update to 1.03
-adds three more things:
- - There is now a ACPI table either called 'iBFT' or 'IBFT' that should
-   be parsed.
- - If running with UEFI, only look at the ACPI table.
- - If not found within ACPI tables, fall back to the old mechanism of scanning
-   memory for the signature.
-
-It has been tested with gPXE and also a real hardware (Mike, did I get that right?)
+diff --git a/drivers/sbus/char/flash.c b/drivers/sbus/char/flash.c
+index 4108347..12cd438 100644
+--- a/drivers/sbus/char/flash.c
++++ b/drivers/sbus/char/flash.c
+@@ -106,9 +106,9 @@ static ssize_t
+ flash_read(struct file * file, char __user * buf,
+ 	   size_t count, loff_t *ppos)
+ {
+-	unsigned long p = file->f_pos;
++	loff_t p = *ppos;
+ 	int i;
+-	
++
+ 	if (count > flash.read_size - p)
+ 		count = flash.read_size - p;
+ 
+@@ -119,7 +119,7 @@ flash_read(struct file * file, char __user * buf,
+ 		buf++;
+ 	}
+ 
+-	file->f_pos += count;
++	*ppos += count;
+ 	return count;
+ }
+ 
+-- 
+1.6.4.2
 
