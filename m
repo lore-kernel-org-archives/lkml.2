@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020Ab0DIRnw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 13:43:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35892 "EHLO mx1.redhat.com"
+	id S1755068Ab0DIRtk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 13:49:40 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36478 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754675Ab0DIRnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 13:43:51 -0400
-Message-ID: <4BBF674C.30201@redhat.com>
-Date: Fri, 09 Apr 2010 20:43:40 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1754903Ab0DIRti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 13:49:38 -0400
+Date: Fri, 9 Apr 2010 19:40:41 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com,
+       hannes@cmpxchg.org
+Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the
+ anon_vmas of a mergeable VMA
+Message-ID: <20100409174041.GA10780@a1.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	Rik van Riel <riel@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Minchan Kim <minchan.kim@gmail.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+	Nick Piggin <npiggin@suse.de>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com,
+	hannes@cmpxchg.org
+References: <alpine.LFD.2.00.1004071929090.3586@i5.linux-foundation.org>
+ <20100408054707.GA9299@a1.tnic>
+ <alpine.LFD.2.00.1004080706500.3586@i5.linux-foundation.org>
+ <20100408210035.GA25834@a1.tnic>
+ <alpine.LFD.2.00.1004081610020.3558@i5.linux-foundation.org>
+ <20100408234721.GB25834@a1.tnic>
+ <alpine.LFD.2.00.1004081744150.3558@i5.linux-foundation.org>
+ <20100409013012.GA8153@liondog.tnic>
+ <20100409092111.GA998@a1.tnic>
+ <alpine.LFD.2.00.1004090917070.3558@i5.linux-foundation.org>
 MIME-Version: 1.0
-To: Tom Lyon <pugs@lyon-about.com>
-CC: Greg KH <gregkh@suse.de>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, "Hans J. Koch" <hjk@linutronix.de>
-Subject: Re: [PATCH 0/1] uio_pci_generic: extensions to allow access for non-privileged
- processes
-References: <201003311708.38961.pugs@lyon-about.com> <20100402170515.GA32579@suse.de> <4BBEFA3B.8070609@redhat.com> <201004090934.16891.pugs@lyon-about.com>
-In-Reply-To: <201004090934.16891.pugs@lyon-about.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1004090917070.3558@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2010 07:34 PM, Tom Lyon wrote:
->> - access to all config space, but BARs must be translated so userspace
->> cannot attack the host
->>      
-> Please elaborate. All of PCI config? All of PCIe config? Seems like a huge mess.
->    
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, Apr 09, 2010 at 09:35:15AM -0700
 
-Yes.  Anything a guest's device driver may want to access.
+> Can you try with _just_ my patch?
 
-> The 'check' items are already done, not fully tested; probably available next week.
-> Can we leave the others for future patches? Please?
+Yep, yours along with the SLUB debugging piece just survived one
+hibernation cycle without a problem. Also, no SIGBUS-killed processes,
+all seems fine. Will continue stressing it though...
 
-Hey, I was expecting we'd have to do all of this.  The requirements list 
-was to get the uio maintainers confirmation that this is going in an 
-acceptable direction.
-
-We can definitely proceed incrementally.
-
-> And I definitely need help with
-> the PCI config stuff.
->    
-
-Sure.
+Let me know what you want me to do next.
 
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+Regards/Gruss,
+Boris.
