@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103Ab0DICTH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 22:19:07 -0400
-Received: from mail-pz0-f193.google.com ([209.85.222.193]:63134 "EHLO
-	mail-pz0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680Ab0DICTB (ORCPT
+	id S1752104Ab0DICT2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 22:19:28 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:43387 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680Ab0DICT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 22:19:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=smKPgMJqPrg2nL4Y8nDZdeMZ/eABsKvthTe4lgBAjlUzy/btP0n/UEAg4Yx1s/yz9f
-         V7szP0A4BPGfMeVTBVw6M/3QG+n50dSmT7X+yLpBStcZSu6RuBwtFugZwMs700TC00u/
-         UheX/SdmusjRHE60IRrhL2V+rqYVJfYjaT7sg=
+	Thu, 8 Apr 2010 22:19:26 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:subject:to:cc:date:message-id:user-agent:
+	mime-version:content-type:content-transfer-encoding:x-system-of-record;
+	b=lY4+7MQaHRJSAybYDyZjEyaoHjaFjKc9H6nDXQj5U+TBbNoG32L7u7q3uZMBzF5u2
+	TQvHiKpWy3/cs7cAjgjrQ==
+From: Divyesh Shah <dpshah@google.com>
+Subject: [PATCH] cfq-iosched: Fix the incorrect timeslice accounting with
+	forced_dispatch.
+To: jens.axboe@oracle.com, vgoyal@redhat.com
+Cc: linux-kernel@vger.kernel.org, nauman@google.com, ctalbott@google.com
+Date: Thu, 08 Apr 2010 19:19:00 -0700
+Message-ID: <20100409021054.13511.52377.stgit@austin.mtv.corp.google.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <20100408192722.687144862@chello.nl>
-References: <20100408191737.296180458@chello.nl>
-	 <20100408192722.687144862@chello.nl>
-Date: Fri, 9 Apr 2010 11:19:01 +0900
-Message-ID: <n2p28c262361004081919qad97cc0dic538d5a23642475e@mail.gmail.com>
-Subject: Re: [PATCH 02/13] mm: Revalidate anon_vma in page_lock_anon_vma()
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-       Nick Piggin <npiggin@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Peter.
+When CFQ dispatches requests forcefully due to a barrier or changing iosched,
+it runs through all cfqq's dispatching requests and then expires each queue.
+However, it does not activate a cfqq before flushing its IOs resulting in
+using stale values for computing slice_used.
+This patch fixes it by calling activate queue before flushing reuqests from
+each queue.
 
-On Fri, Apr 9, 2010 at 4:17 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> There is nothing preventing the anon_vma from being detached while we
-> are spinning to acquire the lock. Most (all?) current users end up
-> calling something like vma_address(page, vma) on it, which has a
-> fairly good chance of weeding out wonky vmas.
->
-> However suppose the anon_vma got freed and re-used while we were
-> waiting to acquire the lock, and the new anon_vma fits with the
-> page->index (because that is the only thing vma_address() uses to
-> determine if the page fits in a particular vma, we could end up
-> traversing faulty anon_vma chains.
+This is useful mostly for barrier requests because when the iosched is changing
+it really doesnt matter if we have incorrect accounting since we're going to
+break down all structures anyway.
 
-We have second defense rule by page_check_address.
-Before anon_vma is detached, pte of pages on the anon_vma should be zeroed.
-So can't page_check_address close the race?
+We also now expire the current timeslice before moving on with the dispatch
+to accurately account slice used for that cfqq.
 
-Thanks for good trial for good feature.
+Signed-off-by: Divyesh Shah<dpshah@google.com>
+---
+Side question that is related:
+(W/o the change to expire the current timeslice) If there is a currently active
+queue which has no requests pending and is idling and we enter forced_dispatch,
+it seems to me that it is pure chance that we are not hitting the BUG_ON for
+cfqd->busy_queues in cfq_forced_dispatch(). The current active queue (which is
+on rr and included in the busy_queues count) can appear in any order from
+get_next_queue_forced() and it may well happen that all non-empty cfqqs were
+dispatched from before it and by the time we get to this queue cfqd->rq_queued
+goes down to zero and we bail out. Hence, __cfq_slice_expired() never gets
+called for this cfqq and it is not taken off from rr which should result in
+cfqd->busy_queues to be non-zero and the BUG_ON I mentioned earlier should be
+hit.
+Does this sound correct?
 
--- 
-Kind regards,
-Minchan Kim
+ block/cfq-iosched.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 9102ffc..39b9a36 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -2196,10 +2196,13 @@ static int cfq_forced_dispatch(struct cfq_data *cfqd)
+ 	struct cfq_queue *cfqq;
+ 	int dispatched = 0;
+ 
+-	while ((cfqq = cfq_get_next_queue_forced(cfqd)) != NULL)
++	/* Expire the timeslice of the current active queue first */
++	cfq_slice_expired(cfqd, 0);
++	while ((cfqq = cfq_get_next_queue_forced(cfqd)) != NULL) {
++		__cfq_set_active_queue(cfqd, cfqq);
+ 		dispatched += __cfq_forced_dispatch_cfqq(cfqq);
++	}
+ 
+-	cfq_slice_expired(cfqd, 0);
+ 	BUG_ON(cfqd->busy_queues);
+ 
+ 	cfq_log(cfqd, "forced_dispatch=%d", dispatched);
+
