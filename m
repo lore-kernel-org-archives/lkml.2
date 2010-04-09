@@ -1,79 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751467Ab0DIMDD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 08:03:03 -0400
-Received: from mail-iw0-f197.google.com ([209.85.223.197]:33296 "EHLO
-	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977Ab0DIMC7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 08:02:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=gP7QZaNmXJZLpzJLiMRC06Jw2CtWAkrFEMJeRY7AYfsOV29dGsVvuJRh1PZTnzLwwy
-         wAYrULsLVxDKHAJHXWhoWlNZgunuozoa+Q3iHemUBInsUi7JbOfUG7wBZTZu6icNNYMg
-         YindJkK4czGqs7DiPGBJbCHKWnV1czhFXhq1s=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH] perf: Make clock software events consistent with general exclusion rules
-Date: Fri,  9 Apr 2010 14:02:47 +0200
-Message-Id: <1270814567-6089-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.6.2.3
+	id S1752176Ab0DIMPj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 08:15:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61881 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751522Ab0DIMPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 08:15:37 -0400
+Date: Fri, 9 Apr 2010 14:12:35 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Gautham R Shenoy <ego@in.ibm.com>, Rusty Russell <rusty@rustcorp.com.au>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Ingo Molnar <mingo@elte.hu>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Nathan Fontenot <nfont@austin.ibm.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Sachin Sant <sachinp@in.ibm.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Shane Wang <shane.wang@intel.com>,
+       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] cpuhotplug: make get_online_cpus() scalability by
+	using percpu counter
+Message-ID: <20100409121235.GA5784@redhat.com>
+References: <4BB9BD8A.9040209@cn.fujitsu.com> <20100405162901.GA3567@redhat.com> <20100406120039.GC5680@redhat.com> <4BBC8A11.3040501@cn.fujitsu.com> <20100407135456.GA12029@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100407135456.GA12029@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cpu/task clock events implement their own version of exclusion
-on top of exclude_user and exclude_kernel.
+On 04/07, Oleg Nesterov wrote:
+>
+> On 04/07, Lai Jiangshan wrote:
+> >
+> > Old get_online_cpus() is read-preference, I think the goal of this ability
+> > is allow get_online_cpus()/put_online_cpus() to be called nested.
+>
+> Sure, I understand why you added task_struct->get_online_cpus_nest.
+>
+> > and use per-task counter for allowing get_online_cpus()/put_online_cpus()
+> > to be called nested, I think this deal is absolutely worth.
+>
+> As I said, I am not going to argue. I can't justify this tradeoff.
 
-The result is that when the event triggered in the kernel but we
-have exclude_kernel set, we try to rewind using task_pt_regs.
-There are two side effects of this:
+But, I must admit, I'd like to avoid adding the new member to task_struct.
 
-- we call task_pt_regs even on kernel threads, which doesn't give
-  us the desired result.
-- if the event occured in the kernel, we shouldn't rewind to the
-  user context. We want to actually ignore the event.
+What do you think about the code below?
 
-get_irq_regs() will always give us the right interrupted context, so
-use its result and submit it to perf_exclude_context() that knows
-when an event must be ignored.
+I didn't even try to compile it, just to explain what I mean.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
----
- kernel/perf_event.c |    9 +--------
- 1 files changed, 1 insertions(+), 8 deletions(-)
+In short: we have the per-cpu fast counters, plus the slow counter
+which is only used when cpu_hotplug_begin() is in progress.
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index c953cfb..2d8b67c 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -4163,15 +4163,8 @@ static enum hrtimer_restart perf_swevent_hrtimer(struct hrtimer *hrtimer)
- 	perf_sample_data_init(&data, 0);
- 	data.period = event->hw.last_period;
- 	regs = get_irq_regs();
--	/*
--	 * In case we exclude kernel IPs or are somehow not in interrupt
--	 * context, provide the next best thing, the user IP.
--	 */
--	if ((event->attr.exclude_kernel || !regs) &&
--			!event->attr.exclude_user)
--		regs = task_pt_regs(current);
- 
--	if (regs) {
-+	if (regs && !perf_exclude_event(event, regs)) {
- 		if (!(event->attr.exclude_idle && current->pid == 0))
- 			if (perf_event_overflow(event, 0, &data, regs))
- 				ret = HRTIMER_NORESTART;
--- 
-1.6.2.3
+Oleg.
+
+
+static DEFINE_PER_CPU(long, cpuhp_fast_ctr);
+static struct task_struct *cpuhp_writer;
+static DEFINE_MUTEX(cpuhp_slow_lock)
+static long cpuhp_slow_ctr;
+
+static bool update_fast_ctr(int inc)
+{
+	bool success = true;
+
+	preempt_disable();
+	if (likely(!cpuhp_writer))
+		__get_cpu_var(cpuhp_fast_ctr) += inc;
+	else if (cpuhp_writer != current)
+		success = false;
+	preempt_enable();
+
+	return success;
+}
+
+void get_online_cpus(void)
+{
+	if (likely(update_fast_ctr(+1));
+		return;
+
+	mutex_lock(&cpuhp_slow_lock);
+	cpuhp_slow_ctr++;
+	mutex_unlock(&cpuhp_slow_lock);
+}
+
+void put_online_cpus(void)
+{
+	if (likely(update_fast_ctr(-1));
+		return;
+
+	mutex_lock(&cpuhp_slow_lock);
+	if (!--cpuhp_slow_ctr && cpuhp_writer)
+		wake_up_process(cpuhp_writer);
+	mutex_unlock(&cpuhp_slow_lock);
+}
+
+static void clear_fast_ctr(void)
+{
+	long total = 0;
+	int cpu;
+
+	for_each_possible_cpu(cpu) {
+		total += per_cpu(cpuhp_fast_ctr, cpu);
+		per_cpu(cpuhp_fast_ctr, cpu) = 0;
+	}
+
+	return total;
+}
+
+static void cpu_hotplug_begin(void)
+{
+	cpuhp_writer = current;
+	synchronize_sched();
+
+	/* Nobody except us can use can use cpuhp_fast_ctr */
+
+	mutex_lock(&cpuhp_slow_lock);
+	cpuhp_slow_ctr += clear_fast_ctr();
+
+	while (cpuhp_slow_ctr) {
+		__set_current_state(TASK_UNINTERRUPTIBLE);
+		mutex_unlock(&&cpuhp_slow_lock);
+		schedule();
+		mutex_lock(&cpuhp_slow_lock);
+	}
+}
+
+static void cpu_hotplug_done(void)
+{
+	cpuhp_writer = NULL;
+	mutex_unlock(&cpuhp_slow_lock);
+}
 
