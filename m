@@ -1,122 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755879Ab0DIGvg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 02:51:36 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54110 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942Ab0DIGvc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 02:51:32 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 9 Apr 2010 15:47:30 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Nick Piggin <npiggin@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 02/13] mm: Revalidate anon_vma in page_lock_anon_vma()
-Message-Id: <20100409154730.e9945cbc.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100409150335.80E3.A69D9226@jp.fujitsu.com>
-References: <20100409031641.GG5683@laptop>
-	<20100409135657.8f234c9a.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100409150335.80E3.A69D9226@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756104Ab0DIGvn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 02:51:43 -0400
+Received: from mk-outboundfilter-6-a-2.mail.uk.tiscali.com ([212.74.114.16]:12789
+	"EHLO mk-outboundfilter-6-a-2.mail.uk.tiscali.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750942Ab0DIGvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 02:51:38 -0400
+X-Trace: 197771711/mk-outboundfilter-6.mail.uk.tiscali.com/F2S/$F2S-ACCEPTED/f2s-freedom2Surf-customers/83.67.12.31/None/tvrtko@ursulin.net
+X-SBRS: None
+X-RemoteIP: 83.67.12.31
+X-IP-MAIL-FROM: tvrtko@ursulin.net
+X-SMTP-AUTH: 
+X-Originating-Country: GB/UNITED KINGDOM
+X-MUA: KMail/1.12.4 (Linux/2.6.33.2; KDE/4.3.5; x86_64; ; )
+X-IP-BHB: Once
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAKtrvktTQwwf/2dsb2JhbACbO3K5CoUJBA
+X-IronPort-AV: E=Sophos;i="4.52,176,1270422000"; 
+   d="scan'208";a="197771711"
+X-IP-Direction: IN
+From: Tvrtko Ursulin <tvrtko@ursulin.net>
+To: Takashi Iwai <tiwai@suse.de>
+Subject: Re: Ooops when working with USB MIDI (2.6.33.1)
+Date: Fri, 9 Apr 2010 07:51:35 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.33.2; KDE/4.3.5; x86_64; ; )
+Cc: Clemens Ladisch <clemens@ladisch.de>, alsa-devel@lists.sourceforge.net,
+       linux-kernel@vger.kernel.org
+References: <201004051433.47171.tvrtko@ursulin.net> <4BBDA92B.8010505@ladisch.de> <s5haateyvzn.wl%tiwai@suse.de>
+In-Reply-To: <s5haateyvzn.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201004090751.35398.tvrtko@ursulin.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  9 Apr 2010 15:34:33 +0900 (JST)
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
-
-> > On Fri, 9 Apr 2010 13:16:41 +1000
-> > Nick Piggin <npiggin@suse.de> wrote:
-> > 
-> > > On Thu, Apr 08, 2010 at 09:17:39PM +0200, Peter Zijlstra wrote:
-> > > > There is nothing preventing the anon_vma from being detached while we
-> > > > are spinning to acquire the lock. Most (all?) current users end up
-> > > > calling something like vma_address(page, vma) on it, which has a
-> > > > fairly good chance of weeding out wonky vmas.
-> > > > 
-> > > > However suppose the anon_vma got freed and re-used while we were
-> > > > waiting to acquire the lock, and the new anon_vma fits with the
-> > > > page->index (because that is the only thing vma_address() uses to
-> > > > determine if the page fits in a particular vma, we could end up
-> > > > traversing faulty anon_vma chains.
-> > > > 
-> > > > Close this hole for good by re-validating that page->mapping still
-> > > > holds the very same anon_vma pointer after we acquire the lock, if not
-> > > > be utterly paranoid and retry the whole operation (which will very
-> > > > likely bail, because it's unlikely the page got attached to a different
-> > > > anon_vma in the meantime).
-> > > 
-> > > Hm, looks like a bugfix? How was this supposed to be safe?
-> > > 
-> > IIUC.
-> > 
-> > Before Rik's change to anon_vma, once page->mapping is set as anon_vma | 0x1,
-> > it's not modified until the page is freed.
-> > After the patch, do_wp_page() overwrite page->mapping when it reuse existing
-> > page.
+On Thursday 08 Apr 2010 13:22:36 Takashi Iwai wrote:
+> > Takashi, do you remember what the original problem was?
 > 
-> Why?
-> IIUC. page->mapping dereference in page_lock_anon_vma() makes four story.
+> Well, I have only a vague memory -- it's a similar scenario that some app
+> still accessing after disconnection.  The URB can't be handled after
+> the disconnection is finished.
 > 
-> 1. the anon_vma is valid
-> 	-> do page_referenced_one(). 
-> 2. the anon_vma is invalid and freed to buddy
-> 	-> bail out by page_mapped(), no touch anon_vma
-> 3. the anon_vma is kfreed, and not reused
-> 	-> bail out by page_mapped()
-> 4. the anon_vma is kfreed, but reused as another anon_vma
-> 	-> bail out by page_check_address()
-> 
-> Now we have to consider 5th story.
-> 
-> 5. the anon_vma is exchanged another anon_vma by do_wp_page.
-> 	-> bail out by above bailing out stuff.
+> I think the patch below might fix in this case.  You can try it
+> instead of reverting the commit above.
 > 
 > 
-> I agree peter's patch makes sense. but I don't think Rik's patch change
-> locking rule.
+> thanks,
 > 
+> Takashi
+> 
+> ---
+> diff --git a/sound/usb/usbmidi.c b/sound/usb/usbmidi.c
+> index 2c59afd..81c8d85 100644
+> --- a/sound/usb/usbmidi.c
+> +++ b/sound/usb/usbmidi.c
+> @@ -986,6 +986,8 @@ static void snd_usbmidi_output_drain(struct
+>  snd_rawmidi_substream *substream) DEFINE_WAIT(wait);
+>  	long timeout = msecs_to_jiffies(50);
+> 
+> +	if (ep->umidi->disconnected)
+> +		return;
+>  	/*
+>  	 * The substream buffer is empty, but some data might still be in the
+>  	 * currently active URBs, so we have to wait for those to complete.
+> @@ -1275,6 +1277,11 @@ void snd_usbmidi_disconnect(struct list_head* p)
+>  			snd_usbmidi_in_endpoint_delete(ep->in);
+>  			ep->in = NULL;
+>  		}
+> +		ep->active_urbs = 0;
+> +		if (ep->drain_urbs) {
+> +			ep->drain_urbs = 0;
+> +			wake_up(&ep->drain_wait);
+> +		}
+>  	}
+>  	del_timer_sync(&umidi->error_timer);
+>  }
 
-Hmm, I think following.
+For the second hunk, do you think ep->out->... and so on? That would be more 
+in-line with code present in 2.6.33.
 
-Assume a page is ANON and SwapCache, and it has only one reference.
-Consider it's read-only mapped and cause do_wp_page().
-page_mapcount(page) == 1 here.
-
-    CPU0                          CPU1
-
-1. do_wp_page()
-2. .....
-3. replace anon_vma.     anon_vma = lock_page_anon_vma()
-
-So, lock_page_anon_vma() may have lock on wrong anon_vma, here.(mapcount=1)
-
-4. modify pte to writable.        do something...
-
-After lock, in CPU1, a pte of estimated address by vma_address(vma, page)
-containes pfn of the page and page_check_address() will success.
-
-I'm not sure how this is dangerouns.
-But it's possible that CPU1 cannot notice there was anon_vma replacement.
-And modifies pte withoug holding anon vma's lock which the code believes
-it's holded.
-
-Thanks,
--Kame
-
-
-
-
+Tvrtko
