@@ -1,98 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751359Ab0DIBDB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 21:03:01 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:47156 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab0DIBC6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 21:02:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=U9Yc+5HJtc+KCRFU3M3W1M0kE3XBEA+IDUYrqxn3lUluccol3JpHaN164WOQ49ASrl
-         iaybRa2+078ybnkljRu+0JcUKvja+dvaLT/9vfC5BFCWRujifa+o0yPk2par8aE+2ccW
-         e6baoYxsnoRwakavf1q4kHz/xagsFwrfNGbME=
-Date: Fri, 9 Apr 2010 03:02:53 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [watchdog] combine nmi_watchdog and softlockup
-Message-ID: <20100409010248.GE6672@nowhere>
-References: <20100323213338.GA29170@redhat.com> <20100405141122.GD15159@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100405141122.GD15159@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751295Ab0DIBFZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 21:05:25 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:60937 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750717Ab0DIBFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 21:05:22 -0400
+Date: Fri, 9 Apr 2010 11:05:20 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       "Wey-Yi Guy" <wey-yi.w.guy@intel.com>
+Subject: linux-next: manual merge of the wireless tree with the
+ wireless-current tree
+Message-Id: <20100409110520.9d4be988.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05, 2010 at 10:11:22AM -0400, Don Zickus wrote:
-> On Tue, Mar 23, 2010 at 05:33:38PM -0400, Don Zickus wrote:
-> > The new nmi_watchdog (which uses the perf event subsystem) is very
-> > similar in structure to the softlockup detector.  Using Ingo's suggestion,
-> > I combined the two functionalities into one file, kernel/watchdog.c.
-> > 
-> > Now both the nmi_watchdog (or hardlockup detector) and softlockup detector
-> > sit on top of the perf event subsystem, which is run every 60 seconds or so
-> > to see if there are any lockups.
-> 
-> I raised some questions privately to Ingo, he asked I re-iterate them with
-> Peter Z. and Frederic W. cc'd.
-> 
-> > Ok thanks.  When you get a chance I had a couple of questions I was hoping
-> > you could answer for me.
-> >
-> > - does the hrtimer stuff look ok?
+Hi John,
 
+Today's linux-next merge of the wireless tree got a conflict in
+drivers/net/wireless/iwlwifi/iwl-4965.c between commit
+ece6444c2fe80dab679beb5f0d58b091f1933b00 ("iwlwifi: need check for valid
+qos packet before free") from the wireless-current tree and commit
+74bcdb33e99f49ef5202dd2f8109945b4570edc2 ("iwlwifi: move agn only tx
+functions from iwlcore to iwlagn") from the wireless tree.
 
-IMO, only partially, as explained in my previous mail.
+Just context changes.  I fixed it up (see below) and can carry the fix
+for a while.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-
-> > - I wanted to merge the hung task detector code into watchdog.c.  The main
-> >   logic of the code is to walk the task list which i thought about doing
-> >   in the watchdog kthread.  I assume that is the right way to go, but i was a
-> >   little confused on how the scheduler worked.  I thought the watchdog kthread
-> >   would be scheduled very frequently (being a high priority task) but it seems
-> >   to only schedule when the code wakes it up.  Is that right?
-
-
-Yeah but high-prio doesn't mean that it is scheduled often.
-It means that once it is in a runnable state (TASK_RUNNING), it
-will have a higher priority to get into the cpu (lower prio tasks
-will have less time in the cpu than the higher prio until the higher prio
-get to sleep). Especially here this is a SCHED_FIFO class, so usual
-tasks (SCHED_OTHER) won't ever run until it goes to sleep.
-
-But when it goes to sleep, it doesn't need the cpu, so other tasks
-can run.
-And it is only woken up every 30 secs, just to call
-__touch_softlockup_watchdog() and then it goes to sleep again
-until the timer wakes it up. That's why it doesn't run often.
-The high priority is just here to ensure it will do its job
-without too much latency, may be even to avoid rt-tasks to
-trigger spurious soft lockups just because the softlockup task
-couldn't run because of them taking the cpu for too long.
-If it starves because of a higher priority task running for
-too long, it can't touch the softlockup_touch_ts, and the timer
-will think there is a softlockup.
-
-
-Concerning the hung task detector, I think it should be left as is in
-its own file and dedicated task. IIRC the hung task and softlockup
-detectors were in the same file before but they were split up.
-
-We can't factorize both in the same task. The softlockup detector
-needs to be a real time task for the reasons stated above. And it's fine
-because it does very few things so it doesn't bother the other tasks
-with its high prio (unless there are strong rt requirement elsewhere).
-But the hung task detector must be a normal task, because it doesn't
-have latency requirements, it just checks if a task is blocked for too
-long, it's not like the softlockup detector that really needs to keep
-up with a timer. Also it does too much things to be an rt task (walking
-through the entire task list).
-
+diff --cc drivers/net/wireless/iwlwifi/iwl-4965.c
+index 89aba76,6edae9b..0000000
+--- a/drivers/net/wireless/iwlwifi/iwl-4965.c
++++ b/drivers/net/wireless/iwlwifi/iwl-4965.c
+@@@ -2020,10 -2013,8 +2013,10 @@@ static void iwl4965_rx_reply_tx(struct 
+  			index = iwl_queue_dec_wrap(scd_ssn & 0xff, txq->q.n_bd);
+  			IWL_DEBUG_TX_REPLY(priv, "Retry scheduler reclaim scd_ssn "
+  					   "%d index %d\n", scd_ssn , index);
+- 			freed = iwl_tx_queue_reclaim(priv, txq_id, index);
++ 			freed = iwlagn_tx_queue_reclaim(priv, txq_id, index);
+ -			iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
+ +			if (qc)
+ +				iwl_free_tfds_in_queue(priv, sta_id,
+ +						       tid, freed);
+  
+  			if (priv->mac80211_registered &&
+  			    (iwl_queue_space(&txq->q) > txq->q.low_mark) &&
+@@@ -2048,18 -2039,15 +2041,18 @@@
+  				   le32_to_cpu(tx_resp->rate_n_flags),
+  				   tx_resp->failure_frame);
+  
+- 		freed = iwl_tx_queue_reclaim(priv, txq_id, index);
++ 		freed = iwlagn_tx_queue_reclaim(priv, txq_id, index);
+ -		iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
+ +		if (qc && likely(sta_id != IWL_INVALID_STATION))
+ +			iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
+ +		else if (sta_id == IWL_INVALID_STATION)
+ +			IWL_DEBUG_TX_REPLY(priv, "Station not known\n");
+  
+  		if (priv->mac80211_registered &&
+  		    (iwl_queue_space(&txq->q) > txq->q.low_mark))
+  			iwl_wake_queue(priv, txq_id);
+  	}
+ -
+ -	iwlagn_txq_check_empty(priv, sta_id, tid, txq_id);
+ +	if (qc && likely(sta_id != IWL_INVALID_STATION))
+- 		iwl_txq_check_empty(priv, sta_id, tid, txq_id);
+++		iwlagn_txq_check_empty(priv, sta_id, tid, txq_id);
+  
+  	if (iwl_check_bits(status, TX_ABORT_REQUIRED_MSK))
+  		IWL_ERR(priv, "TODO:  Implement Tx ABORT REQUIRED!!!\n");
