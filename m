@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404Ab0DIXcl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 19:32:41 -0400
-Received: from mail.gmx.net ([213.165.64.20]:54488 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755089Ab0DIXck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 19:32:40 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX188CasAbSw8YexCg3zPokzF9dOxH9aSkkF4rltiTj
-	dKePmFKajQ1Nuv
-Message-ID: <4BBFB914.1020600@gmx.de>
-Date: Sat, 10 Apr 2010 01:32:36 +0200
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+	id S1755476Ab0DIXeG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 19:34:06 -0400
+Received: from mail-qy0-f179.google.com ([209.85.221.179]:44873 "EHLO
+	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755089Ab0DIXeB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 19:34:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:content-type;
+        b=brsiE6lgIy1eGGYZfQimUn4+43CKfG1jciId0CMbmLXszt2bfDVC0HXnuem2NPIP1f
+         fBk5UQixzXw09RcjdmAYffqhuFMGd+uxoApVloqBCB5F1ASqLkVkrSID5sneDOvf5kos
+         wLq3nbF2ScA4VjDmfz4ZiYR1R7vACT6+GoQ64=
 MIME-Version: 1.0
-To: Jonathan Corbet <corbet@lwn.net>
-CC: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
-       JosephChan@via.com.tw, ScottFang@viatech.com.cn,
-       Deepak Saxena <dsaxena@laptop.org>,
-       linux-fbdev-devel@lists.sourceforge.net
-Subject: Re: [RFC] Initial OLPC Viafb merge
-References: <1270746946-12467-1-git-send-email-corbet@lwn.net>	<4BBEBE87.4000809@gmx.de> <20100409124626.0b150104@bike.lwn.net>
-In-Reply-To: <20100409124626.0b150104@bike.lwn.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.63
+Date: Fri, 9 Apr 2010 19:34:00 -0400
+X-Google-Sender-Auth: fe813fc87f58471e
+Message-ID: <z2md05829401004091634jbb41b5ej9defeb0185929845@mail.gmail.com>
+Subject: bt878/msp3445 Audio Channel Swapping
+From: Paul Braman <bramankp@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jonathan Corbet schrieb:
-> Sorry, the only working platform I had was the OLPC 2.6.31 tree, and
-> there was little point in publishing that by the time it was ready to
-> be seen.  That said, I *did* point out the tree where the work could be
-> seen for anybody who was interested.
+Maybe this is something that just "everyone already knows" but I can't
+find documentation about it.  In several kernels I've tried, most
+recently 2.6.30, the drivers for NTSC tuner cards with AV inputs have
+their left-right channels swapping coming out of the ALSA drivers.
+Both the RF and AV inputs are like this.  However, with the
+bt878/msp3445 combination, switching back and forth from RF and AV can
+actually induce swapping channels *back* to their original assignments
+(and back and forth, etc, upon source switching).
 
-Well the time I looked in your tree I didn't see any of the remaining 
-suspend/resume efforts. Okay perhaps I should have rechecked it now and 
-than.
-Please correct me if I am wrong but the remaining 6 patches concerning 
-suspend&resume look like a real big FIXME. So at the end it is expected 
-to work only on VX855 and needs something called OFW?
-It doesn't seem to make much sense to review each of them because the 
-following patches might or might not correct some of the issues of the 
-other. It is really a pain to have 6 patches trying to add a single 
-feature. Is there any way to fix this mess. (I assume you didn't merge 
-them due to authorship issues?)
-I think it might be better to drop those for now and wait for viafb to 
-be in a better shape before adding this feature. The mode setting should 
-be in a pretty good shape just 1 or 2 kernel versions ahead so that the 
-dependency on OFW can be dropped I think.
-
-Sorry but I really think this is not in a shape where merging it is an 
-option. I think it would be better to skip those suspend/resume patches 
-for the next merge window.
+The best we've been able to figure, the drivers or the hardware is
+dropping samples so the stereo interleaving is getting reversed.  It
+only happens when the audio mux is mutated to a different
+configuration but it's not deterministic so it's very hard to track,
+for example, true stereo left/right.  Is this just a known problem
+that everyone deals with?
 
 
-Thanks,
-
-Florian Tobias Schandinat
+Paul Braman
+Lead Software Engineer
+The Nielsen Company
