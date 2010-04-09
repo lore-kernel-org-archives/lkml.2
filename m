@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab0DINV5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 09:21:57 -0400
-Received: from wine.ocn.ne.jp ([122.1.235.145]:55396 "EHLO smtp.wine.ocn.ne.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751743Ab0DINVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 09:21:54 -0400
-To: amwang@redhat.com, linux-kernel@vger.kernel.org
-Cc: opurdila@ixiacom.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       nhorman@tuxdriver.com, davem@davemloft.net, ebiederm@xmission.com
-Subject: Re: [Patch 3/3] net: reserve ports for applications using fixed port numbers
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <20100409101442.5051.99812.sendpatchset@localhost.localdomain>
-	<20100409101513.5051.97926.sendpatchset@localhost.localdomain>
-In-Reply-To: <20100409101513.5051.97926.sendpatchset@localhost.localdomain>
-Message-Id: <201004092221.GEE32059.FHMOFVLJOFSOtQ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Fri, 9 Apr 2010 22:21:50 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752809Ab0DIN36 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 09:29:58 -0400
+Received: from mailservice.tudelft.nl ([130.161.131.5]:58190 "EHLO
+	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab0DIN35 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 09:29:57 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -14.389
+Message-ID: <4BBF2BD1.5050107@tremplin-utc.net>
+Date: Fri, 09 Apr 2010 15:29:53 +0200
+From: =?ISO-8859-1?Q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100331 Mandriva/3.0.4-1mdv2010.1 (2010.1) Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+       Samu Onkalo <samu.p.onkalo@nokia.com>, Pavel Machek <pavel@ucw.cz>,
+       lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+       Marcin Derlukiewicz <marcin@derlukiewicz.pl>
+Subject: Re: [PATCH] lis3lv02d: provide means to disable polled input interface
+References: <alpine.LNX.2.00.1004091453530.8345@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1004091453530.8345@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 09/04/10 14:56, Jiri Kosina wrote:
+> lis3lv02d driver creates emulated joystick interface for events reported 
+> by the sensor.
+> Because of HW, this has to be implemented as polled input device, with
+> 20Hz frequency.
+> 
+> This is reported to create 20% CPU usage increase (and proportionaly higher
+> power consumption) just for the ipolldevd kernel thread (which is used
+> to read the sensor).
+> 
+> As most users probably only use the freefall functionality of the driver
+> and not the joystick interface, provide means for disabling the registration
+> of joystick device altogether via module parameter.
+> (I'd rather make it default to 0, but this will break backwards compatibility).
+Are you saying there is a 20% CPU usage even when the joystick interface
+is not open? This should not happen (and this is not happening on my
+laptop). The polling should happen only when a userspace app opens the
+joystick interface (like running neverball).
 
-Amerigo Wang wrote:
-> Index: linux-2.6/drivers/infiniband/core/cma.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/infiniband/core/cma.c
-> +++ linux-2.6/drivers/infiniband/core/cma.c
-> @@ -1980,6 +1980,8 @@ retry:
->  	/* FIXME: add proper port randomization per like inet_csk_get_port */
->  	do {
->  		ret = idr_get_new_above(ps, bind_list, next_port, &port);
-> +		if (inet_is_reserved_local_port(port))
-> +			ret = -EAGAIN;
+So I'd tend to think it's more due to a misconfiguration of the system
+(like xserver using the joystick interface as a pointer device) or it's
+a bug in the way we set up the polling. Could you investigate and let me
+know?
 
-You should not overwrite ret with -EAGAIN when idr_get_new_above() returned
--ENOSPC. I don't know about idr, thus I don't know whether
-
-		if (!ret && inet_is_reserved_local_port(port))
-			ret = -EAGAIN;
-
-is correct or not.
-
->  	} while ((ret == -EAGAIN) && idr_pre_get(ps, GFP_KERNEL));
->  
->  	if (ret)
-> @@ -2996,10 +2998,13 @@ static int __init cma_init(void)
->  {
->  	int ret, low, high, remaining;
->  
-> -	get_random_bytes(&next_port, sizeof next_port);
->  	inet_get_local_port_range(&low, &high);
-> +again:
-> +	get_random_bytes(&next_port, sizeof next_port);
->  	remaining = (high - low) + 1;
->  	next_port = ((unsigned int) next_port % remaining) + low;
-> +	if (inet_is_reserved_local_port(next_port))
-> +		goto again;
->  
-
-You should not unconditionally "goto again;".
-If all ports were reserved, it will loop forever (CPU stalls).
-
->  	cma_wq = create_singlethread_workqueue("rdma_cm");
->  	if (!cma_wq)
-
-
-> Index: linux-2.6/net/sctp/socket.c
-> ===================================================================
-> --- linux-2.6.orig/net/sctp/socket.c
-> +++ linux-2.6/net/sctp/socket.c
-> @@ -5436,6 +5436,8 @@ static long sctp_get_port_local(struct s
->  			rover++;
->  			if ((rover < low) || (rover > high))
->  				rover = low;
-> +			if (inet_is_reserved_local_port(rover))
-> +				continue;
-
-This one needs to be
-
-			if (inet_is_reserved_local_port(rover))
-				goto next_nolock;
-
->  			index = sctp_phashfn(rover);
->  			head = &sctp_port_hashtable[index];
->  			sctp_spin_lock(&head->lock);
-
- next:
-			sctp_spin_unlock(&head->lock);
-+next_nolock:
-		} while (--remaining > 0);
-
-otherwise, it will loop forever if all ports were reserved.
+Cheers,
+Eric
