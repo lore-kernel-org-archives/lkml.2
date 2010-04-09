@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab0DIGIi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 02:08:38 -0400
-Received: from acsinet11.oracle.com ([141.146.126.233]:19817 "EHLO
-	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755678Ab0DIGH0 (ORCPT
+	id S1756122Ab0DIGIv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 02:08:51 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:37769 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755634Ab0DIGHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 02:07:26 -0400
+	Fri, 9 Apr 2010 02:07:24 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,112 +16,85 @@ Cc: David Miller <davem@davemloft.net>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 09/39] bootmem, x86: Add weak version of reserve_bootmem_generic
-Date: Thu,  8 Apr 2010 23:03:38 -0700
-Message-Id: <1270793048-23796-10-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 10/39] lmb: Add lmb_to_bootmem()
+Date: Thu,  8 Apr 2010 23:03:39 -0700
+Message-Id: <1270793048-23796-11-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
 References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4BBEC3E2.0103,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090203.4BBEC3E0.00E9,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will be used lmb_to_bootmem converting
+lmb_to_bootmem() will reserve lmb.reserved.region in bootmem after bootmem is
+set up.
 
-It is an wrapper for reserve_bootmem, and x86 64bit is using special one.
-
-Also clean up that version for x86_64. We don't need to take care of numa
-path for that, bootmem can handle it how
+We can use it to with all arches that support lmb later.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init_32.c |    6 ------
- arch/x86/mm/init_64.c |   20 ++------------------
- mm/bootmem.c          |    6 ++++++
- 3 files changed, 8 insertions(+), 24 deletions(-)
+ include/linux/lmb.h |    2 ++
+ mm/lmb.c            |   32 ++++++++++++++++++++++++++++++++
+ 2 files changed, 34 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index bca7909..90e0545 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -1069,9 +1069,3 @@ void mark_rodata_ro(void)
- #endif
- }
- #endif
--
--int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
--				   int flags)
--{
--	return reserve_bootmem(phys, len, flags);
--}
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index ee41bba..634fa08 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -799,13 +799,10 @@ void mark_rodata_ro(void)
+diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+index 598662f..1e236d1 100644
+--- a/include/linux/lmb.h
++++ b/include/linux/lmb.h
+@@ -91,6 +91,8 @@ u64 __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
+ 			 u64 size, u64 align);
+ u64 lmb_find_area(u64 start, u64 end, u64 size, u64 align);
  
- #endif
++void lmb_to_bootmem(u64 start, u64 end);
++
+ #include <asm/lmb.h>
+ 
+ #endif /* __KERNEL__ */
+diff --git a/mm/lmb.c b/mm/lmb.c
+index a514d41..ee3d945 100644
+--- a/mm/lmb.c
++++ b/mm/lmb.c
+@@ -630,6 +630,38 @@ void __init lmb_free_area(u64 start, u64 end)
+ 	__check_and_double_region_array(&lmb.reserved, &lmb_reserved_region[0]);
+ }
  
 +#ifndef CONFIG_NO_BOOTMEM
- int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
- 				   int flags)
- {
--#ifdef CONFIG_NUMA
--	int nid, next_nid;
--	int ret;
--#endif
- 	unsigned long pfn = phys >> PAGE_SHIFT;
- 
- 	if (pfn >= max_pfn) {
-@@ -821,21 +818,7 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
- 		return -EFAULT;
- 	}
- 
--	/* Should check here against the e820 map to avoid double free */
--#ifdef CONFIG_NUMA
--	nid = phys_to_nid(phys);
--	next_nid = phys_to_nid(phys + len - 1);
--	if (nid == next_nid)
--		ret = reserve_bootmem_node(NODE_DATA(nid), phys, len, flags);
--	else
--		ret = reserve_bootmem(phys, len, flags);
--
--	if (ret != 0)
--		return ret;
--
--#else
- 	reserve_bootmem(phys, len, flags);
--#endif
- 
- 	if (phys+len <= MAX_DMA_PFN*PAGE_SIZE) {
- 		dma_reserve += len / PAGE_SIZE;
-@@ -844,6 +827,7 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
- 
- 	return 0;
- }
-+#endif
- 
- int kern_addr_valid(unsigned long addr)
- {
-diff --git a/mm/bootmem.c b/mm/bootmem.c
-index 58c66cc..ee31b95 100644
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -526,6 +526,12 @@ int __init reserve_bootmem(unsigned long addr, unsigned long size,
- }
- 
- #ifndef CONFIG_NO_BOOTMEM
-+int __weak __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
-+				   int flags)
++void __init lmb_to_bootmem(u64 start, u64 end)
 +{
-+	return reserve_bootmem(phys, len, flags);
-+}
++	int i, count;
++	u64 final_start, final_end;
 +
- static unsigned long __init align_idx(struct bootmem_data *bdata,
- 				      unsigned long idx, unsigned long step)
++	/* Take out region array itself */
++	if (lmb.reserved.region != lmb_reserved_region)
++		lmb_free(__pa(lmb.reserved.region), sizeof(struct lmb_property) * lmb.reserved.nr_regions);
++
++	count  = lmb.reserved.cnt;
++	pr_info("(%d early reservations) ==> bootmem [%010llx - %010llx]\n", count, start, end);
++	for (i = 0; i < count; i++) {
++		struct lmb_property *r = &lmb.reserved.region[i];
++		pr_info("  #%d [%010llx - %010llx] ", i, r->base, r->base + r->size);
++		final_start = max(start, r->base);
++		final_end = min(end, r->base + r->size);
++		if (final_start >= final_end) {
++			pr_cont("\n");
++			continue;
++		}
++		pr_cont(" ==> [%010llx - %010llx]\n", final_start, final_end);
++		reserve_bootmem_generic(final_start, final_end - final_start, BOOTMEM_DEFAULT);
++	}
++	/* Clear them to avoid misusing ? */
++	memset(&lmb.reserved.region[0], 0, sizeof(struct lmb_property) * lmb.reserved.nr_regions);
++	lmb.reserved.region = NULL;
++	lmb.reserved.nr_regions = 0;
++	lmb.reserved.cnt = 0;
++}
++#endif
++
+ u64 __init __weak __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
+ 				 u64 size, u64 align)
  {
 -- 
 1.6.4.2
