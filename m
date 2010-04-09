@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab0DIWn2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 18:43:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46124 "EHLO mail.zytor.com"
+	id S1755132Ab0DIWo0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 18:44:26 -0400
+Received: from ns.netcenter.hu ([195.228.254.57]:46951 "EHLO mail.netcenter.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753544Ab0DIWnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 18:43:25 -0400
-Message-ID: <4BBFAD49.3000208@zytor.com>
-Date: Fri, 09 Apr 2010 15:42:17 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1754295Ab0DIWoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 18:44:24 -0400
+Message-ID: <099001cad836$39dc6860$0400a8c0@dcccs>
+From: "Janos Haar" <janos.haar@netcenter.hu>
+To: "Christian Kujau" <lists@nerdbynature.de>
+Cc: <david@fromorbit.com>, <axboe@kernel.dk>,
+       "\"LKML\"" <linux-kernel@vger.kernel.org>, <xfs@oss.sgi.com>,
+       <linux-mm@kvack.org>, <xiyou.wangcong@gmail.com>,
+       <kamezawa.hiroyu@jp.fujitsu.com>
+References: <02c101cacbf8$d21d1650$0400a8c0@dcccs> <179901cad182$5f87f620$0400a8c0@dcccs> <t2h2375c9f91004010337p618c4d5yc739fa25b5f842fa@mail.gmail.com> <1fe901cad2b0$d39d0300$0400a8c0@dcccs> <20100402230905.GW3335@dastard> <22c901cad333$7a67db60$0400a8c0@dcccs> <20100404103701.GX3335@dastard> <2bd101cad4ec$5a425f30$0400a8c0@dcccs> <20100405224522.GZ3335@dastard> <3a5f01cad6c5$8a722c00$0400a8c0@dcccs> <20100408025822.GL11036@dastard> <00bb01cad70d$a814c2c0$0400a8c0@dcccs> <alpine.DEB.2.01.1004091435170.29272@bogon.housecafe.de>
+Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look please!...)
+Date: Sat, 10 Apr 2010 00:44:28 +0200
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: guenter.roeck@ericsson.com, linux-kernel@vger.kernel.org,
-       Yinghai <yinghai.lu@oracle.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Bjorn Helgaas <bjorn.helgaas@hp.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>, Andy Isaacson <adi@hexapodia.org>,
-       Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well
- as x86_32
-References: <20100407210628.28364.96982.stgit@bob.kio>	<201004071705.07176.bjorn.helgaas@hp.com>	<4BBD13C3.2060404@oracle.com>	<201004091004.39857.bjorn.helgaas@hp.com>	<4BBF5987.3010100@zytor.com>	<4BBF626A.3060800@oracle.com>	<4BBF70BC.3080809@zytor.com>	<1270839357.1477.758.camel@groeck-laptop>	<4BBF89FE.5040909@zytor.com>	<1270845108.1477.784.camel@groeck-laptop>	<4BBF91C6.9090701@zytor.com> <20100409234245.4081994a@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100409234245.4081994a@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.3598
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2010 03:42 PM, Alan Cox wrote:
->> "Don't use legacy fixed-function addresses for nonstandard purposes."
+Hello,
+
+I am just started to test the stable-queue patch series on 2.6.32.10.
+Now running, we will see...
+The 2.6.33.2 made 4 crashes in the last 3 days. :-(
+This was more worse than the original 2.6.32.10.
+
+(I am very interested, anyway, this is the last shot of this server.
+The owner giving me an ultimate.
+If the server crashes again in the next week, i need to replace the entire 
+HW, the OS, and the services as well...)
+
+Thanks a lot for help.
+
+Best Regards,
+Janos Haar
+
+----- Original Message ----- 
+From: "Christian Kujau" <lists@nerdbynature.de>
+To: "Janos Haar" <janos.haar@netcenter.hu>
+Cc: "Dave Chinner" <david@fromorbit.com>; <axboe@kernel.dk>; "LKML" 
+<linux-kernel@vger.kernel.org>; <xfs@oss.sgi.com>; <linux-mm@kvack.org>; 
+<xiyou.wangcong@gmail.com>; <kamezawa.hiroyu@jp.fujitsu.com>
+Sent: Friday, April 09, 2010 11:37 PM
+Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look 
+please!...)
+
+
+> On Thu, 8 Apr 2010 at 13:21, Janos Haar wrote:
+>> > Yeah, these still a fix that needs to be back ported to .33
+>> > to solve this problem. It's in the series for 2.6.32.x, so maybe
+>> > pulling the 2.6.32-stable-queue tree in the meantime is your best
+>> > bet.
 >>
->> There, there is your documentation.
-> 
-> It's probably a good idea to only reserve it if the space is actually
-> being used. There are a variety of legitimate reasons to use that space
-> for other things on embedded x86 boards.
-> 
-> They are only "legacy fixed function" if you have a PCI bus...
-
-No they're not.  The 0xa0000...0xbffff range has been a legacy video
-area since the very first PC (although the first PC only used
-0xb0000..0xbffff, 0xa0000..0xbffff was declared reserved at that time.)
-
-I'm wondering what those legitimate reasons are.  This is particularly
-so since it affects our ability to deal with very early errors, long
-before we have enumerated anything.  At this point we can at least lay
-down bytes in the video area and hope the user can see them.
-
-	-hpa
+>> Ok, thank you.
+>> But where can i find this tree?
+>
+>
+> Perhaps Dave meant the stable-queue?
+>
+> http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git
+>
+> Then again, 2.6.34-rc3 needs testing too! :-)
+>
+> Christian.
+> -- 
+> BOFH excuse #98:
+>
+> The vendor put the bug there. 
 
