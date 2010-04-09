@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038Ab0DICSe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 22:18:34 -0400
-Received: from mga03.intel.com ([143.182.124.21]:60672 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751439Ab0DICSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 22:18:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,174,1270450800"; 
-   d="scan'208";a="263708080"
-Subject: Re: [REVERT] be6b38bcb175613f239e0b302607db346472c6b6.
- v2.6.34-rc3-406 oops with 4965AGN wireless
-From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: "Zhao, Shanyu" <shanyu.zhao@intel.com>,
-       "Chatre, Reinette" <reinette.chatre@intel.com>,
-       "stable@kernel.org" <stable@kernel.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>,
+	id S1752103Ab0DICTH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 22:19:07 -0400
+Received: from mail-pz0-f193.google.com ([209.85.222.193]:63134 "EHLO
+	mail-pz0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680Ab0DICTB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 22:19:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=smKPgMJqPrg2nL4Y8nDZdeMZ/eABsKvthTe4lgBAjlUzy/btP0n/UEAg4Yx1s/yz9f
+         V7szP0A4BPGfMeVTBVw6M/3QG+n50dSmT7X+yLpBStcZSu6RuBwtFugZwMs700TC00u/
+         UheX/SdmusjRHE60IRrhL2V+rqYVJfYjaT7sg=
+MIME-Version: 1.0
+In-Reply-To: <20100408192722.687144862@chello.nl>
+References: <20100408191737.296180458@chello.nl>
+	 <20100408192722.687144862@chello.nl>
+Date: Fri, 9 Apr 2010 11:19:01 +0900
+Message-ID: <n2p28c262361004081919qad97cc0dic538d5a23642475e@mail.gmail.com>
+Subject: Re: [PATCH 02/13] mm: Revalidate anon_vma in page_lock_anon_vma()
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
        Linus Torvalds <torvalds@linux-foundation.org>,
-       Al Viro <viro@zeniv.linux.org.uk>
-In-Reply-To: <k2yb6a2187b1004081736td3a4c0f3uc05451902bec39a5@mail.gmail.com>
-References: <Pine.LNX.4.64.1004090251210.11582@boston.corp.fedex.com>
-	 <Pine.LNX.4.64.1004090336410.22139@boston.corp.fedex.com>
-	 <1270759800.19330.19.camel@wwguy-ubuntu>
-	 <k2yb6a2187b1004081736td3a4c0f3uc05451902bec39a5@mail.gmail.com>
-Content-Type: text/plain
-Date: Thu, 08 Apr 2010 20:15:04 -0700
-Message-Id: <1270782904.28602.1.camel@wwguy-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.3 
-Content-Transfer-Encoding: 7bit
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeff,
+Hi, Peter.
 
-On Thu, 2010-04-08 at 17:36 -0700, Jeff Chua wrote:
-> 
-> 
-> On Fri, Apr 9, 2010 at 4:50 AM, Guy, Wey-Yi <wey-yi.w.guy@intel.com>
-> wrote:
->         do not need to check sta_id == IWL_INVALID_STATION here since
->         already
->         check before.
->         could you try my revised version of patch I send after my
->         first attempt.
->         to make sure it works.
->         
->         I attach here again in case you did not get it.
-> 
-> Wey,
->  
-> One small touch-up. Again, I've to rename "iwlagn_" to "iwl_" so that
-> it can apply to Linus's base code.
-> 
-> Tested and working fine. Here's the updated patch.
-> 
-Thanks for verify the patch, you are correct, since I am using the
-wireless-testing version of the kernel, you will need to make the
-changes in order to get the patch apply. Sorry for the trouble.
+On Fri, Apr 9, 2010 at 4:17 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> There is nothing preventing the anon_vma from being detached while we
+> are spinning to acquire the lock. Most (all?) current users end up
+> calling something like vma_address(page, vma) on it, which has a
+> fairly good chance of weeding out wonky vmas.
+>
+> However suppose the anon_vma got freed and re-used while we were
+> waiting to acquire the lock, and the new anon_vma fits with the
+> page->index (because that is the only thing vma_address() uses to
+> determine if the page fits in a particular vma, we could end up
+> traversing faulty anon_vma chains.
 
-Regards
-Wey
+We have second defense rule by page_check_address.
+Before anon_vma is detached, pte of pages on the anon_vma should be zeroed.
+So can't page_check_address close the race?
 
-> 
-> 
-> 
+Thanks for good trial for good feature.
 
+-- 
+Kind regards,
+Minchan Kim
