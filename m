@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751967Ab0DIEOK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 00:14:10 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:5434 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127Ab0DIEOE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 00:14:04 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:subject:to:cc:date:message-id:user-agent:
-	mime-version:content-type:content-transfer-encoding:x-system-of-record;
-	b=vljRqq112derbJs6hwn3pXvvGHNd9Ccq2nAqF75Zr9X8+FDbTOz7fgcvvP1U6zc4e
-	83MMV7wT5WBqrf3gEtyBg==
-From: Divyesh Shah <dpshah@google.com>
-Subject: [PATCH 0/3] blkio: More IO controller stats - always-on and debug-only
-To: jens.axboe@oracle.com, vgoyal@redhat.com
-Cc: linux-kernel@vger.kernel.org, nauman@google.com, ctalbott@google.com
-Date: Thu, 08 Apr 2010 21:13:37 -0700
-Message-ID: <20100409041210.23105.13623.stgit@austin.mtv.corp.google.com>
-User-Agent: StGIT/0.14.3
+	id S1752481Ab0DIEOc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 00:14:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45659 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752062Ab0DIEO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 00:14:27 -0400
+Date: Fri, 9 Apr 2010 14:14:21 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH 00/13] mm: preemptibility -v2
+Message-ID: <20100409041421.GM5683@laptop>
+References: <20100408191737.296180458@chello.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100408191737.296180458@chello.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patchset implements additional per-cgroup IO controller stats.
-Some of these should be enabled for debugging only.
+On Thu, Apr 08, 2010 at 09:17:37PM +0200, Peter Zijlstra wrote:
+> Hi,
+> 
+> This (still incomplete) patch-set makes part of the mm a lot more preemptible.
+> It converts i_mmap_lock and anon_vma->lock to mutexes.  On the way there it
+> also makes mmu_gather preemptible.
+> 
+> The main motivation was making mm_take_all_locks() preemptible, since it
+> appears people are nesting hundreds of spinlocks there.
+> 
+> The side-effects are that we can finally make mmu_gather preemptible, something
+> which lots of people have wanted to do for a long time.
 
-These stats have helped us debug issues with earlier IO controller
-versions and should be useful now as well.
-We've been using these stats for monitoring and debugging problems after the
-fact as these stats can be collected and stored for later use.
+What's the straight-line performance impact of all this? And how about
+concurrency, I wonder. mutexes of course are double the atomics, and
+you've added a refcount which is two more again for those paths using
+it.
 
-The stats added in this patchset are:
-1) io_merged - This includes both the number of bios merged into requests
-   belonging to this cgroup as well as the number of requests merged together.
-   In the past, we've observed different merging behavior across upstream
-   kernels, some by design some actual bugs. This stat helps a lot in debugging
-   such problems when applications report decreased throughput with a new kernel
-   version.
-2) io_queued
-3) avg_queue_size
-   These 2 stats are useful for getting a feel for the IO pattern of the cgroup,
-   i.e., how filled up its queues are at a given instant and over the existence
-   of the cgroup. This ability is useful when debugging problems in the wild as
-   it helps understand the application's IO pattern w/o having to read through
-   the userspace code (coz its tedious or just not available) or w/o the ability
-   to run blktrace (since you may not have root access and/or not want to
-   disturb performance).
-4) group_wait_time - This is the amount of time the cgroup had to wait since it
-   became busy (i.e., went from 0 to 1 request queued) to get a timeslice for
-   one of its queues. This is different from the io_wait_time which is the
-   cumulative total of the amount of time spent by each IO in that cgroup
-   waiting in the scheduler queue. This stat is a great way to find out any jobs
-   in the fleet that are being starved or waiting for longer than what is
-   expected (due to an IO controller bug or any other issue).
-5) empty_time - This is the amount of time a cgroup spends w/o any pending
-   requests. This stat is useful when a job does not seem to be able to use its
-   assigned disk share by helping check if that is happening due to an IO
-   controller bug or because the job is not submitting enough IOs.
-6) idle_time - This is the amount of time spent by the IO scheduler idling
-   for a given cgroup in anticipation of a better request than the exising ones
-   from other queues/cgroups.
+Page faults are very important. We unfortunately have some databases
+doing a significant amount of mmap/munmap activity too. I'd like to
+see microbenchmark numbers for each of those (both anon and file backed
+for page faults).
 
-The last 4 stats are enabled only when CONFIG_DEBUG_CFQ_IOSCHED=y which in turn
-enables CONFIG_DEBUG_BLK_CGROUP.
----
-
-Divyesh Shah (3):
-      Add more debug-only per-cgroup stats for IO contoller
-      Add io_queued and avg_queue_size stats for IO controller.
-      Add io_merged stat. This includes both the number of bios merged into requests
+kbuild does quite a few pages faults, that would be an easy thing to
+test. Not sure what reasonable kinds of cases exercise parallelism.
 
 
- Documentation/cgroups/blkio-controller.txt |   45 +++++
- block/blk-cgroup.c                         |  264 ++++++++++++++++++++++++++++
- block/blk-cgroup.h                         |   80 ++++++++
- block/blk-core.c                           |    2 
- block/cfq-iosched.c                        |   72 ++++++--
- block/elevator.c                           |    9 +
- include/linux/elevator.h                   |    6 +
- 7 files changed, 456 insertions(+), 22 deletions(-)
+> What kind of performance tests would people have me run on this to satisfy
+> their need for numbers? I've done a kernel build on x86_64 and if anything that
+> was slightly faster with these patches, but it was well within the noise
+> levels so it might be heat noise I'm looking at ;-)
 
--- 
-Divyesh
+Is it because you're reducing the number of TLB flushes, or what
+(kbuild isn't multi threaded so on x86 TLB flushes should be really
+fast anyway).
+
