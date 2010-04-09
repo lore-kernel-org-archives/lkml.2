@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab0DIX0v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 19:26:51 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50431 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753900Ab0DIX0t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 19:26:49 -0400
-Date: Fri, 9 Apr 2010 16:22:19 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Borislav Petkov <bp@alien8.de>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas
- of a mergeable VMA
-In-Reply-To: <20100409204328.GG28964@cmpxchg.org>
-Message-ID: <alpine.LFD.2.00.1004091546350.3558@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1004081610020.3558@i5.linux-foundation.org> <20100408234721.GB25834@a1.tnic> <alpine.LFD.2.00.1004081744150.3558@i5.linux-foundation.org> <20100409013012.GA8153@liondog.tnic> <20100409092111.GA998@a1.tnic>
- <alpine.LFD.2.00.1004090917070.3558@i5.linux-foundation.org> <20100409174041.GA10780@a1.tnic> <alpine.LFD.2.00.1004091043490.3558@i5.linux-foundation.org> <20100409191425.GB10780@a1.tnic> <alpine.LFD.2.00.1004091227310.3558@i5.linux-foundation.org>
- <20100409204328.GG28964@cmpxchg.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755404Ab0DIXcl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 19:32:41 -0400
+Received: from mail.gmx.net ([213.165.64.20]:54488 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755089Ab0DIXck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 19:32:40 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX188CasAbSw8YexCg3zPokzF9dOxH9aSkkF4rltiTj
+	dKePmFKajQ1Nuv
+Message-ID: <4BBFB914.1020600@gmx.de>
+Date: Sat, 10 Apr 2010 01:32:36 +0200
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jonathan Corbet <corbet@lwn.net>
+CC: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
+       JosephChan@via.com.tw, ScottFang@viatech.com.cn,
+       Deepak Saxena <dsaxena@laptop.org>,
+       linux-fbdev-devel@lists.sourceforge.net
+Subject: Re: [RFC] Initial OLPC Viafb merge
+References: <1270746946-12467-1-git-send-email-corbet@lwn.net>	<4BBEBE87.4000809@gmx.de> <20100409124626.0b150104@bike.lwn.net>
+In-Reply-To: <20100409124626.0b150104@bike.lwn.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.63
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jonathan Corbet schrieb:
+> Sorry, the only working platform I had was the OLPC 2.6.31 tree, and
+> there was little point in publishing that by the time it was ready to
+> be seen.  That said, I *did* point out the tree where the work could be
+> seen for anybody who was interested.
+
+Well the time I looked in your tree I didn't see any of the remaining 
+suspend/resume efforts. Okay perhaps I should have rechecked it now and 
+than.
+Please correct me if I am wrong but the remaining 6 patches concerning 
+suspend&resume look like a real big FIXME. So at the end it is expected 
+to work only on VX855 and needs something called OFW?
+It doesn't seem to make much sense to review each of them because the 
+following patches might or might not correct some of the issues of the 
+other. It is really a pain to have 6 patches trying to add a single 
+feature. Is there any way to fix this mess. (I assume you didn't merge 
+them due to authorship issues?)
+I think it might be better to drop those for now and wait for viafb to 
+be in a better shape before adding this feature. The mode setting should 
+be in a pretty good shape just 1 or 2 kernel versions ahead so that the 
+dependency on OFW can be dropped I think.
+
+Sorry but I really think this is not in a shape where merging it is an 
+option. I think it would be better to skip those suspend/resume patches 
+for the next merge window.
 
 
-On Fri, 9 Apr 2010, Johannes Weiner wrote:
-> +	/*
-> +	 * 1. case: vma and next are split parts of one root vma.
-> +	 * Their anon_vma_chain is equal and we can drop that of next.
-> +	 *
-> +	 * 2. case: one vma was instantiated as mergeable with the
-> +	 * other one and inherited the other one's primary anon_vma as
-> +	 * the singleton in its chain.
-> +	 *
-> +	 * If next came after vma, vma's chain is already an unstrict
-> +	 * superset of next's and we can treat it like case 1.
-> +	 *
-> +	 * If vma has the singleton chain, we have to copy next's
-> +	 * unique anon_vmas over.
-> +	 */
+Thanks,
 
-This comment makes my head hurt. In fact, the whole anon_vma thing hurts 
-my head.
-
-Can we have some better high-level documentation on what happens for all 
-the cases.
-
- - split (mprotect, or munmap in the middle):
-
-	anon_vma_clone: the two vma's will have the same anon_vma, and the 
-	anon_vma chains will be equivalent. 
-
- - merge (mprotect that creates a mergeable state):
-
-	anon_vma_merge: we're supposed to have a anon_vma_chain that is 
-	a superset of the two chains of the merged entries.
-
- - fork:
-
-	anon_vma_fork: each new vma will have a _new_ anon_vma as it's 
-	primary one, and will link to the old primary trough the 
-	anon_vma_chain. It's doing this with a anon_vma_clone() followed 
-	by adding an entra entry to the new anon_vma, and setting 
-	vma->anon_vma to the new one.
-
- - create/mmap:
-
-	anon_vma_prepare: find a mergeable anon_vma and use that as a 
-	singleton, because the other entries on the anon_vma chain won't 
-	matter, since they cannot be associated with any pages associated 
-	with the newly created vma..
-
-Correct?
-
-Quite frankly, just looking at that, I can't see how we get to your rules. 
-At least not trivially. Especially with multiple merges, I don't see 
-how "singleton" is such a special case.
-
-		Linus
+Florian Tobias Schandinat
