@@ -1,184 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab0DIOtT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 10:49:19 -0400
-Received: from stinky.trash.net ([213.144.137.162]:60430 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753199Ab0DIOtR (ORCPT
+	id S1753938Ab0DIOuc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 10:50:32 -0400
+Received: from smtp-out003.kontent.com ([81.88.40.217]:58535 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753638Ab0DIOua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 10:49:17 -0400
-Message-ID: <4BBF3E6C.5010708@trash.net>
-Date: Fri, 09 Apr 2010 16:49:16 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090701)
+	Fri, 9 Apr 2010 10:50:30 -0400
+From: Oliver Neukum <oliver@neukum.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+Date: Fri, 9 Apr 2010 16:50:31 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-0.1-default; KDE/4.3.5; x86_64; ; )
+Cc: Daniel Mack <daniel@caiaq.de>, linux-kernel@vger.kernel.org,
+       Pedro Ribeiro <pedrib@gmail.com>, akpm@linux-foundation.org,
+       Greg KH <gregkh@suse.de>, alsa-devel@alsa-project.org,
+       linux-usb@vger.kernel.org
+References: <Pine.LNX.4.44L0.1004091033150.1852-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1004091033150.1852-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Valdis.Kletnieks@vt.edu
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-       netfilter-devel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: mmotm 2010-04-05-16-09 uploaded
-References: <201004052336.o35NaeSE015814@imap1.linux-foundation.org> <13074.1270663309@localhost> <4BBDC0CC.7080305@trash.net> <6795.1270740197@localhost>            <4BBDF7E7.708@trash.net> <8356.1270774206@localhost>
-In-Reply-To: <8356.1270774206@localhost>
-X-Enigmail-Version: 0.95.0
-Content-Type: multipart/mixed;
- boundary="------------040807000900090401050007"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004091650.31488.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------040807000900090401050007
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-
-Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 08 Apr 2010 17:36:07 +0200, Patrick McHardy said:
+Am Freitag, 9. April 2010 16:41:48 schrieb Alan Stern:
+> > It'll work on x86. On incoherent architectures this violates the cacheline
+> > rules for DMA-mapping if you have to bounce.
 > 
->> Valdis.Kletnieks@vt.edu wrote:
+> Not true.  Consider: The driver allocates a 16-byte buffer (xbuf)  
+> divided up into four sets of four bytes, and sets
 > 
->>> Well, it *changed* it.  Does the rcu_defererence_check() only fire on the
->>> first time it hits something, so we've fixed the first one and now we get to
->>> see the second one?
->> It appears that way, otherwise you should have seen a second warning in
->> nf_conntrack_ecache the last time.
->>
->>> (For what it's worth, if this is going to be one-at-a-time whack-a-mole, I'm
->>> OK on that, just want to know up front.)
->> I went through the other files and I believe this should be it.
->> We already removed most of these incorrect rcu_dereference()
->> calls a while back.
+>         urb[i].transfer_buffer_dma = xbuf_dma + 4*i;
 > 
-> Confirming - the second version of the patch fixes all the network-related
-> RCU complaints I've been able to trigger...
+> Then usb_submit_urb(urb[i]) will copy the appropriate four bytes to a
+> bounce buffer and map the bounce buffer.  Accesses to the other parts
+> of xbuf won't violate the cacheline rules, because xbuf isn't mapped
+> for DMA -- only the bounce buffer is.  When urb[i] completes, the
+> bounce buffer contents will be copied back to the original four bytes
+> in xbuf.  Again, there is no violation of cacheline rules.
 
-Thanks. I've added the attached commit to the nf-next tree. I'll push
-it to Dave shortly so this can get included in the next tree.
+I think you are assuming that either every or no part of the buffer is mapped
+for DMA in place. I don't think you can assume that.
 
-
---------------040807000900090401050007
-Content-Type: text/plain;
- name="x"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline;
- filename="x"
-
->From ed86308f6179d8fa6151c2d0f652aad0091548e2 Mon Sep 17 00:00:00 2001
-From: Patrick McHardy <kaber@trash.net>
-Date: Fri, 9 Apr 2010 16:42:15 +0200
-Subject: [PATCH] netfilter: remove invalid rcu_dereference() calls
-
-The CONFIG_PROVE_RCU option discovered a few invalid uses of
-rcu_dereference() in netfilter. In all these cases, the code code
-intends to check whether a pointer is already assigned when
-performing registration or whether the assigned pointer matches
-when performing unregistration. The entire registration/
-unregistration is protected by a mutex, so we don't need the
-rcu_dereference() calls.
-
-Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Tested-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
----
- net/netfilter/nf_conntrack_ecache.c |   18 ++++--------------
- net/netfilter/nf_log.c              |    8 ++------
- 2 files changed, 6 insertions(+), 20 deletions(-)
-
-diff --git a/net/netfilter/nf_conntrack_ecache.c b/net/netfilter/nf_conntrack_ecache.c
-index d5a9bcd..849614a 100644
---- a/net/netfilter/nf_conntrack_ecache.c
-+++ b/net/netfilter/nf_conntrack_ecache.c
-@@ -81,11 +81,9 @@ EXPORT_SYMBOL_GPL(nf_ct_deliver_cached_events);
- int nf_conntrack_register_notifier(struct nf_ct_event_notifier *new)
- {
- 	int ret = 0;
--	struct nf_ct_event_notifier *notify;
- 
- 	mutex_lock(&nf_ct_ecache_mutex);
--	notify = rcu_dereference(nf_conntrack_event_cb);
--	if (notify != NULL) {
-+	if (nf_conntrack_event_cb != NULL) {
- 		ret = -EBUSY;
- 		goto out_unlock;
- 	}
-@@ -101,11 +99,8 @@ EXPORT_SYMBOL_GPL(nf_conntrack_register_notifier);
- 
- void nf_conntrack_unregister_notifier(struct nf_ct_event_notifier *new)
- {
--	struct nf_ct_event_notifier *notify;
--
- 	mutex_lock(&nf_ct_ecache_mutex);
--	notify = rcu_dereference(nf_conntrack_event_cb);
--	BUG_ON(notify != new);
-+	BUG_ON(nf_conntrack_event_cb != new);
- 	rcu_assign_pointer(nf_conntrack_event_cb, NULL);
- 	mutex_unlock(&nf_ct_ecache_mutex);
- }
-@@ -114,11 +109,9 @@ EXPORT_SYMBOL_GPL(nf_conntrack_unregister_notifier);
- int nf_ct_expect_register_notifier(struct nf_exp_event_notifier *new)
- {
- 	int ret = 0;
--	struct nf_exp_event_notifier *notify;
- 
- 	mutex_lock(&nf_ct_ecache_mutex);
--	notify = rcu_dereference(nf_expect_event_cb);
--	if (notify != NULL) {
-+	if (nf_expect_event_cb != NULL) {
- 		ret = -EBUSY;
- 		goto out_unlock;
- 	}
-@@ -134,11 +127,8 @@ EXPORT_SYMBOL_GPL(nf_ct_expect_register_notifier);
- 
- void nf_ct_expect_unregister_notifier(struct nf_exp_event_notifier *new)
- {
--	struct nf_exp_event_notifier *notify;
--
- 	mutex_lock(&nf_ct_ecache_mutex);
--	notify = rcu_dereference(nf_expect_event_cb);
--	BUG_ON(notify != new);
-+	BUG_ON(nf_expect_event_cb != new);
- 	rcu_assign_pointer(nf_expect_event_cb, NULL);
- 	mutex_unlock(&nf_ct_ecache_mutex);
- }
-diff --git a/net/netfilter/nf_log.c b/net/netfilter/nf_log.c
-index 015725a..908f599 100644
---- a/net/netfilter/nf_log.c
-+++ b/net/netfilter/nf_log.c
-@@ -35,7 +35,6 @@ static struct nf_logger *__find_logger(int pf, const char *str_logger)
- /* return EEXIST if the same logger is registred, 0 on success. */
- int nf_log_register(u_int8_t pf, struct nf_logger *logger)
- {
--	const struct nf_logger *llog;
- 	int i;
- 
- 	if (pf >= ARRAY_SIZE(nf_loggers))
-@@ -52,8 +51,7 @@ int nf_log_register(u_int8_t pf, struct nf_logger *logger)
- 	} else {
- 		/* register at end of list to honor first register win */
- 		list_add_tail(&logger->list[pf], &nf_loggers_l[pf]);
--		llog = rcu_dereference(nf_loggers[pf]);
--		if (llog == NULL)
-+		if (nf_loggers[pf] == NULL)
- 			rcu_assign_pointer(nf_loggers[pf], logger);
- 	}
- 
-@@ -65,13 +63,11 @@ EXPORT_SYMBOL(nf_log_register);
- 
- void nf_log_unregister(struct nf_logger *logger)
- {
--	const struct nf_logger *c_logger;
- 	int i;
- 
- 	mutex_lock(&nf_log_mutex);
- 	for (i = 0; i < ARRAY_SIZE(nf_loggers); i++) {
--		c_logger = rcu_dereference(nf_loggers[i]);
--		if (c_logger == logger)
-+		if (nf_loggers[i] == logger)
- 			rcu_assign_pointer(nf_loggers[i], NULL);
- 		list_del(&logger->list[i]);
- 	}
--- 
-1.7.0.4
-
-
---------------040807000900090401050007--
+	Regards
+		Oliver
