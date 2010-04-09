@@ -1,196 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757169Ab0DIXCV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 19:02:21 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33608
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755280Ab0DIXBb (ORCPT
+	id S1756120Ab0DIXGB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 19:06:01 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:62643 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887Ab0DIXF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 19:01:31 -0400
-Date: Fri, 09 Apr 2010 16:01:35 -0700 (PDT)
-Message-Id: <20100409.160135.35854399.davem@davemloft.net>
-To: peterz@infradead.org
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       sparclinux@vger.kernel.org
-Subject: [PATCH 1/4] kernel: local_irq_{save,restore}_nmi()
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Fri, 9 Apr 2010 19:05:58 -0400
+Message-ID: <4BBFB1D8.6090802@oracle.com>
+Date: Fri, 09 Apr 2010 16:01:44 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Andy Isaacson <adi@hexapodia.org>
+CC: Yinghai Lu <yinghai.lu@oracle.com>, guenter.roeck@ericsson.com,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well
+ as x86_32
+References: <201004071705.07176.bjorn.helgaas@hp.com> <4BBD13C3.2060404@oracle.com> <201004091004.39857.bjorn.helgaas@hp.com> <4BBF5987.3010100@zytor.com> <4BBF626A.3060800@oracle.com> <4BBF70BC.3080809@zytor.com> <1270839357.1477.758.camel@groeck-laptop> <4BBF863B.1060806@oracle.com> <20100409222103.GA11130@hexapodia.org> <4BBFA9BF.60608@oracle.com> <20100409223532.GC11130@hexapodia.org>
+In-Reply-To: <20100409223532.GC11130@hexapodia.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4BBFB29A.0069:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Please check
 
-Provide local_irq_{save,restore}_nmi() which will allow us to help
-architectures that implement NMIs using IRQ priorities like SPARC64
-does.
+Subject: [PATCH] x86: reserve [0xa0000, 0x100000] in e820
 
-Sparc uses IRQ prio 15 for NMIs and implements local_irq_disable() as
-disable <= 14. However if you do that while inside an NMI you re-
-enable the NMI priority again, causing all kinds of fun.
+Update e820 at first, and later put them resource tree.
 
-A more solid implementation would first check the disable level and
-never lower it, however that is more costly and would slow down the
-rest of the kernel for no particular reason.
+-V2: reserved that early, no PCI BAR can use it, force them to get new one
 
-Therefore introduce local_irq_save_nmi() which can implement this
-slower but more solid scheme and dis-allow local_irq_save() from NMI
-context.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Andy Isaacson <adi@hexapodia.org>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
 
-Suggested-by: David Miller <davem@davemloft.net>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- include/linux/irqflags.h     |   51 +++++++++++++++++++++++++++++++++++++++--
- kernel/lockdep.c             |    7 +++++
- kernel/trace/trace_irqsoff.c |    8 ++++++
- 3 files changed, 63 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/setup.h |    1 -
+ arch/x86/kernel/e820.c       |    2 +-
+ arch/x86/kernel/head32.c     |    1 -
+ arch/x86/kernel/setup.c      |   19 +------------------
+ 4 files changed, 2 insertions(+), 21 deletions(-)
 
-diff --git a/include/linux/irqflags.h b/include/linux/irqflags.h
-index 006bf45..91256d4 100644
---- a/include/linux/irqflags.h
-+++ b/include/linux/irqflags.h
-@@ -18,6 +18,7 @@
-   extern void trace_softirqs_off(unsigned long ip);
-   extern void trace_hardirqs_on(void);
-   extern void trace_hardirqs_off(void);
-+  extern void trace_hardirqs_off_no_nmi(void);
- # define trace_hardirq_context(p)	((p)->hardirq_context)
- # define trace_softirq_context(p)	((p)->softirq_context)
- # define trace_hardirqs_enabled(p)	((p)->hardirqs_enabled)
-@@ -30,6 +31,7 @@
- #else
- # define trace_hardirqs_on()		do { } while (0)
- # define trace_hardirqs_off()		do { } while (0)
-+# define trace_hardirqs_off_no_nmi()	do { } while (0)
- # define trace_softirqs_on(ip)		do { } while (0)
- # define trace_softirqs_off(ip)		do { } while (0)
- # define trace_hardirq_context(p)	0
-@@ -59,15 +61,15 @@
- #define local_irq_enable() \
- 	do { trace_hardirqs_on(); raw_local_irq_enable(); } while (0)
- #define local_irq_disable() \
--	do { raw_local_irq_disable(); trace_hardirqs_off(); } while (0)
-+	do { raw_local_irq_disable(); trace_hardirqs_off_no_nmi(); } while (0)
-+
- #define local_irq_save(flags)				\
- 	do {						\
- 		typecheck(unsigned long, flags);	\
- 		raw_local_irq_save(flags);		\
--		trace_hardirqs_off();			\
-+		trace_hardirqs_off_no_nmi();		\
- 	} while (0)
+Index: linux-2.6/arch/x86/include/asm/setup.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/setup.h
++++ linux-2.6/arch/x86/include/asm/setup.h
+@@ -44,7 +44,6 @@ static inline void visws_early_detect(vo
+ extern unsigned long saved_video_mode;
  
--
- #define local_irq_restore(flags)			\
- 	do {						\
- 		typecheck(unsigned long, flags);	\
-@@ -79,6 +81,30 @@
- 			raw_local_irq_restore(flags);	\
- 		}					\
- 	} while (0)
-+
-+#ifndef local_irq_save_nmi
-+# define local_irq_save_nmi(flags) 			\
-+	 do {						\
-+		 typecheck(unsigned long, flags);	\
-+		 raw_local_irq_save(flags);		\
-+		 trace_hardirqs_off();			\
-+	 } while (0)
-+#endif
-+
-+#ifndef local_irq_restore_nmi
-+#define local_irq_restore_nmi(flags)			\
-+	do {						\
-+		typecheck(unsigned long, flags);	\
-+		if (raw_irqs_disabled_flags(flags)) {	\
-+			raw_local_irq_restore(flags);	\
-+			trace_hardirqs_off();		\
-+		} else {				\
-+			trace_hardirqs_on();		\
-+			raw_local_irq_restore(flags);	\
-+		}					\
-+	} while (0)
-+#endif
-+
- #else /* !CONFIG_TRACE_IRQFLAGS_SUPPORT */
- /*
-  * The local_irq_*() APIs are equal to the raw_local_irq*()
-@@ -86,16 +112,35 @@
-  */
- # define raw_local_irq_disable()	local_irq_disable()
- # define raw_local_irq_enable()		local_irq_enable()
-+
- # define raw_local_irq_save(flags)			\
- 	do {						\
- 		typecheck(unsigned long, flags);	\
- 		local_irq_save(flags);			\
- 	} while (0)
-+
- # define raw_local_irq_restore(flags)			\
- 	do {						\
- 		typecheck(unsigned long, flags);	\
- 		local_irq_restore(flags);		\
- 	} while (0)
-+
-+#ifndef local_irq_save_nmi
-+# define local_irq_save_nmi(flags)			\
-+	 do {						\
-+		 typecheck(unsigned long, flags);	\
-+		 local_irq_save(flags);			\
-+	 } while (0)
-+#endif
-+
-+#ifndef local_irq_restore_nmi
-+# define local_irq_restore_nmi(flags)			\
-+	 do {						\
-+		 typecheck(unsigned long, flags);	\
-+		 local_irq_restore(flags);		\
-+	 } while (0)
-+#endif
-+
- #endif /* CONFIG_TRACE_IRQFLAGS_SUPPORT */
+ extern void reserve_standard_io_resources(void);
+-extern void i386_reserve_resources(void);
+ extern void setup_default_timer_irq(void);
  
- #ifdef CONFIG_TRACE_IRQFLAGS_SUPPORT
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 2594e1c..c2aae0f 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -2382,6 +2382,13 @@ void trace_hardirqs_off(void)
- }
- EXPORT_SYMBOL(trace_hardirqs_off);
- 
-+void trace_hardirqs_off_no_nmi(void)
-+{
-+	WARN_ON_ONCE(in_nmi());
-+	trace_hardirqs_off_caller(CALLER_ADDR0);
-+}
-+EXPORT_SYMBOL(trace_hardirqs_off_no_nmi);
-+
- /*
-  * Softirqs will be enabled:
-  */
-diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-index 2974bc7..7596c6f 100644
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -316,6 +316,14 @@ void trace_hardirqs_off(void)
- }
- EXPORT_SYMBOL(trace_hardirqs_off);
- 
-+void trace_hardirqs_off_no_nmi(void)
-+{
-+	WARN_ON_ONCE(in_nmi());
-+	if (!preempt_trace() && irq_trace())
-+		start_critical_timing(CALLER_ADDR0, CALLER_ADDR1);
-+}
-+EXPORT_SYMBOL(trace_hardirqs_off_no_nmi);
-+
- void trace_hardirqs_on_caller(unsigned long caller_addr)
+ #ifdef CONFIG_X86_MRST
+Index: linux-2.6/arch/x86/kernel/head32.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/head32.c
++++ linux-2.6/arch/x86/kernel/head32.c
+@@ -22,7 +22,6 @@ static void __init i386_default_early_se
  {
- 	if (!preempt_trace() && irq_trace())
--- 
-1.7.0.4
-
+ 	/* Initilize 32bit specific setup functions */
+ 	x86_init.resources.probe_roms = probe_roms;
+-	x86_init.resources.reserve_resources = i386_reserve_resources;
+ 	x86_init.mpparse.setup_ioapic_ids = setup_ioapic_ids_from_mpc;
+ 
+ 	reserve_ebda_region();
+Index: linux-2.6/arch/x86/kernel/setup.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -693,7 +693,7 @@ static void __init trim_bios_range(void)
+ 	 * area (640->1Mb) as ram even though it is not.
+ 	 * take them out.
+ 	 */
+-	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
++	e820_add_region(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RESERVED);
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+ }
+ 
+@@ -1052,20 +1052,3 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	mcheck_init();
+ }
+-
+-#ifdef CONFIG_X86_32
+-
+-static struct resource video_ram_resource = {
+-	.name	= "Video RAM area",
+-	.start	= 0xa0000,
+-	.end	= 0xbffff,
+-	.flags	= IORESOURCE_BUSY | IORESOURCE_MEM
+-};
+-
+-void __init i386_reserve_resources(void)
+-{
+-	request_resource(&iomem_resource, &video_ram_resource);
+-	reserve_standard_io_resources();
+-}
+-
+-#endif /* CONFIG_X86_32 */
