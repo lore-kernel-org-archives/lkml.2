@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab0DIQXz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 12:23:55 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55150 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883Ab0DIQXv convert rfc822-to-8bit (ORCPT
+	id S1754481Ab0DIQhJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 12:37:09 -0400
+Received: from sj-iport-5.cisco.com ([171.68.10.87]:55165 "EHLO
+	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754346Ab0DIQhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 12:23:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=KOkHWgG1wAxABDJ78tht4162mareMBuoRz0LUz7sps7DQqqEU60Qx/FvPbDoMxTIx6
-         3ZEYdSwO7oFuFgnSYbanCy1anwgDpaKmKtNbhhj51mBDgI+mi8i4Wdb4nzcWcE7SYI64
-         pOpj6KT5s18TJbt6NZXxLseiMjg+l+eqtx8sM=
+	Fri, 9 Apr 2010 12:37:06 -0400
+Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEANbzvktAaMHG/2dsb2JhbACbO3GiQJkjhQkEgyQ
+X-IronPort-AV: E=Sophos;i="4.52,178,1270425600"; 
+   d="scan'208";a="180819598"
+From: Tom Lyon <pugs@lyon-about.com>
+To: Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH 0/1] uio_pci_generic: extensions to allow access =?iso-8859-1?q?for=09non-privileged?= processes
+Date: Fri, 9 Apr 2010 09:34:16 -0700
+User-Agent: KMail/1.9.9
+Cc: Greg KH <gregkh@suse.de>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, "Hans J. Koch" <hjk@linutronix.de>
+References: <201003311708.38961.pugs@lyon-about.com> <20100402170515.GA32579@suse.de> <4BBEFA3B.8070609@redhat.com>
+In-Reply-To: <4BBEFA3B.8070609@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1270821655-4368-5-git-send-email-jblunck@suse.de>
-References: <1270821655-4368-1-git-send-email-jblunck@suse.de>
-	 <1270821655-4368-5-git-send-email-jblunck@suse.de>
-Date: Fri, 9 Apr 2010 19:23:50 +0300
-Message-ID: <u2xb6fcc0a1004090923h261c099fpc40b3c289e981b28@mail.gmail.com>
-Subject: Re: [PATCH 04/12] frv: remove "struct file *" argument from sysctl 
-	->proc_handler
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Jan Blunck <jblunck@suse.de>
-Cc: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-       Alan Cox <alan@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201004090934.16891.pugs@lyon-about.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 9, 2010 at 5:00 PM, Jan Blunck <jblunck@suse.de> wrote:
-> Seems that Alexey Dobriyan missed this usage of the file argument when
-> removing it from ->proc_handler in commit 8d65af789f3e2cf4cfbdbf71a0f7a61ebcd41d38.
+On Friday 09 April 2010 02:58:19 am Avi Kivity wrote:
+> On 04/02/2010 08:05 PM, Greg KH wrote:
+> >
+> >> Currently kvm does device assignment with its own code, I'd like to unify
+> >> it with uio, not split it off.
+> >>
+> >> Separate notifications for msi-x interrupts are just as useful for uio as
+> >> they are for kvm.
+> >>      
+> > I agree, there should not be a difference here for KVM vs. the "normal"
+> > version.
+> >    
+> 
+> Just so you know what you got into, here are the kvm requirements:
+> 
+> - msi interrupts delivered via eventfd (these allow us to inject 
+> interrupts from uio to a guest without going through userspace)
+Check.
+> - nonlinear iommu mapping (i.e. map discontiguous ranges of the device 
+> address space into ranges of the virtual address space)
+Check.
+> - dynamic iommu mapping (support guest memory hotplug)
+Check.
+> - unprivileged operation once an admin has assigned a device (my 
+> preferred implementation is to have all operations go through an fd, 
+> which can be passed via SCM_RIGHTS from a privileged application that 
+> opens the file)
+Check.
+> - access to all config space, but BARs must be translated so userspace 
+> cannot attack the host
+Please elaborate. All of PCI config? All of PCIe config? Seems like a huge mess.
+> - some mechanism which allows us to affine device interrupts with their 
+> target vcpus (eventually, this is vague)
+Do-able.
+> - anything mst might add
+mst?
+> - a pony
+Rainbow or glitter?
 
-It wasn't missed, it was deliberately left out because I didn't understand
-what's going on there.
-
-I mean, sysctl handler touching ->f_pos, come on!
-
-What's going on?
-
-> --- a/arch/frv/kernel/sysctl.c
-> +++ b/arch/frv/kernel/sysctl.c
-> @@ -85,7 +86,7 @@ static int procctl_frv_cachemode(ctl_table *table, int write, struct file *filp,
->        }
->
->        /* read the state */
-> -       if (filp->f_pos > 0) {
-> +       if (*ppos > 0) {
->                *lenp = 0;
->                return 0;
->        }
+The 'check' items are already done, not fully tested; probably available next week.
+Can we leave the others for future patches? Please? And I definitely need help with 
+the PCI config stuff.
