@@ -1,38 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756714Ab0DIT7M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 15:59:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:44775 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756448Ab0DIT7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 15:59:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Richard Zidlicky <rz@linux-m68k.org>
-Subject: Re: 2.6.33.2 circular locking, hibernate, dm-crypt
-Date: Fri, 9 Apr 2010 22:02:12 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
-Cc: dm-crypt@saout.de, pm-utils@lists.freedesktop.org,
-       linux-kernel@vger.kernel.org
-References: <20100408110607.GB1788@linux-m68k.org> <201004082235.25263.rjw@sisk.pl> <20100409100805.GA3468@linux-m68k.org>
-In-Reply-To: <20100409100805.GA3468@linux-m68k.org>
+	id S1756752Ab0DIT7W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 15:59:22 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:21957 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756719Ab0DIT7T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 15:59:19 -0400
+Message-ID: <4BBF863B.1060806@oracle.com>
+Date: Fri, 09 Apr 2010 12:55:39 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: guenter.roeck@ericsson.com, Andy Isaacson <adi@hexapodia.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Yinghai <yinghai.lu@oracle.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well
+ as x86_32
+References: <20100407210628.28364.96982.stgit@bob.kio>	 <201004071705.07176.bjorn.helgaas@hp.com> <4BBD13C3.2060404@oracle.com>	 <201004091004.39857.bjorn.helgaas@hp.com> <4BBF5987.3010100@zytor.com>	 <4BBF626A.3060800@oracle.com>  <4BBF70BC.3080809@zytor.com> <1270839357.1477.758.camel@groeck-laptop>
+In-Reply-To: <1270839357.1477.758.camel@groeck-laptop>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004092202.13037.rjw@sisk.pl>
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4BBF8694.0011:SCFMA4539814,ss=1,pt=DBB_66871,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 09 April 2010, Richard Zidlicky wrote:
-> On Thu, Apr 08, 2010 at 10:35:25PM +0200, Rafael J. Wysocki wrote:
-> 
-> > Can you please check if this also is present in the latest 2.6.34-rc kernels
-> > (preferably 2.6.34-rc4 when it's out)?
-> 
-> I can try it, or if you have a particular patch set try to apply it to 2.6.33. It is not
-> 100% reproducible however.
+update version for test
 
-Well, it's always a good idea to try the current Linus' tree.
+Subject: [PATCH] x86: reserve [0xa0000, 0x100000] in e820
 
-Rafael
+Update e820 at first, and later put them resource tree.
+But give pci BAR chance to claim the range, before assign unassigned resources.
+
+In case some system doesn't have VGA, and use [0xa0000, ..] for mmio of some
+other pci devices.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Andy Isaacson <adi@hexapodia.org>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+
+---
+ arch/x86/include/asm/setup.h |    1 -
+ arch/x86/kernel/e820.c       |    2 +-
+ arch/x86/kernel/head32.c     |    1 -
+ arch/x86/kernel/setup.c      |   19 +------------------
+ 4 files changed, 2 insertions(+), 21 deletions(-)
+
+Index: linux-2.6/arch/x86/include/asm/setup.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/setup.h
++++ linux-2.6/arch/x86/include/asm/setup.h
+@@ -44,7 +44,6 @@ static inline void visws_early_detect(vo
+ extern unsigned long saved_video_mode;
+ 
+ extern void reserve_standard_io_resources(void);
+-extern void i386_reserve_resources(void);
+ extern void setup_default_timer_irq(void);
+ 
+ #ifdef CONFIG_X86_MRST
+Index: linux-2.6/arch/x86/kernel/e820.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/e820.c
++++ linux-2.6/arch/x86/kernel/e820.c
+@@ -1094,7 +1094,7 @@ void __init e820_reserve_resources(void)
+ 		 * pci device BAR resource and insert them later in
+ 		 * pcibios_resource_survey()
+ 		 */
+-		if (e820.map[i].type != E820_RESERVED || res->start < (1ULL<<20)) {
++		if (e820.map[i].type != E820_RESERVED) {
+ 			res->flags |= IORESOURCE_BUSY;
+ 			insert_resource(&iomem_resource, res);
+ 		}
+Index: linux-2.6/arch/x86/kernel/head32.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/head32.c
++++ linux-2.6/arch/x86/kernel/head32.c
+@@ -22,7 +22,6 @@ static void __init i386_default_early_se
+ {
+ 	/* Initilize 32bit specific setup functions */
+ 	x86_init.resources.probe_roms = probe_roms;
+-	x86_init.resources.reserve_resources = i386_reserve_resources;
+ 	x86_init.mpparse.setup_ioapic_ids = setup_ioapic_ids_from_mpc;
+ 
+ 	reserve_ebda_region();
+Index: linux-2.6/arch/x86/kernel/setup.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -693,7 +693,7 @@ static void __init trim_bios_range(void)
+ 	 * area (640->1Mb) as ram even though it is not.
+ 	 * take them out.
+ 	 */
+-	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
++	e820_add_region(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RESERVED);
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+ }
+ 
+@@ -1052,20 +1052,3 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	mcheck_init();
+ }
+-
+-#ifdef CONFIG_X86_32
+-
+-static struct resource video_ram_resource = {
+-	.name	= "Video RAM area",
+-	.start	= 0xa0000,
+-	.end	= 0xbffff,
+-	.flags	= IORESOURCE_BUSY | IORESOURCE_MEM
+-};
+-
+-void __init i386_reserve_resources(void)
+-{
+-	request_resource(&iomem_resource, &video_ram_resource);
+-	reserve_standard_io_resources();
+-}
+-
+-#endif /* CONFIG_X86_32 */
