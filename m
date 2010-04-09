@@ -1,55 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab0DIWiw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 18:38:52 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:49772 "EHLO e1.ny.us.ibm.com"
+	id S1754961Ab0DIWjZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 18:39:25 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:52997 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751335Ab0DIWiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 18:38:50 -0400
-Date: Fri, 9 Apr 2010 15:38:43 -0700
+	id S1753719Ab0DIWjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 18:39:20 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
        josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
-Subject: [PATCH tip/core/urgent] v2 rcu: updates for RCU lockdep
-Message-ID: <20100409223843.GA25133@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100409054701.GA8833@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100409054701.GA8833@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/urgent 2/3] RCU: Better explain the condition parameter of rcu_dereference_check()
+Date: Fri,  9 Apr 2010 15:39:11 -0700
+Message-Id: <1270852752-25278-2-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.0
+In-Reply-To: <20100409223843.GA25133@linux.vnet.ibm.com>
+References: <20100409223843.GA25133@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: David Howells <dhowells@redhat.com>
 
-These four patches provides a pair of new APIs and documentation to handle
-a couple of cases that David Howells came across when running an NFS
-workload under CONFIG_PROVE_RCU, along with some comment improvements
-suggested by David and also some by Yong Zhang.
+Better explain the condition parameter of rcu_dereference_check() that
+describes the conditions under which the dereference is permitted to
+take place (and incorporate Yong Zhang's suggestion).  This condition
+is only checked under lockdep proving.
 
-Updated from v1 (http://lkml.org/lkml/2010/4/9/28) to reflect David's
-and Eric Dumazet's comments:
+Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ include/linux/rcupdate.h |   28 +++++++++++++++++++++++-----
+ 1 files changed, 23 insertions(+), 5 deletions(-)
 
-o	Remove (void*) cast from rcu_access_pointer().
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 8fe8660..9f1ddfe 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -195,12 +195,30 @@ static inline int rcu_read_lock_sched_held(void)
+ 
+ /**
+  * rcu_dereference_check - rcu_dereference with debug checking
++ * @p: The pointer to read, prior to dereferencing
++ * @c: The conditions under which the dereference will take place
+  *
+- * Do an rcu_dereference(), but check that the context is correct.
+- * For example, rcu_dereference_check(gp, rcu_read_lock_held()) to
+- * ensure that the rcu_dereference_check() executes within an RCU
+- * read-side critical section.  It is also possible to check for
+- * locks being held, for example, by using lockdep_is_held().
++ * Do an rcu_dereference(), but check that the conditions under which the
++ * dereference will take place are correct.  Typically the conditions indicate
++ * the various locking conditions that should be held at that point.  The check
++ * should return true if the conditions are satisfied.
++ *
++ * For example:
++ *
++ *	bar = rcu_dereference_check(foo->bar, rcu_read_lock_held() ||
++ *					      lockdep_is_held(&foo->lock));
++ *
++ * could be used to indicate to lockdep that foo->bar may only be dereferenced
++ * if either the RCU read lock is held, or that the lock required to replace
++ * the bar struct at foo->bar is held.
++ *
++ * Note that the list of conditions may also include indications of when a lock
++ * need not be held, for example during initialisation or destruction of the
++ * target struct:
++ *
++ *	bar = rcu_dereference_check(foo->bar, rcu_read_lock_held() ||
++ *					      lockdep_is_held(&foo->lock) ||
++ *					      atomic_read(&foo->usage) == 0);
+  */
+ #define rcu_dereference_check(p, c) \
+ 	({ \
+-- 
+1.7.0
 
-o	Merge identical definitions of rcu_access_pointer() outside
-	of #ifdef.
-
-o	Merge comment syntax-error fix into comment patch.
-
-							Thanx, Paul
-
- b/Documentation/RCU/NMI-RCU.txt   |   39 +++++++++++++++++++++-----------------
- b/Documentation/RCU/checklist.txt |    7 +++---
- b/Documentation/RCU/lockdep.txt   |   28 +++++++++++++++++++++++++--
- b/Documentation/RCU/whatisRCU.txt |    6 +++++
- b/include/linux/rcupdate.h        |   32 +++++++++++++++++++++++++++++++
- include/linux/rcupdate.h          |   28 ++++++++++++++++++++++-----
- 6 files changed, 113 insertions(+), 27 deletions(-)
