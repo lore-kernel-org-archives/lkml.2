@@ -1,79 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581Ab0DIWJR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 18:09:17 -0400
-Received: from mail.gmx.net ([213.165.64.20]:42859 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751101Ab0DIWJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 18:09:10 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+FQPJRMx6FxDcOrjiIBmwg2A6vlJG2hUBCXNiHN5
-	ILHuyJdNW1+pSM
-Message-ID: <4BBFA582.2010701@gmx.de>
-Date: Sat, 10 Apr 2010 00:09:06 +0200
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
-MIME-Version: 1.0
-To: Jonathan Corbet <corbet@lwn.net>
-CC: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
-       JosephChan@via.com.tw, ScottFang@viatech.com.cn,
-       Deepak Saxena <dsaxena@laptop.org>,
-       linux-fbdev-devel@lists.sourceforge.net
-Subject: Re: [PATCH 10/16] suppress verbose debug messages:  change printk()
- to DEBUG_MSG()
-References: <1270746946-12467-1-git-send-email-corbet@lwn.net> <1270746946-12467-11-git-send-email-corbet@lwn.net>
-In-Reply-To: <1270746946-12467-11-git-send-email-corbet@lwn.net>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	id S1751706Ab0DIWKs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 18:10:48 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:33162 "HELO
+	outbound-mail-158.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751035Ab0DIWKr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 18:10:47 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Subject:Message-ID:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=L/AZDU4JmwPT3a/GynzXfFdJh8L7lTEHBsuybFSKvNs0MGEQhj0RXtpTmqKcPvpyArFgR2dJ/eyjQIMUmQaowCot8E1bf6Wi2mIfRJariRhetjo//NYF/A+nVXAkzEuE;
+Date: Fri, 9 Apr 2010 15:10:50 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Dave Airlie <airlied@gmail.com>, James Simmons <jsimmons@infradead.org>
+Subject: [RFC] Try a bit harder to get output on the screen at panic time
+Message-ID: <20100409151050.74ef6dcd@virtuousgeek.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.51000000000000001
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is fine.
+This set of 3 patches makes it a little more likely we'll get panic
+output onto the screen even when X is running, assuming a KMS enabled
+stack anyway.
 
+It gets me from a blank or very sparsely populated black screen at
+panic time, to one including the full backtrace and panic output at
+panic time (tested with "echo c > /proc/sysrq-trigger" from an X
+session).
 
-Thanks,
+It doesn't cover every case; for instance I think it'll fail when X has
+disabled the display, but those cases need to be handled with separate
+patches anyway (need to add atomic DPMS paths for instance).
 
-Florian Tobias Schandinat
+Anyway, please test these out and let me know if they work for you.
 
-Jonathan Corbet schrieb:
-> From: Paul Fox <pgf@laptop.org>
-> 
-> ---
->  drivers/video/via/via_i2c.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/video/via/via_i2c.c b/drivers/video/via/via_i2c.c
-> index 18bbbdd..86e6e8d 100644
-> --- a/drivers/video/via/via_i2c.c
-> +++ b/drivers/video/via/via_i2c.c
-> @@ -26,7 +26,7 @@ static void via_i2c_setscl(void *data, int state)
->  	u8 val;
->  	struct via_i2c_adap_cfg *adap_data = data;
->  
-> -	printk(KERN_DEBUG "reading index 0x%02x from IO 0x%x\n",
-> +	DEBUG_MSG(KERN_DEBUG "reading index 0x%02x from IO 0x%x\n",
->  		adap_data->ioport_index, adap_data->io_port);
->  	val = viafb_read_reg(adap_data->io_port,
->  			     adap_data->ioport_index) & 0xF0;
-> @@ -140,7 +140,7 @@ static int create_i2c_bus(struct i2c_adapter *adapter,
->  			  struct via_i2c_adap_cfg *adap_cfg,
->  			  struct pci_dev *pdev)
->  {
-> -	printk(KERN_DEBUG "viafb: creating bus adap=0x%p, algo_bit_data=0x%p, adap_cfg=0x%p\n", adapter, algo, adap_cfg);
-> +	DEBUG_MSG(KERN_DEBUG "viafb: creating bus adap=0x%p, algo_bit_data=0x%p, adap_cfg=0x%p\n", adapter, algo, adap_cfg);
->  
->  	algo->setsda = via_i2c_setsda;
->  	algo->setscl = via_i2c_setscl;
-> @@ -182,7 +182,7 @@ static struct via_i2c_adap_cfg adap_configs[] = {
->  int viafb_create_i2c_busses(struct viafb_par *viapar)
->  {
->  	int i, ret;
-> -	printk(KERN_DEBUG "%s: entering\n", __FUNCTION__);
-> +	DEBUG_MSG(KERN_DEBUG "%s: entering\n", __FUNCTION__);
->  
->  	for (i = 0; i < VIAFB_NUM_I2C; i++) {
->  		struct via_i2c_adap_cfg *adap_cfg = &adap_configs[i];
-
+-- 
+Jesse Barnes, Intel Open Source Technology Center
