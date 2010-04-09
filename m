@@ -1,111 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508Ab0DIXiQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 19:38:16 -0400
-Received: from mail-iw0-f197.google.com ([209.85.223.197]:50149 "EHLO
-	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178Ab0DIXiO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 19:38:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=GDdBkhbnxj554omlBi84bdf2n6M1TgKx5AVXOnxvycf9gmK5GjV4dfgQEJwyVMY4IN
-         5gYZ8mKSQL3ECYUeXu4e2bakBba5YJr8M6Xkbt6hqaQ4yI9PLikT36I5u4wS5256pvd1
-         FrOLVfoxbKZ3n8jmgzM69ViyXej8UzX1At5TE=
+	id S1755608Ab0DIXqh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 19:46:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38127 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752178Ab0DIXqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 19:46:36 -0400
+Message-ID: <4BBFBC07.3010509@redhat.com>
+Date: Fri, 09 Apr 2010 19:45:11 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
 MIME-Version: 1.0
-In-Reply-To: <20100409165014.GC5184@xanatos>
-References: <s5hhbnncflj.wl%tiwai@suse.de>
-	 <Pine.LNX.4.44L0.1004071452560.5760-100000@iolanthe.rowland.org>
-	 <20100408003313.GE4365@kroah.com> <4BBE6E57.6020600@gmail.com>
-	 <20100409165014.GC5184@xanatos>
-Date: Fri, 9 Apr 2010 17:38:13 -0600
-Message-ID: <g2u51f3faa71004091638nc383aa0ei899777c869273a22@mail.gmail.com>
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-From: Robert Hancock <hancockrwd@gmail.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Greg KH <greg@kroah.com>, Alan Stern <stern@rowland.harvard.edu>,
-       alsa-devel@alsa-project.org, linux-usb@vger.kernel.org,
-       Takashi Iwai <tiwai@suse.de>, Greg KH <gregkh@suse.de>,
-       linux-kernel@vger.kernel.org, Pedro Ribeiro <pedrib@gmail.com>,
-       akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Borislav Petkov <bp@alien8.de>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas
+ of a mergeable VMA
+References: <alpine.LFD.2.00.1004081610020.3558@i5.linux-foundation.org> <20100408234721.GB25834@a1.tnic> <alpine.LFD.2.00.1004081744150.3558@i5.linux-foundation.org> <20100409013012.GA8153@liondog.tnic> <20100409092111.GA998@a1.tnic> <alpine.LFD.2.00.1004090917070.3558@i5.linux-foundation.org> <20100409174041.GA10780@a1.tnic> <alpine.LFD.2.00.1004091043490.3558@i5.linux-foundation.org> <20100409191425.GB10780@a1.tnic> <alpine.LFD.2.00.1004091227310.3558@i5.linux-foundation.org> <20100409204328.GG28964@cmpxchg.org> <alpine.LFD.2.00.1004091546350.3558@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1004091546350.3558@i5.linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 9, 2010 at 10:50 AM, Sarah Sharp
-<sarah.a.sharp@linux.intel.com> wrote:
->> >>I don't know if the comment is still true, but until the "#if 0" is
->> >>removed, ehci-hcd won't make use of 64-bit DMA.
->> >
->> >I think someone tried to remove it recently, but I wouldn't let them :)
->> >
->> >What a mess, hopefully xhci will just take over and save the world from
->> >this whole thing...
+On 04/09/2010 07:22 PM, Linus Torvalds wrote:
 >
-> I hate to break it to you, but 64-bit DMA support is optional for an
-> xHCI implementation.  There's a bit in HCCPARAMS that tells whether the
-> host supports it (see the HCC_64BIT_ADDR macro in xhci.h).  The xHCI
-> driver currently doesn't do anything with that bit, although it should.
-> All the implementations I've seen do 64-bit DMA.
 >
->> True.. except for the fact that the xhci driver currently doesn't do
->> 64-bit DMA either
+> On Fri, 9 Apr 2010, Johannes Weiner wrote:
+>> +	/*
+>> +	 * 1. case: vma and next are split parts of one root vma.
+>> +	 * Their anon_vma_chain is equal and we can drop that of next.
+>> +	 *
+>> +	 * 2. case: one vma was instantiated as mergeable with the
+>> +	 * other one and inherited the other one's primary anon_vma as
+>> +	 * the singleton in its chain.
+>> +	 *
+>> +	 * If next came after vma, vma's chain is already an unstrict
+>> +	 * superset of next's and we can treat it like case 1.
+>> +	 *
+>> +	 * If vma has the singleton chain, we have to copy next's
+>> +	 * unique anon_vmas over.
+>> +	 */
 >
-> What makes you think that?  I've seen URB buffers with 64-bit DMA
-> addresses.  I can tell when the debug polling loop runs and I look at
-> the DMA addresses the xHCI driver is feeding to the hardware:
+> This comment makes my head hurt. In fact, the whole anon_vma thing hurts
+> my head.
 >
-> Dev 1 endpoint ring 0:
-> xhci_hcd 0000:05:00.0: @71a49800 01000680 00080000 00000008 00000841
+> Can we have some better high-level documentation on what happens for all
+> the cases.
 >
-> So the TRB at address 71a49800 is pointing to a buffer at address
-> 0x0008000001000680.
+>   - split (mprotect, or munmap in the middle):
+>
+> 	anon_vma_clone: the two vma's will have the same anon_vma, and the
+> 	anon_vma chains will be equivalent.
+>
+>   - merge (mprotect that creates a mergeable state):
+>
+> 	anon_vma_merge: we're supposed to have a anon_vma_chain that is
+> 	a superset of the two chains of the merged entries.
+>
+>   - fork:
+>
+> 	anon_vma_fork: each new vma will have a _new_ anon_vma as it's
+> 	primary one, and will link to the old primary trough the
+> 	anon_vma_chain. It's doing this with a anon_vma_clone() followed
+> 	by adding an entra entry to the new anon_vma, and setting
+> 	vma->anon_vma to the new one.
+>
+>   - create/mmap:
+>
+> 	anon_vma_prepare: find a mergeable anon_vma and use that as a
+> 	singleton, because the other entries on the anon_vma chain won't
+> 	matter, since they cannot be associated with any pages associated
+> 	with the newly created vma..
+>
+> Correct?
 
-I'm not sure why the address would be that huge, unless it's not
-actually a physical address, or there's some kind of remapping going
-on?
+This is indeed correct.
 
->
-> If I'm setting a DMA mask wrong somewhere, or doing something else to
-> limit the DMA to 32-bit, then please let me know.
+> Quite frankly, just looking at that, I can't see how we get to your rules.
+> At least not trivially. Especially with multiple merges, I don't see
+> how "singleton" is such a special case.
 
-The DMA mask for the controller isn't being set anywhere (in the
-version that's in Linus' current git anyway). In that case it'll
-default to 32-bit and any DMA mappings above 4GB will need to be
-remapped. The controller driver doesn't do the mapping itself but the
-USB core does, passing in the controller device as the one doing the
-DMA, so if the controller's DMA mask is set to 32-bit then the buffers
-passed in will get remapped/bounced accordingly.
+The trick is in the fact that anon_vma_merge is only called
+when vma->anon_vma == vma1->anon_vma.
 
-You should likely be setting the DMA mask for the controller device to
-64-bit if the HCC_64BIT_ADDR flag is set, similar to the code in
-ehci-hcd.c which is currently #if 0'ed out.
+If the top anon_vmas are different, then anon_vma_merge will
+not be called.
 
-You can see the currently set mask in sysfs under
-/sys/devices/pci(whatever)/dma_mask_bits.
+This means that VMAs which have recently passed through fork
+will not be passed to anon_vma_merge, because their top
+anon_vmas are different.
 
->
->> nor does it support MSI even though the HW
->> supports it (surprisingly enough the NEC Windows driver does, MSI-X
->> even).
->
-> There's a patch from AMD to enable MSI-X.  The code was there, just
-> commented out because the early prototypes didn't do MSI-X.
+That leaves just the split & create cases, which will be
+passed to anon_vma_merge when they are merged.
 
-Ah, I see it. That could presumably be tested now (the NEC D720200F1
-chip on the Asus U3S6 card I have seems to support MSI-X with 8
-vectors).
+In case of split, they will have identical anon_vma chains.
 
->
->> At this point only Intel likely knows how to do this
->> properly, though, since AFAICS the spec isn't publicly available
->> yet.
->
-> I have tried very hard to fix this, and will continue to do so.
->
-> Sarah Sharp
->
+In case of create + merge, one of the two VMAs will have
+the whole anon_vma chain, while the other one has just
+the top anon_vma.
