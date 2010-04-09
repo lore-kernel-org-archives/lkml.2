@@ -1,86 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756889Ab0DIVCu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 17:02:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:41425 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab0DIVCs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 17:02:48 -0400
-X-Authority-Analysis: v=1.1 cv=0UlR9Czu668I0eXMyLHigKWn+OyLjOz56zOl0XCIY6Q= c=1 sm=0 a=lCZnNc42cWUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=omOdbC7AAAAA:8 a=meVymXHHAAAA:8 a=n7_h5HR9FGrHuRqvOMQA:9 a=6qL_nnPzzWdbb8ONdtHFalsQn0cA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: [PATCH][GIT PULL] tracing: Fix uninitialized variable of
- tracing/trace output
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Fri, 09 Apr 2010 17:02:46 -0400
-Message-ID: <1270846966.19685.17485.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+	id S1757186Ab0DIVKL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 17:10:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59851 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755249Ab0DIVKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 17:10:06 -0400
+Message-ID: <4BBF978C.8040606@redhat.com>
+Date: Fri, 09 Apr 2010 17:09:32 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Jason Baron <jbaron@redhat.com>
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
+       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+       fweisbec@gmail.com, avi@redhat.com
+Subject: Re: [PATCH 9/9] jump label: jump_label_text_reserved() to reserve
+ our jump points
+References: <cover.1270839564.git.jbaron@redhat.com> <ddd6aca6c907d81569a191bae6534bb89ec9abe8.1270839564.git.jbaron@redhat.com>
+In-Reply-To: <ddd6aca6c907d81569a191bae6534bb89ec9abe8.1270839564.git.jbaron@redhat.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jason Baron wrote:
+> Add a jump_label_text_reserved(void *start, void *end), so that other
+> pieces of code that want to modify kernel text, can first verify that
+> jump label has not reserved the instruction.
+> 
+> Signed-off-by: Jason Baron <jbaron@redhat.com>
 
-Ingo,
+Acked-by: Masami Hiramatsu <mhiramat@redhat.com>
 
-Please pull the latest tip/tracing/core tree, which can be found at:
+At least kprobes parts. :)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-tip/tracing/core
+Thank you,
 
+> ---
+>  arch/x86/kernel/kprobes.c  |    3 +-
+>  include/linux/jump_label.h |    6 +++
+>  kernel/jump_label.c        |   83 ++++++++++++++++++++++++++++++++++++++++++++
+>  kernel/kprobes.c           |    3 +-
+>  4 files changed, 93 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+> index b43bbae..87bcf63 100644
+> --- a/arch/x86/kernel/kprobes.c
+> +++ b/arch/x86/kernel/kprobes.c
+> @@ -1194,7 +1194,8 @@ static int __kprobes copy_optimized_instructions(u8 *dest, u8 *src)
+>  	}
+>  	/* Check whether the address range is reserved */
+>  	if (ftrace_text_reserved(src, src + len - 1) ||
+> -	    alternatives_text_reserved(src, src + len - 1))
+> +	    alternatives_text_reserved(src, src + len - 1) ||
+> +	    jump_label_text_reserved(src, src + len - 1))
+>  		return -EBUSY;
+>  
+>  	return len;
+> diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+> index 7238805..90ca4b6 100644
+> --- a/include/linux/jump_label.h
+> +++ b/include/linux/jump_label.h
+> @@ -31,6 +31,7 @@ extern void arch_jump_label_transform(struct jump_entry *entry,
+>  				 enum jump_label_type type);
+>  
+>  extern void jump_label_update(const char *name, enum jump_label_type type);
+> +extern int jump_label_text_reserved(void *start, void *end);
+>  
+>  extern void apply_jump_label_nops(struct module *mod);
+>  
+> @@ -65,6 +66,11 @@ static inline int apply_jump_label_nops(struct module *mod)
+>  	return 0;
+>  }
+>  
+> +static inline int jump_label_text_reserved(void *start, void *end)
+> +{
+> +	return 0;
+> +}
+> +
+>  #endif
+>  
+>  #endif
+> diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+> index 7e7458b..24bba61 100644
+> --- a/kernel/jump_label.c
+> +++ b/kernel/jump_label.c
+> @@ -179,6 +179,89 @@ void jump_label_update(const char *name, enum jump_label_type type)
+>  	mutex_unlock(&jump_label_mutex);
+>  }
+>  
+> +static int addr_conflict(struct jump_entry *entry, void *start, void *end)
+> +{
+> +	if (entry->code <= (unsigned long)end &&
+> +		entry->code + IDEAL_NOP_SIZE_5 > (unsigned long)start)
+> +		return 1;
+> +
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_MODULES
+> +
+> +static int module_conflict(void *start, void *end)
+> +{
+> +	struct hlist_head *head;
+> +	struct hlist_node *node, *node_next, *module_node, *module_node_next;
+> +	struct jump_label_entry *e;
+> +	struct jump_label_module_entry *e_module;
+> +	struct jump_entry *iter;
+> +	int i, count;
+> +	int conflict = 0;
+> +
+> +	for (i = 0; i < JUMP_LABEL_TABLE_SIZE; i++) {
+> +		head = &jump_label_table[i];
+> +		hlist_for_each_entry_safe(e, node, node_next, head, hlist) {
+> +			hlist_for_each_entry_safe(e_module, module_node,
+> +							module_node_next,
+> +							&(e->modules), hlist) {
+> +				count = e_module->nr_entries;
+> +				iter = e_module->table;
+> +				while (count--) {
+> +					if (addr_conflict(iter, start, end)) {
+> +						conflict = 1;
+> +						goto out;
+> +					}
+> +					iter++;
+> +				}
+> +			}
+> +		}
+> +	}
+> +out:
+> +	return conflict;
+> +}
+> +
+> +#endif
+> +
+> +/***
+> + * jump_label_text_reserved - check if addr range is reserved
+> + * @start: start text addr
+> + * @end: end text addr
+> + *
+> + * checks if the text addr located between @start and @end
+> + * overlaps with any of the jump label patch addresses. Code
+> + * that wants to modify kernel text should first verify that
+> + * it does not overlap with any of the jump label addresses.
+> + *
+> + * returns 1 if there is an overlap, 0 otherwise
+> + */
+> +int jump_label_text_reserved(void *start, void *end)
+> +{
+> +	struct jump_entry *iter;
+> +	struct jump_entry *iter_start = __start___jump_table;
+> +	struct jump_entry *iter_stop = __start___jump_table;
+> +	int conflict = 0;
+> +
+> +	mutex_lock(&jump_label_mutex);
+> +	iter = iter_start;
+> +	while (iter < iter_stop) {
+> +		if (addr_conflict(iter, start, end)) {
+> +			conflict = 1;
+> +			goto out;
+> +		}
+> +		iter++;
+> +	}
+> +
+> +	/* now check modules */
+> +#ifdef CONFIG_MODULES
+> +	conflict = module_conflict(start, end);
+> +#endif
+> +out:
+> +	mutex_unlock(&jump_label_mutex);
+> +	return conflict;
+> +}
+> +
+>  static int init_jump_label(void)
+>  {
+>  	int ret;
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index fa034d2..a57755f 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -1140,7 +1140,8 @@ int __kprobes register_kprobe(struct kprobe *p)
+>  	preempt_disable();
+>  	if (!kernel_text_address((unsigned long) p->addr) ||
+>  	    in_kprobes_functions((unsigned long) p->addr) ||
+> -	    ftrace_text_reserved(p->addr, p->addr)) {
+> +	    ftrace_text_reserved(p->addr, p->addr) ||
+> +	    jump_label_text_reserved(p->addr, p->addr)) {
+>  		preempt_enable();
+>  		return -EINVAL;
+>  	}
 
-Lai Jiangshan (1):
-      tracing: Fix uninitialized variable of tracing/trace output
-
-----
- kernel/trace/trace.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
----------------------------
-commit aa27497c2fb4c7f57706099bd489e683e5cc3e3b
-Author: Lai Jiangshan <laijs@cn.fujitsu.com>
-Date:   Mon Apr 5 17:11:05 2010 +0800
-
-    tracing: Fix uninitialized variable of tracing/trace output
-    
-    Because a local variable is not initialized, I got these
-    when I did 'cat tracing/trace'. (not trace_pipe):
-    
-    CPU:0 [LOST 18446744071579453134 EVENTS]
-                  ps-3099  [000]   560.770221: lock_acquire: ffff880030865010 &(&dentry->d_lock)->rlock
-    CPU:0 [LOST 18446744071579453134 EVENTS]
-                  ps-3099  [000]   560.770221: lock_release: ffff880030865010 &(&dentry->d_lock)->rlock
-    CPU:0 [LOST 18446612133255294080 EVENTS]
-                  ps-3099  [000]   560.770221: lock_acquire: ffff880030865010 &(&dentry->d_lock)->rlock
-    CPU:0 [LOST 18446744071579453134 EVENTS]
-                  ps-3099  [000]   560.770222: lock_release: ffff880030865010 &(&dentry->d_lock)->rlock
-    CPU:0 [LOST 18446744071579453134 EVENTS]
-                  ps-3099  [000]   560.770222: lock_release: ffffffff816cfb98 dcache_lock
-    
-    See peek_next_entry(), it does not set *lost_events when we 'cat tracing/trace'
-    
-    Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-    LKML-Reference: <4BB9A929.2000303@cn.fujitsu.com>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 0498beb..b9be232 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1571,7 +1571,7 @@ __find_next_entry(struct trace_iterator *iter, int *ent_cpu,
- {
- 	struct ring_buffer *buffer = iter->tr->buffer;
- 	struct trace_entry *ent, *next = NULL;
--	unsigned long lost_events, next_lost = 0;
-+	unsigned long lost_events = 0, next_lost = 0;
- 	int cpu_file = iter->cpu_file;
- 	u64 next_ts = 0, ts;
- 	int next_cpu = -1;
-
-
+-- 
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
