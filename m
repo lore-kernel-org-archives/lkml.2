@@ -1,188 +1,385 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895Ab0DIUno (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 16:43:44 -0400
-Received: from f0.cmpxchg.org ([85.214.51.133]:60103 "EHLO cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751522Ab0DIUnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 16:43:43 -0400
-Date: Fri, 9 Apr 2010 22:43:28 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Borislav Petkov <bp@alien8.de>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas of a mergeable VMA
-Message-ID: <20100409204328.GG28964@cmpxchg.org>
-References: <alpine.LFD.2.00.1004081610020.3558@i5.linux-foundation.org> <20100408234721.GB25834@a1.tnic> <alpine.LFD.2.00.1004081744150.3558@i5.linux-foundation.org> <20100409013012.GA8153@liondog.tnic> <20100409092111.GA998@a1.tnic> <alpine.LFD.2.00.1004090917070.3558@i5.linux-foundation.org> <20100409174041.GA10780@a1.tnic> <alpine.LFD.2.00.1004091043490.3558@i5.linux-foundation.org> <20100409191425.GB10780@a1.tnic> <alpine.LFD.2.00.1004091227310.3558@i5.linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004091227310.3558@i5.linux-foundation.org>
+	id S1756402Ab0DIUpV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 16:45:21 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:60944 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522Ab0DIUpR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 16:45:17 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:from:date:message-id:
+	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=B7X3nrEsmEabx+LWLVrs/Q3d7a/ixHcLQsWHsrxi0KHjhG9H6ZQQjSmGbWnXJejYX
+	RYW1bafeI1iNzm725YJIw==
+MIME-Version: 1.0
+In-Reply-To: <20100409153255.GA3722@redhat.com>
+References: <20100409041210.23105.13623.stgit@austin.mtv.corp.google.com> 
+	<20100409041428.23105.51779.stgit@austin.mtv.corp.google.com> 
+	<20100409153255.GA3722@redhat.com>
+From: Divyesh Shah <dpshah@google.com>
+Date: Fri, 9 Apr 2010 13:44:54 -0700
+Message-ID: <l2yaf41c7c41004091344s52f8ea47l6f9c5f223392ca02@mail.gmail.com>
+Subject: Re: [PATCH 2/3] blkio: Add io_queued and avg_queue_size stats
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
+       ctalbott@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 09, 2010 at 12:32:30PM -0700, Linus Torvalds wrote:
-> 
-> 
-> On Fri, 9 Apr 2010, Borislav Petkov wrote:
-> > > 
-> > > So what I _think_ will happen is that you'll be able to re-create the 
-> > > problem that started this all.  But I'd like to verify that, just because 
-> > > I'm anal and I'd like these things to be tested independently.
-> > 
-> > Heh, that was easy. Third hibernate cycle is a charm^Wboom :)
-> 
-> Ok, good to know that I'm still tracking ok on the issue.
-> 
-> > > So assuming that the original problem happens again, if you can then apply 
-> > > Rik's patch, but add a
-> > > 
-> > > 	dst->anon_vma = src->anon_vma;
-> > > 
-> > > to just before the success case (the "return 0") in anon_vma_clone(), 
-> > > that would be good.
-> > 
-> > It looks like this way we mangle the anon_vma chains somehow. From
-> > what I can see and if I'm not mistaken, we save the anon_vmas alright
-> > but end up in what seems like an endless list_for_each_entry()
-> > loop having grabbed anon_vma->lock in page_lock_anon_vma() and we
-> > can't seem to yield it through page_unlock_anon_vma() at the end of
-> > page_referenced_anon() so it has to be that code in between iterating
-> > over each list entry...
-> 
-> Ok. So scratch Rik's patch. It doesn't work even with the anon_vma set up.
-> 
-> Rik? I think it's back to you. I'm not going to bother committing the 
-> change to the anon_vma locking unless you actually need the locking 
-> guarantees for anon_vma_prepare().
-> 
-> And I've got the feeling that the proper fix is in the vma_adjust() 
-> handling if your original idea was right.
-> 
-> Anybody?
+On Fri, Apr 9, 2010 at 8:32 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Thu, Apr 08, 2010 at 09:15:10PM -0700, Divyesh Shah wrote:
+>> These stats are useful for getting a feel for the queue depth of the cgroup,
+>> i.e., how filled up its queues are at a given instant and over the existence of
+>> the cgroup. This ability is useful when debugging problems in the wild as it
+>> helps understand the application's IO pattern w/o having to read through the
+>> userspace code (coz its tedious or just not available) or w/o the ability
+>> to run blktrace (since you may not have root access and/or not want to disturb
+>> performance).
+>>
+>> Signed-off-by: Divyesh Shah<dpshah@google.com>
+>> ---
+>>
+>>  Documentation/cgroups/blkio-controller.txt |   11 +++
+>>  block/blk-cgroup.c                         |   98 +++++++++++++++++++++++++++-
+>>  block/blk-cgroup.h                         |   20 +++++-
+>>  block/cfq-iosched.c                        |   11 +++
+>>  4 files changed, 134 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/Documentation/cgroups/blkio-controller.txt b/Documentation/cgroups/blkio-controller.txt
+>> index 810e301..6e52e7c 100644
+>> --- a/Documentation/cgroups/blkio-controller.txt
+>> +++ b/Documentation/cgroups/blkio-controller.txt
+>> @@ -139,6 +139,17 @@ Details of cgroup files
+>>         cgroup. This is further divided by the type of operation - read or
+>>         write, sync or async.
+>>
+>> +- blkio.io_queued
+>> +     - Total number of requests queued up at any given instant for this
+>> +       cgroup. This is further divided by the type of operation - read or
+>> +       write, sync or async.
+>> +
+>> +- blkio.avg_queue_size
+>> +     - Debugging aid only enabled if CONFIG_DEBUG_CFQ_IOSCHED=y.
+>> +       The average queue size for this cgroup over the entire time of this
+>> +       cgroup's existence. Queue size samples are taken each time one of the
+>> +       queues of this cgroup gets a timeslice.
+>> +
+>>  - blkio.dequeue
+>>       - Debugging aid only enabled if CONFIG_DEBUG_CFQ_IOSCHED=y. This
+>>         gives the statistics about how many a times a group was dequeued
+>> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+>> index d23b538..1e0c497 100644
+>> --- a/block/blk-cgroup.c
+>> +++ b/block/blk-cgroup.c
+>> @@ -81,6 +81,71 @@ static void blkio_add_stat(uint64_t *stat, uint64_t add, bool direction,
+>>               stat[BLKIO_STAT_ASYNC] += add;
+>>  }
+>>
+>> +/*
+>> + * Decrements the appropriate stat variable if non-zero depending on the
+>> + * request type. Panics on value being zero.
+>> + * This should be called with the blkg->stats_lock held.
+>> + */
+>> +static void blkio_check_and_dec_stat(uint64_t *stat, bool direction, bool sync)
+>> +{
+>> +     if (direction) {
+>> +             BUG_ON(stat[BLKIO_STAT_WRITE] == 0);
+>> +             stat[BLKIO_STAT_WRITE]--;
+>> +     } else {
+>> +             BUG_ON(stat[BLKIO_STAT_READ] == 0);
+>> +             stat[BLKIO_STAT_READ]--;
+>> +     }
+>> +     if (sync) {
+>> +             BUG_ON(stat[BLKIO_STAT_SYNC] == 0);
+>> +             stat[BLKIO_STAT_SYNC]--;
+>> +     } else {
+>> +             BUG_ON(stat[BLKIO_STAT_ASYNC] == 0);
+>> +             stat[BLKIO_STAT_ASYNC]--;
+>> +     }
+>> +}
+>> +
+>> +#ifdef CONFIG_DEBUG_BLK_CGROUP
+>> +void blkiocg_update_set_active_queue_stats(struct blkio_group *blkg)
+>> +{
+>
+> How about blkiocg_update_avg_queue_size_stats()? A different io policy can
+> choose to take this sample at higher rate and not necessarily when
+> queue is set active.
+Done. I'll send a patch fixing all review comments from the different patches.
 
-Okay, I think I got it working.  I first thought we would need an
-m^n loop to properly merge the anon_vma_chains, but we can actually
-be cleverer than that:
+>
+> Can we group this function near blkiocg_update_blkio_group_dequeue_stats()
+> so that we introduce on less #ifdef CONFIG_DEBUG_BLK_CGROUP.
 
----
-Subject: mm: properly merge anon_vma_chains when merging vmas
+I pulled up blkiocg_update_blkio_group_dequeue_stats() to where this
+function is.
 
-Merging can happen when two VMAs were split from one root VMA or
-a mergeable VMA was instantiated and reused a nearby VMA's anon_vma.
+>
+>> +     unsigned long flags;
+>> +     struct blkio_group_stats *stats;
+>> +
+>> +     spin_lock_irqsave(&blkg->stats_lock, flags);
+>> +     stats = &blkg->stats;
+>> +     stats->avg_queue_size_sum +=
+>> +                     stats->stat_arr[BLKIO_STAT_QUEUED][BLKIO_STAT_READ] +
+>> +                     stats->stat_arr[BLKIO_STAT_QUEUED][BLKIO_STAT_WRITE];
+>> +     stats->avg_queue_size_samples++;
+>
+> What happens when over a period of time "avg_queue_size_sum" or "avg_queue_size_samples" overflow? All the stats will look weird.
 
-In both cases, none of the VMAs can grow any more anon_vmas and forked
-VMAs can no longer get merged due to differing primary anon_vmas for
-their private COW-broken pages.
+Using your calculations from the other thread, since this is at a much
+coarser granularity than ns, I'm not sure we should be worrying about
+overflow here.
 
-In the split case, the anon_vma_chains are equal and we can just drop
-the one of the VMA that is going away.
+>
+>> +     spin_unlock_irqrestore(&blkg->stats_lock, flags);
+>> +}
+>> +EXPORT_SYMBOL_GPL(blkiocg_update_set_active_queue_stats);
+>> +#endif
+>> +
+>> +void blkiocg_update_request_add_stats(struct blkio_group *blkg,
+>> +                     struct blkio_group *curr_blkg, bool direction,
+>> +                     bool sync)
+>> +{
+>
+> curr_blkg is redundant?
+>
+> How about just use "io" keyword instead of "request" as you have been
+> doing all along. blkiocg_update_io_add_stats().
+Done
 
-In the other case, the VMA that was instantiated later has only one
-anon_vma on its chain: the primary anon_vma of its merge partner (due
-to anon_vma_prepare()).
+>
+>> +     unsigned long flags;
+>> +
+>> +     spin_lock_irqsave(&blkg->stats_lock, flags);
+>> +     blkio_add_stat(blkg->stats.stat_arr[BLKIO_STAT_QUEUED], 1, direction,
+>> +                     sync);
+>> +     spin_unlock_irqrestore(&blkg->stats_lock, flags);
+>> +}
+>> +EXPORT_SYMBOL_GPL(blkiocg_update_request_add_stats);
+>> +
+>> +void blkiocg_update_request_remove_stats(struct blkio_group *blkg,
+>> +                                             bool direction, bool sync)
+>> +{
+>
+> blkiocg_update_io_remove_stats().
+Done
 
-If the VMA that came later is going away, its anon_vma_chain is a
-subset of the one that is staying, so it can be dropped like in the
-split case.
+>
+>> +     unsigned long flags;
+>> +
+>> +     spin_lock_irqsave(&blkg->stats_lock, flags);
+>> +     blkio_check_and_dec_stat(blkg->stats.stat_arr[BLKIO_STAT_QUEUED],
+>> +                                     direction, sync);
+>> +     spin_unlock_irqrestore(&blkg->stats_lock, flags);
+>> +}
+>> +EXPORT_SYMBOL_GPL(blkiocg_update_request_remove_stats);
+>> +
+>>  void blkiocg_update_timeslice_used(struct blkio_group *blkg, unsigned long time)
+>>  {
+>>       unsigned long flags;
+>> @@ -253,14 +318,18 @@ blkiocg_reset_stats(struct cgroup *cgroup, struct cftype *cftype, u64 val)
+>>       struct blkio_cgroup *blkcg;
+>>       struct blkio_group *blkg;
+>>       struct hlist_node *n;
+>> -     struct blkio_group_stats *stats;
+>> +     uint64_t queued[BLKIO_STAT_TOTAL];
+>> +     int i;
+>>
+>>       blkcg = cgroup_to_blkio_cgroup(cgroup);
+>>       spin_lock_irq(&blkcg->lock);
+>>       hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
+>>               spin_lock(&blkg->stats_lock);
+>> -             stats = &blkg->stats;
+>> -             memset(stats, 0, sizeof(struct blkio_group_stats));
+>> +             for (i = 0; i < BLKIO_STAT_TOTAL; i++)
+>> +                     queued[i] = blkg->stats.stat_arr[BLKIO_STAT_QUEUED][i];
+>> +             memset(&blkg->stats, 0, sizeof(struct blkio_group_stats));
+>> +             for (i = 0; i < BLKIO_STAT_TOTAL; i++)
+>> +                     blkg->stats.stat_arr[BLKIO_STAT_QUEUED][i] = queued[i];
+>
+> During reset_stats, why are you not resetting the stats for average queue
+> depth? This reset_stat is mean to reset all the debug stats we have
+> collected so far for the cgroup?
 
-Only if the VMA that came first is going away, its potential parent
-anon_vmas need to be migrated to the VMA that is staying.
+The avg_queue_size stats (sum and samples) are being reset - see the
+memset. The current count of how many IOs are queued should not be
+reset since that will mess up the accounting and hit the BUG_ONs when
+decrementing counts when the requests are dispatched.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
-
-It compiles and boots but I have not really excercised this code.
-Boris, could you give it a spin?  Thanks!
-
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index d25bd22..ecef882 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -114,13 +114,7 @@ int anon_vma_clone(struct vm_area_struct *, struct vm_area_struct *);
- int anon_vma_fork(struct vm_area_struct *, struct vm_area_struct *);
- void __anon_vma_link(struct vm_area_struct *);
- void anon_vma_free(struct anon_vma *);
--
--static inline void anon_vma_merge(struct vm_area_struct *vma,
--				  struct vm_area_struct *next)
--{
--	VM_BUG_ON(vma->anon_vma != next->anon_vma);
--	unlink_anon_vmas(next);
--}
-+void anon_vma_merge(struct vm_area_struct *, struct vm_area_struct *);
- 
- /*
-  * rmap interfaces called when adding or removing pte of page
-diff --git a/mm/rmap.c b/mm/rmap.c
-index eaa7a09..498a46e 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -268,6 +268,58 @@ void unlink_anon_vmas(struct vm_area_struct *vma)
- 	}
- }
- 
-+void anon_vma_merge(struct vm_area_struct *vma, struct vm_area_struct *next)
-+{
-+	VM_BUG_ON(vma->anon_vma != next->anon_vma);
-+	/*
-+	 * 1. case: vma and next are split parts of one root vma.
-+	 * Their anon_vma_chain is equal and we can drop that of next.
-+	 *
-+	 * 2. case: one vma was instantiated as mergeable with the
-+	 * other one and inherited the other one's primary anon_vma as
-+	 * the singleton in its chain.
-+	 *
-+	 * If next came after vma, vma's chain is already an unstrict
-+	 * superset of next's and we can treat it like case 1.
-+	 *
-+	 * If vma has the singleton chain, we have to copy next's
-+	 * unique anon_vmas over.
-+	 */
-+	if (!list_is_singular(&vma->anon_vma_chain)) {
-+		unlink_anon_vmas(next);
-+		return;
-+	}
-+	while (!list_empty(&next->anon_vma_chain)) {
-+		struct anon_vma_chain *avc;
-+
-+		avc = list_first_entry(&next->anon_vma_chain,
-+				struct anon_vma_chain, same_vma);
-+		if (avc->anon_vma == vma->anon_vma) {
-+			/*
-+			 * The shared one that vma inherited in
-+			 * anon_vma_prepare.  Don't copy it, we
-+			 * already have it.
-+			 */
-+			spin_lock(&avc->anon_vma->lock);
-+			list_del(&avc->same_anon_vma);
-+			spin_unlock(&avc->anon_vma->lock);
-+
-+			list_del(&avc->same_vma);
-+			anon_vma_chain_free(avc);
-+		} else {
-+			/*
-+			 * One of the parent anon_vmas, move it over.
-+			 * Make sure nobody walks the vma list while
-+			 * the entries are in flux.
-+			 */
-+			spin_lock(&avc->anon_vma->lock);
-+			avc->vma = vma;
-+			list_move_tail(&avc->same_vma, &vma->anon_vma_chain);
-+			spin_unlock(&avc->anon_vma->lock);
-+		}
-+	}
-+}
-+
- static void anon_vma_ctor(void *data)
- {
- 	struct anon_vma *anon_vma = data;
-
+>
+> Thanks
+> Vivek
+>
+>>               spin_unlock(&blkg->stats_lock);
+>>       }
+>>       spin_unlock_irq(&blkcg->lock);
+>> @@ -323,6 +392,15 @@ static uint64_t blkio_get_stat(struct blkio_group *blkg,
+>>               return blkio_fill_stat(key_str, MAX_KEY_LEN - 1,
+>>                                       blkg->stats.sectors, cb, dev);
+>>  #ifdef CONFIG_DEBUG_BLK_CGROUP
+>> +     if (type == BLKIO_STAT_AVG_QUEUE_SIZE) {
+>> +             uint64_t sum = blkg->stats.avg_queue_size_sum;
+>> +             uint64_t samples = blkg->stats.avg_queue_size_samples;
+>> +             if (samples)
+>> +                     do_div(sum, samples);
+>> +             else
+>> +                     sum = 0;
+>> +             return blkio_fill_stat(key_str, MAX_KEY_LEN - 1, sum, cb, dev);
+>> +     }
+>>       if (type == BLKIO_STAT_DEQUEUE)
+>>               return blkio_fill_stat(key_str, MAX_KEY_LEN - 1,
+>>                                       blkg->stats.dequeue, cb, dev);
+>> @@ -376,8 +454,10 @@ SHOW_FUNCTION_PER_GROUP(io_serviced, BLKIO_STAT_SERVICED, 1);
+>>  SHOW_FUNCTION_PER_GROUP(io_service_time, BLKIO_STAT_SERVICE_TIME, 1);
+>>  SHOW_FUNCTION_PER_GROUP(io_wait_time, BLKIO_STAT_WAIT_TIME, 1);
+>>  SHOW_FUNCTION_PER_GROUP(io_merged, BLKIO_STAT_MERGED, 1);
+>> +SHOW_FUNCTION_PER_GROUP(io_queued, BLKIO_STAT_QUEUED, 1);
+>>  #ifdef CONFIG_DEBUG_BLK_CGROUP
+>>  SHOW_FUNCTION_PER_GROUP(dequeue, BLKIO_STAT_DEQUEUE, 0);
+>> +SHOW_FUNCTION_PER_GROUP(avg_queue_size, BLKIO_STAT_AVG_QUEUE_SIZE, 0);
+>>  #endif
+>>  #undef SHOW_FUNCTION_PER_GROUP
+>>
+>> @@ -425,14 +505,22 @@ struct cftype blkio_files[] = {
+>>               .read_map = blkiocg_io_merged_read,
+>>       },
+>>       {
+>> +             .name = "io_queued",
+>> +             .read_map = blkiocg_io_queued_read,
+>> +     },
+>> +     {
+>>               .name = "reset_stats",
+>>               .write_u64 = blkiocg_reset_stats,
+>>       },
+>>  #ifdef CONFIG_DEBUG_BLK_CGROUP
+>> -       {
+>> +     {
+>> +             .name = "avg_queue_size",
+>> +             .read_map = blkiocg_avg_queue_size_read,
+>> +     },
+>> +     {
+>>               .name = "dequeue",
+>>               .read_map = blkiocg_dequeue_read,
+>> -       },
+>> +     },
+>>  #endif
+>>  };
+>>
+>> diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+>> index 470a29d..bea7f3b 100644
+>> --- a/block/blk-cgroup.h
+>> +++ b/block/blk-cgroup.h
+>> @@ -36,10 +36,13 @@ enum stat_type {
+>>       BLKIO_STAT_WAIT_TIME,
+>>       /* Number of IOs merged */
+>>       BLKIO_STAT_MERGED,
+>> +     /* Number of IOs queued up */
+>> +     BLKIO_STAT_QUEUED,
+>>       /* All the single valued stats go below this */
+>>       BLKIO_STAT_TIME,
+>>       BLKIO_STAT_SECTORS,
+>>  #ifdef CONFIG_DEBUG_BLK_CGROUP
+>> +     BLKIO_STAT_AVG_QUEUE_SIZE,
+>>       BLKIO_STAT_DEQUEUE
+>>  #endif
+>>  };
+>> @@ -63,8 +66,12 @@ struct blkio_group_stats {
+>>       /* total disk time and nr sectors dispatched by this group */
+>>       uint64_t time;
+>>       uint64_t sectors;
+>> -     uint64_t stat_arr[BLKIO_STAT_MERGED + 1][BLKIO_STAT_TOTAL];
+>> +     uint64_t stat_arr[BLKIO_STAT_QUEUED + 1][BLKIO_STAT_TOTAL];
+>>  #ifdef CONFIG_DEBUG_BLK_CGROUP
+>> +     /* Sum of number of IOs queued across all samples */
+>> +     uint64_t avg_queue_size_sum;
+>> +     /* Count of samples taken for average */
+>> +     uint64_t avg_queue_size_samples;
+>>       /* How many times this group has been removed from service tree */
+>>       unsigned long dequeue;
+>>  #endif
+>> @@ -127,10 +134,13 @@ static inline char *blkg_path(struct blkio_group *blkg)
+>>  {
+>>       return blkg->path;
+>>  }
+>> +void blkiocg_update_set_active_queue_stats(struct blkio_group *blkg);
+>>  void blkiocg_update_dequeue_stats(struct blkio_group *blkg,
+>>                               unsigned long dequeue);
+>>  #else
+>>  static inline char *blkg_path(struct blkio_group *blkg) { return NULL; }
+>> +static inline void blkiocg_update_set_active_queue_stats(
+>> +                                             struct blkio_group *blkg) {}
+>>  static inline void blkiocg_update_dequeue_stats(struct blkio_group *blkg,
+>>                                               unsigned long dequeue) {}
+>>  #endif
+>> @@ -152,6 +162,10 @@ void blkiocg_update_completion_stats(struct blkio_group *blkg,
+>>       uint64_t start_time, uint64_t io_start_time, bool direction, bool sync);
+>>  void blkiocg_update_io_merged_stats(struct blkio_group *blkg, bool direction,
+>>                                       bool sync);
+>> +void blkiocg_update_request_add_stats(struct blkio_group *blkg,
+>> +             struct blkio_group *curr_blkg, bool direction, bool sync);
+>> +void blkiocg_update_request_remove_stats(struct blkio_group *blkg,
+>> +                                     bool direction, bool sync);
+>>  #else
+>>  struct cgroup;
+>>  static inline struct blkio_cgroup *
+>> @@ -175,5 +189,9 @@ static inline void blkiocg_update_completion_stats(struct blkio_group *blkg,
+>>               bool sync) {}
+>>  static inline void blkiocg_update_io_merged_stats(struct blkio_group *blkg,
+>>                                               bool direction, bool sync) {}
+>> +static inline void blkiocg_update_request_add_stats(struct blkio_group *blkg,
+>> +             struct blkio_group *curr_blkg, bool direction, bool sync) {}
+>> +static inline void blkiocg_update_request_remove_stats(struct blkio_group *blkg,
+>> +                                             bool direction, bool sync) {}
+>>  #endif
+>>  #endif /* _BLK_CGROUP_H */
+>> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+>> index 4eb1906..8e0b86a 100644
+>> --- a/block/cfq-iosched.c
+>> +++ b/block/cfq-iosched.c
+>> @@ -1380,7 +1380,12 @@ static void cfq_reposition_rq_rb(struct cfq_queue *cfqq, struct request *rq)
+>>  {
+>>       elv_rb_del(&cfqq->sort_list, rq);
+>>       cfqq->queued[rq_is_sync(rq)]--;
+>> +     blkiocg_update_request_remove_stats(&cfqq->cfqg->blkg, rq_data_dir(rq),
+>> +                                             rq_is_sync(rq));
+>>       cfq_add_rq_rb(rq);
+>> +     blkiocg_update_request_add_stats(
+>> +                     &cfqq->cfqg->blkg, &cfqq->cfqd->serving_group->blkg,
+>> +                     rq_data_dir(rq), rq_is_sync(rq));
+>>  }
+>>
+>>  static struct request *
+>> @@ -1436,6 +1441,8 @@ static void cfq_remove_request(struct request *rq)
+>>       cfq_del_rq_rb(rq);
+>>
+>>       cfqq->cfqd->rq_queued--;
+>> +     blkiocg_update_request_remove_stats(&cfqq->cfqg->blkg, rq_data_dir(rq),
+>> +                                             rq_is_sync(rq));
+>>       if (rq_is_meta(rq)) {
+>>               WARN_ON(!cfqq->meta_pending);
+>>               cfqq->meta_pending--;
+>> @@ -1527,6 +1534,7 @@ static void __cfq_set_active_queue(struct cfq_data *cfqd,
+>>       if (cfqq) {
+>>               cfq_log_cfqq(cfqd, cfqq, "set_active wl_prio:%d wl_type:%d",
+>>                               cfqd->serving_prio, cfqd->serving_type);
+>> +             blkiocg_update_set_active_queue_stats(&cfqq->cfqg->blkg);
+>>               cfqq->slice_start = 0;
+>>               cfqq->dispatch_start = jiffies;
+>>               cfqq->allocated_slice = 0;
+>> @@ -3213,6 +3221,9 @@ static void cfq_insert_request(struct request_queue *q, struct request *rq)
+>>       list_add_tail(&rq->queuelist, &cfqq->fifo);
+>>       cfq_add_rq_rb(rq);
+>>
+>> +     blkiocg_update_request_add_stats(&cfqq->cfqg->blkg,
+>> +                     &cfqd->serving_group->blkg, rq_data_dir(rq),
+>> +                     rq_is_sync(rq));
+>>       cfq_rq_enqueued(cfqd, cfqq, rq);
+>>  }
+>>
+>
