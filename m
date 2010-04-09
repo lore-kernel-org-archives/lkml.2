@@ -1,75 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757007Ab0DIUgu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 16:36:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63573 "EHLO mx1.redhat.com"
+	id S1756976Ab0DIUjh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 16:39:37 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:44862 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756790Ab0DIUgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 16:36:48 -0400
-Message-ID: <4BBF8FC8.9050707@redhat.com>
-Date: Fri, 09 Apr 2010 16:36:24 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
+	id S1754568Ab0DIUje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 16:39:34 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Michal Hocko <mhocko@suse.cz>
+Subject: Re: commit 9630bdd9 changes behavior of the poweroff - bug?
+Date: Fri, 9 Apr 2010 22:42:17 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+       pm list <linux-pm@lists.linux-foundation.org>,
+       Tony Vroon <tony@linx.net>
+References: <20100401133923.GA4104@tiehlicka.suse.cz> <20100408094905.GA3948@tiehlicka.suse.cz> <201004082243.18393.rjw@sisk.pl>
+In-Reply-To: <201004082243.18393.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Jason Baron <jbaron@redhat.com>
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
-       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-       fweisbec@gmail.com, avi@redhat.com
-Subject: Re: [PATCH 0/9] jump label v6
-References: <cover.1270839564.git.jbaron@redhat.com>
-In-Reply-To: <cover.1270839564.git.jbaron@redhat.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201004092242.17341.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+On Thursday 08 April 2010, Rafael J. Wysocki wrote:
+> On Thursday 08 April 2010, Michal Hocko wrote:
+> > On Wed 07-04-10 21:49:23, Rafael J. Wysocki wrote:
+> > > On Wednesday 07 April 2010, Michal Hocko wrote:
+> > > > Sorry for late reply, but I was AFK during holiday.
+> > > > 
+> > > > On Fri 02-04-10 21:31:47, Rafael J. Wysocki wrote:
+> > > > > On Thursday 01 April 2010, Michal Hocko wrote:
+> > > > > > On Thu 01-04-10 14:45:35, Matthew Garrett wrote:
+> > > > > > > On Thu, Apr 01, 2010 at 03:39:23PM +0200, Michal Hocko wrote:
+> > > > > > > > Hi Rafael, Matthew,
+> > > > > > > > my laptop changed behavior during poweroff recently (after upgrading
+> > > > > > > > from .33 to .34-rc1). The system seems to be powered off (status display
+> > > > > > > > is off) at first glance but when I close the lid then I can hear a noise
+> > > > > > > > which sounds like HDD parking and when I open lid again it starts
+> > > > > > > > booting without poweroff button (same like when I suspend to RAM).
+> > > > > > > 
+> > > > > > > Hm. At a guess, we're somehow managing to leave the lid GPE enabled at 
+> > > > > > > poweroff. Can you send the output of the acpidump command?
+> > > > > > 
+> > > > > > Sure, see attached.
+> > > > > 
+> > > > > Thanks.
+> > > > > 
+> > > > > Please also send the contents of /proc/acpi/wakeup.
+> > > > 
+> > > > See attached. I have checked both kernels (with and without reverted
+> > > > 9630bdd) and the output looks pretty much same. 2.6.34-rc3, however,
+> > > > looks different a bit, so I am attaching it as well.
+> > > 
+> > > Well, I fail to see the possible failure scenario, so let's first try a blind
+> > > shot.
+> > > 
+> > > Please check if this patch helps:
+> > > https://patchwork.kernel.org/patch/86238/
+> > 
+> > No change, sorry. I have tried that on top of 0fdf867 which is not the
+> > most recent one (does it make sense to retest on the most recent one
+> > f5284e7?)
+> 
+> There were no other changes in that area I know of, but the current git
+> contains the above patch, so I'd recommend to use it for further testing.
+> 
+> I'll try to prepare a debug patch for this issue.
 
-Jason Baron wrote:
-> Hi,
-> 
-> Refresh of jump labeling patches aginst -tip tree. For bacground see: 
-> http://marc.info/?l=linux-kernel&m=125858436505941&w=2
-> 
-> I believe I've addressed all the reviews from v5.
-> 
-> Changes in v6:
-> 
-> * I've moved Steve Rostedt's 'ftrace_dyn_arch_init()' to alternative.c to
-> put it into a common area for used by both ftrace and jump labels. By
-> default we put a 'jmp 5' in the nop slot. Then, when we detect the best
-> runtime no-op we patch over the 'jmp 5' with the appropriate nop.
-> 
-> * build time sort of the jump label table. The jump label table is more
-> optimally accessed if the entries are continguous. Sorting the table
-> accomplishes this. Do the sort at build-time. Adds a '-j' option to 
-> 'modpost' which replaces the vmlinux, with a sorted jump label section vmlinux.
-> I've tested this on x86 with relocatable and it works fine there as well. Note
-> that I have not sorted the jump label table in modules. This is b/c the jump
-> label names can be exported by the core kernel, and thus I don't have them
-> available at buildtime. This could be solved by either finding the correct
-> ones in the vmlinux, or by embedding the name of the jump label in the module
-> tables (and not just a pointer), but the module tables tend to be smaller, and
-> thus there is less value to this kind of change anyway. The kernel continues to
-> do the sort, just in case, but at least for the vmlinux, this is just a
-> verfication b/c the jump label table has already been sorted.
-> 
-> * added jump_label_text_reserved(), so that other routines that want to patch
-> the code, can first verify that they are not stomping on jump label addresses.
+Please check if the patch below changes anything.
 
-Good!:-)
-So now, it might be a good time to integrate those text_reserved() functions.
+Rafael
 
-BTW, how many jumps would you expect modifying at once?
-Since the text_poke_smp() uses stop_machine() for each modifying text,
-I found that it can cause a delay issue if it is called so many times...
-(e.g. a systemtap testcase sets ~5000 probes at once)
+---
+ drivers/acpi/wakeup.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Thank you,
-
--- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+Index: linux-2.6/drivers/acpi/wakeup.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/wakeup.c
++++ linux-2.6/drivers/acpi/wakeup.c
+@@ -71,9 +71,9 @@ void acpi_enable_wakeup_device(u8 sleep_
+ 		    || sleep_state > (u32) dev->wakeup.sleep_state)
+ 			continue;
+ 
+-		/* The wake-up power should have been enabled already. */
++		/* The wake-up power should have been enabled already.
+ 		acpi_set_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number,
+-				ACPI_GPE_ENABLE);
++				ACPI_GPE_ENABLE);*/
+ 	}
+ }
+ 
