@@ -1,87 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698Ab0DIDL7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 23:11:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43938 "EHLO mx2.suse.de"
+	id S1752811Ab0DIDMV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 23:12:21 -0400
+Received: from claw.goop.org ([74.207.240.146]:37471 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752240Ab0DIDL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 23:11:56 -0400
-Date: Fri, 9 Apr 2010 13:11:40 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast()
- implementation
-Message-ID: <20100409031140.GF5683@laptop>
-References: <20100408191737.296180458@chello.nl>
- <20100408192722.643778654@chello.nl>
+	id S1752055Ab0DIDMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 23:12:20 -0400
+Message-ID: <4BBE9B12.1070209@goop.org>
+Date: Thu, 08 Apr 2010 20:12:18 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100408192722.643778654@chello.nl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Liang Li <liang.li@windriver.com>
+CC: linux-kernel@vger.kernel.org, wangchen@cn.fujitsu.com, mingo@elte.hu,
+       tglx@linutronix.de, hpa@zytor.com, yinghai@kernel.org,
+       akpm@linux-foundation.org, jeremy.fitzhardinge@citrix.com,
+       konrad.wilk@oracle.com
+Subject: Re: [PATCH v3] x86: let 'reservetop' functioning right
+References: <1270773835-2689-1-git-send-email-liang.li@windriver.com>
+In-Reply-To: <1270773835-2689-1-git-send-email-liang.li@windriver.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's not wrong per se, but the entire powerpc memory management code
-does the IRQ disabling for its pagetable RCU code. So I think it would be
-better to do the whole thing in one go.
+On 04/08/2010 05:43 PM, Liang Li wrote:
+> When specify 'reservetop=0xbadc0de' kernel parameter, the kernel will
+> stop booting due to a early_ioremap bug that relate to commit 8827247ff.
+>
+> The root cause of boot failure problem is the value of 'slot_virt[i]'
+> was initialized in setup_arch->early_ioremap_init. But later in
+> setup_arch, the function 'parse_early_param' will modify 'FIXADDR_TOP'
+> when 'reservetop=0xbadc0de' being specified.
+>
+> The simplest fix might be use __fix_to_virt(idx0) to get updated value
+> of 'FIXADDR_TOP' in '__early_ioremap' instead of reference old value
+> from slot_virt[slot] directly.
+>   
 
-I don't think Paul will surprise-break powerpc :)
+While I guess this patch works OK, I have to say that I'm worried by the
+need for it at all; it seems to be papering over a more serious
+problem.  reserve_top_address() is supposed to be called very early,
+before anything has used or referenced FIXADDR_TOP.  If we're seeing
+problems with FIXADDR_TOP changing after it has been used, then it means
+that reserve_top_address() is being called too late.  Fixing that would
+be the real fix.
 
-It's up to Ben really, though.
+    J
 
-
-On Thu, Apr 08, 2010 at 09:17:38PM +0200, Peter Zijlstra wrote:
-> The powerpc page table freeing relies on the fact that IRQs hold off
-> an RCU grace period, this is currently true for all existing RCU
-> implementations but is not an assumption Paul wants to support.
-> 
-> Therefore, also take the RCU read lock along with disabling IRQs to
-> ensure the RCU grace period does at least cover these lookups.
-> 
-> Requested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Nick Piggin <npiggin@suse.de>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Changelog since v0:
+>
+> -v1: When reservetop being handled then FIXADDR_TOP get adjusted, Hence
+> check prev_map then re-initialize slot_virt and PMD based on new
+> FIXADDR_TOP.
+>
+> -v2: place fixup_early_ioremap hence call early_ioremap_init in
+> reserve_top_address  to re-initialize slot_virt and corresponding PMD
+> when parse_reservetop
+>
+> -v3: move fixup_early_ioremap out of reserve_top_address to make sure
+> other clients of reserve_top_address like xen/lguest won't broken
+>
+> Signed-off-by: Liang Li <liang.li@windriver.com>
+> Cc: Wang Chen <wangchen@cn.fujitsu.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Acked-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > ---
->  arch/powerpc/mm/gup.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> Index: linux-2.6/arch/powerpc/mm/gup.c
-> ===================================================================
-> --- linux-2.6.orig/arch/powerpc/mm/gup.c
-> +++ linux-2.6/arch/powerpc/mm/gup.c
-> @@ -142,6 +142,7 @@ int get_user_pages_fast(unsigned long st
->  	 * So long as we atomically load page table pointers versus teardown,
->  	 * we can follow the address down to the the page and take a ref on it.
->  	 */
-> +	rcu_read_lock();
->  	local_irq_disable();
+>  arch/x86/include/asm/io.h |    1 +
+>  arch/x86/mm/ioremap.c     |   15 +++++++++++++++
+>  arch/x86/mm/pgtable_32.c  |    1 +
+>  3 files changed, 17 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+> index a1dcfa3..30a3e97 100644
+> --- a/arch/x86/include/asm/io.h
+> +++ b/arch/x86/include/asm/io.h
+> @@ -347,6 +347,7 @@ extern void __iomem *early_ioremap(resource_size_t phys_addr,
+>  extern void __iomem *early_memremap(resource_size_t phys_addr,
+>  				    unsigned long size);
+>  extern void early_iounmap(void __iomem *addr, unsigned long size);
+> +extern void fixup_early_ioremap(void);
 >  
->  	pgdp = pgd_offset(mm, addr);
-> @@ -162,6 +163,7 @@ int get_user_pages_fast(unsigned long st
->  	} while (pgdp++, addr = next, addr != end);
+>  #define IO_SPACE_LIMIT 0xffff
 >  
->  	local_irq_enable();
-> +	rcu_read_unlock();
+> diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+> index 5eb1ba7..e4ab706 100644
+> --- a/arch/x86/mm/ioremap.c
+> +++ b/arch/x86/mm/ioremap.c
+> @@ -448,6 +448,21 @@ static inline void __init early_clear_fixmap(enum fixed_addresses idx)
+>  static void __iomem *prev_map[FIX_BTMAPS_SLOTS] __initdata;
+>  static unsigned long prev_size[FIX_BTMAPS_SLOTS] __initdata;
 >  
->  	VM_BUG_ON(nr != (end - start) >> PAGE_SHIFT);
->  	return nr;
-> @@ -171,6 +173,7 @@ int get_user_pages_fast(unsigned long st
+> +void __init fixup_early_ioremap(void)
+> +{
+> +	int i;
+> +	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
+> +		if (prev_map[i])
+> +			break;
+> +	}
+> +
+> +	if (i < FIX_BTMAPS_SLOTS)
+> +		BUG_ON(1);
+> +
+> +	early_ioremap_init();
+> +	return;
+> +}
+> +
+>  static int __init check_early_ioremap_leak(void)
+>  {
+>  	int count = 0;
+> diff --git a/arch/x86/mm/pgtable_32.c b/arch/x86/mm/pgtable_32.c
+> index 1a8faf0..26eadaa 100644
+> --- a/arch/x86/mm/pgtable_32.c
+> +++ b/arch/x86/mm/pgtable_32.c
+> @@ -128,6 +128,7 @@ static int __init parse_reservetop(char *arg)
 >  
->  slow:
->  		local_irq_enable();
-> +		rcu_read_unlock();
->  slow_irqon:
->  		pr_devel("  slow path ! nr = %d\n", nr);
->  
-> 
+>  	address = memparse(arg, &arg);
+>  	reserve_top_address(address);
+> +	fixup_early_ioremap();
+>  	return 0;
+>  }
+>  early_param("reservetop", parse_reservetop);
+>   
+
