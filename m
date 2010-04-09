@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933Ab0DIGMV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 02:12:21 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:30099 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754690Ab0DIGJI (ORCPT
+	id S1755493Ab0DIGHT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 02:07:19 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:19386 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806Ab0DIGHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 02:09:08 -0400
+	Fri, 9 Apr 2010 02:07:11 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,82 +16,92 @@ Cc: David Miller <davem@davemloft.net>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 37/39] mm: move contig_page_data define to bootmem.c/nobootmem.c
-Date: Thu,  8 Apr 2010 23:04:06 -0700
-Message-Id: <1270793048-23796-38-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 17/39] lmb: Add lmb_memory_size()
+Date: Thu,  8 Apr 2010 23:03:46 -0700
+Message-Id: <1270793048-23796-18-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
 References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4BBEC467.0035,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090206.4BBEC3E4.00FF,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can remove #ifdef in mm/page_alloc.c
+It will return memory size in specified range according to lmb.memory.region
+
+Try to share some code with lmb_free_memory_size() by passing get_free to
+__lmb_memory_size().
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- mm/bootmem.c    |    7 +++++++
- mm/nobootmem.c  |    5 +++++
- mm/page_alloc.c |    9 ---------
- 3 files changed, 12 insertions(+), 9 deletions(-)
+ include/linux/lmb.h |    1 +
+ mm/lmb.c            |   18 +++++++++++++++++-
+ 2 files changed, 18 insertions(+), 1 deletions(-)
 
-diff --git a/mm/bootmem.c b/mm/bootmem.c
-index 2741c34..ff55ad7 100644
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -23,6 +23,13 @@
+diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+index b874dc0..8332934 100644
+--- a/include/linux/lmb.h
++++ b/include/linux/lmb.h
+@@ -101,6 +101,7 @@ void lmb_register_active_regions(int nid, unsigned long start_pfn,
+ 					 unsigned long last_pfn);
+ u64 lmb_hole_size(u64 start, u64 end);
+ u64 lmb_free_memory_size(u64 addr, u64 limit);
++u64 lmb_memory_size(u64 addr, u64 limit);
  
- #include "internal.h"
+ #include <asm/lmb.h>
  
-+#ifndef CONFIG_NEED_MULTIPLE_NODES
-+struct pglist_data __refdata contig_page_data = {
-+ .bdata = &bootmem_node_data[0]
-+ };
-+EXPORT_SYMBOL(contig_page_data);
-+#endif
+diff --git a/mm/lmb.c b/mm/lmb.c
+index dccd539..feb3dfa 100644
+--- a/mm/lmb.c
++++ b/mm/lmb.c
+@@ -746,7 +746,7 @@ void __init lmb_to_bootmem(u64 start, u64 end)
+ }
+ #endif
+ 
+-u64 __init lmb_free_memory_size(u64 addr, u64 limit)
++static u64 __init __lmb_memory_size(u64 addr, u64 limit, bool get_free)
+ {
+ 	int i, count;
+ 	struct range *range;
+@@ -776,6 +776,10 @@ u64 __init lmb_free_memory_size(u64 addr, u64 limit)
+ 	}
+ 	subtract_range(range, count, 0, addr);
+ 	subtract_range(range, count, limit, -1ULL);
 +
- unsigned long max_low_pfn;
- unsigned long min_low_pfn;
- unsigned long max_pfn;
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index 283673e..abaec96 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -23,6 +23,11 @@
++	/* Subtract lmb.reserved.region in range ? */
++	if (!get_free)
++		goto sort_and_count_them;
+ 	for (i = 0; i < lmb.reserved.cnt; i++) {
+ 		struct lmb_property *r = &lmb.reserved.region[i];
  
- #include "internal.h"
+@@ -788,6 +792,8 @@ u64 __init lmb_free_memory_size(u64 addr, u64 limit)
  
-+#ifndef CONFIG_NEED_MULTIPLE_NODES
-+struct pglist_data __refdata contig_page_data;
-+EXPORT_SYMBOL(contig_page_data);
-+#endif
+ 		subtract_range(range, count, final_start, final_end);
+ 	}
 +
- unsigned long max_low_pfn;
- unsigned long min_low_pfn;
- unsigned long max_pfn;
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 256aed0..233c403 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4496,15 +4496,6 @@ void __init set_dma_reserve(unsigned long new_dma_reserve)
- 	dma_reserve = new_dma_reserve;
++sort_and_count_them:
+ 	nr_range = clean_sort_range(range, count);
+ 
+ 	free_size = 0;
+@@ -797,6 +803,16 @@ u64 __init lmb_free_memory_size(u64 addr, u64 limit)
+ 	return free_size << PAGE_SHIFT;
  }
  
--#ifndef CONFIG_NEED_MULTIPLE_NODES
--struct pglist_data __refdata contig_page_data = {
--#ifndef CONFIG_NO_BOOTMEM
-- .bdata = &bootmem_node_data[0]
--#endif
-- };
--EXPORT_SYMBOL(contig_page_data);
--#endif
--
- void __init free_area_init(unsigned long *zones_size)
++u64 __init lmb_free_memory_size(u64 addr, u64 limit)
++{
++	return __lmb_memory_size(addr, limit, true);
++}
++
++u64 __init lmb_memory_size(u64 addr, u64 limit)
++{
++	return __lmb_memory_size(addr, limit, false);
++}
++
+ u64 __init __weak __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
+ 				 u64 size, u64 align)
  {
- 	free_area_init_node(0, zones_size,
 -- 
 1.6.4.2
 
