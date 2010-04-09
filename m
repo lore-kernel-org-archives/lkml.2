@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab0DIP4M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 11:56:12 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:41414 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752870Ab0DIP4I (ORCPT
+	id S1752115Ab0DIQBa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 12:01:30 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:47178 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750883Ab0DIQB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 11:56:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:subject:to:cc:in-reply-to:references;
-        b=amB0OPh56pcwEPsLJNXPkgpH5gD4ijA4BNuD7MQrIHqwN+mzcdJIYLZ/bnjLU0dPsz
-         l95UsK80aJpP7UVNkA2+7OtdvsgBzcZ0SAW60Wzo6ZJMu+apHWBGpNxZdbD81qdRmYD9
-         Aw9ZA20G3F82InpjH1LzFchaEup2HJe5692ro=
-Message-ID: <4bbf4e14.a215f10a.4c5c.41c9@mx.google.com>
-Date: Fri, 09 Apr 2010 08:56:04 -0700 (PDT)
-From: Ben Gamari <bgamari.foss@gmail.com>
-Subject: Re: 32GB SSD on USB1.1 P3/700 == ___HELL___ (2.6.34-rc3)
-To: Andreas Mohr <andi@lisas.de>, Bill Davidsen <davidsen@tmr.com>
-Cc: Andreas Mohr <andi@lisas.de>, Jens Axboe <axboe@kernel.dk>,
-       Wu Fengguang <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100408203526.GA15426@rhlx01.hs-esslingen.de>
-References: <20100404221349.GA18036@rhlx01.hs-esslingen.de>
-	<4BBE38B9.6020507@tmr.com>
-	<20100408203526.GA15426@rhlx01.hs-esslingen.de>
+	Fri, 9 Apr 2010 12:01:28 -0400
+Date: Fri, 9 Apr 2010 12:01:27 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Pedro Ribeiro <pedrib@gmail.com>
+cc: Daniel Mack <daniel@caiaq.de>, Robert Hancock <hancockrwd@gmail.com>,
+       <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
+       Greg KH <gregkh@suse.de>, <alsa-devel@alsa-project.org>,
+       <linux-usb@vger.kernel.org>
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+In-Reply-To: <m2n74fd948d1004081613n90408827s7c51ef572848fb1d@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1004091155570.1852-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Apr 2010 22:35:26 +0200, Andreas Mohr <andi@lisas.de> wrote:
-> On Thu, Apr 08, 2010 at 04:12:41PM -0400, Bill Davidsen wrote:
-> > Andreas Mohr wrote:
-> >> Clearly there's a very, very important limiter somewhere in bio layer
-> >> missing or broken, a 300M dd /dev/zero should never manage to put
-> >> such an onerous penalty on a system, IMHO.
+On Fri, 9 Apr 2010, Pedro Ribeiro wrote:
+
+> On 8 April 2010 17:57, Alan Stern <stern@rowland.harvard.edu> wrote:
+> > On Thu, 8 Apr 2010, Daniel Mack wrote:
+> >
+> >> > > AFAIK, the driver shouldn't have to worry about this at all. When the
+> >> > > buffer gets DMA-mapped for the controller, the DMA mapping code should
+> >> > > see that the device has a 32-bit DMA mask and either bounce or IOMMU-map
+> >> > > the memory so that it appears below 4GB.
+> >> >
+> >> > That's true.  It would of course be more efficient for the buffer to be
+> >> > allocated below 4 GB, but it should work okay either way.  Daniel, do
+> >> > you have any idea why it fails?
 > >>
-> > You are using a USB 1.1 connection, about the same speed as a floppy. If 
+> >> No, and I can't do real tests as I lack a 64bit machine. I'll do some
+> >> more investigation later today, but for now the only explanation I have
+> >> is that not the remapped DMA buffer is used eventually by the EHCI code
+> >> but the physical address of the original buffer.
+> >>
+> >> It would of course be best to fix the whole problem at this level, if
+> >> possible.
+> >
+> > It definitely needs to be fixed at this level.  But I still think it's
+> > appropriate to have new USB core functions for allocating and
+> > deallocating I/O memory.  The additional price is small compared to
+> > constantly bouncing the buffers.
+> >
+> > Pedro, in the hope of tracking down the problem, can you apply this
+> > patch and see what output it produces in the system log when the
+> > "interference" happens?  (Warning: It will produce quite a lot of
+> > output whenever you send data to the audio device -- between 500 and
+> > 1000 lines per second.)
+
+> Hi Alan,
 > 
-> Ahahahaaa. A rather distant approximation given a speed of 20kB/s vs. 987kB/s ;)
-> (but I get the point you're making here)
+> here is the output of the patch you sent me when the interference is triggered.
 > 
-> I'm not at all convinced that USB2.0 would fare any better here, though:
-> after all we are buffering the file that is written to the device
-> - after the fact!
-> (plus there are many existing complaints of people that copying of large files
-> manages to break entire machines, and I doubt many of those were using
-> USB1.1)
-> https://bugzilla.kernel.org/show_bug.cgi?id=13347
-> https://bugzilla.kernel.org/show_bug.cgi?id=7372
-> And many other reports.
+> The log is long, 1.3mb in size.
 
-Indeed. I have found this to be a persistent problem and I really wish there
-were more interest in debugging this. I have tried bringing the community's
-resources to bear on this issue several[1] times, and each time we fail to
-get enough of the right eyes looking at it or developer interest simply vanishes.
+I don't see anything suspicious.  The transfer_buffer addresses repeat 
+every 32 URBs, and the DMA addresses cycle almost entirely uniformly 
+from 0x20000000 to 0x23ffffff in units of 0x2000 (there are a few gaps 
+where the interval is a little bigger).
 
-I've started putting together a list[2] of pertinent threads/patches/bugs/data
-in hopes that this will lower the energy barrier of getting up to speed on
-this issue. Hopefully this will help.
-
-Cheers,
-
-- Ben
-
-
-[1] https://bugzilla.kernel.org/show_bug.cgi?id=12309
-[2] http://goldnerlab.physics.umass.edu/wiki/BenGamari/IoWaitLatency
+Alan Stern
 
