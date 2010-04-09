@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933940Ab0DIABe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 20:01:34 -0400
-Received: from mail-yw0-f194.google.com ([209.85.211.194]:59241 "EHLO
-	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933193Ab0DIABb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 20:01:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=TrEYD5hRNaQKcNnjO0CFNP2sHlUxTvyyTI4gz/Zs1iHtUqKptsByYlAsV72Qm7/YFL
-         l5jii9k68jPZ167Q6dxu8i2KGvX3A6uRcJA9mNQoLwPC7SuZEosMfQ6Dk0ncmA2N10D5
-         5uXu2GY4eP7NWa/zJs19LO4cO2fCuYzIoFxLc=
-Message-ID: <4BBE6E57.6020600@gmail.com>
-Date: Thu, 08 Apr 2010 18:01:27 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1759235Ab0DIAIK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 20:08:10 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48356 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759208Ab0DIAIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 20:08:06 -0400
+Message-ID: <4BBE6F0C.6020207@suse.com>
+Date: Thu, 08 Apr 2010 20:04:28 -0400
+From: Jeff Mahoney <jeffm@suse.com>
+Organization: SUSE Labs, Novell, Inc
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-2.3 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Alan Stern <stern@rowland.harvard.edu>, alsa-devel@alsa-project.org,
-       linux-usb@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
-       Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-       Pedro Ribeiro <pedrib@gmail.com>, akpm@linux-foundation.org,
-       sarah.a.sharp@linux.intel.com
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-References: <s5hhbnncflj.wl%tiwai@suse.de>	<Pine.LNX.4.44L0.1004071452560.5760-100000@iolanthe.rowland.org> <20100408003313.GE4365@kroah.com>
-In-Reply-To: <20100408003313.GE4365@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Matt McCutchen <matt@mattmccutchen.net>
+Cc: ReiserFS Mailing List <reiserfs-devel@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Edward Shishkin <edward.shishkin@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH #3] reiserfs: Fix permissions on .reiserfs_priv
+References: <4BBE42A9.2010506@suse.com>  <4BBE4CE2.8030805@gmail.com> <1270766367.3441.4.camel@mattlaptop2.local>
+In-Reply-To: <1270766367.3441.4.camel@mattlaptop2.local>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2010 06:33 PM, Greg KH wrote:
-> On Wed, Apr 07, 2010 at 03:13:11PM -0400, Alan Stern wrote:
->> On Wed, 7 Apr 2010, Takashi Iwai wrote:
->>
->>>> Ok, I'll write some dummies for usb_malloc() and usb_zalloc() which
->>>> will just call kmalloc() with GFP_DMA32 for now.
->>>
->>> Can't we provide only zalloc() variant?  Zero'ing doesn't cost much,
->>> and the buffer allocation shouldn't be called too often.
->>
->> Linus specifically requested us to avoid using kzalloc in usbfs.  I
->> can't find the message in the email archives, but Greg KH should be
->> able to confirm it.
->>
->> As long as we're imitating kmalloc for one use, we might as well make
->> it available to all.
->>
->>>> And while at it,
->>>> usb_alloc_buffer() will be renamed to usb_alloc_consistent().
->>>
->>> Most of recent functions are named with "coherent".
->>
->> Yes, the terminology got a little confused between the PCI and DMA
->> realms.  I agree, "coherent" is better.
->>
->> BTW, although some EHCI controllers may support 64-bit DMA, the driver
->> contains this:
->>
->> 	if (HCC_64BIT_ADDR(hcc_params)) {
->> 		ehci_writel(ehci, 0,&ehci->regs->segment);
->> #if 0
->> // this is deeply broken on almost all architectures
->> 		if (!dma_set_mask(hcd->self.controller, DMA_BIT_MASK(64)))
->> 			ehci_info(ehci, "enabled 64bit DMA\n");
->> #endif
->> 	}
->>
->> I don't know if the comment is still true, but until the "#if 0" is
->> removed, ehci-hcd won't make use of 64-bit DMA.
->
-> I think someone tried to remove it recently, but I wouldn't let them :)
->
-> What a mess, hopefully xhci will just take over and save the world from
-> this whole thing...
+On 04/08/2010 06:39 PM, Matt McCutchen wrote:
+> On Thu, 2010-04-08 at 23:38 +0200, Edward Shishkin wrote:
+>> Jeff Mahoney wrote:
+>>>  [...] This patch resolves the issue by properly hiding .reiserfs_priv. This
+>>>  was the intent of the xattr poisoning code, but it appears to have
+>>>  never worked as expected. This is fixed by using d_revalidate instead
+>>>  of d_compare. [...]
+> 
+> The patch seems to rely on the fact that the priv_root dentry is stuck
+> in the dcache for as long as the filesystem is mounted, so that attempts
+> to follow ".reiserfs_priv" are guaranteed to match that dentry in the
+> cache and be refused by xattr_hide_revalidate.  Is my understanding
+> correct?
+> 
 
-True.. except for the fact that the xhci driver currently doesn't do 
-64-bit DMA either, nor does it support MSI even though the HW supports 
-it (surprisingly enough the NEC Windows driver does, MSI-X even). At 
-this point only Intel likely knows how to do this properly, though, 
-since AFAICS the spec isn't publicly available yet.
+Yes. The other half of it is that the priv_root dentry being stuck in
+the dcache for as long as the flie system is mounted is a guaranteed
+since REISERFS_SB(sb) holds a reference to it until reiserfs_kill_sb is
+called.
+
+-Jeff
+
+-- 
+Jeff Mahoney
+SuSE Labs
