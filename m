@@ -1,104 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769Ab0DINBt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 09:01:49 -0400
-Received: from mout2.freenet.de ([195.4.92.92]:48467 "EHLO mout2.freenet.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752316Ab0DINBp convert rfc822-to-8bit (ORCPT
+	id S1752858Ab0DINCQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 09:02:16 -0400
+Received: from qw-out-2122.google.com ([74.125.92.24]:27378 "EHLO
+	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431Ab0DINCM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 09:01:45 -0400
-To: linux-kernel@vger.kernel.org
-From: t.m.gerlach@freenet.de
-Subject: [PATCH] drivers/video/efifb.c: Framebuffer for NVIDIA 9400M in MacBook Pro 5,1
-Cc: akpm@linux-foundation.org, linux-fbdev@vger.kernel.org
-X-Priority: 3
-X-Abuse: 305211200 / 147.142.42.125
-User-Agent: freenetMail
+	Fri, 9 Apr 2010 09:02:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=BFZXQ5iLtg/YKRWPHHI1nB6kxkDaSHsmiOruONuiPqBDelFhgAVadUh7hRNdyrf2td
+         65dPKF9UgcUj2emiZWq3YT+n6LKZHwAt9Ktc1ASUrU+IsMHQfWyD85FQIHHwEda+wka5
+         2T/IYuJRTeqE4ECjlX+jh0FmU7J8knm00bVhs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <E1O0Dq7-0005Fc-MW@www5.emo.freenet-rz.de>
-Date: Fri, 09 Apr 2010 15:01:39 +0200
+In-Reply-To: <20100409125832.GA22814@redhat.com>
+References: <9e4733910912060952h4aad49dake8e8486acb6566bc@mail.gmail.com>
+	 <9e4733910912151338n62b30af5i35f8d0963e6591c@mail.gmail.com>
+	 <4BAB7659.1040408@redhat.com> <201004090821.10435.james@albanarts.com>
+	 <1270810226.3764.34.camel@palomino.walls.org>
+	 <20100409125832.GA22814@redhat.com>
+Date: Fri, 9 Apr 2010 09:02:09 -0400
+Message-ID: <m2q9e4733911004090602lbcd11b8dle65eaccc1bc34dce@mail.gmail.com>
+Subject: Re: [RFC] What are the goals for the architecture of an in-kernel IR 
+	system?
+From: Jon Smirl <jonsmirl@gmail.com>
+To: Jarod Wilson <jarod@redhat.com>
+Cc: Andy Walls <awalls@radix.net>, James Hogan <james@albanarts.com>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>, Pavel Machek <pavel@ucw.cz>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Krzysztof Halasa <khc@pm.waw.pl>,
+       hermann pitton <hermann-pitton@arcor.de>,
+       Christoph Bartelmus <lirc@bartelmus.de>, j@jannau.net,
+       jarod@wilsonet.com, kraxel@redhat.com, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+       superm1@ubuntu.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Description of patch:
----------------------
-This is a patch for the EFI framebuffer driver to enable the framebuffer of the
-NVIDIA 9400M as found in MacBook Pro (MBP) 5,1 and up.
-The framebuffer of the NVIDIA graphic cards are located at the following
-addresses in memory:
+On Fri, Apr 9, 2010 at 8:58 AM, Jarod Wilson <jarod@redhat.com> wrote:
+> On Fri, Apr 09, 2010 at 06:50:26AM -0400, Andy Walls wrote:
+>> On Fri, 2010-04-09 at 08:21 +0100, James Hogan wrote:
+>> > Hi,
+>> >
+>> > On Thursday 25 March 2010 14:42:33 Mauro Carvalho Chehab wrote:
+>> > > Comments?
+>> >
+>> > I haven't seen this mentioned yet, but are there any plans for a sysfs
+>> > interface to set up waking from suspend/standby on a particular IR scancode
+>> > (for hardware decoders that support masking of comparing of the IR data), kind
+>> > of analagous to the rtc framework's wakealarm sysfs file?
+>>
+>> This requires support at the hardware level.  (You can't have CPU code
+>> running to decode IR pulses when your CPU is "asleep".)
+>>
+>> I know of two video chips supported under linux that provide such a
+>> function.
+>>
+>> Wake-up from IR for these chips will rely on the kernel PCIe or USB
+>> infrastructure supporting PCIe or USB Power Managment Events from
+>> hardware.  It will take a huge amount of work and time to get the
+>> respective linux video drivers to properly support suspend/resume
+>> properly.
+>>
+>> If you're waiting for me to get that working, I'll advise you to plan on
+>> getting off the couch and pushing the power switch for some time to
+>> come. ;)
+>>
+>>
+>>
+>>
+>> The MCE-USB, I *speculate*, can perform wakes.  It's driver would need
+>> to support that, if it can.
+>
+> Yep, it can perform wakes, and the current lirc_mceusb does support it,
+> though it requires some screwing around with echoing something into
+> somewhere in sysfs (for the usb controller its attached to) to enable it,
 
-9400M:    0xC0010000
-9600M GT: 0xB0030000
+You probably need to tell the USB system to leave the MSMCE's power
+turned on during suspend. Maybe the MSMCE driver can tell the USB
+subsystem to leave it powered across suspend when the driver loads.
 
-The patch delivered right here only provides the memory location of the
-framebuffer of the 9400M device. The 9600M GT is not covered. It is assumed that
-the 9400M is used when powered up the MBP.
-The information which device is currently powered and in use is stored in the
-64 bytes large EFI variable "gpu-power-prefs". More specifically, byte 0x3B
-indicates whether 9600M GT (0x00) or 9400M (0x01) is online.
-
-The PCI bus IDs are the following:
-9400M:    PCI 03:00:00
-9600M GT: PCI 02:00:00
-
-The EFI variables can be easily read-out and manipulated with "rEFIt", an MBP
-specific bootloader tool. For more information on how handle rEFIt and EFI
-variables please consult "http://refit.sourceforge.net" and
-"http://ubuntuforums.org/archive/index.php/t-1076879.html".
-
-IMPORTANT NOTE: The information on how to activate the 9400M device given at
-"ubuntuforums.org" is not correct, since it states
-
-gpu-power-prefs[0x3B] = 0x00 -> 9400M (PCI 02:00:00)
-gpu-power-prefs[0x3B] = 0x01 -> 9600M GT (PCI 03:00:00)
-
-Actually, the assignment of the values and the PCI bus IDs are swapped.
-
-Suggestions:
-------------
-To cover framebuffers of both 9400M and 9600M GT, I would suggest to implement
-a conditional on "gpu-power-prefs". Depending on the value of byte 0x3B, the
-according framebuffer is selected. However, this requires kernel access to the
-EFI variables.
-
-Patch:
-------
-
---- linux-2.6.31//drivers/video/efifb.c.orig    2010-03-31 09:22:39.000000000 +0200
-+++ linux-2.6.31//drivers/video/efifb.c    2010-03-31 09:26:05.000000000 +0200
-@@ -49,6 +49,7 @@ enum {
-     M_MBP_2,    /* MacBook Pro 2nd gen */
-     M_MBP_SR,    /* MacBook Pro (Santa Rosa) */
-     M_MBP_4,    /* MacBook Pro, 4th gen */
-+    M_MBP_5_1,    /* MacBook Pro, 5,1th gen */
-     M_UNKNOWN    /* placeholder */
- };
- 
-@@ -70,6 +71,7 @@ static struct efifb_dmi_info {
-     [M_MBP_2] = { "mbp2", 0, 0, 0, 0 }, /* placeholder */
-     [M_MBP_SR] = { "mbp3", 0x80030000, 2048 * 4, 1440, 900 },
-     [M_MBP_4] = { "mbp4", 0xc0060000, 2048 * 4, 1920, 1200 },
-+    [M_MBP_5_1] = { "mbp5,1", 0xc0010000, 2048 * 4, 1440, 900 },
-     [M_UNKNOWN] = { NULL, 0, 0, 0, 0 }
- };
- 
-@@ -106,6 +108,7 @@ static struct dmi_system_id __initdata d
-     EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro3,1", M_MBP_SR),
-     EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro3,1", M_MBP_SR),
-     EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro4,1", M_MBP_4),
-+    EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,1", M_MBP_5_1),
-     {},
- };
-
-
-Signed-off-by: Thomas Gerlach <t.m.gerlach@freenet.de>
+> from what I recall... Making it Just Work would be a good idea.
+>
+> --
+> Jarod Wilson
+> jarod@redhat.com
+>
+>
 
 
 
-Gratis: Jeden Monat 3 SMS versenden-
-Mit freenetMail - Ihrer kostenlose E-Mail-Adresse
-http://email.freenet.de/dienste/emailoffice/produktuebersicht/basic/sms/index.html?pid=6830
-
+-- 
+Jon Smirl
+jonsmirl@gmail.com
