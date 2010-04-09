@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751800Ab0DIQEp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 12:04:45 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:8528 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883Ab0DIQEn (ORCPT
+	id S1754061Ab0DIQNs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 12:13:48 -0400
+Received: from sj-iport-4.cisco.com ([171.68.10.86]:13078 "EHLO
+	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab0DIQNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 12:04:43 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yinghai <yinghai.lu@oracle.com>
-Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well as x86_32
-Date: Fri, 9 Apr 2010 10:04:39 -0600
-User-Agent: KMail/1.9.10
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, linux-pci@vger.kernel.org,
-       x86@kernel.org, linux-kernel@vger.kernel.org,
-       Andy Isaacson <adi@hexapodia.org>, Thomas Renninger <trenn@suse.de>
-References: <20100407210628.28364.96982.stgit@bob.kio> <201004071705.07176.bjorn.helgaas@hp.com> <4BBD13C3.2060404@oracle.com>
-In-Reply-To: <4BBD13C3.2060404@oracle.com>
+	Fri, 9 Apr 2010 12:13:44 -0400
+Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAOzuvkurR7H+/2dsb2JhbACbOnGiKpkohQkEgyQ
+X-IronPort-AV: E=Sophos;i="4.52,178,1270425600"; 
+   d="scan'208";a="113011820"
+From: Roland Dreier <rdreier@cisco.com>
+To: torvalds@linux-foundation.org, akpm@linux-foundation.org
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] please pull infiniband.git
+X-Message-Flag: Warning: May contain useful information
+Date: Fri, 09 Apr 2010 09:13:40 -0700
+Message-ID: <adaiq80txhn.fsf@roland-alpha.cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201004091004.39857.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 07 April 2010 05:22:43 pm Yinghai wrote:
-> On 04/07/2010 04:05 PM, Bjorn Helgaas wrote:
-> > On Wednesday 07 April 2010 04:45:30 pm Yinghai wrote:
-> >> On 04/07/2010 02:06 PM, Bjorn Helgaas wrote:
-> >>>
-> >>> Currently, we only reserve the legacy VGA area [mem 0xa0000-0xbffff] on
-> >>> x86_32.  But this legacy area is also used on x86_64, so this patch
-> >>> reserves it there, too.
-> >>>
-> >>> If we don't reserve it, we may mistakenly move a PCI device to that area,
-> >>> as we did here:
-> >>>
-> >>>   pci_root PNP0A03:00: host bridge window [mem 0xff980800-0xff980bff]
-> >>>   pci_root PNP0A03:00: host bridge window [mem 0xff97c000-0xff97ffff]
-> >>>   pci 0000:00:1f.2: no compatible bridge window for [mem 0xff970000-0xff9707ff]
-> >>>   pci 0000:00:1f.2: BAR 5: assigned [mem 0x000a0000-0x000a07ff]
-> >>>
-> >>> as reported by Andy Isaacson at http://lkml.org/lkml/2010/4/6/375
-> >>>
-> >>> I think the fact that the BAR is not within a host bridge window is a
-> >>> BIOS defect, and it's now more visible because we have "pci=use_crs" as
-> >>> the default.  Using "pci=nocrs" is a workaround, because then we won't
-> >>> attempt to move the device.
-> >>
-> >> that doesn't look right.
-> >>
-> >> It seem another thread, erission has one model without VGA, and they use that area for other device MMIO.
-> >>
-> >> current for 64bit, We remove [0xa0000, 0x100000) from e820 map if those area is E820_RAM.
-> >>
-> >> in e820_reserve_resources(), kernel will reserve range < 1M according to e820 map.
-> >> that is before pci BAR is claimed.
-> >>
-> >> or you can add
-> >> boot_params.screen_info.orig_video_isVGA == 1
-> >> or double check scan pci tree to see if video is there or not
-> > 
-> > I'm sorry, I can't understand what you're saying.
-> 
-> for 64 bit, you may check boot_params.screen_info.orig_video_isVGA to see if you need to reserve that VGA range.
-> not sure if every bootloader fill that...
+Linus, please pull from
 
-Why is this different for 64-bit vs 32-bit?  Can you point me to any
-references where I can learn about this?
+    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
 
-Bjorn
+This will get a few small fixes that have trickled in:
+
+Chien Tung (1):
+      RDMA/nes: Correct cap.max_inline_data assignment in nes_query_qp()
+
+Dan Carpenter (1):
+      IB/mlx4: Check correct variable for allocation failure
+
+Jani Nikula (1):
+      IB/cm: Fix device_create() return value check
+
+Roland Dreier (1):
+      Merge branches 'cma', 'misc', 'mlx4' and 'nes' into for-linus
+
+shefty (1):
+      RDMA/cm: Set num_paths when manually assigning path records
+
+ drivers/infiniband/core/cm.c          |    2 +-
+ drivers/infiniband/core/cma.c         |    1 +
+ drivers/infiniband/hw/mlx4/mr.c       |    2 +-
+ drivers/infiniband/hw/nes/nes_verbs.c |    9 ++++-----
+ 4 files changed, 7 insertions(+), 7 deletions(-)
+
+-- 
+Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
+http://www.cisco.com/web/about/doing_business/legal/cri/index.html
