@@ -1,179 +1,399 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab0DIOll (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 10:41:41 -0400
-Received: from mail-iw0-f197.google.com ([209.85.223.197]:43415 "EHLO
-	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752306Ab0DIOli (ORCPT
+	id S1753625Ab0DIOpz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 10:45:55 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:58154 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752949Ab0DIOpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 10:41:38 -0400
+	Fri, 9 Apr 2010 10:45:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=GiJuLs2mcSrx21G9uG1ZjJ97xhdXnmxcgFym2bW70Zobj2wf5tI5jJiMFG8BM1AF5g
-         KLbNDB98rrNxhR8vfzFW34t3TLf3fPErmdaarSj3VUiW4iwUgj8HJpUvSn4fbl/AP7ji
-         y/tLzBZBOszaV5tzQyYnWA5kayF5EyPbqZxYY=
-Subject: mlock and pageout race?
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>
-In-Reply-To: <20100409170529.80E9.A69D9226@jp.fujitsu.com>
-References: <20100409160252.80E6.A69D9226@jp.fujitsu.com>
-	 <n2x28c262361004090101ufa54ff03zc9a94c8808841206@mail.gmail.com>
-	 <20100409170529.80E9.A69D9226@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Apr 2010 23:41:19 +0900
-Message-ID: <1270824079.2524.63.camel@barrios-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=k9ii+3PLmYrt0M1r12eSUKtTPlAlsdWrbi9Y/RMVKrPlFW57fT/nvKyiVwvHYFIaXh
+         81nfw2Igi8F5C4pkUPDJO7RIuOOrmTXI8x+R2TjIKvJkiJIqf44Wo6r9DSzjxPgUilf9
+         sYB7QIEsCmTOMc5sPlT05z32RPmfnpuiub12I=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+       John Kacur <jkacur@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Al Viro <viro@ZenIV.linux.org.uk>,
+       Alexey Dobriyan <adobriyan@gmail.com>
+Subject: [PATCH v2] procfs: Push down the bkl from ioctl
+Date: Fri,  9 Apr 2010 16:45:37 +0200
+Message-Id: <1270824337-7985-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.6.2.3
+In-Reply-To: <b6fcc0a1003292331n4fd0ce03v6d75a1a20ce14f0f@mail.gmail.com>
+References: <b6fcc0a1003292331n4fd0ce03v6d75a1a20ce14f0f@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Kosaki. 
+Push down the bkl from procfs's ioctl main handler to its users.
+Only three procfs users implement an ioctl (non unlocked) handler.
+Turn them into unlocked_ioctl and push down the Devil inside.
 
-I don't want to make noise due to off-topic.
-So I open new thread. 
+v2: PDE(inode)->data doesn't need to be under bkl
 
-On Fri, 2010-04-09 at 17:17 +0900, KOSAKI Motohiro wrote:
-> Hi Minchan,
-> 
-> > OFF-TOPIC:
-> > 
-> > I think you pointed out good thing, too. :)
-> > 
-> > You mean although application call mlock of any vma, few pages on the vma can
-> > be swapout by race between mlock and reclaim?
-> > 
-> > Although it's not disaster, apparently it breaks API.
-> > Man page
-> > " mlock() and munlock()
-> >   mlock()  locks pages in the address range starting at addr and
-> > continuing for len bytes. All pages that contain a part of the
-> > specified address range are guaranteed to be resident in RAM when the
-> > call returns  successfully;  the pages are guaranteed to stay in RAM
-> > until later unlocked."
-> > 
-> > Do you have a plan to solve such problem?
-> > 
-> > And how about adding simple comment about that race in page_referenced_one?
-> > Could you send the patch?
-> 
-> I'm surprising this mail. you were pushing much patch in this area.
-> I believed you know all stuff ;)
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: John Kacur <jkacur@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+---
+ drivers/char/i8k.c                  |   53 +++++++++++++++------
+ drivers/isdn/divert/divert_procfs.c |   90 ++++++++++++++++++++++-------------
+ net/sunrpc/cache.c                  |   20 ++++++--
+ 3 files changed, 109 insertions(+), 54 deletions(-)
 
-If I disappoint you, sorry for that. 
-Still, there are many thing to study to me. :)
-
-> 
-> My answer is, it don't need to fix, because it's not bug. The point is
-> that this one is race issue. not "pageout after mlock" issue.
-> If pageout and mlock occur at the exactly same time, the human can't
-> observe which event occur in first. it's not API violation.
-
-
-If it might happen, it's obviously API violation, I think.
-
-int main()
-{
-	mlock(any vma, CURRENT|FUTURE);
-	system("cat /proc/self/smaps | grep "any vma");
-	..
-}
-result : 
-
-08884000-088a5000 rw-p 00000000 00:00 0          [any vma]
-Size:                  4 kB
-Rss:                   4 kB
-...
-Swap:                  4 kB
-...
-
-Apparently, user expected that "If I call mlock, there are whole pages
-of the vma in DRAM". But the result make him embarrassed :(
-
-side note : 
-Of course, mlock's semantic is rather different with smaps's Swap. 
-mlock's semantic just makes sure pages on DRAM after success of mlock
-call. it's not relate smap's swap entry. 
-Actually, smaps's swap entry cannot compare to mlock's semantic.
-Some page isn't on swap device yet but on swap cache and whole PTEs of
-page already have swap entry(ie, all unmapped). In such case, smap's
-Swap entry represent it with swap page. But with semantic of mlock, it's
-still on RAM so that it's okay.  
-
-I looked the code more detail.
-Fortunately, the situation you said "page_referenced() already can take
-unstable VM_LOCKED value. So, In worst case we make false positive
-pageout, but it's not disaster" cannot happen, I think. 
-
-1) 
-mlock_fixup				shrink_page_list
-
-					lock_page
-					try_to_unmap
-
-vma->vm_flags = VM_LOCKED
-pte_lock				
-pte_present test
-get_page
-pte_unlock
-					pte_lock
-					VM_LOCKED test fail
-					pte_unlock
-					never pageout
-So, no problem. 
-
-2) 
-mlock_fixup				shrink_page_list
-
-					lock_page
-					try_to_unmap
-					pte_lock
-					VM_LOCKED test pass
-vma->vm_flags = VM_LOCKED		make pte to swap entry
-pte_lock				pte_unlock
-pte_present test fail
-pte_unlock
-					pageout
-swapin by handle_mm_fault     
-
-So, no problem. 
-
-3)
-mlock_fixup				shrink_page_list
-
-					lock_page
-					try_to_unmap
-					pte_lock
-					VM_LOCKED test pass
-vma->vm_flags = VM_LOCKED		make pte to swap entry
-pte_lock				pte_unlock
-pte_present test fail
-pte_unlock
-cachehit in swapcache by handle_mm_fault 
-					pageout
-					is_page_cache_freeable fail
-So, no problem, too. 
-
-I can't think the race situation you mentioned.
-When 'false positive pageout' happens?
-Could you elaborate on it?
-
-
+diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
+index fc8cf7a..85f8893 100644
+--- a/drivers/char/i8k.c
++++ b/drivers/char/i8k.c
+@@ -23,6 +23,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/dmi.h>
+ #include <linux/capability.h>
++#include <linux/smp_lock.h>
+ #include <asm/uaccess.h>
+ #include <asm/io.h>
+ 
+@@ -82,8 +83,7 @@ module_param(fan_mult, int, 0);
+ MODULE_PARM_DESC(fan_mult, "Factor to multiply fan speed with");
+ 
+ static int i8k_open_fs(struct inode *inode, struct file *file);
+-static int i8k_ioctl(struct inode *, struct file *, unsigned int,
+-		     unsigned long);
++static long i8k_ioctl(struct file *, unsigned int, unsigned long);
+ 
+ static const struct file_operations i8k_fops = {
+ 	.owner		= THIS_MODULE,
+@@ -91,7 +91,7 @@ static const struct file_operations i8k_fops = {
+ 	.read		= seq_read,
+ 	.llseek		= seq_lseek,
+ 	.release	= single_release,
+-	.ioctl		= i8k_ioctl,
++	.unlocked_ioctl	= i8k_ioctl,
+ };
+ 
+ struct smm_regs {
+@@ -307,8 +307,7 @@ static int i8k_get_dell_signature(int req_fn)
+ 	return regs.eax == 1145651527 && regs.edx == 1145392204 ? 0 : -1;
+ }
+ 
+-static int i8k_ioctl(struct inode *ip, struct file *fp, unsigned int cmd,
+-		     unsigned long arg)
++static long i8k_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ {
+ 	int val = 0;
+ 	int speed;
+@@ -318,6 +317,9 @@ static int i8k_ioctl(struct inode *ip, struct file *fp, unsigned int cmd,
+ 	if (!argp)
+ 		return -EINVAL;
+ 
++	/* Pushed down from procfs ioctl handler */
++	lock_kernel();
++
+ 	switch (cmd) {
+ 	case I8K_BIOS_VERSION:
+ 		val = i8k_get_bios_version();
+@@ -341,57 +343,78 @@ static int i8k_ioctl(struct inode *ip, struct file *fp, unsigned int cmd,
+ 		break;
+ 
+ 	case I8K_GET_SPEED:
+-		if (copy_from_user(&val, argp, sizeof(int)))
++		if (copy_from_user(&val, argp, sizeof(int))) {
++			unlock_kernel();
+ 			return -EFAULT;
++		}
+ 
+ 		val = i8k_get_fan_speed(val);
+ 		break;
+ 
+ 	case I8K_GET_FAN:
+-		if (copy_from_user(&val, argp, sizeof(int)))
++		if (copy_from_user(&val, argp, sizeof(int))) {
++			unlock_kernel();
+ 			return -EFAULT;
++		}
+ 
+ 		val = i8k_get_fan_status(val);
+ 		break;
+ 
+ 	case I8K_SET_FAN:
+-		if (restricted && !capable(CAP_SYS_ADMIN))
++		if (restricted && !capable(CAP_SYS_ADMIN)) {
++			unlock_kernel();
+ 			return -EPERM;
++		}
+ 
+-		if (copy_from_user(&val, argp, sizeof(int)))
++		if (copy_from_user(&val, argp, sizeof(int))) {
++			unlock_kernel();
+ 			return -EFAULT;
++		}
+ 
+-		if (copy_from_user(&speed, argp + 1, sizeof(int)))
++		if (copy_from_user(&speed, argp + 1, sizeof(int))) {
++			unlock_kernel();
+ 			return -EFAULT;
++		}
+ 
+ 		val = i8k_set_fan(val, speed);
+ 		break;
+ 
+ 	default:
++		unlock_kernel();
+ 		return -EINVAL;
+ 	}
+ 
+-	if (val < 0)
+-		return val;
++	if (val < 0) {
++		unlock_kernel();
++		return -val;
++	}
+ 
+ 	switch (cmd) {
+ 	case I8K_BIOS_VERSION:
+-		if (copy_to_user(argp, &val, 4))
++		if (copy_to_user(argp, &val, 4)) {
++			unlock_kernel();
+ 			return -EFAULT;
++		}
+ 
+ 		break;
+ 	case I8K_MACHINE_ID:
+-		if (copy_to_user(argp, buff, 16))
++		if (copy_to_user(argp, buff, 16)) {
++			unlock_kernel();
+ 			return -EFAULT;
++		}
+ 
+ 		break;
+ 	default:
+-		if (copy_to_user(argp, &val, sizeof(int)))
++		if (copy_to_user(argp, &val, sizeof(int))) {
++			unlock_kernel();
+ 			return -EFAULT;
++		}
+ 
+ 		break;
+ 	}
+ 
++	unlock_kernel();
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/isdn/divert/divert_procfs.c b/drivers/isdn/divert/divert_procfs.c
+index 3697c40..24b3642 100644
+--- a/drivers/isdn/divert/divert_procfs.c
++++ b/drivers/isdn/divert/divert_procfs.c
+@@ -19,6 +19,7 @@
+ #include <linux/sched.h>
+ #include <linux/isdnif.h>
+ #include <net/net_namespace.h>
++#include <linux/smp_lock.h>
+ #include "isdn_divert.h"
+ 
+ 
+@@ -176,18 +177,20 @@ isdn_divert_close(struct inode *ino, struct file *filep)
+ /*********/
+ /* IOCTL */
+ /*********/
+-static int
+-isdn_divert_ioctl(struct inode *inode, struct file *file,
+-		  uint cmd, ulong arg)
++static long isdn_divert_ioctl(struct file *file, uint cmd, ulong arg)
+ {
+ 	divert_ioctl dioctl;
+-	int i;
+ 	unsigned long flags;
+ 	divert_rule *rulep;
+ 	char *cp;
+ 
+-	if (copy_from_user(&dioctl, (void __user *) arg, sizeof(dioctl)))
++	/* Pushed down from procfs ioctl handler */
++	lock_kernel();
++
++	if (copy_from_user(&dioctl, (void __user *) arg, sizeof(dioctl))) {
++		unlock_kernel();
+ 		return -EFAULT;
++	}
+ 
+ 	switch (cmd) {
+ 		case IIOCGETVER:
+@@ -195,65 +198,84 @@ isdn_divert_ioctl(struct inode *inode, struct file *file,
+ 			break;
+ 
+ 		case IIOCGETDRV:
+-			if ((dioctl.getid.drvid = divert_if.name_to_drv(dioctl.getid.drvnam)) < 0)
+-				return (-EINVAL);
++			if ((dioctl.getid.drvid = divert_if.name_to_drv(dioctl.getid.drvnam)) < 0) {
++				unlock_kernel();
++				return -EINVAL;
++			}
+ 			break;
+ 
+ 		case IIOCGETNAM:
+ 			cp = divert_if.drv_to_name(dioctl.getid.drvid);
+-			if (!cp)
+-				return (-EINVAL);
+-			if (!*cp)
+-				return (-EINVAL);
++			if (!cp || !*cp) {
++				unlock_kernel();
++				return -EINVAL;
++			}
+ 			strcpy(dioctl.getid.drvnam, cp);
+ 			break;
+ 
+ 		case IIOCGETRULE:
+-			if (!(rulep = getruleptr(dioctl.getsetrule.ruleidx)))
+-				return (-EINVAL);
++			if (!(rulep = getruleptr(dioctl.getsetrule.ruleidx))) {
++				unlock_kernel();
++				return -EINVAL;
++			}
+ 			dioctl.getsetrule.rule = *rulep;	/* copy data */
+ 			break;
+ 
+ 		case IIOCMODRULE:
+-			if (!(rulep = getruleptr(dioctl.getsetrule.ruleidx)))
+-				return (-EINVAL);
+-            spin_lock_irqsave(&divert_lock, flags);
++			if (!(rulep = getruleptr(dioctl.getsetrule.ruleidx))) {
++				unlock_kernel();
++				return -EINVAL;
++			}
++			spin_lock_irqsave(&divert_lock, flags);
+ 			*rulep = dioctl.getsetrule.rule;	/* copy data */
+ 			spin_unlock_irqrestore(&divert_lock, flags);
+-			return (0);	/* no copy required */
+-			break;
++
++			unlock_kernel();
++			return 0;	/* no copy required */
+ 
+ 		case IIOCINSRULE:
+-			return (insertrule(dioctl.getsetrule.ruleidx, &dioctl.getsetrule.rule));
+-			break;
++			unlock_kernel();
++			return insertrule(dioctl.getsetrule.ruleidx, &dioctl.getsetrule.rule);
+ 
+ 		case IIOCDELRULE:
+-			return (deleterule(dioctl.getsetrule.ruleidx));
+-			break;
++			unlock_kernel();
++			return deleterule(dioctl.getsetrule.ruleidx);
+ 
+ 		case IIOCDODFACT:
+-			return (deflect_extern_action(dioctl.fwd_ctrl.subcmd,
+-						  dioctl.fwd_ctrl.callid,
+-						 dioctl.fwd_ctrl.to_nr));
++			unlock_kernel();
++			return deflect_extern_action(dioctl.fwd_ctrl.subcmd,
++						     dioctl.fwd_ctrl.callid,
++						     dioctl.fwd_ctrl.to_nr);
+ 
+ 		case IIOCDOCFACT:
+ 		case IIOCDOCFDIS:
+-		case IIOCDOCFINT:
+-			if (!divert_if.drv_to_name(dioctl.cf_ctrl.drvid))
+-				return (-EINVAL);	/* invalid driver */
+-			if ((i = cf_command(dioctl.cf_ctrl.drvid,
++		case IIOCDOCFINT: {
++			long err;
++
++			if (!divert_if.drv_to_name(dioctl.cf_ctrl.drvid)) {
++				unlock_kernel();
++				return -EINVAL;	/* invalid driver */
++			}
++			err = cf_command(dioctl.cf_ctrl.drvid,
+ 					    (cmd == IIOCDOCFACT) ? 1 : (cmd == IIOCDOCFDIS) ? 0 : 2,
+ 					    dioctl.cf_ctrl.cfproc,
+ 					    dioctl.cf_ctrl.msn,
+ 					    dioctl.cf_ctrl.service,
+ 					    dioctl.cf_ctrl.fwd_nr,
+-					    &dioctl.cf_ctrl.procid)))
+-				return (i);
++					    &dioctl.cf_ctrl.procid);
++			if (err) {
++				unlock_kernel();
++				return err;
++			}
+ 			break;
+ 
++		}
+ 		default:
+-			return (-EINVAL);
+-	}			/* switch cmd */
++			unlock_kernel();
++			return -EINVAL;
++	}
++
++	unlock_kernel();
+ 	return copy_to_user((void __user *)arg, &dioctl, sizeof(dioctl)) ? -EFAULT : 0;
+ }				/* isdn_divert_ioctl */
+ 
+@@ -264,7 +286,7 @@ static const struct file_operations isdn_fops =
+ 	.read           = isdn_divert_read,
+ 	.write          = isdn_divert_write,
+ 	.poll           = isdn_divert_poll,
+-	.ioctl          = isdn_divert_ioctl,
++	.unlocked_ioctl = isdn_divert_ioctl,
+ 	.open           = isdn_divert_open,
+ 	.release        = isdn_divert_close,                                      
+ };
+diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
+index 39bddba..08abb9b 100644
+--- a/net/sunrpc/cache.c
++++ b/net/sunrpc/cache.c
+@@ -1331,12 +1331,22 @@ static unsigned int cache_poll_procfs(struct file *filp, poll_table *wait)
+ 	return cache_poll(filp, wait, cd);
+ }
+ 
+-static int cache_ioctl_procfs(struct inode *inode, struct file *filp,
+-			      unsigned int cmd, unsigned long arg)
++static long cache_ioctl_procfs(struct file *filp,
++			       unsigned int cmd, unsigned long arg)
+ {
+-	struct cache_detail *cd = PDE(inode)->data;
++	long ret;
++	struct cache_detail *cd;
++	struct inode *inode = filp->f_path.dentry->d_inode;
+ 
+-	return cache_ioctl(inode, filp, cmd, arg, cd);
++	/* Pushed down from procfs ioctl handler */
++	lock_kernel();
++
++	cd = PDE(inode)->data;
++	ret = cache_ioctl(inode, filp, cmd, arg, cd);
++
++	unlock_kernel();
++
++	return ret;
+ }
+ 
+ static int cache_open_procfs(struct inode *inode, struct file *filp)
+@@ -1359,7 +1369,7 @@ static const struct file_operations cache_file_operations_procfs = {
+ 	.read		= cache_read_procfs,
+ 	.write		= cache_write_procfs,
+ 	.poll		= cache_poll_procfs,
+-	.ioctl		= cache_ioctl_procfs, /* for FIONREAD */
++	.unlocked_ioctl	= cache_ioctl_procfs, /* for FIONREAD */
+ 	.open		= cache_open_procfs,
+ 	.release	= cache_release_procfs,
+ };
 -- 
-Kind regards,
-Minchan Kim
-
+1.6.2.3
 
