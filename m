@@ -1,101 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab0DIWjX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 18:39:23 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:51424 "EHLO e2.ny.us.ibm.com"
+	id S1754871Ab0DIWn2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 18:43:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46124 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752595Ab0DIWjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 18:39:20 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/urgent 1/3] rcu: add rcu_access_pointer and rcu_dereference_protected
-Date: Fri,  9 Apr 2010 15:39:10 -0700
-Message-Id: <1270852752-25278-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <20100409223843.GA25133@linux.vnet.ibm.com>
-References: <20100409223843.GA25133@linux.vnet.ibm.com>
+	id S1753544Ab0DIWnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 18:43:25 -0400
+Message-ID: <4BBFAD49.3000208@zytor.com>
+Date: Fri, 09 Apr 2010 15:42:17 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: guenter.roeck@ericsson.com, linux-kernel@vger.kernel.org,
+       Yinghai <yinghai.lu@oracle.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>, Andy Isaacson <adi@hexapodia.org>,
+       Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well
+ as x86_32
+References: <20100407210628.28364.96982.stgit@bob.kio>	<201004071705.07176.bjorn.helgaas@hp.com>	<4BBD13C3.2060404@oracle.com>	<201004091004.39857.bjorn.helgaas@hp.com>	<4BBF5987.3010100@zytor.com>	<4BBF626A.3060800@oracle.com>	<4BBF70BC.3080809@zytor.com>	<1270839357.1477.758.camel@groeck-laptop>	<4BBF89FE.5040909@zytor.com>	<1270845108.1477.784.camel@groeck-laptop>	<4BBF91C6.9090701@zytor.com> <20100409234245.4081994a@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100409234245.4081994a@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds variants of rcu_dereference() that handle situations
-where the RCU-protected data structure cannot change, perhaps due to
-our holding the update-side lock, or where the RCU-protected pointer is
-only to be fetched, not dereferenced.  These are needed due to some
-performance concerns with using rcu_dereference() where it is not
-required, aside from the need for lockdep/sparse checking.
+On 04/09/2010 03:42 PM, Alan Cox wrote:
+>> "Don't use legacy fixed-function addresses for nonstandard purposes."
+>>
+>> There, there is your documentation.
+> 
+> It's probably a good idea to only reserve it if the space is actually
+> being used. There are a variety of legitimate reasons to use that space
+> for other things on embedded x86 boards.
+> 
+> They are only "legacy fixed function" if you have a PCI bus...
 
-The new rcu_access_pointer() primitive is for the case where the pointer
-is be fetch and not dereferenced.  This primitive may be used without
-protection, RCU or otherwise, due to the fact that it uses ACCESS_ONCE().
+No they're not.  The 0xa0000...0xbffff range has been a legacy video
+area since the very first PC (although the first PC only used
+0xb0000..0xbffff, 0xa0000..0xbffff was declared reserved at that time.)
 
-The new rcu_dereference_protected() primitive is for the case where updates
-are prevented, for example, due to holding the update-side lock.  This
-primitive does neither ACCESS_ONCE() nor smp_read_barrier_depends(), so
-can only be used when updates are somehow prevented.
+I'm wondering what those legitimate reasons are.  This is particularly
+so since it affects our ability to deal with very early errors, long
+before we have enumerated anything.  At this point we can at least lay
+down bytes in the video area and hope the user can see them.
 
-Suggested-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- include/linux/rcupdate.h |   32 ++++++++++++++++++++++++++++++++
- 1 files changed, 32 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 872a98e..8fe8660 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -209,13 +209,45 @@ static inline int rcu_read_lock_sched_held(void)
- 		rcu_dereference_raw(p); \
- 	})
- 
-+/**
-+ * rcu_dereference_protected - fetch RCU pointer when updates prevented
-+ *
-+ * Return the value of the specified RCU-protected pointer, but omit
-+ * both the smp_read_barrier_depends() and the ACCESS_ONCE().  This
-+ * is useful in cases where update-side locks prevent the value of the
-+ * pointer from changing.  Please note that this primitive does -not-
-+ * prevent the compiler from repeating this reference or combining it
-+ * with other references, so it should not be used without protection
-+ * of appropriate locks.
-+ */
-+#define rcu_dereference_protected(p, c) \
-+	({ \
-+		if (debug_lockdep_rcu_enabled() && !(c)) \
-+			lockdep_rcu_dereference(__FILE__, __LINE__); \
-+		(p); \
-+	})
-+
- #else /* #ifdef CONFIG_PROVE_RCU */
- 
- #define rcu_dereference_check(p, c)	rcu_dereference_raw(p)
-+#define rcu_dereference_protected(p, c) (p)
- 
- #endif /* #else #ifdef CONFIG_PROVE_RCU */
- 
- /**
-+ * rcu_access_pointer - fetch RCU pointer with no dereferencing
-+ *
-+ * Return the value of the specified RCU-protected pointer, but omit the
-+ * smp_read_barrier_depends() and keep the ACCESS_ONCE().  This is useful
-+ * when the value of this pointer is accessed, but the pointer is not
-+ * dereferenced, for example, when testing an RCU-protected pointer against
-+ * NULL.  This may also be used in cases where update-side locks prevent
-+ * the value of the pointer from changing, but rcu_dereference_protected()
-+ * is a lighter-weight primitive for this use case.
-+ */
-+#define rcu_access_pointer(p)	ACCESS_ONCE(p)
-+
-+/**
-  * rcu_read_lock - mark the beginning of an RCU read-side critical section.
-  *
-  * When synchronize_rcu() is invoked on one CPU while other CPUs
--- 
-1.7.0
+	-hpa
 
