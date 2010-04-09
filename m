@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414Ab0DISqb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 14:46:31 -0400
-Received: from tex.lwn.net ([70.33.254.29]:42022 "EHLO vena.lwn.net"
+	id S1755454Ab0DISzS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 14:55:18 -0400
+Received: from imr1.ericy.com ([198.24.6.9]:45690 "EHLO imr1.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753570Ab0DISq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 14:46:29 -0400
-Date: Fri, 9 Apr 2010 12:46:26 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
-       JosephChan@via.com.tw, ScottFang@viatech.com.cn,
-       Deepak Saxena <dsaxena@laptop.org>,
-       linux-fbdev-devel@lists.sourceforge.net
-Subject: Re: [RFC] Initial OLPC Viafb merge
-Message-ID: <20100409124626.0b150104@bike.lwn.net>
-In-Reply-To: <4BBEBE87.4000809@gmx.de>
-References: <1270746946-12467-1-git-send-email-corbet@lwn.net>
-	<4BBEBE87.4000809@gmx.de>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1755393Ab0DISzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 14:55:15 -0400
+Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well
+ as x86_32
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Yinghai <yinghai.lu@oracle.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Andy Isaacson <adi@hexapodia.org>, Thomas Renninger <trenn@suse.de>
+In-Reply-To: <4BBF70BC.3080809@zytor.com>
+References: <20100407210628.28364.96982.stgit@bob.kio>
+	 <201004071705.07176.bjorn.helgaas@hp.com> <4BBD13C3.2060404@oracle.com>
+	 <201004091004.39857.bjorn.helgaas@hp.com> <4BBF5987.3010100@zytor.com>
+	 <4BBF626A.3060800@oracle.com>  <4BBF70BC.3080809@zytor.com>
+Content-Type: text/plain
+Organization: Ericsson
+Date: Fri, 9 Apr 2010 11:55:57 -0700
+Message-ID: <1270839357.1477.758.camel@groeck-laptop>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.26.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 09 Apr 2010 07:43:35 +0200
-Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
-
-> Thanks a lot for your work I appreciate it very much.
-> However there are 2 things I'd like to ask for:
+On Fri, 2010-04-09 at 14:23 -0400, H. Peter Anvin wrote:
+> [Adding Guenter Roeck as he was commenting on something writing to the
+> VGA area...]
 > 
-> Could you please forward port them to latest mainline? There went some 
-> changes in for 2.6.34 that break some of your patches (but not many and 
-> at least the first conflict is easy to fix) as I generally prefer to 
-> test a version that does not contain too much changes from myself.
+> On 04/09/2010 10:22 AM, Yinghai wrote:
+> > 
+> > then please check this one
+> > 
+> > update e820 at first, and later put them resource tree, but give pci BAR chance to claim
+> > the range, before assign unassigned resources.
+> > 
+> > in case some system doesn't have VGA, and use [0xa0000, ..] for mmio of some other pci devices.
+> > 
+> 
+> Do we have any evidence of any such system?
+> 
+> Either which way, the patch looks saner...
+> 
+Yes, we have a system which does not have VGA and uses the VGA memory
+space for another device. I don't know exactly what for, but I can find
+out if it is relevant.
 
-The OLPC tree is currently based on 2.6.34-rc1.  I forgot that your
-stuff went in after that; pulling things forward would make sense.
+Guenter
 
-> Please make checkpatch happy where appropriate. (whitespaces, ...)
 
-Hmm, will check again.
-
-> Fortunately I still have a bit time left to finish the review of the 
-> remaining patches in the next days but I would really appreciate it very 
-> much if you could publish your work more frequently in the future.
-
-Sorry, the only working platform I had was the OLPC 2.6.31 tree, and
-there was little point in publishing that by the time it was ready to
-be seen.  That said, I *did* point out the tree where the work could be
-seen for anybody who was interested.
-
-In any case, it's very much my intent to get this stuff out there and
-in for the next merge window.
-
-Thanks for the reviews, I'll get to the specific issues in a bit.
-
-jon
