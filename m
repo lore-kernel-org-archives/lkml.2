@@ -1,116 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751067Ab0DIAqv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 20:46:51 -0400
-Received: from mail.windriver.com ([147.11.1.11]:59209 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743Ab0DIAqu (ORCPT
+	id S1751244Ab0DIAvn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 20:51:43 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:49525 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831Ab0DIAvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 20:46:50 -0400
-From: Liang Li <liang.li@windriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: wangchen@cn.fujitsu.com, mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-       yinghai@kernel.org, akpm@linux-foundation.org,
-       jeremy.fitzhardinge@citrix.com, konrad.wilk@oracle.com
-Subject: [PATCH v3] x86: let 'reservetop' functioning right
-Date: Fri,  9 Apr 2010 08:43:55 +0800
-Message-Id: <1270773835-2689-1-git-send-email-liang.li@windriver.com>
-X-Mailer: git-send-email 1.6.6
-X-OriginalArrivalTime: 09 Apr 2010 00:45:24.0863 (UTC) FILETIME=[F10E98F0:01CAD77D]
+	Thu, 8 Apr 2010 20:51:39 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Patrick McHardy <kaber@trash.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+       netfilter-devel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: mmotm 2010-04-05-16-09 uploaded
+In-Reply-To: Your message of "Thu, 08 Apr 2010 17:36:07 +0200."
+             <4BBDF7E7.708@trash.net>
+From: Valdis.Kletnieks@vt.edu
+References: <201004052336.o35NaeSE015814@imap1.linux-foundation.org> <13074.1270663309@localhost> <4BBDC0CC.7080305@trash.net> <6795.1270740197@localhost>
+            <4BBDF7E7.708@trash.net>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1270774206_4354P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 08 Apr 2010 20:50:06 -0400
+Message-ID: <8356.1270774206@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020203.4BBE79C0.00F6,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When specify 'reservetop=0xbadc0de' kernel parameter, the kernel will
-stop booting due to a early_ioremap bug that relate to commit 8827247ff.
+--==_Exmh_1270774206_4354P
+Content-Type: text/plain; charset=us-ascii
 
-The root cause of boot failure problem is the value of 'slot_virt[i]'
-was initialized in setup_arch->early_ioremap_init. But later in
-setup_arch, the function 'parse_early_param' will modify 'FIXADDR_TOP'
-when 'reservetop=0xbadc0de' being specified.
+On Thu, 08 Apr 2010 17:36:07 +0200, Patrick McHardy said:
 
-The simplest fix might be use __fix_to_virt(idx0) to get updated value
-of 'FIXADDR_TOP' in '__early_ioremap' instead of reference old value
-from slot_virt[slot] directly.
+> Valdis.Kletnieks@vt.edu wrote:
 
-Changelog since v0:
+> > Well, it *changed* it.  Does the rcu_defererence_check() only fire on the
+> > first time it hits something, so we've fixed the first one and now we get to
+> > see the second one?
+> 
+> It appears that way, otherwise you should have seen a second warning in
+> nf_conntrack_ecache the last time.
+> 
+> > (For what it's worth, if this is going to be one-at-a-time whack-a-mole, I'm
+> > OK on that, just want to know up front.)
+> 
+> I went through the other files and I believe this should be it.
+> We already removed most of these incorrect rcu_dereference()
+> calls a while back.
 
--v1: When reservetop being handled then FIXADDR_TOP get adjusted, Hence
-check prev_map then re-initialize slot_virt and PMD based on new
-FIXADDR_TOP.
+Confirming - the second version of the patch fixes all the network-related
+RCU complaints I've been able to trigger...
 
--v2: place fixup_early_ioremap hence call early_ioremap_init in
-reserve_top_address  to re-initialize slot_virt and corresponding PMD
-when parse_reservetop
+--==_Exmh_1270774206_4354P
+Content-Type: application/pgp-signature
 
--v3: move fixup_early_ioremap out of reserve_top_address to make sure
-other clients of reserve_top_address like xen/lguest won't broken
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-Signed-off-by: Liang Li <liang.li@windriver.com>
-Cc: Wang Chen <wangchen@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Acked-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/include/asm/io.h |    1 +
- arch/x86/mm/ioremap.c     |   15 +++++++++++++++
- arch/x86/mm/pgtable_32.c  |    1 +
- 3 files changed, 17 insertions(+), 0 deletions(-)
+iD8DBQFLvnm+cC3lWbTT17ARAlV4AJ9LeqKJxNKJHopdR6TZztZiQKqb6wCfXlAs
+6+jWKabDR4mVLHFUHMYljSA=
+=guT+
+-----END PGP SIGNATURE-----
 
-diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
-index a1dcfa3..30a3e97 100644
---- a/arch/x86/include/asm/io.h
-+++ b/arch/x86/include/asm/io.h
-@@ -347,6 +347,7 @@ extern void __iomem *early_ioremap(resource_size_t phys_addr,
- extern void __iomem *early_memremap(resource_size_t phys_addr,
- 				    unsigned long size);
- extern void early_iounmap(void __iomem *addr, unsigned long size);
-+extern void fixup_early_ioremap(void);
- 
- #define IO_SPACE_LIMIT 0xffff
- 
-diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-index 5eb1ba7..e4ab706 100644
---- a/arch/x86/mm/ioremap.c
-+++ b/arch/x86/mm/ioremap.c
-@@ -448,6 +448,21 @@ static inline void __init early_clear_fixmap(enum fixed_addresses idx)
- static void __iomem *prev_map[FIX_BTMAPS_SLOTS] __initdata;
- static unsigned long prev_size[FIX_BTMAPS_SLOTS] __initdata;
- 
-+void __init fixup_early_ioremap(void)
-+{
-+	int i;
-+	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
-+		if (prev_map[i])
-+			break;
-+	}
-+
-+	if (i < FIX_BTMAPS_SLOTS)
-+		BUG_ON(1);
-+
-+	early_ioremap_init();
-+	return;
-+}
-+
- static int __init check_early_ioremap_leak(void)
- {
- 	int count = 0;
-diff --git a/arch/x86/mm/pgtable_32.c b/arch/x86/mm/pgtable_32.c
-index 1a8faf0..26eadaa 100644
---- a/arch/x86/mm/pgtable_32.c
-+++ b/arch/x86/mm/pgtable_32.c
-@@ -128,6 +128,7 @@ static int __init parse_reservetop(char *arg)
- 
- 	address = memparse(arg, &arg);
- 	reserve_top_address(address);
-+	fixup_early_ioremap();
- 	return 0;
- }
- early_param("reservetop", parse_reservetop);
--- 
-1.6.6
+--==_Exmh_1270774206_4354P--
 
