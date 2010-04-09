@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755695Ab0DIHVU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 03:21:20 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:52313 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806Ab0DIHVQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 03:21:16 -0400
-From: James Hogan <james@albanarts.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: [RFC] What are the goals for the architecture of an in-kernel IR 	system?
-Date: Fri, 9 Apr 2010 08:21:02 +0100
-User-Agent: KMail/1.13.1 (Linux/2.6.32.9-70.fc12.x86_64; KDE/4.4.1; x86_64; ; )
-Cc: Jon Smirl <jonsmirl@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Krzysztof Halasa <khc@pm.waw.pl>,
-       hermann pitton <hermann-pitton@arcor.de>,
-       Christoph Bartelmus <lirc@bartelmus.de>, awalls@radix.net, j@jannau.net,
-       jarod@redhat.com, jarod@wilsonet.com, kraxel@redhat.com,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-media@vger.kernel.org, superm1@ubuntu.com
-References: <9e4733910912060952h4aad49dake8e8486acb6566bc@mail.gmail.com> <9e4733910912151338n62b30af5i35f8d0963e6591c@mail.gmail.com> <4BAB7659.1040408@redhat.com>
-In-Reply-To: <4BAB7659.1040408@redhat.com>
+	id S1755780Ab0DIH3U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 03:29:20 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:46773 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752680Ab0DIH3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 03:29:17 -0400
+Date: Fri, 9 Apr 2010 09:29:16 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: Divyesh Shah <dpshah@google.com>
+Cc: vgoyal@redhat.com, linux-kernel@vger.kernel.org, nauman@google.com,
+       ctalbott@google.com
+Subject: Re: [PATCH] cfq-iosched: Fix the incorrect timeslice accounting
+	with  forced_dispatch.
+Message-ID: <20100409072915.GF10103@kernel.dk>
+References: <20100409021054.13511.52377.stgit@austin.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart7994708.VvD75IU4bE";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004090821.10435.james@albanarts.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100409021054.13511.52377.stgit@austin.mtv.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart7994708.VvD75IU4bE
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Thu, Apr 08 2010, Divyesh Shah wrote:
+> When CFQ dispatches requests forcefully due to a barrier or changing iosched,
+> it runs through all cfqq's dispatching requests and then expires each queue.
+> However, it does not activate a cfqq before flushing its IOs resulting in
+> using stale values for computing slice_used.
+> This patch fixes it by calling activate queue before flushing reuqests from
+> each queue.
+> 
+> This is useful mostly for barrier requests because when the iosched is changing
+> it really doesnt matter if we have incorrect accounting since we're going to
+> break down all structures anyway.
+> 
+> We also now expire the current timeslice before moving on with the dispatch
+> to accurately account slice used for that cfqq.
 
-Hi,
+Good catch, applied for 2.6.34.
 
-On Thursday 25 March 2010 14:42:33 Mauro Carvalho Chehab wrote:
-> Comments?
+-- 
+Jens Axboe
 
-I haven't seen this mentioned yet, but are there any plans for a sysfs=20
-interface to set up waking from suspend/standby on a particular IR scancode=
-=20
-(for hardware decoders that support masking of comparing of the IR data), k=
-ind=20
-of analagous to the rtc framework's wakealarm sysfs file?
-
-Cheers
-James
-
---nextPart7994708.VvD75IU4bE
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.13 (GNU/Linux)
-
-iEYEABECAAYFAku+1WYACgkQ4hGc8zKz77ADOgCggcIOFAcoYnZ2HfabEkF1Z9dt
-QrwAn34wB242Z6xGro1mFYNIroDAt3S2
-=p3Qi
------END PGP SIGNATURE-----
-
---nextPart7994708.VvD75IU4bE--
