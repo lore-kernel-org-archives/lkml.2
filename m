@@ -1,20 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756435Ab0DIIRM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 04:17:12 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:46232 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754054Ab0DIIRI (ORCPT
+	id S1756594Ab0DIISx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 04:18:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41612 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754074Ab0DIISs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 04:17:08 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 02/13] mm: Revalidate anon_vma in page_lock_anon_vma()
-Cc: kosaki.motohiro@jp.fujitsu.com,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+	Fri, 9 Apr 2010 04:18:48 -0400
+Subject: Re: [PATCH 06/13] mm: Preemptible mmu_gather
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
        Linus Torvalds <torvalds@linux-foundation.org>,
@@ -22,49 +18,54 @@ Cc: kosaki.motohiro@jp.fujitsu.com,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
        David Miller <davem@davemloft.net>,
        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>
-In-Reply-To: <n2x28c262361004090101ufa54ff03zc9a94c8808841206@mail.gmail.com>
-References: <20100409160252.80E6.A69D9226@jp.fujitsu.com> <n2x28c262361004090101ufa54ff03zc9a94c8808841206@mail.gmail.com>
-Message-Id: <20100409170529.80E9.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
+In-Reply-To: <20100409032509.GH5683@laptop>
+References: <20100408191737.296180458@chello.nl>
+	 <20100408192722.858079986@chello.nl>  <20100409032509.GH5683@laptop>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri,  9 Apr 2010 17:17:01 +0900 (JST)
+Date: Fri, 09 Apr 2010 10:18:43 +0200
+Message-ID: <1270801123.20295.3235.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minchan,
-
-> OFF-TOPIC:
+On Fri, 2010-04-09 at 13:25 +1000, Nick Piggin wrote:
+> On Thu, Apr 08, 2010 at 09:17:43PM +0200, Peter Zijlstra wrote:
+> > @@ -39,30 +33,48 @@
+> >  struct mmu_gather {
+> >  	struct mm_struct	*mm;
+> >  	unsigned int		nr;	/* set to ~0U means fast mode */
+> > +	unsigned int		max;	/* nr < max */
+> >  	unsigned int		need_flush;/* Really unmapped some ptes? */
+> >  	unsigned int		fullmm; /* non-zero means full mm flush */
+> > -	struct page *		pages[FREE_PTE_NR];
+> > +#ifdef HAVE_ARCH_MMU_GATHER
+> > +	struct arch_mmu_gather	arch;
+> > +#endif
+> > +	struct page		**pages;
+> > +	struct page		*local[8];
 > 
-> I think you pointed out good thing, too. :)
+> Have you done some profiling on this? What I would like to see, if
+> it's not too much complexity, is to have a small set of pages to
+> handle common size frees, and then use them up first by default
+> before attempting to allocate more.
 > 
-> You mean although application call mlock of any vma, few pages on the vma can
-> be swapout by race between mlock and reclaim?
-> 
-> Although it's not disaster, apparently it breaks API.
-> Man page
-> " mlock() and munlock()
->   mlock()  locks pages in the address range starting at addr and
-> continuing for len bytes. All pages that contain a part of the
-> specified address range are guaranteed to be resident in RAM when the
-> call returns  successfully;  the pages are guaranteed to stay in RAM
-> until later unlocked."
-> 
-> Do you have a plan to solve such problem?
-> 
-> And how about adding simple comment about that race in page_referenced_one?
-> Could you send the patch?
+> Also, it would be cool to be able to chain allocations to avoid
+> TLB flushes even on big frees (overridable by arch of course, in
+> case they're doing some non-preeemptible work or you wish to break
+> up lock hold times). But that might be just getting over engineered.
 
-I'm surprising this mail. you were pushing much patch in this area.
-I believed you know all stuff ;)
+Did no profiling at all, back when I wrote this I was in a hurry to get
+this working for -rt.
 
-My answer is, it don't need to fix, because it's not bug. The point is
-that this one is race issue. not "pageout after mlock" issue.
-If pageout and mlock occur at the exactly same time, the human can't
-observe which event occur in first. it's not API violation.
+But yes, those things do look like something we want to look into, we
+can easily add a head structure to these pages like we did for the RCU
+batches.
 
-Thanks.
+But as it stands I think we can do those things as incrementals on top
+of this, no?
 
+What kind of workload would you recommend I use to profile this?
 
