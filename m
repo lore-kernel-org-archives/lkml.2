@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757062Ab0DIGOK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 02:14:10 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:25872 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755231Ab0DIGHM (ORCPT
+	id S1757066Ab0DIGOc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 02:14:32 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:37528 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755160Ab0DIGHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 02:07:12 -0400
+	Fri, 9 Apr 2010 02:07:11 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -15,97 +15,115 @@ Cc: David Miller <davem@davemloft.net>,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       Becky Bruce <beckyb@kernel.crashing.org>
-Subject: [PATCH 01/39] swiotlb: Use page alignment for early buffer allocation
-Date: Thu,  8 Apr 2010 23:03:30 -0700
-Message-Id: <1270793048-23796-2-git-send-email-yinghai@kernel.org>
+       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 19/39] lmb: Use lmb_debug to control debug message print out
+Date: Thu,  8 Apr 2010 23:03:48 -0700
+Message-Id: <1270793048-23796-20-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
 References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4BBEC3E3.0011,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090206.4BBEC3EB.011C,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We could call free_bootmem_late() if swiotlb is not used, and
-it will shrink to page alignement.
+Also let lmb_reserve_area/lmb_free_area could print out name if lmb=debug is
+specified
 
-So alloc them with page alignment at first, to avoid lose two pages
-
-before patch:
-[    0.000000]     lmb_reserve_area: [00d3600000, 00d7600000]   swiotlb buffer
-[    0.000000]     lmb_reserve_area: [00d7e7ef40, 00d7e9ef40]     swiotlb list
-[    0.000000]     lmb_reserve_area: [00d7e3ef40, 00d7e7ef40]  swiotlb orig_ad
-[    0.000000]     lmb_reserve_area: [000008a000, 0000092000]  swiotlb overflo
-
-after patch will get
-[    0.000000]     lmb_reserve_area: [00d3600000, 00d7600000]   swiotlb buffer
-[    0.000000]     lmb_reserve_area: [00d7e7e000, 00d7e9e000]     swiotlb list
-[    0.000000]     lmb_reserve_area: [00d7e3e000, 00d7e7e000]  swiotlb orig_ad
-[    0.000000]     lmb_reserve_area: [000008a000, 0000092000]  swiotlb overflo
+will also print ther name when reserve_lmb_area/free_lmb_area are called.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: Becky Bruce <beckyb@kernel.crashing.org>
 ---
- lib/swiotlb.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+ mm/lmb.c |   29 +++++++++++++++++++++--------
+ 1 files changed, 21 insertions(+), 8 deletions(-)
 
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index 5fddf72..1bd4258 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -159,7 +159,7 @@ swiotlb_init_with_default_size(size_t default_size, int verbose)
- 	/*
- 	 * Get IO TLB memory from the low pages
- 	 */
--	io_tlb_start = alloc_bootmem_low_pages(bytes);
-+	io_tlb_start = alloc_bootmem_low_pages(PAGE_ALIGN(bytes));
- 	if (!io_tlb_start)
- 		panic("Cannot allocate SWIOTLB buffer");
- 	io_tlb_end = io_tlb_start + bytes;
-@@ -169,16 +169,16 @@ swiotlb_init_with_default_size(size_t default_size, int verbose)
- 	 * to find contiguous free memory regions of size up to IO_TLB_SEGSIZE
- 	 * between io_tlb_start and io_tlb_end.
- 	 */
--	io_tlb_list = alloc_bootmem(io_tlb_nslabs * sizeof(int));
-+	io_tlb_list = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
- 	for (i = 0; i < io_tlb_nslabs; i++)
-  		io_tlb_list[i] = IO_TLB_SEGSIZE - OFFSET(i, IO_TLB_SEGSIZE);
- 	io_tlb_index = 0;
--	io_tlb_orig_addr = alloc_bootmem(io_tlb_nslabs * sizeof(phys_addr_t));
-+	io_tlb_orig_addr = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
+diff --git a/mm/lmb.c b/mm/lmb.c
+index 34fc030..dfbf660 100644
+--- a/mm/lmb.c
++++ b/mm/lmb.c
+@@ -591,8 +591,9 @@ static void __init __check_and_double_region_array(struct lmb_region *type,
+ 	memset(&old[0], 0, sizeof(struct lmb_property) * rgnsz);
+ 	type->region = new;
+ 	type->nr_regions = rgnsz * 2;
+-	printk(KERN_DEBUG "lmb.reserved.region array is doubled to %ld at [%llx - %llx]\n",
+-		type->nr_regions, mem, mem + size - 1);
++	if (lmb_debug)
++		pr_info("lmb.reserved.region array is doubled to %ld at [%010llx - %010llx]\n",
++				type->nr_regions, mem, mem + size - 1);
  
- 	/*
- 	 * Get the overflow emergency buffer
- 	 */
--	io_tlb_overflow_buffer = alloc_bootmem_low(io_tlb_overflow);
-+	io_tlb_overflow_buffer = alloc_bootmem_low_pages(PAGE_ALIGN(io_tlb_overflow));
- 	if (!io_tlb_overflow_buffer)
- 		panic("Cannot allocate SWIOTLB overflow buffer!\n");
- 	if (verbose)
-@@ -304,13 +304,13 @@ void __init swiotlb_free(void)
- 			   get_order(io_tlb_nslabs << IO_TLB_SHIFT));
- 	} else {
- 		free_bootmem_late(__pa(io_tlb_overflow_buffer),
--				  io_tlb_overflow);
-+				  PAGE_ALIGN(io_tlb_overflow));
- 		free_bootmem_late(__pa(io_tlb_orig_addr),
--				  io_tlb_nslabs * sizeof(phys_addr_t));
-+				  PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
- 		free_bootmem_late(__pa(io_tlb_list),
--				  io_tlb_nslabs * sizeof(int));
-+				  PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
- 		free_bootmem_late(__pa(io_tlb_start),
--				  io_tlb_nslabs << IO_TLB_SHIFT);
-+				  PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
- 	}
+ 	/* Free old one ?*/
+ 	if (old != static_region)
+@@ -619,6 +620,8 @@ void __init lmb_reserve_area(u64 start, u64 end, char *name)
+ 	if (WARN_ONCE(start > end, "lmb_reserve_area: wrong range [%#llx, %#llx]\n", start, end))
+ 		return;
+ 
++	if (lmb_debug)
++		pr_info("    lmb_reserve_area: [%010llx, %010llx] %16s\n", start, end, name);
+ 	__lmb_reserve_area(start, end, name);
  }
  
+@@ -635,6 +638,8 @@ void __init lmb_reserve_area_overlap_ok(u64 start, u64 end, char *name)
+ 	if (WARN_ONCE(start > end, "lmb_reserve_area_overlap_ok: wrong range [%#llx, %#llx]\n", start, end))
+ 		return;
+ 
++	if (lmb_debug)
++		pr_info("    lmb_reserve_area_overlap_ok: [%010llx, %010llx] %16s\n", start, end, name);
+ 	/* Free that region at first */
+ 	lmb_free(start, end - start);
+ 	__lmb_reserve_area(start, end, name);
+@@ -648,6 +653,8 @@ void __init lmb_free_area(u64 start, u64 end)
+ 	if (WARN_ONCE(start > end, "lmb_free_area: wrong range [%#llx, %#llx]\n", start, end))
+ 		return;
+ 
++	if (lmb_debug)
++		pr_info("       lmb_free_area: [%010llx, %010llx]\n", start, end);
+ 	/* keep punching hole, could run out of slots too */
+ 	lmb_free(start, end - start);
+ 	__check_and_double_region_array(&lmb.reserved, &lmb_reserved_region[0]);
+@@ -688,11 +695,13 @@ static void __init subtract_lmb_reserved(struct range *range, int az)
+ 
+ 	count  = lmb.reserved.cnt;
+ 
+-	pr_info("Subtract (%d early reservations)\n", count);
++	if (lmb_debug)
++		pr_info("Subtract (%d early reservations)\n", count);
+ 
+ 	for (i = 0; i < count; i++) {
+ 		struct lmb_property *r = &lmb.reserved.region[i];
+-		pr_info("  #%d [%010llx - %010llx]\n", i, r->base, r->base + r->size);
++		if (lmb_debug)
++			pr_info("  #%03d [%010llx - %010llx]\n", i, r->base, r->base + r->size);
+ 		final_start = PFN_DOWN(r->base);
+ 		final_end = PFN_UP(r->base + r->size);
+ 		if (final_start >= final_end)
+@@ -748,17 +757,21 @@ void __init lmb_to_bootmem(u64 start, u64 end)
+ 		lmb_free(__pa(lmb.reserved.region), sizeof(struct lmb_property) * lmb.reserved.nr_regions);
+ 
+ 	count  = lmb.reserved.cnt;
+-	pr_info("(%d early reservations) ==> bootmem [%010llx - %010llx]\n", count, start, end);
++	if (lmb_debug)
++		pr_info("(%d early reservations) ==> bootmem [%010llx - %010llx]\n", count, start, end);
+ 	for (i = 0; i < count; i++) {
+ 		struct lmb_property *r = &lmb.reserved.region[i];
+-		pr_info("  #%d [%010llx - %010llx] ", i, r->base, r->base + r->size);
++		if (lmb_debug)
++			pr_info("  #%03d [%010llx - %010llx] ", i, r->base, r->base + r->size);
+ 		final_start = max(start, r->base);
+ 		final_end = min(end, r->base + r->size);
+ 		if (final_start >= final_end) {
+-			pr_cont("\n");
++			if (lmb_debug)
++				pr_cont("\n");
+ 			continue;
+ 		}
+-		pr_cont(" ==> [%010llx - %010llx]\n", final_start, final_end);
++		if (lmb_debug)
++			pr_cont(" ==> [%010llx - %010llx]\n", final_start, final_end);
+ 		reserve_bootmem_generic(final_start, final_end - final_start, BOOTMEM_DEFAULT);
+ 	}
+ 	/* Clear them to avoid misusing ? */
 -- 
 1.6.4.2
 
