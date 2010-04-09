@@ -1,51 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585Ab0DIOCm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 10:02:42 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45367 "EHLO mx1.suse.de"
+	id S1753108Ab0DIOJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 10:09:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52637 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752811Ab0DIOB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 10:01:28 -0400
-From: Jan Blunck <jblunck@suse.de>
-To: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-       Alan Cox <alan@linux.intel.com>, Jan Blunck <jblunck@suse.de>
-Subject: [PATCH 09/12] osst: Use noop_llseek() instead of default_llseek()
-Date: Fri,  9 Apr 2010 16:00:52 +0200
-Message-Id: <1270821655-4368-10-git-send-email-jblunck@suse.de>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1270821655-4368-1-git-send-email-jblunck@suse.de>
-References: <1270821655-4368-1-git-send-email-jblunck@suse.de>
+	id S1751798Ab0DIOJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 10:09:57 -0400
+Date: Fri, 9 Apr 2010 10:09:50 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Divyesh Shah <dpshah@google.com>
+Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
+       ctalbott@google.com
+Subject: Re: [PATCH] cfq-iosched: Fix the incorrect timeslice accounting
+	with forced_dispatch.
+Message-ID: <20100409140950.GC27573@redhat.com>
+References: <20100409021054.13511.52377.stgit@austin.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100409021054.13511.52377.stgit@austin.mtv.corp.google.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__os_scsi_tape_open() suggests that llseek() doesn't work:
-"We really want to do nonseekable_open(inode, filp); here, but some
-versions of tar incorrectly call lseek on tapes and bail out if that
-fails.  So we disallow pread() and pwrite(), but permit lseeks."
+On Thu, Apr 08, 2010 at 07:19:00PM -0700, Divyesh Shah wrote:
+> When CFQ dispatches requests forcefully due to a barrier or changing iosched,
+> it runs through all cfqq's dispatching requests and then expires each queue.
+> However, it does not activate a cfqq before flushing its IOs resulting in
+> using stale values for computing slice_used.
+> This patch fixes it by calling activate queue before flushing reuqests from
+> each queue.
+> 
+> This is useful mostly for barrier requests because when the iosched is changing
+> it really doesnt matter if we have incorrect accounting since we're going to
+> break down all structures anyway.
+> 
+> We also now expire the current timeslice before moving on with the dispatch
+> to accurately account slice used for that cfqq.
+> 
+> Signed-off-by: Divyesh Shah<dpshah@google.com>
 
-Instead of using the fallback default_llseek() the driver should use
-noop_llseek() which leaves the file->f_pos untouched but succeeds.
+Thanks Divyesh. Looks good to me.
 
-Signed-off-by: Jan Blunck <jblunck@suse.de>
----
- drivers/scsi/osst.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-diff --git a/drivers/scsi/osst.c b/drivers/scsi/osst.c
-index 9dc0b9a..960e39c 100644
---- a/drivers/scsi/osst.c
-+++ b/drivers/scsi/osst.c
-@@ -5619,6 +5619,7 @@ static const struct file_operations osst_fops = {
- 	.open =         os_scsi_tape_open,
- 	.flush =        os_scsi_tape_flush,
- 	.release =      os_scsi_tape_close,
-+	.llseek =	noop_llseek,
- };
+> ---
+> Side question that is related:
+> (W/o the change to expire the current timeslice) If there is a currently active
+> queue which has no requests pending and is idling and we enter forced_dispatch,
+> it seems to me that it is pure chance that we are not hitting the BUG_ON for
+> cfqd->busy_queues in cfq_forced_dispatch(). The current active queue (which is
+> on rr and included in the busy_queues count) can appear in any order from
+> get_next_queue_forced() and it may well happen that all non-empty cfqqs were
+> dispatched from before it and by the time we get to this queue cfqd->rq_queued
+> goes down to zero and we bail out. Hence, __cfq_slice_expired() never gets
+> called for this cfqq and it is not taken off from rr which should result in
+> cfqd->busy_queues to be non-zero and the BUG_ON I mentioned earlier should be
+> hit.
+> Does this sound correct?
+
+I think cfq_slice_expired() is covering that case (in a non-intutive way).
+
+So even if you are idling on an empty queue when we start forced dispatch, it
+will continue to remain the active queue (because during flush of other queues,
+we are not making them active queues). And once the flush is over, we will call
+cfq_slice_expired() which will expire the active queue we were idling on.
+
+I suspect that additional cfq_slice_expired() call may be redundant now.
  
- static int osst_supports(struct scsi_device * SDp)
--- 
-1.6.4.2
+Vivek
 
+> 
+>  block/cfq-iosched.c |    7 +++++--
+>  1 files changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index 9102ffc..39b9a36 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -2196,10 +2196,13 @@ static int cfq_forced_dispatch(struct cfq_data *cfqd)
+>  	struct cfq_queue *cfqq;
+>  	int dispatched = 0;
+>  
+> -	while ((cfqq = cfq_get_next_queue_forced(cfqd)) != NULL)
+> +	/* Expire the timeslice of the current active queue first */
+> +	cfq_slice_expired(cfqd, 0);
+> +	while ((cfqq = cfq_get_next_queue_forced(cfqd)) != NULL) {
+> +		__cfq_set_active_queue(cfqd, cfqq);
+>  		dispatched += __cfq_forced_dispatch_cfqq(cfqq);
+> +	}
+>  
+> -	cfq_slice_expired(cfqd, 0);
+>  	BUG_ON(cfqd->busy_queues);
+>  
+>  	cfq_log(cfqd, "forced_dispatch=%d", dispatched);
