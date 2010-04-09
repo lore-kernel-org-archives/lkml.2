@@ -1,232 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323Ab0DIGvM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 02:51:12 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36471 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750878Ab0DIGvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 02:51:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,176,1270450800"; 
-   d="scan'208";a="556390080"
-Date: Fri, 9 Apr 2010 14:51:04 +0800
-From: Shaohua Li <shaohua.li@intel.com>
-To: "Wu, Fengguang" <fengguang.wu@intel.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       riel@redhat.com
-Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
-Message-ID: <20100409065104.GA21480@sli10-desk.sh.intel.com>
-References: <20100331045348.GA3396@sli10-desk.sh.intel.com>
- <20100331142708.039E.A69D9226@jp.fujitsu.com>
- <20100331145030.03A1.A69D9226@jp.fujitsu.com>
- <20100402065052.GA28027@sli10-desk.sh.intel.com>
- <20100406050325.GA17797@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100406050325.GA17797@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755879Ab0DIGvg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 02:51:36 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54110 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942Ab0DIGvc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 02:51:32 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 9 Apr 2010 15:47:30 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Nick Piggin <npiggin@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH 02/13] mm: Revalidate anon_vma in page_lock_anon_vma()
+Message-Id: <20100409154730.e9945cbc.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100409150335.80E3.A69D9226@jp.fujitsu.com>
+References: <20100409031641.GG5683@laptop>
+	<20100409135657.8f234c9a.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100409150335.80E3.A69D9226@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 06, 2010 at 01:03:25PM +0800, Wu, Fengguang wrote:
-> Shaohua,
+On Fri,  9 Apr 2010 15:34:33 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+
+> > On Fri, 9 Apr 2010 13:16:41 +1000
+> > Nick Piggin <npiggin@suse.de> wrote:
+> > 
+> > > On Thu, Apr 08, 2010 at 09:17:39PM +0200, Peter Zijlstra wrote:
+> > > > There is nothing preventing the anon_vma from being detached while we
+> > > > are spinning to acquire the lock. Most (all?) current users end up
+> > > > calling something like vma_address(page, vma) on it, which has a
+> > > > fairly good chance of weeding out wonky vmas.
+> > > > 
+> > > > However suppose the anon_vma got freed and re-used while we were
+> > > > waiting to acquire the lock, and the new anon_vma fits with the
+> > > > page->index (because that is the only thing vma_address() uses to
+> > > > determine if the page fits in a particular vma, we could end up
+> > > > traversing faulty anon_vma chains.
+> > > > 
+> > > > Close this hole for good by re-validating that page->mapping still
+> > > > holds the very same anon_vma pointer after we acquire the lock, if not
+> > > > be utterly paranoid and retry the whole operation (which will very
+> > > > likely bail, because it's unlikely the page got attached to a different
+> > > > anon_vma in the meantime).
+> > > 
+> > > Hm, looks like a bugfix? How was this supposed to be safe?
+> > > 
+> > IIUC.
+> > 
+> > Before Rik's change to anon_vma, once page->mapping is set as anon_vma | 0x1,
+> > it's not modified until the page is freed.
+> > After the patch, do_wp_page() overwrite page->mapping when it reuse existing
+> > page.
 > 
-> > +		scan = zone_nr_lru_pages(zone, sc, l);
-> > +		if (priority) {
-> > +			scan >>= priority;
-> > +			scan = (scan * fraction[file] / denominator[file]);
+> Why?
+> IIUC. page->mapping dereference in page_lock_anon_vma() makes four story.
 > 
-> Ah, the (scan * fraction[file]) may overflow in 32bit kernel!
-I updated the patch to address previous issues.
-is it possible to put this to -mm tree to see if there is anything wield happen?
+> 1. the anon_vma is valid
+> 	-> do page_referenced_one(). 
+> 2. the anon_vma is invalid and freed to buddy
+> 	-> bail out by page_mapped(), no touch anon_vma
+> 3. the anon_vma is kfreed, and not reused
+> 	-> bail out by page_mapped()
+> 4. the anon_vma is kfreed, but reused as another anon_vma
+> 	-> bail out by page_check_address()
+> 
+> Now we have to consider 5th story.
+> 
+> 5. the anon_vma is exchanged another anon_vma by do_wp_page.
+> 	-> bail out by above bailing out stuff.
+> 
+> 
+> I agree peter's patch makes sense. but I don't think Rik's patch change
+> locking rule.
+> 
+
+Hmm, I think following.
+
+Assume a page is ANON and SwapCache, and it has only one reference.
+Consider it's read-only mapped and cause do_wp_page().
+page_mapcount(page) == 1 here.
+
+    CPU0                          CPU1
+
+1. do_wp_page()
+2. .....
+3. replace anon_vma.     anon_vma = lock_page_anon_vma()
+
+So, lock_page_anon_vma() may have lock on wrong anon_vma, here.(mapcount=1)
+
+4. modify pte to writable.        do something...
+
+After lock, in CPU1, a pte of estimated address by vma_address(vma, page)
+containes pfn of the page and page_check_address() will success.
+
+I'm not sure how this is dangerouns.
+But it's possible that CPU1 cannot notice there was anon_vma replacement.
+And modifies pte withoug holding anon vma's lock which the code believes
+it's holded.
+
+Thanks,
+-Kame
 
 
 
-get_scan_ratio() calculates percentage and if the percentage is < 1%, it will
-round percentage down to 0% and cause we completely ignore scanning anon/file
-pages to reclaim memory even the total anon/file pages are very big.
 
-To avoid underflow, we don't use percentage, instead we directly calculate
-how many pages should be scaned. In this way, we should get several scanned pages
-for < 1% percent.
-
-This has some benefits:
-1. increase our calculation precision
-2. making our scan more smoothly. Without this, if percent[x] is underflow,
-shrink_zone() doesn't scan any pages and suddenly it scans all pages when priority
-is zero. With this, even priority isn't zero, shrink_zone() gets chance to scan
-some pages.
-
-Note, this patch doesn't really change logics, but just increase precision. For
-system with a lot of memory, this might slightly changes behavior. For example,
-in a sequential file read workload, without the patch, we don't swap any anon
-pages. With it, if anon memory size is bigger than 16G, we will see one anon page
-swapped. The 16G is calculated as PAGE_SIZE * priority(4096) * (fp/ap). fp/ap
-is assumed to be 1024 which is common in this workload. So the impact sounds not
-a big deal.
-
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 3ff3311..1070f83 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1519,21 +1519,52 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
- }
- 
- /*
-+ * Smallish @nr_to_scan's are deposited in @nr_saved_scan,
-+ * until we collected @swap_cluster_max pages to scan.
-+ */
-+static unsigned long nr_scan_try_batch(unsigned long nr_to_scan,
-+				       unsigned long *nr_saved_scan)
-+{
-+	unsigned long nr;
-+
-+	*nr_saved_scan += nr_to_scan;
-+	nr = *nr_saved_scan;
-+
-+	if (nr >= SWAP_CLUSTER_MAX)
-+		*nr_saved_scan = 0;
-+	else
-+		nr = 0;
-+
-+	return nr;
-+}
-+
-+/*
-  * Determine how aggressively the anon and file LRU lists should be
-  * scanned.  The relative value of each set of LRU lists is determined
-  * by looking at the fraction of the pages scanned we did rotate back
-  * onto the active list instead of evict.
-  *
-- * percent[0] specifies how much pressure to put on ram/swap backed
-- * memory, while percent[1] determines pressure on the file LRUs.
-+ * nr[0] = anon pages to scan; nr[1] = file pages to scan
-  */
--static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
--					unsigned long *percent)
-+static void get_scan_count(struct zone *zone, struct scan_control *sc,
-+					unsigned long *nr, int priority)
- {
- 	unsigned long anon, file, free;
- 	unsigned long anon_prio, file_prio;
- 	unsigned long ap, fp;
- 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
-+	u64 fraction[2], denominator;
-+	enum lru_list l;
-+	int noswap = 0;
-+
-+	/* If we have no swap space, do not bother scanning anon pages. */
-+	if (!sc->may_swap || (nr_swap_pages <= 0)) {
-+		noswap = 1;
-+		fraction[0] = 0;
-+		fraction[1] = 1;
-+		denominator = 1;
-+		goto out;
-+	}
- 
- 	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
- 		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
-@@ -1545,9 +1576,10 @@ static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
- 		/* If we have very few page cache pages,
- 		   force-scan anon pages. */
- 		if (unlikely(file + free <= high_wmark_pages(zone))) {
--			percent[0] = 100;
--			percent[1] = 0;
--			return;
-+			fraction[0] = 1;
-+			fraction[1] = 0;
-+			denominator = 1;
-+			goto out;
- 		}
- 	}
- 
-@@ -1594,29 +1626,22 @@ static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
- 	fp = (file_prio + 1) * (reclaim_stat->recent_scanned[1] + 1);
- 	fp /= reclaim_stat->recent_rotated[1] + 1;
- 
--	/* Normalize to percentages */
--	percent[0] = 100 * ap / (ap + fp + 1);
--	percent[1] = 100 - percent[0];
--}
--
--/*
-- * Smallish @nr_to_scan's are deposited in @nr_saved_scan,
-- * until we collected @swap_cluster_max pages to scan.
-- */
--static unsigned long nr_scan_try_batch(unsigned long nr_to_scan,
--				       unsigned long *nr_saved_scan)
--{
--	unsigned long nr;
--
--	*nr_saved_scan += nr_to_scan;
--	nr = *nr_saved_scan;
--
--	if (nr >= SWAP_CLUSTER_MAX)
--		*nr_saved_scan = 0;
--	else
--		nr = 0;
-+	fraction[0] = ap;
-+	fraction[1] = fp;
-+	denominator = ap + fp + 1;
-+out:
-+	for_each_evictable_lru(l) {
-+		int file = is_file_lru(l);
-+		unsigned long scan;
- 
--	return nr;
-+		scan = zone_nr_lru_pages(zone, sc, l);
-+		if (priority || noswap) {
-+			scan >>= priority;
-+			scan = div64_u64(scan * fraction[file], denominator);
-+		}
-+		nr[l] = nr_scan_try_batch(scan,
-+					  &reclaim_stat->nr_saved_scan[l]);
-+	}
- }
- 
- /*
-@@ -1627,33 +1652,11 @@ static void shrink_zone(int priority, struct zone *zone,
- {
- 	unsigned long nr[NR_LRU_LISTS];
- 	unsigned long nr_to_scan;
--	unsigned long percent[2];	/* anon @ 0; file @ 1 */
- 	enum lru_list l;
- 	unsigned long nr_reclaimed = sc->nr_reclaimed;
- 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
--	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
--	int noswap = 0;
--
--	/* If we have no swap space, do not bother scanning anon pages. */
--	if (!sc->may_swap || (nr_swap_pages <= 0)) {
--		noswap = 1;
--		percent[0] = 0;
--		percent[1] = 100;
--	} else
--		get_scan_ratio(zone, sc, percent);
- 
--	for_each_evictable_lru(l) {
--		int file = is_file_lru(l);
--		unsigned long scan;
--
--		scan = zone_nr_lru_pages(zone, sc, l);
--		if (priority || noswap) {
--			scan >>= priority;
--			scan = (scan * percent[file]) / 100;
--		}
--		nr[l] = nr_scan_try_batch(scan,
--					  &reclaim_stat->nr_saved_scan[l]);
--	}
-+	get_scan_count(zone, sc, nr, priority);
- 
- 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
- 					nr[LRU_INACTIVE_FILE]) {
