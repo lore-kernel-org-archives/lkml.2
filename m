@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757614Ab0DIKXM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 06:23:12 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:38771 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754188Ab0DIKXH (ORCPT
+	id S1757649Ab0DIKdw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 06:33:52 -0400
+Received: from mail-gx0-f217.google.com ([209.85.217.217]:50688 "EHLO
+	mail-gx0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754733Ab0DIKdu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 06:23:07 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:date:message-id:subject:from:to:cc:
-	content-type:x-system-of-record;
-	b=jbj+soBtKIPAw0MNocBnQU9kSMnHpB+lfa4rJ1jCSyZW9K0KKwlbPWdrQ2HsPbZDn
-	vmwDpN9yWAkSqSli5az1g==
+	Fri, 9 Apr 2010 06:33:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=P20sH3IgBa2gdeZfn/0ztkX1UdG5LQRdLT5FXwnGb8upMZCgB9EXlvnT6sqH8LWCsl
+         idSeYR39MgkMZSMYpyKE4V0j7OCefHS7Fk4MSz17aPjPC/qUwwl40oB9/dxN9S0EbYBz
+         aqugFQPHgw+D4AfWqP2fNF758LEBgs4g75xBE=
 MIME-Version: 1.0
-Date: Fri, 9 Apr 2010 12:22:59 +0200
-Message-ID: <q2lbd4cb8901004090322g1efb36cesc39a6848ab403e9f@mail.gmail.com>
-Subject: [BUG] perf_events: PERF_FORMAT_GROUP fails
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-       davem@davemloft.net, robert.richter@amd.com,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com,
-       Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <20100409101503.5051.3805.sendpatchset@localhost.localdomain>
+References: <20100409101442.5051.99812.sendpatchset@localhost.localdomain> 
+	<20100409101503.5051.3805.sendpatchset@localhost.localdomain>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Fri, 9 Apr 2010 18:33:29 +0800
+Message-ID: <s2w412e6f7f1004090333g3b23eb94udb1e6cc3939a07e5@mail.gmail.com>
+Subject: Re: [Patch 2/3] sysctl: add proc_do_large_bitmap
+To: Amerigo Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Octavian Purdila <opurdila@ixiacom.com>,
+       ebiederm@xmission.com, Eric Dumazet <eric.dumazet@gmail.com>,
+       netdev@vger.kernel.org, Neil Horman <nhorman@tuxdriver.com>,
+       David Miller <davem@davemloft.net>
 Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Apr 9, 2010 at 6:11 PM, Amerigo Wang <amwang@redhat.com> wrote:
+> From: Octavian Purdila <opurdila@ixiacom.com>
+>
+> The new function can be used to read/write large bitmaps via /proc. A
+> comma separated range format is used for compact output and input
+> (e.g. 1,3-4,10-10).
+>
+> Writing into the file will first reset the bitmap then update it
+> based on the given input.
+>
 
-I have been running some tests where I count and I am
-using PERF_FORMAT_GROUP. I want to extract all counts
-in one read().
+We have bitmap_scnprintf() and bitmap_parse_user(), why invent a new suite?
 
-It turns out that this does not work as expected. I would expect
-that if I create an event group, I can ALWAYS read it with a single
-read(). Turns out, it depends on the state of the events.
 
-If the events are still attached to a task then the read() returns
-the expected data  which is:
-
-/*
- *      { u64           nr;
- *        { u64         time_enabled; } && PERF_FORMAT_ENABLED
- *        { u64         time_running; } && PERF_FORMAT_RUNNING
- *        { u64         value;
- *          { u64       id;           } && PERF_FORMAT_ID
- *        }             cntr[nr];
- */
-
-But if you read once the monitored task has died, i.e., events are detached,
-then all you get is the data for the leader of the group yet the value
-of nr still
-shows all the members of the group.
-
-Here is an example with 2 events + ENABLED+RUNNING:
-  - task active, events attached: read()=40 (5* 8,
-5=nr+enabled+running+2*value), nr=2
-  - task died, event detached: read()=32 (4*8 =
-nr+enabled+running+value) yet nr=2
-
-Seems to me the events need to be linked in sibling_list regardless of the state
-they are in. And there is mismatch in how nr_siblings and sibling_list
-are managed.
+-- 
+Regards，
+Changli Gao(xiaosuo@gmail.com)
