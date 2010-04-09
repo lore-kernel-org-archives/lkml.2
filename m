@@ -1,210 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab0DIFRj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 01:17:39 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:60455 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188Ab0DIFRd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 01:17:33 -0400
-From: dvhltc@us.ibm.com
-To: linux-kernel@vger.kernel.org
-Cc: Darren Hart <dvhltc@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       "Peter W. Morreale" <pmorreale@novell.com>,
-       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Gregory Haskins <ghaskins@novell.com>,
-       Sven-Thorsten Dietrich <sdietrich@novell.com>,
-       Chris Mason <chris.mason@oracle.com>,
-       John Cooper <john.cooper@third-harmonic.com>,
-       Chris Wright <chrisw@sous-sol.org>, Ulrich Drepper <drepper@gmail.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, Avi Kivity <avi@redhat.com>
-Subject: [PATCH 3/4] futex: refactor futex_lock_pi_atomic
-Date: Thu,  8 Apr 2010 22:15:20 -0700
-Message-Id: <1270790121-16317-4-git-send-email-dvhltc@us.ibm.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1270790121-16317-1-git-send-email-dvhltc@us.ibm.com>
-References: <1270790121-16317-1-git-send-email-dvhltc@us.ibm.com>
+	id S1754303Ab0DIFVJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 01:21:09 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55482 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754103Ab0DIFVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 01:21:04 -0400
+From: Nikanth Karthikesan <knikanth@suse.de>
+Organization: suse.de
+To: Jens Axboe <jens.axboe@oracle.com>
+Subject: Re: [PATCH] loop: Update mtime when writing using aops
+Date: Fri, 9 Apr 2010 10:52:32 +0530
+User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-desktop; KDE/4.3.5; x86_64; ; )
+Cc: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <201004081551.37824.knikanth@suse.de> <201004081515.56161.tvrtko.ursulin@sophos.com> <20100408193838.GY10103@kernel.dk>
+In-Reply-To: <20100408193838.GY10103@kernel.dk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004091052.32518.knikanth@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Darren Hart <dvhltc@us.ibm.com>
+On Friday 09 April 2010 01:08:38 Jens Axboe wrote:
+> On Thu, Apr 08 2010, Tvrtko Ursulin wrote:
+> > On Thursday 08 April 2010 13:45:39 Jens Axboe wrote:
+> > > On Thu, Apr 08 2010, Nikanth Karthikesan wrote:
+> > > > Update mtime when writing to backing filesystem using the address
+> > > > space operations write_begin and write_end.
+> > >
+> > > You forgot to include a 'why' :-)
+> > >
+> > > Not that I disagree with the patch, just curious what made you make the
+> > > change.
+> >
 
-Prepare for FUTEX_LOCK by refactoring futex_lock_pi_atomic() into
-lock_futex_atomic() and lock_pi_futex_atomic(). The name change is meant to
-reflect the naming convention in futex.c that futex_*() functions map directly
-to futex op codes and the others are internal helper functions.
+Sorry, for the bad terse changelog.
 
-Signed-off-by: Darren Hart <dvhltc@us.ibm.com>
+> > You mean how the bug was found? I originally reported this problem
+> > against openSUSE 11.2 kernel, where when you have a dm-crypt loop
+> > filesystem the container file modification time does not get updated with
+> > use. Consequence of that is that backup runs would miss the fact
+> > container has changed.
+> >
+> > Maybe one could argue it is a security feature in this scenario :), but
+> > as the problem turns out to be unrelated to the crypto case, rather
+> > contained in the loop driver itself, it looks like that would not hold.
+> >
+> :-)
+> 
+> I suppose you could update the mtime on tear down, since then it would
+> also be safe to actually backup. But same difference in the end I
+> suppose, I'll add the patch.
+> 
 
-===================================================================
----
- kernel/futex.c |   79 +++++++++++++++++++++++++++++++++++++------------------
- 1 files changed, 53 insertions(+), 26 deletions(-)
+If we update mtime only during tear down, we might miss to backup after a 
+system crash or scenarios where the loop device is not deleted after use 
+during backup. Also when relatime is used, it is better to change mtime on 
+time. :-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 2ae18cd..8c1bb16 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -625,30 +625,23 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
- }
- 
- /**
-- * futex_lock_pi_atomic() - Atomic work required to acquire a pi aware futex
-- * @uaddr:		the pi futex user address
-- * @hb:			the pi futex hash bucket
-- * @key:		the futex key associated with uaddr and hb
-- * @ps:			the pi_state pointer where we store the result of the
-- *			lookup
-- * @task:		the task to perform the atomic lock work for.  This will
-- *			be "current" except in the case of requeue pi.
-- * @set_waiters:	force setting the FUTEX_WAITERS bit (1) or not (0)
-+ * lock_futex_atomic() - Try to acquire the futex lock atomically
-+ * @uaddr:       user address of the futex
-+ * @task:        the task to perform the atomic lock work for.
-+ * @set_waiters: force setting the FUTEX_WAITERS bit (1) or not (0)
-+ *
-+ * The hb->lock shall be held by the caller.
-  *
-  * Returns:
-  *  0 - ready to wait
-  *  1 - acquired the lock
-  * <0 - error
-- *
-- * The hb->lock and futex_key refs shall be held by the caller.
-  */
--static int futex_lock_pi_atomic(u32 __user *uaddr, struct futex_hash_bucket *hb,
--				union futex_key *key,
--				struct futex_pi_state **ps,
--				struct task_struct *task, int set_waiters)
-+static int lock_futex_atomic(u32 __user *uaddr, struct task_struct *task,
-+                             int set_waiters)
- {
--	int lock_taken, ret, ownerdied = 0;
- 	u32 uval, newval, curval;
-+	int lock_taken, ret;
- 
- retry:
- 	ret = lock_taken = 0;
-@@ -695,10 +688,10 @@ retry:
- 	 *
- 	 * This is safe as we are protected by the hash bucket lock !
- 	 */
--	if (unlikely(ownerdied || !(curval & FUTEX_TID_MASK))) {
-+	if (unlikely((curval & FUTEX_OWNER_DIED) ||
-+	             !(curval & FUTEX_TID_MASK))) {
- 		/* Keep the OWNER_DIED bit */
- 		newval = (curval & ~FUTEX_TID_MASK) | task_pid_vnr(task);
--		ownerdied = 0;
- 		lock_taken = 1;
- 	}
- 
-@@ -715,10 +708,46 @@ retry:
- 	if (unlikely(lock_taken))
- 		return 1;
- 
-+	return ret;
-+}
-+
-+/**
-+ * lock_pi_futex_atomic() - Atomic work required to acquire a pi aware futex
-+ * @uaddr:		the pi futex user address
-+ * @hb:			the pi futex hash bucket
-+ * @key:		the futex key associated with uaddr and hb
-+ * @ps:			the pi_state pointer where we store the result of the
-+ *			lookup
-+ * @task:		the task to perform the atomic lock work for.  This will
-+ *			be "current" except in the case of requeue pi.
-+ * @set_waiters:	force setting the FUTEX_WAITERS bit (1) or not (0)
-+ *
-+ * Returns:
-+ *  0 - ready to wait
-+ *  1 - acquired the lock
-+ * <0 - error
-+ *
-+ * The hb->lock and futex_key refs shall be held by the caller.
-+ */
-+static int lock_pi_futex_atomic(u32 __user *uaddr, struct futex_hash_bucket *hb,
-+				union futex_key *key,
-+				struct futex_pi_state **ps,
-+				struct task_struct *task, int set_waiters)
-+{
-+	u32 uval;
-+	int ret;
-+
-+retry:
-+	ret = lock_futex_atomic(uaddr, task, set_waiters);
-+	if (ret)
-+		return ret;
-+
- 	/*
- 	 * We dont have the lock. Look up the PI state (or create it if
- 	 * we are the first waiter):
- 	 */
-+	if (get_futex_value_locked(&uval, uaddr))
-+		return -EFAULT;
- 	ret = lookup_pi_state(uval, hb, key, ps);
- 
- 	if (unlikely(ret)) {
-@@ -729,7 +758,7 @@ retry:
- 			 * OWNER_DIED bit is set to figure out whether
- 			 * this is a robust futex or not.
- 			 */
--			if (get_futex_value_locked(&curval, uaddr))
-+			if (get_futex_value_locked(&uval, uaddr))
- 				return -EFAULT;
- 
- 			/*
-@@ -737,10 +766,8 @@ retry:
- 			 * futex. The code above will take the futex
- 			 * and return happy.
- 			 */
--			if (curval & FUTEX_OWNER_DIED) {
--				ownerdied = 1;
-+			if (uval & FUTEX_OWNER_DIED)
- 				goto retry;
--			}
- 		default:
- 			break;
- 		}
-@@ -1100,7 +1127,7 @@ void requeue_pi_wake_futex(struct futex_q *q, union futex_key *key,
-  *
-  * Try and get the lock on behalf of the top waiter if we can do it atomically.
-  * Wake the top waiter if we succeed.  If the caller specified set_waiters,
-- * then direct futex_lock_pi_atomic() to force setting the FUTEX_WAITERS bit.
-+ * then direct lock_pi_futex_atomic() to force setting the FUTEX_WAITERS bit.
-  * hb1 and hb2 must be held by the caller.
-  *
-  * Returns:
-@@ -1124,7 +1151,7 @@ static int futex_proxy_trylock_atomic(u32 __user *pifutex,
- 	/*
- 	 * Find the top_waiter and determine if there are additional waiters.
- 	 * If the caller intends to requeue more than 1 waiter to pifutex,
--	 * force futex_lock_pi_atomic() to set the FUTEX_WAITERS bit now,
-+	 * force lock_pi_futex_atomic() to set the FUTEX_WAITERS bit now,
- 	 * as we have means to handle the possible fault.  If not, don't set
- 	 * the bit unecessarily as it will force the subsequent unlock to enter
- 	 * the kernel.
-@@ -1144,7 +1171,7 @@ static int futex_proxy_trylock_atomic(u32 __user *pifutex,
- 	 * the contended case or if set_waiters is 1.  The pi_state is returned
- 	 * in ps in contended cases.
- 	 */
--	ret = futex_lock_pi_atomic(pifutex, hb2, key2, ps, top_waiter->task,
-+	ret = lock_pi_futex_atomic(pifutex, hb2, key2, ps, top_waiter->task,
- 				   set_waiters);
- 	if (ret == 1)
- 		requeue_pi_wake_futex(top_waiter, key2, hb2);
-@@ -1925,7 +1952,7 @@ retry:
- retry_private:
- 	hb = queue_lock(&q);
- 
--	ret = futex_lock_pi_atomic(uaddr, hb, &q.key, &q.pi_state, current, 0);
-+	ret = lock_pi_futex_atomic(uaddr, hb, &q.key, &q.pi_state, current, 0);
- 	if (unlikely(ret)) {
- 		switch (ret) {
- 		case 1:
--- 
-1.6.3.3
+Thanks for taking the patch.
 
+Thanks
+Nikanth
