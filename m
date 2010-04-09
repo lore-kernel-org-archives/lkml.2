@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab0DIGHM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 02:07:12 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:25743 "EHLO
+	id S1757062Ab0DIGOK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 02:14:10 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:25872 "EHLO
 	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942Ab0DIGHF (ORCPT
+	with ESMTP id S1755231Ab0DIGHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 02:07:05 -0400
+	Fri, 9 Apr 2010 02:07:12 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -15,73 +15,97 @@ Cc: David Miller <davem@davemloft.net>,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 06/39] lmb: Seperate __lmb_find_base() from __lmb_alloc_base()
-Date: Thu,  8 Apr 2010 23:03:35 -0700
-Message-Id: <1270793048-23796-7-git-send-email-yinghai@kernel.org>
+       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       Becky Bruce <beckyb@kernel.crashing.org>
+Subject: [PATCH 01/39] swiotlb: Use page alignment for early buffer allocation
+Date: Thu,  8 Apr 2010 23:03:30 -0700
+Message-Id: <1270793048-23796-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
 References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4BBEC3E1.0088,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090201.4BBEC3E3.0011,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So We can construct one generic __find_lmb_area() later
+We could call free_bootmem_late() if swiotlb is not used, and
+it will shrink to page alignement.
+
+So alloc them with page alignment at first, to avoid lose two pages
+
+before patch:
+[    0.000000]     lmb_reserve_area: [00d3600000, 00d7600000]   swiotlb buffer
+[    0.000000]     lmb_reserve_area: [00d7e7ef40, 00d7e9ef40]     swiotlb list
+[    0.000000]     lmb_reserve_area: [00d7e3ef40, 00d7e7ef40]  swiotlb orig_ad
+[    0.000000]     lmb_reserve_area: [000008a000, 0000092000]  swiotlb overflo
+
+after patch will get
+[    0.000000]     lmb_reserve_area: [00d3600000, 00d7600000]   swiotlb buffer
+[    0.000000]     lmb_reserve_area: [00d7e7e000, 00d7e9e000]     swiotlb list
+[    0.000000]     lmb_reserve_area: [00d7e3e000, 00d7e7e000]  swiotlb orig_ad
+[    0.000000]     lmb_reserve_area: [000008a000, 0000092000]  swiotlb overflo
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: Becky Bruce <beckyb@kernel.crashing.org>
 ---
- mm/lmb.c |   21 +++++++++++++++++----
- 1 files changed, 17 insertions(+), 4 deletions(-)
+ lib/swiotlb.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/mm/lmb.c b/mm/lmb.c
-index 65b62dc..392d805 100644
---- a/mm/lmb.c
-+++ b/mm/lmb.c
-@@ -393,7 +393,7 @@ u64 __init lmb_alloc_base(u64 size, u64 align, u64 max_addr)
- 	return alloc;
- }
+diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+index 5fddf72..1bd4258 100644
+--- a/lib/swiotlb.c
++++ b/lib/swiotlb.c
+@@ -159,7 +159,7 @@ swiotlb_init_with_default_size(size_t default_size, int verbose)
+ 	/*
+ 	 * Get IO TLB memory from the low pages
+ 	 */
+-	io_tlb_start = alloc_bootmem_low_pages(bytes);
++	io_tlb_start = alloc_bootmem_low_pages(PAGE_ALIGN(bytes));
+ 	if (!io_tlb_start)
+ 		panic("Cannot allocate SWIOTLB buffer");
+ 	io_tlb_end = io_tlb_start + bytes;
+@@ -169,16 +169,16 @@ swiotlb_init_with_default_size(size_t default_size, int verbose)
+ 	 * to find contiguous free memory regions of size up to IO_TLB_SEGSIZE
+ 	 * between io_tlb_start and io_tlb_end.
+ 	 */
+-	io_tlb_list = alloc_bootmem(io_tlb_nslabs * sizeof(int));
++	io_tlb_list = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
+ 	for (i = 0; i < io_tlb_nslabs; i++)
+  		io_tlb_list[i] = IO_TLB_SEGSIZE - OFFSET(i, IO_TLB_SEGSIZE);
+ 	io_tlb_index = 0;
+-	io_tlb_orig_addr = alloc_bootmem(io_tlb_nslabs * sizeof(phys_addr_t));
++	io_tlb_orig_addr = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
  
--u64 __init __lmb_alloc_base(u64 size, u64 align, u64 max_addr)
-+static u64 __init __lmb_find_base(u64 size, u64 align, u64 max_addr)
- {
- 	long i, j;
- 	u64 base = 0;
-@@ -426,8 +426,6 @@ u64 __init __lmb_alloc_base(u64 size, u64 align, u64 max_addr)
- 			j = lmb_overlaps_region(&lmb.reserved, base, size);
- 			if (j < 0) {
- 				/* this area isn't reserved, take it */
--				if (lmb_add_region(&lmb.reserved, base, size) < 0)
--					return 0;
- 				return base;
- 			}
- 			res_base = lmb.reserved.region[j].base;
-@@ -436,7 +434,22 @@ u64 __init __lmb_alloc_base(u64 size, u64 align, u64 max_addr)
- 			base = lmb_align_down(res_base - size, align);
- 		}
+ 	/*
+ 	 * Get the overflow emergency buffer
+ 	 */
+-	io_tlb_overflow_buffer = alloc_bootmem_low(io_tlb_overflow);
++	io_tlb_overflow_buffer = alloc_bootmem_low_pages(PAGE_ALIGN(io_tlb_overflow));
+ 	if (!io_tlb_overflow_buffer)
+ 		panic("Cannot allocate SWIOTLB overflow buffer!\n");
+ 	if (verbose)
+@@ -304,13 +304,13 @@ void __init swiotlb_free(void)
+ 			   get_order(io_tlb_nslabs << IO_TLB_SHIFT));
+ 	} else {
+ 		free_bootmem_late(__pa(io_tlb_overflow_buffer),
+-				  io_tlb_overflow);
++				  PAGE_ALIGN(io_tlb_overflow));
+ 		free_bootmem_late(__pa(io_tlb_orig_addr),
+-				  io_tlb_nslabs * sizeof(phys_addr_t));
++				  PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
+ 		free_bootmem_late(__pa(io_tlb_list),
+-				  io_tlb_nslabs * sizeof(int));
++				  PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
+ 		free_bootmem_late(__pa(io_tlb_start),
+-				  io_tlb_nslabs << IO_TLB_SHIFT);
++				  PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
  	}
--	return 0;
-+	return -1ULL;
-+}
-+
-+u64 __init __lmb_alloc_base(u64 size, u64 align, u64 max_addr)
-+{
-+	u64 base;
-+
-+	base = __lmb_find_base(size, align, max_addr);
-+
-+	if (base == -1ULL)
-+		return 0;
-+
-+	if (lmb_add_region(&lmb.reserved, base, size) < 0)
-+		return 0;
-+
-+	return base;
  }
  
- /* You must call lmb_analyze() before this. */
 -- 
 1.6.4.2
 
