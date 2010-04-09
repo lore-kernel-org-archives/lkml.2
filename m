@@ -1,98 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546Ab0DIM5m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 08:57:42 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:41463 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431Ab0DIM5i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 08:57:38 -0400
-Subject: Re: [PATCH 02/13] mm: Revalidate anon_vma in page_lock_anon_vma()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-       Nick Piggin <npiggin@suse.de>
-In-Reply-To: <20100408192722.687144862@chello.nl>
-References: <20100408191737.296180458@chello.nl>
-	 <20100408192722.687144862@chello.nl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Apr 2010 14:57:34 +0200
-Message-ID: <1270817854.20295.3356.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1752529Ab0DIM75 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 08:59:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32958 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751431Ab0DIM7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 08:59:55 -0400
+Date: Fri, 9 Apr 2010 08:58:32 -0400
+From: Jarod Wilson <jarod@redhat.com>
+To: Andy Walls <awalls@radix.net>
+Cc: James Hogan <james@albanarts.com>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       Jon Smirl <jonsmirl@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Krzysztof Halasa <khc@pm.waw.pl>,
+       hermann pitton <hermann-pitton@arcor.de>,
+       Christoph Bartelmus <lirc@bartelmus.de>, j@jannau.net,
+       jarod@wilsonet.com, kraxel@redhat.com, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+       superm1@ubuntu.com
+Subject: Re: [RFC] What are the goals for the architecture of an in-kernel IR
+ system?
+Message-ID: <20100409125832.GA22814@redhat.com>
+References: <9e4733910912060952h4aad49dake8e8486acb6566bc@mail.gmail.com>
+ <9e4733910912151338n62b30af5i35f8d0963e6591c@mail.gmail.com>
+ <4BAB7659.1040408@redhat.com>
+ <201004090821.10435.james@albanarts.com>
+ <1270810226.3764.34.camel@palomino.walls.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1270810226.3764.34.camel@palomino.walls.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-08 at 21:17 +0200, Peter Zijlstra wrote:
+On Fri, Apr 09, 2010 at 06:50:26AM -0400, Andy Walls wrote:
+> On Fri, 2010-04-09 at 08:21 +0100, James Hogan wrote:
+> > Hi,
+> > 
+> > On Thursday 25 March 2010 14:42:33 Mauro Carvalho Chehab wrote:
+> > > Comments?
+> > 
+> > I haven't seen this mentioned yet, but are there any plans for a sysfs 
+> > interface to set up waking from suspend/standby on a particular IR scancode 
+> > (for hardware decoders that support masking of comparing of the IR data), kind 
+> > of analagous to the rtc framework's wakealarm sysfs file?
+> 
+> This requires support at the hardware level.  (You can't have CPU code
+> running to decode IR pulses when your CPU is "asleep".)
+> 
+> I know of two video chips supported under linux that provide such a
+> function.
+> 
+> Wake-up from IR for these chips will rely on the kernel PCIe or USB
+> infrastructure supporting PCIe or USB Power Managment Events from
+> hardware.  It will take a huge amount of work and time to get the
+> respective linux video drivers to properly support suspend/resume
+> properly.
+> 
+> If you're waiting for me to get that working, I'll advise you to plan on
+> getting off the couch and pushing the power switch for some time to
+> come. ;)
+> 
+> 
+> 
+> 
+> The MCE-USB, I *speculate*, can perform wakes.  It's driver would need
+> to support that, if it can.
 
-> Index: linux-2.6/mm/rmap.c
-> ===================================================================
-> --- linux-2.6.orig/mm/rmap.c
-> +++ linux-2.6/mm/rmap.c
-> @@ -294,6 +294,7 @@ struct anon_vma *page_lock_anon_vma(stru
->  	unsigned long anon_mapping;
->  
->  	rcu_read_lock();
-> +again:
->  	anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
->  	if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)
->  		goto out;
-> @@ -302,6 +303,12 @@ struct anon_vma *page_lock_anon_vma(stru
->  
->  	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
->  	spin_lock(&anon_vma->lock);
-> +
-> +	if (page_rmapping(page) != anon_vma) {
-> +		spin_unlock(&anon_vma->lock);
-> +		goto again;
-> +	}
-> +
->  	return anon_vma;
->  out:
->  	rcu_read_unlock();
+Yep, it can perform wakes, and the current lirc_mceusb does support it,
+though it requires some screwing around with echoing something into
+somewhere in sysfs (for the usb controller its attached to) to enable it,
+from what I recall... Making it Just Work would be a good idea.
 
-
-
-OK, so I'm not quite sure about this anymore... this locking is quite,..
-umh,. interesting.
-
-We have:
-
- - page_remove_rmap() - which decrements page->_mapcount but does not
-clear page->mapping. Even though both it and page_add_anon_rmap()
-require pte_lock, there is no guarantee these are the same locks, so
-these can indeed race.
-
-So there is indeed a possibility for page->mapping to change, but
-holding anon_vma->lock won't make a difference.
-
- - anon_vma->lock - this does protect vma_anon_link/unlink like things
-and is held during rmap walks, it only protects the list.
-
- - SLAB_DESTROY_BY_RCU - only guarantees we can deref anon_vma, not that
-we'll find the one we were looking for.
-
- - we generally unmap/zap before unlink/free - so this should not see
-pages race with anon_vma freeing (except when someone has a page ref),
-however on anon_vma merges we seem to simply unlink the next one,
-without updating potential pages referencing it?
-
- - KSM seems to not do anything that swap doesn't also do (but I didn't
-look too closely).
-
- - page migration seems terribly broken..
-
-
-As it stands I don't see a reliable way to obtain an anon_vma,
-vma_address() + page_check_address() things are indeed enough, but not
-everybody seems to do that.
+-- 
+Jarod Wilson
+jarod@redhat.com
 
