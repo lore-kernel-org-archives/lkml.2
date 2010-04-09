@@ -1,132 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853Ab0DIGVz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 02:21:55 -0400
-Received: from ozlabs.org ([203.10.76.45]:46538 "EHLO ozlabs.org"
+	id S1755249Ab0DIGVW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 02:21:22 -0400
+Received: from ozlabs.org ([203.10.76.45]:46431 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755681Ab0DIGVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 02:21:24 -0400
+	id S1750806Ab0DIGVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 02:21:20 -0400
 To: Peter Zijlstra <peterz@infradead.org>,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>
 From: Michael Neuling <mikey@neuling.org>
 Date: Fri, 09 Apr 2010 16:21:18 +1000
-Subject: [PATCH 4/5] sched: Mark the balance type for use in need_active_balance()
+Subject: [PATCH 1/5] sched: fix capacity calculations for SMT4
 In-Reply-To: <1270794078.794237.347827867455.qpush@pale>
 CC: <linuxppc-dev@ozlabs.org>, <linux-kernel@vger.kernel.org>,
        Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>,
        Gautham R Shenoy <ego@in.ibm.com>
-Message-Id: <20100409062119.040B0CBB6F@localhost.localdomain>
+Message-Id: <20100409062118.D4096CBB6C@localhost.localdomain>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-need_active_balance() gates the asymmetric packing based due to power
-save logic, but for packing we don't care.
+When calculating capacity we use the following calculation:
 
-This marks the type of balanace we are attempting to do perform from
-f_b_g() and stops need_active_balance() power save logic gating a
-balance in the asymmetric packing case.
+       capacity = DIV_ROUND_CLOSEST(power, SCHED_LOAD_SCALE);
+
+In SMT2, power will be 1178/2 (provided we are not scaling power with
+freq say) and SCHED_LOAD_SCALE will be 1024, resulting in capacity
+being 1.
+
+With SMT4 however, power will be 1178/4, hence capacity will end up as
+0.
+
+Fix this by ensuring capacity is always at least 1 after this
+calculation.
 
 Signed-off-by: Michael Neuling <mikey@neuling.org>
+---
+I'm not sure this is the correct fix but this works for me.  
+Original post here: 
+  http://lkml.org/lkml/2010/3/30/884
 
 ---
 
- kernel/sched_fair.c |   24 +++++++++++++++++++-----
- 1 file changed, 19 insertions(+), 5 deletions(-)
+ kernel/sched_fair.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
 Index: linux-2.6-ozlabs/kernel/sched_fair.c
 ===================================================================
 --- linux-2.6-ozlabs.orig/kernel/sched_fair.c
 +++ linux-2.6-ozlabs/kernel/sched_fair.c
-@@ -91,6 +91,13 @@ const_debug unsigned int sysctl_sched_mi
+@@ -1482,6 +1482,7 @@ static int select_task_rq_fair(struct ta
+ 			}
  
- static const struct sched_class fair_sched_class;
+ 			capacity = DIV_ROUND_CLOSEST(power, SCHED_LOAD_SCALE);
++			capacity = max(capacity, 1UL);
  
-+enum balance_type {
-+	BALANCE_NONE = 0,
-+	BALANCE_LOAD,
-+	BALANCE_POWER,
-+	BALANCE_PACKING
-+};
-+
- /**************************************************************
-  * CFS operations on generic schedulable entities:
-  */
-@@ -2783,7 +2790,8 @@ static inline void calculate_imbalance(s
- static struct sched_group *
- find_busiest_group(struct sched_domain *sd, int this_cpu,
- 		   unsigned long *imbalance, enum cpu_idle_type idle,
--		   int *sd_idle, const struct cpumask *cpus, int *balance)
-+		   int *sd_idle, const struct cpumask *cpus, int *balance,
-+		   enum balance_type *bt)
- {
- 	struct sd_lb_stats sds;
+ 			if (tmp->flags & SD_POWERSAVINGS_BALANCE)
+ 				nr_running /= 2;
+@@ -2488,6 +2489,7 @@ static inline void update_sg_lb_stats(st
  
-@@ -2808,6 +2816,7 @@ find_busiest_group(struct sched_domain *
- 	if (!(*balance))
- 		goto ret;
- 
-+	*bt = BALANCE_PACKING;
- 	if ((idle == CPU_IDLE || idle == CPU_NEWLY_IDLE) &&
- 	    check_asym_packing(sd, &sds, this_cpu, imbalance))
- 		return sds.busiest;
-@@ -2828,6 +2837,7 @@ find_busiest_group(struct sched_domain *
- 
- 	/* Looks like there is an imbalance. Compute it */
- 	calculate_imbalance(&sds, this_cpu, imbalance);
-+	*bt = BALANCE_LOAD;
- 	return sds.busiest;
- 
- out_balanced:
-@@ -2835,10 +2845,12 @@ out_balanced:
- 	 * There is no obvious imbalance. But check if we can do some balancing
- 	 * to save power.
- 	 */
-+	*bt = BALANCE_POWER;
- 	if (check_power_save_busiest_group(&sds, this_cpu, imbalance))
- 		return sds.busiest;
- ret:
- 	*imbalance = 0;
-+	*bt = BALANCE_NONE;
- 	return NULL;
+ 	sgs->group_capacity =
+ 		DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
++	sgs->group_capacity = max(sgs->group_capacity, 1UL);
  }
  
-@@ -2899,9 +2911,10 @@ find_busiest_queue(struct sched_group *g
- /* Working cpumask for load_balance and load_balance_newidle. */
- static DEFINE_PER_CPU(cpumask_var_t, load_balance_tmpmask);
+ /**
+@@ -2795,9 +2797,11 @@ find_busiest_queue(struct sched_group *g
  
--static int need_active_balance(struct sched_domain *sd, int sd_idle, int idle)
-+static int need_active_balance(struct sched_domain *sd, int sd_idle, int idle,
-+			       enum balance_type *bt)
- {
--	if (idle == CPU_NEWLY_IDLE) {
-+	if (idle == CPU_NEWLY_IDLE && *bt != BALANCE_PACKING) {
- 		/*
- 		 * The only task running in a non-idle cpu can be moved to this
- 		 * cpu in an attempt to completely freeup the other CPU
-@@ -2946,6 +2959,7 @@ static int load_balance(int this_cpu, st
- 	struct rq *busiest;
- 	unsigned long flags;
- 	struct cpumask *cpus = __get_cpu_var(load_balance_tmpmask);
-+	enum balance_type bt;
+ 	for_each_cpu(i, sched_group_cpus(group)) {
+ 		unsigned long power = power_of(i);
+-		unsigned long capacity = DIV_ROUND_CLOSEST(power, SCHED_LOAD_SCALE);
++		unsigned long capacity;
+ 		unsigned long wl;
  
- 	cpumask_copy(cpus, cpu_active_mask);
++		capacity = max(DIV_ROUND_CLOSEST(power, SCHED_LOAD_SCALE), 1UL);
++
+ 		if (!cpumask_test_cpu(i, cpus))
+ 			continue;
  
-@@ -2964,7 +2978,7 @@ static int load_balance(int this_cpu, st
- redo:
- 	update_shares(sd);
- 	group = find_busiest_group(sd, this_cpu, &imbalance, idle, &sd_idle,
--				   cpus, balance);
-+				   cpus, balance, &bt);
- 
- 	if (*balance == 0)
- 		goto out_balanced;
-@@ -3018,7 +3032,7 @@ redo:
- 		schedstat_inc(sd, lb_failed[idle]);
- 		sd->nr_balance_failed++;
- 
--		if (need_active_balance(sd, sd_idle, idle)) {
-+		if (need_active_balance(sd, sd_idle, idle, &bt)) {
- 			raw_spin_lock_irqsave(&busiest->lock, flags);
- 
- 			/* don't kick the migration_thread, if the curr
