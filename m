@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755832Ab0DIThG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 15:37:06 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53156 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755603Ab0DIThD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 15:37:03 -0400
-Date: Fri, 9 Apr 2010 12:32:30 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Borislav Petkov <bp@alien8.de>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com,
-       hannes@cmpxchg.org
-Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas
- of a mergeable VMA
-In-Reply-To: <20100409191425.GB10780@a1.tnic>
-Message-ID: <alpine.LFD.2.00.1004091227310.3558@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1004080706500.3586@i5.linux-foundation.org> <20100408210035.GA25834@a1.tnic> <alpine.LFD.2.00.1004081610020.3558@i5.linux-foundation.org> <20100408234721.GB25834@a1.tnic> <alpine.LFD.2.00.1004081744150.3558@i5.linux-foundation.org>
- <20100409013012.GA8153@liondog.tnic> <20100409092111.GA998@a1.tnic> <alpine.LFD.2.00.1004090917070.3558@i5.linux-foundation.org> <20100409174041.GA10780@a1.tnic> <alpine.LFD.2.00.1004091043490.3558@i5.linux-foundation.org> <20100409191425.GB10780@a1.tnic>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755771Ab0DITim (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 15:38:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11912 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753965Ab0DITik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 15:38:40 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+X-Fcc: ~/Mail/linus
+Cc: Andrew Morton <akpm@linux-foundation.org>, Alan Cox <alan@linux.intel.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] make task_struct->signal immutable/refcountable
+In-Reply-To: Oleg Nesterov's message of  Friday, 19 March 2010 19:40:17 +0100 <20100319184017.GA512@redhat.com>
+References: <20100319184017.GA512@redhat.com>
+Emacs: because you deserve a brk today.
+Message-Id: <20100409193816.A3C36B082@magilla.sf.frob.com>
+Date: Fri,  9 Apr 2010 12:38:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Acked-by: Roland McGrath <roland@redhat.com>
+but some comments:
+
+> This patch adds the reference counter, sigcnt, into signal_struct. This
+> reference is owned by task_struct and it is dropped in __put_task_struct().
+
+I'm not thrilled about the field name, but whatever.  We now have three
+atomic counts with subtly different meanings, and no comments anywhere
+really explaining it all.
+
+* live: created and not yet begun to exit
+* count: not yet reaped
+* sigcnt: task_struct not yet freed
+
+> Perhaps it makes sense to export get/put_signal_struct() later, but
+> currently I don't see the immediate reason.
+
+We should never export those at all.  In fact, I would not even make it a
+separate inline.  We're here to simplify the lifetime rules, not give new
+ways to complicate them.  If anybody wants to keep a signal_struct alive,
+they can do it with get_task_struct().
+
+> 	- with or without this patch signal_struct->count should go away,
+> 	  or at least it should be "int nr_threads" for fs/proc. This will
+> 	  be addressed later.
+
+Indeed.  IMHO adding yet another atomic count here is OK only on the
+proviso that we will be getting rid of the old one RSN.
 
 
-On Fri, 9 Apr 2010, Borislav Petkov wrote:
-> > 
-> > So what I _think_ will happen is that you'll be able to re-create the 
-> > problem that started this all.  But I'd like to verify that, just because 
-> > I'm anal and I'd like these things to be tested independently.
-> 
-> Heh, that was easy. Third hibernate cycle is a charm^Wboom :)
-
-Ok, good to know that I'm still tracking ok on the issue.
-
-> > So assuming that the original problem happens again, if you can then apply 
-> > Rik's patch, but add a
-> > 
-> > 	dst->anon_vma = src->anon_vma;
-> > 
-> > to just before the success case (the "return 0") in anon_vma_clone(), 
-> > that would be good.
-> 
-> It looks like this way we mangle the anon_vma chains somehow. From
-> what I can see and if I'm not mistaken, we save the anon_vmas alright
-> but end up in what seems like an endless list_for_each_entry()
-> loop having grabbed anon_vma->lock in page_lock_anon_vma() and we
-> can't seem to yield it through page_unlock_anon_vma() at the end of
-> page_referenced_anon() so it has to be that code in between iterating
-> over each list entry...
-
-Ok. So scratch Rik's patch. It doesn't work even with the anon_vma set up.
-
-Rik? I think it's back to you. I'm not going to bother committing the 
-change to the anon_vma locking unless you actually need the locking 
-guarantees for anon_vma_prepare().
-
-And I've got the feeling that the proper fix is in the vma_adjust() 
-handling if your original idea was right.
-
-Anybody?
-
-We're at the point where I've already delayed -rc4 several days because 
-it's pointless cutting it without fixing this. One option is to just say 
-"f*ck it, we'll revert it all and try again later". But it feels so 
-close..
-
-		Linus
+Thanks,
+Roland
