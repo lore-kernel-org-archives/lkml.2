@@ -1,195 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457Ab0DIFkl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 01:40:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64858 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754147Ab0DIFki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 01:40:38 -0400
-Message-ID: <4BBEBE93.2030507@redhat.com>
-Date: Fri, 09 Apr 2010 13:43:47 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
+	id S1754474Ab0DIFli (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 01:41:38 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:57070 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752291Ab0DIFlh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 01:41:37 -0400
+Message-ID: <4BBEBE0C.7050602@us.ibm.com>
+Date: Thu, 08 Apr 2010 22:41:32 -0700
+From: Darren Hart <dvhltc@us.ibm.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-To: Stephen Hemminger <shemminger@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       bridge@lists.linux-foundation.org, Andy Gospodarek <gospo@redhat.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Jeff Moyer <jmoyer@redhat.com>,
-       Matt Mackall <mpm@selenic.com>, bonding-devel@lists.sourceforge.net,
-       Jay Vosburgh <fubar@us.ibm.com>, David Miller <davem@davemloft.net>
-Subject: Re: [v3 Patch 2/3] bridge: make bridge support netpoll
-References: <20100408062234.4499.17042.sendpatchset@localhost.localdomain>	<20100408062246.4499.5670.sendpatchset@localhost.localdomain> <20100408083710.2b61ee44@nehalam>
-In-Reply-To: <20100408083710.2b61ee44@nehalam>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Peter W. Morreale" <pmorreale@novell.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Eric Dumazet <eric.dumazet@gmail.com>, Rik van Riel <riel@redhat.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>, Avi Kivity <avi@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 4/6] futex: Add FUTEX_LOCK with optional adaptive spinning
+References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com> <1270499039-23728-5-git-send-email-dvhltc@us.ibm.com> <alpine.LFD.2.00.1004061818250.32352@localhost.localdomain> <4BBCC02C.5090000@us.ibm.com> <alpine.LFD.2.00.1004072124250.32352@localhost.localdomain> <4BBD4C92.8010701@us.ibm.com> <1270768233.6318.45.camel@hermosa.site>
+In-Reply-To: <1270768233.6318.45.camel@hermosa.site>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Hemminger wrote:
-> On Thu, 8 Apr 2010 02:18:58 -0400
-> Amerigo Wang <amwang@redhat.com> wrote:
+Peter W. Morreale wrote:
+> On Wed, 2010-04-07 at 20:25 -0700, Darren Hart wrote:
+>> Thomas Gleixner wrote:
+>>> On Wed, 7 Apr 2010, Darren Hart wrote:
+>>>> Thomas Gleixner wrote:
+
+>>>>> 	   if ((curval & FUTEX_TID_MASK) != ownertid) {
+>>>>> 	      ownertid = curval & FUTEX_TID_MASK;
+>>>>> 	      owner = update_owner(ownertid);
+>>>>> 	   }
+>>>> Hrm... at this point the owner has changed... so we should break and go
+>>>> to sleep, not update the owner and start spinning again. The
+>>>> futex_spin_on_owner() will detect this and abort, so I'm not seeing the
+>>>> purpose of the above if() block.
+>>> Why ? If the owner has changed and the new owner is running on another
+>>> cpu then why not spin further ?
+>> That's an interesting question, and I'm not sure what the right answer 
+>> is. The current approach of the adaptive spinning in the kernel is to 
+>> spin until the owner changes or deschedules, then stop and block. The 
+>> idea is that if you didn't get the lock before the owner changed, you 
+>> aren't going to get it in a very short period of time (you have at least 
+>> an entire critical section to wait through plus whatever time you've 
+>> already spent spinning). However, blocking just so another task can spin 
+>> doesn't really make sense either, and makes the lock less fair than it 
+>> could otherwise be.
 > 
->> Based on the previous patch, make bridge support netpoll by:
->>
->> 1) implement the 2 methods to support netpoll for bridge;
->>
->> 2) modify netpoll during forwarding packets via bridge;
->>
->> 3) disable netpoll support of bridge when a netpoll-unabled device
->>    is added to bridge;
->>
->> 4) enable netpoll support when all underlying devices support netpoll.
->>
->> Cc: David Miller <davem@davemloft.net>
->> Cc: Neil Horman <nhorman@tuxdriver.com>
->> Cc: Stephen Hemminger <shemminger@linux-foundation.org>
->> Cc: Matt Mackall <mpm@selenic.com>
->> Signed-off-by: WANG Cong <amwang@redhat.com>
->>
->> ---
->>
->> Index: linux-2.6/net/bridge/br_device.c
->> ===================================================================
->> --- linux-2.6.orig/net/bridge/br_device.c
->> +++ linux-2.6/net/bridge/br_device.c
->> @@ -13,8 +13,10 @@
->>  
->>  #include <linux/kernel.h>
->>  #include <linux/netdevice.h>
->> +#include <linux/netpoll.h>
->>  #include <linux/etherdevice.h>
->>  #include <linux/ethtool.h>
->> +#include <linux/list.h>
->>  
->>  #include <asm/uaccess.h>
->>  #include "br_private.h"
->> @@ -162,6 +164,59 @@ static int br_set_tx_csum(struct net_dev
->>  	return 0;
->>  }
->>  
->> +#ifdef CONFIG_NET_POLL_CONTROLLER
->> +bool br_devices_support_netpoll(struct net_bridge *br)
->> +{
->> +	struct net_bridge_port *p;
->> +	bool ret = true;
->> +	int count = 0;
->> +	unsigned long flags;
->> +
->> +	spin_lock_irqsave(&br->lock, flags);
->> +	list_for_each_entry(p, &br->port_list, list) {
->> +		count++;
->> +		if (p->dev->priv_flags & IFF_DISABLE_NETPOLL
->> +				|| !p->dev->netdev_ops->ndo_poll_controller)
->> +			ret = false;
->> +	}
->> +	spin_unlock_irqrestore(&br->lock, flags);
->> +	return count != 0 && ret;
->> +}
->> +
->> +static void br_poll_controller(struct net_device *br_dev)
->> +{
->> +	struct netpoll *np = br_dev->npinfo->netpoll;
->> +
->> +	if (np->real_dev != br_dev)
->> +		netpoll_poll_dev(np->real_dev);
->> +}
->> +
->> +void br_netpoll_cleanup(struct net_device *br_dev)
->> +{
->> +	struct net_bridge *br = netdev_priv(br_dev);
->> +	struct net_bridge_port *p, *n;
->> +	const struct net_device_ops *ops;
->> +
->> +	br->dev->npinfo = NULL;
->> +	list_for_each_entry_safe(p, n, &br->port_list, list) {
->> +		if (p->dev) {
->> +			ops = p->dev->netdev_ops;
->> +			if (ops->ndo_netpoll_cleanup)
->> +				ops->ndo_netpoll_cleanup(p->dev);
->> +			else
->> +				p->dev->npinfo = NULL;
->> +		}
->> +	}
->> +}
->> +
->> +#else
->> +
->> +void br_netpoll_cleanup(struct net_device *br_dev)
->> +{
->> +}
->> +
->> +#endif
+> Not only less fair, but potentially could cause starvation, no?  Perhaps
+> you could see this if you changed your model to allow all contended
+> tasks to spin instead of just one.  
+
+Agreed, and V5 (just posted) does just that.
+
 > 
-> Could you use more stub functions to eliminate #ifdef's in code.
+> If a spinning task blocks because of an owner change, and a new task
+> enters and starts spinning directly after the owner change, at what
+> point does the original task get woken up?
 
+At the time of unlock the owner will have to call FUTEX_WAKE. This task 
+will wake and attempt to acquire the lock - it will lose races with 
+aclready running contenders. Lock stealing, adaptive spinning, etc are 
+all going to lead to less fair locks in exchange for throughput.
 
-Probably no, because only br_netpoll_cleanup() will be called
-no matter if CONFIG_NET_POLL_CONTROLLER is defined.
-
-
->> @@ -50,7 +51,13 @@ int br_dev_queue_push_xmit(struct sk_buf
->>  		else {
->>  			skb_push(skb, ETH_HLEN);
->>  
->> -			dev_queue_xmit(skb);
->> +#ifdef CONFIG_NET_POLL_CONTROLLER
->> +			if (skb->dev->priv_flags & IFF_IN_NETPOLL) {
->> +				netpoll_send_skb(skb->dev->npinfo->netpoll, skb);
->> +				skb->dev->priv_flags &= ~IFF_IN_NETPOLL;
->> +			} else
->> +#endif
+>  Its likely that the new
+> spinner will get the resource next, no?  Rinse/repeat with another task
+> and the original spinner is starved.  
 > 
-> There is no protection on dev->priv_flags for SMP access.
-> It would better bit value in dev->state if you are using it as control flag.
-> 
-> Then you could use 
-> 			if (unlikely(test_and_clear_bit(__IN_NETPOLL, &skb->dev->state)))
-> 				netpoll_send_skb(...)
-> 
+> (Or am I missing something?  My understanding was that unfairness was
+> built-in to this algo... If so, then the above is a possibility, right?)
 
+Yes it is. These locks are typically used in situations where it is more 
+important that some work gets completed than _which_ work gets completed.
 
-Yes? netpoll_send_skb() needs to see IFF_IN_NETPOLL is set, so
-we can't clear this bit before calling it.
+Thanks,
 
-But we do need a find a safe way to check/set this flag.
-
-
->>  static void __br_deliver(const struct net_bridge_port *to, struct sk_buff *skb)
->>  {
->> +#ifdef CONFIG_NET_POLL_CONTROLLER
->> +	struct net_bridge *br = to->br;
->> +	if (br->dev->priv_flags & IFF_IN_NETPOLL) {
->> +		struct netpoll *np;
->> +		to->dev->npinfo = skb->dev->npinfo;
->> +		np = skb->dev->npinfo->netpoll;
->> +		np->real_dev = np->dev = to->dev;
->> +		to->dev->priv_flags |= IFF_IN_NETPOLL;
->> +	}
->> +#endif
-> 
-> This is n hot path, so use unlikely()
-
-
-Ok, good point.
-
-
->> +#ifdef CONFIG_NET_POLL_CONTROLLER
->> +	if (br_devices_support_netpoll(br)) {
->> +		br->dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
->> +		if (br->dev->npinfo)
->> +			dev->npinfo = br->dev->npinfo;
->> +	} else if (!(br->dev->priv_flags & IFF_DISABLE_NETPOLL)) {
->> +		br->dev->priv_flags |= IFF_DISABLE_NETPOLL;
->> +		printk(KERN_INFO "New device %s does not support netpoll\n",
->> +			dev->name);
->> +		printk(KERN_INFO "Disabling netpoll for %s\n",
->> +			br->dev->name);
-> 
-> One message is sufficient.
-> 
-
-Yes? The first messages explains the reason for the second message.
-
-
-Thanks.
+--
+Darren Hart
+IBM Linux Technology Center
+Real-Time Linux Team
