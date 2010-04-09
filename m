@@ -1,47 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733Ab0DIODH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 10:03:07 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45357 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752698Ab0DIOB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 10:01:26 -0400
-From: Jan Blunck <jblunck@suse.de>
-To: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-       Alan Cox <alan@linux.intel.com>, Jan Blunck <jblunck@suse.de>
-Subject: [PATCH 06/12] zcrypt: Use nonseekable_open()
-Date: Fri,  9 Apr 2010 16:00:49 +0200
-Message-Id: <1270821655-4368-7-git-send-email-jblunck@suse.de>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1270821655-4368-1-git-send-email-jblunck@suse.de>
-References: <1270821655-4368-1-git-send-email-jblunck@suse.de>
+	id S1752156Ab0DINvD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 09:51:03 -0400
+Received: from mx51.mymxserver.com ([85.199.173.110]:24659 "EHLO
+	mx51.mymxserver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127Ab0DINvA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 09:51:00 -0400
+From: Holger Schurig <hs4233@mail.mn-solutions.de>
+To: "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [PATCH] net/wireless/libertas: do not call wiphy_unregister() w/o wiphy_register()
+Date: Fri, 9 Apr 2010 15:51:38 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.33; KDE/4.4.2; i686; ; )
+Cc: Dan Williams <dcbw@redhat.com>, Daniel Mack <daniel@caiaq.de>,
+       libertas-dev@lists.infradead.org, netdev@vger.kernel.org,
+       linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1269875658-3324-1-git-send-email-daniel@caiaq.de> <20100330172008.GD13120@tuxdriver.com> <20100408190358.GB2999@tuxdriver.com>
+In-Reply-To: <20100408190358.GB2999@tuxdriver.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004091551.39365.hs4233@mail.mn-solutions.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zcrypt doesn't even allow to read/write the files it opens. So seeking on
-it shouldn't fall back to defaults either but should be disallowed as well.
+> Ping?
 
-Signed-off-by: Jan Blunck <jblunck@suse.de>
----
- drivers/s390/crypto/zcrypt_api.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Pong.
 
-diff --git a/drivers/s390/crypto/zcrypt_api.c b/drivers/s390/crypto/zcrypt_api.c
-index ba50fe0..18a986d 100644
---- a/drivers/s390/crypto/zcrypt_api.c
-+++ b/drivers/s390/crypto/zcrypt_api.c
-@@ -301,7 +301,7 @@ static ssize_t zcrypt_write(struct file *filp, const char __user *buf,
- static int zcrypt_open(struct inode *inode, struct file *filp)
- {
- 	atomic_inc(&zcrypt_open_count);
--	return 0;
-+	return nonseekable_open(inode, filp);
- }
- 
- /**
--- 
-1.6.4.2
-
+I'm a bit swamped with other stuff, so I can't do that right now. That's the 
+pity of someone who can only use this-and-then on kernel projects.
