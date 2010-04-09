@@ -1,92 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330Ab0DICoE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 22:44:04 -0400
-Received: from mail-iw0-f197.google.com ([209.85.223.197]:43883 "EHLO
-	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751809Ab0DICn6 convert rfc822-to-8bit (ORCPT
+	id S1752460Ab0DIDE7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 23:04:59 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52145 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751924Ab0DIDE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 22:43:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Db0K9CNOYyawINo5xt+lXxBRyHjfCiuxTq6gLGjxhG4O8CtDQVlYKy/9yp3mCY7lzU
-         bwpHSoDylo1ibYdA8Xykpbw6sflLCUANnkZQHmpzhiyVKBMcSy0x/wpwLj7DgkLSC6Rg
-         Jr8qKk87GFP8DUbwsjuTNzjDy68+t9+0uJK/g=
-MIME-Version: 1.0
-In-Reply-To: <20100408072731.GA29866@elte.hu>
-References: <alpine.LRH.2.00.1003311747040.23859@tundra.namei.org>
-	 <alpine.LRH.2.00.1004010952080.31957@tundra.namei.org>
-	 <4BB3DC4E.7030504@zytor.com>
-	 <alpine.LRH.2.00.1004011042460.32618@tundra.namei.org>
-	 <4BB3DF46.8080008@zytor.com>
-	 <alpine.LRH.2.00.1004011200020.365@tundra.namei.org>
-	 <20100401125210.GA2445@elte.hu> <20100408063236.GA23489@elte.hu>
-	 <4BBD7F18.1070205@oracle.com> <20100408072731.GA29866@elte.hu>
-Date: Fri, 9 Apr 2010 12:43:57 +1000
-Message-ID: <n2p21d7e9971004081943qdc59e4deq315d6d06704e9f92@mail.gmail.com>
-Subject: Re: Config NO_BOOTMEM breaks my amd64 box
-From: Dave Airlie <airlied@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Yinghai <yinghai.lu@oracle.com>, James Morris <jmorris@namei.org>,
-       "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-       airlied@linux.ie, Thomas Gleixner <tglx@linutronix.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 8 Apr 2010 23:04:56 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 9 Apr 2010 12:01:04 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+       randy.dunlap@oracle.com,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] memcg: update documentation v3
+Message-Id: <20100409120104.9db5b88c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100409111145.5359a872.nishimura@mxp.nes.nec.co.jp>
+References: <20100408145800.ca90ad81.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100409102626.11f8b8b6.nishimura@mxp.nes.nec.co.jp>
+	<20100409104556.2aa6399d.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100409111145.5359a872.nishimura@mxp.nes.nec.co.jp>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 8, 2010 at 5:27 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Yinghai <yinghai.lu@oracle.com> wrote:
->
->> On 04/07/2010 11:32 PM, Ingo Molnar wrote:
->> >
->> > * Ingo Molnar <mingo@elte.hu> wrote:
->> >
->> >> * James Morris <jmorris@namei.org> wrote:
->> >>
->> >>> On Wed, 31 Mar 2010, H. Peter Anvin wrote:
->> >>>
->> >>>> On 03/31/2010 04:43 PM, James Morris wrote:
->> >>>>>>
->> >>>>>> Upgraded how?  The problem no longer happens?
->> >>>>>
->> >>>>> Upgraded to the latest rawhide userland -- I have not since tested with
->> >>>>> bootmem off.  I'll try and do so again when I get a chance.
->> >>>>>
->> >>>>
->> >>>> That would be great.  The sooner the better, obviously.
->> >>>
->> >>> I'm not seeing any problems now, with current Linus and rawhide.  I'll leave
->> >>> bootmem off and see if anything comes up again.
->> >>
->> >> (a current bootlog would still be nice)
->> >>
->> >> Dave, can you reproduce any of these problems with Linus's latest?
->> >
->> > ping? Can you or Dave reproduce the bug with -rc3 or later kernels? (If not
->> > then it probably means that the bug you triggered was already fixed at the
->> > time you reported it, as hpa suspected.)
->>
->> James already reported -rc3 fix the problem for him.
->>
->> Dave implied -rc3 fixed problem for him
->
-> Hm, i'm confused, does this mean that it was all fixed upstream already when
-> Dave and James sent their complaints?
+On Fri, 9 Apr 2010 11:11:45 +0900
+Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
 
-When I reported it, it was only at rc2 stage so not fixed upstream at all.
+> On Fri, 9 Apr 2010 10:45:56 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > On Fri, 9 Apr 2010 10:26:26 +0900
+> > Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+> > > > +Current Status: linux-2.6.34-mmotm(development version of 2010/April)
+> > > > +
+> > > > +Features:
+> > > > + - accounting anonymous pages, file caches, swap caches usage and limit them.
+> > > > + - private LRU and reclaim routine. (system's global LRU and private LRU
+> > > > +   work independently from each other)
+> > > > + - optionally, memory+swap usage can be accounted and limited.
+> > > > + - hierarchical accounting
+> > > > + - soft limit
+> > > > + - moving(recharging) account at moving a task is selectable.
+> > > > + - usage threshold notifier
+> > > > + - oom-killer disable knob and oom-notifier
+> > > > + - Root cgroup has no limit controls.
+> > > > +
+> > > > + Kernel memory and Hugepages are not under control yet. We just manage
+> > > > + pages on LRU. To add more controls, we have to take care of performance.
+> > > > +
+> > > > +Brief summary of control files.
+> > > > +
+> > > > + tasks				 # attach a task(thread)
+> > > > + cgroup.procs			 # attach a process(all threads under it)
+> > > IIUC, writing to cgroup.procs isn't supported yet. So, I think we don't have to
+> > > bother explaining cgroup.procs here.
+> > > 
+> > 
+> > It's supported. See Documetaion/cgroup/cgroup.txt
+> > IIRC, I use cgroup.procs file for migrating, sometimes.
+> > 
+> I can't write to it now.
+> 
+> # echo $$ >/cgroup/memory/01/cgroup.procs
+> -bash: echo: write error: Invalid argument
+> # ls -l /cgroup/memory/01/cgroup.procs
+> -r--r--r-- 1 root root 0 2010-04-09 10:41 /cgroup/memory/01/cgroup.procs
+> # uname -a
+> Linux GibsonE 2.6.34-rc3-mm1-00432-g37c11f5 #1 SMP Thu Apr 8 11:03:39 JST 2010 x86_64 x86_64 x86_64 GNU/Linux
+> 
+> And kernel/cgroup.c says:
+> 
+>    3161         {
+>    3162                 .name = CGROUP_FILE_GENERIC_PREFIX "procs",
+>    3163                 .open = cgroup_procs_open,
+>    3164                 /* .write_u64 = cgroup_procs_write, TODO */
+>    3165                 .release = cgroup_pidlist_release,
+>    3166                 .mode = S_IRUGO,
+>    3167         },
+> 
+> IIRC, it's supported once, but the patch was dropped.
+> 
+Ouch....I have to fix (our internal) user manual, too.....
 
->
-> Would be nice to have a confirmation from Dave for that (beyond 'implying'
-> it), to not keep this thread open-ended.
 
-Okay I built a linus head and it booted on the previously broken machine.
-with CONFIG_NO_BOOTMEM=y
+Thanks,
+-Kame
 
-Dave.
