@@ -1,138 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947Ab0DIR0Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 13:26:16 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:22354 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754869Ab0DIR0N (ORCPT
+	id S1754922Ab0DIRbX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 13:31:23 -0400
+Received: from gerolde.archlinux.org ([66.211.214.132]:48936 "EHLO
+	archlinux.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753881Ab0DIRbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 13:26:13 -0400
-Message-ID: <4BBF626A.3060800@oracle.com>
-Date: Fri, 09 Apr 2010 10:22:50 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	Fri, 9 Apr 2010 13:31:19 -0400
+X-Greylist: delayed 605 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Apr 2010 13:31:19 EDT
+Message-ID: <4BBF6206.2070103@archlinux.org>
+Date: Fri, 09 Apr 2010 19:21:10 +0200
+From: =?ISO-8859-15?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, Yinghai <yinghai.lu@oracle.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       linux-pci@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-       Andy Isaacson <adi@hexapodia.org>, Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well
- as x86_32
-References: <20100407210628.28364.96982.stgit@bob.kio> <201004071705.07176.bjorn.helgaas@hp.com> <4BBD13C3.2060404@oracle.com> <201004091004.39857.bjorn.helgaas@hp.com> <4BBF5987.3010100@zytor.com>
-In-Reply-To: <4BBF5987.3010100@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0208.4BBF630F.0332:SCFMA4539814,ss=1,pt=DBB_66871,fgs=0
+To: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Warning in ath9k after update from 2.6.33.1 to 2.6.33.2
+X-Enigmail-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="------------enig43865880F7F776F0AC9FD4A5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2010 09:44 AM, H. Peter Anvin wrote:
-> On 04/09/2010 09:04 AM, Bjorn Helgaas wrote:
->>>
->>> for 64 bit, you may check boot_params.screen_info.orig_video_isVGA to see if you need to reserve that VGA range.
->>> not sure if every bootloader fill that...
->>
->> Why is this different for 64-bit vs 32-bit?  Can you point me to any
->> references where I can learn about this?
->>
-> 
-> It's not.  Any differences between 32 and 64 bits in this area are just
-> plain wrong.
-> 
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig43865880F7F776F0AC9FD4A5
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-then please check this one
+Since I upgraded from 2.6.33.1 to .2, I get the following warning
+sometimes, related to wireless:
 
-update e820 at first, and later put them resource tree, but give pci BAR chance to claim
-the range, before assign unassigned resources.
+------------[ cut here ]------------
+WARNING: at kernel/softirq.c:143 local_bh_enable_ip+0x82/0xb0()
+Hardware name: TECRA A11
+Modules linked in: ipv6 rfcomm sco bnep l2cap bridge stp llc
+cpufreq_ondemand tun ext3 jbd btusb bluetooth uvcvideo videodev
+snd_seq_dummy v4l1_compat arc4 snd_seq_oss ecb v4l2_compat_ioctl32
+snd_seq_midi_event snd_hda_codec_intelhdmi snd_seq snd_seq_device
+tpm_infineon snd_hda_codec_realtek ath9k snd_pcm_oss ath9k_common
+snd_mixer_oss snd_hda_intel snd_hda_codec mac80211 snd_hwdep snd_pcm
+snd_timer ath9k_hw snd joydev soundcore ath sdhci_pci kvm_intel
+snd_page_alloc ehci_hcd iTCO_wdt evdev sdhci iTCO_vendor_support kvm
+usbcore mmc_core e1000e psmouse tpm_tis cfg80211 tpm toshiba_acpi
+acpi_cpufreq led_class tpm_bios rfkill toshiba_bluetooth serio_raw
+pcspkr sr_mod thermal cdrom battery sg ac freq_table processor rtc_cmos
+rtc_core rtc_lib fpu aesni_intel cryptd aes_x86_64 aes_generic xts
+gf128mul dm_crypt dm_mod sd_mod ahci libata scsi_mod ext4 mbcache jbd2
+crc16 i915 drm_kms_helper drm i2c_algo_bit button i2c_core video output
+intel_agp [last unloaded: microcode]
+Pid: 2571, comm: wpa_supplicant Not tainted 2.6.33-ARCH #1
+Call Trace:
+ [<ffffffff81052a08>] warn_slowpath_common+0x78/0xb0
+ [<ffffffff81052a4f>] warn_slowpath_null+0xf/0x20
+ [<ffffffff81059682>] local_bh_enable_ip+0x82/0xb0
+ [<ffffffff8135d42f>] _raw_spin_unlock_bh+0x1f/0x30
+ [<ffffffffa04018ed>] ath_tx_node_cleanup+0x19d/0x1c0 [ath9k]
+ [<ffffffffa03fc607>] ath9k_sta_notify+0x57/0xb0 [ath9k]
+ [<ffffffffa039bbc4>] __sta_info_unlink+0x174/0x220 [mac80211]
+ [<ffffffffa039bca8>] sta_info_unlink+0x38/0x60 [mac80211]
+ [<ffffffffa03a2639>] ieee80211_set_disassoc+0x1e9/0x290 [mac80211]
+ [<ffffffffa03a2e89>] ieee80211_mgd_deauth+0x159/0x160 [mac80211]
+ [<ffffffff8104d700>] ? default_wake_function+0x0/0x10
+ [<ffffffffa03a9b69>] ieee80211_deauth+0x19/0x20 [mac80211]
+ [<ffffffffa02426de>] __cfg80211_mlme_deauth+0xee/0x130 [cfg80211]
+ [<ffffffff8135baad>] ? __mutex_lock_slowpath+0x26d/0x370
+ [<ffffffffa0246839>] __cfg80211_disconnect+0x159/0x1d0 [cfg80211]
+ [<ffffffffa0248f9c>] cfg80211_wext_siwmlme+0x8c/0xa0 [cfg80211]
+ [<ffffffff8133e6b7>] ioctl_standard_iw_point+0x207/0x3a0
+ [<ffffffffa0248f10>] ? cfg80211_wext_siwmlme+0x0/0xa0 [cfg80211]
+ [<ffffffff8133e850>] ? ioctl_standard_call+0x0/0xd0
+ [<ffffffff8133e8e9>] ioctl_standard_call+0x99/0xd0
+ [<ffffffff812b2660>] ? __dev_get_by_name+0xa0/0xc0
+ [<ffffffff8133dce7>] wext_ioctl_dispatch+0x1f7/0x210
+ [<ffffffff8133f330>] ? ioctl_private_call+0x0/0xa0
+ [<ffffffff8133de91>] wext_handle_ioctl+0x41/0x90
+ [<ffffffff812b8299>] dev_ioctl+0x679/0x850
+ [<ffffffff812a0522>] sock_ioctl+0xe2/0x290
+ [<ffffffff812a369d>] ? sys_recvfrom+0x13d/0x160
+ [<ffffffff811324c8>] vfs_ioctl+0x38/0xd0
+ [<ffffffff81132670>] do_vfs_ioctl+0x80/0x560
+ [<ffffffff81132bd1>] sys_ioctl+0x81/0xa0
+ [<ffffffff8100b1f9>] ? do_device_not_available+0x9/0x10
+ [<ffffffff81009fc2>] system_call_fastpath+0x16/0x1b
+---[ end trace 8dbf12cb72787a6d ]---
 
-in case some system doesn't have VGA, and use [0xa0000, ..] for mmio of some other pci devices.
+This machine is an Intel Core i5-520M running x86_64, wireless is ath9k.
 
-Yinghai
 
-Subject: [RFC PATCH] x86: reserve [0xa0000, 0x100000] in e820
+--------------enig43865880F7F776F0AC9FD4A5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-And put those range in resource tree after pci BAR claim those range
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
----
- arch/x86/include/asm/setup.h |    1 -
- arch/x86/kernel/e820.c       |    2 +-
- arch/x86/kernel/head32.c     |    1 -
- arch/x86/kernel/setup.c      |   19 +------------------
- 4 files changed, 2 insertions(+), 21 deletions(-)
+iEYEAREIAAYFAku/YgYACgkQEda5KzHP/VB/ZACgrOMf0eQfYMR3EKlPhhNCSs8o
+DRIAoNEd5WCvP+SfnCrL1GfdJdT13Zuk
+=KDXE
+-----END PGP SIGNATURE-----
 
-Index: linux-2.6/arch/x86/include/asm/setup.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/setup.h
-+++ linux-2.6/arch/x86/include/asm/setup.h
-@@ -44,7 +44,6 @@ static inline void visws_early_detect(vo
- extern unsigned long saved_video_mode;
- 
- extern void reserve_standard_io_resources(void);
--extern void i386_reserve_resources(void);
- extern void setup_default_timer_irq(void);
- 
- #ifdef CONFIG_X86_MRST
-Index: linux-2.6/arch/x86/kernel/e820.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/e820.c
-+++ linux-2.6/arch/x86/kernel/e820.c
-@@ -1094,7 +1094,7 @@ void __init e820_reserve_resources(void)
- 		 * pci device BAR resource and insert them later in
- 		 * pcibios_resource_survey()
- 		 */
--		if (e820.map[i].type != E820_RESERVED || res->start < (1ULL<<20)) {
-+		if (e820.map[i].type != E820_RESERVED) {
- 			res->flags |= IORESOURCE_BUSY;
- 			insert_resource(&iomem_resource, res);
- 		}
-Index: linux-2.6/arch/x86/kernel/head32.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/head32.c
-+++ linux-2.6/arch/x86/kernel/head32.c
-@@ -22,7 +22,6 @@ static void __init i386_default_early_se
- {
- 	/* Initilize 32bit specific setup functions */
- 	x86_init.resources.probe_roms = probe_roms;
--	x86_init.resources.reserve_resources = i386_reserve_resources;
- 	x86_init.mpparse.setup_ioapic_ids = setup_ioapic_ids_from_mpc;
- 
- 	reserve_ebda_region();
-Index: linux-2.6/arch/x86/kernel/setup.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/setup.c
-+++ linux-2.6/arch/x86/kernel/setup.c
-@@ -693,7 +693,7 @@ static void __init trim_bios_range(void)
- 	 * area (640->1Mb) as ram even though it is not.
- 	 * take them out.
- 	 */
--	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
-+	e820_add_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RESERVED);
- 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
- }
- 
-@@ -1052,20 +1052,3 @@ void __init setup_arch(char **cmdline_p)
- 
- 	mcheck_init();
- }
--
--#ifdef CONFIG_X86_32
--
--static struct resource video_ram_resource = {
--	.name	= "Video RAM area",
--	.start	= 0xa0000,
--	.end	= 0xbffff,
--	.flags	= IORESOURCE_BUSY | IORESOURCE_MEM
--};
--
--void __init i386_reserve_resources(void)
--{
--	request_resource(&iomem_resource, &video_ram_resource);
--	reserve_standard_io_resources();
--}
--
--#endif /* CONFIG_X86_32 */
+--------------enig43865880F7F776F0AC9FD4A5--
