@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757066Ab0DIGOc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 02:14:32 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:37528 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755160Ab0DIGHL (ORCPT
+	id S1754961Ab0DIGHK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 02:07:10 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:25736 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806Ab0DIGHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 02:07:11 -0400
+	Fri, 9 Apr 2010 02:07:05 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,114 +16,88 @@ Cc: David Miller <davem@davemloft.net>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 19/39] lmb: Use lmb_debug to control debug message print out
-Date: Thu,  8 Apr 2010 23:03:48 -0700
-Message-Id: <1270793048-23796-20-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 03/39] x86: Align e820 ram range to page
+Date: Thu,  8 Apr 2010 23:03:32 -0700
+Message-Id: <1270793048-23796-4-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
 References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4BBEC3EB.011C,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090201.4BBEC3E2.00EB,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also let lmb_reserve_area/lmb_free_area could print out name if lmb=debug is
-specified
-
-will also print ther name when reserve_lmb_area/free_lmb_area are called.
+to workaround wrong BIOS memory map.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- mm/lmb.c |   29 +++++++++++++++++++++--------
- 1 files changed, 21 insertions(+), 8 deletions(-)
+ arch/x86/kernel/e820.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 44 insertions(+), 0 deletions(-)
 
-diff --git a/mm/lmb.c b/mm/lmb.c
-index 34fc030..dfbf660 100644
---- a/mm/lmb.c
-+++ b/mm/lmb.c
-@@ -591,8 +591,9 @@ static void __init __check_and_double_region_array(struct lmb_region *type,
- 	memset(&old[0], 0, sizeof(struct lmb_property) * rgnsz);
- 	type->region = new;
- 	type->nr_regions = rgnsz * 2;
--	printk(KERN_DEBUG "lmb.reserved.region array is doubled to %ld at [%llx - %llx]\n",
--		type->nr_regions, mem, mem + size - 1);
-+	if (lmb_debug)
-+		pr_info("lmb.reserved.region array is doubled to %ld at [%010llx - %010llx]\n",
-+				type->nr_regions, mem, mem + size - 1);
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 14d0a1a..73dc6a7 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -1044,6 +1044,47 @@ static int __init parse_memmap_opt(char *p)
+ }
+ early_param("memmap", parse_memmap_opt);
  
- 	/* Free old one ?*/
- 	if (old != static_region)
-@@ -619,6 +620,8 @@ void __init lmb_reserve_area(u64 start, u64 end, char *name)
- 	if (WARN_ONCE(start > end, "lmb_reserve_area: wrong range [%#llx, %#llx]\n", start, end))
- 		return;
- 
-+	if (lmb_debug)
-+		pr_info("    lmb_reserve_area: [%010llx, %010llx] %16s\n", start, end, name);
- 	__lmb_reserve_area(start, end, name);
++static void __init e820_align_ram_page(void)
++{
++	int i;
++	bool changed = false;;
++
++	for (i = 0; i < e820.nr_map; i++) {
++		struct e820entry *entry = &e820.map[i];
++		u64 start, end;
++		u64 start_aligned, end_aligned;
++
++		if (entry->type != E820_RAM)
++			continue;
++
++		start = entry->addr;
++		end = start + entry->size;
++
++		start_aligned = round_up(start, PAGE_SIZE);
++		end_aligned = round_down(end, PAGE_SIZE);
++
++		if (end_aligned <= start_aligned) {
++			e820_update_range(start, end - start, E820_RAM, E820_RESERVED);
++			changed = true;
++			continue;
++		}
++		if (start < start_aligned) {
++			e820_update_range(start, start_aligned - start, E820_RAM, E820_RESERVED);
++			changed = true;
++		}
++		if (end_aligned < end) {
++			e820_update_range(end_aligned, end - end_aligned, E820_RAM, E820_RESERVED);
++			changed = true;
++		}
++	}
++
++	if (changed) {
++		sanitize_e820_map();
++		printk(KERN_INFO "aligned physical RAM map:\n");
++		e820_print_map("aligned");
++	}
++}
++
+ void __init finish_e820_parsing(void)
+ {
+ 	if (userdef) {
+@@ -1056,6 +1097,9 @@ void __init finish_e820_parsing(void)
+ 		printk(KERN_INFO "user-defined physical RAM map:\n");
+ 		e820_print_map("user");
+ 	}
++
++	/* In case, We have RAM entres that are not PAGE aligned */
++	e820_align_ram_page();
  }
  
-@@ -635,6 +638,8 @@ void __init lmb_reserve_area_overlap_ok(u64 start, u64 end, char *name)
- 	if (WARN_ONCE(start > end, "lmb_reserve_area_overlap_ok: wrong range [%#llx, %#llx]\n", start, end))
- 		return;
- 
-+	if (lmb_debug)
-+		pr_info("    lmb_reserve_area_overlap_ok: [%010llx, %010llx] %16s\n", start, end, name);
- 	/* Free that region at first */
- 	lmb_free(start, end - start);
- 	__lmb_reserve_area(start, end, name);
-@@ -648,6 +653,8 @@ void __init lmb_free_area(u64 start, u64 end)
- 	if (WARN_ONCE(start > end, "lmb_free_area: wrong range [%#llx, %#llx]\n", start, end))
- 		return;
- 
-+	if (lmb_debug)
-+		pr_info("       lmb_free_area: [%010llx, %010llx]\n", start, end);
- 	/* keep punching hole, could run out of slots too */
- 	lmb_free(start, end - start);
- 	__check_and_double_region_array(&lmb.reserved, &lmb_reserved_region[0]);
-@@ -688,11 +695,13 @@ static void __init subtract_lmb_reserved(struct range *range, int az)
- 
- 	count  = lmb.reserved.cnt;
- 
--	pr_info("Subtract (%d early reservations)\n", count);
-+	if (lmb_debug)
-+		pr_info("Subtract (%d early reservations)\n", count);
- 
- 	for (i = 0; i < count; i++) {
- 		struct lmb_property *r = &lmb.reserved.region[i];
--		pr_info("  #%d [%010llx - %010llx]\n", i, r->base, r->base + r->size);
-+		if (lmb_debug)
-+			pr_info("  #%03d [%010llx - %010llx]\n", i, r->base, r->base + r->size);
- 		final_start = PFN_DOWN(r->base);
- 		final_end = PFN_UP(r->base + r->size);
- 		if (final_start >= final_end)
-@@ -748,17 +757,21 @@ void __init lmb_to_bootmem(u64 start, u64 end)
- 		lmb_free(__pa(lmb.reserved.region), sizeof(struct lmb_property) * lmb.reserved.nr_regions);
- 
- 	count  = lmb.reserved.cnt;
--	pr_info("(%d early reservations) ==> bootmem [%010llx - %010llx]\n", count, start, end);
-+	if (lmb_debug)
-+		pr_info("(%d early reservations) ==> bootmem [%010llx - %010llx]\n", count, start, end);
- 	for (i = 0; i < count; i++) {
- 		struct lmb_property *r = &lmb.reserved.region[i];
--		pr_info("  #%d [%010llx - %010llx] ", i, r->base, r->base + r->size);
-+		if (lmb_debug)
-+			pr_info("  #%03d [%010llx - %010llx] ", i, r->base, r->base + r->size);
- 		final_start = max(start, r->base);
- 		final_end = min(end, r->base + r->size);
- 		if (final_start >= final_end) {
--			pr_cont("\n");
-+			if (lmb_debug)
-+				pr_cont("\n");
- 			continue;
- 		}
--		pr_cont(" ==> [%010llx - %010llx]\n", final_start, final_end);
-+		if (lmb_debug)
-+			pr_cont(" ==> [%010llx - %010llx]\n", final_start, final_end);
- 		reserve_bootmem_generic(final_start, final_end - final_start, BOOTMEM_DEFAULT);
- 	}
- 	/* Clear them to avoid misusing ? */
+ static inline const char *e820_type_to_string(int e820_type)
 -- 
 1.6.4.2
 
