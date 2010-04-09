@@ -1,433 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab0DITV6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 15:21:58 -0400
+	id S1755902Ab0DITVx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 15:21:53 -0400
 Received: from mailout3.w1.samsung.com ([210.118.77.13]:19726 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755785Ab0DITVs (ORCPT
+	with ESMTP id S1755449Ab0DITVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 15:21:48 -0400
+	Fri, 9 Apr 2010 15:21:43 -0400
 MIME-version: 1.0
 Content-transfer-encoding: 7BIT
 Content-type: TEXT/PLAIN
-Date: Fri, 09 Apr 2010 21:21:22 +0200
+Date: Fri, 09 Apr 2010 21:21:18 +0200
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv2 5/8] USB: g_ffs: the FunctionFS gadget driver
-In-reply-to: <7edafe56416c4355b85d7627e9a025e8c589a1e6.1270835924.git.mina86@mina86.com>
+Subject: [PATCHv2 1/8] wait_event_interruptible_locked() interface
+In-reply-to: <cover.1270835924.git.mina86@mina86.com>
 To: linux-usb@vger.kernel.org
 Cc: Michal Nazarewicz <mina86@mina86.com>,
-       Michal Nazarewicz <m.nazarewicz@samsung.com>, Greg KH <greg@kroah.com>,
+       Michal Nazarewicz <m.nazarewicz@samsung.com>,
+       Davide Libenzi <davidel@xmailserver.org>, Greg KH <greg@kroah.com>,
        Kyungmin Park <kyungmin.park@samsung.com>,
        Marek Szyprowski <m.szyprowski@samsung.com>,
+       Thomas Gleixner <tglx@linutronix.de>, linux-fsdevel@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Message-id: <6f40ed65715fbf1862bb443820277da7b5114838.1270835924.git.mina86@mina86.com>
+Message-id: <3baf39971e1f49e98498f5d00e21df4302396252.1270835924.git.mina86@mina86.com>
 X-Mailer: git-send-email 1.7.0
 References: <cover.1270835924.git.mina86@mina86.com>
- <3baf39971e1f49e98498f5d00e21df4302396252.1270835924.git.mina86@mina86.com>
- <e6cbed26355492a8cde57973da56bccbb55b85a1.1270835924.git.mina86@mina86.com>
- <aa83c43874f8aa490300d6bd03472646f2727eb1.1270835924.git.mina86@mina86.com>
- <7edafe56416c4355b85d7627e9a025e8c589a1e6.1270835924.git.mina86@mina86.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Function Filesystem (FunctioFS) lets one create USB
-composite functions in user space in the same way as GadgetFS
-lets one create USB gadgets in user space.  This allows
-creation of composite gadgets such that some of the functions
-are implemented in kernel space (for instance Ethernet, serial
-or mass storage) and other are implemented in user space.
+New wait_event_interruptible{,_exclusive}_locked{,_irq,_irqsave}
+macros added.  They work just like versions without _locked* suffix
+but require the wait queue's lock to be held.  Also __wake_up_locked()
+is now exported as to pair it with the above macros.
+
+The use case of this new facility is when one uses wait queue's lock
+to protect a data structure.  This may be advantageous if the
+structure needs to be protected by a spinlock anyway.  In particular,
+with additional spinlock the following code has to be used to wait for
+an condition:
+
+#v+
+spin_lock(&data.lock);
+...
+for (ret = 0; !ret && !(condition); ) {
+	spin_unlock(&data.lock);
+	ret = wait_event_interruptible(data.wqh, (condition));
+	spin_lock(&data.lock);
+}
+...
+spin_unlock(&data.lock);
+#v-
+
+This looks bizarre plus wait_event_interruptible() locks the wait
+queue's lock anyway so there is a unlock+lock sequence where it could
+be avoided.
+
+To avoid those problems and benefit from wait queue's lock, a code
+similar to the following should be used:
+
+#v+
+/* Waiting */
+spin_lock(&data.wqh.lock);
+...
+ret = wait_event_interruptible_locked(data.wqh, (condition));
+...
+spin_unlock(&data.wqh.lock);
+
+/* Waiting exclusively */
+spin_lock(&data.whq.lock);
+...
+ret = wait_event_interruptible_exclusive_locked(data.whq, (condition));
+...
+spin_unlock(&data.whq.lock);
+
+/* Waking up */
+spin_lock(&data.wqh.lock);
+...
+wake_up_locked(&data.wqh);
+...
+spin_unlock(&data.wqh.lock);
+#v-
+
+When spin_lock_irq() or spin_lock_irqsave() is used matching versions
+of macros need to be used (*_locked_irq() or * _locked_irqsave()).
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>
 ---
- drivers/usb/gadget/Kconfig  |   21 +++-
- drivers/usb/gadget/Makefile |    2 +
- drivers/usb/gadget/g_ffs.c  |  322 +++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 344 insertions(+), 1 deletions(-)
- create mode 100644 drivers/usb/gadget/g_ffs.c
+ include/linux/wait.h |  231 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ kernel/sched.c       |    1 +
+ 2 files changed, 231 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index d886cd6..6f38a10 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -746,6 +746,26 @@ config USB_GADGETFS
- 	  Say "y" to link the driver statically, or "m" to build a
- 	  dynamically linked module called "gadgetfs".
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index a48e16b..1f97306 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -362,6 +362,235 @@ do {									\
+ 	__ret;								\
+ })
  
-+config USB_FUNCTIONFS
-+	tristate "Function Filesystem (EXPERIMENTAL)"
-+	depends on EXPERIMENTAL
-+	help
-+	  The Function Filesystem (FunctioFS) lets one create USB
-+	  composite functions in user space in the same way as GadgetFS
-+	  lets one create USB gadgets in user space.  This allows creation
-+	  of composite gadgets such that some of the functions are
-+	  implemented in kernel space (for instance Ethernet, serial or
-+	  mass storage) and other are implemented in user space.
 +
-+	  Say "y" to link the driver statically, or "m" to build
-+	  a dynamically linked module called "g_ffs".
-+
-+config USB_FUNCTIONFS_ETH
-+	bool "Include Ethernet funcien"
-+	depends on USB_FUNCTIONFS
-+	help
-+	  Include an Ethernet funcion in the Funcion Filesystem.
-+
- config USB_FILE_STORAGE
- 	tristate "File-backed Storage Gadget"
- 	depends on BLOCK
-@@ -899,7 +919,6 @@ config USB_G_MULTI_CDC
- 
- 	  If unsure, say "y".
- 
--
- # put drivers that need isochronous transfer support (for audio
- # or video class gadget drivers), or specific hardware, here.
- 
-diff --git a/drivers/usb/gadget/Makefile b/drivers/usb/gadget/Makefile
-index cecbc3d..0dd1e7b 100644
---- a/drivers/usb/gadget/Makefile
-+++ b/drivers/usb/gadget/Makefile
-@@ -50,6 +50,8 @@ obj-$(CONFIG_USB_ZERO)		+= g_zero.o
- obj-$(CONFIG_USB_AUDIO)		+= g_audio.o
- obj-$(CONFIG_USB_ETH)		+= g_ether.o
- obj-$(CONFIG_USB_GADGETFS)	+= gadgetfs.o
-+obj-$(CONFIG_USB_FUNCTIONFS)	+= g_ffs.o
-+obj-$(CONFIG_USB_ETH_FUNCTIONFS)	+= g_eth_ffs.o
- obj-$(CONFIG_USB_FILE_STORAGE)	+= g_file_storage.o
- obj-$(CONFIG_USB_MASS_STORAGE)	+= g_mass_storage.o
- obj-$(CONFIG_USB_G_SERIAL)	+= g_serial.o
-diff --git a/drivers/usb/gadget/g_ffs.c b/drivers/usb/gadget/g_ffs.c
-new file mode 100644
-index 0000000..6033f5d
---- /dev/null
-+++ b/drivers/usb/gadget/g_ffs.c
-@@ -0,0 +1,322 @@
-+#include <linux/module.h>
-+#include <linux/utsname.h>
++#define __wait_event_interruptible_locked(wq, condition, ret, exclusive, lock, unlock, lock_args) \
++do {									\
++	DEFINE_WAIT(__wait);						\
++									\
++	if (exclusive)							\
++		__wait.flags |= WQ_FLAG_EXCLUSIVE;			\
++	else								\
++		__wait.flags &= ~WQ_FLAG_EXCLUSIVE;			\
++	__add_wait_queue_tail(&(wq), &__wait);				\
++									\
++	do {								\
++		set_current_state(TASK_INTERRUPTIBLE);			\
++		if (signal_pending(current)) {				\
++			ret = -ERESTARTSYS;				\
++			break;						\
++		}							\
++		spin_unlock ##unlock lock_args;				\
++		schedule();						\
++		spin_lock ##lock lock_args;				\
++	} while (!(condition));						\
++	__remove_wait_queue(&(wq), &__wait);				\
++	__set_current_state(TASK_RUNNING);				\
++} while (0)
 +
 +
-+/*
-+ * kbuild is not very cooperative with respect to linking separately
-+ * compiled library objects into one module.  So for now we won't use
-+ * separate compilation ... ensuring init/exit sections work to shrink
-+ * the runtime footprint, and giving us at least some parts of what
-+ * a "gcc --combine ... part1.c part2.c part3.c ... " build would.
++/**
++ * wait_event_interruptible_locked - sleep until a condition gets true
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
++ * @condition evaluates to true or a signal is received.
++ * The @condition is checked each time the waitqueue @wq is woken up.
++ *
++ * It must be called with wq.lock being held.  This spinlock is
++ * unlocked while sleeping but @condition testing is done while lock
++ * is held and when this macro exits the lock is held.
++ *
++ * The lock is locked/unlocked using spin_lock()/spin_unlock()
++ * functions which must match the way they are locked/unlocked outside
++ * of this macro.
++ *
++ * wake_up_locked() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * The function will return -ERESTARTSYS if it was interrupted by a
++ * signal and 0 if @condition evaluated to true.
 + */
-+
-+/* Do not mark any of the USB and composite initialization functions
-+ * as __init, we use it after user space writes descriptors which is
-+ * when init segments are removed. */
-+#define USB_NO_INIT_SEGMENT 1
-+/* Do not mark composite_unbind() and usb_composite_unregister() as
-+ * __exit, we may need it even if we are not unloaded. */
-+#define USB_NO_EXIT_SEGMENT 1
-+
-+#include "composite.c"
-+#include "usbstring.c"
-+#include "config.c"
-+#include "epautoconf.c"
-+
-+#ifdef CONFIG_USB_FUNCTIONFS_ETH
-+/* #  if defined USB_ETH_RNDIS */
-+/* #    undef USB_ETH_RNDIS */
-+/* #  endif */
-+/* #  ifdef CONFIG_USB_ETH_FUNCTIONFS_RNDIS */
-+/* #    define USB_ETH_RNDIS y */
-+/* #  endif */
-+#  include "u_ether.h"
-+
-+#  include "f_ecm.c"
-+#  include "f_subset.c"
-+/* #  ifdef USB_ETH_RNDIS */
-+/* #    include "f_rndis.c" */
-+/* #    include "rndis.c" */
-+/* #  endif */
-+#  include "u_ether.c"
-+
-+static u8 gfs_hostaddr[ETH_ALEN];
-+#endif
-+
-+#include "f_fs.c"
-+
-+
-+#define DRIVER_NAME	"g_ffs"
-+#define DRIVER_DESC	"USB Function Filesystem"
-+#define DRIVER_VERSION	"24 Aug 2004"
-+
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_AUTHOR("Michal Nazarewicz");
-+MODULE_LICENSE("GPL");
-+
-+
-+static unsigned short gfs_vendor_id    = 0x0525;	/* XXX NetChip */
-+static unsigned short gfs_product_id   = 0xa4ac;	/* XXX */
-+
-+static struct usb_device_descriptor gfs_dev_desc = {
-+	.bLength		= sizeof gfs_dev_desc,
-+	.bDescriptorType	= USB_DT_DEVICE,
-+
-+	.bcdUSB			= cpu_to_le16(0x0200),
-+	.bDeviceClass		= USB_CLASS_PER_INTERFACE,
-+
-+	/* Vendor and product id can be overridden by module parameters.  */
-+	/* .idVendor		= cpu_to_le16(gfs_vendor_id), */
-+	/* .idProduct		= cpu_to_le16(gfs_product_id), */
-+	/* .bcdDevice		= f(hardware) */
-+	/* .iManufacturer	= DYNAMIC */
-+	/* .iProduct		= DYNAMIC */
-+	/* NO SERIAL NUMBER */
-+	.bNumConfigurations	= 1,
-+};
-+
-+#define GFS_MODULE_PARAM_DESC(name, field) \
-+	MODULE_PARM_DESC(name, "Value of the " #field " field of the device descriptor sent to the host.  Takes effect only prior to the user-space driver registering to the FunctionFS.")
-+
-+module_param_named(usb_class,    gfs_dev_desc.bDeviceClass,    byte,   0644);
-+GFS_MODULE_PARAM_DESC(usb_class, bDeviceClass);
-+module_param_named(usb_subclass, gfs_dev_desc.bDeviceSubClass, byte,   0644);
-+GFS_MODULE_PARAM_DESC(usb_subclass, bDeviceSubClass);
-+module_param_named(usb_protocol, gfs_dev_desc.bDeviceProtocol, byte,   0644);
-+GFS_MODULE_PARAM_DESC(usb_protocol, bDeviceProtocol);
-+module_param_named(usb_vendor,   gfs_vendor_id,                ushort, 0644);
-+GFS_MODULE_PARAM_DESC(usb_vendor, idVendor);
-+module_param_named(usb_product,  gfs_product_id,               ushort, 0644);
-+GFS_MODULE_PARAM_DESC(usb_product, idProduct);
-+
-+
-+
-+static const struct usb_descriptor_header *gfs_otg_desc[] = {
-+	(const struct usb_descriptor_header *)
-+	&(const struct usb_otg_descriptor) {
-+		.bLength		= sizeof(struct usb_otg_descriptor),
-+		.bDescriptorType	= USB_DT_OTG,
-+
-+		/* REVISIT SRP-only hardware is possible, although
-+		 * it would not be called "OTG" ... */
-+		.bmAttributes		= USB_OTG_SRP | USB_OTG_HNP,
-+	},
-+
-+	NULL
-+};
-+
-+/* string IDs are assigned dynamically */
-+
-+enum {
-+	GFS_STRING_MANUFACTURER_IDX,
-+	GFS_STRING_PRODUCT_IDX,
-+	GFS_STRING_CONFIGURATION_IDX
-+};
-+
-+static       char gfs_manufacturer[50];
-+static const char gfs_driver_desc[] = DRIVER_DESC;
-+static const char gfs_short_name[]  = DRIVER_NAME;
-+
-+static struct usb_string gfs_strings[] = {
-+	[GFS_STRING_MANUFACTURER_IDX].s = gfs_manufacturer,
-+	[GFS_STRING_PRODUCT_IDX].s = gfs_driver_desc,
-+	[GFS_STRING_CONFIGURATION_IDX].s = "Self Powered",
-+	{  } /* end of list */
-+};
-+
-+static struct usb_gadget_strings *gfs_dev_strings[] = {
-+	&(struct usb_gadget_strings) {
-+		.language	= 0x0409,	/* en-us */
-+		.strings	= gfs_strings,
-+	},
-+	NULL,
-+};
-+
-+
-+static int gfs_bind(struct usb_composite_dev *cdev);
-+static int gfs_unbind(struct usb_composite_dev *cdev);
-+static int gfs_do_config(struct usb_configuration *c);
-+
-+
-+static struct usb_composite_driver gfs_driver = {
-+	.name		= gfs_short_name,
-+	.dev		= &gfs_dev_desc,
-+	.strings	= gfs_dev_strings,
-+	.bind		= gfs_bind,
-+	.unbind		= gfs_unbind,
-+};
-+
-+static struct usb_configuration gfs_config_driver = {
-+	.label			= "FunctionFS",
-+	.bind			= gfs_do_config,
-+	.bConfigurationValue	= 1,
-+	/* .iConfiguration	= DYNAMIC */
-+	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
-+};
-+
-+
-+static struct ffs_data *gfs_ffs_data;
-+static unsigned long gfs_registered;
-+
-+
-+static int __init gfs_init(void)
-+{
-+	ENTER();
-+
-+	return functionfs_init();
-+}
-+module_init(gfs_init);
-+
-+static void __exit gfs_exit(void)
-+{
-+	ENTER();
-+
-+	if (test_and_clear_bit(0, &gfs_registered))
-+		usb_composite_unregister(&gfs_driver);
-+
-+	functionfs_cleanup();
-+}
-+module_exit(gfs_exit);
-+
-+
-+static int functionfs_ready_callback(struct ffs_data *ffs)
-+{
-+	int ret;
-+
-+	ENTER();
-+
-+	if (WARN_ON(test_and_set_bit(0, &gfs_registered)))
-+		return -EBUSY;
-+
-+	gfs_ffs_data = ffs;
-+	ret = usb_composite_register(&gfs_driver);
-+	if (unlikely(ret < 0))
-+		clear_bit(0, &gfs_registered);
-+	return ret;
-+}
-+
-+static void functionfs_closed_callback(struct ffs_data *ffs)
-+{
-+	ENTER();
-+
-+	if (test_and_clear_bit(0, &gfs_registered))
-+		usb_composite_unregister(&gfs_driver);
-+}
-+
-+
-+static int functionfs_check_dev_callback(const char *dev_name)
-+{
-+	return 0;
-+}
-+
-+
-+
-+static int gfs_bind(struct usb_composite_dev *cdev)
-+{
-+	int ret;
-+
-+	ENTER();
-+
-+	if (WARN_ON(!gfs_ffs_data))
-+		return -ENODEV;
-+
-+#ifdef CONFIG_USB_FUNCTIONFS_ETH
-+	ret = gether_setup(cdev->gadget, gfs_hostaddr);
-+	if (unlikely(ret < 0))
-+		goto error_quick;
-+#endif
-+
-+	gfs_dev_desc.idVendor  = cpu_to_le16(gfs_vendor_id);
-+	gfs_dev_desc.idProduct = cpu_to_le16(gfs_product_id);
-+
-+	snprintf(gfs_manufacturer, sizeof gfs_manufacturer, "%s %s with %s",
-+		 init_utsname()->sysname, init_utsname()->release,
-+		 cdev->gadget->name);
-+	ret = usb_string_id(cdev);
-+	if (unlikely(ret < 0))
-+		goto error;
-+	gfs_strings[GFS_STRING_MANUFACTURER_IDX].id = ret;
-+	gfs_dev_desc.iManufacturer = ret;
-+
-+	ret = usb_string_id(cdev);
-+	if (unlikely(ret < 0))
-+		goto error;
-+	gfs_strings[GFS_STRING_PRODUCT_IDX].id = ret;
-+	gfs_dev_desc.iProduct = ret;
-+
-+	ret = usb_string_id(cdev);
-+	if (unlikely(ret < 0))
-+		goto error;
-+	gfs_strings[GFS_STRING_CONFIGURATION_IDX].id = ret;
-+	gfs_config_driver.iConfiguration = ret;
-+
-+	ret = functionfs_bind(gfs_ffs_data, cdev);
-+	if (unlikely(ret < 0))
-+		goto error;
-+
-+	ret = usb_add_config(cdev, &gfs_config_driver);
-+	if (unlikely(ret < 0))
-+		goto error_unbind;
-+
-+	return 0;
-+
-+error_unbind:
-+	functionfs_unbind(gfs_ffs_data);
-+error:
-+#ifdef CONFIG_USB_FUNCTIONFS_ETH
-+	gether_cleanup();
-+error_quick:
-+#endif
-+	gfs_ffs_data = NULL;
-+	return ret;
-+}
-+
-+static int gfs_unbind(struct usb_composite_dev *cdev)
-+{
-+	ENTER();
-+
-+#ifdef CONFIG_USB_FUNCTIONFS_ETH
-+	gether_cleanup();
-+#endif
-+
-+	if (!WARN_ON(!gfs_ffs_data)) {
-+		functionfs_unbind(gfs_ffs_data);
-+		gfs_ffs_data = NULL;
-+	}
-+
-+	return 0;
-+}
-+
-+
-+static int gfs_do_config(struct usb_configuration *c)
-+{
-+	int ret;
-+
-+	ENTER();
-+
-+	if (WARN_ON(!gfs_ffs_data))
-+		return -ENODEV;
-+
-+	if (gadget_is_otg(c->cdev->gadget)) {
-+		c->descriptors = gfs_otg_desc;
-+		c->bmAttributes |= USB_CONFIG_ATT_WAKEUP;
-+	}
-+
-+#ifdef CONFIG_USB_FUNCTIONFS_ETH
-+	if (can_support_ecm(c->cdev->gadget)) {
-+		FINFO("ecm_bind_config");
-+		ret = ecm_bind_config(c, gfs_hostaddr);
-+	} else {
-+		FINFO("geth_bind_config");
-+		ret = geth_bind_config(c, gfs_hostaddr);
-+	}
-+	if (unlikely(ret < 0))
-+		return ret;
-+#endif
-+
-+	ret = functionfs_add(c->cdev, c, gfs_ffs_data);
-+	if (unlikely(ret < 0))
-+		return ret;
-+
-+	return 0;
-+}
--- 
-1.7.0
-
++#define wait_event_interruptible_locked(wq, condition)			\
++({									\
++	int __ret = 0;							\
++	if (!(condition))						\
++		__wait_event_interruptible_locked(wq, condition, __ret, 0, , , (&(wq).lock)); \
++	__ret;								\
++})
++
++/**
++ * wait_event_interruptible_locked_irq - sleep until a condition gets true
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
++ * @condition evaluates to true or a signal is received.
++ * The @condition is checked each time the waitqueue @wq is woken up.
++ *
++ * It must be called with wq.lock being held.  This spinlock is
++ * unlocked while sleeping but @condition testing is done while lock
++ * is held and when this macro exits the lock is held.
++ *
++ * The lock is locked/unlocked using spin_lock_irq()/spin_unlock_irq()
++ * functions which must match the way they are locked/unlocked outside
++ * of this macro.
++ *
++ * wake_up_locked() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * The function will return -ERESTARTSYS if it was interrupted by a
++ * signal and 0 if @condition evaluated to true.
++ */
++#define wait_event_interruptible_locked_irq(wq, condition)		\
++({									\
++	int __ret = 0;							\
++	if (!(condition))						\
++		__wait_event_interruptible_locked(wq, condition, __ret, 0, _irq, _irq, (&(wq).lock)); \
++	__ret;								\
++})
++
++/**
++ * wait_event_interruptible_locked_irq - sleep until a condition gets true
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ * @flags: variable to restore/save IRQ state from/to
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
++ * @condition evaluates to true or a signal is received.
++ * The @condition is checked each time the waitqueue @wq is woken up.
++ *
++ * It must be called with wq.lock being held.  This spinlock is
++ * unlocked while sleeping but @condition testing is done while lock
++ * is held and when this macro exits the lock is held.
++ *
++ * The lock is locked/unlocked using
++ * spin_lock_irqsave()/spin_unlock_irqrestore() functions which must
++ * match the way they are locked/unlocked outside of this macro.
++ *
++ * wake_up_locked() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * The function will return -ERESTARTSYS if it was interrupted by a
++ * signal and 0 if @condition evaluated to true.
++ */
++#define wait_event_interruptible_locked_irqsave(wq, condition, flags)	\
++({									\
++	int __ret = 0;							\
++	if (!(condition))						\
++		__wait_event_interruptible_locked(wq, condition, __ret, 0, _irqsave, _irqrestore, (&(wq).lock, flags)); \
++	__ret;								\
++})
++
++
++/**
++ * wait_event_interruptible_exclusive_locked - sleep exclusively until a condition gets true
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
++ * @condition evaluates to true or a signal is received.
++ * The @condition is checked each time the waitqueue @wq is woken up.
++ *
++ * It must be called with wq.lock being held.  This spinlock is
++ * unlocked while sleeping but @condition testing is done while lock
++ * is held and when this macro exits the lock is held.
++ *
++ * The lock is locked/unlocked using spin_lock()/spin_unlock()
++ * functions which must match the way they are locked/unlocked outside
++ * of this macro.
++ *
++ * The process is put on the wait queue with an WQ_FLAG_EXCLUSIVE flag
++ * set thus when other process waits process on the list if this
++ * process is awaken further processes are not considered.
++ *
++ * wake_up_locked() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * The function will return -ERESTARTSYS if it was interrupted by a
++ * signal and 0 if @condition evaluated to true.
++ */
++#define wait_event_interruptible_exclusive_locked(wq, condition)	\
++({									\
++	int __ret = 0;							\
++	if (!(condition))						\
++		__wait_event_interruptible_locked(wq, condition, __ret, 1, , , (&(wq).lock)); \
++	__ret;								\
++})
++
++/**
++ * wait_event_interruptible_exclusive_locked_irq - sleep until a condition gets true
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
++ * @condition evaluates to true or a signal is received.
++ * The @condition is checked each time the waitqueue @wq is woken up.
++ *
++ * It must be called with wq.lock being held.  This spinlock is
++ * unlocked while sleeping but @condition testing is done while lock
++ * is held and when this macro exits the lock is held.
++ *
++ * The lock is locked/unlocked using spin_lock_irq()/spin_unlock_irq()
++ * functions which must match the way they are locked/unlocked outside
++ * of this macro.
++ *
++ * The process is put on the wait queue with an WQ_FLAG_EXCLUSIVE flag
++ * set thus when other process waits process on the list if this
++ * process is awaken further processes are not considered.
++ *
++ * wake_up_locked() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * The function will return -ERESTARTSYS if it was interrupted by a
++ * signal and 0 if @condition evaluated to true.
++ */
++#define wait_event_interruptible_exclusive_locked_irq(wq, condition)	\
++({									\
++	int __ret = 0;							\
++	if (!(condition))						\
++		__wait_event_interruptible_locked(wq, condition, __ret, 1, _irq, _irq, (&(wq).lock)); \
++	__ret;								\
++})
++
++/**
++ * wait_event_interruptible_locked_irq - sleep until a condition gets true
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ * @flags: variable to restore/save IRQ state from/to
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
++ * @condition evaluates to true or a signal is received.
++ * The @condition is checked each time the waitqueue @wq is woken up.
++ *
++ * It must be called with wq.lock being held.  This spinlock is
++ * unlocked while sleeping but @condition testing is done while lock
++ * is held and when this macro exits the lock is held.
++ *
++ * The lock is locked/unlocked using
++ * spin_lock_irqsave()/spin_unlock_irqrestore() functions which must
++ * match the way they are locked/unlocked outside of this macro.
++ *
++ * The process is put on the wait queue with an WQ_FLAG_EXCLUSIVE flag
++ * set thus when other process waits process on the list if this
++ * process is awaken further processes are not considered.
++ *
++ * wake_up_locked() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * The function will return -ERESTARTSYS if it was interrupted by a
++ * signal and 0 if @condition evaluated to true.
++ */
++#define wait_event_interruptible_exclusive_locked_irqsave(wq, condition, flags)	\
++({									\
++	int __ret = 0;							\
++	if (!(condition))						\
++		__wait_event_interruptible_locked(wq, condition, __ret, 1, _irqsave, _irqrestore, (&(wq).lock, flags)); \
++	__ret;								\
++})
++
++
++
+ #define __wait_event_killable(wq, condition, ret)			\
+ do {									\
+ 	DEFINE_WAIT(__wait);						\
+@@ -517,7 +746,7 @@ static inline int wait_on_bit_lock(void *word, int bit,
+ 		return 0;
+ 	return out_of_line_wait_on_bit_lock(word, bit, action, mode);
+ }
+-	
++
+ #endif /* __KERNEL__ */
+ 
+ #endif
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 6ca5490..226e9ec 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3940,6 +3940,7 @@ void __wake_up_locked(wait_queue_head_t *q, unsigned int mode)
+ {
+ 	__wake_up_common(q, mode, 1, 0, NULL);
+ }
++EXPORT_SYMBOL_GPL(__wake_up_locked);
+ 
+ void __wake_up_locked_key(wait_queue_head_t *q, unsigned int mode, void *key)
+ {
