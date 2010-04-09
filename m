@@ -1,87 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331Ab0DIM4X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 08:56:23 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43153 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751844Ab0DIM4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 08:56:21 -0400
-Date: Fri, 9 Apr 2010 14:56:18 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Eric Piel <eric.piel@tremplin-utc.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Samu Onkalo <samu.p.onkalo@nokia.com>, Pavel Machek <pavel@ucw.cz>
-Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-       Marcin Derlukiewicz <marcin@derlukiewicz.pl>
-Subject: [PATCH] lis3lv02d: provide means to disable polled input interface
-Message-ID: <alpine.LNX.2.00.1004091453530.8345@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752546Ab0DIM5m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 08:57:42 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41463 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431Ab0DIM5i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 08:57:38 -0400
+Subject: Re: [PATCH 02/13] mm: Revalidate anon_vma in page_lock_anon_vma()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       akpm@linux-foundation.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>
+In-Reply-To: <20100408192722.687144862@chello.nl>
+References: <20100408191737.296180458@chello.nl>
+	 <20100408192722.687144862@chello.nl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 09 Apr 2010 14:57:34 +0200
+Message-ID: <1270817854.20295.3356.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lis3lv02d driver creates emulated joystick interface for events reported 
-by the sensor.
-Because of HW, this has to be implemented as polled input device, with
-20Hz frequency.
+On Thu, 2010-04-08 at 21:17 +0200, Peter Zijlstra wrote:
 
-This is reported to create 20% CPU usage increase (and proportionaly higher
-power consumption) just for the ipolldevd kernel thread (which is used
-to read the sensor).
+> Index: linux-2.6/mm/rmap.c
+> ===================================================================
+> --- linux-2.6.orig/mm/rmap.c
+> +++ linux-2.6/mm/rmap.c
+> @@ -294,6 +294,7 @@ struct anon_vma *page_lock_anon_vma(stru
+>  	unsigned long anon_mapping;
+>  
+>  	rcu_read_lock();
+> +again:
+>  	anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
+>  	if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)
+>  		goto out;
+> @@ -302,6 +303,12 @@ struct anon_vma *page_lock_anon_vma(stru
+>  
+>  	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
+>  	spin_lock(&anon_vma->lock);
+> +
+> +	if (page_rmapping(page) != anon_vma) {
+> +		spin_unlock(&anon_vma->lock);
+> +		goto again;
+> +	}
+> +
+>  	return anon_vma;
+>  out:
+>  	rcu_read_unlock();
 
-As most users probably only use the freefall functionality of the driver
-and not the joystick interface, provide means for disabling the registration
-of joystick device altogether via module parameter.
-(I'd rather make it default to 0, but this will break backwards compatibility).
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 
---- 
- drivers/hwmon/lis3lv02d.c |   16 +++++++++-------
- 1 files changed, 9 insertions(+), 7 deletions(-)
+OK, so I'm not quite sure about this anymore... this locking is quite,..
+umh,. interesting.
 
-diff --git a/drivers/hwmon/lis3lv02d.c b/drivers/hwmon/lis3lv02d.c
-index b2f2277..bfbc02c 100644
---- a/drivers/hwmon/lis3lv02d.c
-+++ b/drivers/hwmon/lis3lv02d.c
-@@ -41,6 +41,9 @@
- 
- /* joystick device poll interval in milliseconds */
- #define MDPS_POLL_INTERVAL 50
-+static int enable_joystick = 1;
-+module_param_named(joystick, enable_joystick, int, 0400);
-+MODULE_PARM_DESC(joystick, "Enable joystick emulation (0 = disable, 1 = enable). Default: 1");
- /*
-  * The sensor can also generate interrupts (DRDY) but it's pretty pointless
-  * because they are generated even if the data do not change. So it's better
-@@ -434,14 +437,13 @@ EXPORT_SYMBOL_GPL(lis3lv02d_joystick_enable);
- 
- void lis3lv02d_joystick_disable(void)
- {
--	if (!lis3_dev.idev)
--		return;
--
- 	if (lis3_dev.irq)
- 		misc_deregister(&lis3lv02d_misc_device);
--	input_unregister_polled_device(lis3_dev.idev);
--	input_free_polled_device(lis3_dev.idev);
--	lis3_dev.idev = NULL;
-+	if (lis3_dev.idev) {
-+		input_unregister_polled_device(lis3_dev.idev);
-+		input_free_polled_device(lis3_dev.idev);
-+		lis3_dev.idev = NULL;
-+	}
- }
- EXPORT_SYMBOL_GPL(lis3lv02d_joystick_disable);
- 
-@@ -559,7 +561,7 @@ int lis3lv02d_init_device(struct lis3lv02d *dev)
- 	lis3lv02d_add_fs(dev);
- 	lis3lv02d_poweron(dev);
- 
--	if (lis3lv02d_joystick_enable())
-+	if (enable_joystick && lis3lv02d_joystick_enable())
- 		printk(KERN_ERR DRIVER_NAME ": joystick initialization failed\n");
- 
- 	/* passing in platform specific data is purely optional and only
+We have:
+
+ - page_remove_rmap() - which decrements page->_mapcount but does not
+clear page->mapping. Even though both it and page_add_anon_rmap()
+require pte_lock, there is no guarantee these are the same locks, so
+these can indeed race.
+
+So there is indeed a possibility for page->mapping to change, but
+holding anon_vma->lock won't make a difference.
+
+ - anon_vma->lock - this does protect vma_anon_link/unlink like things
+and is held during rmap walks, it only protects the list.
+
+ - SLAB_DESTROY_BY_RCU - only guarantees we can deref anon_vma, not that
+we'll find the one we were looking for.
+
+ - we generally unmap/zap before unlink/free - so this should not see
+pages race with anon_vma freeing (except when someone has a page ref),
+however on anon_vma merges we seem to simply unlink the next one,
+without updating potential pages referencing it?
+
+ - KSM seems to not do anything that swap doesn't also do (but I didn't
+look too closely).
+
+ - page migration seems terribly broken..
+
+
+As it stands I don't see a reliable way to obtain an anon_vma,
+vma_address() + page_check_address() things are indeed enough, but not
+everybody seems to do that.
+
