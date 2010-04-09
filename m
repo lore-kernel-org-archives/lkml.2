@@ -1,45 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab0DITrY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 15:47:24 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:44665 "EHLO ogre.sisk.pl"
+	id S1755934Ab0DITtB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 15:49:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12269 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754283Ab0DITrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 15:47:21 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: David Dillow <dave@thedillows.org>
-Subject: Re: [Bug #15454] r8169 exits with error -22 since 2.6.33
-Date: Fri, 9 Apr 2010 21:50:42 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Conrad Kostecki <ConiKost@gmx.de>, romieu@fr.zoreil.com
-References: <cjwJ7Pf9h0L.A.9pB.1DmvLB@chimera> <onZ81XwyNTD.A.PlC.tEmvLB@chimera> <1270775683.26861.4.camel@obelisk.thedillows.org>
-In-Reply-To: <1270775683.26861.4.camel@obelisk.thedillows.org>
+	id S1754283Ab0DITs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 15:48:59 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004092150.42603.rjw@sisk.pl>
+From: Roland McGrath <roland@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+X-Fcc: ~/Mail/linus
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm 1/3] proc: get_nr_threads() doesn't need ->siglock any
+	longer
+In-Reply-To: Oleg Nesterov's message of  Monday, 22 March 2010 19:41:30 +0100 <20100322184130.GA3957@redhat.com>
+References: <20100322184130.GA3957@redhat.com>
+X-Windows: a moment of convenience, a lifetime of regret.
+Message-Id: <20100409194853.95D09BD02@magilla.sf.frob.com>
+Date: Fri,  9 Apr 2010 12:48:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 09 April 2010, David Dillow wrote:
-> On Fri, 2010-04-09 at 01:04 +0200, Rafael J. Wysocki wrote:
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15454
-> > Subject		: r8169 exits with error -22 since 2.6.33
-> > Submitter	: Conrad Kostecki <ConiKost@gmx.de>
-> > Date		: 2010-03-05 22:32 (35 days old)
-> 
-> Francois attached a patch to the bugzilla entry that ignores the failure
-> to enable MWI on the device. That may get the NIC up and running, but
-> that area of the driver doesn't seem to have changed since 2.6.32, so
-> perhaps this is just a canary -- I'm betting that the cache line size is
-> not getting set properly, and it probably affects more than just this
-> NIC.
+Acked-by: Roland McGrath <roland@redhat.com>
 
-Thanks for the update.
+I'm not entirely sure about the name, but it's probably fine.  There should
+be some comments somewhere making clear what "nr" or kind of threads this
+refers to.  This is threads created and not yet reaped.  It differs from
+the "threads not yet exited" (signal->live) count only during some races
+around exit time, and when ptrace is preventing self-reaping.
 
-Rafael
+
+Thanks,
+Roland
