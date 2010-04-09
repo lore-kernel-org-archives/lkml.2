@@ -1,62 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab0DITud (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 15:50:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15861 "EHLO mx1.redhat.com"
+	id S1755558Ab0DITuw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 15:50:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50684 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756535Ab0DITu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 15:50:28 -0400
-Date: Fri, 9 Apr 2010 15:50:03 -0400
+	id S1756056Ab0DITus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 15:50:48 -0400
+Date: Fri, 9 Apr 2010 15:50:08 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
        tglx@linutronix.de, rostedt@goodmis.org, andi@firstfloor.org,
        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
        fweisbec@gmail.com, avi@redhat.com
-Message-Id: <e9cf60b7a01690cef53a3fc05a8e94ac2b9bd12d.1270839564.git.jbaron@redhat.com>
+Message-Id: <ddd6aca6c907d81569a191bae6534bb89ec9abe8.1270839564.git.jbaron@redhat.com>
 In-Reply-To: <cover.1270839564.git.jbaron@redhat.com>
 References: <cover.1270839564.git.jbaron@redhat.com>
-Subject: [PATCH 8/9] jump label: initialize workqueue tracepoints *before* they are registered
+Subject: [PATCH 9/9] jump label: jump_label_text_reserved() to reserve our jump points
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initialize the workqueue data structures *before* they are registered
-so that they are ready for callbacks.
+Add a jump_label_text_reserved(void *start, void *end), so that other
+pieces of code that want to modify kernel text, can first verify that
+jump label has not reserved the instruction.
 
 Signed-off-by: Jason Baron <jbaron@redhat.com>
 ---
- kernel/trace/trace_workqueue.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ arch/x86/kernel/kprobes.c  |    3 +-
+ include/linux/jump_label.h |    6 +++
+ kernel/jump_label.c        |   83 ++++++++++++++++++++++++++++++++++++++++++++
+ kernel/kprobes.c           |    3 +-
+ 4 files changed, 93 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/trace/trace_workqueue.c b/kernel/trace/trace_workqueue.c
-index 40cafb0..487d821 100644
---- a/kernel/trace/trace_workqueue.c
-+++ b/kernel/trace/trace_workqueue.c
-@@ -258,6 +258,11 @@ int __init trace_workqueue_early_init(void)
- {
- 	int ret, cpu;
+diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+index b43bbae..87bcf63 100644
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -1194,7 +1194,8 @@ static int __kprobes copy_optimized_instructions(u8 *dest, u8 *src)
+ 	}
+ 	/* Check whether the address range is reserved */
+ 	if (ftrace_text_reserved(src, src + len - 1) ||
+-	    alternatives_text_reserved(src, src + len - 1))
++	    alternatives_text_reserved(src, src + len - 1) ||
++	    jump_label_text_reserved(src, src + len - 1))
+ 		return -EBUSY;
  
-+	for_each_possible_cpu(cpu) {
-+		spin_lock_init(&workqueue_cpu_stat(cpu)->lock);
-+		INIT_LIST_HEAD(&workqueue_cpu_stat(cpu)->list);
+ 	return len;
+diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+index 7238805..90ca4b6 100644
+--- a/include/linux/jump_label.h
++++ b/include/linux/jump_label.h
+@@ -31,6 +31,7 @@ extern void arch_jump_label_transform(struct jump_entry *entry,
+ 				 enum jump_label_type type);
+ 
+ extern void jump_label_update(const char *name, enum jump_label_type type);
++extern int jump_label_text_reserved(void *start, void *end);
+ 
+ extern void apply_jump_label_nops(struct module *mod);
+ 
+@@ -65,6 +66,11 @@ static inline int apply_jump_label_nops(struct module *mod)
+ 	return 0;
+ }
+ 
++static inline int jump_label_text_reserved(void *start, void *end)
++{
++	return 0;
++}
++
+ #endif
+ 
+ #endif
+diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+index 7e7458b..24bba61 100644
+--- a/kernel/jump_label.c
++++ b/kernel/jump_label.c
+@@ -179,6 +179,89 @@ void jump_label_update(const char *name, enum jump_label_type type)
+ 	mutex_unlock(&jump_label_mutex);
+ }
+ 
++static int addr_conflict(struct jump_entry *entry, void *start, void *end)
++{
++	if (entry->code <= (unsigned long)end &&
++		entry->code + IDEAL_NOP_SIZE_5 > (unsigned long)start)
++		return 1;
++
++	return 0;
++}
++
++#ifdef CONFIG_MODULES
++
++static int module_conflict(void *start, void *end)
++{
++	struct hlist_head *head;
++	struct hlist_node *node, *node_next, *module_node, *module_node_next;
++	struct jump_label_entry *e;
++	struct jump_label_module_entry *e_module;
++	struct jump_entry *iter;
++	int i, count;
++	int conflict = 0;
++
++	for (i = 0; i < JUMP_LABEL_TABLE_SIZE; i++) {
++		head = &jump_label_table[i];
++		hlist_for_each_entry_safe(e, node, node_next, head, hlist) {
++			hlist_for_each_entry_safe(e_module, module_node,
++							module_node_next,
++							&(e->modules), hlist) {
++				count = e_module->nr_entries;
++				iter = e_module->table;
++				while (count--) {
++					if (addr_conflict(iter, start, end)) {
++						conflict = 1;
++						goto out;
++					}
++					iter++;
++				}
++			}
++		}
++	}
++out:
++	return conflict;
++}
++
++#endif
++
++/***
++ * jump_label_text_reserved - check if addr range is reserved
++ * @start: start text addr
++ * @end: end text addr
++ *
++ * checks if the text addr located between @start and @end
++ * overlaps with any of the jump label patch addresses. Code
++ * that wants to modify kernel text should first verify that
++ * it does not overlap with any of the jump label addresses.
++ *
++ * returns 1 if there is an overlap, 0 otherwise
++ */
++int jump_label_text_reserved(void *start, void *end)
++{
++	struct jump_entry *iter;
++	struct jump_entry *iter_start = __start___jump_table;
++	struct jump_entry *iter_stop = __start___jump_table;
++	int conflict = 0;
++
++	mutex_lock(&jump_label_mutex);
++	iter = iter_start;
++	while (iter < iter_stop) {
++		if (addr_conflict(iter, start, end)) {
++			conflict = 1;
++			goto out;
++		}
++		iter++;
 +	}
 +
- 	ret = register_trace_workqueue_insertion(probe_workqueue_insertion);
- 	if (ret)
- 		goto out;
-@@ -274,11 +279,6 @@ int __init trace_workqueue_early_init(void)
- 	if (ret)
- 		goto no_creation;
- 
--	for_each_possible_cpu(cpu) {
--		spin_lock_init(&workqueue_cpu_stat(cpu)->lock);
--		INIT_LIST_HEAD(&workqueue_cpu_stat(cpu)->list);
--	}
--
- 	return 0;
- 
- no_creation:
++	/* now check modules */
++#ifdef CONFIG_MODULES
++	conflict = module_conflict(start, end);
++#endif
++out:
++	mutex_unlock(&jump_label_mutex);
++	return conflict;
++}
++
+ static int init_jump_label(void)
+ {
+ 	int ret;
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index fa034d2..a57755f 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1140,7 +1140,8 @@ int __kprobes register_kprobe(struct kprobe *p)
+ 	preempt_disable();
+ 	if (!kernel_text_address((unsigned long) p->addr) ||
+ 	    in_kprobes_functions((unsigned long) p->addr) ||
+-	    ftrace_text_reserved(p->addr, p->addr)) {
++	    ftrace_text_reserved(p->addr, p->addr) ||
++	    jump_label_text_reserved(p->addr, p->addr)) {
+ 		preempt_enable();
+ 		return -EINVAL;
+ 	}
 -- 
 1.7.0.1
 
