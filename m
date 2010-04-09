@@ -1,67 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab0DIFJI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 01:09:08 -0400
-Received: from mail-qy0-f179.google.com ([209.85.221.179]:64919 "EHLO
-	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634Ab0DIFJE convert rfc822-to-8bit (ORCPT
+	id S1754166Ab0DIFQK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 01:16:10 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:52194 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754124Ab0DIFQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 01:09:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=AlAr07I+r06V+lRkIdd5g/N4jXM9YqnccVVECfLmHq9Dl5JoI1+yNfKTpzoBJtsLWz
-         d6Fe1FiWbJXLztjdTOEWhEfpnQJqEmBrhEZjYyJh+gbDpL3eM+ah7d7kBoc0HQGh1+wo
-         08pMy9TDrw7hGN6cgT6LNuiPHg4q/G2sm7PQw=
-MIME-Version: 1.0
-In-Reply-To: <1270789332.2458.23.camel@edumazet-laptop>
-References: <4BBEA87B.4040807@gmail.com>
-	 <1270789332.2458.23.camel@edumazet-laptop>
-Date: Fri, 9 Apr 2010 13:09:03 +0800
-Message-ID: <l2x2375c9f91004082209p9b13a651zc227448380f65b16@mail.gmail.com>
-Subject: Re: [PATCH 2/3] flex_array: export some symbols for nfnetlink_queue 
-	use
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: xiaosuo@gmail.com, Patrick McHardy <kaber@trash.net>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       netfilter-devel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 9 Apr 2010 01:16:06 -0400
+From: dvhltc@us.ibm.com
+To: linux-kernel@vger.kernel.org
+Cc: Darren Hart <dvhltc@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       John Cooper <john.cooper@third-harmonic.com>,
+       Chris Wright <chrisw@sous-sol.org>, Ulrich Drepper <drepper@gmail.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, Avi Kivity <avi@redhat.com>
+Subject: [PATCH V5 0/4][RFC] futex: FUTEX_LOCK with optional adaptive spinning 
+Date: Thu,  8 Apr 2010 22:15:17 -0700
+Message-Id: <1270790121-16317-1-git-send-email-dvhltc@us.ibm.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 9, 2010 at 1:02 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le vendredi 09 avril 2010 à 12:09 +0800, Changli Gao a écrit :
->> export some symbols for nfnetlink_queue use
->>
->> export some symbols for nfnetlink_queue use.
->>
->> Signed-off-by: Changli Gao <xiaosuo@gmail.com>
->> ----
->> lib/Makefile | 4 ++--
->> lib/flex_array.c | 5 +++++
->> 2 files changed, 7 insertions(+), 2 deletions(-)
->>
->> diff --git a/lib/Makefile b/lib/Makefile
->> index 0a6ab6f..0700e74 100644
->> --- a/lib/Makefile
->> +++ b/lib/Makefile
->> @@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
->>        idr.o int_sqrt.o extable.o prio_tree.o \
->>        sha1.o irq_regs.o reciprocal_div.o argv_split.o \
->>        proportions.o prio_heap.o ratelimit.o show_mem.o \
->> -      is_single_threaded.o plist.o decompress.o flex_array.o
->> +      is_single_threaded.o plist.o decompress.o
->>
->
-> Hmm, could you instead add a lib-$(CONFIG_FLEX_ARRAY) += flex_array.o
-> instead ?
->
-> And do the necessary Kconfig changes as well.
->
+NOT FOR INCLUSION
 
-Right, if nfnetlink will use flex_array, CONFIG_NETFILTER_NETLINK will
-need to depend on or select CONFIG_FLEX_ARRAY.
+The following patch series implements a new experimental kernel side futex mutex
+via new FUTEX_LOCK and FUTEX_LOCK_ADAPTIVE futex op codes. The adaptive spin
+allows for multiple spinners until the lock is released or the owner is
+descheduled. The patch currently allows the user to specify if they want
+spinning or not, but the final version will only provide the adaptive variant as
+blocking locks are already very efficiently implemented with the existing
+operations.
+
+This version greatly outperforms the last, and actually shows some benefit using
+adaptive locks! The primary difference in the implementations was the removal of
+any attempt to limit the number of spinners as we have no means to track
+spinners. This version also allows spinners to continue spinning if the owner of
+a lock changes, and only aborts if the current owner deschedules. Aborting the
+spin if the owner changes proved ineffectual as this locking mechanism does a
+lot of lock stealing, so many of the loops would be a single cycle, and then
+move on to block. Something to note is that the adaptive runs can make
+significantly more syscalls than the non-adaptive version, and still show
+significant improvement.
+
+Normal Lock
+===========
+# ./futex_lock -i100000000 -n8 -p1000 -d10 
+futex_lock: Measure FUTEX_LOCK operations per second
+	Arguments: iterations=100000000 threads=8 adaptive=no
+	           period=1000 duty-cycle=10%
+Result: 606 Kiter/s
+lock calls:      100000000
+lock syscalls:   35729444 (35.73%)
+unlock calls:    100000000
+unlock syscalls: 41740294 (41.74%)
+
+Adaptive Lock
+=============
+# ./futex_lock -i100000000 -n8 -p1000 -d10 -a
+futex_lock: Measure FUTEX_LOCK operations per second
+	Arguments: iterations=100000000 threads=8 adaptive=yes
+	           period=1000 duty-cycle=10%
+Result: 749 Kiter/s
+lock calls:      100000000
+lock syscalls:   72257679 (72.26%)
+unlock calls:    100000000
+unlock syscalls: 72265869 (72.27%)
+
+I'm using the futex_lock branch of my futextest test suite to gather results.
+The test is performance/futex_lock.c and can be checked out here:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/dvhart/futextest.git
+
+At Avi's suggestion, I prepared plots of multiple thread counts, they are
+available at the URL below. These plots are all from runs with a period of 1000
+instructions, with one plot per each of several duty-cycles.
+
+http://www.kernel.org/pub/linux/kernel/people/dvhart/adaptive_futex/v5/1000-period/plots.html
+
+Now that an advantage can be shown using FUTEX_LOCK_ADAPTIVE over FUTEX_LOCK,
+the next steps as I see them are:
+
+o Try and show improvement of FUTEX_LOCK_ADAPTIVE over FUTEX_WAIT based
+  implementations (pthread_mutex specifically).
+
+o Improve workload definition. The current workload is a cpu-hog. It runs a
+  fixed set of instructions in a loop, with some percentage of those being
+  contained within the lock/unlock block. Adding sleeps to reduce CPU overhead
+  just added so much scheduling overhead that the numbers dropped absurdly for
+  both normal and adaptive. I'd appreciate any assistance in preparing a
+  test-case for a real-world usage scenario. I will work with some of IBM's
+  product teams to do so, and would welcome any input from others with an
+  interest in kernel assisted userspace spinlocks.
+
+o Attempt the kernel assisted userspace spinning version proposed by Avi, Alan,
+  and Ulrich for comparison.
+
+Thanks,
+
+Darren Hart
+IBM Linux Technology Center
+Real-Time Linux Team
+
+
