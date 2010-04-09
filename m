@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525Ab0DIHEV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 03:04:21 -0400
-Received: from mail.in-ulm.de ([217.10.8.10]:47043 "HELO mail.in-ulm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754260Ab0DIHES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 03:04:18 -0400
-Date: Fri, 9 Apr 2010 09:04:16 +0200
-From: Christian Ehrhardt <uni@c--e.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 05/13] mm: Make use of the anon_vma ref count
-Message-ID: <20100409070416.GA14118@lisa.in-ulm.de>
-References: <20100408191737.296180458@chello.nl> <20100408192722.815377075@chello.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100408192722.815377075@chello.nl>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	id S1755807Ab0DIHNs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 03:13:48 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:51711 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753381Ab0DIHNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 03:13:46 -0400
+Date: Fri, 9 Apr 2010 17:13:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>, Hans Verkuil <hverkuil@xs4all.nl>
+Subject: Re: linux-next: manual merge of the v4l-dvb tree with Linus' tree
+Message-Id: <20100409171333.418c31f3.sfr@canb.auug.org.au>
+In-Reply-To: <4BBEB995.4090307@infradead.org>
+References: <20100407110035.217b024b.sfr@canb.auug.org.au>
+	<4BBEB995.4090307@infradead.org>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__9_Apr_2010_17_13_33_+1000_1dofDrD0oFxAw2k9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Fri__9_Apr_2010_17_13_33_+1000_1dofDrD0oFxAw2k9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi,
+Hi Mauro,
 
-On Thu, Apr 08, 2010 at 09:17:42PM +0200, Peter Zijlstra wrote:
-> @@ -302,23 +307,33 @@ again:
->  		goto out;
->  
->  	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
-> -	spin_lock(&anon_vma->lock);
-> +	if (!atomic_inc_not_zero(&anon_vma->ref))
-> +		anon_vma = NULL;
->  
->  	if (page_rmapping(page) != anon_vma) {
-> -		spin_unlock(&anon_vma->lock);
-> +		anon_vma_put(anon_vma);
->  		goto again;
->  	}
+On Fri, 09 Apr 2010 02:22:29 -0300 Mauro Carvalho Chehab <mchehab@infradead=
+.org> wrote:
+>
+> Thanks for pointing it to me. Fixed.
+>=20
+> I also fixed today a conflict that it would appear on your next pull, bet=
+ween=20
+> input and v4l-dvb, due to the upstream changes of keytable ops from
+> int to unsigned.
 
-AFAICS anon_vma_put might be called with anon_vma == NULL here which
-will oops on the ref count. Not sure if
+Excellent, thanks.
 
-     page_rmapping(page) == anon_vma == NULL 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-is possible, too.
+--Signature=_Fri__9_Apr_2010_17_13_33_+1000_1dofDrD0oFxAw2k9
+Content-Type: application/pgp-signature
 
-    regards   Christian
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iEYEARECAAYFAku+050ACgkQjjKRsyhoI8wBzACeJmV2ZwkjxMA56TlX27hkc0PC
+IrAAnA0/QdFbO4ZS+HN9cVbzhY2VK6ZS
+=u0nB
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__9_Apr_2010_17_13_33_+1000_1dofDrD0oFxAw2k9--
