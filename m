@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965Ab0DIFsG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 01:48:06 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:45198 "EHLO e3.ny.us.ibm.com"
+	id S1754821Ab0DIGEv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 02:04:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48997 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754717Ab0DIFra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 01:47:30 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/urgent 2/4] RCU: Better explain the condition parameter of rcu_dereference_check()
-Date: Thu,  8 Apr 2010 22:47:20 -0700
-Message-Id: <1270792042-9358-2-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <20100409054701.GA8833@linux.vnet.ibm.com>
-References: <20100409054701.GA8833@linux.vnet.ibm.com>
+	id S1754550Ab0DIGEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 02:04:48 -0400
+Message-ID: <4BBEC082.10106@redhat.com>
+Date: Fri, 09 Apr 2010 01:52:02 -0400
+From: john cooper <john.cooper@redhat.com>
+User-Agent: Thunderbird 2.0.0.9 (X11/20071115)
+MIME-Version: 1.0
+To: Darren Hart <dvhltc@us.ibm.com>
+CC: john cooper <john.cooper@third-harmonic.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
+       "Peter W. Morreale" <pmorreale@novell.com>,
+       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Gregory Haskins <ghaskins@novell.com>,
+       Sven-Thorsten Dietrich <sdietrich@novell.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       Chris Wright <chrisw@sous-sol.org>, john.cooper@redhat.com
+Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive
+ spinning
+References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com> <4BBA5305.7010002@redhat.com> <4BBA5C00.4090703@us.ibm.com> <4BBA6279.20802@redhat.com> <4BBA6B6F.7040201@us.ibm.com> <4BBB36FA.4020008@redhat.com> <1270560931.1595.342.camel@laptop> <20100406145128.6324ac9a@lxorguk.ukuu.org.uk> <4BBB531A.4070500@us.ibm.com> <4BBB5C0D.8050602@redhat.com> <alpine.LFD.2.00.1004061809080.32352@localhost.localdomain> <4BBB5F52.4000403@redhat.com> <4BBC23C2.4080100@third-harmonic.com> <4BBD4E9C.2040500@us.ibm.com>
+In-Reply-To: <4BBD4E9C.2040500@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Howells <dhowells@redhat.com>
+Darren Hart wrote:
+> john cooper wrote:
+>> But here we're otherwise completely
+>> open to indiscriminate scheduling preemption even though
+>> we may be holding a userland lock.
+> 
+> That's true with any userland lock.
 
-Better explain the condition parameter of rcu_dereference_check() that
-describes the conditions under which the dereference is permitted to take
-place.  This condition is only checked under lockdep proving.
+Agreed.  However from your earlier mail it seemed
+addressing this scenario was within the scope of
+consideration.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- include/linux/rcupdate.h |   28 +++++++++++++++++++++++-----
- 1 files changed, 23 insertions(+), 5 deletions(-)
+There are two ways to deal with this condition, either
+reactive in the sense we do so after the lock holder
+has been preempted and subsequently find we're spinning
+in sibling thread context attempting to acquire the
+lock.  Or proactively where we provide a time bounded
+deferral of lock holder preemption with the assumption
+the lock hold path overhead has negligible effect upon
+deferring a potentially coincident scheduling operation.
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index b00b20e..6cdb176 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -195,12 +195,30 @@ static inline int rcu_read_lock_sched_held(void)
+It is fairly straightforward to demonstrate the impact
+to performance with a focused micro benchmark, less so
+for a more "typical" application with the effect being
+diluted among other app activity.
  
- /**
-  * rcu_dereference_check - rcu_dereference with debug checking
-+ * @p: The pointer to read, prior to dereferencing
-+ * @c: The conditions under which the dereference will take place
-  *
-- * Do an rcu_dereference(), but check that the context is correct.
-- * For example, rcu_dereference_check(gp, rcu_read_lock_held()) to
-- * ensure that the rcu_dereference_check() executes within an RCU
-- * read-side critical section.  It is also possible to check for
-- * locks being held, for example, by using lockdep_is_held().
-+ * Do an rcu_dereference(), but check that the conditions under which the
-+ * dereference will take place are correct.  Typically the conditions indicate
-+ * the various locking conditions that should be held at that point.  The check
-+ * should return true if the conditions are satisfied.
-+ *
-+ * For example:
-+ *
-+ *	bar = rcu_dereference_check(foo->bar, rcu_read_lock_held() ||
-+ *					      lockdep_is_held(&foo->lock));
-+ *
-+ * could be used to indicate to lockdep that foo->bar may only be dereferenced
-+ * if either the RCU read lock is held, or that the lock required to replace
-+ * the bar struct at foo->bar is held.
-+ *
-+ * Note that the list of conditions may also include indications of when a lock
-+ * need not be held, for example during initialisation or destruction of the
-+ * target struct:
-+ *
-+ *	bar = rcu_dereference_check(foo->bar, rcu_read_lock_held() ||
-+ *					      lockdep_is_held(&foo->lock),
-+ *					      atomic_read(&foo->usage) == 0);
-  */
- #define rcu_dereference_check(p, c) \
- 	({ \
--- 
-1.7.0
+The two approaches are complimentary with differing
+system wide tradeoffs.  Both require some insight into
+the scheduling disposition of the lock holder, the
+preemption deferral mechanism more so.  If a scheme to
+expose scheduler state transitions to (or cooperate
+with) userland locking primitives is being considered,
+it seems opportune to consider support as well for
+this scenario.
 
+-john
+
+-- 
+john.cooper@redhat.com
