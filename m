@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903Ab0DICSU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 22:18:20 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:39203 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439Ab0DICSR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 22:18:17 -0400
-Date: Fri, 9 Apr 2010 11:11:45 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-       randy.dunlap@oracle.com,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH] memcg: update documentation v3
-Message-Id: <20100409111145.5359a872.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20100409104556.2aa6399d.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100408145800.ca90ad81.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100409102626.11f8b8b6.nishimura@mxp.nes.nec.co.jp>
-	<20100409104556.2aa6399d.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 2.6.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1752038Ab0DICSe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 22:18:34 -0400
+Received: from mga03.intel.com ([143.182.124.21]:60672 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751439Ab0DICSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 22:18:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,174,1270450800"; 
+   d="scan'208";a="263708080"
+Subject: Re: [REVERT] be6b38bcb175613f239e0b302607db346472c6b6.
+ v2.6.34-rc3-406 oops with 4965AGN wireless
+From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Cc: "Zhao, Shanyu" <shanyu.zhao@intel.com>,
+       "Chatre, Reinette" <reinette.chatre@intel.com>,
+       "stable@kernel.org" <stable@kernel.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Al Viro <viro@zeniv.linux.org.uk>
+In-Reply-To: <k2yb6a2187b1004081736td3a4c0f3uc05451902bec39a5@mail.gmail.com>
+References: <Pine.LNX.4.64.1004090251210.11582@boston.corp.fedex.com>
+	 <Pine.LNX.4.64.1004090336410.22139@boston.corp.fedex.com>
+	 <1270759800.19330.19.camel@wwguy-ubuntu>
+	 <k2yb6a2187b1004081736td3a4c0f3uc05451902bec39a5@mail.gmail.com>
+Content-Type: text/plain
+Date: Thu, 08 Apr 2010 20:15:04 -0700
+Message-Id: <1270782904.28602.1.camel@wwguy-ubuntu>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.24.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Apr 2010 10:45:56 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Fri, 9 Apr 2010 10:26:26 +0900
-> Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-> > > +Current Status: linux-2.6.34-mmotm(development version of 2010/April)
-> > > +
-> > > +Features:
-> > > + - accounting anonymous pages, file caches, swap caches usage and limit them.
-> > > + - private LRU and reclaim routine. (system's global LRU and private LRU
-> > > +   work independently from each other)
-> > > + - optionally, memory+swap usage can be accounted and limited.
-> > > + - hierarchical accounting
-> > > + - soft limit
-> > > + - moving(recharging) account at moving a task is selectable.
-> > > + - usage threshold notifier
-> > > + - oom-killer disable knob and oom-notifier
-> > > + - Root cgroup has no limit controls.
-> > > +
-> > > + Kernel memory and Hugepages are not under control yet. We just manage
-> > > + pages on LRU. To add more controls, we have to take care of performance.
-> > > +
-> > > +Brief summary of control files.
-> > > +
-> > > + tasks				 # attach a task(thread)
-> > > + cgroup.procs			 # attach a process(all threads under it)
-> > IIUC, writing to cgroup.procs isn't supported yet. So, I think we don't have to
-> > bother explaining cgroup.procs here.
-> > 
+Hi Jeff,
+
+On Thu, 2010-04-08 at 17:36 -0700, Jeff Chua wrote:
 > 
-> It's supported. See Documetaion/cgroup/cgroup.txt
-> IIRC, I use cgroup.procs file for migrating, sometimes.
 > 
-I can't write to it now.
+> On Fri, Apr 9, 2010 at 4:50 AM, Guy, Wey-Yi <wey-yi.w.guy@intel.com>
+> wrote:
+>         do not need to check sta_id == IWL_INVALID_STATION here since
+>         already
+>         check before.
+>         could you try my revised version of patch I send after my
+>         first attempt.
+>         to make sure it works.
+>         
+>         I attach here again in case you did not get it.
+> 
+> Wey,
+>  
+> One small touch-up. Again, I've to rename "iwlagn_" to "iwl_" so that
+> it can apply to Linus's base code.
+> 
+> Tested and working fine. Here's the updated patch.
+> 
+Thanks for verify the patch, you are correct, since I am using the
+wireless-testing version of the kernel, you will need to make the
+changes in order to get the patch apply. Sorry for the trouble.
 
-# echo $$ >/cgroup/memory/01/cgroup.procs
--bash: echo: write error: Invalid argument
-# ls -l /cgroup/memory/01/cgroup.procs
--r--r--r-- 1 root root 0 2010-04-09 10:41 /cgroup/memory/01/cgroup.procs
-# uname -a
-Linux GibsonE 2.6.34-rc3-mm1-00432-g37c11f5 #1 SMP Thu Apr 8 11:03:39 JST 2010 x86_64 x86_64 x86_64 GNU/Linux
+Regards
+Wey
 
-And kernel/cgroup.c says:
+> 
+> 
+> 
 
-   3161         {
-   3162                 .name = CGROUP_FILE_GENERIC_PREFIX "procs",
-   3163                 .open = cgroup_procs_open,
-   3164                 /* .write_u64 = cgroup_procs_write, TODO */
-   3165                 .release = cgroup_pidlist_release,
-   3166                 .mode = S_IRUGO,
-   3167         },
-
-IIRC, it's supported once, but the patch was dropped.
-
-
-Thanks,
-Daisuke Nishimura.
