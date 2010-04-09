@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756737Ab0DIGJm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 02:09:42 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:28684 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756523Ab0DIGJ2 (ORCPT
+	id S1756793Ab0DIGJp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 02:09:45 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:30426 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756564Ab0DIGJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 02:09:28 -0400
+	Fri, 9 Apr 2010 02:09:29 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,201 +16,153 @@ Cc: David Miller <davem@davemloft.net>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 32/39] x86: Add get_centaur_ram_top()
-Date: Thu,  8 Apr 2010 23:04:01 -0700
-Message-Id: <1270793048-23796-33-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 31/39] x86: Use wake_system_ram_range() instead of e820_any_mapped() in agp path
+Date: Thu,  8 Apr 2010 23:04:00 -0700
+Message-Id: <1270793048-23796-32-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
 References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4BBEC45F.00EB,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090203.4BBEC461.008D,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So we can avoid to access e820.map[] directly.
+Move apterture_valid back to .c
 
-later we could move e820 to static and _initdata
+and early path still use e820_any_mapped()
+
+So later we can make e820_any_mapped() to _init
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/e820.h   |    9 ++++++
- arch/x86/kernel/cpu/centaur.c |   53 +-------------------------------------
- arch/x86/kernel/e820.c        |   56 +++++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/setup.c       |    2 +
- 4 files changed, 69 insertions(+), 51 deletions(-)
+ arch/x86/include/asm/gart.h   |   22 ----------------------
+ arch/x86/kernel/aperture_64.c |   22 ++++++++++++++++++++++
+ drivers/char/agp/amd64-agp.c  |   39 ++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 60 insertions(+), 23 deletions(-)
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index 334281f..cd7de51 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -76,6 +76,15 @@ struct e820map {
- /* see comment in arch/x86/kernel/e820.c */
- extern struct e820map e820;
- 
-+#if defined(CONFIG_X86_OOSTORE) && defined(CONFIG_CPU_SUP_CENTAUR)
-+extern int centaur_ram_top;
-+void get_centaur_ram_top(void);
-+#else
-+static inline void get_centaur_ram_top(void)
-+{
-+}
-+#endif
-+
- extern unsigned long pci_mem_start;
- extern int e820_any_mapped(u64 start, u64 end, unsigned type);
- extern int e820_all_mapped(u64 start, u64 end, unsigned type);
-diff --git a/arch/x86/kernel/cpu/centaur.c b/arch/x86/kernel/cpu/centaur.c
-index e58d978..bb49358 100644
---- a/arch/x86/kernel/cpu/centaur.c
-+++ b/arch/x86/kernel/cpu/centaur.c
-@@ -37,63 +37,14 @@ static void __cpuinit centaur_mcr_insert(int reg, u32 base, u32 size, int key)
- 	mtrr_centaur_report_mcr(reg, lo, hi);	/* Tell the mtrr driver */
+diff --git a/arch/x86/include/asm/gart.h b/arch/x86/include/asm/gart.h
+index 4ac5b0f..2b63a91 100644
+--- a/arch/x86/include/asm/gart.h
++++ b/arch/x86/include/asm/gart.h
+@@ -74,26 +74,4 @@ static inline void enable_gart_translation(struct pci_dev *dev, u64 addr)
+         pci_write_config_dword(dev, AMD64_GARTAPERTURECTL, ctl);
  }
  
--/*
-- * Figure what we can cover with MCR's
-- *
-- * Shortcut: We know you can't put 4Gig of RAM on a winchip
-- */
--static u32 __cpuinit ramtop(void)
+-static inline int aperture_valid(u64 aper_base, u32 aper_size, u32 min_size)
 -{
--	u32 clip = 0xFFFFFFFFUL;
--	u32 top = 0;
--	int i;
+-	if (!aper_base)
+-		return 0;
 -
--	for (i = 0; i < e820.nr_map; i++) {
--		unsigned long start, end;
--
--		if (e820.map[i].addr > 0xFFFFFFFFUL)
--			continue;
--		/*
--		 * Don't MCR over reserved space. Ignore the ISA hole
--		 * we frob around that catastrophe already
--		 */
--		if (e820.map[i].type == E820_RESERVED) {
--			if (e820.map[i].addr >= 0x100000UL &&
--			    e820.map[i].addr < clip)
--				clip = e820.map[i].addr;
--			continue;
--		}
--		start = e820.map[i].addr;
--		end = e820.map[i].addr + e820.map[i].size;
--		if (start >= end)
--			continue;
--		if (end > top)
--			top = end;
+-	if (aper_base + aper_size > 0x100000000ULL) {
+-		printk(KERN_INFO "Aperture beyond 4GB. Ignoring.\n");
+-		return 0;
 -	}
--	/*
--	 * Everything below 'top' should be RAM except for the ISA hole.
--	 * Because of the limited MCR's we want to map NV/ACPI into our
--	 * MCR range for gunk in RAM
--	 *
--	 * Clip might cause us to MCR insufficient RAM but that is an
--	 * acceptable failure mode and should only bite obscure boxes with
--	 * a VESA hole at 15Mb
--	 *
--	 * The second case Clip sometimes kicks in is when the EBDA is marked
--	 * as reserved. Again we fail safe with reasonable results
--	 */
--	if (top > clip)
--		top = clip;
+-	if (e820_any_mapped(aper_base, aper_base + aper_size, E820_RAM)) {
+-		printk(KERN_INFO "Aperture pointing to e820 RAM. Ignoring.\n");
+-		return 0;
+-	}
+-	if (aper_size < min_size) {
+-		printk(KERN_INFO "Aperture too small (%d MB) than (%d MB)\n",
+-				 aper_size>>20, min_size>>20);
+-		return 0;
+-	}
 -
--	return top;
+-	return 1;
 -}
-+int __cpuinitdata centaur_ram_top;
- 
- /*
-  * Compute a set of MCR's to give maximum coverage
-  */
- static int __cpuinit centaur_mcr_compute(int nr, int key)
- {
--	u32 mem = ramtop();
-+	u32 mem = centaur_ram_top;
- 	u32 root = power2(mem);
- 	u32 base = root;
- 	u32 top = root;
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 57c938a..be6e1e6 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -1131,6 +1131,62 @@ void __init setup_memory_map(void)
- 	e820_print_map(who);
+-
+ #endif /* _ASM_X86_GART_H */
+diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
+index 3704997..f6e6270 100644
+--- a/arch/x86/kernel/aperture_64.c
++++ b/arch/x86/kernel/aperture_64.c
+@@ -145,6 +145,28 @@ static u32 __init find_cap(int bus, int slot, int func, int cap)
+ 	return 0;
  }
  
-+#if defined(CONFIG_X86_OOSTORE) && defined(CONFIG_CPU_SUP_CENTAUR)
-+/*
-+ * Figure what we can cover with MCR's
-+ *
-+ * Shortcut: We know you can't put 4Gig of RAM on a winchip
-+ */
-+void __init get_centaur_ram_top(void)
++static int __init aperture_valid(u64 aper_base, u32 aper_size, u32 min_size)
 +{
-+	u32 clip = 0xFFFFFFFFUL;
-+	u32 top = 0;
-+	int i;
++	if (!aper_base)
++		return 0;
 +
-+	if (boot_cpu_data.x86_vendor != X86_VENDOR_CENTAUR)
-+		return;
-+
-+	for (i = 0; i < e820.nr_map; i++) {
-+		unsigned long start, end;
-+
-+		if (e820.map[i].addr > 0xFFFFFFFFUL)
-+			continue;
-+		/*
-+		 * Don't MCR over reserved space. Ignore the ISA hole
-+		 * we frob around that catastrophe already
-+		 */
-+		if (e820.map[i].type == E820_RESERVED) {
-+			if (e820.map[i].addr >= 0x100000UL &&
-+			    e820.map[i].addr < clip)
-+				clip = e820.map[i].addr;
-+			continue;
-+		}
-+		start = e820.map[i].addr;
-+		end = e820.map[i].addr + e820.map[i].size;
-+		if (start >= end)
-+			continue;
-+		if (end > top)
-+			top = end;
++	if (aper_base + aper_size > 0x100000000ULL) {
++		printk(KERN_INFO "Aperture beyond 4GB. Ignoring.\n");
++		return 0;
 +	}
-+	/*
-+	 * Everything below 'top' should be RAM except for the ISA hole.
-+	 * Because of the limited MCR's we want to map NV/ACPI into our
-+	 * MCR range for gunk in RAM
-+	 *
-+	 * Clip might cause us to MCR insufficient RAM but that is an
-+	 * acceptable failure mode and should only bite obscure boxes with
-+	 * a VESA hole at 15Mb
-+	 *
-+	 * The second case Clip sometimes kicks in is when the EBDA is marked
-+	 * as reserved. Again we fail safe with reasonable results
-+	 */
-+	if (top > clip)
-+		top = clip;
++	if (e820_any_mapped(aper_base, aper_base + aper_size, E820_RAM)) {
++		printk(KERN_INFO "Aperture pointing to e820 RAM. Ignoring.\n");
++		return 0;
++	}
++	if (aper_size < min_size) {
++		printk(KERN_INFO "Aperture too small (%d MB) than (%d MB)\n",
++				 aper_size>>20, min_size>>20);
++		return 0;
++	}
 +
-+	centaur_ram_top = top;
++	return 1;
 +}
-+#endif
 +
- void __init init_lmb_memory(void)
+ /* Read a standard AGPv3 bridge header */
+ static u32 __init read_agp(int bus, int slot, int func, int cap, u32 *order)
  {
- 	lmb_init();
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 403b15c..a7ed663 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -893,6 +893,8 @@ void __init setup_arch(char **cmdline_p)
- 	if (mtrr_trim_uncached_memory(max_pfn))
- 		max_pfn = e820_end_of_ram_pfn();
+diff --git a/drivers/char/agp/amd64-agp.c b/drivers/char/agp/amd64-agp.c
+index fd50ead..85cabd0 100644
+--- a/drivers/char/agp/amd64-agp.c
++++ b/drivers/char/agp/amd64-agp.c
+@@ -14,7 +14,6 @@
+ #include <linux/agp_backend.h>
+ #include <linux/mmzone.h>
+ #include <asm/page.h>		/* PAGE_SIZE */
+-#include <asm/e820.h>
+ #include <asm/k8.h>
+ #include <asm/gart.h>
+ #include "agp.h"
+@@ -231,6 +230,44 @@ static const struct agp_bridge_driver amd_8151_driver = {
+ 	.agp_type_to_mask_type  = agp_generic_type_to_mask_type,
+ };
  
-+	get_centaur_ram_top();
++static int __devinit
++__is_ram(unsigned long pfn, unsigned long nr_pages, void *arg)
++{
++	return 1;
++}
 +
- #ifdef CONFIG_X86_32
- 	/* max_low_pfn get updated here */
- 	find_low_pfn_range();
++static int __devinit any_ram_in_range(u64 base, u64 size)
++{
++	unsigned long pfn, nr_pages;
++
++	pfn = base >> PAGE_SHIFT;
++	nr_pages = size >> PAGE_SHIFT;
++
++	return walk_system_ram_range(pfn, nr_pages, NULL, __is_ram) == 1;
++}
++
++static int __devinit aperture_valid(u64 aper_base, u32 aper_size, u32 min_size)
++{
++	if (!aper_base)
++		return 0;
++
++	if (aper_base + aper_size > 0x100000000ULL) {
++		printk(KERN_INFO "Aperture beyond 4GB. Ignoring.\n");
++		return 0;
++	}
++	if (any_ram_in_range(aper_base, aper_size)) {
++		printk(KERN_INFO "Aperture pointing to E820 RAM. Ignoring.\n");
++		return 0;
++	}
++	if (aper_size < min_size) {
++		printk(KERN_INFO "Aperture too small (%d MB) than (%d MB)\n",
++				 aper_size>>20, min_size>>20);
++		return 0;
++	}
++
++	return 1;
++}
++
+ /* Some basic sanity checks for the aperture. */
+ static int __devinit agp_aperture_valid(u64 aper, u32 size)
+ {
 -- 
 1.6.4.2
 
