@@ -1,100 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab0DISFL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 14:05:11 -0400
-Received: from 64-131-60-146.usfamily.net ([64.131.60.146]:52118 "EHLO
-	mail.sandeen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753359Ab0DISFI (ORCPT
+	id S1755275Ab0DISJv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 14:09:51 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:58009 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359Ab0DISJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 14:05:08 -0400
-Message-ID: <4BBF6C51.5030203@sandeen.net>
-Date: Fri, 09 Apr 2010 13:05:05 -0500
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	Fri, 9 Apr 2010 14:09:47 -0400
+Date: Fri, 9 Apr 2010 20:09:42 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Pedro Ribeiro <pedrib@gmail.com>, Robert Hancock <hancockrwd@gmail.com>,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       Greg KH <gregkh@suse.de>, alsa-devel@alsa-project.org,
+       linux-usb@vger.kernel.org
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+Message-ID: <20100409180942.GK30801@buzzloop.caiaq.de>
+References: <m2n74fd948d1004081613n90408827s7c51ef572848fb1d@mail.gmail.com>
+ <Pine.LNX.4.44L0.1004091155570.1852-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>, Dave Chinner <david@fromorbit.com>,
-       John Berthels <john@humyo.com>, linux-kernel@vger.kernel.org,
-       Nick Gregory <nick@humyo.com>, Rob Sanderson <rob@humyo.com>,
-       xfs@oss.sgi.com, linux-mm@kvack.org
-Subject: Re: PROBLEM + POSS FIX: kernel stack overflow, xfs, many disks,	heavy
- write load, 8k stack, x86-64
-References: <4BBC6719.7080304@humyo.com> <20100407140523.GJ11036@dastard>	<4BBCAB57.3000106@humyo.com> <20100407234341.GK11036@dastard>	<20100408030347.GM11036@dastard> <4BBDC92D.8060503@humyo.com>	<4BBDEC9A.9070903@humyo.com> <20100408233837.GP11036@dastard> <20100409113850.GE13327@think>
-In-Reply-To: <20100409113850.GE13327@think>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1004091155570.1852-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris Mason wrote:
-
-> shrink_zone on my box isn't 500 bytes, but lets try the easy stuff
-> first.  This is against .34, if you have any trouble applying to .32,
-> just add the word noinline after the word static on the function
-> definitions.
+On Fri, Apr 09, 2010 at 12:01:27PM -0400, Alan Stern wrote:
+> On Fri, 9 Apr 2010, Pedro Ribeiro wrote:
+> > here is the output of the patch you sent me when the interference is triggered.
+> > 
+> > The log is long, 1.3mb in size.
 > 
-> This makes shrink_zone disappear from my check_stack.pl output.
-> Basically I think the compiler is inlining the shrink_active_zone and
-> shrink_inactive_zone code into shrink_zone.
-> 
-> -chris
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 79c8098..c70593e 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -620,7 +620,7 @@ static enum page_references page_check_references(struct page *page,
->  /*
->   * shrink_page_list() returns the number of reclaimed pages
->   */
-> -static unsigned long shrink_page_list(struct list_head *page_list,
-> +static noinline unsigned long shrink_page_list(struct list_head *page_list,
+> I don't see anything suspicious.  The transfer_buffer addresses repeat 
+> every 32 URBs, and the DMA addresses cycle almost entirely uniformly 
+> from 0x20000000 to 0x23ffffff in units of 0x2000 (there are a few gaps 
+> where the interval is a little bigger).
 
-FWIW akpm suggested that I add:
+The DMA pointers do indeed look sane. I wanted to take a deeper look at
+this and set up a 64bit system today. However, I fail to see the problem
+here. Pedro, how much RAM does your machine have installed?
 
-/*
- * Rather then using noinline to prevent stack consumption, use
- * noinline_for_stack instead.  For documentaiton reasons.
- */
-#define noinline_for_stack noinline
-
-so maybe for a formal submission that'd be good to use.
-
-
->  					struct scan_control *sc,
->  					enum pageout_io sync_writeback)
->  {
-> @@ -1121,7 +1121,7 @@ static int too_many_isolated(struct zone *zone, int file,
->   * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
->   * of reclaimed pages
->   */
-> -static unsigned long shrink_inactive_list(unsigned long max_scan,
-> +static noinline unsigned long shrink_inactive_list(unsigned long max_scan,
->  			struct zone *zone, struct scan_control *sc,
->  			int priority, int file)
->  {
-> @@ -1341,7 +1341,7 @@ static void move_active_pages_to_lru(struct zone *zone,
->  		__count_vm_events(PGDEACTIVATE, pgmoved);
->  }
->  
-> -static void shrink_active_list(unsigned long nr_pages, struct zone *zone,
-> +static noinline void shrink_active_list(unsigned long nr_pages, struct zone *zone,
->  			struct scan_control *sc, int priority, int file)
->  {
->  	unsigned long nr_taken;
-> @@ -1504,7 +1504,7 @@ static int inactive_list_is_low(struct zone *zone, struct scan_control *sc,
->  		return inactive_anon_is_low(zone, sc);
->  }
->  
-> -static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
-> +static noinline unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
->  	struct zone *zone, struct scan_control *sc, int priority)
->  {
->  	int file = is_file_lru(lru);
-> 
-> _______________________________________________
-> xfs mailing list
-> xfs@oss.sgi.com
-> http://oss.sgi.com/mailman/listinfo/xfs
-> 
+Daniel
 
