@@ -1,107 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255Ab0DINdT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 09:33:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43487 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753136Ab0DINdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 09:33:08 -0400
-Date: Fri, 9 Apr 2010 09:32:52 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [watchdog] combine nmi_watchdog and softlockup
-Message-ID: <20100409133252.GH15159@redhat.com>
-References: <20100323213338.GA29170@redhat.com>
- <20100405141122.GD15159@redhat.com>
- <20100409010248.GE6672@nowhere>
+	id S1752444Ab0DINkr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 09:40:47 -0400
+Received: from ixro-out-rtc.ixiacom.com ([92.87.192.98]:9087 "EHLO
+	ixro-ex1.ixiacom.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750705Ab0DINkq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 09:40:46 -0400
+From: Octavian Purdila <opurdila@ixiacom.com>
+Organization: Ixia
+To: Changli Gao <xiaosuo@gmail.com>
+Subject: Re: [Patch 1/3] sysctl: refactor integer handling proc code
+Date: Fri, 9 Apr 2010 16:40:43 +0300
+User-Agent: KMail/1.12.2 (Linux/2.6.32-2-686; KDE/4.3.2; i686; ; )
+Cc: Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
+       Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
+       Neil Horman <nhorman@tuxdriver.com>, David Miller <davem@davemloft.net>,
+       ebiederm@xmission.com
+References: <20100409101442.5051.99812.sendpatchset@localhost.localdomain> <20100409101452.5051.74050.sendpatchset@localhost.localdomain> <n2j412e6f7f1004090349q37cb01f0u177aaa4fc16664ec@mail.gmail.com>
+In-Reply-To: <n2j412e6f7f1004090349q37cb01f0u177aaa4fc16664ec@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100409010248.GE6672@nowhere>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004091640.44056.opurdila@ixiacom.com>
+X-OriginalArrivalTime: 09 Apr 2010 13:40:44.0841 (UTC) FILETIME=[411FE990:01CAD7EA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 09, 2010 at 03:02:53AM +0200, Frederic Weisbecker wrote:
-> On Mon, Apr 05, 2010 at 10:11:22AM -0400, Don Zickus wrote:
-> > On Tue, Mar 23, 2010 at 05:33:38PM -0400, Don Zickus wrote:
-> > > The new nmi_watchdog (which uses the perf event subsystem) is very
-> > > similar in structure to the softlockup detector.  Using Ingo's suggestion,
-> > > I combined the two functionalities into one file, kernel/watchdog.c.
-> > > 
-> > > Now both the nmi_watchdog (or hardlockup detector) and softlockup detector
-> > > sit on top of the perf event subsystem, which is run every 60 seconds or so
-> > > to see if there are any lockups.
-> > 
-> > I raised some questions privately to Ingo, he asked I re-iterate them with
-> > Peter Z. and Frederic W. cc'd.
-> > 
-> > > Ok thanks.  When you get a chance I had a couple of questions I was hoping
-> > > you could answer for me.
-> > >
-> > > - does the hrtimer stuff look ok?
-> 
-> 
-> IMO, only partially, as explained in my previous mail.
 
-Yup, makes sense, thanks.
+Hi and thanks for reviewing.
 
+On Friday 09 April 2010 13:49:12 you wrote:
+> > + *
+> > + * In case of success 0 is returned and buf and size are updated with
+> > + * the amount of bytes read. If tr is non NULL and a trailing
+> > + * character exist (size is non zero after returning from this
+> > + * function) tr is updated with the trailing character.
+> > + */
+> > +static int proc_get_ulong(char __user **buf, size_t *size,
+> > +                         unsigned long *val, bool *neg,
+> > +                         const char *perm_tr, unsigned perm_tr_len, char
+> > *tr) +{
+> > +       int len;
+> > +       char *p, tmp[TMPBUFLEN];
+> > +
+> > +       if (!*size)
+> > +               return -EINVAL;
+> > +
+> > +       len = *size;
+> > +       if (len > TMPBUFLEN-1)
+> > +               len = TMPBUFLEN-1;
+> > +
+> > +       if (copy_from_user(tmp, *buf, len))
+> > +               return -EFAULT;
+> > +
+> > +       tmp[len] = 0;
+> > +       p = tmp;
+> > +       if (*p == '-' && *size > 1) {
+> > +               *neg = 1;
+> > +               p++;
+> > +       } else
+> > +               *neg = 0;
 > 
+> the function name implies that it is used to parse unsigned long, so
+> negative value should not be supported.
 > 
-> > > - I wanted to merge the hung task detector code into watchdog.c.  The main
-> > >   logic of the code is to walk the task list which i thought about doing
-> > >   in the watchdog kthread.  I assume that is the right way to go, but i was a
-> > >   little confused on how the scheduler worked.  I thought the watchdog kthread
-> > >   would be scheduled very frequently (being a high priority task) but it seems
-> > >   to only schedule when the code wakes it up.  Is that right?
-> 
-> 
-> Yeah but high-prio doesn't mean that it is scheduled often.
-> It means that once it is in a runnable state (TASK_RUNNING), it
-> will have a higher priority to get into the cpu (lower prio tasks
-> will have less time in the cpu than the higher prio until the higher prio
-> get to sleep). Especially here this is a SCHED_FIFO class, so usual
-> tasks (SCHED_OTHER) won't ever run until it goes to sleep.
-> 
-> But when it goes to sleep, it doesn't need the cpu, so other tasks
-> can run.
-> And it is only woken up every 30 secs, just to call
-> __touch_softlockup_watchdog() and then it goes to sleep again
-> until the timer wakes it up. That's why it doesn't run often.
-> The high priority is just here to ensure it will do its job
-> without too much latency, may be even to avoid rt-tasks to
-> trigger spurious soft lockups just because the softlockup task
-> couldn't run because of them taking the cpu for too long.
-> If it starves because of a higher priority task running for
-> too long, it can't touch the softlockup_touch_ts, and the timer
-> will think there is a softlockup.
 
-Ok.
+My intention was to signal that the argument is unsigned long and that the 
+sign come separate in neg, but I am OK with changing the function name to 
+proc_get_long() if you think that is better.
 
+> > +       if (!isdigit(*p))
+> > +               return -EINVAL;
 > 
+> It seems that ledding white space should be allowed, so this check
+> isn't needed, and simple_strtoul can handle it.
 > 
-> Concerning the hung task detector, I think it should be left as is in
-> its own file and dedicated task. IIRC the hung task and softlockup
-> detectors were in the same file before but they were split up.
 
-I was doing that work based on a request by Ingo.  Ingo, thoughts?
+Leading white space is skipped with proc_skip_space before calling this 
+function. AFAICS simple_strtoul does not handle whitespaces.
 
+> > +
+> > +       *val = simple_strtoul(p, &p, 0);
+> > +
+> > +       len = p - tmp;
+> > +
+> > +       /* We don't know if the next char is whitespace thus we may
+> > accept +        * invalid integers (e.g. 1234...a) or two integers
+> > instead of one +        * (e.g. 123...1). So lets not allow such large
+> > numbers. */ +       if (len == TMPBUFLEN - 1)
+> > +               return -EINVAL;
+> > +
+> > +       if (len < *size && perm_tr_len && !isanyof(*p, perm_tr,
+> > perm_tr_len)) +               return -EINVAL;
 > 
-> We can't factorize both in the same task. The softlockup detector
-> needs to be a real time task for the reasons stated above. And it's fine
-> because it does very few things so it doesn't bother the other tasks
-> with its high prio (unless there are strong rt requirement elsewhere).
-> But the hung task detector must be a normal task, because it doesn't
-> have latency requirements, it just checks if a task is blocked for too
-> long, it's not like the softlockup detector that really needs to keep
-> up with a timer. Also it does too much things to be an rt task (walking
-> through the entire task list).
+> is strspn() better?
+> 
 
-Ok.  Makes sense.
+I don't  think it will work out, \0 is an accepted trailer for many of the 
+function which use this function.
 
-Cheers,
-Don
+
+> > +
+> > +       if (tr && (len < *size))
+> > +               *tr = *p;
+> > +
+> > +       *buf += len;
+> > +       *size -= len;
+> > +
+> > +       return 0;
+> > +}
+> > +
+> > +/**
+> > + * proc_put_ulong - coverts an integer to a decimal ASCII formated
+> > string + *
+> > + * @buf - the user buffer
+> > + * @size - the size of the user buffer
+> > + * @val - the integer to be converted
+> > + * @neg - sign of the number, %TRUE for negative
+> > + * @first - if %FALSE will insert a separator character before the
+> > number + * @separator - the separator character
+> > + *
+> > + * In case of success 0 is returned and buf and size are updated with
+> > + * the amount of bytes read.
+> > + */
+> > +static int proc_put_ulong(char __user **buf, size_t *size, unsigned long
+> > val, +                         bool neg, bool first, char separator)
+> > +{
+> > +       int len;
+> > +       char tmp[TMPBUFLEN], *p = tmp;
+> > +
+> > +       if (!first)
+> > +               *p++ = separator;
+> > +       sprintf(p, "%s%lu", neg ? "-" : "", val);
+> 
+> negative should not be supported too.
+> 
+
+We need negatives in proc_dointvec, again we can change the function name if 
+it will clear things up.
+
+<snip>
+> >                int val = *valp;
+> >                unsigned long lval;
+> >                if (val < 0) {
+> > -                       *negp = -1;
+> > +                       *negp = 1;
+> >                        lval = (unsigned long)-val;
+> >                } else {
+> >                        *negp = 0;
+> 
+> These functions have so much lines of code. I think you can make them
+> less. Please refer to strsep().
+> 
+
+Hmm, the input its pretty permissive and maybe this is why it looks so fat, we 
+need to account for quite a few cases. 
+
+Or maybe I spent too much time on this code already and I can't see the simple 
+solution :)
+
+Thanks,
+tavi
+
+
+
 
