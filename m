@@ -1,117 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514Ab0DINNe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 09:13:34 -0400
-Received: from nat.nue.novell.com ([195.135.221.3]:48545 "EHLO
-	emea5-mh.id5.novell.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751223Ab0DINN3 (ORCPT
+	id S1752724Ab0DINPL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 09:15:11 -0400
+Received: from ns2.intersolute.de ([193.110.43.67]:38746 "EHLO
+	ns2.intersolute.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab0DINPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 09:13:29 -0400
-Subject: Re: [PATCH 4/6] futex: Add FUTEX_LOCK with optional adaptive
- spinning
-From: "Peter W. Morreale" <pmorreale@novell.com>
-To: Darren Hart <dvhltc@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Eric Dumazet <eric.dumazet@gmail.com>, Rik van Riel <riel@redhat.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Gregory Haskins <ghaskins@novell.com>,
-       Sven-Thorsten Dietrich <sdietrich@novell.com>,
-       Chris Mason <chris.mason@oracle.com>,
-       John Cooper <john.cooper@third-harmonic.com>,
-       Chris Wright <chrisw@sous-sol.org>, Avi Kivity <avi@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <4BBEBE0C.7050602@us.ibm.com>
-References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com>
-	 <1270499039-23728-5-git-send-email-dvhltc@us.ibm.com>
-	 <alpine.LFD.2.00.1004061818250.32352@localhost.localdomain>
-	 <4BBCC02C.5090000@us.ibm.com>
-	 <alpine.LFD.2.00.1004072124250.32352@localhost.localdomain>
-	 <4BBD4C92.8010701@us.ibm.com> <1270768233.6318.45.camel@hermosa.site>
-	 <4BBEBE0C.7050602@us.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Novell Inc.
-Date: Fri, 09 Apr 2010 07:13:22 -0600
-Message-ID: <1270818802.6627.13.camel@hermosa.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+	Fri, 9 Apr 2010 09:15:07 -0400
+Message-ID: <4BBF284F.1020307@lumino.de>
+Date: Fri, 09 Apr 2010 15:14:55 +0200
+From: Michael Schnell <mschnell@lumino.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-2.3 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       nios2-dev <nios2-dev@sopc.et.ntust.edu.tw>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: atomic RAM ?
+References: <4BBD86A5.5030109@lumino.de>	<20100408114542.47b6589a@lxorguk.ukuu.org.uk>	<4BBDC7D4.6040301@lumino.de>	<20100408143750.0acebaa1@lxorguk.ukuu.org.uk>	<4BBF0784.2060002@lumino.de>	<20100409125426.5bc200da@lxorguk.ukuu.org.uk>	<4BBF2351.3040506@lumino.de> <20100409141518.0dbe7050@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100409141518.0dbe7050@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-08 at 22:41 -0700, Darren Hart wrote:
-> Peter W. Morreale wrote:
-> > On Wed, 2010-04-07 at 20:25 -0700, Darren Hart wrote:
-> >> Thomas Gleixner wrote:
-> >>> On Wed, 7 Apr 2010, Darren Hart wrote:
-> >>>> Thomas Gleixner wrote:
-> 
-> >>>>> 	   if ((curval & FUTEX_TID_MASK) != ownertid) {
-> >>>>> 	      ownertid = curval & FUTEX_TID_MASK;
-> >>>>> 	      owner = update_owner(ownertid);
-> >>>>> 	   }
-> >>>> Hrm... at this point the owner has changed... so we should break and go
-> >>>> to sleep, not update the owner and start spinning again. The
-> >>>> futex_spin_on_owner() will detect this and abort, so I'm not seeing the
-> >>>> purpose of the above if() block.
-> >>> Why ? If the owner has changed and the new owner is running on another
-> >>> cpu then why not spin further ?
-> >> That's an interesting question, and I'm not sure what the right answer 
-> >> is. The current approach of the adaptive spinning in the kernel is to 
-> >> spin until the owner changes or deschedules, then stop and block. The 
-> >> idea is that if you didn't get the lock before the owner changed, you 
-> >> aren't going to get it in a very short period of time (you have at least 
-> >> an entire critical section to wait through plus whatever time you've 
-> >> already spent spinning). However, blocking just so another task can spin 
-> >> doesn't really make sense either, and makes the lock less fair than it 
-> >> could otherwise be.
-> > 
-> > Not only less fair, but potentially could cause starvation, no?  Perhaps
-> > you could see this if you changed your model to allow all contended
-> > tasks to spin instead of just one.  
-> 
-> Agreed, and V5 (just posted) does just that.
-> 
-> > 
-> > If a spinning task blocks because of an owner change, and a new task
-> > enters and starts spinning directly after the owner change, at what
-> > point does the original task get woken up?
-> 
-> At the time of unlock the owner will have to call FUTEX_WAKE. This task 
-> will wake and attempt to acquire the lock - it will lose races with 
-> aclready running contenders. Lock stealing, adaptive spinning, etc are 
-> all going to lead to less fair locks in exchange for throughput.
+On 04/09/2010 03:15 PM, Alan Cox wrote:
+> Lamport's Bakery
+Found it in Wikipedia. I'm working on the text...
 
-nod.  My only point was that if only one can spin, and sleeps when the
-owner is not on CPU, then you virtually guarantee worst case performance
-under certain conditions (ie: multiple threads coming in at various
-times)
-
-If all spin, and they sleep only on owner block, then the 'unfairness'
-is potentially more evenly distributed via hardware (and stealing) and
-when the owner is blocked. 
-
-
-Best,
--PWM
-
-> 
-> >  Its likely that the new
-> > spinner will get the resource next, no?  Rinse/repeat with another task
-> > and the original spinner is starved.  
-> > 
-> > (Or am I missing something?  My understanding was that unfairness was
-> > built-in to this algo... If so, then the above is a possibility, right?)
-> 
-> Yes it is. These locks are typically used in situations where it is more 
-> important that some work gets completed than _which_ work gets completed.
-> 
-> Thanks,
-> 
-> --
-> Darren Hart
-> IBM Linux Technology Center
-> Real-Time Linux Team
-
+Thanks a lot !
+-Michael
 
