@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757450Ab0DII6s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 04:58:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54784 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab0DII6q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 04:58:46 -0400
-Subject: Re: [PATCH 00/13] mm: preemptibility -v2
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>
-In-Reply-To: <20100409085050.GO5683@laptop>
-References: <20100408191737.296180458@chello.nl>
-	 <20100409041421.GM5683@laptop> <1270802131.20295.3270.camel@laptop>
-	 <20100409085050.GO5683@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Apr 2010 10:58:41 +0200
-Message-ID: <1270803521.20295.3274.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1757462Ab0DIJAT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 05:00:19 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54943 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757167Ab0DIJAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 05:00:16 -0400
+Message-ID: <4BBEEC82.6030301@cn.fujitsu.com>
+Date: Fri, 09 Apr 2010 16:59:46 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com, mingo@elte.hu
+CC: linux-kernel@vger.kernel.org, dipankar@in.ibm.com,
+       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
+       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
+Subject: Re: [PATCH tip/core/urgent] rcu: updates for RCU lockdep
+References: <20100409054701.GA8833@linux.vnet.ibm.com>
+In-Reply-To: <20100409054701.GA8833@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-04-09 at 18:50 +1000, Nick Piggin wrote:
-> I have some microbenchmarks like this and the page fault test I
-> could try.
+For whole patchset:
+
+Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+
+Paul E. McKenney wrote:
+> Hello!
 > 
-If you don't mind, please. If you send them my way I'll run them on my
-machines too.
+> These four patches provides a pair of new APIs and documentation to handle
+> a couple of cases that David Howells came across when running an NFS
+> workload under CONFIG_PROVE_RCU, along with some comment improvements
+> suggested by David and also some by Yong Zhang.
+> 
+> 							Thanx, Paul
+> 
+>  b/Documentation/RCU/NMI-RCU.txt   |   39 +++++++++++++++++++++-----------------
+>  b/Documentation/RCU/checklist.txt |    7 +++---
+>  b/Documentation/RCU/lockdep.txt   |   28 +++++++++++++++++++++++++--
+>  b/Documentation/RCU/whatisRCU.txt |    6 +++++
+>  b/include/linux/rcupdate.h        |   33 ++++++++++++++++++++++++++++++++
+>  include/linux/rcupdate.h          |   30 +++++++++++++++++++++++------
+>  6 files changed, 115 insertions(+), 28 deletions(-)
+> 
+> 
 
