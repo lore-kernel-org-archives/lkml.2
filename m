@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab0DIST2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 14:19:28 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:53205 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752887Ab0DISTY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 14:19:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Wp5aB/RcUZlo+cpyW2m+ro7dASaJT3iHh7PZVjiIy5675F3nw0Pdgdj/hlJwAC1TJW
-         WD6NqmPTZw+IfmKOxbDYYqE6Yl5vs5LwVKuns3/pQJA2j+2kPuZ0ylLRXKxpug6+eHOi
-         EPftXrkhytIXceEaFJk8nUcebIJ+SiA3PuRxU=
+	id S1755363Ab0DISZt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 14:25:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57951 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752887Ab0DISZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 14:25:46 -0400
+Message-ID: <4BBF70BC.3080809@zytor.com>
+Date: Fri, 09 Apr 2010 11:23:56 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20100409180942.GK30801@buzzloop.caiaq.de>
-References: <m2n74fd948d1004081613n90408827s7c51ef572848fb1d@mail.gmail.com>
-	 <Pine.LNX.4.44L0.1004091155570.1852-100000@iolanthe.rowland.org>
-	 <20100409180942.GK30801@buzzloop.caiaq.de>
-Date: Fri, 9 Apr 2010 19:19:22 +0100
-Message-ID: <w2r74fd948d1004091119j9f33d8a6kc1824d9243abf38b@mail.gmail.com>
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-From: Pedro Ribeiro <pedrib@gmail.com>
-To: Daniel Mack <daniel@caiaq.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       Robert Hancock <hancockrwd@gmail.com>, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, Greg KH <gregkh@suse.de>,
-       alsa-devel@alsa-project.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Yinghai <yinghai.lu@oracle.com>,
+       Guenter Roeck <guenter.roeck@ericsson.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+       Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       linux-pci@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+       Andy Isaacson <adi@hexapodia.org>, Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well
+ as x86_32
+References: <20100407210628.28364.96982.stgit@bob.kio> <201004071705.07176.bjorn.helgaas@hp.com> <4BBD13C3.2060404@oracle.com> <201004091004.39857.bjorn.helgaas@hp.com> <4BBF5987.3010100@zytor.com> <4BBF626A.3060800@oracle.com>
+In-Reply-To: <4BBF626A.3060800@oracle.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 April 2010 19:09, Daniel Mack <daniel@caiaq.de> wrote:
-> On Fri, Apr 09, 2010 at 12:01:27PM -0400, Alan Stern wrote:
->> On Fri, 9 Apr 2010, Pedro Ribeiro wrote:
->> > here is the output of the patch you sent me when the interference is triggered.
->> >
->> > The log is long, 1.3mb in size.
->>
->> I don't see anything suspicious.  The transfer_buffer addresses repeat
->> every 32 URBs, and the DMA addresses cycle almost entirely uniformly
->> from 0x20000000 to 0x23ffffff in units of 0x2000 (there are a few gaps
->> where the interval is a little bigger).
->
-> The DMA pointers do indeed look sane. I wanted to take a deeper look at
-> this and set up a 64bit system today. However, I fail to see the problem
-> here. Pedro, how much RAM does your machine have installed?
->
-> Daniel
->
->
+[Adding Guenter Roeck as he was commenting on something writing to the
+VGA area...]
 
-It has 4 GB.
+On 04/09/2010 10:22 AM, Yinghai wrote:
+> 
+> then please check this one
+> 
+> update e820 at first, and later put them resource tree, but give pci BAR chance to claim
+> the range, before assign unassigned resources.
+> 
+> in case some system doesn't have VGA, and use [0xa0000, ..] for mmio of some other pci devices.
+> 
 
-Pedro
+Do we have any evidence of any such system?
+
+Either which way, the patch looks saner...
+
+	-hpa
