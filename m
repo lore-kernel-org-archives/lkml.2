@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757766Ab0DIVzc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 17:55:32 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:61394 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460Ab0DIVza (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 17:55:30 -0400
+	id S1757604Ab0DIV6d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 17:58:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16112 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751122Ab0DIV6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 17:58:31 -0400
+Message-ID: <4BBFA2ED.6050601@redhat.com>
+Date: Fri, 09 Apr 2010 17:58:05 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <4BBF253A.8030406@redhat.com>
-References: <9e4733910912060952h4aad49dake8e8486acb6566bc@mail.gmail.com>
-	 <9e4733910912151338n62b30af5i35f8d0963e6591c@mail.gmail.com>
-	 <4BAB7659.1040408@redhat.com> <201004090821.10435.james@albanarts.com>
-	 <1270810226.3764.34.camel@palomino.walls.org>
-	 <4BBF253A.8030406@redhat.com>
-Date: Fri, 9 Apr 2010 17:55:28 -0400
-Message-ID: <g2k829197381004091455m20368cc6r63df4a4f00d36b45@mail.gmail.com>
-Subject: Re: [RFC] What are the goals for the architecture of an in-kernel IR 
-	system?
-From: Devin Heitmueller <dheitmueller@kernellabs.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Andy Walls <awalls@radix.net>, James Hogan <james@albanarts.com>,
-       Jon Smirl <jonsmirl@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Krzysztof Halasa <khc@pm.waw.pl>,
-       hermann pitton <hermann-pitton@arcor.de>,
-       Christoph Bartelmus <lirc@bartelmus.de>, j@jannau.net, jarod@redhat.com,
-       jarod@wilsonet.com, kraxel@redhat.com, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-       superm1@ubuntu.com
+To: Jason Baron <jbaron@redhat.com>
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
+       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+       fweisbec@gmail.com, avi@redhat.com
+Subject: Re: [PATCH 0/9] jump label v6
+References: <cover.1270839564.git.jbaron@redhat.com> <4BBF8FC8.9050707@redhat.com> <20100409213701.GC2774@redhat.com>
+In-Reply-To: <20100409213701.GC2774@redhat.com>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 9, 2010 at 9:01 AM, Mauro Carvalho Chehab
-<mchehab@redhat.com> wrote:
-> [1] Basically, a keycode (like KEY_POWER) could be used to wake up the machine. So, by
-> associating some scancode to KEY_POWER via ir-core, the driver can program the hardware
-> to wake up the machine with the corresponding scancode. I can't see a need for a change at
-> ir-core to implement such behavior. Of course, some attributes at sysfs can be added
-> to enable or disable this feature, and to control the associated logic, but we first
-> need to implement the wakeup feature at the hardware driver, and then adding some logic
-> at ir-core to add the non-hardware specific code there.
+Jason Baron wrote:
+> On Fri, Apr 09, 2010 at 04:36:24PM -0400, Masami Hiramatsu wrote:
+>> Hi Jason,
+>>
+>> Jason Baron wrote:
+>>> Hi,
+>>>
+>>> Refresh of jump labeling patches aginst -tip tree. For bacground see: 
+>>> http://marc.info/?l=linux-kernel&m=125858436505941&w=2
+>>>
+>>> I believe I've addressed all the reviews from v5.
+>>>
+>>> Changes in v6:
+>>>
+>>> * I've moved Steve Rostedt's 'ftrace_dyn_arch_init()' to alternative.c to
+>>> put it into a common area for used by both ftrace and jump labels. By
+>>> default we put a 'jmp 5' in the nop slot. Then, when we detect the best
+>>> runtime no-op we patch over the 'jmp 5' with the appropriate nop.
+>>>
+>>> * build time sort of the jump label table. The jump label table is more
+>>> optimally accessed if the entries are continguous. Sorting the table
+>>> accomplishes this. Do the sort at build-time. Adds a '-j' option to 
+>>> 'modpost' which replaces the vmlinux, with a sorted jump label section vmlinux.
+>>> I've tested this on x86 with relocatable and it works fine there as well. Note
+>>> that I have not sorted the jump label table in modules. This is b/c the jump
+>>> label names can be exported by the core kernel, and thus I don't have them
+>>> available at buildtime. This could be solved by either finding the correct
+>>> ones in the vmlinux, or by embedding the name of the jump label in the module
+>>> tables (and not just a pointer), but the module tables tend to be smaller, and
+>>> thus there is less value to this kind of change anyway. The kernel continues to
+>>> do the sort, just in case, but at least for the vmlinux, this is just a
+>>> verfication b/c the jump label table has already been sorted.
+>>>
+>>> * added jump_label_text_reserved(), so that other routines that want to patch
+>>> the code, can first verify that they are not stomping on jump label addresses.
+>>
+>> Good!:-)
+>> So now, it might be a good time to integrate those text_reserved() functions.
+>>
+>> BTW, how many jumps would you expect modifying at once?
+>> Since the text_poke_smp() uses stop_machine() for each modifying text,
+>> I found that it can cause a delay issue if it is called so many times...
+>> (e.g. a systemtap testcase sets ~5000 probes at once)
+>>
+>> Thank you,
+>>
+> 
+> I'm counting 934 jump label locations in the vmlinux, i have compiled,
+> 675 of them being 'kmalloc'. Batch mode for text_poke_smp()?
 
-Really?  Have you actually seen any hardware where a particular scan
-code can be used to wake up the hardware?  The only hardware I have
-seen has the ability to unsuspend on arrival of IR traffic, but you
-didn't have the granularity to dictate that it only wake up on
-particular scancodes.
+Yeah:) I'm now trying to make it with updating kprobes.
 
-Devin
+Thank you,
 
 -- 
-Devin J. Heitmueller - Kernel Labs
-http://www.kernellabs.com
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
