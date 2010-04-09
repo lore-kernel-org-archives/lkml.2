@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875Ab0DIXB6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 19:01:58 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33620
+	id S1757169Ab0DIXCV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 19:02:21 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33608
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756523Ab0DIXBk (ORCPT
+	by vger.kernel.org with ESMTP id S1755280Ab0DIXBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 19:01:40 -0400
-Date: Fri, 09 Apr 2010 16:01:43 -0700 (PDT)
-Message-Id: <20100409.160143.201915197.davem@davemloft.net>
+	Fri, 9 Apr 2010 19:01:31 -0400
+Date: Fri, 09 Apr 2010 16:01:35 -0700 (PDT)
+Message-Id: <20100409.160135.35854399.davem@davemloft.net>
 To: peterz@infradead.org
 CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
        sparclinux@vger.kernel.org
-Subject: [PATCH 4/4] tracing: Use local_irq_{save,restore}_nmi() in tracers.
+Subject: [PATCH 1/4] kernel: local_irq_{save,restore}_nmi()
 From: David Miller <davem@davemloft.net>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
@@ -23,175 +23,174 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+Provide local_irq_{save,restore}_nmi() which will allow us to help
+architectures that implement NMIs using IRQ priorities like SPARC64
+does.
+
+Sparc uses IRQ prio 15 for NMIs and implements local_irq_disable() as
+disable <= 14. However if you do that while inside an NMI you re-
+enable the NMI priority again, causing all kinds of fun.
+
+A more solid implementation would first check the disable level and
+never lower it, however that is more costly and would slow down the
+rest of the kernel for no particular reason.
+
+Therefore introduce local_irq_save_nmi() which can implement this
+slower but more solid scheme and dis-allow local_irq_save() from NMI
+context.
+
+Suggested-by: David Miller <davem@davemloft.net>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- kernel/trace/ftrace.c                |    8 ++++----
- kernel/trace/trace_functions.c       |    8 ++++----
- kernel/trace/trace_functions_graph.c |    8 ++++----
- kernel/trace/trace_sched_wakeup.c    |    4 ++--
- kernel/trace/trace_stack.c           |    4 ++--
- 5 files changed, 16 insertions(+), 16 deletions(-)
+ include/linux/irqflags.h     |   51 +++++++++++++++++++++++++++++++++++++++--
+ kernel/lockdep.c             |    7 +++++
+ kernel/trace/trace_irqsoff.c |    8 ++++++
+ 3 files changed, 63 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 2404b59..6be1e33 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -613,7 +613,7 @@ function_profile_call(unsigned long ip, unsigned long parent_ip)
- 	if (!ftrace_profile_enabled)
- 		return;
+diff --git a/include/linux/irqflags.h b/include/linux/irqflags.h
+index 006bf45..91256d4 100644
+--- a/include/linux/irqflags.h
++++ b/include/linux/irqflags.h
+@@ -18,6 +18,7 @@
+   extern void trace_softirqs_off(unsigned long ip);
+   extern void trace_hardirqs_on(void);
+   extern void trace_hardirqs_off(void);
++  extern void trace_hardirqs_off_no_nmi(void);
+ # define trace_hardirq_context(p)	((p)->hardirq_context)
+ # define trace_softirq_context(p)	((p)->softirq_context)
+ # define trace_hardirqs_enabled(p)	((p)->hardirqs_enabled)
+@@ -30,6 +31,7 @@
+ #else
+ # define trace_hardirqs_on()		do { } while (0)
+ # define trace_hardirqs_off()		do { } while (0)
++# define trace_hardirqs_off_no_nmi()	do { } while (0)
+ # define trace_softirqs_on(ip)		do { } while (0)
+ # define trace_softirqs_off(ip)		do { } while (0)
+ # define trace_hardirq_context(p)	0
+@@ -59,15 +61,15 @@
+ #define local_irq_enable() \
+ 	do { trace_hardirqs_on(); raw_local_irq_enable(); } while (0)
+ #define local_irq_disable() \
+-	do { raw_local_irq_disable(); trace_hardirqs_off(); } while (0)
++	do { raw_local_irq_disable(); trace_hardirqs_off_no_nmi(); } while (0)
++
+ #define local_irq_save(flags)				\
+ 	do {						\
+ 		typecheck(unsigned long, flags);	\
+ 		raw_local_irq_save(flags);		\
+-		trace_hardirqs_off();			\
++		trace_hardirqs_off_no_nmi();		\
+ 	} while (0)
  
--	local_irq_save(flags);
-+	local_irq_save_nmi(flags);
+-
+ #define local_irq_restore(flags)			\
+ 	do {						\
+ 		typecheck(unsigned long, flags);	\
+@@ -79,6 +81,30 @@
+ 			raw_local_irq_restore(flags);	\
+ 		}					\
+ 	} while (0)
++
++#ifndef local_irq_save_nmi
++# define local_irq_save_nmi(flags) 			\
++	 do {						\
++		 typecheck(unsigned long, flags);	\
++		 raw_local_irq_save(flags);		\
++		 trace_hardirqs_off();			\
++	 } while (0)
++#endif
++
++#ifndef local_irq_restore_nmi
++#define local_irq_restore_nmi(flags)			\
++	do {						\
++		typecheck(unsigned long, flags);	\
++		if (raw_irqs_disabled_flags(flags)) {	\
++			raw_local_irq_restore(flags);	\
++			trace_hardirqs_off();		\
++		} else {				\
++			trace_hardirqs_on();		\
++			raw_local_irq_restore(flags);	\
++		}					\
++	} while (0)
++#endif
++
+ #else /* !CONFIG_TRACE_IRQFLAGS_SUPPORT */
+ /*
+  * The local_irq_*() APIs are equal to the raw_local_irq*()
+@@ -86,16 +112,35 @@
+  */
+ # define raw_local_irq_disable()	local_irq_disable()
+ # define raw_local_irq_enable()		local_irq_enable()
++
+ # define raw_local_irq_save(flags)			\
+ 	do {						\
+ 		typecheck(unsigned long, flags);	\
+ 		local_irq_save(flags);			\
+ 	} while (0)
++
+ # define raw_local_irq_restore(flags)			\
+ 	do {						\
+ 		typecheck(unsigned long, flags);	\
+ 		local_irq_restore(flags);		\
+ 	} while (0)
++
++#ifndef local_irq_save_nmi
++# define local_irq_save_nmi(flags)			\
++	 do {						\
++		 typecheck(unsigned long, flags);	\
++		 local_irq_save(flags);			\
++	 } while (0)
++#endif
++
++#ifndef local_irq_restore_nmi
++# define local_irq_restore_nmi(flags)			\
++	 do {						\
++		 typecheck(unsigned long, flags);	\
++		 local_irq_restore(flags);		\
++	 } while (0)
++#endif
++
+ #endif /* CONFIG_TRACE_IRQFLAGS_SUPPORT */
  
- 	stat = &__get_cpu_var(ftrace_profile_stats);
- 	if (!stat->hash || !ftrace_profile_enabled)
-@@ -628,7 +628,7 @@ function_profile_call(unsigned long ip, unsigned long parent_ip)
- 
- 	rec->counter++;
-  out:
--	local_irq_restore(flags);
-+	local_irq_restore_nmi(flags);
+ #ifdef CONFIG_TRACE_IRQFLAGS_SUPPORT
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 2594e1c..c2aae0f 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -2382,6 +2382,13 @@ void trace_hardirqs_off(void)
  }
+ EXPORT_SYMBOL(trace_hardirqs_off);
  
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
-@@ -645,7 +645,7 @@ static void profile_graph_return(struct ftrace_graph_ret *trace)
- 	struct ftrace_profile *rec;
- 	unsigned long flags;
- 
--	local_irq_save(flags);
-+	local_irq_save_nmi(flags);
- 	stat = &__get_cpu_var(ftrace_profile_stats);
- 	if (!stat->hash || !ftrace_profile_enabled)
- 		goto out;
-@@ -672,7 +672,7 @@ static void profile_graph_return(struct ftrace_graph_ret *trace)
- 		rec->time += calltime;
- 
-  out:
--	local_irq_restore(flags);
-+	local_irq_restore_nmi(flags);
++void trace_hardirqs_off_no_nmi(void)
++{
++	WARN_ON_ONCE(in_nmi());
++	trace_hardirqs_off_caller(CALLER_ADDR0);
++}
++EXPORT_SYMBOL(trace_hardirqs_off_no_nmi);
++
+ /*
+  * Softirqs will be enabled:
+  */
+diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
+index 2974bc7..7596c6f 100644
+--- a/kernel/trace/trace_irqsoff.c
++++ b/kernel/trace/trace_irqsoff.c
+@@ -316,6 +316,14 @@ void trace_hardirqs_off(void)
  }
+ EXPORT_SYMBOL(trace_hardirqs_off);
  
- static int register_ftrace_profiler(void)
-diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index b3f3776..cac3f8d 100644
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -91,7 +91,7 @@ function_trace_call(unsigned long ip, unsigned long parent_ip)
- 	 * Need to use raw, since this must be called before the
- 	 * recursive protection is performed.
- 	 */
--	local_irq_save(flags);
-+	local_irq_save_nmi(flags);
- 	cpu = raw_smp_processor_id();
- 	data = tr->data[cpu];
- 	disabled = atomic_inc_return(&data->disabled);
-@@ -102,7 +102,7 @@ function_trace_call(unsigned long ip, unsigned long parent_ip)
- 	}
- 
- 	atomic_dec(&data->disabled);
--	local_irq_restore(flags);
-+	local_irq_restore_nmi(flags);
- }
- 
- static void
-@@ -122,7 +122,7 @@ function_stack_trace_call(unsigned long ip, unsigned long parent_ip)
- 	 * Need to use raw, since this must be called before the
- 	 * recursive protection is performed.
- 	 */
--	local_irq_save(flags);
-+	local_irq_save_nmi(flags);
- 	cpu = raw_smp_processor_id();
- 	data = tr->data[cpu];
- 	disabled = atomic_inc_return(&data->disabled);
-@@ -142,7 +142,7 @@ function_stack_trace_call(unsigned long ip, unsigned long parent_ip)
- 	}
- 
- 	atomic_dec(&data->disabled);
--	local_irq_restore(flags);
-+	local_irq_restore_nmi(flags);
- }
- 
- 
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index 9aed1a5..84f92ef 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -221,7 +221,7 @@ int trace_graph_entry(struct ftrace_graph_ent *trace)
- 	if (!(trace->depth || ftrace_graph_addr(trace->func)))
- 		return 0;
- 
--	local_irq_save(flags);
-+	local_irq_save_nmi(flags);
- 	cpu = raw_smp_processor_id();
- 	data = tr->data[cpu];
- 	disabled = atomic_inc_return(&data->disabled);
-@@ -233,7 +233,7 @@ int trace_graph_entry(struct ftrace_graph_ent *trace)
- 	}
- 
- 	atomic_dec(&data->disabled);
--	local_irq_restore(flags);
-+	local_irq_restore_nmi(flags);
- 
- 	return ret;
- }
-@@ -278,7 +278,7 @@ void trace_graph_return(struct ftrace_graph_ret *trace)
- 	int cpu;
- 	int pc;
- 
--	local_irq_save(flags);
-+	local_irq_save_nmi(flags);
- 	cpu = raw_smp_processor_id();
- 	data = tr->data[cpu];
- 	disabled = atomic_inc_return(&data->disabled);
-@@ -287,7 +287,7 @@ void trace_graph_return(struct ftrace_graph_ret *trace)
- 		__trace_graph_return(tr, trace, flags, pc);
- 	}
- 	atomic_dec(&data->disabled);
--	local_irq_restore(flags);
-+	local_irq_restore_nmi(flags);
- }
- 
- void set_graph_array(struct trace_array *tr)
-diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
-index 0271742..891d3a0 100644
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -65,11 +65,11 @@ wakeup_tracer_call(unsigned long ip, unsigned long parent_ip)
- 	if (unlikely(disabled != 1))
- 		goto out;
- 
--	local_irq_save(flags);
-+	local_irq_save_nmi(flags);
- 
- 	trace_function(tr, ip, parent_ip, flags, pc);
- 
--	local_irq_restore(flags);
-+	local_irq_restore_nmi(flags);
- 
-  out:
- 	atomic_dec(&data->disabled);
-diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index f4bc9b2..14fa61c 100644
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -53,7 +53,7 @@ static inline void check_stack(void)
- 	if (!object_is_on_stack(&this_size))
- 		return;
- 
--	local_irq_save(flags);
-+	local_irq_save_nmi(flags);
- 	arch_spin_lock(&max_stack_lock);
- 
- 	/* a race could have already updated it */
-@@ -104,7 +104,7 @@ static inline void check_stack(void)
- 
-  out:
- 	arch_spin_unlock(&max_stack_lock);
--	local_irq_restore(flags);
-+	local_irq_restore_nmi(flags);
- }
- 
- static void
++void trace_hardirqs_off_no_nmi(void)
++{
++	WARN_ON_ONCE(in_nmi());
++	if (!preempt_trace() && irq_trace())
++		start_critical_timing(CALLER_ADDR0, CALLER_ADDR1);
++}
++EXPORT_SYMBOL(trace_hardirqs_off_no_nmi);
++
+ void trace_hardirqs_on_caller(unsigned long caller_addr)
+ {
+ 	if (!preempt_trace() && irq_trace())
 -- 
 1.7.0.4
 
