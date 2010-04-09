@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933909Ab0DIAAr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 20:00:47 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:58325 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758215Ab0DIAAq (ORCPT
+	id S933940Ab0DIABe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 20:01:34 -0400
+Received: from mail-yw0-f194.google.com ([209.85.211.194]:59241 "EHLO
+	mail-yw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933193Ab0DIABb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 20:00:46 -0400
+	Thu, 8 Apr 2010 20:01:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rSmMRA7MRAcSBGnvgIOfDViJAPy+/dOaRwRaFSZYPBtfAdb3yjvYFutedmN9PO1JP/
-         Zhw9uwwpl4a3rIdeMk6LrbEGT4vkjbnxmnMsTSI+VBjb+Yd7uqPZj92ibDPVzA1i/n3R
-         Buc6tIaPQ9Bgni5JU5mxey5XgEHccAHbbXKXQ=
-Date: Fri, 9 Apr 2010 02:00:38 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>, mingo@elte.hu, peterz@infradead.org,
-       aris@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [watchdog] combine nmi_watchdog and softlockup
-Message-ID: <20100409000036.GC6672@nowhere>
-References: <20100323213338.GA29170@redhat.com> <20100406141321.GA8416@nowhere> <20100406153115.GB5744@lenovo>
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=TrEYD5hRNaQKcNnjO0CFNP2sHlUxTvyyTI4gz/Zs1iHtUqKptsByYlAsV72Qm7/YFL
+         l5jii9k68jPZ167Q6dxu8i2KGvX3A6uRcJA9mNQoLwPC7SuZEosMfQ6Dk0ncmA2N10D5
+         5uXu2GY4eP7NWa/zJs19LO4cO2fCuYzIoFxLc=
+Message-ID: <4BBE6E57.6020600@gmail.com>
+Date: Thu, 08 Apr 2010 18:01:27 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100406153115.GB5744@lenovo>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Greg KH <greg@kroah.com>
+CC: Alan Stern <stern@rowland.harvard.edu>, alsa-devel@alsa-project.org,
+       linux-usb@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
+       Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+       Pedro Ribeiro <pedrib@gmail.com>, akpm@linux-foundation.org,
+       sarah.a.sharp@linux.intel.com
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+References: <s5hhbnncflj.wl%tiwai@suse.de>	<Pine.LNX.4.44L0.1004071452560.5760-100000@iolanthe.rowland.org> <20100408003313.GE4365@kroah.com>
+In-Reply-To: <20100408003313.GE4365@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 06, 2010 at 07:31:15PM +0400, Cyrill Gorcunov wrote:
-> > I fear the cpu clock is not going to help you detecting any hard lockups.
-> > If you're stuck in an interrupt or an irq disabled loop, your cpu clock is
-> > not going to fire.
-> >
-> 
-> I guess it's not supposed to. For such cases only nmi irqs may help for which
-> the perf events are there (/me need to check if we program apic timer for anything
-> like that). But it should help for other deadlocks. Or I miss something?
+On 04/07/2010 06:33 PM, Greg KH wrote:
+> On Wed, Apr 07, 2010 at 03:13:11PM -0400, Alan Stern wrote:
+>> On Wed, 7 Apr 2010, Takashi Iwai wrote:
+>>
+>>>> Ok, I'll write some dummies for usb_malloc() and usb_zalloc() which
+>>>> will just call kmalloc() with GFP_DMA32 for now.
+>>>
+>>> Can't we provide only zalloc() variant?  Zero'ing doesn't cost much,
+>>> and the buffer allocation shouldn't be called too often.
+>>
+>> Linus specifically requested us to avoid using kzalloc in usbfs.  I
+>> can't find the message in the email archives, but Greg KH should be
+>> able to confirm it.
+>>
+>> As long as we're imitating kmalloc for one use, we might as well make
+>> it available to all.
+>>
+>>>> And while at it,
+>>>> usb_alloc_buffer() will be renamed to usb_alloc_consistent().
+>>>
+>>> Most of recent functions are named with "coherent".
+>>
+>> Yes, the terminology got a little confused between the PCI and DMA
+>> realms.  I agree, "coherent" is better.
+>>
+>> BTW, although some EHCI controllers may support 64-bit DMA, the driver
+>> contains this:
+>>
+>> 	if (HCC_64BIT_ADDR(hcc_params)) {
+>> 		ehci_writel(ehci, 0,&ehci->regs->segment);
+>> #if 0
+>> // this is deeply broken on almost all architectures
+>> 		if (!dma_set_mask(hcd->self.controller, DMA_BIT_MASK(64)))
+>> 			ehci_info(ehci, "enabled 64bit DMA\n");
+>> #endif
+>> 	}
+>>
+>> I don't know if the comment is still true, but until the "#if 0" is
+>> removed, ehci-hcd won't make use of 64-bit DMA.
+>
+> I think someone tried to remove it recently, but I wouldn't let them :)
+>
+> What a mess, hopefully xhci will just take over and save the world from
+> this whole thing...
 
-
-Actually not. What the hardlockup detector does it to check the progression
-of irqs.
-
-So it detects true hardlockups: stuck in an irq disabled section.
-If you don't have NMI to detect that (here this made by hardware clock based
-on cpu cycles overflows), then you're screwed. The hardlockup detector is
-useless with a maskable irq based clock.
-
+True.. except for the fact that the xhci driver currently doesn't do 
+64-bit DMA either, nor does it support MSI even though the HW supports 
+it (surprisingly enough the NEC Windows driver does, MSI-X even). At 
+this point only Intel likely knows how to do this properly, though, 
+since AFAICS the spec isn't publicly available yet.
