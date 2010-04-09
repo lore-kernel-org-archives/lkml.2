@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753099Ab0DINc3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 09:32:29 -0400
-Received: from ns2.intersolute.de ([193.110.43.67]:34687 "EHLO
-	ns2.intersolute.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365Ab0DINc0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 09:32:26 -0400
-Message-ID: <4BBF2C5E.4060801@lumino.de>
-Date: Fri, 09 Apr 2010 15:32:14 +0200
-From: Michael Schnell <mschnell@lumino.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-2.3 Thunderbird/3.0.4
+	id S1753166Ab0DINdJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 09:33:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35499 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752444Ab0DINdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 09:33:01 -0400
+Date: Fri, 9 Apr 2010 15:32:59 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Samu Onkalo <samu.p.onkalo@nokia.com>, Pavel Machek <pavel@ucw.cz>,
+       lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+       Marcin Derlukiewicz <marcin@derlukiewicz.pl>
+Subject: Re: [PATCH] lis3lv02d: provide means to disable polled input
+ interface
+In-Reply-To: <4BBF2BD1.5050107@tremplin-utc.net>
+Message-ID: <alpine.LNX.2.00.1004091532150.8345@pobox.suse.cz>
+References: <alpine.LNX.2.00.1004091453530.8345@pobox.suse.cz> <4BBF2BD1.5050107@tremplin-utc.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-       nios2-dev <nios2-dev@sopc.et.ntust.edu.tw>
-Subject: Re: atomic RAM ?
-References: <4BBD86A5.5030109@lumino.de>	<20100408114542.47b6589a@lxorguk.ukuu.org.uk>	<4BBDC7D4.6040301@lumino.de>	<20100408143750.0acebaa1@lxorguk.ukuu.org.uk>	<4BBF0784.2060002@lumino.de>	<20100409125426.5bc200da@lxorguk.ukuu.org.uk>	<4BBF2351.3040506@lumino.de> <20100409141518.0dbe7050@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100409141518.0dbe7050@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2010 03:15 PM, Alan Cox wrote:
-> Lamport's Bakery
-Hmm. The code implements the lock as a busy spinning wait. This of
-course is not possible in real world, as the thread that has the lock
-will not get any CPU time (e.g. in a non-SMP system).
+On Fri, 9 Apr 2010, Éric Piel wrote:
 
-I understand that the main purpose of the FUTEX Kernel call(s) is doing
-a not-busy wait and having the "unlock" code wake the (next) waiting thread.
+> > This is reported to create 20% CPU usage increase (and proportionaly higher
+> > power consumption) just for the ipolldevd kernel thread (which is used
+> > to read the sensor).
+> > 
+> > As most users probably only use the freefall functionality of the driver
+> > and not the joystick interface, provide means for disabling the registration
+> > of joystick device altogether via module parameter.
+> > (I'd rather make it default to 0, but this will break backwards compatibility).
+> Are you saying there is a 20% CPU usage even when the joystick interface
+> is not open? This should not happen (and this is not happening on my
+> laptop). The polling should happen only when a userspace app opens the
+> joystick interface (like running neverball).
+> 
+> So I'd tend to think it's more due to a misconfiguration of the system
+> (like xserver using the joystick interface as a pointer device) or it's
+> a bug in the way we set up the polling. Could you investigate and let me
+> know?
 
-I did implement something like this in my testing program: enhanced by a
-sleep to allow for the thread that has the lock to proceed it's work,
-but this of course is not fast at all, as a short sleep() produces too
-much CPU load and a long sleep produces too much latency.
+Marcin originally reported this to me.
 
-So maybe this algorithm can be used instead of the hardware stuff I
-suggested but it would need a FUTEX-like Kernel part, too.
+Marcin, could you please check 'lsof' output to see whether the joystick 
+interface has been open by some application?
 
--Michael
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
