@@ -1,45 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab0DISAJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 14:00:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43709 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755009Ab0DISAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 14:00:06 -0400
-Date: Fri, 9 Apr 2010 10:22:50 -0700
-From: Greg KH <gregkh@suse.de>
-To: Gunnar Gudvardarson <gunni@wave.is>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: asus_oled: asus_oled.c removed an unnessecary
- space, making it checkpatch clean
-Message-ID: <20100409172250.GA15900@suse.de>
-References: <1270818069-3400-1-git-send-email-gunni@wave.is>
+	id S1755255Ab0DISFL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 14:05:11 -0400
+Received: from 64-131-60-146.usfamily.net ([64.131.60.146]:52118 "EHLO
+	mail.sandeen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359Ab0DISFI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 14:05:08 -0400
+Message-ID: <4BBF6C51.5030203@sandeen.net>
+Date: Fri, 09 Apr 2010 13:05:05 -0500
+From: Eric Sandeen <sandeen@sandeen.net>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1270818069-3400-1-git-send-email-gunni@wave.is>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Chris Mason <chris.mason@oracle.com>, Dave Chinner <david@fromorbit.com>,
+       John Berthels <john@humyo.com>, linux-kernel@vger.kernel.org,
+       Nick Gregory <nick@humyo.com>, Rob Sanderson <rob@humyo.com>,
+       xfs@oss.sgi.com, linux-mm@kvack.org
+Subject: Re: PROBLEM + POSS FIX: kernel stack overflow, xfs, many disks,	heavy
+ write load, 8k stack, x86-64
+References: <4BBC6719.7080304@humyo.com> <20100407140523.GJ11036@dastard>	<4BBCAB57.3000106@humyo.com> <20100407234341.GK11036@dastard>	<20100408030347.GM11036@dastard> <4BBDC92D.8060503@humyo.com>	<4BBDEC9A.9070903@humyo.com> <20100408233837.GP11036@dastard> <20100409113850.GE13327@think>
+In-Reply-To: <20100409113850.GE13327@think>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 09, 2010 at 01:01:09PM +0000, Gunnar Gudvardarson wrote:
-> This is the first linux kernel patch i have ever made, i don't even
-> know the C programming language except reading the syntax (basic)
+Chris Mason wrote:
 
-Then I would strongly encourage you to either learn it, or not modify
-the code.
+> shrink_zone on my box isn't 500 bytes, but lets try the easy stuff
+> first.  This is against .34, if you have any trouble applying to .32,
+> just add the word noinline after the word static on the function
+> definitions.
+> 
+> This makes shrink_zone disappear from my check_stack.pl output.
+> Basically I think the compiler is inlining the shrink_active_zone and
+> shrink_inactive_zone code into shrink_zone.
+> 
+> -chris
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 79c8098..c70593e 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -620,7 +620,7 @@ static enum page_references page_check_references(struct page *page,
+>  /*
+>   * shrink_page_list() returns the number of reclaimed pages
+>   */
+> -static unsigned long shrink_page_list(struct list_head *page_list,
+> +static noinline unsigned long shrink_page_list(struct list_head *page_list,
 
-> It didn't compile on my machine due to invalid configuration of something
-> on my machine, because i have not yet learned how to configure the compiler.
+FWIW akpm suggested that I add:
 
-Especially as you were not able to build test the patch, which is a
-basic requirement for submitting code changes.
+/*
+ * Rather then using noinline to prevent stack consumption, use
+ * noinline_for_stack instead.  For documentaiton reasons.
+ */
+#define noinline_for_stack noinline
 
-Try reading the kernel file, Documentation/HOWTO for pointers on how to
-find information to learn the C language, and to learn how to build a
-kernel on your own.
+so maybe for a formal submission that'd be good to use.
 
-best of luck,
 
-greg k-h
+>  					struct scan_control *sc,
+>  					enum pageout_io sync_writeback)
+>  {
+> @@ -1121,7 +1121,7 @@ static int too_many_isolated(struct zone *zone, int file,
+>   * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
+>   * of reclaimed pages
+>   */
+> -static unsigned long shrink_inactive_list(unsigned long max_scan,
+> +static noinline unsigned long shrink_inactive_list(unsigned long max_scan,
+>  			struct zone *zone, struct scan_control *sc,
+>  			int priority, int file)
+>  {
+> @@ -1341,7 +1341,7 @@ static void move_active_pages_to_lru(struct zone *zone,
+>  		__count_vm_events(PGDEACTIVATE, pgmoved);
+>  }
+>  
+> -static void shrink_active_list(unsigned long nr_pages, struct zone *zone,
+> +static noinline void shrink_active_list(unsigned long nr_pages, struct zone *zone,
+>  			struct scan_control *sc, int priority, int file)
+>  {
+>  	unsigned long nr_taken;
+> @@ -1504,7 +1504,7 @@ static int inactive_list_is_low(struct zone *zone, struct scan_control *sc,
+>  		return inactive_anon_is_low(zone, sc);
+>  }
+>  
+> -static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
+> +static noinline unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
+>  	struct zone *zone, struct scan_control *sc, int priority)
+>  {
+>  	int file = is_file_lru(lru);
+> 
+> _______________________________________________
+> xfs mailing list
+> xfs@oss.sgi.com
+> http://oss.sgi.com/mailman/listinfo/xfs
+> 
+
