@@ -1,304 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab0DIWUi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 18:20:38 -0400
-Received: from hera.kernel.org ([140.211.167.34]:32998 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754503Ab0DIWUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 18:20:36 -0400
-Date: Fri, 9 Apr 2010 22:20:15 GMT
-From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       trenn@suse.de, tglx@linutronix.de, borislav.petkov@amd.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       tglx@linutronix.de, trenn@suse.de, borislav.petkov@amd.com
-In-Reply-To: <1270065406-1814-7-git-send-email-bp@amd64.org>
-References: <1270065406-1814-7-git-send-email-bp@amd64.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] cpufreq: Unify sysfs attribute definition macros
-Message-ID: <tip-6dad2a29646ce3792c40cfc52d77e9b65a7bb143@git.kernel.org>
-Git-Commit-ID: 6dad2a29646ce3792c40cfc52d77e9b65a7bb143
-X-Mailer: tip-git-log-daemon
+	id S1754331Ab0DIWVI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 18:21:08 -0400
+Received: from straum.hexapodia.org ([207.7.131.186]:51302 "EHLO
+	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752285Ab0DIWVF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 18:21:05 -0400
+Date: Fri, 9 Apr 2010 15:21:03 -0700
+From: Andy Isaacson <adi@hexapodia.org>
+To: Yinghai <yinghai.lu@oracle.com>
+Cc: guenter.roeck@ericsson.com, "H. Peter Anvin" <hpa@zytor.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well
+	as x86_32
+Message-ID: <20100409222103.GA11130@hexapodia.org>
+References: <20100407210628.28364.96982.stgit@bob.kio> <201004071705.07176.bjorn.helgaas@hp.com> <4BBD13C3.2060404@oracle.com> <201004091004.39857.bjorn.helgaas@hp.com> <4BBF5987.3010100@zytor.com> <4BBF626A.3060800@oracle.com> <4BBF70BC.3080809@zytor.com> <1270839357.1477.758.camel@groeck-laptop> <4BBF863B.1060806@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 09 Apr 2010 22:20:16 +0000 (UTC)
+In-Reply-To: <4BBF863B.1060806@oracle.com>
+X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
+X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
+X-Domestic-Surveillance: money launder bomb tax evasion
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6dad2a29646ce3792c40cfc52d77e9b65a7bb143
-Gitweb:     http://git.kernel.org/tip/6dad2a29646ce3792c40cfc52d77e9b65a7bb143
-Author:     Borislav Petkov <borislav.petkov@amd.com>
-AuthorDate: Wed, 31 Mar 2010 21:56:46 +0200
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Fri, 9 Apr 2010 14:07:56 -0700
+On Fri, Apr 09, 2010 at 12:55:39PM -0700, Yinghai wrote:
+> update version for test
+> 
+> Subject: [PATCH] x86: reserve [0xa0000, 0x100000] in e820
+> 
+> Update e820 at first, and later put them resource tree.
+> But give pci BAR chance to claim the range, before assign unassigned resources.
+> 
+> In case some system doesn't have VGA, and use [0xa0000, ..] for mmio of some
+> other pci devices.
 
-cpufreq: Unify sysfs attribute definition macros
+This doesn't help, my AHCI still fails to initialize in the same way.
 
-Multiple modules used to define those which are with identical
-functionality and were needlessly replicated among the different cpufreq
-drivers. Push them into the header and remove duplication.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <1270065406-1814-7-git-send-email-bp@amd64.org>
-Reviewed-by: Thomas Renninger <trenn@suse.de>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- drivers/cpufreq/cpufreq.c              |   40 +++++++++-----------------
- drivers/cpufreq/cpufreq_conservative.c |   48 ++++++++++---------------------
- drivers/cpufreq/cpufreq_ondemand.c     |   40 ++++++++------------------
- include/linux/cpufreq.h                |   30 ++++++++++++++++++++
- 4 files changed, 72 insertions(+), 86 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 2d5d575..e02e417 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -662,32 +662,20 @@ static ssize_t show_bios_limit(struct cpufreq_policy *policy, char *buf)
- 	return sprintf(buf, "%u\n", policy->cpuinfo.max_freq);
- }
- 
--#define define_one_ro(_name) \
--static struct freq_attr _name = \
--__ATTR(_name, 0444, show_##_name, NULL)
--
--#define define_one_ro0400(_name) \
--static struct freq_attr _name = \
--__ATTR(_name, 0400, show_##_name, NULL)
--
--#define define_one_rw(_name) \
--static struct freq_attr _name = \
--__ATTR(_name, 0644, show_##_name, store_##_name)
--
--define_one_ro0400(cpuinfo_cur_freq);
--define_one_ro(cpuinfo_min_freq);
--define_one_ro(cpuinfo_max_freq);
--define_one_ro(cpuinfo_transition_latency);
--define_one_ro(scaling_available_governors);
--define_one_ro(scaling_driver);
--define_one_ro(scaling_cur_freq);
--define_one_ro(bios_limit);
--define_one_ro(related_cpus);
--define_one_ro(affected_cpus);
--define_one_rw(scaling_min_freq);
--define_one_rw(scaling_max_freq);
--define_one_rw(scaling_governor);
--define_one_rw(scaling_setspeed);
-+cpufreq_freq_attr_ro_perm(cpuinfo_cur_freq, 0400);
-+cpufreq_freq_attr_ro(cpuinfo_min_freq);
-+cpufreq_freq_attr_ro(cpuinfo_max_freq);
-+cpufreq_freq_attr_ro(cpuinfo_transition_latency);
-+cpufreq_freq_attr_ro(scaling_available_governors);
-+cpufreq_freq_attr_ro(scaling_driver);
-+cpufreq_freq_attr_ro(scaling_cur_freq);
-+cpufreq_freq_attr_ro(bios_limit);
-+cpufreq_freq_attr_ro(related_cpus);
-+cpufreq_freq_attr_ro(affected_cpus);
-+cpufreq_freq_attr_rw(scaling_min_freq);
-+cpufreq_freq_attr_rw(scaling_max_freq);
-+cpufreq_freq_attr_rw(scaling_governor);
-+cpufreq_freq_attr_rw(scaling_setspeed);
- 
- static struct attribute *default_attrs[] = {
- 	&cpuinfo_min_freq.attr,
-diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
-index 599a40b..ce5248e 100644
---- a/drivers/cpufreq/cpufreq_conservative.c
-+++ b/drivers/cpufreq/cpufreq_conservative.c
-@@ -178,12 +178,8 @@ static ssize_t show_sampling_rate_min(struct kobject *kobj,
- 	return sprintf(buf, "%u\n", min_sampling_rate);
- }
- 
--#define define_one_ro(_name)		\
--static struct global_attr _name =	\
--__ATTR(_name, 0444, show_##_name, NULL)
--
--define_one_ro(sampling_rate_max);
--define_one_ro(sampling_rate_min);
-+define_one_global_ro(sampling_rate_max);
-+define_one_global_ro(sampling_rate_min);
- 
- /* cpufreq_conservative Governor Tunables */
- #define show_one(file_name, object)					\
-@@ -221,12 +217,8 @@ show_one_old(freq_step);
- show_one_old(sampling_rate_min);
- show_one_old(sampling_rate_max);
- 
--#define define_one_ro_old(object, _name)	\
--static struct freq_attr object =		\
--__ATTR(_name, 0444, show_##_name##_old, NULL)
--
--define_one_ro_old(sampling_rate_min_old, sampling_rate_min);
--define_one_ro_old(sampling_rate_max_old, sampling_rate_max);
-+cpufreq_freq_attr_ro_old(sampling_rate_min);
-+cpufreq_freq_attr_ro_old(sampling_rate_max);
- 
- /*** delete after deprecation time ***/
- 
-@@ -364,16 +356,12 @@ static ssize_t store_freq_step(struct kobject *a, struct attribute *b,
- 	return count;
- }
- 
--#define define_one_rw(_name) \
--static struct global_attr _name = \
--__ATTR(_name, 0644, show_##_name, store_##_name)
--
--define_one_rw(sampling_rate);
--define_one_rw(sampling_down_factor);
--define_one_rw(up_threshold);
--define_one_rw(down_threshold);
--define_one_rw(ignore_nice_load);
--define_one_rw(freq_step);
-+define_one_global_rw(sampling_rate);
-+define_one_global_rw(sampling_down_factor);
-+define_one_global_rw(up_threshold);
-+define_one_global_rw(down_threshold);
-+define_one_global_rw(ignore_nice_load);
-+define_one_global_rw(freq_step);
- 
- static struct attribute *dbs_attributes[] = {
- 	&sampling_rate_max.attr,
-@@ -409,16 +397,12 @@ write_one_old(down_threshold);
- write_one_old(ignore_nice_load);
- write_one_old(freq_step);
- 
--#define define_one_rw_old(object, _name)	\
--static struct freq_attr object =		\
--__ATTR(_name, 0644, show_##_name##_old, store_##_name##_old)
--
--define_one_rw_old(sampling_rate_old, sampling_rate);
--define_one_rw_old(sampling_down_factor_old, sampling_down_factor);
--define_one_rw_old(up_threshold_old, up_threshold);
--define_one_rw_old(down_threshold_old, down_threshold);
--define_one_rw_old(ignore_nice_load_old, ignore_nice_load);
--define_one_rw_old(freq_step_old, freq_step);
-+cpufreq_freq_attr_rw_old(sampling_rate);
-+cpufreq_freq_attr_rw_old(sampling_down_factor);
-+cpufreq_freq_attr_rw_old(up_threshold);
-+cpufreq_freq_attr_rw_old(down_threshold);
-+cpufreq_freq_attr_rw_old(ignore_nice_load);
-+cpufreq_freq_attr_rw_old(freq_step);
- 
- static struct attribute *dbs_attributes_old[] = {
- 	&sampling_rate_max_old.attr,
-diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-index bd444dc..c00b25f 100644
---- a/drivers/cpufreq/cpufreq_ondemand.c
-+++ b/drivers/cpufreq/cpufreq_ondemand.c
-@@ -234,12 +234,8 @@ static ssize_t show_sampling_rate_min(struct kobject *kobj,
- 	return sprintf(buf, "%u\n", min_sampling_rate);
- }
- 
--#define define_one_ro(_name)		\
--static struct global_attr _name =	\
--__ATTR(_name, 0444, show_##_name, NULL)
--
--define_one_ro(sampling_rate_max);
--define_one_ro(sampling_rate_min);
-+define_one_global_ro(sampling_rate_max);
-+define_one_global_ro(sampling_rate_min);
- 
- /* cpufreq_ondemand Governor Tunables */
- #define show_one(file_name, object)					\
-@@ -274,12 +270,8 @@ show_one_old(powersave_bias);
- show_one_old(sampling_rate_min);
- show_one_old(sampling_rate_max);
- 
--#define define_one_ro_old(object, _name)       \
--static struct freq_attr object =               \
--__ATTR(_name, 0444, show_##_name##_old, NULL)
--
--define_one_ro_old(sampling_rate_min_old, sampling_rate_min);
--define_one_ro_old(sampling_rate_max_old, sampling_rate_max);
-+cpufreq_freq_attr_ro_old(sampling_rate_min);
-+cpufreq_freq_attr_ro_old(sampling_rate_max);
- 
- /*** delete after deprecation time ***/
- 
-@@ -376,14 +368,10 @@ static ssize_t store_powersave_bias(struct kobject *a, struct attribute *b,
- 	return count;
- }
- 
--#define define_one_rw(_name) \
--static struct global_attr _name = \
--__ATTR(_name, 0644, show_##_name, store_##_name)
--
--define_one_rw(sampling_rate);
--define_one_rw(up_threshold);
--define_one_rw(ignore_nice_load);
--define_one_rw(powersave_bias);
-+define_one_global_rw(sampling_rate);
-+define_one_global_rw(up_threshold);
-+define_one_global_rw(ignore_nice_load);
-+define_one_global_rw(powersave_bias);
- 
- static struct attribute *dbs_attributes[] = {
- 	&sampling_rate_max.attr,
-@@ -415,14 +403,10 @@ write_one_old(up_threshold);
- write_one_old(ignore_nice_load);
- write_one_old(powersave_bias);
- 
--#define define_one_rw_old(object, _name)       \
--static struct freq_attr object =               \
--__ATTR(_name, 0644, show_##_name##_old, store_##_name##_old)
--
--define_one_rw_old(sampling_rate_old, sampling_rate);
--define_one_rw_old(up_threshold_old, up_threshold);
--define_one_rw_old(ignore_nice_load_old, ignore_nice_load);
--define_one_rw_old(powersave_bias_old, powersave_bias);
-+cpufreq_freq_attr_rw_old(sampling_rate);
-+cpufreq_freq_attr_rw_old(up_threshold);
-+cpufreq_freq_attr_rw_old(ignore_nice_load);
-+cpufreq_freq_attr_rw_old(powersave_bias);
- 
- static struct attribute *dbs_attributes_old[] = {
-        &sampling_rate_max_old.attr,
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 4de02b1..9f15150 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -278,6 +278,27 @@ struct freq_attr {
- 	ssize_t (*store)(struct cpufreq_policy *, const char *, size_t count);
- };
- 
-+#define cpufreq_freq_attr_ro(_name)		\
-+static struct freq_attr _name =			\
-+__ATTR(_name, 0444, show_##_name, NULL)
-+
-+#define cpufreq_freq_attr_ro_perm(_name, _perm)	\
-+static struct freq_attr _name =			\
-+__ATTR(_name, _perm, show_##_name, NULL)
-+
-+#define cpufreq_freq_attr_ro_old(_name)		\
-+static struct freq_attr _name##_old =		\
-+__ATTR(_name, 0444, show_##_name##_old, NULL)
-+
-+#define cpufreq_freq_attr_rw(_name)		\
-+static struct freq_attr _name =			\
-+__ATTR(_name, 0644, show_##_name, store_##_name)
-+
-+#define cpufreq_freq_attr_rw_old(_name)		\
-+static struct freq_attr _name##_old =		\
-+__ATTR(_name, 0644, show_##_name##_old, store_##_name##_old)
-+
-+
- struct global_attr {
- 	struct attribute attr;
- 	ssize_t (*show)(struct kobject *kobj,
-@@ -286,6 +307,15 @@ struct global_attr {
- 			 const char *c, size_t count);
- };
- 
-+#define define_one_global_ro(_name)		\
-+static struct global_attr _name =		\
-+__ATTR(_name, 0444, show_##_name, NULL)
-+
-+#define define_one_global_rw(_name)		\
-+static struct global_attr _name =		\
-+__ATTR(_name, 0644, show_##_name, store_##_name)
-+
-+
- /*********************************************************************
-  *                        CPUFREQ 2.6. INTERFACE                     *
-  *********************************************************************/
+-andy
