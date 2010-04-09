@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab0DINbS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 09:31:18 -0400
-Received: from ppsw-6.csi.cam.ac.uk ([131.111.8.136]:54617 "EHLO
-	ppsw-6.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965Ab0DINbQ (ORCPT
+	id S1753099Ab0DINc3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 09:32:29 -0400
+Received: from ns2.intersolute.de ([193.110.43.67]:34687 "EHLO
+	ns2.intersolute.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752365Ab0DINc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 09:31:16 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4BBF2CC4.5000303@cam.ac.uk>
-Date: Fri, 09 Apr 2010 14:33:56 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20100109 Thunderbird/3.0
+	Fri, 9 Apr 2010 09:32:26 -0400
+Message-ID: <4BBF2C5E.4060801@lumino.de>
+Date: Fri, 09 Apr 2010 15:32:14 +0200
+From: Michael Schnell <mschnell@lumino.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-2.3 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: yauhen.kharuzhy@promwad.com, linux-kernel@vger.kernel.org,
-       Jeff Mahoney <jeffm@suse.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-       Sonic Zhang <sonic.adi@gmail.com>
-Subject: Re: [PATCH] IIO: Fix adding more than one iio device eventset
-References: <1270652625-30640-1-git-send-email-yauhen.kharuzhy@promwad.com>	<4BBCCBDC.8080609@cam.ac.uk> <20100408124843.ed53e39d.akpm@linux-foundation.org>
-In-Reply-To: <20100408124843.ed53e39d.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+       nios2-dev <nios2-dev@sopc.et.ntust.edu.tw>
+Subject: Re: atomic RAM ?
+References: <4BBD86A5.5030109@lumino.de>	<20100408114542.47b6589a@lxorguk.ukuu.org.uk>	<4BBDC7D4.6040301@lumino.de>	<20100408143750.0acebaa1@lxorguk.ukuu.org.uk>	<4BBF0784.2060002@lumino.de>	<20100409125426.5bc200da@lxorguk.ukuu.org.uk>	<4BBF2351.3040506@lumino.de> <20100409141518.0dbe7050@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100409141518.0dbe7050@lxorguk.ukuu.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/10 20:48, Andrew Morton wrote:
-> On Wed, 07 Apr 2010 19:15:56 +0100
-> Jonathan Cameron <jic23@cam.ac.uk> wrote:
-> 
->> Thanks for the patch.  The first bug was fixed by a patch from Sonic Zhang.
->> Andrew Morton picked it up so it is in the mm tree.  Thanks for the report
->> of this particularly horrible bug though as had been there quite a while before
->> Sonic pointed it out!
-> 
-> hm.  Is it a "horrible bug"?  I had assumed that it was a minor bug and
-> had staged the patch for 2.6.35.  Was that a mistake?
-> 
-It is a bug you will only see if you attempt to bring up two iio devices
-with event interfaces at the same time.  I've no idea if anyone has a, non-dev
-board where this is happening. If you trigger the bug the second devices probe
-will fail. So moderately horrible but the problem is fairly self contained.
+On 04/09/2010 03:15 PM, Alan Cox wrote:
+> Lamport's Bakery
+Hmm. The code implements the lock as a busy spinning wait. This of
+course is not possible in real world, as the thread that has the lock
+will not get any CPU time (e.g. in a non-SMP system).
 
-By the look of it two people have run into the bug (or spotted the problem during
-code review?) so probably worth pushing the fix in sooner rather than later.
+I understand that the main purpose of the FUTEX Kernel call(s) is doing
+a not-busy wait and having the "unlock" code wake the (next) waiting thread.
 
-Thanks,
+I did implement something like this in my testing program: enhanced by a
+sleep to allow for the thread that has the lock to proceed it's work,
+but this of course is not fast at all, as a short sleep() produces too
+much CPU load and a long sleep produces too much latency.
 
-Jonathan
+So maybe this algorithm can be used instead of the hardware stuff I
+suggested but it would need a FUTEX-like Kernel part, too.
+
+-Michael
