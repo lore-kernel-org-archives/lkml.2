@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab0DIDyr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 23:54:47 -0400
-Received: from mail.windriver.com ([147.11.1.11]:50627 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753070Ab0DIDyp (ORCPT
+	id S1751241Ab0DIEF5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 00:05:57 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:48820 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab0DIEFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 23:54:45 -0400
-Date: Fri, 9 Apr 2010 11:52:18 +0800
-From: Liang Li <liang.li@windriver.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: linux-kernel@vger.kernel.org, wangchen@cn.fujitsu.com, mingo@elte.hu,
-       tglx@linutronix.de, hpa@zytor.com, yinghai@kernel.org,
-       akpm@linux-foundation.org, jeremy.fitzhardinge@citrix.com,
-       konrad.wilk@oracle.com, Alok Kataria <akataria@vmware.com>
-Subject: Re: [PATCH v3] x86: let 'reservetop' functioning right
-Message-ID: <20100409035218.GA21391@localhost>
-Reply-To: Liang Li <liang.li@windriver.com>
-References: <1270773835-2689-1-git-send-email-liang.li@windriver.com>
- <4BBE9B12.1070209@goop.org>
- <20100409032316.GA19938@localhost>
- <4BBEA1E4.1050205@goop.org>
+	Fri, 9 Apr 2010 00:05:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=AdJ/k0/ZP4oF5AX6X1PNLhmdIYxLsA7AxZUt58INXuYyy6b8z8Cs+SZgAq0N6KzAuW
+         yhz446CA0HvOkUAllfDwO8OfxFobIUAoGx+oPvx4ePSmaa9m9+AN6swXQhsK1Lp8Ansl
+         olOi7XdvWtjMoP6jOywueuF5l+hap5HohRrfI=
+Message-ID: <4BBEA79A.3020307@gmail.com>
+Date: Fri, 09 Apr 2010 12:05:46 +0800
+From: Changli Gao <xiaosuo@gmail.com>
+Reply-To: xiaosuo@gmail.com
+User-Agent: Thunderbird 2.0.0.23 (X11/20091022)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BBEA1E4.1050205@goop.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-OriginalArrivalTime: 09 Apr 2010 03:53:48.0469 (UTC) FILETIME=[4287FE50:01CAD798]
+To: Patrick McHardy <kaber@trash.net>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       netfilter-devel@vger.kernel.org, xiaosuo <xiaosuo@gmail.com>
+Subject: [PATCH 1/3] flex_array: fix the panic issue when calling flex_array_alloc()
+ without __GFP_ZERO
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 08, 2010 at 08:41:24PM -0700, Jeremy Fitzhardinge wrote:
-> On 04/08/2010 08:23 PM, Liang Li wrote:
-> > On Thu, Apr 08, 2010 at 08:12:18PM -0700, Jeremy Fitzhardinge wrote:
-> >   
-> >> On 04/08/2010 05:43 PM, Liang Li wrote:
-> >>     
-> >>> When specify 'reservetop=0xbadc0de' kernel parameter, the kernel will
-> >>> stop booting due to a early_ioremap bug that relate to commit 8827247ff.
-> >>>
-> >>> The root cause of boot failure problem is the value of 'slot_virt[i]'
-> >>> was initialized in setup_arch->early_ioremap_init. But later in
-> >>> setup_arch, the function 'parse_early_param' will modify 'FIXADDR_TOP'
-> >>> when 'reservetop=0xbadc0de' being specified.
-> >>>
-> >>> The simplest fix might be use __fix_to_virt(idx0) to get updated value
-> >>> of 'FIXADDR_TOP' in '__early_ioremap' instead of reference old value
-> >>> from slot_virt[slot] directly.
-> >>>   
-> >>>       
-> >> While I guess this patch works OK, I have to say that I'm worried by the
-> >> need for it at all; it seems to be papering over a more serious
-> >> problem.  reserve_top_address() is supposed to be called very early,
-> >> before anything has used or referenced FIXADDR_TOP.  If we're seeing
-> >> problems with FIXADDR_TOP changing after it has been used, then it means
-> >> that reserve_top_address() is being called too late.  Fixing that would
-> >> be the real fix.
-> >>     
-> > The ideal thing is FIXADDR_TOP should not be touched after
-> > early_ioremap_init. The late call to reserve_top_address is from
-> > parse_reservetop, aka when reservetop=0xabcd0000 being passed as kernel
-> > commandline parameter. In setup_arch, the call sequence is:
-> >
-> > setup_arch
-> >   -> early_ioremap_init
-> >   -> parse_early_param
-> >     -> parse_reservetop
-> > 	  ->reserve_top_address
-> >
-> > See, how could we solve the confliction better?
-> >   
-> 
-> Well, the first question is "do we need the reservetop= kernel
-> parameter"?  Zach added it, I think, so that VMI could be loaded
-> dynamically as a module.  Given that VMI is deprecated anyway, I wonder
-> if we can just drop support for modular VMI and remove the reservetop=
-> kernel parameter.  Or are there other uses for it?
+fix the panic issue when calling flex_array_alloc() without __GFP_ZERO.
 
-Agree. We can remove the 'reservetop=' kernel parameter then the
-problem dispear. :) But we don't have to.....
+memset is called with the wrong address, then kernel panics.
 
-Regards,
-		-Liang Li
+Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+----
+lib/flex_array.c | 2 +-
+1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/flex_array.c b/lib/flex_array.c
+index 66eef2e..6fbb514 100644
+--- a/lib/flex_array.c
++++ b/lib/flex_array.c
+@@ -99,7 +99,7 @@ struct flex_array *flex_array_alloc(int element_size, unsigned int total,
+ 	ret->element_size = element_size;
+ 	ret->total_nr_elements = total;
+ 	if (elements_fit_in_base(ret) && !(flags & __GFP_ZERO))
+-		memset(ret->parts[0], FLEX_ARRAY_FREE,
++		memset(&ret->parts[0], FLEX_ARRAY_FREE,
+ 						FLEX_ARRAY_BASE_BYTES_LEFT);
+ 	return ret;
+ }
+
+
