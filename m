@@ -1,222 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146Ab0DIEV0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 00:21:26 -0400
-Received: from mail.gmx.net ([213.165.64.20]:48912 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751127Ab0DIEVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 00:21:24 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1/RaZ92ibXR2fc4VFmlVguBiFuArEPO9tqmIAT536
-	BtF8jbGa8z7+II
-Message-ID: <4BBEAB3E.5090709@gmx.de>
-Date: Fri, 09 Apr 2010 06:21:18 +0200
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+	id S1752364Ab0DIE0u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 00:26:50 -0400
+Received: from mail-qy0-f179.google.com ([209.85.221.179]:57665 "EHLO
+	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031Ab0DIE0q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 00:26:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=oXQ8YR7qy+AdH9rODOXueSR9XrOwArDAVFirQoB2/jkO92pgSx95xuiv2wCKEP1Lrf
+         O6a1byH6md+wTP3gBdCEfL4ontmaEkeOASN/phHs4/IdEKX2rD8fU54wZJhsEL4N6MHY
+         Kp3Zn3OIDhqwMZC74tpCJV2eynqLej5G48hPI=
+Message-ID: <4BBEAC83.9060301@garzik.org>
+Date: Fri, 09 Apr 2010 00:26:43 -0400
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Jonathan Corbet <corbet@lwn.net>
-CC: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
-       JosephChan@via.com.tw, ScottFang@viatech.com.cn,
-       Deepak Saxena <dsaxena@laptop.org>,
-       linux-fbdev-devel@lists.sourceforge.net
-Subject: Re: [PATCH 06/16] viafb: complete support for VX800/VX855 accelerated
- framebuffer
-References: <1270746946-12467-1-git-send-email-corbet@lwn.net> <1270746946-12467-7-git-send-email-corbet@lwn.net>
-In-Reply-To: <1270746946-12467-7-git-send-email-corbet@lwn.net>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
+CC: linux-kernel@vger.kernel.org,
+       Linux IDE mailing list <linux-ide@vger.kernel.org>
+Subject: Re: 2.6.33: libata issues with VIA SATA/PATA controller
+References: <201004090043.o390hSjL014351@turbo.physics.adelaide.edu.au>
+In-Reply-To: <201004090043.o390hSjL014351@turbo.physics.adelaide.edu.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.40000000000000002
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jonathan Corbet schrieb:
-> This patch is a painful merge of change
-> a90bab567ece3e915d0ccd55ab00c9bb333fa8c0 (viafb: Add support for 2D
-> accelerated framebuffer on VX800/VX855) in the OLPC tree, originally by
-> Harald Welte.  Harald's changelog read:
-> 
-> 	The VX800/VX820 and the VX855/VX875 chipsets have a different 2D
->     	acceleration engine called "M1".  The M1 engine has some subtle
->     	(and some not-so-subtle) differences to the previous engines, so
->     	support for accelerated framebuffer on those chipsets was disabled
->     	so far.
-> 
-> This merge tries to preserve Harald's changes in the framework of the
-> much-changed 2.6.34 viafb code.
-> 
-> Signed-off-by: Jonathan Corbet <corbet@lwn.net>
+On 04/08/2010 08:43 PM, Jonathan Woithe wrote:
+> Hi
+>
+> I have a machine equipped with the following SATA/PATA controllers:
+>
+>   * 00:0f.1 IDE interface: VIA Technologies, Inc. VT82C586A/B/VT82C686/A/B/
+>     VT823x/A/C PIPC Bus Master IDE (rev 06)
+>
+>   * 00:0f.0 RAID bus controller: VIA Technologies, Inc. VIA VT6420 SATA RAID
+>     Controller (rev 80)
+>
+> Two hard drives are attached to the SATA controller (messages from 2.6.24.2):
+>
+>    scsi 0:0:0:0: Direct-Access     ATA      WDC WD2502ABYS-0 02.0 PQ: 0 ANSI: 5
+>    scsi 1:0:0:0: Direct-Access     ATA      WDC WD2502ABYS-0 02.0 PQ: 0 ANSI: 5
+>
+> Both drives are jumpered to force 1.5 Gbps SATA speed.  This is needed
+> because these WD drives won't automatically fall back to 1.5 Gbps if 3.0
+> Gbps isn't requested, and the VIA controller in use is only capable of
+> 1.5 Gbps.
+>
+> The PATA interface has a tape drive attached as primary master and a CD
+> writer attached as secondary master.  Under 2.6.24.2 these show up as
+>
+>    hda: SONY SDX-260V, ATAPI TAPE drive
+>    hdc: ATAPI 40X CD-ROM CD-R/RW drive, 2048kB Cache
+>
+> The problem I have is that I am unable to boot 2.6.33 (or 2.6.33.2).  The
+> interfaces are probed but it seems the system has trouble communicating
+> reliably over the SATA links.  Sometimes both drives are identified
+> correctly, only to encounter I/O errors when the partition table is read.
+> Other times failures occur during the drive detection phase.  The problem
+> persists even when both PATA devices have been unplugged, so the PATA
+> devices themselves are not the cause.  In all cases the end result is the
+> same: the rootfs can't be found, the kernel panics.
+>
+> The 2.6.33.2 I have tried to boot today is configured to use libata VIA PATA
+> support.  The 2.6.24.2 kernel (which mostly works, except for some issues
+> with ide-tape which might be hardware related) instead uses the old ide
+> driver for the PATA interface.  I have not yet been able to test whether
+> disabling the VIA PATA component of libata works around the problem.  The
+> reason for enabling libata VIA PATA support is due to ongoing issues with
+> ide-tape in recent kernels (I've tried from 2.6.29 on).  The suggestion was
+> made to try libata since its tape driver was in better shape.
+>
+> Unfortunately the machine in question is a production machine and I have
+> limited opportunities to reboot and test kernels.  I also didn't have a
+> camera handy to take screen shots this morning during testing.  The
+> following are messages I noted by hand before they were scrolled away by the
+> panic.
+>
+>    ata1: lost interrupt status 0x50
+>    unhandled error code
+>    Result: hostbyte=0x00, driverbyte=0x06
+>    CDB: cdb[0] = 0x28 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x08 0x00
+>    end request: I/O error, dev sda, sector 0
+>
+> The same was repeated for ata2 / sdb.
+>
+> Another group of messages which crops up during drive detection is:
+>
+>    qc timeout cmd 0x27
+>    failed to read native max address (error mask 0x4)
+>    HPA suport seems broken, skipping HPA handling
+>
+> I would like to try to get to the bottom of what's happening here.  This
+> problem does not occur in 2.6.24.2 (using the VIA ide PATA driver).  Both
+> 2.6.33 and 2.6.33.2 (with the VIA libata PATA driver) suffer from the
+> problem.  If there are further tests I can do please let me know and I'll do
+> my best to schedule them (given that the machine in question is a production
+> system).  Also ask if you require more information about the machine.
+>
+> Finally, there's a complete dmsg output I get from 2.6.24.2 at the end of
+> this email in case it contains additional useful information on the hardware
+> configuration of this system.  Please CC me any replies to ensure I see them
+> (I monitor lkml via web gateways, so it's easy to miss followups at times).
 
-The patch itself looks good. However I have a few minor issues below 
-which could be addressed by follow-ups (or ignored for the moment).
+(adding linux-ide to CC)
 
-> ---
->  drivers/video/via/accel.c |   39 +++++++++++++++++++++++++++++++++------
->  drivers/video/via/accel.h |   40 ++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 73 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/video/via/accel.c b/drivers/video/via/accel.c
-> index 78c0a2b..7fe1c1d 100644
-> --- a/drivers/video/via/accel.c
-> +++ b/drivers/video/via/accel.c
-> @@ -328,6 +328,7 @@ int viafb_init_engine(struct fb_info *info)
->  {
->  	struct viafb_par *viapar = info->par;
->  	void __iomem *engine;
-> +	int highest_reg, i;
->  	u32 vq_start_addr, vq_end_addr, vq_start_low, vq_end_low, vq_high,
->  		vq_len, chip_name = viapar->shared->chip_info.gfx_chip_name;
->  
-> @@ -339,6 +340,18 @@ int viafb_init_engine(struct fb_info *info)
->  		return -ENOMEM;
->  	}
->  
-> +	/* Initialize registers to reset the 2D engine */
-> +	switch (viapar->shared->chip_info.twod_engine) {
-> +	case VIA_2D_ENG_M1:
-> +		highest_reg = 0x5c;
-> +		break;
-> +	default:
-> +		highest_reg = 0x40;
-> +		break;
-> +	}
-> +	for (i = 0; i <= highest_reg; i+= 4)
-> +		writel(0x0, engine + i);
-> +
+A complete dmesg is definitely useful.  Posting one from the failing 
+kernel would be preferred, though.  That will show us libata boot 
+messages as well as the failures you are seeing, in full detail.
 
-this obsoletes
-	/* Init 2D engine reg to reset 2D engine */
-	writel(0x0, engine + VIA_REG_KEYCONTROL);
-as VIA_REG_KEYCONTROL is 0x02C.
+Also, please try the latest 2.6.34-rc kernel, as that has several fixes 
+for both pata_via and sata_via which did not make 2.6.33.
 
->  	switch (chip_name) {
->  	case UNICHROME_CLE266:
->  	case UNICHROME_K400:
-> @@ -375,6 +388,8 @@ int viafb_init_engine(struct fb_info *info)
->  	switch (chip_name) {
->  	case UNICHROME_K8M890:
->  	case UNICHROME_P4M900:
-> +	case UNICHROME_VX800:
-> +	case UNICHROME_VX855:
->  		writel(0x00100000, engine + VIA_REG_CR_TRANSET);
->  		writel(0x680A0000, engine + VIA_REG_CR_TRANSPACE);
->  		writel(0x02000000, engine + VIA_REG_CR_TRANSPACE);
-> @@ -409,6 +424,8 @@ int viafb_init_engine(struct fb_info *info)
->  	switch (chip_name) {
->  	case UNICHROME_K8M890:
->  	case UNICHROME_P4M900:
-> +	case UNICHROME_VX800:
-> +	case UNICHROME_VX855:
->  		vq_start_low |= 0x20000000;
->  		vq_end_low |= 0x20000000;
->  		vq_high |= 0x20000000;
-> @@ -486,15 +503,25 @@ void viafb_wait_engine_idle(struct fb_info *info)
->  {
->  	struct viafb_par *viapar = info->par;
->  	int loop = 0;
-> +	u32 mask;
->  
-> -	while (!(readl(viapar->shared->engine_mmio + VIA_REG_STATUS) &
-> -			VIA_VR_QUEUE_BUSY) && (loop < MAXLOOP)) {
-> -		loop++;
-> -		cpu_relax();
-> +	switch (viapar->shared->chip_info.twod_engine) {
-> +	case VIA_2D_ENG_H5:
-> +	case VIA_2D_ENG_M1:
-> +		mask = VIA_CMD_RGTR_BUSY_M1 | VIA_2D_ENG_BUSY_M1 |
-> +			      VIA_3D_ENG_BUSY_M1;
-> +		break;
-> +	default:
+	Jeff
 
-As in the previous patch I'd appreciate a default of
-	printk(KERN_ALERT "viafb_xy: FIXME");
-I have to admit to be consistent a few switches that are already there 
-would need to be changed but that's another issue.
 
-> +		while (!(readl(viapar->shared->engine_mmio + VIA_REG_STATUS) &
-> +				VIA_VR_QUEUE_BUSY) && (loop < MAXLOOP)) {
-> +			loop++;
-> +			cpu_relax();
-> +		}
-> +		mask = VIA_CMD_RGTR_BUSY | VIA_2D_ENG_BUSY | VIA_3D_ENG_BUSY;
-> +		break;
->  	}
->  
-> -	while ((readl(viapar->shared->engine_mmio + VIA_REG_STATUS) &
-> -		    (VIA_CMD_RGTR_BUSY | VIA_2D_ENG_BUSY | VIA_3D_ENG_BUSY)) &&
-> +	while ((readl(viapar->shared->engine_mmio + VIA_REG_STATUS) & mask) &&
->  		    (loop < MAXLOOP)) {
->  		loop++;
->  		cpu_relax();
-> diff --git a/drivers/video/via/accel.h b/drivers/video/via/accel.h
-> index 615c84a..2c122d2 100644
-> --- a/drivers/video/via/accel.h
-> +++ b/drivers/video/via/accel.h
-> @@ -67,6 +67,34 @@
->  /* from 0x100 to 0x1ff */
->  #define VIA_REG_COLORPAT        0x100
->  
-> +/* defines for VIA 2D registers for vt3353/3409 (M1 engine)*/
-> +#define VIA_REG_GECMD_M1        0x000
-> +#define VIA_REG_GEMODE_M1       0x004
-> +#define VIA_REG_GESTATUS_M1     0x004       /* as same as VIA_REG_GEMODE */
-> +#define VIA_REG_PITCH_M1        0x008       /* pitch of src and dst */
-> +#define VIA_REG_DIMENSION_M1    0x00C       /* width and height */
-> +#define VIA_REG_DSTPOS_M1       0x010
-> +#define VIA_REG_LINE_XY_M1      0x010
-> +#define VIA_REG_DSTBASE_M1      0x014
-> +#define VIA_REG_SRCPOS_M1       0x018
-> +#define VIA_REG_LINE_K1K2_M1    0x018
-> +#define VIA_REG_SRCBASE_M1      0x01C
-> +#define VIA_REG_PATADDR_M1      0x020
-> +#define VIA_REG_MONOPAT0_M1     0x024
-> +#define VIA_REG_MONOPAT1_M1     0x028
-> +#define VIA_REG_OFFSET_M1       0x02C
-> +#define VIA_REG_LINE_ERROR_M1   0x02C
-> +#define VIA_REG_CLIPTL_M1       0x040       /* top and left of clipping */
-> +#define VIA_REG_CLIPBR_M1       0x044       /* bottom and right of clipping */
-> +#define VIA_REG_KEYCONTROL_M1   0x048       /* color key control */
-> +#define VIA_REG_FGCOLOR_M1      0x04C
-> +#define VIA_REG_DSTCOLORKEY_M1  0x04C       /* as same as VIA_REG_FG */
-> +#define VIA_REG_BGCOLOR_M1      0x050
-> +#define VIA_REG_SRCCOLORKEY_M1  0x050       /* as same as VIA_REG_BG */
-> +#define VIA_REG_MONOPATFGC_M1   0x058       /* Add BG color of Pattern. */
-> +#define VIA_REG_MONOPATBGC_M1   0x05C       /* Add FG color of Pattern. */
-> +#define VIA_REG_COLORPAT_M1     0x100       /* from 0x100 to 0x1ff */
-> +
 
-All of these defines are unused. I admit that it is my fault. I've not 
-yet found a way I like to use them as the meaning of the same hardware 
-address changed. I think the most clean long term solution would be to 
-put the engines in separate files and the definitions in private headers 
-to at least avoid the need to decode the engine version in the name.
-However as the old headers already contain a bunch of trash feel free to 
-ignore this issue and add it for now.
-
->  /* VIA_REG_PITCH(0x38): Pitch Setting */
->  #define VIA_PITCH_ENABLE        0x80000000
->  
-> @@ -157,6 +185,18 @@
->  /* Virtual Queue is busy */
->  #define VIA_VR_QUEUE_BUSY       0x00020000
->  
-> +/* VIA_REG_STATUS(0x400): Engine Status for H5 */
-> +#define VIA_CMD_RGTR_BUSY_H5   0x00000010  /* Command Regulator is busy */
-> +#define VIA_2D_ENG_BUSY_H5     0x00000002  /* 2D Engine is busy */
-> +#define VIA_3D_ENG_BUSY_H5     0x00001FE1  /* 3D Engine is busy */
-> +#define VIA_VR_QUEUE_BUSY_H5   0x00000004  /* Virtual Queue is busy */
-> +
-> +/* VIA_REG_STATUS(0x400): Engine Status for VT3353/3409 */
-> +#define VIA_CMD_RGTR_BUSY_M1   0x00000010  /* Command Regulator is busy */
-> +#define VIA_2D_ENG_BUSY_M1     0x00000002  /* 2D Engine is busy */
-> +#define VIA_3D_ENG_BUSY_M1     0x00001FE1  /* 3D Engine is busy */
-> +#define VIA_VR_QUEUE_BUSY_M1   0x00000004  /* Virtual Queue is busy */
-> +
->  #define MAXLOOP                 0xFFFFFF
->  
->  #define VIA_BITBLT_COLOR	1
-
-Thanks,
-
-Florian Tobias Schandinat
