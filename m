@@ -1,110 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab0DIDUg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 23:20:36 -0400
-Received: from mail.gmx.net ([213.165.64.20]:56971 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752731Ab0DIDUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 23:20:34 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX18V8fUf3ygV2WpqkJb64MH3sh8lIByhe1Iq5F+xCm
-	IeNiA3mGbRf6mL
-Message-ID: <4BBE9CFC.2020804@gmx.de>
-Date: Fri, 09 Apr 2010 05:20:28 +0200
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+	id S1753435Ab0DIDUp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 23:20:45 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:51201 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753301Ab0DIDUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 23:20:43 -0400
+Message-ID: <4BBE9D58.2010602@cn.fujitsu.com>
+Date: Fri, 09 Apr 2010 11:22:00 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-To: Jonathan Corbet <corbet@lwn.net>
-CC: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
-       JosephChan@via.com.tw, ScottFang@viatech.com.cn,
-       Deepak Saxena <dsaxena@laptop.org>,
-       linux-fbdev-devel@lists.sourceforge.net
-Subject: Re: [PATCH 05/16] viafb: Determine type of 2D engine and store it
- in chip_info
-References: <1270746946-12467-1-git-send-email-corbet@lwn.net> <1270746946-12467-6-git-send-email-corbet@lwn.net>
-In-Reply-To: <1270746946-12467-6-git-send-email-corbet@lwn.net>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "menage@google.com" <menage@google.com>,
+       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+       stable@kernel.org
+Subject: Re: [PATCH] fix cgroup procs documentation
+References: <20100409121143.9610dc8f.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100409121143.9610dc8f.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.46000000000000002
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jonathan Corbet schrieb:
-> From: Harald Welte <laforge@gnumonks.org>
+KAMEZAWA Hiroyuki wrote:
+> 2.6.33's Documentation has the same wrong information. So, I CC'ed to stable.
+> If people believe this information, they'll usr cgroup.procs file and will
+> see cgroup doesn'w work as expected.
+> The patch itself is against -mm.
 > 
-> This will help us for the upcoming support for 2D acceleration using
-> the M1 engine.
+> ==
+> Writing to cgroup.procs is not supported now.
 > 
-> [jc: fixed merge conflicts]
-> Signed-off-by: Harald Welte <HaraldWelte@viatech.com>
-
-That's probably a good idea (although most things are already done in 
-the separate blitting functions).
-Just a minor nit:
-Could we change the default so that if someone adds support for a new 
-IGP (and misses this function) we default to either the newest or 
-preferably to none? I've just seen too much poorly maintained code in 
-this driver and defaulting to the oldest is hence a bad idea.
-Otherwise it's fine.
-
-
-Thanks,
-
-Florian Tobias Schandinat
-
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > ---
->  drivers/video/via/chip.h |    8 ++++++++
->  drivers/video/via/hw.c   |   15 +++++++++++++++
->  2 files changed, 23 insertions(+), 0 deletions(-)
+>  Documentation/cgroups/cgroups.txt |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
-> diff --git a/drivers/video/via/chip.h b/drivers/video/via/chip.h
-> index 474f428..f799e2c 100644
-> --- a/drivers/video/via/chip.h
-> +++ b/drivers/video/via/chip.h
-> @@ -122,9 +122,17 @@ struct lvds_chip_information {
->  	int i2c_port;
->  };
->  
-> +/* The type of 2D engine */
-> +enum via_2d_engine {
-> +	VIA_2D_ENG_H2,
-> +	VIA_2D_ENG_H5,
-> +	VIA_2D_ENG_M1,
-> +};
-> +
->  struct chip_information {
->  	int gfx_chip_name;
->  	int gfx_chip_revision;
-> +	enum via_2d_engine twod_engine;
->  	struct tmds_chip_information tmds_chip_info;
->  	struct lvds_chip_information lvds_chip_info;
->  	struct lvds_chip_information lvds_chip_info2;
-> diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
-> index f2e4bda..963704e 100644
-> --- a/drivers/video/via/hw.c
-> +++ b/drivers/video/via/hw.c
-> @@ -2034,6 +2034,21 @@ static void init_gfx_chip_info(struct pci_dev *pdev,
->  				CX700_REVISION_700;
->  		}
->  	}
-> +
-> +	/* Determine which 2D engine we have */
-> +	switch (viaparinfo->chip_info->gfx_chip_name) {
-> +	case UNICHROME_VX800:
-> +	case UNICHROME_VX855:
-> +		viaparinfo->chip_info->twod_engine = VIA_2D_ENG_M1;
-> +		break;
-> +	case UNICHROME_K8M890:
-> +	case UNICHROME_P4M900:
-> +		viaparinfo->chip_info->twod_engine = VIA_2D_ENG_H5;
-> +		break;
-> +	default:
-> +		viaparinfo->chip_info->twod_engine = VIA_2D_ENG_H2;
-> +		break;
-> +	}
->  }
->  
->  static void init_tmds_chip_info(void)
+> Index: mmotm-temp/Documentation/cgroups/cgroups.txt
+> ===================================================================
+> --- mmotm-temp.orig/Documentation/cgroups/cgroups.txt
+> +++ mmotm-temp/Documentation/cgroups/cgroups.txt
+> @@ -235,8 +235,7 @@ containing the following files describin
+>   - cgroup.procs: list of tgids in the cgroup.  This list is not
+>     guaranteed to be sorted or free of duplicate tgids, and userspace
+>     should sort/uniquify the list if this property is required.
+> -   Writing a tgid into this file moves all threads with that tgid into
+> -   this cgroup.
+> +   This is a read-only file, now.
 
+I think the better wording is "for now". :)
+
+>   - notify_on_release flag: run the release agent on exit?
+>   - release_agent: the path to use for release notifications (this file
+>     exists in the top cgroup only)
+> 
