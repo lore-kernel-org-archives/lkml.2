@@ -1,68 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab0DIRtk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 13:49:40 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36478 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754903Ab0DIRti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 13:49:38 -0400
-Date: Fri, 9 Apr 2010 19:40:41 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com,
-       hannes@cmpxchg.org
-Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the
- anon_vmas of a mergeable VMA
-Message-ID: <20100409174041.GA10780@a1.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-	Rik van Riel <riel@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Minchan Kim <minchan.kim@gmail.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-	Nick Piggin <npiggin@suse.de>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com,
-	hannes@cmpxchg.org
-References: <alpine.LFD.2.00.1004071929090.3586@i5.linux-foundation.org>
- <20100408054707.GA9299@a1.tnic>
- <alpine.LFD.2.00.1004080706500.3586@i5.linux-foundation.org>
- <20100408210035.GA25834@a1.tnic>
- <alpine.LFD.2.00.1004081610020.3558@i5.linux-foundation.org>
- <20100408234721.GB25834@a1.tnic>
- <alpine.LFD.2.00.1004081744150.3558@i5.linux-foundation.org>
- <20100409013012.GA8153@liondog.tnic>
- <20100409092111.GA998@a1.tnic>
- <alpine.LFD.2.00.1004090917070.3558@i5.linux-foundation.org>
+	id S1755148Ab0DIRwy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 13:52:54 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:31120 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755008Ab0DIRwv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 13:52:51 -0400
+Message-ID: <4BBF68AD.9010405@oracle.com>
+Date: Fri, 09 Apr 2010 10:49:33 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004090917070.3558@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: David Woodhouse <david.woodhouse@intel.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Chris Wright <chrisw@sous-sol.org>,
+       "Yu, Fenghua" <fenghua.yu@intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
+Subject: Re: [PATCH 6/6] intel-iommu: Don't call domain_exit if can not attach
+ with iommu
+References: <1270753107-15881-1-git-send-email-yinghai@kernel.org>	 <1270753107-15881-7-git-send-email-yinghai@kernel.org> <1270827783.4478.10459.camel@macbook.infradead.org>
+In-Reply-To: <1270827783.4478.10459.camel@macbook.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4BBF6964.00C8:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, Apr 09, 2010 at 09:35:15AM -0700
+On 04/09/2010 08:43 AM, David Woodhouse wrote:
+> On Thu, 2010-04-08 at 19:58 +0100, Yinghai Lu wrote:
+>>
+>> --- a/drivers/pci/intel-iommu.c
+>> +++ b/drivers/pci/intel-iommu.c
+>> @@ -1853,7 +1853,7 @@ static struct dmar_domain
+>> *get_domain_for_dev(struct pci_dev *pdev, int gaw)
+>>  
+>>         ret = iommu_attach_domain(domain, iommu);
+>>         if (ret) {
+>> -               domain_exit(domain);
+>> +               free_domain_mem(domain);
+>>                 goto error;
+>>         }
+>>   
+> 
+> Um, shouldn't the next error have the same change? If domain_init()
+> fails before it gets round to initialising the domain->devices list, the
+> same oops in domain_exit() will occur, won't it? It's because
+> domain->devices.{next,prev} are both NULL?
+> 
 
-> Can you try with _just_ my patch?
+thanks. please check
 
-Yep, yours along with the SLUB debugging piece just survived one
-hibernation cycle without a problem. Also, no SIGBUS-killed processes,
-all seems fine. Will continue stressing it though...
+Subject: [PATCH] intel-iommu: Don't call domain_exit if can not attach with iommu
 
-Let me know what you want me to do next.
+found when a lot of ixgbevf are used with intel iommu, will get crash
 
--- 
-Regards/Gruss,
-Boris.
+> > 
+> > eth304 ip=192.171.178.102 mac=56:95:16:88:4C:C1 pci=0000:0e:18.3 drv=ixgbevf
+> > eth305 ip=192.171.179.102 mac=D6:41:8C:4A:87:B3 pci=0000:0e:18.5 drv=ixgbevf
+> > [ 9534.886519] BUG: unable to handle kernel NULL pointer dereference at
+> > 0000000000000008
+> > [ 9534.889775] Call Trace:
+> > [ 9534.889775]  [<ffffffff81406a3d>] domain_remove_dev_info+0x34/0xcf
+> > [ 9534.889775]  [<ffffffff81408a1d>] domain_exit+0x23/0xc4
+> > [ 9534.889775]  [<ffffffff81409c1c>] T.953+0x173/0x342
+> > [ 9534.889775]  [<ffffffff81409fd0>] __intel_map_single+0x63/0x1b3
+> > [ 9534.889775]  [<ffffffff8140a22a>] intel_alloc_coherent+0xc7/0xee
+> > [ 9534.889775]  [<ffffffff816c3e7d>] ? ixgbevf_setup_tx_resources+0x2f/0x12c
+> > [ 9534.889775]  [<ffffffff816c3f36>] ixgbevf_setup_tx_resources+0xe8/0x12c
+> > [ 9534.889775]  [<ffffffff816c42d2>] ixgbevf_open+0x7a/0x160
+> > [ 9534.889775]  [<ffffffff81adf21e>] __dev_open+0x8e/0xbc
+> > [ 9534.889775]  [<ffffffff81adb716>] __dev_change_flags+0xad/0x130
+> > [ 9534.889775]  [<ffffffff81adf15a>] dev_change_flags+0x21/0x57
+> > [ 9534.889775]  [<ffffffff81b211e5>] devinet_ioctl+0x29d/0x541
+> > [ 9534.889775]  [<ffffffff810a4b92>] ? trace_hardirqs_off_caller+0x1f/0xa9
+> > [ 9534.889775]  [<ffffffff81b22801>] inet_ioctl+0x8f/0xa7
+> > [ 9534.889775]  [<ffffffff81acc258>] sock_do_ioctl+0x29/0x48
+> > [ 9534.889775]  [<ffffffff81acca64>] sock_ioctl+0x1fe/0x20d
+> > [ 9534.889775]  [<ffffffff8113b86a>] vfs_ioctl+0x32/0xa6
+> > [ 9534.889775]  [<ffffffff8113bd04>] do_vfs_ioctl+0x2b0/0x2cb
+> > [ 9534.889775]  [<ffffffff81033c4c>] ? sysret_check+0x27/0x62
+> > [ 9534.889775]  [<ffffffff8113bd66>] sys_ioctl+0x47/0x6a
+> > [ 9534.889775]  [<ffffffff81033c1b>] system_call_fastpath+0x16/0x1b
+> > [ 9534.889775] Code: cd 7f cc ff 41 54 9d 48 83 c4 20 5b 41 5c 41 5d 41
+> > 5e c9 c3 55 48 89 e5 e8 11 ff ff ff c9 c3 55 48 89 e5 53 48 89 fb 48 83
+> > ec 08 <48> 8b 47 08 4c 8b 00 49 39 f8 74 1d 48 89 f9 48 c7 c2 7f e9 18
+> > [ 9534.889775] RIP  [<ffffffff813ddf94>] list_del+0xc/0x8b
+> > [ 9534.889775]  RSP <ffff88c070373af8>
+> > [ 9534.889775] CR2: 0000000000000008
+> > [ 9534.889775] ---[ end trace 072bd8cdb08a760c ]---
+> > xifconfig8_2x_vf.sh: line 10: 28555 Killed                  ifconfig
+> > $DEV $IP
+> > 
+when intel_iommu=off or iommu=pt is used, will work well.
+
+root cause:
+domain is initialized after trying attached it,
+
+if it can not be attached, don't call domain_exit yet.
+it will cause kernel crash in domain_exit()
+
+after patch will will get error instead of crash.
+
+[ 1781.910241] IOMMU: no free domain ids
+[ 1781.910244] Allocating domain for 0000:d0:1f.5 failed
+SIOCSIFFLAGS: Cannot allocate memory
+
+-v2: DavidW pointed out next error with domain_init could have the same problem.
+     So try to adjust sequence in domain_init() to make sure domain->devices get
+     initialized properly
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ drivers/pci/intel-iommu.c |   37 ++++++++++++++++++++-----------------
+ 1 file changed, 20 insertions(+), 17 deletions(-)
+
+Index: linux-2.6/drivers/pci/intel-iommu.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/intel-iommu.c
++++ linux-2.6/drivers/pci/intel-iommu.c
+@@ -1379,24 +1379,10 @@ static int domain_init(struct dmar_domai
+ 
+ 	domain_reserve_special_ranges(domain);
+ 
+-	/* calculate AGAW */
+-	iommu = domain_get_iommu(domain);
+-	if (guest_width > cap_mgaw(iommu->cap))
+-		guest_width = cap_mgaw(iommu->cap);
+-	domain->gaw = guest_width;
+-	adjust_width = guestwidth_to_adjustwidth(guest_width);
+-	agaw = width_to_agaw(adjust_width);
+-	sagaw = cap_sagaw(iommu->cap);
+-	if (!test_bit(agaw, &sagaw)) {
+-		/* hardware doesn't support it, choose a bigger one */
+-		pr_debug("IOMMU: hardware doesn't support agaw %d\n", agaw);
+-		agaw = find_next_bit(&sagaw, 5, agaw);
+-		if (agaw >= 5)
+-			return -ENODEV;
+-	}
+-	domain->agaw = agaw;
+ 	INIT_LIST_HEAD(&domain->devices);
+ 
++	iommu = domain_get_iommu(domain);
++
+ 	if (ecap_coherent(iommu->ecap))
+ 		domain->iommu_coherency = 1;
+ 	else
+@@ -1415,6 +1401,23 @@ static int domain_init(struct dmar_domai
+ 	if (!domain->pgd)
+ 		return -ENOMEM;
+ 	__iommu_flush_cache(iommu, domain->pgd, PAGE_SIZE);
++
++	/* calculate AGAW */
++	if (guest_width > cap_mgaw(iommu->cap))
++		guest_width = cap_mgaw(iommu->cap);
++	domain->gaw = guest_width;
++	adjust_width = guestwidth_to_adjustwidth(guest_width);
++	agaw = width_to_agaw(adjust_width);
++	sagaw = cap_sagaw(iommu->cap);
++	if (!test_bit(agaw, &sagaw)) {
++		/* hardware doesn't support it, choose a bigger one */
++		pr_debug("IOMMU: hardware doesn't support agaw %d\n", agaw);
++		agaw = find_next_bit(&sagaw, 5, agaw);
++		if (agaw >= 5)
++			return -ENODEV;
++	}
++	domain->agaw = agaw;
++
+ 	return 0;
+ }
+ 
+@@ -1853,7 +1856,7 @@ static struct dmar_domain *get_domain_fo
+ 
+ 	ret = iommu_attach_domain(domain, iommu);
+ 	if (ret) {
+-		domain_exit(domain);
++		free_domain_mem(domain);
+ 		goto error;
+ 	}
+ 
