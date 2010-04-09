@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061Ab0DIQNs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 12:13:48 -0400
-Received: from sj-iport-4.cisco.com ([171.68.10.86]:13078 "EHLO
-	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab0DIQNo (ORCPT
+	id S1754148Ab0DIQXz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 12:23:55 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55150 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab0DIQXv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 12:13:44 -0400
-Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAOzuvkurR7H+/2dsb2JhbACbOnGiKpkohQkEgyQ
-X-IronPort-AV: E=Sophos;i="4.52,178,1270425600"; 
-   d="scan'208";a="113011820"
-From: Roland Dreier <rdreier@cisco.com>
-To: torvalds@linux-foundation.org, akpm@linux-foundation.org
-Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] please pull infiniband.git
-X-Message-Flag: Warning: May contain useful information
-Date: Fri, 09 Apr 2010 09:13:40 -0700
-Message-ID: <adaiq80txhn.fsf@roland-alpha.cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Fri, 9 Apr 2010 12:23:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=KOkHWgG1wAxABDJ78tht4162mareMBuoRz0LUz7sps7DQqqEU60Qx/FvPbDoMxTIx6
+         3ZEYdSwO7oFuFgnSYbanCy1anwgDpaKmKtNbhhj51mBDgI+mi8i4Wdb4nzcWcE7SYI64
+         pOpj6KT5s18TJbt6NZXxLseiMjg+l+eqtx8sM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1270821655-4368-5-git-send-email-jblunck@suse.de>
+References: <1270821655-4368-1-git-send-email-jblunck@suse.de>
+	 <1270821655-4368-5-git-send-email-jblunck@suse.de>
+Date: Fri, 9 Apr 2010 19:23:50 +0300
+Message-ID: <u2xb6fcc0a1004090923h261c099fpc40b3c289e981b28@mail.gmail.com>
+Subject: Re: [PATCH 04/12] frv: remove "struct file *" argument from sysctl 
+	->proc_handler
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Jan Blunck <jblunck@suse.de>
+Cc: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+       Alan Cox <alan@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from
+On Fri, Apr 9, 2010 at 5:00 PM, Jan Blunck <jblunck@suse.de> wrote:
+> Seems that Alexey Dobriyan missed this usage of the file argument when
+> removing it from ->proc_handler in commit 8d65af789f3e2cf4cfbdbf71a0f7a61ebcd41d38.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
+It wasn't missed, it was deliberately left out because I didn't understand
+what's going on there.
 
-This will get a few small fixes that have trickled in:
+I mean, sysctl handler touching ->f_pos, come on!
 
-Chien Tung (1):
-      RDMA/nes: Correct cap.max_inline_data assignment in nes_query_qp()
+What's going on?
 
-Dan Carpenter (1):
-      IB/mlx4: Check correct variable for allocation failure
-
-Jani Nikula (1):
-      IB/cm: Fix device_create() return value check
-
-Roland Dreier (1):
-      Merge branches 'cma', 'misc', 'mlx4' and 'nes' into for-linus
-
-shefty (1):
-      RDMA/cm: Set num_paths when manually assigning path records
-
- drivers/infiniband/core/cm.c          |    2 +-
- drivers/infiniband/core/cma.c         |    1 +
- drivers/infiniband/hw/mlx4/mr.c       |    2 +-
- drivers/infiniband/hw/nes/nes_verbs.c |    9 ++++-----
- 4 files changed, 7 insertions(+), 7 deletions(-)
-
--- 
-Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
-http://www.cisco.com/web/about/doing_business/legal/cri/index.html
+> --- a/arch/frv/kernel/sysctl.c
+> +++ b/arch/frv/kernel/sysctl.c
+> @@ -85,7 +86,7 @@ static int procctl_frv_cachemode(ctl_table *table, int write, struct file *filp,
+>        }
+>
+>        /* read the state */
+> -       if (filp->f_pos > 0) {
+> +       if (*ppos > 0) {
+>                *lenp = 0;
+>                return 0;
+>        }
