@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab0DIQ7R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 12:59:17 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:60356 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754617Ab0DIQ7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 12:59:15 -0400
-Date: Fri, 9 Apr 2010 09:59:11 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, eric.dumazet@gmail.com
-Subject: Re: [PATCH tip/core/urgent 4/4] rcu: fix syntax error in
- rcu_dereference_check() example in comment
-Message-ID: <20100409165911.GC2421@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1270792042-9358-4-git-send-email-paulmck@linux.vnet.ibm.com>
- <20100409054701.GA8833@linux.vnet.ibm.com>
- <23696.1270804637@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <23696.1270804637@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754542Ab0DIRDk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 13:03:40 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34355
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750918Ab0DIRDi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 13:03:38 -0400
+Date: Fri, 09 Apr 2010 10:03:41 -0700 (PDT)
+Message-Id: <20100409.100341.268115452.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: jeff.chua.linux@gmail.com, shanyu.zhao@intel.com,
+       reinette.chatre@intel.com, stable@kernel.org,
+       linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+       viro@zeniv.linux.org.uk, wey-yi.w.guy@intel.com,
+       linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: pull request: wireless-2.6 2010-04-09
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100409153807.GA3014@tuxdriver.com>
+References: <20100408200218.GC2999@tuxdriver.com>
+	<1270762107.20845.3.camel@wwguy-ubuntu>
+	<20100409153807.GA3014@tuxdriver.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 09, 2010 at 10:17:17AM +0100, David Howells wrote:
-> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Fri, 9 Apr 2010 11:38:07 -0400
+
+> This fix is intended for 2.6.34.  It resolves an issue involving an
+> Oops on boxes w/ iwl4965 hardware, apparently introduced by another
+> recent patch.  The thread describing the issue and the resolution
+> is here:
 > 
-> > Need a logical "or" rather than a comma.
-> > 
-> > Suggested-by: Yong Zhang <yong.zhang@windriver.com>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 	http://marc.info/?l=linux-kernel&m=127074721531649&w=2
 > 
-> I'm surprised you didn't just roll this in to patch 2.
+> In order to avoid reverting that patch, please accept this fix instead.
+> As usual, please let me know if there are problems!
 
-I will do so when I resubmit.  I am finally growing more comfortable
-with "git rebase -i", but still some ways to go.  It has been a long
-journey from the old punched-card cabinets of my youth.  ;-)
-
-							Thanx, Paul
-
-> Acked-by: David Howells <dhowells@redhat.com>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Pulled, thanks John.
