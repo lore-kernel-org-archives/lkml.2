@@ -1,86 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754359Ab0DIQk1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 12:40:27 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50017 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754527Ab0DIQkX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 12:40:23 -0400
-Date: Fri, 9 Apr 2010 09:35:15 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Borislav Petkov <bp@alien8.de>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com,
-       hannes@cmpxchg.org
-Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas
- of a mergeable VMA
-In-Reply-To: <20100409092111.GA998@a1.tnic>
-Message-ID: <alpine.LFD.2.00.1004090917070.3558@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1004071625490.3586@i5.linux-foundation.org> <20100408101925.FB9F.A69D9226@jp.fujitsu.com> <alpine.LFD.2.00.1004071929090.3586@i5.linux-foundation.org> <20100408054707.GA9299@a1.tnic> <alpine.LFD.2.00.1004080706500.3586@i5.linux-foundation.org>
- <20100408210035.GA25834@a1.tnic> <alpine.LFD.2.00.1004081610020.3558@i5.linux-foundation.org> <20100408234721.GB25834@a1.tnic> <alpine.LFD.2.00.1004081744150.3558@i5.linux-foundation.org> <20100409013012.GA8153@liondog.tnic> <20100409092111.GA998@a1.tnic>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754716Ab0DIQpX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 12:45:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35987 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754613Ab0DIQpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 12:45:21 -0400
+Message-ID: <4BBF5987.3010100@zytor.com>
+Date: Fri, 09 Apr 2010 09:44:55 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+CC: Yinghai <yinghai.lu@oracle.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, linux-pci@vger.kernel.org,
+       x86@kernel.org, linux-kernel@vger.kernel.org,
+       Andy Isaacson <adi@hexapodia.org>, Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well
+ as x86_32
+References: <20100407210628.28364.96982.stgit@bob.kio> <201004071705.07176.bjorn.helgaas@hp.com> <4BBD13C3.2060404@oracle.com> <201004091004.39857.bjorn.helgaas@hp.com>
+In-Reply-To: <201004091004.39857.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Fri, 9 Apr 2010, Borislav Petkov wrote:
+On 04/09/2010 09:04 AM, Bjorn Helgaas wrote:
+>>
+>> for 64 bit, you may check boot_params.screen_info.orig_video_isVGA to see if you need to reserve that VGA range.
+>> not sure if every bootloader fill that...
 > 
-> So I went and reapplied the three patches (3rd is the object_err export
-> for SLUB debugging) on a new branch of today's git - same results, the
-> same processes crap up in the WARN(!vma->anon_vma) check so it should be
-> something else we're missing.
+> Why is this different for 64-bit vs 32-bit?  Can you point me to any
+> references where I can learn about this?
 > 
-> More code staring later...
 
-Can you try with _just_ my patch? Or add a 
+It's not.  Any differences between 32 and 64 bits in this area are just
+plain wrong.
 
-	vma->anon_vma = merge_vma->anon_vma;
+	-hpa
 
-to Rik's "merge_vma" case in anon_vma_prepare().
 
-Because I'm starign at Rik's patch, and one thing strikes me: it does that 
-"anon_vma_clone()" in anon_vma_prepare(), and maybe I'm blind, but I don't 
-see where that actually sets vma->anon_vma.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-As far as I can tell, anon_vma_clone() was designed purely for the fork() 
-case, which has done
-
-	*new = *vma;
-
-which will set new->anon_vma to the same vma. But Rik's patch never does 
-that for the anon_vma_prepare() case.
-
-And maybe we should do it in anon_vma_clone() itself, just to make it 
-impossible to mistakenly leave it out, the way I think Rik's patch did.
-
-Anyway, I'm still groggy from allt he flu medication, so take everything I 
-say with a grain of salt.
-
-In fact, the more I look at this, the less I think I like Rik's patch in 
-the first place. I think the real bug that Rik tried to fix is that 
-apparently anon_vma_merge() doesn't necessarily merge everything right. 
->From Rik's bug-explanation, step 5:
-
->> 5) vma_adjust calls anon_vma_merge, causing the anon_vma
->>    chain of one of the VMAs to get nuked - with bad luck,
->>    this is the original one, leaving just the new anon_vma
->>   attached to the VMA
-
-and I think that _this_ is the real bug to begin with. The real fix should 
-be in vma_adjust/anon_vma_merge, not in how we set up the anon_vma in the 
-first place. I do _not_ think we should require that we always merged 
-things at mmap() time, because we may _never_ be able to merge perfectly 
-(ie start out with to disjoing mmaps, and fill in the middle).
-
-			Linus
