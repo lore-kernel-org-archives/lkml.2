@@ -1,51 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab0DIGJu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 02:09:50 -0400
-Received: from quoll.daa.com.au ([203.17.251.1]:51719 "EHLO quoll.daa.com.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756663Ab0DIGJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 02:09:39 -0400
-X-Greylist: delayed 350 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Apr 2010 02:09:39 EDT
-Message-ID: <4BBEC35E.8060002@daa.com.au>
-Date: Fri, 09 Apr 2010 14:04:14 +0800
-From: James Andrewartha <jamesa@daa.com.au>
-Organization: Data Analysis Australia
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Lightning/1.0b1 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
-CC: Jeff Garzik <jeff@garzik.org>, linux-kernel@vger.kernel.org,
-       Linux IDE mailing list <linux-ide@vger.kernel.org>
-Subject: Re: 2.6.33: libata issues with VIA SATA/PATA controller
-References: <201004090436.o394a0ao022460@turbo.physics.adelaide.edu.au>
-In-Reply-To: <201004090436.o394a0ao022460@turbo.physics.adelaide.edu.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756493Ab0DIGKx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 02:10:53 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:30381 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756490Ab0DIGJ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 02:09:27 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 29/39] x86, lmb: Use lmb_memory_size()/lmb_free_memory_size() to get correct dma_reserve
+Date: Thu,  8 Apr 2010 23:03:58 -0700
+Message-Id: <1270793048-23796-30-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
+References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4BBEC45E.00F9,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/04/2010 12:36 PM, Jonathan Woithe wrote:
-> Hi Jeff
-> 
->> A complete dmesg is definitely useful.
-> 
-> It's at the end of my previous post.
-> 
->> Posting one from the failing kernel would be preferred, though.
-> 
-> Any ideas as to how I can capture it?  Since the SATA disc interfaces stop
-> working long before they are mounted none of the early boot messages make it
-> to disc.  All the interesting bits are therefore scrolled into the bit
-> bucket.
-> 
-> A serial console might be doable (is there documentation about how to set
-> one up?) but that would take some time to arrange - I'm only physically at
-> the machine in question sporadically and I'd have to rustle up another PC
-> ready for my next visit.  It could be done, but might take some time.
+lmb_memory_size() will return memory size in lmb.memory.region.
+lmb_free_memory_size() will return free memory size in lmb.memory.region.
 
-Netconsole is the easiest way to get dmesg when disks aren't working - see
-Documentation/networking/netconsole.txt for details on how to set it up.
+So We can get exact reseved size in specified range.
 
+Set the size right after initmem_init(), because later bootmem API will
+get area above 16M. (except some fallback).
+
+Later after we remove the bootmem, We could call that just before paging_init().
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/include/asm/e820.h |    2 ++
+ arch/x86/kernel/e820.c      |   17 +++++++++++++++++
+ arch/x86/kernel/setup.c     |    1 +
+ arch/x86/mm/init_64.c       |    7 -------
+ 4 files changed, 20 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index de6cd06..334281f 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -117,6 +117,8 @@ extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
+ 
+ void init_lmb_memory(void);
+ void fill_lmb_memory(void);
++void find_lmb_dma_reserve(void);
++
+ extern void finish_e820_parsing(void);
+ extern void e820_reserve_resources(void);
+ extern void e820_reserve_resources_late(void);
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index e0ba87d..57c938a 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -1151,3 +1151,20 @@ void __init fill_lmb_memory(void)
+ 	lmb_analyze();
+ 	lmb_dump_all();
+ }
++
++void __init find_lmb_dma_reserve(void)
++{
++#ifdef CONFIG_X86_64
++	u64 free_size_pfn;
++	u64 mem_size_pfn;
++	/*
++	 * need to find out used area below MAX_DMA_PFN
++	 * need to use lmb to get free size in [0, MAX_DMA_PFN]
++	 * at first, and assume boot_mem will not take below MAX_DMA_PFN
++	 */
++	mem_size_pfn = lmb_memory_size(0, MAX_DMA_PFN << PAGE_SHIFT) >> PAGE_SHIFT;
++	free_size_pfn = lmb_free_memory_size(0, MAX_DMA_PFN << PAGE_SHIFT) >> PAGE_SHIFT;
++	set_dma_reserve(mem_size_pfn - free_size_pfn);
++#endif
++}
++
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 4d2a984..403b15c 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1001,6 +1001,7 @@ void __init setup_arch(char **cmdline_p)
+ #endif
+ 
+ 	initmem_init(0, max_pfn, acpi, k8);
++	find_lmb_dma_reserve();
+ #ifndef CONFIG_NO_BOOTMEM
+ 	lmb_to_bootmem(0, max_low_pfn<<PAGE_SHIFT);
+ #endif
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 0d2252c..37c7a82 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -53,8 +53,6 @@
+ #include <asm/init.h>
+ #include <linux/bootmem.h>
+ 
+-static unsigned long dma_reserve __initdata;
+-
+ static int __init parse_direct_gbpages_off(char *arg)
+ {
+ 	direct_gbpages = 0;
+@@ -821,11 +819,6 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+ 
+ 	reserve_bootmem(phys, len, flags);
+ 
+-	if (phys+len <= MAX_DMA_PFN*PAGE_SIZE) {
+-		dma_reserve += len / PAGE_SIZE;
+-		set_dma_reserve(dma_reserve);
+-	}
+-
+ 	return 0;
+ }
+ #endif
 -- 
-James Andrewartha
+1.6.4.2
+
