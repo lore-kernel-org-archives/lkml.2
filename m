@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab0DIQBa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 12:01:30 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:47178 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750883Ab0DIQB2 (ORCPT
+	id S1751800Ab0DIQEp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 12:04:45 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:8528 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab0DIQEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 12:01:28 -0400
-Date: Fri, 9 Apr 2010 12:01:27 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Pedro Ribeiro <pedrib@gmail.com>
-cc: Daniel Mack <daniel@caiaq.de>, Robert Hancock <hancockrwd@gmail.com>,
-       <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
-       Greg KH <gregkh@suse.de>, <alsa-devel@alsa-project.org>,
-       <linux-usb@vger.kernel.org>
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-In-Reply-To: <m2n74fd948d1004081613n90408827s7c51ef572848fb1d@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1004091155570.1852-100000@iolanthe.rowland.org>
+	Fri, 9 Apr 2010 12:04:43 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Yinghai <yinghai.lu@oracle.com>
+Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well as x86_32
+Date: Fri, 9 Apr 2010 10:04:39 -0600
+User-Agent: KMail/1.9.10
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, linux-pci@vger.kernel.org,
+       x86@kernel.org, linux-kernel@vger.kernel.org,
+       Andy Isaacson <adi@hexapodia.org>, Thomas Renninger <trenn@suse.de>
+References: <20100407210628.28364.96982.stgit@bob.kio> <201004071705.07176.bjorn.helgaas@hp.com> <4BBD13C3.2060404@oracle.com>
+In-Reply-To: <4BBD13C3.2060404@oracle.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201004091004.39857.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Apr 2010, Pedro Ribeiro wrote:
-
-> On 8 April 2010 17:57, Alan Stern <stern@rowland.harvard.edu> wrote:
-> > On Thu, 8 Apr 2010, Daniel Mack wrote:
-> >
-> >> > > AFAIK, the driver shouldn't have to worry about this at all. When the
-> >> > > buffer gets DMA-mapped for the controller, the DMA mapping code should
-> >> > > see that the device has a 32-bit DMA mask and either bounce or IOMMU-map
-> >> > > the memory so that it appears below 4GB.
-> >> >
-> >> > That's true.  It would of course be more efficient for the buffer to be
-> >> > allocated below 4 GB, but it should work okay either way.  Daniel, do
-> >> > you have any idea why it fails?
+On Wednesday 07 April 2010 05:22:43 pm Yinghai wrote:
+> On 04/07/2010 04:05 PM, Bjorn Helgaas wrote:
+> > On Wednesday 07 April 2010 04:45:30 pm Yinghai wrote:
+> >> On 04/07/2010 02:06 PM, Bjorn Helgaas wrote:
+> >>>
+> >>> Currently, we only reserve the legacy VGA area [mem 0xa0000-0xbffff] on
+> >>> x86_32.  But this legacy area is also used on x86_64, so this patch
+> >>> reserves it there, too.
+> >>>
+> >>> If we don't reserve it, we may mistakenly move a PCI device to that area,
+> >>> as we did here:
+> >>>
+> >>>   pci_root PNP0A03:00: host bridge window [mem 0xff980800-0xff980bff]
+> >>>   pci_root PNP0A03:00: host bridge window [mem 0xff97c000-0xff97ffff]
+> >>>   pci 0000:00:1f.2: no compatible bridge window for [mem 0xff970000-0xff9707ff]
+> >>>   pci 0000:00:1f.2: BAR 5: assigned [mem 0x000a0000-0x000a07ff]
+> >>>
+> >>> as reported by Andy Isaacson at http://lkml.org/lkml/2010/4/6/375
+> >>>
+> >>> I think the fact that the BAR is not within a host bridge window is a
+> >>> BIOS defect, and it's now more visible because we have "pci=use_crs" as
+> >>> the default.  Using "pci=nocrs" is a workaround, because then we won't
+> >>> attempt to move the device.
 > >>
-> >> No, and I can't do real tests as I lack a 64bit machine. I'll do some
-> >> more investigation later today, but for now the only explanation I have
-> >> is that not the remapped DMA buffer is used eventually by the EHCI code
-> >> but the physical address of the original buffer.
+> >> that doesn't look right.
 > >>
-> >> It would of course be best to fix the whole problem at this level, if
-> >> possible.
-> >
-> > It definitely needs to be fixed at this level.  But I still think it's
-> > appropriate to have new USB core functions for allocating and
-> > deallocating I/O memory.  The additional price is small compared to
-> > constantly bouncing the buffers.
-> >
-> > Pedro, in the hope of tracking down the problem, can you apply this
-> > patch and see what output it produces in the system log when the
-> > "interference" happens?  (Warning: It will produce quite a lot of
-> > output whenever you send data to the audio device -- between 500 and
-> > 1000 lines per second.)
-
-> Hi Alan,
+> >> It seem another thread, erission has one model without VGA, and they use that area for other device MMIO.
+> >>
+> >> current for 64bit, We remove [0xa0000, 0x100000) from e820 map if those area is E820_RAM.
+> >>
+> >> in e820_reserve_resources(), kernel will reserve range < 1M according to e820 map.
+> >> that is before pci BAR is claimed.
+> >>
+> >> or you can add
+> >> boot_params.screen_info.orig_video_isVGA == 1
+> >> or double check scan pci tree to see if video is there or not
+> > 
+> > I'm sorry, I can't understand what you're saying.
 > 
-> here is the output of the patch you sent me when the interference is triggered.
-> 
-> The log is long, 1.3mb in size.
+> for 64 bit, you may check boot_params.screen_info.orig_video_isVGA to see if you need to reserve that VGA range.
+> not sure if every bootloader fill that...
 
-I don't see anything suspicious.  The transfer_buffer addresses repeat 
-every 32 URBs, and the DMA addresses cycle almost entirely uniformly 
-from 0x20000000 to 0x23ffffff in units of 0x2000 (there are a few gaps 
-where the interval is a little bigger).
+Why is this different for 64-bit vs 32-bit?  Can you point me to any
+references where I can learn about this?
 
-Alan Stern
-
+Bjorn
