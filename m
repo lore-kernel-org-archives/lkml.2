@@ -1,65 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666Ab0DITbp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 15:31:45 -0400
-Received: from tex.lwn.net ([70.33.254.29]:34086 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751486Ab0DITbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 15:31:42 -0400
-Date: Fri, 9 Apr 2010 13:31:39 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
-       JosephChan@via.com.tw, ScottFang@viatech.com.cn,
-       Deepak Saxena <dsaxena@laptop.org>,
-       linux-fbdev-devel@lists.sourceforge.net,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 01/16] [FB] viafb: Fix various resource leaks during
- module_init()
-Message-ID: <20100409133139.1ab17828@bike.lwn.net>
-In-Reply-To: <4BBE1F01.5000800@gmx.de>
-References: <1270746946-12467-1-git-send-email-corbet@lwn.net>
-	<1270746946-12467-2-git-send-email-corbet@lwn.net>
-	<4BBE1F01.5000800@gmx.de>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1755707Ab0DITeM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 15:34:12 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:60928 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754327Ab0DITeH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 15:34:07 -0400
+Date: Fri, 9 Apr 2010 15:34:06 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Pedro Ribeiro <pedrib@gmail.com>
+cc: Daniel Mack <daniel@caiaq.de>, Robert Hancock <hancockrwd@gmail.com>,
+       <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
+       Greg KH <gregkh@suse.de>, <alsa-devel@alsa-project.org>,
+       <linux-usb@vger.kernel.org>
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+In-Reply-To: <w2r74fd948d1004091119j9f33d8a6kc1824d9243abf38b@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1004091529240.1852-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 08 Apr 2010 20:22:57 +0200
-Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
+On Fri, 9 Apr 2010, Pedro Ribeiro wrote:
 
-> >  	if (!viafbinfo->screen_base) {
-> >  		printk(KERN_INFO "ioremap failed\n");
-> > -		return -ENOMEM;
-> > +		rc = -EIO;
-> 
-> I don't know whether this is right (changing the return code) as Andrew 
-> recommend a while ago:
-> "It should return -ENOMEM rather than -1, but that's minor."
-> So I did and now I wonder which one is correct?
+> > The DMA pointers do indeed look sane. I wanted to take a deeper look at
+> > this and set up a 64bit system today. However, I fail to see the problem
+> > here. Pedro, how much RAM does your machine have installed?
 
-To me it seems like -ENOMEM could be a bit confusing here; there's a lot of
-things that could go wrong with that same error return.
+> It has 4 GB.
 
-That said, I did some digging around, and -ENOMEM does seem to be the
-standard response to an ioremap() failure.  So I've changed it back.
+That means DMA mapping cannot be the cause of the problem.  :-(
 
-> >  		if (!viafbinfo1) {
-> >  			printk(KERN_ERR
-> >  			"allocate the second framebuffer struct error\n");
-> > -			framebuffer_release(viafbinfo);
-> > -			return -ENOMEM;
-> 
-> rc = -ENOMEM;
-> is missing?
+Alan Stern
 
-Indeed.  Fixed.
-
-Thanks,
-
-jon
