@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756493Ab0DIGKx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 02:10:53 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:30381 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756490Ab0DIGJ1 (ORCPT
+	id S1756762Ab0DIGLU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 02:11:20 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:28860 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756459Ab0DIGJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 02:09:27 -0400
+	Fri, 9 Apr 2010 02:09:26 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,112 +16,39 @@ Cc: David Miller <davem@davemloft.net>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 29/39] x86, lmb: Use lmb_memory_size()/lmb_free_memory_size() to get correct dma_reserve
-Date: Thu,  8 Apr 2010 23:03:58 -0700
-Message-Id: <1270793048-23796-30-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 27/39] x86, lmb: turn off ARCH_LMB_FIND_AREA
+Date: Thu,  8 Apr 2010 23:03:56 -0700
+Message-Id: <1270793048-23796-28-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
 References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4BBEC45E.00F9,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090207.4BBEC461.0029,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lmb_memory_size() will return memory size in lmb.memory.region.
-lmb_free_memory_size() will return free memory size in lmb.memory.region.
-
-So We can get exact reseved size in specified range.
-
-Set the size right after initmem_init(), because later bootmem API will
-get area above 16M. (except some fallback).
-
-Later after we remove the bootmem, We could call that just before paging_init().
+32bit now can use generic __find_lmb_area now. So we can turn arch one off
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/e820.h |    2 ++
- arch/x86/kernel/e820.c      |   17 +++++++++++++++++
- arch/x86/kernel/setup.c     |    1 +
- arch/x86/mm/init_64.c       |    7 -------
- 4 files changed, 20 insertions(+), 7 deletions(-)
+ arch/x86/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index de6cd06..334281f 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -117,6 +117,8 @@ extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index da9040b..bbe4e99 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -584,7 +584,7 @@ config PARAVIRT_DEBUG
+ 	  a paravirt_op is missing when it is called.
  
- void init_lmb_memory(void);
- void fill_lmb_memory(void);
-+void find_lmb_dma_reserve(void);
-+
- extern void finish_e820_parsing(void);
- extern void e820_reserve_resources(void);
- extern void e820_reserve_resources_late(void);
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index e0ba87d..57c938a 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -1151,3 +1151,20 @@ void __init fill_lmb_memory(void)
- 	lmb_analyze();
- 	lmb_dump_all();
- }
-+
-+void __init find_lmb_dma_reserve(void)
-+{
-+#ifdef CONFIG_X86_64
-+	u64 free_size_pfn;
-+	u64 mem_size_pfn;
-+	/*
-+	 * need to find out used area below MAX_DMA_PFN
-+	 * need to use lmb to get free size in [0, MAX_DMA_PFN]
-+	 * at first, and assume boot_mem will not take below MAX_DMA_PFN
-+	 */
-+	mem_size_pfn = lmb_memory_size(0, MAX_DMA_PFN << PAGE_SHIFT) >> PAGE_SHIFT;
-+	free_size_pfn = lmb_free_memory_size(0, MAX_DMA_PFN << PAGE_SHIFT) >> PAGE_SHIFT;
-+	set_dma_reserve(mem_size_pfn - free_size_pfn);
-+#endif
-+}
-+
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 4d2a984..403b15c 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1001,6 +1001,7 @@ void __init setup_arch(char **cmdline_p)
- #endif
- 
- 	initmem_init(0, max_pfn, acpi, k8);
-+	find_lmb_dma_reserve();
- #ifndef CONFIG_NO_BOOTMEM
- 	lmb_to_bootmem(0, max_low_pfn<<PAGE_SHIFT);
- #endif
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 0d2252c..37c7a82 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -53,8 +53,6 @@
- #include <asm/init.h>
- #include <linux/bootmem.h>
- 
--static unsigned long dma_reserve __initdata;
--
- static int __init parse_direct_gbpages_off(char *arg)
- {
- 	direct_gbpages = 0;
-@@ -821,11 +819,6 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
- 
- 	reserve_bootmem(phys, len, flags);
- 
--	if (phys+len <= MAX_DMA_PFN*PAGE_SIZE) {
--		dma_reserve += len / PAGE_SIZE;
--		set_dma_reserve(dma_reserve);
--	}
--
- 	return 0;
- }
- #endif
+ config ARCH_LMB_FIND_AREA
+-	default y
++	default n
+ 	bool "Use x86 own lmb_find_area()"
+ 	---help---
+ 	  Use lmb_find_area() version instead of generic version, it get free
 -- 
 1.6.4.2
 
