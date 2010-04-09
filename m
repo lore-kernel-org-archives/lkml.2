@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab0DIWNj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 18:13:39 -0400
-Received: from mail1.radix.net ([207.192.128.31]:33431 "EHLO mail1.radix.net"
+	id S1752708Ab0DIWTU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 18:19:20 -0400
+Received: from hera.kernel.org ([140.211.167.34]:32904 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751444Ab0DIWNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 18:13:34 -0400
-Subject: Re: [RFC] What are the goals for the architecture of an in-kernel
- IR  system?
-From: Andy Walls <awalls@radix.net>
-To: Devin Heitmueller <dheitmueller@kernellabs.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-       James Hogan <james@albanarts.com>, Jon Smirl <jonsmirl@gmail.com>,
-       Pavel Machek <pavel@ucw.cz>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Krzysztof Halasa <khc@pm.waw.pl>,
-       hermann pitton <hermann-pitton@arcor.de>,
-       Christoph Bartelmus <lirc@bartelmus.de>, j@jannau.net, jarod@redhat.com,
-       jarod@wilsonet.com, kraxel@redhat.com, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-       superm1@ubuntu.com
-In-Reply-To: <g2k829197381004091455m20368cc6r63df4a4f00d36b45@mail.gmail.com>
-References: <9e4733910912060952h4aad49dake8e8486acb6566bc@mail.gmail.com>
-	 <9e4733910912151338n62b30af5i35f8d0963e6591c@mail.gmail.com>
-	 <4BAB7659.1040408@redhat.com> <201004090821.10435.james@albanarts.com>
-	 <1270810226.3764.34.camel@palomino.walls.org> <4BBF253A.8030406@redhat.com>
-	 <g2k829197381004091455m20368cc6r63df4a4f00d36b45@mail.gmail.com>
-Content-Type: text/plain
-Date: Fri, 09 Apr 2010 18:14:00 -0400
-Message-Id: <1270851240.3038.51.camel@palomino.walls.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.5 (2.24.5-2.fc10) 
-Content-Transfer-Encoding: 7bit
+	id S1751223Ab0DIWTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 18:19:16 -0400
+Date: Fri, 9 Apr 2010 22:18:50 GMT
+From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       trenn@suse.de, tglx@linutronix.de, borislav.petkov@amd.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       tglx@linutronix.de, trenn@suse.de, borislav.petkov@amd.com
+In-Reply-To: <1270065406-1814-2-git-send-email-bp@amd64.org>
+References: <1270065406-1814-2-git-send-email-bp@amd64.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cpu] x86, cpu: Add AMD core boosting feature flag to /proc/cpuinfo
+Message-ID: <tip-5958f1d5d722df7a9e5d129676614a8e5219bacd@git.kernel.org>
+Git-Commit-ID: 5958f1d5d722df7a9e5d129676614a8e5219bacd
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 09 Apr 2010 22:18:51 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-04-09 at 17:55 -0400, Devin Heitmueller wrote:
-> On Fri, Apr 9, 2010 at 9:01 AM, Mauro Carvalho Chehab
-> <mchehab@redhat.com> wrote:
-> > [1] Basically, a keycode (like KEY_POWER) could be used to wake up the machine. So, by
-> > associating some scancode to KEY_POWER via ir-core, the driver can program the hardware
-> > to wake up the machine with the corresponding scancode. I can't see a need for a change at
-> > ir-core to implement such behavior. Of course, some attributes at sysfs can be added
-> > to enable or disable this feature, and to control the associated logic, but we first
-> > need to implement the wakeup feature at the hardware driver, and then adding some logic
-> > at ir-core to add the non-hardware specific code there.
-> 
-> Really?  Have you actually seen any hardware where a particular scan
-> code can be used to wake up the hardware?  The only hardware I have
-> seen has the ability to unsuspend on arrival of IR traffic, but you
-> didn't have the granularity to dictate that it only wake up on
-> particular scancodes.
+Commit-ID:  5958f1d5d722df7a9e5d129676614a8e5219bacd
+Gitweb:     http://git.kernel.org/tip/5958f1d5d722df7a9e5d129676614a8e5219bacd
+Author:     Borislav Petkov <borislav.petkov@amd.com>
+AuthorDate: Wed, 31 Mar 2010 21:56:41 +0200
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Fri, 9 Apr 2010 14:05:23 -0700
 
-The CX23888 and CX23102 can do it.  Basically any IR pulse pattern your
-heart desires; within reason.  And any carrier freq you want too; within
-reason.
+x86, cpu: Add AMD core boosting feature flag to /proc/cpuinfo
 
-But let's be real, the cx23885, cx231xx, and cx25840 modules are nowhere
-near properly supporing suspend/resume for their main video and DMA
-functions, AFAIK.
+By semi-popular demand, this adds the Core Performance Boost feature
+flag to /proc/cpuinfo. Possible use case for this is userspace tools
+like cpufreq-aperf, for example, so that they don't have to jump through
+hoops of accessing "/dev/cpu/%d/cpuid" in order to check for CPB hw
+support, or call cpuid from userspace.
 
-Regards,
-Andy
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+LKML-Reference: <1270065406-1814-2-git-send-email-bp@amd64.org>
+Reviewed-by: Thomas Renninger <trenn@suse.de>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/include/asm/cpufeature.h          |    1 +
+ arch/x86/kernel/cpu/addon_cpuid_features.c |    5 +++--
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 0cd82d0..630e623 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -161,6 +161,7 @@
+  */
+ #define X86_FEATURE_IDA		(7*32+ 0) /* Intel Dynamic Acceleration */
+ #define X86_FEATURE_ARAT	(7*32+ 1) /* Always Running APIC Timer */
++#define X86_FEATURE_CPB		(7*32+ 2) /* AMD Core Performance Boost */
+ 
+ /* Virtualization flags: Linux defined */
+ #define X86_FEATURE_TPR_SHADOW  (8*32+ 0) /* Intel TPR Shadow */
+diff --git a/arch/x86/kernel/cpu/addon_cpuid_features.c b/arch/x86/kernel/cpu/addon_cpuid_features.c
+index 97ad79c..ead2a1c 100644
+--- a/arch/x86/kernel/cpu/addon_cpuid_features.c
++++ b/arch/x86/kernel/cpu/addon_cpuid_features.c
+@@ -30,8 +30,9 @@ void __cpuinit init_scattered_cpuid_features(struct cpuinfo_x86 *c)
+ 	const struct cpuid_bit *cb;
+ 
+ 	static const struct cpuid_bit __cpuinitconst cpuid_bits[] = {
+-		{ X86_FEATURE_IDA, CR_EAX, 1, 0x00000006 },
+-		{ X86_FEATURE_ARAT, CR_EAX, 2, 0x00000006 },
++		{ X86_FEATURE_IDA,   CR_EAX, 1, 0x00000006 },
++		{ X86_FEATURE_ARAT,  CR_EAX, 2, 0x00000006 },
++		{ X86_FEATURE_CPB,   CR_EDX, 9, 0x80000007 },
+ 		{ X86_FEATURE_NPT,   CR_EDX, 0, 0x8000000a },
+ 		{ X86_FEATURE_LBRV,  CR_EDX, 1, 0x8000000a },
+ 		{ X86_FEATURE_SVML,  CR_EDX, 2, 0x8000000a },
