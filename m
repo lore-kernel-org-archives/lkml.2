@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab0DIGPF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 02:15:05 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:25801 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754739Ab0DIGHI (ORCPT
+	id S1757058Ab0DIGPN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 02:15:13 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:27651 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754713Ab0DIGHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Apr 2010 02:07:08 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -16,229 +16,138 @@ Cc: David Miller <davem@davemloft.net>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 02/39] x86: Add sanitize_e820_map()
-Date: Thu,  8 Apr 2010 23:03:31 -0700
-Message-Id: <1270793048-23796-3-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 08/39] lmb: Add lmb_reserve_area/lmb_free_area
+Date: Thu,  8 Apr 2010 23:03:37 -0700
+Message-Id: <1270793048-23796-9-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
 References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4BBEC3E8.00C9,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090208.4BBEC3E4.010A,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So We don't need to take e820.map with it.
+They will check if the region array is big enough.
 
-Also change e820_saved to initdata to get some bytes memory back.
+__check_and_double_region_array will try to double the region array if that
+array spare slots is not big enough.  Old array will be copied to new array.
+
+Arch code should set lmb.default_alloc_limit accordingly, so the new array is in
+accessiable address.
+
+-v2: change get_max_mapped() to lmb.default_alloc_limit according to Michael
+      Ellerman and Ben
+     change to lmb_reserve_area and lmb_free_area according to Michael Ellerman
+-v3: call check_and_double after reserve/free, so could avoid to use
+      find_lmb_area. Suggested by Michael Ellerman
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/e820.h |    5 ++---
- arch/x86/kernel/e820.c      |   26 ++++++++++++++++++--------
- arch/x86/kernel/efi.c       |    2 +-
- arch/x86/kernel/setup.c     |   10 +++++-----
- arch/x86/xen/setup.c        |    4 +---
- 5 files changed, 27 insertions(+), 20 deletions(-)
+ include/linux/lmb.h |    4 +++
+ mm/lmb.c            |   66 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 70 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index ec8a52d..0457c49 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -75,15 +75,14 @@ struct e820map {
- #ifdef __KERNEL__
- /* see comment in arch/x86/kernel/e820.c */
- extern struct e820map e820;
--extern struct e820map e820_saved;
- 
- extern unsigned long pci_mem_start;
- extern int e820_any_mapped(u64 start, u64 end, unsigned type);
- extern int e820_all_mapped(u64 start, u64 end, unsigned type);
- extern void e820_add_region(u64 start, u64 size, int type);
- extern void e820_print_map(char *who);
--extern int
--sanitize_e820_map(struct e820entry *biosmap, int max_nr_map, u32 *pnr_map);
-+int sanitize_e820_map(void);
-+void save_e820_map(void);
- extern u64 e820_update_range(u64 start, u64 size, unsigned old_type,
- 			       unsigned new_type);
- extern u64 e820_remove_range(u64 start, u64 size, unsigned old_type,
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 7bca3c6..14d0a1a 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -35,7 +35,7 @@
-  * next kernel with full memory.
-  */
- struct e820map e820;
--struct e820map e820_saved;
-+static struct e820map __initdata e820_saved;
- 
- /* For PCI or other memory-mapped resources */
- unsigned long pci_mem_start = 0xaeedbabe;
-@@ -224,7 +224,7 @@ void __init e820_print_map(char *who)
-  *	   ______________________4_
-  */
- 
--int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
-+static int __init __sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
- 			     u32 *pnr_map)
- {
- 	struct change_member {
-@@ -383,6 +383,11 @@ int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
- 	return 0;
+diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+index 4cf2f3b..598662f 100644
+--- a/include/linux/lmb.h
++++ b/include/linux/lmb.h
+@@ -33,6 +33,7 @@ struct lmb_region {
+ struct lmb {
+ 	unsigned long debug;
+ 	u64 rmo_size;
++	u64 default_alloc_limit;
+ 	struct lmb_region memory;
+ 	struct lmb_region reserved;
+ };
+@@ -83,6 +84,9 @@ lmb_end_pfn(struct lmb_region *type, unsigned long region_nr)
+ 	       lmb_size_pages(type, region_nr);
  }
  
-+int __init sanitize_e820_map(void)
++void lmb_reserve_area(u64 start, u64 end, char *name);
++void lmb_free_area(u64 start, u64 end);
++void lmb_add_memory(u64 start, u64 end);
+ u64 __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
+ 			 u64 size, u64 align);
+ u64 lmb_find_area(u64 start, u64 end, u64 size, u64 align);
+diff --git a/mm/lmb.c b/mm/lmb.c
+index 7010212..a514d41 100644
+--- a/mm/lmb.c
++++ b/mm/lmb.c
+@@ -564,6 +564,72 @@ int lmb_find(struct lmb_property *res)
+ 	return -1;
+ }
+ 
++static void __init __check_and_double_region_array(struct lmb_region *type,
++			 struct lmb_property *static_region)
 +{
-+	return __sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
++	u64 size, mem;
++	struct lmb_property *new, *old;
++	unsigned long rgnsz = type->nr_regions;
++
++	/* Do we have enough slots left ? */
++	if ((rgnsz - type->cnt) > 2)
++		return;
++
++	old = type->region;
++	/* Double the array size */
++	size = sizeof(struct lmb_property) * rgnsz * 2;
++
++	mem = __lmb_alloc_base(size, sizeof(struct lmb_property), lmb.default_alloc_limit);
++	if (mem == 0)
++		panic("can not find more space for lmb.reserved.region array");
++
++	new = __va(mem);
++	/* Copy old to new */
++	memcpy(&new[0], &old[0], sizeof(struct lmb_property) * rgnsz);
++	memset(&new[rgnsz], 0, sizeof(struct lmb_property) * rgnsz);
++
++	memset(&old[0], 0, sizeof(struct lmb_property) * rgnsz);
++	type->region = new;
++	type->nr_regions = rgnsz * 2;
++	printk(KERN_DEBUG "lmb.reserved.region array is doubled to %ld at [%llx - %llx]\n",
++		type->nr_regions, mem, mem + size - 1);
++
++	/* Free old one ?*/
++	if (old != static_region)
++		lmb_free(__pa(old), sizeof(struct lmb_property) * rgnsz);
 +}
 +
- static int __init __append_e820_map(struct e820entry *biosmap, int nr_map)
- {
- 	while (nr_map) {
-@@ -571,7 +576,7 @@ void __init update_e820(void)
- 	u32 nr_map;
- 
- 	nr_map = e820.nr_map;
--	if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr_map))
-+	if (__sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr_map))
- 		return;
- 	e820.nr_map = nr_map;
- 	printk(KERN_INFO "modified physical RAM map:\n");
-@@ -582,7 +587,7 @@ static void __init update_e820_saved(void)
- 	u32 nr_map;
- 
- 	nr_map = e820_saved.nr_map;
--	if (sanitize_e820_map(e820_saved.map, ARRAY_SIZE(e820_saved.map), &nr_map))
-+	if (__sanitize_e820_map(e820_saved.map, ARRAY_SIZE(e820_saved.map), &nr_map))
- 		return;
- 	e820_saved.nr_map = nr_map;
- }
-@@ -677,7 +682,7 @@ void __init parse_e820_ext(struct setup_data *sdata, unsigned long pa_data)
- 		sdata = early_ioremap(pa_data, map_len);
- 	extmap = (struct e820entry *)(sdata->data);
- 	__append_e820_map(extmap, entries);
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- 	if (map_len > PAGE_SIZE)
- 		early_iounmap(sdata, map_len);
- 	printk(KERN_INFO "extended physical RAM map:\n");
-@@ -1044,7 +1049,7 @@ void __init finish_e820_parsing(void)
- 	if (userdef) {
- 		u32 nr = e820.nr_map;
- 
--		if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr) < 0)
-+		if (__sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr) < 0)
- 			early_panic("Invalid user supplied memory map");
- 		e820.nr_map = nr;
- 
-@@ -1174,7 +1179,7 @@ char *__init default_machine_specific_memory_setup(void)
- 	 * the next section from 1mb->appropriate_mem_k
- 	 */
- 	new_nr = boot_params.e820_entries;
--	sanitize_e820_map(boot_params.e820_map,
-+	__sanitize_e820_map(boot_params.e820_map,
- 			ARRAY_SIZE(boot_params.e820_map),
- 			&new_nr);
- 	boot_params.e820_entries = new_nr;
-@@ -1201,12 +1206,17 @@ char *__init default_machine_specific_memory_setup(void)
- 	return who;
- }
- 
-+void __init save_e820_map(void)
++void __init lmb_add_memory(u64 start, u64 end)
 +{
-+	memcpy(&e820_saved, &e820, sizeof(struct e820map));
++	lmb_add_region(&lmb.memory, start, end - start);
++	__check_and_double_region_array(&lmb.memory, &lmb_memory_region[0]);
 +}
 +
- void __init setup_memory_map(void)
++void __init lmb_reserve_area(u64 start, u64 end, char *name)
++{
++	if (start == end)
++		return;
++
++	if (WARN_ONCE(start > end, "lmb_reserve_area: wrong range [%#llx, %#llx]\n", start, end))
++		return;
++
++	lmb_add_region(&lmb.reserved, start, end - start);
++	__check_and_double_region_array(&lmb.reserved, &lmb_reserved_region[0]);
++}
++
++void __init lmb_free_area(u64 start, u64 end)
++{
++	if (start == end)
++		return;
++
++	if (WARN_ONCE(start > end, "lmb_free_area: wrong range [%#llx, %#llx]\n", start, end))
++		return;
++
++	/* keep punching hole, could run out of slots too */
++	lmb_free(start, end - start);
++	__check_and_double_region_array(&lmb.reserved, &lmb_reserved_region[0]);
++}
++
+ u64 __init __weak __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
+ 				 u64 size, u64 align)
  {
- 	char *who;
- 
- 	who = x86_init.resources.memory_setup();
--	memcpy(&e820_saved, &e820, sizeof(struct e820map));
-+	save_e820_map();
- 	printk(KERN_INFO "BIOS-provided physical RAM map:\n");
- 	e820_print_map(who);
- }
-diff --git a/arch/x86/kernel/efi.c b/arch/x86/kernel/efi.c
-index c2fa9b8..299f03f 100644
---- a/arch/x86/kernel/efi.c
-+++ b/arch/x86/kernel/efi.c
-@@ -272,7 +272,7 @@ static void __init do_add_efi_memmap(void)
- 		}
- 		e820_add_region(start, size, e820_type);
- 	}
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- }
- 
- void __init efi_reserve_early(void)
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index c4851ef..894a48a 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -462,8 +462,8 @@ static void __init e820_reserve_setup_data(void)
- 	if (!found)
- 		return;
- 
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
--	memcpy(&e820_saved, &e820, sizeof(struct e820map));
-+	sanitize_e820_map();
-+	save_e820_map();
- 	printk(KERN_INFO "extended physical RAM map:\n");
- 	e820_print_map("reserve setup_data");
- }
-@@ -625,7 +625,7 @@ static int __init dmi_low_memory_corruption(const struct dmi_system_id *d)
- 		d->ident);
- 
- 	e820_update_range(0, 0x10000, E820_RAM, E820_RESERVED);
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- 
- 	return 0;
- }
-@@ -694,7 +694,7 @@ static void __init trim_bios_range(void)
- 	 * take them out.
- 	 */
- 	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- }
- 
- /*
-@@ -865,7 +865,7 @@ void __init setup_arch(char **cmdline_p)
- 	if (ppro_with_ram_bug()) {
- 		e820_update_range(0x70000000ULL, 0x40000ULL, E820_RAM,
- 				  E820_RESERVED);
--		sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+		sanitize_e820_map();
- 		printk(KERN_INFO "fixed physical RAM map:\n");
- 		e820_print_map("bad_ppro");
- 	}
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index ad0047f..3f2c411 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -43,8 +43,6 @@ char * __init xen_memory_setup(void)
- 
- 	max_pfn = min(MAX_DOMAIN_PAGES, max_pfn);
- 
--	e820.nr_map = 0;
--
- 	e820_add_region(0, PFN_PHYS((u64)max_pfn), E820_RAM);
- 
- 	/*
-@@ -65,7 +63,7 @@ char * __init xen_memory_setup(void)
- 		      __pa(xen_start_info->pt_base),
- 			"XEN START INFO");
- 
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- 
- 	return "Xen";
- }
 -- 
 1.6.4.2
 
