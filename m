@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab0DISLP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 14:11:15 -0400
-Received: from bamako.nerim.net ([62.4.17.28]:49592 "EHLO bamako.nerim.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755206Ab0DISLO convert rfc822-to-8bit (ORCPT
+	id S1755356Ab0DISMO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 14:12:14 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:58311 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755204Ab0DISMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 14:11:14 -0400
-Date: Fri, 9 Apr 2010 20:11:10 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: =?UTF-8?B?w4lyaWM=?= Piel <eric.piel@tremplin-utc.net>,
-       Marcin Derlukiewicz <marcin@derlukiewicz.pl>,
-       linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-       Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [lm-sensors] [PATCH] lis3lv02d: provide means to disable polled
-  input interface
-Message-ID: <20100409201110.5d75a24e@hyperion.delvare>
-In-Reply-To: <alpine.LNX.2.00.1004091532150.8345@pobox.suse.cz>
-References: <alpine.LNX.2.00.1004091453530.8345@pobox.suse.cz>
-	<4BBF2BD1.5050107@tremplin-utc.net>
-	<alpine.LNX.2.00.1004091532150.8345@pobox.suse.cz>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 9 Apr 2010 14:12:09 -0400
+Date: Fri, 9 Apr 2010 14:11:08 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Eric Sandeen <sandeen@sandeen.net>
+Cc: Dave Chinner <david@fromorbit.com>, John Berthels <john@humyo.com>,
+       linux-kernel@vger.kernel.org, Nick Gregory <nick@humyo.com>,
+       Rob Sanderson <rob@humyo.com>, xfs@oss.sgi.com, linux-mm@kvack.org
+Subject: Re: PROBLEM + POSS FIX: kernel stack overflow, xfs, many disks,
+ heavy write load, 8k stack, x86-64
+Message-ID: <20100409181108.GG13327@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Eric Sandeen <sandeen@sandeen.net>,
+	Dave Chinner <david@fromorbit.com>, John Berthels <john@humyo.com>,
+	linux-kernel@vger.kernel.org, Nick Gregory <nick@humyo.com>,
+	Rob Sanderson <rob@humyo.com>, xfs@oss.sgi.com, linux-mm@kvack.org
+References: <4BBC6719.7080304@humyo.com>
+ <20100407140523.GJ11036@dastard>
+ <4BBCAB57.3000106@humyo.com>
+ <20100407234341.GK11036@dastard>
+ <20100408030347.GM11036@dastard>
+ <4BBDC92D.8060503@humyo.com>
+ <4BBDEC9A.9070903@humyo.com>
+ <20100408233837.GP11036@dastard>
+ <20100409113850.GE13327@think>
+ <4BBF6C51.5030203@sandeen.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BBF6C51.5030203@sandeen.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A010208.4BBF6DDE.00D0:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Apr 2010 15:32:59 +0200 (CEST), Jiri Kosina wrote:
-> On Fri, 9 Apr 2010, Éric Piel wrote:
+On Fri, Apr 09, 2010 at 01:05:05PM -0500, Eric Sandeen wrote:
+> Chris Mason wrote:
 > 
-> > > This is reported to create 20% CPU usage increase (and proportionaly higher
-> > > power consumption) just for the ipolldevd kernel thread (which is used
-> > > to read the sensor).
-> > > 
-> > > As most users probably only use the freefall functionality of the driver
-> > > and not the joystick interface, provide means for disabling the registration
-> > > of joystick device altogether via module parameter.
-> > > (I'd rather make it default to 0, but this will break backwards compatibility).
-> > Are you saying there is a 20% CPU usage even when the joystick interface
-> > is not open? This should not happen (and this is not happening on my
-> > laptop). The polling should happen only when a userspace app opens the
-> > joystick interface (like running neverball).
+> > shrink_zone on my box isn't 500 bytes, but lets try the easy stuff
+> > first.  This is against .34, if you have any trouble applying to .32,
+> > just add the word noinline after the word static on the function
+> > definitions.
 > > 
-> > So I'd tend to think it's more due to a misconfiguration of the system
-> > (like xserver using the joystick interface as a pointer device) or it's
-> > a bug in the way we set up the polling. Could you investigate and let me
-> > know?
+> > This makes shrink_zone disappear from my check_stack.pl output.
+> > Basically I think the compiler is inlining the shrink_active_zone and
+> > shrink_inactive_zone code into shrink_zone.
+> > 
+> > -chris
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 79c8098..c70593e 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -620,7 +620,7 @@ static enum page_references page_check_references(struct page *page,
+> >  /*
+> >   * shrink_page_list() returns the number of reclaimed pages
+> >   */
+> > -static unsigned long shrink_page_list(struct list_head *page_list,
+> > +static noinline unsigned long shrink_page_list(struct list_head *page_list,
 > 
-> Marcin originally reported this to me.
+> FWIW akpm suggested that I add:
 > 
-> Marcin, could you please check 'lsof' output to see whether the joystick 
-> interface has been open by some application?
+> /*
+>  * Rather then using noinline to prevent stack consumption, use
+>  * noinline_for_stack instead.  For documentaiton reasons.
+>  */
+> #define noinline_for_stack noinline
+> 
+> so maybe for a formal submission that'd be good to use.
 
-I would randomly blame hal. It keeps my IR remote control device opened
-all the time and I have no idea why.
+Oh yeah, I forgot about that one.  If the patch actually helps we can
+switch it.
 
--- 
-Jean Delvare
+-chris
