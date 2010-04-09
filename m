@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614Ab0DIWL7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 18:11:59 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:55890 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752038Ab0DIWLy convert rfc822-to-8bit (ORCPT
+	id S1753143Ab0DIWMa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 18:12:30 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:43967 "HELO
+	outbound-mail-01.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751655Ab0DIWMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 18:11:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=bLT3Jzk9RwkyYBJbBIlVntSId7YqH5673NEQ+gkai8PQKbJ71IZIelL+ReNu2DN8qA
-         i8F+OgcfLpa+HwinEMxw6uhCz6RipBQ+8QTAi8DySGcPSh8H3ho9DKEVXtDTXtGTItp7
-         mw08IlelZTBTM7voKPUCOhpDDblE6Dtxhqyzg=
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1004091722260.1852-100000@iolanthe.rowland.org>
-References: <20100409202533.GA8983@phenom.dumpdata.com>
-	 <Pine.LNX.4.44L0.1004091722260.1852-100000@iolanthe.rowland.org>
-Date: Fri, 9 Apr 2010 16:11:52 -0600
-Message-ID: <r2n51f3faa71004091511y936975en874a02f7232bb57c@mail.gmail.com>
-Subject: Re: [LKML] Re: USB transfer_buffer allocations on 64bit systems
-From: Robert Hancock <hancockrwd@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-       Pedro Ribeiro <pedrib@gmail.com>, Daniel Mack <daniel@caiaq.de>,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       Greg KH <gregkh@suse.de>, alsa-devel@alsa-project.org,
-       linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 9 Apr 2010 18:12:25 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=WJl8PeRTW85GqjfpgvHlWJ33EXiK5R4p+pIy80xh1pA1bS+2qioVusKkiFZSIcVePL33mB+X3dZ4DG1PJ7kxspVPryXr5AwjNGDpewb1mZz1XqPlxTfPmldKeTBomlb1;
+Date: Fri, 9 Apr 2010 15:12:27 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Dave Airlie <airlied@gmail.com>, James Simmons <jsimmons@infradead.org>
+Subject: [PATCH] vt: try harder to print output when panicing
+Message-ID: <20100409151227.43fa7d43@virtuousgeek.org>
+In-Reply-To: <20100409151050.74ef6dcd@virtuousgeek.org>
+References: <20100409151050.74ef6dcd@virtuousgeek.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 9, 2010 at 3:23 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Fri, 9 Apr 2010, Konrad Rzeszutek Wilk wrote:
->
->> On Fri, Apr 09, 2010 at 03:34:06PM -0400, Alan Stern wrote:
->> > On Fri, 9 Apr 2010, Pedro Ribeiro wrote:
->> >
->> > > > The DMA pointers do indeed look sane. I wanted to take a deeper look at
->> > > > this and set up a 64bit system today. However, I fail to see the problem
->> > > > here. Pedro, how much RAM does your machine have installed?
->> >
->> > > It has 4 GB.
->> >
->> > That means DMA mapping cannot be the cause of the problem.  :-(
->>
->> That isn't entirely true. The BIOS usually allocates a 256 MB ACPI/PCI hole
->> that is under the 4GB.
->>
->> So end up with 3.7 GB, then the 256MB hole, and then right above the 4GB
->> you the the remaining memory: 4.3GB.
->
-> How can Pedro find out what physical addresses are in use on his
-> system?
+At panic time (i.e. when oops_in_progress is set) we should try a bit
+harder to update the screen and make sure output gets to the VT, since
+some drivers are capable of flipping back to it.
 
-If you have 4GB of RAM then almost certainly you have memory located
-at addresses over 4GB. If you look at the e820 memory map printed at
-the start of dmesg on bootup and see entries with addresses of
-100000000 or higher reported as usable, then this is the case.
+So make sure we try to unblank and update the display if called from a
+panic context.
+
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+---
+ drivers/char/vt.c |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/char/vt.c b/drivers/char/vt.c
+index bd1d116..29ec1c9 100644
+--- a/drivers/char/vt.c
++++ b/drivers/char/vt.c
+@@ -698,7 +698,10 @@ void redraw_screen(struct vc_data *vc, int is_switch)
+ 			update_attr(vc);
+ 			clear_buffer_attributes(vc);
+ 		}
+-		if (update && vc->vc_mode != KD_GRAPHICS)
++
++		/* Forcibly update if we're panicing */
++		if ((update && vc->vc_mode != KD_GRAPHICS) ||
++		    oops_in_progress)
+ 			do_update_region(vc, vc->vc_origin, vc->vc_screenbuf_size / 2);
+ 	}
+ 	set_cursor(vc);
+@@ -2498,7 +2501,7 @@ static void vt_console_print(struct console *co, const char *b, unsigned count)
+ 		goto quit;
+ 	}
+ 
+-	if (vc->vc_mode != KD_TEXT)
++	if (vc->vc_mode != KD_TEXT && !oops_in_progress)
+ 		goto quit;
+ 
+ 	/* undraw cursor first */
+@@ -3703,7 +3706,8 @@ void do_unblank_screen(int leaving_gfx)
+ 		return;
+ 	}
+ 	vc = vc_cons[fg_console].d;
+-	if (vc->vc_mode != KD_TEXT)
++	/* Try to unblank in oops case too */
++	if (vc->vc_mode != KD_TEXT && !oops_in_progress)
+ 		return; /* but leave console_blanked != 0 */
+ 
+ 	if (blankinterval) {
+@@ -3712,7 +3716,7 @@ void do_unblank_screen(int leaving_gfx)
+ 	}
+ 
+ 	console_blanked = 0;
+-	if (vc->vc_sw->con_blank(vc, 0, leaving_gfx))
++	if (vc->vc_sw->con_blank(vc, 0, leaving_gfx) || oops_in_progress)
+ 		/* Low-level driver cannot restore -> do it ourselves */
+ 		update_screen(vc);
+ 	if (console_blank_hook)
+-- 
+1.6.6.1
+
