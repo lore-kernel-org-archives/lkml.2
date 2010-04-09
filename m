@@ -1,87 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756987Ab0DIUXO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 16:23:14 -0400
-Received: from mail.gmx.net ([213.165.64.20]:44686 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756889Ab0DIUXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 16:23:11 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+4pQgg5Wa4kaZ/zrnVJD17xafF83w3E4X8gDG1DJ
-	If/pMyuYcYq25a
-Message-ID: <4BBF8CAA.3090506@gmx.de>
-Date: Fri, 09 Apr 2010 22:23:06 +0200
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+	id S1756998Ab0DIU2Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 16:28:16 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:50084 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754713Ab0DIU2O (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Fri, 9 Apr 2010 16:28:14 -0400
+Date: Fri, 9 Apr 2010 16:25:33 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Pedro Ribeiro <pedrib@gmail.com>, Daniel Mack <daniel@caiaq.de>,
+       Robert Hancock <hancockrwd@gmail.com>, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, Greg KH <gregkh@suse.de>,
+       alsa-devel@alsa-project.org, linux-usb@vger.kernel.org
+Subject: Re: [LKML] Re: USB transfer_buffer allocations on 64bit systems
+Message-ID: <20100409202533.GA8983@phenom.dumpdata.com>
+References: <w2r74fd948d1004091119j9f33d8a6kc1824d9243abf38b@mail.gmail.com> <Pine.LNX.4.44L0.1004091529240.1852-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Jonathan Corbet <corbet@lwn.net>
-CC: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
-       JosephChan@via.com.tw, ScottFang@viatech.com.cn,
-       Deepak Saxena <dsaxena@laptop.org>,
-       linux-fbdev-devel@lists.sourceforge.net
-Subject: Re: [PATCH 04/16] viafb: Retain GEMODE reserved bits
-References: <1270746946-12467-1-git-send-email-corbet@lwn.net>	<1270746946-12467-5-git-send-email-corbet@lwn.net>	<4BBE99F6.9060300@gmx.de> <20100409135959.381d819a@bike.lwn.net>
-In-Reply-To: <20100409135959.381d819a@bike.lwn.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.56999999999999995
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1004091529240.1852-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4BBF8DA2.0064:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jon,
-
-Jonathan Corbet schrieb:
-> On Fri, 09 Apr 2010 05:07:34 +0200
-> Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
+On Fri, Apr 09, 2010 at 03:34:06PM -0400, Alan Stern wrote:
+> On Fri, 9 Apr 2010, Pedro Ribeiro wrote:
 > 
->> in your later patch "[PATCH 06/16] viafb: complete support for 
->> VX800/VX855 accelerated framebuffer" you reintroduce initializing those 
->> bits to 0. That's fine but I can't see a reason for preserving this bits 
->> here as it adds useless overhead unless the hardware itself changed some 
->> of those bits and behaves differently according to those bits. 
+> > > The DMA pointers do indeed look sane. I wanted to take a deeper look at
+> > > this and set up a 64bit system today. However, I fail to see the problem
+> > > here. Pedro, how much RAM does your machine have installed?
 > 
-> Somehow the cost of an additional MMIO read at mode setting time is
-> just not going to keep me up at night.
-
-Well it's not only mode setting its for each hardware accelerated 
-operation, but...
-
-> I will admit that I've learned to be rather superstitious when it comes
-> to messing with reserved bits.  Hardware designers like to hide
-> functionality like "bring down the wrath of the gods" behind such
-> bits.  The old code preserved them and worked, so I did the same.  I
-> don't see any real reason not to keep it.
-
-...if you insist on it its okay with me. I still disagree but its 
-nothing I can't live with.
-
->> Additionally the first 2 bits are not reserved but provide a rotation 
->> where 00 is what we want (no rotation).
+> > It has 4 GB.
 > 
-> That much is true, yes.  My mistake, will fix.
-> 
->> And if you rip code off hw_bitblt_2 it would be better to do the same 
->> with hw_bitblt_1. A quick look reveals that the same function can be 
->> used there (the error message would need to be adjusted but that's minor).
-> 
-> That had crossed my mind; there is quite a bit of duplicated code
-> between those two very long functions.  At the time I was focused on
-> making things work, and I didn't want to mess with code that I couldn't
-> actually test.  So further cleanup is on my list, but I would prefer to
-> defer it for a little bit.
+> That means DMA mapping cannot be the cause of the problem.  :-(
 
-The code (and the spec regarding the reserved bits also) is obviously 
-identical so please don't ignore it. If you decide to put it in a 
-separate function please do so for both blit engines especially if they 
-really do the same as in this case. As you say they are mostly identical 
-and that's by design. Please keep them in sync if possible. They exist 
-that way to be a stateless and to avoid cluttering if's around.
-(no need to say that I'll test those patches on my CLE266 and VX800 as 
-soon as they apply cleanly to mainline)
+That isn't entirely true. The BIOS usually allocates a 256 MB ACPI/PCI hole
+that is under the 4GB.
 
+So end up with 3.7 GB, then the 256MB hole, and then right above the 4GB
+you the the remaining memory: 4.3GB.
 
-Thanks,
-
-Florian Tobias Schandinat
