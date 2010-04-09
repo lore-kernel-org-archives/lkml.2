@@ -1,356 +1,680 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab0DITTl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 15:19:41 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:51482 "EHLO mail.skyhub.de"
+	id S1755536Ab0DITVN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 15:21:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26961 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754163Ab0DITTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 15:19:39 -0400
-Date: Fri, 9 Apr 2010 21:14:25 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com,
-       hannes@cmpxchg.org
-Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the
- anon_vmas of a mergeable VMA
-Message-ID: <20100409191425.GB10780@a1.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-	Rik van Riel <riel@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Minchan Kim <minchan.kim@gmail.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-	Nick Piggin <npiggin@suse.de>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com,
-	hannes@cmpxchg.org
-References: <alpine.LFD.2.00.1004080706500.3586@i5.linux-foundation.org>
- <20100408210035.GA25834@a1.tnic>
- <alpine.LFD.2.00.1004081610020.3558@i5.linux-foundation.org>
- <20100408234721.GB25834@a1.tnic>
- <alpine.LFD.2.00.1004081744150.3558@i5.linux-foundation.org>
- <20100409013012.GA8153@liondog.tnic>
- <20100409092111.GA998@a1.tnic>
- <alpine.LFD.2.00.1004090917070.3558@i5.linux-foundation.org>
- <20100409174041.GA10780@a1.tnic>
- <alpine.LFD.2.00.1004091043490.3558@i5.linux-foundation.org>
+	id S1754163Ab0DITVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 15:21:09 -0400
+Date: Fri, 9 Apr 2010 15:21:02 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Divyesh Shah <dpshah@google.com>
+Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
+       ctalbott@google.com
+Subject: Re: [PATCH 3/3] blkio: Add more debug-only per-cgroup stats
+Message-ID: <20100409192102.GB3722@redhat.com>
+References: <20100409041210.23105.13623.stgit@austin.mtv.corp.google.com> <20100409041515.23105.11858.stgit@austin.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004091043490.3558@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100409041515.23105.11858.stgit@austin.mtv.corp.google.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, Apr 09, 2010 at 10:50:23AM -0700
+On Thu, Apr 08, 2010 at 09:15:35PM -0700, Divyesh Shah wrote:
+> 1) group_wait_time - This is the amount of time the cgroup had to wait to get a
+>   timeslice for one of its queues from when it became busy, i.e., went from 0
+>   to 1 request queued. This is different from the io_wait_time which is the
+>   cumulative total of the amount of time spent by each IO in that cgroup waiting
+>   in the scheduler queue. This stat is a great way to find out any jobs in the
+>   fleet that are being starved or waiting for longer than what is expected (due
+>   to an IO controller bug or any other issue).
+> 2) empty_time - This is the amount of time a cgroup spends w/o any pending
+>    requests. This stat is useful when a job does not seem to be able to use its
+>    assigned disk share by helping check if that is happening due to an IO
+>    controller bug or because the job is not submitting enough IOs.
 
-> Continue stress-testing it. I don't think my patch on its own should fix 
-> the original problem, but at least we now know why you got those NULL 
-> anon_vma's.
+Divyesh,
+
+This empty_time looks like a redundant stats. One can just look at
+group_wait_time. If group_wait_time is  not increasing, then application
+in cgroup is not doing any IO. If it is increasing then one can look
+at so many other stas like blkio.time, blkio.sectors etc to find out
+if cgroup is making any progress or not.
+
+So IMHO, we really don't need anything like empty_time.
+  
+
+> 3) idle_time - This is the amount of time spent by the IO scheduler idling
+>    for a given cgroup in anticipation of a better request than the exising ones
+>    from other queues/cgroups.
 > 
-> So what I _think_ will happen is that you'll be able to re-create the 
-> problem that started this all.  But I'd like to verify that, just because 
-> I'm anal and I'd like these things to be tested independently.
+> All these stats are recorded using start and stop events. When reading these
+> stats, we do not add the delta between the current time and the last start time
+> if we're between the start and stop events. We avoid doing this to make sure
+> that these numbers are always monotonically increasing when read. Since we're
+> using sched_clock() which may use the tsc as its source, it may induce some
+> inconsistency (due to tsc resync across cpus) if we included the current delta.
 
-Heh, that was easy. Third hibernate cycle is a charm^Wboom :)
+So what is that inconsistency? Time goes backwards? If yes, can't we just
+check that stop time is start time and only then any time sample is
+valid otherwise we ignore it?
 
-> So assuming that the original problem happens again, if you can then apply 
-> Rik's patch, but add a
+Why same inconsistency in time (due to tsc resync) can't be introduced between start and stop event window? 
+
+In case of group_wait_time, there does not seem to be any stop event. It
+is just start and update event?
+
 > 
-> 	dst->anon_vma = src->anon_vma;
+> Signed-off-by: Divyesh Shah<dpshah@google.com>
+> ---
 > 
-> to just before the success case (the "return 0") in anon_vma_clone(), 
-> that would be good.
+>  Documentation/cgroups/blkio-controller.txt |   29 +++++
+>  block/blk-cgroup.c                         |  159 +++++++++++++++++++++++++++-
+>  block/blk-cgroup.h                         |   54 ++++++++++
+>  block/cfq-iosched.c                        |   50 ++++++---
+>  4 files changed, 271 insertions(+), 21 deletions(-)
+> 
+> diff --git a/Documentation/cgroups/blkio-controller.txt b/Documentation/cgroups/blkio-controller.txt
+> index 6e52e7c..db054ea 100644
+> --- a/Documentation/cgroups/blkio-controller.txt
+> +++ b/Documentation/cgroups/blkio-controller.txt
+> @@ -150,6 +150,35 @@ Details of cgroup files
+>  	  cgroup's existence. Queue size samples are taken each time one of the
+>  	  queues of this cgroup gets a timeslice.
+>  
+> +- blkio.group_wait_time
+> +	- Debugging aid only enabled if CONFIG_DEBUG_CFQ_IOSCHED=y.
+> +	  This is the amount of time the cgroup had to wait since it became busy
+> +	  (i.e., went from 0 to 1 request queued) to get a timeslice for one of
+> +	  its queues. This is different from the io_wait_time which is the
+> +	  cumulative total of the amount of time spent by each IO in that cgroup
+> +	  waiting in the scheduler queue. This is in nanoseconds. If this is
+> +	  read when the cgroup is in a waiting (for timeslice) state, the stat
+> +	  will only report the group_wait_time accumulated till the last time it
+> +	  got a timeslice and will not include the current delta.
+> +
+> +- blkio.empty_time
+> +	- Debugging aid only enabled if CONFIG_DEBUG_CFQ_IOSCHED=y.
+> +	  This is the amount of time a cgroup spends without any pending
+> +	  requests when not being served, i.e., it does not include any time
+> +	  spent idling for one of the queues of the cgroup. This is in
+> +	  nanoseconds. If this is read when the cgroup is in an empty state,
+> +	  the stat will only report the empty_time accumulated till the last
+> +	  time it had a pending request and will not include the current delta.
+> +
+> +- blkio.idle_time
+> +	- Debugging aid only enabled if CONFIG_DEBUG_CFQ_IOSCHED=y.
+> +	  This is the amount of time spent by the IO scheduler idling for a
+> +	  given cgroup in anticipation of a better request than the exising ones
+> +	  from other queues/cgroups. This is in nanoseconds. If this is read
+> +	  when the cgroup is in an idling state, the stat will only report the
+> +	  idle_time accumulated till the last idle period and will not include
+> +	  the current delta.
+> +
+>  - blkio.dequeue
+>  	- Debugging aid only enabled if CONFIG_DEBUG_CFQ_IOSCHED=y. This
+>  	  gives the statistics about how many a times a group was dequeued
+> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+> index 1e0c497..1ecff7a 100644
+> --- a/block/blk-cgroup.c
+> +++ b/block/blk-cgroup.c
+> @@ -105,6 +105,76 @@ static void blkio_check_and_dec_stat(uint64_t *stat, bool direction, bool sync)
+>  }
+>  
+>  #ifdef CONFIG_DEBUG_BLK_CGROUP
+> +/* This should be called with the blkg->stats_lock held. */
+> +static void blkio_set_start_group_wait_time(struct blkio_group *blkg,
+> +						struct blkio_group *curr_blkg)
+> +{
+> +	if (blkio_blkg_waiting(&blkg->stats))
+> +		return;
+> +	if (blkg == curr_blkg)
+> +		return;
+> +	blkg->stats.start_group_wait_time = sched_clock();
+> +	blkio_mark_blkg_waiting(&blkg->stats);
 
-It looks like this way we mangle the anon_vma chains somehow. From
-what I can see and if I'm not mistaken, we save the anon_vmas alright
-but end up in what seems like an endless list_for_each_entry()
-loop having grabbed anon_vma->lock in page_lock_anon_vma() and we
-can't seem to yield it through page_unlock_anon_vma() at the end of
-page_referenced_anon() so it has to be that code in between iterating
-over each list entry...
+I am hoping that you have a good reason to maintain all these stats in ns
+and not in us.
 
-I could be completely wrong though...
+My rough calculation says that it will take 584 years to overflow this
+:-). So probably ns is not bad.  
 
+2^64/10^9 = 18446744073 sec
+18446744073/60 = 307445734 mins
+307445734/60 = 5124095 hrs
+5124095/24= 213503 days
+213503/365= 584 years 
 
-[  373.683545] PM: Syncing filesystems ... done.
-[  373.950289] Freezing user space processes ... (elapsed 0.04 seconds) done.
-[  373.998878] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-[  374.011121] PM: Preallocating image memory... 
-[  439.161126] BUG: soft lockup - CPU#1 stuck for 61s! [hib.sh:3617]
-[  439.161315] Modules linked in: powernow_k8 cpufreq_ondemand cpufreq_powersave cpufreq_userspace freq_table cpufreq_conservative binfmt_misc kvm_amd kvm ipv6 vfat fat dm_crypt dm_mod 8250_pnp 8250 serial_core edac_core pcspkr k10temp ohci_hcd
-[  439.162302] irq event stamp: 0
-[  439.162302] hardirqs last  enabled at (0): [<(null)>] (null)
-[  439.162302] hardirqs last disabled at (0): [<ffffffff8103655c>] copy_process+0x3c1/0x10cc
-[  439.163297] softirqs last  enabled at (0): [<ffffffff8103655c>] copy_process+0x3c1/0x10cc
-[  439.163297] softirqs last disabled at (0): [<(null)>] (null)
-[  439.163297] CPU 1 
-[  439.163297] Modules linked in: powernow_k8 cpufreq_ondemand cpufreq_powersave cpufreq_userspace freq_table cpufreq_conservative binfmt_misc kvm_amd kvm ipv6 vfat fat dm_crypt dm_mod 8250_pnp 8250 serial_core edac_core pcspkr k10temp ohci_hcd
-[  439.165297] 
-[  439.165297] Pid: 3617, comm: hib.sh Tainted: G        W  2.6.34-rc3-00413-g1028f7c-dirty #12 M3A78 PRO/System Product Name
-[  439.165297] RIP: 0010:[<ffffffff8118b731>]  [<ffffffff8118b731>] delay_tsc+0x0/0xca
-[  439.165297] RSP: 0018:ffff8801f68b77f0  EFLAGS: 00000202
-[  439.166300] RAX: 0000000000000000 RBX: ffff8801f68b77f8 RCX: 000000000000f100
-[  439.166300] RDX: 0000000000000001 RSI: ffff8801f68b7848 RDI: 0000000000000001
-[  439.166300] RBP: ffffffff81002b4e R08: 0000000000000001 R09: 0000000000000000
-[  439.166300] R10: ffff88022c9a3ac8 R11: ffffffff00000012 R12: 000000000000f100
-[  439.166300] R13: 00000000cc444700 R14: 0000000000000001 R15: 0000000000000000
-[  439.166300] FS:  00007f8d00e676f0(0000) GS:ffff88000a200000(0000) knlGS:0000000000000000
-[  439.167296] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  439.167296] CR2: 00007fff93e8a9c0 CR3: 00000001f5397000 CR4: 00000000000006e0
-[  439.167296] DR0: 00000000000000a0 DR1: 0000000000000000 DR2: 0000000000000003
-[  439.167296] DR3: 00000000000000b0 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  439.167296] Process hib.sh (pid: 3617, threadinfo ffff8801f68b6000, task ffff88022a2e8000)
-[  439.167296] Stack:
-[  439.168297]  ffffffff8118b72f ffff8801f68b7848 ffffffff8119a1ca ffff880214972868
-[  439.168297] <0> 0000000000000001 ffff880100000000 ffff880214972850 ffff880214972868
-[  439.168297] <0> ffff8801f68b7cf8 ffff8801f68b7b78 ffff8801f68b7a00 ffff8801f68b7878
-[  439.169298] Call Trace:
-[  439.169298]  [<ffffffff8118b72f>] ? __delay+0xf/0x11
-[  439.169298]  [<ffffffff8119a1ca>] ? do_raw_spin_lock+0xd2/0x13c
-[  439.169298]  [<ffffffff813f827b>] ? _raw_spin_lock+0x60/0x73
-[  439.170299]  [<ffffffff810c0a37>] ? page_lock_anon_vma+0x63/0xac
-[  439.170299]  [<ffffffff810c0a37>] ? page_lock_anon_vma+0x63/0xac
-[  439.170299]  [<ffffffff810c09d4>] ? page_lock_anon_vma+0x0/0xac
-[  439.170299]  [<ffffffff810c0c1d>] ? page_referenced+0x80/0x1dc
-[  439.170299]  [<ffffffff810c0b22>] ? try_to_unmap_anon+0xa2/0xb4
-[  439.170299]  [<ffffffff810ab7a6>] ? shrink_page_list+0x14a/0x477
-[  439.170299]  [<ffffffff813f8d86>] ? _raw_spin_unlock_irq+0x30/0x58
-[  439.171296]  [<ffffffff810abe2a>] ? shrink_inactive_list+0x357/0x5e5
-[  439.171296]  [<ffffffff810ab64a>] ? shrink_active_list+0x232/0x244
-[  439.171296]  [<ffffffff810ac3c4>] ? shrink_zone+0x30c/0x3d6
-[  439.171296]  [<ffffffff810acf9f>] ? do_try_to_free_pages+0x176/0x27f
-[  439.171296]  [<ffffffff810ad13d>] ? shrink_all_memory+0x95/0xc4
-[  439.171296]  [<ffffffff810aa640>] ? isolate_pages_global+0x0/0x1f0
-[  439.171296]  [<ffffffff81076e60>] ? count_data_pages+0x65/0x79
-[  439.172298]  [<ffffffff810770c7>] ? hibernate_preallocate_memory+0x1aa/0x2cb
-[  439.172298]  [<ffffffff813f5285>] ? printk+0x41/0x44
-[  439.172298]  [<ffffffff81075a67>] ? hibernation_snapshot+0x36/0x1e1
-[  439.172298]  [<ffffffff81075ce0>] ? hibernate+0xce/0x172
-[  439.172298]  [<ffffffff81074a4d>] ? state_store+0x5c/0xd3
-[  439.172298]  [<ffffffff81184f8f>] ? kobj_attr_store+0x17/0x19
-[  439.173296]  [<ffffffff81125dd7>] ? sysfs_write_file+0x108/0x144
-[  439.173296]  [<ffffffff810d575f>] ? vfs_write+0xb2/0x153
-[  439.173296]  [<ffffffff81063bed>] ? trace_hardirqs_on_caller+0x1f/0x14b
-[  439.173296]  [<ffffffff810d58c3>] ? sys_write+0x4a/0x71
-[  439.173296]  [<ffffffff810021db>] ? system_call_fastpath+0x16/0x1b
-[  439.173296] Code: ff c8 c9 c3 55 48 89 e5 0f 1f 44 00 00 48 c7 05 12 35 4e 00 31 b7 18 81 c9 c3 55 48 89 e5 0f 1f 44 00 00 ff 15 01 35 4e 00 c9 c3 <55> 48 89 e5 41 57 41 56 41 55 41 54 53 48 83 ec 08 0f 1f 44 00 
-[  439.176296] Call Trace:
-[  439.177297]  [<ffffffff8118b72f>] ? __delay+0xf/0x11
-[  439.177297]  [<ffffffff8119a1ca>] ? do_raw_spin_lock+0xd2/0x13c
-[  439.177297]  [<ffffffff813f827b>] ? _raw_spin_lock+0x60/0x73
-[  439.177297]  [<ffffffff810c0a37>] ? page_lock_anon_vma+0x63/0xac
-[  439.177297]  [<ffffffff810c0a37>] ? page_lock_anon_vma+0x63/0xac
-[  439.177297]  [<ffffffff810c09d4>] ? page_lock_anon_vma+0x0/0xac
-[  439.177297]  [<ffffffff810c0c1d>] ? page_referenced+0x80/0x1dc
-[  439.178295]  [<ffffffff810c0b22>] ? try_to_unmap_anon+0xa2/0xb4
-[  439.178295]  [<ffffffff810ab7a6>] ? shrink_page_list+0x14a/0x477
-[  439.178295]  [<ffffffff813f8d86>] ? _raw_spin_unlock_irq+0x30/0x58
-[  439.178295]  [<ffffffff810abe2a>] ? shrink_inactive_list+0x357/0x5e5
-[  439.178295]  [<ffffffff810ab64a>] ? shrink_active_list+0x232/0x244
-[  439.178295]  [<ffffffff810ac3c4>] ? shrink_zone+0x30c/0x3d6
-[  439.178295]  [<ffffffff810acf9f>] ? do_try_to_free_pages+0x176/0x27f
-[  439.179299]  [<ffffffff810ad13d>] ? shrink_all_memory+0x95/0xc4
-[  439.179299]  [<ffffffff810aa640>] ? isolate_pages_global+0x0/0x1f0
-[  439.179299]  [<ffffffff81076e60>] ? count_data_pages+0x65/0x79
-[  439.179299]  [<ffffffff810770c7>] ? hibernate_preallocate_memory+0x1aa/0x2cb
-[  439.179299]  [<ffffffff813f5285>] ? printk+0x41/0x44
-[  439.179299]  [<ffffffff81075a67>] ? hibernation_snapshot+0x36/0x1e1
-[  439.180296]  [<ffffffff81075ce0>] ? hibernate+0xce/0x172
-[  439.180296]  [<ffffffff81074a4d>] ? state_store+0x5c/0xd3
-[  439.180296]  [<ffffffff81184f8f>] ? kobj_attr_store+0x17/0x19
-[  439.180296]  [<ffffffff81125dd7>] ? sysfs_write_file+0x108/0x144
-[  439.180296]  [<ffffffff810d575f>] ? vfs_write+0xb2/0x153
-[  439.180296]  [<ffffffff81063bed>] ? trace_hardirqs_on_caller+0x1f/0x14b
-[  439.180296]  [<ffffffff810d58c3>] ? sys_write+0x4a/0x71
-[  439.181297]  [<ffffffff810021db>] ? system_call_fastpath+0x16/0x1b
-[  504.659125] BUG: soft lockup - CPU#1 stuck for 61s! [hib.sh:3617]
-[  504.659126] Modules linked in: powernow_k8 cpufreq_ondemand cpufreq_powersave cpufreq_userspace freq_table cpufreq_conservative binfmt_misc kvm_amd kvm ipv6 vfat fat dm_crypt dm_mod 8250_pnp 8250 serial_core edac_core pcspkr k10temp ohci_hcd
-[  504.660297] irq event stamp: 0
-[  504.660297] hardirqs last  enabled at (0): [<(null)>] (null)
-[  504.660297] hardirqs last disabled at (0): [<ffffffff8103655c>] copy_process+0x3c1/0x10cc
-[  504.661298] softirqs last  enabled at (0): [<ffffffff8103655c>] copy_process+0x3c1/0x10cc
-[  504.661298] softirqs last disabled at (0): [<(null)>] (null)
-[  504.661298] CPU 1 
-[  504.661298] Modules linked in: powernow_k8 cpufreq_ondemand cpufreq_powersave cpufreq_userspace freq_table cpufreq_conservative binfmt_misc kvm_amd kvm ipv6 vfat fat dm_crypt dm_mod 8250_pnp 8250 serial_core edac_core pcspkr k10temp ohci_hcd
-[  504.663297] 
-[  504.663297] Pid: 3617, comm: hib.sh Tainted: G        W  2.6.34-rc3-00413-g1028f7c-dirty #12 M3A78 PRO/System Product Name
-[  504.663297] RIP: 0010:[<ffffffff8118b775>]  [<ffffffff8118b775>] delay_tsc+0x44/0xca
-[  504.663297] RSP: 0018:ffff8801f68b77b8  EFLAGS: 00000206
-[  504.663297] RAX: 00000000a4911fed RBX: ffff8801f68b77e8 RCX: 000000000000f100
-[  504.664326] RDX: 00000000000000f1 RSI: ffff8801f68b7848 RDI: 0000000000000001
-[  504.664326] RBP: ffffffff81002b4e R08: 0000000000000001 R09: 0000000000000000
-[  504.664326] R10: ffff88022c9a3ac8 R11: ffffffff00000012 R12: 0000000000000010
-[  504.664326] R13: ffff88000a200000 R14: ffff8801f68b6000 R15: ffff8801f68b7fd8
-[  504.664326] FS:  00007f8d00e676f0(0000) GS:ffff88000a200000(0000) knlGS:0000000000000000
-[  504.664326] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  504.665296] CR2: 00007fff93e8a9c0 CR3: 00000001f5397000 CR4: 00000000000006e0
-[  504.665296] DR0: 00000000000000a0 DR1: 0000000000000000 DR2: 0000000000000003
-[  504.665296] DR3: 00000000000000b0 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  504.665296] Process hib.sh (pid: 3617, threadinfo ffff8801f68b6000, task ffff88022a2e8000)
-[  504.665296] Stack:
-[  504.665296]  0000000000000001 ffff880214972850 ffff88022a2e8000 00000000b3450160
-[  504.666297] <0> ffff88022a2e83a8 000000005486e668 ffff8801f68b77f8 ffffffff8118b72f
-[  504.666297] <0> ffff8801f68b7848 ffffffff8119a1ca ffff880214972868 0000000000000001
-[  504.667298] Call Trace:
-[  504.667298]  [<ffffffff8118b72f>] ? __delay+0xf/0x11
-[  504.667298]  [<ffffffff8119a1ca>] ? do_raw_spin_lock+0xd2/0x13c
-[  504.667298]  [<ffffffff813f827b>] ? _raw_spin_lock+0x60/0x73
-[  504.667298]  [<ffffffff810c0a37>] ? page_lock_anon_vma+0x63/0xac
-[  504.668288]  [<ffffffff810c0a37>] ? page_lock_anon_vma+0x63/0xac
-[  504.668298]  [<ffffffff810c09d4>] ? page_lock_anon_vma+0x0/0xac
-[  504.668298]  [<ffffffff810c0c1d>] ? page_referenced+0x80/0x1dc
-[  504.668298]  [<ffffffff810c0b22>] ? try_to_unmap_anon+0xa2/0xb4
-[  504.668298]  [<ffffffff810ab7a6>] ? shrink_page_list+0x14a/0x477
-[  504.668298]  [<ffffffff813f8d86>] ? _raw_spin_unlock_irq+0x30/0x58
-[  504.668298]  [<ffffffff810abe2a>] ? shrink_inactive_list+0x357/0x5e5
-[  504.669296]  [<ffffffff810ab64a>] ? shrink_active_list+0x232/0x244
-[  504.669296]  [<ffffffff810ac3c4>] ? shrink_zone+0x30c/0x3d6
-[  504.669296]  [<ffffffff810acf9f>] ? do_try_to_free_pages+0x176/0x27f
-[  504.669296]  [<ffffffff810ad13d>] ? shrink_all_memory+0x95/0xc4
-[  504.669296]  [<ffffffff810aa640>] ? isolate_pages_global+0x0/0x1f0
-[  504.669296]  [<ffffffff81076e60>] ? count_data_pages+0x65/0x79
-[  504.669296]  [<ffffffff810770c7>] ? hibernate_preallocate_memory+0x1aa/0x2cb
-[  504.670302]  [<ffffffff813f5285>] ? printk+0x41/0x44
-[  504.670302]  [<ffffffff81075a67>] ? hibernation_snapshot+0x36/0x1e1
-[  504.670302]  [<ffffffff81075ce0>] ? hibernate+0xce/0x172
-[  504.670302]  [<ffffffff81074a4d>] ? state_store+0x5c/0xd3
-[  504.670302]  [<ffffffff81184f8f>] ? kobj_attr_store+0x17/0x19
-[  504.670302]  [<ffffffff81125dd7>] ? sysfs_write_file+0x108/0x144
-[  504.670302]  [<ffffffff810d575f>] ? vfs_write+0xb2/0x153
-[  504.671297]  [<ffffffff81063bed>] ? trace_hardirqs_on_caller+0x1f/0x14b
-[  504.671297]  [<ffffffff810d58c3>] ? sys_write+0x4a/0x71
-[  504.673315]  [<ffffffff810021db>] ? system_call_fastpath+0x16/0x1b
-[  504.674350] Code: bf 01 00 00 00 e8 f8 1d ea ff e8 9f f4 00 00 41 89 c5 0f ae f0 66 66 90 0f 31 89 c3 65 4c 8b 34 25 48 b5 00 00 0f ae f0 66 66 90 <0f> 31 41 89 c7 4c 89 f8 48 29 d8 4c 39 e0 73 49 bf 01 00 00 00 
-[  504.677299] Call Trace:
-[  504.677299]  [<ffffffff8118b72f>] ? __delay+0xf/0x11
-[  504.677299]  [<ffffffff8119a1ca>] ? do_raw_spin_lock+0xd2/0x13c
-[  504.677299]  [<ffffffff813f827b>] ? _raw_spin_lock+0x60/0x73
-[  504.677299]  [<ffffffff810c0a37>] ? page_lock_anon_vma+0x63/0xac
-[  504.678287]  [<ffffffff810c0a37>] ? page_lock_anon_vma+0x63/0xac
-[  504.678296]  [<ffffffff810c09d4>] ? page_lock_anon_vma+0x0/0xac
-[  504.678296]  [<ffffffff810c0c1d>] ? page_referenced+0x80/0x1dc
-[  504.678296]  [<ffffffff810c0b22>] ? try_to_unmap_anon+0xa2/0xb4
-[  504.678296]  [<ffffffff810ab7a6>] ? shrink_page_list+0x14a/0x477
-[  504.678296]  [<ffffffff813f8d86>] ? _raw_spin_unlock_irq+0x30/0x58
-[  504.678296]  [<ffffffff810abe2a>] ? shrink_inactive_list+0x357/0x5e5
-[  504.679297]  [<ffffffff810ab64a>] ? shrink_active_list+0x232/0x244
-[  504.679297]  [<ffffffff810ac3c4>] ? shrink_zone+0x30c/0x3d6
-[  504.679297]  [<ffffffff810acf9f>] ? do_try_to_free_pages+0x176/0x27f
-[  504.679297]  [<ffffffff810ad13d>] ? shrink_all_memory+0x95/0xc4
-[  504.679297]  [<ffffffff810aa640>] ? isolate_pages_global+0x0/0x1f0
-[  504.679297]  [<ffffffff81076e60>] ? count_data_pages+0x65/0x79
-[  504.679297]  [<ffffffff810770c7>] ? hibernate_preallocate_memory+0x1aa/0x2cb
-[  504.680303]  [<ffffffff813f5285>] ? printk+0x41/0x44
-[  504.680303]  [<ffffffff81075a67>] ? hibernation_snapshot+0x36/0x1e1
-[  504.680303]  [<ffffffff81075ce0>] ? hibernate+0xce/0x172
-[  504.680303]  [<ffffffff81074a4d>] ? state_store+0x5c/0xd3
-[  504.680303]  [<ffffffff81184f8f>] ? kobj_attr_store+0x17/0x19
-[  504.680303]  [<ffffffff81125dd7>] ? sysfs_write_file+0x108/0x144
-[  504.680303]  [<ffffffff810d575f>] ? vfs_write+0xb2/0x153
-[  504.681297]  [<ffffffff81063bed>] ? trace_hardirqs_on_caller+0x1f/0x14b
-[  504.681297]  [<ffffffff810d58c3>] ? sys_write+0x4a/0x71
-[  504.681297]  [<ffffffff810021db>] ? system_call_fastpath+0x16/0x1b
-[  570.157125] BUG: soft lockup - CPU#1 stuck for 61s! [hib.sh:3617]
-[  570.157126] Modules linked in: powernow_k8 cpufreq_ondemand cpufreq_powersave cpufreq_userspace freq_table cpufreq_conservative binfmt_misc kvm_amd kvm ipv6 vfat fat dm_crypt dm_mod 8250_pnp 8250 serial_core edac_core pcspkr k10temp ohci_hcd
-[  570.158283] irq event stamp: 0
-[  570.158283] hardirqs last  enabled at (0): [<(null)>] (null)
-[  570.158283] hardirqs last disabled at (0): [<ffffffff8103655c>] copy_process+0x3c1/0x10cc
-[  570.159297] softirqs last  enabled at (0): [<ffffffff8103655c>] copy_process+0x3c1/0x10cc
-[  570.159297] softirqs last disabled at (0): [<(null)>] (null)
-[  570.159297] CPU 1 
-[  570.159297] Modules linked in: powernow_k8 cpufreq_ondemand cpufreq_powersave cpufreq_userspace freq_table cpufreq_conservative binfmt_misc kvm_amd kvm ipv6 vfat fat dm_crypt dm_mod 8250_pnp 8250 serial_core edac_core pcspkr k10temp ohci_hcd
-[  570.161297] 
-[  570.161297] Pid: 3617, comm: hib.sh Tainted: G        W  2.6.34-rc3-00413-g1028f7c-dirty #12 M3A78 PRO/System Product Name
-[  570.161297] RIP: 0010:[<ffffffff8118b777>]  [<ffffffff8118b777>] delay_tsc+0x46/0xca
-[  570.161297] RSP: 0018:ffff8801f68b77b8  EFLAGS: 00000206
-[  570.161297] RAX: 000000007cdde43c RBX: ffff8801f68b77e8 RCX: 000000000000f100
-[  570.162296] RDX: 000000000000011f RSI: ffff8801f68b7848 RDI: 0000000000000001
-[  570.162296] RBP: ffffffff81002b4e R08: 0000000000000001 R09: 0000000000000000
-[  570.162296] R10: ffff88022c9a3ac8 R11: ffffffff00000012 R12: 0000000000000010
-[  570.162296] R13: ffff88000a200000 R14: ffff8801f68b6000 R15: ffff8801f68b7fd8
-[  570.162296] FS:  00007f8d00e676f0(0000) GS:ffff88000a200000(0000) knlGS:0000000000000000
-[  570.162296] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  570.163296] CR2: 00007fff93e8a9c0 CR3: 00000001f5397000 CR4: 00000000000006e0
-[  570.163296] DR0: 00000000000000a0 DR1: 0000000000000000 DR2: 0000000000000003
-[  570.163296] DR3: 00000000000000b0 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  570.163296] Process hib.sh (pid: 3617, threadinfo ffff8801f68b6000, task ffff88022a2e8000)
-[  570.163296] Stack:
-[  570.163296]  0000000000000001 ffff880214972850 ffff88022a2e8000 00000000b3450160
-[  570.164335] <0> ffff88022a2e83a8 000000007f0025c7 ffff8801f68b77f8 ffffffff8118b72f
-[  570.164335] <0> ffff8801f68b7848 ffffffff8119a1ca ffff880214972868 0000000000000001
-[  570.165299] Call Trace:
-[  570.165299]  [<ffffffff8118b72f>] ? __delay+0xf/0x11
-[  570.165299]  [<ffffffff8119a1ca>] ? do_raw_spin_lock+0xd2/0x13c
-[  570.165299]  [<ffffffff813f827b>] ? _raw_spin_lock+0x60/0x73
-[  570.165299]  [<ffffffff810c0a37>] ? page_lock_anon_vma+0x63/0xac
-[  570.165299]  [<ffffffff810c0a37>] ? page_lock_anon_vma+0x63/0xac
-[  570.166297]  [<ffffffff810c09d4>] ? page_lock_anon_vma+0x0/0xac
-[  570.166297]  [<ffffffff810c0c1d>] ? page_referenced+0x80/0x1dc
-[  570.166297]  [<ffffffff810c0b22>] ? try_to_unmap_anon+0xa2/0xb4
-[  570.166297]  [<ffffffff810ab7a6>] ? shrink_page_list+0x14a/0x477
-[  570.166297]  [<ffffffff813f8d86>] ? _raw_spin_unlock_irq+0x30/0x58
-[  570.166297]  [<ffffffff810abe2a>] ? shrink_inactive_list+0x357/0x5e5
-[  570.167296]  [<ffffffff810ab64a>] ? shrink_active_list+0x232/0x244
-[  570.167296]  [<ffffffff810ac3c4>] ? shrink_zone+0x30c/0x3d6
-[  570.167296]  [<ffffffff810acf9f>] ? do_try_to_free_pages+0x176/0x27f
-[  570.167296]  [<ffffffff810ad13d>] ? shrink_all_memory+0x95/0xc4
-[  570.167296]  [<ffffffff810aa640>] ? isolate_pages_global+0x0/0x1f0
-[  570.167296]  [<ffffffff81076e60>] ? count_data_pages+0x65/0x79
-[  570.167296]  [<ffffffff810770c7>] ? hibernate_preallocate_memory+0x1aa/0x2cb
-[  570.168286]  [<ffffffff813f5285>] ? printk+0x41/0x44
-[  570.168286]  [<ffffffff81075a67>] ? hibernation_snapshot+0x36/0x1e1
-[  570.168286]  [<ffffffff81075ce0>] ? hibernate+0xce/0x172
-[  570.168286]  [<ffffffff81074a4d>] ? state_store+0x5c/0xd3
-[  570.168286]  [<ffffffff81184f8f>] ? kobj_attr_store+0x17/0x19
-[  570.168286]  [<ffffffff81125dd7>] ? sysfs_write_file+0x108/0x144
-[  570.168286]  [<ffffffff810d575f>] ? vfs_write+0xb2/0x153
-[  570.169297]  [<ffffffff81063bed>] ? trace_hardirqs_on_caller+0x1f/0x14b
-[  570.169297]  [<ffffffff810d58c3>] ? sys_write+0x4a/0x71
-[  570.169297]  [<ffffffff810021db>] ? system_call_fastpath+0x16/0x1b
-[  570.169297] Code: 00 00 00 e8 f8 1d ea ff e8 9f f4 00 00 41 89 c5 0f ae f0 66 66 90 0f 31 89 c3 65 4c 8b 34 25 48 b5 00 00 0f ae f0 66 66 90 0f 31 <41> 89 c7 4c 89 f8 48 29 d8 4c 39 e0 73 49 bf 01 00 00 00 e8 07 
-[  570.172299] Call Trace:
-[  570.172299]  [<ffffffff8118b72f>] ? __delay+0xf/0x11
-[  570.172299]  [<ffffffff8119a1ca>] ? do_raw_spin_lock+0xd2/0x13c
-[  570.173297]  [<ffffffff813f827b>] ? _raw_spin_lock+0x60/0x73
-[  570.173297]  [<ffffffff810c0a37>] ? page_lock_anon_vma+0x63/0xac
-[  570.173297]  [<ffffffff810c0a37>] ? page_lock_anon_vma+0x63/0xac
-[  570.173297]  [<ffffffff810c09d4>] ? page_lock_anon_vma+0x0/0xac
-[  570.173297]  [<ffffffff810c0c1d>] ? page_referenced+0x80/0x1dc
-[  570.173297]  [<ffffffff810c0b22>] ? try_to_unmap_anon+0xa2/0xb4
-[  570.174329]  [<ffffffff810ab7a6>] ? shrink_page_list+0x14a/0x477
-[  570.174329]  [<ffffffff813f8d86>] ? _raw_spin_unlock_irq+0x30/0x58
-[  570.174329]  [<ffffffff810abe2a>] ? shrink_inactive_list+0x357/0x5e5
-[  570.174329]  [<ffffffff810ab64a>] ? shrink_active_list+0x232/0x244
-[  570.174329]  [<ffffffff810ac3c4>] ? shrink_zone+0x30c/0x3d6
-[  570.174329]  [<ffffffff810acf9f>] ? do_try_to_free_pages+0x176/0x27f
-[  570.174329]  [<ffffffff810ad13d>] ? shrink_all_memory+0x95/0xc4
-[  570.175297]  [<ffffffff810aa640>] ? isolate_pages_global+0x0/0x1f0
-[  570.175297]  [<ffffffff81076e60>] ? count_data_pages+0x65/0x79
-[  570.175297]  [<ffffffff810770c7>] ? hibernate_preallocate_memory+0x1aa/0x2cb
-[  570.175297]  [<ffffffff813f5285>] ? printk+0x41/0x44
-[  570.175297]  [<ffffffff81075a67>] ? hibernation_snapshot+0x36/0x1e1
-[  570.175297]  [<ffffffff81075ce0>] ? hibernate+0xce/0x172
-[  570.175297]  [<ffffffff81074a4d>] ? state_store+0x5c/0xd3
-[  570.176298]  [<ffffffff81184f8f>] ? kobj_attr_store+0x17/0x19
-[  570.176298]  [<ffffffff81125dd7>] ? sysfs_write_file+0x108/0x144
-[  570.176298]  [<ffffffff810d575f>] ? vfs_write+0xb2/0x153
-[  570.176298]  [<ffffffff81063bed>] ? trace_hardirqs_on_caller+0x1f/0x14b
-[  570.176298]  [<ffffffff810d58c3>] ? sys_write+0x4a/0x71
-[  570.176298]  [<ffffffff810021db>] ? system_call_fastpath+0x16/0x1b
+Hopefully this calculation is right.
 
+> +}
+> +
+> +/* This should be called with the blkg->stats_lock held. */
+> +static void blkio_update_group_wait_time(struct blkio_group_stats *stats)
+> +{
+> +	unsigned long long now;
+> +
+> +	if (!blkio_blkg_waiting(stats))
+> +		return;
+> +
+> +	now = sched_clock();
+> +	if (time_after64(now, stats->start_group_wait_time))
+> +		stats->group_wait_time += now - stats->start_group_wait_time;
+> +	blkio_clear_blkg_waiting(stats);
+> +}
+> +
+> +/* This should be called with the blkg->stats_lock held. */
+> +static void blkio_end_empty_time(struct blkio_group_stats *stats)
+> +{
+> +	unsigned long long now;
+> +
+> +	if (!blkio_blkg_empty(stats))
+> +		return;
+> +
+> +	now = sched_clock();
+> +	if (time_after64(now, stats->start_empty_time))
+> +		stats->empty_time += now - stats->start_empty_time;
+> +	blkio_clear_blkg_empty(stats);
+> +}
+> +
+> +void blkiocg_update_set_idle_time_stats(struct blkio_group *blkg)
+> +{
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&blkg->stats_lock, flags);
+> +	BUG_ON(blkio_blkg_idling(&blkg->stats));
+> +	blkg->stats.start_idle_time = sched_clock();
+> +	blkio_mark_blkg_idling(&blkg->stats);
+> +	spin_unlock_irqrestore(&blkg->stats_lock, flags);
+> +}
+> +EXPORT_SYMBOL_GPL(blkiocg_update_set_idle_time_stats);
+> +
+> +void blkiocg_update_idle_time_stats(struct blkio_group *blkg)
+> +{
+> +	unsigned long flags;
+> +	unsigned long long now;
+> +	struct blkio_group_stats *stats;
+> +
+> +	spin_lock_irqsave(&blkg->stats_lock, flags);
+> +	stats = &blkg->stats;
+> +	if (blkio_blkg_idling(stats)) {
+> +		now = sched_clock();
+> +		if (time_after64(now, stats->start_idle_time))
+> +			stats->idle_time += now - stats->start_idle_time;
+> +		blkio_clear_blkg_idling(stats);
+> +	}
+> +	spin_unlock_irqrestore(&blkg->stats_lock, flags);
+> +}
+> +EXPORT_SYMBOL_GPL(blkiocg_update_idle_time_stats);
+> +
+>  void blkiocg_update_set_active_queue_stats(struct blkio_group *blkg)
+>  {
+>  	unsigned long flags;
+> @@ -116,9 +186,14 @@ void blkiocg_update_set_active_queue_stats(struct blkio_group *blkg)
+>  			stats->stat_arr[BLKIO_STAT_QUEUED][BLKIO_STAT_READ] +
+>  			stats->stat_arr[BLKIO_STAT_QUEUED][BLKIO_STAT_WRITE];
+>  	stats->avg_queue_size_samples++;
+> +	blkio_update_group_wait_time(stats);
 
--- 
-Regards/Gruss,
-Boris.
+Will cfq_choose_cfqg() be a better place to call this function. Why should
+we call it when an active queue is set. Instead when a group is chosen
+to dispatch request from, we can update the wait time.
+
+That way the number of times this function is called will reduce as we
+can dispatch multiple cfqqs from single group.
+
+>  	spin_unlock_irqrestore(&blkg->stats_lock, flags);
+>  }
+>  EXPORT_SYMBOL_GPL(blkiocg_update_set_active_queue_stats);
+> +#else
+> +static inline void blkio_set_start_group_wait_time(struct blkio_group *blkg,
+> +					struct blkio_group *curr_blkg) {}
+> +static inline void blkio_end_empty_time(struct blkio_group_stats *stats) {}
+>  #endif
+>  
+>  void blkiocg_update_request_add_stats(struct blkio_group *blkg,
+> @@ -130,6 +205,8 @@ void blkiocg_update_request_add_stats(struct blkio_group *blkg,
+>  	spin_lock_irqsave(&blkg->stats_lock, flags);
+>  	blkio_add_stat(blkg->stats.stat_arr[BLKIO_STAT_QUEUED], 1, direction,
+>  			sync);
+> +	blkio_end_empty_time(&blkg->stats);
+> +	blkio_set_start_group_wait_time(blkg, curr_blkg);
+>  	spin_unlock_irqrestore(&blkg->stats_lock, flags);
+>  }
+>  EXPORT_SYMBOL_GPL(blkiocg_update_request_add_stats);
+> @@ -156,6 +233,33 @@ void blkiocg_update_timeslice_used(struct blkio_group *blkg, unsigned long time)
+>  }
+>  EXPORT_SYMBOL_GPL(blkiocg_update_timeslice_used);
+>  
+> +void blkiocg_set_start_empty_time(struct blkio_group *blkg, bool ignore)
+> +{
+> +	unsigned long flags;
+> +	struct blkio_group_stats *stats;
+> +
+> +	spin_lock_irqsave(&blkg->stats_lock, flags);
+> +	stats = &blkg->stats;
+> +
+> +	if (stats->stat_arr[BLKIO_STAT_QUEUED][BLKIO_STAT_READ] ||
+> +			stats->stat_arr[BLKIO_STAT_QUEUED][BLKIO_STAT_WRITE]) {
+> +		spin_unlock_irqrestore(&blkg->stats_lock, flags);
+> +		return;
+> +	}
+> +
+> +	/*
+> +	 * If ignore is set, we do not panic on the empty flag being set
+> +	 * already. This is to avoid cases where there are superfluous timeslice
+> +	 * complete events (for eg., forced_dispatch in CFQ) when no IOs are
+> +	 * served which could result in triggering the empty check incorrectly.
+> +	 */
+> +	BUG_ON(!ignore && blkio_blkg_empty(stats));
+> +	stats->start_empty_time = sched_clock();
+> +	blkio_mark_blkg_empty(stats);
+> +	spin_unlock_irqrestore(&blkg->stats_lock, flags);
+> +}
+> +EXPORT_SYMBOL_GPL(blkiocg_set_start_empty_time);
+> +
+>  void blkiocg_update_dispatch_stats(struct blkio_group *blkg,
+>  				uint64_t bytes, bool direction, bool sync)
+>  {
+> @@ -317,19 +421,44 @@ blkiocg_reset_stats(struct cgroup *cgroup, struct cftype *cftype, u64 val)
+>  {
+>  	struct blkio_cgroup *blkcg;
+>  	struct blkio_group *blkg;
+> +	struct blkio_group_stats *stats;
+>  	struct hlist_node *n;
+>  	uint64_t queued[BLKIO_STAT_TOTAL];
+>  	int i;
+> +#ifdef CONFIG_DEBUG_BLK_CGROUP
+> +	bool idling, waiting, empty;
+> +	unsigned long long now = sched_clock();
+> +#endif
+>  
+>  	blkcg = cgroup_to_blkio_cgroup(cgroup);
+>  	spin_lock_irq(&blkcg->lock);
+>  	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
+>  		spin_lock(&blkg->stats_lock);
+> +		stats = &blkg->stats;
+> +#ifdef CONFIG_DEBUG_BLK_CGROUP
+> +		idling = blkio_blkg_idling(stats);
+> +		waiting = blkio_blkg_waiting(stats);
+> +		empty = blkio_blkg_empty(stats);
+> +#endif
+>  		for (i = 0; i < BLKIO_STAT_TOTAL; i++)
+> -			queued[i] = blkg->stats.stat_arr[BLKIO_STAT_QUEUED][i];
+> -		memset(&blkg->stats, 0, sizeof(struct blkio_group_stats));
+> +			queued[i] = stats->stat_arr[BLKIO_STAT_QUEUED][i];
+> +		memset(stats, 0, sizeof(struct blkio_group_stats));
+>  		for (i = 0; i < BLKIO_STAT_TOTAL; i++)
+> -			blkg->stats.stat_arr[BLKIO_STAT_QUEUED][i] = queued[i];
+> +			stats->stat_arr[BLKIO_STAT_QUEUED][i] = queued[i];
+> +#ifdef CONFIG_DEBUG_BLK_CGROUP
+> +		if (idling) {
+> +			blkio_mark_blkg_idling(stats);
+> +			stats->start_idle_time = now;
+> +		}
+> +		if (waiting) {
+> +			blkio_mark_blkg_waiting(stats);
+> +			stats->start_group_wait_time = now;
+> +		}
+> +		if (empty) {
+> +			blkio_mark_blkg_empty(stats);
+> +			stats->start_empty_time = now;
+> +		}
+> +#endif
+>  		spin_unlock(&blkg->stats_lock);
+>  	}
+>  	spin_unlock_irq(&blkcg->lock);
+> @@ -401,6 +530,15 @@ static uint64_t blkio_get_stat(struct blkio_group *blkg,
+>  			sum = 0;
+>  		return blkio_fill_stat(key_str, MAX_KEY_LEN - 1, sum, cb, dev);
+>  	}
+> +	if (type == BLKIO_STAT_GROUP_WAIT_TIME)
+> +		return blkio_fill_stat(key_str, MAX_KEY_LEN - 1,
+> +					blkg->stats.group_wait_time, cb, dev);
+> +	if (type == BLKIO_STAT_IDLE_TIME)
+> +		return blkio_fill_stat(key_str, MAX_KEY_LEN - 1,
+> +					blkg->stats.idle_time, cb, dev);
+> +	if (type == BLKIO_STAT_EMPTY_TIME)
+> +		return blkio_fill_stat(key_str, MAX_KEY_LEN - 1,
+> +					blkg->stats.empty_time, cb, dev);
+>  	if (type == BLKIO_STAT_DEQUEUE)
+>  		return blkio_fill_stat(key_str, MAX_KEY_LEN - 1,
+>  					blkg->stats.dequeue, cb, dev);
+> @@ -458,6 +596,9 @@ SHOW_FUNCTION_PER_GROUP(io_queued, BLKIO_STAT_QUEUED, 1);
+>  #ifdef CONFIG_DEBUG_BLK_CGROUP
+>  SHOW_FUNCTION_PER_GROUP(dequeue, BLKIO_STAT_DEQUEUE, 0);
+>  SHOW_FUNCTION_PER_GROUP(avg_queue_size, BLKIO_STAT_AVG_QUEUE_SIZE, 0);
+> +SHOW_FUNCTION_PER_GROUP(group_wait_time, BLKIO_STAT_GROUP_WAIT_TIME, 0);
+> +SHOW_FUNCTION_PER_GROUP(idle_time, BLKIO_STAT_IDLE_TIME, 0);
+> +SHOW_FUNCTION_PER_GROUP(empty_time, BLKIO_STAT_EMPTY_TIME, 0);
+>  #endif
+>  #undef SHOW_FUNCTION_PER_GROUP
+>  
+> @@ -518,6 +659,18 @@ struct cftype blkio_files[] = {
+>  		.read_map = blkiocg_avg_queue_size_read,
+>  	},
+>  	{
+> +		.name = "group_wait_time",
+> +		.read_map = blkiocg_group_wait_time_read,
+> +	},
+> +	{
+> +		.name = "idle_time",
+> +		.read_map = blkiocg_idle_time_read,
+> +	},
+> +	{
+> +		.name = "empty_time",
+> +		.read_map = blkiocg_empty_time_read,
+> +	},
+> +	{
+>  		.name = "dequeue",
+>  		.read_map = blkiocg_dequeue_read,
+>  	},
+> diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+> index bea7f3b..bfce085 100644
+> --- a/block/blk-cgroup.h
+> +++ b/block/blk-cgroup.h
+> @@ -43,6 +43,9 @@ enum stat_type {
+>  	BLKIO_STAT_SECTORS,
+>  #ifdef CONFIG_DEBUG_BLK_CGROUP
+>  	BLKIO_STAT_AVG_QUEUE_SIZE,
+> +	BLKIO_STAT_IDLE_TIME,
+> +	BLKIO_STAT_EMPTY_TIME,
+> +	BLKIO_STAT_GROUP_WAIT_TIME,
+>  	BLKIO_STAT_DEQUEUE
+>  #endif
+>  };
+> @@ -55,6 +58,13 @@ enum stat_sub_type {
+>  	BLKIO_STAT_TOTAL
+>  };
+>  
+> +/* blkg state flags */
+> +enum blkg_state_flags {
+> +	BLKG_waiting = 0,
+> +	BLKG_idling,
+> +	BLKG_empty,
+> +};
+> +
+>  struct blkio_cgroup {
+>  	struct cgroup_subsys_state css;
+>  	unsigned int weight;
+> @@ -74,6 +84,21 @@ struct blkio_group_stats {
+>  	uint64_t avg_queue_size_samples;
+>  	/* How many times this group has been removed from service tree */
+>  	unsigned long dequeue;
+> +
+> +	/* Total time spent waiting for it to be assigned a timeslice. */
+> +	uint64_t group_wait_time;
+> +	uint64_t start_group_wait_time;
+> +
+> +	/* Time spent idling for this blkio_group */
+> +	uint64_t idle_time;
+> +	uint64_t start_idle_time;
+> +	/*
+> +	 * Total time when we have requests queued and do not contain the
+> +	 * current active queue.
+> +	 */
+> +	uint64_t empty_time;
+> +	uint64_t start_empty_time;
+> +	uint16_t flags;
+
+Does this flags has to be inside blkio_group_stats? May be a better
+place is inside blkio_group as it represents the blkio_group status.
+That's a differnet thing that as of today all three flags are helping out
+only for stats purposes but in future we could add more flags?
+
+>  #endif
+>  };
+>  
+> @@ -137,12 +162,41 @@ static inline char *blkg_path(struct blkio_group *blkg)
+>  void blkiocg_update_set_active_queue_stats(struct blkio_group *blkg);
+>  void blkiocg_update_dequeue_stats(struct blkio_group *blkg,
+>  				unsigned long dequeue);
+> +void blkiocg_update_set_idle_time_stats(struct blkio_group *blkg);
+> +void blkiocg_update_idle_time_stats(struct blkio_group *blkg);
+> +void blkiocg_set_start_empty_time(struct blkio_group *blkg, bool ignore);
+> +
+> +#define BLKG_FLAG_FNS(name)						\
+> +static inline void blkio_mark_blkg_##name(				\
+> +		struct blkio_group_stats *stats)			\
+> +{									\
+> +	stats->flags |= (1 << BLKG_##name);				\
+> +}									\
+> +static inline void blkio_clear_blkg_##name(				\
+> +		struct blkio_group_stats *stats)			\
+> +{									\
+> +	stats->flags &= ~(1 << BLKG_##name);				\
+> +}									\
+> +static inline int blkio_blkg_##name(struct blkio_group_stats *stats)	\
+> +{									\
+> +	return (stats->flags & (1 << BLKG_##name)) != 0;		\
+> +}									\
+> +
+> +BLKG_FLAG_FNS(waiting)
+> +BLKG_FLAG_FNS(idling)
+> +BLKG_FLAG_FNS(empty)
+> +#undef BLKG_FLAG_FNS
+>  #else
+>  static inline char *blkg_path(struct blkio_group *blkg) { return NULL; }
+>  static inline void blkiocg_update_set_active_queue_stats(
+>  						struct blkio_group *blkg) {}
+>  static inline void blkiocg_update_dequeue_stats(struct blkio_group *blkg,
+>  						unsigned long dequeue) {}
+> +static inline void blkiocg_update_set_idle_time_stats(struct blkio_group *blkg)
+> +{}
+> +static inline void blkiocg_update_idle_time_stats(struct blkio_group *blkg) {}
+> +static inline void blkiocg_set_start_empty_time(struct blkio_group *blkg,
+> +						bool ignore) {}
+>  #endif
+>  
+>  #if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index 8e0b86a..b6e095c 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -886,7 +886,7 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
+>  }
+>  
+>  static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+> -				struct cfq_queue *cfqq)
+> +				struct cfq_queue *cfqq, bool forced)
+>  {
+>  	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+>  	unsigned int used_sl, charge_sl;
+> @@ -916,6 +916,7 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+>  	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
+>  					st->min_vdisktime);
+>  	blkiocg_update_timeslice_used(&cfqg->blkg, used_sl);
+> +	blkiocg_set_start_empty_time(&cfqg->blkg, forced);
+
+Why this needs to be called from CFQ? Can't we just internally call this
+from blkiocg_update_request_remove_stats() internally. So when we remove
+a request, we update the stats in blkio. That time blkio can checek if
+group became empty and start the time?
+
+>  }
+>  
+>  #ifdef CONFIG_CFQ_GROUP_IOSCHED
+> @@ -1528,6 +1529,12 @@ static int cfq_allow_merge(struct request_queue *q, struct request *rq,
+>  	return cfqq == RQ_CFQQ(rq);
+>  }
+>  
+> +static inline void cfq_del_timer(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+> +{
+> +	del_timer(&cfqd->idle_slice_timer);
+> +	blkiocg_update_idle_time_stats(&cfqq->cfqg->blkg);
+> +}
+> +
+>  static void __cfq_set_active_queue(struct cfq_data *cfqd,
+>  				   struct cfq_queue *cfqq)
+>  {
+> @@ -1547,7 +1554,7 @@ static void __cfq_set_active_queue(struct cfq_data *cfqd,
+>  		cfq_clear_cfqq_fifo_expire(cfqq);
+>  		cfq_mark_cfqq_slice_new(cfqq);
+>  
+> -		del_timer(&cfqd->idle_slice_timer);
+> +		cfq_del_timer(cfqd, cfqq);
+>  	}
+>  
+>  	cfqd->active_queue = cfqq;
+> @@ -1558,12 +1565,12 @@ static void __cfq_set_active_queue(struct cfq_data *cfqd,
+>   */
+>  static void
+>  __cfq_slice_expired(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+> -		    bool timed_out)
+> +		    bool timed_out, bool forced)
+>  {
+>  	cfq_log_cfqq(cfqd, cfqq, "slice expired t=%d", timed_out);
+>  
+>  	if (cfq_cfqq_wait_request(cfqq))
+> -		del_timer(&cfqd->idle_slice_timer);
+> +		cfq_del_timer(cfqd, cfqq);
+>  
+>  	cfq_clear_cfqq_wait_request(cfqq);
+>  	cfq_clear_cfqq_wait_busy(cfqq);
+> @@ -1585,7 +1592,7 @@ __cfq_slice_expired(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+>  		cfq_log_cfqq(cfqd, cfqq, "resid=%ld", cfqq->slice_resid);
+>  	}
+>  
+> -	cfq_group_served(cfqd, cfqq->cfqg, cfqq);
+> +	cfq_group_served(cfqd, cfqq->cfqg, cfqq, forced);
+>  
+>  	if (cfq_cfqq_on_rr(cfqq) && RB_EMPTY_ROOT(&cfqq->sort_list))
+>  		cfq_del_cfqq_rr(cfqd, cfqq);
+> @@ -1604,12 +1611,13 @@ __cfq_slice_expired(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+>  	}
+>  }
+>  
+> -static inline void cfq_slice_expired(struct cfq_data *cfqd, bool timed_out)
+> +static inline void cfq_slice_expired(struct cfq_data *cfqd, bool timed_out,
+> +					bool forced)
+>  {
+>  	struct cfq_queue *cfqq = cfqd->active_queue;
+>  
+>  	if (cfqq)
+> -		__cfq_slice_expired(cfqd, cfqq, timed_out);
+> +		__cfq_slice_expired(cfqd, cfqq, timed_out, forced);
+>  }
+>  
+>  /*
+> @@ -1865,6 +1873,7 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
+>  	sl = cfqd->cfq_slice_idle;
+>  
+>  	mod_timer(&cfqd->idle_slice_timer, jiffies + sl);
+> +	blkiocg_update_set_idle_time_stats(&cfqq->cfqg->blkg);
+>  	cfq_log_cfqq(cfqd, cfqq, "arm_idle: %lu", sl);
+>  }
+>  
+> @@ -2176,7 +2185,7 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
+>  	}
+>  
+>  expire:
+> -	cfq_slice_expired(cfqd, 0);
+> +	cfq_slice_expired(cfqd, 0, false);
+>  new_queue:
+>  	/*
+>  	 * Current queue expired. Check if we have to switch to a new
+> @@ -2202,7 +2211,7 @@ static int __cfq_forced_dispatch_cfqq(struct cfq_queue *cfqq)
+>  	BUG_ON(!list_empty(&cfqq->fifo));
+>  
+>  	/* By default cfqq is not expired if it is empty. Do it explicitly */
+> -	__cfq_slice_expired(cfqq->cfqd, cfqq, 0);
+> +	__cfq_slice_expired(cfqq->cfqd, cfqq, 0, true);
+>  	return dispatched;
+>  }
+>  
+> @@ -2218,7 +2227,7 @@ static int cfq_forced_dispatch(struct cfq_data *cfqd)
+>  	while ((cfqq = cfq_get_next_queue_forced(cfqd)) != NULL)
+>  		dispatched += __cfq_forced_dispatch_cfqq(cfqq);
+>  
+> -	cfq_slice_expired(cfqd, 0);
+> +	cfq_slice_expired(cfqd, 0, true);
+>  	BUG_ON(cfqd->busy_queues);
+>  
+>  	cfq_log(cfqd, "forced_dispatch=%d", dispatched);
+> @@ -2382,10 +2391,15 @@ static int cfq_dispatch_requests(struct request_queue *q, int force)
+>  	    cfqq->slice_dispatch >= cfq_prio_to_maxrq(cfqd, cfqq)) ||
+>  	    cfq_class_idle(cfqq))) {
+>  		cfqq->slice_end = jiffies + 1;
+> -		cfq_slice_expired(cfqd, 0);
+> +		cfq_slice_expired(cfqd, 0, false);
+>  	}
+>  
+>  	cfq_log_cfqq(cfqd, cfqq, "dispatched a request");
+> +	/*
+> +	 * This is needed since we don't exactly match the mod_timer() and
+> +	 * del_timer() calls in CFQ.
+> +	 */
+> +	blkiocg_update_idle_time_stats(&cfqq->cfqg->blkg);
+
+Shouldn't we try to call cfq_del_timer() whereever appropriate, instead of
+directy trying to update idle_time_stats?
+
+>  	return 1;
+>  }
+>  
+> @@ -2413,7 +2427,7 @@ static void cfq_put_queue(struct cfq_queue *cfqq)
+>  	orig_cfqg = cfqq->orig_cfqg;
+>  
+>  	if (unlikely(cfqd->active_queue == cfqq)) {
+> -		__cfq_slice_expired(cfqd, cfqq, 0);
+> +		__cfq_slice_expired(cfqd, cfqq, 0, false);
+>  		cfq_schedule_dispatch(cfqd);
+>  	}
+>  
+> @@ -2514,7 +2528,7 @@ static void cfq_exit_cfqq(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+>  	struct cfq_queue *__cfqq, *next;
+>  
+>  	if (unlikely(cfqq == cfqd->active_queue)) {
+> -		__cfq_slice_expired(cfqd, cfqq, 0);
+> +		__cfq_slice_expired(cfqd, cfqq, 0, false);
+>  		cfq_schedule_dispatch(cfqd);
+>  	}
+>  
+> @@ -3143,7 +3157,7 @@ cfq_should_preempt(struct cfq_data *cfqd, struct cfq_queue *new_cfqq,
+>  static void cfq_preempt_queue(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+>  {
+>  	cfq_log_cfqq(cfqd, cfqq, "preempt");
+> -	cfq_slice_expired(cfqd, 1);
+> +	cfq_slice_expired(cfqd, 1, false);
+>  
+>  	/*
+>  	 * Put the new queue at the front of the of the current list,
+> @@ -3191,7 +3205,7 @@ cfq_rq_enqueued(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+>  		if (cfq_cfqq_wait_request(cfqq)) {
+>  			if (blk_rq_bytes(rq) > PAGE_CACHE_SIZE ||
+>  			    cfqd->busy_queues > 1) {
+> -				del_timer(&cfqd->idle_slice_timer);
+> +				cfq_del_timer(cfqd, cfqq);
+>  				cfq_clear_cfqq_wait_request(cfqq);
+>  				__blk_run_queue(cfqd->queue);
+>  			} else
+> @@ -3352,7 +3366,7 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
+>  		 * - when there is a close cooperator
+>  		 */
+>  		if (cfq_slice_used(cfqq) || cfq_class_idle(cfqq))
+> -			cfq_slice_expired(cfqd, 1);
+> +			cfq_slice_expired(cfqd, 1, false);
+>  		else if (sync && cfqq_empty &&
+>  			 !cfq_close_cooperator(cfqd, cfqq)) {
+>  			cfqd->noidle_tree_requires_idle |= !rq_noidle(rq);
+> @@ -3612,7 +3626,7 @@ static void cfq_idle_slice_timer(unsigned long data)
+>  		cfq_clear_cfqq_deep(cfqq);
+>  	}
+>  expire:
+> -	cfq_slice_expired(cfqd, timed_out);
+> +	cfq_slice_expired(cfqd, timed_out, false);
+>  out_kick:
+>  	cfq_schedule_dispatch(cfqd);
+>  out_cont:
+> @@ -3655,7 +3669,7 @@ static void cfq_exit_queue(struct elevator_queue *e)
+>  	spin_lock_irq(q->queue_lock);
+>  
+>  	if (cfqd->active_queue)
+> -		__cfq_slice_expired(cfqd, cfqd->active_queue, 0);
+> +		__cfq_slice_expired(cfqd, cfqd->active_queue, 0, false);
+>  
+>  	while (!list_empty(&cfqd->cic_list)) {
+>  		struct cfq_io_context *cic = list_entry(cfqd->cic_list.next,
