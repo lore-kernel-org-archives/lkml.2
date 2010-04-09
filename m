@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757785Ab0DIVdP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 17:33:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38429 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757144Ab0DIVdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 17:33:11 -0400
+	id S1757912Ab0DIVhm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 17:37:42 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:65042 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757761Ab0DIVhi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 17:37:38 -0400
+Date: Fri, 9 Apr 2010 14:37:15 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Janos Haar <janos.haar@netcenter.hu>
+cc: Dave Chinner <david@fromorbit.com>, axboe@kernel.dk,
+       LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+       linux-mm@kvack.org, xiyou.wangcong@gmail.com,
+       kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look
+ please!...)
+In-Reply-To: <00bb01cad70d$a814c2c0$0400a8c0@dcccs>
+Message-ID: <alpine.DEB.2.01.1004091435170.29272@bogon.housecafe.de>
+References: <02c101cacbf8$d21d1650$0400a8c0@dcccs> <179901cad182$5f87f620$0400a8c0@dcccs> <t2h2375c9f91004010337p618c4d5yc739fa25b5f842fa@mail.gmail.com> <1fe901cad2b0$d39d0300$0400a8c0@dcccs> <20100402230905.GW3335@dastard> <22c901cad333$7a67db60$0400a8c0@dcccs>
+ <20100404103701.GX3335@dastard> <2bd101cad4ec$5a425f30$0400a8c0@dcccs> <20100405224522.GZ3335@dastard> <3a5f01cad6c5$8a722c00$0400a8c0@dcccs> <20100408025822.GL11036@dastard> <00bb01cad70d$a814c2c0$0400a8c0@dcccs>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-X-Fcc: ~/Mail/linus
-Cc: Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
-       tglx@linutronix.de, rostedt@goodmis.org, andi@firstfloor.org,
-       rth@redhat.com, mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-       "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH 7/9] jump label: sort jump table at build-time
-In-Reply-To: Vivek Goyal's message of  Friday, 9 April 2010 17:24:25 -0400 <20100409212425.GB8219@redhat.com>
-References: <cover.1270839564.git.jbaron@redhat.com>
-	<9cd6a0307ac55f2090c5b75a26ee9ca6a167cc8d.1270839564.git.jbaron@redhat.com>
-	<20100409212425.GB8219@redhat.com>
-X-Windows: ignorance is our most important resource.
-Message-Id: <20100409213249.BDEF9CD14@magilla.sf.frob.com>
-Date: Fri,  9 Apr 2010 14:32:49 -0700 (PDT)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V01U2FsdGVkX193wU1GGtF6MN/Bn4EQ0YcxISHuFE5wVduZbGP
+ MJb2Vjk2eAMO0easWiIKRXGzokVtdH5rgrlhdw0oRmI2h9nW5U
+ /NLauC4Jj38hA2Rq1aCjQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think it just happens to come out harmless.  The relocs.c extraction
-stuff doesn't actually care about the exact address to be relocated, it
-only needs to know that a relocated value sits at a given place in the
-binary.  The sorting rearranges the addresses in the text without
-rearranging their corresponding relocs, but it's still the case that at
-exactly each of those spots in text there is a relocated address.  The
-boot-time "relocation" is just a blind adjustment to all those spots,
-without reference to the original relocation details.  So it Just Works.
-I'm not at all sure this is how we want things to be.  It's rather
-nonobvious and fragile if we change any of the related magic.  But I think
-it is entirely reliable in today's code that it will do the right thing.
+On Thu, 8 Apr 2010 at 13:21, Janos Haar wrote:
+> > Yeah, these still a fix that needs to be back ported to .33
+> > to solve this problem. It's in the series for 2.6.32.x, so maybe
+> > pulling the 2.6.32-stable-queue tree in the meantime is your best
+> > bet.
+> 
+> Ok, thank you.
+> But where can i find this tree?
 
 
-Thanks,
-Roland
+Perhaps Dave meant the stable-queue?
+
+http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git
+
+Then again, 2.6.34-rc3 needs testing too! :-)
+
+Christian.
+-- 
+BOFH excuse #98:
+
+The vendor put the bug there.
