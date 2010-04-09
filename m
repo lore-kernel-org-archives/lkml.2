@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757101Ab0DIUbv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 16:31:51 -0400
-Received: from mtumx-2.merit.edu ([198.108.1.20]:62859 "EHLO mail.mtu.edu"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755576Ab0DIUbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 16:31:49 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApoEAEcpv0uN208i/2dsb2JhbADPCIhchQkEjj4
-X-IronPort-AV: E=Sophos;i="4.52,179,1270440000"; 
-   d="scan'208";a="282120518"
-Message-ID: <4BBF8C76.7010000@mtu.edu>
-Date: Fri, 09 Apr 2010 16:22:14 -0400
-From: Jakob Penzien <jwpenzie@mtu.edu>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	id S1755565Ab0DIUeX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 16:34:23 -0400
+Received: from mail.gmx.net ([213.165.64.20]:35713 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754182Ab0DIUeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 16:34:20 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1/Q0Uk3Mc/Q2SQ4/+agH8rJ+adJgXwpN/PzvmFcNZ
+	0SRLGl74KP614Y
+Message-ID: <4BBF8F48.2070902@gmx.de>
+Date: Fri, 09 Apr 2010 22:34:16 +0200
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
 MIME-Version: 1.0
-To: gregkh@suse.de, wfp5p@virginia.edu, bart@cs.pdx.edu,
-       linux@dominikbrodowski.net, keil@b1-systems.de,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: PATCH: ni_labpc_cs.c 2
-References: <4B8DF681.4050903@mtu.edu>
-In-Reply-To: <4B8DF681.4050903@mtu.edu>
-X-Enigmail-Version: 0.95.7
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jonathan Corbet <corbet@lwn.net>
+CC: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
+       JosephChan@via.com.tw, ScottFang@viatech.com.cn,
+       Deepak Saxena <dsaxena@laptop.org>,
+       linux-fbdev-devel@lists.sourceforge.net
+Subject: Re: [PATCH 05/16] viafb: Determine type of 2D engine and store it
+ in chip_info
+References: <1270746946-12467-1-git-send-email-corbet@lwn.net>	<1270746946-12467-6-git-send-email-corbet@lwn.net>	<4BBE9CFC.2020804@gmx.de> <20100409141127.42e4e1fa@bike.lwn.net>
+In-Reply-To: <20100409141127.42e4e1fa@bike.lwn.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.55000000000000004
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jakob Penzien <jwpenzie@mtu.edu>
-Date: Wed, 3 Mar 2010 00:31:24 -0500
-Subject: [PATCH 2/2] Staging: Comedi: fix 80 character and KERN
-coding style issue in ni_labpc_cs.c
- This is a patch to the ni_labpc_cs.c file that fixes up the 80
-character and KERN
- warning found by the checkpoint.pl tool. Changed the spaceing
-between KERN and ".
- Signed-off-by: Jakob Penzien <Supermine290@gmail.com>
+Jonathan Corbet schrieb:
+> On Fri, 09 Apr 2010 05:20:28 +0200
+> Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
+> 
+>> Just a minor nit:
+>> Could we change the default so that if someone adds support for a new 
+>> IGP (and misses this function) we default to either the newest or 
+>> preferably to none? I've just seen too much poorly maintained code in 
+>> this driver and defaulting to the oldest is hence a bad idea.
+>> Otherwise it's fine.
+> 
+> That would require making an exhaustive list of older chipset types.
+> It could probably be inferred through inspection of the code, but I
+> worry about making assumptions in this area...
 
----
- drivers/staging/comedi/drivers/ni_labpc_cs.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+Such list already exists. gfx_chip_name = pdi->driver_data in hw.c (and 
+only there) so what is needed is the list viafb_pci_table in viafbdev.c 
+(relatively at the end) of all chips:
+UNICHROME_CLE266
+UNICHROME_PM800
+UNICHROME_K400
+UNICHROME_K800
+UNICHROME_CN700
+UNICHROME_K8M890
+UNICHROME_CX700
+UNICHROME_P4M900
+UNICHROME_CN750
+UNICHROME_VX800
+UNICHROME_VX855
 
-diff --git a/drivers/staging/comedi/drivers/ni_labpc_cs.c
-b/drivers/staging/comedi/drivers/ni_labpc_cs.c
-index 0b963bb..07d7bf9 100644
---- a/drivers/staging/comedi/drivers/ni_labpc_cs.c
-+++ b/drivers/staging/comedi/drivers/ni_labpc_cs.c
-@@ -1,7 +1,8 @@
- /*
-     comedi/drivers/ni_labpc_cs.c
-     Driver for National Instruments daqcard-1200 boards
--    Copyright (C) 2001, 2002, 2003 Frank Mori Hess
-<fmhess@users.sourceforge.net>
-+    Copyright (C) 2001, 2002, 2003 Frank Mori Hess
-+    <fmhess@users.sourceforge.net>
+Would appreciate it if you could use this info.
 
-     PCMCIA crap is adapted from dummy_cs.c 1.31 2001/08/24 12:13:13
-     from the pcmcia package.
-@@ -146,7 +147,7 @@ static int labpc_attach(struct comedi_device
-*dev, struct comedi_devconfig *it)
- 		irq = link->irq.AssignedIRQ;
- 		break;
- 	default:
--		printk("bug! couldn't determine board type\n");
-+		printk(KERN_ERR "bug! couldn't determine board type\n");
- 		return -EINVAL;
- 		break;
- 	}
 
+Thanks,
+
+Florian Tobias Schandinat
