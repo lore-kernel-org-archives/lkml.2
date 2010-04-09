@@ -1,81 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab0DIM75 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 08:59:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32958 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751431Ab0DIM7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 08:59:55 -0400
-Date: Fri, 9 Apr 2010 08:58:32 -0400
-From: Jarod Wilson <jarod@redhat.com>
-To: Andy Walls <awalls@radix.net>
-Cc: James Hogan <james@albanarts.com>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
-       Jon Smirl <jonsmirl@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Krzysztof Halasa <khc@pm.waw.pl>,
-       hermann pitton <hermann-pitton@arcor.de>,
-       Christoph Bartelmus <lirc@bartelmus.de>, j@jannau.net,
-       jarod@wilsonet.com, kraxel@redhat.com, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-       superm1@ubuntu.com
-Subject: Re: [RFC] What are the goals for the architecture of an in-kernel IR
- system?
-Message-ID: <20100409125832.GA22814@redhat.com>
-References: <9e4733910912060952h4aad49dake8e8486acb6566bc@mail.gmail.com>
- <9e4733910912151338n62b30af5i35f8d0963e6591c@mail.gmail.com>
- <4BAB7659.1040408@redhat.com>
- <201004090821.10435.james@albanarts.com>
- <1270810226.3764.34.camel@palomino.walls.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1270810226.3764.34.camel@palomino.walls.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1752639Ab0DINBp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 09:01:45 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:36515 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431Ab0DINBo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 09:01:44 -0400
+From: Gunnar Gudvardarson <gunni@wave.is>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Gunnar Gudvardarson <gunni@wave.is>
+Subject: [PATCH] Staging: asus_oled: asus_oled.c removed an unnessecary space, making it checkpatch clean
+Date: Fri,  9 Apr 2010 13:01:09 +0000
+Message-Id: <1270818069-3400-1-git-send-email-gunni@wave.is>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 09, 2010 at 06:50:26AM -0400, Andy Walls wrote:
-> On Fri, 2010-04-09 at 08:21 +0100, James Hogan wrote:
-> > Hi,
-> > 
-> > On Thursday 25 March 2010 14:42:33 Mauro Carvalho Chehab wrote:
-> > > Comments?
-> > 
-> > I haven't seen this mentioned yet, but are there any plans for a sysfs 
-> > interface to set up waking from suspend/standby on a particular IR scancode 
-> > (for hardware decoders that support masking of comparing of the IR data), kind 
-> > of analagous to the rtc framework's wakealarm sysfs file?
-> 
-> This requires support at the hardware level.  (You can't have CPU code
-> running to decode IR pulses when your CPU is "asleep".)
-> 
-> I know of two video chips supported under linux that provide such a
-> function.
-> 
-> Wake-up from IR for these chips will rely on the kernel PCIe or USB
-> infrastructure supporting PCIe or USB Power Managment Events from
-> hardware.  It will take a huge amount of work and time to get the
-> respective linux video drivers to properly support suspend/resume
-> properly.
-> 
-> If you're waiting for me to get that working, I'll advise you to plan on
-> getting off the couch and pushing the power switch for some time to
-> come. ;)
-> 
-> 
-> 
-> 
-> The MCE-USB, I *speculate*, can perform wakes.  It's driver would need
-> to support that, if it can.
+This is the first linux kernel patch i have ever made, i don't even
+know the C programming language except reading the syntax (basic)
 
-Yep, it can perform wakes, and the current lirc_mceusb does support it,
-though it requires some screwing around with echoing something into
-somewhere in sysfs (for the usb controller its attached to) to enable it,
-from what I recall... Making it Just Work would be a good idea.
+It didn't compile on my machine due to invalid configuration of something
+on my machine, because i have not yet learned how to configure the compiler.
 
+Signed-off-by: Gunnar Gudvardarson <gunni@wave.is>
+---
+ drivers/staging/asus_oled/asus_oled.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/staging/asus_oled/asus_oled.c b/drivers/staging/asus_oled/asus_oled.c
+index 7ebecc9..5b279fb 100644
+--- a/drivers/staging/asus_oled/asus_oled.c
++++ b/drivers/staging/asus_oled/asus_oled.c
+@@ -771,7 +771,7 @@ static struct usb_driver oled_driver = {
+ };
+ 
+ static CLASS_ATTR_STRING(version, S_IRUGO,
+-		 	ASUS_OLED_UNDERSCORE_NAME " " ASUS_OLED_VERSION);
++			ASUS_OLED_UNDERSCORE_NAME " " ASUS_OLED_VERSION);
+ 
+ static int __init asus_oled_init(void)
+ {
 -- 
-Jarod Wilson
-jarod@redhat.com
+1.6.3.3
 
