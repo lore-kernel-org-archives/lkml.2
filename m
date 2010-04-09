@@ -1,95 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab0DIDE7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 23:04:59 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52145 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751924Ab0DIDE4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 23:04:56 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 9 Apr 2010 12:01:04 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-       randy.dunlap@oracle.com,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] memcg: update documentation v3
-Message-Id: <20100409120104.9db5b88c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100409111145.5359a872.nishimura@mxp.nes.nec.co.jp>
-References: <20100408145800.ca90ad81.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100409102626.11f8b8b6.nishimura@mxp.nes.nec.co.jp>
-	<20100409104556.2aa6399d.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100409111145.5359a872.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752618Ab0DIDHn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 23:07:43 -0400
+Received: from mail.gmx.net ([213.165.64.20]:47471 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751974Ab0DIDHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 23:07:39 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX19u7Hwq7OBu3ME1eWFeAmgJlWhI6XG6CqNt4Ibzjn
+	2izOxdP/q4yVoa
+Message-ID: <4BBE99F6.9060300@gmx.de>
+Date: Fri, 09 Apr 2010 05:07:34 +0200
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+MIME-Version: 1.0
+To: Jonathan Corbet <corbet@lwn.net>
+CC: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
+       JosephChan@via.com.tw, ScottFang@viatech.com.cn,
+       Deepak Saxena <dsaxena@laptop.org>,
+       linux-fbdev-devel@lists.sourceforge.net
+Subject: Re: [PATCH 04/16] viafb: Retain GEMODE reserved bits
+References: <1270746946-12467-1-git-send-email-corbet@lwn.net> <1270746946-12467-5-git-send-email-corbet@lwn.net>
+In-Reply-To: <1270746946-12467-5-git-send-email-corbet@lwn.net>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Apr 2010 11:11:45 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+Hi Jon,
 
-> On Fri, 9 Apr 2010 10:45:56 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Fri, 9 Apr 2010 10:26:26 +0900
-> > Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-> > > > +Current Status: linux-2.6.34-mmotm(development version of 2010/April)
-> > > > +
-> > > > +Features:
-> > > > + - accounting anonymous pages, file caches, swap caches usage and limit them.
-> > > > + - private LRU and reclaim routine. (system's global LRU and private LRU
-> > > > +   work independently from each other)
-> > > > + - optionally, memory+swap usage can be accounted and limited.
-> > > > + - hierarchical accounting
-> > > > + - soft limit
-> > > > + - moving(recharging) account at moving a task is selectable.
-> > > > + - usage threshold notifier
-> > > > + - oom-killer disable knob and oom-notifier
-> > > > + - Root cgroup has no limit controls.
-> > > > +
-> > > > + Kernel memory and Hugepages are not under control yet. We just manage
-> > > > + pages on LRU. To add more controls, we have to take care of performance.
-> > > > +
-> > > > +Brief summary of control files.
-> > > > +
-> > > > + tasks				 # attach a task(thread)
-> > > > + cgroup.procs			 # attach a process(all threads under it)
-> > > IIUC, writing to cgroup.procs isn't supported yet. So, I think we don't have to
-> > > bother explaining cgroup.procs here.
-> > > 
-> > 
-> > It's supported. See Documetaion/cgroup/cgroup.txt
-> > IIRC, I use cgroup.procs file for migrating, sometimes.
-> > 
-> I can't write to it now.
-> 
-> # echo $$ >/cgroup/memory/01/cgroup.procs
-> -bash: echo: write error: Invalid argument
-> # ls -l /cgroup/memory/01/cgroup.procs
-> -r--r--r-- 1 root root 0 2010-04-09 10:41 /cgroup/memory/01/cgroup.procs
-> # uname -a
-> Linux GibsonE 2.6.34-rc3-mm1-00432-g37c11f5 #1 SMP Thu Apr 8 11:03:39 JST 2010 x86_64 x86_64 x86_64 GNU/Linux
-> 
-> And kernel/cgroup.c says:
-> 
->    3161         {
->    3162                 .name = CGROUP_FILE_GENERIC_PREFIX "procs",
->    3163                 .open = cgroup_procs_open,
->    3164                 /* .write_u64 = cgroup_procs_write, TODO */
->    3165                 .release = cgroup_pidlist_release,
->    3166                 .mode = S_IRUGO,
->    3167         },
-> 
-> IIRC, it's supported once, but the patch was dropped.
-> 
-Ouch....I have to fix (our internal) user manual, too.....
+Jonathan Corbet schrieb:
+> Commit c3e25673843153ea75fda79a47cf12f10a25ca37 (viafb: 2D engine rewrite)
+> changed the setting of the GEMODE register so that the reserved bits are no
+> longer preserved.  Fix that; at the same time, move this code to its own
+> function and restore the use of symbolic constants.
+
+in your later patch "[PATCH 06/16] viafb: complete support for 
+VX800/VX855 accelerated framebuffer" you reintroduce initializing those 
+bits to 0. That's fine but I can't see a reason for preserving this bits 
+here as it adds useless overhead unless the hardware itself changed some 
+of those bits and behaves differently according to those bits. 
+Additionally the first 2 bits are not reserved but provide a rotation 
+where 00 is what we want (no rotation).
+And if you rip code off hw_bitblt_2 it would be better to do the same 
+with hw_bitblt_1. A quick look reveals that the same function can be 
+used there (the error message would need to be adjusted but that's minor).
+So nack@preserving (unless it would cause problems otherwise) but 
+ack@ripping code off and sharing between hw_bitblt_1 & hw_bitblt_2.
 
 
 Thanks,
--Kame
+
+Florian Tobias Schandinat
+
+> Signed-off-by: Jonathan Corbet <corbet@lwn.net>
+> ---
+>  drivers/video/via/accel.c |   48 ++++++++++++++++++++++++++++++---------------
+>  1 files changed, 32 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/video/via/accel.c b/drivers/video/via/accel.c
+> index d5077df..78c0a2b 100644
+> --- a/drivers/video/via/accel.c
+> +++ b/drivers/video/via/accel.c
+> @@ -165,12 +165,41 @@ static int hw_bitblt_1(void __iomem *engine, u8 op, u32 width, u32 height,
+>  	return 0;
+>  }
+>  
+> +/*
+> + * Figure out an appropriate bytes-per-pixel setting.
+> + */
+> +static int viafb_set_bpp(void __iomem *engine, u8 bpp)
+> +{
+> +	u32 gemode;
+> +
+> +	/* Preserve the reserved bits */
+> +	gemode = readl(engine + VIA_REG_GEMODE) & 0xfffffcff;
+> +	switch (bpp) {
+> +	case 8:
+> +		gemode |= VIA_GEM_8bpp;
+> +		break;
+> +	case 16:
+> +		gemode |= VIA_GEM_16bpp;
+> +		break;
+> +	case 32:
+> +		gemode |= VIA_GEM_32bpp;
+> +		break;
+> +	default:
+> +		printk(KERN_WARNING "hw_bitblt_2: Unsupported bpp %d\n", bpp);
+> +		return -EINVAL;
+> +	}
+> +	writel(gemode, engine + VIA_REG_GEMODE);
+> +	return 0;
+> +}
+> +
+> +
+>  static int hw_bitblt_2(void __iomem *engine, u8 op, u32 width, u32 height,
+>  	u8 dst_bpp, u32 dst_addr, u32 dst_pitch, u32 dst_x, u32 dst_y,
+>  	u32 *src_mem, u32 src_addr, u32 src_pitch, u32 src_x, u32 src_y,
+>  	u32 fg_color, u32 bg_color, u8 fill_rop)
+>  {
+>  	u32 ge_cmd = 0, tmp, i;
+> +	int ret;
+>  
+>  	if (!op || op > 3) {
+>  		printk(KERN_WARNING "hw_bitblt_2: Invalid operation: %d\n", op);
+> @@ -204,22 +233,9 @@ static int hw_bitblt_2(void __iomem *engine, u8 op, u32 width, u32 height,
+>  		}
+>  	}
+>  
+> -	switch (dst_bpp) {
+> -	case 8:
+> -		tmp = 0x00000000;
+> -		break;
+> -	case 16:
+> -		tmp = 0x00000100;
+> -		break;
+> -	case 32:
+> -		tmp = 0x00000300;
+> -		break;
+> -	default:
+> -		printk(KERN_WARNING "hw_bitblt_2: Unsupported bpp %d\n",
+> -			dst_bpp);
+> -		return -EINVAL;
+> -	}
+> -	writel(tmp, engine + 0x04);
+> +	ret = viafb_set_bpp(engine, dst_bpp);
+> +	if (ret)
+> +		return ret;
+>  
+>  	if (op == VIA_BITBLT_FILL)
+>  		tmp = 0;
 
