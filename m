@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab0DIDfl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Apr 2010 23:35:41 -0400
-Received: from cantor.suse.de ([195.135.220.2]:53747 "EHLO mx1.suse.de"
+	id S1754068Ab0DIDl2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Apr 2010 23:41:28 -0400
+Received: from claw.goop.org ([74.207.240.146]:50193 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753362Ab0DIDfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Apr 2010 23:35:39 -0400
-Date: Fri, 9 Apr 2010 13:35:32 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 09/13] mm, powerpc: Move the RCU page-table freeing
- into generic code
-Message-ID: <20100409033532.GI5683@laptop>
-References: <20100408191737.296180458@chello.nl>
- <20100408192722.987227219@chello.nl>
+	id S1752320Ab0DIDl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Apr 2010 23:41:26 -0400
+Message-ID: <4BBEA1E4.1050205@goop.org>
+Date: Thu, 08 Apr 2010 20:41:24 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100408192722.987227219@chello.nl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Liang Li <liang.li@windriver.com>
+CC: linux-kernel@vger.kernel.org, wangchen@cn.fujitsu.com, mingo@elte.hu,
+       tglx@linutronix.de, hpa@zytor.com, yinghai@kernel.org,
+       akpm@linux-foundation.org, jeremy.fitzhardinge@citrix.com,
+       konrad.wilk@oracle.com, Alok Kataria <akataria@vmware.com>
+Subject: Re: [PATCH v3] x86: let 'reservetop' functioning right
+References: <1270773835-2689-1-git-send-email-liang.li@windriver.com> <4BBE9B12.1070209@goop.org> <20100409032316.GA19938@localhost>
+In-Reply-To: <20100409032316.GA19938@localhost>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 08, 2010 at 09:17:46PM +0200, Peter Zijlstra wrote:
-> Index: linux-2.6/include/asm-generic/tlb.h
-> ===================================================================
-> --- linux-2.6.orig/include/asm-generic/tlb.h
-> +++ linux-2.6/include/asm-generic/tlb.h
-> @@ -27,6 +27,49 @@
->    #define tlb_fast_mode(tlb) 1
->  #endif
->  
-> +#ifdef HAVE_ARCH_RCU_TABLE_FREE
-> +/*
-> + * Semi RCU freeing of the page directories.
-> + *
-> + * This is needed by some architectures to implement gup_fast().
+On 04/08/2010 08:23 PM, Liang Li wrote:
+> On Thu, Apr 08, 2010 at 08:12:18PM -0700, Jeremy Fitzhardinge wrote:
+>   
+>> On 04/08/2010 05:43 PM, Liang Li wrote:
+>>     
+>>> When specify 'reservetop=0xbadc0de' kernel parameter, the kernel will
+>>> stop booting due to a early_ioremap bug that relate to commit 8827247ff.
+>>>
+>>> The root cause of boot failure problem is the value of 'slot_virt[i]'
+>>> was initialized in setup_arch->early_ioremap_init. But later in
+>>> setup_arch, the function 'parse_early_param' will modify 'FIXADDR_TOP'
+>>> when 'reservetop=0xbadc0de' being specified.
+>>>
+>>> The simplest fix might be use __fix_to_virt(idx0) to get updated value
+>>> of 'FIXADDR_TOP' in '__early_ioremap' instead of reference old value
+>>> from slot_virt[slot] directly.
+>>>   
+>>>       
+>> While I guess this patch works OK, I have to say that I'm worried by the
+>> need for it at all; it seems to be papering over a more serious
+>> problem.  reserve_top_address() is supposed to be called very early,
+>> before anything has used or referenced FIXADDR_TOP.  If we're seeing
+>> problems with FIXADDR_TOP changing after it has been used, then it means
+>> that reserve_top_address() is being called too late.  Fixing that would
+>> be the real fix.
+>>     
+> The ideal thing is FIXADDR_TOP should not be touched after
+> early_ioremap_init. The late call to reserve_top_address is from
+> parse_reservetop, aka when reservetop=0xabcd0000 being passed as kernel
+> commandline parameter. In setup_arch, the call sequence is:
+>
+> setup_arch
+>   -> early_ioremap_init
+>   -> parse_early_param
+>     -> parse_reservetop
+> 	  ->reserve_top_address
+>
+> See, how could we solve the confliction better?
+>   
 
-Really? I see the comment in the powerpc code, but powerpc was already
-using RCU before gup_fast(), and AFAIKS it is indeed using it so that
-it can handle faults by getting the linux pte with find_linux_pte ?
+Well, the first question is "do we need the reservetop= kernel
+parameter"?  Zach added it, I think, so that VMI could be loaded
+dynamically as a module.  Given that VMI is deprecated anyway, I wonder
+if we can just drop support for modular VMI and remove the reservetop=
+kernel parameter.  Or are there other uses for it?
 
-I would have thought this should be a well used method for handling
-software TLB faults.
-
-But anyway this looks like a nice abstraction.
-
+    J
