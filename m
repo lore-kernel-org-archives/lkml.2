@@ -1,33 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab0DINPL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 09:15:11 -0400
-Received: from ns2.intersolute.de ([193.110.43.67]:38746 "EHLO
-	ns2.intersolute.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab0DINPH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 09:15:07 -0400
-Message-ID: <4BBF284F.1020307@lumino.de>
-Date: Fri, 09 Apr 2010 15:14:55 +0200
-From: Michael Schnell <mschnell@lumino.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-2.3 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       nios2-dev <nios2-dev@sopc.et.ntust.edu.tw>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: atomic RAM ?
-References: <4BBD86A5.5030109@lumino.de>	<20100408114542.47b6589a@lxorguk.ukuu.org.uk>	<4BBDC7D4.6040301@lumino.de>	<20100408143750.0acebaa1@lxorguk.ukuu.org.uk>	<4BBF0784.2060002@lumino.de>	<20100409125426.5bc200da@lxorguk.ukuu.org.uk>	<4BBF2351.3040506@lumino.de> <20100409141518.0dbe7050@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100409141518.0dbe7050@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752837Ab0DINV5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 09:21:57 -0400
+Received: from wine.ocn.ne.jp ([122.1.235.145]:55396 "EHLO smtp.wine.ocn.ne.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751743Ab0DINVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 09:21:54 -0400
+To: amwang@redhat.com, linux-kernel@vger.kernel.org
+Cc: opurdila@ixiacom.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
+       nhorman@tuxdriver.com, davem@davemloft.net, ebiederm@xmission.com
+Subject: Re: [Patch 3/3] net: reserve ports for applications using fixed port numbers
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <20100409101442.5051.99812.sendpatchset@localhost.localdomain>
+	<20100409101513.5051.97926.sendpatchset@localhost.localdomain>
+In-Reply-To: <20100409101513.5051.97926.sendpatchset@localhost.localdomain>
+Message-Id: <201004092221.GEE32059.FHMOFVLJOFSOtQ@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Fri, 9 Apr 2010 22:21:50 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2010 03:15 PM, Alan Cox wrote:
-> Lamport's Bakery
-Found it in Wikipedia. I'm working on the text...
+Hello.
 
-Thanks a lot !
--Michael
+Amerigo Wang wrote:
+> Index: linux-2.6/drivers/infiniband/core/cma.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/infiniband/core/cma.c
+> +++ linux-2.6/drivers/infiniband/core/cma.c
+> @@ -1980,6 +1980,8 @@ retry:
+>  	/* FIXME: add proper port randomization per like inet_csk_get_port */
+>  	do {
+>  		ret = idr_get_new_above(ps, bind_list, next_port, &port);
+> +		if (inet_is_reserved_local_port(port))
+> +			ret = -EAGAIN;
 
+You should not overwrite ret with -EAGAIN when idr_get_new_above() returned
+-ENOSPC. I don't know about idr, thus I don't know whether
+
+		if (!ret && inet_is_reserved_local_port(port))
+			ret = -EAGAIN;
+
+is correct or not.
+
+>  	} while ((ret == -EAGAIN) && idr_pre_get(ps, GFP_KERNEL));
+>  
+>  	if (ret)
+> @@ -2996,10 +2998,13 @@ static int __init cma_init(void)
+>  {
+>  	int ret, low, high, remaining;
+>  
+> -	get_random_bytes(&next_port, sizeof next_port);
+>  	inet_get_local_port_range(&low, &high);
+> +again:
+> +	get_random_bytes(&next_port, sizeof next_port);
+>  	remaining = (high - low) + 1;
+>  	next_port = ((unsigned int) next_port % remaining) + low;
+> +	if (inet_is_reserved_local_port(next_port))
+> +		goto again;
+>  
+
+You should not unconditionally "goto again;".
+If all ports were reserved, it will loop forever (CPU stalls).
+
+>  	cma_wq = create_singlethread_workqueue("rdma_cm");
+>  	if (!cma_wq)
+
+
+> Index: linux-2.6/net/sctp/socket.c
+> ===================================================================
+> --- linux-2.6.orig/net/sctp/socket.c
+> +++ linux-2.6/net/sctp/socket.c
+> @@ -5436,6 +5436,8 @@ static long sctp_get_port_local(struct s
+>  			rover++;
+>  			if ((rover < low) || (rover > high))
+>  				rover = low;
+> +			if (inet_is_reserved_local_port(rover))
+> +				continue;
+
+This one needs to be
+
+			if (inet_is_reserved_local_port(rover))
+				goto next_nolock;
+
+>  			index = sctp_phashfn(rover);
+>  			head = &sctp_port_hashtable[index];
+>  			sctp_spin_lock(&head->lock);
+
+ next:
+			sctp_spin_unlock(&head->lock);
++next_nolock:
+		} while (--remaining > 0);
+
+otherwise, it will loop forever if all ports were reserved.
