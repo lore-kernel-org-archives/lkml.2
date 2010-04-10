@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751288Ab0DJInJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 04:43:09 -0400
-Received: from fg-out-1718.google.com ([72.14.220.158]:38142 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945Ab0DJInC (ORCPT
+	id S1751549Ab0DJInU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 04:43:20 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:60039 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470Ab0DJInQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 04:43:02 -0400
+	Sat, 10 Apr 2010 04:43:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=kcbiLyVe+njKE9OHab10UvY03RTExZ8iice5X3GYjm8ybvfWl5ODBjJfCosT9obRyM
-         hhlKAn3sfZO+YowVxmHZqFgmiogioW3pzuGqKPOqYvOpLjYewObOJALH1p24QcUpHYOk
-         stMFauB6LqpVNv/AJsoXBg74PggG/lyYTXD+I=
-Message-ID: <4BC03A11.4050407@gmail.com>
-Date: Sat, 10 Apr 2010 10:42:57 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.2pre) Gecko/20100308 SUSE/3.1b1-6.2 Thunderbird/3.1b1
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=hp0yTkK2bgdQUhVpb9d3GBi8fU3BZC6xU9O3HKDwCxv7juHhH9XusREqiWIisPrDND
+         LjzaBx5bEv1athkHYw7PW7UB7bssJGahx9tbPmwO+4VUavW+Ze1KxjtCfNtvnpEGlaIh
+         p6Rce3uzyJwKL4WHrofw+5rZIDuJwnz7HK2e8=
 MIME-Version: 1.0
-To: maciej.rutecki@gmail.com
-CC: Jiri Kosina <jkosina@suse.cz>, Pavel Machek <pavel@ucw.cz>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: 2.6.34-rc3 doesn't suspend to disk (-rc2 did)
-References: <alpine.LNX.2.00.1004020215100.8345@pobox.suse.cz> <201004082044.26949.maciej.rutecki@gmail.com>
-In-Reply-To: <201004082044.26949.maciej.rutecki@gmail.com>
-X-Enigmail-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Date: Sat, 10 Apr 2010 04:43:13 -0400
+Message-ID: <k2o49f90a801004100143q8a546d5dnf85d3d1b924b406e@mail.gmail.com>
+Subject: Probing System calls
+From: Siddhartha Chhabra <siddhartha.chhabra@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2010 08:44 PM, Maciej Rutecki wrote:
-> On piątek, 2 kwietnia 2010 o 02:19:26 Jiri Kosina wrote:
->> Hi,
->>
->> I have just hit this problem. Haven't bisected it yet, and going through
->> shortlog doesn't ring any bell immediately, so I am sending this out in
->> case it rings a bell for someone right away.
-> 
-> I created a Bugzilla entry at 
-> https://bugzilla.kernel.org/show_bug.cgi?id=15728
+I am trying to probe the read and write system calls using jprobe and
+kretprobes. In the first place, sys_read was not exported, so I have
+exported the symbol and I am successfully able to register the probes.
+Next I have a small piece of code that just invokes the read system
+call. Now after I insert the module with the probes and run the
+program with the read system call, it does not show the system call
+called with the size parameter that I pass. For e.g. I call ./read
+1234, the debug messages have a lot of prints but for sizes like 1,
+4096, but never 1234. Since the debug message are getting printed, it
+tells me that the probe has been registered successfully, however, I
+was wondering why it never gives a message with the size i passed. Is
+there something I am missing on probing the system call, or is there a
+fundamental limitation on probing system calls...
 
-Jiri, could you add there whether you changed config options somehow?
-The bug drives me crazy.
+I appreciate any comments/suggestion...
 
-thanks,
--- 
-js
+Thanks
