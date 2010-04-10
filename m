@@ -1,94 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab0DJVJf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 17:09:35 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:52683 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751703Ab0DJVJd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 17:09:33 -0400
-X-Greylist: delayed 8979 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Apr 2010 17:09:28 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=QWeiWABNoPl+vTE8K44jrCc4LpAnFO1TWRX5zxMYJMWCCeMLXTnaaIjaBz+RYzoemV
-         3oa3yznnuXp/1uuGFh+Y9Fx8QdO1b3RJ2aokWn/HH46FpeN6gcxWHVuQmYBp2nE12a2k
-         X5zn8/gitLn45QvXvIOeGqMJC7A9iphuD3qRo=
-Message-ID: <4BC0E904.20509@gmail.com>
-Date: Sat, 10 Apr 2010 23:09:24 +0200
-From: Till Kamppeter <till.kamppeter@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100404 Thunderbird/3.0.4
+	id S1752186Ab0DJVQL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 17:16:11 -0400
+Received: from ns.netcenter.hu ([195.228.254.57]:47678 "EHLO mail.netcenter.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751703Ab0DJVQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Apr 2010 17:16:09 -0400
+Message-ID: <0d5b01cad8f2$fdbd5750$0400a8c0@dcccs>
+From: "Janos Haar" <janos.haar@netcenter.hu>
+To: "Dave Chinner" <david@fromorbit.com>
+Cc: <xiyou.wangcong@gmail.com>, <linux-kernel@vger.kernel.org>,
+       <kamezawa.hiroyu@jp.fujitsu.com>, <linux-mm@kvack.org>,
+       <xfs@oss.sgi.com>, <axboe@kernel.dk>
+References: <02c101cacbf8$d21d1650$0400a8c0@dcccs> <179901cad182$5f87f620$0400a8c0@dcccs> <t2h2375c9f91004010337p618c4d5yc739fa25b5f842fa@mail.gmail.com> <1fe901cad2b0$d39d0300$0400a8c0@dcccs> <20100402230905.GW3335@dastard> <22c901cad333$7a67db60$0400a8c0@dcccs> <20100404103701.GX3335@dastard> <2bd101cad4ec$5a425f30$0400a8c0@dcccs> <20100405224522.GZ3335@dastard> <3a5f01cad6c5$8a722c00$0400a8c0@dcccs> <20100408025822.GL11036@dastard>
+Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look please!...)
+Date: Sat, 10 Apr 2010 23:15:45 +0200
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Greg KH <greg@kroah.com>,
-       Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-       "Luis R. Rodriguez" <mcgrof@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-wireless <linux-wireless@vger.kernel.org>,
-       Witold Sowa <witold.sowa@gmail.com>,
-       Johannes Berg <johannes@sipsolutions.net>
-Subject: Google Summer of Code 2010 - CORRECTION: Only organization admin
- can assign, so please PROPOSE being a mentor for a student
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.3598
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I have to correct what I told in my previous posting. In contrary 
-to last year, this year only the organization administrator can assign 
-mentors to students.
+Dave,
 
-Mentors can only express their wish to mentor a student by clicking "I 
-am willing to mentor this proposal" near the bottom of the proposal 
-page. If you click it on the wrong proposal or change your mind, click 
-"I am no longer willing to mentor this proposal" at the same place. You 
-can only decide for yourself whether you like to mentor, you cannot 
-propose another mentor. If you like another person to mentor this 
-student, e-mail to this person and ask him to request mentorship by 
-clicking "I am willing to mentor this proposal". More than one person 
-can request mentorship and the persons who have requested mentorship are 
-listed near the top of the proposal page as "Possible Mentors:". Check 
-whether you are really listed there.
+Not the server looks stable, but only runs in 23 hour at this point.
 
-See also the user guide:
+Now i can see these and similar messages:
+Apr 10 09:59:09 alfa kernel: Filesystem "sdb2": corrupt dinode 673160714, 
+extent total = -1392508927, nblocks = 5.  Unmount and run xfs_repair.
+Apr 10 09:59:09 alfa kernel: ffff880153797a00: 49 4e 81 a4 01 02 00 01 00 00 
+00 30 00 00 00 30  IN.........0...0
+Apr 10 09:59:09 alfa kernel: Filesystem "sdb2": XFS internal error 
+xfs_iformat(1) at line 332 of file fs/xfs/xfs_inode.c.  Caller 
+0xffffffff811d70d6
+Apr 10 09:59:09 alfa kernel:
+Apr 10 09:59:09 alfa kernel: Pid: 2324, comm: updatedb Not tainted 2.6.32.10 
+#3
+Apr 10 09:59:09 alfa kernel: Call Trace:
+Apr 10 09:59:09 alfa kernel:  [<ffffffff811cf87d>] 
+xfs_error_report+0x41/0x43
+Apr 10 09:59:09 alfa kernel:  [<ffffffff811d70d6>] ? xfs_iread+0xb1/0x184
+Apr 10 09:59:09 alfa kernel:  [<ffffffff811cf8d1>] 
+xfs_corruption_error+0x52/0x5e
+Apr 10 09:59:09 alfa kernel:  [<ffffffff811d6c68>] xfs_iformat+0x10d/0x4ca
+Apr 10 09:59:09 alfa kernel:  [<ffffffff811d70d6>] ? xfs_iread+0xb1/0x184
+Apr 10 09:59:09 alfa kernel:  [<ffffffff811d70d6>] xfs_iread+0xb1/0x184
+Apr 10 09:59:09 alfa kernel:  [<ffffffff811d3ee2>] xfs_iget+0x2c3/0x455
+Apr 10 09:59:09 alfa kernel:  [<ffffffff811eab8b>] xfs_lookup+0x82/0xb3
+Apr 10 09:59:09 alfa kernel:  [<ffffffff811f5a8f>] xfs_vn_lookup+0x45/0x86
+Apr 10 09:59:09 alfa kernel:  [<ffffffff810e3f73>] do_lookup+0xde/0x1ca
+Apr 10 09:59:09 alfa kernel:  [<ffffffff810e65b6>] 
+__link_path_walk+0x84e/0xcb3
+Apr 10 09:59:09 alfa kernel:  [<ffffffff810e4462>] ? path_init+0xaf/0x156
+Apr 10 09:59:09 alfa kernel:  [<ffffffff810e6a6e>] path_walk+0x53/0x9c
+Apr 10 09:59:09 alfa kernel:  [<ffffffff810e6b9e>] do_path_lookup+0x2f/0xac
+Apr 10 09:59:09 alfa kernel:  [<ffffffff810e7603>] user_path_at+0x57/0x91
+Apr 10 09:59:09 alfa kernel:  [<ffffffff810ec2e5>] ? dput+0x54/0x132
+Apr 10 09:59:09 alfa kernel:  [<ffffffff810df492>] ? cp_new_stat+0xfb/0x114
+Apr 10 09:59:09 alfa kernel:  [<ffffffff810df670>] vfs_fstatat+0x3a/0x67
+Apr 10 09:59:09 alfa kernel:  [<ffffffff810df6f4>] vfs_lstat+0x1e/0x20
+Apr 10 09:59:09 alfa kernel:  [<ffffffff810df715>] sys_newlstat+0x1f/0x39
+Apr 10 09:59:09 alfa kernel:  [<ffffffff8175d2d3>] ? 
+trace_hardirqs_on_thunk+0x3a/0x3f
+Apr 10 09:59:09 alfa kernel:  [<ffffffff811d3f36>] ? xfs_iget+0x317/0x455
+Apr 10 09:59:09 alfa kernel:  [<ffffffff8100b09b>] 
+system_call_fastpath+0x16/0x1b
+Apr 10 09:59:09 alfa kernel: Filesystem "sdb2": corrupt inode 673160713 
+((a)extents = 16777217).  Unmount and run xfs_repair.
+Apr 10 09:59:09 alfa kernel: ffff880153797900: 49 4e 81 a4 01 02 00 01 00 00 
+00 30 00 00 00 30  IN.........0...0
+Apr 10 09:59:09 alfa kernel: Filesystem "sdb2": XFS internal error 
+xfs_iformat_extents(1) at line 558 of file fs/xfs/xfs_inode.c.  Caller 
+0xffffffff811d6e70
+Apr 10 09:59:09 alfa kernel:
 
-http://socghop.appspot.com/document/show/gsoc_program/google/gsoc2010/userguide#depth_mentrequest
+All reports sdb2 for corruption.
+I will test this partition as soon as i can plan some minute planned 
+pause....
 
-This, or posting a comment, makes the proposal move from the first table 
-("List of new Student Proposals sent to The Linux Foundation ") to the 
-second ("Student Proposals already under review sent to The Linux 
-Foundation") on the list of proposals:
+Thanks for all your help again.
 
-http://socghop.appspot.com/gsoc/org/list_proposals/google/gsoc2010/lf
+Best Regards:
+Janos Haar
 
-As long as you do not send me any special wish I do the following:
 
-1. I ignore proposals with negative score
 
-2. From all the rest I
+----- Original Message ----- 
+From: "Dave Chinner" <david@fromorbit.com>
+To: "Janos Haar" <janos.haar@netcenter.hu>
+Cc: <xiyou.wangcong@gmail.com>; <linux-kernel@vger.kernel.org>; 
+<kamezawa.hiroyu@jp.fujitsu.com>; <linux-mm@kvack.org>; <xfs@oss.sgi.com>; 
+<axboe@kernel.dk>
+Sent: Thursday, April 08, 2010 4:58 AM
+Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look 
+please!...)
 
-   a. If there is one "Possible mentor", I assign the proposal to this
-      mentor.
 
-   b. If there is no "Possible mentor", I assign the mentor with the
-      highest activity in comments or scoring.
+> On Thu, Apr 08, 2010 at 04:45:13AM +0200, Janos Haar wrote:
+>> Hello,
+>>
+>> Sorry, but still have the problem with 2.6.33.2.
+>
+> Yeah, these still a fix that needs to be back ported to .33
+> to solve this problem. It's in the series for 2.6.32.x, so maybe
+> pulling the 2.6.32-stable-queue tree in the meantime is your best
+> bet.
+>
+> Cheers,
+>
+> Dave.
+> -- 
+> Dave Chinner
+> david@fromorbit.com
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/ 
 
-   c. If there is more than one "Possible mentor", I assign the
-      "Possible mentor" with the highest activity in comments or scoring.
-
-So please do the following:
-
-Propose yourself as mentor for good proposals and give negative scores 
-for bad proposals. Send me e-mail if I have assigned a mentor and 
-another should be assigned, or if you have other special wishes. I do 
-not remove mentor assignments without assigning another mentor as long 
-as you do not tell me that an application with assigned mentor is bad.
-
-Please make sure that all proposals which are still in the first table 
-("List of new Student Proposals sent to The Linux Foundation") get 
-reviewed and a mentor proposed, a comment, or a negative score given, so 
-that I can assign mentors or ignore these proposals.
-
-VERY IMPORTANT: All must be done by the end of Monday.
-
-    Till
