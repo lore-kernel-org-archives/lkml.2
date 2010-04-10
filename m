@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331Ab0DJXca (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 19:32:30 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:50635 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752104Ab0DJXc3 (ORCPT
+	id S1752424Ab0DJXf6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 19:35:58 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60296 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752104Ab0DJXf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 19:32:29 -0400
-Date: Sun, 11 Apr 2010 00:35:29 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Ulrich Drepper <drepper@gmail.com>
-Cc: Darren Hart <dvhltc@us.ibm.com>, Peter Zijlstra <peterz@infradead.org>,
-       Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       "Peter W. Morreale" <pmorreale@novell.com>,
-       Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Gregory Haskins <ghaskins@novell.com>,
-       Sven-Thorsten Dietrich <sdietrich@novell.com>,
-       Chris Mason <chris.mason@oracle.com>,
-       John Cooper <john.cooper@third-harmonic.com>,
-       Chris Wright <chrisw@sous-sol.org>
-Subject: Re: [PATCH V2 0/6][RFC] futex: FUTEX_LOCK with optional adaptive 
- spinning
-Message-ID: <20100411003529.28fe5c3b@lxorguk.ukuu.org.uk>
-In-Reply-To: <j2ia36005b51004061034p8c59ecag87c4d90660f33562@mail.gmail.com>
-References: <1270499039-23728-1-git-send-email-dvhltc@us.ibm.com>
-	<4BBA5305.7010002@redhat.com>
-	<4BBA5C00.4090703@us.ibm.com>
-	<4BBA6279.20802@redhat.com>
-	<4BBA6B6F.7040201@us.ibm.com>
-	<4BBB36FA.4020008@redhat.com>
-	<1270560931.1595.342.camel@laptop>
-	<20100406145128.6324ac9a@lxorguk.ukuu.org.uk>
-	<4BBB531A.4070500@us.ibm.com>
-	<20100406174459.60088461@lxorguk.ukuu.org.uk>
-	<j2ia36005b51004061034p8c59ecag87c4d90660f33562@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 10 Apr 2010 19:35:57 -0400
+Date: Sat, 10 Apr 2010 16:31:14 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Borislav Petkov <bp@alien8.de>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas
+ of a mergeable VMA
+In-Reply-To: <20100410224915.GJ28964@cmpxchg.org>
+Message-ID: <alpine.LFD.2.00.1004101629090.3576@i5.linux-foundation.org>
+References: <alpine.LFD.2.00.1004091227310.3558@i5.linux-foundation.org> <20100409204328.GG28964@cmpxchg.org> <alpine.LFD.2.00.1004091546350.3558@i5.linux-foundation.org> <alpine.LFD.2.00.1004091638290.3558@i5.linux-foundation.org> <20100410003110.GI28964@cmpxchg.org>
+ <alpine.LFD.2.00.1004091730130.3558@i5.linux-foundation.org> <20100410072714.GA9246@liondog.tnic> <20100410112639.GA24708@a1.tnic> <alpine.LFD.2.00.1004100821340.3558@i5.linux-foundation.org> <alpine.LFD.2.00.1004100930460.3558@i5.linux-foundation.org>
+ <20100410224915.GJ28964@cmpxchg.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The non-swappable part will be tricky.  One doesn't know how many
-> threads will be created in a process.  This mechanism shouldn't put an
-> arbitrary limit in place.  So where to allocate the memory?  Perhaps
-> it's better to implicitly mark the memory page pointed to by the new
-> syscall as non-swappable?  This could mean one page per thread...
 
-You only need one page per 4096 threads or so if you make it create the
-page on the first request, tied to say the signals and the like in
-threaded tasks, and you then allocate 'slots' in the page for future
-calls until you've got 4096 live.
 
-ie you'd see something like
+On Sun, 11 Apr 2010, Johannes Weiner wrote:
+> 
+> Did you have something in mind that I missed?
 
-	addr = set_tid_notifier_addr();
+Mostly that the corner cases will never matter, and I'd prefer to keep the 
+code simpler than to care deeply.
 
-	[1st call
-	 map page at x to x + 4095, probably R/O]
-	[returns x]
+For example, the only case you'd see vm_ops->close() is for special device 
+mappings. It's true that they cannot have their vma's merged, but it's 
+also true that they (a) will seldom have anon_vma's anyway and (b) would 
+never get mapped very many times so that anon_vma merging would be an 
+issue.
 
-next thread
-	addr = set_tid_notifier_addr()
+In other words, it's a "don't care" situation, where to keep the code 
+simpler we just document that we don't care.
 
-	[returns x + 1]
-
-Alan
+		Linus
