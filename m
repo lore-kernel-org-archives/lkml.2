@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751423Ab0DJP2Z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 11:28:25 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:32922 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab0DJP2X (ORCPT
+	id S1751907Ab0DJP2s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 11:28:48 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60290 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750948Ab0DJP2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 11:28:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=AAABkUE6heY5UqDs6gbhwqOZf4rOlgjSSIymFeU+QFSqG/w1V3bv7Ikk0PIsaJvZrr
-         lA6NkXiqwyU0/YUr/q8YxeSkLm3ncikcTqpCl7avBNjfegSfRAcprB2fVDu5xu75v4Mt
-         s6gsFsslSlj1vp/FAKRTbgGwrO4OK2fLQpaVQ=
-Date: Sat, 10 Apr 2010 17:28:16 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-       Alexey Dobriyan <adobriyan@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
+	Sat, 10 Apr 2010 11:28:46 -0400
+Date: Sat, 10 Apr 2010 08:24:02 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Borislav Petkov <bp@alien8.de>
+cc: Johannes Weiner <hannes@cmpxchg.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 6/6] procfs: Kill the bkl in ioctl
-Message-ID: <20100410152813.GE5204@nowhere>
-References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <20100331172208.GB5163@nowhere> <4BB485ED.80806@s5r6.in-berlin.de> <201004011445.32657.arnd@arndb.de>
+       Minchan Kim <minchan.kim@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas
+ of a mergeable VMA
+In-Reply-To: <20100410112639.GA24708@a1.tnic>
+Message-ID: <alpine.LFD.2.00.1004100821340.3558@i5.linux-foundation.org>
+References: <20100409174041.GA10780@a1.tnic> <alpine.LFD.2.00.1004091043490.3558@i5.linux-foundation.org> <20100409191425.GB10780@a1.tnic> <alpine.LFD.2.00.1004091227310.3558@i5.linux-foundation.org> <20100409204328.GG28964@cmpxchg.org>
+ <alpine.LFD.2.00.1004091546350.3558@i5.linux-foundation.org> <alpine.LFD.2.00.1004091638290.3558@i5.linux-foundation.org> <20100410003110.GI28964@cmpxchg.org> <alpine.LFD.2.00.1004091730130.3558@i5.linux-foundation.org> <20100410072714.GA9246@liondog.tnic>
+ <20100410112639.GA24708@a1.tnic>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201004011445.32657.arnd@arndb.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 01, 2010 at 02:45:32PM +0200, Arnd Bergmann wrote:
-> On Thursday 01 April 2010, Stefan Richter wrote:
-> > > 
-> > > I wonder if we should actually just turn all these into unlocked_ioctl
-> > > directly. And then bring a warn on ioctl, and finally schedule the removal
-> > > of this callback.
+
+
+On Sat, 10 Apr 2010, Borislav Petkov wrote:
 > > 
-> > A side note:  A considerable portion of this particular commit in Arnd's
-> > git actually does not deal with .ioctl->.unlocked_ioctl at all, but
-> > purely with .llseek.  Many(?) of these changes deal with .ioctl and
-> > .llseek together.  (Arnd also says so in the last paragraph of his
-> > changelog.)
-> > 
-> > IOW there are less .ioctl implementations left than one could think from
-> > a look at the diffstat.
+> > I will keep running that kernel in the next couple of days and keep you
+> > informed in case this is the fix we're gonna use.
 > 
-> Given our recent discussions on the llseek topic, it's probably better to
-> revert most of the changes that purely deal with llseek. My current idea
-> is to use an explicit default_llseek only if one of the following is given:
+> Yep, you jinxed it :)
 > 
-> - we convert ioctl to unlocked_ioctl in the same file_operations, or
-> - the module uses the big kernel lock explicitly elsewhere.
-> 
-> Even then, there may be a number of cases where we can show it not
-> to be necessary, e.g. when the driver does not care about f_pos.
-> Concurrent llseek is racy by nature, so in most drivers, using the
-> BKL in llseek does not gain anything over using i_mutex.
-> 
-> 	Arnd
+> This time we got stuck on the anon_vma->lock (yep, we've seen that
+> oopsie before). So, it might be that we _really_ are staring at the
+> wrong code... Back to square one.
 
+No, I think we're good. I suspect this is a different issue. Do you have 
+lockdep enabled, along with mutex and spinlock debugging etc? That might 
+help pinpoint what triggers this.
 
+But I think the fact that you are apparently not able to get the list 
+corruption is a good sign. Of course, it might just be harder to trigger, 
+and these things could all be a sign of a different bug, but my gut feel 
+is that we did fix something, and you are just damn good at stressing the 
+new code. Kudos.
 
-So you mean we should attribute explicit default_llseek to the evil
-places instead of explicit generic_file_llseek in the safe ones?
-That's not a bad idea as it would result in much less changes.
-
-The problem happens the day you switch to generic_file_llseek() as the
-new default llseek(), how do you prove that all remaining fops
-that don't implement .llseek don't use the bkl? There will be
-hundreds of them and saying "we've looked all of them and they don't
-need it" will be a scary justification.
-
-On the opposite, attributing explicit generic_file_llseek or
-non_seekable_open on the safe places and default_llseek on
-the dozens of others doubtful places is easier to get a
-safe conclusion.
-
-But yeah we should try, at least attributing explicit
-default_llseek won't harm, quite the opposite.
-
+		Linus
