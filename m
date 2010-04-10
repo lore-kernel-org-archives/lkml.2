@@ -1,50 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751303Ab0DJPNw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 11:13:52 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:42503 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab0DJPNv (ORCPT
+	id S1751777Ab0DJPOH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 11:14:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38627 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527Ab0DJPOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 11:13:51 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 10 Apr 2010 17:13:38 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
-To: Arnd Bergmann <arnd@arndb.de>
-cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
-In-Reply-To: <201003271537.40488.arnd@arndb.de>
-Message-ID: <tkrat.5a45045b32e1e7c6@s5r6.in-berlin.de>
-References: <201003242240.54907.arnd@arndb.de>
- <201003251438.59062.arnd@arndb.de> <4BAD4795.2040700@s5r6.in-berlin.de>
- <201003271537.40488.arnd@arndb.de>
+	Sat, 10 Apr 2010 11:14:04 -0400
+Date: Sat, 10 Apr 2010 11:27:00 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+       systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH -tip v2 7/8] perf probe: Remove die() from probe-finder
+ code
+Message-ID: <20100410142700.GN3908@ghostprotocols.net>
+References: <20100406220542.13329.45837.stgit@localhost6.localdomain6>
+ <20100406220629.13329.71869.stgit@localhost6.localdomain6>
+ <4BBFB5CE.7070104@redhat.com>
+ <20100410012815.GC16721@ghostprotocols.net>
+ <4BBFFC86.4020201@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BBFFC86.4020201@redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 Mar, Arnd Bergmann wrote:
-> On Saturday 27 March 2010 00:47:33 Stefan Richter wrote:
->> firewire-core and raw1394 do not actually require the BKL, they only
->> miss to declare their files as not seekable.  I will post patches which
->> change these accordingly.
+Em Sat, Apr 10, 2010 at 12:20:22AM -0400, Masami Hiramatsu escreveu:
+> Arnaldo Carvalho de Melo wrote:
+> > Em Fri, Apr 09, 2010 at 07:18:38PM -0400, Masami Hiramatsu escreveu:
+> >> Hi Arnaldo,
+> >>
+> >> Has this code done what you suggested? :)
+> >> I'd like to have your comment.
+> > 
+> > It improves the current situation, yes, but there are still cases there
+> > where die() is called, I assume that is left for later, right?
 > 
-> Your patches look good, but it would be helpful to also set .llseek = no_llseek
-> in the file operations, because that is much easier to grep for than
-> only the nonseekable_open. While it's technically a NOP on the presence of
-> nonseekable_open, it will help that I don't accidentally apply my patch on
-> top of yours.
+> With the next (8/8) patch, all die()s are removed at least from 
+> probe-{event,finder}.c, except for all x*() wrappers.
 
-I pushed modified versions of these patches out to linux1394-2.6.git now
-(master and for-next branch, on top of unrelated firewire updates). They
-contain the explicit .llseek = no_llseek now.
+Ok
+ 
+> > 
+> > Like here, the TUI/GUI can try to add a probe but if it fails it can
+> > still continue providing things like a "perf top" window, analysing
+> > perf.data files, doing 'perf diffs', etc.
+> 
+> Sure, this die() is removed by next (8/8) patch. Sorry, I've split it because
+> of easy to review...
 
-http://git.kernel.org/?p=linux/kernel/git/ieee1394/linux1394-2.6.git;a=commitdiff;h=3ac26b2ee30005930117fe6a180c139c5f300faf
-http://git.kernel.org/?p=linux/kernel/git/ieee1394/linux1394-2.6.git;a=commitdiff;h=7cfe21aae155c26193fde617dc61d37a79a63f86
--- 
-Stefan Richter
--=====-==-=- -=-- -=-=-
-http://arcgraph.de/sr/
+Ok
+ 
+> >>>  	tvar->value = xstrdup(regs);
+> >>>  	if (ref) {
+> >>>  		tvar->ref = xzalloc(sizeof(struct kprobe_trace_arg_ref));
+> > 
+> > We have to kill those xzcalloc, etc, too they are die() in disguise :-)
+> 
+> Hmm, I think that will cost high, because only failing to allocate memory,
+> which theoretically means we can't continue to operate it. In that case,
+> we'd better just use backtrace() and die().
 
+Consider a situation where we are trying to allocate lots of objects
+allocated for some big operation (adding probes for all functions in all
+threads, whatever), we can just say to the user "hey, you don't have
+memory to do this" but other operations are possible, so calling
+panic(), oops, die() is not the right thing to do.
+
+- Arnaldo
