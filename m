@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751549Ab0DJInU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 04:43:20 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:60039 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab0DJInQ (ORCPT
+	id S1751496Ab0DJIrW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 04:47:22 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:63986 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924Ab0DJIrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 04:43:16 -0400
+	Sat, 10 Apr 2010 04:47:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=hp0yTkK2bgdQUhVpb9d3GBi8fU3BZC6xU9O3HKDwCxv7juHhH9XusREqiWIisPrDND
-         LjzaBx5bEv1athkHYw7PW7UB7bssJGahx9tbPmwO+4VUavW+Ze1KxjtCfNtvnpEGlaIh
-         p6Rce3uzyJwKL4WHrofw+5rZIDuJwnz7HK2e8=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=NOzOTp6IewZIaN6Wed9CvAqL/Urn4ofyVwA24dnc8bXzuzbSQ2af220Q/O5Q/C/HP1
+         TWhbEIFIhq9m3xMC+AjyONrcgmlcNMU7r6ies9VikpfOVX2clh8AeniGDPwpnfGMKw4f
+         NBS1Rki47BMCvs3k7qRjXyyVVji9bvhq/izik=
+Message-ID: <4BC03B16.6000403@gmail.com>
+Date: Sat, 10 Apr 2010 10:47:18 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.2pre) Gecko/20100308 SUSE/3.1b1-6.2 Thunderbird/3.1b1
 MIME-Version: 1.0
-Date: Sat, 10 Apr 2010 04:43:13 -0400
-Message-ID: <k2o49f90a801004100143q8a546d5dnf85d3d1b924b406e@mail.gmail.com>
-Subject: Probing System calls
-From: Siddhartha Chhabra <siddhartha.chhabra@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: maciej.rutecki@gmail.com
+CC: Jiri Kosina <jkosina@suse.cz>, Pavel Machek <pavel@ucw.cz>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: 2.6.34-rc3 doesn't suspend to disk (-rc2 did)
+References: <alpine.LNX.2.00.1004020215100.8345@pobox.suse.cz> <201004082044.26949.maciej.rutecki@gmail.com> <4BC03A11.4050407@gmail.com>
+In-Reply-To: <4BC03A11.4050407@gmail.com>
+X-Enigmail-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am trying to probe the read and write system calls using jprobe and
-kretprobes. In the first place, sys_read was not exported, so I have
-exported the symbol and I am successfully able to register the probes.
-Next I have a small piece of code that just invokes the read system
-call. Now after I insert the module with the probes and run the
-program with the read system call, it does not show the system call
-called with the size parameter that I pass. For e.g. I call ./read
-1234, the debug messages have a lot of prints but for sizes like 1,
-4096, but never 1234. Since the debug message are getting printed, it
-tells me that the probe has been registered successfully, however, I
-was wondering why it never gives a message with the size i passed. Is
-there something I am missing on probing the system call, or is there a
-fundamental limitation on probing system calls...
+On 04/10/2010 10:42 AM, Jiri Slaby wrote:
+> Jiri, could you add there whether you changed config options somehow?
+> The bug drives me crazy.
 
-I appreciate any comments/suggestion...
+(and check whether the fix there solves your problem or we hit different
+issues)
 
-Thanks
+-- 
+js
