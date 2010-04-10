@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752443Ab0DJW6X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 18:58:23 -0400
-Received: from smtp107.sbc.mail.gq1.yahoo.com ([67.195.14.110]:23472 "HELO
-	smtp107.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752371Ab0DJW6W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 18:58:22 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Apr 2010 18:58:21 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Subject:Date:User-Agent:Cc:References:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding:Content-Disposition:Message-Id;
-  b=3HtlXJ6bZ/KLkC5wlREo5Yxr7Kl9CgXs3W1sbIa1iv1B/eYtQDHUbAoBNZadYKrgFWXaRgPGJzm1m0gzH9Ti/MpPs0FHFeG5yyhBgQ5DkL92FWp3aYHG8v/i45gWgOQVIjIMNqHWkvlr/cNnRwqb6THoJ/Mm21JMO0cuy3XC2gI=  ;
-X-Yahoo-SMTP: 2V1ThQ.swBDh24fWwg9PZFuY7TTwFsTuVtXZ.8DKSgQ-
-X-YMail-OSG: WrOmhDwVM1lKB3Abq_.eyngBnoSP3045LQFxh853DPHM9uIUCaxJ.NYeKVmZSFBYtafxuXzJNHVh0BSm2PpuK05zOzP3aGA.ecXuqR_5mc2tLYmkZaHGyVPhw310i0Z7RIAogzW5LRaKuM.k.uq5WmYF7sjt7lhHCAelB3yk5tjNNTY7ab1cwexHS2cpXw1PKNN5F0dgLQUdsDGG_rW.rhsmm.Xyi0CrN49YzpufS9Y89UdlHSZiJ6xq3Y.HKHljW.TzrZ.0noVhXj8NdHNiDPFdu8sLCqDLuOZp7ZnTmlGY0U0gFuCRcnI-
-X-Yahoo-Newman-Property: ymail-3
-From: David Brownell <david-b@pacbell.net>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv2 7/8] USB: testusb: an USB testing application
-Date: Sat, 10 Apr 2010 15:51:40 -0700
-User-Agent: KMail/1.9.10
-Cc: linux-usb@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>,
-       Greg KH <greg@kroah.com>, Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org,
-       David Brownell <dbrownell@users.sourceforge.net>
-References: <cover.1270835924.git.mina86@mina86.com> <20100408002952.GC4365@kroah.com>  <bc9d1ab4bd3fc9a3dfa3792054cfb410cf9c6411.1270835924.git.mina86@mina86.com>
-In-Reply-To: <bc9d1ab4bd3fc9a3dfa3792054cfb410cf9c6411.1270835924.git.mina86@mina86.com>
+	id S1752454Ab0DJXVg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 19:21:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49572 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751502Ab0DJXVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Apr 2010 19:21:34 -0400
+Date: Sat, 10 Apr 2010 16:21:16 -0700
+From: Greg KH <gregkh@suse.de>
+To: Stefan Lippers-Hollmann <s.L-H@gmx.de>
+Cc: linux-kernel@vger.kernel.org, wey-yi.w.guy@intel.com,
+       reinette.chatre@intel.com, shanyu.zhao@intel.com, stable@kernel.org
+Subject: Re: patch
+ iwlwifi-counting-number-of-tfds-can-be-free-for-4965.patch added to
+ 2.6.33-stable tree
+Message-ID: <20100410232116.GA8360@suse.de>
+References: <12705808611488@kroah.org>
+ <201004110116.10564.s.L-H@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201004101551.40418.david-b@pacbell.net>
+In-Reply-To: <201004110116.10564.s.L-H@gmx.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 09 April 2010, Michal Nazarewicz wrote:
-> > I also would like to get an ack from David that he doesn't mind his code
-> > moving into the kernel here (personally I think it's a good thing to be
-> > here.)
+On Sun, Apr 11, 2010 at 01:16:06AM +0200, Stefan Lippers-Hollmann wrote:
+> Hi
+> 
+> On Sunday 11 April 2010, gregkh@suse.de wrote:
+> > This is a note to let you know that we have just queued up the patch titled
+> > 
+> >     Subject: iwlwifi: counting number of tfds can be free for 4965
+> > 
+> > to the 2.6.33-stable tree.  Its filename is
+> > 
+> >     iwlwifi-counting-number-of-tfds-can-be-free-for-4965.patch
+> > 
+> > A git repo of this tree can be found at 
+> >     http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
+> > 
+> > From be6b38bcb175613f239e0b302607db346472c6b6 Mon Sep 17 00:00:00 2001
+> > From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+> > Date: Thu, 18 Mar 2010 09:05:00 -0700
+> > Subject: iwlwifi: counting number of tfds can be free for 4965
+> > 
+> > From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+> > 
+> > commit be6b38bcb175613f239e0b302607db346472c6b6 upstream.
+> > 
+> > Forget one hunk in 4965 during "iwlwifi: error checking for number of tfds
+> > in queue" patch.
+> [...]
+> 
+> With this patch applied as part of the current -stable queue for 2.6.33, 
+> I've gotten feedback from two different IPW4965 users on amd64 and i386 
+> architectures that they're getting a kernel panic while booting:
 
+Yes, there is a follow-up patch that just went to Linus to fix this
+issue.  I should be picking it up in a day or so.
 
-Fine by me.  It might seee more miprovements this way too.
+thanks,
 
+greg k-h
