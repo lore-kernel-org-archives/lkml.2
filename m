@@ -1,96 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751490Ab0DJH1Z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 03:27:25 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46174 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751021Ab0DJH1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 03:27:21 -0400
-Date: Sat, 10 Apr 2010 09:27:14 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the
- anon_vmas of a mergeable VMA
-Message-ID: <20100410072714.GA9246@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Johannes Weiner <hannes@cmpxchg.org>,
-	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-	Rik van Riel <riel@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Minchan Kim <minchan.kim@gmail.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-	Nick Piggin <npiggin@suse.de>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-References: <alpine.LFD.2.00.1004090917070.3558@i5.linux-foundation.org>
- <20100409174041.GA10780@a1.tnic>
- <alpine.LFD.2.00.1004091043490.3558@i5.linux-foundation.org>
- <20100409191425.GB10780@a1.tnic>
- <alpine.LFD.2.00.1004091227310.3558@i5.linux-foundation.org>
- <20100409204328.GG28964@cmpxchg.org>
- <alpine.LFD.2.00.1004091546350.3558@i5.linux-foundation.org>
- <alpine.LFD.2.00.1004091638290.3558@i5.linux-foundation.org>
- <20100410003110.GI28964@cmpxchg.org>
- <alpine.LFD.2.00.1004091730130.3558@i5.linux-foundation.org>
+	id S1751231Ab0DJICy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 04:02:54 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:48843 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745Ab0DJICt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Apr 2010 04:02:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=hpnuuJ+l1+rLlAeQUsObNoxionXiB6G+/rH7zsfdfJbNw7njn++ktxITa7/TViZDfz
+         RqWhyadsDi+TOaCzTebcWQrGHsWEvig4pHvC8SpqBtEghEte0c2+PZ5kHMpetFQcD/BH
+         aouLs4tbS7tZC2Lx2mT1HGhHI9XZI2V3lb6Yo=
+Date: Sat, 10 Apr 2010 16:06:31 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Janos Haar <janos.haar@netcenter.hu>
+Cc: Christian Kujau <lists@nerdbynature.de>, david@fromorbit.com,
+       axboe@kernel.dk, LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+       linux-mm@kvack.org, xiyou.wangcong@gmail.com,
+       kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look
+	please!...)
+Message-ID: <20100410080631.GA9772@hack>
+References: <20100402230905.GW3335@dastard> <22c901cad333$7a67db60$0400a8c0@dcccs> <20100404103701.GX3335@dastard> <2bd101cad4ec$5a425f30$0400a8c0@dcccs> <20100405224522.GZ3335@dastard> <3a5f01cad6c5$8a722c00$0400a8c0@dcccs> <20100408025822.GL11036@dastard> <00bb01cad70d$a814c2c0$0400a8c0@dcccs> <alpine.DEB.2.01.1004091435170.29272@bogon.housecafe.de> <099001cad836$39dc6860$0400a8c0@dcccs>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004091730130.3558@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <099001cad836$39dc6860$0400a8c0@dcccs>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, Apr 09, 2010 at 05:32:36PM -0700
+On Sat, Apr 10, 2010 at 12:44:28AM +0200, Janos Haar wrote:
+> Hello,
+>
 
-> Exactly. This is the "let's limit things a bit to keep them much simpler.
+Hi,
 
-You gotta love that rule :)
+> I am just started to test the stable-queue patch series on 2.6.32.10.
+> Now running, we will see...
+> The 2.6.33.2 made 4 crashes in the last 3 days. :-(
+> This was more worse than the original 2.6.32.10.
+>
+> (I am very interested, anyway, this is the last shot of this server.
+> The owner giving me an ultimate.
+> If the server crashes again in the next week, i need to replace the 
+> entire HW, the OS, and the services as well...)
+>
 
-> > Let's hope it fixes Boris's issue.
-> 
-> I'm going to just guess that it won't, and that Boris' issue was actually 
-> due to something else entirely, and we've all been staring at totally the 
-> wrong code.
-> 
-> But we can hope.
+I would recommend you to use a distribution-released kernel,
+rather than a stable kernel from kernel.org, because usually
+the distribution maintains a longer supported kernel than
+kernel.org.
 
-Now why would you go and jinx it like that... :)
+Just a little suggestion. Hope it helps for you to choose Linux. ;)
 
-Hibernation runs back-to-back:
-
-1. light system load after boot... ok
-2. 3 kvm guests, 3Gb mem free of 8Gb total acc. to /proc/meminfo... ok			[ this was the fireproof way to trigger the bug, btw]
-3. kvm guests down, firefox loading a 4Mb html page... ok
-4. start ubuntu guest, firefox keeps loading the 4Mb html page after previous resume... ok
-5. ubuntu guest booting done, firefox done, play video... ok
-6. video broken after resume due to:
-
-[AO_ALSA] Pcm in suspend mode, trying to resume. 212%  2%  1.7% 1 0 
-[AO_ALSA] alsa-lib: pcm_hw.c:709:(snd_pcm_hw_resume) SNDRV_PCM_IOCTL_RESUME failed: Function not implemented
-
-i.e., unrelated... still ok
-
-7. ubuntu guest downloading a 100Mb file causing allocation of a bunch of anon memory in the host... ok
-8. all guests off, firefox off, back to light load... ok
-
-No oopsies or problems in dmesg except the old lockdep sysfs warning.
-
-I will keep running that kernel in the next couple of days and keep you
-informed in case this is the fix we're gonna use.
+Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
+Live like a child, think like the god.
+ 
