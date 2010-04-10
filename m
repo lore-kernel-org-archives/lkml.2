@@ -1,54 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751107Ab0DJMtS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 08:49:18 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:36210 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838Ab0DJMtR (ORCPT
+	id S1751265Ab0DJNHf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 09:07:35 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:55676 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958Ab0DJNHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 08:49:17 -0400
-Date: Sat, 10 Apr 2010 14:49:12 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Pedro Ribeiro <pedrib@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       Robert Hancock <hancockrwd@gmail.com>, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, Greg KH <gregkh@suse.de>,
-       alsa-devel@alsa-project.org, linux-usb@vger.kernel.org
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-Message-ID: <20100410124912.GP30801@buzzloop.caiaq.de>
-References: <m2n74fd948d1004081613n90408827s7c51ef572848fb1d@mail.gmail.com>
- <Pine.LNX.4.44L0.1004091155570.1852-100000@iolanthe.rowland.org>
- <20100409180942.GK30801@buzzloop.caiaq.de>
- <w2r74fd948d1004091119j9f33d8a6kc1824d9243abf38b@mail.gmail.com>
+	Sat, 10 Apr 2010 09:07:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=JnoPoL9CiCOppY+Pj0XtYNJ8eGwTgtGmmE99AxTU8+5LJp2XUgxquVgP0WeObwP6bC
+         ilj1mvSi6UrwOMmJfzV3fzATLaa7neldh2bMDeOCPycXfjq48oRFEfvRV+S78emfjk8y
+         6Kero5uAZ0+PchAw0P7bCve/HgoBAi5AHB9RI=
+Date: Sat, 10 Apr 2010 15:07:26 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: Question about lock sequence
+Message-ID: <20100410130723.GA5204@nowhere>
+References: <4BC05677.7070406@dcl.info.waseda.ac.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <w2r74fd948d1004091119j9f33d8a6kc1824d9243abf38b@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4BC05677.7070406@dcl.info.waseda.ac.jp>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 09, 2010 at 07:19:22PM +0100, Pedro Ribeiro wrote:
-> On 9 April 2010 19:09, Daniel Mack <daniel@caiaq.de> wrote:
-> > On Fri, Apr 09, 2010 at 12:01:27PM -0400, Alan Stern wrote:
-> >> I don't see anything suspicious.  The transfer_buffer addresses repeat
-> >> every 32 URBs, and the DMA addresses cycle almost entirely uniformly
-> >> from 0x20000000 to 0x23ffffff in units of 0x2000 (there are a few gaps
-> >> where the interval is a little bigger).
-> >
-> > The DMA pointers do indeed look sane. I wanted to take a deeper look at
-> > this and set up a 64bit system today. However, I fail to see the problem
-> > here. Pedro, how much RAM does your machine have installed?
-> >
-> > Daniel
-> >
-> >
-> 
-> It has 4 GB.
+On Sat, Apr 10, 2010 at 07:44:07PM +0900, Hitoshi Mitake wrote:
+>
+> Hi,
+>
+> I found that my understand about lockdep is completely wrong :( ,
+> so state machine of perf lock should be fixed before optimization.
+>
+> And I found that behaviour related to some of spin locks are strange.
+> The concrete example is lock sequences targeting dcache_lock (defined in
+> head of fs/dcache.c).
+>
+> I made a little (and not essential) change to perf lock, and observe
+> lock sequence targeting it.
+> Changed perf lock shows sequence of locks in time order,
+> and I grepped the output of it with dcache, like this:
+>
+> % sudo ./perf lock report | grep dcache
+>
+> The head part of result is this:
+> # <name>-<pid> <time (in u64)> <action> <address of lockdep> <name of lock>
+> perf-3238 92430534170 acquire: 0xffffffff81a4b398 dcache_lock
+> perf-3238 92430536714 acquire: 0xffffffff81a4b398 dcache_lock
+> perf-3238 92431444481 acquire: 0xffffffff81a4b398 dcache_lock
+> perf-3238 92431446061 acquired: 0xffffffff81a4b398 dcache_lock
+> perf-3238 92431448157 acquire: 0xffffffff81a4b398 dcache_lock
+> perf-3238 92431449670 acquired: 0xffffffff81a4b398 dcache_lock
+> perf-3238 92432371136 acquire: 0xffffffff81a4b398 dcache_lock
+> perf-3238 92432372712 acquired: 0xffffffff81a4b398 dcache_lock
+> perf-3238 92432374718 acquire: 0xffffffff81a4b398 dcache_lock
+> perf-3238 92432376173 acquired: 0xffffffff81a4b398 dcache_lock
+> perf-3238 92433315563 acquire: 0xffffffff81a4b398 dcache_lock
+> perf-3238 92433317173 acquired: 0xffffffff81a4b398 dcache_lock
+>
+> There are too many acquire and acquired without corresponding release
+> (or contended).
+> If dcache_lock is rwlock and these acquires mean read locks, this is not
+> so strange.
+> But, for me, this is a pattern of dead lock.
+> Of course perf lock finished its work, so there is no actual dead lock.
+>
+> If you know something about this behaviour of lock, could you tell me?
 
-Upgraded my machine now to 4GB, but I still can't reproduce this bug.
-Pedro, can you send your config, please?
 
-Daniel
+If you can see nesting acquires on an rwlock, it's normal, because it can
+be recursively acquired.
+
+What wouldn't be normal is an unbalanced stacking of acquire - release.
+
+If you see:
+
+acquire
+ acquire
+  acquire
+
+You should find the symetric releases:
+
+  release
+ release
+release
+
+Otherwise we have something wrong.
+
+Also I wonder about the fact you seem to have acquire without acquired
+in your trace.
+
+I'm going to look at this, hopefully I'll survive after looking in all these
+rwlock_* _rwlock_* __rwlock_* arch_* raw* _raw* __raw* do_raw* mess... :)
+
