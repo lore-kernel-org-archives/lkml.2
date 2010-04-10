@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751437Ab0DJHMI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 03:12:08 -0400
-Received: from smtprelay-h11.telenor.se ([62.127.194.4]:60117 "EHLO
-	smtprelay-h11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021Ab0DJHMB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 03:12:01 -0400
-X-SENDER-IP: [83.226.251.151]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhM4AG3Bv0tT4vuXPGdsb2JhbACHZZNdDAEBAQE1LapfjWOFCgQ
-X-IronPort-AV: E=Sophos;i="4.52,181,1270418400"; 
-   d="scan'208";a="61851434"
-From: Lars Lindley <lindley@coyote.org>
-To: gregkh@suse.de, alan@linux.intel.com, o.hartmann@telovital.com,
-       tj@kernel.org, cl@linux-foundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Lars Lindley <lindley@coyote.org>
-Subject: [PATCH] staging: et131x: et1310_phy.c coding style fixes.
-Date: Sat, 10 Apr 2010 09:12:01 +0200
-Message-Id: <1270883521-16933-1-git-send-email-lindley@coyote.org>
-X-Mailer: git-send-email 1.7.0.4
+	id S1751412Ab0DJH0e (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 03:26:34 -0400
+Received: from smtp.seznam.cz ([77.75.72.43]:60770 "EHLO smtp.seznam.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750982Ab0DJH0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Apr 2010 03:26:31 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=beta; d=post.cz;
+	h=Received:From:To:Date:MIME-Version:Subject:CC:Message-ID:Priority:In-reply-to:References:X-mailer:Content-type:Content-transfer-encoding:Content-description:X-Smtpd:X-Seznam-User:X-QM-Mark;
+	b=DNxpgKhU/oY1aVX3m6chEjmQ4ILAglwQnJnZNLfU/Jb2M8EBQmWGRj8YPwHt4hJdM
+	MBBQ1lSEKIvRFcWKYJJ+Y9U9+HyIrlLeWLkcVZauTLfKJPD81hquycuVyywCCkfnzOt
+	Ku3gAI0wsjq0LyCC7HZBFK/VYXWTBy87ETHs2rg=
+From: "Frantisek Rysanek" <Frantisek.Rysanek@post.cz>
+To: linux-kernel@vger.kernel.org
+Date: Sat, 10 Apr 2010 09:26:24 +0200
+MIME-Version: 1.0
+Subject: Re: setitimer vs. threads: SIGALRM returned to which thread? (process master or individual child)
+CC: bill o gallmeister <bog.kernel@gmail.com>
+Message-ID: <4BC04440.17716.2AAF4DA@Frantisek.Rysanek.post.cz>
+In-reply-to: <4BBF9B8F.3030106@gmail.com>
+References: <4BBFA0C6.2610.2C4FFE@Frantisek.Rysanek.post.cz>, <4BBF9B8F.3030106@gmail.com>
+X-mailer: Pegasus Mail for Windows (4.41)
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7BIT
+Content-description: Mail message body
+X-Smtpd: 1.1.7@13984
+X-Seznam-User: frantisek.rysanek@post.cz
+X-QM-Mark: email-qm2<540511907>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I fixed some long lines and whitespace around a =.
+On 9 Apr 2010 at 23:26, bill o gallmeister wrote:
+>
+> Check out timer_create() rather than setitimer().
+> 
+Oh I *see* :-)  There seems to be a way to deliver an event to a 
+specific thread. Just a quick guess, haven't validated this by a 
+compiler:
 
-Signed-off-by: Lars Lindley <lindley@coyote.org>
----
- drivers/staging/et131x/et1310_phy.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+============ PSEUDOCODE SNIPPET ==========
+struct my_thr_data
+{
+   pthread_t ID; /* to be set upon pthread_create() */
+   /* ...further members... */
+};
 
-diff --git a/drivers/staging/et131x/et1310_phy.c b/drivers/staging/et131x/et1310_phy.c
-index 34cd5d1..21c5eee 100644
---- a/drivers/staging/et131x/et1310_phy.c
-+++ b/drivers/staging/et131x/et1310_phy.c
-@@ -344,7 +344,7 @@ static void ET1310_PhyDuplexMode(struct et131x_adapter *etdev, u16 duplex)
- static void ET1310_PhySpeedSelect(struct et131x_adapter *etdev, u16 speed)
- {
- 	u16 data;
--	static const u16 bits[3]={0x0000, 0x2000, 0x0040};
-+	static const u16 bits[3] = {0x0000, 0x2000, 0x0040};
- 
- 	/* Read the PHY control register */
- 	MiRead(etdev, PHY_CONTROL, &data);
-@@ -760,7 +760,8 @@ void et131x_Mii_check(struct et131x_adapter *etdev,
- 			if (etdev->linkspeed == TRUEPHY_SPEED_10MBPS) {
- 				/* NOTE - Is there a way to query this without
- 				 * TruePHY?
--				 * && TRU_QueryCoreType(etdev->hTruePhy, 0) == EMI_TRUEPHY_A13O) {
-+				 * && TRU_QueryCoreType(etdev->hTruePhy, 0) ==
-+				 * EMI_TRUEPHY_A13O) {
- 				 */
- 				u16 Register18;
- 
-@@ -778,7 +779,7 @@ void et131x_Mii_check(struct et131x_adapter *etdev,
- 			 * in the LinkDetectionDPC).
- 			 */
- 			if (!(etdev->Flags & fMP_ADAPTER_LINK_DETECTION) ||
--			  (etdev->MediaState == NETIF_STATUS_MEDIA_DISCONNECT)) {
-+			 (etdev->MediaState == NETIF_STATUS_MEDIA_DISCONNECT)) {
- 				spin_lock_irqsave(&etdev->Lock, flags);
- 				etdev->MediaState =
- 				    NETIF_STATUS_MEDIA_DISCONNECT;
-@@ -836,7 +837,8 @@ void et131x_Mii_check(struct et131x_adapter *etdev,
- 				/*
- 				 * NOTE - Is there a way to query this without
- 				 * TruePHY?
--				 * && TRU_QueryCoreType(etdev->hTruePhy, 0)== EMI_TRUEPHY_A13O) {
-+				 * && TRU_QueryCoreType(etdev->hTruePhy, 0)==
-+				 * EMI_TRUEPHY_A13O) {
- 				 */
- 				u16 Register18;
- 
--- 
-1.7.0.4
+void* my_fn(void* my_user_data)
+{
+    pthread_kill( ((my_thr_data*)my_user_data)->ID, SIGALRM);
+}
 
+struct my_thr_data this_thread;
+timer_t my_timer;
+struct sigevent my_event =
+{
+   sigev_notify: SIGEV_THREAD,
+   sigev_notify_function: my_fn,
+   sigev_value.sival_ptr: &this_thread,
+   sigev_notify_attributes: NULL   
+}
+
+timer_create(CLOCK_REALTIME, &my_event, &my_timer);
+
+/* by now we're set up, but the timer doesn't tick yet. */
+
+/* someplace later in the code: */
+timer_settime(my_timer, ...  );
+
+
+=========== /PSEUDOCODE SNIPPET ==============
+thank you :-)
+
+Frank Rysanek
