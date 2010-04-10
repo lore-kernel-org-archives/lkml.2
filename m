@@ -1,102 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633Ab0DJDVI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 23:21:08 -0400
-Received: from qw-out-2122.google.com ([74.125.92.27]:56553 "EHLO
-	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754491Ab0DJDVD convert rfc822-to-8bit (ORCPT
+	id S1755568Ab0DJDXK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 23:23:10 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:57063 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754415Ab0DJDXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 23:21:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Xa1asbWXwP5dbnnMYFI5JSLZ8dbi7X4U/gZ5W/aMtVF9d4tA/MkeZtH6z1oIn5P1jQ
-         W9wwfaSXcypw2amV2m8bvKO7j4ctg/BrOo0SImTUEZzxIJ6LGycMyabh54gh2PWvvciQ
-         p5kDa1lcekLZxpeKa/XeMCeh4oZ/i2i7PzC8w=
-MIME-Version: 1.0
-In-Reply-To: <4BBF6206.2070103@archlinux.org>
-References: <4BBF6206.2070103@archlinux.org>
-Date: Sat, 10 Apr 2010 11:21:02 +0800
-Message-ID: <w2vd82e647a1004092021nadf2e47fu7bf9ccd9e7f928d5@mail.gmail.com>
-Subject: Re: Warning in ath9k after update from 2.6.33.1 to 2.6.33.2
-From: Ming Lei <tom.leiming@gmail.com>
-To: =?ISO-8859-1?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 9 Apr 2010 23:23:05 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: paulmck@linux.vnet.ibm.com, Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
+Subject: Re: mmotm 2010-04-05 - another RCU whinge (not network this time)
+In-Reply-To: Your message of "Fri, 09 Apr 2010 16:16:14 PDT."
+             <20100409231614.GE2421@linux.vnet.ibm.com>
+From: Valdis.Kletnieks@vt.edu
+References: <201004052336.o35NaeSE015814@imap1.linux-foundation.org> <6417.1270771048@localhost>
+            <20100409231614.GE2421@linux.vnet.ibm.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1270869752_5034P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 09 Apr 2010 23:22:32 -0400
+Message-ID: <10875.1270869752@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=dagger.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020206.4BBFEEF9.0080,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/4/10 Thomas Bächler <thomas@archlinux.org>:
-> Since I upgraded from 2.6.33.1 to .2, I get the following warning
-> sometimes, related to wireless:
->
-> ------------[ cut here ]------------
-> WARNING: at kernel/softirq.c:143 local_bh_enable_ip+0x82/0xb0()
-> Hardware name: TECRA A11
-> Modules linked in: ipv6 rfcomm sco bnep l2cap bridge stp llc
-> cpufreq_ondemand tun ext3 jbd btusb bluetooth uvcvideo videodev
-> snd_seq_dummy v4l1_compat arc4 snd_seq_oss ecb v4l2_compat_ioctl32
-> snd_seq_midi_event snd_hda_codec_intelhdmi snd_seq snd_seq_device
-> tpm_infineon snd_hda_codec_realtek ath9k snd_pcm_oss ath9k_common
-> snd_mixer_oss snd_hda_intel snd_hda_codec mac80211 snd_hwdep snd_pcm
-> snd_timer ath9k_hw snd joydev soundcore ath sdhci_pci kvm_intel
-> snd_page_alloc ehci_hcd iTCO_wdt evdev sdhci iTCO_vendor_support kvm
-> usbcore mmc_core e1000e psmouse tpm_tis cfg80211 tpm toshiba_acpi
-> acpi_cpufreq led_class tpm_bios rfkill toshiba_bluetooth serio_raw
-> pcspkr sr_mod thermal cdrom battery sg ac freq_table processor rtc_cmos
-> rtc_core rtc_lib fpu aesni_intel cryptd aes_x86_64 aes_generic xts
-> gf128mul dm_crypt dm_mod sd_mod ahci libata scsi_mod ext4 mbcache jbd2
-> crc16 i915 drm_kms_helper drm i2c_algo_bit button i2c_core video output
-> intel_agp [last unloaded: microcode]
-> Pid: 2571, comm: wpa_supplicant Not tainted 2.6.33-ARCH #1
-> Call Trace:
->  [<ffffffff81052a08>] warn_slowpath_common+0x78/0xb0
->  [<ffffffff81052a4f>] warn_slowpath_null+0xf/0x20
->  [<ffffffff81059682>] local_bh_enable_ip+0x82/0xb0
->  [<ffffffff8135d42f>] _raw_spin_unlock_bh+0x1f/0x30
->  [<ffffffffa04018ed>] ath_tx_node_cleanup+0x19d/0x1c0 [ath9k]
->  [<ffffffffa03fc607>] ath9k_sta_notify+0x57/0xb0 [ath9k]
->  [<ffffffffa039bbc4>] __sta_info_unlink+0x174/0x220 [mac80211]
->  [<ffffffffa039bca8>] sta_info_unlink+0x38/0x60 [mac80211]
->  [<ffffffffa03a2639>] ieee80211_set_disassoc+0x1e9/0x290 [mac80211]
->  [<ffffffffa03a2e89>] ieee80211_mgd_deauth+0x159/0x160 [mac80211]
->  [<ffffffff8104d700>] ? default_wake_function+0x0/0x10
->  [<ffffffffa03a9b69>] ieee80211_deauth+0x19/0x20 [mac80211]
->  [<ffffffffa02426de>] __cfg80211_mlme_deauth+0xee/0x130 [cfg80211]
->  [<ffffffff8135baad>] ? __mutex_lock_slowpath+0x26d/0x370
->  [<ffffffffa0246839>] __cfg80211_disconnect+0x159/0x1d0 [cfg80211]
->  [<ffffffffa0248f9c>] cfg80211_wext_siwmlme+0x8c/0xa0 [cfg80211]
->  [<ffffffff8133e6b7>] ioctl_standard_iw_point+0x207/0x3a0
->  [<ffffffffa0248f10>] ? cfg80211_wext_siwmlme+0x0/0xa0 [cfg80211]
->  [<ffffffff8133e850>] ? ioctl_standard_call+0x0/0xd0
->  [<ffffffff8133e8e9>] ioctl_standard_call+0x99/0xd0
->  [<ffffffff812b2660>] ? __dev_get_by_name+0xa0/0xc0
->  [<ffffffff8133dce7>] wext_ioctl_dispatch+0x1f7/0x210
->  [<ffffffff8133f330>] ? ioctl_private_call+0x0/0xa0
->  [<ffffffff8133de91>] wext_handle_ioctl+0x41/0x90
->  [<ffffffff812b8299>] dev_ioctl+0x679/0x850
->  [<ffffffff812a0522>] sock_ioctl+0xe2/0x290
->  [<ffffffff812a369d>] ? sys_recvfrom+0x13d/0x160
->  [<ffffffff811324c8>] vfs_ioctl+0x38/0xd0
->  [<ffffffff81132670>] do_vfs_ioctl+0x80/0x560
->  [<ffffffff81132bd1>] sys_ioctl+0x81/0xa0
->  [<ffffffff8100b1f9>] ? do_device_not_available+0x9/0x10
->  [<ffffffff81009fc2>] system_call_fastpath+0x16/0x1b
-> ---[ end trace 8dbf12cb72787a6d ]---
->
-> This machine is an Intel Core i5-520M running x86_64, wireless is ath9k.
->
->
+--==_Exmh_1270869752_5034P
+Content-Type: text/plain; charset=us-ascii
 
-I does not find the issue on 2.6.34-rc3-wireless-next,  using wext and trigger
-a disassociation.
+On Fri, 09 Apr 2010 16:16:14 PDT, "Paul E. McKenney" said:
+> On Thu, Apr 08, 2010 at 07:57:28PM -0400, Valdis.Kletnieks@vt.edu wrote:
+> > On Mon, 05 Apr 2010 16:09:45 PDT, akpm@linux-foundation.org said:
+> > > The mm-of-the-moment snapshot 2010-04-05-16-09 has been uploaded to
+> > > 
+> > >    http://userweb.kernel.org/~akpm/mmotm/
+> > 
+> > Hit another one.  I seem to be on a roll...
+> > 
+> > Seen in dmesg, happened near end of the initrd..
+> > 
+> > [   26.756864] 
+> > [   26.756866] ===================================================
+> > [   26.756869] [ INFO: suspicious rcu_dereference_check() usage. ]
+> > [   26.756871] ---------------------------------------------------
+> > [   26.756874] fs/proc/array.c:241 invoked rcu_dereference_check() without protection!
+> 
+> Color me confused.  I cloned James Toy's git repository at
+> git://zen-kernel.org/kernel/mmotm.git, and gitk claims that I am on tag
+> 2010-04-05-16-09, which matches the string above.  But when I look at
+> fs/proc/array.c near line 241, I see:
 
-How do you reproduce the warning?
+Andrew's -mm tree has 3 patches from Oleg Nesterov that hit that file, so the
+code is different from what you show. Color *me* confused why your clone of
+mmotm.git doesn't seem to contain them - I'm not sure how James Toy builds
+that git tree.  Perhaps the tag is applied before those patches are - the
+'mm.patch' that updates the Makefile with the version is usually in the
+*middle* of the 'series' file.  What does HEAD of that tree look like?
 
-Thanks,
+My tree has:
 
--- 
-Lei Ming
+/* needs ->siglock or rcu_read_lock() */
+static void collect_sigign_sigcatch(struct task_struct *p, sigset_t *ign,
+                                    sigset_t *catch)
+{
+        struct sighand_struct *sighand = rcu_dereference(p->sighand);
+
+And that rcu_dereference() does it.
+
+Oleg, looks like proc-make-collect_sigign_sigcatch-rcu-safe.patch is the
+offender here, it added the line that causes the whinge.
+
+
+
+--==_Exmh_1270869752_5034P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFLv+74cC3lWbTT17ARAqh/AKCW1uK+E0KtLcwU4lVX5ShDOxioEQCeKQJ/
+RloJ1ISGi6Z4AKWjJtr4c6o=
+=dP2w
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1270869752_5034P--
+
