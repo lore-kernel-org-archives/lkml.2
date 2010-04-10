@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab0DJQJz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 12:09:55 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:65240 "EHLO
+	id S1751697Ab0DJQO5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 12:14:57 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:34160 "EHLO
 	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330Ab0DJQJx (ORCPT
+	with ESMTP id S1751428Ab0DJQOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 12:09:53 -0400
+	Sat, 10 Apr 2010 12:14:55 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=rSsr8BWRN/SuqkLm64zzm1hBSB7ek4lQQ/GQXEC5UMTAh5YUh8jsm6lMdIazltAWgZ
-         Ynl5zhhs1pSpDajdYimUp82fw0XfoV3OdE8opMAfww1uff+ptQSZ9x0rcx8UBUPrc3ft
-         ZFSs+xVbEUTfgM5lOTBagxveyQycZxnZ9qUL0=
-Date: Sat, 10 Apr 2010 18:09:47 +0200
+        b=ZEZWcQtBnfQOxN5JSooZWIwYbz2/UW1PD/oJApVtnECLTFpZhWdTOONSAFBx21GUV5
+         MUPR9vlZ1efhDXJh6q2UzsAyR74ovyQh3UVBGSpyard+UQX225D8RJBxQSxZA8yr3wi+
+         l4WHMrwKLPdBhl/IOCbQYkksOazZ9G4903mnQ=
+Date: Sat, 10 Apr 2010 18:14:45 +0200
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Arnd Bergmann <arnd@arndb.de>
 Cc: Alexey Dobriyan <adobriyan@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
@@ -24,7 +24,7 @@ Cc: Alexey Dobriyan <adobriyan@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
 Subject: Re: [PATCH 6/6] procfs: Kill the bkl in ioctl
-Message-ID: <20100410160945.GF5204@nowhere>
+Message-ID: <20100410161443.GG5204@nowhere>
 References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <201003312221.23953.arnd@arndb.de> <20100331214058.GE5163@nowhere> <201004011442.38536.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -91,35 +91,13 @@ On Thu, Apr 01, 2010 at 02:42:38PM +0200, Arnd Bergmann wrote:
 > get removed.
 > 
 > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> ---
->  fs/ioctl.c               |   22 ++++++++++++++++++++++
->  include/linux/fs.h       |    3 +++
->  include/linux/smp_lock.h |    4 ++++
->  lib/Kconfig.debug        |   10 ++++++++++
->  4 files changed, 39 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/ioctl.c b/fs/ioctl.c
-> index 6c75110..52c2698 100644
-> --- a/fs/ioctl.c
-> +++ b/fs/ioctl.c
-> @@ -58,6 +58,28 @@ static long vfs_ioctl(struct file *filp, unsigned int cmd,
->  	return error;
->  }
->  
-> +#ifdef CONFIG_BKL
-> +/*
-> + * default_ioctl - call unlocked_ioctl with BKL held
-> + *
-> + * Setting only the the ioctl operation but not unlocked_ioctl will become
-> + * invalid in the future, all drivers that are not converted to unlocked_ioctl
-> + * should set .unlocked_ioctl = default_ioctl now.
-> + */
-> +long default_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-> +{
 
 
+Al, we would like to make this for 2.6.34, so that we can start
+converting the drivers that use bkl'ed ioctl to this new scheme
+in the relevant maintainers trees.
 
-Do you mind if I rename this to deprecated_ioctl()?
-This "default" naming suggests a fallback everyone that don't
-need tricky things should use.
+Can we get your ack?
+
+Thanks.
 
