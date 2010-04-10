@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938Ab0DJTiH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 15:38:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45999 "EHLO mx1.redhat.com"
+	id S1752038Ab0DJTzU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 15:55:20 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:46491 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751703Ab0DJTiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 15:38:03 -0400
-Message-ID: <4BC0D347.3080905@redhat.com>
-Date: Sat, 10 Apr 2010 15:36:39 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
+	id S1750878Ab0DJTzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Apr 2010 15:55:19 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ondrej Zary <linux@rainbow-software.org>
+Subject: Re: 2.6.31 regression: programs crashing after a couple of days of uptime with hibernation
+Date: Sat, 10 Apr 2010 21:58:17 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+       pm list <linux-pm@lists.linux-foundation.org>
+References: <201004012332.49454.linux@rainbow-software.org> <201004021858.28611.rjw@sisk.pl> <201004101103.21380.linux@rainbow-software.org>
+In-Reply-To: <201004101103.21380.linux@rainbow-software.org>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Borislav Petkov <bp@alien8.de>, Johannes Weiner <hannes@cmpxchg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas
- of a mergeable VMA
-References: <20100409191425.GB10780@a1.tnic> <alpine.LFD.2.00.1004091227310.3558@i5.linux-foundation.org> <20100409204328.GG28964@cmpxchg.org> <alpine.LFD.2.00.1004091546350.3558@i5.linux-foundation.org> <alpine.LFD.2.00.1004091638290.3558@i5.linux-foundation.org> <20100410003110.GI28964@cmpxchg.org> <alpine.LFD.2.00.1004091730130.3558@i5.linux-foundation.org> <20100410072714.GA9246@liondog.tnic> <20100410112639.GA24708@a1.tnic> <alpine.LFD.2.00.1004100821340.3558@i5.linux-foundation.org> <20100410163828.GA25579@a1.tnic> <alpine.LFD.2.00.1004100947400.3558@i5.linux-foundation.org> <alpine.LFD.2.00.1004101101180.3558@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1004101101180.3558@i5.linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201004102158.17454.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2010 02:21 PM, Linus Torvalds wrote:
+On Saturday 10 April 2010, Ondrej Zary wrote:
+> On Friday 02 April 2010 18:58:28 Rafael J. Wysocki wrote:
+> > On Friday 02 April 2010, Ondrej Zary wrote:
+> > > On Friday 02 April 2010 00:33:55 Rafael J. Wysocki wrote:
+> > > > On Friday 02 April 2010, Ondrej Zary wrote:
+> > > > > On Thursday 01 April 2010 23:45:33 you wrote:
+> > > > > > On Thursday 01 April 2010, Ondrej Zary wrote:
+> > > > > > > Hello,
+> > > > > > > with kernel 2.6.30, I can have uptime of more than a month on my
+> > > > > > > desktop PC (with hibernation). It's impossible with 2.6.31. After
+> > > > > > > 1 to 3 days, processes that were running during hibernation (e.g.
+> > > > > > > konsole, kwin, kicker, xorg) start to crash randomly in very
+> > > > > > > weird ways. The kernel itself does not seem to crash. When I run
+> > > > > > > the crashed program again, it seems to work. Looks like some
+> > > > > > > memory corruption.
+> > > > > > >
+> > > > > > > This bug is also present in 2.6.32 and 2.6.33.
+> > > > > >
+> > > > > > Is the kernel 32-bit or 64-bit?  What kind of CPU is there in the
+> > > > > > box?
+> > > > >
+> > > > > It's old 32-bit i686 CPU - Cyrix MII.
+> > > >
+> > > > Please try with this patch applied:
+> > > > http://git.kernel.org/?p=linux/kernel/git/mingo/linux-2.6-x86.git;a=pat
+> > > >ch;h =8ae06d223f8203c72104e5c0c4ee49a000aedb42
+> > >
+> > > Thanks, I'll try it. But I doubt that it will fix the problem. There were
+> > > no changes in hibernate_asm_32.S between 2.6.30 and 2.6.31.
+> >
+> > The change that exposed this issue was elsewhere in the x86 arch code.  I
+> > don't know where exactly, but we surely didn't need the above patch before.
+> 
+> It did not help. It started crashing with 2.6.32 and this patch applied after 
+> two days.
 
-> Maybe I'm crazy, but something started bothering me. And I started
-> wondering: when is the 'page->mapping' of an anonymous page actually
-> cleared?
->
-> The thing is, the mapping of an anonymous page is actually cleared only
-> when the page is _freed_, in "free_hot_cold_page()".
+Well, no idea, then.
 
-Which is also where they are removed from the LRU.
-The plot thickens...
-
-> Now, let's think about that. And in particular, let's think about how that
-> relates to the freeing of the 'anon_vma' that the page->mapping points to.
->
-> The way the anon_vma is freed is when the mapping is torn down, and we do
-> roughly:
->
-> 	tlb = tlb_gather_mmu(mm,..)
-> 	..
-> 	unmap_vmas(&tlb, vma ..
-> 	..
-> 	free_pgtables()
-> 	..
-> 	tlb_finish_mmu(tlb, start, end);
-
-Looks like we should move the anon_vma freeing from free_pgtables
-over to remove_vma?
-
-This code is just below the tlb_finish_mmu in exit_mmap:
-
-         /*
-          * Walk the list again, actually closing and freeing it,
-          * with preemption enabled, without holding any MM locks.
-          */
-         while (vma)
-                 vma = remove_vma(vma);
-
-This comment in free_pgtables is a little suspect:
-
-                 /*
-                  * Hide vma from rmap and truncate_pagecache before freeing
-                  * pgtables
-                  */
-                 unlink_anon_vmas(vma);
-                 unlink_file_vma(vma);
-
-After all, the rmap code will quickly notice that there either are
-no page tables, or the page tables no longer have anything in them.
-
-It looks like we may have had this use-after-free bug in the VM for
-quite a while...  I am not entirely sure what exposed the bug, but
-I can see how it works.
-
+Rafael
