@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693Ab0DJJDg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 05:03:36 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:48861 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751122Ab0DJJDd (ORCPT
+	id S1751676Ab0DJJ1N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 05:27:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38330 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108Ab0DJJ1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 05:03:33 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: 2.6.31 regression: programs crashing after a couple of days of uptime with hibernation
-Date: Sat, 10 Apr 2010 11:03:19 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-kernel@vger.kernel.org,
-       pm list <linux-pm@lists.linux-foundation.org>
-References: <201004012332.49454.linux@rainbow-software.org> <201004021253.30668.linux@rainbow-software.org> <201004021858.28611.rjw@sisk.pl>
-In-Reply-To: <201004021858.28611.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	Sat, 10 Apr 2010 05:27:11 -0400
+Subject: Re: [PATCH] MTD: Suppress warnings in inline_map_read()
+From: David Woodhouse <dwmw2@infradead.org>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <fb80b9139bec21ac8bd4ddcec0abeb9c1ad39ad5@localhost.localdomain>
+References: <fb80b9139bec21ac8bd4ddcec0abeb9c1ad39ad5@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 10 Apr 2010 10:26:22 +0100
+Message-ID: <1270891582.4704.102.camel@macbook.infradead.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201004101103.21380.linux@rainbow-software.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 02 April 2010 18:58:28 Rafael J. Wysocki wrote:
-> On Friday 02 April 2010, Ondrej Zary wrote:
-> > On Friday 02 April 2010 00:33:55 Rafael J. Wysocki wrote:
-> > > On Friday 02 April 2010, Ondrej Zary wrote:
-> > > > On Thursday 01 April 2010 23:45:33 you wrote:
-> > > > > On Thursday 01 April 2010, Ondrej Zary wrote:
-> > > > > > Hello,
-> > > > > > with kernel 2.6.30, I can have uptime of more than a month on my
-> > > > > > desktop PC (with hibernation). It's impossible with 2.6.31. After
-> > > > > > 1 to 3 days, processes that were running during hibernation (e.g.
-> > > > > > konsole, kwin, kicker, xorg) start to crash randomly in very
-> > > > > > weird ways. The kernel itself does not seem to crash. When I run
-> > > > > > the crashed program again, it seems to work. Looks like some
-> > > > > > memory corruption.
-> > > > > >
-> > > > > > This bug is also present in 2.6.32 and 2.6.33.
-> > > > >
-> > > > > Is the kernel 32-bit or 64-bit?  What kind of CPU is there in the
-> > > > > box?
-> > > >
-> > > > It's old 32-bit i686 CPU - Cyrix MII.
-> > >
-> > > Please try with this patch applied:
-> > > http://git.kernel.org/?p=linux/kernel/git/mingo/linux-2.6-x86.git;a=pat
-> > >ch;h =8ae06d223f8203c72104e5c0c4ee49a000aedb42
-> >
-> > Thanks, I'll try it. But I doubt that it will fix the problem. There were
-> > no changes in hibernate_asm_32.S between 2.6.30 and 2.6.31.
->
-> The change that exposed this issue was elsewhere in the x86 arch code.  I
-> don't know where exactly, but we surely didn't need the above patch before.
+On Fri, 2010-04-09 at 15:45 -0700, Kevin Cernekee wrote:
+> With gcc 4.4.3 -O2 on MIPS32:
+> 
+> drivers/mtd/chips/cfi_util.c: In function 'cfi_qry_present':
+> include/linux/mtd/map.h:390: warning: 'r' may be used uninitialized in this function
+> include/linux/mtd/map.h:375: note: 'r' was declared here
+> include/linux/mtd/map.h:390: warning: 'r' may be used uninitialized in this function
+> include/linux/mtd/map.h:375: note: 'r' was declared here
+> 
+> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 
-It did not help. It started crashing with 2.6.32 and this patch applied after 
-two days.
+I suspect 'else BUG()' would be a better fix.
 
 -- 
-Ondrej Zary
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
+
