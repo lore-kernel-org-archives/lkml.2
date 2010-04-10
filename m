@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424Ab0DJXf6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 19:35:58 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60296 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752104Ab0DJXf5 (ORCPT
+	id S1752469Ab0DJXqP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 19:46:15 -0400
+Received: from smtpout2.superonline.com ([212.252.122.228]:62955 "EHLO
+	smtpout2.superonline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752330Ab0DJXqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 19:35:57 -0400
-Date: Sat, 10 Apr 2010 16:31:14 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Borislav Petkov <bp@alien8.de>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas
- of a mergeable VMA
-In-Reply-To: <20100410224915.GJ28964@cmpxchg.org>
-Message-ID: <alpine.LFD.2.00.1004101629090.3576@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1004091227310.3558@i5.linux-foundation.org> <20100409204328.GG28964@cmpxchg.org> <alpine.LFD.2.00.1004091546350.3558@i5.linux-foundation.org> <alpine.LFD.2.00.1004091638290.3558@i5.linux-foundation.org> <20100410003110.GI28964@cmpxchg.org>
- <alpine.LFD.2.00.1004091730130.3558@i5.linux-foundation.org> <20100410072714.GA9246@liondog.tnic> <20100410112639.GA24708@a1.tnic> <alpine.LFD.2.00.1004100821340.3558@i5.linux-foundation.org> <alpine.LFD.2.00.1004100930460.3558@i5.linux-foundation.org>
- <20100410224915.GJ28964@cmpxchg.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Sat, 10 Apr 2010 19:46:14 -0400
+Message-ID: <4BC10DBB.70205@superonline.com>
+Date: Sat, 10 Apr 2010 19:46:03 -0400
+From: "M. Vefa Bicakci" <bicave@superonline.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100405 Icedove/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [Bug #15585] [Bisected Regression in 2.6.32.8] i915 with KMS enabledcauses memorycorruption when resuming from suspend-to-disk
+References: <cjwJ7Pf9h0L.A.9pB.1DmvLB@chimera> <onZ81XwyNTD.A.ENC.QEmvLB@chimera>
+In-Reply-To: <onZ81XwyNTD.A.ENC.QEmvLB@chimera>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-SMTP-Filter: SurGATE SMTP Filter Engine Release 2.1 ($Revision: 165 $) http://www.endersys.com
+X-SurGATE-Result: Clean (Content eval: -26.00 points)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Sun, 11 Apr 2010, Johannes Weiner wrote:
+On 08/04/10 07:04 PM, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.32 and 2.6.33.
 > 
-> Did you have something in mind that I missed?
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.32 and 2.6.33.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+> 
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15585
+> Subject		: [Bisected Regression in 2.6.32.8] i915 with KMS enabled causes memorycorruption when resuming from suspend-to-disk
+> Submitter	: M. Vefa Bicakci <bicave@superonline.com>
+> Date		: 2010-03-13 5:11 (27 days old)
+> First-Bad-Commit: http://git.kernel.org/git/linus/d8e0902806c0bd2ccc4f6a267ff52565a3ec933b
+> Message-ID	: <4B9B1E8F.5090806@superonline.com>
+> References	: http://marc.info/?l=linux-kernel&m=126845754409543&w=2
 
-Mostly that the corner cases will never matter, and I'd prefer to keep the 
-code simpler than to care deeply.
+Dear Rafael J. Wysocki,
 
-For example, the only case you'd see vm_ops->close() is for special device 
-mappings. It's true that they cannot have their vma's merged, but it's 
-also true that they (a) will seldom have anon_vma's anyway and (b) would 
-never get mapped very many times so that anon_vma merging would be an 
-issue.
+I tested vanilla 2.6.33.2 and 2.6.34-rc3-git10, and unfortunately
+both of them *have* this issue. So it looks like the issue has not
+been resolved yet. Please keep this regression in the list of known
+regressions.
 
-In other words, it's a "don't care" situation, where to keep the code 
-simpler we just document that we don't care.
+Just to let you know: I am currently running 2.6.33.2 with the above-
+mentioned commit reverted, and hibernate-thaw cycles work properly.
 
-		Linus
+Regards,
+
+M. Vefa Bicakci
+
+Note: Please include me in the CC list when replying to this e-mail
+as I am currently not subscribed to the LKML.
