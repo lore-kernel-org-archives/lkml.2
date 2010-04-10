@@ -1,99 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265Ab0DJVWH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 17:22:07 -0400
-Received: from ns.netcenter.hu ([195.228.254.57]:43295 "EHLO mail.netcenter.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751436Ab0DJVWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 17:22:05 -0400
-Message-ID: <0d6501cad8f3$d816b5e0$0400a8c0@dcccs>
-From: "Janos Haar" <janos.haar@netcenter.hu>
-To: =?iso-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: <lists@nerdbynature.de>, <david@fromorbit.com>, <axboe@kernel.dk>,
-       "\"LKML\"" <linux-kernel@vger.kernel.org>, <xfs@oss.sgi.com>,
-       <linux-mm@kvack.org>, <xiyou.wangcong@gmail.com>,
-       <kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100402230905.GW3335@dastard> <22c901cad333$7a67db60$0400a8c0@dcccs> <20100404103701.GX3335@dastard> <2bd101cad4ec$5a425f30$0400a8c0@dcccs> <20100405224522.GZ3335@dastard> <3a5f01cad6c5$8a722c00$0400a8c0@dcccs> <20100408025822.GL11036@dastard> <00bb01cad70d$a814c2c0$0400a8c0@dcccs> <alpine.DEB.2.01.1004091435170.29272@bogon.housecafe.de> <099001cad836$39dc6860$0400a8c0@dcccs> <20100410080631.GA9772@hack>
-Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a lookplease!...)
-Date: Sat, 10 Apr 2010 23:21:53 +0200
-MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 8bit
+	id S1752282Ab0DJVYK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 17:24:10 -0400
+Received: from 209-20-91-232.slicehost.net ([209.20.91.232]:52172 "EHLO
+	fczbackup" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751436Ab0DJVYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Apr 2010 17:24:07 -0400
+To: linux-kernel@vger.kernel.org
+Subject: FANTATRIATLETA 2009
+Recieved: 
+Date: Sat, 10 Apr 2010 23:24:05 +0200
+From: daddo <nardonedario@gmail.com>
+Message-ID: <a33f44b03154fd419470fcfb1bd9ac25@fcz.it>
 X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.3598
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
+X-Mailer: PHPMailer [version 1.73]
+X-Mailer: phplist v2.10.10
+X-MessageID: 19
+X-ListMember: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+FANTATRIATLETA 2009
+
+CATEGORY:
+
+- TRIATHLON m/f (sprint & olimpic distance)
+
+- TRIATHLON U23 m/f (chi c'è nella categoria TRIATHLON, non può
+essere inserito anche in questa)
+
+- TRIATHLON Long distance m/f (dal 70.3 in su)
+
+- DUATHLON m/f
+
+- MULTIMAN m/f (triathlon, duathlon, aquathlon, winter triathlon, in
+all distances)
+
+- GIOVANE (Youth & Junior) m/f
+
+- SORPRESA m/f
+
+- AGE GROUP m/f
+
+- TEAM
+
+- RACE Italia/Estero
+
+- WEB (siti internet Italia ed Estero)
+
+- OVER THE TOP m/f (the best in the world!)
+
+- FCZ (i migliori fancazzisti!)
+
+Send us your favorite triathletes in each category
+
+Segnalaci, entro domenica 11 aprile, per ogni categoria i tuoi atleti
+preferiti
+
+email: dario@fcz.it
+
+web: http://www.fcz.it/forum/index.php?topic=16268.msg284091#new
 
 
------ Original Message ----- 
-From: "Am�rico Wang" <xiyou.wangcong@gmail.com>
-To: "Janos Haar" <janos.haar@netcenter.hu>
-Cc: "Christian Kujau" <lists@nerdbynature.de>; <david@fromorbit.com>; 
-<axboe@kernel.dk>; "LKML" <linux-kernel@vger.kernel.org>; <xfs@oss.sgi.com>; 
-<linux-mm@kvack.org>; <xiyou.wangcong@gmail.com>; 
-<kamezawa.hiroyu@jp.fujitsu.com>
-Sent: Saturday, April 10, 2010 10:06 AM
-Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a 
-lookplease!...)
+
+______________________________
+
+Per cancellare l'iscrizione da questa Mailing List visita...
+For unsubscribe...
+ http://fcz.it/newsletter/?p=unsubscribe&uid=46f5c7fb83b84fcd8ffbb4656e8d4c9f
+
+Per aggiornare le tue informazioni visita...
+For manage your account...
+ http://fcz.it/newsletter/?p=preferences&uid=46f5c7fb83b84fcd8ffbb4656e8d4c9f
+
+Per inoltrare questo messaggio a un tuo amico...
+Forward a Message to Someone...
+ http://fcz.it/newsletter/?p=forward&uid=46f5c7fb83b84fcd8ffbb4656e8d4c9f&mid=19
 
 
-> On Sat, Apr 10, 2010 at 12:44:28AM +0200, Janos Haar wrote:
->> Hello,
->>
->
-> Hi,
->
->> I am just started to test the stable-queue patch series on 2.6.32.10.
->> Now running, we will see...
->> The 2.6.33.2 made 4 crashes in the last 3 days. :-(
->> This was more worse than the original 2.6.32.10.
->>
->> (I am very interested, anyway, this is the last shot of this server.
->> The owner giving me an ultimate.
->> If the server crashes again in the next week, i need to replace the
->> entire HW, the OS, and the services as well...)
->>
->
-> I would recommend you to use a distribution-released kernel,
-> rather than a stable kernel from kernel.org, because usually
-> the distribution maintains a longer supported kernel than
-> kernel.org.
->
-> Just a little suggestion. Hope it helps for you to choose Linux. ;)
+Informativa sulla privacy
+http://www.fcz.it/forum/index.php?topic=11362.0
 
-Personally, i am really like Linux, and use it since 1990. :-)
-I have set up about 30 servers or more...
-Usually i can't use the distro-release kernels, because these usually too 
-old.
-Additionally i can find bugs on any software and in any kernel version.... 
-B-)
-This is not the first time when i report bugs from the kernel, maybe the 4th 
-or 5th time...
-(I was who helped to solve the original NBD deadlock problem as well about 
-2005.)
 
-Anyway, thanks for your suggestion. ;-)
+Before printing, think about the environment
 
-Cheers,
-Janos
 
->
-> Thanks.
->
-> -- 
-> Live like a child, think like the god.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/ 
+--
+Powered by PHPlist, www.phplist.com --
+
 
