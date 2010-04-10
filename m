@@ -1,147 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987Ab0DJRCs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 13:02:48 -0400
-Received: from cnc.isely.net ([64.81.146.143]:36617 "EHLO cnc.isely.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751498Ab0DJRCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 13:02:47 -0400
-Date: Sat, 10 Apr 2010 11:57:05 -0500 (CDT)
-From: Mike Isely <isely@isely.net>
-To: Joe Perches <joe@perches.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-       Mauro Carvalho Chehab <mchehab@infradead.org>,
-       linux-media@vger.kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Mike Isely <isely@isely.net>
-Subject: Re: [PATCH 09/11] pvrusb2-v4l2: Rename dev_info to pdi
-In-Reply-To: <2044c4a5829aa21c3ec4bb90535289dd749bf4f1.1270493677.git.joe@perches.com>
-Message-ID: <alpine.DEB.1.10.1004101156450.5518@ivanova.isely.net>
-References: <20100304232928.2e45bdd1.akpm@linux-foundation.org> <2044c4a5829aa21c3ec4bb90535289dd749bf4f1.1270493677.git.joe@perches.com>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752032Ab0DJRC4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 13:02:56 -0400
+Received: from mail-yx0-f171.google.com ([209.85.210.171]:44141 "EHLO
+	mail-yx0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751992Ab0DJRCy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Apr 2010 13:02:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=eOh1CZM2wT7QLomrREg47aFMI9bLeIQiW7eBZnZv2v8EQGcndVNMxTXlHIkYadEMwP
+         6/1FB5yWfCzxoKW4lp1rnY7J+YemzUA99JRTgL61pw1qEenTQ0N1aCQL+/ERWe/ZQmqa
+         IHe9S6obsTdczPQaaOUVzvcVq0hsHzBIug82c=
+MIME-Version: 1.0
+In-Reply-To: <20100410083453.GN30801@buzzloop.caiaq.de>
+References: <s5hhbnncflj.wl%tiwai@suse.de>
+	 <Pine.LNX.4.44L0.1004071452560.5760-100000@iolanthe.rowland.org>
+	 <20100408003313.GE4365@kroah.com> <4BBE6E57.6020600@gmail.com>
+	 <20100409165014.GC5184@xanatos>
+	 <g2u51f3faa71004091638nc383aa0ei899777c869273a22@mail.gmail.com>
+	 <20100410083453.GN30801@buzzloop.caiaq.de>
+Date: Sat, 10 Apr 2010 11:02:53 -0600
+Message-ID: <p2o51f3faa71004101002xef38c6e4z71f5a61eed7f899e@mail.gmail.com>
+Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
+From: Robert Hancock <hancockrwd@gmail.com>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, alsa-devel@alsa-project.org,
+       Greg KH <gregkh@suse.de>, Takashi Iwai <tiwai@suse.de>,
+       Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+       Pedro Ribeiro <pedrib@gmail.com>, akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Apr 10, 2010 at 2:34 AM, Daniel Mack <daniel@caiaq.de> wrote:
+> On Fri, Apr 09, 2010 at 05:38:13PM -0600, Robert Hancock wrote:
+>> On Fri, Apr 9, 2010 at 10:50 AM, Sarah Sharp
+>> <sarah.a.sharp@linux.intel.com> wrote:
+>> > What makes you think that?  I've seen URB buffers with 64-bit DMA
+>> > addresses.  I can tell when the debug polling loop runs and I look at
+>> > the DMA addresses the xHCI driver is feeding to the hardware:
+>> >
+>> > Dev 1 endpoint ring 0:
+>> > xhci_hcd 0000:05:00.0: @71a49800 01000680 00080000 00000008 00000841
+>> >
+>> > So the TRB at address 71a49800 is pointing to a buffer at address
+>> > 0x0008000001000680.
+>>
+>> I'm not sure why the address would be that huge, unless it's not
+>> actually a physical address, or there's some kind of remapping going
+>> on?
+>>
+>> >
+>> > If I'm setting a DMA mask wrong somewhere, or doing something else to
+>> > limit the DMA to 32-bit, then please let me know.
+>>
+>> The DMA mask for the controller isn't being set anywhere (in the
+>> version that's in Linus' current git anyway). In that case it'll
+>> default to 32-bit and any DMA mappings above 4GB will need to be
+>> remapped. The controller driver doesn't do the mapping itself but the
+>> USB core does, passing in the controller device as the one doing the
+>> DMA, so if the controller's DMA mask is set to 32-bit then the buffers
+>> passed in will get remapped/bounced accordingly.
+>
+> So if we're seeing physical addresses in the log above, and the xHCI
+> driver does not explicitly allow the USB core to use addresses above
+> 4GB, why shouldn't the same thing be true as well for EHCI?
+> (Which would then be exactly the case we're seeing)
 
-Acked-By: Mike Isely <isely@pobox.com>
+That is a bit suspicious, yes. With the DMA mask at default I don't
+expect that should happen. Sarah, what kind of traffic was happening
+when you saw that (bulk, isochronous, etc)?
 
-  -Mike
+If this apparent EHCI problem is reproducible, it might be useful to
+add some code that warns if anything non-zero gets written to the
+hw_bufp_hi and hw_buf_hi members in the descriptors.
 
-
-On Mon, 5 Apr 2010, Joe Perches wrote:
-
-> There is a macro called dev_info that prints struct device specific
-> information.  Having variables with the same name can be confusing and
-> prevents conversion of the macro to a function.
-> 
-> Rename the existing dev_info variables to something else in preparation
-> to converting the dev_info macro to a function.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/media/video/pvrusb2/pvrusb2-v4l2.c |   22 +++++++++++-----------
->  1 files changed, 11 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/media/video/pvrusb2/pvrusb2-v4l2.c b/drivers/media/video/pvrusb2/pvrusb2-v4l2.c
-> index cc8ddb2..ba32c91 100644
-> --- a/drivers/media/video/pvrusb2/pvrusb2-v4l2.c
-> +++ b/drivers/media/video/pvrusb2/pvrusb2-v4l2.c
-> @@ -48,7 +48,7 @@ struct pvr2_v4l2_dev {
->  
->  struct pvr2_v4l2_fh {
->  	struct pvr2_channel channel;
-> -	struct pvr2_v4l2_dev *dev_info;
-> +	struct pvr2_v4l2_dev *pdi;
->  	enum v4l2_priority prio;
->  	struct pvr2_ioread *rhp;
->  	struct file *file;
-> @@ -161,7 +161,7 @@ static long pvr2_v4l2_do_ioctl(struct file *file, unsigned int cmd, void *arg)
->  {
->  	struct pvr2_v4l2_fh *fh = file->private_data;
->  	struct pvr2_v4l2 *vp = fh->vhead;
-> -	struct pvr2_v4l2_dev *dev_info = fh->dev_info;
-> +	struct pvr2_v4l2_dev *pdi = fh->pdi;
->  	struct pvr2_hdw *hdw = fh->channel.mc_head->hdw;
->  	long ret = -EINVAL;
->  
-> @@ -563,14 +563,14 @@ static long pvr2_v4l2_do_ioctl(struct file *file, unsigned int cmd, void *arg)
->  
->  	case VIDIOC_STREAMON:
->  	{
-> -		if (!fh->dev_info->stream) {
-> +		if (!fh->pdi->stream) {
->  			/* No stream defined for this node.  This means
->  			   that we're not currently allowed to stream from
->  			   this node. */
->  			ret = -EPERM;
->  			break;
->  		}
-> -		ret = pvr2_hdw_set_stream_type(hdw,dev_info->config);
-> +		ret = pvr2_hdw_set_stream_type(hdw,pdi->config);
->  		if (ret < 0) return ret;
->  		ret = pvr2_hdw_set_streaming(hdw,!0);
->  		break;
-> @@ -578,7 +578,7 @@ static long pvr2_v4l2_do_ioctl(struct file *file, unsigned int cmd, void *arg)
->  
->  	case VIDIOC_STREAMOFF:
->  	{
-> -		if (!fh->dev_info->stream) {
-> +		if (!fh->pdi->stream) {
->  			/* No stream defined for this node.  This means
->  			   that we're not currently allowed to stream from
->  			   this node. */
-> @@ -1031,7 +1031,7 @@ static int pvr2_v4l2_open(struct file *file)
->  	}
->  
->  	init_waitqueue_head(&fhp->wait_data);
-> -	fhp->dev_info = dip;
-> +	fhp->pdi = dip;
->  
->  	pvr2_trace(PVR2_TRACE_STRUCT,"Creating pvr_v4l2_fh id=%p",fhp);
->  	pvr2_channel_init(&fhp->channel,vp->channel.mc_head);
-> @@ -1112,7 +1112,7 @@ static int pvr2_v4l2_iosetup(struct pvr2_v4l2_fh *fh)
->  	struct pvr2_hdw *hdw;
->  	if (fh->rhp) return 0;
->  
-> -	if (!fh->dev_info->stream) {
-> +	if (!fh->pdi->stream) {
->  		/* No stream defined for this node.  This means that we're
->  		   not currently allowed to stream from this node. */
->  		return -EPERM;
-> @@ -1121,21 +1121,21 @@ static int pvr2_v4l2_iosetup(struct pvr2_v4l2_fh *fh)
->  	/* First read() attempt.  Try to claim the stream and start
->  	   it... */
->  	if ((ret = pvr2_channel_claim_stream(&fh->channel,
-> -					     fh->dev_info->stream)) != 0) {
-> +					     fh->pdi->stream)) != 0) {
->  		/* Someone else must already have it */
->  		return ret;
->  	}
->  
-> -	fh->rhp = pvr2_channel_create_mpeg_stream(fh->dev_info->stream);
-> +	fh->rhp = pvr2_channel_create_mpeg_stream(fh->pdi->stream);
->  	if (!fh->rhp) {
->  		pvr2_channel_claim_stream(&fh->channel,NULL);
->  		return -ENOMEM;
->  	}
->  
->  	hdw = fh->channel.mc_head->hdw;
-> -	sp = fh->dev_info->stream->stream;
-> +	sp = fh->pdi->stream->stream;
->  	pvr2_stream_set_callback(sp,(pvr2_stream_callback)pvr2_v4l2_notify,fh);
-> -	pvr2_hdw_set_stream_type(hdw,fh->dev_info->config);
-> +	pvr2_hdw_set_stream_type(hdw,fh->pdi->config);
->  	if ((ret = pvr2_hdw_set_streaming(hdw,!0)) < 0) return ret;
->  	return pvr2_ioread_set_enabled(fh->rhp,!0);
->  }
-> 
-
--- 
-
-Mike Isely
-isely @ isely (dot) net
-PGP: 03 54 43 4D 75 E5 CC 92 71 16 01 E2 B5 F5 C1 E8
+Also, booting with mem=4096M on an affected system would also tell you
+if it's related to using memory above 4GB.
