@@ -1,75 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab0DJVDo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 17:03:44 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:53321 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751703Ab0DJVDn (ORCPT
+	id S1752165Ab0DJVJf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 17:09:35 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:52683 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703Ab0DJVJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 17:03:43 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: 2.6.31 regression: programs crashing after a couple of days of uptime with hibernation
-Date: Sat, 10 Apr 2010 23:03:29 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-kernel@vger.kernel.org,
-       pm list <linux-pm@lists.linux-foundation.org>
-References: <201004012332.49454.linux@rainbow-software.org> <201004101103.21380.linux@rainbow-software.org> <201004102158.17454.rjw@sisk.pl>
-In-Reply-To: <201004102158.17454.rjw@sisk.pl>
+	Sat, 10 Apr 2010 17:09:33 -0400
+X-Greylist: delayed 8979 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Apr 2010 17:09:28 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=QWeiWABNoPl+vTE8K44jrCc4LpAnFO1TWRX5zxMYJMWCCeMLXTnaaIjaBz+RYzoemV
+         3oa3yznnuXp/1uuGFh+Y9Fx8QdO1b3RJ2aokWn/HH46FpeN6gcxWHVuQmYBp2nE12a2k
+         X5zn8/gitLn45QvXvIOeGqMJC7A9iphuD3qRo=
+Message-ID: <4BC0E904.20509@gmail.com>
+Date: Sat, 10 Apr 2010 23:09:24 +0200
+From: Till Kamppeter <till.kamppeter@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100404 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+To: "Theodore Ts'o" <tytso@mit.edu>, Greg KH <greg@kroah.com>,
+       Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+       "Luis R. Rodriguez" <mcgrof@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-wireless <linux-wireless@vger.kernel.org>,
+       Witold Sowa <witold.sowa@gmail.com>,
+       Johannes Berg <johannes@sipsolutions.net>
+Subject: Google Summer of Code 2010 - CORRECTION: Only organization admin
+ can assign, so please PROPOSE being a mentor for a student
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201004102303.32129.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 10 April 2010 21:58:17 Rafael J. Wysocki wrote:
-> On Saturday 10 April 2010, Ondrej Zary wrote:
-> > On Friday 02 April 2010 18:58:28 Rafael J. Wysocki wrote:
-> > > On Friday 02 April 2010, Ondrej Zary wrote:
-> > > > On Friday 02 April 2010 00:33:55 Rafael J. Wysocki wrote:
-> > > > > On Friday 02 April 2010, Ondrej Zary wrote:
-> > > > > > On Thursday 01 April 2010 23:45:33 you wrote:
-> > > > > > > On Thursday 01 April 2010, Ondrej Zary wrote:
-> > > > > > > > Hello,
-> > > > > > > > with kernel 2.6.30, I can have uptime of more than a month on
-> > > > > > > > my desktop PC (with hibernation). It's impossible with
-> > > > > > > > 2.6.31. After 1 to 3 days, processes that were running during
-> > > > > > > > hibernation (e.g. konsole, kwin, kicker, xorg) start to crash
-> > > > > > > > randomly in very weird ways. The kernel itself does not seem
-> > > > > > > > to crash. When I run the crashed program again, it seems to
-> > > > > > > > work. Looks like some memory corruption.
-> > > > > > > >
-> > > > > > > > This bug is also present in 2.6.32 and 2.6.33.
-> > > > > > >
-> > > > > > > Is the kernel 32-bit or 64-bit?  What kind of CPU is there in
-> > > > > > > the box?
-> > > > > >
-> > > > > > It's old 32-bit i686 CPU - Cyrix MII.
-> > > > >
-> > > > > Please try with this patch applied:
-> > > > > http://git.kernel.org/?p=linux/kernel/git/mingo/linux-2.6-x86.git;a
-> > > > >=pat ch;h =8ae06d223f8203c72104e5c0c4ee49a000aedb42
-> > > >
-> > > > Thanks, I'll try it. But I doubt that it will fix the problem. There
-> > > > were no changes in hibernate_asm_32.S between 2.6.30 and 2.6.31.
-> > >
-> > > The change that exposed this issue was elsewhere in the x86 arch code. 
-> > > I don't know where exactly, but we surely didn't need the above patch
-> > > before.
-> >
-> > It did not help. It started crashing with 2.6.32 and this patch applied
-> > after two days.
->
-> Well, no idea, then.
+Sorry, I have to correct what I told in my previous posting. In contrary 
+to last year, this year only the organization administrator can assign 
+mentors to students.
 
-So I'll try to bisect it again.
+Mentors can only express their wish to mentor a student by clicking "I 
+am willing to mentor this proposal" near the bottom of the proposal 
+page. If you click it on the wrong proposal or change your mind, click 
+"I am no longer willing to mentor this proposal" at the same place. You 
+can only decide for yourself whether you like to mentor, you cannot 
+propose another mentor. If you like another person to mentor this 
+student, e-mail to this person and ask him to request mentorship by 
+clicking "I am willing to mentor this proposal". More than one person 
+can request mentorship and the persons who have requested mentorship are 
+listed near the top of the proposal page as "Possible Mentors:". Check 
+whether you are really listed there.
 
-Here's a bug report so it won't get lost: 
-https://bugzilla.kernel.org/show_bug.cgi?id=15753
+See also the user guide:
 
--- 
-Ondrej Zary
+http://socghop.appspot.com/document/show/gsoc_program/google/gsoc2010/userguide#depth_mentrequest
+
+This, or posting a comment, makes the proposal move from the first table 
+("List of new Student Proposals sent to The Linux Foundation ") to the 
+second ("Student Proposals already under review sent to The Linux 
+Foundation") on the list of proposals:
+
+http://socghop.appspot.com/gsoc/org/list_proposals/google/gsoc2010/lf
+
+As long as you do not send me any special wish I do the following:
+
+1. I ignore proposals with negative score
+
+2. From all the rest I
+
+   a. If there is one "Possible mentor", I assign the proposal to this
+      mentor.
+
+   b. If there is no "Possible mentor", I assign the mentor with the
+      highest activity in comments or scoring.
+
+   c. If there is more than one "Possible mentor", I assign the
+      "Possible mentor" with the highest activity in comments or scoring.
+
+So please do the following:
+
+Propose yourself as mentor for good proposals and give negative scores 
+for bad proposals. Send me e-mail if I have assigned a mentor and 
+another should be assigned, or if you have other special wishes. I do 
+not remove mentor assignments without assigning another mentor as long 
+as you do not tell me that an application with assigned mentor is bad.
+
+Please make sure that all proposals which are still in the first table 
+("List of new Student Proposals sent to The Linux Foundation") get 
+reviewed and a mentor proposed, a comment, or a negative score given, so 
+that I can assign mentors or ignore these proposals.
+
+VERY IMPORTANT: All must be done by the end of Monday.
+
+    Till
