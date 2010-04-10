@@ -1,114 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110Ab0DJUr1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 16:47:27 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:56960 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751766Ab0DJUr0 (ORCPT
+	id S1752131Ab0DJVDo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 17:03:44 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:53321 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751703Ab0DJVDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 16:47:26 -0400
-Date: Sat, 10 Apr 2010 22:47:14 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Chihau Chau <chihau@gmail.com>
-Cc: gregkh@suse.de, jochen.maes@sejo.be, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: dream: pmem: fix some code style issues
-Message-ID: <20100410204714.GA812@elf.ucw.cz>
-References: <1270926878-11272-1-git-send-email-chihau@gmail.com>
+	Sat, 10 Apr 2010 17:03:43 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: 2.6.31 regression: programs crashing after a couple of days of uptime with hibernation
+Date: Sat, 10 Apr 2010 23:03:29 +0200
+User-Agent: KMail/1.9.10
+Cc: linux-kernel@vger.kernel.org,
+       pm list <linux-pm@lists.linux-foundation.org>
+References: <201004012332.49454.linux@rainbow-software.org> <201004101103.21380.linux@rainbow-software.org> <201004102158.17454.rjw@sisk.pl>
+In-Reply-To: <201004102158.17454.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1270926878-11272-1-git-send-email-chihau@gmail.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <201004102303.32129.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2010-04-10 15:14:38, Chihau Chau wrote:
-> From: Chihau Chau <chihau@gmail.com>
-> 
-> This fixes some code style issues like prohibited spaces after that open
-> parenthesis '(' and before that close parenthesis ')', and lines over 80
-> characters.
-> 
-> Signed-off-by: Chihau Chau <chihau@gmail.com>
+On Saturday 10 April 2010 21:58:17 Rafael J. Wysocki wrote:
+> On Saturday 10 April 2010, Ondrej Zary wrote:
+> > On Friday 02 April 2010 18:58:28 Rafael J. Wysocki wrote:
+> > > On Friday 02 April 2010, Ondrej Zary wrote:
+> > > > On Friday 02 April 2010 00:33:55 Rafael J. Wysocki wrote:
+> > > > > On Friday 02 April 2010, Ondrej Zary wrote:
+> > > > > > On Thursday 01 April 2010 23:45:33 you wrote:
+> > > > > > > On Thursday 01 April 2010, Ondrej Zary wrote:
+> > > > > > > > Hello,
+> > > > > > > > with kernel 2.6.30, I can have uptime of more than a month on
+> > > > > > > > my desktop PC (with hibernation). It's impossible with
+> > > > > > > > 2.6.31. After 1 to 3 days, processes that were running during
+> > > > > > > > hibernation (e.g. konsole, kwin, kicker, xorg) start to crash
+> > > > > > > > randomly in very weird ways. The kernel itself does not seem
+> > > > > > > > to crash. When I run the crashed program again, it seems to
+> > > > > > > > work. Looks like some memory corruption.
+> > > > > > > >
+> > > > > > > > This bug is also present in 2.6.32 and 2.6.33.
+> > > > > > >
+> > > > > > > Is the kernel 32-bit or 64-bit?  What kind of CPU is there in
+> > > > > > > the box?
+> > > > > >
+> > > > > > It's old 32-bit i686 CPU - Cyrix MII.
+> > > > >
+> > > > > Please try with this patch applied:
+> > > > > http://git.kernel.org/?p=linux/kernel/git/mingo/linux-2.6-x86.git;a
+> > > > >=pat ch;h =8ae06d223f8203c72104e5c0c4ee49a000aedb42
+> > > >
+> > > > Thanks, I'll try it. But I doubt that it will fix the problem. There
+> > > > were no changes in hibernate_asm_32.S between 2.6.30 and 2.6.31.
+> > >
+> > > The change that exposed this issue was elsewhere in the x86 arch code. 
+> > > I don't know where exactly, but we surely didn't need the above patch
+> > > before.
+> >
+> > It did not help. It started crashing with 2.6.32 and this patch applied
+> > after two days.
+>
+> Well, no idea, then.
 
-ACK.
+So I'll try to bisect it again.
 
-> ---
->  drivers/staging/dream/pmem.c |   22 +++++++++++-----------
->  1 files changed, 11 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/staging/dream/pmem.c b/drivers/staging/dream/pmem.c
-> index 503ba21..3e4dd21 100644
-> --- a/drivers/staging/dream/pmem.c
-> +++ b/drivers/staging/dream/pmem.c
-> @@ -37,17 +37,17 @@
->   * the file should not be released until put_pmem_file is called */
->  #define PMEM_FLAGS_BUSY 0x1
->  /* indicates that this is a suballocation of a larger master range */
-> -#define PMEM_FLAGS_CONNECTED ( 0x1 << 1 )
-> +#define PMEM_FLAGS_CONNECTED (0x1 << 1)
->  /* indicates this is a master and not a sub allocation and that it is mmaped */
-> -#define PMEM_FLAGS_MASTERMAP ( 0x1 << 2 )
-> +#define PMEM_FLAGS_MASTERMAP (0x1 << 2)
->  /* submap and unsubmap flags indicate:
->   * 00: subregion has never been mmaped
->   * 10: subregion has been mmaped, reference to the mm was taken
->   * 11: subretion has ben released, refernece to the mm still held
->   * 01: subretion has been released, reference to the mm has been released
->   */
-> -#define PMEM_FLAGS_SUBMAP ( 0x1 << 3 )
-> -#define PMEM_FLAGS_UNSUBMAP ( 0x1 << 4 )
-> +#define PMEM_FLAGS_SUBMAP (0x1 << 3)
-> +#define PMEM_FLAGS_UNSUBMAP (0x1 << 4)
->  
->  
->  struct pmem_data {
-> @@ -152,7 +152,7 @@ struct pmem_info {
->  static struct pmem_info pmem[PMEM_MAX_DEVICES];
->  static int id_count;
->  
-> -#define PMEM_IS_FREE(id, index) ( !(pmem[id].bitmap[index].allocated) )
-> +#define PMEM_IS_FREE(id, index) (!(pmem[id].bitmap[index].allocated))
->  #define PMEM_ORDER(id, index) pmem[id].bitmap[index].order
->  #define PMEM_BUDDY_INDEX(id, index) (index ^ (1 << PMEM_ORDER(id, index)))
->  #define PMEM_NEXT_INDEX(id, index) (index + (1 << PMEM_ORDER(id, index)))
-> @@ -844,8 +844,8 @@ static int pmem_connect(unsigned long connect, struct file *file)
->  	src_data = (struct pmem_data *)src_file->private_data;
->  
->  	if (has_allocation(file) && (data->index != src_data->index)) {
-> -		printk(KERN_INFO "pmem: file is already mapped but doesn't match this"
-> -		       " src_file!\n");
-> +		printk(KERN_INFO "pmem: file is already mapped but doesn't "
-> +			"match this src_file!\n");
->  		ret = -EINVAL;
->  		goto err_bad_file;
->  	}
-> @@ -934,8 +934,8 @@ int pmem_remap(struct pmem_region *region, struct file *file,
->  	if (unlikely(!PMEM_IS_PAGE_ALIGNED(region->offset) ||
->  		 !PMEM_IS_PAGE_ALIGNED(region->len))) {
->  #if PMEM_DEBUG
-> -		printk(KERN_DEBUG "pmem: request for unaligned pmem suballocation "
-> -		       "%lx %lx\n", region->offset, region->len);
-> +		printk(KERN_DEBUG "pmem: request for unaligned pmem "
-> +			"suballocation %lx %lx\n", region->offset, region->len);
->  #endif
->  		return -EINVAL;
->  	}
-> @@ -1085,8 +1085,8 @@ static long pmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
->  				region.offset = pmem_start_addr(id, data);
->  				region.len = pmem_len(id, data);
->  			}
-> -			printk(KERN_INFO "pmem: request for physical address of pmem region "
-> -					"from process %d.\n", current->pid);
-> +			printk(KERN_INFO "pmem: request for physical address "
-> +			     "of pmem region from process %d.\n", current->pid);
->  			if (copy_to_user((void __user *)arg, &region,
->  						sizeof(struct pmem_region)))
->  				return -EFAULT;
+Here's a bug report so it won't get lost: 
+https://bugzilla.kernel.org/show_bug.cgi?id=15753
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Ondrej Zary
