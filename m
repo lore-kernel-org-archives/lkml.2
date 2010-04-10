@@ -1,63 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147Ab0DJSp0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 14:45:26 -0400
-Received: from fg-out-1718.google.com ([72.14.220.155]:16713 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab0DJSpZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 14:45:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=K1bFpFBhnhH2yZvR/P17NYMZmG+dhy9cLncVf6ElMyBc+HcDthXqA+qVqv2WMPSKz0
-         DVMu8F7bBv3s4EaErBfah6ST6uO9lu8d8LImrjVex3wELOn8F17L7AtaDLd7D09jR2XV
-         ehKICQfH+DKAKYl99FlW7SEcVQlCq0ekIoRzE=
-Message-ID: <4BC0C5F1.20309@gmail.com>
-Date: Sat, 10 Apr 2010 20:39:45 +0200
-From: Till Kamppeter <till.kamppeter@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100404 Thunderbird/3.0.4
+	id S1752189Ab0DJTAB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 15:00:01 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:59524 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751197Ab0DJTAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Apr 2010 15:00:00 -0400
+Date: Sat, 10 Apr 2010 20:51:45 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the
+ anon_vmas of a mergeable VMA
+Message-ID: <20100410185145.GB28952@a1.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Johannes Weiner <hannes@cmpxchg.org>,
+	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	Rik van Riel <riel@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Minchan Kim <minchan.kim@gmail.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+	Nick Piggin <npiggin@suse.de>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+References: <alpine.LFD.2.00.1004091546350.3558@i5.linux-foundation.org>
+ <alpine.LFD.2.00.1004091638290.3558@i5.linux-foundation.org>
+ <20100410003110.GI28964@cmpxchg.org>
+ <alpine.LFD.2.00.1004091730130.3558@i5.linux-foundation.org>
+ <20100410072714.GA9246@liondog.tnic>
+ <20100410112639.GA24708@a1.tnic>
+ <alpine.LFD.2.00.1004100821340.3558@i5.linux-foundation.org>
+ <20100410163828.GA25579@a1.tnic>
+ <alpine.LFD.2.00.1004100947400.3558@i5.linux-foundation.org>
+ <alpine.LFD.2.00.1004101101180.3558@i5.linux-foundation.org>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Greg KH <greg@kroah.com>,
-       Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-       "Luis R. Rodriguez" <mcgrof@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-wireless <linux-wireless@vger.kernel.org>,
-       Witold Sowa <witold.sowa@gmail.com>,
-       Johannes Berg <johannes@sipsolutions.net>
-Subject: Google Summer of Code 2010 - Please ASSIGN (not propose) mentors
- to the students
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1004101101180.3558@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, Apr 10, 2010 at 11:21:39AM -0700
 
-on Tuesday morning the distribution of the student slots to the 
-mentoring organizations will take place. The number of slots which each 
-organization gets depends mainly on how many student applications with 
-assigned mentor (not only proposed mentors) they have.
+> On Sat, 10 Apr 2010, Linus Torvalds wrote:
+> > On Sat, 10 Apr 2010, Borislav Petkov wrote:
+> > > 
+> > > And I got an oops again, this time the #GP from couple of days ago.
+> > 
+> > Oh damn. So the list corruption really does happen still.
+> 
+> Ho humm.
+> 
+> Maybe I'm crazy, but something started bothering me. And I started 
+> wondering: when is the 'page->mapping' of an anonymous page actually 
+> cleared?
+> 
+> The thing is, the mapping of an anonymous page is actually cleared only 
+> when the page is _freed_, in "free_hot_cold_page()". 
+> 
+> Now, let's think about that. And in particular, let's think about how that 
+> relates to the freeing of the 'anon_vma' that the page->mapping points to. 
+> 
+> The way the anon_vma is freed is when the mapping is torn down, and we do 
+> roughly:
+> 
+> 	tlb = tlb_gather_mmu(mm,..)
+> 	..
+> 	unmap_vmas(&tlb, vma ..
+> 	..
+> 	free_pgtables()
+> 	..
+> 	tlb_finish_mmu(tlb, start, end);
+> 
+> and we actually unmap all the pages in "unmap_vmas()", and then _after_ 
+> unmapping all the pages we do the "unlink_anon_vmas(vma);" in 
+> "free_pgtables()". Fine so far - the anon_vma stay around until after the 
+> page has been happily unmapped.
+> 
+> But "unmapped all the pages" is _not_ actually the same as "free'd all the 
+> pages". The actual _freeing_ of the page happens generally in 
+> tlb_finish_mmu(), because we can free the page only after we've flushed 
+> any TLB entries.
+> 
+> So what we have in that tlb_gather structure is a list of _pending_ pages 
+> to be freed, while we already actually free'd the anon_vmas earlier!
+> 
+> Now, the thing is, tlb_gather_mmu() begins a preempt-safe region (because 
+> we use a per-cpu variable), but as far as I can tell it is _not_ an 
+> RCU-safe region.
+> 
+> So I think we might actually get a real RCU freeing event while this all
+> happens. So now the 'anon_vma' that 'page->mapping' points to has not just 
+> been released back to the SLUB caches, the page itself might have been 
+> released too.
 
-So please ASSIGN a mentor to each good application of your work area.
+So, if I understand you correctly, the list_head anon_vma gets freed
+_before_ the page descriptor itself, therefore we still get a valid
+page->mapping in page_lock_anon_vma(). Maybe that explains the funny
+patterns in %r13. But how do they come to exist when the anon_vma is
+freed, shouldn't there be LIST_POISON or something recognizable?
 
-On the page with the list of student proposals
+Anyways, testing...
 
-http://socghop.appspot.com/gsoc/org/list_proposals/google/gsoc2010/lf
-
-all good applications must appear in the second list ("Student Proposals 
-already under review sent to The Linux Foundation") and in the column 
-"Mentor" must be a name of a mentor, NOT simply "N Proposed". To assign 
-a mentor to a student click on the proposal in the list to get the 
-proposal's page, there, under "Admin options" select the desired mentor 
-from the list. If you want to mentor and you are not listed, see my 
-previous posting on how to get mentor.
-
-If you do not mentor by yourself but the one who should mentor the 
-student is not available in the moment so that he cannot do the steps to 
-get mentor and to assign himself to the student until end of Monday, 
-please assign yourself as mentor to get the student considered when the 
-slots get distributed. The mentor assignment can be changed at any time.
-
-    Till
+-- 
+Regards/Gruss,
+Boris.
