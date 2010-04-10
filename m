@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777Ab0DJPOH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 11:14:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38627 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751527Ab0DJPOE (ORCPT
+	id S1751423Ab0DJP2Z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 11:28:25 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:32922 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab0DJP2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 11:14:04 -0400
-Date: Sat, 10 Apr 2010 11:27:00 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>,
-       Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH -tip v2 7/8] perf probe: Remove die() from probe-finder
- code
-Message-ID: <20100410142700.GN3908@ghostprotocols.net>
-References: <20100406220542.13329.45837.stgit@localhost6.localdomain6>
- <20100406220629.13329.71869.stgit@localhost6.localdomain6>
- <4BBFB5CE.7070104@redhat.com>
- <20100410012815.GC16721@ghostprotocols.net>
- <4BBFFC86.4020201@redhat.com>
+	Sat, 10 Apr 2010 11:28:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=AAABkUE6heY5UqDs6gbhwqOZf4rOlgjSSIymFeU+QFSqG/w1V3bv7Ikk0PIsaJvZrr
+         lA6NkXiqwyU0/YUr/q8YxeSkLm3ncikcTqpCl7avBNjfegSfRAcprB2fVDu5xu75v4Mt
+         s6gsFsslSlj1vp/FAKRTbgGwrO4OK2fLQpaVQ=
+Date: Sat, 10 Apr 2010 17:28:16 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 6/6] procfs: Kill the bkl in ioctl
+Message-ID: <20100410152813.GE5204@nowhere>
+References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <20100331172208.GB5163@nowhere> <4BB485ED.80806@s5r6.in-berlin.de> <201004011445.32657.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BBFFC86.4020201@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <201004011445.32657.arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Apr 10, 2010 at 12:20:22AM -0400, Masami Hiramatsu escreveu:
-> Arnaldo Carvalho de Melo wrote:
-> > Em Fri, Apr 09, 2010 at 07:18:38PM -0400, Masami Hiramatsu escreveu:
-> >> Hi Arnaldo,
-> >>
-> >> Has this code done what you suggested? :)
-> >> I'd like to have your comment.
+On Thu, Apr 01, 2010 at 02:45:32PM +0200, Arnd Bergmann wrote:
+> On Thursday 01 April 2010, Stefan Richter wrote:
+> > > 
+> > > I wonder if we should actually just turn all these into unlocked_ioctl
+> > > directly. And then bring a warn on ioctl, and finally schedule the removal
+> > > of this callback.
 > > 
-> > It improves the current situation, yes, but there are still cases there
-> > where die() is called, I assume that is left for later, right?
-> 
-> With the next (8/8) patch, all die()s are removed at least from 
-> probe-{event,finder}.c, except for all x*() wrappers.
-
-Ok
- 
+> > A side note:  A considerable portion of this particular commit in Arnd's
+> > git actually does not deal with .ioctl->.unlocked_ioctl at all, but
+> > purely with .llseek.  Many(?) of these changes deal with .ioctl and
+> > .llseek together.  (Arnd also says so in the last paragraph of his
+> > changelog.)
 > > 
-> > Like here, the TUI/GUI can try to add a probe but if it fails it can
-> > still continue providing things like a "perf top" window, analysing
-> > perf.data files, doing 'perf diffs', etc.
+> > IOW there are less .ioctl implementations left than one could think from
+> > a look at the diffstat.
 > 
-> Sure, this die() is removed by next (8/8) patch. Sorry, I've split it because
-> of easy to review...
-
-Ok
- 
-> >>>  	tvar->value = xstrdup(regs);
-> >>>  	if (ref) {
-> >>>  		tvar->ref = xzalloc(sizeof(struct kprobe_trace_arg_ref));
-> > 
-> > We have to kill those xzcalloc, etc, too they are die() in disguise :-)
+> Given our recent discussions on the llseek topic, it's probably better to
+> revert most of the changes that purely deal with llseek. My current idea
+> is to use an explicit default_llseek only if one of the following is given:
 > 
-> Hmm, I think that will cost high, because only failing to allocate memory,
-> which theoretically means we can't continue to operate it. In that case,
-> we'd better just use backtrace() and die().
+> - we convert ioctl to unlocked_ioctl in the same file_operations, or
+> - the module uses the big kernel lock explicitly elsewhere.
+> 
+> Even then, there may be a number of cases where we can show it not
+> to be necessary, e.g. when the driver does not care about f_pos.
+> Concurrent llseek is racy by nature, so in most drivers, using the
+> BKL in llseek does not gain anything over using i_mutex.
+> 
+> 	Arnd
 
-Consider a situation where we are trying to allocate lots of objects
-allocated for some big operation (adding probes for all functions in all
-threads, whatever), we can just say to the user "hey, you don't have
-memory to do this" but other operations are possible, so calling
-panic(), oops, die() is not the right thing to do.
 
-- Arnaldo
+
+So you mean we should attribute explicit default_llseek to the evil
+places instead of explicit generic_file_llseek in the safe ones?
+That's not a bad idea as it would result in much less changes.
+
+The problem happens the day you switch to generic_file_llseek() as the
+new default llseek(), how do you prove that all remaining fops
+that don't implement .llseek don't use the bkl? There will be
+hundreds of them and saying "we've looked all of them and they don't
+need it" will be a scary justification.
+
+On the opposite, attributing explicit generic_file_llseek or
+non_seekable_open on the safe places and default_llseek on
+the dozens of others doubtful places is easier to get a
+safe conclusion.
+
+But yeah we should try, at least attributing explicit
+default_llseek won't harm, quite the opposite.
+
