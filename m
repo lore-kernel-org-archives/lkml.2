@@ -1,66 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755062Ab0DJDDv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 23:03:51 -0400
-Received: from mail.digidescorp.com ([66.244.163.200]:40028 "EHLO
-	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754283Ab0DJDDu (ORCPT
+	id S1755633Ab0DJDVI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 23:21:08 -0400
+Received: from qw-out-2122.google.com ([74.125.92.27]:56553 "EHLO
+	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754491Ab0DJDVD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 23:03:50 -0400
-X-Spam-Processed: digidescorp.com, Fri, 09 Apr 2010 22:03:49 -0500
-X-Authenticated-Sender: steve@digidescorp.com
-X-MDRemoteIP: 99.144.234.3
-X-Return-Path: prvs=1716912bc1=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-From: "Steven J. Magnani" <steve@digidescorp.com>
-To: microblaze-uclinux@itee.uq.edu.au
-Cc: monstr@monstr.eu, linux-kernel@vger.kernel.org,
-       "Steven J. Magnani" <steve@digidescorp.com>
-Subject: [PATCH] microblaze: Quiet section mismatch warnings
-Date: Fri,  9 Apr 2010 22:03:37 -0500
-Message-Id: <1270868617-16551-1-git-send-email-steve@digidescorp.com>
-X-Mailer: git-send-email 1.6.0.6
+	Fri, 9 Apr 2010 23:21:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Xa1asbWXwP5dbnnMYFI5JSLZ8dbi7X4U/gZ5W/aMtVF9d4tA/MkeZtH6z1oIn5P1jQ
+         W9wwfaSXcypw2amV2m8bvKO7j4ctg/BrOo0SImTUEZzxIJ6LGycMyabh54gh2PWvvciQ
+         p5kDa1lcekLZxpeKa/XeMCeh4oZ/i2i7PzC8w=
+MIME-Version: 1.0
+In-Reply-To: <4BBF6206.2070103@archlinux.org>
+References: <4BBF6206.2070103@archlinux.org>
+Date: Sat, 10 Apr 2010 11:21:02 +0800
+Message-ID: <w2vd82e647a1004092021nadf2e47fu7bf9ccd9e7f928d5@mail.gmail.com>
+Subject: Re: Warning in ath9k after update from 2.6.33.1 to 2.6.33.2
+From: Ming Lei <tom.leiming@gmail.com>
+To: =?ISO-8859-1?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-_start is located in .text, which causes mismatch warnings with 
-machine_early_init() and start_kernel() in .init.text.
+2010/4/10 Thomas Bächler <thomas@archlinux.org>:
+> Since I upgraded from 2.6.33.1 to .2, I get the following warning
+> sometimes, related to wireless:
+>
+> ------------[ cut here ]------------
+> WARNING: at kernel/softirq.c:143 local_bh_enable_ip+0x82/0xb0()
+> Hardware name: TECRA A11
+> Modules linked in: ipv6 rfcomm sco bnep l2cap bridge stp llc
+> cpufreq_ondemand tun ext3 jbd btusb bluetooth uvcvideo videodev
+> snd_seq_dummy v4l1_compat arc4 snd_seq_oss ecb v4l2_compat_ioctl32
+> snd_seq_midi_event snd_hda_codec_intelhdmi snd_seq snd_seq_device
+> tpm_infineon snd_hda_codec_realtek ath9k snd_pcm_oss ath9k_common
+> snd_mixer_oss snd_hda_intel snd_hda_codec mac80211 snd_hwdep snd_pcm
+> snd_timer ath9k_hw snd joydev soundcore ath sdhci_pci kvm_intel
+> snd_page_alloc ehci_hcd iTCO_wdt evdev sdhci iTCO_vendor_support kvm
+> usbcore mmc_core e1000e psmouse tpm_tis cfg80211 tpm toshiba_acpi
+> acpi_cpufreq led_class tpm_bios rfkill toshiba_bluetooth serio_raw
+> pcspkr sr_mod thermal cdrom battery sg ac freq_table processor rtc_cmos
+> rtc_core rtc_lib fpu aesni_intel cryptd aes_x86_64 aes_generic xts
+> gf128mul dm_crypt dm_mod sd_mod ahci libata scsi_mod ext4 mbcache jbd2
+> crc16 i915 drm_kms_helper drm i2c_algo_bit button i2c_core video output
+> intel_agp [last unloaded: microcode]
+> Pid: 2571, comm: wpa_supplicant Not tainted 2.6.33-ARCH #1
+> Call Trace:
+>  [<ffffffff81052a08>] warn_slowpath_common+0x78/0xb0
+>  [<ffffffff81052a4f>] warn_slowpath_null+0xf/0x20
+>  [<ffffffff81059682>] local_bh_enable_ip+0x82/0xb0
+>  [<ffffffff8135d42f>] _raw_spin_unlock_bh+0x1f/0x30
+>  [<ffffffffa04018ed>] ath_tx_node_cleanup+0x19d/0x1c0 [ath9k]
+>  [<ffffffffa03fc607>] ath9k_sta_notify+0x57/0xb0 [ath9k]
+>  [<ffffffffa039bbc4>] __sta_info_unlink+0x174/0x220 [mac80211]
+>  [<ffffffffa039bca8>] sta_info_unlink+0x38/0x60 [mac80211]
+>  [<ffffffffa03a2639>] ieee80211_set_disassoc+0x1e9/0x290 [mac80211]
+>  [<ffffffffa03a2e89>] ieee80211_mgd_deauth+0x159/0x160 [mac80211]
+>  [<ffffffff8104d700>] ? default_wake_function+0x0/0x10
+>  [<ffffffffa03a9b69>] ieee80211_deauth+0x19/0x20 [mac80211]
+>  [<ffffffffa02426de>] __cfg80211_mlme_deauth+0xee/0x130 [cfg80211]
+>  [<ffffffff8135baad>] ? __mutex_lock_slowpath+0x26d/0x370
+>  [<ffffffffa0246839>] __cfg80211_disconnect+0x159/0x1d0 [cfg80211]
+>  [<ffffffffa0248f9c>] cfg80211_wext_siwmlme+0x8c/0xa0 [cfg80211]
+>  [<ffffffff8133e6b7>] ioctl_standard_iw_point+0x207/0x3a0
+>  [<ffffffffa0248f10>] ? cfg80211_wext_siwmlme+0x0/0xa0 [cfg80211]
+>  [<ffffffff8133e850>] ? ioctl_standard_call+0x0/0xd0
+>  [<ffffffff8133e8e9>] ioctl_standard_call+0x99/0xd0
+>  [<ffffffff812b2660>] ? __dev_get_by_name+0xa0/0xc0
+>  [<ffffffff8133dce7>] wext_ioctl_dispatch+0x1f7/0x210
+>  [<ffffffff8133f330>] ? ioctl_private_call+0x0/0xa0
+>  [<ffffffff8133de91>] wext_handle_ioctl+0x41/0x90
+>  [<ffffffff812b8299>] dev_ioctl+0x679/0x850
+>  [<ffffffff812a0522>] sock_ioctl+0xe2/0x290
+>  [<ffffffff812a369d>] ? sys_recvfrom+0x13d/0x160
+>  [<ffffffff811324c8>] vfs_ioctl+0x38/0xd0
+>  [<ffffffff81132670>] do_vfs_ioctl+0x80/0x560
+>  [<ffffffff81132bd1>] sys_ioctl+0x81/0xa0
+>  [<ffffffff8100b1f9>] ? do_device_not_available+0x9/0x10
+>  [<ffffffff81009fc2>] system_call_fastpath+0x16/0x1b
+> ---[ end trace 8dbf12cb72787a6d ]---
+>
+> This machine is an Intel Core i5-520M running x86_64, wireless is ath9k.
+>
+>
 
-Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
----
-diff -uprN a/arch/microblaze/kernel/head.S b/arch/microblaze/kernel/head.S
---- a/arch/microblaze/kernel/head.S	2010-04-09 21:52:36.000000000 -0500
-+++ b/arch/microblaze/kernel/head.S	2010-04-09 21:56:26.000000000 -0500
-@@ -28,6 +28,7 @@
-  * for more details.
-  */
- 
-+#include <linux/init.h>
- #include <linux/linkage.h>
- #include <asm/thread_info.h>
- #include <asm/page.h>
-@@ -49,7 +50,7 @@ swapper_pg_dir:
- 
- #endif /* CONFIG_MMU */
- 
--	.text
-+	__HEAD
- ENTRY(_start)
- #if CONFIG_KERNEL_BASE_ADDR == 0
- 	brai	TOPHYS(real_start)
-diff -uprN a/arch/microblaze/kernel/vmlinux.lds.S b/arch/microblaze/kernel/vmlinux.lds.S
---- a/arch/microblaze/kernel/vmlinux.lds.S	2010-04-09 21:52:36.000000000 -0500
-+++ b/arch/microblaze/kernel/vmlinux.lds.S	2010-04-09 21:54:58.000000000 -0500
-@@ -24,7 +24,8 @@ SECTIONS {
- 	.text : AT(ADDR(.text) - LOAD_OFFSET) {
- 		_text = . ;
- 		_stext = . ;
--		*(.text .text.*)
-+		HEAD_TEXT
-+		TEXT_TEXT
- 		*(.fixup)
- 		EXIT_TEXT
- 		EXIT_CALL
+I does not find the issue on 2.6.34-rc3-wireless-next,  using wext and trigger
+a disassociation.
 
+How do you reproduce the warning?
+
+Thanks,
+
+-- 
+Lei Ming
