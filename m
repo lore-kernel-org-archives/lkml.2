@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751231Ab0DJICy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 04:02:54 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:48843 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab0DJICt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 04:02:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=hpnuuJ+l1+rLlAeQUsObNoxionXiB6G+/rH7zsfdfJbNw7njn++ktxITa7/TViZDfz
-         RqWhyadsDi+TOaCzTebcWQrGHsWEvig4pHvC8SpqBtEghEte0c2+PZ5kHMpetFQcD/BH
-         aouLs4tbS7tZC2Lx2mT1HGhHI9XZI2V3lb6Yo=
-Date: Sat, 10 Apr 2010 16:06:31 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Janos Haar <janos.haar@netcenter.hu>
-Cc: Christian Kujau <lists@nerdbynature.de>, david@fromorbit.com,
-       axboe@kernel.dk, LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-       linux-mm@kvack.org, xiyou.wangcong@gmail.com,
-       kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look
-	please!...)
-Message-ID: <20100410080631.GA9772@hack>
-References: <20100402230905.GW3335@dastard> <22c901cad333$7a67db60$0400a8c0@dcccs> <20100404103701.GX3335@dastard> <2bd101cad4ec$5a425f30$0400a8c0@dcccs> <20100405224522.GZ3335@dastard> <3a5f01cad6c5$8a722c00$0400a8c0@dcccs> <20100408025822.GL11036@dastard> <00bb01cad70d$a814c2c0$0400a8c0@dcccs> <alpine.DEB.2.01.1004091435170.29272@bogon.housecafe.de> <099001cad836$39dc6860$0400a8c0@dcccs>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <099001cad836$39dc6860$0400a8c0@dcccs>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1751273Ab0DJIPr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 04:15:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32321 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751062Ab0DJIPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Apr 2010 04:15:41 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1270852752-25278-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <1270852752-25278-1-git-send-email-paulmck@linux.vnet.ibm.com> <20100409223843.GA25133@linux.vnet.ibm.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+       laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, eric.dumazet@gmail.com
+Subject: Re: [PATCH tip/core/urgent 1/3] rcu: add rcu_access_pointer and rcu_dereference_protected
+Date: Sat, 10 Apr 2010 09:13:50 +0100
+Message-ID: <9850.1270887230@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 10, 2010 at 12:44:28AM +0200, Janos Haar wrote:
-> Hello,
->
+Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-Hi,
+> This patch adds variants of rcu_dereference() that handle situations
+> where the RCU-protected data structure cannot change, perhaps due to
+> our holding the update-side lock, or where the RCU-protected pointer is
+> only to be fetched, not dereferenced.  These are needed due to some
+> performance concerns with using rcu_dereference() where it is not
+> required, aside from the need for lockdep/sparse checking.
+> 
+> The new rcu_access_pointer() primitive is for the case where the pointer
+> is be fetch and not dereferenced.  This primitive may be used without
+> protection, RCU or otherwise, due to the fact that it uses ACCESS_ONCE().
+> 
+> The new rcu_dereference_protected() primitive is for the case where updates
+> are prevented, for example, due to holding the update-side lock.  This
+> primitive does neither ACCESS_ONCE() nor smp_read_barrier_depends(), so
+> can only be used when updates are somehow prevented.
+> 
+> Suggested-by: David Howells <dhowells@redhat.com>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-> I am just started to test the stable-queue patch series on 2.6.32.10.
-> Now running, we will see...
-> The 2.6.33.2 made 4 crashes in the last 3 days. :-(
-> This was more worse than the original 2.6.32.10.
->
-> (I am very interested, anyway, this is the last shot of this server.
-> The owner giving me an ultimate.
-> If the server crashes again in the next week, i need to replace the 
-> entire HW, the OS, and the services as well...)
->
-
-I would recommend you to use a distribution-released kernel,
-rather than a stable kernel from kernel.org, because usually
-the distribution maintains a longer supported kernel than
-kernel.org.
-
-Just a little suggestion. Hope it helps for you to choose Linux. ;)
-
-Thanks.
-
--- 
-Live like a child, think like the god.
- 
+Acked-by: David Howells <dhowells@redhat.com>
