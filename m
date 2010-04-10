@@ -1,194 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751020Ab0DJEU7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 00:20:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27053 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750838Ab0DJEU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 00:20:57 -0400
-Message-ID: <4BBFFC86.4020201@redhat.com>
-Date: Sat, 10 Apr 2010 00:20:22 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>,
-       Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH -tip v2 7/8] perf probe: Remove die() from probe-finder
- code
-References: <20100406220542.13329.45837.stgit@localhost6.localdomain6> <20100406220629.13329.71869.stgit@localhost6.localdomain6> <4BBFB5CE.7070104@redhat.com> <20100410012815.GC16721@ghostprotocols.net>
-In-Reply-To: <20100410012815.GC16721@ghostprotocols.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751037Ab0DJFNK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 01:13:10 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35148
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750784Ab0DJFNH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Apr 2010 01:13:07 -0400
+Date: Fri, 09 Apr 2010 22:13:07 -0700 (PDT)
+Message-Id: <20100409.221307.246951787.davem@davemloft.net>
+To: cristiklein@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tcp: add setsockopt to disable slow start after idle
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1270863015-19597-1-git-send-email-cristiklein@gmail.com>
+References: <1270863015-19597-1-git-send-email-cristiklein@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo Carvalho de Melo wrote:
-> Em Fri, Apr 09, 2010 at 07:18:38PM -0400, Masami Hiramatsu escreveu:
->> Hi Arnaldo,
->>
->> Has this code done what you suggested? :)
->> I'd like to have your comment.
-> 
-> It improves the current situation, yes, but there are still cases there
-> where die() is called, I assume that is left for later, right?
+From: Cristian KLEIN <cristiklein@gmail.com>
+Date: Sat, 10 Apr 2010 03:30:15 +0200
 
-With the next (8/8) patch, all die()s are removed at least from 
-probe-{event,finder}.c, except for all x*() wrappers.
+> Allows user-space to override the sysctl
+> net.ipv4.tcp_slow_start_after_idle, on a per-socket bases, using
+> setsockopt().
+> 
+> Slow start after idle can harm some scientific applications which
+> interleave computation and communication. Assume we have an iterative
+> applications, each iteration consisting of a computation and a
+> communication phase. If the computation phase takes long enough (i.e.
+> more that 2*RTT), the communication phase will always slow start and
+> might never reach the wire speed.
+> 
+> This patch allows each application to disable slow start after idle,
+> just like we allow delay-sensitive applications (e.g. telnet, SSH) to
+> disable NAGLE.
+> 
+> Signed-off-by: Cristian KLEIN <cristiklein@gmail.com>
 
-> 
-> More comments below.
->  
->> Thank you,
->>
->> Masami Hiramatsu wrote:
->>> Remove die() and DIE_IF() code from util/probe-finder.c since
->>> these 'sudden death' in utility functions make reusing it from
->>> other code (especially tui/gui) difficult.
->>>
->>> Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
->>> Cc: Ingo Molnar <mingo@elte.hu>
->>> Cc: Paul Mackerras <paulus@samba.org>
->>> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
->>> Cc: Peter Zijlstra <peterz@infradead.org>
->>> Cc: Mike Galbraith <efault@gmx.de>
->>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->>> ---
->>>
->>>  tools/perf/util/probe-event.c  |    4 
->>>  tools/perf/util/probe-finder.c |  517 +++++++++++++++++++++++++---------------
->>>  2 files changed, 322 insertions(+), 199 deletions(-)
->>>
->>> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
->>> index bef2805..7893b32 100644
->>> --- a/tools/perf/util/probe-event.c
->>> +++ b/tools/perf/util/probe-event.c
->>> @@ -151,10 +151,10 @@ static int try_to_find_kprobe_trace_events(struct perf_probe_event *pev,
->>>  
->>>  	/* Error path */
->>>  	if (need_dwarf) {
->>> -		if (ntevs == -ENOENT)
->>> +		if (ntevs == -EBADF)
->>>  			pr_warning("No dwarf info found in the vmlinux - "
->>>  				"please rebuild with CONFIG_DEBUG_INFO=y.\n");
->>> -		die("Could not analyze debuginfo.");
->>> +		die("Failed to analyze debuginfo.");
-> 
-> Like here, the TUI/GUI can try to add a probe but if it fails it can
-> still continue providing things like a "perf top" window, analysing
-> perf.data files, doing 'perf diffs', etc.
+We specifically did not add a socket option for this facility.
 
-Sure, this die() is removed by next (8/8) patch. Sorry, I've split it because
-of easy to review...
+It is a very dangerous option to enable, and depends deeply
+upon the characteristics of your network and the paths by
+which remote hosts are reached.
 
->>>  	}
->>>  	pr_debug("An error occurred in debuginfo analysis."
->>>  		 " Try to use symbols.\n");
->>> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
->>> index 1f45285..4a57504 100644
->>> --- a/tools/perf/util/probe-finder.c
->>> +++ b/tools/perf/util/probe-finder.c
->>> @@ -196,19 +196,7 @@ static bool die_compare_name(Dwarf_Die *dw_die, const char *tname)
->>>  {
->>>  	const char *name;
->>>  	name = dwarf_diename(dw_die);
->>> -	DIE_IF(name == NULL);
->>> -	return strcmp(tname, name);
->>> -}
->>> -
->>> -/* Get entry pc(or low pc, 1st entry of ranges)  of the die */
->>> -static Dwarf_Addr die_get_entrypc(Dwarf_Die *dw_die)
->>> -{
->>> -	Dwarf_Addr epc;
->>> -	int ret;
->>> -
->>> -	ret = dwarf_entrypc(dw_die, &epc);
->>> -	DIE_IF(ret == -1);
->>> -	return epc;
->>> +	return name ? strcmp(tname, name) : -1;
-> 
-> This change is correct, with the stated intent :-)
-> 
->>>  }
->>>  
->>>  /* Get type die, but skip qualifiers and typedef */
->>> @@ -390,7 +378,7 @@ static Dwarf_Die *die_find_member(Dwarf_Die *st_die, const char *name,
->>>   */
->>>  
->>>  /* Show a location */
->>> -static void convert_location(Dwarf_Op *op, struct probe_finder *pf)
->>> +static int convert_location(Dwarf_Op *op, struct probe_finder *pf)
-> 
-> Yeah, there are still lots of places, in other areas that don't return a
-> status, just printing a warning and silently failing, like in the trace
-> parsing routines
-> 
->>>  {
->>>  	unsigned int regn;
->>>  	Dwarf_Word offs = 0;
->>> @@ -400,8 +388,11 @@ static void convert_location(Dwarf_Op *op, struct probe_finder *pf)
->>>  
->>>  	/* If this is based on frame buffer, set the offset */
->>>  	if (op->atom == DW_OP_fbreg) {
->>> -		if (pf->fb_ops == NULL)
->>> -			die("The attribute of frame base is not supported.\n");
->>> +		if (pf->fb_ops == NULL) {
->>> +			pr_warning("The attribute of frame base is not "
->>> +				   "supported.\n");
->>> +			return -ENOTSUP;
->>> +		}
-> 
-> Correct, if you look at tools/perf/util/debug.c, eprintf() looks if
-> we're in TUI mode, use_browser is true and either fprintfs(stderr) if
-> not or calls a routine to put it at the "status line" (bottom) in the
-> TUI.
-> 
-> Having a list with the last messages so that we can have a log window,
-> or keeping it in a log file that would then be browser is an enhancement
-> to be made.
-> 
->>>  		ref = true;
->>>  		offs = op->number;
->>>  		op = &pf->fb_ops[0];
->>> @@ -419,50 +410,63 @@ static void convert_location(Dwarf_Op *op, struct probe_finder *pf)
->>>  		ref = true;
->>>  	} else if (op->atom == DW_OP_regx) {
->>>  		regn = op->number;
->>> -	} else
->>> -		die("DW_OP %d is not supported.", op->atom);
->>> +	} else {
->>> +		pr_warning("DW_OP %d is not supported.\n", op->atom);
->>> +		return -ENOTSUP;
->>> +	}
-> 
-> correct
-> 
->>>  	regs = get_arch_regstr(regn);
->>> -	if (!regs)
->>> -		die("%u exceeds max register number.", regn);
->>> +	if (!regs) {
->>> +		pr_warning("%u exceeds max register number.\n", regn);
->>> +		return -ERANGE;
->>> +	}
->>>  
->>>  	tvar->value = xstrdup(regs);
->>>  	if (ref) {
->>>  		tvar->ref = xzalloc(sizeof(struct kprobe_trace_arg_ref));
-> 
-> We have to kill those xzcalloc, etc, too they are die() in disguise :-)
+Therefore, only the system administrator can determine whether it is
+safe to enable this, and that's why it can only be changed via sysctl.
+Lettting arbitrary applications change this aspect of TCP is beyond
+dangerous.
 
-Hmm, I think that will cost high, because only failing to allocate memory,
-which theoretically means we can't continue to operate it. In that case,
-we'd better just use backtrace() and die().
-
-Thank you,
-
--- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+I will not be applying this patch.
