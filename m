@@ -1,181 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab0DJB21 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 21:28:27 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:57551 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab0DJB2Z (ORCPT
+	id S1754386Ab0DJBat (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 21:30:49 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:55514 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370Ab0DJBar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 21:28:25 -0400
-Date: Fri, 9 Apr 2010 22:28:15 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>,
-       Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH -tip v2 7/8] perf probe: Remove die() from probe-finder
-	code
-Message-ID: <20100410012815.GC16721@ghostprotocols.net>
-References: <20100406220542.13329.45837.stgit@localhost6.localdomain6> <20100406220629.13329.71869.stgit@localhost6.localdomain6> <4BBFB5CE.7070104@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BBFB5CE.7070104@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 9 Apr 2010 21:30:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=VWiiWNdOZd2MXuSCjwzSpAiDgcr4SvJE5gyUdihkKpzWrE6vpf7umcYc8uvXhL9kbR
+         OuTe41dWwzP5du7t/ygWTNDwAzDmkZaAM2k2N37iRt86fc10sC6q2r0EEuM1kRB6cokd
+         38a6rF61AvqT5Pzk1EJ0rXxDQL3eTTH5eXZkU=
+From: Cristian KLEIN <cristiklein@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Cristian KLEIN <cristiklein@gmail.com>
+Subject: [PATCH] tcp: add setsockopt to disable slow start after idle
+Date: Sat, 10 Apr 2010 03:30:15 +0200
+Message-Id: <1270863015-19597-1-git-send-email-cristiklein@gmail.com>
+X-Mailer: git-send-email 1.7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Apr 09, 2010 at 07:18:38PM -0400, Masami Hiramatsu escreveu:
-> Hi Arnaldo,
-> 
-> Has this code done what you suggested? :)
-> I'd like to have your comment.
+Allows user-space to override the sysctl
+net.ipv4.tcp_slow_start_after_idle, on a per-socket bases, using
+setsockopt().
 
-It improves the current situation, yes, but there are still cases there
-where die() is called, I assume that is left for later, right?
+Slow start after idle can harm some scientific applications which
+interleave computation and communication. Assume we have an iterative
+applications, each iteration consisting of a computation and a
+communication phase. If the computation phase takes long enough (i.e.
+more that 2*RTT), the communication phase will always slow start and
+might never reach the wire speed.
 
-More comments below.
+This patch allows each application to disable slow start after idle,
+just like we allow delay-sensitive applications (e.g. telnet, SSH) to
+disable NAGLE.
+
+Signed-off-by: Cristian KLEIN <cristiklein@gmail.com>
+---
+ include/linux/tcp.h      |    4 +++-
+ net/ipv4/tcp.c           |   10 ++++++++++
+ net/ipv4/tcp_ipv4.c      |    1 +
+ net/ipv4/tcp_minisocks.c |    1 +
+ net/ipv4/tcp_output.c    |    4 ++--
+ 5 files changed, 17 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/tcp.h b/include/linux/tcp.h
+index a778ee0..132aab0 100644
+--- a/include/linux/tcp.h
++++ b/include/linux/tcp.h
+@@ -105,6 +105,7 @@ enum {
+ #define TCP_COOKIE_TRANSACTIONS	15	/* TCP Cookie Transactions */
+ #define TCP_THIN_LINEAR_TIMEOUTS 16      /* Use linear timeouts for thin streams*/
+ #define TCP_THIN_DUPACK         17      /* Fast retrans. after 1 dupack */
++#define TCP_SLOW_START_AFTER_IDLE 18    /* Slow start after transmission idle */
  
-> Thank you,
-> 
-> Masami Hiramatsu wrote:
-> > Remove die() and DIE_IF() code from util/probe-finder.c since
-> > these 'sudden death' in utility functions make reusing it from
-> > other code (especially tui/gui) difficult.
-> > 
-> > Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Paul Mackerras <paulus@samba.org>
-> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Cc: Mike Galbraith <efault@gmx.de>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > ---
-> > 
-> >  tools/perf/util/probe-event.c  |    4 
-> >  tools/perf/util/probe-finder.c |  517 +++++++++++++++++++++++++---------------
-> >  2 files changed, 322 insertions(+), 199 deletions(-)
-> > 
-> > diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> > index bef2805..7893b32 100644
-> > --- a/tools/perf/util/probe-event.c
-> > +++ b/tools/perf/util/probe-event.c
-> > @@ -151,10 +151,10 @@ static int try_to_find_kprobe_trace_events(struct perf_probe_event *pev,
-> >  
-> >  	/* Error path */
-> >  	if (need_dwarf) {
-> > -		if (ntevs == -ENOENT)
-> > +		if (ntevs == -EBADF)
-> >  			pr_warning("No dwarf info found in the vmlinux - "
-> >  				"please rebuild with CONFIG_DEBUG_INFO=y.\n");
-> > -		die("Could not analyze debuginfo.");
-> > +		die("Failed to analyze debuginfo.");
+ /* for TCP_INFO socket option */
+ #define TCPI_OPT_TIMESTAMPS	1
+@@ -345,7 +346,8 @@ struct tcp_sock {
+ 	u8	nonagle     : 4,/* Disable Nagle algorithm?             */
+ 		thin_lto    : 1,/* Use linear timeouts for thin streams */
+ 		thin_dupack : 1,/* Fast retransmit on first dupack      */
+-		unused      : 2;
++		slow_start_after_idle : 1,/* Slow start after transmission idle */
++		unused      : 1;
+ 
+ /* RTT measurement */
+ 	u32	srtt;		/* smoothed round trip time << 3	*/
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 6afb6d8..3cf3863 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -2252,6 +2252,13 @@ static int do_tcp_setsockopt(struct sock *sk, int level,
+ 		}
+ 		break;
+ 
++	case TCP_SLOW_START_AFTER_IDLE:
++		if (val)
++			tp->slow_start_after_idle = 1;
++		else
++			tp->slow_start_after_idle = 0;
++		break;
++
+ 	case TCP_THIN_LINEAR_TIMEOUTS:
+ 		if (val < 0 || val > 1)
+ 			err = -EINVAL;
+@@ -2497,6 +2504,9 @@ static int do_tcp_getsockopt(struct sock *sk, int level,
+ 	case TCP_NODELAY:
+ 		val = !!(tp->nonagle&TCP_NAGLE_OFF);
+ 		break;
++	case TCP_SLOW_START_AFTER_IDLE:
++		val = tp->slow_start_after_idle;
++		break;
+ 	case TCP_CORK:
+ 		val = !!(tp->nonagle&TCP_NAGLE_CORK);
+ 		break;
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index f4df5f9..1380902 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -1449,6 +1449,7 @@ struct sock *tcp_v4_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
+ 		newtp->advmss = tcp_sk(sk)->rx_opt.user_mss;
+ 
+ 	tcp_initialize_rcv_mss(newsk);
++	newtp->slow_start_after_idle = sysctl_tcp_slow_start_after_idle;
+ 
+ #ifdef CONFIG_TCP_MD5SIG
+ 	/* Copy over the MD5 key from the original socket */
+diff --git a/net/ipv4/tcp_minisocks.c b/net/ipv4/tcp_minisocks.c
+index 4199bc6..1e6f0bb 100644
+--- a/net/ipv4/tcp_minisocks.c
++++ b/net/ipv4/tcp_minisocks.c
+@@ -495,6 +495,7 @@ struct sock *tcp_create_openreq_child(struct sock *sk, struct request_sock *req,
+ 			newtp->rx_opt.ts_recent_stamp = 0;
+ 			newtp->tcp_header_len = sizeof(struct tcphdr);
+ 		}
++		newtp->slow_start_after_idle = sysctl_tcp_slow_start_after_idle;
+ #ifdef CONFIG_TCP_MD5SIG
+ 		newtp->md5sig_info = NULL;	/*XXX*/
+ 		if (newtp->af_specific->md5_lookup(sk, newsk))
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index f181b78..175d499 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -154,7 +154,7 @@ static void tcp_event_data_sent(struct tcp_sock *tp,
+ 	struct inet_connection_sock *icsk = inet_csk(sk);
+ 	const u32 now = tcp_time_stamp;
+ 
+-	if (sysctl_tcp_slow_start_after_idle &&
++	if (tp->slow_start_after_idle &&
+ 	    (!tp->packets_out && (s32)(now - tp->lsndtime) > icsk->icsk_rto))
+ 		tcp_cwnd_restart(sk, __sk_dst_get(sk));
+ 
+@@ -1279,7 +1279,7 @@ static void tcp_cwnd_validate(struct sock *sk)
+ 		if (tp->packets_out > tp->snd_cwnd_used)
+ 			tp->snd_cwnd_used = tp->packets_out;
+ 
+-		if (sysctl_tcp_slow_start_after_idle &&
++		if (tp->slow_start_after_idle &&
+ 		    (s32)(tcp_time_stamp - tp->snd_cwnd_stamp) >= inet_csk(sk)->icsk_rto)
+ 			tcp_cwnd_application_limited(sk);
+ 	}
+-- 
+1.7.0
 
-Like here, the TUI/GUI can try to add a probe but if it fails it can
-still continue providing things like a "perf top" window, analysing
-perf.data files, doing 'perf diffs', etc.
-
-> >  	}
-> >  	pr_debug("An error occurred in debuginfo analysis."
-> >  		 " Try to use symbols.\n");
-> > diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-> > index 1f45285..4a57504 100644
-> > --- a/tools/perf/util/probe-finder.c
-> > +++ b/tools/perf/util/probe-finder.c
-> > @@ -196,19 +196,7 @@ static bool die_compare_name(Dwarf_Die *dw_die, const char *tname)
-> >  {
-> >  	const char *name;
-> >  	name = dwarf_diename(dw_die);
-> > -	DIE_IF(name == NULL);
-> > -	return strcmp(tname, name);
-> > -}
-> > -
-> > -/* Get entry pc(or low pc, 1st entry of ranges)  of the die */
-> > -static Dwarf_Addr die_get_entrypc(Dwarf_Die *dw_die)
-> > -{
-> > -	Dwarf_Addr epc;
-> > -	int ret;
-> > -
-> > -	ret = dwarf_entrypc(dw_die, &epc);
-> > -	DIE_IF(ret == -1);
-> > -	return epc;
-> > +	return name ? strcmp(tname, name) : -1;
-
-This change is correct, with the stated intent :-)
-
-> >  }
-> >  
-> >  /* Get type die, but skip qualifiers and typedef */
-> > @@ -390,7 +378,7 @@ static Dwarf_Die *die_find_member(Dwarf_Die *st_die, const char *name,
-> >   */
-> >  
-> >  /* Show a location */
-> > -static void convert_location(Dwarf_Op *op, struct probe_finder *pf)
-> > +static int convert_location(Dwarf_Op *op, struct probe_finder *pf)
-
-Yeah, there are still lots of places, in other areas that don't return a
-status, just printing a warning and silently failing, like in the trace
-parsing routines
-
-> >  {
-> >  	unsigned int regn;
-> >  	Dwarf_Word offs = 0;
-> > @@ -400,8 +388,11 @@ static void convert_location(Dwarf_Op *op, struct probe_finder *pf)
-> >  
-> >  	/* If this is based on frame buffer, set the offset */
-> >  	if (op->atom == DW_OP_fbreg) {
-> > -		if (pf->fb_ops == NULL)
-> > -			die("The attribute of frame base is not supported.\n");
-> > +		if (pf->fb_ops == NULL) {
-> > +			pr_warning("The attribute of frame base is not "
-> > +				   "supported.\n");
-> > +			return -ENOTSUP;
-> > +		}
-
-Correct, if you look at tools/perf/util/debug.c, eprintf() looks if
-we're in TUI mode, use_browser is true and either fprintfs(stderr) if
-not or calls a routine to put it at the "status line" (bottom) in the
-TUI.
-
-Having a list with the last messages so that we can have a log window,
-or keeping it in a log file that would then be browser is an enhancement
-to be made.
-
-> >  		ref = true;
-> >  		offs = op->number;
-> >  		op = &pf->fb_ops[0];
-> > @@ -419,50 +410,63 @@ static void convert_location(Dwarf_Op *op, struct probe_finder *pf)
-> >  		ref = true;
-> >  	} else if (op->atom == DW_OP_regx) {
-> >  		regn = op->number;
-> > -	} else
-> > -		die("DW_OP %d is not supported.", op->atom);
-> > +	} else {
-> > +		pr_warning("DW_OP %d is not supported.\n", op->atom);
-> > +		return -ENOTSUP;
-> > +	}
-
-correct
-
-> >  	regs = get_arch_regstr(regn);
-> > -	if (!regs)
-> > -		die("%u exceeds max register number.", regn);
-> > +	if (!regs) {
-> > +		pr_warning("%u exceeds max register number.\n", regn);
-> > +		return -ERANGE;
-> > +	}
-> >  
-> >  	tvar->value = xstrdup(regs);
-> >  	if (ref) {
-> >  		tvar->ref = xzalloc(sizeof(struct kprobe_trace_arg_ref));
-
-We have to kill those xzcalloc, etc, too they are die() in disguise :-)
-
-- Arnaldo
