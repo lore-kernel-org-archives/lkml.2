@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910Ab0DJUZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 16:25:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52302 "EHLO mx1.redhat.com"
+	id S1751890Ab0DJUeX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 16:34:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7279 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750829Ab0DJUZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 16:25:27 -0400
-Message-ID: <4BC0DE61.3020001@redhat.com>
-Date: Sat, 10 Apr 2010 16:24:01 -0400
+	id S1750838Ab0DJUeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Apr 2010 16:34:21 -0400
+Message-ID: <4BC0E079.80800@redhat.com>
+Date: Sat, 10 Apr 2010 16:32:57 -0400
 From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
 MIME-Version: 1.0
@@ -32,54 +32,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 04/10/2010 04:05 PM, Linus Torvalds wrote:
 
-> And vma_adjust is the one place that does that anon_vma_merge(), which is
-> apart from the actual unmapping sequence the only other place that
-> actually free's anon_vmas. So there are reasons to be very suspicious of
-> that code.
+> This patch is scary and untested, but the more I look at that code, the
+> more convinced I am that vma_adjust was _really_ badly screwed up. The
+> patch below may make things worse. I'll test it myself too, but I'm
+> sending it out first, since I was writing the email as I was looking at
+> the piece of cr*p.
 
-It frees anon_vma_chain structures, but not actual anon_vmas.
+Your patch looks correct.  Gotta love how before,
+"vma" could be either exporter or importer!
 
-Walking the anon_vma (from rmap) requires the anon_vma->lock,
-which is taken in anon_vma_merge whenever a chain is unlinked.
+I'm guessing that it did not break before my
+changes, because of plain old luck...
 
-> And I think that code can actually lose an anon_vma chain. It's totally
-> screwing up the "import anonvma" case: when it does
->
->                          if (anon_vma_clone(importer, vma)) {
->                                  return -ENOMEM;
->                          }
->                          importer->anon_vma = anon_vma;
->
-> we can actually have "importer == vma", but "anon_vma = next->anon_vma".
-
-A few lines up from that code, we have:
-
-         if (vma->anon_vma && (insert || importer || start != 
-vma->vm_start))
-                 anon_vma = vma->anon_vma;
-
-So anon_vma should always be vma->anon_vma.
-
-If we have already imported an anon_vma, we will not
-do so twice, because of the !importer->anon_vma check.
-
-What am I overlooking?
-
-> In which case we actually end up with an _empty_ chain (because importer
-> didn't have a chain to begin with!) but "importer->anon_vma" points to an
-> anon_vma.
-
-If we import a chain, from vma to importer, importer->anon_vma
-will be equal to vma->anon_vma.
-
-I do not see how 'importer' could get a state different from 'vma'.
-
-> Also, the conditional nesting makes no sense (the whole anon_vma_clone()
-> only makes sense if importer is set, and it is only ever set _inside_ the
-> earlier if-statement, so the whole code should be moved inside there), nor
-> does some of the comments.
-
-No argument there, vma_adjust is very hard to read and it took
-me a few days to convince myself that my changes kept things
-equivalent to how they were before.
-
+Acked-by: Rik van Riel <riel@redhat.com>
