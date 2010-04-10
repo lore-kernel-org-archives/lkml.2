@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697Ab0DJQO5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 12:14:57 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:34160 "EHLO
+	id S1751691Ab0DJQYv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 12:24:51 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:45561 "EHLO
 	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428Ab0DJQOz (ORCPT
+	with ESMTP id S1751341Ab0DJQYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 12:14:55 -0400
+	Sat, 10 Apr 2010 12:24:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZEZWcQtBnfQOxN5JSooZWIwYbz2/UW1PD/oJApVtnECLTFpZhWdTOONSAFBx21GUV5
-         MUPR9vlZ1efhDXJh6q2UzsAyR74ovyQh3UVBGSpyard+UQX225D8RJBxQSxZA8yr3wi+
-         l4WHMrwKLPdBhl/IOCbQYkksOazZ9G4903mnQ=
-Date: Sat, 10 Apr 2010 18:14:45 +0200
+        b=waepOQ6T9gUHHKP8hiHJyUwzRQ+rk4GkBTmEuG6d98R4e/CFuAAo+UeMJj+Xy6Yeaq
+         LeF4Yixv8vB6MQTcTc/FBIKCxtrCrX6No76JSKo1Bs4J7Rw7f5qyzSsyW7AmdeDE3aGd
+         lAuCXiJYm6ypY+BwHqJde3fbSUow36MHg53LI=
+Date: Sat, 10 Apr 2010 18:24:42 +0200
 From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
+To: Al Viro <viro@zeniv.linux.org.uk>
 Cc: Alexey Dobriyan <adobriyan@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
        Thomas Gleixner <tglx@linutronix.de>,
        Andrew Morton <akpm@linux-foundation.org>,
        John Kacur <jkacur@redhat.com>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
+       Ingo Molnar <mingo@elte.hu>, Arnd Bergmann <arnd@arndb.de>
 Subject: Re: [PATCH 6/6] procfs: Kill the bkl in ioctl
-Message-ID: <20100410161443.GG5204@nowhere>
+Message-ID: <20100410162439.GH5204@nowhere>
 References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <201003312221.23953.arnd@arndb.de> <20100331214058.GE5163@nowhere> <201004011442.38536.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
