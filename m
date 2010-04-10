@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751652Ab0DJOBt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 10:01:49 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:47687 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab0DJOBr convert rfc822-to-8bit (ORCPT
+	id S1751704Ab0DJOR5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Apr 2010 10:17:57 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:60986 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403Ab0DJORx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 10:01:47 -0400
-Subject: Re: Question about lock sequence
-From: Peter Zijlstra <peterz@infradead.org>
-To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-In-Reply-To: <4BC05677.7070406@dcl.info.waseda.ac.jp>
-References: <4BC05677.7070406@dcl.info.waseda.ac.jp>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 10 Apr 2010 16:01:51 +0200
-Message-ID: <1270908111.4222.4.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	Sat, 10 Apr 2010 10:17:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=f07AgS5t86YnVoh4RWZ6f+bFuH1yQnIWacIZme/RgqOxJKYBFQScj/o7h1oQhAzVLX
+         nQbp8GN4HgUPvGBXbUmB8JDrEhOymErK9L1Mdz3ooEH7aPHb2HlUlQAUfv+gnABomwv6
+         5+RktkYtstrAl67fNPQfHgdSeUGhAK53i0yqg=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+       Matt Mackall <mpm@selenic.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH] random: Forbid llseek on random chardev
+Date: Sat, 10 Apr 2010 16:17:44 +0200
+Message-Id: <1270909064-7845-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.6.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-04-10 at 19:44 +0900, Hitoshi Mitake wrote:
-> Hi,
-> 
-> I found that my understand about lockdep is completely wrong :( ,
-> so state machine of perf lock should be fixed before optimization.
-> 
-> And I found that behaviour related to some of spin locks are strange.
-> The concrete example is lock sequences targeting dcache_lock (defined in
-> head of fs/dcache.c).
-> 
-> I made a little (and not essential) change to perf lock, and observe
-> lock sequence targeting it.
-> Changed perf lock shows sequence of locks in time order,
-> and I grepped the output of it with dcache, like this:
-> 
-> % sudo ./perf lock report | grep dcache
-> 
-> The head part of result is this:
-> # <name>-<pid> <time (in u64)> <action> <address of lockdep> <name of lock>
-> perf-3238 92430534170 acquire: 0xffffffff81a4b398 dcache_lock
-> perf-3238 92430536714 acquire: 0xffffffff81a4b398 dcache_lock
-> perf-3238 92431444481 acquire: 0xffffffff81a4b398 dcache_lock
-> perf-3238 92431446061 acquired: 0xffffffff81a4b398 dcache_lock
-> perf-3238 92431448157 acquire: 0xffffffff81a4b398 dcache_lock
-> perf-3238 92431449670 acquired: 0xffffffff81a4b398 dcache_lock
-> perf-3238 92432371136 acquire: 0xffffffff81a4b398 dcache_lock
-> perf-3238 92432372712 acquired: 0xffffffff81a4b398 dcache_lock
-> perf-3238 92432374718 acquire: 0xffffffff81a4b398 dcache_lock
-> perf-3238 92432376173 acquired: 0xffffffff81a4b398 dcache_lock
-> perf-3238 92433315563 acquire: 0xffffffff81a4b398 dcache_lock
-> perf-3238 92433317173 acquired: 0xffffffff81a4b398 dcache_lock
-> 
-> There are too many acquire and acquired without corresponding release
-> (or contended).
-> If dcache_lock is rwlock and these acquires mean read locks, this is not
-> so strange.
-> But, for me, this is a pattern of dead lock.
-> Of course perf lock finished its work, so there is no actual dead lock.
-> 
-> If you know something about this behaviour of lock, could you tell me?
+From: Arnd Bergmann <arnd@arndb.de>
 
-Well dcache_lock is a regular spinlock and there is only one of them, my
-guess is that your timeline got messed up somehow.
+Seeking on /dev/random and /dev/urandom is pointless.
+Using generic_file_llseek means we no longer need to
+take the BKL if anyone tries to seek on these.
 
-Also, there doesn't appear to be a proper balance between acquires and
-releases.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ drivers/char/random.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 2fd3d39..513c685 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -1169,6 +1169,7 @@ const struct file_operations random_fops = {
+ 	.poll  = random_poll,
+ 	.unlocked_ioctl = random_ioctl,
+ 	.fasync = random_fasync,
++	.open = nonseekable_open,
+ };
+ 
+ const struct file_operations urandom_fops = {
+@@ -1176,6 +1177,7 @@ const struct file_operations urandom_fops = {
+ 	.write = random_write,
+ 	.unlocked_ioctl = random_ioctl,
+ 	.fasync = random_fasync,
++	.open = nonseekable_open,
+ };
+ 
+ /***************************************************************
+-- 
+1.6.2.3
 
