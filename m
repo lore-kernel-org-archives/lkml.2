@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584Ab0DJAil (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Apr 2010 20:38:41 -0400
-Received: from mail-in-05.arcor-online.net ([151.189.21.45]:35814 "EHLO
-	mail-in-05.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751145Ab0DJAih (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Apr 2010 20:38:37 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-01.arcor-online.net 57F53332676
-Subject: Re: [RFC] What are the goals for the architecture of an in-kernel
-	IR  system?
-From: hermann pitton <hermann-pitton@arcor.de>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Andy Walls <awalls@radix.net>,
-       Devin Heitmueller <dheitmueller@kernellabs.com>,
-       James Hogan <james@albanarts.com>, Jon Smirl <jonsmirl@gmail.com>,
-       Pavel Machek <pavel@ucw.cz>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Krzysztof Halasa <khc@pm.waw.pl>,
-       Christoph Bartelmus <lirc@bartelmus.de>, j@jannau.net, jarod@redhat.com,
-       jarod@wilsonet.com, kraxel@redhat.com, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-       superm1@ubuntu.com
-In-Reply-To: <4BBFB925.7080606@redhat.com>
-References: <9e4733910912060952h4aad49dake8e8486acb6566bc@mail.gmail.com>
-	 <9e4733910912151338n62b30af5i35f8d0963e6591c@mail.gmail.com>
-	 <4BAB7659.1040408@redhat.com> <201004090821.10435.james@albanarts.com>
-	 <1270810226.3764.34.camel@palomino.walls.org> <4BBF253A.8030406@redhat.com>
-	 <g2k829197381004091455m20368cc6r63df4a4f00d36b45@mail.gmail.com>
-	 <1270851240.3038.51.camel@palomino.walls.org> <4BBFB925.7080606@redhat.com>
-Content-Type: text/plain
-Date: Sat, 10 Apr 2010 02:38:23 +0200
-Message-Id: <1270859903.8003.16.camel@pc07.localdom.local>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-5.fc8) 
+	id S1752364Ab0DJAm6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Apr 2010 20:42:58 -0400
+Received: from mail.gmx.net ([213.165.64.20]:52925 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750958Ab0DJAm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Apr 2010 20:42:57 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1/3h2IeRfH3d/PjwU1J4IBZJAm15XSF/nBQ13FVDY
+	vjAm2IKfd0VPCL
+Message-ID: <4BBFC98C.5010805@gmx.de>
+Date: Sat, 10 Apr 2010 02:42:52 +0200
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+MIME-Version: 1.0
+To: Jonathan Corbet <corbet@lwn.net>
+CC: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
+       JosephChan@via.com.tw, ScottFang@viatech.com.cn,
+       Deepak Saxena <dsaxena@laptop.org>,
+       linux-fbdev-devel@lists.sourceforge.net
+Subject: Re: [PATCH 08/16] viafb: Do not probe for LVDS/TMDS on OLPC XO-1.5
+References: <1270746946-12467-1-git-send-email-corbet@lwn.net>	<1270746946-12467-9-git-send-email-corbet@lwn.net>	<4BBF9EE7.50707@gmx.de> <20100409181942.175b375a@bike.lwn.net>
+In-Reply-To: <20100409181942.175b375a@bike.lwn.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.56999999999999995
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-Am Freitag, den 09.04.2010, 20:32 -0300 schrieb Mauro Carvalho Chehab:
-> Andy Walls wrote:
-> > On Fri, 2010-04-09 at 17:55 -0400, Devin Heitmueller wrote:
-> >> On Fri, Apr 9, 2010 at 9:01 AM, Mauro Carvalho Chehab
-> >> <mchehab@redhat.com> wrote:
-> >>> [1] Basically, a keycode (like KEY_POWER) could be used to wake up the machine. So, by
-> >>> associating some scancode to KEY_POWER via ir-core, the driver can program the hardware
-> >>> to wake up the machine with the corresponding scancode. I can't see a need for a change at
-> >>> ir-core to implement such behavior. Of course, some attributes at sysfs can be added
-> >>> to enable or disable this feature, and to control the associated logic, but we first
-> >>> need to implement the wakeup feature at the hardware driver, and then adding some logic
-> >>> at ir-core to add the non-hardware specific code there.
-> >> Really?  Have you actually seen any hardware where a particular scan
-> >> code can be used to wake up the hardware?  The only hardware I have
-> >> seen has the ability to unsuspend on arrival of IR traffic, but you
-> >> didn't have the granularity to dictate that it only wake up on
-> >> particular scancodes.
-> > 
-> > The CX23888 and CX23102 can do it.  Basically any IR pulse pattern your
-> > heart desires; within reason.  And any carrier freq you want too; within
-> > reason.
-> > 
-> > But let's be real, the cx23885, cx231xx, and cx25840 modules are nowhere
-> > near properly supporing suspend/resume for their main video and DMA
-> > functions, AFAIK.
+Jonathan Corbet schrieb:
+> On Fri, 09 Apr 2010 23:40:55 +0200
+> Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
 > 
-> AFAIK, only saa7134 have a good suspend/resume code [1]. You may be watching TV,
-> do a suspend and waking the hardware again, and you'll keep seeing the same
-> channel (I tested it some time ago, when the proper suspend code were added,
-> on analog mode, with alsa enabled). Other drivers can suspend/resume, but
-> they won't properly restore the video registers, so, you'll see artifacts when
-> it returns.
-
-Yes, that was Maxim with enough testers around and Matthias Schwarzott
-had fixes.
-
-To remind, we don't recover from suspend on DVB, needs to reload the
-driver once. We are also not MFE ready with mixed init calls through v4l
-and dvb.
-
-But yes, analog is on leading edge on that ;)
-
-Cheers,
-Hermann
-
-> So, yes, you're right: before any suspend/resume code on those drivers, we
-> first need to add some code to properly handle kernel threads and work queues
-> during suspend, and to restore all the registers to a sane state at resume,
-> before implementing IR wakeup on them.
+>> I don't like the idea of OLPC specific code. Isn't there any way to 
+>> speed this up in general?
 > 
-> In the case of mceusb, as there is already an userspace code for it on lirc,
-> it would probably not be that hard to make this feature to work with ir-core.
-> 
-> [1] Yet, none of the in-hardware decoders allow resume, AFAIK. With a software
-> decoder, the IR IRQ might be used to wake, but this means that everything,
-> even a glitch, would wake the hardware, so this won't work neither.
-> 
+> Architecture-specific code happens.  OLPCs are wired differently; if
+> you go trying to do LVDS out those GPIO ports on an OLPC, you'll not
+> end up talking to the hardware you think you're talking to.  The best
+> thing to do is to avoid it altogether.
 
+*sigh* I feared it would be something like this.
+
+>> There is not yet even an option for OLPC_XO_1_5 (in contrast to 
+>> CONFIG_OLPC) in mainline. Is such a thing planned?
+> 
+> Yes, it is.  That's part of the remaining OLPC support code which has
+> also been brought forward to 2.6.34 with the intention of mainlining it.
+> 
+>> I can't really see anything that would speak for accepting this patch 
+>> now in current mainline, sorry.
+> 
+> If you can come up with a better solution to the problem, I'm all
+> ears.  But without it you'll have a hard time running mainline kernels
+> on XO 1.5 systems.  It is all coming, but the OLPC folks are scrambling
+> to get everything together; I don't think we really need to make things
+> harder for them.
+
+Sadly no as you probably know the OLPC hardware much better than me.
+However I do not intend to give the OLPC folks a hard time.
+
+> That said, machine_is_olpc() is properly defined for all
+> configurations, so the #ifdefs can (and should) come out.
+
+I'm not sure I get you right here. If you talk about removing the 
+defines and only letting the machine check that is something that I 
+would accept now. If this is not what you meant I think it would be 
+better to move this patch to the series adding the config option.
+
+
+Thanks,
+
+Florian Tobias Schandinat
