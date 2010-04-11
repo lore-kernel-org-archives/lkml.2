@@ -1,45 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab0DKPE0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 11:04:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8737 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751812Ab0DKPEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 11:04:24 -0400
-Message-ID: <4BC1E4A4.1070103@redhat.com>
-Date: Sun, 11 Apr 2010 18:03:00 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1752140Ab0DKPHb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 11:07:31 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:51910 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752032Ab0DKPHa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Apr 2010 11:07:30 -0400
+Date: Sun, 11 Apr 2010 17:07:18 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Bernie Thompson <bernie@plugable.com>
+Cc: roberto@unbit.it, gregkh@suse.de, Cyril Hrubis <metan@ucw.cz>,
+       kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: staging: udlfb -- staging version does not work, external does
+Message-ID: <20100411150718.GA1401@ucw.cz>
+References: <20100411072625.GA9926@elf.ucw.cz> <n2g480988181004110742w2ce92bfdr4f0f01216f879fe8@mail.gmail.com>
 MIME-Version: 1.0
-To: Ben Gamari <bgamari.foss@gmail.com>
-CC: Andi Kleen <andi@firstfloor.org>, Arjan van de Ven <arjan@infradead.org>,
-       linux-kernel@vger.kernel.org, tytso@mit.edu, npiggin@suse.de,
-       mingo@elte.hu, Ruald Andreae <ruald.a@gmail.com>,
-       Jens Axboe <jens.axboe@oracle.com>, Olly Betts <olly@survex.com>,
-       martin f krafft <madduck@madduck.net>
-Subject: Re: Poor interactive performance with I/O loads with fsync()ing
-References: <4b9fa440.12135e0a.7fc8.ffffe745@mx.google.com>	<4baeaee5.c5c2f10a.7187.2688@mx.google.com>	<20100327204233.0d84542a@infradead.org>	<4baf624c.48c3f10a.16d0.ffffccb8@mx.google.com>	<87y6hcyu85.fsf@basil.nowhere.org> <4bbf401e.a3b9e70a.13f3.4460@mx.google.com>
-In-Reply-To: <4bbf401e.a3b9e70a.13f3.4460@mx.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <n2g480988181004110742w2ce92bfdr4f0f01216f879fe8@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2010 05:56 PM, Ben Gamari wrote:
-> On Mon, 29 Mar 2010 00:08:58 +0200, Andi Kleen<andi@firstfloor.org>  wrote:
->    
->> Ben Gamari<bgamari.foss@gmail.com>  writes:
->> ext4/XFS/JFS/btrfs should be better in this regard
->>
->>      
-> I am using btrfs, so yes, I was expecting things to be better. Unfortunately,
-> the improvement seems to be non-existent under high IO/fsync load.
->
->    
+Hi!
 
-btrfs is known to perform poorly under fsync.
+> Thanks for the bug report!
+
+You are welcome :-).
+
+> > I tried getting udlfb to work in 2.6.34-rc*, and could not.
+> 
+> What CPU arch are you on, and is it 32 or 64?
+
+32bit Intel Core Duo.
+
+> > 1) it hates vga console. If text-mode vga console is used (not
+> > vesafb), system dies immeditaly during insmod or during boot if
+> > monolithic kernel is used.
+> 
+> It is a kernel oops? Where does the crash happen?  Can you email any
+> udlfb-specific output in logs (especially /var/log/kern.log)?
+
+It just locks :-(.
+
+> > 2) it does not display anything. With vesafb, it will not lockup the
+> > system, and /dev/fb1 is created... Unfortunately, all I get is green
+> > screen.
+> 
+> The green screen means udlfb has initialized device and started
+> rendering.   So what this likely means is everything is fine -- just
+> fbcon has matched against fb0, which is why it's not using the fb1
+> udlfb screen.
+
+Yep, but I still should be able to produce output on it.
+
+> > (I tried testing with cat /bin/bash > /dev/fb1 and cat /dev/fb0 >
+> > /dev/fb1).
+> 
+> I don't think redirects like that will work.  The fbcon module loads
+> against one fb, and can only be switch with utilities like "fbset"
+
+IMO they should work. First one should fill the screen with ~random
+noise, and second should copy graphical representation on fb0 to
+fb1. If they have same resolution and color depth, I should be looking
+at copy of my console...
+
+(And it does work with this driver:
+
+> > So I tried
+> >
+> >    Roberto De Ioris roberto at unbit.it
+> >    Wed Jun 10 08:00:07 PDT 2009 
+
+).
+
+								Pavel
 
 -- 
-error compiling committee.c: too many arguments to function
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
