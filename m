@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab0DKUOK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 16:14:10 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:37984 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752229Ab0DKUOJ (ORCPT
+	id S1752840Ab0DKUSs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 16:18:48 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35632
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752507Ab0DKUSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 16:14:09 -0400
-Date: Sun, 11 Apr 2010 22:14:26 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>,
-       kernel list <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@osdl.org>
-Subject: Re: LOCALVERSION_AUTO considered harmful
-Message-ID: <20100411201426.GC25294@elf.ucw.cz>
-References: <20100411164701.GA7558@elf.ucw.cz>
- <20100412185136.GA13171@x200>
- <g2v10f740e81004111158r4d4714a1w23b8521d5d595b29@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <g2v10f740e81004111158r4d4714a1w23b8521d5d595b29@mail.gmail.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 11 Apr 2010 16:18:46 -0400
+Date: Sun, 11 Apr 2010 13:18:50 -0700 (PDT)
+Message-Id: <20100411.131850.226764423.davem@davemloft.net>
+To: cristiklein@gmail.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] tcp: add setsockopt to disable slow start after idle
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4BC218B6.8050703@gmail.com>
+References: <4BC06A5F.6070804@gmail.com>
+	<20100410.154709.201110995.davem@davemloft.net>
+	<4BC218B6.8050703@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 2010-04-11 20:58:58, Geert Uytterhoeven wrote:
-> On Mon, Apr 12, 2010 at 20:51, Alexey Dobriyan <adobriyan@gmail.com> wrote:
-> > On Sun, Apr 11, 2010 at 06:47:01PM +0200, Pavel Machek wrote:
-> >> @@ -99,6 +98,11 @@ config LOCALVERSION_AUTO
-> >>         appended after any matching localversion* files, and after the value
-> >>         set in CONFIG_LOCALVERSION.
-> >>
-> >> +       Unfortunately, such finegrained versioning will mean that you will
-> >> +       not be able to use modules for development; even "make modules"
-> >> +       will change module versions, making recompiled modules impossible
-> >> +       to insert into old kernel.
-> >
-> > That's conditional BS.
-> > Turn off CONFIG_MODVERSIONS already.
-> 
-> Yeah, I disabled it ages ago. Even then (before git, probably even
-> before bitkeeper)
-> I had hard times inserting modules...
+From: Cristian KLEIN <cristiklein@gmail.com>
+Date: Sun, 11 Apr 2010 20:45:10 +0200
 
-I _had_ it off
+> Without this patch, an application which needs this behaviour
+> (i.e. not to slow start after idle) is forced to implement its own
+> UDP-based protocol with all the congestion control, retransmission
+> etc. Undue congestion might still occur.
 
- # CONFIG_MODVERSIONS is not set
+Ask your system administrator to set the existing sysctl, because it
+is a physical network attribute whether this behavior is safe or not.
 
-It seems some checking survives CONFIG_MODVERSIONS unset and that
-checking is strict enough to refuse module load after one "make
-modules" with LOCALVERSION_AUTO on...
-									Pavel
+And if it is safe, it is safe for all applications, there is no reason
+for one application to ask for it and others to not.  If it's legal,
+it helps all applications without exception.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Your attempts to tie this to NAGLE is complete nonsense.
+
+NAGLE changes acking behavior, whereas this feature controls in what
+way we trust congestion control information we've probed for in the
+past.
