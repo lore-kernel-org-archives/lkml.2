@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462Ab0DKJVQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 05:21:16 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57799
+	id S1751509Ab0DKJYO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 05:24:14 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37045
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751361Ab0DKJVP (ORCPT
+	by vger.kernel.org with ESMTP id S1751414Ab0DKJYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 05:21:15 -0400
-Date: Sun, 11 Apr 2010 02:21:18 -0700 (PDT)
-Message-Id: <20100411.022118.35346455.davem@davemloft.net>
+	Sun, 11 Apr 2010 05:24:13 -0400
+Date: Sun, 11 Apr 2010 02:24:16 -0700 (PDT)
+Message-Id: <20100411.022416.107236208.davem@davemloft.net>
 To: yinghai@kernel.org
 Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
        torvalds@linux-foundation.org
@@ -27,15 +27,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Yinghai Lu <yinghai@kernel.org>
 Date: Sun, 11 Apr 2010 02:17:09 -0700
 
-> caused by:
-> 
-> commit 2626419ad5be1a054d350786b684b41d23de1538
-> Author: David S. Miller <davem@davemloft.net>
-> Date:   Thu Apr 8 11:32:30 2010 -0700
-> 
->     tcp: Set CHECKSUM_UNNECESSARY in tcp_init_nondata_skb
-> 
 > it will make sshd server, telnet server and vnc server doesn't respond
 > connecting request anymore.
 
-I'll either fix or revert this, thanks for reporting.
+What kind of network device are you using?
+
+And regardless of the underlying physical network device, are you
+going over some virtual device such as a tunnel, a bonding device, or
+a virtualization network interface?
+
+Thanks.
