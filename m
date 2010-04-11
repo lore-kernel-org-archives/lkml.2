@@ -1,74 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab0DKXoS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 19:44:18 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:49456 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156Ab0DKXoQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 19:44:16 -0400
-From: "Hans-Peter Jansen" <hpj@urpla.net>
-To: linux-kernel@vger.kernel.org
-Subject: Re: Poor interactive performance with I/O loads with fsync()ing
-Date: Mon, 12 Apr 2010 01:43:44 +0200
-User-Agent: KMail/1.9.10
-Cc: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-       Avi Kivity <avi@redhat.com>, Ben Gamari <bgamari.foss@gmail.com>,
-       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu, npiggin@suse.de,
-       Ingo Molnar <mingo@elte.hu>, Ruald Andreae <ruald.a@gmail.com>,
-       Jens Axboe <jens.axboe@oracle.com>, Olly Betts <olly@survex.com>,
-       martin f krafft <madduck@madduck.net>
-References: <4b9fa440.12135e0a.7fc8.ffffe745@mx.google.com> <20100411184227.GL18855@one.firstfloor.org> <alpine.LFD.2.00.1004112332380.18009@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1004112332380.18009@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-Message-Id: <201004120143.45643.hpj@urpla.net>
-X-Provags-ID: V01U2FsdGVkX1+FYj64cy7IwC/KSAwpVXIY1Z4vTwgiK+RXWiF
- MjrON37e2ybRxd18XWLeWDrS6msbhXV1XtCRehivyZctto+3zf
- NysJMJndru02gt7LSI9Bgh9xkwugWJC
+	id S1753283Ab0DKXzo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 19:55:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39684 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753129Ab0DKXzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Apr 2010 19:55:42 -0400
+Subject: Re: [PATCH 1/3] fbmem: fix aperture overlapping check
+From: Dave Airlie <airlied@redhat.com>
+To: marcin.slusarz@gmail.com
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       dri-devel <dri-devel@lists.freedesktop.org>,
+       nouveau@lists.freedesktop.org, linux-fbdev@vger.kernel.org,
+       Peter Jones <pjones@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1270929334-3742-1-git-send-email-marcin.slusarz@gmail.com>
+References: <1270929334-3742-1-git-send-email-marcin.slusarz@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 12 Apr 2010 09:54:28 +1000
+Message-ID: <1271030068.3554.1.camel@localhost>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 11 April 2010, 23:54:34 Thomas Gleixner wrote:
-> On Sun, 11 Apr 2010, Andi Kleen wrote:
-> > > XFS does not do much better. Just moved my VM images back to ext for
-> > > that reason.
-> >
-> > Did you move from XFS to ext3?  ext3 defaults to barriers off, XFS on,
-> > which can make a big difference depending on the disk. You can
-> > disable them on XFS too of course, with the known drawbacks.
-> >
-> > XFS also typically needs some tuning to get reasonable log sizes.
-> >
-> > My point was merely (before people chime in with counter examples)
-> > that XFS/btrfs/jfs don't suffer from the "need to sync all transactions
-> > for every fsync" issue. There can (and will be) still other issues.
->
-> Yes, I moved them back from XFS to ext3 simply because moving them
-> from ext3 to XFS turned out to be a completely unusable disaster.
->
-> I know that I can tweak knobs on XFS (or any other file system), but I
-> would not have expected that it sucks that much for KVM with the
-> default settings which are perfectly fine for the other use cases
-> which made us move to XFS.
+On Sat, 2010-04-10 at 21:55 +0200, marcin.slusarz@gmail.com wrote:
+> fb_do_apertures_overlap is returning wrong value when one aperture
+> is completely whithin the other. Add generic ranges_overlap macro
+> (probably kernel.h candidate) and use it here.
+> 
 
-Thomas, what Andi was merely turning out, is that xfs has a really 
-concerning different default: barriers, that hurts with fsync(). 
+That doesn't seem right.
 
-In order to make a fair comparison of the two, you may want to mount xfs 
-with nobarrier or ext3 with barrier option set, and _then_ check which one 
-is sucking less.
+The rules are:
 
-I guess, that outcome will be interesting for quite a bunch of people in the 
-audience (including me¹).
+the generic aperture has to be equal or smaller than the hw aperture,
+otherwise the generic driver will be trashing random hw pieces on the
+machine.
 
-Pete
+So with that in mind, the check makes sure the generic aperture starts
+somewhere inside the hw aperture, which the test clearly gets right.
 
-¹) while in transition of getting rid of even suckier technology junk like
-   VMware-Server - but digging out a current², but _stable_ kernel release
-   seems harder then ever nowadays. 
-²) with operational VT-d support for kvm
+Have you got a pointer to a machine where it fails?
+
+Dave.
+
+
+> Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+> Cc: Dave Airlie <airlied@redhat.com>
+> Cc: Peter Jones <pjones@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>  drivers/video/fbmem.c |   24 +++++++++++++++++-------
+>  1 files changed, 17 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+> index a15b44e..41f2e5e 100644
+> --- a/drivers/video/fbmem.c
+> +++ b/drivers/video/fbmem.c
+> @@ -1468,15 +1468,25 @@ static int fb_check_foreignness(struct fb_info *fi)
+>  	return 0;
+>  }
+>  
+> +/**
+> + * ranges_overlap - check whether two ranges overlap (their intersection is not empty)
+> + * @start1: start of the first range
+> + * @size1:  length of the first range
+> + * @start2: start of the second range
+> + * @size2:  length of the second range
+> + */
+> +#define ranges_overlap(start1, size1, start2, size2) ({	\
+> +	typeof(start1) __start1 = (start1);		\
+> +	typeof(size1)  __size1  = (size1);		\
+> +	typeof(start2) __start2 = (start2);		\
+> +	typeof(size2)  __size2  = (size2);		\
+> +	__start1 < __start2 + __size2 && __start1 + __size1 > __start2; \
+> +})
+> +
+>  static bool fb_do_apertures_overlap(struct fb_info *gen, struct fb_info *hw)
+>  {
+> -	/* is the generic aperture base the same as the HW one */
+> -	if (gen->aperture_base == hw->aperture_base)
+> -		return true;
+> -	/* is the generic aperture base inside the hw base->hw base+size */
+> -	if (gen->aperture_base > hw->aperture_base && gen->aperture_base <= hw->aperture_base + hw->aperture_size)
+> -		return true;
+> -	return false;
+> +	return ranges_overlap(gen->aperture_base, gen->aperture_size,
+> +				hw->aperture_base, hw->aperture_size);
+>  }
+>  /**
+>   *	register_framebuffer - registers a frame buffer device
+
+
