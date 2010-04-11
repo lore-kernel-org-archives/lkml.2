@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab0DKPHb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 11:07:31 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:51910 "EHLO
+	id S1752147Ab0DKPoq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 11:44:46 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:46322 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752032Ab0DKPHa (ORCPT
+	by vger.kernel.org with ESMTP id S1751143Ab0DKPoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 11:07:30 -0400
-Date: Sun, 11 Apr 2010 17:07:18 +0200
+	Sun, 11 Apr 2010 11:44:44 -0400
+Date: Sun, 11 Apr 2010 17:44:37 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: Bernie Thompson <bernie@plugable.com>
-Cc: roberto@unbit.it, gregkh@suse.de, Cyril Hrubis <metan@ucw.cz>,
-       kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: staging: udlfb -- staging version does not work, external does
-Message-ID: <20100411150718.GA1401@ucw.cz>
-References: <20100411072625.GA9926@elf.ucw.cz> <n2g480988181004110742w2ce92bfdr4f0f01216f879fe8@mail.gmail.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Philippe Troin <phil@fifi.org>,
+       Mohamed Ikbel Boulabiar <boulabiar@gmail.com>,
+       linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: webcam problem after suspend/hibernate
+Message-ID: <20100411154437.GA16098@elf.ucw.cz>
+References: <45cc95261003301455u10e6ee24pfb66176bfb279d1@mail.gmail.com>
+ <87ljd3ujrp.fsf@old-tantale.fifi.org>
+ <20100404193405.GA15065@elf.ucw.cz>
+ <201004111253.58237.laurent.pinchart@ideasonboard.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <n2g480988181004110742w2ce92bfdr4f0f01216f879fe8@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <201004111253.58237.laurent.pinchart@ideasonboard.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi!
 
-> Thanks for the bug report!
-
-You are welcome :-).
-
-> > I tried getting udlfb to work in 2.6.34-rc*, and could not.
+> > > My testing shows that:
+> > >  1. If I remove uvcvideo BEFORE suspend and reinsert it after resume,
+> > >  
+> > >     it works.  However, I cannot always rmmod uvcvideo before suspend
+> > >     as it may be in use.
+...
+> > > I think uvcvideo is failing to reinitialize the camera on resume, and
+> > > forcing an uvcvideo "reset" with either of these three methods kicks
+> > > uvcvideo into working again.
+> > 
+> > Ok, that puts the problem firmly into uvcvideo area.
 > 
-> What CPU arch are you on, and is it 32 or 64?
+> No, it doesn't.
 
-32bit Intel Core Duo.
+I believe that the fact that rmmod/insmod fixes it means that problem
+is in the driver (and not in ehci or something like that).
 
-> > 1) it hates vga console. If text-mode vga console is used (not
-> > vesafb), system dies immeditaly during insmod or during boot if
-> > monolithic kernel is used.
+> First of all, the dmesg output available on pastebin.com is difficult to 
+> understand. As it seems you perform several suspend/resume cycles there. 
+> Mohamed, could you please
 > 
-> It is a kernel oops? Where does the crash happen?  Can you email any
-> udlfb-specific output in logs (especially /var/log/kern.log)?
+> - clear the kernel log ('dmesg -c' as root)
+> - suspend and resume your system
+> - post the kernel log content ('dmesg')
+> - clear the kernel log
+> - try to use your webcam with whatever test software your prefer
+> - describe the failure (application error messages, ...)
+> - post the kernel log content
 
-It just locks :-(.
+Good idea.
 
-> > 2) it does not display anything. With vesafb, it will not lockup the
-> > system, and /dev/fb1 is created... Unfortunately, all I get is green
-> > screen.
+> > Try changing its _resume routine to whatever is done on device
+> > unplug... it should be rather easy, and is quite close to "correct"
+> > solution.
 > 
-> The green screen means udlfb has initialized device and started
-> rendering.   So what this likely means is everything is fine -- just
-> fbcon has matched against fb0, which is why it's not using the fb1
-> udlfb screen.
+> That's not a solution. Devices are supposed to resume properly without being 
+> reset. The camera might be crashing, or the USB core might be doing something 
+> wrong, requiring some kind of reset. I'd like to diagnose the problem 
+> correctly before trying to fix it.
 
-Yep, but I still should be able to produce output on it.
-
-> > (I tried testing with cat /bin/bash > /dev/fb1 and cat /dev/fb0 >
-> > /dev/fb1).
-> 
-> I don't think redirects like that will work.  The fbcon module loads
-> against one fb, and can only be switch with utilities like "fbset"
-
-IMO they should work. First one should fill the screen with ~random
-noise, and second should copy graphical representation on fb0 to
-fb1. If they have same resolution and color depth, I should be looking
-at copy of my console...
-
-(And it does work with this driver:
-
-> > So I tried
-> >
-> >    Roberto De Ioris roberto at unbit.it
-> >    Wed Jun 10 08:00:07 PDT 2009 
-
-).
-
+Ok. (You are right that simulating rmmod/insmod is not the same as
+proper suspend/resume support, but I still guess it would help with
+debugging.)
 								Pavel
-
 -- 
 (english) http://www.livejournal.com/~pavelmachek
 (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
