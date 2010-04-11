@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992Ab0DKNVb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 09:21:31 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:37804 "EHLO mail.skyhub.de"
+	id S1752015Ab0DKNYN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 09:24:13 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37831 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751272Ab0DKNVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 09:21:30 -0400
+	id S1751927Ab0DKNYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Apr 2010 09:24:11 -0400
 From: Borislav Petkov <bp@alien8.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>,
@@ -17,9 +17,9 @@ Cc: Johannes Weiner <hannes@cmpxchg.org>,
        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
        Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
        Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-Subject: [PATCH 3/3] mm: fixup vma_adjust
-Date: Sun, 11 Apr 2010 15:19:58 +0200
-Message-Id: <1270991999-4004-3-git-send-email-bp@alien8.de>
+Subject: [PATCH 2/3] mm: cleanup find_mergeable_anon_vma complexity
+Date: Sun, 11 Apr 2010 15:19:57 +0200
+Message-Id: <1270991999-4004-2-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <1270991999-4004-1-git-send-email-bp@alien8.de>
 References: <1270991999-4004-1-git-send-email-bp@alien8.de>
@@ -31,136 +31,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Torvalds <torvalds@linux-foundation.org>
 
-On Sat, 10 Apr 2010, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@alien8.de>
-> Date: Sat, Apr 10, 2010 at 08:51:45PM +0200
+On Sat, 10 Apr 2010, Linus Torvalds wrote:
 >
-> > Anyways, testing...
->
-> Nope, still b0rked. And this time is not a funny pattern but
-> ffffffffffffffe0 we had originally.
+> But I think the fact that you are apparently not able to get the list
+> corruption is a good sign. Of course, it might just be harder to trigger,
+> and these things could all be a sign of a different bug, but my gut feel
+> is that we did fix something, and you are just damn good at stressing the
+> new code. Kudos.
 
-Ok, I think that just depends on who happens to re-use the allocation and
-how it does it.
+Btw, I do hate the current 'find_mergeable_anon_vma()' with its duplicated
+checks for prev/next compatibility that I just made even more complex.
 
-I'm pretty sure it's a use-after-free issue, where we have free'd an
-anon_vma too early, even though it has pages associated with it.
+So I'm actually inclined to want to write my simple two-liner fix as a
+rather more complex cleanup patch, below.
 
-If it wasn't the RCU case, it's just something else.
+It adds way more lines than it deletes, but a lot of it is comments (and
+some of it is just because one routine got split up into three), and I
+think it makes the result a lot more readable.
 
-I think it's worth looking at "vma_adjust()", because as I already
-mentioned to Rik earlier - the code is very hard to understand, and it's
-accrued crud over many many years.
+It also splits off the decision of whether we can reuse an non_vma from
+the decision of whether we can merge the vma's - the two are kind of
+related, but they are not really the same, and they have different issues.
+I think it's good to try to keep separate issues separate.
 
-And vma_adjust is the one place that does that anon_vma_merge(), which is
-apart from the actual unmapping sequence the only other place that
-actually free's anon_vmas. So there are reasons to be very suspicious of
-that code.
+This is UNTESTED! It's meant to be an "obvious cleanup" with no real
+semantic difference, but if I did something wrong it won't work. Also note
+the comment about the lack of locking between two adjacent anon_vma's
+taking a page fault at the same time: the ACCESS_ONCE() is unlikely to
+ever matter (anon_vma's are stable once they are set, so it's really just
+that you could first load a NULL, and then if you re-load the value you
+might get a non-NULL thing).
 
-And I think that code can actually lose an anon_vma chain. It's totally
-screwing up the "import anonvma" case: when it does
+Also note that when checking whether the anon_vma is a singleton, we don't
+hold any lock that protects the list we are checking. But
+"list_is_singular()" is safe and won't oops even if the pointers in the
+list are crap, because it only _compares_ the prev/next pointers, it
+doesn't dereference them.
 
-                        if (anon_vma_clone(importer, vma)) {
-                                return -ENOMEM;
-                        }
-                        importer->anon_vma = anon_vma;
+In short, what I'm saying is that there is a pretty subtle race in the
+very very unlikely case that two anon_vma's get prepared concurrently, but
+from a correctness standpoint it doesn't matter. We might sometimes - once
+in a blue moon - reject an anon_vma that could in theory have been merged,
+but that won't hurt.
 
-we can actually have "importer == vma", but "anon_vma = next->anon_vma".
+Comments? Rik, Johannes?
 
-In which case we actually end up with an _empty_ chain (because importer
-didn't have a chain to begin with!) but "importer->anon_vma" points to an
-anon_vma.
-
-And then when we do that "remove_next", we actually get rid of the only
-chain we ever had, and have lost all our references to the anon_vma.
-
-That looks _horribly_ buggy.
-
-Also, the conditional nesting makes no sense (the whole anon_vma_clone()
-only makes sense if importer is set, and it is only ever set _inside_ the
-earlier if-statement, so the whole code should be moved inside there), nor
-does some of the comments.
-
-This patch is scary and untested, but the more I look at that code, the
-more convinced I am that vma_adjust was _really_ badly screwed up. The
-patch below may make things worse. I'll test it myself too, but I'm
-sending it out first, since I was writing the email as I was looking at
-the piece of cr*p.
-
-		Linus
+			Linus
 ---
- mm/mmap.c |   24 ++++++++----------------
- 1 files changed, 8 insertions(+), 16 deletions(-)
+ mm/mmap.c |   86 ++++++++++++++++++++++++++++++++++++++++++++-----------------
+ 1 files changed, 62 insertions(+), 24 deletions(-)
 
 diff --git a/mm/mmap.c b/mm/mmap.c
-index acb023e..f90ea92 100644
+index 75557c6..acb023e 100644
 --- a/mm/mmap.c
 +++ b/mm/mmap.c
-@@ -507,11 +507,12 @@ int vma_adjust(struct vm_area_struct *vma, unsigned long start,
- 	struct address_space *mapping = NULL;
- 	struct prio_tree_root *root = NULL;
- 	struct file *file = vma->vm_file;
--	struct anon_vma *anon_vma = NULL;
- 	long adjust_next = 0;
- 	int remove_next = 0;
+@@ -825,6 +825,61 @@ struct vm_area_struct *vma_merge(struct mm_struct *mm,
+ }
  
- 	if (next && !insert) {
-+		struct vm_area_struct *exporter = NULL;
+ /*
++ * Rough compatbility check to quickly see if it's even worth looking
++ * at sharing an anon_vma.
++ *
++ * They need to have the same vm_file, and the flags can only differ
++ * in things that mprotect may change.
++ *
++ * NOTE! The fact that we share an anon_vma doesn't _have_ to mean that
++ * we can merge the two vma's. For example, we refuse to merge a vma if
++ * there is a vm_ops->close() function, because that indicates that the
++ * driver is doing some kind of reference counting. But that doesn't
++ * really matter for the anon_vma sharing case.
++ */
++static int anon_vma_compatible(struct vm_area_struct *a, struct vm_area_struct *b)
++{
++	return a->vm_end == b->vm_start &&
++		mpol_equal(vma_policy(a), vma_policy(b)) &&
++		a->vm_file == b->vm_file &&
++		!((a->vm_flags ^ b->vm_flags) & ~(VM_READ|VM_WRITE|VM_EXEC)) &&
++		b->vm_pgoff == a->vm_pgoff + ((b->vm_start - a->vm_start) >> PAGE_SHIFT);
++}
 +
- 		if (end >= next->vm_end) {
- 			/*
- 			 * vma expands, overlapping all the next, and
-@@ -519,7 +520,7 @@ int vma_adjust(struct vm_area_struct *vma, unsigned long start,
- 			 */
- again:			remove_next = 1 + (end > next->vm_end);
- 			end = next->vm_end;
--			anon_vma = next->anon_vma;
-+			exporter = next;
- 			importer = vma;
- 		} else if (end > next->vm_start) {
- 			/*
-@@ -527,7 +528,7 @@ again:			remove_next = 1 + (end > next->vm_end);
- 			 * mprotect case 5 shifting the boundary up.
- 			 */
- 			adjust_next = (end - next->vm_start) >> PAGE_SHIFT;
--			anon_vma = next->anon_vma;
-+			exporter = next;
- 			importer = vma;
- 		} else if (end < vma->vm_end) {
- 			/*
-@@ -536,28 +537,19 @@ again:			remove_next = 1 + (end > next->vm_end);
- 			 * mprotect case 4 shifting the boundary down.
- 			 */
- 			adjust_next = - ((vma->vm_end - end) >> PAGE_SHIFT);
--			anon_vma = next->anon_vma;
-+			exporter = vma;
- 			importer = next;
- 		}
--	}
++/*
++ * Do some basic sanity checking to see if we can re-use the anon_vma
++ * from 'old'. The 'a'/'b' vma's are in VM order - one of them will be
++ * the same as 'old', the other will be the new one that is trying
++ * to share the anon_vma.
++ *
++ * NOTE! This runs with mm_sem held for reading, so it is possible that
++ * the anon_vma of 'old' is concurrently in the process of being set up
++ * by another page fault trying to merge _that_. But that's ok: if it
++ * is being set up, that automatically means that it will be a singleton
++ * acceptable for merging, so we can do all of this optimistically. But
++ * we do that ACCESS_ONCE() to make sure that we never re-load the pointer.
++ *
++ * IOW: that the "list_is_singular()" test on the anon_vma_chain only
++ * matters for the 'stable anon_vma' case (ie the thing we want to avoid
++ * is to return an anon_vma that is "complex" due to having gone through
++ * a fork).
++ *
++ * We also make sure that the two vma's are compatible (adjacent,
++ * and with the same memory policies). That's all stable, even with just
++ * a read lock on the mm_sem.
++ */
++static struct anon_vma *reusable_anon_vma(struct vm_area_struct *old, struct vm_area_struct *a, struct vm_area_struct *b)
++{
++	if (anon_vma_compatible(a, b)) {
++		struct anon_vma *anon_vma = ACCESS_ONCE(old->anon_vma);
++
++		if (anon_vma && list_is_singular(&old->anon_vma_chain))
++			return anon_vma;
++	}
++	return NULL;
++}
++
++/*
+  * find_mergeable_anon_vma is used by anon_vma_prepare, to check
+  * neighbouring vmas for a suitable anon_vma, before it goes off
+  * to allocate a new anon_vma.  It checks because a repetitive
+@@ -834,28 +889,16 @@ struct vm_area_struct *vma_merge(struct mm_struct *mm,
+  */
+ struct anon_vma *find_mergeable_anon_vma(struct vm_area_struct *vma)
+ {
++	struct anon_vma *anon_vma;
+ 	struct vm_area_struct *near;
+-	unsigned long vm_flags;
+ 
+ 	near = vma->vm_next;
+ 	if (!near)
+ 		goto try_prev;
  
 -	/*
--	 * When changing only vma->vm_end, we don't really need anon_vma lock.
+-	 * Since only mprotect tries to remerge vmas, match flags
+-	 * which might be mprotected into each other later on.
+-	 * Neither mlock nor madvise tries to remerge at present,
+-	 * so leave their flags as obstructing a merge.
 -	 */
--	if (vma->anon_vma && (insert || importer || start != vma->vm_start))
--		anon_vma = vma->anon_vma;
--	if (anon_vma) {
- 		/*
- 		 * Easily overlooked: when mprotect shifts the boundary,
- 		 * make sure the expanding vma has anon_vma set if the
- 		 * shrinking vma had, to cover any anon pages imported.
- 		 */
--		if (importer && !importer->anon_vma) {
--			/* Block reverse map lookups until things are set up. */
--			if (anon_vma_clone(importer, vma)) {
-+		if (exporter && exporter->anon_vma && !importer->anon_vma) {
-+			if (anon_vma_clone(importer, exporter))
- 				return -ENOMEM;
--			}
--			importer->anon_vma = anon_vma;
-+			importer->anon_vma = exporter->anon_vma;
- 		}
- 	}
+-	vm_flags = vma->vm_flags & ~(VM_READ|VM_WRITE|VM_EXEC);
+-	vm_flags |= near->vm_flags & (VM_READ|VM_WRITE|VM_EXEC);
+-
+-	if (near->anon_vma && vma->vm_end == near->vm_start &&
+- 			mpol_equal(vma_policy(vma), vma_policy(near)) &&
+-			can_vma_merge_before(near, vm_flags,
+-				NULL, vma->vm_file, vma->vm_pgoff +
+-				((vma->vm_end - vma->vm_start) >> PAGE_SHIFT)))
+-		return near->anon_vma;
++	anon_vma = reusable_anon_vma(near, vma, near);
++	if (anon_vma)
++		return anon_vma;
+ try_prev:
+ 	/*
+ 	 * It is potentially slow to have to call find_vma_prev here.
+@@ -868,14 +911,9 @@ try_prev:
+ 	if (!near)
+ 		goto none;
  
+-	vm_flags = vma->vm_flags & ~(VM_READ|VM_WRITE|VM_EXEC);
+-	vm_flags |= near->vm_flags & (VM_READ|VM_WRITE|VM_EXEC);
+-
+-	if (near->anon_vma && near->vm_end == vma->vm_start &&
+-  			mpol_equal(vma_policy(near), vma_policy(vma)) &&
+-			can_vma_merge_after(near, vm_flags,
+-				NULL, vma->vm_file, vma->vm_pgoff))
+-		return near->anon_vma;
++	anon_vma = reusable_anon_vma(near, near, vma);
++	if (anon_vma)
++		return anon_vma;
+ none:
+ 	/*
+ 	 * There's no absolute need to look only at touching neighbours:
 -- 
 1.7.0.3
 
