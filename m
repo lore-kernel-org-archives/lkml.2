@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab0DKB6r (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Apr 2010 21:58:47 -0400
-Received: from bureau63.ns.utoronto.ca ([128.100.132.160]:52892 "EHLO
-	bureau63.ns.utoronto.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752534Ab0DKB6q (ORCPT
+	id S1750855Ab0DKEOK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 00:14:10 -0400
+Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:33430 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab0DKEOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Apr 2010 21:58:46 -0400
-X-Greylist: delayed 16516 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Apr 2010 21:58:45 EDT
-Message-ID: <20100410171924.dtdi1ljlnowsc8kg@webmail.utoronto.ca>
-Date: Sat, 10 Apr 2010 17:19:24 -0400
-X-ID: makemil1
-From: Liu Tia Ling <liu@utoronto.ca>
-Reply-to: lliutia@yahoo.com.hk
-To: undisclosed-recipients:;
-Subject: Good Day
+	Sun, 11 Apr 2010 00:14:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
+	:date:message-id:mime-version:content-type; q=dns; s=sasl; b=mLp
+	H3XwgR4yR0+bOL8UWdo/JAl2mXF+bGAviOefBW3pvIYOFNGw9vxe5Aw8+PEoxzia
+	s8tLftA9XyE9q8CwtJsEWrR302EedN3uiAmbpzKqjPyZSyMYpyU4dNXh7OA7CEsa
+	YbA6NHRYCZQmDhMjShI3JjD0RTYmj2ChPJ6J5roc=
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.1.rc1
+From: Junio C Hamano <gitster@pobox.com>
+Date: Sat, 10 Apr 2010 21:13:56 -0700
+Message-ID: <7vmxxar5h7.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
-X-PMX-Version: 5.4.2.338381, Antispam-Engine: 2.6.0.325393, Antispam-Data: 2010.4.10.210015
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: A8AE1FA2-4520-11DF-92B7-D033EE7EF46B-77302942!a-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+A release candidate Git 1.7.1.rc1 is available at the usual places
+for testing:
 
-Good Day,
+  http://www.kernel.org/pub/software/scm/git/
 
-I have a Business Proposal of $21,300,000.00 for you to handle with me from my
-bank. I need to know if you will be able to handle this with me, if  
-you agree to
-work with me please send me the below details via my email address:
-{lliutia@yahoo.com.hk}
+  git-1.7.1.rc1.tar.{gz,bz2}			(source tarball)
+  git-htmldocs-1.7.1.rc1.tar.{gz,bz2}		(preformatted docs)
+  git-manpages-1.7.1.rc1.tar.{gz,bz2}		(preformatted docs)
 
-1,Full names,
-2,occupation,
-3,private phone number,
-4,current residential address.
+The RPM binary packages for a few architectures are found in:
 
-Your earliest response to this letter will be appreciated.
+  testing/git-*-1.7.1.rc1-1.fc11.$arch.rpm	(RPM)
 
-Regards
-Liu Tia Ling
+Please test 'master', report & fix regressions.  Hopefully we can do
+another rc during the next week and release the final one next weekend.
 
+----------------------------------------------------------------
 
+Changes since v1.7.1-rc0 are as follows:
 
+Brandon Casey (1):
+      notes.h: declare bit field as unsigned to silence compiler complaints
 
+Jeff King (4):
+      fix const-correctness of write_sha1_file
+      fix textconv leak in emit_rewrite_diff
+      fix typos and grammar in 1.7.1 draft release notes
+      docs: clarify "branch -l"
 
+Jens Lehmann (2):
+      Let check_preimage() use memset() to initialize "struct checkout"
+      Teach diff --submodule and status to handle .git files in submodules
+
+Jonathan Nieder (1):
+      Teach mailinfo %< as an alternative scissors mark
+
+Junio C Hamano (2):
+      diff.c: work around pointer constness warnings
+      Git 1.7.1-rc1
+
+Mark Rada (6):
+      Gitweb: add ignore and clean rules for minified files
+      Gitweb: add support for minifying gitweb.css
+      Gitweb: add autoconfigure support for minifiers
+      instaweb: add minification awareness
+      gitweb: add documentation to INSTALL regarding gitweb.js
+      gitweb: update INSTALL to use shorter make target
+
+Michael J Gruber (2):
+      t3301-notes: Test the creation of reflog entries
+      refs.c: Write reflogs for notes just like for branch heads
+
+Tay Ray Chuan (2):
+      branch: say "Reset to" in reflog entries for 'git branch -f' operations
+      fetch/push: fix usage strings
 
