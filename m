@@ -1,84 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830Ab0DKKw5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 06:52:57 -0400
-Received: from perceval.irobotique.be ([92.243.18.41]:48241 "EHLO
-	perceval.irobotique.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab0DKKw4 (ORCPT
+	id S1751890Ab0DKLCh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 07:02:37 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:50062 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801Ab0DKLCe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 06:52:56 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: webcam problem after suspend/hibernate
-Date: Sun, 11 Apr 2010 12:53:57 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.33; KDE/4.4.2; x86_64; ; )
-Cc: Philippe Troin <phil@fifi.org>,
-       Mohamed Ikbel Boulabiar <boulabiar@gmail.com>,
-       linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-References: <45cc95261003301455u10e6ee24pfb66176bfb279d1@mail.gmail.com> <87ljd3ujrp.fsf@old-tantale.fifi.org> <20100404193405.GA15065@elf.ucw.cz>
-In-Reply-To: <20100404193405.GA15065@elf.ucw.cz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004111253.58237.laurent.pinchart@ideasonboard.com>
+	Sun, 11 Apr 2010 07:02:34 -0400
+Date: Sun, 11 Apr 2010 13:02:26 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+       linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>,
+       Nicu Pavel <npavel@ituner.com>, Oliver Neukum <oliver@neukum.org>
+Subject: Re: [PATCH v6 7/8, needs improvement] hid: add suspend/resume hooks
+ for hid drivers
+Message-ID: <20100411130226.4086a92d@neptune.home>
+In-Reply-To: <alpine.LNX.2.00.1003311415000.24576@pobox.suse.cz>
+References: <20100324233707.7243b04d@neptune.home>
+	<20100324234022.0361bd80@neptune.home>
+	<20100326065656.GC26602@core.coreip.homeip.net>
+	<20100326102951.3b9ecda1@neptune.home>
+	<alpine.LNX.2.00.1003262156280.24576@pobox.suse.cz>
+	<20100327012245.0ace6a09@neptune.home>
+	<alpine.LNX.2.00.1003291144350.24576@pobox.suse.cz>
+	<20100329121611.0c22dcaf@pluto.restena.lu>
+	<alpine.LNX.2.00.1003301010410.24576@pobox.suse.cz>
+	<20100330223224.18fe4f3e@neptune.home>
+	<20100330224230.7b84df75@neptune.home>
+	<alpine.LNX.2.00.1003311415000.24576@pobox.suse.cz>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 04 April 2010 21:34:06 Pavel Machek wrote:
-> Hi!
+On Wed, 31 March 2010 Jiri Kosina <jkosina@suse.cz> wrote:
+
+> On Tue, 30 Mar 2010, Bruno Prémont wrote:
 > 
-> > > If unload/reload of uvcvideo helps, it is most likely problem in that.
-> > > 
-> > > If unload/reload of ehci_hcd is needed, it is most likely ehci problem.
+> > Add suspend/resume hooks for HID drivers so these can do some
+> > additional state adjustment when device gets suspended/resumed.
 > > 
-> > My testing shows that:
-> >  1. If I remove uvcvideo BEFORE suspend and reinsert it after resume,
-> >  
-> >     it works.  However, I cannot always rmmod uvcvideo before suspend
-> >     as it may be in use.
-> >  
-> >  2. As a work around, removing ehci_hcd and reinserting ehci_hcd upon
-> >  
-> >     resume works as well.
-> >  
-> >  3. Since my distribution's kernels come with ehci_hcd built into the
-> >  
-> >     kernel, and I cannot do #2 any more, I also found that unbinding
-> >     and rebinding the device (with the script I sent earlier on) works
-> >     as well.
+> > This patch calls these hooks from usbhid suspend/resume functions,
+> > only calling suspend on plain suspend, not autosuspend.
+> > (it might be worth adding an autosuspend parameter to suspend
+> > hook and calling suspend in both cases)
 > > 
-> > I think uvcvideo is failing to reinitialize the camera on resume, and
-> > forcing an uvcvideo "reset" with either of these three methods kicks
-> > uvcvideo into working again.
+> > Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+> > ---
+> > 
+> > Note:
+> >   this patch needs improvements as mentionned by Olivier Neukum:
+> >   - suspend hook for both system suspend and autosuspend
+> >   - no call of hook on USB-HID-resume failure
 > 
-> Ok, that puts the problem firmly into uvcvideo area.
+> I agree with Oliver's comments.
+> 
+> We should also consider putting the hook calls into bluetooth 
+> implementation as well (though there is currently no driver using it, but 
+> I don't know, maybe Wacom could benefit from it as well).
 
-No, it doesn't.
+Where do I find the bluetooth HID bits? I've been searching through kernel
+sources (under drivers/) but did not find bluetooth code trying to
+register a HID device...
 
-First of all, the dmesg output available on pastebin.com is difficult to 
-understand. As it seems you perform several suspend/resume cycles there. 
-Mohamed, could you please
+Below an updated patch which also calls the hook for auto-suspend case.
+The patch compiles but I've not runtime-tested it yet (especially for
+the auto-suspend part, as I'm not sure what should trigger it).
 
-- clear the kernel log ('dmesg -c' as root)
-- suspend and resume your system
-- post the kernel log content ('dmesg')
-- clear the kernel log
-- try to use your webcam with whatever test software your prefer
-- describe the failure (application error messages, ...)
-- post the kernel log content
+As far as I understand the code, in auto-suspend case if the driver
+sends commands to the device it will have to call usbhid_wait_io().
+Please correct me if I'm wrong!
 
-> Try changing its _resume routine to whatever is done on device
-> unplug... it should be rather easy, and is quite close to "correct"
-> solution.
+Thanks,
+Bruno
 
-That's not a solution. Devices are supposed to resume properly without being 
-reset. The camera might be crashing, or the USB core might be doing something 
-wrong, requiring some kind of reset. I'd like to diagnose the problem 
-correctly before trying to fix it.
 
+---
+
+Add suspend/resume hooks for HID drivers so these can do some
+additional state adjustment when device gets suspended/resumed.
+
+v2:
+  - Adds auto_suspend parameter to suspend hook
+  - Only calls HID driver's resume hooks when previous code
+    did succeed
+
+Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+---
+ drivers/hid/usbhid/hid-core.c |   24 +++++++++++++++++++++++-
+ include/linux/hid.h           |    8 ++++++++
+ 2 files changed, 31 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+index 3e7909b..1f40695 100644
+--- a/drivers/hid/usbhid/hid-core.c
++++ b/drivers/hid/usbhid/hid-core.c
+@@ -1291,6 +1291,11 @@ static int hid_suspend(struct usb_interface *intf, pm_message_t message)
+ 		{
+ 			set_bit(HID_REPORTED_IDLE, &usbhid->iofl);
+ 			spin_unlock_irq(&usbhid->lock);
++			if (hid->driver && hid->driver->suspend) {
++				status = hid->driver->suspend(hid, 1);
++				if (status < 0)
++					return status;
++			}
+ 		} else {
+ 			usbhid_mark_busy(usbhid);
+ 			spin_unlock_irq(&usbhid->lock);
+@@ -1298,6 +1303,11 @@ static int hid_suspend(struct usb_interface *intf, pm_message_t message)
+ 		}
+ 
+ 	} else {
++		if (hid->driver && hid->driver->suspend) {
++			status = hid->driver->suspend(hid, 0);
++			if (status < 0)
++				return status;
++		}
+ 		spin_lock_irq(&usbhid->lock);
+ 		set_bit(HID_REPORTED_IDLE, &usbhid->iofl);
+ 		spin_unlock_irq(&usbhid->lock);
+@@ -1352,6 +1362,11 @@ static int hid_resume(struct usb_interface *intf)
+ 		hid_io_error(hid);
+ 	usbhid_restart_queues(usbhid);
+ 
++	if (status >= 0 && hid->driver && hid->driver->resume) {
++		int ret = hid->driver->resume(hid);
++		if (ret < 0)
++			status = ret;
++	}
+ 	dev_dbg(&intf->dev, "resume status %d\n", status);
+ 	return 0;
+ }
+@@ -1360,9 +1375,16 @@ static int hid_reset_resume(struct usb_interface *intf)
+ {
+ 	struct hid_device *hid = usb_get_intfdata(intf);
+ 	struct usbhid_device *usbhid = hid->driver_data;
++	int status;
+ 
+ 	clear_bit(HID_REPORTED_IDLE, &usbhid->iofl);
+-	return hid_post_reset(intf);
++	status = hid_post_reset(intf);
++	if (status >= 0 && hid->driver && hid->driver->reset_resume) {
++		int ret = hid->driver->reset_resume(hid);
++		if (ret < 0)
++			status = ret;
++	}
++	return status;
+ }
+ 
+ #endif /* CONFIG_PM */
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index b1344ec..a2f3612 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -589,6 +589,9 @@ struct hid_usage_id {
+  * @report_fixup: called before report descriptor parsing (NULL means nop)
+  * @input_mapping: invoked on input registering before mapping an usage
+  * @input_mapped: invoked on input registering after mapping an usage
++ * @suspend: invoked on suspend (NULL means nop)
++ * @resume: invoked on resume if device was not reset (NULL means nop)
++ * @reset_resume: invoked on resume if device was reset (NULL means nop)
+  *
+  * raw_event and event should return 0 on no action performed, 1 when no
+  * further processing should be done and negative on error
+@@ -629,6 +632,11 @@ struct hid_driver {
+ 	int (*input_mapped)(struct hid_device *hdev,
+ 			struct hid_input *hidinput, struct hid_field *field,
+ 			struct hid_usage *usage, unsigned long **bit, int *max);
++#ifdef CONFIG_PM
++	int (*suspend)(struct hid_device *hdev, int auto_suspend);
++	int (*resume)(struct hid_device *hdev);
++	int (*reset_resume)(struct hid_device *hdev);
++#endif
+ /* private: */
+ 	struct device_driver driver;
+ };
 -- 
-Regards,
+1.6.4.4
 
-Laurent Pinchart
