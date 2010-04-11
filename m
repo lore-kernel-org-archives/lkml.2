@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951Ab0DKNUG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 09:20:06 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38361 "EHLO mail.skyhub.de"
+	id S1751992Ab0DKNVb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 09:21:31 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37804 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751272Ab0DKNUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 09:20:04 -0400
+	id S1751272Ab0DKNVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Apr 2010 09:21:30 -0400
 From: Borislav Petkov <bp@alien8.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>,
@@ -17,10 +17,12 @@ Cc: Johannes Weiner <hannes@cmpxchg.org>,
        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
        Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
        Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-Subject: [PATCH 1/3] mm: make page freeing path RCU-safe
-Date: Sun, 11 Apr 2010 15:19:56 +0200
-Message-Id: <1270991999-4004-1-git-send-email-bp@alien8.de>
+Subject: [PATCH 3/3] mm: fixup vma_adjust
+Date: Sun, 11 Apr 2010 15:19:58 +0200
+Message-Id: <1270991999-4004-3-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.7.0.3
+In-Reply-To: <1270991999-4004-1-git-send-email-bp@alien8.de>
+References: <1270991999-4004-1-git-send-email-bp@alien8.de>
 In-Reply-To: <20100411130801.GA7189@a1.tnic>
 References: <20100411130801.GA7189@a1.tnic>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,95 +31,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Torvalds <torvalds@linux-foundation.org>
 
-On Sat, 10 Apr 2010, Linus Torvalds wrote:
-> On Sat, 10 Apr 2010, Borislav Petkov wrote:
-> >
-> > And I got an oops again, this time the #GP from couple of days ago.
+On Sat, 10 Apr 2010, Borislav Petkov wrote:
+> From: Borislav Petkov <bp@alien8.de>
+> Date: Sat, Apr 10, 2010 at 08:51:45PM +0200
 >
-> Oh damn. So the list corruption really does happen still.
+> > Anyways, testing...
+>
+> Nope, still b0rked. And this time is not a funny pattern but
+> ffffffffffffffe0 we had originally.
 
-Ho humm.
+Ok, I think that just depends on who happens to re-use the allocation and
+how it does it.
 
-Maybe I'm crazy, but something started bothering me. And I started
-wondering: when is the 'page->mapping' of an anonymous page actually
-cleared?
+I'm pretty sure it's a use-after-free issue, where we have free'd an
+anon_vma too early, even though it has pages associated with it.
 
-The thing is, the mapping of an anonymous page is actually cleared only
-when the page is _freed_, in "free_hot_cold_page()".
+If it wasn't the RCU case, it's just something else.
 
-Now, let's think about that. And in particular, let's think about how that
-relates to the freeing of the 'anon_vma' that the page->mapping points to.
+I think it's worth looking at "vma_adjust()", because as I already
+mentioned to Rik earlier - the code is very hard to understand, and it's
+accrued crud over many many years.
 
-The way the anon_vma is freed is when the mapping is torn down, and we do
-roughly:
+And vma_adjust is the one place that does that anon_vma_merge(), which is
+apart from the actual unmapping sequence the only other place that
+actually free's anon_vmas. So there are reasons to be very suspicious of
+that code.
 
-	tlb = tlb_gather_mmu(mm,..)
-	..
-	unmap_vmas(&tlb, vma ..
-	..
-	free_pgtables()
-	..
-	tlb_finish_mmu(tlb, start, end);
+And I think that code can actually lose an anon_vma chain. It's totally
+screwing up the "import anonvma" case: when it does
 
-and we actually unmap all the pages in "unmap_vmas()", and then _after_
-unmapping all the pages we do the "unlink_anon_vmas(vma);" in
-"free_pgtables()". Fine so far - the anon_vma stay around until after the
-page has been happily unmapped.
+                        if (anon_vma_clone(importer, vma)) {
+                                return -ENOMEM;
+                        }
+                        importer->anon_vma = anon_vma;
 
-But "unmapped all the pages" is _not_ actually the same as "free'd all the
-pages". The actual _freeing_ of the page happens generally in
-tlb_finish_mmu(), because we can free the page only after we've flushed
-any TLB entries.
+we can actually have "importer == vma", but "anon_vma = next->anon_vma".
 
-So what we have in that tlb_gather structure is a list of _pending_ pages
-to be freed, while we already actually free'd the anon_vmas earlier!
+In which case we actually end up with an _empty_ chain (because importer
+didn't have a chain to begin with!) but "importer->anon_vma" points to an
+anon_vma.
 
-Now, the thing is, tlb_gather_mmu() begins a preempt-safe region (because
-we use a per-cpu variable), but as far as I can tell it is _not_ an
-RCU-safe region.
+And then when we do that "remove_next", we actually get rid of the only
+chain we ever had, and have lost all our references to the anon_vma.
 
-So I think we might actually get a real RCU freeing event while this all
-happens. So now the 'anon_vma' that 'page->mapping' points to has not just
-been released back to the SLUB caches, the page itself might have been
-released too.
+That looks _horribly_ buggy.
 
-I dunno. Does the above sound at all sane? Or am I just raving?
+Also, the conditional nesting makes no sense (the whole anon_vma_clone()
+only makes sense if importer is set, and it is only ever set _inside_ the
+earlier if-statement, so the whole code should be moved inside there), nor
+does some of the comments.
 
-Something hacky like the above might fix it if I'm not just raving. I
-really might be missing something here.
+This patch is scary and untested, but the more I look at that code, the
+more convinced I am that vma_adjust was _really_ badly screwed up. The
+patch below may make things worse. I'll test it myself too, but I'm
+sending it out first, since I was writing the email as I was looking at
+the piece of cr*p.
 
 		Linus
 ---
- include/asm-generic/tlb.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ mm/mmap.c |   24 ++++++++----------------
+ 1 files changed, 8 insertions(+), 16 deletions(-)
 
-diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
-index e43f976..2678118 100644
---- a/include/asm-generic/tlb.h
-+++ b/include/asm-generic/tlb.h
-@@ -14,6 +14,7 @@
- #define _ASM_GENERIC__TLB_H
+diff --git a/mm/mmap.c b/mm/mmap.c
+index acb023e..f90ea92 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -507,11 +507,12 @@ int vma_adjust(struct vm_area_struct *vma, unsigned long start,
+ 	struct address_space *mapping = NULL;
+ 	struct prio_tree_root *root = NULL;
+ 	struct file *file = vma->vm_file;
+-	struct anon_vma *anon_vma = NULL;
+ 	long adjust_next = 0;
+ 	int remove_next = 0;
  
- #include <linux/swap.h>
-+#include <linux/rcupdate.h>
- #include <asm/pgalloc.h>
- #include <asm/tlbflush.h>
+ 	if (next && !insert) {
++		struct vm_area_struct *exporter = NULL;
++
+ 		if (end >= next->vm_end) {
+ 			/*
+ 			 * vma expands, overlapping all the next, and
+@@ -519,7 +520,7 @@ int vma_adjust(struct vm_area_struct *vma, unsigned long start,
+ 			 */
+ again:			remove_next = 1 + (end > next->vm_end);
+ 			end = next->vm_end;
+-			anon_vma = next->anon_vma;
++			exporter = next;
+ 			importer = vma;
+ 		} else if (end > next->vm_start) {
+ 			/*
+@@ -527,7 +528,7 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 			 * mprotect case 5 shifting the boundary up.
+ 			 */
+ 			adjust_next = (end - next->vm_start) >> PAGE_SHIFT;
+-			anon_vma = next->anon_vma;
++			exporter = next;
+ 			importer = vma;
+ 		} else if (end < vma->vm_end) {
+ 			/*
+@@ -536,28 +537,19 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 			 * mprotect case 4 shifting the boundary down.
+ 			 */
+ 			adjust_next = - ((vma->vm_end - end) >> PAGE_SHIFT);
+-			anon_vma = next->anon_vma;
++			exporter = vma;
+ 			importer = next;
+ 		}
+-	}
  
-@@ -62,6 +63,7 @@ tlb_gather_mmu(struct mm_struct *mm, unsigned int full_mm_flush)
- 
- 	tlb->fullmm = full_mm_flush;
- 
-+	rcu_read_lock();
- 	return tlb;
- }
- 
-@@ -90,6 +92,7 @@ tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start, unsigned long end)
- 	/* keep the page table cache within bounds */
- 	check_pgt_cache();
- 
-+	rcu_read_unlock();
- 	put_cpu_var(mmu_gathers);
- }
+-	/*
+-	 * When changing only vma->vm_end, we don't really need anon_vma lock.
+-	 */
+-	if (vma->anon_vma && (insert || importer || start != vma->vm_start))
+-		anon_vma = vma->anon_vma;
+-	if (anon_vma) {
+ 		/*
+ 		 * Easily overlooked: when mprotect shifts the boundary,
+ 		 * make sure the expanding vma has anon_vma set if the
+ 		 * shrinking vma had, to cover any anon pages imported.
+ 		 */
+-		if (importer && !importer->anon_vma) {
+-			/* Block reverse map lookups until things are set up. */
+-			if (anon_vma_clone(importer, vma)) {
++		if (exporter && exporter->anon_vma && !importer->anon_vma) {
++			if (anon_vma_clone(importer, exporter))
+ 				return -ENOMEM;
+-			}
+-			importer->anon_vma = anon_vma;
++			importer->anon_vma = exporter->anon_vma;
+ 		}
+ 	}
  
 -- 
 1.7.0.3
