@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834Ab0DKSzy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 14:55:54 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:62509 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693Ab0DKSzx (ORCPT
+	id S1752827Ab0DKS7B (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 14:59:01 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:40009 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752747Ab0DKS67 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 14:55:53 -0400
-X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXJ75k/AprGTViQ=
-X-RZG-CLASS-ID: mo00
-Message-ID: <4BC21AC4.8060403@hartkopp.net>
-Date: Sun, 11 Apr 2010 20:53:56 +0200
-From: Oliver Hartkopp <socketcan@hartkopp.net>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
+	Sun, 11 Apr 2010 14:58:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=fg18QK2G/ogZTV5bGtC9q28H96v/MDZMeorBA2dk1B96+zIQLl42QT6NltASRFubha
+         YzlgRbHkWIKXNtUJMy36ZkiJoJBF7JlKUoWbLhzDip1z2y2PDSMAQcGTxF1EJM6ZqPAY
+         Olh7Mhn68FEbikCQ5e4P+Bul2/CaRNBbPPCfo=
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: nm127@freemail.hu, eric.dumazet@gmail.com, oliver.hartkopp@volkswagen.de,
-       urs.thuermann@volkswagen.de, socketcan-core@lists.berlios.de,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Linux 2.6.34-rc3 + CAN build problem
-References: <1270892851.2093.32.camel@edumazet-laptop>	<4BC054AE.7040303@freemail.hu>	<4BC070E0.6070601@hartkopp.net> <20100410.155009.66184583.davem@davemloft.net>
-In-Reply-To: <20100410.155009.66184583.davem@davemloft.net>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100412185136.GA13171@x200>
+References: <20100411164701.GA7558@elf.ucw.cz> <20100412185136.GA13171@x200>
+Date: Sun, 11 Apr 2010 20:58:58 +0200
+X-Google-Sender-Auth: 346e3ec56b442aaa
+Message-ID: <g2v10f740e81004111158r4d4714a1w23b8521d5d595b29@mail.gmail.com>
+Subject: Re: LOCALVERSION_AUTO considered harmful
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@osdl.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller wrote:
-> From: Oliver Hartkopp <socketcan@hartkopp.net>
-> Date: Sat, 10 Apr 2010 14:36:48 +0200
-> 
->> So i wonder why Nemeth trapped into this problem ... probably an include file
->> mix-up?
-> 
-> Do you have CONFIG_DEBUG_STRICT_USER_COPY_CHECKS enabled in your
-> kernel config?
-> 
-> That's the only way you get an actual failure of a build when
-> the user copy size can't be proven to be in range by the
-> compiler, otherwise it just warns.
+On Mon, Apr 12, 2010 at 20:51, Alexey Dobriyan <adobriyan@gmail.com> wrote:
+> On Sun, Apr 11, 2010 at 06:47:01PM +0200, Pavel Machek wrote:
+>> @@ -99,6 +98,11 @@ config LOCALVERSION_AUTO
+>>         appended after any matching localversion* files, and after the value
+>>         set in CONFIG_LOCALVERSION.
+>>
+>> +       Unfortunately, such finegrained versioning will mean that you will
+>> +       not be able to use modules for development; even "make modules"
+>> +       will change module versions, making recompiled modules impossible
+>> +       to insert into old kernel.
+>
+> That's conditional BS.
+> Turn off CONFIG_MODVERSIONS already.
 
-No, indeed i do not have it set.
+Yeah, I disabled it ages ago. Even then (before git, probably even
+before bitkeeper)
+I had hard times inserting modules...
 
-# CONFIG_DEBUG_STRICT_USER_COPY_CHECKS is not set
+Gr{oetje,eeting}s,
 
-What would be the best approach to fix this build failure then?
+						Geert
 
-By applying the patch thankfully provided by Eric?
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Regards,
-Oliver
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
