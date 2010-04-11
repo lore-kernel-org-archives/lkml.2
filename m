@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751056Ab0DKESK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 00:18:10 -0400
-Received: from 209-20-91-232.slicehost.net ([209.20.91.232]:47520 "EHLO
-	fczbackup" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750713Ab0DKESJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 00:18:09 -0400
-To: linux-kernel@vger.kernel.org
-Subject: Goodbye from our Newsletter
-Recieved: 
-Date: Sun, 11 Apr 2010 06:18:06 +0200
-From: Webmaster <noreply@fcz.it>
-Message-ID: <0d16e6988162a0d69a2ee29a5a3799ab@fcz.it>
-X-Priority: 3
-X-Mailer: PHPMailer [version 1.73]
-X-Mailer: phplist v2.10.10
-X-MessageID: systemmessage
-X-ListMember: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
+	id S1751100Ab0DKEkR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 00:40:17 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52756
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750813Ab0DKEkP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Apr 2010 00:40:15 -0400
+Date: Sat, 10 Apr 2010 21:40:17 -0700 (PDT)
+Message-Id: <20100410.214017.165974351.davem@davemloft.net>
+To: ebiederm@xmission.com
+CC: gregkh@suse.de, James.Bottomley@suse.de, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] scsi: Add lockdep annotations to SAS sysfs attributes.
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-  
-  Goodbye from our Newsletter, sorry to see you go.
+They are allocated dynamically, and thus need sysfs_attr_init()
+treatment.
 
-  You have been unsubscribed from our newsletters.
+Signed-off-by: David S. Miller <davem@davemloft.net>
 
-  This is the last email you will receive from us. We have added you to our
-  "blacklist", which means that our newsletter system will refuse to send
-  you any other email, without manual intervention by our administrator.
-
-  If there is an error in this information, you can re-subscribe:
-  please go to http://fcz.it/newsletter/?p=subscribe and follow the steps.
-
-  Thank you
-  
-  
-
+diff --git a/drivers/scsi/scsi_transport_sas.c b/drivers/scsi/scsi_transport_sas.c
+index 927e99c..f9c61b9 100644
+--- a/drivers/scsi/scsi_transport_sas.c
++++ b/drivers/scsi/scsi_transport_sas.c
+@@ -1679,15 +1679,17 @@ static int sas_user_scan(struct Scsi_Host *shost, uint channel,
+  */
+ 
+ #define SETUP_TEMPLATE(attrb, field, perm, test)			\
+-	i->private_##attrb[count] = dev_attr_##field;		\
++	i->private_##attrb[count] = dev_attr_##field;			\
+ 	i->private_##attrb[count].attr.mode = perm;			\
++	sysfs_attr_init(&i->private_##attrb[count].attr);		\
+ 	i->attrb[count] = &i->private_##attrb[count];			\
+ 	if (test)							\
+ 		count++
+ 
+ #define SETUP_TEMPLATE_RW(attrb, field, perm, test, ro_test, ro_perm)	\
+-	i->private_##attrb[count] = dev_attr_##field;		\
++	i->private_##attrb[count] = dev_attr_##field;			\
+ 	i->private_##attrb[count].attr.mode = perm;			\
++	sysfs_attr_init(&i->private_##attrb[count].attr);		\
+ 	if (ro_test) {							\
+ 		i->private_##attrb[count].attr.mode = ro_perm;		\
+ 		i->private_##attrb[count].store = NULL;			\
