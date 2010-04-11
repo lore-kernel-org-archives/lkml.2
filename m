@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147Ab0DKPoq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 11:44:46 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:46322 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751143Ab0DKPoo (ORCPT
+	id S1752185Ab0DKQfl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 12:35:41 -0400
+Received: from mail-qy0-f179.google.com ([209.85.221.179]:65414 "EHLO
+	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752131Ab0DKQfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 11:44:44 -0400
-Date: Sun, 11 Apr 2010 17:44:37 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Philippe Troin <phil@fifi.org>,
-       Mohamed Ikbel Boulabiar <boulabiar@gmail.com>,
-       linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: webcam problem after suspend/hibernate
-Message-ID: <20100411154437.GA16098@elf.ucw.cz>
-References: <45cc95261003301455u10e6ee24pfb66176bfb279d1@mail.gmail.com>
- <87ljd3ujrp.fsf@old-tantale.fifi.org>
- <20100404193405.GA15065@elf.ucw.cz>
- <201004111253.58237.laurent.pinchart@ideasonboard.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201004111253.58237.laurent.pinchart@ideasonboard.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 11 Apr 2010 12:35:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:subject:to:cc:in-reply-to:references;
+        b=omex11hrAQEpREBtziQu7mfan09pqbxSKpXKSRxqX3trfvtzJhkHva1julqZnlqqNO
+         elitazB73k048tCRH0g3vXlw86PV0bjVVPIshsLALGr8zdR3eFqqTND0K9OxbPQH8M7c
+         aKgLKm00TD8fAbhssN1IHBV8d7k7BuIgDfCIg=
+Message-ID: <4bc1fa59.c5c2f10a.776d.ffffcd91@mx.google.com>
+Date: Sun, 11 Apr 2010 09:35:37 -0700 (PDT)
+From: Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: Poor interactive performance with I/O loads with fsync()ing
+To: Avi Kivity <avi@redhat.com>, linux-btrfs@vger.kernel.org
+Cc: Andi Kleen <andi@firstfloor.org>, Arjan van de Ven <arjan@infradead.org>,
+       linux-kernel@vger.kernel.org, tytso@mit.edu, npiggin@suse.de,
+       mingo@elte.hu, Ruald Andreae <ruald.a@gmail.com>,
+       Jens Axboe <jens.axboe@oracle.com>, Olly Betts <olly@survex.com>,
+       martin f krafft <madduck@madduck.net>
+In-Reply-To: <4BC1E4A4.1070103@redhat.com>
+References: <4b9fa440.12135e0a.7fc8.ffffe745@mx.google.com>
+	<4baeaee5.c5c2f10a.7187.2688@mx.google.com>
+	<20100327204233.0d84542a@infradead.org>
+	<4baf624c.48c3f10a.16d0.ffffccb8@mx.google.com>
+	<87y6hcyu85.fsf@basil.nowhere.org>
+	<4bbf401e.a3b9e70a.13f3.4460@mx.google.com>
+	<4BC1E4A4.1070103@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > > My testing shows that:
-> > >  1. If I remove uvcvideo BEFORE suspend and reinsert it after resume,
-> > >  
-> > >     it works.  However, I cannot always rmmod uvcvideo before suspend
-> > >     as it may be in use.
-...
-> > > I think uvcvideo is failing to reinitialize the camera on resume, and
-> > > forcing an uvcvideo "reset" with either of these three methods kicks
-> > > uvcvideo into working again.
-> > 
-> > Ok, that puts the problem firmly into uvcvideo area.
+On Sun, 11 Apr 2010 18:03:00 +0300, Avi Kivity <avi@redhat.com> wrote:
+> On 04/09/2010 05:56 PM, Ben Gamari wrote:
+> > On Mon, 29 Mar 2010 00:08:58 +0200, Andi Kleen<andi@firstfloor.org>  wrote:
+> >    
+> >> Ben Gamari<bgamari.foss@gmail.com>  writes:
+> >> ext4/XFS/JFS/btrfs should be better in this regard
+> >>
+> >>      
+> > I am using btrfs, so yes, I was expecting things to be better. Unfortunately,
+> > the improvement seems to be non-existent under high IO/fsync load.
+> >
 > 
-> No, it doesn't.
-
-I believe that the fact that rmmod/insmod fixes it means that problem
-is in the driver (and not in ehci or something like that).
-
-> First of all, the dmesg output available on pastebin.com is difficult to 
-> understand. As it seems you perform several suspend/resume cycles there. 
-> Mohamed, could you please
+> btrfs is known to perform poorly under fsync.
 > 
-> - clear the kernel log ('dmesg -c' as root)
-> - suspend and resume your system
-> - post the kernel log content ('dmesg')
-> - clear the kernel log
-> - try to use your webcam with whatever test software your prefer
-> - describe the failure (application error messages, ...)
-> - post the kernel log content
+Has the reason for this been identified? Judging from the nature of metadata
+loads, it would seem that it should be substantially easier to implement
+fsync() efficiently.
 
-Good idea.
+- Ben
 
-> > Try changing its _resume routine to whatever is done on device
-> > unplug... it should be rather easy, and is quite close to "correct"
-> > solution.
-> 
-> That's not a solution. Devices are supposed to resume properly without being 
-> reset. The camera might be crashing, or the USB core might be doing something 
-> wrong, requiring some kind of reset. I'd like to diagnose the problem 
-> correctly before trying to fix it.
-
-Ok. (You are right that simulating rmmod/insmod is not the same as
-proper suspend/resume support, but I still guess it would help with
-debugging.)
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
