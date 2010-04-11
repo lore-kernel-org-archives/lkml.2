@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab0DKVlb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 17:41:31 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42355
+	id S1753045Ab0DKVnM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 17:43:12 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42363
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753022Ab0DKVla (ORCPT
+	by vger.kernel.org with ESMTP id S1752862Ab0DKVnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 17:41:30 -0400
-Date: Sun, 11 Apr 2010 14:41:33 -0700 (PDT)
-Message-Id: <20100411.144133.193724547.davem@davemloft.net>
-To: andi@firstfloor.org
-Cc: cristiklein@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tcp: add setsockopt to disable slow start after idle
+	Sun, 11 Apr 2010 17:43:10 -0400
+Date: Sun, 11 Apr 2010 14:43:13 -0700 (PDT)
+Message-Id: <20100411.144313.71127091.davem@davemloft.net>
+To: herbert@gondor.hengli.com.au
+Cc: yinghai@kernel.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       torvalds@linux-foundation.org
+Subject: Re: ssh server etc doesn't work anymore with net-2.6
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <87hbnhbtrg.fsf@basil.nowhere.org>
-References: <1270863015-19597-1-git-send-email-cristiklein@gmail.com>
-	<20100409.221307.246951787.davem@davemloft.net>
-	<87hbnhbtrg.fsf@basil.nowhere.org>
+In-Reply-To: <20100411120403.GA20565@gondor.apana.org.au>
+References: <20100411100902.GA20141@gondor.apana.org.au>
+	<20100411120403.GA20565@gondor.apana.org.au>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -25,21 +25,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <andi@firstfloor.org>
-Date: Sun, 11 Apr 2010 22:48:19 +0200
+From: Herbert Xu <herbert@gondor.apana.org.au>
+Date: Sun, 11 Apr 2010 20:04:03 +0800
 
-> It should be safe as long as you don't have any packet loss (which
-> means the network can take it). Or I am missing something?
+> Herbert Xu <herbert@gondor.apana.org.au> wrote:
+>> 
+>> After looking at the actual net-2.6 tree I see that it is actually
+>> CHECKSUM_PARTIAL that caused this breakage.
+>> 
+>> The fact that when this was first implemented we didn't use hw
+>> checksums on dataless packets might not have been an oversight
+>> after all.
 > 
-> So perhaps allow it, but force disable it on the first retransmit?
+> Looks like I was too quick to blame the hardware, the synack
+> code can't handle CHECKSUM_PARTIAL so this is probably the real
+> cause.
+> 
+> I will send patches to fix this.
 
-Unless you can detect packet loss or queueing delay incurred by
-everyone else on the internet, this won't work.
+Thanks a lot for figuring this out.
 
-Look, just drop this discussion, people simply don't understand the
-implications of what they are suggesting.
-
-The only thing I am willing to consider is a per-route attribute for
-this setting, because that would be another legitimate to make this
-setting.
-
+I'll put my original patch (with fixed commit log message!)
+and your fixes into net-next-2.6
