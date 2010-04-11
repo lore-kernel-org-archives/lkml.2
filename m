@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161Ab0DKWYm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 18:24:42 -0400
-Received: from www.tglx.de ([62.245.132.106]:35344 "EHLO www.tglx.de"
+	id S1753198Ab0DKWpO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 18:45:14 -0400
+Received: from ns.netcenter.hu ([195.228.254.57]:48121 "EHLO mail.netcenter.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753003Ab0DKWYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 18:24:41 -0400
-Date: Mon, 12 Apr 2010 00:24:10 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Pavel Machek <pavel@ucw.cz>
-cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-       Alexey Dobriyan <adobriyan@gmail.com>,
-       kernel list <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@osdl.org>
-Subject: Re: LOCALVERSION_AUTO considered harmful
-In-Reply-To: <20100411201426.GC25294@elf.ucw.cz>
-Message-ID: <alpine.LFD.2.00.1004120022230.18009@localhost.localdomain>
-References: <20100411164701.GA7558@elf.ucw.cz> <20100412185136.GA13171@x200> <g2v10f740e81004111158r4d4714a1w23b8521d5d595b29@mail.gmail.com> <20100411201426.GC25294@elf.ucw.cz>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753064Ab0DKWpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Apr 2010 18:45:12 -0400
+Message-ID: <11b701cad9c8$93212530$0400a8c0@dcccs>
+From: "Janos Haar" <janos.haar@netcenter.hu>
+To: "Dave Chinner" <david@fromorbit.com>
+Cc: <xiyou.wangcong@gmail.com>, <linux-kernel@vger.kernel.org>,
+       <kamezawa.hiroyu@jp.fujitsu.com>, <linux-mm@kvack.org>,
+       <xfs@oss.sgi.com>, <axboe@kernel.dk>
+References: <02c101cacbf8$d21d1650$0400a8c0@dcccs> <179901cad182$5f87f620$0400a8c0@dcccs> <t2h2375c9f91004010337p618c4d5yc739fa25b5f842fa@mail.gmail.com> <1fe901cad2b0$d39d0300$0400a8c0@dcccs> <20100402230905.GW3335@dastard> <22c901cad333$7a67db60$0400a8c0@dcccs> <20100404103701.GX3335@dastard> <2bd101cad4ec$5a425f30$0400a8c0@dcccs> <20100405224522.GZ3335@dastard> <3a5f01cad6c5$8a722c00$0400a8c0@dcccs> <20100408025822.GL11036@dastard>
+Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look please!...)
+Date: Mon, 12 Apr 2010 00:44:37 +0200
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2080386426-1271024652=:18009"
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.3598
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi,
 
---8323328-2080386426-1271024652=:18009
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Sun, 11 Apr 2010, Pavel Machek wrote:
-
-> On Sun 2010-04-11 20:58:58, Geert Uytterhoeven wrote:
-> > On Mon, Apr 12, 2010 at 20:51, Alexey Dobriyan <adobriyan@gmail.com> wrote:
-> > > On Sun, Apr 11, 2010 at 06:47:01PM +0200, Pavel Machek wrote:
-> > >> @@ -99,6 +98,11 @@ config LOCALVERSION_AUTO
-> > >>         appended after any matching localversion* files, and after the value
-> > >>         set in CONFIG_LOCALVERSION.
-> > >>
-> > >> +       Unfortunately, such finegrained versioning will mean that you will
-> > >> +       not be able to use modules for development; even "make modules"
-> > >> +       will change module versions, making recompiled modules impossible
-> > >> +       to insert into old kernel.
-> > >
-> > > That's conditional BS.
-> > > Turn off CONFIG_MODVERSIONS already.
-> > 
-> > Yeah, I disabled it ages ago. Even then (before git, probably even
-> > before bitkeeper)
-> > I had hard times inserting modules...
-> 
-> I _had_ it off
-> 
->  # CONFIG_MODVERSIONS is not set
-> 
-> It seems some checking survives CONFIG_MODVERSIONS unset and that
-> checking is strict enough to refuse module load after one "make
-> modules" with LOCALVERSION_AUTO on...
-
-So instead of fixing the CONFIG_MODVERSIONS=n case you go the easy way
-of killing LOCALVERSION_AUTO ? Brilliant.
+Ok, here comes the funny part:
+I have got several messages from the kernel about one of my XFS (sdb2) have 
+corrupted inodes, but my xfs_repair (v. 2.8.11) says the FS is clean and 
+shine.
+Should i upgrade my xfs_repair, or this is another bug? :-)
 
 Thanks,
 
-	tglx
---8323328-2080386426-1271024652=:18009--
+Janos
+
+----- Original Message ----- 
+From: "Dave Chinner" <david@fromorbit.com>
+To: "Janos Haar" <janos.haar@netcenter.hu>
+Cc: <xiyou.wangcong@gmail.com>; <linux-kernel@vger.kernel.org>; 
+<kamezawa.hiroyu@jp.fujitsu.com>; <linux-mm@kvack.org>; <xfs@oss.sgi.com>; 
+<axboe@kernel.dk>
+Sent: Thursday, April 08, 2010 4:58 AM
+Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look 
+please!...)
+
+
+> On Thu, Apr 08, 2010 at 04:45:13AM +0200, Janos Haar wrote:
+>> Hello,
+>>
+>> Sorry, but still have the problem with 2.6.33.2.
+>
+> Yeah, these still a fix that needs to be back ported to .33
+> to solve this problem. It's in the series for 2.6.32.x, so maybe
+> pulling the 2.6.32-stable-queue tree in the meantime is your best
+> bet.
+>
+> Cheers,
+>
+> Dave.
+> -- 
+> Dave Chinner
+> david@fromorbit.com
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/ 
+
