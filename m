@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751600Ab0DKJdb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 05:33:31 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55859
+	id S1751688Ab0DKJnv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 05:43:51 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33603
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751518Ab0DKJd3 (ORCPT
+	by vger.kernel.org with ESMTP id S1751615Ab0DKJnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 05:33:29 -0400
-Date: Sun, 11 Apr 2010 02:33:32 -0700 (PDT)
-Message-Id: <20100411.023332.119286627.davem@davemloft.net>
+	Sun, 11 Apr 2010 05:43:49 -0400
+Date: Sun, 11 Apr 2010 02:43:52 -0700 (PDT)
+Message-Id: <20100411.024352.209996508.davem@davemloft.net>
 To: yinghai@kernel.org
 Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
        torvalds@linux-foundation.org
@@ -29,20 +29,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Yinghai Lu <yinghai@kernel.org>
 Date: Sun, 11 Apr 2010 02:32:33 -0700
 
-> On Sun, Apr 11, 2010 at 2:24 AM, David Miller <davem@davemloft.net> wrote:
->> From: Yinghai Lu <yinghai@kernel.org>
->> Date: Sun, 11 Apr 2010 02:17:09 -0700
->>
->>> it will make sshd server, telnet server and vnc server doesn't respond
->>> connecting request anymore.
->>
->> What kind of network device are you using?
->>
->> And regardless of the underlying physical network device, are you
->> going over some virtual device such as a tunnel, a bonding device, or
->> a virtualization network interface?
-> 
 > server side: 82576 with net-2.6
 > client side: opensuse 11.2 on thinkpad T61 wireless + vpnc
 
-Thanks.
+I've pushed out a revert, we'll sort this out in net-next-2.6
+and meanwhile I've started a dialog with the Intel driver
+folks to see if there IGB chip has a problem with handling
+CHECKSUM_PARTIAL packets with a zero length data area.
+
+Thanks for your report.
