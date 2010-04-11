@@ -1,63 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab0DKS7B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 14:59:01 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:40009 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747Ab0DKS67 convert rfc822-to-8bit (ORCPT
+	id S1752859Ab0DKTQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 15:16:27 -0400
+Received: from fg-out-1718.google.com ([72.14.220.153]:14160 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693Ab0DKTQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 14:58:59 -0400
+	Sun, 11 Apr 2010 15:16:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=fg18QK2G/ogZTV5bGtC9q28H96v/MDZMeorBA2dk1B96+zIQLl42QT6NltASRFubha
-         YzlgRbHkWIKXNtUJMy36ZkiJoJBF7JlKUoWbLhzDip1z2y2PDSMAQcGTxF1EJM6ZqPAY
-         Olh7Mhn68FEbikCQ5e4P+Bul2/CaRNBbPPCfo=
+        h=sender:from:to:cc:subject:references:x-url:x-pgp-fp:x-pgp:date
+         :in-reply-to:message-id:user-agent:mime-version:content-type;
+        b=SJH65PhpfGsnaswVgqi7aaB6wK2tT7ojoILG1uluRJqZgZL/fbu7cbLKpSTtmS2bSs
+         SJfa+PZ9BWZL71dOhv4wGJtTi70GI+bcxxBnDORIepmTgEjWEmSp9cJN8UqgqpJwUSeh
+         83CsjKfyY9iuGgjum08n4LgpkVbXgp/5ARtxE=
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-usb@vger.kernel.org,
+       Davide Libenzi <davidel@xmailserver.org>, Greg KH <greg@kroah.com>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 2/8] fs/timerfd.c: make use of wait_event_interruptible_locked_irq()
+References: <cover.1270835924.git.mina86@mina86.com>
+	<3baf39971e1f49e98498f5d00e21df4302396252.1270835924.git.mina86@mina86.com>
+	<e6cbed26355492a8cde57973da56bccbb55b85a1.1270835924.git.mina86@mina86.com>
+	<alpine.LFD.2.00.1004111618000.32352@localhost.localdomain>
+X-Url: http://mina86.com/
+X-PGP-FP: 9134 06FA 7AD8 D134 9D0C  C33F 532C CB00 B7C6 DF1E
+X-PGP: B7C6DF1E
+Date: Sun, 11 Apr 2010 21:16:17 +0200
+In-Reply-To: <alpine.LFD.2.00.1004111618000.32352@localhost.localdomain>
+	(Thomas Gleixner's message of "Sun, 11 Apr 2010 16:31:50 +0200
+	(CEST)")
+Message-ID: <87ochplrzy.fsf@erwin.mina86.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (Slckware Linux)
 MIME-Version: 1.0
-In-Reply-To: <20100412185136.GA13171@x200>
-References: <20100411164701.GA7558@elf.ucw.cz> <20100412185136.GA13171@x200>
-Date: Sun, 11 Apr 2010 20:58:58 +0200
-X-Google-Sender-Auth: 346e3ec56b442aaa
-Message-ID: <g2v10f740e81004111158r4d4714a1w23b8521d5d595b29@mail.gmail.com>
-Subject: Re: LOCALVERSION_AUTO considered harmful
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@osdl.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 12, 2010 at 20:51, Alexey Dobriyan <adobriyan@gmail.com> wrote:
-> On Sun, Apr 11, 2010 at 06:47:01PM +0200, Pavel Machek wrote:
->> @@ -99,6 +98,11 @@ config LOCALVERSION_AUTO
->>         appended after any matching localversion* files, and after the value
->>         set in CONFIG_LOCALVERSION.
->>
->> +       Unfortunately, such finegrained versioning will mean that you will
->> +       not be able to use modules for development; even "make modules"
->> +       will change module versions, making recompiled modules impossible
->> +       to insert into old kernel.
->
-> That's conditional BS.
-> Turn off CONFIG_MODVERSIONS already.
+> On Fri, 9 Apr 2010, Michal Nazarewicz wrote:
+>> diff --git a/fs/timerfd.c b/fs/timerfd.c
+>> index 1bfc95a..4d2c371 100644
+>> --- a/fs/timerfd.c
+>> +++ b/fs/timerfd.c
+>> @@ -109,31 +109,13 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
+>>  	struct timerfd_ctx *ctx = file->private_data;
+>>  	ssize_t res;
+>>  	u64 ticks = 0;
+>> -	DECLARE_WAITQUEUE(wait, current);
+>>  
+>>  	if (count < sizeof(ticks))
+>>  		return -EINVAL;
+>>  	spin_lock_irq(&ctx->wqh.lock);
+>>  	res = -EAGAIN;
+>> -	if (!ctx->ticks && !(file->f_flags & O_NONBLOCK)) {
+>> -		__add_wait_queue(&ctx->wqh, &wait);
+>> -		for (res = 0;;) {
+>> -			set_current_state(TASK_INTERRUPTIBLE);
+>> -			if (ctx->ticks) {
+>> -				res = 0;
+>> -				break;
+>> -			}
+>> -			if (signal_pending(current)) {
+>> -				res = -ERESTARTSYS;
+>> -				break;
+>> -			}
+>> -			spin_unlock_irq(&ctx->wqh.lock);
+>> -			schedule();
+>> -			spin_lock_irq(&ctx->wqh.lock);
+>> -		}
+>> -		__remove_wait_queue(&ctx->wqh, &wait);
+>> -		__set_current_state(TASK_RUNNING);
+>> -	}
+>> +	if (!(file->f_flags & O_NONBLOCK))
+>> +		wait_event_interruptible_locked_irq(ctx->wqh, ctx->ticks);
 
-Yeah, I disabled it ages ago. Even then (before git, probably even
-before bitkeeper)
-I had hard times inserting modules...
+Thomas Gleixner <tglx@linutronix.de> writes:
+> With this change we return -EAGAIN instead of -ERESTARTSYS when the
+> wait got interrupted by a signal. That means instead of restarting the
+> syscall we return -EAGAIN to user space.
 
-Gr{oetje,eeting}s,
+Stupid mistake, the following should fix it:
 
-						Geert
++		res = wait_event_interruptible_locked_irq(ctx->wqh, ctx->ticks);
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Sorry about that.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+I'll resubmit an updated patchset by the end of the week.
+
+-- 
+Best regards,                                         _     _
+ .o. | Liege of Serenly Enlightened Majesty of      o' \,=./ `o
+ ..o | Computer Science,  Michal "mina86" Nazarewicz   (o o)
+ ooo +--<mina86-tlen.pl>--<jid:mina86-jabber.org>--ooO--(_)--Ooo--
