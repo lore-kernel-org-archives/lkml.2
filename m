@@ -1,121 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936Ab0DKMQf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 08:16:35 -0400
-Received: from ringil.hengli.com.au ([216.59.3.182]:55358 "EHLO
-	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751247Ab0DKMQF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 08:16:05 -0400
-Subject: [PATCH 2/3] tcp: Handle CHECKSUM_PARTIAL for SYNACK packets for IPv6
-References: <20100411100902.GA20141@gondor.apana.org.au>
-To: davem@davemloft.net, yinghai@kernel.org, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org, torvalds@linux-foundation.org
-Message-Id: <E1O0w4w-0005V0-Ip@gondolin.me.apana.org.au>
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-Date: Sun, 11 Apr 2010 20:15:54 +0800
+	id S1751861Ab0DKMfT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 08:35:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34697 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751463Ab0DKMfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Apr 2010 08:35:18 -0400
+Subject: Re: [PATCH 1/2] scsi: Add lockdep annotations to SAS sysfs
+ attributes.
+From: James Bottomley <James.Bottomley@suse.de>
+To: David Miller <davem@davemloft.net>
+Cc: ebiederm@xmission.com, gregkh@suse.de, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100410.214017.165974351.davem@davemloft.net>
+References: <20100410.214017.165974351.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 11 Apr 2010 07:35:12 -0500
+Message-ID: <1270989312.2806.644.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tcp: Handle CHECKSUM_PARTIAL for SYNACK packets for IPv6
+On Sat, 2010-04-10 at 21:40 -0700, David Miller wrote:
+> They are allocated dynamically, and thus need sysfs_attr_init()
+> treatment.
 
-This patch moves the common code between tcp_v6_send_check and
-tcp_v6_gso_send_check into a new function __tcp_v6_send_check.
+This should all be taken care of by
 
-It then uses the new function in tcp_v6_send_synack as well as
-tcp_v6_send_response so that they handle CHECKSUM_PARTIAL properly.
+commit ebd09ec93c90c8ec571d7e166832fb1fc705bf5e
+Author: James Bottomley <James.Bottomley@suse.de>
+Date:   Sat Mar 20 12:44:12 2010 -0500
 
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
----
+    [SCSI] attirbute_container: Initialize sysfs attributes with
+sysfs_attr_init
 
- net/ipv6/tcp_ipv6.c |   37 +++++++++++++++++++------------------
- 1 file changed, 19 insertions(+), 18 deletions(-)
+I can't check the FC class, but I have checked the SAS one, and I don't
+see any more lockdep warn ons ... unless there's one I'm not seeing
+because of the options I've compiled with?
 
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index c92ebe8..f84c506 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -75,6 +75,9 @@ static void	tcp_v6_reqsk_send_ack(struct sock *sk, struct sk_buff *skb,
- 				      struct request_sock *req);
- 
- static int	tcp_v6_do_rcv(struct sock *sk, struct sk_buff *skb);
-+static void	__tcp_v6_send_check(struct sk_buff *skb,
-+				    struct in6_addr *saddr,
-+				    struct in6_addr *daddr);
- 
- static const struct inet_connection_sock_af_ops ipv6_mapped;
- static const struct inet_connection_sock_af_ops ipv6_specific;
-@@ -503,11 +506,7 @@ static int tcp_v6_send_synack(struct sock *sk, struct request_sock *req,
- 
- 	skb = tcp_make_synack(sk, dst, req, rvp);
- 	if (skb) {
--		struct tcphdr *th = tcp_hdr(skb);
--
--		th->check = tcp_v6_check(skb->len,
--					 &treq->loc_addr, &treq->rmt_addr,
--					 csum_partial(th, skb->len, skb->csum));
-+		__tcp_v6_send_check(skb, &treq->loc_addr, &treq->rmt_addr);
- 
- 		ipv6_addr_copy(&fl.fl6_dst, &treq->rmt_addr);
- 		err = ip6_xmit(sk, skb, &fl, opt, 0);
-@@ -918,22 +917,29 @@ static struct timewait_sock_ops tcp6_timewait_sock_ops = {
- 	.twsk_destructor= tcp_twsk_destructor,
- };
- 
--static void tcp_v6_send_check(struct sock *sk, int len, struct sk_buff *skb)
-+static void __tcp_v6_send_check(struct sk_buff *skb,
-+				struct in6_addr *saddr, struct in6_addr *daddr)
- {
--	struct ipv6_pinfo *np = inet6_sk(sk);
- 	struct tcphdr *th = tcp_hdr(skb);
- 
- 	if (skb->ip_summed == CHECKSUM_PARTIAL) {
--		th->check = ~csum_ipv6_magic(&np->saddr, &np->daddr, len, IPPROTO_TCP,  0);
-+		th->check = ~tcp_v6_check(skb->len, saddr, daddr, 0);
- 		skb->csum_start = skb_transport_header(skb) - skb->head;
- 		skb->csum_offset = offsetof(struct tcphdr, check);
- 	} else {
--		th->check = csum_ipv6_magic(&np->saddr, &np->daddr, len, IPPROTO_TCP,
--					    csum_partial(th, th->doff<<2,
--							 skb->csum));
-+		th->check = tcp_v6_check(skb->len, saddr, daddr,
-+					 csum_partial(th, th->doff << 2,
-+						      skb->csum));
- 	}
- }
- 
-+static void tcp_v6_send_check(struct sock *sk, int len, struct sk_buff *skb)
-+{
-+	struct ipv6_pinfo *np = inet6_sk(sk);
-+
-+	__tcp_v6_send_check(skb, &np->saddr, &np->daddr);
-+}
-+
- static int tcp_v6_gso_send_check(struct sk_buff *skb)
- {
- 	struct ipv6hdr *ipv6h;
-@@ -946,11 +952,8 @@ static int tcp_v6_gso_send_check(struct sk_buff *skb)
- 	th = tcp_hdr(skb);
- 
- 	th->check = 0;
--	th->check = ~csum_ipv6_magic(&ipv6h->saddr, &ipv6h->daddr, skb->len,
--				     IPPROTO_TCP, 0);
--	skb->csum_start = skb_transport_header(skb) - skb->head;
--	skb->csum_offset = offsetof(struct tcphdr, check);
- 	skb->ip_summed = CHECKSUM_PARTIAL;
-+	__tcp_v6_send_check(skb, &ipv6h->saddr, &ipv6h->daddr);
- 	return 0;
- }
- 
-@@ -1053,9 +1056,7 @@ static void tcp_v6_send_response(struct sk_buff *skb, u32 seq, u32 ack, u32 win,
- 	ipv6_addr_copy(&fl.fl6_dst, &ipv6_hdr(skb)->saddr);
- 	ipv6_addr_copy(&fl.fl6_src, &ipv6_hdr(skb)->daddr);
- 
--	t1->check = csum_ipv6_magic(&fl.fl6_src, &fl.fl6_dst,
--				    tot_len, IPPROTO_TCP,
--				    buff->csum);
-+	__tcp_v6_send_check(buff, &fl.fl6_src, &fl.fl6_dst);
- 
- 	fl.proto = IPPROTO_TCP;
- 	fl.oif = inet6_iif(skb);
+James
+
+
