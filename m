@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015Ab0DKNYN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 09:24:13 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:37831 "EHLO mail.skyhub.de"
+	id S1752025Ab0DKNZi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 09:25:38 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44261 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751927Ab0DKNYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 09:24:11 -0400
+	id S1751927Ab0DKNZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Apr 2010 09:25:37 -0400
+Date: Sun, 11 Apr 2010 15:25:32 +0200
 From: Borislav Petkov <bp@alien8.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>,
@@ -18,13 +19,34 @@ Cc: Johannes Weiner <hannes@cmpxchg.org>,
        Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
        Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
 Subject: [PATCH 2/3] mm: cleanup find_mergeable_anon_vma complexity
-Date: Sun, 11 Apr 2010 15:19:57 +0200
-Message-Id: <1270991999-4004-2-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.7.0.3
-In-Reply-To: <1270991999-4004-1-git-send-email-bp@alien8.de>
-References: <1270991999-4004-1-git-send-email-bp@alien8.de>
+Message-ID: <20100411132532.GA2644@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Johannes Weiner <hannes@cmpxchg.org>,
+	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	Rik van Riel <riel@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Minchan Kim <minchan.kim@gmail.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+	Nick Piggin <npiggin@suse.de>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+References: <20100410185145.GB28952@a1.tnic>
+ <20100410185839.GA32035@a1.tnic>
+ <alpine.LFD.2.00.1004101234210.3558@i5.linux-foundation.org>
+ <alpine.LFD.2.00.1004101308250.3618@i5.linux-foundation.org>
+ <20100410203628.GB32035@a1.tnic>
+ <alpine.LFD.2.00.1004101336440.3618@i5.linux-foundation.org>
+ <20100410212555.GA1797@a1.tnic>
+ <alpine.LFD.2.00.1004101427090.3618@i5.linux-foundation.org>
+ <20100410215115.GA2599@a1.tnic>
+ <20100411130801.GA7189@a1.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 In-Reply-To: <20100411130801.GA7189@a1.tnic>
-References: <20100411130801.GA7189@a1.tnic>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
