@@ -1,56 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab0DLVEa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 17:04:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19039 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752776Ab0DLVE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 17:04:29 -0400
-Message-ID: <4BC38A94.2050003@redhat.com>
-Date: Mon, 12 Apr 2010 17:03:16 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
+	id S1754172Ab0DLVFb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 17:05:31 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:56147 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752776Ab0DLVF3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 17:05:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=VAP8zx0gskX3F2E3Ad2VyeBw9xZvqZHMN32THHRvW1AeC2s2GwP0tnCOq2l0vlhLUJ
+         C3zdC5//RuS9h5ZlSMnNv8Icmc0X21wwpecYYHgAoWOv1Iw1X67mdw7KmCvd74DOqUoM
+         gXxcfHmLcJsjk7FUMoL7+pLyoJAJtmrEqrJoI=
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Borislav Petkov <bp@alien8.de>, Johannes Weiner <hannes@cmpxchg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-Subject: Re: [PATCH 4/4] anonvma: when setting up page->mapping, we need to
- pick the _oldest_ anonvma
-References: <20100411130801.GA7189@a1.tnic> <alpine.LFD.2.00.1004110938570.3514@i5.linux-foundation.org> <alpine.LFD.2.00.1004111010280.3514@i5.linux-foundation.org> <20100411185508.GA4450@liondog.tnic> <alpine.LFD.2.00.1004111707360.3514@i5.linux-foundation.org> <alpine.LFD.2.00.1004111759440.3521@i5.linux-foundation.org> <20100412072056.GA2432@liondog.tnic> <alpine.LFD.2.00.1004120854440.26679@i5.linux-foundation.org> <alpine.LFD.2.00.1004120906370.26679@i5.linux-foundation.org> <4BC36916.3080005@redhat.com> <20100412190002.GA8595@a1.tnic> <alpine.LFD.2.00.1004121201480.3714@i5.linux-foundation.org> <alpine.LFD.2.00.1004121320390.3683@i5.linux-foundation.org> <alpine.LFD.2.00.1004121322400.3683@i5.linux-foundation.org> <alpine.LFD.2.00.1004121323080.3683@i5.linux-foundation.org> <alpine.LFD.2.00.1004121323270.3683@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1004121323270.3683@i5.linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100412174352.4e13113f@lxorguk.ukuu.org.uk>
+References: <q2lff6de6f21004120834k72cfd554v188b9d2b5a01012c@mail.gmail.com>
+	 <20100412174352.4e13113f@lxorguk.ukuu.org.uk>
+Date: Mon, 12 Apr 2010 17:05:26 -0400
+Message-ID: <n2wff6de6f21004121405xd33676f8s81c12e23747b88b0@mail.gmail.com>
+Subject: Re: Trying to fix ITE-887x parallel/serial driver bugs (including 
+	unhandled IRQs)
+From: Joseph Krahn <joseph.krahn@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2010 04:23 PM, Linus Torvalds wrote:
+On Mon, Apr 12, 2010 at 12:43 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> Both drivers (8250_pci.c and parport_pc.c) probe randomly for the
+>> chips control I/O port, instead of using the standard PNP-configured
+>> BAR, and they do so independently, stepping on the previous drivers
+>> configuration attempt. I think the two drivers should be merged into
+>> parport_serial.c because this is a combo chip. However, different
 >
-> From: Linus Torvalds<torvalds@linux-foundation.org>
-> Date: Mon, 12 Apr 2010 12:44:29 -0700
-> Subject: [PATCH 4/4] anonvma: when setting up page->mapping, we need to pick the _oldest_ anonvma
+> That seems reasonable.
 >
-> Otherwise we might be mapping in a page in a new mapping, but that page
-> (through the swapcache) would later be mapped into an old mapping too.
-> The page->mapping must be the case that works for everybody, not just
-> the mapping that happened to page it in first.
->
-> This can be improved in certain cases: if we know the page is private to
-> just this particular mapping (for example, it's a new page, or it is the
-> only swapcache entry), we could pick the top (most specific) anon_vma.
->
-> But that's a future optimization. Make it _work_ reliably first.
+> I don't think your description is accurate entirely. The device is picked
+> up by PCi scans and the INTCBAR is then set up by Linux having checked
+> for free address ranges. It's hardly 'random probing' and it isn't a
+> normal BAR or guaranteed to have been configured by anything beforehand.
+Yes, but the drivers don't use INTCBAR. They scan through a herd-coded
+list of possible port ranges:
 
-Agreed.  I'll send an incremental for that later, you
-can judge whether or not it's something you'll want to
-merge before or after 2.6.34
+static int __devinit sio_ite_8872_probe(struct pci_dev *pdev, int autoirq,
+                                         int autodma,
+                                         const struct parport_pc_via_data *via)
+{
+        short inta_addr[6] = { 0x2A0, 0x2C0, 0x220, 0x240, 0x1E0 };
+...
+        for (i = 0; i < 5; i++) {
+                base_res = request_region(inta_addr[i], 32, "it887x");
+                if (base_res) {
+...
 
-> Signed-off-by: Linus Torvalds<torvalds@linux-foundation.org>
+>
+>> The IT887x chips include an interrupt controller that maps external
+>> IRQ inputs to serialized IRQs. Apparently, the I/O ports only present
+>> a standard interrupt interface when wired for serialized IRQs. For
+>> normal PCI interrupts, it needs a custom interrupt handler to
+>> communicate directly with the interrupt-controller port. The current
+>
+> I guess the obvious thing to do would be to provide one. The serial code
+> already supports several such things. What is actually needed or is the
+> 'special' handler simply shared IRQ support in which case it ought t just
+> work.
+The interrupt controller (INTC) provides IRQ status bits in a single
+I/O port byte. I only have the datasheet for IT8875F, which is 1
+parallel and no serial ports, so my understanding of UART IRQs is sort
+of reverse engineering. Polling the UART IIR register shows that it
+acts like a normal 16550 UART when set to SERIRQ mode, but I get no
+IRQs generated. Setting to standard PCI INTA interrupts, the IRQs are
+generated, but the UART IIR registers do not set the IRQ bits.
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+One possibility is to install custom io_serial_in/out functions. When
+the value of IIR is requested, the INTC can be checked, and modify the
+result to what it should be for a normal UART. That is a bit of a
+hack, but makes it much easier to fit into the existing code.
+>
+>> serial driver attempts to disable IRQs, and let the core driver revert
+>> to polling. However, it does this incorrectly, and can produce
+>> unhandled IRQs. (Maybe it was tested on a system with Ser. IRQ?) To
+>> avoid extra interrupt-handler code, especially for a less common chip,
+>> is it OK to intentionally provide polling-only support?
+>
+> I'd strongly prefer it worked as well as possible if the the
+> documentation to fix it exists. What is involved ?
+>
+> Alan
+>
+It is easy to fix the code to use INTCBAR to configure the INTC I/O
+port. It is probably not too hard to get a proper driver, if I can
+find other users to test different hardware configurations. For
+hardware wired to use the chip's serialized IRQ, it probably behaves
+like standard PC-style chips, and no special IRQ code is needed. It
+would be nice to verify this. Maybe a good approach would be to add
+support IRQs, but add a module parameter to disable it.
+
+Joe
