@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab0DLTWH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 15:22:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54734 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753740Ab0DLTWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 15:22:04 -0400
-Date: Mon, 12 Apr 2010 21:22:12 +0200
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-       linux-ext4@vger.kernel.org
-Subject: [PULL REQUEST] ext2, ext3, and quota fixes
-Message-ID: <20100412192212.GN3404@quack.suse.cz>
+	id S1753817Ab0DLTYR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 15:24:17 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47334 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753698Ab0DLTYQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 15:24:16 -0400
+Date: Mon, 12 Apr 2010 20:23:45 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       Grant Likely <grant.likely@secretlab.ca>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/11] ARM: PrimeCell DMA Interface v5
+Message-ID: <20100412192345.GN3048@n2100.arm.linux.org.uk>
+References: <1270681920-4461-1-git-send-email-linus.walleij@stericsson.com> <v2se9c3a7c21004071645u8180f4d7p3b4b1f96de11303e@mail.gmail.com> <CEE6BB42CAD6E947908279175AF8470A03A50F78@EXDCVYMBSTM006.EQ1STM.local> <n2n63386a3d1004110713w74a16713g13f32219b610d3a6@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <n2n63386a3d1004110713w74a16713g13f32219b610d3a6@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Linus,
+On Sun, Apr 11, 2010 at 04:13:39PM +0200, Linus Walleij wrote:
+> Russell,
+> 
+> are you OK with pushing these patches from this series:
+> 
+> patch 01 - <linux/amba/dma.h>
+> patch 08 - DMA for drivers/serial/amba-pl011.c
+> 
+> through Dan's async_tx / DMAengine tree?
+> 
+> I think those are the ones which need your Acked-by to proceed.
+> 
+> If you have some other idea of how these patches should be twisted
+> around please let me know!
 
-  could you please pull from
-
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs-2.6.git for_linus
-
-  to get a few fixes:
-
-Andrew Perepechko (1):
-      quota: Fix possible dq_flags corruption
-
-Dmitry Monakhov (2):
-      ext2: symlink must be handled via filesystem specific operation
-      ext3: symlink must be handled via filesystem specific operation
-
-Jan Kara (1):
-      quota: Hide warnings about writes to the filesystem before quota was turned on
-
-The diffstat is
-
- fs/ext2/symlink.c |    2 ++
- fs/ext3/symlink.c |    2 ++
- fs/quota/dquot.c  |   18 ++++++++++++------
- 3 files changed, 16 insertions(+), 6 deletions(-)
-
-							Thanks
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+I do think it would be of value for someone to try to get this working
+on the Realview boards to ensure that these patches are well proven...
+unfortunately I don't have the bandwidth to do that at present.
