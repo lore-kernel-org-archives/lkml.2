@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157Ab0DLO3Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 10:29:16 -0400
-Received: from bamako.nerim.net ([62.4.17.28]:57216 "EHLO bamako.nerim.net"
+	id S1752208Ab0DLOaY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 10:30:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49799 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751663Ab0DLO3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 10:29:15 -0400
-Date: Mon, 12 Apr 2010 16:29:12 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Nicolas Boichat <nicolas@boichat.ch>
-Cc: Henrik Rydberg <rydberg@euromail.se>, lm-sensors@lm-sensors.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwmon: Switch applesmc maintainer
-Message-ID: <20100412162912.74515ddd@hyperion.delvare>
-In-Reply-To: <4BC32050.7080806@boichat.ch>
-References: <1271078868-3699-1-git-send-email-rydberg@euromail.se>
-	<4BC32050.7080806@boichat.ch>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1750836Ab0DLOaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 10:30:23 -0400
+Date: Mon, 12 Apr 2010 10:30:15 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Divyesh Shah <dpshah@google.com>
+Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
+       ctalbott@google.com
+Subject: Re: [PATCH] blkio: Changes to more io-controller stats patches to
+	address
+Message-ID: <20100412143015.GC1294@redhat.com>
+References: <20100410023509.17767.21937.stgit@austin.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100410023509.17767.21937.stgit@austin.mtv.corp.google.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Apr 2010 21:29:52 +0800, Nicolas Boichat wrote:
-> On 04/12/2010 09:27 PM, Henrik Rydberg wrote:
-> > Nicolas has expressed a wish to be relieved from the maintenance
-> > of applesmc, so we simply switch maintainer with this patch.
+On Fri, Apr 09, 2010 at 07:35:35PM -0700, Divyesh Shah wrote:
+> review comments.
 > 
-> Thank you.
+> Changelog: (in response to Vivek Goyal's comments)
+> o group blkiocg_update_blkio_group_dequeue_stats() with other DEBUG functions
+> o rename blkiocg_update_set_active_queue_stats() to
+>   blkiocg_update_avg_queue_size_stats()
+> o s/request/io/ in blkiocg_update_request_add_stats() and
+>   blkiocg_update_request_remove_stats()
+> o Call cfq_del_timer() at request dispatch() instead of
+>   blkiocg_update_idle_time_stats()
 > 
-> > Signed-off-by: Henrik Rydberg<rydberg@euromail.se>
+> Signed-off-by: Divyesh Shah<dpshah@google.com>
+> ---
 > 
-> Signed-off-by: Nicolas Boichat <nicolas@boichat.ch>
-> 
-> > ---
-> >   MAINTAINERS |    4 ++--
-> >   1 files changed, 2 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/MAINTAINERS b/MAINTAINERS
-> > index 7a9ccda..13c5688 100644
-> > --- a/MAINTAINERS
-> > +++ b/MAINTAINERS
-> > @@ -485,8 +485,8 @@ S:	Maintained
-> >   F:	drivers/input/mouse/bcm5974.c
-> >
-> >   APPLE SMC DRIVER
-> > -M:	Nicolas Boichat<nicolas@boichat.ch>
-> > -L:	mactel-linux-devel@lists.sourceforge.net
-> > +M:	Henrik Rydberg<rydberg@euromail.se>
-> > +L:	lm-sensors@lm-sensors.org
-> >   S:	Maintained
-> >   F:	drivers/hwmon/applesmc.c
-> >
 
-Patch applied, thanks Henrik for stepping in!
+[..]
+> @@ -2395,11 +2395,7 @@ static int cfq_dispatch_requests(struct request_queue *q, int force)
+>  	}
+>  
+>  	cfq_log_cfqq(cfqd, cfqq, "dispatched a request");
+> -	/*
+> -	 * This is needed since we don't exactly match the mod_timer() and
+> -	 * del_timer() calls in CFQ.
+> -	 */
+> -	blkiocg_update_idle_time_stats(&cfqq->cfqg->blkg);
+> +	cfq_del_timer(cfqd, cfqq);
 
--- 
-Jean Delvare
+I am trying to think that why do we need this call here. What is that path
+which does not delete the timer upon receiving request and lets fix that.
+
+One of the possible path when you got the request but still leave the
+timer on is following.
+
+cfq_rq_enqueued()
+	if(request_not_big_enough)
+		leave_timer_on
+		cfq_mark_cfqq_must_dispatch(cfqq);
+
+I guess we need to leave timer on so that if an unplug does not come in, a
+timer expirty will dispatch the request from the queue.
+
+In this case we can probably call here blkiocg_update_idle_time_stats()
+directly. Anyway, that's the right thing to do otherwise our idle time
+stats are little wrong as we got a request from the application and idle
+timer is over. Now this is additional wait time enforced by cfq so that
+lots of small requests are not dispatched to disk.
+
+Thanks
+Vivek
