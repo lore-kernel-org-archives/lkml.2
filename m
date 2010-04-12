@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750971Ab0DLEMn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 00:12:43 -0400
-Received: from mga10.intel.com ([192.55.52.92]:11250 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750702Ab0DLEMm (ORCPT
+	id S1751180Ab0DLENL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 00:13:11 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:60287 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750847Ab0DLENJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 00:12:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,187,1270450800"; 
-   d="scan'208";a="557000018"
-Subject: Re: [PATCH V2 ] ioatdma:  Release memory in error handling path
-From: minskey <chaohong_guo@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: dan.j.williams@intel.com
-In-Reply-To: <1271043661.4957.13.camel@minskey-desktop>
-References: <1271043661.4957.13.camel@minskey-desktop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 12 Apr 2010 12:00:54 +0800
-Message-ID: <1271044854.4957.20.camel@minskey-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 8bit
+	Mon, 12 Apr 2010 00:13:09 -0400
+Message-Id: <201004120410.o3C4Axwe066941@www262.sakura.ne.jp>
+Subject: Re: [2.6.31.13] Build failure at arch/x86/kernel/apic/io_apic.c
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: gregkh@suse.de, trenn@suse.de, yinghai@kernel.org, hpa@zytor.com
+Cc: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Date: Mon, 12 Apr 2010 13:10:59 +0900
+References: <201004120230.o3C2UhfQ050532@www262.sakura.ne.jp> <20100412024446.GA28141@suse.de>
+In-Reply-To: <20100412024446.GA28141@suse.de>
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: K-Prox Anti-Virus Powered by Kaspersky, bases: 11042010 #3700788, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit d539e5576605d048e6aeb21cbe3a8e71dc5eea81 "x86: Fix SCI on IOAPIC != 0"
+introduced "void setup_IO_APIC_irq_extra(u32 gsi)" which calls
+mp_find_ioapic() and mp_find_ioapic_pin().
 
-Very sorry, re-send it : correct for compiling error
+This commit does not compile if CONFIG_X86_IO_APIC=y and CONFIG_ACPI=n .
 
+Regards.
 
-    Release memory in error handling path
-
-Signed-off-by: Minskey Guo <chaohong_guo@linux.intel.com>
-
----
- drivers/dma/ioat/pci.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/dma/ioat/pci.c b/drivers/dma/ioat/pci.c
-index a6e93ee..2a3dae9 100644
---- a/drivers/dma/ioat/pci.c
-+++ b/drivers/dma/ioat/pci.c
-@@ -153,10 +153,12 @@ static int __devinit ioat_pci_probe(struct pci_dev
-*pdev, const struct pci_devic
-        else if (device->version >= IOAT_VER_3_0)
-                err = ioat3_dma_probe(device, ioat_dca_enabled);
-        else
--               return -ENODEV;
-+               err = -ENODEV;
-
-        if (err) {
-                dev_err(dev, "Intel(R) I/OAT DMA Engine init failed\n");
-+               pci_set_drvdata(pdev, NULL);
-+               devm_kfree(dev, device);
-                return -ENODEV;
-        }
---
-1.6.3.3
-
-
--minskey
-
-
-在 2010-04-12一的 11:41 +0800，minskey写道：
-> Release memory in error handling path
+Greg KH wrote:
+> On Mon, Apr 12, 2010 at 11:30:43AM +0900, Tetsuo Handa wrote:
+> > Hello.
+> > 
+> >   CC      arch/x86/kernel/apic/io_apic.o
+> > arch/x86/kernel/apic/io_apic.c: In function `setup_IO_APIC_irq_extra':
+> > arch/x86/kernel/apic/io_apic.c:1575: error: implicit declaration of function `mp_find_ioapic'
+> > arch/x86/kernel/apic/io_apic.c:1579: error: implicit declaration of function `mp_find_ioapic_pin'
+> > make[3]: *** [arch/x86/kernel/apic/io_apic.o] Error 1
+> > make[2]: *** [arch/x86/kernel/apic] Error 2
+> > make[1]: *** [arch/x86/kernel] Error 2
+> > make: *** [arch/x86] Error 2
+> > 
+> > This is because
+> > 
+> > #ifdef CONFIG_ACPI
+> > (...snipped...)
+> > #ifdef CONFIG_X86_IO_APIC
+> > extern int mp_find_ioapic(int gsi);
+> > extern int mp_find_ioapic_pin(int ioapic, int gsi);
+> > #endif
+> > (...snipped...)
+> > #endif
+> > 
+> > but CONFIG_X86_IO_APIC=y and CONFIG_ACPI=n in my config.
+> > 2.6.31.12 was OK.
 > 
-> Signed-off-by: Minskey Guo <chaohong_guo@linux.intel.com>
+> What patch caused this?
 > 
-> ---
->  drivers/dma/ioat/pci.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
+> thanks,
 > 
-> diff --git a/drivers/dma/ioat/pci.c b/drivers/dma/ioat/pci.c
-> index a6e93ee..2a3dae9 100644
-> --- a/drivers/dma/ioat/pci.c
-> +++ b/drivers/dma/ioat/pci.c
-> @@ -153,10 +153,12 @@ static int __devinit ioat_pci_probe(struct pci_dev
-> *pdev, const struct pci_devic
->         else if (device->version >= IOAT_VER_3_0)
->                 err = ioat3_dma_probe(device, ioat_dca_enabled);
->         else
-> -               return -ENODEV;
-> +               err = -ENODEV;
-> 
->         if (err) {
->                 dev_err(dev, "Intel(R) I/OAT DMA Engine init failed\n");
-> +               pci_set_drvdata(pdev, NULL);
-> +               devm_kfree(dev, device)
->                 return -ENODEV;
->         }
-> --
-> 1.6.3.3
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+> greg k-h
