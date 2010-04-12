@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab0DLLOY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 07:14:24 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58219 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753265Ab0DLLOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 07:14:23 -0400
-Message-ID: <4BC2FFF0.20303@cn.fujitsu.com>
-Date: Mon, 12 Apr 2010 19:11:44 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1753672Ab0DLLOp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 07:14:45 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:39700 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753265Ab0DLLOo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 07:14:44 -0400
+Date: Mon, 12 Apr 2010 13:14:39 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+       Pedro Ribeiro <pedrib@gmail.com>, akpm@linux-foundation.org,
+       Greg KH <gregkh@suse.de>, alsa-devel@alsa-project.org,
+       linux-usb@vger.kernel.org
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+Message-ID: <20100412111439.GU30801@buzzloop.caiaq.de>
+References: <20100407090623.GN30807@buzzloop.caiaq.de>
+ <Pine.LNX.4.44L0.1004071036060.1779-100000@iolanthe.rowland.org>
+ <87sk719hbm.fsf@basil.nowhere.org>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/6] KVM MMU: reduce kvm_mmu_page size
-References: <4BC2D2E2.1030604@cn.fujitsu.com> <4BC2D43A.5020003@cn.fujitsu.com> <4BC2DB95.70704@redhat.com>
-In-Reply-To: <4BC2DB95.70704@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87sk719hbm.fsf@basil.nowhere.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Avi Kivity wrote:
-> On 04/12/2010 11:05 AM, Xiao Guangrong wrote:
->> 'multimapped' and 'unsync' in 'struct kvm_mmu_page' are just indication
->> field, we can use flag bits instand of them
->>
->> @@ -202,9 +202,10 @@ struct kvm_mmu_page {
->>        * in this shadow page.
->>        */
->>       DECLARE_BITMAP(slot_bitmap, KVM_MEMORY_SLOTS +
->> KVM_PRIVATE_MEM_SLOTS);
->> -    int multimapped;         /* More than one parent_pte? */
->>       int root_count;          /* Currently serving as active root */
->> -    bool unsync;
->> +    #define MMU_PAGE_MULTIMAPPED 0x1        /* More than one
->> parent_pte? */
->> +    #define MMU_PAGE_UNSYNC 0x2
->> +    unsigned int flags;
->>       unsigned int unsync_children;
->>       union {
->>    
+On Mon, Apr 12, 2010 at 10:59:57AM +0200, Andi Kleen wrote:
+> Alan Stern <stern@rowland.harvard.edu> writes:
+> >> 
+> >> The fix is to use usb_buffer_alloc() for that purpose which ensures
+> >> memory that is suitable for DMA. And on x86_64, this also means that the
+> >> upper 32 bits of the address returned are all 0's.
+> >
+> > That is not a good fix.  usb_buffer_alloc() provides coherent memory, 
+> > which is not what we want.  I believe the correct fix is to specify the 
+> > GFP_DMA32 flag in the kzalloc() call.
 > 
-> Please just use bool for multimapped.  If we grow more than 4 flags, we
-> can use 'bool flag : 1;' to reduce space while retaining readability.
+> The traditional way to handle this is to leave it to swiotlb in
+> pci_map_*. pci_map_* is needed anyways if you run with a IOMMU.
 > 
+> Also note at least on x86 systems coherent memory is the same as non coherent
+> memory. And GFP_DMA32 is a x86 specific flag, doesn't necessarily 
+> do any good anywhere else.
+> 
+> So if you add x86isms anyways you could as well use dma_alloc_coherent()
+> directly which is actually better at this than a simple GFP_DMA32
+> and as a bonus handles the IOMMUs correctly too.
 
-Yeah, good idea, i'll fix it in the next version
+Which is exactly what usb_buffer_alloc() does already. So at least for
+x86 you say this is the right thing to do? However, we don't necessarily
+need coherent memory on other platforms, which is why I hessitate to
+enforce that type of memory for all transfer_buffer allocations.
 
-Thanks,
-Xiao
+> Or just use GFP_KERNEL and pci_map_* later.
+
+The USB core does this already, but at least on Pedro's machine, this
+seems unsufficient. Unfortunately, I can't reproduce the issue yet, even
+with more than 4GB of RAM installed.
+
+Daniel
+
