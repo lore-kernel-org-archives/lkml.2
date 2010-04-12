@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734Ab0DLGEB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 02:04:01 -0400
-Received: from sj-iport-5.cisco.com ([171.68.10.87]:39901 "EHLO
-	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752372Ab0DLGD6 (ORCPT
+	id S1752802Ab0DLGEF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 02:04:05 -0400
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:23062 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752744Ab0DLGEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 02:03:58 -0400
-Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
+	Mon, 12 Apr 2010 02:04:01 -0400
+Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEACZVwkurR7Hu/2dsb2JhbACbM3GhRZgUhQwEgyU
+X-IronPort-Anti-Spam-Result: AvsEADZUwkurR7Ht/2dsb2JhbACbM3GhP5gUhQwEgyU
 X-IronPort-AV: E=Sophos;i="4.52,188,1270425600"; 
-   d="scan'208";a="181521077"
-Date: Sun, 11 Apr 2010 23:03:58 -0700
+   d="scan'208";a="513153595"
+Date: Sun, 11 Apr 2010 23:04:01 -0700
 From: David VomLehn <dvomlehn@cisco.com>
 To: to@dvomlehn-lnx2.corp.sa.net, "linux_arch"@dvomlehn-lnx2.corp.sa.net,
        linux_arch@dvomlehn-lnx2.corp.sa.net
 Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
        maint_arch@dvomlehn-lnx2.corp.sa.net
-Subject: [PATCH 7/23] Make register values available to FRV panic notifiers
-Message-ID: <20100412060358.GA24467@dvomlehn-lnx2.corp.sa.net>
+Subject: [PATCH 8/23] Make register values available to H8300 panic
+	notifiers
+Message-ID: <20100412060401.GA24534@dvomlehn-lnx2.corp.sa.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -33,24 +34,25 @@ help to complete this.
 
 Signed-off-by: David VomLehn <dvomlehn@cisco.com>
 ---
- arch/frv/include/asm/ptrace.h |  124 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 124 insertions(+), 0 deletions(-)
+ arch/h8300/include/asm/ptrace.h |   64 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 64 insertions(+), 0 deletions(-)
 
-diff --git a/arch/frv/include/asm/ptrace.h b/arch/frv/include/asm/ptrace.h
-index 6bfad4c..7365c6a 100644
---- a/arch/frv/include/asm/ptrace.h
-+++ b/arch/frv/include/asm/ptrace.h
-@@ -85,6 +85,130 @@ extern void show_regs(struct pt_regs *);
- 
- #define arch_has_single_step()	(1)
- 
+diff --git a/arch/h8300/include/asm/ptrace.h b/arch/h8300/include/asm/ptrace.h
+index d866c0e..09d6f3f 100644
+--- a/arch/h8300/include/asm/ptrace.h
++++ b/arch/h8300/include/asm/ptrace.h
+@@ -61,6 +61,70 @@ struct pt_regs {
+ #define instruction_pointer(regs) ((regs)->pc)
+ #define profile_pc(regs) instruction_pointer(regs)
+ extern void show_regs(struct pt_regs *);
++
 +/* Macros for saving the contents of registers and for the output constraint
 + * for those registers */
 +#include "/home/vomlehn/git/kernel.org/ptreg.h"
-+#define PTREG_SAVE(r, name)	"std	" #r ", %[" # name "]\n"
-+#define PTREG_SAVE_GR(i)		PTREG_SAVE_I(gr, gr, i)
++#define PTREG_SAVE(r, name)	"mov.l	" #r ", %[" #name "]\n"
++#define PTREG_SAVE_ER(i)	PTREG_SAVE_I(er, er, i)
 +
-+#define PTREG_OUT_GR(regs, i)	PTREG_OUT_I(regs, gr, r, i)
++#define PTREG_OUT_ER(regs, i)	PTREG_OUT_I(regs, er, er, i)
 +
 +#define arch_has_save_ptregs	1
 +
@@ -68,106 +70,45 @@ index 6bfad4c..7365c6a 100644
 +const struct pt_regs *save_ptregs(struct pt_regs *regs)
 +{
 +	__asm__ __volatile__ (
-+			PTREG_SAVE(psr, psr)
-+			PTREG_SAVE(isr, isr)
++			PTREG_SAVE(retpc, retpc)
++			PTREG_SAVE_ER(4)
++			PTREG_SAVE_ER(5)
++			PTREG_SAVE_ER(6)
++			PTREG_SAVE_ER(3)
++			PTREG_SAVE_ER(2)
++			PTREG_SAVE_ER(1)
++			PTREG_SAVE(orig_er0, orig_er0)
 +			PTREG_SAVE(ccr, ccr)
-+			PTREG_SAVE(cccr, cccr)
-+			PTREG_SAVE(lr, lr)
-+			PTREG_SAVE(lcr, lcr)
-+			PTREG_SAVE(__status, __status)
-+			PTREG_SAVE(syscallno, syscallno)
-+			PTREG_SAVE(orig_gr8, orig_gr8)
-+			PTREG_SAVE(gner0, gner0)
-+			PTREG_SAVE(gner1, gner1)
-+			PTREG_SAVE(iacc0, iacc0)
-+			PTREG_SAVE(tbr, tbr)
-+			PTREG_SAVE(sp, sp)
-+			PTREG_SAVE(fp, fp)
-+			PTREG_SAVE_GR(3)
-+			PTREG_SAVE_GR(4)
-+			PTREG_SAVE_GR(5)
-+			PTREG_SAVE_GR(6)
-+			PTREG_SAVE_GR(7)
-+			PTREG_SAVE_GR(8)
-+			PTREG_SAVE_GR(9)
-+			PTREG_SAVE_GR(10)
-+			PTREG_SAVE_GR(11)
-+			PTREG_SAVE_GR(12)
-+			PTREG_SAVE_GR(13)
-+			PTREG_SAVE_GR(14)
-+			PTREG_SAVE_GR(15)
-+			PTREG_SAVE_GR(16)
-+			PTREG_SAVE_GR(17)
-+			PTREG_SAVE_GR(18)
-+			PTREG_SAVE_GR(19)
-+			PTREG_SAVE_GR(20)
-+			PTREG_SAVE_GR(21)
-+			PTREG_SAVE_GR(22)
-+			PTREG_SAVE_GR(23)
-+			PTREG_SAVE_GR(24)
-+			PTREG_SAVE_GR(25)
-+			PTREG_SAVE_GR(26)
-+			PTREG_SAVE_GR(27)
-+			PTREG_SAVE(next_frame, next_frame)
-+			PTREG_SAVE_GR(29)
-+			PTREG_SAVE_GR(30)
-+			PTREG_SAVE_GR(31)
++			PTREG_SAVE_ER(0)
++			PTREG_SAVE(vector, vector)
++#if defined(CONFIG_CPU_H8S)
++			PTREG_SAVE(exr, exr)
++#endif
 +		"1:\n"
-+			"sethi.p	#1b, gr0\n"
-+			"setlo		#1b, gr0\n"
-+			PTREG_SAVE(gr0, pc)
++			"mov.l	#1b, er0\n"
++			PTREG_SAVE(er0, pc)
 +	:
-+		PTREG_OUT(regs, psr, psr),
-+		PTREG_OUT(regs, isr, isr),
-+		PTREG_OUT(regs, ccr, ccr),
-+		PTREG_OUT(regs, cccr, cccr),
-+		PTREG_OUT(regs, lr, lr),
-+		PTREG_OUT(regs, lcr, lcr),
-+		PTREG_OUT(regs, pc, pc),
-+		PTREG_OUT(regs, __status, __status),
-+		PTREG_OUT(regs, syscallno, syscallno),
-+		PTREG_OUT(regs, orig_gr8, orig_gr8),
-+		PTREG_OUT(regs, gner0, gner0),
-+		PTREG_OUT(regs, gner1, gner1),
-+		PTREG_OUT(regs, iacc0, iacc0),
-+		PTREG_OUT(regs, tbr, tbr),
-+		PTREG_OUT(regs, sp, sp),
-+		PTREG_OUT(regs, fp, fp),
-+		PTREG_OUT_GR(regs, 3),
-+		PTREG_OUT_GR(regs, 4),
-+		PTREG_OUT_GR(regs, 5),
-+		PTREG_OUT_GR(regs, 6),
-+		PTREG_OUT_GR(regs, 7),
-+		PTREG_OUT_GR(regs, 8),
-+		PTREG_OUT_GR(regs, 9),
-+		PTREG_OUT_GR(regs, 10),
-+		PTREG_OUT_GR(regs, 11),
-+		PTREG_OUT_GR(regs, 12),
-+		PTREG_OUT_GR(regs, 13),
-+		PTREG_OUT_GR(regs, 14),
-+		PTREG_OUT_GR(regs, 15),
-+		PTREG_OUT_GR(regs, 16),
-+		PTREG_OUT_GR(regs, 17),
-+		PTREG_OUT_GR(regs, 18),
-+		PTREG_OUT_GR(regs, 19),
-+		PTREG_OUT_GR(regs, 20),
-+		PTREG_OUT_GR(regs, 21),
-+		PTREG_OUT_GR(regs, 22),
-+		PTREG_OUT_GR(regs, 23),
-+		PTREG_OUT_GR(regs, 24),
-+		PTREG_OUT_GR(regs, 25),
-+		PTREG_OUT_GR(regs, 26),
-+		PTREG_OUT_GR(regs, 27),
-+		PTREG_OUT(regs, next_frame, next_frame),
-+		PTREG_OUT_GR(regs, 29),
-+		PTREG_OUT_GR(regs, 30),
-+		PTREG_OUT_GR(regs, 31)
++		PTREG_OUT(regs, retpc, retpc)
++		PTREG_OUT(regs, 4)
++		PTREG_OUT(regs, 5)
++		PTREG_OUT(regs, 6)
++		PTREG_OUT(regs, 3)
++		PTREG_OUT(regs, 2)
++		PTREG_OUT(regs, 1)
++		PTREG_OUT(regs, orig_er0, orig_er0)
++		PTREG_OUT(regs, ccr, ccr)
++		PTREG_OUT(regs, 0)
++		PTREG_OUT(regs, vector, vector)
++#if defined(CONFIG_CPU_H8S)
++		PTREG_OUT(regs, exr, exr)
++#endif
++		PTREG_OUT(regs, pc, pc)
 +	:
-+		"gr0"
++		"er0"
 +	);
 +
 +	return regs;
 +}
- #endif /* !__ASSEMBLY__ */
  #endif /* __KERNEL__ */
- #endif /* _ASM_PTRACE_H */
+ #endif /* __ASSEMBLY__ */
+ #endif /* _H8300_PTRACE_H */
