@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751517Ab0DLB5U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 21:57:20 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:38605 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab0DLB5T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 21:57:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=cC6XViJwY9FRf7UZ+hRZcrU684Xn3OxX+DIoDAqIP0fM4+ykLe+Tp1PlHOp3ve39kt
-         X3DKSzhcEIPN/sMTE9oFQlRXrxKGaGXHWCVJFyveP+YF6WZ540hZR0FJx0mJNNzt6ZDh
-         KSjUQ6g1MKOflJSmiPUzMy/QvHpffTEsfoBbM=
-Date: Mon, 12 Apr 2010 09:57:14 +0800
-From: wzt.wzt@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: avi@redhat.com, mtosatti@redhat.com, kvm@vger.kernel.org
-Subject: [PATCH] KVM: Enhance the coalesced_mmio_write() parameter to avoid stack buffer overflow
-Message-ID: <20100412015714.GA2815@localhost.localdomain>
-Mime-Version: 1.0
+	id S1751608Ab0DLB57 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 21:57:59 -0400
+Received: from mga02.intel.com ([134.134.136.20]:27334 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751067Ab0DLB55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Apr 2010 21:57:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,186,1270450800"; 
+   d="scan'208";a="612148270"
+Date: Mon, 12 Apr 2010 09:57:39 +0800
+From: Shaohua Li <shaohua.li@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Wu, Fengguang" <fengguang.wu@intel.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "riel@redhat.com" <riel@redhat.com>
+Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
+Message-ID: <20100412015739.GA14988@sli10-desk.sh.intel.com>
+References: <20100331045348.GA3396@sli10-desk.sh.intel.com>
+ <20100331142708.039E.A69D9226@jp.fujitsu.com>
+ <20100331145030.03A1.A69D9226@jp.fujitsu.com>
+ <20100402065052.GA28027@sli10-desk.sh.intel.com>
+ <20100406050325.GA17797@localhost>
+ <20100409065104.GA21480@sli10-desk.sh.intel.com>
+ <20100409142057.be0ce5af.akpm@linux-foundation.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20100409142057.be0ce5af.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-coalesced_mmio_write() is not check the len value, if len is negative,
-memcpy(ring->coalesced_mmio[ring->last].data, val, len); will cause
-stack buffer overflow.
+On Sat, Apr 10, 2010 at 05:20:57AM +0800, Andrew Morton wrote:
+> On Fri, 9 Apr 2010 14:51:04 +0800
+> Shaohua Li <shaohua.li@intel.com> wrote:
+> 
+> > get_scan_ratio() calculates percentage and if the percentage is < 1%, it will
+> > round percentage down to 0% and cause we completely ignore scanning anon/file
+> > pages to reclaim memory even the total anon/file pages are very big.
+> > 
+> > To avoid underflow, we don't use percentage, instead we directly calculate
+> > how many pages should be scaned. In this way, we should get several scanned pages
+> > for < 1% percent.
+> > 
+> > This has some benefits:
+> > 1. increase our calculation precision
+> > 2. making our scan more smoothly. Without this, if percent[x] is underflow,
+> > shrink_zone() doesn't scan any pages and suddenly it scans all pages when priority
+> > is zero. With this, even priority isn't zero, shrink_zone() gets chance to scan
+> > some pages.
+> > 
+> > Note, this patch doesn't really change logics, but just increase precision. For
+> > system with a lot of memory, this might slightly changes behavior. For example,
+> > in a sequential file read workload, without the patch, we don't swap any anon
+> > pages. With it, if anon memory size is bigger than 16G, we will see one anon page
+> > swapped. The 16G is calculated as PAGE_SIZE * priority(4096) * (fp/ap). fp/ap
+> > is assumed to be 1024 which is common in this workload. So the impact sounds not
+> > a big deal.
+> 
+> I grabbed this.
+> 
+> Did we decide that this needed to be backported into 2.6.33.x?  If so,
+> some words explaining the reasoning would be needed.
+> 
+> Come to that, it's not obvious that we need this in 2.6.34 either. 
+Not needed.
 
-Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
+> is the user-visible impact here?
+Should be very small I think.
 
----
- virt/kvm/coalesced_mmio.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/virt/kvm/coalesced_mmio.c b/virt/kvm/coalesced_mmio.c
-index c0dcfb7..eb4601c 100644
---- a/virt/kvm/coalesced_mmio.c
-+++ b/virt/kvm/coalesced_mmio.c
-@@ -61,6 +61,10 @@ static int coalesced_mmio_write(struct kvm_io_device *this,
- {
- 	struct kvm_coalesced_mmio_dev *dev = to_mmio(this);
- 	struct kvm_coalesced_mmio_ring *ring = dev->kvm->coalesced_mmio_ring;
-+
-+	if (len < 0)
-+		return -EOPNOTSUPP;
-+
- 	if (!coalesced_mmio_in_range(dev, addr, len))
- 		return -EOPNOTSUPP;
- 
--- 
-1.6.5.3
-
+Thanks,
+Shaohua
