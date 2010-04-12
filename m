@@ -1,99 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751604Ab0DLE6I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 00:58:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:7130 "EHLO mga02.intel.com"
+	id S1751679Ab0DLFG5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 01:06:57 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:53571 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751405Ab0DLE6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 00:58:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,187,1270450800"; 
-   d="scan'208";a="508302506"
-Date: Mon, 12 Apr 2010 12:58:00 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Taras Glek <tglek@mozilla.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
-Message-ID: <20100412045800.GB18099@localhost>
-References: <4BBA6776.5060804@mozilla.com> <20100406095135.GB5183@cmpxchg.org> <20100407022456.GA9468@localhost> <4BBBF402.70403@mozilla.com> <20100407073847.GB17892@localhost> <4BBE1609.6080308@mozilla.com> <20100412022704.GB5151@localhost> <l2z28c262361004112025ydabc82ceyfa21cff9debc85b3@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <l2z28c262361004112025ydabc82ceyfa21cff9debc85b3@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1750983Ab0DLFG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 01:06:56 -0400
+Date: Mon, 12 Apr 2010 15:06:51 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Ben Skeggs <bskeggs@redhat.com>
+Subject: linux-next: manual merge of the drm tree with Linus' tree
+Message-Id: <20100412150651.4dd8d6d7.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.20.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minchan,
+Hi Dave,
 
-> > Yes, every binary/library starts with this 512b read.  It is requested
-> > by ld.so/ld-linux.so, and will trigger a 4-page readahead. This is not
-> > good readahead. I wonder if ld.so can switch to mmap read for the
-> > first read, in order to trigger a larger 128kb readahead. However this
-> > will introduce a little overhead on VMA operations.
+Today's linux-next merge of the drm tree got a conflict in
+drivers/gpu/drm/nouveau/nouveau_drv.h between commit
+952eb63543552deb1bf1113739d59d29172d7755 ("drm/nouveau: remove some
+unused members from drm_nouveau_private") from Linus' tree and commit
+386516744ba45d50f42c6999151cc210cb4f96e4 ("drm/fb: fix fbdev object model
++ cleanup properly") from the drm tree.
 
-Correction with data: in my system, ld is doing one 832b initial read for every library:
+Just context changes.  I fixed it up (see below) and can carry the fix
+for a while.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-        $ strace true
-        execve("/bin/true", ["true"], [/* 44 vars */]) = 0
-        brk(0)                                  = 0x608000
-        mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fb3b3ea0000
-        access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
-        mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fb3b3e9e000
-        access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
-        open("/etc/ld.so.cache", O_RDONLY)      = 3
-        fstat(3, {st_mode=S_IFREG|0644, st_size=140899, ...}) = 0
-        mmap(NULL, 140899, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7fb3b3e7b000
-        close(3)                                = 0
-        access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
-        open("/lib/libc.so.6", O_RDONLY)        = 3
-==>     read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\320\353\1\0\0\0\0\0@"..., 832) = 832
-        fstat(3, {st_mode=S_IFREG|0755, st_size=1379752, ...}) = 0
-        mmap(NULL, 3487784, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7fb3b3931000
-        mprotect(0x7fb3b3a7b000, 2097152, PROT_NONE) = 0
-        mmap(0x7fb3b3c7b000, 20480, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x14a000) = 0x7fb3b3c7b000
-        mmap(0x7fb3b3c80000, 18472, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7fb3b3c80000
-        close(3)                                = 0
-        mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fb3b3e7a000
-        mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fb3b3e79000
-        arch_prctl(ARCH_SET_FS, 0x7fb3b3e796f0) = 0
-        mprotect(0x7fb3b3c7b000, 16384, PROT_READ) = 0
-        mprotect(0x7fb3b3ea1000, 4096, PROT_READ) = 0
-        munmap(0x7fb3b3e7b000, 140899)          = 0
-        brk(0)                                  = 0x608000
-        brk(0x629000)                           = 0x629000
-        open("/usr/lib/locale/locale-archive", O_RDONLY) = 3
-        fstat(3, {st_mode=S_IFREG|0644, st_size=4332320, ...}) = 0
-        mmap(NULL, 4332320, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7fb3b350f000
-        close(3)                                = 0
-        close(1)                                = 0
-        close(2)                                = 0
-        exit_group(0)                           = ?
-
-> AFAIK, kernel reads first sector(ELF header and so one)  of binary in
-> case of binary.
-> in fs/exec.c,
-> prepare_binprm()
-> {
-> ...
-> return kernel_read(bprm->file, 0, bprm->buf, BINPRM_BUF_SIZE);
-> }
-
-Thanks for pointing this out. Yes we may optimize the binary part by
-adding a readahead call before the kernel_read().
- 
-> But dynamic loader uses libc_read for reading of shared library's one.
-> 
-> So you may have a chance to increase readahead size on binary but hard on shared
-> library. Many of app have lots of shared library so the solution of
-> only binary isn't big about
-> performance. :(
-
-Yeah, it won't be a big optimization..
-
-Thanks,
-Fengguang
+diff --cc drivers/gpu/drm/nouveau/nouveau_drv.h
+index ace630a,941339c..0000000
+--- a/drivers/gpu/drm/nouveau/nouveau_drv.h
++++ b/drivers/gpu/drm/nouveau/nouveau_drv.h
+@@@ -533,8 -531,7 +533,6 @@@ struct drm_nouveau_private 
+  		atomic_t validate_sequence;
+  	} ttm;
+  
+- 	struct fb_info *fbdev_info;
+- 
+ -	int fifo_alloc_count;
+  	struct nouveau_channel *fifos[NOUVEAU_MAX_CHANNEL_NR];
+  
+  	struct nouveau_engine engine;
