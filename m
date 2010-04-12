@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab0DLSUG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 14:20:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25848 "EHLO mx1.redhat.com"
+	id S1753394Ab0DLSf1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 14:35:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54098 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752751Ab0DLSUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 14:20:04 -0400
-Date: Mon, 12 Apr 2010 20:16:55 +0200
+	id S1752659Ab0DLSf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 14:35:26 -0400
+Date: Mon, 12 Apr 2010 20:32:51 +0200
 From: Oleg Nesterov <oleg@redhat.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Gautham R Shenoy <ego@in.ibm.com>, Rusty Russell <rusty@rustcorp.com.au>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Ingo Molnar <mingo@elte.hu>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Nathan Fontenot <nfont@austin.ibm.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Sachin Sant <sachinp@in.ibm.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Shane Wang <shane.wang@intel.com>,
-       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] cpuhotplug: make get_online_cpus() scalability by
-	using percpu counter
-Message-ID: <20100412181655.GA11872@redhat.com>
-References: <4BB9BD8A.9040209@cn.fujitsu.com> <20100405162901.GA3567@redhat.com> <20100406120039.GC5680@redhat.com> <4BBC8A11.3040501@cn.fujitsu.com> <20100407135456.GA12029@redhat.com> <20100409121235.GA5784@redhat.com> <4BC2E6CE.7060401@cn.fujitsu.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Valdis.Kletnieks@vt.edu, Andrew Morton <akpm@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       linux-kernel@vger.kernel.org
+Subject: Re: mmotm 2010-04-05 - another RCU whinge (not network this time)
+Message-ID: <20100412183251.GA13391@redhat.com>
+References: <201004052336.o35NaeSE015814@imap1.linux-foundation.org> <6417.1270771048@localhost> <20100409231614.GE2421@linux.vnet.ibm.com> <10875.1270869752@localhost> <20100410051504.GA2414@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BC2E6CE.7060401@cn.fujitsu.com>
+In-Reply-To: <20100410051504.GA2414@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12, Lai Jiangshan wrote:
+On 04/09, Paul E. McKenney wrote:
 >
-> Oleg Nesterov wrote:
-> >
-> > But, I must admit, I'd like to avoid adding the new member to task_struct.
-> >
-> > What do you think about the code below?
-> >
-> > I didn't even try to compile it, just to explain what I mean.
-> >
-> > In short: we have the per-cpu fast counters, plus the slow counter
-> > which is only used when cpu_hotplug_begin() is in progress.
+> > Oleg, looks like proc-make-collect_sigign_sigcatch-rcu-safe.patch is the
+> > offender here, it added the line that causes the whinge.
 >
-> get_online_cpus() in your code is still read-preference.
+> If collect_sigign_sigcatch() is OK to call by updaters as well as
+> readers, we need something like:
+>
+> 	struct sighand_struct *sighand;
+> 	
+> 	sighand = rcu_dereference_check(p->sighand,
+> 					rcu_read_lock_held() ||
+> 					lockdep_is_held(&???));
+>
+> Where the "???" is replaced with whichever of the two locks is protecting
+> updates.  My guess would be the sighand lock, but I would not rely on
+> my guesses in this case.  ;-)
 
-Yes,
+Yes, it should be p->sighand->siglock.
 
-> I wish we quit this ability of get_online_cpus().
+Actually, I was going to change another caller, do_task_stat(), to call
+collect_sigign_sigcatch() without ->siglock too, but now I am not sure
+when/if this will happen.
 
-Heh. Since I never read the changelogs, I didn't even notice this was
-one of the goals of your patch. I thought this is just the side-effect.
+OK, thanks, I'll send the patch to make rcu_dereference_check() happy.
 
-Yes, if we want to block the new readers, I don't see how it is possible
-to avoid the counter in task_struct.
 
-I can't judge whether this new member worth the trouble. Once again, I am
-not arguing, just I don't know. And I think your patch is correct (apart
-from pure theoretical race with cpu_hotplug_done afaics).
+
+
+While we are here... __exit_signal() does
+
+	sighand = rcu_dereference_check(tsk->sighand,
+					rcu_read_lock_held() ||
+					lockdep_tasklist_lock_is_held());
+
+What is the point? We know that the single caller must hold tasklist,
+otherwise everything is broken. Perhaps it would be better to
+use rcu_dereference_raw() ?
+
+In fact, I don't really understand why __exit_signal() needs
+rcu_dereference() at all.
 
 Oleg.
 
