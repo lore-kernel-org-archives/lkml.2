@@ -1,85 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab0DMBVR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 21:21:17 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:49757 "EHLO
+	id S1754635Ab0DMBVT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 21:21:19 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:49816 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754522Ab0DMBUv (ORCPT
+	with ESMTP id S1754544Ab0DMBVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 21:20:51 -0400
-Date: Mon, 12 Apr 2010 10:47:38 +1000
+	Mon, 12 Apr 2010 21:21:01 -0400
+Date: Mon, 12 Apr 2010 11:01:27 +1000
 From: Dave Chinner <david@fromorbit.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Denys Fedorysychenko <nuclearcat@nuclearcat.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: endless sync on bdi_sched_wait()? 2.6.33.1
-Message-ID: <20100412004738.GC2493@dastard>
-References: <201003311907.31342.nuclearcat@nuclearcat.com>
- <20100408092850.GA20488@quack.suse.cz>
+To: Chris Mason <chris.mason@oracle.com>, Eric Sandeen <sandeen@sandeen.net>,
+       John Berthels <john@humyo.com>, linux-kernel@vger.kernel.org,
+       Nick Gregory <nick@humyo.com>, Rob Sanderson <rob@humyo.com>,
+       xfs@oss.sgi.com, linux-mm@kvack.org
+Subject: Re: PROBLEM + POSS FIX: kernel stack overflow, xfs, many disks,
+ heavy write load, 8k stack, x86-64
+Message-ID: <20100412010127.GD2493@dastard>
+References: <20100407140523.GJ11036@dastard>
+ <4BBCAB57.3000106@humyo.com>
+ <20100407234341.GK11036@dastard>
+ <20100408030347.GM11036@dastard>
+ <4BBDC92D.8060503@humyo.com>
+ <4BBDEC9A.9070903@humyo.com>
+ <20100408233837.GP11036@dastard>
+ <20100409113850.GE13327@think>
+ <4BBF6C51.5030203@sandeen.net>
+ <20100409181108.GG13327@think>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100408092850.GA20488@quack.suse.cz>
+In-Reply-To: <20100409181108.GG13327@think>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 08, 2010 at 11:28:50AM +0200, Jan Kara wrote:
-> On Wed 31-03-10 19:07:31, Denys Fedorysychenko wrote:
-> > I have a proxy server with "loaded" squid. On some moment i did sync, and 
-> > expecting it to finish in reasonable time. Waited more than 30 minutes, still 
-> > "sync". Can be reproduced easily.
-....
+On Fri, Apr 09, 2010 at 02:11:08PM -0400, Chris Mason wrote:
+> On Fri, Apr 09, 2010 at 01:05:05PM -0500, Eric Sandeen wrote:
+> > Chris Mason wrote:
 > > 
-> > SUPERPROXY ~ # cat /proc/1753/stack
-> > [<c019a93c>] bdi_sched_wait+0x8/0xc
-> > [<c019a807>] wait_on_bit+0x20/0x2c
-> > [<c019a9af>] sync_inodes_sb+0x6f/0x10a
-> > [<c019dd53>] __sync_filesystem+0x28/0x49
-> > [<c019ddf3>] sync_filesystems+0x7f/0xc0
-> > [<c019de7a>] sys_sync+0x1b/0x2d
-> > [<c02f7a25>] syscall_call+0x7/0xb
-> > [<ffffffff>] 0xffffffff
->   Hmm, I guess you are observing the problem reported in
-> https://bugzilla.kernel.org/show_bug.cgi?id=14830
->   There seem to be several issues in the per-bdi writeback code that
-> cause sync on a busy filesystem to last almost forever. To that bug are
-> attached two patches that fix two issues but apparently it's not all.
-> I'm still looking into it...
+> > > shrink_zone on my box isn't 500 bytes, but lets try the easy stuff
+> > > first.  This is against .34, if you have any trouble applying to .32,
+> > > just add the word noinline after the word static on the function
+> > > definitions.
+> > > 
+> > > This makes shrink_zone disappear from my check_stack.pl output.
+> > > Basically I think the compiler is inlining the shrink_active_zone and
+> > > shrink_inactive_zone code into shrink_zone.
+> > > 
+> > > -chris
+> > > 
+> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > > index 79c8098..c70593e 100644
+> > > --- a/mm/vmscan.c
+> > > +++ b/mm/vmscan.c
+> > > @@ -620,7 +620,7 @@ static enum page_references page_check_references(struct page *page,
+> > >  /*
+> > >   * shrink_page_list() returns the number of reclaimed pages
+> > >   */
+> > > -static unsigned long shrink_page_list(struct list_head *page_list,
+> > > +static noinline unsigned long shrink_page_list(struct list_head *page_list,
+> > 
+> > FWIW akpm suggested that I add:
+> > 
+> > /*
+> >  * Rather then using noinline to prevent stack consumption, use
+> >  * noinline_for_stack instead.  For documentaiton reasons.
+> >  */
+> > #define noinline_for_stack noinline
+> > 
+> > so maybe for a formal submission that'd be good to use.
+> 
+> Oh yeah, I forgot about that one.  If the patch actually helps we can
+> switch it.
 
-Jan, just another data point that i haven't had a chance to look
-into yet - I noticed that 2.6.34-rc1 writeback patterns have changed
-on XFS from looking at blocktrace.
+Well, given that the largest stack overflow reported was about 800
+bytes, I don't think it's enough. All the fat has been trimmed from
+XFS long ago, and there isn't that much in the generic code paths
+to trim. And if we consider that this isn't including a significant
+storage subsystem (i.e. NFS on top and stacked DM+MD+FC below), then
+trimming a few hundred bytes is not enough to prevent an 8k stack
+being blown sky high.
 
-The bdi-flush background write threadi almost never completes - it
-blocks in get_request() and it is doing 1-2 page IOs. If I do a
-large dd write, the writeback thread starts with 512k IOs for a
-short while, then suddenly degrades to 1-2 page IOs that get merged
-in the elevator to 512k IOs.
-
-My theory is that the inode is getting dirtied by the concurrent
-write() and the inode is never moving back to the dirty list and
-having it's dirtied_when time reset  - it's being moved to the
-b_more_io list in writeback_single_inode(), wbc->more_io is being
-set, and then we re-enter writeback_inodes_wb() which splices the
-b_more_io list back onto the b_io list and we try to write it out
-again.
-
-Because I have so many dirty pages in memory, nr_pages is quite high
-and this pattern continues for some time until it is exhausted, at
-which time throttling triggers background sync to run again and the
-1-2 page IO pattern continues.
-
-And for sync(), nr_pages is set to LONG_MAX, so regardless of how
-many pages were dirty, if we keep dirtying pages it will stay in
-this loop until LONG_MAX pages are written....
-
-Anyway, that's my theory - if we had trace points in the writeback
-code, I could confirm/deny this straight away. First thing I need to
-do, though, is to forward port the original writeback tracng code
-Jens posted a while back....
+That is why I was saying I'm not sure what the best way to solve the
+problem is - I've got a couple of ideas for fixing the problem in
+XFS once and for all, but I'm not sure if they will fly or not
+yet, let alone written any code....
 
 Cheers,
 
