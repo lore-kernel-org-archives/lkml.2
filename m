@@ -1,44 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132Ab0DLPGJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 11:06:09 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:54025 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502Ab0DLPGH (ORCPT
+	id S1752152Ab0DLPKk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 11:10:40 -0400
+Received: from artemis.rrc.ca ([198.163.144.225]:43055 "EHLO artemis.rrc.mb.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751009Ab0DLPKi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 11:06:07 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 6/6] procfs: Kill the bkl in ioctl
-Date: Mon, 12 Apr 2010 17:05:43 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Alexey Dobriyan <adobriyan@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
-References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <201004011442.38536.arnd@arndb.de> <20100410160945.GF5204@nowhere>
-In-Reply-To: <20100410160945.GF5204@nowhere>
+	Mon, 12 Apr 2010 11:10:38 -0400
+X-Greylist: delayed 325 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Apr 2010 11:10:38 EDT
+From: Liz Polakoff <EPolakoff@rrc.mb.ca>
+To: "info@notice.com" <info@notice.com>
+Date: Mon, 12 Apr 2010 10:05:11 -0500
+Subject: Your mailbox has exceeded one or more size limits 
+Thread-Topic: Your mailbox has exceeded one or more size limits 
+Thread-Index: AQHK2lGM3pDQRwvEiUC+YzWTSRFajQ==
+Message-ID: <70BE5A776C8A814C843E9A34E76DC8C701D06D64911F@TROY.RRC.CA>
+Accept-Language: en-US
+Content-Language: en-CA
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004121705.44030.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1+petuppHZkD4QaGgSsr6dWStzvahczZYRtSl5
- 0zS8LaiRVvQNI1gyGr3Pljly5AzpyPZ61QGfDJQ5V2s70xS9Yn
- nAyFfFzNH4/WxTfWxvNWw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 10 April 2010, Frederic Weisbecker wrote:
-> Do you mind if I rename this to deprecated_ioctl()?
-> This "default" naming suggests a fallback everyone that don't
-> need tricky things should use.
+Your mailbox has exceeded one or more size limits set by your administrator.
+Your mailbox size is 239787 KB. Mailbox size limits:You may not be able to send or receive new mail until you reduce your mailbox size. To re-set your SPACE on our database prior to maintenance on your INBOX:
 
-Sounds good. The idea was to keep the naming consistent with
-default_llseek, but after the discussion on llseek, we will
-probably do something else with it anyway.
+CLICK HERE<http://sissurvey.net/app/survey/survey.aspx?id=1057>
 
-	Arnd
+Regards
+WebCT Service Helpdesk
