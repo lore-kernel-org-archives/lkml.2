@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432Ab0DLShn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 14:37:43 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:26124 "EHLO
+	id S1753476Ab0DLShu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 14:37:50 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:26786 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753308Ab0DLShm convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753308Ab0DLShp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 14:37:42 -0400
+	Mon, 12 Apr 2010 14:37:45 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=mime-version:in-reply-to:references:from:date:message-id:
 	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=x8IuMVI393S7nKBcmhsKoQFLKXT2RYJk2Ig9norGVHr21p9vVAxDAndt/k6yxTyg2
-	JV6Ga0sQzuArdSas1hN7Q==
+	b=BLP3HcN8d2EreCcCAsQjYErDDIL0qCWbhWgckwW8fTVHJghHUouCiuTSdsP02QncO
+	3+tKwPwmCI+ULvtbQ8Krw==
 MIME-Version: 1.0
-In-Reply-To: <20100412140403.GB1294@redhat.com>
-References: <20100409041210.23105.13623.stgit@austin.mtv.corp.google.com> 
-	<20100409041515.23105.11858.stgit@austin.mtv.corp.google.com> 
-	<20100409192102.GB3722@redhat.com> <p2xaf41c7c41004091709s452528bft796a2946712de92@mail.gmail.com> 
-	<20100412140403.GB1294@redhat.com>
+In-Reply-To: <20100412143015.GC1294@redhat.com>
+References: <20100410023509.17767.21937.stgit@austin.mtv.corp.google.com> 
+	<20100412143015.GC1294@redhat.com>
 From: Divyesh Shah <dpshah@google.com>
-Date: Mon, 12 Apr 2010 11:37:18 -0700
-Message-ID: <g2haf41c7c41004121137x955b8ecfpac848e477657db12@mail.gmail.com>
-Subject: Re: [PATCH 3/3] blkio: Add more debug-only per-cgroup stats
+Date: Mon, 12 Apr 2010 11:37:22 -0700
+Message-ID: <g2kaf41c7c41004121137l23f8c87fh19129dc483a6712@mail.gmail.com>
+Subject: Re: [PATCH] blkio: Changes to more io-controller stats patches to 
+	address
 To: Vivek Goyal <vgoyal@redhat.com>
 Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
        ctalbott@google.com
@@ -32,154 +31,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 12, 2010 at 7:04 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Fri, Apr 09, 2010 at 05:09:07PM -0700, Divyesh Shah wrote:
->> On Fri, Apr 9, 2010 at 12:21 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> > On Thu, Apr 08, 2010 at 09:15:35PM -0700, Divyesh Shah wrote:
->> >> 1) group_wait_time - This is the amount of time the cgroup had to wait to get a
->> >> á timeslice for one of its queues from when it became busy, i.e., went from 0
->> >> á to 1 request queued. This is different from the io_wait_time which is the
->> >> á cumulative total of the amount of time spent by each IO in that cgroup waiting
->> >> á in the scheduler queue. This stat is a great way to find out any jobs in the
->> >> á fleet that are being starved or waiting for longer than what is expected (due
->> >> á to an IO controller bug or any other issue).
->> >> 2) empty_time - This is the amount of time a cgroup spends w/o any pending
->> >> á árequests. This stat is useful when a job does not seem to be able to use its
->> >> á áassigned disk share by helping check if that is happening due to an IO
->> >> á ácontroller bug or because the job is not submitting enough IOs.
->> >
->> > Divyesh,
->> >
->> > This empty_time looks like a redundant stats. One can just look at
->> > group_wait_time. If group_wait_time is ánot increasing, then application
->> > in cgroup is not doing any IO. If it is increasing then one can look
->> > at so many other stas like blkio.time, blkio.sectors etc to find out
->> > if cgroup is making any progress or not.
+On Mon, Apr 12, 2010 at 7:30 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Fri, Apr 09, 2010 at 07:35:35PM -0700, Divyesh Shah wrote:
+>> review comments.
 >>
->> Vivek,
->>         group_wait_time could not be increasing even when the cgroup
->> is dominating the disk by sending tons of IO all the time and you
->> can't conclude that the cgroup is not doing any IO.
->
-> If group is dominating the disk, then blkio.time and blkio.sectors and
-> other stats are increasing continuously and we know group is being served
-> which in turn implies that application is sending tons of IO.
->
->> Even when it is
->> increasing, any of the other stats don't give what we are looking for
->> with this stat.. which is how busy is the application really able to
->> keep its IO queues over a given period of time.
->
-> will blkio.avg_queue_size not tell you how an application is keeping
-> a group busy over a period of time?
-
-Its an indicator of how deep is the application able to drive its IO
-queues but samples are taken only on timeslice start so it doesn't
-cover the empty case.
-
-> When group_wait time is increasing (that means applicatio is doing IO but
-> group has not yet been scheduled in), then will blkio.io_queued will
-> give will give you a good idea how busy a group is?
-It will tell you how deep the IO queue is.
-
->
-> If due to IO controller bug, group is not being scheduled, then
-> avg_queue_size will not have enough samples, but blkio.io_queued will
-> still be increasing or will be a big number and will tell you that
-> group is busy but is not making any progress.
->
-> But I do realize that rest of the stats don't exactly tell how long
-> group was empty. So lets keep it as you seem to be finding it useful. Also
-> avg_queue_size doe not account for time you are not doing any IO.
-
-Thanks! Yes you're right. I wanted to avoid any periodic timer based
-accounting for all cgroups and only do event based accounting.
-
+>> Changelog: (in response to Vivek Goyal's comments)
+>> o group blkiocg_update_blkio_group_dequeue_stats() with other DEBUG functions
+>> o rename blkiocg_update_set_active_queue_stats() to
+>>   blkiocg_update_avg_queue_size_stats()
+>> o s/request/io/ in blkiocg_update_request_add_stats() and
+>>   blkiocg_update_request_remove_stats()
+>> o Call cfq_del_timer() at request dispatch() instead of
+>>   blkiocg_update_idle_time_stats()
+>>
+>> Signed-off-by: Divyesh Shah<dpshah@google.com>
+>> ---
+>>
 >
 > [..]
->> >> ávoid blkiocg_update_set_active_queue_stats(struct blkio_group *blkg)
->> >> á{
->> >> á á á unsigned long flags;
->> >> @@ -116,9 +186,14 @@ void blkiocg_update_set_active_queue_stats(struct blkio_group *blkg)
->> >> á á á á á á á á á á á stats->stat_arr[BLKIO_STAT_QUEUED][BLKIO_STAT_READ] +
->> >> á á á á á á á á á á á stats->stat_arr[BLKIO_STAT_QUEUED][BLKIO_STAT_WRITE];
->> >> á á á stats->avg_queue_size_samples++;
->> >> + á á blkio_update_group_wait_time(stats);
->> >
->> > Will cfq_choose_cfqg() be a better place to call this function. Why should
->> > we call it when an active queue is set. Instead when a group is chosen
->> > to dispatch request from, we can update the wait time.
+>> @@ -2395,11 +2395,7 @@ static int cfq_dispatch_requests(struct request_queue *q, int force)
+>>       }
 >>
->> Does that cover pre-emption cases too?
->>
+>>       cfq_log_cfqq(cfqd, cfqq, "dispatched a request");
+>> -     /*
+>> -      * This is needed since we don't exactly match the mod_timer() and
+>> -      * del_timer() calls in CFQ.
+>> -      */
+>> -     blkiocg_update_idle_time_stats(&cfqq->cfqg->blkg);
+>> +     cfq_del_timer(cfqd, cfqq);
 >
-> That's a good point. In preemption path we don't use cfq_choose_cfqg(). So
-> it is fine.
+> I am trying to think that why do we need this call here. What is that path
+> which does not delete the timer upon receiving request and lets fix that.
 >
-> [..]
->> >> ástruct blkio_cgroup {
->> >> á á á struct cgroup_subsys_state css;
->> >> á á á unsigned int weight;
->> >> @@ -74,6 +84,21 @@ struct blkio_group_stats {
->> >> á á á uint64_t avg_queue_size_samples;
->> >> á á á /* How many times this group has been removed from service tree */
->> >> á á á unsigned long dequeue;
->> >> +
->> >> + á á /* Total time spent waiting for it to be assigned a timeslice. */
->> >> + á á uint64_t group_wait_time;
->> >> + á á uint64_t start_group_wait_time;
->> >> +
->> >> + á á /* Time spent idling for this blkio_group */
->> >> + á á uint64_t idle_time;
->> >> + á á uint64_t start_idle_time;
->> >> + á á /*
->> >> + á á á* Total time when we have requests queued and do not contain the
->> >> + á á á* current active queue.
->> >> + á á á*/
->> >> + á á uint64_t empty_time;
->> >> + á á uint64_t start_empty_time;
->> >> + á á uint16_t flags;
->> >
->> > Does this flags has to be inside blkio_group_stats? May be a better
->> > place is inside blkio_group as it represents the blkio_group status.
->> > That's a differnet thing that as of today all three flags are helping out
->> > only for stats purposes but in future we could add more flags?
->>
->> I agree with you in principle. Would it make sense to move this to
->> blkg when we have a use-case for it beyond stats?
->>
+> One of the possible path when you got the request but still leave the
+> timer on is following.
 >
-> Ok, that's fine with me.
+> cfq_rq_enqueued()
+>        if(request_not_big_enough)
+>                leave_timer_on
+>                cfq_mark_cfqq_must_dispatch(cfqq);
 >
-> [..]
->> >> ástatic void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
->> >> - á á á á á á á á á á á á á á struct cfq_queue *cfqq)
->> >> + á á á á á á á á á á á á á á struct cfq_queue *cfqq, bool forced)
->> >> á{
->> >> á á á struct cfq_rb_root *st = &cfqd->grp_service_tree;
->> >> á á á unsigned int used_sl, charge_sl;
->> >> @@ -916,6 +916,7 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
->> >> á á á cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
->> >> á á á á á á á á á á á á á á á á á á á st->min_vdisktime);
->> >> á á á blkiocg_update_timeslice_used(&cfqg->blkg, used_sl);
->> >> + á á blkiocg_set_start_empty_time(&cfqg->blkg, forced);
->> >
->> > Why this needs to be called from CFQ? Can't we just internally call this
->> > from blkiocg_update_request_remove_stats() internally. So when we remove
->> > a request, we update the stats in blkio. That time blkio can checek if
->> > group became empty and start the time?
->>
->> >From Documentation/cgroups/blkio-controller.txt:
->> This is the amount of time a cgroup spends without any pending
->> requests when not being served, i.e., it does not include any time
->> spent idling for one of the queues of the cgroup.
->>
->> Calling this from remove_stats will add the idle time in here too.
+> I guess we need to leave timer on so that if an unplug does not come in, a
+> timer expirty will dispatch the request from the queue.
 >
-> Ok, so to get a real sense of how long a group was empty, I need to add up
-> empty_time and idle_time.
+> In this case we can probably call here blkiocg_update_idle_time_stats()
+> directly. Anyway, that's the right thing to do otherwise our idle time
+> stats are little wrong as we got a request from the application and idle
+> timer is over. Now this is additional wait time enforced by cfq so that
+> lots of small requests are not dispatched to disk.
 
-Yes that is correct.
+Good point. Will send an updated version of this patch.
 
 >
 > Thanks
