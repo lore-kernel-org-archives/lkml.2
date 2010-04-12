@@ -1,50 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751361Ab0DLMMp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 08:12:45 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:46338 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776Ab0DLMMo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 08:12:44 -0400
-Date: Mon, 12 Apr 2010 14:12:43 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Pedro Ribeiro <pedrib@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Daniel Mack <daniel@caiaq.de>,
-       Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, Greg KH <gregkh@suse.de>,
-       alsa-devel@alsa-project.org, linux-usb@vger.kernel.org
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-Message-ID: <20100412121243.GN18855@one.firstfloor.org>
-References: <20100407090623.GN30807@buzzloop.caiaq.de> <Pine.LNX.4.44L0.1004071036060.1779-100000@iolanthe.rowland.org> <87sk719hbm.fsf@basil.nowhere.org> <20100412111439.GU30801@buzzloop.caiaq.de> <20100412115300.GM18855@one.firstfloor.org> <q2z74fd948d1004120511hebf19eaauc41ee9ed25dea19e@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <q2z74fd948d1004120511hebf19eaauc41ee9ed25dea19e@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1751464Ab0DLMUX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 08:20:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18518 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751340Ab0DLMUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 08:20:19 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100412120330.GA2566@osiris.boeblingen.de.ibm.com>
+References: <20100412120330.GA2566@osiris.boeblingen.de.ibm.com> <20100412060609.GA25273@dvomlehn-lnx2.corp.sa.net>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: dhowells@redhat.com, David VomLehn <dvomlehn@cisco.com>,
+       to@dvomlehn-lnx2.corp.sa.net, "linux-arch@vger.kernel.org"@cisco.com,
+       linux-arch@vger.kernel.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org, maint_arch@dvomlehn-lnx2.corp.sa.net
+Subject: Re: [PATCH 1/23] Make register values available to panic notifiers
+Date: Mon, 12 Apr 2010 13:20:02 +0100
+Message-ID: <24979.1271074802@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> I'm not putting into question whether something is broken in my
-> system, but if it is, it must be the ICH9 platform, because I was able
-> to reproduce it in another laptop.
-> 
-> My laptop is a Lenovo T400 and I was able to reproduce it in a Acer
-> Aspire 59xx (I don't remember the exact model, but it is one of the
-> new ones with 15.6 inch - i think they all use the same base). And the
-> common thing between them is the ICH9 platform.
+Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
 
-There are lots of systems around with ICH9 that work fine.
-I'm typing on one.
+> Wouldn't it be much easier to implement panic with an illegal op and let
+> the exception handler set up the pt regs structure instead? Just like some
+> architectures do that already for warnings.
 
-> 
-> The only which solved this problem was the first patch sent to me by
-> Daniel Mack. I've been using it for days straight and it works fine.
+No, not necessarily.  panic() is varargs.
 
-Can you send a full boot log?
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+David
