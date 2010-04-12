@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab0DLIhs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 04:37:48 -0400
-Received: from pmx3.lnl.infn.it ([192.135.30.243]:42031 "EHLO pmx3.lnl.infn.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752525Ab0DLIhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 04:37:47 -0400
-X-Greylist: delayed 1339 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Apr 2010 04:37:47 EDT
-Message-ID: <2977669.1271060085255.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
-Date: Mon, 12 Apr 2010 10:14:45 +0200 (CEST)
-From: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>
-To: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org,
-       rolandd@cisco.com, peterz@infradead.org, pavel@ucw.cz, mingo@elte.hu,
-       Eric B Munson <ebmunson@us.ibm.com>,
-       Steve Wise <swise@opengridcomputing.com>
-Subject: Socket Direct Protocol: help
-Mime-Version: 1.0
+	id S1753374Ab0DLIlG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 04:41:06 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:53699 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752824Ab0DLIlD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 04:41:03 -0400
+To: ebiederm@xmission.com (Eric W. Biederman)
+Cc: tek-life <teklife.kernel@gmail.com>, dhazelton@enter.net,
+       oliver@neukum.org, linux-kernel@vger.kernel.org
+Subject: Re: Can we remove the Zone_DMA?
+From: Andi Kleen <andi@firstfloor.org>
+References: <m2mc58e39921004032121hc7ca41f0gacd90ffe2abc6444@mail.gmail.com>
+	<k2tc58e39921004032226ze2eb64dev21f8c2d137a49ebc@mail.gmail.com>
+	<s2mc58e39921004032233rfd47a83eoa86b37ffe59d2e7@mail.gmail.com>
+	<201004040349.28840.dhazelton@enter.net>
+	<j2rc58e39921004040128xb502c314u4b6b080a77fee813@mail.gmail.com>
+	<m18w93hati.fsf@fess.ebiederm.org>
+Date: Mon, 12 Apr 2010 10:41:00 +0200
+In-Reply-To: <m18w93hati.fsf@fess.ebiederm.org> (Eric W. Biederman's message of "Sun, 04 Apr 2010 01:38:17 -0700")
+Message-ID: <871velawrn.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Priority: 3 (normal)
-X-Mailer: SuSE Linux Openexchange Server 4 - WebMail (Build 2.4160)
-X-Operating-System: Linux 2.4.21-314-smp i386 (JVM 1.3.1_20)
-Organization: INFN - Laboratori Nazionali Legnaro
-X-PMX-Version: 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.4.12.80015 (i)
-X-Spam-Flag: NO
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good morning,
+ebiederm@xmission.com (Eric W. Biederman) writes:
 
-I'm testing some Neteffect cards (Intel code E10G81GP - Neteffect
-NE020.LP.1.SSR).
-PC has Linux| (kernel version) 2.6.18-164.15.1.el5 | x86_64 x86_64
-x86_64 GNU/Linux.
+Revisiting old posts. Sorry for digging up this old thread
+from its grave.
 
-In this phase, I measure the bandwidth with the netserver/nerperf
-(version netperf-2.4.5) ad hoc tests.
-They work fine with TCP protocol - as OFED 1.5.1 example programs - and
-they have some problems with SDP one.
+> Ultimately I don't see much point in disabling ZONE_DMA.  It is a lot of
+> work to track down if it is really needed, and it only costs 16MB.  So
+> unless someone shows me that ZONE_DMA triggers the OOM killer unnecessarily
+> or otherwise impacts the system what does legacy code hurt?
 
-I'm trying test with the command lines below:
+It has quite a lot of impact on slab for example.
 
-server: LD_PRELOAD=/usr/local/lib64/libsdp.so netserver
+The main users today are mostly some users who need to have less tha 4GB
+on 64bit systems. The problem is for those often 16MB is not enough.
+So on many systems 16MB is too much and on others it isn't enough.
 
-client: LD_PRELOAD=/usr/local/lib64/libsdp.so netperf -H server_address
--c -C
--- -m 65536
+A long time ago I had a patchkit to replace it with a range allocator,
+merge it with softiotlb and replace all the allocations with real masks.
 
-The /etc/libsdp.conf file contains rules below:
-use both listen * *:*
-use both connect * *:*
-log min-level 9 destination file libsdp.log
+It never got quite merged and still needed some more work.
 
-Client displays "Connection error: Can not allocate memory" and the
-connection fails.
-(original text on client log file:libsdp Error connect: failed for SDP
-fd:6 with error:Cannot allocate memory)
+ftp://firstfloor.org/pub/ak/dma/INTRO
 
-The library path is:
-/usr/local/lib64/libsdp.so
+All the issues described in the INTRO are still there.
 
-
-Could someone explain me how LD_PRELOAD environment variable must be
-set?
-I don't understand why the test work with TCP and not with SDP.
-Could I work with wrong Linux kernel environment or parameters?
-
-I don't know if there is a specific mailing list for SDP so I ask you
-help.
-
-Thank you very much,
-Andrea 
-
-
-
-
-
-
-
-Andrea Gozzelino
-
-INFN - Laboratori Nazionali di Legnaro	(LNL)
-Viale dell'Universita' 2
-I-35020 - Legnaro (PD)- ITALIA
-Tel: +39 049 8068346
-Fax: +39 049 641925
-Mail: andrea.gozzelino@lnl.infn.it			
-
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
