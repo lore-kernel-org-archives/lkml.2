@@ -1,73 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694Ab0DLDoz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 23:44:55 -0400
-Received: from complete.lackof.org ([198.49.126.79]:55435 "EHLO
-	complete.lackof.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751655Ab0DLDox (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 23:44:53 -0400
-Date: Sun, 11 Apr 2010 21:44:52 -0600
-From: Grant Grundler <grundler@parisc-linux.org>
-To: Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
-Cc: Grant Grundler <grundler@parisc-linux.org>,
-       Kyle McMartin <kyle@mcmartin.ca>,
-       "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: tulip_stop_rxtx() failed (CSR5 0xf0260000 CSR6 0xb3862002) on
-	DEC Alpha Personal Workstation 433au
-Message-ID: <20100412034452.GA22957@lackof.org>
-References: <20100405171318.GA18915@physik.fu-berlin.de>
+	id S1752740Ab0DLDtl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 23:49:41 -0400
+Received: from xenotime.net ([72.52.64.118]:52011 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752438Ab0DLDtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Apr 2010 23:49:39 -0400
+Message-ID: <4BC2984D.2050102@xenotime.net>
+Date: Sun, 11 Apr 2010 20:49:33 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100405171318.GA18915@physik.fu-berlin.de>
-X-Home-Page: http://www.parisc-linux.org/
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Pavel Machek <pavel@ucw.cz>, Geert Uytterhoeven <geert@linux-m68k.org>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       kernel list <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@osdl.org>
+Subject: Re: LOCALVERSION_AUTO considered harmful
+References: <20100411164701.GA7558@elf.ucw.cz> <20100412185136.GA13171@x200>    <g2v10f740e81004111158r4d4714a1w23b8521d5d595b29@mail.gmail.com>    <20100411201426.GC25294@elf.ucw.cz>    <alpine.LFD.2.00.1004120022230.18009@localhost.localdomain> <33355.71.245.98.113.1271040992.squirrel@www.xenotime.net>
+In-Reply-To: <33355.71.245.98.113.1271040992.squirrel@www.xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05, 2010 at 07:13:18PM +0200, Adrian Glaubitz wrote:
-> Hi guys,
+On 04/11/10 19:56, rdunlap@xenotime.net wrote:
+> On Sun, April 11, 2010 3:24 pm, Thomas Gleixner wrote:
+>> On Sun, 11 Apr 2010, Pavel Machek wrote:
+>>
+>>
+>>> On Sun 2010-04-11 20:58:58, Geert Uytterhoeven wrote:
+>>>
+>>>> On Mon, Apr 12, 2010 at 20:51, Alexey Dobriyan <adobriyan@gmail.com>
+>>>> wrote:
+>>>>
+>>>>> On Sun, Apr 11, 2010 at 06:47:01PM +0200, Pavel Machek wrote:
+>>>>>
+>>>>>> @@ -99,6 +98,11 @@ config LOCALVERSION_AUTO
+>>>>>>         appended after any matching localversion* files, and after
+>>>>>> the value         set in CONFIG_LOCALVERSION.
+>>>>>>
+>>>>>>
+>>>>>> +       Unfortunately, such finegrained versioning will mean that
+>>>>>> you will +       not be able to use modules for development; even
+>>>>>> "make modules"
+>>>>>> +       will change module versions, making recompiled modules
+>>>>>> impossible +       to insert into old kernel.
+>>>>>>
+>>>>>
+>>>>> That's conditional BS.
+>>>>> Turn off CONFIG_MODVERSIONS already.
+>>>>>
+>>>>
+>>>> Yeah, I disabled it ages ago. Even then (before git, probably even
+>>>> before bitkeeper) I had hard times inserting modules...
+>>>>
+>>>
+>>> I _had_ it off
+>>>
+>>>
+>>> # CONFIG_MODVERSIONS is not set
+>>>
+>>>
+>>> It seems some checking survives CONFIG_MODVERSIONS unset and that
+>>> checking is strict enough to refuse module load after one "make modules"
+>>> with LOCALVERSION_AUTO on...
+>>
+>> So instead of fixing the CONFIG_MODVERSIONS=n case you go the easy way
+>> of killing LOCALVERSION_AUTO ? Brilliant.
 > 
-> I installed Debian unstable on an old digital workstation "DEC Digital
-> Personal Workstation 433au" (Miata) which has an on-board tulip
-> network controller. I'm not really using that network controller but
-> an off-board intel e1000 controller. However, I found that the tulip
-> driver produces a lot of noise in the message log, the following
-> message is repated periodically and spams the whole message log:
+> Pavel's original example (afaik) was on April 5:
+> Subject: 2.6.34-rc3: Can't insmod after make, because versions now differ?!
 > 
-> 0000:00:03.0: tulip_stop_rxtx() failed (CSR5 0xf0260000 CSR6 0xb3862002)
+> Apr  5 07:33:16 amd kernel: udlfb: version magic
+> '2.6.34-rc3-00345-ge8240f9-dirty SMP mod_unload CORE2 ' should be
+> '2.6.34-rc3-00344-g548fc0a-dirty SMP mod_unload CORE2 '
 > 
-> Do you think this is related to the fact that no cable is connected to
-> the network controller?
-
-It shouldn't be. The "stop_rxtx failed" error is because either 
-CSR5_TS or CSR5_RS are still set in CSR5. This means the chip
-thinks the transmit or receive protocol engines are still running.
-
-What I suspect is the state isn't "running" by rather some other
-"hung" state caused by failed (lack of) link. This has been reported
-before but I've not looked that closely yet.
-
-> The lspci output of the hardware looks like this:
 > 
-> test-adrian1:~# lspci
-> 00:03.0 Ethernet controller: Digital Equipment Corporation DECchip 21142/43 (rev 30)
-> 00:07.0 ISA bridge: Contaq Microsystems 82c693
-> 00:07.1 IDE interface: Contaq Microsystems 82c693
-> 00:07.2 IDE interface: Contaq Microsystems 82c693
-> 00:07.3 USB Controller: Contaq Microsystems 82c693
-> 00:0b.0 VGA compatible controller: Matrox Graphics, Inc. MGA 2064W [Millennium] (rev 01)
-> 00:14.0 PCI bridge: Digital Equipment Corporation DECchip 21152 (rev 03)
-> 01:04.0 SCSI storage controller: QLogic Corp. ISP1020 Fast-wide SCSI (rev 05)
-> 01:09.0 Ethernet controller: Intel Corporation 82541GI Gigabit Ethernet Controller
+> So what do you suggest?  If the "magic" strings contain "-dirty ",
+> then ignore that and the 2 preceding hyphen-separated fields?
 > 
-> If you need anymore verbose or debug output, please let me know.
+> That could be dangerous if some kernel internal structures have changed.
+> I.e., user/developer beware.
+> 
+> Maybe ignore those strings iff some override has been set somewhere?
 
-I might. I first have to stare at the tulip programmers guide a while
-sort.
+Pavel, does "modprobe --force" work?
 
-cheers,
-grant
+-- 
+~Randy
