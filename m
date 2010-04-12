@@ -1,36 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615Ab0DLDKF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 23:10:05 -0400
-Received: from tundra.namei.org ([65.99.196.166]:53213 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751554Ab0DLDKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 23:10:01 -0400
-Date: Mon, 12 Apr 2010 13:09:48 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Eric Paris <eparis@redhat.com>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -v2] security: remove dead hook acct
-In-Reply-To: <20100409193324.23535.36578.stgit@paris.rdu.redhat.com>
-Message-ID: <alpine.LRH.2.00.1004121309300.21578@tundra.namei.org>
-References: <20100409193324.23535.36578.stgit@paris.rdu.redhat.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1752701Ab0DLDZp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 23:25:45 -0400
+Received: from mail-yx0-f171.google.com ([209.85.210.171]:50141 "EHLO
+	mail-yx0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752557Ab0DLDZo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Apr 2010 23:25:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=PdeJt5mkqBLXsCdkZb6V7OsEAb1Y/XjVeoyVQ1bbq1J6v/g+/WTzBqjF82excFv7Jt
+         wlHfH1BIAx/sakS1AtEZ3bAQZ7c3YmpUaJgx2To/Os4MWrochF+Jh+t0TxMXJTd+Rc+N
+         KWccYQCjPpGbRAO4JAHicG8pr5gwMNKgHuQRY=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20100412022704.GB5151@localhost>
+References: <4BBA6776.5060804@mozilla.com> <20100406095135.GB5183@cmpxchg.org>
+	 <20100407022456.GA9468@localhost> <4BBBF402.70403@mozilla.com>
+	 <20100407073847.GB17892@localhost> <4BBE1609.6080308@mozilla.com>
+	 <20100412022704.GB5151@localhost>
+Date: Mon, 12 Apr 2010 12:25:43 +0900
+Message-ID: <l2z28c262361004112025ydabc82ceyfa21cff9debc85b3@mail.gmail.com>
+Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Taras Glek <tglek@mozilla.com>, Johannes Weiner <hannes@cmpxchg.org>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Apr 2010, Eric Paris wrote:
+Hi, Wu.
 
-> Unused hook.  Remove.
-> 
-> Signed-off-by: Eric Paris <eparis@redhat.com>
+On Mon, Apr 12, 2010 at 11:27 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> On Fri, Apr 09, 2010 at 01:44:41AM +0800, Taras Glek wrote:
+>> On 04/07/2010 12:38 AM, Wu Fengguang wrote:
+>> > On Wed, Apr 07, 2010 at 10:54:58AM +0800, Taras Glek wrote:
+>> >
+>> >> On 04/06/2010 07:24 PM, Wu Fengguang wrote:
+>> >>
+>> >>> Hi Taras,
+>> >>>
+>> >>> On Tue, Apr 06, 2010 at 05:51:35PM +0800, Johannes Weiner wrote:
+>> >>>
+>> >>>
+>> >>>> On Mon, Apr 05, 2010 at 03:43:02PM -0700, Taras Glek wrote:
+>> >>>>
+>> >>>>
+>> >>>>> Hello,
+>> >>>>> I am working on improving Mozilla startup times. It turns out that page
+>> >>>>> faults(caused by lack of cooperation between user/kernelspace) are the
+>> >>>>> main cause of slow startup. I need some insights from someone who
+>> >>>>> understands linux vm behavior.
+>> >>>>>
+>> >>>>>
+>> >>> How about improve Fedora (and other distros) to preload Mozilla (and
+>> >>> other apps the user run at the previous boot) with fadvise() at boot
+>> >>> time? This sounds like the most reasonable option.
+>> >>>
+>> >>>
+>> >> That's a slightly different usecase. I'd rather have all large apps
+>> >> startup as efficiently as possible without any hacks. Though until we
+>> >> get there, we'll be using all of the hacks we can.
+>> >>
+>> > Boot time user space readahead can do better than kernel heuristic
+>> > readahead in several ways:
+>> >
+>> > - it can collect better knowledge on which files/pages will be used
+>> >    which lead to high readahead hit ratio and less cache consumption
+>> >
+>> > - it can submit readahead requests for many files in parallel,
+>> >    which enables queuing (elevator, NCQ etc.) optimizations
+>> >
+>> > So I won't call it dirty hack :)
+>> >
+>> >
+>> Fair enough.
+>> >>> As for the kernel readahead, I have a patchset to increase default
+>> >>> mmap read-around size from 128kb to 512kb (except for small memory
+>> >>> systems).  This should help your case as well.
+>> >>>
+>> >>>
+>> >> Yes. Is the current readahead really doing read-around(ie does it read
+>> >> pages before the one being faulted)? From what I've seen, having the
+>> >>
+>> > Sure. It will do read-around from current fault offset - 64kb to +64kb.
+>> >
+>> That's excellent.
+>> >
+>> >> dynamic linker read binary sections backwards causes faults.
+>> >> http://sourceware.org/bugzilla/show_bug.cgi?id=11447
+>> >>
+>> > There are too many data in
+>> > http://people.mozilla.com/~tglek/startup/systemtap_graphs/ld_bug/report.txt
+>> > Can you show me the relevant lines? (wondering if I can ever find such lines..)
+>> >
+>> The first part of the file lists sections in a file and their hex
+>> offset+size.
+>
+>> lines like 0 512 offset(#1) mean a read at position 0 of 512 bytes.
+>> Incidentally this first read is coming from vfs_read, so the log doesn't
+>> take account readahead (unlike the other reads caused by mmap page faults).
+>
+> Yes, every binary/library starts with this 512b read.  It is requested
+> by ld.so/ld-linux.so, and will trigger a 4-page readahead. This is not
+> good readahead. I wonder if ld.so can switch to mmap read for the
+> first read, in order to trigger a larger 128kb readahead. However this
+> will introduce a little overhead on VMA operations.
 
+AFAIK, kernel reads first sector(ELF header and so one)  of binary in
+case of binary.
+in fs/exec.c,
+prepare_binprm()
+{
+...
+return kernel_read(bprm->file, 0, bprm->buf, BINPRM_BUF_SIZE);
+}
 
-All applied to
-git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
+But dynamic loader uses libc_read for reading of shared library's one.
+
+So you may have a chance to increase readahead size on binary but hard on shared
+library. Many of app have lots of shared library so the solution of
+only binary isn't big about
+performance. :(
 
 -- 
-James Morris
-<jmorris@namei.org>
+Kind regards,
+Minchan Kim
