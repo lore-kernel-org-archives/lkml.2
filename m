@@ -1,165 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592Ab0DLKRn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 06:17:43 -0400
-Received: from fg-out-1718.google.com ([72.14.220.158]:51444 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147Ab0DLKRk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 06:17:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=TPUp47OIYHcBhVDgSKyPCXma7XFeiDKjlHgJYdar0E2DyVozCqIWTrysHZypfqxiDj
-         pKKjXPQw2yY2mOZgI+URFdQxSThB5nz2eRi7WqBUVXDyxKIsjGxiHhl3eJIOxBiqXHLj
-         hQWFleJs5WdD05nJ7j+x0c0a2TqT23lmF33c4=
-Date: Tue, 13 Apr 2010 14:18:15 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Octavian Purdila <opurdila@ixiacom.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       penguin-kernel@I-love.SAKURA.ne.jp, netdev@vger.kernel.org,
-       Neil Horman <nhorman@tuxdriver.com>, ebiederm@xmission.com,
-       David Miller <davem@davemloft.net>
-Subject: Re: [Patch 1/3] sysctl: refactor integer handling proc code
-Message-ID: <20100413111814.GB4396@x200>
-References: <20100412100744.5302.92442.sendpatchset@localhost.localdomain>
- <20100412100754.5302.99552.sendpatchset@localhost.localdomain>
+	id S1753643Ab0DLK0I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 06:26:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61694 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753447Ab0DLK0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 06:26:05 -0400
+Message-ID: <4BC2F536.70808@redhat.com>
+Date: Mon, 12 Apr 2010 13:25:58 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100412100754.5302.99552.sendpatchset@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] KVM MMU: fix kvm_mmu_zap_page() and its calling path
+References: <4BC2D2E2.1030604@cn.fujitsu.com> <4BC2D345.100@cn.fujitsu.com> <4BC2D8D6.6030306@redhat.com> <4BC2DFA0.6000609@cn.fujitsu.com> <4BC2E2FF.9020005@redhat.com> <4BC2E654.7050002@cn.fujitsu.com>
+In-Reply-To: <4BC2E654.7050002@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 12, 2010 at 06:04:04AM -0400, Amerigo Wang wrote:
-> As we are about to add another integer handling proc function a little
-> bit of cleanup is in order: add a few helper functions to improve code
-> readability and decrease code duplication.
-> 
-> In the process a bug is also fixed: if the user specifies a number
-> with more then 20 digits it will be interpreted as two integers
-> (e.g. 10000...13 will be interpreted as 100.... and 13).
+On 04/12/2010 12:22 PM, Xiao Guangrong wrote:
+> Hi Avi,
+>
+> Avi Kivity wrote:
+>
+>    
+>> hlist_for_each_entry_safe() is supposed to be be safe against removal of
+>> the element that is pointed to by the iteration cursor.
+>>      
+> If we destroyed the next point, hlist_for_each_entry_safe() is unsafe.
+>
+> List hlist_for_each_entry_safe()'s code:
+>
+> |#define hlist_for_each_entry_safe(tpos, pos, n, head, member) 		 \
+> |	for (pos = (head)->first;					 \
+> |	     pos&&  ({ n = pos->next; 1; })&&  				\
+> |		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
+> |	     pos = n)
+>
+> if n is destroyed:
+> 'pos = n, n = pos->next'
+> then it access n again, it's unsafe/illegal for us.
+>    
 
-ULONG_MAX is not 22 digits always.
+But kvm_mmu_zap_page() will only destroy sp == tpos == pos; n points at 
+pos->next already, so it's safe.
 
-The fix is to not rely on simple_strtoul()
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
-I guess it's time to finally remove it. :-(
-
-Also, it's better to copy_from user stuff once.
-Without looking at non-trivial users, one page should be enough.
-
-> Behavior for EFAULT handling was changed as well. Previous to this
-> patch, when an EFAULT error occurred in the middle of a write
-> operation, although some of the elements were set, that was not
-> acknowledged to the user (by shorting the write and returning the
-> number of bytes accepted). EFAULT is now treated just like any other
-> errors by acknowledging the amount of bytes accepted.
-
-> +static int proc_skip_wspace(char __user **buf, size_t *size)
-> +{
-> +	char c;
-> +
-> +	while (*size) {
-> +		if (get_user(c, *buf))
-> +			return -EFAULT;
-> +		if (!isspace(c))
-> +			break;
-> +		(*size)--;
-> +		(*buf)++;
-> +	}
-> +
-> +	return 0;
-> +}
-
-yeah, copy_from_user once, so we won't have this.
-
-> +static bool isanyof(char c, const char *v, unsigned len)
-
-A what?
-this is memchr()
-
-> +{
-> +	int i;
-> +
-> +	if (!len)
-> +		return false;
-> +
-> +	for (i = 0; i < len; i++)
-> +		if (c == v[i])
-> +			break;
-> +	if (i == len)
-> +		return false;
-> +
-> +	return true;
-> +}
-> +
-> +#define TMPBUFLEN 22
-> +/**
-> + * proc_get_long - reads an ASCII formated integer from a user buffer
-> + *
-> + * @buf - user buffer
-> + * @size - size of the user buffer
-> + * @val - this is where the number will be stored
-> + * @neg - set to %TRUE if number is negative
-> + * @perm_tr - a vector which contains the allowed trailers
-> + * @perm_tr_len - size of the perm_tr vector
-> + * @tr - pointer to store the trailer character
-> + *
-> + * In case of success 0 is returned and buf and size are updated with
-> + * the amount of bytes read. If tr is non NULL and a trailing
-> + * character exist (size is non zero after returning from this
-> + * function) tr is updated with the trailing character.
-> + */
-> +static int proc_get_long(char __user **buf, size_t *size,
-> +			  unsigned long *val, bool *neg,
-> +			  const char *perm_tr, unsigned perm_tr_len, char *tr)
-> +{
-> +	int len;
-> +	char *p, tmp[TMPBUFLEN];
-> +
-> +	if (!*size)
-> +		return -EINVAL;
-> +
-> +	len = *size;
-> +	if (len > TMPBUFLEN-1)
-> +		len = TMPBUFLEN-1;
-> +
-> +	if (copy_from_user(tmp, *buf, len))
-> +		return -EFAULT;
-> +
-> +	tmp[len] = 0;
-> +	p = tmp;
-> +	if (*p == '-' && *size > 1) {
-> +		*neg = 1;
-> +		p++;
-> +	} else
-> +		*neg = 0;
-> +	if (!isdigit(*p))
-> +		return -EINVAL;
-> +
-> +	*val = simple_strtoul(p, &p, 0);
-> +
-> +	len = p - tmp;
-> +
-> +	/* We don't know if the next char is whitespace thus we may accept
-> +	 * invalid integers (e.g. 1234...a) or two integers instead of one
-> +	 * (e.g. 123...1). So lets not allow such large numbers. */
-> +	if (len == TMPBUFLEN - 1)
-> +		return -EINVAL;
-> +
-> +	if (len < *size && perm_tr_len && !isanyof(*p, perm_tr, perm_tr_len))
-> +		return -EINVAL;
-> +
-> +	if (tr && (len < *size))
-> +		*tr = *p;
-> +
-> +	*buf += len;
-> +	*size -= len;
-> +
-> +	return 0;
-> +}
