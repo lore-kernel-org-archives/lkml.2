@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398Ab0DLXzA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 19:55:00 -0400
-Received: from f0.cmpxchg.org ([85.214.51.133]:36771 "EHLO cmpxchg.org"
+	id S1754414Ab0DLX4V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 19:56:21 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:60654 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754021Ab0DLXy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 19:54:59 -0400
-Date: Tue, 13 Apr 2010 01:54:31 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Borislav Petkov <bp@alien8.de>, Rik van Riel <riel@redhat.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-Subject: Re: [PATCH 1/4] Simplify and comment on anon_vma re-use for anon_vma_prepare()
-Message-ID: <20100412235431.GA20163@cmpxchg.org>
-References: <20100411185508.GA4450@liondog.tnic> <alpine.LFD.2.00.1004111707360.3514@i5.linux-foundation.org> <alpine.LFD.2.00.1004111759440.3521@i5.linux-foundation.org> <20100412072056.GA2432@liondog.tnic> <alpine.LFD.2.00.1004120854440.26679@i5.linux-foundation.org> <alpine.LFD.2.00.1004120906370.26679@i5.linux-foundation.org> <4BC36916.3080005@redhat.com> <20100412190002.GA8595@a1.tnic> <alpine.LFD.2.00.1004121201480.3714@i5.linux-foundation.org> <alpine.LFD.2.00.1004121320390.3683@i5.linux-foundation.org>
+	id S1754332Ab0DLX4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 19:56:19 -0400
+Date: Tue, 13 Apr 2010 09:56:12 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+       John Kacur <jkacur@gmail.com>, Roland McGrath <roland@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] ptrace: kill BKL in ptrace syscall
+Message-Id: <20100413095612.2348215e.sfr@canb.auug.org.au>
+In-Reply-To: <20100412132910.098e3ddf.akpm@linux-foundation.org>
+References: <1269812331-8511-1-git-send-regression-fweisbec@gmail.com>
+	<20100329114046.GB16971@redhat.com>
+	<520f0cf11003290506o629c9ab6n95c94c48ba24acf4@mail.gmail.com>
+	<20100329130526.GA23201@redhat.com>
+	<520f0cf11003290626q2e74c5d1r1eebb07a75e25dd5@mail.gmail.com>
+	<20100329182204.GE5101@nowhere>
+	<20100329183502.GA17842@redhat.com>
+	<20100401184855.GB6142@nowhere>
+	<20100412132910.098e3ddf.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004121320390.3683@i5.linux-foundation.org>
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__13_Apr_2010_09_56_12_+1000_qiJ_8L.2VEWl1g=6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+--Signature=_Tue__13_Apr_2010_09_56_12_+1000_qiJ_8L.2VEWl1g=6
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Apr 12, 2010 at 01:22:33PM -0700, Linus Torvalds wrote:
-> 
-> From: Linus Torvalds <torvalds@linux-foundation.org>
-> Date: Sat, 10 Apr 2010 10:36:19 -0700
-> Subject: [PATCH 1/4] Simplify and comment on anon_vma re-use for anon_vma_prepare()
-> 
-> This changes the anon_vma reuse case to require that we only reuse
-> simple anon_vma's - ie the case when the vma only has a single anon_vma
-> associated with it.
-> 
-> This means that a reuse of an anon_vma from an adjacent vma will always
-> guarantee that both vma's are associated not onyl with the same
-> anon_vma, they will also have the same anon_vma chain (of just a single
-> entry in this case).
-> 
-> And since anon_vma re-use was the only case where the same anon_vma
-> might be associated with different chains of anon_vma's, we now have the
-> case that every vma that shares the same vma will always also have the
+Hi Andrew,
 
-                                           ^^^ That should be anon_vma?
+On Mon, 12 Apr 2010 13:29:10 -0700 Andrew Morton <akpm@linux-foundation.org=
+> wrote:
+>
+> On Thu, 1 Apr 2010 20:48:58 +0200 Frederic Weisbecker <fweisbec@gmail.com=
+> wrote:
+> >=20
+> > I have applied it to:
+> >=20
+> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.g=
+it
+> > 	bkl/core
+>=20
+> It hasn't turned up in linux-next yet?
 
-> same chain.  That makes it much easier to think about merging vma's that
-> share the same anon_vma's: you can always just drop the other anon_vma
-> chain in anon_vma_merge() since you know that they are always identical.
+It will be there from today (assuming no problems).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-I like to think of 'incomplete' and 'complete' versions of the same
-chain and that this new rule of yours simplifies things by limiting
-reuse to the cases where the incomplete and the complete version
-end up identical.  I can live with your wording, though :)
+--Signature=_Tue__13_Apr_2010_09_56_12_+1000_qiJ_8L.2VEWl1g=6
+Content-Type: application/pgp-signature
 
-> This also splits up the function to validate the anon_vma re-use, and
-> adds a lot of commentary about the possible races.
-> 
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+iEYEARECAAYFAkvDsxwACgkQjjKRsyhoI8wiCwCfclAVKbSDBvvG41eeTR1Z8n6V
+SOoAoIOgdRm+19ib6YHonSgGruI3Ww4b
+=6VmZ
+-----END PGP SIGNATURE-----
 
-That said, I still don't like that the vma comparisons differ depending
-on whether we reuse an anon_vma or merge vmas.  In my happy-place, the
-same vma comparison function is predicate for both cases, so I actually
-liked that aspect of the old code, but I also see that code reuse is a
-PITA in that file...  Ah well, that can still be cleaned up later.
+--Signature=_Tue__13_Apr_2010_09_56_12_+1000_qiJ_8L.2VEWl1g=6--
