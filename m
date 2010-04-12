@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab0DLLWf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 07:22:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1748 "EHLO mx1.redhat.com"
+	id S1753698Ab0DLL1G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 07:27:06 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:44546 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752568Ab0DLLWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 07:22:34 -0400
-Message-ID: <4BC30273.3050406@redhat.com>
-Date: Mon, 12 Apr 2010 14:22:27 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] KVM MMU: optimize for writing cr4
-References: <4BC2D2E2.1030604@cn.fujitsu.com> <4BC2D3E0.8070602@cn.fujitsu.com> <4BC2DB27.7060005@redhat.com> <4BC2F928.2060407@cn.fujitsu.com>
-In-Reply-To: <4BC2F928.2060407@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1752840Ab0DLL1C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 07:27:02 -0400
+Subject: Re: 2.6.34-rc2: "ima_dec_counts: open/free imbalance"?
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: Eric Paris <eparis@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Mimi Zohar <zohar@us.ibm.com>, James Morris <jmorris@namei.org>,
+       "dri-devel@lists.sourceforge.net" <dri-devel@lists.sourceforge.net>
+In-Reply-To: <25D576C5-F4E5-49BF-A20C-361214155BBA@m3y3r.de>
+References: <1269775909.5301.4.camel@localhost.localdomain>
+	 <20100331163234.8e875ae8.akpm@linux-foundation.org>
+	 <1270089696.2941.217.camel@dhcp235-240.rdu.redhat.com>
+	 <25D576C5-F4E5-49BF-A20C-361214155BBA@m3y3r.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 12 Apr 2010 07:27:00 -0400
+Message-ID: <1271071620.3125.30.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2010 01:42 PM, Xiao Guangrong wrote:
-> Hi Avi,
->
-> Thanks for your comments.
->
-> Avi Kivity wrote:
->
->    
->> Later we have:
->>
->>      
->>>          kvm_x86_ops->set_cr4(vcpu, cr4);
->>>          vcpu->arch.cr4 = cr4;
->>>          vcpu->arch.mmu.base_role.cr4_pge = (cr4&  X86_CR4_PGE)&&
->>> !tdp_enabled;
->>>        
->> All of which depend on cr4.
->>      
-> Oh, destroy_kvm_mmu() is not really destroyed cr3 and we can reload it later
-> form shadow page cache, so, maybe this patch is unnecessary.
->
-> But, i have a another question here, why we need encode 'cr4&  X86_CR4_PGE' into
-> base_role.cr4_gpe? Why we need allocation different shadow page for global page
-> and no-global page?
->    
+On Thu, 2010-04-01 at 20:17 +0200, Thomas Meyer wrote:
+> Am 01.04.2010 um 04:41 schrieb Eric Paris <eparis@redhat.com>:
+> 
+> > On Wed, 2010-03-31 at 16:32 -0700, Andrew Morton wrote:
+> >> On Sun, 28 Mar 2010 13:31:49 +0200
+> >> Thomas Meyer <thomas@m3y3r.de> wrote:
+> >>
+> >>> This warning/error/notice is new in 2.6.34-rc2+:
+> >>
+> >> Let's add some cc's.  It might be a DRM bug.
+> >>
+> >> I'll ask Rafael and Maciej to track this as a post-2.6.33 regression,
+> >> thanks.
+> >
+> > The IMA code hasn't changed since .33 so my guess is something new the
+> > drm code is doing with obj->filp.
+> >
+> > Thomas, any idea what the newest kernel was that didn't show you this
+> > problem?
+> 
+> I first saw this message in 2.6.34-rc2 (+free_init_pages patch), but  
+> that was also the first bootable kernel for me as I was hit by the  
+> NO_BOOTMEM bug...
+> 
+> >  It might help cut down my search in the morning....
+> >
+> > -Eric
+> >
 
-See 6364a3918cb.  It was reverted later due to a problem with the 
-implementation.  I'm not sure whether I want to fix the bug and restore 
-that patch, or to drop it altogether and give the guest ownership of 
-cr4.pge.  See cr4_guest_owned_bits (currently only used on ept).
+The call to shmem_file_setup() in drm_gem_object_alloc() should properly
+increment the IMA counters and the fput() in
+drm_gem_object_free_common() should decrement them.
 
-> As i know, global page is not static in TLB, and x86 cpu also may flush them form TLB,
-> maybe we no need treat global page specially... Am i miss something? :-(
->    
+I noticed the 'bump' comment in 'include/drm/drmP.h' doesn't match the
+code, but in fact does the exact opposite.  Not sure if this is related.
 
-You can't read reverted patches? :)
+static inline void
+drm_gem_object_handle_unreference(struct drm_gem_object *obj)
+{
+        if (obj == NULL)
+                return;
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+        /*
+         * Must bump handle count first as this may be the last
+         * ref, in which case the object would disappear before we
+         * checked for a name
+         */
+        kref_put(&obj->handlecount, drm_gem_object_handle_free);
+        drm_gem_object_unreference(obj);
+}
+
+Mimi
 
