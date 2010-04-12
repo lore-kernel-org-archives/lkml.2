@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295Ab0DLGDo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 02:03:44 -0400
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:22990 "EHLO
+	id S1752576Ab0DLGDv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 02:03:51 -0400
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:23022 "EHLO
 	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006Ab0DLGDm (ORCPT
+	with ESMTP id S1752372Ab0DLGDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 02:03:42 -0400
+	Mon, 12 Apr 2010 02:03:49 -0400
 Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
 X-IronPort-Anti-Spam-Filtered: true
 X-IronPort-Anti-Spam-Result: AvsEADZUwkurRN+K/2dsb2JhbACbM3GhP5gUhQwEgyU
 X-IronPort-AV: E=Sophos;i="4.52,188,1270425600"; 
-   d="scan'208";a="513153458"
-Date: Sun, 11 Apr 2010 23:03:41 -0700
+   d="scan'208";a="513153515"
+Date: Sun, 11 Apr 2010 23:03:48 -0700
 From: David VomLehn <dvomlehn@cisco.com>
 To: to@dvomlehn-lnx2.corp.sa.net, "linux_arch"@dvomlehn-lnx2.corp.sa.net,
        linux_arch@dvomlehn-lnx2.corp.sa.net
 Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
        maint_arch@dvomlehn-lnx2.corp.sa.net
-Subject: [PATCH 2/23] Make register values available to Alpha panic
-	notifiers
-Message-ID: <20100412060341.GA24324@dvomlehn-lnx2.corp.sa.net>
+Subject: [PATCH 4/23] Make register values available to AV32 panic notifiers
+Message-ID: <20100412060348.GA24382@dvomlehn-lnx2.corp.sa.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -34,24 +33,24 @@ help to complete this.
 
 Signed-off-by: David VomLehn <dvomlehn@cisco.com>
 ---
- arch/alpha/include/asm/ptrace.h |  124 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 124 insertions(+), 0 deletions(-)
+ arch/avr32/include/asm/ptrace.h |   68 +++++++++++++++++++++++++++++++++++++++
+ arch/avr32/kernel/traps.c       |    4 +-
+ 2 files changed, 70 insertions(+), 2 deletions(-)
 
-diff --git a/arch/alpha/include/asm/ptrace.h b/arch/alpha/include/asm/ptrace.h
-index 65cf3e2..952d177 100644
---- a/arch/alpha/include/asm/ptrace.h
-+++ b/arch/alpha/include/asm/ptrace.h
-@@ -79,6 +79,130 @@ extern void show_regs(struct pt_regs *);
- 
- #define force_successful_syscall_return() (task_pt_regs(current)->r0 = 0)
+diff --git a/arch/avr32/include/asm/ptrace.h b/arch/avr32/include/asm/ptrace.h
+index e53dd0d..28b7f25 100644
+--- a/arch/avr32/include/asm/ptrace.h
++++ b/arch/avr32/include/asm/ptrace.h
+@@ -151,6 +151,74 @@ static __inline__ int valid_user_regs(struct pt_regs *regs)
+ 	return 0;
+ }
  
 +/* Macros for saving the contents of registers and for the output constraint
 + * for those registers */
-+#include "/home/vomlehn/git/kernel.org/linux/ptreg.h"
-+#define PTREG_SAVE(r, name)	"stq	" #r ", %[" #name "]\n"
-+#define PTREG_SAVE_R(i)		PTREG_SAVE_I($, r, i)
++#define PTREG_SAVE(r, name)	"st.w	" #r ", %[" #name "]\n"
++#define PTREG_SAVE_R(i)		PTREG_SAVE_I(r, r, i)
 +
-+#define PTREG_OUT_R(regsp, i)	PTREG_OUT_I(regsp, r, r, i)
++#define PTREG_OUT_R(regs, i)	PTREG_OUT(regs, r##i, r##i)
 +
 +#define arch_has_save_ptregs	1
 +
@@ -69,59 +68,26 @@ index 65cf3e2..952d177 100644
 +const struct pt_regs *save_ptregs(struct pt_regs *regs)
 +{
 +	__asm__ __volatile__ (
-+			/* Based on the SAVE_ALL code */
 +			PTREG_SAVE_R(0)
 +			PTREG_SAVE_R(1)
 +			PTREG_SAVE_R(2)
 +			PTREG_SAVE_R(3)
 +			PTREG_SAVE_R(4)
-+			PTREG_SAVE_R(28)
-+			"lda	$2, alpha_mv\n"
 +			PTREG_SAVE_R(5)
 +			PTREG_SAVE_R(6)
 +			PTREG_SAVE_R(7)
 +			PTREG_SAVE_R(8)
-+			PTREG_SAVE_R(19)
-+			PTREG_SAVE_R(20)
-+			PTREG_SAVE_R(21)
-+			"ldq	$2, HAE_CACHE($2)\n"
-+			PTREG_SAVE_R(22)
-+			PTREG_SAVE_R(23)
-+			PTREG_SAVE_R(24)
-+			PTREG_SAVE_R(25)
-+			PTREG_SAVE_R(26)
-+			PTREG_SAVE_R(27)
-+			PTREG_SAVE($2, hae)
-+			PTREG_SAVE_R(16)
-+			PTREG_SAVE_R(17)
-+			PTREG_SAVE_R(18)
-+
 +			PTREG_SAVE_R(9)
 +			PTREG_SAVE_R(10)
 +			PTREG_SAVE_R(11)
 +			PTREG_SAVE_R(12)
-+			PTREG_SAVE_R(13)
-+			PTREG_SAVE_R(14)
-+			PTREG_SAVE_R(15)
-+			PTREG_SAVE_R(29)
-+			PTREG_SAVE_R(30)
-+			PTREG_SAVE_R(31)
-+			PTREG_SAVE_REG($gp, gp)
-+			PTREG_SAVE_REG($31, ps)
-+
-+			/* These are almost certainly wrong */
-+			PTREG_SAVE_REG(trap_a0, trap_a0)
-+			PTREG_SAVE_REG(trap_a1, trap_a1)
-+			PTREG_SAVE_REG(trap_a2, trap_a2)
-+		/*
-+		 * The current location is the one for which the register
-+		 * values are correct, even if some had been modified on
-+		 * function entry. So, the current location is the value to
-+		 * save as the execution address.
-+		 */
-+		"1b:\n"
-+			"lda	$2, 1b\n"
-+			PTREG_SAVE($2, pc)
++			PTREG_SAVE(sp, sp)
++			PTREG_SAVE(lr, lr)
++			PTREG_SAVE(sr, sr)
++			PTREG_SAVE(r12_orig, r12_orig)
++		"1:\n"
++			"mov r0, 1b\n"
++			PTREG_SAVE(r0, pc)
 +	:
 +		PTREG_OUT_R(regs, 0),
 +		PTREG_OUT_R(regs, 1),
@@ -136,39 +102,34 @@ index 65cf3e2..952d177 100644
 +		PTREG_OUT_R(regs, 10),
 +		PTREG_OUT_R(regs, 11),
 +		PTREG_OUT_R(regs, 12),
-+		PTREG_OUT_R(regs, 13),
-+		PTREG_OUT_R(regs, 14),
-+		PTREG_OUT_R(regs, 15),
-+		PTREG_OUT_R(regs, 16),
-+		PTREG_OUT_R(regs, 17),
-+		PTREG_OUT_R(regs, 18),
-+		PTREG_OUT_R(regs, 19),
-+		PTREG_OUT_R(regs, 20),
-+		PTREG_OUT_R(regs, 21),
-+		PTREG_OUT_R(regs, 22),
-+		PTREG_OUT_R(regs, 23),
-+		PTREG_OUT_R(regs, 24),
-+		PTREG_OUT_R(regs, 25),
-+		PTREG_OUT_R(regs, 26),
-+		PTREG_OUT_R(regs, 27),
-+		PTREG_OUT_R(regs, 28),
-+		PTREG_OUT_R(regs, 29),
-+		PTREG_OUT_R(regs, 30),
-+		PTREG_OUT_R(regs, 31),
-+
-+		PTREG_OUT(regs, hae, hae),
-+		PTREG_OUT(regs, trap_a0, trap_a0),
-+		PTREG_OUT(regs, trap_a1, trap_a1),
-+		PTREG_OUT(regs, trap_a2, trap_a2),
-+		PTREG_OUT(regs, ps, ps),
++		PTREG_OUT(regs, sp, sp),
++		PTREG_OUT(regs, lr, lr),
 +		PTREG_OUT(regs, pc, pc),
-+		PTREG_OUT(regs, gp, gp)
++		PTREG_OUT(regs, sr, sr),
++		PTREG_OUT(regs, r12_orig, r12_orig)
 +	:
-+		"$2"
++		"r0"
 +	);
 +
 +	return regs;
 +}
- #endif
  
- #endif
+ #endif /* __KERNEL__ */
+ 
+diff --git a/arch/avr32/kernel/traps.c b/arch/avr32/kernel/traps.c
+index b91b204..100c52a 100644
+--- a/arch/avr32/kernel/traps.c
++++ b/arch/avr32/kernel/traps.c
+@@ -65,10 +65,10 @@ void NORET_TYPE die(const char *str, struct pt_regs *regs, long err)
+ 	spin_unlock_irq(&die_lock);
+ 
+ 	if (in_interrupt())
+-		panic("Fatal exception in interrupt");
++		panic_with_regs(regs, "Fatal exception in interrupt");
+ 
+ 	if (panic_on_oops)
+-		panic("Fatal exception");
++		panic_with_regs(regs, "Fatal exception");
+ 
+ 	do_exit(err);
+ }
