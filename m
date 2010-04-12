@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab0DLTs4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 15:48:56 -0400
-Received: from straum.hexapodia.org ([207.7.131.186]:59740 "EHLO
-	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982Ab0DLTsy (ORCPT
+	id S1753374Ab0DLTtz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 15:49:55 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:53725 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752876Ab0DLTtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 15:48:54 -0400
-Date: Mon, 12 Apr 2010 12:48:53 -0700
-From: Andy Isaacson <adi@hexapodia.org>
-To: Yinghai <yinghai.lu@oracle.com>
-Cc: guenter.roeck@ericsson.com, "H. Peter Anvin" <hpa@zytor.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Bjorn Helgaas <bjorn.helgaas@hp.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well
-	as x86_32
-Message-ID: <20100412194853.GN11130@hexapodia.org>
-References: <20100409223532.GC11130@hexapodia.org> <4BBFB1D8.6090802@oracle.com> <20100410000030.GE11130@hexapodia.org> <4BBFD019.9040405@oracle.com> <20100410014308.GG11130@hexapodia.org> <4BBFD8EF.6020108@oracle.com> <20100410015711.GH11130@hexapodia.org> <4BBFE66C.2040603@oracle.com> <20100412185416.GA19959@hexapodia.org> <4BC375D9.4040503@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BC375D9.4040503@oracle.com>
-X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
-X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
-X-Domestic-Surveillance: money launder bomb tax evasion
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 12 Apr 2010 15:49:53 -0400
+Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the
+ anon_vmas of a mergeable VMA
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Borislav Petkov <bp@alien8.de>,
+       Johannes Weiner <hannes@cmpxchg.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+In-Reply-To: <1271100621.20295.3397.camel@laptop>
+References: <20100409191425.GB10780@a1.tnic>
+	 <alpine.LFD.2.00.1004091227310.3558@i5.linux-foundation.org>
+	 <20100409204328.GG28964@cmpxchg.org>
+	 <alpine.LFD.2.00.1004091546350.3558@i5.linux-foundation.org>
+	 <alpine.LFD.2.00.1004091638290.3558@i5.linux-foundation.org>
+	 <20100410003110.GI28964@cmpxchg.org>
+	 <alpine.LFD.2.00.1004091730130.3558@i5.linux-foundation.org>
+	 <20100410072714.GA9246@liondog.tnic> <20100410112639.GA24708@a1.tnic>
+	 <alpine.LFD.2.00.1004100821340.3558@i5.linux-foundation.org>
+	 <20100410163828.GA25579@a1.tnic>
+	 <alpine.LFD.2.00.1004100947400.3558@i5.linux-foundation.org>
+	 <alpine.LFD.2.00.1004101101180.3558@i5.linux-foundation.org>
+	 <1271083207.4807.18.camel@twins>  <4BC33A02.8000307@redhat.com>
+	 <1271088103.20295.3383.camel@laptop> <4BC34501.5060401@redhat.com>
+	 <alpine.LFD.2.00.1004120941310.26679@i5.linux-foundation.org>
+	 <1271097638.4807.129.camel@twins>  <1271100621.20295.3397.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 12 Apr 2010 21:44:34 +0200
+Message-ID: <1271101474.20295.3400.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 12, 2010 at 12:34:49PM -0700, Yinghai wrote:
-> On 04/12/2010 11:54 AM, Andy Isaacson wrote:
-> > On Fri, Apr 09, 2010 at 07:46:04PM -0700, Yinghai wrote:
-> > [    5.463672] ahci 0000:00:1f.2: PCI INT C -> GSI 20 (level, low) -> IRQ 20
-> > [    5.470633] ahci 0000:00:1f.2: BAR 5: can't reserve [mem 0x000a0000-0x000a07ff]
-> > [    5.478257] ahci: probe of 0000:00:1f.2 failed with error -16
+On Mon, 2010-04-12 at 21:30 +0200, Peter Zijlstra wrote:
 > 
-> please check
+> We could here return a non-valid and already freed anon_vma.
 > 
-> [PATCH] x86,pci, acpi: Inherent BUSY flag when setup_resource for root bus
+OK, so non of the users of page_lock_anon_vma() with exception of the
+memory-failure.c one could really care. And all of them seem to be safe
+enough wrt dealing with a dead one.
 
-What patches should I have applied?  I'm testing with d620a7cf from
-linus' tree, plus your "reserve [0xa0000,0x1000000] in e820", plus this
-patch.  Please let me know if I should be testing something else (or
-just push a git head for me to pull, that would remove all the
-uncertainty).
+So unless people care, I'm going to not spend more time on trying to
+make page_lock_anon_vma() behave.
 
--andy
+Instead I'll try and see wth it is that migrate.c and rmap_walk_anon are
+doing.
+
