@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423Ab0DLRKt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 13:10:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64750 "EHLO mx1.redhat.com"
+	id S1753451Ab0DLRKx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 13:10:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47676 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753364Ab0DLRKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 13:10:46 -0400
+	id S1753383Ab0DLRKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 13:10:43 -0400
 From: Masami Hiramatsu <mhiramat@redhat.com>
-Subject: [PATCH -tip v3 05/10] perf probe: Support basic type casting
+Subject: [PATCH -tip v3 04/10] perf probe: Query basic types from debuginfo
 To: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
        lkml <linux-kernel@vger.kernel.org>
 Cc: systemtap <systemtap@sources.redhat.com>,
@@ -17,8 +17,8 @@ Cc: systemtap <systemtap@sources.redhat.com>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Mon, 12 Apr 2010 13:17:22 -0400
-Message-ID: <20100412171722.3790.50372.stgit@localhost6.localdomain6>
+Date: Mon, 12 Apr 2010 13:17:15 -0400
+Message-ID: <20100412171715.3790.23730.stgit@localhost6.localdomain6>
 In-Reply-To: <20100412171646.3790.64715.stgit@localhost6.localdomain6>
 References: <20100412171646.3790.64715.stgit@localhost6.localdomain6>
 User-Agent: StGIT/0.14.3
@@ -29,9 +29,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add basic type casting for arguments to perf probe. This allows
-users to specify the actual type of arguments. Of course, if
-user sets invalid types, kprobe-tracer rejects that.
+Query the basic type information (byte-size and signed-flag) from
+debuginfo and pass that to kprobe-tracer. This is especially useful
+for tracing the members of data structure, because each member has
+different byte-size on the memory.
 
 Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -42,139 +43,189 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 ---
 
- tools/perf/Documentation/perf-probe.txt |    3 ++-
- tools/perf/util/probe-event.c           |   23 ++++++++++++++++++++++-
- tools/perf/util/probe-event.h           |    1 +
- tools/perf/util/probe-finder.c          |   10 ++++++++--
- 4 files changed, 33 insertions(+), 4 deletions(-)
+ tools/perf/util/probe-event.c  |    9 +++++
+ tools/perf/util/probe-event.h  |    1 +
+ tools/perf/util/probe-finder.c |   78 ++++++++++++++++++++++++++++++++++++----
+ 3 files changed, 80 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
-index 441324f..63c25d3 100644
---- a/tools/perf/Documentation/perf-probe.txt
-+++ b/tools/perf/Documentation/perf-probe.txt
-@@ -85,9 +85,10 @@ PROBE ARGUMENT
- --------------
- Each probe argument follows below syntax.
- 
-- [NAME=]LOCALVAR|$retval|%REG|@SYMBOL
-+ [NAME=]LOCALVAR|$retval|%REG|@SYMBOL[:TYPE]
- 
- 'NAME' specifies the name of this argument (optional). You can use the name of local variable, local data structure member (e.g. var->field, var.field2), or kprobe-tracer argument format (e.g. $retval, %ax, etc). Note that the name of this argument will be set as the last member name if you specify a local data structure member (e.g. field2 for 'var->field1.field2'.)
-+'TYPE' casts the type of this argument (optional). If omitted, perf probe automatically set the type based on debuginfo.
- 
- LINE SYNTAX
- -----------
 diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 05ca4a9..bef2805 100644
+index 19de8b7..05ca4a9 100644
 --- a/tools/perf/util/probe-event.c
 +++ b/tools/perf/util/probe-event.c
-@@ -435,7 +435,7 @@ static void parse_perf_probe_point(char *arg, struct perf_probe_event *pev)
- }
- 
- /* Parse perf-probe event argument */
--static void parse_perf_probe_arg(const char *str, struct perf_probe_arg *arg)
-+static void parse_perf_probe_arg(char *str, struct perf_probe_arg *arg)
- {
- 	char *tmp;
- 	struct perf_probe_arg_field **fieldp;
-@@ -445,9 +445,17 @@ static void parse_perf_probe_arg(const char *str, struct perf_probe_arg *arg)
- 	tmp = strchr(str, '=');
- 	if (tmp) {
- 		arg->name = xstrndup(str, tmp - str);
-+		pr_debug("name:%s ", arg->name);
- 		str = tmp + 1;
+@@ -740,6 +740,13 @@ static int synthesize_kprobe_trace_arg(struct kprobe_trace_arg *arg,
+ 		buf += ret;
+ 		buflen -= ret;
  	}
- 
-+	tmp = strchr(str, ':');
-+	if (tmp) {	/* Type setting */
-+		*tmp = '\0';
-+		arg->type = xstrdup(tmp + 1);
-+		pr_debug("type:%s ", arg->type);
-+	}
-+
- 	tmp = strpbrk(str, "-.");
- 	if (!is_c_varname(str) || !tmp) {
- 		/* A variable, register, symbol or special value */
-@@ -603,6 +611,15 @@ int synthesize_perf_probe_arg(struct perf_probe_arg *pa, char *buf, size_t len)
- 		len -= ret;
- 		field = field->next;
- 	}
-+
-+	if (pa->type) {
-+		ret = e_snprintf(tmp, len, ":%s", pa->type);
++	/* Print argument type */
++	if (arg->type) {
++		ret = e_snprintf(buf, buflen, ":%s", arg->type);
 +		if (ret <= 0)
-+			goto error;
-+		tmp += ret;
-+		len -= ret;
++			return ret;
++		buf += ret;
 +	}
-+
- 	return tmp - buf;
- error:
- 	die("Failed to synthesize perf probe argument: %s", strerror(-ret));
-@@ -825,6 +842,8 @@ void clear_perf_probe_event(struct perf_probe_event *pev)
- 			free(pev->args[i].name);
- 		if (pev->args[i].var)
- 			free(pev->args[i].var);
-+		if (pev->args[i].type)
-+			free(pev->args[i].type);
- 		field = pev->args[i].field;
- 		while (field) {
- 			next = field->next;
-@@ -1145,6 +1164,8 @@ static int convert_to_kprobe_trace_events(struct perf_probe_event *pev,
- 			if (pev->args[i].name)
- 				tev->args[i].name = xstrdup(pev->args[i].name);
- 			tev->args[i].value = xstrdup(pev->args[i].var);
-+			if (pev->args[i].type)
-+				tev->args[i].type = xstrdup(pev->args[i].type);
- 		}
- 	}
  
+ 	return buf - tmp;
+ }
+@@ -848,6 +855,8 @@ void clear_kprobe_trace_event(struct kprobe_trace_event *tev)
+ 			free(tev->args[i].name);
+ 		if (tev->args[i].value)
+ 			free(tev->args[i].value);
++		if (tev->args[i].type)
++			free(tev->args[i].type);
+ 		ref = tev->args[i].ref;
+ 		while (ref) {
+ 			next = ref->next;
 diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index 0759db6..5a9837c 100644
+index a73ede6..0759db6 100644
 --- a/tools/perf/util/probe-event.h
 +++ b/tools/perf/util/probe-event.h
-@@ -57,6 +57,7 @@ struct perf_probe_arg_field {
- struct perf_probe_arg {
+@@ -23,6 +23,7 @@ struct kprobe_trace_arg_ref {
+ struct kprobe_trace_arg {
  	char				*name;	/* Argument name */
- 	char				*var;	/* Variable name */
+ 	char				*value;	/* Base value */
 +	char				*type;	/* Type name */
- 	struct perf_probe_arg_field	*field;	/* Structure fields */
+ 	struct kprobe_trace_arg_ref	*ref;	/* Referencing offset */
  };
  
 diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index ebeb413..ab47673 100644
+index 105e95c..ebeb413 100644
 --- a/tools/perf/util/probe-finder.c
 +++ b/tools/perf/util/probe-finder.c
-@@ -547,7 +547,10 @@ static void convert_variable(Dwarf_Die *vr_die, struct probe_finder *pf)
- 					&die_mem);
- 		vr_die = &die_mem;
+@@ -84,6 +84,9 @@ const char *x86_64_regs_table[X86_64_MAX_REGS] = {
+ #define arch_regs_table x86_32_regs_table
+ #endif
+ 
++/* Kprobe tracer basic type is up to u64 */
++#define MAX_BASIC_TYPE_BITS	64
++
+ /* Return architecture dependent register string (for kprobe-tracer) */
+ static const char *get_arch_regstr(unsigned int n)
+ {
+@@ -230,6 +233,31 @@ static Dwarf_Die *die_get_real_type(Dwarf_Die *vr_die, Dwarf_Die *die_mem)
+ 	return die_mem;
+ }
+ 
++static bool die_is_signed_type(Dwarf_Die *tp_die)
++{
++	Dwarf_Attribute attr;
++	Dwarf_Word ret;
++
++	if (dwarf_attr(tp_die, DW_AT_encoding, &attr) == NULL ||
++	    dwarf_formudata(&attr, &ret) != 0)
++		return false;
++
++	return (ret == DW_ATE_signed_char || ret == DW_ATE_signed ||
++		ret == DW_ATE_signed_fixed);
++}
++
++static int die_get_byte_size(Dwarf_Die *tp_die)
++{
++	Dwarf_Attribute attr;
++	Dwarf_Word ret;
++
++	if (dwarf_attr(tp_die, DW_AT_byte_size, &attr) == NULL ||
++	    dwarf_formudata(&attr, &ret) != 0)
++		return 0;
++
++	return (int)ret;
++}
++
+ /* Return values for die_find callbacks */
+ enum {
+ 	DIE_FIND_CB_FOUND = 0,		/* End of Search */
+@@ -406,13 +434,42 @@ static void convert_location(Dwarf_Op *op, struct probe_finder *pf)
  	}
--	convert_variable_type(vr_die, pf->tvar);
-+	if (pf->pvar->type)
-+		pf->tvar->type = xstrdup(pf->pvar->type);
-+	else
-+		convert_variable_type(vr_die, pf->tvar);
+ }
+ 
++static void convert_variable_type(Dwarf_Die *vr_die,
++				  struct kprobe_trace_arg *targ)
++{
++	Dwarf_Die type;
++	char buf[16];
++	int ret;
++
++	if (die_get_real_type(vr_die, &type) == NULL)
++		die("Failed to get a type information of %s.",
++		    dwarf_diename(vr_die));
++
++	ret = die_get_byte_size(&type) * 8;
++	if (ret) {
++		/* Check the bitwidth */
++		if (ret > MAX_BASIC_TYPE_BITS) {
++			pr_warning("  Warning: %s exceeds max-bitwidth."
++				   " Cut down to %d bits.\n",
++				   dwarf_diename(&type), MAX_BASIC_TYPE_BITS);
++			ret = MAX_BASIC_TYPE_BITS;
++		}
++
++		ret = snprintf(buf, 16, "%c%d",
++			       die_is_signed_type(&type) ? 's' : 'u', ret);
++		if (ret < 0 || ret >= 16)
++			die("Failed to convert variable type.");
++		targ->type = xstrdup(buf);
++	}
++}
++
+ static void convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
+ 				    struct perf_probe_arg_field *field,
+-				    struct kprobe_trace_arg_ref **ref_ptr)
++				    struct kprobe_trace_arg_ref **ref_ptr,
++				    Dwarf_Die *die_mem)
+ {
+ 	struct kprobe_trace_arg_ref *ref = *ref_ptr;
+ 	Dwarf_Attribute attr;
+-	Dwarf_Die member;
+ 	Dwarf_Die type;
+ 	Dwarf_Word offs;
+ 
+@@ -450,26 +507,27 @@ static void convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
+ 			die("Structure on a register is not supported yet.");
+ 	}
+ 
+-	if (die_find_member(&type, field->name, &member) == NULL)
++	if (die_find_member(&type, field->name, die_mem) == NULL)
+ 		die("%s(tyep:%s) has no member %s.", varname,
+ 		    dwarf_diename(&type), field->name);
+ 
+ 	/* Get the offset of the field */
+-	if (dwarf_attr(&member, DW_AT_data_member_location, &attr) == NULL ||
++	if (dwarf_attr(die_mem, DW_AT_data_member_location, &attr) == NULL ||
+ 	    dwarf_formudata(&attr, &offs) != 0)
+ 		die("Failed to get the offset of %s.", field->name);
+ 	ref->offset += (long)offs;
+ 
+ 	/* Converting next field */
+ 	if (field->next)
+-		convert_variable_fields(&member, field->name, field->next,
+-					&ref);
++		convert_variable_fields(die_mem, field->name, field->next,
++					&ref, die_mem);
+ }
+ 
+ /* Show a variables in kprobe event format */
+ static void convert_variable(Dwarf_Die *vr_die, struct probe_finder *pf)
+ {
+ 	Dwarf_Attribute attr;
++	Dwarf_Die die_mem;
+ 	Dwarf_Op *expr;
+ 	size_t nexpr;
+ 	int ret;
+@@ -483,9 +541,13 @@ static void convert_variable(Dwarf_Die *vr_die, struct probe_finder *pf)
+ 
+ 	convert_location(expr, pf);
+ 
+-	if (pf->pvar->field)
++	if (pf->pvar->field) {
+ 		convert_variable_fields(vr_die, pf->pvar->var,
+-					pf->pvar->field, &pf->tvar->ref);
++					pf->pvar->field, &pf->tvar->ref,
++					&die_mem);
++		vr_die = &die_mem;
++	}
++	convert_variable_type(vr_die, pf->tvar);
  	/* *expr will be cached in libdw. Don't free it. */
  	return ;
  error:
-@@ -560,13 +563,16 @@ error:
- static void find_variable(Dwarf_Die *sp_die, struct probe_finder *pf)
- {
- 	Dwarf_Die vr_die;
--	char buf[32];
-+	char buf[32], *ptr;
- 
- 	/* TODO: Support arrays */
- 	if (pf->pvar->name)
- 		pf->tvar->name = xstrdup(pf->pvar->name);
- 	else {
- 		synthesize_perf_probe_arg(pf->pvar, buf, 32);
-+		ptr = strchr(buf, ':');	/* Change type separator to _ */
-+		if (ptr)
-+			*ptr = '_';
- 		pf->tvar->name = xstrdup(buf);
- 	}
- 
 
 
 -- 
