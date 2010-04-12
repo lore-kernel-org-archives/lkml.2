@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab0DLGEk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 02:04:40 -0400
-Received: from sj-iport-5.cisco.com ([171.68.10.87]:40000 "EHLO
+	id S1753399Ab0DLGE7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 02:04:59 -0400
+Received: from sj-iport-5.cisco.com ([171.68.10.87]:65425 "EHLO
 	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753127Ab0DLGEg (ORCPT
+	with ESMTP id S1753388Ab0DLGE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 02:04:36 -0400
+	Mon, 12 Apr 2010 02:04:57 -0400
 Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEACZVwkurR7Hu/2dsb2JhbACbM3GhRZgUhQwEgyU
+X-IronPort-Anti-Spam-Result: AvsEACZVwktAaMHG/2dsb2JhbACbM3GhRZgUhQwEgyU
 X-IronPort-AV: E=Sophos;i="4.52,188,1270425600"; 
-   d="scan'208";a="181521344"
-Date: Sun, 11 Apr 2010 23:04:36 -0700
+   d="scan'208";a="181521480"
+Date: Sun, 11 Apr 2010 23:04:52 -0700
 From: David VomLehn <dvomlehn@cisco.com>
 To: to@dvomlehn-lnx2.corp.sa.net, "linux_arch"@dvomlehn-lnx2.corp.sa.net,
        linux_arch@dvomlehn-lnx2.corp.sa.net
 Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
        maint_arch@dvomlehn-lnx2.corp.sa.net
-Subject: [PATCH 18/23] Make register values available to Score panic
+Subject: [PATCH 23/23] Make register values available to Xtensa panic
 	notifiers
-Message-ID: <20100412060436.GA24838@dvomlehn-lnx2.corp.sa.net>
+Message-ID: <20100412060452.GA24979@dvomlehn-lnx2.corp.sa.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -34,26 +34,24 @@ help to complete this.
 
 Signed-off-by: David VomLehn <dvomlehn@cisco.com>
 ---
- arch/score/include/asm/ptrace.h |  136 +++++++++++++++++++++++++++++++++++++++
- arch/score/kernel/traps.c       |    2 +-
- 2 files changed, 137 insertions(+), 1 deletions(-)
+ arch/xtensa/include/asm/ptrace.h |   93 ++++++++++++++++++++++++++++++++++++++
+ arch/xtensa/kernel/traps.c       |    4 +-
+ 2 files changed, 95 insertions(+), 2 deletions(-)
 
-diff --git a/arch/score/include/asm/ptrace.h b/arch/score/include/asm/ptrace.h
-index e89dc9b..d9a1293 100644
---- a/arch/score/include/asm/ptrace.h
-+++ b/arch/score/include/asm/ptrace.h
-@@ -91,6 +91,142 @@ extern int read_tsk_short(struct task_struct *, unsigned long,
+diff --git a/arch/xtensa/include/asm/ptrace.h b/arch/xtensa/include/asm/ptrace.h
+index 905e1e6..56d5721 100644
+--- a/arch/xtensa/include/asm/ptrace.h
++++ b/arch/xtensa/include/asm/ptrace.h
+@@ -130,6 +130,99 @@ extern void show_regs(struct pt_regs *);
  
- #define arch_has_single_step()	(1)
+ #endif	/* !__ASSEMBLY__ */
  
-+
 +/* Macros for saving the contents of registers and for the output constraint
 + * for those registers */
-+#include "/home/vomlehn/git/kernel.org/ptreg.h"
-+#define PTREG_SAVE(r, name)	"sw	" #r ", %[" #name "]\n"
-+#define PTREG_SAVE_R(i)		PTREG_SAVE_I(r, r, i)
++#define PTREG_SAVE(r, name)		"movel	" #r ", %[" #name "]\n"
++#define PTREG_SAVE_R(r)			PTREG_SAVE_I(r, r, i)
 +
-+#define PTREG_SAVE_R(regs, i)	PTREG_SAVE_I(regs, r, r, i)
++#define PTREG_OUT_R(regs, i)		PTREG_OUT_I(regs, i)
 +
 +#define arch_has_save_ptregs	1
 +
@@ -71,6 +69,22 @@ index e89dc9b..d9a1293 100644
 +const struct pt_regs *save_ptregs(struct pt_regs *regs)
 +{
 +	__asm__ __volatile__ (
++			PTREG_SAVE(pc, pc)
++			PTREG_SAVE(ps, ps)
++			PTREG_SAVE(depc, depc)
++			PTREG_SAVE(exccause, exccause)
++			PTREG_SAVE(excvaddr, excvaddr)
++			PTREG_SAVE(debugcause, debugcause)
++			PTREG_SAVE(wmask, wmask)
++			PTREG_SAVE(lbeg, lbeg)
++			PTREG_SAVE(lend, lend)
++			PTREG_SAVE(lcount, lcount)
++			PTREG_SAVE(sar, sar)
++			PTREG_SAVE(windowbase, windowbase)
++			PTREG_SAVE(windowstart, windowstart)
++			PTREG_SAVE(syscall, syscall)
++			PTREG_SAVE(icountlevel, icountlevel)
++			/* Don't know how to handle xtregs_opt_t definitions */
 +			PTREG_SAVE_R(0)
 +			PTREG_SAVE_R(1)
 +			PTREG_SAVE_R(2)
@@ -87,114 +101,61 @@ index e89dc9b..d9a1293 100644
 +			PTREG_SAVE_R(13)
 +			PTREG_SAVE_R(14)
 +			PTREG_SAVE_R(15)
-+			PTREG_SAVE_R(16)
-+			PTREG_SAVE_R(17)
-+			PTREG_SAVE_R(18)
-+			PTREG_SAVE_R(19)
-+			PTREG_SAVE_R(20)
-+			PTREG_SAVE_R(21)
-+			PTREG_SAVE_R(22)
-+			PTREG_SAVE_R(23)
-+			PTREG_SAVE_R(24)
-+			PTREG_SAVE_R(25)
-+			PTREG_SAVE_R(26)
-+			PTREG_SAVE_R(27)
-+			PTREG_SAVE_R(28)
-+			PTREG_SAVE_R(29)
-+			PTREG_SAVE_R(30)
-+			PTREG_SAVE_R(31)
-+
-+			PTREG_SAVE(sr0, sr0)
-+			PTREG_SAVE(sr1, sr1)
-+			PTREG_SAVE(sr2, sr2)
-+
-+			"mfcehl	r30, r31\n"
-+			PTREG_SAVE(r30, cp0_ceh)
-+			PTREG_SAVE(r31, cp0_cel)
-+
-+			"mfcr	r31, cr0\n"
-+			PTREG_SAVE(r31, cp0_ecr)
-+
-+			"mfcr	r31, cr1\n"
-+			PTREG_SAVE(r31, cp0_condition)
-+
-+			"mfcr	r31, cr2\n"
-+			PTREG_SAVE(r31, cp0_ecr)
-+
-+			"mfcr	r31, cr6\n"
-+			PTREG_SAVE(r31, cp0_ema)
-+
-+		/*
-+		 * The current location is the one for which the register
-+		 * values are correct, even if some had been modified on
-+		 * function entry. So, the current location is the value to
-+		 * save as the execution address.
-+		 */
-+		"1:\n"
-+			"la	r1, 1b"
-+			PTREG_SAVE(r1, cp0_epc)
 +	:
-+		PTREG_OUT_R(regs, 0)
-+		PTREG_OUT_R(regs, 1)
-+		PTREG_OUT_R(regs, 2)
-+		PTREG_OUT_R(regs, 3)
-+		PTREG_OUT_R(regs, 4)
-+		PTREG_OUT_R(regs, 5)
-+		PTREG_OUT_R(regs, 6)
-+		PTREG_OUT_R(regs, 7)
-+		PTREG_OUT_R(regs, 8)
-+		PTREG_OUT_R(regs, 9)
-+		PTREG_OUT_R(regs, 10)
-+		PTREG_OUT_R(regs, 11)
-+		PTREG_OUT_R(regs, 12)
-+		PTREG_OUT_R(regs, 13)
-+		PTREG_OUT_R(regs, 14)
++		PTREG_OUT(regs, pc, pc),
++		PTREG_OUT(regs, ps, ps),
++		PTREG_OUT(regs, depc, depc),
++		PTREG_OUT(regs, exccause, exccause),
++		PTREG_OUT(regs, excvaddr, excvaddr),
++		PTREG_OUT(regs, debugcause, debugcause),
++		PTREG_OUT(regs, wmask, wmask),
++		PTREG_OUT(regs, lbeg, lbeg),
++		PTREG_OUT(regs, lend, lend),
++		PTREG_OUT(regs, lcount, lcount),
++		PTREG_OUT(regs, sar, sar),
++		PTREG_OUT(regs, windowbase, windowbase),
++		PTREG_OUT(regs, windowstart, windowstart),
++		PTREG_OUT(regs, syscall, syscall),
++		PTREG_OUT(regs, icountlevel, icountlevel),
++		/* Don't know how to handle xtregs_opt_t definitions */
++		PTREG_OUT_R(regs, 0),
++		PTREG_OUT_R(regs, 1),
++		PTREG_OUT_R(regs, 2),
++		PTREG_OUT_R(regs, 3),
++		PTREG_OUT_R(regs, 4),
++		PTREG_OUT_R(regs, 5),
++		PTREG_OUT_R(regs, 6),
++		PTREG_OUT_R(regs, 7),
++		PTREG_OUT_R(regs, 8),
++		PTREG_OUT_R(regs, 9),
++		PTREG_OUT_R(regs, 10),
++		PTREG_OUT_R(regs, 11),
++		PTREG_OUT_R(regs, 12),
++		PTREG_OUT_R(regs, 13),
++		PTREG_OUT_R(regs, 14),
 +		PTREG_OUT_R(regs, 15)
-+		PTREG_OUT_R(regs, 16)
-+		PTREG_OUT_R(regs, 17)
-+		PTREG_OUT_R(regs, 18)
-+		PTREG_OUT_R(regs, 19)
-+		PTREG_OUT_R(regs, 20)
-+		PTREG_OUT_R(regs, 21)
-+		PTREG_OUT_R(regs, 22)
-+		PTREG_OUT_R(regs, 23)
-+		PTREG_OUT_R(regs, 24)
-+		PTREG_OUT_R(regs, 25)
-+		PTREG_OUT_R(regs, 26)
-+		PTREG_OUT_R(regs, 27)
-+		PTREG_OUT_R(regs, 28)
-+		PTREG_OUT_R(regs, 29)
-+		PTREG_OUT_R(regs, 30)
-+		PTREG_OUT_R(regs, 31)
-+		PTREG_OUT(regs, cel, cel)
-+		PTREG_OUT(regs, ceh, ceh)
-+		PTREG_OUT(regs, sr0, sr0)
-+		PTREG_OUT(regs, sr1, sr1)
-+		PTREG_OUT(regs, sr2, sr2)
-+		PTREG_OUT(regs, cp0_epc, cp0_epc)
-+		PTREG_OUT(regs, cp0_ema, cp0_ema)
-+		PTREG_OUT(regs, cp0_psr, cp0_psr)
-+		PTREG_OUT(regs, cp0_ecr, cp0_ecr)
-+		PTREG_OUT(regs, cp0_condition, cp0_condition)
 +	:
-+		"r30", "r31"
 +	);
 +
 +	return regs;
 +}
- #endif /* __KERNEL__ */
+ #endif  /* __KERNEL__ */
  
- #endif /* _ASM_SCORE_PTRACE_H */
-diff --git a/arch/score/kernel/traps.c b/arch/score/kernel/traps.c
-index 0e46fb1..1331829 100644
---- a/arch/score/kernel/traps.c
-+++ b/arch/score/kernel/traps.c
-@@ -283,7 +283,7 @@ asmlinkage void do_reserved(struct pt_regs *regs)
- 	 */
- 	die_if_kernel("do_reserved execution Exception", regs);
- 	show_regs(regs);
--	panic("Caught reserved exception - should not happen.");
-+	panic_with_regs(regs, "Caught reserved exception - should not happen.");
+ #endif	/* _XTENSA_PTRACE_H */
+diff --git a/arch/xtensa/kernel/traps.c b/arch/xtensa/kernel/traps.c
+index e64efac..3441d54 100644
+--- a/arch/xtensa/kernel/traps.c
++++ b/arch/xtensa/kernel/traps.c
+@@ -497,10 +497,10 @@ void die(const char * str, struct pt_regs * regs, long err)
+ 	spin_unlock_irq(&die_lock);
+ 
+ 	if (in_interrupt())
+-		panic("Fatal exception in interrupt");
++		panic_with_regs(regs, "Fatal exception in interrupt");
+ 
+ 	if (panic_on_oops)
+-		panic("Fatal exception");
++		panic_with_regs(regs, "Fatal exception");
+ 
+ 	do_exit(err);
  }
- 
- /*
