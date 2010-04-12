@@ -1,89 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab0DLTjV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 15:39:21 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:60018 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999Ab0DLTjT (ORCPT
+	id S1753046Ab0DLTpU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 15:45:20 -0400
+Received: from smtp-out002.kontent.com ([81.88.40.216]:42764 "EHLO
+	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752398Ab0DLTpQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 15:39:19 -0400
-Message-ID: <4BC375D9.4040503@oracle.com>
-Date: Mon, 12 Apr 2010 12:34:49 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	Mon, 12 Apr 2010 15:45:16 -0400
+From: Oliver Neukum <oliver@neukum.org>
+To: Bruno =?utf-8?q?Pr=C3=A9mont?= <bonbons@linux-vserver.org>
+Subject: Re: [PATCH v6 7/8, needs improvement] hid: add suspend/resume hooks for hid drivers
+Date: Mon, 12 Apr 2010 21:45:10 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-0.1-default; KDE/4.3.5; x86_64; ; )
+Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>,
+       Nicu Pavel <npavel@ituner.com>
+References: <20100324233707.7243b04d@neptune.home> <alpine.LNX.2.00.1004121342550.8345@pobox.suse.cz> <20100412185607.10c7b3be@neptune.home>
+In-Reply-To: <20100412185607.10c7b3be@neptune.home>
 MIME-Version: 1.0
-To: Andy Isaacson <adi@hexapodia.org>
-CC: guenter.roeck@ericsson.com, "H. Peter Anvin" <hpa@zytor.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Bjorn Helgaas <bjorn.helgaas@hp.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well
- as x86_32
-References: <20100409222103.GA11130@hexapodia.org> <4BBFA9BF.60608@oracle.com> <20100409223532.GC11130@hexapodia.org> <4BBFB1D8.6090802@oracle.com> <20100410000030.GE11130@hexapodia.org> <4BBFD019.9040405@oracle.com> <20100410014308.GG11130@hexapodia.org> <4BBFD8EF.6020108@oracle.com> <20100410015711.GH11130@hexapodia.org> <4BBFE66C.2040603@oracle.com> <20100412185416.GA19959@hexapodia.org>
-In-Reply-To: <20100412185416.GA19959@hexapodia.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4BC37682.0121:SCFMA4539814,ss=1,fgs=0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201004122145.10396.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2010 11:54 AM, Andy Isaacson wrote:
-> On Fri, Apr 09, 2010 at 07:46:04PM -0700, Yinghai wrote:
-> [    5.463672] ahci 0000:00:1f.2: PCI INT C -> GSI 20 (level, low) -> IRQ 20
-> [    5.470633] ahci 0000:00:1f.2: BAR 5: can't reserve [mem 0x000a0000-0x000a07ff]
-> [    5.478257] ahci: probe of 0000:00:1f.2 failed with error -16
+Am Montag, 12. April 2010 18:56:07 schrieb Bruno Prémont:
+> > Yes, it will wake the device up from auto-suspension. However, that's 
+> > usually what you want to happen, is there is anything you need to dispatch 
+> > to the device, isn't it?
+> 
+> I thought of a report to send to device to ask the device to disable some
+> power using feature (e.g. turning off or dimming LEDs)
 
-please check
+The device should do this on its own. If it is really necessary you
+can do this in suspend()
 
-[PATCH] x86,pci, acpi: Inherent BUSY flag when setup_resource for root bus
-
-So make pci root resource from _CRS honor the range We reserve in e820 below 1M
-then  will not assign them to unsigned pci BAR
-
--v2: let pci_bus_alloc_resource() honor IORESOURCE_BUSY
-     driver can not use those range, so skip it
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- arch/x86/pci/acpi.c |    4 ++++
- drivers/pci/bus.c   |    4 ++++
- 2 files changed, 8 insertions(+)
-
-Index: linux-2.6/arch/x86/pci/acpi.c
-===================================================================
---- linux-2.6.orig/arch/x86/pci/acpi.c
-+++ linux-2.6/arch/x86/pci/acpi.c
-@@ -175,6 +175,10 @@ setup_resource(struct acpi_resource *acp
- 			"conflicts with %s %pR\n",
- 			res, conflict->name, conflict);
- 	} else {
-+		/* In case it falls in big reserved region */
-+		if (res->parent->flags & IORESOURCE_BUSY)
-+			res->flags |= IORESOURCE_BUSY;
-+
- 		pci_bus_add_resource(info->bus, res, 0);
- 		info->res_num++;
- 		if (addr.translation_offset)
-Index: linux-2.6/drivers/pci/bus.c
-===================================================================
---- linux-2.6.orig/drivers/pci/bus.c
-+++ linux-2.6/drivers/pci/bus.c
-@@ -103,6 +103,10 @@ pci_bus_alloc_resource(struct pci_bus *b
- 		if (!r)
- 			continue;
- 
-+		/* Driver can not reserve it later, so don't use it */
-+		if (r->flags & IORESOURCE_BUSY)
-+			continue;
-+
- 		/* type_mask must match */
- 		if ((res->flags ^ r->flags) & type_mask)
- 			continue;
+	Regards
+		Oliver
