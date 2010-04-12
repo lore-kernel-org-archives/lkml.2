@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab0DLIvA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 04:51:00 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:54899 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752403Ab0DLIu7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 04:50:59 -0400
-To: Taras Glek <tglek@mozilla.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Downsides to madvise/fadvise(willneed) for application startup
-From: Andi Kleen <andi@firstfloor.org>
-References: <4BBA6776.5060804@mozilla.com>
-Date: Mon, 12 Apr 2010 10:50:57 +0200
-In-Reply-To: <4BBA6776.5060804@mozilla.com> (Taras Glek's message of "Mon, 05 Apr 2010 15:43:02 -0700")
-Message-ID: <87wrwd9hqm.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
+	id S1753180Ab0DLI43 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 04:56:29 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53422 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752403Ab0DLI42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 04:56:28 -0400
+Message-ID: <4BC2DFA0.6000609@cn.fujitsu.com>
+Date: Mon, 12 Apr 2010 16:53:52 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] KVM MMU: fix kvm_mmu_zap_page() and its calling path
+References: <4BC2D2E2.1030604@cn.fujitsu.com> <4BC2D345.100@cn.fujitsu.com> <4BC2D8D6.6030306@redhat.com>
+In-Reply-To: <4BC2D8D6.6030306@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Taras Glek <tglek@mozilla.com> writes:
 
-> Hello,
-> I am working on improving Mozilla startup times. It turns out that
-> page faults(caused by lack of cooperation between user/kernelspace)
-> are the main cause of slow startup. I need some insights from someone
-> who understands linux vm behavior.
 
-I have an older patch to create dynamic bitmaps based on the last 
-run and only prefetch those pages. 
+Avi Kivity wrote:
 
-It wasn't entirely a win for everything and didn't work for shared
-libraries, but with some additional tuning the approach still has
-potential I think, by combining memory saving with prefetching.
+> 
+>>           kvm->arch.n_free_mmu_pages = 0;
+>> @@ -1589,7 +1589,8 @@ static void mmu_unshadow(struct kvm *kvm, gfn_t
+>> gfn)
+>>           &&  !sp->role.invalid) {
+>>               pgprintk("%s: zap %lx %x\n",
+>>                    __func__, gfn, sp->role.word);
+>> -            kvm_mmu_zap_page(kvm, sp);
+>> +            if (kvm_mmu_zap_page(kvm, sp))
+>> +                nn = bucket->first;
+>>           }
+>>       }
+>>    
+> 
+> I don't understand why this is needed.
 
-ftp://firstfloor.org/pub/ak/pbitmap/INTRO
-http://halobates.de/dp2.pdf
+There is the code segment in mmu_unshadow():
 
-For your use case the algorithm would likely need some glibc support.
+|hlist_for_each_entry_safe(sp, node, nn, bucket, hash_link) {
+|		if (sp->gfn == gfn && !sp->role.direct
+|		    && !sp->role.invalid) {
+|			pgprintk("%s: zap %lx %x\n",
+|				 __func__, gfn, sp->role.word);
+|			kvm_mmu_zap_page(kvm, sp);
+|		}
+|	}
 
--Andi
+in the loop, if nn is zapped, hlist_for_each_entry_safe() access nn will
+cause crash. and it's checked in other functions, such as kvm_mmu_zap_all(),
+kvm_mmu_unprotect_page()...
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Thanks,
+Xiao
+
