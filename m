@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783Ab0DLQ16 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 12:27:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41197 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752659Ab0DLQ15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 12:27:57 -0400
-Subject: vmalloc performance
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain
-Organization: Red Hat (UK) Ltd (Registered in England and Wales, No.
- 3798903) Registered office: Red Hat UK Ltd, Amberley Place, 107-111 Peascod
- Street, Windsor, Berkshire, SL4 ITE
-Date: Mon, 12 Apr 2010 17:27:52 +0100
-Message-Id: <1271089672.7196.63.camel@localhost.localdomain>
+	id S1752869Ab0DLQ3u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 12:29:50 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:38124 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752757Ab0DLQ3t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 12:29:49 -0400
+Date: Mon, 12 Apr 2010 18:29:47 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Andi Kleen <andi@firstfloor.org>, Daniel Mack <daniel@caiaq.de>,
+       Pedro Ribeiro <pedrib@gmail.com>, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, Greg KH <gregkh@suse.de>,
+       alsa-devel@alsa-project.org, linux-usb@vger.kernel.org
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+Message-ID: <20100412162947.GQ18855@one.firstfloor.org>
+References: <20100412154323.GP18855@one.firstfloor.org> <Pine.LNX.4.44L0.1004121214460.1702-100000@iolanthe.rowland.org>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1004121214460.1702-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Apr 12, 2010 at 12:17:22PM -0400, Alan Stern wrote:
+> On Mon, 12 Apr 2010, Andi Kleen wrote:
+> 
+> > > Well, the sound driver itself doesn't care for any of those things, just
+> > > like any other USB driver doesn't. The USB core itself of the host
+> > > controller driver should do, and as far as I can see, it does that, yes.
+> > 
+> > Hmm, still things must go wrong somewhere. Perhaps need some instrumentation
+> > to see if all the transfer buffers really hit the PCI mapping functions.
+> 
+> Such a test has already been carried out earlier in this thread:
+> 
+> 	http://marc.info/?l=linux-usb&m=127074587029353&w=2
+> 	http://marc.info/?l=linux-usb&m=127076841801051&w=2
+> 	http://marc.info/?l=linux-usb&m=127082890510415&w=2
 
-I've noticed that vmalloc seems to be rather slow. I wrote a test kernel
-module to track down what was going wrong. The kernel module does one
-million vmalloc/touch mem/vfree in a loop and prints out how long it
-takes.
+Hmm, thanks. But things must still go wrong somewhere, otherwise
+the GFP_DMA32 wouldn't be needed?
 
-The source of the test kernel module can be found as an attachment to
-this bz: https://bugzilla.redhat.com/show_bug.cgi?id=581459
+-Andi
 
-When this module is run on my x86_64, 8 core, 12 Gb machine, then on an
-otherwise idle system I get the following results:
-
-vmalloc took 148798983 us
-vmalloc took 151664529 us
-vmalloc took 152416398 us
-vmalloc took 151837733 us
-
-After applying the two line patch (see the same bz) which disabled the
-delayed removal of the structures, which appears to be intended to
-improve performance in the smp case by reducing TLB flushes across cpus,
-I get the following results:
-
-vmalloc took 15363634 us
-vmalloc took 15358026 us
-vmalloc took 15240955 us
-vmalloc took 15402302 us
-
-So thats a speed up of around 10x, which isn't too bad. The question is
-whether it is possible to come to a compromise where it is possible to
-retain the benefits of the delayed TLB flushing code, but reduce the
-overhead for other users. My two line patch basically disables the delay
-by forcing a removal on each and every vfree.
-
-What is the correct way to fix this I wonder?
-
-Steve.
-
-
+-- 
+ak@linux.intel.com -- Speaking for myself only.
