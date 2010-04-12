@@ -1,38 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab0DLRBi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 13:01:38 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:49246 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862Ab0DLRBh (ORCPT
+	id S1752720Ab0DLRHR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 13:07:17 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34703 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750827Ab0DLRHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 13:01:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=hOPAIpJ3/3hMRKVFN/f7muhrz8csd7UpYQYR/vw4ond6+pbU10hCxmc/ZpWChUVqzr
-         CnZ0P0AVZQOvJ1GJU6qvmN/5lSDSSbb2hEA6OVsAAxYCfN86uFtztTyhPszC67IY+6FW
-         46nMJ0y0kR1f3RNDxu3YfJDg6OgCX3l8w5vmM=
+	Mon, 12 Apr 2010 13:07:15 -0400
+Date: Mon, 12 Apr 2010 10:03:03 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Pavel Machek <pavel@ucw.cz>
+cc: Thomas Gleixner <tglx@linutronix.de>,
+       Geert Uytterhoeven <geert@linux-m68k.org>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       kernel list <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: LOCALVERSION_AUTO considered harmful
+In-Reply-To: <20100412131405.GB22773@ucw.cz>
+Message-ID: <alpine.LFD.2.00.1004121000400.26679@i5.linux-foundation.org>
+References: <20100411164701.GA7558@elf.ucw.cz> <20100412185136.GA13171@x200> <g2v10f740e81004111158r4d4714a1w23b8521d5d595b29@mail.gmail.com> <20100411201426.GC25294@elf.ucw.cz> <alpine.LFD.2.00.1004120022230.18009@localhost.localdomain>
+ <20100412131405.GB22773@ucw.cz>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Mon, 12 Apr 2010 12:01:36 -0500
-Message-ID: <q2m68f510a71004121001v370509fftc6f4b86c4420b509@mail.gmail.com>
-Subject: Accessing peripheral register directly from userspace
-From: Krishna Gopal <linuxkrishna@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Would there be any issues for optimization purpose I do a mmap to a
-peripheral register to directly access it from userspace ? This is
-considering the peripheral already has a Kernel driver through which
-you can set the register bit.
 
-Basically I want to avoid the additional context switch on entering
-the Kernel to set that one bit in the Peripheral register.
 
-I request you to please share your thoughts.
+On Mon, 12 Apr 2010, Pavel Machek wrote:
 
-Best regards,
-Krishna
+> Hi!
+> 
+> > > > > That's conditional BS.
+> > > > > Turn off CONFIG_MODVERSIONS already.
+> > > > 
+> > > > Yeah, I disabled it ages ago. Even then (before git, probably even
+> > > > before bitkeeper)
+> > > > I had hard times inserting modules...
+> > > 
+> > > I _had_ it off
+> > > 
+> > >  # CONFIG_MODVERSIONS is not set
+> > > 
+> > > It seems some checking survives CONFIG_MODVERSIONS unset and that
+> > > checking is strict enough to refuse module load after one "make
+> > > modules" with LOCALVERSION_AUTO on...
+> > 
+> > So instead of fixing the CONFIG_MODVERSIONS=n case you go the easy way
+> > of killing LOCALVERSION_AUTO ? Brilliant.
+> 
+> In previous discussion, I was told that there's no bug to fix, that
+> everything works as intended.
+
+The problem is that you guys are looking at CONFIG_MODVERSIONS the wrong 
+way around.
+
+It's the _off_ case that is broken. Always was, always will be.
+
+If CONFIG_MODVERSIONS is off, we remove the symbol versioning, and replace 
+it with the _insane_ kernel version check. That is never valid. The fact 
+that the kernel version is the same doesn't mean that the module will 
+work, since we often do lots of changes within the same version.
+
+So the solution is to say CONFIG_MODVERSIONS=y, and everybody is happy. 
+Your modules will actually test things that _matter_, and will stop 
+loading if the data types or function prototypes have changed. 
+
+		Linus
