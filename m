@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab0DLTgQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 15:36:16 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33385 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753809Ab0DLTgO (ORCPT
+	id S1752852Ab0DLTjV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 15:39:21 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:60018 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999Ab0DLTjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 15:36:14 -0400
-Date: Mon, 12 Apr 2010 20:35:36 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-       davem@davemloft.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dmabounce: fix partial sync in dma_sync_single_*
-	API
-Message-ID: <20100412193536.GO3048@n2100.arm.linux.org.uk>
-References: <20100405123847C.fujita.tomonori@lab.ntt.co.jp>
+	Mon, 12 Apr 2010 15:39:19 -0400
+Message-ID: <4BC375D9.4040503@oracle.com>
+Date: Mon, 12 Apr 2010 12:34:49 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100405123847C.fujita.tomonori@lab.ntt.co.jp>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Andy Isaacson <adi@hexapodia.org>
+CC: guenter.roeck@ericsson.com, "H. Peter Anvin" <hpa@zytor.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH] x86: Reserve legacy VGA MMIO area for x86_64 as well
+ as x86_32
+References: <20100409222103.GA11130@hexapodia.org> <4BBFA9BF.60608@oracle.com> <20100409223532.GC11130@hexapodia.org> <4BBFB1D8.6090802@oracle.com> <20100410000030.GE11130@hexapodia.org> <4BBFD019.9040405@oracle.com> <20100410014308.GG11130@hexapodia.org> <4BBFD8EF.6020108@oracle.com> <20100410015711.GH11130@hexapodia.org> <4BBFE66C.2040603@oracle.com> <20100412185416.GA19959@hexapodia.org>
+In-Reply-To: <20100412185416.GA19959@hexapodia.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4BC37682.0121:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 05, 2010 at 12:39:32PM +0900, FUJITA Tomonori wrote:
-> I don't have arm hardware that uses dmabounce so I can't confirm the
-> problem but seems that dmabounce doesn't work for some drivers...
+On 04/12/2010 11:54 AM, Andy Isaacson wrote:
+> On Fri, Apr 09, 2010 at 07:46:04PM -0700, Yinghai wrote:
+> [    5.463672] ahci 0000:00:1f.2: PCI INT C -> GSI 20 (level, low) -> IRQ 20
+> [    5.470633] ahci 0000:00:1f.2: BAR 5: can't reserve [mem 0x000a0000-0x000a07ff]
+> [    5.478257] ahci: probe of 0000:00:1f.2 failed with error -16
 
-Patch reviews fine, except for one niggle.  I too don't have hardware
-I can test (well, I do except the kernel stopped supporting the UDA1341
-audio codec on the SA1110 Neponset.)
+please check
 
-> @@ -171,10 +172,17 @@ find_safe_buffer(struct dmabounce_device_info *device_info, dma_addr_t safe_dma_
->  	read_lock_irqsave(&device_info->lock, flags);
->  
->  	list_for_each_entry(b, &device_info->safe_buffers, node)
-> -		if (b->safe_dma_addr == safe_dma_addr) {
-> -			rb = b;
-> -			break;
-> -		}
-> +		if (for_sync) {
-> +			if (b->safe_dma_addr <= safe_dma_addr &&
-> +			    safe_dma_addr < b->safe_dma_addr + b->size) {
-> +				rb = b;
-> +				break;
-> +			}
-> +		} else
-> +			if (b->safe_dma_addr == safe_dma_addr) {
-> +				rb = b;
-> +				break;
-> +			}
+[PATCH] x86,pci, acpi: Inherent BUSY flag when setup_resource for root bus
 
-This is the niggle; I don't like this indentation style.  If you want to
-indent this if () statement, then please format like this:
+So make pci root resource from _CRS honor the range We reserve in e820 below 1M
+then  will not assign them to unsigned pci BAR
 
-		} else {
-			if (b->safe...) {
-				...
-			}
-		}
+-v2: let pci_bus_alloc_resource() honor IORESOURCE_BUSY
+     driver can not use those range, so skip it
 
-or format it as:
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-		} else if (b->safe...) {
-			...
-		}
+---
+ arch/x86/pci/acpi.c |    4 ++++
+ drivers/pci/bus.c   |    4 ++++
+ 2 files changed, 8 insertions(+)
+
+Index: linux-2.6/arch/x86/pci/acpi.c
+===================================================================
+--- linux-2.6.orig/arch/x86/pci/acpi.c
++++ linux-2.6/arch/x86/pci/acpi.c
+@@ -175,6 +175,10 @@ setup_resource(struct acpi_resource *acp
+ 			"conflicts with %s %pR\n",
+ 			res, conflict->name, conflict);
+ 	} else {
++		/* In case it falls in big reserved region */
++		if (res->parent->flags & IORESOURCE_BUSY)
++			res->flags |= IORESOURCE_BUSY;
++
+ 		pci_bus_add_resource(info->bus, res, 0);
+ 		info->res_num++;
+ 		if (addr.translation_offset)
+Index: linux-2.6/drivers/pci/bus.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/bus.c
++++ linux-2.6/drivers/pci/bus.c
+@@ -103,6 +103,10 @@ pci_bus_alloc_resource(struct pci_bus *b
+ 		if (!r)
+ 			continue;
+ 
++		/* Driver can not reserve it later, so don't use it */
++		if (r->flags & IORESOURCE_BUSY)
++			continue;
++
+ 		/* type_mask must match */
+ 		if ((res->flags ^ r->flags) & type_mask)
+ 			continue;
