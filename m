@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab0DLGMZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 02:12:25 -0400
-Received: from sj-iport-1.cisco.com ([171.71.176.70]:45615 "EHLO
-	sj-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609Ab0DLGD4 (ORCPT
+	id S1752649Ab0DLGNS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 02:13:18 -0400
+Received: from rtp-iport-1.cisco.com ([64.102.122.148]:63839 "EHLO
+	rtp-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751843Ab0DLGNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 02:03:56 -0400
-Authentication-Results: sj-iport-1.cisco.com; dkim=neutral (message not signed) header.i=none
+	Mon, 12 Apr 2010 02:13:17 -0400
+X-Greylist: delayed 570 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Apr 2010 02:13:16 EDT
+Authentication-Results: rtp-iport-1.cisco.com; dkim=neutral (message not signed) header.i=none
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEADZUwkurR7Ht/2dsb2JhbACbM3GhP5gUhQwEgyU
+X-IronPort-Anti-Spam-Result: AvsEAK9UwkutJV2Z/2dsb2JhbACbM3GhRZgUhQwEgyU
 X-IronPort-AV: E=Sophos;i="4.52,188,1270425600"; 
-   d="scan'208";a="316193679"
-Date: Sun, 11 Apr 2010 23:03:55 -0700
+   d="scan'208";a="100750065"
+Date: Sun, 11 Apr 2010 23:03:45 -0700
 From: David VomLehn <dvomlehn@cisco.com>
 To: to@dvomlehn-lnx2.corp.sa.net, "linux_arch"@dvomlehn-lnx2.corp.sa.net,
        linux_arch@dvomlehn-lnx2.corp.sa.net
 Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
        maint_arch@dvomlehn-lnx2.corp.sa.net
-Subject: [PATCH 6/23] Make register values available to CRIS panic notifiers
-Message-ID: <20100412060355.GA24438@dvomlehn-lnx2.corp.sa.net>
+Subject: [PATCH 3/23] Make register values available to ARM panic notifiers
+Message-ID: <20100412060345.GA24353@dvomlehn-lnx2.corp.sa.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,30 +29,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The save_ptregs() function has not been tested or even built. I will need
-help to complete this.
+The save_ptregs() functions compiles cleanly, but has not been tested.
 
 Signed-off-by: David VomLehn <dvomlehn@cisco.com>
 ---
- arch/cris/include/arch-v10/arch/ptrace.h |   80 ++++++++++++++++++++++++++++
- arch/cris/include/arch-v32/arch/ptrace.h |   84 ++++++++++++++++++++++++++++++
- 2 files changed, 164 insertions(+), 0 deletions(-)
+ arch/arm/include/asm/ptrace.h |   75 +++++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/traps.c       |    4 +-
+ 2 files changed, 77 insertions(+), 2 deletions(-)
 
-diff --git a/arch/cris/include/arch-v10/arch/ptrace.h b/arch/cris/include/arch-v10/arch/ptrace.h
-index 2f464ea..28be57c 100644
---- a/arch/cris/include/arch-v10/arch/ptrace.h
-+++ b/arch/cris/include/arch-v10/arch/ptrace.h
-@@ -114,6 +114,86 @@ struct switch_stack {
- #define profile_pc(regs) instruction_pointer(regs)
- extern void show_regs(struct pt_regs *);
+diff --git a/arch/arm/include/asm/ptrace.h b/arch/arm/include/asm/ptrace.h
+index 9dcb11e..b9a0488 100644
+--- a/arch/arm/include/asm/ptrace.h
++++ b/arch/arm/include/asm/ptrace.h
+@@ -184,6 +184,81 @@ extern unsigned long profile_pc(struct pt_regs *regs);
+ #define predicate(x)		((x) & 0xf0000000)
+ #define PREDICATE_ALWAYS	0xe0000000
  
 +/* Macros for saving the contents of registers and for the output constraint
 + * for those registers */
-+#include "/home/vomlehn/git/kernel.org/ptreg.h"
-+#define PTREG_SAVE(r, name)	"move.d	$" #r ", %[" #r "]\n"
-+#define PTREG_SAVE_R(i)		PTREG_SAVE_I(r, r, i)
++#include <linux/ptreg.h>
++#define PTREG_SAVE(r, name)	"str	" #r ", %[" #name "]\n"
++#define PTREG_SAVE_R(i)		_PTREG_SAVE_IDX(r, r, i)
 +
-+#define PTREG_OUT_R(regs, i)	PTREG_OUT_I(regs, r, r, i)
++#define PTREG_OUT_R(regs, i)	_PTREG_OUT_IDX(regs, uregs, r, i)
 +
 +#define arch_has_save_ptregs	1
 +
@@ -69,157 +69,73 @@ index 2f464ea..28be57c 100644
 +const struct pt_regs *save_ptregs(struct pt_regs *regs)
 +{
 +	__asm__ __volatile__ (
-+			PTREG_SAVE(frametype)
-+			PTREG_SAVE(orig_r10)
-+			PTREGS_SAVE_R(13)
-+			PTREGS_SAVE_R(12)
-+			PTREGS_SAVE_R(11)
-+			PTREGS_SAVE_R(10)
-+			PTREGS_SAVE_R(9)
-+			PTREGS_SAVE_R(8)
-+			PTREGS_SAVE_R(7)
-+			PTREGS_SAVE_R(6)
-+			PTREGS_SAVE_R(5)
-+			PTREGS_SAVE_R(4)
-+			PTREGS_SAVE_R(3)
-+			PTREGS_SAVE_R(2)
-+			PTREGS_SAVE_R(1)
-+			PTREGS_SAVE_R(0)
-+			PTREG_SAVE(mof)
-+			PTREG_SAVE(dccr)
-+			PTREG_SAVE(srp)
-+			PTREG_SAVE(irp)
-+			PTREG_SAVE(csrinstr)
-+			PTREG_SAVE(csraddr)
-+			PTREG_SAVE(csrdata)
++			/*
++			 * I think ARM has an instruction to store multiple
++			 * registers it would be nice to use that
++			 */
++			PTREG_SAVE_R(0)
++			PTREG_SAVE_R(1)
++			PTREG_SAVE_R(2)
++			PTREG_SAVE_R(3)
++			PTREG_SAVE_R(4)
++			PTREG_SAVE_R(5)
++			PTREG_SAVE_R(6)
++			PTREG_SAVE_R(7)
++			PTREG_SAVE_R(8)
++			PTREG_SAVE_R(9)
++			PTREG_SAVE_R(10)
++			PTREG_SAVE(fp, fp)
++			PTREG_SAVE(ip, ip)
++			PTREG_SAVE(sp, sp)
++			PTREG_SAVE(lr, lr)
++
++			"mrs	r0, cpsr\n"
++			PTREG_SAVE(r0, cpsr)
++
 +		"1:\n"
-+			"move.d	1b, r0\n"
-+			PTREG_SAVE(r0, irp)
++			"adr	r0, 1b\n"
++			PTREG_SAVE(r0, pc)
 +	:
-+		PTREG_OUT(regs, frametype, frametype),
-+		PTREG_OUT(regs, orig_r10, orig_r10),
-+		PTREG_OUT_I(regs, 13),
-+		PTREG_OUT_I(regs, 12),
-+		PTREG_OUT_I(regs, 11),
-+		PTREG_OUT_I(regs, 10),
-+		PTREG_OUT_I(regs, 9),
-+		PTREG_OUT_I(regs, 8),
-+		PTREG_OUT_I(regs, 7),
-+		PTREG_OUT_I(regs, 6),
-+		PTREG_OUT_I(regs, 5),
-+		PTREG_OUT_I(regs, 4),
-+		PTREG_OUT_I(regs, 3),
-+		PTREG_OUT_I(regs, 2),
-+		PTREG_OUT_I(regs, 1),
-+		PTREG_OUT_I(regs, 0),
-+		PTREG_OUT(regs, mof, mof),
-+		PTREG_OUT(regs, dccr, dccr),
-+		PTREG_OUT(regs, srp, srp),
-+		PTREG_OUT(regs, irp, irp),
-+		PTREG_OUT(regs, csrinstr, csrinstr),
-+		PTREG_OUT(regs, csraddr, csraddr),
-+		PTREG_OUT(regs, csrdata, csrdata)
++		PTREG_OUT_R(regs, 0),
++		PTREG_OUT_R(regs, 1),
++		PTREG_OUT_R(regs, 2),
++		PTREG_OUT_R(regs, 3),
++		PTREG_OUT_R(regs, 4),
++		PTREG_OUT_R(regs, 5),
++		PTREG_OUT_R(regs, 6),
++		PTREG_OUT_R(regs, 7),
++		PTREG_OUT_R(regs, 8),
++		PTREG_OUT_R(regs, 9),
++		PTREG_OUT_R(regs, 10),
++		PTREG_OUT(regs, ARM_fp, fp),
++		PTREG_OUT(regs, ARM_ip, ip),
++		PTREG_OUT(regs, ARM_sp, sp),
++		PTREG_OUT(regs, ARM_lr, lr),
++		PTREG_OUT(regs, ARM_pc, pc),
++		PTREG_OUT(regs, ARM_cpsr, cpsr)
++	:
 +	:
 +		"r0"
 +	);
 +
 +	return regs;
 +}
- #endif  /*  __KERNEL__  */
+ #endif /* __KERNEL__ */
  
- #endif
-diff --git a/arch/cris/include/arch-v32/arch/ptrace.h b/arch/cris/include/arch-v32/arch/ptrace.h
-index ffca8d0..90ad6b1 100644
---- a/arch/cris/include/arch-v32/arch/ptrace.h
-+++ b/arch/cris/include/arch-v32/arch/ptrace.h
-@@ -114,6 +114,90 @@ struct switch_stack {
- extern void show_regs(struct pt_regs *);
- #define profile_pc(regs) instruction_pointer(regs)
+ #endif /* __ASSEMBLY__ */
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index 1621e53..128be0f 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -282,9 +282,9 @@ void die(const char *str, struct pt_regs *regs, int err)
+ 	oops_exit();
  
-+/* Macros for saving the contents of registers and for the output constraint
-+ * for those registers */
-+#include "/home/vomlehn/git/kernel.org/ptreg.h"
-+#define PTREG_SAVE(r, name)	"move.d	$" #r ", %[" #r "]\n"
-+#define PTREG_SAVE_R(i)		PTREG_SAVE_I(r, r, i)
-+
-+#define PTREG_OUT_R(regs, i)	PTREG_OUT_I(regs, r, r, i)
-+
-+#define arch_has_save_ptregs	1
-+
-+/**
-+ * save_ptregs - save processor registers for backtracing
-+ * @regs:	Pointer to &struct pt_regs structure in which to save the
-+ *		registers
-+ *
-+ * Returns a constant pointer to @regs.
-+ *
-+ * This function must be called first in a function. There must be no
-+ * auto variables defined that are initialized before calling this function.
-+ */
-+static __always_inline
-+const struct pt_regs *save_ptregs(struct pt_regs *regs)
-+{
-+	__asm__ __volatile__ (
-+			PTREG_SAVE(frametype)
-+			PTREG_SAVE(orig_r10)
-+			PTREGS_SAVE_R(13)
-+			PTREGS_SAVE_R(12)
-+			PTREGS_SAVE_R(11)
-+			PTREGS_SAVE_R(10)
-+			PTREGS_SAVE_R(9)
-+			PTREGS_SAVE_R(8)
-+			PTREGS_SAVE_R(7)
-+			PTREGS_SAVE_R(6)
-+			PTREGS_SAVE_R(5)
-+			PTREGS_SAVE_R(4)
-+			PTREGS_SAVE_R(3)
-+			PTREGS_SAVE_R(2)
-+			PTREGS_SAVE_R(1)
-+			PTREGS_SAVE_R(0)
-+			PTREG_SAVE(acr)
-+			PTREG_SAVE(srs)
-+			PTREG_SAVE(mof)
-+			PTREG_SAVE(spc)
-+			PTREG_SAVE(ccs)
-+			PTREG_SAVE(srp)
-+			PTREG_SAVE(erp)
-+			PTREG_SAVE(exs)
-+			PTREG_SAVE(eda)
-+		"1:\n"
-+			"move.d	1b, r0\n"
-+			PTREG_SAVE(r0, irp)
-+	:
-+		PTREG_OUT(regs, frametype, frametype),
-+		PTREG_OUT(regs, orig_r10, orig_r10),
-+		PTREG_OUT_I(regs, 0),
-+		PTREG_OUT_I(regs, 1),
-+		PTREG_OUT_I(regs, 2),
-+		PTREG_OUT_I(regs, 3),
-+		PTREG_OUT_I(regs, 4),
-+		PTREG_OUT_I(regs, 5),
-+		PTREG_OUT_I(regs, 6),
-+		PTREG_OUT_I(regs, 7),
-+		PTREG_OUT_I(regs, 8),
-+		PTREG_OUT_I(regs, 9),
-+		PTREG_OUT_I(regs, 10),
-+		PTREG_OUT_I(regs, 11),
-+		PTREG_OUT_I(regs, 12),
-+		PTREG_OUT_I(regs, 13),
-+		PTREG_OUT(regs, acr, acr),
-+		PTREG_OUT(regs, srs, srs),
-+		PTREG_OUT(regs, mof, mof),
-+		PTREG_OUT(regs, spc, spc),
-+		PTREG_OUT(regs, ccs, ccs),
-+		PTREG_OUT(regs, srp, srp),
-+		PTREG_OUT(regs, erp, erp),
-+		PTREG_OUT(regs, exs, exs),
-+		PTREG_OUT(regs, eda, eda)
-+	:
-+		"r0"
-+	);
-+
-+	return regs;
-+}
- #endif  /*  __KERNEL__  */
- 
- #endif
+ 	if (in_interrupt())
+-		panic("Fatal exception in interrupt");
++		panic_with_regs(regs, "Fatal exception in interrupt");
+ 	if (panic_on_oops)
+-		panic("Fatal exception");
++		panic_with_regs(regs, "Fatal exception");
+ 	if (ret != NOTIFY_STOP)
+ 		do_exit(SIGSEGV);
+ }
