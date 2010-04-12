@@ -1,107 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab0DLXq0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 19:46:26 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34187 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754318Ab0DLXqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 19:46:25 -0400
-Date: Tue, 13 Apr 2010 09:46:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Linux Next <linux-next@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: A few tree inclusion update requests
-Message-Id: <20100413094618.76ac20a8.sfr@canb.auug.org.au>
-In-Reply-To: <20100410134221.GC5204@nowhere>
-References: <20100410134221.GC5204@nowhere>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__13_Apr_2010_09_46_18_+1000_WFlh5uhfpE=jns12"
+	id S1754367Ab0DLXxU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 19:53:20 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49841 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754318Ab0DLXxT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 19:53:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=blM41gfhTHzzoG2oPskOVMgsXe78J6anf9GJ2qtRrUaS6phR1HgCuHspB/kRrLHobY
+         j+wrTNjBHN5jFmGu8g2dFsqZHDR2sNoV495+WTajuOAvQxQNnJAXDnIlVAn43UUETPDe
+         chTBi9C0jXJq8/ApddiS5FZmD/iFsxA8Xxmv8=
+MIME-Version: 1.0
+In-Reply-To: <1271102450.2131.27.camel@Joe-Laptop.home>
+References: <cover.1269655208.git.joe@perches.com>
+	 <0c97f736400ec243e71ba794ae7046a61d2449c1.1269655208.git.joe@perches.com>
+	 <20100412194737.GS3048@n2100.arm.linux.org.uk>
+	 <1271102450.2131.27.camel@Joe-Laptop.home>
+Date: Tue, 13 Apr 2010 08:53:16 +0900
+X-Google-Sender-Auth: 6773bcf16a8914f6
+Message-ID: <h2p9c9fda241004121653te938caa2u42e39c31f27e85e1@mail.gmail.com>
+Subject: Re: [PATCH] MAINTAINERS: arch/arm/s3c and arch/arm/s5p
+From: Kyungmin Park <kmpark@infradead.org>
+To: Joe Perches <joe@perches.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       Ben Dooks <ben-linux-arm@fluff.org>,
+       Marek Szyprowski <m.szyprowski@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__13_Apr_2010_09_46_18_+1000_WFlh5uhfpE=jns12
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi Frederic,
-
-On Sat, 10 Apr 2010 15:42:23 +0200 Frederic Weisbecker <fweisbec@gmail.com>=
- wrote:
+On Tue, Apr 13, 2010 at 5:00 AM, Joe Perches <joe@perches.com> wrote:
+> On Mon, 2010-04-12 at 20:47 +0100, Russell King - ARM Linux wrote:
+>> This is Samsung stuff, it should be copied to Ben (added).
 >
-> I have some requests for you about tree inclusions for linux-next.
->=20
-> My reiserfs/kill-bkl branch had no updates for a next release
-> for some time now. You can safely remove it from -next. If
-> I get updates for it later, I'll tell you. But for now it's
-> only here to host fixes for the current release.
+> Maybe this is appropriate?
 
-There is some value to having "fixes for the current release" trees in
-linux-next - it means that while such fixes are waiting for Linus to
-merge them, people testing linux-next don't have to worry about bugs that
-already have fixes pending.  However, I have removed that tree - I will
-put it back if you ask me to.
+No, s5p stubs are maintained by Samsung.
+Of course Ben work on core part together, e.g., clock, interrupt.
 
-> Also I have two new branches aimed for .35
->=20
-> Could you please integrate the two following?
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> 	bkl/core
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> 	bkl/procfs
+Most s5pc1XX are done by Marek and Kyungmin Park except plat-samsung.
+common part of Samsung SoCs.
 
-Both added from today.
+Thank you,
+Kyungmin Park
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  MAINTAINERS |   40 ++++++++--------------------------------
+>  1 files changed, 8 insertions(+), 32 deletions(-)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 7a9ccda..5a0d6ef 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -902,48 +902,24 @@ W:        http://www.fluff.org/ben/linux/
+>  S:     Maintained
+>  F:     arch/arm/plat-s3c/
+>  F:     arch/arm/plat-s3c24xx/
+> +F:     arch/arm/plat-samsung/
+>
+> -ARM/S3C2410 ARM ARCHITECTURE
+> +ARM/S3Cxxxx ARM ARCHITECTURE
+>  M:     Ben Dooks <ben-linux@fluff.org>
+>  L:     linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+>  W:     http://www.fluff.org/ben/linux/
+>  S:     Maintained
+> -F:     arch/arm/mach-s3c2410/
+> -
+> -ARM/S3C2440 ARM ARCHITECTURE
+> -M:     Ben Dooks <ben-linux@fluff.org>
+> -L:     linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> -W:     http://www.fluff.org/ben/linux/
+> -S:     Maintained
+> -F:     arch/arm/mach-s3c2440/
+> -
+> -ARM/S3C2442 ARM ARCHITECTURE
+> -M:     Ben Dooks <ben-linux@fluff.org>
+> -L:     linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> -W:     http://www.fluff.org/ben/linux/
+> -S:     Maintained
+> -F:     arch/arm/mach-s3c2442/
+> -
+> -ARM/S3C2443 ARM ARCHITECTURE
+> -M:     Ben Dooks <ben-linux@fluff.org>
+> -L:     linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> -W:     http://www.fluff.org/ben/linux/
+> -S:     Maintained
+> -F:     arch/arm/mach-s3c2443/
+> -
+> -ARM/S3C6400 ARM ARCHITECTURE
+> -M:     Ben Dooks <ben-linux@fluff.org>
+> -L:     linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> -W:     http://www.fluff.org/ben/linux/
+> -S:     Maintained
+> -F:     arch/arm/mach-s3c6400/
+> +F:     arch/arm/mach-s3c????/
+> +F:     arch/arm/plat-s3c????/
+>
+> -ARM/S3C6410 ARM ARCHITECTURE
+> +ARM/S5Pxxxx ARM ARCHITECTURE
+>  M:     Ben Dooks <ben-linux@fluff.org>
 
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
+It should be Byungho Min but now changed to Marek and Kyungmin Park
 
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Tue__13_Apr_2010_09_46_18_+1000_WFlh5uhfpE=jns12
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvDsMoACgkQjjKRsyhoI8xHigCdHFccN2bTDkvrmM610suD86xl
-sa4An0YViXfQN+1qutsfa7m/fZ1gbuEF
-=MIKf
------END PGP SIGNATURE-----
-
---Signature=_Tue__13_Apr_2010_09_46_18_+1000_WFlh5uhfpE=jns12--
+>  L:     linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+>  W:     http://www.fluff.org/ben/linux/
+>  S:     Maintained
+> -F:     arch/arm/mach-s3c6410/
+> +F:     arch/arm/mach-s5p????/
+> +F:     arch/arm/plat-s5p/
+> +F:     arch/arm/plat-s5p????/
+>
+>  ARM/SHMOBILE ARM ARCHITECTURE
+>  M:     Paul Mundt <lethal@linux-sh.org>
+>
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
