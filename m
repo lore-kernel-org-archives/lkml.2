@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387Ab0DLPji (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 11:39:38 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59686 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751999Ab0DLPjh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 11:39:37 -0400
-Date: Mon, 12 Apr 2010 08:38:42 -0700
-From: Stephen Hemminger <shemminger@linux-foundation.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Cong Wang <amwang@redhat.com>, Jay Vosburgh <fubar@us.ibm.com>,
-       Neil Horman <nhorman@tuxdriver.com>, netdev@vger.kernel.org,
-       Matt Mackall <mpm@selenic.com>, bridge@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-       Jeff Moyer <jmoyer@redhat.com>, Andy Gospodarek <gospo@redhat.com>,
-       bonding-devel@lists.sourceforge.net
-Subject: Re: [Bonding-devel] [v3 Patch 2/3] bridge: make bridge support
- netpoll
-Message-ID: <20100412083842.26d71bda@nehalam>
-In-Reply-To: <1271068737.16881.18.camel@edumazet-laptop>
-References: <20100408062234.4499.17042.sendpatchset@localhost.localdomain>
-	<20100408062246.4499.5670.sendpatchset@localhost.localdomain>
-	<20100408083710.2b61ee44@nehalam>
-	<4BC2F7E2.7020309@redhat.com>
-	<1271068737.16881.18.camel@edumazet-laptop>
-Organization: Linux Foundation
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.3; x86_64-pc-linux-gnu)
+	id S1752437Ab0DLPn3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 11:43:29 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:38660 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189Ab0DLPn1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 11:43:27 -0400
+Date: Mon, 12 Apr 2010 17:43:23 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: Andi Kleen <andi@firstfloor.org>, Pedro Ribeiro <pedrib@gmail.com>,
+       Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, Greg KH <gregkh@suse.de>,
+       alsa-devel@alsa-project.org, linux-usb@vger.kernel.org
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+Message-ID: <20100412154323.GP18855@one.firstfloor.org>
+References: <20100407090623.GN30807@buzzloop.caiaq.de> <Pine.LNX.4.44L0.1004071036060.1779-100000@iolanthe.rowland.org> <87sk719hbm.fsf@basil.nowhere.org> <20100412111439.GU30801@buzzloop.caiaq.de> <20100412115300.GM18855@one.firstfloor.org> <q2z74fd948d1004120511hebf19eaauc41ee9ed25dea19e@mail.gmail.com> <20100412121243.GN18855@one.firstfloor.org> <20100412123238.GW30801@buzzloop.caiaq.de> <20100412124708.GO18855@one.firstfloor.org> <20100412125421.GX30801@buzzloop.caiaq.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100412125421.GX30801@buzzloop.caiaq.de>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Apr 2010 12:38:57 +0200
-Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> >                urbs[i]->transfer_buffer =                                                                                                   
+> > -                       kmalloc(FRAMES_PER_URB * BYTES_PER_FRAME, GFP_KERNEL);                                                              
+> > +                       kmalloc(FRAMES_PER_URB * BYTES_PER_FRAME, GFP_KERNEL | GFP_DMA32);                                                  
 
-> Le lundi 12 avril 2010 Ã  18:37 +0800, Cong Wang a Ã©crit :
-> > Stephen Hemminger wrote:
-> > > There is no protection on dev->priv_flags for SMP access.
-> > > It would better bit value in dev->state if you are using it as control flag.
-> > > 
-> > > Then you could use 
-> > > 			if (unlikely(test_and_clear_bit(__IN_NETPOLL, &skb->dev->state)))
-> > > 				netpoll_send_skb(...)
-> > > 
-> > > 
-> > 
-> > Hmm, I think we can't use ->state here, it is not for this kind of purpose,
-> > according to its comments.
-> > 
-> > Also, I find other usages of IFF_XXX flags of ->priv_flags are also using
-> > &, | to set or clear the flags. So there must be some other things preventing
-> > the race...
-> 
-> Yes, its RTNL that protects priv_flags changes, hopefully...
-> 
+Ah you can't use GFP_DMA32 with kmalloc, only GFP_DMA.
 
-The patch was not protecting priv_flags with RTNL.
-For example..
+Actually there should be a WARN_ON for this when slab debugging 
+is enabled.
 
+Slab needs separate caches for dma, and it only has them for GFP_DMA,
+but not DMA32.  Use __get_free_pages() for GFP_DMA32
 
-@@ -308,7 +312,9 @@ static void netpoll_send_skb(struct netp
- 		     tries > 0; --tries) {
- 			if (__netif_tx_trylock(txq)) {
- 				if (!netif_tx_queue_stopped(txq)) {
-+					dev->priv_flags |= IFF_IN_NETPOLL;
- 					status = ops->ndo_start_xmit(skb, dev);
-+					dev->priv_flags &= ~IFF_IN_NETPOLL;
- 					if (status == NETDEV_TX_OK)
- 						txq_trans_update(txq);
+> Well, the sound driver itself doesn't care for any of those things, just
+> like any other USB driver doesn't. The USB core itself of the host
+> controller driver should do, and as far as I can see, it does that, yes.
+
+Hmm, still things must go wrong somewhere. Perhaps need some instrumentation
+to see if all the transfer buffers really hit the PCI mapping functions.
+
+It might be interesting to test if the device works with enabled
+IOMMU. That would trigger any failures to properly map the buffers
+earlier.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
