@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab0DLASM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 20:18:12 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38855 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753010Ab0DLASK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 20:18:10 -0400
-Date: Sun, 11 Apr 2010 17:13:26 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Borislav Petkov <bp@alien8.de>
-cc: Johannes Weiner <hannes@cmpxchg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas
- of a mergeable VMA
-In-Reply-To: <20100411185508.GA4450@liondog.tnic>
-Message-ID: <alpine.LFD.2.00.1004111707360.3514@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1004101234210.3558@i5.linux-foundation.org> <alpine.LFD.2.00.1004101308250.3618@i5.linux-foundation.org> <20100410203628.GB32035@a1.tnic> <alpine.LFD.2.00.1004101336440.3618@i5.linux-foundation.org> <20100410212555.GA1797@a1.tnic>
- <alpine.LFD.2.00.1004101427090.3618@i5.linux-foundation.org> <20100410215115.GA2599@a1.tnic> <20100411130801.GA7189@a1.tnic> <alpine.LFD.2.00.1004110938570.3514@i5.linux-foundation.org> <alpine.LFD.2.00.1004111010280.3514@i5.linux-foundation.org>
- <20100411185508.GA4450@liondog.tnic>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753308Ab0DLAhm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 20:37:42 -0400
+Received: from borg.medozas.de ([188.40.89.202]:46805 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753204Ab0DLAhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Apr 2010 20:37:40 -0400
+Date: Mon, 12 Apr 2010 02:37:35 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Alan Cox <alan@redhat.com>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: pts_unix98_lookup returns -EIO dependent on path
+Message-ID: <alpine.LSU.2.01.1004120227390.23484@obet.zrqbmnf.qr>
+User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
 
-On Sun, 11 Apr 2010, Borislav Petkov wrote:
-> 
-> > Conversely, if you still see the oops (rather than the watchdog), that 
-> > means that we actually have pages that are still marked mapped, and that 
-> > despite that mapped state have a stale page->mapping pointer. I actually 
-> > find that the more likely case, because otherwise the window is _so_ small 
-> > that I don't see how you can hit the oops so reliably.
-> 
-> Ok, did test with the all 5 patches applied. It oopsed with the same
-> trace, see below. Except one kernel/sched.c:3555 warning checking
-> spinlock count overflowing, nothing else. :(
+for reason not ultimately known to me, opening a pts node outside of
+/dev/pts makes drivers/char/pty.c:pts_unix98_lookup return -EIO on 2.6.33.
+The next ancestral commit which looks related to this is possibly 
+99f1fe18.
 
-Ok, that preempt-count thing is a real problem, but should be unrelated to 
-your issues.
+In the following screenlog, /dev is a tmpfs, and /dev/pts is devpts. 
+Whether CONFIG_DEVPTS_MULTIPLE_INSTANCES is set or not seems to play no 
+role (the master instance is used only anyway).
 
-Anyway, so this all means that we definitely have lost sight of an 
-'anon_vma', even if page->mapping still points to it, and even though the 
-page is still mapped.
+02:30 yaguchi:/dev/pts # ls -l
+total 0
+drwxr-xr-x  2 root root    0 Apr 12  2010 .
+drwxr-xr-x 16 root root 3720 Apr 12 01:55 ..
 
-I'll see if I can come up with a patch to do the same kind of validation 
-on page->mapping as on the anon-vma chains themselves.
+02:30 yaguchi:/dev/pts # socat pty pty &
+[1] 7302
 
-> I tried to see whether the page->mapping pointer is stale, I dunno,
-> maybe there could be something in the register dump which could tell us
-> what's happening.
+02:30 yaguchi:/dev/pts # ls -l
+total 0
+drwxr-xr-x  2 root root      0 Apr 12  2010 .
+drwxr-xr-x 16 root root   3720 Apr 12 01:55 ..
+crw--w----  1 root tty  136, 0 Apr 12 02:30 0
+crw--w----  1 root tty  136, 1 Apr 12 02:30 1
 
-Sadly, you cannot tell by the pointer. A stale pointer still is a 
-perfectly fine kernel pointer, it's just that we've long since released 
-the anon_vma it used to point to, and now it points to some random other 
-data structure.
+02:30 yaguchi:/dev/pts # echo hi >0
+02:30 yaguchi:/dev/pts # cp -a 0 ../0
+02:30 yaguchi:/dev/pts # echo hi >../0
+bash: ../0: Input/output error
+02:30 yaguchi:/dev/pts # ls -l ../0
+crw--w---- 1 root tty 136, 0 Apr 12 02:30 ../0
 
-> So, it really looks like at least that list_head in anon_vma is
-> bollocks, or even the whole anon_vma. So if this is correct, it is
-> highly likely that the anon_vma is already freed material or not
-> initialized at all.
 
-Yes, it's pretty certain it is long free'd, and re-allocated to something 
-else.
-
-		Linus
+Jan
