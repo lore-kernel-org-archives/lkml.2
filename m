@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751604Ab0DLMcq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 08:32:46 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:53018 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776Ab0DLMco (ORCPT
+	id S1751628Ab0DLMf3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 08:35:29 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:33278 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751009Ab0DLMf1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 08:32:44 -0400
-Date: Mon, 12 Apr 2010 14:32:38 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Pedro Ribeiro <pedrib@gmail.com>, Alan Stern <stern@rowland.harvard.edu>,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       Greg KH <gregkh@suse.de>, alsa-devel@alsa-project.org,
-       linux-usb@vger.kernel.org
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-Message-ID: <20100412123238.GW30801@buzzloop.caiaq.de>
-References: <20100407090623.GN30807@buzzloop.caiaq.de>
- <Pine.LNX.4.44L0.1004071036060.1779-100000@iolanthe.rowland.org>
- <87sk719hbm.fsf@basil.nowhere.org>
- <20100412111439.GU30801@buzzloop.caiaq.de>
- <20100412115300.GM18855@one.firstfloor.org>
- <q2z74fd948d1004120511hebf19eaauc41ee9ed25dea19e@mail.gmail.com>
- <20100412121243.GN18855@one.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100412121243.GN18855@one.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 12 Apr 2010 08:35:27 -0400
+Subject: Re: [PATCH 2/2] cpuhotplug: make get_online_cpus() scalability by
+ using percpu counter
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Gautham R Shenoy <ego@in.ibm.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Ingo Molnar <mingo@elte.hu>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Nathan Fontenot <nfont@austin.ibm.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Sachin Sant <sachinp@in.ibm.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Shane Wang <shane.wang@intel.com>,
+       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <4BC31265.4090503@cn.fujitsu.com>
+References: <4BB9BD8A.9040209@cn.fujitsu.com>
+	 <20100405162901.GA3567@redhat.com> <20100406120039.GC5680@redhat.com>
+	 <4BBC8A11.3040501@cn.fujitsu.com> <20100407135456.GA12029@redhat.com>
+	 <20100409121235.GA5784@redhat.com>  <4BC2E6CE.7060401@cn.fujitsu.com>
+	 <1271064539.4222.27.camel@twins>  <4BC31265.4090503@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 12 Apr 2010 14:34:30 +0200
+Message-ID: <1271075670.4807.2.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 12, 2010 at 02:12:43PM +0200, Andi Kleen wrote:
-> > I'm not putting into question whether something is broken in my
-> > system, but if it is, it must be the ICH9 platform, because I was able
-> > to reproduce it in another laptop.
-> > 
-> > My laptop is a Lenovo T400 and I was able to reproduce it in a Acer
-> > Aspire 59xx (I don't remember the exact model, but it is one of the
-> > new ones with 15.6 inch - i think they all use the same base). And the
-> > common thing between them is the ICH9 platform.
-> 
-> There are lots of systems around with ICH9 that work fine.
-> I'm typing on one.
+On Mon, 2010-04-12 at 20:30 +0800, Lai Jiangshan wrote:
+> Because read-preference RWL will cause write site starvation.
 
-FWIW, the fix that made it work for Pedro was to use usb_buffer_alloc()
-for the transfer_buffer of the audio module.
+Sure, but why is that a problem? Hotplug should be a rare event, who
+cares if it takes a while to come through.
 
-Another detail I can't explain is that on his machine, the kernel oopses
-when kmalloc() with GFP_DMA32 is used. The patch to try this also only
-touched the allocation in sound/usb/caiaq/audio.c.
 
-> > The only which solved this problem was the first patch sent to me by
-> > Daniel Mack. I've been using it for days straight and it works fine.
-> 
-> Can you send a full boot log?
-
-He just did. I put it online here:
-
-  http://caiaq.de/download/tmp/pedro-dmesg
-
-Daniel
