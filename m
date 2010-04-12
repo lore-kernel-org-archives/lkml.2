@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660Ab0DLGHR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 02:07:17 -0400
-Received: from sj-iport-1.cisco.com ([171.71.176.70]:48250 "EHLO
-	sj-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753603Ab0DLGHE (ORCPT
+	id S1753681Ab0DLGHV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 02:07:21 -0400
+Received: from sj-iport-4.cisco.com ([171.68.10.86]:11409 "EHLO
+	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753594Ab0DLGHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 02:07:04 -0400
-Authentication-Results: sj-iport-1.cisco.com; dkim=neutral (message not signed) header.i=none
+	Mon, 12 Apr 2010 02:07:01 -0400
+Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAGJVwkurR7Ht/2dsb2JhbACbM3GhNpgUhQwEgyU
+X-IronPort-Anti-Spam-Result: AvsEAKlVwkurR7H+/2dsb2JhbACbM3GhN5gUhQwEgyU
 X-IronPort-AV: E=Sophos;i="4.52,188,1270425600"; 
-   d="scan'208";a="316193980"
-Date: Sun, 11 Apr 2010 23:07:04 -0700
+   d="scan'208";a="113732124"
+Date: Sun, 11 Apr 2010 23:07:00 -0700
 From: David VomLehn <dvomlehn@cisco.com>
 To: to@dvomlehn-lnx2.corp.sa.net, "linux-arch@vger.kernel.org"@cisco.com,
        linux-arch@vger.kernel.org
 Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
        maint_arch@dvomlehn-lnx2.corp.sa.net
-Subject: [PATCH 18/23] Make register values available to Score panic
+Subject: [PATCH 17/23] Make register values available to S/390 panic
 	notifiers
-Message-ID: <20100412060704.GA25767@dvomlehn-lnx2.corp.sa.net>
+Message-ID: <20100412060700.GA25740@dvomlehn-lnx2.corp.sa.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -34,26 +34,33 @@ help to complete this.
 
 Signed-off-by: David VomLehn <dvomlehn@cisco.com>
 ---
- arch/score/include/asm/ptrace.h |  136 +++++++++++++++++++++++++++++++++++++++
- arch/score/kernel/traps.c       |    2 +-
- 2 files changed, 137 insertions(+), 1 deletions(-)
+ arch/s390/include/asm/ptrace.h |   94 ++++++++++++++++++++++++++++++++++++++++
+ arch/s390/kernel/traps.c       |    4 +-
+ 2 files changed, 96 insertions(+), 2 deletions(-)
 
-diff --git a/arch/score/include/asm/ptrace.h b/arch/score/include/asm/ptrace.h
-index e89dc9b..d9a1293 100644
---- a/arch/score/include/asm/ptrace.h
-+++ b/arch/score/include/asm/ptrace.h
-@@ -91,6 +91,142 @@ extern int read_tsk_short(struct task_struct *, unsigned long,
- 
- #define arch_has_single_step()	(1)
+diff --git a/arch/s390/include/asm/ptrace.h b/arch/s390/include/asm/ptrace.h
+index fef9b33..6665159 100644
+--- a/arch/s390/include/asm/ptrace.h
++++ b/arch/s390/include/asm/ptrace.h
+@@ -507,6 +507,100 @@ static inline unsigned long kernel_stack_pointer(struct pt_regs *regs)
+ 	return regs->gprs[15] & PSW_ADDR_INSN;
+ }
  
 +
 +/* Macros for saving the contents of registers and for the output constraint
 + * for those registers */
 +#include "/home/vomlehn/git/kernel.org/ptreg.h"
-+#define PTREG_SAVE(r, name)	"sw	" #r ", %[" #name "]\n"
-+#define PTREG_SAVE_R(i)		PTREG_SAVE_I(r, r, i)
++#ifndef CONFIG_64BIT
++#define PTREG_SAVE(r, name)	"st	" #r ", %[" #name "]\n"
++#else
++#define PTREG_SAVE(r, name)	"stg	" #r ", %[" #name "]\n"
++#endif
 +
-+#define PTREG_SAVE_R(regs, i)	PTREG_SAVE_I(regs, r, r, i)
++#define PTREG_SAVE_GPR(i)	PTREG_SAVE_I(gprs, r, i)
++#define PTREG_SAVE_ARG(i)	PTREG_SAVE_I(args, r, i)
++
++#define PTREG_SAVE_R(regs, i)	PTREG_SAVE_I(regs, gprs, r, i)
++#define PTREG_SAVE_ARG(regs, i)	PTREG_SAVE_I(regs, arg, r, i)
 +
 +#define arch_has_save_ptregs	1
 +
@@ -71,130 +78,84 @@ index e89dc9b..d9a1293 100644
 +const struct pt_regs *save_ptregs(struct pt_regs *regs)
 +{
 +	__asm__ __volatile__ (
-+			PTREG_SAVE_R(0)
-+			PTREG_SAVE_R(1)
-+			PTREG_SAVE_R(2)
-+			PTREG_SAVE_R(3)
-+			PTREG_SAVE_R(4)
-+			PTREG_SAVE_R(5)
-+			PTREG_SAVE_R(6)
-+			PTREG_SAVE_R(7)
-+			PTREG_SAVE_R(8)
-+			PTREG_SAVE_R(9)
-+			PTREG_SAVE_R(10)
-+			PTREG_SAVE_R(11)
-+			PTREG_SAVE_R(12)
-+			PTREG_SAVE_R(13)
-+			PTREG_SAVE_R(14)
-+			PTREG_SAVE_R(15)
-+			PTREG_SAVE_R(16)
-+			PTREG_SAVE_R(17)
-+			PTREG_SAVE_R(18)
-+			PTREG_SAVE_R(19)
-+			PTREG_SAVE_R(20)
-+			PTREG_SAVE_R(21)
-+			PTREG_SAVE_R(22)
-+			PTREG_SAVE_R(23)
-+			PTREG_SAVE_R(24)
-+			PTREG_SAVE_R(25)
-+			PTREG_SAVE_R(26)
-+			PTREG_SAVE_R(27)
-+			PTREG_SAVE_R(28)
-+			PTREG_SAVE_R(29)
-+			PTREG_SAVE_R(30)
-+			PTREG_SAVE_R(31)
-+
-+			PTREG_SAVE(sr0, sr0)
-+			PTREG_SAVE(sr1, sr1)
-+			PTREG_SAVE(sr2, sr2)
-+
-+			"mfcehl	r30, r31\n"
-+			PTREG_SAVE(r30, cp0_ceh)
-+			PTREG_SAVE(r31, cp0_cel)
-+
-+			"mfcr	r31, cr0\n"
-+			PTREG_SAVE(r31, cp0_ecr)
-+
-+			"mfcr	r31, cr1\n"
-+			PTREG_SAVE(r31, cp0_condition)
-+
-+			"mfcr	r31, cr2\n"
-+			PTREG_SAVE(r31, cp0_ecr)
-+
-+			"mfcr	r31, cr6\n"
-+			PTREG_SAVE(r31, cp0_ema)
-+
++			PTREG_SAVE_ARG(0)
++			PTREG_SAVE(psw, psw)
++			PTREG_SAVE_GPR(0)
++			PTREG_SAVE_GPR(1)
++			PTREG_SAVE_GPR(2)
++			PTREG_SAVE_GPR(3)
++			PTREG_SAVE_GPR(4)
++			PTREG_SAVE_GPR(5)
++			PTREG_SAVE_GPR(6)
++			PTREG_SAVE_GPR(7)
++			PTREG_SAVE_GPR(8)
++			PTREG_SAVE_GPR(9)
++			PTREG_SAVE_GPR(10)
++			PTREG_SAVE_GPR(11)
++			PTREG_SAVE_GPR(12)
++			PTREG_SAVE_GPR(13)
++			PTREG_SAVE_GPR(14)
++			PTREG_SAVE_GPR(15)
++			PTREG_SAVE(orig_gpr2, orig_gpr2)
++			PTREG_SAVE(svcnr, svcnr)
++			PTREG_SAVE(ilc, ilc)
 +		/*
 +		 * The current location is the one for which the register
 +		 * values are correct, even if some had been modified on
 +		 * function entry. So, the current location is the value to
 +		 * save as the execution address.
 +		 */
-+		"1:\n"
-+			"la	r1, 1b"
-+			PTREG_SAVE(r1, cp0_epc)
++#ifndef CONFIG_64BIT
++			"basr	1, 0\n"
++		"0:\n"
++			"ahi	 1, 1b\n"
++#else
++			"lalr	 1, 1b\n"
++#endif
++			PTREG_SAVE(1, ilc)
 +	:
-+		PTREG_OUT_R(regs, 0)
-+		PTREG_OUT_R(regs, 1)
-+		PTREG_OUT_R(regs, 2)
-+		PTREG_OUT_R(regs, 3)
-+		PTREG_OUT_R(regs, 4)
-+		PTREG_OUT_R(regs, 5)
-+		PTREG_OUT_R(regs, 6)
-+		PTREG_OUT_R(regs, 7)
-+		PTREG_OUT_R(regs, 8)
-+		PTREG_OUT_R(regs, 9)
-+		PTREG_OUT_R(regs, 10)
-+		PTREG_OUT_R(regs, 11)
-+		PTREG_OUT_R(regs, 12)
-+		PTREG_OUT_R(regs, 13)
-+		PTREG_OUT_R(regs, 14)
-+		PTREG_OUT_R(regs, 15)
-+		PTREG_OUT_R(regs, 16)
-+		PTREG_OUT_R(regs, 17)
-+		PTREG_OUT_R(regs, 18)
-+		PTREG_OUT_R(regs, 19)
-+		PTREG_OUT_R(regs, 20)
-+		PTREG_OUT_R(regs, 21)
-+		PTREG_OUT_R(regs, 22)
-+		PTREG_OUT_R(regs, 23)
-+		PTREG_OUT_R(regs, 24)
-+		PTREG_OUT_R(regs, 25)
-+		PTREG_OUT_R(regs, 26)
-+		PTREG_OUT_R(regs, 27)
-+		PTREG_OUT_R(regs, 28)
-+		PTREG_OUT_R(regs, 29)
-+		PTREG_OUT_R(regs, 30)
-+		PTREG_OUT_R(regs, 31)
-+		PTREG_OUT(regs, cel, cel)
-+		PTREG_OUT(regs, ceh, ceh)
-+		PTREG_OUT(regs, sr0, sr0)
-+		PTREG_OUT(regs, sr1, sr1)
-+		PTREG_OUT(regs, sr2, sr2)
-+		PTREG_OUT(regs, cp0_epc, cp0_epc)
-+		PTREG_OUT(regs, cp0_ema, cp0_ema)
-+		PTREG_OUT(regs, cp0_psr, cp0_psr)
-+		PTREG_OUT(regs, cp0_ecr, cp0_ecr)
-+		PTREG_OUT(regs, cp0_condition, cp0_condition)
++		PTREG_OUT(regs, psw, psw),
++		PTREG_OUT_GPR(regs, 0),
++		PTREG_OUT_GPR(regs, 1),
++		PTREG_OUT_GPR(regs, 2),
++		PTREG_OUT_GPR(regs, 3),
++		PTREG_OUT_GPR(regs, 4),
++		PTREG_OUT_GPR(regs, 5),
++		PTREG_OUT_GPR(regs, 6),
++		PTREG_OUT_GPR(regs, 7),
++		PTREG_OUT_GPR(regs, 8),
++		PTREG_OUT_GPR(regs, 9),
++		PTREG_OUT_GPR(regs, 10),
++		PTREG_OUT_GPR(regs, 11),
++		PTREG_OUT_GPR(regs, 12),
++		PTREG_OUT_GPR(regs, 13),
++		PTREG_OUT_GPR(regs, 14),
++		PTREG_OUT_GPR(regs, 15),
++		PTREG_OUT(regs, orig_gpr2, orig_gpr2),
++		PTREG_OUT(regs, svcnr, svcnr),
++		PTREG_OUT(regs, ilc, ilc)
 +	:
-+		"r30", "r31"
++		"r1"
 +	);
 +
 +	return regs;
 +}
  #endif /* __KERNEL__ */
+ #endif /* __ASSEMBLY__ */
  
- #endif /* _ASM_SCORE_PTRACE_H */
-diff --git a/arch/score/kernel/traps.c b/arch/score/kernel/traps.c
-index 0e46fb1..1331829 100644
---- a/arch/score/kernel/traps.c
-+++ b/arch/score/kernel/traps.c
-@@ -283,7 +283,7 @@ asmlinkage void do_reserved(struct pt_regs *regs)
- 	 */
- 	die_if_kernel("do_reserved execution Exception", regs);
- 	show_regs(regs);
--	panic("Caught reserved exception - should not happen.");
-+	panic_with_regs(regs, "Caught reserved exception - should not happen.");
+diff --git a/arch/s390/kernel/traps.c b/arch/s390/kernel/traps.c
+index 6e7ad63..49eacce 100644
+--- a/arch/s390/kernel/traps.c
++++ b/arch/s390/kernel/traps.c
+@@ -308,9 +308,9 @@ void die(const char * str, struct pt_regs * regs, long err)
+ 	add_taint(TAINT_DIE);
+ 	spin_unlock_irq(&die_lock);
+ 	if (in_interrupt())
+-		panic("Fatal exception in interrupt");
++		panic_with_regs(regs, "Fatal exception in interrupt");
+ 	if (panic_on_oops)
+-		panic("Fatal exception: panic_on_oops");
++		panic_with_regs(regs, "Fatal exception: panic_on_oops");
+ 	oops_exit();
+ 	do_exit(SIGSEGV);
  }
- 
- /*
