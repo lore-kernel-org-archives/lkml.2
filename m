@@ -1,35 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab0DLJMM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 05:12:12 -0400
-Received: from mail-qy0-f179.google.com ([209.85.221.179]:38396 "EHLO
-	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753165Ab0DLJML (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 05:12:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=M2RQ30Z/cTsrMjCbc5sS9Zr1+lHwtT/6ghhqwyijmcEE3RYDSXqcr5Z7sOQuNAI5mh
-         aaNFWyWkcUOrH+xsptaaWwcQwIcFn8eu28MD8kN2Mm+Y7/kOkAL/c0BgplDQjNZpKXK7
-         hgl8icdhMm4HXF5UJ6CtaIjn974pfzmhWabQE=
+	id S1753414Ab0DLJZJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 05:25:09 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54886 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752839Ab0DLJZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 05:25:05 -0400
+Message-ID: <4BC2E654.7050002@cn.fujitsu.com>
+Date: Mon, 12 Apr 2010 17:22:28 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-In-Reply-To: <20100412015714.GA2815@localhost.localdomain>
-References: <20100412015714.GA2815@localhost.localdomain>
-Date: Mon, 12 Apr 2010 10:12:09 +0100
-Message-ID: <v2gfbd9d3991004120212jffcf0d20gad2df9d789982d92@mail.gmail.com>
-Subject: Re: [PATCH] KVM: Enhance the coalesced_mmio_write() parameter to 
-	avoid stack buffer overflow
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: wzt.wzt@gmail.com
-Cc: linux-kernel@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
-       kvm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] KVM MMU: fix kvm_mmu_zap_page() and its calling path
+References: <4BC2D2E2.1030604@cn.fujitsu.com> <4BC2D345.100@cn.fujitsu.com> <4BC2D8D6.6030306@redhat.com> <4BC2DFA0.6000609@cn.fujitsu.com> <4BC2E2FF.9020005@redhat.com>
+In-Reply-To: <4BC2E2FF.9020005@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Does len need to be int?  Perhaps it should be unsigned int?
+Hi Avi,
 
-Stefan
+Avi Kivity wrote:
+
+> hlist_for_each_entry_safe() is supposed to be be safe against removal of
+> the element that is pointed to by the iteration cursor.
+
+If we destroyed the next point, hlist_for_each_entry_safe() is unsafe.
+
+List hlist_for_each_entry_safe()'s code:
+
+|#define hlist_for_each_entry_safe(tpos, pos, n, head, member) 		 \
+|	for (pos = (head)->first;					 \
+|	     pos && ({ n = pos->next; 1; }) && 				 \
+|		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
+|	     pos = n)
+
+if n is destroyed:
+'pos = n, n = pos->next'
+then it access n again, it's unsafe/illegal for us.
+
+Xiao
