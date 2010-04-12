@@ -1,198 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310Ab0DLNEV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 09:04:21 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:51805 "EHLO
+	id S1752523Ab0DLNEk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 09:04:40 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:40707 "EHLO
 	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152Ab0DLNEO (ORCPT
+	with ESMTP id S1752165Ab0DLNEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 09:04:14 -0400
+	Mon, 12 Apr 2010 09:04:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=p1eI6GTNSQS1QxZhEEu6lR2X/t/JeHpT0V3497aneUHRhYF/icUXEsvsVPyMxvTI1n
-         +Al6wn9ecjquBZmbR9Cz6iBvXn/Pzv7Ps3LpmZwlVs3mJ/JcOcAxrzqns8vZ02IS0/0d
-         WRqdTvV6/Dq4xsdbGcW281Zyw2huWML1He8Bg=
+        b=GQE2+FfeUH3nfXnfFngS/3KPG6fgfvBCK4m/T3TjumpZNB11RmoPTyTs9sIHp3bxJS
+         IhAGAFkueFrNEg6lnDm2WVgXUWoGTH7SBPJv0kEDHHl9CBqGuXcsfUk5hc92YneEylkA
+         s59tlzfqPj5pDzp3jUjkgQdQT+wp/DoSU3nKM=
 From: Dmitry Monakhov <dmonakhov@openvz.org>
 To: linux-kernel@vger.kernel.org
 Cc: jens.axboe@oracle.com, hch@infradead.org,
        Dmitry Monakhov <dmonakhov@openvz.org>
-Subject: [PATCH 2/4] blkdev: generalize flags for blkdev_issue_fn functions
-Date: Mon, 12 Apr 2010 17:03:55 +0400
-Message-Id: <1271077437-7921-3-git-send-email-dmonakhov@openvz.org>
+Subject: [PATCH 3/4] blkdev: add blkdev_issue helper functions
+Date: Mon, 12 Apr 2010 17:03:56 +0400
+Message-Id: <1271077437-7921-4-git-send-email-dmonakhov@openvz.org>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1271077437-7921-2-git-send-email-dmonakhov@openvz.org>
+In-Reply-To: <1271077437-7921-3-git-send-email-dmonakhov@openvz.org>
 References: <1271077437-7921-1-git-send-email-dmonakhov@openvz.org>
  <1271077437-7921-2-git-send-email-dmonakhov@openvz.org>
+ <1271077437-7921-3-git-send-email-dmonakhov@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch just convert all blkdev_issue_xxx function to common
-flags. Wait/allocation semantics not changed.
+Move blkdev_issue_discard from blk-barrier.c because it is not barrier
+related.
 
 Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
 ---
- block/blk-barrier.c    |   10 +++++-----
- block/ioctl.c          |    2 +-
- fs/btrfs/extent-tree.c |    2 +-
- fs/gfs2/rgrp.c         |    5 +++--
- include/linux/blkdev.h |    8 +++-----
- mm/swapfile.c          |    8 +++++---
- 6 files changed, 18 insertions(+), 17 deletions(-)
+ block/Makefile      |    2 +-
+ block/blk-barrier.c |  103 ----------------------------------------------
+ block/blk-lib.c     |  114 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 115 insertions(+), 104 deletions(-)
+ create mode 100644 block/blk-lib.c
 
+diff --git a/block/Makefile b/block/Makefile
+index cb2d515..0bb499a 100644
+--- a/block/Makefile
++++ b/block/Makefile
+@@ -5,7 +5,7 @@
+ obj-$(CONFIG_BLOCK) := elevator.o blk-core.o blk-tag.o blk-sysfs.o \
+ 			blk-barrier.o blk-settings.o blk-ioc.o blk-map.o \
+ 			blk-exec.o blk-merge.o blk-softirq.o blk-timeout.o \
+-			blk-iopoll.o ioctl.o genhd.o scsi_ioctl.o
++			blk-iopoll.o blk-lib.o ioctl.o genhd.o scsi_ioctl.o
+ 
+ obj-$(CONFIG_BLK_DEV_BSG)	+= bsg.o
+ obj-$(CONFIG_BLK_CGROUP)	+= blk-cgroup.o
 diff --git a/block/blk-barrier.c b/block/blk-barrier.c
-index 7e6e810..56254b1 100644
+index 56254b1..1242bdd 100644
 --- a/block/blk-barrier.c
 +++ b/block/blk-barrier.c
-@@ -368,17 +368,17 @@ static void blkdev_discard_end_io(struct bio *bio, int err)
-  * @sector:	start sector
-  * @nr_sects:	number of sectors to discard
-  * @gfp_mask:	memory allocation flags (for bio_alloc)
-- * @flags:	DISCARD_FL_* flags to control behaviour
+@@ -347,106 +347,3 @@ int blkdev_issue_flush(struct block_device *bdev, gfp_t gfp_mask,
+ }
+ EXPORT_SYMBOL(blkdev_issue_flush);
+ 
+-static void blkdev_discard_end_io(struct bio *bio, int err)
+-{
+-	if (err) {
+-		if (err == -EOPNOTSUPP)
+-			set_bit(BIO_EOPNOTSUPP, &bio->bi_flags);
+-		clear_bit(BIO_UPTODATE, &bio->bi_flags);
+-	}
+-
+-	if (bio->bi_private)
+-		complete(bio->bi_private);
+-	__free_page(bio_page(bio));
+-
+-	bio_put(bio);
+-}
+-
+-/**
+- * blkdev_issue_discard - queue a discard
+- * @bdev:	blockdev to issue discard for
+- * @sector:	start sector
+- * @nr_sects:	number of sectors to discard
+- * @gfp_mask:	memory allocation flags (for bio_alloc)
+- * @flags:	BLKDEV_IFL_* flags to control behaviour
+- *
+- * Description:
+- *    Issue a discard request for the sectors in question.
+- */
+-int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+-		sector_t nr_sects, gfp_t gfp_mask, unsigned long flags)
+-{
+-	DECLARE_COMPLETION_ONSTACK(wait);
+-	struct request_queue *q = bdev_get_queue(bdev);
+-	int type = flags & BLKDEV_IFL_BARRIER ?
+-		DISCARD_BARRIER : DISCARD_NOBARRIER;
+-	struct bio *bio;
+-	struct page *page;
+-	int ret = 0;
+-
+-	if (!q)
+-		return -ENXIO;
+-
+-	if (!blk_queue_discard(q))
+-		return -EOPNOTSUPP;
+-
+-	while (nr_sects && !ret) {
+-		unsigned int sector_size = q->limits.logical_block_size;
+-		unsigned int max_discard_sectors =
+-			min(q->limits.max_discard_sectors, UINT_MAX >> 9);
+-
+-		bio = bio_alloc(gfp_mask, 1);
+-		if (!bio)
+-			goto out;
+-		bio->bi_sector = sector;
+-		bio->bi_end_io = blkdev_discard_end_io;
+-		bio->bi_bdev = bdev;
+-		if (flags & BLKDEV_IFL_BARRIER)
+-			bio->bi_private = &wait;
+-
+-		/*
+-		 * Add a zeroed one-sector payload as that's what
+-		 * our current implementations need.  If we'll ever need
+-		 * more the interface will need revisiting.
+-		 */
+-		page = alloc_page(gfp_mask | __GFP_ZERO);
+-		if (!page)
+-			goto out_free_bio;
+-		if (bio_add_pc_page(q, bio, page, sector_size, 0) < sector_size)
+-			goto out_free_page;
+-
+-		/*
+-		 * And override the bio size - the way discard works we
+-		 * touch many more blocks on disk than the actual payload
+-		 * length.
+-		 */
+-		if (nr_sects > max_discard_sectors) {
+-			bio->bi_size = max_discard_sectors << 9;
+-			nr_sects -= max_discard_sectors;
+-			sector += max_discard_sectors;
+-		} else {
+-			bio->bi_size = nr_sects << 9;
+-			nr_sects = 0;
+-		}
+-
+-		bio_get(bio);
+-		submit_bio(type, bio);
+-
+-		if (flags & BLKDEV_IFL_BARRIER)
+-			wait_for_completion(&wait);
+-
+-		if (bio_flagged(bio, BIO_EOPNOTSUPP))
+-			ret = -EOPNOTSUPP;
+-		else if (!bio_flagged(bio, BIO_UPTODATE))
+-			ret = -EIO;
+-		bio_put(bio);
+-	}
+-	return ret;
+-out_free_page:
+-	__free_page(page);
+-out_free_bio:
+-	bio_put(bio);
+-out:
+-	return -ENOMEM;
+-}
+-EXPORT_SYMBOL(blkdev_issue_discard);
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+new file mode 100644
+index 0000000..d7827e5
+--- /dev/null
++++ b/block/blk-lib.c
+@@ -0,0 +1,114 @@
++/*
++ * Functions related to generic helpers functions
++ */
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/bio.h>
++#include <linux/blkdev.h>
++#include <linux/scatterlist.h>
++
++#include "blk.h"
++
++static void blkdev_discard_end_io(struct bio *bio, int err)
++{
++	if (err) {
++		if (err == -EOPNOTSUPP)
++			set_bit(BIO_EOPNOTSUPP, &bio->bi_flags);
++		clear_bit(BIO_UPTODATE, &bio->bi_flags);
++	}
++
++	if (bio->bi_private)
++		complete(bio->bi_private);
++	__free_page(bio_page(bio));
++
++	bio_put(bio);
++}
++
++/**
++ * blkdev_issue_discard - queue a discard
++ * @bdev:	blockdev to issue discard for
++ * @sector:	start sector
++ * @nr_sects:	number of sectors to discard
++ * @gfp_mask:	memory allocation flags (for bio_alloc)
 + * @flags:	BLKDEV_IFL_* flags to control behaviour
-  *
-  * Description:
-  *    Issue a discard request for the sectors in question.
-  */
- int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
--		sector_t nr_sects, gfp_t gfp_mask, int flags)
++ *
++ * Description:
++ *    Issue a discard request for the sectors in question.
++ */
++int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
 +		sector_t nr_sects, gfp_t gfp_mask, unsigned long flags)
- {
- 	DECLARE_COMPLETION_ONSTACK(wait);
- 	struct request_queue *q = bdev_get_queue(bdev);
--	int type = flags & DISCARD_FL_BARRIER ?
++{
++	DECLARE_COMPLETION_ONSTACK(wait);
++	struct request_queue *q = bdev_get_queue(bdev);
 +	int type = flags & BLKDEV_IFL_BARRIER ?
- 		DISCARD_BARRIER : DISCARD_NOBARRIER;
- 	struct bio *bio;
- 	struct page *page;
-@@ -401,7 +401,7 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 		bio->bi_sector = sector;
- 		bio->bi_end_io = blkdev_discard_end_io;
- 		bio->bi_bdev = bdev;
--		if (flags & DISCARD_FL_WAIT)
++		DISCARD_BARRIER : DISCARD_NOBARRIER;
++	struct bio *bio;
++	struct page *page;
++	int ret = 0;
++
++	if (!q)
++		return -ENXIO;
++
++	if (!blk_queue_discard(q))
++		return -EOPNOTSUPP;
++
++	while (nr_sects && !ret) {
++		unsigned int sector_size = q->limits.logical_block_size;
++		unsigned int max_discard_sectors =
++			min(q->limits.max_discard_sectors, UINT_MAX >> 9);
++
++		bio = bio_alloc(gfp_mask, 1);
++		if (!bio)
++			goto out;
++		bio->bi_sector = sector;
++		bio->bi_end_io = blkdev_discard_end_io;
++		bio->bi_bdev = bdev;
 +		if (flags & BLKDEV_IFL_BARRIER)
- 			bio->bi_private = &wait;
- 
- 		/*
-@@ -432,7 +432,7 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 		bio_get(bio);
- 		submit_bio(type, bio);
- 
--		if (flags & DISCARD_FL_WAIT)
++			bio->bi_private = &wait;
++
++		/*
++		 * Add a zeroed one-sector payload as that's what
++		 * our current implementations need.  If we'll ever need
++		 * more the interface will need revisiting.
++		 */
++		page = alloc_page(gfp_mask | __GFP_ZERO);
++		if (!page)
++			goto out_free_bio;
++		if (bio_add_pc_page(q, bio, page, sector_size, 0) < sector_size)
++			goto out_free_page;
++
++		/*
++		 * And override the bio size - the way discard works we
++		 * touch many more blocks on disk than the actual payload
++		 * length.
++		 */
++		if (nr_sects > max_discard_sectors) {
++			bio->bi_size = max_discard_sectors << 9;
++			nr_sects -= max_discard_sectors;
++			sector += max_discard_sectors;
++		} else {
++			bio->bi_size = nr_sects << 9;
++			nr_sects = 0;
++		}
++
++		bio_get(bio);
++		submit_bio(type, bio);
++
 +		if (flags & BLKDEV_IFL_BARRIER)
- 			wait_for_completion(&wait);
- 
- 		if (bio_flagged(bio, BIO_EOPNOTSUPP))
-diff --git a/block/ioctl.c b/block/ioctl.c
-index be48ea5..d803cac 100644
---- a/block/ioctl.c
-+++ b/block/ioctl.c
-@@ -125,7 +125,7 @@ static int blk_ioctl_discard(struct block_device *bdev, uint64_t start,
- 	if (start + len > (bdev->bd_inode->i_size >> 9))
- 		return -EINVAL;
- 	return blkdev_issue_discard(bdev, start, len, GFP_KERNEL,
--				    DISCARD_FL_WAIT);
-+				    BLKDEV_IFL_WAIT);
- }
- 
- static int put_ushort(unsigned long arg, unsigned short val)
-diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
-index 559f724..7453ac4 100644
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -1588,7 +1588,7 @@ static void btrfs_issue_discard(struct block_device *bdev,
- 				u64 start, u64 len)
- {
- 	blkdev_issue_discard(bdev, start >> 9, len >> 9, GFP_KERNEL,
--			     DISCARD_FL_BARRIER);
-+			BLKDEV_IFL_WAIT | BLKDEV_IFL_BARRIER);
- }
- 
- static int btrfs_discard_extent(struct btrfs_root *root, u64 bytenr,
-diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-index 503b842..bf011dc 100644
---- a/fs/gfs2/rgrp.c
-+++ b/fs/gfs2/rgrp.c
-@@ -854,7 +854,8 @@ static void gfs2_rgrp_send_discards(struct gfs2_sbd *sdp, u64 offset,
- 				if ((start + nr_sects) != blk) {
- 					rv = blkdev_issue_discard(bdev, start,
- 							    nr_sects, GFP_NOFS,
--							    DISCARD_FL_BARRIER);
-+							    BLKDEV_IFL_WAIT |
-+							    BLKDEV_IFL_BARRIER);
- 					if (rv)
- 						goto fail;
- 					nr_sects = 0;
-@@ -869,7 +870,7 @@ start_new_extent:
- 	}
- 	if (nr_sects) {
- 		rv = blkdev_issue_discard(bdev, start, nr_sects, GFP_NOFS,
--					 DISCARD_FL_BARRIER);
-+					 BLKDEV_IFL_WAIT | BLKDEV_IFL_BARRIER);
- 		if (rv)
- 			goto fail;
- 	}
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index f669656..a222351 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1002,10 +1002,8 @@ enum{
- #define BLKDEV_IFL_BARRIER	(1 << __BLKDEV_IFL_BARRIER)
- extern int blkdev_issue_flush(struct block_device *, gfp_t, sector_t *,
- 			unsigned long);
--#define DISCARD_FL_WAIT		0x01	/* wait for completion */
--#define DISCARD_FL_BARRIER	0x02	/* issue DISCARD_BARRIER request */
--extern int blkdev_issue_discard(struct block_device *, sector_t sector,
--		sector_t nr_sects, gfp_t, int flags);
-+extern int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
-+		sector_t nr_sects, gfp_t gfp_mask, unsigned long flags);
- 
- static inline int sb_issue_discard(struct super_block *sb,
- 				   sector_t block, sector_t nr_blocks)
-@@ -1013,7 +1011,7 @@ static inline int sb_issue_discard(struct super_block *sb,
- 	block <<= (sb->s_blocksize_bits - 9);
- 	nr_blocks <<= (sb->s_blocksize_bits - 9);
- 	return blkdev_issue_discard(sb->s_bdev, block, nr_blocks, GFP_KERNEL,
--				    DISCARD_FL_BARRIER);
-+				   BLKDEV_IFL_WAIT | BLKDEV_IFL_BARRIER);
- }
- 
- extern int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm);
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 6cd0a8f..4a16fad 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -139,7 +139,8 @@ static int discard_swap(struct swap_info_struct *si)
- 	nr_blocks = ((sector_t)se->nr_pages - 1) << (PAGE_SHIFT - 9);
- 	if (nr_blocks) {
- 		err = blkdev_issue_discard(si->bdev, start_block,
--				nr_blocks, GFP_KERNEL, DISCARD_FL_BARRIER);
-+				nr_blocks, GFP_KERNEL,
-+				BLKDEV_IFL_WAIT | BLKDEV_IFL_BARRIER);
- 		if (err)
- 			return err;
- 		cond_resched();
-@@ -150,7 +151,8 @@ static int discard_swap(struct swap_info_struct *si)
- 		nr_blocks = (sector_t)se->nr_pages << (PAGE_SHIFT - 9);
- 
- 		err = blkdev_issue_discard(si->bdev, start_block,
--				nr_blocks, GFP_KERNEL, DISCARD_FL_BARRIER);
-+				nr_blocks, GFP_KERNEL,
-+				BLKDEV_IFL_WAIT | BLKDEV_IFL_BARRIER);
- 		if (err)
- 			break;
- 
-@@ -189,7 +191,7 @@ static void discard_swap_cluster(struct swap_info_struct *si,
- 			start_block <<= PAGE_SHIFT - 9;
- 			nr_blocks <<= PAGE_SHIFT - 9;
- 			if (blkdev_issue_discard(si->bdev, start_block,
--				    nr_blocks, GFP_NOIO, DISCARD_FL_BARRIER))
-+				    nr_blocks, GFP_NOIO, BLKDEV_IFL_BARRIER))
- 				break;
- 		}
- 
++			wait_for_completion(&wait);
++
++		if (bio_flagged(bio, BIO_EOPNOTSUPP))
++			ret = -EOPNOTSUPP;
++		else if (!bio_flagged(bio, BIO_UPTODATE))
++			ret = -EIO;
++		bio_put(bio);
++	}
++	return ret;
++out_free_page:
++	__free_page(page);
++out_free_bio:
++	bio_put(bio);
++out:
++	return -ENOMEM;
++}
++EXPORT_SYMBOL(blkdev_issue_discard);
 -- 
 1.6.6.1
 
