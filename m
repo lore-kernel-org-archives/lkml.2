@@ -1,137 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752454Ab0DLQEr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 12:04:47 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:42923 "HELO
-	outbound-mail-01.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751432Ab0DLQEq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 12:04:46 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=b18yPrWbIlHsw1VVFowXZ1e4EI6lbJzgWNWXSZGlKQsSW2NB3GnQlyORb+6CqjRoGI/AjcT28cKvECrhqRF8SVq87uQQmB3BXNpPn4Kg61DHOSF2+I6KMpRVl0g82Ihb;
-Date: Mon, 12 Apr 2010 09:05:06 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Dave Airlie <airlied@gmail.com>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       James Simmons <jsimmons@infradead.org>
-Subject: Re: [PATCH] drm: add locked variant of
- drm_fb_helper_force_kernel_mode
-Message-ID: <20100412090506.26cf7179@virtuousgeek.org>
-In-Reply-To: <z2q21d7e9971004111705p4d1760dax9f324777be44f299@mail.gmail.com>
-References: <20100409151050.74ef6dcd@virtuousgeek.org>
-	<20100409151148.4312e5cb@virtuousgeek.org>
-	<z2q21d7e9971004111705p4d1760dax9f324777be44f299@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	id S1752520Ab0DLQGj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 12:06:39 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42860 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751009Ab0DLQGi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 12:06:38 -0400
+Date: Mon, 12 Apr 2010 09:02:03 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Borislav Petkov <bp@alien8.de>
+cc: Johannes Weiner <hannes@cmpxchg.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas
+ of a mergeable VMA
+In-Reply-To: <20100412072056.GA2432@liondog.tnic>
+Message-ID: <alpine.LFD.2.00.1004120854440.26679@i5.linux-foundation.org>
+References: <alpine.LFD.2.00.1004101336440.3618@i5.linux-foundation.org> <20100410212555.GA1797@a1.tnic> <alpine.LFD.2.00.1004101427090.3618@i5.linux-foundation.org> <20100410215115.GA2599@a1.tnic> <20100411130801.GA7189@a1.tnic>
+ <alpine.LFD.2.00.1004110938570.3514@i5.linux-foundation.org> <alpine.LFD.2.00.1004111010280.3514@i5.linux-foundation.org> <20100411185508.GA4450@liondog.tnic> <alpine.LFD.2.00.1004111707360.3514@i5.linux-foundation.org> <alpine.LFD.2.00.1004111759440.3521@i5.linux-foundation.org>
+ <20100412072056.GA2432@liondog.tnic>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Apr 2010 10:05:00 +1000
-Dave Airlie <airlied@gmail.com> wrote:
 
-> On Sat, Apr 10, 2010 at 8:11 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> > Needed for panic and kdb, since we need to avoid taking the mode_config
-> > mutex.
+
+On Mon, 12 Apr 2010, Borislav Petkov wrote:
+> > 
+> > If the warnings do happen, they are not going to be printing out any 
+> > hugely informative data apart from the fact that the bad case happened at 
+> > all. But If they do trigger, I can try to improve on them - it's just not 
+> > worth trying to make them any more interesting if they never trigger.
 > 
-> One comment below.
+> Haa, I think you're gonna want to improve them :)
+> 
+> 	WARN_ONCE(1, "page->mapping does not exist in vma chain");
+> 
+> triggered on the first resume showing a rather messy 4 WARN_ONCEs. Had I
+> more cores, there maybe would've been more of them :) Maybe need locking
+> if clean output is of interest (see below).
 
-Updated patch below.
+Goodie.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+I can't trigger this on my machine (not that I tried very hard - but I did 
+do some swapping loads etc by limiting my memory to just 1GB etc). So I'm 
+pretty sure my verification code is "correct", and verifies things that 
+should be right.
 
->From 7e972aa6a2f432b8fd04cb5d1a51f4df2fddea62 Mon Sep 17 00:00:00 2001
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-Date: Thu, 8 Apr 2010 14:40:27 -0700
-Subject: [PATCH] drm: add locked variant of drm_fb_helper_force_kernel_mode
+And the fact that it triggers under the exact load that you use to then 
+trigger the bug is a damn good thing.  That means that we are finally on 
+the right track, and we have somethign that correlates well with the 
+actual bug.
 
-Needed for panic and kdb, since we need to avoid taking the mode_config
-mutex.
+> So, anyway, if I can read this correctly, there is a page->mapping
+> anon_vma which is _not_ in the anon_vmas chain of the vma
+> (avc->same_vma).
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
----
- drivers/gpu/drm/drm_fb_helper.c |   43 ++++++++++++++++++++++++++++++++------
- 1 files changed, 36 insertions(+), 7 deletions(-)
+Yes, and that is supposed to be a no-no. The page is clearly associated 
+with the vma in question (since we are unmapping it through that vma), but 
+the vma list of 'anon_vma's doesn't actually have the one that 
+'page->mapping' points to.
 
-diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
-index 6929f5b..be0b95a 100644
---- a/drivers/gpu/drm/drm_fb_helper.c
-+++ b/drivers/gpu/drm/drm_fb_helper.c
-@@ -242,18 +242,22 @@ static int drm_fb_helper_parse_command_line(struct drm_fb_helper *fb_helper)
- 	return 0;
- }
- 
--bool drm_fb_helper_force_kernel_mode(void)
-+bool drm_fb_helper_force_kernel_mode_locked(void)
- {
- 	int i = 0;
- 	bool ret, error = false;
- 	struct drm_fb_helper *helper;
--
--	if (list_empty(&kernel_fb_helper_list))
--		return false;
-+	struct drm_mode_set *mode_set;
-+	struct drm_crtc *crtc;
- 
- 	list_for_each_entry(helper, &kernel_fb_helper_list, kernel_fb_list) {
- 		for (i = 0; i < helper->crtc_count; i++) {
--			struct drm_mode_set *mode_set = &helper->crtc_info[i].mode_set;
-+			mode_set = &helper->crtc_info[i].mode_set;
-+			crtc = helper->crtc_info[i].mode_set.crtc;
-+
-+			if (!crtc->enabled)
-+				continue;
-+
- 			ret = drm_crtc_helper_set_config(mode_set);
- 			if (ret)
- 				error = true;
-@@ -262,12 +266,37 @@ bool drm_fb_helper_force_kernel_mode(void)
- 	return error;
- }
- 
-+bool drm_fb_helper_force_kernel_mode(void)
-+{
-+	bool ret;
-+	struct drm_device *dev;
-+	struct drm_fb_helper *helper;
-+	struct drm_mode_set *mode_set;
-+
-+	if (list_empty(&kernel_fb_helper_list)) {
-+		DRM_DEBUG_KMS("no fb helper list??\n");
-+		return false;
-+	}
-+
-+	/* Get the DRM device */
-+	helper = list_first_entry(&kernel_fb_helper_list,
-+				  struct drm_fb_helper,
-+				  kernel_fb_list);
-+	mode_set = &helper->crtc_info[0].mode_set;
-+	dev = mode_set->crtc->dev;
-+
-+	mutex_lock(&dev->mode_config.mutex);
-+	ret = drm_fb_helper_force_kernel_mode_locked();
-+	mutex_unlock(&dev->mode_config.mutex);
-+
-+	return ret;
-+}
-+
- int drm_fb_helper_panic(struct notifier_block *n, unsigned long ununsed,
- 			void *panic_str)
- {
- 	DRM_ERROR("panic occurred, switching back to text console\n");
--	return drm_fb_helper_force_kernel_mode();
--	return 0;
-+	return drm_fb_helper_force_kernel_mode_locked();
- }
- EXPORT_SYMBOL(drm_fb_helper_panic);
- 
--- 
-1.6.6.1
+And that, in turn, means that we've lost sight of the 'page->mapping' 
+anon_vma, and THAT in turn means that it could well have been free'd as 
+being no longer referenced.
 
+And if it was free'd, it could be re-allocated as something else (after 
+the RCU grace period), and that directly explains your oops.
 
+> By the way, I completely understand when you say that your head hurts
+> from looking at this :).
+
+Well, I have to say that I'm happy I've spent the time on it, because this 
+way I got to learn all the new rules. It's just that I really wish I 
+wouldn't have _had_ to.
+
+Anyway, I'll have to think way more about this to see if I can come up 
+with a debugging patch that shows more details about what actually caused 
+this to happen in the first place. But we definitely have a smoking gun.
+
+		Linus
