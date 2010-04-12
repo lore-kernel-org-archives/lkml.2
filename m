@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461Ab0DLUbV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 16:31:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16742 "EHLO mx1.redhat.com"
+	id S1753859Ab0DLUcS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 16:32:18 -0400
+Received: from www.tglx.de ([62.245.132.106]:48751 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753670Ab0DLUbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 16:31:19 -0400
-Subject: Re: [PATCH 1/3] fbmem: fix aperture overlapping check
-From: Dave Airlie <airlied@redhat.com>
-To: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: linux-fbdev@vger.kernel.org, nouveau@lists.freedesktop.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       dri-devel <dri-devel@lists.freedesktop.org>,
-       Peter Jones <pjones@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20100412113438.GB2789@joi.lan>
-References: <1270929334-3742-1-git-send-email-marcin.slusarz@gmail.com>
-	 <1271030068.3554.1.camel@localhost>  <20100412113438.GB2789@joi.lan>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Apr 2010 06:28:21 +1000
-Message-ID: <1271104101.5726.3.camel@t60prh>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752982Ab0DLUcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 16:32:16 -0400
+Date: Mon, 12 Apr 2010 22:32:11 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stefan Agner <stefan@agner.ch>
+cc: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: I attached a test module to reproduce this bug. Does I miss
+ something in my code or is there a bug?
+In-Reply-To: <20100412182325.161358ntday18s1o@limpopo.deheime.ch>
+Message-ID: <alpine.LFD.2.00.1004122207300.18009@localhost.localdomain>
+References: <20100412182325.161358ntday18s1o@limpopo.deheime.ch>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-04-12 at 13:34 +0200, Marcin Slusarz wrote:
-> On Mon, Apr 12, 2010 at 09:54:28AM +1000, Dave Airlie wrote:
-> > On Sat, 2010-04-10 at 21:55 +0200, marcin.slusarz@gmail.com wrote:
-> > > fb_do_apertures_overlap is returning wrong value when one aperture
-> > > is completely whithin the other. Add generic ranges_overlap macro
-> > > (probably kernel.h candidate) and use it here.
-> > > 
-> > 
-> > That doesn't seem right.
-> > 
-> > The rules are:
-> > 
-> > the generic aperture has to be equal or smaller than the hw aperture,
-> > otherwise the generic driver will be trashing random hw pieces on the
-> > machine.
+Stefan,
 
-> Why "it has to"? Why generic aperture can't start one byte before hw?
+please use short and descriptive subject lines. "I attached a test
+module to reproduce this bug ..." does not tell anything.
 
-Think about how it works a bit more, the answer is obvious.
+On Mon, 12 Apr 2010, Stefan Agner wrote:
 
-The hw aperture is defined by the actual hardware, not by the OS or my
-code. The PCI apertures are well defined. Now for a generic driver like
-vesa or offb to access the hardware it needs to access the hw apertures.
+> Unable to handle kernel paging request at kthread_should_stop
 
-It can't go accessing one byte before the hw aperture, as that will
-crash the machine, or write to some other devices hw.
+That would have been the real subject line :)
+ 
+> I attached a test module to reproduce this bug.  Does I miss something in my
+> code or is there a bug?
 
+There are several bugs in your code :)
+
+> static int runloop(void *unused)
+> {
 > 
-> > So with that in mind, the check makes sure the generic aperture starts
-> > somewhere inside the hw aperture, which the test clearly gets right.
+> 	int ret;
 > 
-> So your only objection is that it's impossible with the current code?
+> 	/* Daemonize */
+> 	daemonize(MODULE_NAME);
+
+ Do not call daemonize() for a kthread created with kthread_create().
+ That was necessary for kthreads created with kernel_thread.
+
+> 	/* Allow SIGTERM signal */
+> 	allow_signal(SIGTERM);
+
+ Why do you want signals here ?
+
+> 	/* Calculate first shot */
+> 	now = ktime_get();
+> 	thread_next = ktime_add_us(now, 500);
 > 
-> > Have you got a pointer to a machine where it fails?
+> 	do {
+> 		set_current_state(TASK_UNINTERRUPTIBLE);
+> 		ret = schedule_hrtimeout(&thread_next, HRTIMER_MODE_ABS);
+> 		if(ret == -EINTR)
+> 		{
+
+  That EINTR can never happen. You set the task to
+  TASK_UNINTERRUPTIBLE state, so it cannot be woken up by a signal.
+	
+> int __init init_test_module(void)
+> {
+> 	struct sched_param param = { .sched_priority = THREAD_PRIORITY };
 > 
-> No, it failed with an artifical test while I was working on vga16fb handoff
-> (unfinished).
+> 	/* Kernel Thread erzeugen */
+> 	if(thread == NULL)
+> 		thread = kthread_create((void *)&runloop, NULL, "testthread");
 
-You won't be able to make this work for vga16fb from what I can see
-since it access 0xa000 directly, not via any of the defined apertures
-that vesafb/offb use. vga16fb will need a different approach I suspect.
+ The init code is called once, so no need to check for thread == NULL
+ before calling kthread_create().
 
-Dave.
+ But you miss to check thread _after_ the call ....
 
+> 	// Realtime scheduler
+> 	sched_setscheduler(thread, THREAD_SCHEDULER, &param);
 
+ Scheduler settings should happen in the thread.
+
+> 	wake_up_process(thread);
+
+ Simply use kthread_run(....), which implies kthread_create() and
+ wake_up_process().
+
+Thanks,
+
+	tglx
