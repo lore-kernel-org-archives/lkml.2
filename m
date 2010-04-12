@@ -1,125 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab0DLM44 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 08:56:56 -0400
-Received: from bamako.nerim.net ([62.4.17.28]:57112 "EHLO bamako.nerim.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750878Ab0DLM4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 08:56:54 -0400
-Date: Mon, 12 Apr 2010 14:56:50 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Nicolas Boichat <nicolas@boichat.ch>
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
-       linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [PATCH]BUG FIX: hwmon applesmc.c add iMac9,  1 and
-  MacBookPro2, 2 to fix bug 14429
-Message-ID: <20100412145650.76b1cf19@hyperion.delvare>
-In-Reply-To: <4BC31427.3000200@boichat.ch>
-References: <1271022202-4348-1-git-send-email-justinmattock@gmail.com>
-	<20100412094541.21910420@hyperion.delvare>
-	<4BC31427.3000200@boichat.ch>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752080Ab0DLNEN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 09:04:13 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:51805 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296Ab0DLNEL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 09:04:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=vDhth9Zzdbf+R4Ere8Qb6yaZVU3XCSlH5Vbk5oz+MbeoaVp9LxYEWZybQg2MGOiB5O
+         FAlFD5ZdyGRAI52k3TTqAkvl/O6CPWc+0Ir7NcljIWBPlsVjJ0hp21cBRsUZU/Z4b8Py
+         vqDwkDbcOcg/lbHfvaPyKhdg8Jlmg3Cu35trc=
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: jens.axboe@oracle.com, hch@infradead.org,
+       Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: [PATCH 0/4] blkdev: blkdev_issue_fn cleanups v2
+Date: Mon, 12 Apr 2010 17:03:53 +0400
+Message-Id: <1271077437-7921-1-git-send-email-dmonakhov@openvz.org>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Apr 2010 20:37:59 +0800, Nicolas Boichat wrote:
-> Hi Jean,
-> 
-> On 04/12/2010 03:45 PM, Jean Delvare wrote:
-> > Hi Justin,
-> >
-> > On Sun, 11 Apr 2010 14:43:22 -0700, Justin P. Mattock wrote:
-> >> This patch adds the iMac9,1 and the MacBookPro2,2
-> >> temperature sensors to hwmon applesmc.c to fix bug entry:
-> >> https://bugzilla.kernel.org/show_bug.cgi?id=14429
-> >
-> > Nicely filled under component IA64, no surprise I didn't see it. I've
-> > just fixed it.
-> >
-> >> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
-> >> ---
-> >>   drivers/hwmon/applesmc.c |   18 ++++++++++++++++++
-> >>   1 files changed, 18 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-> >> index c1605b5..5e762ac 100644
-> >> --- a/drivers/hwmon/applesmc.c
-> >> +++ b/drivers/hwmon/applesmc.c
-> >> @@ -142,6 +142,12 @@ static const char *temperature_sensors_sets[][41] = {
-> >>   	  "TM1S", "TM2P", "TM2S", "TM3S", "TM8P", "TM8S", "TM9P", "TM9S",
-> >>   	  "TN0C", "TN0D", "TN0H", "TS0C", "Tp0C", "Tp1C", "Tv0S", "Tv1S",
-> >>   	  NULL },
-> >> +/* Set 17: iMac9,1 */
-> >> +	{ "TA0P", "TC0D", "TC0H", "TC0P", "TG0D", "TG0H", "TH0P", "TL0P",
-> >> +	  "TN0D", "TN0H", "TN0P", "TO0P", "Tm0P", "Tp0P", NULL },
-> >> +/* Set 18: MacBookPro2,2 */
-> >> +	{ "TB0T", "TC0D", "TC0P", "TG0H", "TG0P", "TG0T", "TM0P", "TTF0",
-> >> +	  "Th0H", "Th1H", "Tm0P", "Ts0P", NULL },
-> >>   };
-> >>
-> >>   /* List of keys used to read/write fan speeds */
-> >> @@ -1350,6 +1356,10 @@ static __initdata struct dmi_match_data applesmc_dmi_data[] = {
-> >>   	{ .accelerometer = 1, .light = 1, .temperature_set = 15 },
-> >>   /* MacPro3,1: temperature set 16 */
-> >>   	{ .accelerometer = 0, .light = 0, .temperature_set = 16 },
-> >> +/* iMac9,1: light sensor only, temperature set 17 */
-> >> +	{ .accelerometer = 0, .light = 0, .temperature_set = 17 },
-> >> +/* MacBookPro2,2: accelerometer, backlight and temperature set 18 */
-> >> +	{ .accelerometer = 1, .light = 1, .temperature_set = 18 },
-> >>   };
-> >>
-> >>   /* Note that DMI_MATCH(...,"MacBook") will match "MacBookPro1,1".
-> >> @@ -1375,6 +1385,10 @@ static __initdata struct dmi_system_id applesmc_whitelist[] = {
-> >>   	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
-> >>   	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro3") },
-> >>   		&applesmc_dmi_data[9]},
-> >> +	{ applesmc_dmi_match, "Apple MacBookPro2,2", {
-> 
-> I would put spaces in the name, to be consistent with the rest of the 
-> list, that is: "Apple MacBook Pro 2,2".
-> 
-> >> +	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple Computer, Inc."),
-> >> +	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro2,2") },
-> >> +		&applesmc_dmi_data[18]},
-> >>   	{ applesmc_dmi_match, "Apple MacBook Pro", {
-> >>   	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
-> >>   	  DMI_MATCH(DMI_PRODUCT_NAME,"MacBookPro") },
-> >> @@ -1415,6 +1429,10 @@ static __initdata struct dmi_system_id applesmc_whitelist[] = {
-> >>   	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
-> >>   	  DMI_MATCH(DMI_PRODUCT_NAME, "MacPro") },
-> >>   		&applesmc_dmi_data[4]},
-> >> +	{ applesmc_dmi_match, "Apple iMac9,1", {
-> 
-> Same here: "Apple iMac 9,1".
+- Convert all blkdev_issue_xxx function to common set of flags
+- move common functions to block/blk-lib.c
+- Add generic zeroout helper
 
-Both updated, thanks.
-
-> >> +	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple Inc."),
-> >> +	  DMI_MATCH(DMI_PRODUCT_NAME, "iMac9,1") },
-> >> +		&applesmc_dmi_data[17]},
-> >>   	{ applesmc_dmi_match, "Apple iMac 8", {
-> >>   	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
-> >>   	  DMI_MATCH(DMI_PRODUCT_NAME, "iMac8") },
-> >
-> > Patch applied, queued for 2.6.34, thanks.
-> >
-> > Nicolas, as the maintainer of this driver, I would like to get your
-> > ack, at least.
-> 
-> Apart from that, it looks fine to me, I haven't compiled nor tested it 
-> though (I don't own any Apple hardware anymore, maybe I should remove 
-> myself from the maintainer list...).
-
-Please do if you have lost interest. No maintainer is better than an
-unresponsive/uninterested maintainer.
-
-> Acked-by: Nicolas Boichat <nicolas@boichat.ch>
-
-Thanks.
-
--- 
-Jean Delvare
+changes from V1
+Christoph is about to change discard memory payload allocation logic
+so discard cleanups are no longer necessary.
