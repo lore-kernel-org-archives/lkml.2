@@ -1,41 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420Ab0DLONg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 10:13:36 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:61702 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776Ab0DLONf (ORCPT
+	id S1751651Ab0DLOUv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 10:20:51 -0400
+Received: from mail2.ruggedcom.com ([204.50.148.11]:25238 "EHLO
+	mail2.ruggedcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471Ab0DLOUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 10:13:35 -0400
-Message-ID: <4BC32A58.2040500@ru.mvista.com>
-Date: Mon, 12 Apr 2010 18:12:40 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	Mon, 12 Apr 2010 10:20:49 -0400
+X-Greylist: delayed 319 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Apr 2010 10:20:49 EDT
+Message-ID: <4BC32B00.1030600@ruggedcom.com>
+Date: Mon, 12 Apr 2010 10:15:28 -0400
+From: Michael Barkowski <michaelbarkowski@ruggedcom.com>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 47/64] ide: add drive->dma_mode field
-References: <20100118171349.14623.90030.sendpatchset@localhost> <20100118172035.14623.50000.sendpatchset@localhost>
-In-Reply-To: <20100118172035.14623.50000.sendpatchset@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Krzysztof Halasa <khc@pm.waw.pl>
+CC: "David S. Miller" <davem@davemloft.net>, Julia Lawall <julia@diku.dk>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: hdlc_ppp: why no detach()?
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Apr 2010 14:15:31.0496 (UTC) FILETIME=[9C1B7280:01CADA4A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bartlomiej Zolnierkiewicz wrote:
-> From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> Subject: [PATCH] ide: add drive->dma_mode field
->
-> Add dma_mode field to ide_drive_t matching dma_mode field used in
-> struct ata_device.
->
-> The validity of the field is restricted to ->dma_pio_mode method
-> only currently in IDE subsystem.
->   
+Hello Krzyztof,
 
-   I don't see such method even in your tree -- perhaps you meant 
-set_dma_mode()?
+I am looking at your hdlc_ppp code and I don't understand: why is there
+not the equivalent of fr_detach() in there?
 
-MBR, Sergei
+pc8300_drv:cpc_remove_one() frees netdevs quite confidently but I wonder
+how it can be so sure that there are not skbs in hdlc_ppp's tx_queue
+associated with those devices before freeing them....
+
+Even if you wanted to switch a device from PPP to Frame Relay, I don't
+see the method right now.  If I may ask, please, what am I missing?
+
+If you agree there is a need for detach(), I would be happy to work on
+it and make a submission.
+
+thanks for your time,
+
+-- 
+Michael Barkowski
+RuggedCom, Inc.
 
