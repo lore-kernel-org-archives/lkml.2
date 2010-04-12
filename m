@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660Ab0DLKeJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 06:34:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2675 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753445Ab0DLKeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 06:34:05 -0400
-Message-ID: <4BC2F7E2.7020309@redhat.com>
-Date: Mon, 12 Apr 2010 18:37:22 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
+	id S1753646Ab0DLKfm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 06:35:42 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:34390 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753283Ab0DLKfl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 06:35:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=SN5IqOGtHghLelmSFxcnBCwhW0jKc8AEM9bjYWm/Jc4lpG7SlggZgkEYBXo2r6rERN
+         yo76pL9VhS85vU7Hi9hSHGgcNFOJ83eDp4JvjCccuI1J4PelIaHSL2Na2NPXK9h3LSkB
+         LqSRyBoqG6MMzC1Kb+y8+u3PT4wIyRJg5dGQU=
+Message-ID: <4BC2F773.4050906@gmail.com>
+Date: Mon, 12 Apr 2010 12:35:31 +0200
+From: Till Kamppeter <till.kamppeter@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100404 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Stephen Hemminger <shemminger@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       bridge@lists.linux-foundation.org, Andy Gospodarek <gospo@redhat.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Jeff Moyer <jmoyer@redhat.com>,
-       Matt Mackall <mpm@selenic.com>, bonding-devel@lists.sourceforge.net,
-       Jay Vosburgh <fubar@us.ibm.com>, David Miller <davem@davemloft.net>
-Subject: Re: [v3 Patch 2/3] bridge: make bridge support netpoll
-References: <20100408062234.4499.17042.sendpatchset@localhost.localdomain>	<20100408062246.4499.5670.sendpatchset@localhost.localdomain> <20100408083710.2b61ee44@nehalam>
-In-Reply-To: <20100408083710.2b61ee44@nehalam>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Luis R. Rodriguez" <mcgrof@gmail.com>
+CC: "Theodore Ts'o" <tytso@mit.edu>, Greg KH <greg@kroah.com>,
+       Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+       linux-kernel@vger.kernel.org,
+       linux-wireless <linux-wireless@vger.kernel.org>,
+       Witold Sowa <witold.sowa@gmail.com>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: Google Summer of Code 2010 - Assigned all unassigned kernel 
+ applications to Grant Likely
+References: <4BC242BD.7060405@gmail.com> <t2u43e72e891004120057w55fac67fk433f92920a71d787@mail.gmail.com>
+In-Reply-To: <t2u43e72e891004120057w55fac67fk433f92920a71d787@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Hemminger wrote:
->> Index: linux-2.6/net/bridge/br_forward.c
->> ===================================================================
->> --- linux-2.6.orig/net/bridge/br_forward.c
->> +++ linux-2.6/net/bridge/br_forward.c
->> @@ -15,6 +15,7 @@
->>  #include <linux/slab.h>
->>  #include <linux/kernel.h>
->>  #include <linux/netdevice.h>
->> +#include <linux/netpoll.h>
->>  #include <linux/skbuff.h>
->>  #include <linux/if_vlan.h>
->>  #include <linux/netfilter_bridge.h>
->> @@ -50,7 +51,13 @@ int br_dev_queue_push_xmit(struct sk_buf
->>  		else {
->>  			skb_push(skb, ETH_HLEN);
->>  
->> -			dev_queue_xmit(skb);
->> +#ifdef CONFIG_NET_POLL_CONTROLLER
->> +			if (skb->dev->priv_flags & IFF_IN_NETPOLL) {
->> +				netpoll_send_skb(skb->dev->npinfo->netpoll, skb);
->> +				skb->dev->priv_flags &= ~IFF_IN_NETPOLL;
->> +			} else
->> +#endif
-> 
-> There is no protection on dev->priv_flags for SMP access.
-> It would better bit value in dev->state if you are using it as control flag.
-> 
-> Then you could use 
-> 			if (unlikely(test_and_clear_bit(__IN_NETPOLL, &skb->dev->state)))
-> 				netpoll_send_skb(...)
-> 
-> 
+On 04/12/2010 09:57 AM, Luis R. Rodriguez wrote:
+> Sorry for the delay, I was at a wedding at another state, back home
+> now and just signed up.
 
-Hmm, I think we can't use ->state here, it is not for this kind of purpose,
-according to its comments.
+I have approved you now, so you can remove some mentoring load from 
+Grant by proposing yourself or giving negative scores.
 
-Also, I find other usages of IFF_XXX flags of ->priv_flags are also using
-&, | to set or clear the flags. So there must be some other things preventing
-the race...
-
-
-Thanks.
+    Till
