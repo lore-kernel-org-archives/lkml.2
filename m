@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751418Ab0DLMZe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 08:25:34 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58598 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065Ab0DLMZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 08:25:33 -0400
-Message-ID: <4BC310A0.3090005@cn.fujitsu.com>
-Date: Mon, 12 Apr 2010 20:22:56 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1751577Ab0DLMZq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 08:25:46 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55284 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab0DLMZo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 08:25:44 -0400
+Date: Mon, 12 Apr 2010 13:24:33 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: David VomLehn <dvomlehn@cisco.com>, to@dvomlehn-lnx2.corp.sa.net,
+       "linux-arch@vger.kernel.org"@cisco.com, linux-arch@vger.kernel.org,
+       akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+       maint_arch@dvomlehn-lnx2.corp.sa.net
+Subject: Re: [PATCH 1/23] Make register values available to panic notifiers
+Message-ID: <20100412122433.GB28208@flint.arm.linux.org.uk>
+Mail-Followup-To: Heiko Carstens <heiko.carstens@de.ibm.com>,
+	David VomLehn <dvomlehn@cisco.com>, to@dvomlehn-lnx2.corp.sa.net,
+	"linux-arch@vger.kernel.org"@cisco.com, linux-arch@vger.kernel.org,
+	akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+	maint_arch@dvomlehn-lnx2.corp.sa.net
+References: <20100412060609.GA25273@dvomlehn-lnx2.corp.sa.net> <20100412120330.GA2566@osiris.boeblingen.de.ibm.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/6] KVM MMU: fix kvm_mmu_zap_page() and its calling path
-References: <4BC2D2E2.1030604@cn.fujitsu.com> <4BC2D345.100@cn.fujitsu.com> <4BC2D8D6.6030306@redhat.com> <4BC2DFA0.6000609@cn.fujitsu.com> <4BC2E2FF.9020005@redhat.com> <4BC2E654.7050002@cn.fujitsu.com> <4BC2F536.70808@redhat.com>
-In-Reply-To: <4BC2F536.70808@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100412120330.GA2566@osiris.boeblingen.de.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 12, 2010 at 02:03:30PM +0200, Heiko Carstens wrote:
+> Wouldn't it be much easier to implement panic with an illegal op and let
+> the exception handler set up the pt regs structure instead? Just like some
+> architectures do that already for warnings.
+> Have a look at lib/bug.c and at various arch/<...>/include/asm/bug.h.
+> BUG_FLAG_PANIC would do the trick.
 
+You also have the problem that there are panic() statements before
+exception vectors are setup.
 
-Avi Kivity wrote:
-> On 04/12/2010 12:22 PM, Xiao Guangrong wrote:
->> Hi Avi,
->>
->> Avi Kivity wrote:
+Eg, using lmb, you might want to allocate a page for a L2 page table
+so you can setup the exception vectors, but the lmb allocator has a
+panic statement which will be used on failure to allocate a page.
 
-> But kvm_mmu_zap_page() will only destroy sp == tpos == pos; n points at
-> pos->next already, so it's safe.
-> 
+The result is that you don't know why you didn't boot since there's no
+diagnostics from the kernel.
 
-kvm_mmu_zap_page(sp) not only zaps sp but also zaps all sp's unsync children
-pages, if n is just sp's unsyc child, just at the same hlist and just behind sp,
-it will crash. :-)
+At least with the current setup, merely (re)directing the kernel printk
+output results in something you can read.
+
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
