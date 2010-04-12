@@ -1,91 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210Ab0DLPRU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 11:17:20 -0400
-Received: from sh.osrg.net ([192.16.179.4]:54592 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751840Ab0DLPRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 11:17:18 -0400
-Date: Tue, 13 Apr 2010 00:16:40 +0900 (JST)
-Message-Id: <20100413.001640.64700206.ryusuke@osrg.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Subject: [GIT PULL] nilfs2 fixes for 2.6.34
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 13 Apr 2010 00:16:41 +0900 (JST)
+	id S1752331Ab0DLPR6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 11:17:58 -0400
+Received: from mail-iw0-f197.google.com ([209.85.223.197]:46681 "EHLO
+	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967Ab0DLPR5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 11:17:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=VFVdwmtx5TeCEzkRXnpKKGGaE+zF2trTx9rM6v7/sgIMAouWPnmafw8urVaX2+jKWb
+         UAAM0kgRWQ5zT/8z+gk7bUTFO475Ejkbs7SrdxxMgsLMQnM5M7Za1ZSkx3wfeIEQtA0w
+         acqXw7TMD9SzxTm8hppbWpmflQmjYCx5dw1EI=
+MIME-Version: 1.0
+In-Reply-To: <1271083207.4807.18.camel@twins>
+References: <20100409191425.GB10780@a1.tnic>
+	 <20100410003110.GI28964@cmpxchg.org>
+	 <alpine.LFD.2.00.1004091730130.3558@i5.linux-foundation.org>
+	 <20100410072714.GA9246@liondog.tnic> <20100410112639.GA24708@a1.tnic>
+	 <alpine.LFD.2.00.1004100821340.3558@i5.linux-foundation.org>
+	 <20100410163828.GA25579@a1.tnic>
+	 <alpine.LFD.2.00.1004100947400.3558@i5.linux-foundation.org>
+	 <alpine.LFD.2.00.1004101101180.3558@i5.linux-foundation.org>
+	 <1271083207.4807.18.camel@twins>
+Date: Tue, 13 Apr 2010 00:17:56 +0900
+Message-ID: <r2i28c262361004120817hbd161cd2k4476ea3a6ad3de6a@mail.gmail.com>
+Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas 
+	of a mergeable VMA
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Borislav Petkov <bp@alien8.de>, Johannes Weiner <hannes@cmpxchg.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Apr 12, 2010 at 11:40 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Sat, 2010-04-10 at 11:21 -0700, Linus Torvalds wrote:
+>>
+>
+>> Ho humm.
+>>
+>> Maybe I'm crazy, but something started bothering me. And I started
+>> wondering: when is the 'page->mapping' of an anonymous page actually
+>> cleared?
+>>
+>> The thing is, the mapping of an anonymous page is actually cleared only
+>> when the page is _freed_, in "free_hot_cold_page()".
+>>
+>> Now, let's think about that. And in particular, let's think about how that
+>> relates to the freeing of the 'anon_vma' that the page->mapping points to.
+>>
+>> The way the anon_vma is freed is when the mapping is torn down, and we do
+>> roughly:
+>>
+>>       tlb = tlb_gather_mmu(mm,..)
+>>       ..
+>>       unmap_vmas(&tlb, vma ..
+>>       ..
+>>       free_pgtables()
+>>       ..
+>>       tlb_finish_mmu(tlb, start, end);
+>>
+>> and we actually unmap all the pages in "unmap_vmas()", and then _after_
+>> unmapping all the pages we do the "unlink_anon_vmas(vma);" in
+>> "free_pgtables()". Fine so far - the anon_vma stay around until after the
+>> page has been happily unmapped.
+>>
+>> But "unmapped all the pages" is _not_ actually the same as "free'd all the
+>> pages". The actual _freeing_ of the page happens generally in
+>> tlb_finish_mmu(), because we can free the page only after we've flushed
+>> any TLB entries.
+>>
+>> So what we have in that tlb_gather structure is a list of _pending_ pages
+>> to be freed, while we already actually free'd the anon_vmas earlier!
+>>
+>> Now, the thing is, tlb_gather_mmu() begins a preempt-safe region (because
+>> we use a per-cpu variable), but as far as I can tell it is _not_ an
+>> RCU-safe region.
+>>
+>> So I think we might actually get a real RCU freeing event while this all
+>> happens. So now the 'anon_vma' that 'page->mapping' points to has not just
+>> been released back to the SLUB caches, the page itself might have been
+>> released too.
+>>
+>> I dunno. Does the above sound at all sane? Or am I just raving?
+>>
+>> Something hacky like the above might fix it if I'm not just raving. I
+>> really might be missing something here.
+>
+> Right, so unless you have CONFIG_TREE_PREEMPT_RCU=y, the preempt-disable
+> == RCU read lock assumption does hold.
 
-please pull from:
+Indeed.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
+>
+> But even with your patch it doesn't close all holes because while
+> zap_pte_range() can remove the last mapcount of the page, the
+> page_remove_tlb() et al. don't need to be the last use count of the
+> page.
+>
+> Concurrent reclaim/gup/whatever could still have a count out on the page
+> delaying the actual free beyond the tlb gather RCU section.
 
-to grab the following fixes, only containing trivial ones.
+anon_vma lock is just valid in case of page_mapped.
+if reclaim/gup/whatever want to use anon_vma, it should check with page_mapped.
+And last put_page doesn't touch anon_vma for freeing the page so I
+think it's not a problem. Do I miss something?
 
-Thanks!
+>
+> This also complicates the whole page_lock_anon_vma() thing, so it would
+> be nice to be able to remove this race and clear page->mapping in
+> page_remove_rmap().
+>
 
-Ryusuke Konishi
---
-The following changes since commit 2eaa9cfdf33b8d7fb7aff27792192e0019ae8fc6:
-  Linus Torvalds (1):
-        Linux 2.6.34-rc3
+BTW, I totally agree with you.
+Now anon_vma is very complicated.
+SLAB_DESTROY_BY_RCU, vma merge, when page->mapping is cleared,
+anon_vma_chain and so on.. :(
 
-Li Hong (2):
-      nilfs2: fix a wrong type conversion in nilfs_ioctl()
-      nilfs2: Remove an uninitialization warning in nilfs_btree_propagate_v()
 
-Ryusuke Konishi (1):
-      nilfs2: fix typo "numer" -> "number" in alloc.c
-
- fs/nilfs2/alloc.c |    2 +-
- fs/nilfs2/btree.c |    2 +-
- fs/nilfs2/ioctl.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/fs/nilfs2/alloc.c b/fs/nilfs2/alloc.c
-index 3f959f1..c2a1387 100644
---- a/fs/nilfs2/alloc.c
-+++ b/fs/nilfs2/alloc.c
-@@ -425,7 +425,7 @@ void nilfs_palloc_abort_alloc_entry(struct inode *inode,
- 	bitmap = bitmap_kaddr + bh_offset(req->pr_bitmap_bh);
- 	if (!nilfs_clear_bit_atomic(nilfs_mdt_bgl_lock(inode, group),
- 				    group_offset, bitmap))
--		printk(KERN_WARNING "%s: entry numer %llu already freed\n",
-+		printk(KERN_WARNING "%s: entry number %llu already freed\n",
- 		       __func__, (unsigned long long)req->pr_entry_nr);
- 
- 	nilfs_palloc_group_desc_add_entries(inode, group, desc, 1);
-diff --git a/fs/nilfs2/btree.c b/fs/nilfs2/btree.c
-index 7cdd98b..76c38e3 100644
---- a/fs/nilfs2/btree.c
-+++ b/fs/nilfs2/btree.c
-@@ -1879,7 +1879,7 @@ static int nilfs_btree_propagate_v(struct nilfs_btree *btree,
- 				   struct nilfs_btree_path *path,
- 				   int level, struct buffer_head *bh)
- {
--	int maxlevel, ret;
-+	int maxlevel = 0, ret;
- 	struct nilfs_btree_node *parent;
- 	struct inode *dat = nilfs_bmap_get_dat(&btree->bt_bmap);
- 	__u64 ptr;
-diff --git a/fs/nilfs2/ioctl.c b/fs/nilfs2/ioctl.c
-index 313d0a2..c446017 100644
---- a/fs/nilfs2/ioctl.c
-+++ b/fs/nilfs2/ioctl.c
-@@ -648,7 +648,7 @@ static int nilfs_ioctl_get_info(struct inode *inode, struct file *filp,
- long nilfs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- {
- 	struct inode *inode = filp->f_dentry->d_inode;
--	void __user *argp = (void * __user *)arg;
-+	void __user *argp = (void __user *)arg;
- 
- 	switch (cmd) {
- 	case NILFS_IOCTL_CHANGE_CPMODE:
+-- 
+Kind regards,
+Minchan Kim
