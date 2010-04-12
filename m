@@ -1,69 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045Ab0DLRWj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 13:22:39 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:39511 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009Ab0DLRWi (ORCPT
+	id S1752365Ab0DLRfZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 13:35:25 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:57767 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776Ab0DLRfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 13:22:38 -0400
-Date: Mon, 12 Apr 2010 19:22:33 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Daniel Mack <daniel@caiaq.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Andi Kleen <andi@firstfloor.org>,
-       Pedro Ribeiro <pedrib@gmail.com>, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, Greg KH <gregkh@suse.de>,
-       alsa-devel@alsa-project.org, linux-usb@vger.kernel.org
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-Message-ID: <20100412172233.GR18855@one.firstfloor.org>
-References: <20100412162947.GQ18855@one.firstfloor.org> <Pine.LNX.4.44L0.1004121252310.1702-100000@iolanthe.rowland.org> <20100412171507.GB30801@buzzloop.caiaq.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100412171507.GB30801@buzzloop.caiaq.de>
-User-Agent: Mutt/1.4.2.2i
+	Mon, 12 Apr 2010 13:35:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 6/6] procfs: Kill the bkl in ioctl
+Date: Mon, 12 Apr 2010 19:34:17 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
+References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <20100410152813.GE5204@nowhere> <20100411130341.GA6353@infradead.org>
+In-Reply-To: <20100411130341.GA6353@infradead.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004121934.18307.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX18Bw9eYlBvZI78xj5FPey8xdHkKq/3iU0mHtcp
+ ohYQaQFjo6uaQ9VLWNOmDY+o3PPVMoZ4f6FDmXCbPSLyz+9Jdb
+ Zd94Bwb8Q2EpQG5WGnjIQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 12, 2010 at 07:15:07PM +0200, Daniel Mack wrote:
-> On Mon, Apr 12, 2010 at 12:57:16PM -0400, Alan Stern wrote:
-> > On Mon, 12 Apr 2010, Andi Kleen wrote:
-> > > Hmm, thanks. But things must still go wrong somewhere, otherwise
-> > > the GFP_DMA32 wouldn't be needed?
+On Sunday 11 April 2010, Christoph Hellwig wrote:
+> On Sat, Apr 10, 2010 at 05:28:16PM +0200, Frederic Weisbecker wrote:
+> > So you mean we should attribute explicit default_llseek to the evil
+> > places instead of explicit generic_file_llseek in the safe ones?
+> > That's not a bad idea as it would result in much less changes.
 > > 
-> > Indeed, something must go wrong somewhere.  Since Daniel's patch fixed
-> > the problem by changing the buffer from a streaming mapping to a
-> > coherent mapping, it's logical to assume that bad DMA addresses have
-> > something to do with it.  But we don't really know for certain.
+> > The problem happens the day you switch to generic_file_llseek() as the
+> > new default llseek(), how do you prove that all remaining fops
+> > that don't implement .llseek don't use the bkl? There will be
+> > hundreds of them and saying "we've looked all of them and they don't
+> > need it" will be a scary justification.
+> > 
+> > On the opposite, attributing explicit generic_file_llseek or
+> > non_seekable_open on the safe places and default_llseek on
+> > the dozens of others doubtful places is easier to get a
+> > safe conclusion.
+> > 
+> > But yeah we should try, at least attributing explicit
+> > default_llseek won't harm, quite the opposite.
 > 
-> Given that - at least for non-64-aware host controllers - we want memory
-> <4GB anyway for USB transfers to avoid DMA bouncing buffers, maybe we
-> should just do that and fix the problem at this level? I already started
-> to implement usb_[mz]alloc() and use it in some USB drivers.
-
-If the area is not mapped correctly it will fail in other situations,
-e.g. with an IOMMU active or in virtualized setups. So the bug
-has to be eventually tracked down.
-
+> Note that an lssek that actually does something is the wrong default,
+> even if we have it that way currently.  If the default is changed it
+> should be changed to give the semantics that nonseekable_open()
+> gives us.  Given that you guys are so motivated to do something in
+> this area it might be a good idea to do this in a few simple steps:
 > 
-> But even after all collected wisdom about memory management in this
-> thread, I'm still uncertain of how to get suitable memory. Using
-> dma_alloc_coherent() seems overdone as that type of memory is not
-> necessarily needed and might be a costly good on some platforms. And as
-> fas as I understand, kmalloc(GFP_DMA) does not avoid memory >4GB.
+>  - make sure every file operation either has a ->llseek instead or
+>    calls nonseekable_open from ->open
 
-It does actually, but it only has 16MB to play with. Don't use it.
-If anything use __get_free_pages(GFP_DMA32), but it's a x86-64 
-specific code.
+I still think it would be better to always set llseek if we do that,
+even if nonseekable_open is already there. I can come up with scripts
+that check that case, but checking that the open function always
+calls nonseekable_open when it returns success is beyond my grep
+skills ;-)
 
-> Can anyone explain which is the right way to go?
+>  - remove nonseekable_open and all calls to it
+>  - switch all users of no_llseek to not set a ->llsek after auditing
+>    that there's no corner case where we want to allow pread/pwrite
+>    but not lseek, which is rather unlikely
 
-The right thing would be to define a proper interface for it.
+This parts seems fine.
 
-I had an attempt for it a couple of years ago with the mask allocator, 
-but it didn't make it into the tree.
+>  - walk through the instances now using default_llseek and chose
+>    a better implementation for this particular instance.  Often
+>    this will be just removing the the lssek method as not allowing
+>    seeks is the right thing to do for character drivers, even if it
+>    is a behaviour change from the current version which usually
+>    is the result of sloppy coding.
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+This part is really hard. While in many cases, the driver maintainer
+might know what user space is potentially opening some character
+device, it's really hard to tell for outsiders whether the behaviour
+should be no_llseek (then the default) or noop_llseek to work around
+broken user space.
+
+I think the rule set for the conversion needs to be one that can
+be done purely based on the code. How about this:
+
+For each file operation {
+	if (uses f_pos) {
+		if (same module uses BKL)
+			-> default_llseek
+		else
+			-> generic_file_llseek
+	} else {
+		if (driver maintained)
+			-> no_llseek (with maintainer ACK)
+		else
+			-> noop_llseek
+	}
+}
+
+Once that is done, we can turn the default into nonseekable
+behavior and start removing instances of explicit no_llseek
+and nonseekable_open.
+
+Should we also rename default_llseek to deprecated_llseek in the
+process, to go along with the approach for ioctl?
+
+	Arnd
