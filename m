@@ -1,104 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab0DLU7J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 16:59:09 -0400
-Received: from mga05.intel.com ([192.55.52.89]:7385 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754130Ab0DLU7G (ORCPT
+	id S1754141Ab0DLVBh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 17:01:37 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:41975 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754010Ab0DLVBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 16:59:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,192,1270450800"; 
-   d="scan'208";a="788510431"
-Date: Mon, 12 Apr 2010 13:58:37 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: Daniel Mack <daniel@caiaq.de>, alsa-devel@alsa-project.org,
-       Greg KH <gregkh@suse.de>, Takashi Iwai <tiwai@suse.de>,
-       Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-       Pedro Ribeiro <pedrib@gmail.com>, akpm@linux-foundation.org
-Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
-Message-ID: <20100412205837.GA18665@xanatos>
-References: <s5hhbnncflj.wl%tiwai@suse.de>
- <Pine.LNX.4.44L0.1004071452560.5760-100000@iolanthe.rowland.org>
- <20100408003313.GE4365@kroah.com>
- <4BBE6E57.6020600@gmail.com>
- <20100409165014.GC5184@xanatos>
- <g2u51f3faa71004091638nc383aa0ei899777c869273a22@mail.gmail.com>
- <20100410083453.GN30801@buzzloop.caiaq.de>
- <p2o51f3faa71004101002xef38c6e4z71f5a61eed7f899e@mail.gmail.com>
- <20100412185621.GA6101@xanatos>
- <x2t51f3faa71004121339j67558281mc71bfd35d929e060@mail.gmail.com>
+	Mon, 12 Apr 2010 17:01:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=RK6wl1auYnnvq8xza6X8y4IKH/CLEh1sgDxi4N73Z3dxBknqLT6WaUvcp1jPYUe4wL
+         sCWJJ6BjSukIpUd/JUSFlSMFbkR4Bx2Kue7VBlaxmhp2fyvIXOPTrGulmQ2fsEWVI/Vy
+         I6oLrurR4a9aMZRaokPYY40GMU4rK3MmBv1X4=
+Date: Mon, 12 Apr 2010 23:01:29 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jan Blunck <jblunck@suse.de>
+Cc: Jan Kara <jack@suse.cz>, tytso@mit.edu,
+       Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
+       linux-ext4@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 0/5] ext2: Preparation to remove BKL
+Message-ID: <20100412210127.GE8285@nowhere>
+References: <1271104905-8804-1-git-send-email-jblunck@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <x2t51f3faa71004121339j67558281mc71bfd35d929e060@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1271104905-8804-1-git-send-email-jblunck@suse.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 12, 2010 at 02:39:04PM -0600, Robert Hancock wrote:
-> On Mon, Apr 12, 2010 at 12:56 PM, Sarah Sharp
-> <sarah.a.sharp@linux.intel.com> wrote:
-> > On Sat, Apr 10, 2010 at 11:02:53AM -0600, Robert Hancock wrote:
-> >> On Sat, Apr 10, 2010 at 2:34 AM, Daniel Mack <daniel@caiaq.de> wrote:
-> >> > On Fri, Apr 09, 2010 at 05:38:13PM -0600, Robert Hancock wrote:
-> >> >> On Fri, Apr 9, 2010 at 10:50 AM, Sarah Sharp
-> >> >> <sarah.a.sharp@linux.intel.com> wrote:
-> >> >> > What makes you think that?  I've seen URB buffers with 64-bit DMA
-> >> >> > addresses.  I can tell when the debug polling loop runs and I look at
-> >> >> > the DMA addresses the xHCI driver is feeding to the hardware:
-> >> >> >
-> >> >> > Dev 1 endpoint ring 0:
-> >> >> > xhci_hcd 0000:05:00.0: @71a49800 01000680 00080000 00000008 00000841
-> >> >> >
-> >> >> > So the TRB at address 71a49800 is pointing to a buffer at address
-> >> >> > 0x0008000001000680.
-> >> >>
-> >> >> I'm not sure why the address would be that huge, unless it's not
-> >> >> actually a physical address, or there's some kind of remapping going
-> >> >> on?
-> >> >>
-> >> >> >
-> >> >> > If I'm setting a DMA mask wrong somewhere, or doing something else to
-> >> >> > limit the DMA to 32-bit, then please let me know.
-> >> >>
-> >> >> The DMA mask for the controller isn't being set anywhere (in the
-> >> >> version that's in Linus' current git anyway). In that case it'll
-> >> >> default to 32-bit and any DMA mappings above 4GB will need to be
-> >> >> remapped. The controller driver doesn't do the mapping itself but the
-> >> >> USB core does, passing in the controller device as the one doing the
-> >> >> DMA, so if the controller's DMA mask is set to 32-bit then the buffers
-> >> >> passed in will get remapped/bounced accordingly.
-> >> >
-> >> > So if we're seeing physical addresses in the log above, and the xHCI
-> >> > driver does not explicitly allow the USB core to use addresses above
-> >> > 4GB, why shouldn't the same thing be true as well for EHCI?
-> >> > (Which would then be exactly the case we're seeing)
-> >>
-> >> That is a bit suspicious, yes. With the DMA mask at default I don't
-> >> expect that should happen. Sarah, what kind of traffic was happening
-> >> when you saw that (bulk, isochronous, etc)?
-> >
-> > Ring 0 is the default control ring, so it must be control transfers.
-> > That's the first control transfer on the ring (and it didn't fill), so
-> > it must have come from the USB core.
-> >
-> > I was running the USB mass storage driver, and the bulk endpoint rings
-> > don't have the high 32-bits of the address set.  It mostly uses the
-> > scatter-gather interface, which calls usb_buffer_map_sg(), so that's not
-> > surprising.
+On Mon, Apr 12, 2010 at 10:41:40PM +0200, Jan Blunck wrote:
+> In this series I've collected the patches that prepare ext2 for BKL removal.
+> It consist mostly of cleanups and additionally introduces a spinlock to protect
+> some of the superblock's fields against concurrent access. I've addressed the
+> feedback kindly provided by Ogawa-san by moving the ext2_write_super() out of
+> ext2_setup_super().
 > 
-> Is this machine using an IOMMU or something which would be remapping
-> physical addresses? That address 0x0008000001000680 seems huge, I
-> don't see how it could even be a valid bus address otherwise..
+> These patches have been part of the BKL removal series that I have posted in
+> November 2009 already. Since this is more than just removing the usage of the
+> big lock I repost it separately for inclusion. This series, at least the last
+> patch that includes the s_lock, needs to be merged before Frederics bkl-removal
+> branch, if he merges the rest of my patches there.
 
-Oh, shoot, nevermind.  That TRB has a slightly different format, where
-the setup data for the control transfer is substituted for the DMA
-buffer address.  I'll have to look through my logs to see if there's any
-real 64-bit DMA addresses in there, and fix xHCI's DMA mask.
 
-Sarah Sharp
+It looks like this is all about .35 material.
+
+This is going to be hard to have a separate tree to pushdown/remove
+the bkl in the mount path if it depends on the ext2 tree.
+
+What about putting that with the fs bkl removal tree? Would that conflict
+with other changes in the ext2 tree?
+
+Thanks.
+
