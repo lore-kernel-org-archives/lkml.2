@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136Ab0DLVmk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 17:42:40 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:51470 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753702Ab0DLVmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 17:42:39 -0400
-Message-ID: <4BC393C0.2000407@epsm.fr>
-Date: Mon, 12 Apr 2010 23:42:24 +0200
-From: Didier Spaier <didier.spaier@epsm.fr>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100404)
+	id S1754180Ab0DLVpP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 17:45:15 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:60901 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753702Ab0DLVpN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 17:45:13 -0400
+Date: Mon, 12 Apr 2010 17:45:11 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>, Anton Blanchard <anton@samba.org>
+Cc: Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org
+Subject: TRACE_EVENT() declarations belong to include/trace/
+Message-ID: <20100412214511.GA2699@Krystal>
 MIME-Version: 1.0
-To: Andy Isaacson <adi@hexapodia.org>
-CC: nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-       dri-devel@lists.sf.net, Dave Airlie <airlied@linux.ie>,
-       Ben Kseggs <bskeggs@redhat.com>
-Subject: Re: [Nouveau] nouveau userspace bits for 2.6.34
-References: <20100412212203.GA2671@hexapodia.org>
-In-Reply-To: <20100412212203.GA2671@hexapodia.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 17:38:45 up 80 days, 15 min,  2 users,  load average: 0.00, 0.04,
+	0.03
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Isaacson wrote:
+Hi,
 
-> 
-> What version of libdrm-nouveau and xserver-xorg-video-nouveau do I need
-> in order to run nouveau on 2.6.34-rc3 and later?
-> 
-On Slackware 64-current using unmodified 2.6.34-rc3 with libdrm-2.4.19 and xf86-video-nouveau pulled from git commit 2462b417fc550b71f021ca9736808f8f2d1cb6f0 works well.
- >
-> What git branches should I be tracking?  What changesets add support for
-> nouveau interface version 0.0.16?
-> 
-> (I'm on Debian and Ubuntu, but building my own from git is fine.)
-> 
-Didier
+Ranting about:
+
+commit 1bf4af165050d90ea6659ffb2536ec8ca783aab5
+Author: Anton Blanchard <anton@samba.org>
+Date:   Mon Oct 26 18:47:42 2009 +0000
+
+    powerpc: tracing: Add powerpc tracepoints for interrupt entry and exit
+
+Why are there TRACE_EVENT() declarations in arch/powerpc/include/asm/trace.h for
+irq_entry/exit ?
+
+What's so special about them that they cannot be put in linux/trace/ ?
+
+I'm all for the trace_irq_entry/exit instrumentation, but I don't see any good
+in adding event declarations outside of include/trace/.
+
+Thanks,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
