@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840Ab0DLIC1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 04:02:27 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:57013 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752757Ab0DLICY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 04:02:24 -0400
-To: Colin King <colin.king@canonical.com>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Disable 4MB page tables for Atom, work around errata AAE44
-From: Andi Kleen <andi@firstfloor.org>
-References: <1269271251-19775-1-git-send-email-colin.king@canonical.com>
-Date: Mon, 12 Apr 2010 10:02:19 +0200
-In-Reply-To: <1269271251-19775-1-git-send-email-colin.king@canonical.com> (Colin King's message of "Mon, 22 Mar 2010 15:20:51 +0000")
-Message-ID: <87633xayk4.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
+	id S1752852Ab0DLIDt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 04:03:49 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:52648 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752403Ab0DLIDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 04:03:48 -0400
+Message-ID: <4BC2D345.100@cn.fujitsu.com>
+Date: Mon, 12 Apr 2010 16:01:09 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/6] KVM MMU: fix kvm_mmu_zap_page() and its calling path
+References: <4BC2D2E2.1030604@cn.fujitsu.com>
+In-Reply-To: <4BC2D2E2.1030604@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Colin King <colin.king@canonical.com> writes:
->  
-> +static void __init check_atom(void)
-> +{
-> +
-> +	/*
-> +	 *  Disable 4MB page tables to work around Intel errata AAE44 for
-> +	 *  Atom. We cannot guarantee stopping undefined processor behaviour
-> +	 *  when two pageing structure translations differ with respect to
-> +	 *  page frame sizes.  Hence, for Atoms we disable the PSE.
-> +	 */
-> +	if (boot_cpu_data.x86_model == 0x1c) {
+- calculate zapped page number properly in mmu_zap_unsync_children()
+- calculate freeed page number properly kvm_mmu_change_mmu_pages()
+- restart list walking if have children page zapped
 
-Perhaps someone else pointed that out already, but you obviously
-need to check for x86_vendor == X86_VENDOR_INTEL and x86_family == 6 too,
-otherwise you'll get false positives.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-Besides such workarounds are normally in arch/x86/kernel/cpu/intel.c.
-bugs.c is really obsolete.
-
--Andi
-
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index a23ca75..8f4f781 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1483,8 +1483,8 @@ static int mmu_zap_unsync_children(struct kvm *kvm,
+ 		for_each_sp(pages, sp, parents, i) {
+ 			kvm_mmu_zap_page(kvm, sp);
+ 			mmu_pages_clear_parents(&parents);
++			zapped++;
+ 		}
+-		zapped += pages.nr;
+ 		kvm_mmu_pages_init(parent, &parents, &pages);
+ 	}
+ 
+@@ -1540,7 +1540,7 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int kvm_nr_mmu_pages)
+ 
+ 			page = container_of(kvm->arch.active_mmu_pages.prev,
+ 					    struct kvm_mmu_page, link);
+-			kvm_mmu_zap_page(kvm, page);
++			used_pages -= kvm_mmu_zap_page(kvm, page);
+ 			used_pages--;
+ 		}
+ 		kvm->arch.n_free_mmu_pages = 0;
+@@ -1589,7 +1589,8 @@ static void mmu_unshadow(struct kvm *kvm, gfn_t gfn)
+ 		    && !sp->role.invalid) {
+ 			pgprintk("%s: zap %lx %x\n",
+ 				 __func__, gfn, sp->role.word);
+-			kvm_mmu_zap_page(kvm, sp);
++			if (kvm_mmu_zap_page(kvm, sp))
++				nn = bucket->first;
+ 		}
+ 	}
+ }
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.6.1.2
+
+
