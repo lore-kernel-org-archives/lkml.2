@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab0DLGG5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 02:06:57 -0400
-Received: from sj-iport-4.cisco.com ([171.68.10.86]:11364 "EHLO
-	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753468Ab0DLGGy (ORCPT
+	id S1753609Ab0DLGHE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 02:07:04 -0400
+Received: from sj-iport-5.cisco.com ([171.68.10.87]:6743 "EHLO
+	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753567Ab0DLGG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 02:06:54 -0400
-Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
+	Mon, 12 Apr 2010 02:06:58 -0400
+Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAKlVwkurR7Hu/2dsb2JhbACbM3GhN5gUhQwEgyU
+X-IronPort-Anti-Spam-Result: AvsEACZVwkurR7Hu/2dsb2JhbACbM3GhRZgUhQwEgyU
 X-IronPort-AV: E=Sophos;i="4.52,188,1270425600"; 
-   d="scan'208";a="113732088"
-Date: Sun, 11 Apr 2010 23:06:54 -0700
+   d="scan'208";a="181522423"
+Date: Sun, 11 Apr 2010 23:06:57 -0700
 From: David VomLehn <dvomlehn@cisco.com>
 To: to@dvomlehn-lnx2.corp.sa.net, "linux-arch@vger.kernel.org"@cisco.com,
        linux-arch@vger.kernel.org
 Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
        maint_arch@dvomlehn-lnx2.corp.sa.net
-Subject: [PATCH 15/23] Make register values available to PA-RISC panic
+Subject: [PATCH 16/23] Make register values available to PowerPC panic
 	notifiers
-Message-ID: <20100412060654.GA25682@dvomlehn-lnx2.corp.sa.net>
+Message-ID: <20100412060657.GA25709@dvomlehn-lnx2.corp.sa.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -29,36 +29,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The save_ptregs() function has not been tested or even built. I will need
-help to complete this.
+The save_ptregs() functions compiles cleanly on 32-bit systems, but has not
+been tested. Compilation on 64-bit systems has not been done.
 
 Signed-off-by: David VomLehn <dvomlehn@cisco.com>
 ---
- arch/parisc/include/asm/ptrace.h |  146 ++++++++++++++++++++++++++++++++++++++
- arch/parisc/kernel/traps.c       |    4 +-
- 2 files changed, 148 insertions(+), 2 deletions(-)
+ arch/powerpc/include/asm/ptrace.h |  167 +++++++++++++++++++++++++++++++++++++
+ arch/powerpc/kernel/traps.c       |    4 +-
+ 2 files changed, 169 insertions(+), 2 deletions(-)
 
-diff --git a/arch/parisc/include/asm/ptrace.h b/arch/parisc/include/asm/ptrace.h
-index aead40b..f95d560 100644
---- a/arch/parisc/include/asm/ptrace.h
-+++ b/arch/parisc/include/asm/ptrace.h
-@@ -63,6 +63,152 @@ void user_enable_block_step(struct task_struct *task);
- unsigned long profile_pc(struct pt_regs *);
- extern void show_regs(struct pt_regs *);
+diff --git a/arch/powerpc/include/asm/ptrace.h b/arch/powerpc/include/asm/ptrace.h
+index cbd759e..5b3dd23 100644
+--- a/arch/powerpc/include/asm/ptrace.h
++++ b/arch/powerpc/include/asm/ptrace.h
+@@ -225,6 +225,7 @@ extern void user_disable_single_step(struct task_struct *);
+ #define PT_VR0_32 164	/* each Vector reg occupies 4 slots in 32-bit */
+ #define PT_VSCR_32 (PT_VR0 + 32*4 + 3)
+ #define PT_VRSAVE_32 (PT_VR0 + 33*4)
++
+ #endif
  
+ /*
+@@ -237,6 +238,172 @@ extern void user_disable_single_step(struct task_struct *);
+ #endif
+ #endif /* __powerpc64__ */
+ 
++#if !defined(__ASSEMBLY__) && defined(__KERNEL__)
 +/* Macros for saving the contents of registers and for the output constraint
 + * for those registers */
-+#include "/home/vomlehn/git/kernel.org/ptreg.h"
-+#define PTREG_SAVE(r, name)		"stw	%%" #r ", %[" #r "]\n"
-+#define PTREG_SAVE_GR(i)		PTREG_SAVE_IDX(gr, r, i)
-+#define PTREG_SAVE_SR(i)		PTREG_SAVE_IDX(sr, sr, i)
-+#define PTREG_SAVE_IASQ(i)		PTREG_SAVE_IDX(iasq, iasq, i)
-+#define PTREG_SAVE_IAOQ(i)		PTREG_SAVE_IDX(iaoq, iaoq, i)
 +
-+#define PTREG_OUT_GR(regs, i)		PTREG_SAVE_IDX(regs, gr, gr, i)
-+#define PTREG_OUT_SR(regs, i)		PTREG_SAVE_IDX(regs, sr, sr, i)
-+#define PTREG_OUT_IASQ(regs, i)		PTREG_SAVE_IDX(regs, iasq, iasq, i)
-+#define PTREG_OUT_IAOQ(regs, i)		PTREG_SAVE_IDX(regs, iaoq, iaoq, i)
++#include <linux/ptreg.h>
++
++#ifdef __powerpc64__
++#define PTREG_SAVE(r, name)		"std	" #r ", %[" #name "]\n"
++#else
++#define PTREG_SAVE(r, name)		"stw	" #r ", %[" #name "]\n"
++#endif
++
++#define PTREG_SAVE_GPR(i)		_PTREG_SAVE_IDX(, gpr, i)
++
++#define PTREG_OUT_GPR(regs, i)		_PTREG_OUT_IDX(regs, gpr, gpr, i)
 +
 +#define arch_has_save_ptregs	1
 +
@@ -76,141 +86,157 @@ index aead40b..f95d560 100644
 +const struct pt_regs *save_ptregs(struct pt_regs *regs)
 +{
 +	__asm__ __volatile__ (
-+			PTREG_SAVE_GR(0)
-+			PTREG_SAVE_GR(1)
-+			PTREG_SAVE_GR(2)
-+			PTREG_SAVE_GR(3)
-+			PTREG_SAVE_GR(4)
-+			PTREG_SAVE_GR(5)
-+			PTREG_SAVE_GR(6)
-+			PTREG_SAVE_GR(7)
-+			PTREG_SAVE_GR(8)
-+			PTREG_SAVE_GR(9)
-+			PTREG_SAVE_GR(10)
-+			PTREG_SAVE_GR(11)
-+			PTREG_SAVE_GR(12)
-+			PTREG_SAVE_GR(13)
-+			PTREG_SAVE_GR(14)
-+			PTREG_SAVE_GR(15)
-+			PTREG_SAVE_GR(16)
-+			PTREG_SAVE_GR(17)
-+			PTREG_SAVE_GR(18)
-+			PTREG_SAVE_GR(19)
-+			PTREG_SAVE_GR(20)
-+			PTREG_SAVE_GR(21)
-+			PTREG_SAVE_GR(22)
-+			PTREG_SAVE_GR(23)
-+			PTREG_SAVE_GR(24)
-+			PTREG_SAVE_GR(25)
-+			PTREG_SAVE_GR(26)
-+			PTREG_SAVE_GR(27)
-+			PTREG_SAVE_GR(28)
-+			PTREG_SAVE_GR(29)
-+			PTREG_SAVE_GR(30)
-+			PTREG_SAVE_GR(31)
-+			PTREG_SAVE_SR(0)
-+			PTREG_SAVE_SR(1)
-+			PTREG_SAVE_SR(2)
-+			PTREG_SAVE_SR(3)
-+			PTREG_SAVE_SR(4)
-+			PTREG_SAVE_SR(5)
-+			PTREG_SAVE_SR(6)
-+			PTREG_SAVE_SR(7)
-+			PTREG_SAVE_IASQ(0)
-+			PTREG_SAVE_IASQ(1)
-+			PTREG_SAVE_IAOQ(0)
-+			PTREG_SAVE_IAOQ(1)
-+			PTREG_SAVE(cr27, cr27)
-+			PTREG_SAVE(orig_r28, orig_r28)
-+			PTREG_SAVE(ksp, ksp)
-+			PTREG_SAVE(kpc, kpc)
-+			PTREG_SAVE(sar, sar)
-+			PTREG_SAVE(iir, iir)
-+			PTREG_SAVE(isr, isr)
-+			PTREG_SAVE(ior, ior)
-+			PTREG_SAVE(ipsw, ipsw)
-+		"1:\n"
-+			"ldil	1b, %r1\n"
-+			PTSAVE(r0, pc)
++			PTREG_SAVE_GPR(0)
++			PTREG_SAVE_GPR(1)
++			PTREG_SAVE_GPR(2)
++			PTREG_SAVE_GPR(3)
++			PTREG_SAVE_GPR(4)
++			PTREG_SAVE_GPR(5)
++			PTREG_SAVE_GPR(6)
++			PTREG_SAVE_GPR(7)
++			PTREG_SAVE_GPR(8)
++			PTREG_SAVE_GPR(9)
++			PTREG_SAVE_GPR(10)
++			PTREG_SAVE_GPR(11)
++			PTREG_SAVE_GPR(12)
++			PTREG_SAVE_GPR(13)
++			PTREG_SAVE_GPR(14)
++			PTREG_SAVE_GPR(15)
++			PTREG_SAVE_GPR(16)
++			PTREG_SAVE_GPR(17)
++			PTREG_SAVE_GPR(18)
++			PTREG_SAVE_GPR(19)
++			PTREG_SAVE_GPR(20)
++			PTREG_SAVE_GPR(21)
++			PTREG_SAVE_GPR(22)
++			PTREG_SAVE_GPR(23)
++			PTREG_SAVE_GPR(24)
++			PTREG_SAVE_GPR(25)
++			PTREG_SAVE_GPR(26)
++			PTREG_SAVE_GPR(27)
++			PTREG_SAVE_GPR(28)
++			PTREG_SAVE_GPR(29)
 +	:
-+		PTREG_OUT_GR(regs, 0)
-+		PTREG_OUT_GR(regs, 1)
-+		PTREG_OUT_GR(regs, 2)
-+		PTREG_OUT_GR(regs, 3)
-+		PTREG_OUT_GR(regs, 4)
-+		PTREG_OUT_GR(regs, 5)
-+		PTREG_OUT_GR(regs, 6)
-+		PTREG_OUT_GR(regs, 7)
-+		PTREG_OUT_GR(regs, 8)
-+		PTREG_OUT_GR(regs, 9)
-+		PTREG_OUT_GR(regs, 10)
-+		PTREG_OUT_GR(regs, 11)
-+		PTREG_OUT_GR(regs, 12)
-+		PTREG_OUT_GR(regs, 13)
-+		PTREG_OUT_GR(regs, 14)
-+		PTREG_OUT_GR(regs, 15)
-+		PTREG_OUT_GR(regs, 16)
-+		PTREG_OUT_GR(regs, 17)
-+		PTREG_OUT_GR(regs, 18)
-+		PTREG_OUT_GR(regs, 19)
-+		PTREG_OUT_GR(regs, 20)
-+		PTREG_OUT_GR(regs, 21)
-+		PTREG_OUT_GR(regs, 22)
-+		PTREG_OUT_GR(regs, 23)
-+		PTREG_OUT_GR(regs, 24)
-+		PTREG_OUT_GR(regs, 25)
-+		PTREG_OUT_GR(regs, 26)
-+		PTREG_OUT_GR(regs, 27)
-+		PTREG_OUT_GR(regs, 28)
-+		PTREG_OUT_GR(regs, 29)
-+		PTREG_OUT_GR(regs, 30)
-+		PTREG_OUT_GR(regs, 31)
-+		PTREG_OUT_SR(regs, 0)
-+		PTREG_OUT_SR(regs, 1)
-+		PTREG_OUT_SR(regs, 2)
-+		PTREG_OUT_SR(regs, 3)
-+		PTREG_OUT_SR(regs, 4)
-+		PTREG_OUT_SR(regs, 5)
-+		PTREG_OUT_SR(regs, 6)
-+		PTREG_OUT_SR(regs, 7)
-+		PTREG_OUT_IASQ(regs, 0)
-+		PTREG_OUT_IASQ(regs, 1)
-+		PTREG_OUT_IAOQ(regs, 0)
-+		PTREG_OUT_IAOQ(regs, 1)
-+		PTREG_OUT(regs, cr27, cr27)
-+		PTREG_OUT(regs, orig_r28, orig_r28)
-+		PTREG_OUT(regs, ksp, ksp)
-+		PTREG_OUT(regs, kpc, kpc)
-+		PTREG_OUT(regs, sar, sar)
-+		PTREG_OUT(regs, iir, iir)
-+		PTREG_OUT(regs, isr, isr)
-+		PTREG_OUT(regs, ior, ior)
-+		PTREG_OUT(regs, ipsw, ipsw)
++		PTREG_OUT_GPR(regs, 0),
++		PTREG_OUT_GPR(regs, 1),
++		PTREG_OUT_GPR(regs, 2),
++		PTREG_OUT_GPR(regs, 3),
++		PTREG_OUT_GPR(regs, 4),
++		PTREG_OUT_GPR(regs, 5),
++		PTREG_OUT_GPR(regs, 6),
++		PTREG_OUT_GPR(regs, 7),
++		PTREG_OUT_GPR(regs, 8),
++		PTREG_OUT_GPR(regs, 9),
++		PTREG_OUT_GPR(regs, 10),
++		PTREG_OUT_GPR(regs, 11),
++		PTREG_OUT_GPR(regs, 12),
++		PTREG_OUT_GPR(regs, 13),
++		PTREG_OUT_GPR(regs, 14),
++		PTREG_OUT_GPR(regs, 15),
++		PTREG_OUT_GPR(regs, 16),
++		PTREG_OUT_GPR(regs, 17),
++		PTREG_OUT_GPR(regs, 18),
++		PTREG_OUT_GPR(regs, 19),
++		PTREG_OUT_GPR(regs, 20),
++		PTREG_OUT_GPR(regs, 21),
++		PTREG_OUT_GPR(regs, 22),
++		PTREG_OUT_GPR(regs, 23),
++		PTREG_OUT_GPR(regs, 24),
++		PTREG_OUT_GPR(regs, 25),
++		PTREG_OUT_GPR(regs, 26),
++		PTREG_OUT_GPR(regs, 27),
++		PTREG_OUT_GPR(regs, 28),
++		PTREG_OUT_GPR(regs, 29)
++	:
++	);
++
++	/*
++	 * We have a 30 operand limitation in asm statements, so this is the
++	 * continuation. Nothing should be happening betweent the two
++	 * statements and they are __volatile__, so the registers *shouldn't*
++	 * change values.
++	 */
++	__asm__ __volatile__ (
++			PTREG_SAVE_GPR(30)
++			PTREG_SAVE_GPR(31)
++
++			/*
++			 * Now get various special registers. These must first
++			 * be moved to register 0, so the entry value must
++			 * already be saved.
++			 */
++			"mfxer	0\n"
++			PTREG_SAVE(0, xer)
++
++			"mfmsr	0\n"
++			PTREG_SAVE(0, msr)
++
++			"mfctr	0\n"
++			PTREG_SAVE(0, ctr)
++
++			"mflr	0\n"
++			PTREG_SAVE(0, link)
++
++			"mfcr	0\n"
++			PTREG_SAVE(0, ccr)
++#ifdef __powerpc64__
++			PTREG_SAVE(softe, softe)
++#endif
++			"mfdar	0\n"
++			PTREG_SAVE(0, dar)
++
++			"mfdsisr	0\n"
++			PTREG_SAVE(0, dsisr)
++		"1:\n"
++#ifdef __powerpc64__
++			"li	0, 1b\n"
++#else
++			"lis	0, 1b@ha\n"
++			"addi	0, 0, 1b@l\n"
++#endif
++			PTREG_SAVE(0, nip)
++	:
++		PTREG_OUT_GPR(regs, 30),
++		PTREG_OUT_GPR(regs, 31),
++		PTREG_OUT(regs, xer, xer),
++		PTREG_OUT(regs, msr, msr),
++		PTREG_OUT(regs, ctr, ctr),
++		PTREG_OUT(regs, link, link),
++		PTREG_OUT(regs, ccr, ccr),
++#ifdef __powerpc64__
++		PTREG_OUT(regs, softe, softe),
++#else
++		PTREG_OUT(regs, mq, mq),
++#endif
++		PTREG_OUT(regs, dar, dar),
++		PTREG_OUT(regs, dsisr, dsisr),
++		PTREG_OUT(regs, nip, nip)
++	:
 +	:
 +		"r0"
 +	);
 +
 +	return regs;
 +}
- 
- #endif /* __KERNEL__ */
- 
-diff --git a/arch/parisc/kernel/traps.c b/arch/parisc/kernel/traps.c
-index 8b58bf0..23dabd2 100644
---- a/arch/parisc/kernel/traps.c
-+++ b/arch/parisc/kernel/traps.c
-@@ -286,12 +286,12 @@ void die_if_kernel(char *str, struct pt_regs *regs, long err)
- 	add_taint(TAINT_DIE);
++#endif
++
+ /*
+  * Get/set all the altivec registers vr0..vr31, vscr, vrsave, in one go.
+  * The transfer totals 34 quadword.  Quadwords 0-31 contain the
+diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
+index d069ff8..9b56fec 100644
+--- a/arch/powerpc/kernel/traps.c
++++ b/arch/powerpc/kernel/traps.c
+@@ -163,10 +163,10 @@ int die(const char *str, struct pt_regs *regs, long err)
+ 	crash_kexec_secondary(regs);
  
  	if (in_interrupt())
 -		panic("Fatal exception in interrupt");
 +		panic_with_regs(regs, "Fatal exception in interrupt");
  
- 	if (panic_on_oops) {
- 		printk(KERN_EMERG "Fatal exception: panic in 5 seconds\n");
- 		ssleep(5);
+ 	if (panic_on_oops)
 -		panic("Fatal exception");
 +		panic_with_regs(regs, "Fatal exception");
- 	}
  
  	oops_exit();
+ 	do_exit(err);
