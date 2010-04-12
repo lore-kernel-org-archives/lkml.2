@@ -1,109 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab0DLV63 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 17:58:29 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55459 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754077Ab0DLV62 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 17:58:28 -0400
-Date: Mon, 12 Apr 2010 14:57:57 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David VomLehn <dvomlehn@cisco.com>
-Cc: to@dvomlehn-lnx2.corp.sa.net, "linux_arch"@dvomlehn-lnx2.corp.sa.net,
-       linux_arch@dvomlehn-lnx2.corp.sa.net, linux-kernel@vger.kernel.org,
-       maint_arch@dvomlehn-lnx2.corp.sa.net
-Subject: Re: [PATCH 1/23] Make register values available to panic notifiers
-Message-Id: <20100412145757.7d0297bb.akpm@linux-foundation.org>
-In-Reply-To: <20100412060338.GA24296@dvomlehn-lnx2.corp.sa.net>
-References: <20100412060338.GA24296@dvomlehn-lnx2.corp.sa.net>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754242Ab0DLV65 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 17:58:57 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:50792 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754177Ab0DLV6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 17:58:55 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tony Vroon <tony@linx.net>, Michal Hocko <mhocko@suse.cz>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: commit 9630bdd9 changes behavior of the poweroff - bug?
+Date: Tue, 13 Apr 2010 01:01:54 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
+       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+       pm list <linux-pm@lists.linux-foundation.org>
+References: <20100401133923.GA4104@tiehlicka.suse.cz> <1270848027.3071.0.camel@localhost> <201004102136.43246.rjw@sisk.pl>
+In-Reply-To: <201004102136.43246.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201004130101.54117.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 11 Apr 2010 23:03:38 -0700
-David VomLehn <dvomlehn@cisco.com> wrote:
-
-> This patch makes panic() and die() registers available to, for example,
-> panic notifier functions.  Panic notifier functions are quite useful
-> for recording crash information, but they don't get passed the register
-> values. This makes it hard to print register contents, do stack
-> backtraces, etc. The changes in this patch save the register state when
-> panic() is called and introduce a function for die() to call that allows
-> it to pass in the registers it was passed.
+On Saturday 10 April 2010, Rafael J. Wysocki wrote:
+> On Friday 09 April 2010, Tony Vroon wrote:
+> > On Fri, 2010-04-09 at 22:42 +0200, Rafael J. Wysocki wrote:
+> > > Please check if the patch below changes anything.
+> > >  drivers/acpi/wakeup.c |    4 ++--
+> > >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > That didn't change the behaviour for me, sorry.
 > 
-> Following this patch are more patches, one per architecture. These include
-> two types of changes:
-> o  A save_ptregs() function for the processor. I've taken a whack at
->    doing this for all of the processors. I have tested x86 and MIPS
->    versions. I was able to find cross compilers for ARM, ... and the
->    code compiles cleanly. Everything else, well, what you see is sheer
->    fantasy. You are welcome to chortle with merriment.
-> o  When I could figure it out, I replaced the calls to panic() in
->    exception handling functions with calls to panic_with_regs() so
->    that everyone can leverage these changes without much effort. Again,
->    not all the code was transparent, so there are likely some places
->    that should have additional work done.
+> Well, I would be sorry if it did, because the patch removed some useful code. :-)
 > 
-> Note that the pointer to the struct pt_regs may be NULL. This is to
-> accomodate those processors which don't have a working save_ptregs(). I'd
-> love to eliminate this case by providing a save_ptregs() for all
-> architectures, but I'll need help to so.
+> > (I made sure to go through a full power down session before trying the
+> > patched kernel)
 > 
+> Thanks for testing.  So it looks like we don't disable the GPE during power off.
+> 
+> I'll try to figure out what's going on, please stay tuned.
 
-It would make life easier if you could describe (or send) a means by
-which arch maintainers can easily test these changes.
+Can you please check if the patch below changes the behavior?
 
-> --- a/kernel/panic.c
-> +++ b/kernel/panic.c
->
-> ...
->
-> +/* Registers stored in calls to panic() */
-> +static DEFINE_PER_CPU(struct pt_regs, panic_panic_regs);
-> +static DEFINE_PER_CPU(const struct pt_regs *, panic_regs);
-> +
-> +/**
-> + * get_panic_regs - return the current pointer to panic register values
-> + */
-> +const struct pt_regs *get_panic_regs()
-> +{
-> +	return __get_cpu_var(panic_regs);
-> +}
-> +EXPORT_SYMBOL(get_panic_regs);
-> +
-> +/**
-> + * set_panic_regs - Set a pointer to the values of registers on panic()
-> + * @new_regs:	Pointer to register values
-> + *
-> + * Returns: Pointer to the previous panic registers, if any.
-> + */
-> +const struct pt_regs *set_panic_regs(const struct pt_regs *new_regs)
-> +{
-> +	const struct pt_regs *old_regs, **pp_regs;
-> +
-> +	pp_regs = &__get_cpu_var(panic_regs);
-> +	old_regs = *pp_regs;
-> +	*pp_regs = new_regs;
-> +	return old_regs;
-> +}
+Rafael
 
-What's going on here?  We define storage for a set of pt_regs and also
-storage for a set of pt_regs pointers, and provide the ability for
-callers to rewrite the thing which the pt_regs*'s point at.
+---
+ drivers/acpi/wakeup.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Seems complex.  Why not simply provide a set of pt_regs and permit
-callers to copy their own pt_regs sets into that area?
-
-Secondly, this code implicitly assumes that the panicing code is pinned
-to the panicing CPU and cannot be preempted and migrated to a different
-CPU.  Is that true - do we take steps to ensure this anywhere?
-
-Thirdly and relatedly, the code assumes that callers have disabled
-preemption (otherwise __get_cpu_var->smp_processor_id() will whine). 
-Where does this get reliably assured?
-
+Index: linux-2.6/drivers/acpi/wakeup.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/wakeup.c
++++ linux-2.6/drivers/acpi/wakeup.c
+@@ -63,17 +63,17 @@ void acpi_enable_wakeup_device(u8 sleep_
+ 	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
+ 		struct acpi_device *dev =
+ 			container_of(node, struct acpi_device, wakeup_list);
++		u8 action = ACPI_GPE_ENABLE;
+ 
+ 		if (!dev->wakeup.flags.valid)
+ 			continue;
+ 
+ 		if ((!dev->wakeup.state.enabled && !dev->wakeup.prepare_count)
+ 		    || sleep_state > (u32) dev->wakeup.sleep_state)
+-			continue;
++			action = ACPI_GPE_DISABLE;
+ 
+-		/* The wake-up power should have been enabled already. */
+ 		acpi_set_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number,
+-				ACPI_GPE_ENABLE);
++				action);
+ 	}
+ }
+ 
