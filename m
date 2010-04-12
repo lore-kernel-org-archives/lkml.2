@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711Ab0DLGLg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 02:11:36 -0400
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:23122 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752999Ab0DLGEX (ORCPT
+	id S1753743Ab0DLGLy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 02:11:54 -0400
+Received: from sj-iport-4.cisco.com ([171.68.10.86]:10576 "EHLO
+	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616Ab0DLGEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 02:04:23 -0400
-Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+	Mon, 12 Apr 2010 02:04:08 -0400
+Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAGJVwkurR7Ht/2dsb2JhbACbM3GhNpgUhQwEgyU
+X-IronPort-Anti-Spam-Result: AvsEAHRUwkurR7H+/2dsb2JhbACbM3GhRZgUhQwEgyU
 X-IronPort-AV: E=Sophos;i="4.52,188,1270425600"; 
-   d="scan'208";a="513153694"
-Date: Sun, 11 Apr 2010 23:04:22 -0700
+   d="scan'208";a="113730809"
+Date: Sun, 11 Apr 2010 23:04:08 -0700
 From: David VomLehn <dvomlehn@cisco.com>
 To: to@dvomlehn-lnx2.corp.sa.net, "linux_arch"@dvomlehn-lnx2.corp.sa.net,
        linux_arch@dvomlehn-lnx2.corp.sa.net
 Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
        maint_arch@dvomlehn-lnx2.corp.sa.net
-Subject: [PATCH 14/23] Make register values available to MN10300 panic
+Subject: [PATCH 10/23] Make register values available to M32R panic
 	notifiers
-Message-ID: <20100412060422.GA24724@dvomlehn-lnx2.corp.sa.net>
+Message-ID: <20100412060408.GA24607@dvomlehn-lnx2.corp.sa.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -34,28 +34,24 @@ help to complete this.
 
 Signed-off-by: David VomLehn <dvomlehn@cisco.com>
 ---
- arch/mn10300/include/asm/ptrace.h |   92 +++++++++++++++++++++++++++++++++++++
- arch/mn10300/kernel/traps.c       |    2 +-
- 2 files changed, 93 insertions(+), 1 deletions(-)
+ arch/m32r/include/asm/ptrace.h |   91 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 91 insertions(+), 0 deletions(-)
 
-diff --git a/arch/mn10300/include/asm/ptrace.h b/arch/mn10300/include/asm/ptrace.h
-index 1b0ba5e..e8e3548 100644
---- a/arch/mn10300/include/asm/ptrace.h
-+++ b/arch/mn10300/include/asm/ptrace.h
-@@ -102,6 +102,98 @@ extern void show_regs(struct pt_regs *);
- extern void user_enable_single_step(struct task_struct *);
- extern void user_disable_single_step(struct task_struct *);
+diff --git a/arch/m32r/include/asm/ptrace.h b/arch/m32r/include/asm/ptrace.h
+index a0755b9..54f3239 100644
+--- a/arch/m32r/include/asm/ptrace.h
++++ b/arch/m32r/include/asm/ptrace.h
+@@ -143,6 +143,97 @@ extern void withdraw_debug_trap(struct pt_regs *regs);
+ #define task_pt_regs(task) \
+         ((struct pt_regs *)(task_stack_page(task) + THREAD_SIZE) - 1)
  
 +/* Macros for saving the contents of registers and for the output constraint
 + * for those registers */
-+#define PTREG_SAVE(r, name)	"mov	" #r ", %[" #name "]\n"
-+#define PTREG_SAVE_D(i)		PTREG_SAVE_I(d, d, i)
-+#define PTREG_SAVE_A(i)		PTREG_SAVE_I(a, a, i)
-+#define PTREG_SAVE_E(i)		PTREG_SAVE_I(e, e, i)
++#include "/home/vomlehn/git/kernel.org/ptreg.h"
++#define PTREG_SAVE(r, name)	"movel	" #r ", %[" #r "]\n"
++#define PTREG_SAVE_R(i)		PTREG_SAVE_I(r, r, i)
 +
-+#define PTREG_OUT_D(regs, i)	PTREG_OUT_I(regs, d, d, i)
-+#define PTREG_OUT_A(regs, i)	PTREG_OUT_I(regs, a, a, i)
-+#define PTREG_OUT_E(regs, i)	PTREG_OUT_I(regs, e, e, i)
++#define PTREG_OUT_R(regs, i)	PTREG_OUT_I(regs, r, r, i)
 +
 +#define arch_has_save_ptregs	1
 +
@@ -73,84 +69,73 @@ index 1b0ba5e..e8e3548 100644
 +const struct pt_regs *save_ptregs(struct pt_regs *regs)
 +{
 +	__asm__ __volatile__ (
-+			PTREG_SAVE_A(3)
-+			PTREG_SAVE_A(2)
-+			PTREG_SAVE_D(3)
-+			PTREG_SAVE_D(2)
-+			PTREG_SAVE(mcvf, mcvf)
-+			PTREG_SAVE(mcrl, mcrl)
-+			PTREG_SAVE(mcrh, mcrh)
-+			PTREG_SAVE(mdrq, mdrq)
-+			PTREG_SAVE_E(1)
-+			PTREG_SAVE_E(0)
-+			PTREG_SAVE_E(7)
-+			PTREG_SAVE_E(6)
-+			PTREG_SAVE_E(5)
-+			PTREG_SAVE_E(4)
-+			PTREG_SAVE_E(3)
-+			PTREG_SAVE_E(2)
-+			PTREG_SAVE(sp, sp)
-+			PTREG_SAVE(lar, lar)
-+			PTREG_SAVE(lir, lir)
-+			PTREG_SAVE(mdr, mdr)
-+			PTREG_SAVE_A(1)
-+			PTREG_SAVE_A(0)
-+			PTREG_SAVE_D(1)
-+			PTREG_SAVE_D(0)
-+			PTREG_SAVE(next, next)
-+			PTREG_SAVE(orig_d0, orig_d0)
-+			PTREG_SAVE(epsw, epsw)
++			PTREG_SAVE_R(4)
++			PTREG_SAVE_R(5)
++			PTREG_SAVE_R(6)
++			PTREG_SAVE(pt_regs, pt_regs)
++			PTREG_SAVE_R(0)
++			PTREG_SAVE_R(1)
++			PTREG_SAVE_R(2)
++			PTREG_SAVE_R(3)
++			PTREG_SAVE_R(7)
++			PTREG_SAVE_R(8)
++			PTREG_SAVE_R(9)
++			PTREG_SAVE_R(10)
++			PTREG_SAVE_R(11)
++			PTREG_SAVE_R(12)
++			PTREG_SAVE(syscall_nr, syscall_nr)
++			PTREG_SAVE(acc0h, acc0h)
++			PTREG_SAVE(acc0l, acc0l)
++			PTREG_SAVE(acc1h, acc1h)
++			PTREG_SAVE(acc1l, acc1l)
++			PTREG_SAVE(psw, psw)
++			PTREG_SAVE(bpc, bpc)
++			PTREG_SAVE(bbpsw, bbpsw)
++			PTREG_SAVE(bbpc, bbpc)
++			PTREG_SAVE(spu, spu)
++			PTREG_SAVE(fp, fp)
++			PTREG_SAVE(lr, lr)
++			PTREG_SAVE(spi, spi)
++			PTREG_SAVE(orig_r0, orig_r0)
 +		"1:\n"
-+			"mov	1b, a0\n"
-+			PTREG_SAVE(a0, pc)
++			"seth	r0, #high(1b)\n"
++			"or3	r0, r0, #low(1b)\n"
++			PTREG_SAVE(r0, bpc)
 +	:
-+		PTREG_OUT_A(regs, 3)
-+		PTREG_OUT_A(regs, 2)
-+		PTREG_OUT_D(regs, 3)
-+		PTREG_OUT_D(regs, 2)
-+		PTREG_OUT(regs, mcvf, mcvf)
-+		PTREG_OUT(regs, mcrl, mcrl)
-+		PTREG_OUT(regs, mcrh, mcrh)
-+		PTREG_OUT(regs, mdrq, mdrq)
-+		PTREG_OUT_E(regs, 1)
-+		PTREG_OUT_E(regs, 0)
-+		PTREG_OUT_E(regs, 7)
-+		PTREG_OUT_E(regs, 6)
-+		PTREG_OUT_E(regs, 5)
-+		PTREG_OUT_E(regs, 4)
-+		PTREG_OUT_E(regs, 3)
-+		PTREG_OUT_E(regs, 2)
-+		PTREG_OUT(regs, sp, sp)
-+		PTREG_OUT(regs, lar, lar)
-+		PTREG_OUT(regs, lir, lir)
-+		PTREG_OUT(regs, mdr, mdr)
-+		PTREG_OUT_A(regs, 1)
-+		PTREG_OUT_A(regs, 0)
-+		PTREG_OUT_D(regs, 1)
-+		PTREG_OUT_D(regs, 0)
-+		PTREG_OUT(regs, next, next)
-+		PTREG_OUT(regs, orig_d0, orig_d0)
-+		PTREG_OUT(regs, epsw, epsw)
-+		PTREG_OUT(regs, pc, pc)
++		PTREG_OUT_R(regs, 4),
++		PTREG_OUT_R(regs, 5),
++		PTREG_OUT_R(regs, 6),
++		PTREG_OUT(regs, pt_regs, pt_regs),
++		PTREG_OUT_R(regs, 0),
++		PTREG_OUT_R(regs, 1),
++		PTREG_OUT_R(regs, 2),
++		PTREG_OUT_R(regs, 3),
++		PTREG_OUT_R(regs, 7),
++		PTREG_OUT_R(regs, 8),
++		PTREG_OUT_R(regs, 9),
++		PTREG_OUT_R(regs, 10),
++		PTREG_OUT_R(regs, 11),
++		PTREG_OUT_R(regs, 12),
++		PTREG_OUT(regs, syscall_nr, syscall_nr),
++		PTREG_OUT(regs, acc0h, acc0h),
++		PTREG_OUT(regs, acc0l, acc0l),
++		PTREG_OUT(regs, acc1h, acc1h),
++		PTREG_OUT(regs, acc1l, acc1l),
++		PTREG_OUT(regs, psw, psw),
++		PTREG_OUT(regs, bpc, bpc),
++		PTREG_OUT(regs, bbpsw, bbpsw),
++		PTREG_OUT(regs, bbpc, bbpc),
++		PTREG_OUT(regs, spu, spu),
++		PTREG_OUT(regs, fp, fp),
++		PTREG_OUT(regs, lr, lr),
++		PTREG_OUT(regs, spi, spi),
++		PTREG_OUT(regs, orig_r0, orig_r0)
 +	:
-+		"a0"
++		"r0"
 +	);
 +
 +	return regs;
 +}
- #endif  /*  !__ASSEMBLY  */
+ #endif /* __KERNEL */
  
- #define profile_pc(regs) ((regs)->pc)
-diff --git a/arch/mn10300/kernel/traps.c b/arch/mn10300/kernel/traps.c
-index 91365ad..0251adf 100644
---- a/arch/mn10300/kernel/traps.c
-+++ b/arch/mn10300/kernel/traps.c
-@@ -471,7 +471,7 @@ asmlinkage void io_bus_error(u32 bcberr, u32 bcbear, struct pt_regs *regs)
- 	printk(KERN_EMERG "\n");
- 	show_registers(regs);
- 
--	panic("Halted due to asynchronous I/O Bus Error\n");
-+	panic_with_regs(regs, "Halted due to asynchronous I/O Bus Error\n");
- }
- 
- /*
+ #endif /* _ASM_M32R_PTRACE_H */
