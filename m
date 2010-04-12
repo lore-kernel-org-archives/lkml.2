@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818Ab0DLUbB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 16:31:01 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:53642 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752614Ab0DLUa7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 16:30:59 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [PATCH tip/core/urgent 1/4] rcu: add rcu_access_pointer and rcu_dereference_protected
-Date: Mon, 12 Apr 2010 22:30:42 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.31-19-generic; KDE/4.4.2; x86_64; ; )
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
-       peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu
-References: <1270792042-9358-1-git-send-email-paulmck@linux.vnet.ibm.com> <20100409165735.GB2421@linux.vnet.ibm.com> <20100412192441.GB27341@feather>
-In-Reply-To: <20100412192441.GB27341@feather>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1753461Ab0DLUbV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 16:31:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16742 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753670Ab0DLUbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 16:31:19 -0400
+Subject: Re: [PATCH 1/3] fbmem: fix aperture overlapping check
+From: Dave Airlie <airlied@redhat.com>
+To: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: linux-fbdev@vger.kernel.org, nouveau@lists.freedesktop.org,
+       LKML <linux-kernel@vger.kernel.org>,
+       dri-devel <dri-devel@lists.freedesktop.org>,
+       Peter Jones <pjones@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20100412113438.GB2789@joi.lan>
+References: <1270929334-3742-1-git-send-email-marcin.slusarz@gmail.com>
+	 <1271030068.3554.1.camel@localhost>  <20100412113438.GB2789@joi.lan>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 13 Apr 2010 06:28:21 +1000
+Message-ID: <1271104101.5726.3.camel@t60prh>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004122230.43053.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1+nQDBZOkI9RA12m9OgYj6q/sZvne7mwFMRzVv
- gqIeKMEZ5NeMAamoehd2VoeYqCO0NaUocxKDxh+clwn/VEADYt
- Fk10BjbugKXhhDd7/RUdw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 12 April 2010 21:24:42 Josh Triplett wrote:
-> If you want to prevent people from deferencing the pointer directly, or
-> from assigning it to some other pointer, you could use Sparse's
-> __attribute__((noderef)) and
-> __attribute__((address_space(...)).
-> 
-> See the definitions of __user and __iomem in include/linux/compiler.h
-> for instance.  (And, looking at that file, now __percpu.  Nice!)
-> 
-> You'd then have to explicitly use __force at the point where you
-> legitimately dereference it.
+On Mon, 2010-04-12 at 13:34 +0200, Marcin Slusarz wrote:
+> On Mon, Apr 12, 2010 at 09:54:28AM +1000, Dave Airlie wrote:
+> > On Sat, 2010-04-10 at 21:55 +0200, marcin.slusarz@gmail.com wrote:
+> > > fb_do_apertures_overlap is returning wrong value when one aperture
+> > > is completely whithin the other. Add generic ranges_overlap macro
+> > > (probably kernel.h candidate) and use it here.
+> > > 
+> > 
+> > That doesn't seem right.
+> > 
+> > The rules are:
+> > 
+> > the generic aperture has to be equal or smaller than the hw aperture,
+> > otherwise the generic driver will be trashing random hw pieces on the
+> > machine.
 
-I have started a patch set for doing that a few weeks ago, still need
-to pick up that work again. Are there any other patches besides this
-series that I should base on top of now?
+> Why "it has to"? Why generic aperture can't start one byte before hw?
 
-	Arnd
+Think about how it works a bit more, the answer is obvious.
+
+The hw aperture is defined by the actual hardware, not by the OS or my
+code. The PCI apertures are well defined. Now for a generic driver like
+vesa or offb to access the hardware it needs to access the hw apertures.
+
+It can't go accessing one byte before the hw aperture, as that will
+crash the machine, or write to some other devices hw.
+
+> 
+> > So with that in mind, the check makes sure the generic aperture starts
+> > somewhere inside the hw aperture, which the test clearly gets right.
+> 
+> So your only objection is that it's impossible with the current code?
+> 
+> > Have you got a pointer to a machine where it fails?
+> 
+> No, it failed with an artifical test while I was working on vga16fb handoff
+> (unfinished).
+
+You won't be able to make this work for vga16fb from what I can see
+since it access 0xa000 directly, not via any of the defined apertures
+that vesafb/offb use. vga16fb will need a different approach I suspect.
+
+Dave.
+
+
