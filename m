@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab0DLI5n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 04:57:43 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:61533 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752701Ab0DLI5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 04:57:41 -0400
-Message-ID: <4BC2DFEC.5020204@cn.fujitsu.com>
-Date: Mon, 12 Apr 2010 16:55:08 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1753420Ab0DLJAB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 05:00:01 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:49185 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753385Ab0DLI77 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 04:59:59 -0400
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Daniel Mack <daniel@caiaq.de>, linux-kernel@vger.kernel.org,
+       Pedro Ribeiro <pedrib@gmail.com>, <akpm@linux-foundation.org>,
+       Greg KH <gregkh@suse.de>, <alsa-devel@alsa-project.org>,
+       <linux-usb@vger.kernel.org>
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+From: Andi Kleen <andi@firstfloor.org>
+References: <20100407090623.GN30807@buzzloop.caiaq.de>
+	<Pine.LNX.4.44L0.1004071036060.1779-100000@iolanthe.rowland.org>
+Date: Mon, 12 Apr 2010 10:59:57 +0200
+In-Reply-To: <Pine.LNX.4.44L0.1004071036060.1779-100000@iolanthe.rowland.org> (Alan Stern's message of "Wed, 7 Apr 2010 10:59:47 -0400 (EDT)")
+Message-ID: <87sk719hbm.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/6] KVM MMU: optimize/cleanup for marking parent unsync
-References: <4BC2D2E2.1030604@cn.fujitsu.com> <4BC2D390.7050708@cn.fujitsu.com> <4BC2DAB5.4030901@redhat.com>
-In-Reply-To: <4BC2DAB5.4030901@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Alan Stern <stern@rowland.harvard.edu> writes:
+>> 
+>> The fix is to use usb_buffer_alloc() for that purpose which ensures
+>> memory that is suitable for DMA. And on x86_64, this also means that the
+>> upper 32 bits of the address returned are all 0's.
+>
+> That is not a good fix.  usb_buffer_alloc() provides coherent memory, 
+> which is not what we want.  I believe the correct fix is to specify the 
+> GFP_DMA32 flag in the kzalloc() call.
 
+The traditional way to handle this is to leave it to swiotlb in
+pci_map_*. pci_map_* is needed anyways if you run with a IOMMU.
 
-Avi Kivity wrote:
-> On 04/12/2010 11:02 AM, Xiao Guangrong wrote:
->> - 'vcpu' is not used while mark parent unsync, so remove it
->> - if it has alread marked unsync, no need to walk it's parent
->>
->>    
-> 
-> Please separate these two changes.
-> 
-> The optimization looks good.  Perhaps it can be done even nicer using
-> mutually recursive functions (mmu_parent_walk calls mmu_parent_walk_fn
-> which calls mmu_parent_walk on the parent), but let's not change too
-> many things at a time.
+Also note at least on x86 systems coherent memory is the same as non coherent
+memory. And GFP_DMA32 is a x86 specific flag, doesn't necessarily 
+do any good anywhere else.
 
-OK, i'll separate it in the next version
+So if you add x86isms anyways you could as well use dma_alloc_coherent()
+directly which is actually better at this than a simple GFP_DMA32
+and as a bonus handles the IOMMUs correctly too.
 
-Thanks,
-Xiao
+Or just use GFP_KERNEL and pci_map_* later.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
