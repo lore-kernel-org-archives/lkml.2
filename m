@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab0DLTZF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 15:25:05 -0400
-Received: from relay1-d.mail.gandi.net ([217.70.183.193]:38897 "EHLO
-	relay1-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753776Ab0DLTZE (ORCPT
+	id S1753838Ab0DLT3I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 15:29:08 -0400
+Received: from pqueueb.post.tele.dk ([193.162.153.10]:37567 "EHLO
+	pqueueb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753383Ab0DLT3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 15:25:04 -0400
-X-Originating-IP: 217.70.178.42
-X-Originating-IP: 173.50.255.69
-Date: Mon, 12 Apr 2010 12:24:42 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, David Howells <dhowells@redhat.com>,
-       linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH tip/core/urgent 1/4] rcu: add rcu_access_pointer and
- rcu_dereference_protected
-Message-ID: <20100412192441.GB27341@feather>
-References: <1270792042-9358-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20100409054701.GA8833@linux.vnet.ibm.com>
- <23572.1270804211@redhat.com>
- <1270805058.2623.72.camel@edumazet-laptop>
- <20100409165735.GB2421@linux.vnet.ibm.com>
+	Mon, 12 Apr 2010 15:29:06 -0400
+X-Greylist: delayed 1342 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Apr 2010 15:29:06 EDT
+Date: Mon, 12 Apr 2010 21:06:22 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: David VomLehn <dvomlehn@cisco.com>
+Cc: linux-arch@vger.kernel.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/23] Make register values available to Alpha panic
+	notifiers
+Message-ID: <20100412190509.GA17147@merkur.ravnborg.org>
+References: <20100412060613.GA25303@dvomlehn-lnx2.corp.sa.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100409165735.GB2421@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100412060613.GA25303@dvomlehn-lnx2.corp.sa.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 09, 2010 at 09:57:35AM -0700, Paul E. McKenney wrote:
-> On Fri, Apr 09, 2010 at 11:24:18AM +0200, Eric Dumazet wrote:
-> > Le vendredi 09 avril 2010 à 10:10 +0100, David Howells a écrit :
-> > > Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > +#define rcu_access_pointer(p) ((void *)ACCESS_ONCE(p))
-> > > > ...
-> > > > +#define rcu_access_pointer(p)		((void *)ACCESS_ONCE(p))
-> > > 
-> > > There's no difference between your two versions of rcu_access_pointer(), so
-> > > you could move that whole construct outside of the #ifdef'ed section.
-> > > 
-> > > Other than that:
-> > > 
-> > > Acked-by: David Howells <dhowells@redhat.com>
-> > 
-> > I also prefer to keep type checking if possible
-> > 
-> > #define rcu_access_pointer(p)		(ACCESS_ONCE(p))
+On Sun, Apr 11, 2010 at 11:06:13PM -0700, David VomLehn wrote:
+> The save_ptregs() function has not been tested or even built. I will need
+> help to complete this.
 > 
-> Yikes!  I was obsessing on preventing people from dereferencing the
-> pointer, but you are quite right, they might be comparing it to a
-> constant pointer to check for array bounds or for use of a statically
-> allocated emergency-pool item.
+> Signed-off-by: David VomLehn <dvomlehn@cisco.com>
+> ---
+>  arch/alpha/include/asm/ptrace.h |  124 +++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 124 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/alpha/include/asm/ptrace.h b/arch/alpha/include/asm/ptrace.h
+> index 65cf3e2..952d177 100644
+> --- a/arch/alpha/include/asm/ptrace.h
+> +++ b/arch/alpha/include/asm/ptrace.h
+> @@ -79,6 +79,130 @@ extern void show_regs(struct pt_regs *);
+>  
+>  #define force_successful_syscall_return() (task_pt_regs(current)->r0 = 0)
+>  
+> +/* Macros for saving the contents of registers and for the output constraint
+> + * for those registers */
+> +#include "/home/vomlehn/git/kernel.org/linux/ptreg.h"
+The above include needs fixing.
 
-If you want to prevent people from deferencing the pointer directly, or
-from assigning it to some other pointer, you could use Sparse's
-__attribute__((noderef)) and
-__attribute__((address_space(...)).
-
-See the definitions of __user and __iomem in include/linux/compiler.h
-for instance.  (And, looking at that file, now __percpu.  Nice!)
-
-You'd then have to explicitly use __force at the point where you
-legitimately dereference it.
-
-- Josh Triplett
+	Sam
