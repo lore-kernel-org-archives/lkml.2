@@ -1,46 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124Ab0DLU6Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 16:58:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46962 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754010Ab0DLU6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 16:58:23 -0400
-Message-ID: <4BC38928.3000402@redhat.com>
-Date: Mon, 12 Apr 2010 16:57:12 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
+	id S1754148Ab0DLU7J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 16:59:09 -0400
+Received: from mga05.intel.com ([192.55.52.89]:7385 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754130Ab0DLU7G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 16:59:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,192,1270450800"; 
+   d="scan'208";a="788510431"
+Date: Mon, 12 Apr 2010 13:58:37 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: Daniel Mack <daniel@caiaq.de>, alsa-devel@alsa-project.org,
+       Greg KH <gregkh@suse.de>, Takashi Iwai <tiwai@suse.de>,
+       Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+       Pedro Ribeiro <pedrib@gmail.com>, akpm@linux-foundation.org
+Subject: Re: [alsa-devel] USB transfer_buffer allocations on 64bit systems
+Message-ID: <20100412205837.GA18665@xanatos>
+References: <s5hhbnncflj.wl%tiwai@suse.de>
+ <Pine.LNX.4.44L0.1004071452560.5760-100000@iolanthe.rowland.org>
+ <20100408003313.GE4365@kroah.com>
+ <4BBE6E57.6020600@gmail.com>
+ <20100409165014.GC5184@xanatos>
+ <g2u51f3faa71004091638nc383aa0ei899777c869273a22@mail.gmail.com>
+ <20100410083453.GN30801@buzzloop.caiaq.de>
+ <p2o51f3faa71004101002xef38c6e4z71f5a61eed7f899e@mail.gmail.com>
+ <20100412185621.GA6101@xanatos>
+ <x2t51f3faa71004121339j67558281mc71bfd35d929e060@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Borislav Petkov <bp@alien8.de>, Johannes Weiner <hannes@cmpxchg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-Subject: Re: [PATCH 3/4] anon_vma: clone the anon_vma chain in the right order
-References: <20100411130801.GA7189@a1.tnic> <alpine.LFD.2.00.1004110938570.3514@i5.linux-foundation.org> <alpine.LFD.2.00.1004111010280.3514@i5.linux-foundation.org> <20100411185508.GA4450@liondog.tnic> <alpine.LFD.2.00.1004111707360.3514@i5.linux-foundation.org> <alpine.LFD.2.00.1004111759440.3521@i5.linux-foundation.org> <20100412072056.GA2432@liondog.tnic> <alpine.LFD.2.00.1004120854440.26679@i5.linux-foundation.org> <alpine.LFD.2.00.1004120906370.26679@i5.linux-foundation.org> <4BC36916.3080005@redhat.com> <20100412190002.GA8595@a1.tnic> <alpine.LFD.2.00.1004121201480.3714@i5.linux-foundation.org> <alpine.LFD.2.00.1004121320390.3683@i5.linux-foundation.org> <alpine.LFD.2.00.1004121322400.3683@i5.linux-foundation.org> <alpine.LFD.2.00.1004121323080.3683@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1004121323080.3683@i5.linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <x2t51f3faa71004121339j67558281mc71bfd35d929e060@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2010 04:23 PM, Linus Torvalds wrote:
->
-> From: Linus Torvalds<torvalds@linux-foundation.org>
-> Date: Sun, 11 Apr 2010 17:15:03 -0700
-> Subject: [PATCH 3/4] anon_vma: clone the anon_vma chain in the right order
->
-> We want to walk the chain in reverse order when cloning it, so that the
-> order of the result chain will be the same as the order in the source
-> chain.  When we add entries to the chain, they go at the head of the
-> chain, so we want to add the source head last.
->
-> Signed-off-by: Linus Torvalds<torvalds@linux-foundation.org>
+On Mon, Apr 12, 2010 at 02:39:04PM -0600, Robert Hancock wrote:
+> On Mon, Apr 12, 2010 at 12:56 PM, Sarah Sharp
+> <sarah.a.sharp@linux.intel.com> wrote:
+> > On Sat, Apr 10, 2010 at 11:02:53AM -0600, Robert Hancock wrote:
+> >> On Sat, Apr 10, 2010 at 2:34 AM, Daniel Mack <daniel@caiaq.de> wrote:
+> >> > On Fri, Apr 09, 2010 at 05:38:13PM -0600, Robert Hancock wrote:
+> >> >> On Fri, Apr 9, 2010 at 10:50 AM, Sarah Sharp
+> >> >> <sarah.a.sharp@linux.intel.com> wrote:
+> >> >> > What makes you think that?  I've seen URB buffers with 64-bit DMA
+> >> >> > addresses.  I can tell when the debug polling loop runs and I look at
+> >> >> > the DMA addresses the xHCI driver is feeding to the hardware:
+> >> >> >
+> >> >> > Dev 1 endpoint ring 0:
+> >> >> > xhci_hcd 0000:05:00.0: @71a49800 01000680 00080000 00000008 00000841
+> >> >> >
+> >> >> > So the TRB at address 71a49800 is pointing to a buffer at address
+> >> >> > 0x0008000001000680.
+> >> >>
+> >> >> I'm not sure why the address would be that huge, unless it's not
+> >> >> actually a physical address, or there's some kind of remapping going
+> >> >> on?
+> >> >>
+> >> >> >
+> >> >> > If I'm setting a DMA mask wrong somewhere, or doing something else to
+> >> >> > limit the DMA to 32-bit, then please let me know.
+> >> >>
+> >> >> The DMA mask for the controller isn't being set anywhere (in the
+> >> >> version that's in Linus' current git anyway). In that case it'll
+> >> >> default to 32-bit and any DMA mappings above 4GB will need to be
+> >> >> remapped. The controller driver doesn't do the mapping itself but the
+> >> >> USB core does, passing in the controller device as the one doing the
+> >> >> DMA, so if the controller's DMA mask is set to 32-bit then the buffers
+> >> >> passed in will get remapped/bounced accordingly.
+> >> >
+> >> > So if we're seeing physical addresses in the log above, and the xHCI
+> >> > driver does not explicitly allow the USB core to use addresses above
+> >> > 4GB, why shouldn't the same thing be true as well for EHCI?
+> >> > (Which would then be exactly the case we're seeing)
+> >>
+> >> That is a bit suspicious, yes. With the DMA mask at default I don't
+> >> expect that should happen. Sarah, what kind of traffic was happening
+> >> when you saw that (bulk, isochronous, etc)?
+> >
+> > Ring 0 is the default control ring, so it must be control transfers.
+> > That's the first control transfer on the ring (and it didn't fill), so
+> > it must have come from the USB core.
+> >
+> > I was running the USB mass storage driver, and the bulk endpoint rings
+> > don't have the high 32-bits of the address set.  It mostly uses the
+> > scatter-gather interface, which calls usb_buffer_map_sg(), so that's not
+> > surprising.
+> 
+> Is this machine using an IOMMU or something which would be remapping
+> physical addresses? That address 0x0008000001000680 seems huge, I
+> don't see how it could even be a valid bus address otherwise..
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Oh, shoot, nevermind.  That TRB has a slightly different format, where
+the setup data for the control transfer is substituted for the DMA
+buffer address.  I'll have to look through my logs to see if there's any
+real 64-bit DMA addresses in there, and fix xHCI's DMA mask.
 
+Sarah Sharp
