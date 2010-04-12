@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208Ab0DLOaY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 10:30:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49799 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836Ab0DLOaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 10:30:23 -0400
-Date: Mon, 12 Apr 2010 10:30:15 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Divyesh Shah <dpshah@google.com>
-Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
-       ctalbott@google.com
-Subject: Re: [PATCH] blkio: Changes to more io-controller stats patches to
-	address
-Message-ID: <20100412143015.GC1294@redhat.com>
-References: <20100410023509.17767.21937.stgit@austin.mtv.corp.google.com>
+	id S1751926Ab0DLOeg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 10:34:36 -0400
+Received: from mail2.ruggedcom.com ([204.50.148.11]:38201 "EHLO
+	mail2.ruggedcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827Ab0DLOef (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 10:34:35 -0400
+Message-ID: <4BC32F7A.4040809@ruggedcom.com>
+Date: Mon, 12 Apr 2010 10:34:34 -0400
+From: Michael Barkowski <michaelbarkowski@ruggedcom.com>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100410023509.17767.21937.stgit@austin.mtv.corp.google.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Krzysztof Halasa <khc@pm.waw.pl>
+CC: "David S. Miller" <davem@davemloft.net>, Julia Lawall <julia@diku.dk>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: hdlc_ppp: why no detach()?
+References: <4BC32B00.1030600@ruggedcom.com>
+In-Reply-To: <4BC32B00.1030600@ruggedcom.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Apr 2010 14:34:37.0199 (UTC) FILETIME=[46FFD9F0:01CADA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 09, 2010 at 07:35:35PM -0700, Divyesh Shah wrote:
-> review comments.
+Michael Barkowski wrote:
+> Hello Krzyztof,
 > 
-> Changelog: (in response to Vivek Goyal's comments)
-> o group blkiocg_update_blkio_group_dequeue_stats() with other DEBUG functions
-> o rename blkiocg_update_set_active_queue_stats() to
->   blkiocg_update_avg_queue_size_stats()
-> o s/request/io/ in blkiocg_update_request_add_stats() and
->   blkiocg_update_request_remove_stats()
-> o Call cfq_del_timer() at request dispatch() instead of
->   blkiocg_update_idle_time_stats()
+> I am looking at your hdlc_ppp code and I don't understand: why is there
+> not the equivalent of fr_detach() in there?
 > 
-> Signed-off-by: Divyesh Shah<dpshah@google.com>
-> ---
+> pc8300_drv:cpc_remove_one() frees netdevs quite confidently but I wonder
+> how it can be so sure that there are not skbs in hdlc_ppp's tx_queue
+> associated with those devices before freeing them....
 > 
 
-[..]
-> @@ -2395,11 +2395,7 @@ static int cfq_dispatch_requests(struct request_queue *q, int force)
->  	}
->  
->  	cfq_log_cfqq(cfqd, cfqq, "dispatched a request");
-> -	/*
-> -	 * This is needed since we don't exactly match the mod_timer() and
-> -	 * del_timer() calls in CFQ.
-> -	 */
-> -	blkiocg_update_idle_time_stats(&cfqq->cfqg->blkg);
-> +	cfq_del_timer(cfqd, cfqq);
+the above is the real danger I see - free the netdev, then ppp's timer
+comes along and dequeues from tx_queue an skb with invalid device.
 
-I am trying to think that why do we need this call here. What is that path
-which does not delete the timer upon receiving request and lets fix that.
+> Even if you wanted to switch a device from PPP to Frame Relay, I don't
+> see the method right now.  If I may ask, please, what am I missing?
+> 
 
-One of the possible path when you got the request but still leave the
-timer on is following.
+Ok - this part was a momentary lapse on my part - please strike from
+the record :)
 
-cfq_rq_enqueued()
-	if(request_not_big_enough)
-		leave_timer_on
-		cfq_mark_cfqq_must_dispatch(cfqq);
+> If you agree there is a need for detach(), I would be happy to work on
+> it and make a submission.
+> 
+> thanks for your time,
+> 
 
-I guess we need to leave timer on so that if an unplug does not come in, a
-timer expirty will dispatch the request from the queue.
 
-In this case we can probably call here blkiocg_update_idle_time_stats()
-directly. Anyway, that's the right thing to do otherwise our idle time
-stats are little wrong as we got a request from the application and idle
-timer is over. Now this is additional wait time enforced by cfq so that
-lots of small requests are not dispatched to disk.
-
-Thanks
-Vivek
+-- 
+Michael Barkowski
+905-482-4577
