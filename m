@@ -1,194 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981Ab0DLQsK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 12:48:10 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:52517 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752609Ab0DLQsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 12:48:05 -0400
-Date: Mon, 12 Apr 2010 09:47:53 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: David Howells <dhowells@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: RCU condition checks
-Message-ID: <20100412164753.GA2525@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <15371.1270057054@redhat.com>
- <19556.1270076008@redhat.com>
- <14003.1270122314@redhat.com>
- <4161.1270133211@redhat.com>
- <23331.1270570443@redhat.com>
- <26510.1270582446@redhat.com>
- <24225.1270646561@redhat.com>
- <26884.1270658130@redhat.com>
- <20100407171048.GE2481@linux.vnet.ibm.com>
- <1271026643.6620.37.camel@localhost.localdomain>
+	id S1753021Ab0DLQvS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 12:51:18 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:50738 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752291Ab0DLQvQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 12:51:16 -0400
+Date: Mon, 12 Apr 2010 09:46:07 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
+       Johannes Weiner <hannes@cmpxchg.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas
+ of a mergeable VMA
+In-Reply-To: <4BC34501.5060401@redhat.com>
+Message-ID: <alpine.LFD.2.00.1004120941310.26679@i5.linux-foundation.org>
+References: <20100409191425.GB10780@a1.tnic>  <alpine.LFD.2.00.1004091227310.3558@i5.linux-foundation.org>  <20100409204328.GG28964@cmpxchg.org>  <alpine.LFD.2.00.1004091546350.3558@i5.linux-foundation.org>  <alpine.LFD.2.00.1004091638290.3558@i5.linux-foundation.org>
+  <20100410003110.GI28964@cmpxchg.org>  <alpine.LFD.2.00.1004091730130.3558@i5.linux-foundation.org>  <20100410072714.GA9246@liondog.tnic> <20100410112639.GA24708@a1.tnic>  <alpine.LFD.2.00.1004100821340.3558@i5.linux-foundation.org>  <20100410163828.GA25579@a1.tnic>
+  <alpine.LFD.2.00.1004100947400.3558@i5.linux-foundation.org>  <alpine.LFD.2.00.1004101101180.3558@i5.linux-foundation.org>  <1271083207.4807.18.camel@twins>  <4BC33A02.8000307@redhat.com> <1271088103.20295.3383.camel@laptop> <4BC34501.5060401@redhat.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271026643.6620.37.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 11, 2010 at 06:57:23PM -0400, Trond Myklebust wrote:
-> On Wed, 2010-04-07 at 10:10 -0700, Paul E. McKenney wrote: 
-> > On Wed, Apr 07, 2010 at 05:35:30PM +0100, David Howells wrote:
-> > > Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > > Why is there a need for 'c'?
-> > > > 
-> > > > An example use is where rcu_access_pointer() is legal because we are
-> > > > either initializing or cleaning up, so that no other CPU has access
-> > > > to the pointer.  In these cases, you might do something like:
-> > > > 
-> > > > 	q = rcu_access_pointer(p->a, p->refcnt == 0);
-> > > 
-> > > I think the main problem I have with this is that the fact that p->refcnt
-> > > should be 0 here is unrelated to the fact that we're wanting to look at the
-> > > value of p->a.  I'd say that this should be two separate statements, for
-> > > example:
-> > > 
-> > > 	ASSERT(p->refcnt == 0);
-> > > 	q = rcu_access_pointer(p->a);
-> > > 
-> > > I could see using a lockdep-managed ASSERT here would work, though.
-> > > 
-> > > The other problem I have with this is that I'm assuming rcu_access_pointer()
-> > > is simply for looking at the value of the pointer without dereferencing it -
-> > > in which case, is there any need for the lock-describing condition?
-> > 
-> > I agree that in many cases there won't be a reasonable condition.
-> > In which case, using "1" and an explanatory comment makes sense.
-> > In other cases, the fact that the value is zero can mean that no one
-> > else can possibly have a reference.
-> > 
-> > All that aside, I fully expect that uses of rcu_access_pointer() will
-> > require more than the usual code-review effort, as these sorts of
-> > unprotected accesses are notoriously error-prone.
-> > 
-> > > I agree, though, that:
-> > > 
-> > > 	q = rcu_dereference_check(p->a,
-> > > 				  rcu_read_lock_held() || (
-> > > 				   lockdep_is_held(p->lock) &&
-> > > 				   lockdep_is_held(q->lock)));
-> > > 
-> > > is a reasonable way of keeping the dereference and the lock checks together,
-> > > though that could equally well be written, say:
-> > > 
-> > > 	LOCKDEP_ASSERT(rcu_read_lock_held() || (
-> > > 		        lockdep_is_held(p->lock) &&
-> > > 			lockdep_is_held(q->lock)));
-> > > 	q = rcu_dereference_protected(p->a);
-> > > 
-> > > but combining those makes it easier to ensure people to write lock checking.
-> > 
-> > Glad you like it!
-> > 
-> > 							Thanx, Paul
-> 
-> What say we just list the conditions in the comments. I'm happy with
-> something like the following:
 
-This does work at present, but the sparse-based checks that Arnd is
-working on will generate warnings anywhere an RCU-protected pointer is
-used as a normal pointer.  So I believe that it would be good to get
-these taken care of now, rather than having them break again in a very
-short time.
 
-							Thanx, Paul
+On Mon, 12 Apr 2010, Rik van Riel wrote:
 
-> Trond
-> --------------------------------------------------------------------------------------------- 
-> NFSv4: Kill the bogus RCU dereferencing warnings in fs/nfs/delegation.c
+> On 04/12/2010 12:01 PM, Peter Zijlstra wrote:
 > 
-> From: Trond Myklebust <Trond.Myklebust@netapp.com>
+> > @@ -864,15 +889,8 @@ void page_remove_rmap(struct page *page)
+> >   		__dec_zone_page_state(page, NR_FILE_MAPPED);
+> >   		mem_cgroup_update_file_mapped(page, -1);
+> >   	}
+> > -	/*
+> > -	 * It would be tidy to reset the PageAnon mapping here,
+> > -	 * but that might overwrite a racing page_add_anon_rmap
+> > -	 * which increments mapcount after us but sets mapping
+> > -	 * before us: so leave the reset to free_hot_cold_page,
+> > -	 * and remember that it's only reliable while mapped.
+> > -	 * Leaving it set also helps swapoff to reinstate ptes
+> > -	 * faster for those pages still in swapcache.
+> > -	 */
+> > +
+> > +	page->mapping = NULL;
+> >   }
 > 
-> Kill all the bogus warnings about RCU dereferencing, and document which
-> locks are protecting the pointer derefs.
+> That would be a bug for file pages :)
 > 
-> Reported-by: David Howells <dhowells@redhat.com>
-> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> ---
-> 
->  fs/nfs/delegation.c |   24 ++++++++++++++++++------
->  1 files changed, 18 insertions(+), 6 deletions(-)
-> 
-> 
-> diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
-> index 1567124..5a1a379 100644
-> --- a/fs/nfs/delegation.c
-> +++ b/fs/nfs/delegation.c
-> @@ -34,12 +34,17 @@ static void nfs_free_delegation_callback(struct rcu_head *head)
->  	nfs_do_free_delegation(delegation);
->  }
->  
-> +/*
-> + * At this point, we know that the nfsi->rwsem protects us against read
-> + * access by the state recovery thread, so it is safe to assume nobody
-> + * else is accessing delegation->cred.
-> + */
->  static void nfs_free_delegation(struct nfs_delegation *delegation)
->  {
->  	struct rpc_cred *cred;
->  
-> -	cred = rcu_dereference(delegation->cred);
-> -	rcu_assign_pointer(delegation->cred, NULL);
-> +	cred = delegation->cred;
-> +	delegation->cred = NULL;
->  	call_rcu(&delegation->rcu, nfs_free_delegation_callback);
->  	if (cred)
->  		put_rpccred(cred);
-> @@ -166,12 +171,18 @@ static struct inode *nfs_delegation_grab_inode(struct nfs_delegation *delegation
->  	return inode;
->  }
->  
-> +/*
-> + * This function must be called with the nfs_client->cl_lock held to
-> + * ensure that the value of nfsi->delegation is protected against
-> + * modification by other threads.
-> + */
->  static struct nfs_delegation *nfs_detach_delegation_locked(struct nfs_inode *nfsi, const nfs4_stateid *stateid)
->  {
-> -	struct nfs_delegation *delegation = rcu_dereference(nfsi->delegation);
-> +	struct nfs_delegation *delegation = nfsi->delegation;
->  
->  	if (delegation == NULL)
->  		goto nomatch;
-> +	/* Lock out RCU-protected lookups. */
->  	spin_lock(&delegation->lock);
->  	if (stateid != NULL && memcmp(delegation->stateid.data, stateid->data,
->  				sizeof(delegation->stateid.data)) != 0)
-> @@ -212,8 +223,9 @@ int nfs_inode_set_delegation(struct inode *inode, struct rpc_cred *cred, struct
->  	delegation->flags = 1<<NFS_DELEGATION_REFERENCED;
->  	spin_lock_init(&delegation->lock);
->  
-> +	/* Protect nfsi->delegation against modification */
->  	spin_lock(&clp->cl_lock);
-> -	if (rcu_dereference(nfsi->delegation) != NULL) {
-> +	if (nfsi->delegation != NULL) {
->  		if (memcmp(&delegation->stateid, &nfsi->delegation->stateid,
->  					sizeof(delegation->stateid)) == 0 &&
->  				delegation->type == nfsi->delegation->type) {
-> @@ -330,7 +342,7 @@ void nfs_inode_return_delegation_noreclaim(struct inode *inode)
->  	struct nfs_inode *nfsi = NFS_I(inode);
->  	struct nfs_delegation *delegation;
->  
-> -	if (rcu_dereference(nfsi->delegation) != NULL) {
-> +	if (nfsi->delegation != NULL) {
->  		spin_lock(&clp->cl_lock);
->  		delegation = nfs_detach_delegation_locked(nfsi, NULL);
->  		spin_unlock(&clp->cl_lock);
-> @@ -346,7 +358,7 @@ int nfs_inode_return_delegation(struct inode *inode)
->  	struct nfs_delegation *delegation;
->  	int err = 0;
->  
-> -	if (rcu_dereference(nfsi->delegation) != NULL) {
-> +	if (nfsi->delegation != NULL) {
->  		spin_lock(&clp->cl_lock);
->  		delegation = nfs_detach_delegation_locked(nfsi, NULL);
->  		spin_unlock(&clp->cl_lock);
-> 
+> I could see how it could work for anonymous memory, though.
+
+I think it's scary for anonymous pages too. The _common_ case of 
+page_remove_rmap() is from unmap/exit, which holds no locks on the page 
+what-so-ever. So assuming the page could be reachable some other way (swap 
+cache etc), I think the above is pretty scary. 
+
+Also do note that the bug we've been chasing has _always_ had that test 
+for "page_mapped(page)". See my other email about why the unmapped case 
+isn't even interesting, because it's so easy to see how page->mapping can 
+be stale for unmapped pages.
+
+It's the _mapped_ case that is interesting, not the unmapped one. So 
+setting page->mapping to NULL when unmapping is perhaps a nice consistency 
+issue ("never have stale pointers"), but it's missing the fact that it's 
+not really the case we care about.
+
+			Linus
