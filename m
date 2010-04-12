@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655Ab0DLMqT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 08:46:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55081 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151Ab0DLMqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 08:46:17 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100412122745.GC28208@flint.arm.linux.org.uk>
-References: <20100412122745.GC28208@flint.arm.linux.org.uk> <20100412060609.GA25273@dvomlehn-lnx2.corp.sa.net>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: dhowells@redhat.com, David VomLehn <dvomlehn@cisco.com>,
-       linux-arch@vger.kernel.org, akpm@linux-foundation.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/23] Make register values available to panic notifiers
-Date: Mon, 12 Apr 2010 13:45:27 +0100
-Message-ID: <25356.1271076327@redhat.com>
+	id S1751552Ab0DLMrL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 08:47:11 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:35449 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab0DLMrJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 08:47:09 -0400
+Date: Mon, 12 Apr 2010 14:47:08 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: Andi Kleen <andi@firstfloor.org>, Pedro Ribeiro <pedrib@gmail.com>,
+       Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, Greg KH <gregkh@suse.de>,
+       alsa-devel@alsa-project.org, linux-usb@vger.kernel.org
+Subject: Re: USB transfer_buffer allocations on 64bit systems
+Message-ID: <20100412124708.GO18855@one.firstfloor.org>
+References: <20100407090623.GN30807@buzzloop.caiaq.de> <Pine.LNX.4.44L0.1004071036060.1779-100000@iolanthe.rowland.org> <87sk719hbm.fsf@basil.nowhere.org> <20100412111439.GU30801@buzzloop.caiaq.de> <20100412115300.GM18855@one.firstfloor.org> <q2z74fd948d1004120511hebf19eaauc41ee9ed25dea19e@mail.gmail.com> <20100412121243.GN18855@one.firstfloor.org> <20100412123238.GW30801@buzzloop.caiaq.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100412123238.GW30801@buzzloop.caiaq.de>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King <rmk@arm.linux.org.uk> wrote:
+On Mon, Apr 12, 2010 at 02:32:38PM +0200, Daniel Mack wrote:
+> Another detail I can't explain is that on his machine, the kernel oopses
+> when kmalloc() with GFP_DMA32 is used. The patch to try this also only
+> touched the allocation in sound/usb/caiaq/audio.c.
 
-> Can you explain why you want this?
+Where did it oops?
+
 > 
-> I'm wondering about the value of saving the registers; normally when a panic
-> occurs, it's because of a well defined reason, and not because something
-> went wrong in some CPU register; to put it another way, a panic() is a
-> more controlled exception than a BUG() or a bad pointer dereference.
+> > > The only which solved this problem was the first patch sent to me by
+> > > Daniel Mack. I've been using it for days straight and it works fine.
+> > 
+> > Can you send a full boot log?
+> 
+> He just did. I put it online here:
+> 
+>   http://caiaq.de/download/tmp/pedro-dmesg
 
-+1.
+The system seems to set up the soft iotlb correctly.
 
-I found in FS-Cache and CacheFiles that often the things I most wanted to know
-when I had something of the form:
+[    0.468472] PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+[    0.468539] Placing 64MB software IO TLB between ffff880020000000 - ffff880024000000
+[    0.468610] software IO TLB at phys 0x20000000 - 0x24000000
 
-	if (A == B)
-		BUG();
+Also if that was wrong a lot more things would go wrong.
 
-was a and b, so I made the following macro:
+I would suspect the driver. Are you sure:
 
-	#define ASSERTCMP(X, OP, Y)					\
-	do {								\
-		if (unlikely(!((X) OP (Y)))) {				\
-			printk(KERN_ERR "\n");				\
-			printk(KERN_ERR "AFS: Assertion failed\n");	\
-			printk(KERN_ERR "%lu " #OP " %lu is false\n",	\
-			       (unsigned long)(X), (unsigned long)(Y));	\
-			printk(KERN_ERR "0x%lx " #OP " 0x%lx is false\n", \
-			       (unsigned long)(X), (unsigned long)(Y));	\
-			BUG();						\
-		}							\
-	} while(0)
+- it sets up it's dma_masks correctly?
+- it uses pci_map_single/sg correctly for all transferred data?
 
-which I could then call like this:
+-Andi
 
-	ASSERTCMP(A, ==, B);
-
-and if the assertion failed, it prints A and B explicitly.  This is much
-easier than trying to pick the values out of a register dump, especially as
-the compiler may be free to clobber A or B immediately after testing them.
-
-David
+-- 
+ak@linux.intel.com -- Speaking for myself only.
