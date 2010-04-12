@@ -1,127 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451Ab0DLPpz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 11:45:55 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:38177 "HELO
-	outbound-mail-01.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751388Ab0DLPpy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 11:45:54 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=gYscfMougkddd/dWxVxn8orUaWzoYpCsteHDkCH+fK2TzGdBz30gaKm/f4KGnwZw+qz2MkxR0H68c3Ip1DYTZxvrXpgLHHz/5TfyM+zu9vhTLBLqY3Xg65fNZeJD1uba;
-Date: Mon, 12 Apr 2010 08:46:13 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Dave Airlie <airlied@gmail.com>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       James Simmons <jsimmons@infradead.org>
-Subject: Re: [PATCH] drm: add locked variant of
- drm_fb_helper_force_kernel_mode
-Message-ID: <20100412084613.78788e9d@virtuousgeek.org>
-In-Reply-To: <z2q21d7e9971004111705p4d1760dax9f324777be44f299@mail.gmail.com>
-References: <20100409151050.74ef6dcd@virtuousgeek.org>
-	<20100409151148.4312e5cb@virtuousgeek.org>
-	<z2q21d7e9971004111705p4d1760dax9f324777be44f299@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	id S1752635Ab0DLPtA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 11:49:00 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59914 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752330Ab0DLPs7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 11:48:59 -0400
+Date: Mon, 12 Apr 2010 08:44:08 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+cc: Borislav Petkov <bp@alien8.de>, Johannes Weiner <hannes@cmpxchg.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas
+ of a mergeable VMA
+In-Reply-To: <4BC227B6.7050802@redhat.com>
+Message-ID: <alpine.LFD.2.00.1004120841480.26679@i5.linux-foundation.org>
+References: <alpine.LFD.2.00.1004101101180.3558@i5.linux-foundation.org> <20100410185145.GB28952@a1.tnic> <20100410185839.GA32035@a1.tnic> <alpine.LFD.2.00.1004101234210.3558@i5.linux-foundation.org> <alpine.LFD.2.00.1004101308250.3618@i5.linux-foundation.org>
+ <20100410203628.GB32035@a1.tnic> <alpine.LFD.2.00.1004101336440.3618@i5.linux-foundation.org> <20100410212555.GA1797@a1.tnic> <alpine.LFD.2.00.1004101427090.3618@i5.linux-foundation.org> <20100410215115.GA2599@a1.tnic> <20100411130801.GA7189@a1.tnic>
+ <alpine.LFD.2.00.1004110938570.3514@i5.linux-foundation.org> <alpine.LFD.2.00.1004111010280.3514@i5.linux-foundation.org> <4BC227B6.7050802@redhat.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Apr 2010 10:05:00 +1000
-Dave Airlie <airlied@gmail.com> wrote:
 
-> On Sat, Apr 10, 2010 at 8:11 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> > Needed for panic and kdb, since we need to avoid taking the mode_config
-> > mutex.
-> 
-> One comment below.
-> 
-> >
-> > Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-> > ---
-> >  drivers/gpu/drm/drm_fb_helper.c |   42 +++++++++++++++++++++++++++++++++-----
-> >  1 files changed, 36 insertions(+), 6 deletions(-)
-> >
-> > diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
-> > index 6929f5b..962eadb 100644
-> > --- a/drivers/gpu/drm/drm_fb_helper.c
-> > +++ b/drivers/gpu/drm/drm_fb_helper.c
-> > @@ -242,18 +242,22 @@ static int drm_fb_helper_parse_command_line(struct drm_fb_helper *fb_helper)
-> >        return 0;
-> >  }
-> >
-> > -bool drm_fb_helper_force_kernel_mode(void)
-> > +bool drm_fb_helper_force_kernel_mode_locked(void)
-> >  {
-> >        int i = 0;
-> >        bool ret, error = false;
-> >        struct drm_fb_helper *helper;
-> > -
-> > -       if (list_empty(&kernel_fb_helper_list))
-> > -               return false;
-> > +       struct drm_mode_set *mode_set;
-> > +       struct drm_crtc *crtc;
-> >
-> >        list_for_each_entry(helper, &kernel_fb_helper_list, kernel_fb_list) {
-> >                for (i = 0; i < helper->crtc_count; i++) {
-> > -                       struct drm_mode_set *mode_set = &helper->crtc_info[i].mode_set;
-> > +                       mode_set = &helper->crtc_info[i].mode_set;
-> > +                       crtc = helper->crtc_info[i].mode_set.crtc;
-> > +
-> > +                       if (!crtc->enabled)
-> > +                               continue;
-> > +
-> >                        ret = drm_crtc_helper_set_config(mode_set);
-> >                        if (ret)
-> >                                error = true;
-> > @@ -262,11 +266,37 @@ bool drm_fb_helper_force_kernel_mode(void)
-> >        return error;
-> >  }
-> >
-> > +bool drm_fb_helper_force_kernel_mode(void)
-> > +{
-> > +       bool ret;
-> > +       struct drm_device *dev;
-> > +       struct drm_fb_helper *helper;
-> > +       struct drm_mode_set *mode_set;
-> > +
-> > +       if (list_empty(&kernel_fb_helper_list)) {
-> > +               DRM_DEBUG_KMS("no fb helper list??\n");
-> > +               return false;
-> > +       }
-> > +
-> > +       /* Get the DRM device */
-> > +       helper = list_first_entry(&kernel_fb_helper_list,
-> > +                                 struct drm_fb_helper,
-> > +                                 kernel_fb_list);
-> > +       mode_set = &helper->crtc_info[0].mode_set;
-> > +       dev = mode_set->crtc->dev;
-> > +
-> > +       mutex_lock(&dev->mode_config.mutex);
-> > +       ret = drm_fb_helper_force_kernel_mode_locked();
-> > +       mutex_unlock(&dev->mode_config.mutex);
-> > +
-> > +       return ret;
-> > +}
-> > +
-> >  int drm_fb_helper_panic(struct notifier_block *n, unsigned long ununsed,
-> >                        void *panic_str)
-> >  {
-> >        DRM_ERROR("panic occurred, switching back to text console\n");
-> > -       return drm_fb_helper_force_kernel_mode();
-> > +       drm_fb_helper_force_kernel_mode_locked();
-> 
-> Any reason to drop the return here?
-> 
-> not just remove the return 0?
 
-Oh no; I don't think the return value is checked anywhere but we may as
-well return it anyway.
+On Sun, 11 Apr 2010, Rik van Riel wrote:
+> 
+> Looking around the code some more, zap_pte_range()
+> calls page_remove_rmap(), which leaves the
+> page->mapping in place and has this comment:
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+See my earlier email about this exact issue. It's well-known that there 
+are stale page->mapping pointers. The "page_mapped()" check _should_ have 
+meant that in that case we never follow them, though.
+
+> I wonder if we can clear page->mapping here, if
+> list_is_singular(anon_vma->head).  That way we
+> will not leave stale pointers behind.
+
+What does that help? What if list _isn't_ singular?
+
+		Linus
