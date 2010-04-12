@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab0DLKjI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 06:39:08 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:50940 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752439Ab0DLKjG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 06:39:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=NoKe6GHqn/AUBsBag/nhyoKCLGAQ86KSnbqFpJeKFYRwe55IFeN0L+9Pa6WOFG/N+T
-         X6Zrde1MDbmuYMn7nQErwTcvueDuDkHUpZp3YOw+VtGj9+oTvSwzoCqNR/DxeFkH7y+J
-         xLzXGHd781JlU+vSWdeI3wXpm1yoUvjGSStdc=
-Subject: Re: [v3 Patch 2/3] bridge: make bridge support netpoll
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Cong Wang <amwang@redhat.com>
-Cc: Stephen Hemminger <shemminger@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       bridge@lists.linux-foundation.org, Andy Gospodarek <gospo@redhat.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Jeff Moyer <jmoyer@redhat.com>,
-       Matt Mackall <mpm@selenic.com>, bonding-devel@lists.sourceforge.net,
-       Jay Vosburgh <fubar@us.ibm.com>, David Miller <davem@davemloft.net>
-In-Reply-To: <4BC2F7E2.7020309@redhat.com>
-References: <20100408062234.4499.17042.sendpatchset@localhost.localdomain>
-	 <20100408062246.4499.5670.sendpatchset@localhost.localdomain>
-	 <20100408083710.2b61ee44@nehalam>  <4BC2F7E2.7020309@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 12 Apr 2010 12:38:57 +0200
-Message-ID: <1271068737.16881.18.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1753658Ab0DLKp1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 06:45:27 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:65139 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752201Ab0DLKp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 06:45:26 -0400
+Message-ID: <4BC2F928.2060407@cn.fujitsu.com>
+Date: Mon, 12 Apr 2010 18:42:48 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/6] KVM MMU: optimize for writing cr4
+References: <4BC2D2E2.1030604@cn.fujitsu.com> <4BC2D3E0.8070602@cn.fujitsu.com> <4BC2DB27.7060005@redhat.com>
+In-Reply-To: <4BC2DB27.7060005@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 12 avril 2010 à 18:37 +0800, Cong Wang a écrit :
-> Stephen Hemminger wrote:
-> > There is no protection on dev->priv_flags for SMP access.
-> > It would better bit value in dev->state if you are using it as control flag.
-> > 
-> > Then you could use 
-> > 			if (unlikely(test_and_clear_bit(__IN_NETPOLL, &skb->dev->state)))
-> > 				netpoll_send_skb(...)
-> > 
-> > 
-> 
-> Hmm, I think we can't use ->state here, it is not for this kind of purpose,
-> according to its comments.
-> 
-> Also, I find other usages of IFF_XXX flags of ->priv_flags are also using
-> &, | to set or clear the flags. So there must be some other things preventing
-> the race...
+Hi Avi,
 
-Yes, its RTNL that protects priv_flags changes, hopefully...
+Thanks for your comments.
 
+Avi Kivity wrote:
+
+> Later we have:
+> 
+>>         kvm_x86_ops->set_cr4(vcpu, cr4);
+>>         vcpu->arch.cr4 = cr4;
+>>         vcpu->arch.mmu.base_role.cr4_pge = (cr4 & X86_CR4_PGE) &&
+>> !tdp_enabled;
+> 
+> All of which depend on cr4.
+
+Oh, destroy_kvm_mmu() is not really destroyed cr3 and we can reload it later
+form shadow page cache, so, maybe this patch is unnecessary.
+
+But, i have a another question here, why we need encode 'cr4 & X86_CR4_PGE' into
+base_role.cr4_gpe? Why we need allocation different shadow page for global page
+and no-global page?
+
+As i know, global page is not static in TLB, and x86 cpu also may flush them form TLB,
+maybe we no need treat global page specially... Am i miss something? :-(
+
+Xiao
 
