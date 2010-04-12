@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab0DLWGe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 18:06:34 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:50828 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752776Ab0DLWGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 18:06:32 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [Bug #15625] BUG: 2.6.34-rc1, RIP is (null)
-Date: Tue, 13 Apr 2010 01:09:56 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc3-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>
-References: <6Pphclm24fK.A.lSF.qsPvLB@chimera> <JVS2s9dmTsP.A.lhH.qtPvLB@chimera> <4BC28CC7.7070904@oracle.com>
-In-Reply-To: <4BC28CC7.7070904@oracle.com>
+	id S1754054Ab0DLWLb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 18:11:31 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:64837 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753426Ab0DLWLa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 18:11:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=AunyKRBER2p9Iy2pDj+Ln3/zkamTG8XC1/WQQtVPmlxs40aTj5FaDrdjWgRgcS26r8
+         1l5UnaJEohPcruZUxZbKCbt9+LmqT4AGMhJnBqhk1zVbWn0Y0DPXaz5E7DI1TcfQXjtC
+         Q2p+QYl8x/ieMww5M5trRxIIbTYLULgJ8G1OQ=
+Date: Tue, 13 Apr 2010 00:04:53 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Anton Blanchard <anton@samba.org>,
+       Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org
+Subject: Re: TRACE_EVENT() declarations belong to include/trace/
+Message-ID: <20100412220451.GG8285@nowhere>
+References: <20100412214511.GA2699@Krystal>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004130109.56070.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100412214511.GA2699@Krystal>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 12 April 2010, Randy Dunlap wrote:
-> On 04/07/10 14:13, Rafael J. Wysocki wrote:
-> > This message has been generated automatically as a part of a summary report
-> > of recent regressions.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.33.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
-> > 
+On Mon, Apr 12, 2010 at 05:45:11PM -0400, Mathieu Desnoyers wrote:
+> Why are there TRACE_EVENT() declarations in arch/powerpc/include/asm/trace.h for
+> irq_entry/exit ?
 > 
-> This was a one-time occurrence.  I don't know your policy of whether it should still
-> be listed or not.
+> What's so special about them that they cannot be put in linux/trace/ ?
 > 
-> I don't tend to ignore one-time bugs.
+> I'm all for the trace_irq_entry/exit instrumentation, but I don't see any good
+> in adding event declarations outside of include/trace/.
+> 
+> Thanks,
 
-Let's keep it listed for some time.
 
-Thanks,
-Rafael
+Yeah,
+
+If this is to trace all irqs, then it seems to me the wrong way.
+We already have generic irq_handler_entry and irq_handler_exit trace events.
+
+May be those in powerpc are here to get the spurious irqs by computing
+a diff between generic and arch irq events? In which case
+it would be better to get dedicated spurious irq tracepoints.
+
