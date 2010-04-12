@@ -1,115 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab0DLBJK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Apr 2010 21:09:10 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40593 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753309Ab0DLBJG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Apr 2010 21:09:06 -0400
-Date: Sun, 11 Apr 2010 18:04:39 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Borislav Petkov <bp@alien8.de>
-cc: Johannes Weiner <hannes@cmpxchg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas
- of a mergeable VMA
-In-Reply-To: <alpine.LFD.2.00.1004111707360.3514@i5.linux-foundation.org>
-Message-ID: <alpine.LFD.2.00.1004111759440.3521@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1004101234210.3558@i5.linux-foundation.org> <alpine.LFD.2.00.1004101308250.3618@i5.linux-foundation.org> <20100410203628.GB32035@a1.tnic> <alpine.LFD.2.00.1004101336440.3618@i5.linux-foundation.org> <20100410212555.GA1797@a1.tnic>
- <alpine.LFD.2.00.1004101427090.3618@i5.linux-foundation.org> <20100410215115.GA2599@a1.tnic> <20100411130801.GA7189@a1.tnic> <alpine.LFD.2.00.1004110938570.3514@i5.linux-foundation.org> <alpine.LFD.2.00.1004111010280.3514@i5.linux-foundation.org>
- <20100411185508.GA4450@liondog.tnic> <alpine.LFD.2.00.1004111707360.3514@i5.linux-foundation.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753343Ab0DLBUF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Apr 2010 21:20:05 -0400
+Received: from xenotime.net ([72.52.64.118]:55401 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753244Ab0DLBUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Apr 2010 21:20:03 -0400
+Message-ID: <37958.71.245.98.113.1271035201.squirrel@www.xenotime.net>
+In-Reply-To: <alpine.LFD.2.00.1004120022230.18009@localhost.localdomain>
+References: <20100411164701.GA7558@elf.ucw.cz> <20100412185136.GA13171@x200>
+    <g2v10f740e81004111158r4d4714a1w23b8521d5d595b29@mail.gmail.com>
+    <20100411201426.GC25294@elf.ucw.cz>
+    <alpine.LFD.2.00.1004120022230.18009@localhost.localdomain>
+Date: Sun, 11 Apr 2010 18:20:01 -0700 (PDT)
+Subject: Re: LOCALVERSION_AUTO considered harmful
+From: rdunlap@xenotime.net
+To: "Thomas Gleixner" <tglx@linutronix.de>
+Cc: "Pavel Machek" <pavel@ucw.cz>, "Geert Uytterhoeven" <geert@linux-m68k.org>,
+       "Alexey Dobriyan" <adobriyan@gmail.com>,
+       "kernel list" <linux-kernel@vger.kernel.org>,
+       "Linus Torvalds" <torvalds@linux-foundation.org>,
+       "Andrew Morton" <akpm@osdl.org>
+User-Agent: SquirrelMail/1.5.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, April 11, 2010 3:24 pm, Thomas Gleixner wrote:
+> On Sun, 11 Apr 2010, Pavel Machek wrote:
+>
+>
+>> On Sun 2010-04-11 20:58:58, Geert Uytterhoeven wrote:
+>>
+>>> On Mon, Apr 12, 2010 at 20:51, Alexey Dobriyan <adobriyan@gmail.com>
+>>> wrote:
+>>>
+>>>> On Sun, Apr 11, 2010 at 06:47:01PM +0200, Pavel Machek wrote:
+>>>>
+>>>>> @@ -99,6 +98,11 @@ config LOCALVERSION_AUTO
+>>>>>         appended after any matching localversion* files, and after
+>>>>> the value         set in CONFIG_LOCALVERSION.
+>>>>>
+>>>>>
+>>>>> +       Unfortunately, such finegrained versioning will mean that
+>>>>> you will +       not be able to use modules for development; even
+>>>>> "make modules"
+>>>>> +       will change module versions, making recompiled modules
+>>>>> impossible +       to insert into old kernel.
+>>>>>
+>>>>
+>>>> That's conditional BS.
+>>>> Turn off CONFIG_MODVERSIONS already.
+>>>>
+>>>
+>>> Yeah, I disabled it ages ago. Even then (before git, probably even
+>>> before bitkeeper) I had hard times inserting modules...
+>>>
+>>
+>> I _had_ it off
+>>
+>>
+>> # CONFIG_MODVERSIONS is not set
+>>
+>>
+>> It seems some checking survives CONFIG_MODVERSIONS unset and that
+>> checking is strict enough to refuse module load after one "make modules"
+>> with LOCALVERSION_AUTO on...
+>
+> So instead of fixing the CONFIG_MODVERSIONS=n case you go the easy way
+> of killing LOCALVERSION_AUTO ? Brilliant.
+
+so it works for you?  how so, please?
+
+> Thanks,
+
+(saving bits)
+
+~Randy
 
 
-On Sun, 11 Apr 2010, Linus Torvalds wrote:
-> 
-> I'll see if I can come up with a patch to do the same kind of validation 
-> on page->mapping as on the anon-vma chains themselves.
-
-Ok, this may or may not work. It hasn't triggered for me, which may be 
-because it's broken, but maybe it's because I'm not doing whatever it is 
-you are doing to break our VM.
-
-It checks each anonymous page at unmap time against the vma it gets 
-unmapped from. It depends on the previous vma_verify debugging patch, and 
-it would be interesting to hear whether this patch causes any new warnngs 
-for you..
-
-If the warnings do happen, they are not going to be printing out any 
-hugely informative data apart from the fact that the bad case happened at 
-all. But If they do trigger, I can try to improve on them - it's just not 
-worth trying to make them any more interesting if they never trigger.
-
-		Linus
-
----
- mm/memory.c |   21 +++++++++++++++++++++
- mm/mmap.c   |    2 +-
- 2 files changed, 22 insertions(+), 1 deletions(-)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index 833952d..5d2df59 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -890,6 +890,25 @@ int copy_page_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 	return ret;
- }
- 
-+extern void verify_vma(struct vm_area_struct *);
-+
-+static void verify_anon_page(struct vm_area_struct *vma, struct page *page)
-+{
-+	struct anon_vma *anon_vma = vma->anon_vma;
-+	struct anon_vma *need_anon_vma = page_anon_vma(page);
-+	struct anon_vma_chain *avc;
-+
-+	verify_vma(vma);
-+	if (WARN_ONCE(!anon_vma, "anonymous page in vma without anon_vma"))
-+		return;
-+	list_for_each_entry(avc, &vma->anon_vma_chain, same_vma) {
-+		WARN_ONCE(avc->vma != vma, "anon_vma_chain vma entry doesn't match");
-+		if (avc->anon_vma == need_anon_vma)
-+			return;
-+	}
-+	WARN_ONCE(1, "page->mapping does not exist in vma chain");
-+}
-+
- static unsigned long zap_pte_range(struct mmu_gather *tlb,
- 				struct vm_area_struct *vma, pmd_t *pmd,
- 				unsigned long addr, unsigned long end,
-@@ -940,6 +959,8 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
- 			tlb_remove_tlb_entry(tlb, pte, addr);
- 			if (unlikely(!page))
- 				continue;
-+			if (PageAnon(page))
-+				verify_anon_page(vma, page);
- 			if (unlikely(details) && details->nonlinear_vma
- 			    && linear_page_index(details->nonlinear_vma,
- 						addr) != page->index)
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 890c169..461f59c 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1565,7 +1565,7 @@ get_unmapped_area(struct file *file, unsigned long addr, unsigned long len,
- 
- EXPORT_SYMBOL(get_unmapped_area);
- 
--static void verify_vma(struct vm_area_struct *vma)
-+void verify_vma(struct vm_area_struct *vma)
- {
- 	if (vma->anon_vma) {
- 		struct anon_vma_chain *avc;
