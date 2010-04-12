@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047Ab0DLUmL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 16:42:11 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38968 "EHLO mx1.suse.de"
+	id S1754065Ab0DLUmM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 16:42:12 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38969 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753776Ab0DLUmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753866Ab0DLUmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Apr 2010 16:42:04 -0400
 From: Jan Blunck <jblunck@suse.de>
 To: Jan Kara <jack@suse.cz>, tytso@mit.edu
 Cc: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
        linux-ext4@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
        Arnd Bergmann <arnd@arndb.de>, Jan Blunck <jblunck@suse.de>
-Subject: [PATCH 0/5] ext2: Preparation to remove BKL
-Date: Mon, 12 Apr 2010 22:41:40 +0200
-Message-Id: <1271104905-8804-1-git-send-email-jblunck@suse.de>
+Subject: [PATCH 4/5] ext2: Move ext2_write_super() out of ext2_setup_super()
+Date: Mon, 12 Apr 2010 22:41:44 +0200
+Message-Id: <1271104905-8804-5-git-send-email-jblunck@suse.de>
 X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1271104905-8804-1-git-send-email-jblunck@suse.de>
+References: <1271104905-8804-1-git-send-email-jblunck@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In this series I've collected the patches that prepare ext2 for BKL removal.
-It consist mostly of cleanups and additionally introduces a spinlock to protect
-some of the superblock's fields against concurrent access. I've addressed the
-feedback kindly provided by Ogawa-san by moving the ext2_write_super() out of
-ext2_setup_super().
+Move ext2_write_super() out of ext2_setup_super() as a preparation for the
+next patch that adds a new lock for superblock fields.
 
-These patches have been part of the BKL removal series that I have posted in
-November 2009 already. Since this is more than just removing the usage of the
-big lock I repost it separately for inclusion. This series, at least the last
-patch that includes the s_lock, needs to be merged before Frederics bkl-removal
-branch, if he merges the rest of my patches there.
+Signed-off-by: Jan Blunck <jblunck@suse.de>
+---
+ fs/ext2/super.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-Thanks,
-Jan
-
-Jan Blunck (5):
-  ext2: Use ext2_clear_super_error() in ext2_sync_fs()
-  ext2: Set the write time in ext2_sync_fs()
-  ext2: Remove duplicate code from ext2_sync_fs()
-  ext2: Move ext2_write_super() out of ext2_setup_super()
-  ext2: Add ext2_sb_info s_lock spinlock
-
- fs/ext2/inode.c            |    2 +
- fs/ext2/super.c            |   63 +++++++++++++++++++++++++-------------------
- include/linux/ext2_fs_sb.h |    6 ++++
- 3 files changed, 44 insertions(+), 27 deletions(-)
+diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+index 40fc8d5..b01c491 100644
+--- a/fs/ext2/super.c
++++ b/fs/ext2/super.c
+@@ -606,7 +606,6 @@ static int ext2_setup_super (struct super_block * sb,
+ 	if (!le16_to_cpu(es->s_max_mnt_count))
+ 		es->s_max_mnt_count = cpu_to_le16(EXT2_DFL_MAX_MNT_COUNT);
+ 	le16_add_cpu(&es->s_mnt_count, 1);
+-	ext2_write_super(sb);
+ 	if (test_opt (sb, DEBUG))
+ 		ext2_msg(sb, KERN_INFO, "%s, %s, bs=%lu, fs=%lu, gc=%lu, "
+ 			"bpg=%lu, ipg=%lu, mo=%04lx]",
+@@ -1079,7 +1078,9 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
+ 	if (EXT2_HAS_COMPAT_FEATURE(sb, EXT3_FEATURE_COMPAT_HAS_JOURNAL))
+ 		ext2_msg(sb, KERN_WARNING,
+ 			"warning: mounting ext3 filesystem as ext2");
+-	ext2_setup_super (sb, es, sb->s_flags & MS_RDONLY);
++	if (ext2_setup_super (sb, es, sb->s_flags & MS_RDONLY))
++		sb->s_flags != MS_RDONLY;
++	ext2_write_super(sb);
+ 	return 0;
+ 
+ cantfind_ext2:
+@@ -1249,6 +1250,7 @@ static int ext2_remount (struct super_block * sb, int * flags, char * data)
+ 		 */
+ 		es->s_state = cpu_to_le16(sbi->s_mount_state);
+ 		es->s_mtime = cpu_to_le32(get_seconds());
++		ext2_sync_super(sb, es);
+ 	} else {
+ 		__le32 ret = EXT2_HAS_RO_COMPAT_FEATURE(sb,
+ 					       ~EXT2_FEATURE_RO_COMPAT_SUPP);
+@@ -1268,8 +1270,8 @@ static int ext2_remount (struct super_block * sb, int * flags, char * data)
+ 		sbi->s_mount_state = le16_to_cpu(es->s_state);
+ 		if (!ext2_setup_super (sb, es, 0))
+ 			sb->s_flags &= ~MS_RDONLY;
++		ext2_write_super(sb);
+ 	}
+-	ext2_sync_super(sb, es);
+ 	unlock_kernel();
+ 	return 0;
+ restore_opts:
+-- 
+1.6.4.2
 
