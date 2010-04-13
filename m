@@ -1,352 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577Ab0DMMzW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 08:55:22 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:62241 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963Ab0DMMzU (ORCPT
+	id S1751593Ab0DMND7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 09:03:59 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:54644 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab0DMND5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 08:55:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:message-id:x-mailer;
-        b=GcBA8e54Uw+d7nOytkXtp4HcDsRrgJRf9zoi3luQff0uCLzFmT6HUIqyx6i7U0D45U
-         y8wHLzUTXXe31VKzSuXSJ/96q0HU3784VKvN2dbn4G6kQJ8gQo6F7iOTj7wFgitnw8KJ
-         zSTWPKclPhwG8gatdZ4nVDl1GlViBlCsmqsB0=
-From: Maurice Dawson <mauricedawson2699@googlemail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu, mithlesh@linsyssoft.com,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 31/31] Staging: comedi: fix over 80 characters coding style issues in adv_pci_dio.c
-Date: Tue, 13 Apr 2010 13:55:07 +0100
-Message-Id: <1271163307-3424-1-git-send-email-mauricedawson2699@googlemail.com>
-X-Mailer: git-send-email 1.6.3.3
+	Tue, 13 Apr 2010 09:03:57 -0400
+Message-ID: <4BC46BBB.7060508@vlnb.net>
+Date: Tue, 13 Apr 2010 17:03:55 +0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+MIME-Version: 1.0
+To: linux-scsi@vger.kernel.org
+CC: linux-kernel@vger.kernel.org,
+       scst-devel <scst-devel@lists.sourceforge.net>,
+       James Bottomley <James.Bottomley@HansenPartnership.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       Mike Christie <michaelc@cs.wisc.edu>, Jeff Garzik <jeff@garzik.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Vu Pham <vu@mellanox.com>, Bart Van Assche <bart.vanassche@gmail.com>,
+       James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
+       Andy Yan <ayan@marvell.com>, linux-driver@qlogic.com,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: [PATCH][RFC 0/0/0/5] New SCSI target framework (SCST) with dev handlers
+ and 2 target drivers
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V01U2FsdGVkX18tV5sxDK27n61Sd84tQTil4FeLdKowMmUt4wC
+ 5KtLJrZI2DC8zYyOPvzTjdJy4ptUXPx4qumvtSePkWvFZRbxua
+ jVftgz5GiaiFMlAZdQ0Tg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a re-submission of a previous patch to the adv_pci_dio.c file that fixes up over 80 character warnings found by the checkpatch.pl tool
+Please review this second iteration of the patch set of the new 
+(although, perhaps, the oldest) SCSI target framework for Linux SCST 
+with a set of dev handlers and 2 target drivers: for iSCSI (iscsi-scst) 
+and for Infiniband SRP (srpt).
 
-Signed-off-by: Maurice Dawson <mauricedawson2699@googlemail.com>
----
- drivers/staging/comedi/drivers/adv_pci_dio.c |  124 ++++++++++++-------------
- 1 files changed, 60 insertions(+), 64 deletions(-)
+The first iteration you can found here: http://lkml.org/lkml/2008/12/10/245.
 
-diff --git a/drivers/staging/comedi/drivers/adv_pci_dio.c b/drivers/staging/comedi/drivers/adv_pci_dio.c
-index b768ea5..3238e1a 100644
---- a/drivers/staging/comedi/drivers/adv_pci_dio.c
-+++ b/drivers/staging/comedi/drivers/adv_pci_dio.c
-@@ -63,8 +63,8 @@ enum hw_io_access {
- 
- #define MAX_DI_SUBDEVS	2	/* max number of DI subdevices per card */
- #define MAX_DO_SUBDEVS	2	/* max number of DO subdevices per card */
--#define MAX_DIO_SUBDEVG	2
- 			/* max number of DIO subdevices group per card */
-+#define MAX_DIO_SUBDEVG	2
- 
- #define SIZE_8255	   4	/* 8255 IO space length */
- 
-@@ -78,8 +78,8 @@ enum hw_io_access {
- #define PCI1730_DO	   2	/* W:   Digital output 0-15 */
- #define PCI1733_IDI	   0	/* R:   Isolated digital input  0-31 */
- #define	PCI1730_3_INT_EN	0x08	/* R/W: enable/disable interrupts */
--#define	PCI1730_3_INT_RF	0x0c
- 			/* R/W: set falling/raising edge for interrupts */
-+#define	PCI1730_3_INT_RF	0x0c
- #define	PCI1730_3_INT_CLR	0x10	/* R/W: clear interrupts */
- #define PCI1734_IDO	   0	/* W:   Isolated digital output 0-31 */
- #define PCI173x_BOARDID	   4	/* R:   Board I/D switch for 1730/3/4 */
-@@ -88,8 +88,8 @@ enum hw_io_access {
- #define PCI1736_IDI        0	/* R:   Isolated digital input  0-15 */
- #define PCI1736_IDO        0	/* W:   Isolated digital output 0-15 */
- #define PCI1736_3_INT_EN        0x08	/* R/W: enable/disable interrupts */
--#define PCI1736_3_INT_RF        0x0c
- 			/* R/W: set falling/raising edge for interrupts */
-+#define PCI1736_3_INT_RF        0x0c
- #define PCI1736_3_INT_CLR       0x10	/* R/W: clear interrupts */
- #define PCI1736_BOARDID    4	/* R:   Board I/D switch for 1736UP */
- #define PCI1736_MAINREG    0	/* Normal register (2) doesn't work */
-@@ -151,70 +151,66 @@ enum hw_io_access {
- #define INTCSR3		0x3b
- 
- /* PCI-1760 mailbox commands */
--#define CMD_ClearIMB2		0x00
- 		/* Clear IMB2 status and return actual DI status in IMB3 */
-+#define CMD_ClearIMB2		0x00
- #define CMD_SetRelaysOutput	0x01	/* Set relay output from OMB0 */
- #define CMD_GetRelaysStatus	0x02	/* Get relay status to IMB0 */
--#define CMD_ReadCurrentStatus	0x07
- 	/* Read the current status of the register in OMB0, result in IMB0 */
--#define CMD_ReadFirmwareVersion	0x0e
-+#define CMD_ReadCurrentStatus	0x07
- 			/* Read the firmware ver., result in IMB1.IMB0 */
--#define CMD_ReadHardwareVersion	0x0f
-+#define CMD_ReadFirmwareVersion	0x0e
- 			/* Read the hardware ver., result in IMB1.IMB0 */
-+#define CMD_ReadHardwareVersion	0x0f
-+			/* Enable IDI filters based on bits in OMB0 */
- #define CMD_EnableIDIFilters	0x20
--				/* Enable IDI filters based on bits in OMB0 */
-+			/* Enable IDI pattern match based on bits in OMB0 */
- #define CMD_EnableIDIPatternMatch 0x21
- 			/* Enable IDI pattern match based on bits in OMB0 */
- #define CMD_SetIDIPatternMatch	0x22
--			/* Enable IDI pattern match based on bits in OMB0 */
-+			/* Enable IDI counters based on bits in OMB0 */
- #define CMD_EnableIDICounters	0x28
--				/* Enable IDI counters based on bits in OMB0 */
--#define CMD_ResetIDICounters	0x29
- 	/* Reset IDI counters based on bits in OMB0 to its reset values */
--
--#define CMD_OverflowIDICounters	0x2a
-+#define CMD_ResetIDICounters	0x29
- 	/* Enable IDI counters overflow interrupts based on bits in OMB0 */
--
--#define CMD_MatchIntIDICounters	0x2b
-+#define CMD_OverflowIDICounters	0x2a
- 	/* Enable IDI counters match value interrupts based on bits in OMB0 */
--
--#define CMD_EdgeIDICounters	0x2c
-+#define CMD_MatchIntIDICounters	0x2b
- 	/* Set IDI up counters count edge (bit=0 - rising, =1 - falling) */
--
--#define CMD_GetIDICntCurValue	0x2f
-+#define CMD_EdgeIDICounters	0x2c
- 				/* Read IDI{OMB0} up counter current value */
--#define CMD_SetIDI0CntResetValue 0x40
-+#define CMD_GetIDICntCurValue	0x2f
- 				/* Set IDI0 Counter Reset Value 256*OMB1+OMB0 */
--#define CMD_SetIDI1CntResetValue 0x41
-+#define CMD_SetIDI0CntResetValue 0x40
- 				/* Set IDI1 Counter Reset Value 256*OMB1+OMB0 */
--#define CMD_SetIDI2CntResetValue 0x42
-+#define CMD_SetIDI1CntResetValue 0x41
- 				/* Set IDI2 Counter Reset Value 256*OMB1+OMB0 */
--#define CMD_SetIDI3CntResetValue 0x43
-+#define CMD_SetIDI2CntResetValue 0x42
- 				/* Set IDI3 Counter Reset Value 256*OMB1+OMB0 */
--#define CMD_SetIDI4CntResetValue 0x44
-+#define CMD_SetIDI3CntResetValue 0x43
- 				/* Set IDI4 Counter Reset Value 256*OMB1+OMB0 */
--#define CMD_SetIDI5CntResetValue 0x45
-+#define CMD_SetIDI4CntResetValue 0x44
- 				/* Set IDI5 Counter Reset Value 256*OMB1+OMB0 */
--#define CMD_SetIDI6CntResetValue 0x46
-+#define CMD_SetIDI5CntResetValue 0x45
- 				/* Set IDI6 Counter Reset Value 256*OMB1+OMB0 */
--#define CMD_SetIDI7CntResetValue 0x47
-+#define CMD_SetIDI6CntResetValue 0x46
- 				/* Set IDI7 Counter Reset Value 256*OMB1+OMB0 */
--#define CMD_SetIDI0CntMatchValue 0x48
-+#define CMD_SetIDI7CntResetValue 0x47
- 				/* Set IDI0 Counter Match Value 256*OMB1+OMB0 */
--#define CMD_SetIDI1CntMatchValue 0x49
-+#define CMD_SetIDI0CntMatchValue 0x48
- 				/* Set IDI1 Counter Match Value 256*OMB1+OMB0 */
--#define CMD_SetIDI2CntMatchValue 0x4a
-+#define CMD_SetIDI1CntMatchValue 0x49
- 				/* Set IDI2 Counter Match Value 256*OMB1+OMB0 */
--#define CMD_SetIDI3CntMatchValue 0x4b
-+#define CMD_SetIDI2CntMatchValue 0x4a
- 				/* Set IDI3 Counter Match Value 256*OMB1+OMB0 */
--#define CMD_SetIDI4CntMatchValue 0x4c
-+#define CMD_SetIDI3CntMatchValue 0x4b
- 				/* Set IDI4 Counter Match Value 256*OMB1+OMB0 */
--#define CMD_SetIDI5CntMatchValue 0x4d
-+#define CMD_SetIDI4CntMatchValue 0x4c
- 				/* Set IDI5 Counter Match Value 256*OMB1+OMB0 */
--#define CMD_SetIDI6CntMatchValue 0x4e
-+#define CMD_SetIDI5CntMatchValue 0x4d
- 				/* Set IDI6 Counter Match Value 256*OMB1+OMB0 */
--#define CMD_SetIDI7CntMatchValue 0x4f
-+#define CMD_SetIDI6CntMatchValue 0x4e
- 				/* Set IDI7 Counter Match Value 256*OMB1+OMB0 */
-+#define CMD_SetIDI7CntMatchValue 0x4f
- 
- #define OMBCMD_RETRY	0x03	/* 3 times try request before error */
- 
-@@ -225,8 +221,7 @@ static int pci_dio_detach(struct comedi_device *dev);
- struct diosubd_data {
- 	int chans;		/* num of chans */
- 	int addr;		/* PCI address ofset */
--	int regs;
--		/* number of registers to read or 8255 subdevices */
-+	int regs;	/* number of registers to read or 8255 subdevices */
- 	unsigned int specflags;	/* addon subdevice flags */
- };
- 
-@@ -375,12 +370,13 @@ struct pci_dio_private {
- 	char GlobalIrqEnabled;		/* 1= any IRQ source is enabled */
- 	/* PCI-1760 specific data */
- 	unsigned char IDICntEnable;	/* counter's counting enable status */
--	unsigned char IDICntOverEnable;
- 			/* counter's overflow interrupts enable status */
-+	unsigned char IDICntOverEnable;
-+			/* counter's match interrupts enable status */
- 	unsigned char IDICntMatchEnable;
--				/* counter's match interrupts enable status */
--	unsigned char IDICntEdge;
- 		/* counter's count edge value (bit=0 - rising, =1 - falling) */
-+	unsigned char IDICntEdge;
-+
- 	unsigned short CntResValue[8];	 /* counters' reset value */
- 	unsigned short CntMatchValue[8]; /* counters' match interrupt value */
- 	unsigned char IDIFiltersEn;    /* IDI's digital filters enable status */
-@@ -618,8 +614,8 @@ static int pci1760_insn_cnt_write(struct comedi_device *dev,
- 	};
- 	unsigned char imb[4];
- 
-+				/* Set reset value if different */
- 	if (devpriv->CntResValue[chan] != (data[0] & 0xffff)) {
--					/* Set reset value if different */
- 		ret = pci1760_mbxrequest(dev, omb, imb);
- 		if (!ret)
- 			return ret;
-@@ -632,8 +628,8 @@ static int pci1760_insn_cnt_write(struct comedi_device *dev,
- 	if (!ret)
- 		return ret;
- 
-+				/* start counter if it don't run */
- 	if (!(bitmask & devpriv->IDICntEnable)) {
--					/* start counter if it don't run */
- 		omb[0] = bitmask;
- 		omb[2] = CMD_EnableIDICounters;
- 		ret = pci1760_mbxrequest(dev, omb, imb);
-@@ -669,14 +665,14 @@ static int pci1760_reset(struct comedi_device *dev)
- 	devpriv->IDICntEnable = 0;
- 
- 	omb[0] = 0x00;
--	omb[2] = CMD_OverflowIDICounters;
- 				/* disable counters overflow interrupts */
-+	omb[2] = CMD_OverflowIDICounters;
- 	pci1760_mbxrequest(dev, omb, imb);
- 	devpriv->IDICntOverEnable = 0;
- 
- 	omb[0] = 0x00;
--	omb[2] = CMD_MatchIntIDICounters;
- 				/* disable counters match value interrupts */
-+	omb[2] = CMD_MatchIntIDICounters;
- 	pci1760_mbxrequest(dev, omb, imb);
- 	devpriv->IDICntMatchEnable = 0;
- 
-@@ -697,8 +693,8 @@ static int pci1760_reset(struct comedi_device *dev)
- 	}
- 
- 	omb[0] = 0xff;
--	omb[2] = CMD_ResetIDICounters;
- 				/* reset IDI up counters to reset values */
-+	omb[2] = CMD_ResetIDICounters;
- 	pci1760_mbxrequest(dev, omb, imb);
- 
- 	omb[0] = 0x00;
-@@ -739,12 +735,12 @@ static int pci_dio_reset(struct comedi_device *dev)
- 		outb(0, dev->iobase + PCI1730_IDO + 1);
- 		/* NO break there! */
- 	case TYPE_PCI1733:
-+						/* disable interrupts */
- 		outb(0, dev->iobase + PCI1730_3_INT_EN);
--							/* disable interrupts */
-+						/* clear interrupts */
- 		outb(0x0f, dev->iobase + PCI1730_3_INT_CLR);
--							/* clear interrupts */
--		outb(0, dev->iobase + PCI1730_3_INT_RF);
- 						/* set rising edge trigger */
-+		outb(0, dev->iobase + PCI1730_3_INT_RF);
- 		break;
- 	case TYPE_PCI1734:
- 		outb(0, dev->iobase + PCI1734_IDO);	/* clear outputs */
-@@ -752,58 +748,56 @@ static int pci_dio_reset(struct comedi_device *dev)
- 		outb(0, dev->iobase + PCI1734_IDO + 2);
- 		outb(0, dev->iobase + PCI1734_IDO + 3);
- 		break;
--
- 	case TYPE_PCI1736:
- 		outb(0, dev->iobase + PCI1736_IDO);
- 		outb(0, dev->iobase + PCI1736_IDO + 1);
-+						/* disable interrupts */
- 		outb(0, dev->iobase + PCI1736_3_INT_EN);
--							/* disable interrupts */
-+						/* clear interrupts */
- 		outb(0x0f, dev->iobase + PCI1736_3_INT_CLR);
--							/* clear interrupts */
--		outb(0, dev->iobase + PCI1736_3_INT_RF);
- 						/* set rising edge trigger */
-+		outb(0, dev->iobase + PCI1736_3_INT_RF);
- 		break;
--
- 	case TYPE_PCI1750:
- 	case TYPE_PCI1751:
--		outb(0x88, dev->iobase + PCI1750_ICR);
- 						/* disable & clear interrupts */
-+		outb(0x88, dev->iobase + PCI1750_ICR);
- 		break;
- 	case TYPE_PCI1752:
--		outw(0, dev->iobase + PCI1752_6_CFC);
- 					/* disable channel freeze function */
--		outw(0, dev->iobase + PCI1752_IDO);
-+		outw(0, dev->iobase + PCI1752_6_CFC);
- 						/* clear outputs */
-+		outw(0, dev->iobase + PCI1752_IDO);
- 		outw(0, dev->iobase + PCI1752_IDO + 2);
- 		outw(0, dev->iobase + PCI1752_IDO2);
- 		outw(0, dev->iobase + PCI1752_IDO2 + 2);
- 		break;
- 	case TYPE_PCI1753E:
--		outb(0x88, dev->iobase + PCI1753E_ICR0);
- 						/* disable & clear interrupts */
-+		outb(0x88, dev->iobase + PCI1753E_ICR0);
- 		outb(0x80, dev->iobase + PCI1753E_ICR1);
- 		outb(0x80, dev->iobase + PCI1753E_ICR2);
- 		outb(0x80, dev->iobase + PCI1753E_ICR3);
- 		/* NO break there! */
- 	case TYPE_PCI1753:
--		outb(0x88, dev->iobase + PCI1753_ICR0);
- 						/* disable & clear interrupts */
-+		outb(0x88, dev->iobase + PCI1753_ICR0);
- 		outb(0x80, dev->iobase + PCI1753_ICR1);
- 		outb(0x80, dev->iobase + PCI1753_ICR2);
- 		outb(0x80, dev->iobase + PCI1753_ICR3);
- 		break;
- 	case TYPE_PCI1754:
--		outw(0x08, dev->iobase + PCI1754_6_ICR0);
- 						/* disable & clear interrupts */
-+		outw(0x08, dev->iobase + PCI1754_6_ICR0);
- 		outw(0x08, dev->iobase + PCI1754_6_ICR1);
- 		outw(0x08, dev->iobase + PCI1754_ICR2);
- 		outw(0x08, dev->iobase + PCI1754_ICR3);
- 		break;
- 	case TYPE_PCI1756:
--		outw(0, dev->iobase + PCI1752_6_CFC);
- 					/* disable channel freeze function */
--		outw(0x08, dev->iobase + PCI1754_6_ICR0);
-+		outw(0, dev->iobase + PCI1752_6_CFC);
- 						/* disable & clear interrupts */
-+		outw(0x08, dev->iobase + PCI1754_6_ICR0);
- 		outw(0x08, dev->iobase + PCI1754_6_ICR1);
- 		outw(0, dev->iobase + PCI1756_IDO);	/* clear outputs */
- 		outw(0, dev->iobase + PCI1756_IDO + 2);
-@@ -812,8 +806,8 @@ static int pci_dio_reset(struct comedi_device *dev)
- 		pci1760_reset(dev);
- 		break;
- 	case TYPE_PCI1762:
--		outw(0x0101, dev->iobase + PCI1762_ICR);
- 						/* disable & clear interrupts */
-+		outw(0x0101, dev->iobase + PCI1762_ICR);
- 		break;
- 	}
- 
-@@ -1102,8 +1096,10 @@ static int pci_dio_detach(struct comedi_device *dev)
- 		if (devpriv->valid)
- 			pci_dio_reset(dev);
- 
--		/* This shows the silliness of using this kind of
--		 * scheme for numbering subdevices.  Don't do it.  --ds */
-+		/*
-+		 * This shows the silliness of using this kind of
-+		 * scheme for numbering subdevices.  Don't do it.  --ds
-+		 */
- 		subdev = 0;
- 		for (i = 0; i < MAX_DI_SUBDEVS; i++) {
- 			if (this_board->sdi[i].chans)
--- 
-1.6.3.3
+Please review this patchset as a proposed replacement of the current 
+mainline SCSI target subsystem STGT.
 
+I've already described advantages of SCST over STGT in 
+http://lkml.org/lkml/2008/12/10/245. In short, they are:
+
+1. Performance, including various performance improvements not available 
+from user space, for instance, because of the user space allocated memory.
+
+2. Overall simplicity with the resulting simpler and more clear code, 
+because STGT has a microkernel-like architecture, but SCST has the same 
+monolithic architecture as the Linux kernel has chosen from the very 
+beginning.
+
+3. Complete pass-through support, which isn't practically possible if 
+the SCSI target core stays in user space.
+
+I can add to what I already wrote only:
+
+1. There are recent performance comparison data between SCST SRP and 
+STGT iSER measured by Bart Van Assche with the following target setup:
+
+* 2.6.30.7 kernel with SCST patches and with kernel debugging disabled.
+* OFED 1.5 IB drivers.
+* SCST revision 1504 with FILEIO vdisk, built in release mode (make
+   debug2release) and with SCST_MAX_TGT_DEV_COMMANDS changed from 48 into
+   256.
+* ib_srpt kernel module parameters thread=0.
+* STGT revision 1.0.1 with rdwr backend.
+* 1 GB file residing on a tmpfs filesystem was exported towards the
+   initiator system.
+* Frequency scaling was disabled.
+* Runlevel: 3.
+* IRQ affinity for mlx4-comp-0: not bound to a core (smp_affinity=3).
+* IB HCA: QDR (40Gbps) Mellanox ConnectX MT26428
+* CPU: Intel Core2 Duo E8400 @ 3.00 GHz.
+* NOOP I/O scheduler
+
+and initiator setup:
+
+* Vanilla 2.6.33-rc7 kernel
+* SRP initiator was loaded with parameter srp_sg_tablesize=128
+* Frequency scaling was disabled.
+* Runlevel: 3.
+* IRQ affinity for mlx4_core: bound to a single core (smp_affinity=1).
+* IB HCA: QDR (40Gbps) Mellanox ConnectX MT26428
+* CPU: Intel Core2 Duo E6750 @ 2.66 GHz.
+
+The test application was dd utility in O_DIRECT mode run 3 times, then 
+average was calculated. Caches were dropped between each run.
+
+For dd bs 4KB:
+
+SCST: write 84 MB/s, read 104 MB/s
+STGT: write 62 MB/s, read 64 MB/s
+
+For dd bs 6MB:
+
+SCST: write 1030 MB/s, read 2944 MB/s
+STGT: write 796 MB/s, read 1702 MB/s
+
+I've chosen those values for dd bs, because they allow to measure 2 
+fundamental properties of any link: latency (with bs 4KB) and bandwidth 
+(with bs 6MB). You can see that SCST up to 63% better in latency and up 
+to 73% better in bandwidth! Here is clearly seen the user space 
+implementation overhead! Are there any other evidences needed?
+
+2. Since the first SCST patches review iteration in December 2008 
+popularity of STGT, despite of the being "mainline", has not grown 
+noticeably, while popularity of SCST has significantly grown. 
+Particularly, Emulex and Marvell added SCST target drivers for their 
+hardware (thanks a lot!), Joe Eykholt added FCoE target (thanks a lot 
+too!) as well as many storage companies are now either selling 
+SCST-based storage devices (see http://scst.sourceforge.net/users.html), 
+or preparing to sell them (so not yet listed on the users page).
+
+STGT was originally introduced in 2005 as a "simpler" SCST, where the 
+SCSI target state machine moved from the kernel to user space with goal 
+to create smaller in-kernel code in a hope that it would be similarly 
+effective as the fully in-kernel approach SCST using, but would create 
+less the in-kernel part's maintaining effort.
+
+Now, after nearly 5 years passed, it is clear that the overhead of the 
+split kernel/user processing of STGT is much higher than with the fully 
+in-kernel processing of SCST. Thus, we can see now that the hopes for 
+the similarly effective processing of STGT were not correct. We can also 
+see now that the size of in-kernel part only doesn't matter without 
+considering the overall size of the system including the user space part 
+(see http://lkml.org/lkml/2007/4/24/364). Thus, there are no points now 
+  left to keep STGT in the kernel.
+
+Usually, if for the kernel there are more than one patch/product/etc. 
+doing the same functionality, users are allowed choose the best one by 
+voting for it by using it. So, from this point it is also clear that 
+users have been voting for SCST, not STGT (see above). Just, for 
+instance, count the number of target drivers for SCST: for QLogic (Fibre 
+Channel), Emulex (FC and FCoE), Marvell (SAS) and LSI (parallel SCSI, FC 
+and SAS) hardware as well as for iSCSI, SRP (InfiniBand) and FCoE! While 
+STGT has target drivers only for iSCSI/iSER and IBM pSeries Virtual SCSI 
+(ibmvstgt).
+
+Moreover, (Open)Solaris is now developing similar to SCST fully 
+in-kernel SCSI target subsystem COMSTAR. Solaris developers are 
+similarly started from the user space approach, but quickly realized its 
+limitations and moved to the fully in-kernel approach.
+
+Thus, we believe, that 5 years is sufficient time to decide that the 
+original hopes for STGT were not correct, STGT is worse than SCST, and 
+users are voting for SCST, therefore it is a time for Linux kernel to 
+acknowledge those and choose the best option. While Linux is loosing 
+time with the worse approach, COMSTAR is going much ahead.
+
+Currently, the kernel has only one target driver for STGT: ibmvstgt from 
+drivers/scsi/ibmvscsi, so this is the only driver that would be affected 
+by the removal of the in-kernel part of STGT. STGT iSCSI/iSER target 
+will not be affected, because it's implemented fully in user space and 
+doesn't use any services of the in-kernel part of STGT. Regarding 
+ibmvstgt, we don't know how many users this driver has, but I guess, 
+only few at best, because it is for very special IBM's mainframe 
+virtualization hardware (is it still produced?) and I wasn't able to 
+find maintainer for it in the MAINTAINERS file for 2.6.33. Anyway, we 
+are willing to do the best to migrate this driver to SCST. But who is 
+the maintainer who we should contact? Without hardware we can make at 
+the best a compile tested only version.
+
+In future, as I wrote in http://lkml.org/lkml/2008/12/10/245, the user 
+space part of STGT could be a good supplement for SCST as a framework to 
+produce SCST user space targets via scst_local module (see 
+http://lkml.org/lkml/2008/12/10/289), although so far I have not seen 
+any interest to development of user space target drivers.
+
+Since the first iteration of the SCST patches, together with a lot of 
+other new features and improvements (version 2.0 is going to be released 
+soon), we have fixed all review comments and added to SCST a sysfs-based 
+interface instead of the old not allowed procfs-based interface. Also we 
+reduced amount of the kernel patches touching the kernel's code outside 
+of SCST and its drivers.
+
+The the new sysfs interface is nice looking and easy to use. It is a big 
+step ahead. Detail description of it with a sample layout you can find 
+in the SCST docs. The exceptional feature of the new sysfs interface is 
+that it is self-documented, i.e. with it for any management utilities, 
+like scstadmin [1], there's no need to know anymore how to configure 
+each specific target driver and dev handler. In other words, the 
+management code will be made once and will work for all current and 
+future targets and dev handlers, including implemented both in kernel 
+and user spaces, without any internal changes. To achieve that all is 
+necessary is that all target drivers and dev handlers should follow few 
+several simple rules how to represent their internal configuration on 
+the sysfs. You can find the sysfs rules also in the SCST doc patch. Any 
+comments are welcome.
+
+This iteration for simplicity contains only 2 target drivers: for iSCSI 
+and SRP. If SCST accepted, we will submit other mainline ready drivers 
+later: for QLogic, Emulex and Marvell hardware + scst_local +, probably, 
+FCoE target fcst, if Joe Eykholt thinks it's ready.
+
+This patchset is for kernel 2.6.33.
+
+In the next iteration, if we don't be told during this review anything 
+really bad, in few weeks time we are going to prepare a request for 
+inclusion patch set.
+
+Home page of SCST is http://scst.sourceforge.net
+Home page of iSCSI-SCST is http://iscsi-scst.sourceforge.net
+Home page of SCST SRP target driver is 
+http://scst.sourceforge.net/target_srp.html
+
+Thank you for your time,
+Vlad
+
+[1] Scstadmin is an utility, which allows doing SCST configuration using 
+a text config file. Among other, it has the following great facilities:
+
+1. A possibility to apply changes in the config file to currently 
+running system. Only changes applied, so there are no any unneeded 
+restarts and resets.
+
+2. Generate a config file for currently running system.
