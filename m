@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651Ab0DMIzk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 04:55:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52356 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752567Ab0DMIzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 04:55:38 -0400
-Message-ID: <4BC43214.6030009@redhat.com>
-Date: Tue, 13 Apr 2010 16:57:56 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
+	id S1752675Ab0DMIz6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 04:55:58 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51560 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412Ab0DMIz4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 04:55:56 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH]vmscan: handle underflow for get_scan_ratio
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+       Shaohua Li <shaohua.li@intel.com>,
+       "Wu, Fengguang" <fengguang.wu@intel.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100413144519.D107.A69D9226@jp.fujitsu.com>
+References: <4BC3DA2B.3070605@redhat.com> <20100413144519.D107.A69D9226@jp.fujitsu.com>
+Message-Id: <20100413175414.D110.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Stephen Hemminger <shemminger@linux-foundation.org>
-CC: Eric Dumazet <eric.dumazet@gmail.com>, Jay Vosburgh <fubar@us.ibm.com>,
-       Neil Horman <nhorman@tuxdriver.com>, netdev@vger.kernel.org,
-       Matt Mackall <mpm@selenic.com>, bridge@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-       Jeff Moyer <jmoyer@redhat.com>, Andy Gospodarek <gospo@redhat.com>,
-       bonding-devel@lists.sourceforge.net
-Subject: Re: [Bonding-devel] [v3 Patch 2/3] bridge: make bridge support netpoll
-References: <20100408062234.4499.17042.sendpatchset@localhost.localdomain>	<20100408062246.4499.5670.sendpatchset@localhost.localdomain>	<20100408083710.2b61ee44@nehalam>	<4BC2F7E2.7020309@redhat.com>	<1271068737.16881.18.camel@edumazet-laptop> <20100412083842.26d71bda@nehalam>
-In-Reply-To: <20100412083842.26d71bda@nehalam>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 13 Apr 2010 17:55:52 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Hemminger wrote:
-> On Mon, 12 Apr 2010 12:38:57 +0200
-> Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > > I'm surprised this ack a bit. Rik, do you have any improvement plan about
+> > > streaming io detection logic?
+> > > I think the patch have a slightly marginal benefit, it help to<1% scan
+> > > ratio case. but it have big regression, it cause streaming io (e.g. backup
+> > > operation) makes tons swap.
+> > 
+> > How?  From the description I believe it took 16GB in
+> > a zone before we start scanning anon pages when
+> > reclaiming at DEF_PRIORITY?
+> > 
+> > Would that casue a problem?
 > 
->> Le lundi 12 avril 2010 à 18:37 +0800, Cong Wang a écrit :
->>> Stephen Hemminger wrote:
->>>> There is no protection on dev->priv_flags for SMP access.
->>>> It would better bit value in dev->state if you are using it as control flag.
->>>>
->>>> Then you could use 
->>>> 			if (unlikely(test_and_clear_bit(__IN_NETPOLL, &skb->dev->state)))
->>>> 				netpoll_send_skb(...)
->>>>
->>>>
->>> Hmm, I think we can't use ->state here, it is not for this kind of purpose,
->>> according to its comments.
->>>
->>> Also, I find other usages of IFF_XXX flags of ->priv_flags are also using
->>> &, | to set or clear the flags. So there must be some other things preventing
->>> the race...
->> Yes, its RTNL that protects priv_flags changes, hopefully...
->>
+> Please remember, 2.6.27 has following +1 scanning modifier.
 > 
-> The patch was not protecting priv_flags with RTNL.
-> For example..
+>   zone->nr_scan_active += (zone_page_state(zone, NR_ACTIVE) >> priority) + 1;
+>                                                                          ^^^^
 > 
+> and, early (ano not yet merged) SplitLRU VM has similar +1. likes
 > 
-> @@ -308,7 +312,9 @@ static void netpoll_send_skb(struct netp
->  		     tries > 0; --tries) {
->  			if (__netif_tx_trylock(txq)) {
->  				if (!netif_tx_queue_stopped(txq)) {
-> +					dev->priv_flags |= IFF_IN_NETPOLL;
->  					status = ops->ndo_start_xmit(skb, dev);
-> +					dev->priv_flags &= ~IFF_IN_NETPOLL;
->  					if (status == NETDEV_TX_OK)
->  						txq_trans_update(txq);
+>          scan = zone_nr_lru_pages(zone, sc, l);
+>          scan >>= priority;
+>          scan = (scan * percent[file]) / 100 + 1;
+>                                              ^^^
+> 
+> We didn't think only one page scanning is not big matter. but it was not
+> correct. we got streaming io bug report. the above +1 makes annoying swap
+> io. because some server need big backup operation rather much much than
+> physical memory size.
+> 
+> example, If vm are dropping 1TB use once pages, 0.1% anon scanning makes
+> 1GB scan. and almost server only have some gigabyte swap although it
+> has >1TB memory.
+> 
+> If my memory is not correct, please correct me.
+> 
+> My point is, greater or smaller than 16GB isn't essential. all patches 
+> should have big worth than the downside. The description said "the impact 
+> sounds not a big deal", nobody disagree it. but it's worth is more little.
+> I don't imagine this patch improve anything.
 
-Hmm, but I checked the bonding case (IFF_BONDING), it doesn't
-hold rtnl_lock. Strange.
+And now I've merged this patch into my local vmscan patch queue.
+After solving streaming io issue, I'll put it to mainline.
+
+Thanks.
+
+
 
