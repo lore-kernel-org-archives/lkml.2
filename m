@@ -1,127 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751325Ab0DMMAp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 08:00:45 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39980 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893Ab0DMMAo (ORCPT
+	id S1751545Ab0DMMKI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 08:10:08 -0400
+Received: from stinky.trash.net ([213.144.137.162]:48193 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131Ab0DMMKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 08:00:44 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas of a mergeable VMA
-Cc: kosaki.motohiro@jp.fujitsu.com, Rik van Riel <riel@redhat.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Borislav Petkov <bp@alien8.de>, Johannes Weiner <hannes@cmpxchg.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-In-Reply-To: <1271158226.4807.1107.camel@twins>
-References: <20100413194443.D116.A69D9226@jp.fujitsu.com> <1271158226.4807.1107.camel@twins>
-Message-Id: <20100413204149.D11C.A69D9226@jp.fujitsu.com>
+	Tue, 13 Apr 2010 08:10:06 -0400
+Message-ID: <4BC45F1D.3030301@trash.net>
+Date: Tue, 13 Apr 2010 14:10:05 +0200
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090701)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 13 Apr 2010 21:00:36 +0900 (JST)
+To: Alexey Dobriyan <adobriyan@gmail.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       shemminger@vyatta.com, bhutchings@solarflare.com, andreas@fatal.se,
+       hadi@cyberus.ca, hideaki@yoshifuji.org
+Subject: Re: [PATCH v2] xtables: make XT_ALIGN() usable in exported headers
+ by exporting __ALIGN_KERNEL()
+References: <20100407162245.GA4557@x200> <4BC437C6.8020602@trash.net> <4BC44117.80901@trash.net> <20100414120712.GA25686@x200> <4BC450A4.1010200@trash.net> <20100414125007.GB25686@x200>
+In-Reply-To: <20100414125007.GB25686@x200>
+X-Enigmail-Version: 0.95.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, 2010-04-13 at 19:53 +0900, KOSAKI Motohiro wrote:
-> > >  struct anon_vma *page_lock_anon_vma(struct page *page)
-> > >  {
-> > > @@ -294,14 +309,24 @@ struct anon_vma *page_lock_anon_vma(struct page *page)
-> > >  	unsigned long anon_mapping;
-> > >  
-> > >  	rcu_read_lock();
-> > > -	anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
-> > > +	anon_mapping = (unsigned long)rcu_dereference(page->mapping);
-> > >  	if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)
-> > >  		goto out;
-> > > -	if (!page_mapped(page))
-> > > -		goto out;
-> > >  
-> > >  	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
-> > >  	spin_lock(&anon_vma->lock);
-> > 
-> > Does anon->lock dereference is guranteed if page->_mapcount==-1?
-> > It can be freed miliseconds ago, rcu_read_lock() doesn't provide such
-> > gurantee.
-> > 
-> > perhaps, I'm missing your point.
+Alexey Dobriyan wrote:
+> On Tue, Apr 13, 2010 at 01:08:20PM +0200, Patrick McHardy wrote:
+>> Alexey Dobriyan wrote:
+>>> XT_ALIGN() was rewritten through ALIGN() by commit 42107f5009da223daa800d6da6904d77297ae829
+>>> "netfilter: xtables: symmetric COMPAT_XT_ALIGN definition".
+>>> ALIGN() is not exported in userspace headers, which created compile problem for tc(8)
+>>> and will create problem for iptables(8).
+>>>
+>>> We can't export generic looking name ALIGN() but we can export less generic
+>>> __ALIGN_KERNEL() (suggested by Ben Hutchings).
+>>> Google knows nothing about __ALIGN_KERNEL().
+>>>
+>>> COMPAT_XT_ALIGN() changed for symmetry.
+>> I've already pushed your change out, could you send me an incremental
+>> fix please?
+>>
+>> master.kernel.org:/pub/scm/linux/kernel/git/kaber/nf-next-2.6.git
 > 
-> No you're right, I got my head hopelessly twisted up trying to make
-> page_lock_anon_vma() do something reliable, but there really isn't much
-> that can be done.
+> [PATCH] Restore __ALIGN_MASK()
 > 
-> Luckily most users (with exception of the memory-failure.c one) don't
-> really care and all take steps to verify the page is indeed in any of
-> the vmas it might find.
-> 
-> So I've given up on this and will only submit a patch like the below,
-> which hopefully does still make sense...
-> 
-> I do think there's a missing barrier in there as well, but I've made
-> enough of a fool of myself.
-> 
-> [ with the preemptible mmu_gather patches I introduce a refcount to
->   the anon_vma, and then with atomic_inc_not_zero() we can add a
->   guarantee that the returned anon_vma is alive ]
+> Fix lib/bitmap.c compile failure due to __ALIGN_KERNEL changes.
 
-Indeed. refcount is best way. anon_vma DESTROY_BY_RCU stuff seems
-overengineering, I think. this is fastest, but anon_vma allocation is not
-(and was not) fork/exit bottleneck point. So, I guess most simply way is
-best.
-
-
-Also following patch looks good to me.
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-
-Thanks for that. I've thought this is really necessary. but my (very) poor
-english skill make hesitate it to me. sorry my laziness ;)
-
-
-
-> 
-> ---
->  mm/rmap.c |   18 ++++++++++++++++--
->  1 files changed, 16 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index eaa7a09..49a2533 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -285,8 +285,22 @@ void __init anon_vma_init(void)
->  }
->  
->  /*
-> - * Getting a lock on a stable anon_vma from a page off the LRU is
-> - * tricky: page_lock_anon_vma rely on RCU to guard against the races.
-> + * Getting a lock on a stable anon_vma from a page off the LRU is tricky!
-> + *
-> + * Since there is no serialization what so ever against page_remove_rmap()
-> + * the best this function can do is return a locked anon_vma that might
-> + * have been relevant to this page.
-> + *
-> + * The page might have been remapped to a different anon_vma or the anon_vma
-> + * returned may already be freed (and even reused).
-> + *
-> + * All users of this function must be very careful when walking the anon_vma
-> + * chain and verify that the page in question is indeed mapped in it
-> + * [ something equivalent to page_mapped_in_vma() ].
-> + *
-> + * Since anon_vma's slab is DESTROY_BY_RCU and we know from page_remove_rmap()
-> + * that the anon_vma pointer from page->mapping is valid if there is a
-> + * mapcount, we can dereference the anon_vma after observing those.
->   */
->  struct anon_vma *page_lock_anon_vma(struct page *page)
->  {
-> 
-
-
-
+Applied.
