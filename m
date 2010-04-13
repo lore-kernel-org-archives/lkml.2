@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789Ab0DMD5e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 23:57:34 -0400
-Received: from gate.crashing.org ([63.228.1.57]:39195 "EHLO gate.crashing.org"
+	id S1751969Ab0DMD7c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 23:59:32 -0400
+Received: from gate.crashing.org ([63.228.1.57]:39226 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197Ab0DMD5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 23:57:32 -0400
-Subject: Re: [PATCH 05/39] lmb: Seperate region array from lmb_region struct
+	id S1751197Ab0DMD7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 23:59:30 -0400
+Subject: Re: [PATCH 06/39] lmb: Seperate __lmb_find_base() from
+ __lmb_alloc_base()
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 To: Yinghai Lu <yinghai@kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
@@ -16,12 +17,12 @@ Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org
-In-Reply-To: <1270793048-23796-6-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1270793048-23796-7-git-send-email-yinghai@kernel.org>
 References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
-	 <1270793048-23796-6-git-send-email-yinghai@kernel.org>
+	 <1270793048-23796-7-git-send-email-yinghai@kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Apr 2010 13:56:09 +1000
-Message-ID: <1271130969.13059.49.camel@pasglop>
+Date: Tue, 13 Apr 2010 13:58:01 +1000
+Message-ID: <1271131081.13059.51.camel@pasglop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
@@ -30,67 +31,30 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, 2010-04-08 at 23:03 -0700, Yinghai Lu wrote:
-> lmb_init() will connect them back.
-> Add nr_regions in struct lmb_region to track region array size.
-> 
-> So later We can install dynamically allocated region array to that pointer
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> +	return -1ULL;
+> +}
 
-> ---
->  include/linux/lmb.h |    3 ++-
->  mm/lmb.c            |    9 ++++++++-
->  2 files changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/lmb.h b/include/linux/lmb.h
-> index f3d1433..e14ea8d 100644
-> --- a/include/linux/lmb.h
-> +++ b/include/linux/lmb.h
-> @@ -26,7 +26,8 @@ struct lmb_property {
->  struct lmb_region {
->  	unsigned long cnt;
->  	u64 size;
-> -	struct lmb_property region[MAX_LMB_REGIONS+1];
-> +	struct lmb_property *region;
-> +	unsigned long nr_regions;
->  };
->  
->  struct lmb {
-> diff --git a/mm/lmb.c b/mm/lmb.c
-> index b1fc526..65b62dc 100644
-> --- a/mm/lmb.c
-> +++ b/mm/lmb.c
-> @@ -18,6 +18,8 @@
->  #define LMB_ALLOC_ANYWHERE	0
->  
->  struct lmb lmb;
-> +static struct lmb_property lmb_memory_region[MAX_LMB_REGIONS + 1];
-> +static struct lmb_property lmb_reserved_region[MAX_LMB_REGIONS + 1];
->  
->  static int lmb_debug;
->  
-> @@ -106,6 +108,11 @@ static void lmb_coalesce_regions(struct lmb_region *rgn,
->  
->  void __init lmb_init(void)
->  {
-> +	lmb.memory.region   = lmb_memory_region;
-> +	lmb.reserved.region = lmb_reserved_region;
-> +	lmb.memory.nr_regions   = ARRAY_SIZE(lmb_memory_region);
-> +	lmb.reserved.nr_regions = ARRAY_SIZE(lmb_reserved_region);
+Defininf some kind of LMB_ERROR would be nicer.
+
+Cheers,
+Ben.
+
+> +u64 __init __lmb_alloc_base(u64 size, u64 align, u64 max_addr)
+> +{
+> +	u64 base;
 > +
->  	/* Create a dummy zero size LMB which will get coalesced away later.
->  	 * This simplifies the lmb_add() code below...
->  	 */
-> @@ -169,7 +176,7 @@ static long lmb_add_region(struct lmb_region *rgn, u64 base, u64 size)
+> +	base = __lmb_find_base(size, align, max_addr);
+> +
+> +	if (base == -1ULL)
+> +		return 0;
+> +
+> +	if (lmb_add_region(&lmb.reserved, base, size) < 0)
+> +		return 0;
+> +
+> +	return base;
+>  }
 >  
->  	if (coalesced)
->  		return coalesced;
-> -	if (rgn->cnt >= MAX_LMB_REGIONS)
-> +	if (rgn->cnt > rgn->nr_regions)
->  		return -1;
->  
->  	/* Couldn't coalesce the LMB, so add it to the sorted table. */
+>  /* You must call lmb_analyze() before this. */
 
 
