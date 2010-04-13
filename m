@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751298Ab0DMFf3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 01:35:29 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33418 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772Ab0DMFf1 convert rfc822-to-8bit (ORCPT
+	id S1751329Ab0DMFlY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 01:41:24 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:54736 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772Ab0DMFlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 01:35:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=ptvNCueS0EGjV/54qziw4Qz6QMFjjif2id0faDjX6Fp3VJz05OM3DYmx90M2SBNilN
-         unZI+p8j4aqV2ZNb6f8Ukmb2o2IOhaAPLhNWI1Jygir3DV7xnt0eMOLweNU2lvv0VemY
-         tpRges1oKquezW5kPGXsdbC+GwA5M6ogP5K0g=
+	Tue, 13 Apr 2010 01:41:22 -0400
+Message-ID: <4BC40336.4030902@oracle.com>
+Date: Mon, 12 Apr 2010 22:37:58 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <m2s43e72e891004122151n2677a158o7f9aa8d054bf058e@mail.gmail.com>
-References: <m2s43e72e891004122151n2677a158o7f9aa8d054bf058e@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Mon, 12 Apr 2010 22:35:06 -0700
-Message-ID: <v2q43e72e891004122235p87e971c9o12986a064f7d2be1@mail.gmail.com>
-Subject: Re: Compat-wireless for 2.6.34 - 802.11 and bluetooth backported
-To: linux-wireless <linux-wireless@vger.kernel.org>,
-       linux-bluetooth <linux-bluetooth@vger.kernel.org>
-Cc: linux-kernel@vger.kernel.org
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 18/39] lmb: Add lmb_reserve_area_overlap_ok()
+References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>	 <1270793048-23796-19-git-send-email-yinghai@kernel.org>	 <1271132476.13059.66.camel@pasglop>  <4BC3F6C8.4020303@oracle.com> <1271135450.13059.72.camel@pasglop>
+In-Reply-To: <1271135450.13059.72.camel@pasglop>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4BC403E5.0157:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 12, 2010 at 9:51 PM, Luis R. Rodriguez <mcgrof@gmail.com> wrote:
-> We're up to 2.6.34-rc4 upstream but we hadn't released a respective
-> compat-wireless stable [1] tarball yet. I finally got some time so
-> just posted one up [2], this gives us the 2.6.34-rc4 wireless
-> subsystem, bluetooth subsystem and new wireless/bluetooth drivers
-> compilable and installed on older kernels. Please report any issues
-> ASAP. For details on changes you can refer to the
-> ChangeLog-2.6.34-rc4-wireless [3].
->
-> I only did a quick build test against 2.6.31 and it seems to compile
-> fine :), more compile tests reports against older kernels and actual
-> loading tests reports against different kernels are greatly
-> appreciated.
->
->  Luis
->
-> [1] http://wireless.kernel.org/en/users/Download/stable
-> [2] http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.34/compat-wireless-2.6.34-rc4.tar.bz2
-> [3] http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.34/ChangeLog-2.6.34-rc4-wireless
+On 04/12/2010 10:10 PM, Benjamin Herrenschmidt wrote:
+> On Mon, 2010-04-12 at 21:44 -0700, Yinghai wrote:
+> 
+>> that is only for some special cases about area that is reserved for fw region.
+> 
+> And ? From what I can see in the code, it will still not work properly
+> unless all your special cases end up fitting right with the bug you
+> effectively have..
 
-Also just updated the tarballs for 2.6.32.11 and 2.6.33.2, and removed
-the 2.6.30 and 2.6.31 tarballs since not even kernel.org supports
-those anymore.
+not sure.
 
-  Luis
+noticed there some overlapped, and with this patch, those overlapped area disappeared
+
+> 
+>> and even there is overlapped area, it the code still can go through when lmb_to_bootmem or create range list for slab.
+>> because they are using range array subtract.
+> 
+> Well, either we just have overlapped areas or we don't ... we shouldn't
+> have some kind of overlap_ok() thing that does the right thing ..
+> sometimes, but maybe not, but we don't care anyways, which is what you
+> seem to be saying.
+yes.
+> 
+>>> Besides, lmb_reserve_area_overlap_ok() sucks as a name :-)
+>>
+>> any suggestion for better name?
+> 
+> Well, what you actually implemented is 
+> 
+> lmb_reserve_area_overlap_maybe_ok_not_too_sure_though()
+> 
+> What we should decide is once for all, is it ok to have lmb_reserve() be
+> called for overlapping ranges. I think the answer is yes and in fact, we
+> don't take special care in powerpc either there so overlap could happen
+> in theory.
+> 
+> Now, do we want to avoid actually creating overlapping regions in the
+> array ? I think we should look into it, but then we should fix
+> lmb_reserve() to do the right thing here and coalesce all the overlaps.
+
+not sure if is needed. lmb_free/lmb_reserve seems work.
+
+YH
