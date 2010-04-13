@@ -1,61 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751551Ab0DMF1t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 01:27:49 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:58193 "EHLO smtps.tip.net.au"
+	id S1751685Ab0DMF2M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 01:28:12 -0400
+Received: from sh.osrg.net ([192.16.179.4]:45305 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750869Ab0DMF1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 01:27:47 -0400
-Date: Tue, 13 Apr 2010 15:27:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: =?UTF-8?B?IkZyw6lkw6lyaWMgV2Vpc2JlY2tlciI=?= <fweisbec@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the bkl-procfs tree
-Message-Id: <20100413152741.4d56be0c.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.0; i486-pc-linux-gnu)
+	id S1750755Ab0DMF1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 01:27:48 -0400
+Date: Tue, 13 Apr 2010 14:27:04 +0900
+To: linux@arm.linux.org.uk
+Cc: fujita.tomonori@lab.ntt.co.jp, linux-arm-kernel@lists.infradead.org,
+       netdev@vger.kernel.org, davem@davemloft.net,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: dmabounce: fix partial sync in dma_sync_single_*
+	API
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100412193536.GO3048@n2100.arm.linux.org.uk>
+References: <20100405123847C.fujita.tomonori@lab.ntt.co.jp>
+	<20100412193536.GO3048@n2100.arm.linux.org.uk>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__13_Apr_2010_15_27_41_+1000_outbpfpjGyHmv8k/"
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100413142607V.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 13 Apr 2010 14:27:07 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__13_Apr_2010_15_27_41_+1000_outbpfpjGyHmv8k/
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 12 Apr 2010 20:35:36 +0100
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-Hi "Fr=C3=A9d=C3=A9ric,
+> On Mon, Apr 05, 2010 at 12:39:32PM +0900, FUJITA Tomonori wrote:
+> > I don't have arm hardware that uses dmabounce so I can't confirm the
+> > problem but seems that dmabounce doesn't work for some drivers...
+> 
+> Patch reviews fine, except for one niggle.  I too don't have hardware
+> I can test (well, I do except the kernel stopped supporting the UDA1341
+> audio codec on the SA1110 Neponset.)
 
-After merging the bkl-procfs tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Thanks for reviewing.
 
-net/sunrpc/cache.c: In function 'cache_ioctl_procfs':
-net/sunrpc/cache.c:1355: error: implicit declaration of function 'lock_kern=
-el'
-net/sunrpc/cache.c:1359: error: implicit declaration of function 'unlock_ke=
-rnel'
+> > @@ -171,10 +172,17 @@ find_safe_buffer(struct dmabounce_device_info *device_info, dma_addr_t safe_dma_
+> >  	read_lock_irqsave(&device_info->lock, flags);
+> >  
+> >  	list_for_each_entry(b, &device_info->safe_buffers, node)
+> > -		if (b->safe_dma_addr == safe_dma_addr) {
+> > -			rb = b;
+> > -			break;
+> > -		}
+> > +		if (for_sync) {
+> > +			if (b->safe_dma_addr <= safe_dma_addr &&
+> > +			    safe_dma_addr < b->safe_dma_addr + b->size) {
+> > +				rb = b;
+> > +				break;
+> > +			}
+> > +		} else
+> > +			if (b->safe_dma_addr == safe_dma_addr) {
+> > +				rb = b;
+> > +				break;
+> > +			}
+> 
+> This is the niggle; I don't like this indentation style.  If you want to
+> indent this if () statement, then please format like this:
+> 
+> 		} else {
+> 			if (b->safe...) {
+> 				...
+> 			}
+> 		}
+> 
+> or format it as:
+> 
+> 		} else if (b->safe...) {
+> 			...
+> 		}
 
-Caused by commit 64ef834551d7696f54553d7608eba80a5a800e77 ("procfs: Push
-down the bkl from ioctl").  Forgot to include linux/smp_lock.h?  See
-Documentation/SubmitChecklist Rule #1.
+ok, here's the fixed patch.
 
-I have dropped the bkl-procfs tree for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+=
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: [PATCH] ARM: dmabounce: fix partial sync in dma_sync_single_* API
 
---Signature=_Tue__13_Apr_2010_15_27_41_+1000_outbpfpjGyHmv8k/
-Content-Type: application/pgp-signature
+Some network drivers do a partial sync with
+dma_sync_single_for_{device|cpu}. The dma_addr argument might not be
+the same as one as passed into the mapping API.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+This adds some tricks to find_safe_buffer() for
+dma_sync_single_for_{device|cpu}.
 
-iEYEARECAAYFAkvEAM0ACgkQjjKRsyhoI8y5ygCdGixk/ODmErpqJ9otBhb4FxLv
-qZwAoIQl630LSyvxhsHxuwj2TXUJRD3s
-=x8XG
------END PGP SIGNATURE-----
+Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+---
+ arch/arm/common/dmabounce.c |   30 +++++++++++++++++++++---------
+ 1 files changed, 21 insertions(+), 9 deletions(-)
 
---Signature=_Tue__13_Apr_2010_15_27_41_+1000_outbpfpjGyHmv8k/--
+diff --git a/arch/arm/common/dmabounce.c b/arch/arm/common/dmabounce.c
+index cc0a932..2e6deec 100644
+--- a/arch/arm/common/dmabounce.c
++++ b/arch/arm/common/dmabounce.c
+@@ -163,7 +163,8 @@ alloc_safe_buffer(struct dmabounce_device_info *device_info, void *ptr,
+ 
+ /* determine if a buffer is from our "safe" pool */
+ static inline struct safe_buffer *
+-find_safe_buffer(struct dmabounce_device_info *device_info, dma_addr_t safe_dma_addr)
++find_safe_buffer(struct dmabounce_device_info *device_info, dma_addr_t safe_dma_addr,
++		 int for_sync)
+ {
+ 	struct safe_buffer *b, *rb = NULL;
+ 	unsigned long flags;
+@@ -171,9 +172,17 @@ find_safe_buffer(struct dmabounce_device_info *device_info, dma_addr_t safe_dma_
+ 	read_lock_irqsave(&device_info->lock, flags);
+ 
+ 	list_for_each_entry(b, &device_info->safe_buffers, node)
+-		if (b->safe_dma_addr == safe_dma_addr) {
+-			rb = b;
+-			break;
++		if (for_sync) {
++			if (b->safe_dma_addr <= safe_dma_addr &&
++			    safe_dma_addr < b->safe_dma_addr + b->size) {
++				rb = b;
++				break;
++			}
++		} else {
++			if (b->safe_dma_addr == safe_dma_addr) {
++				rb = b;
++				break;
++			}
+ 		}
+ 
+ 	read_unlock_irqrestore(&device_info->lock, flags);
+@@ -205,7 +214,8 @@ free_safe_buffer(struct dmabounce_device_info *device_info, struct safe_buffer *
+ /* ************************************************** */
+ 
+ static struct safe_buffer *find_safe_buffer_dev(struct device *dev,
+-		dma_addr_t dma_addr, const char *where)
++						dma_addr_t dma_addr, const char *where,
++						int for_sync)
+ {
+ 	if (!dev || !dev->archdata.dmabounce)
+ 		return NULL;
+@@ -216,7 +226,7 @@ static struct safe_buffer *find_safe_buffer_dev(struct device *dev,
+ 			pr_err("unknown device: Trying to %s invalid mapping\n", where);
+ 		return NULL;
+ 	}
+-	return find_safe_buffer(dev->archdata.dmabounce, dma_addr);
++	return find_safe_buffer(dev->archdata.dmabounce, dma_addr, for_sync);
+ }
+ 
+ static inline dma_addr_t map_single(struct device *dev, void *ptr, size_t size,
+@@ -286,7 +296,7 @@ static inline dma_addr_t map_single(struct device *dev, void *ptr, size_t size,
+ static inline void unmap_single(struct device *dev, dma_addr_t dma_addr,
+ 		size_t size, enum dma_data_direction dir)
+ {
+-	struct safe_buffer *buf = find_safe_buffer_dev(dev, dma_addr, "unmap");
++	struct safe_buffer *buf = find_safe_buffer_dev(dev, dma_addr, "unmap", 0);
+ 
+ 	if (buf) {
+ 		BUG_ON(buf->size != size);
+@@ -398,7 +408,7 @@ int dmabounce_sync_for_cpu(struct device *dev, dma_addr_t addr,
+ 	dev_dbg(dev, "%s(dma=%#x,off=%#lx,sz=%zx,dir=%x)\n",
+ 		__func__, addr, off, sz, dir);
+ 
+-	buf = find_safe_buffer_dev(dev, addr, __func__);
++	buf = find_safe_buffer_dev(dev, addr, __func__, 1);
+ 	if (!buf)
+ 		return 1;
+ 
+@@ -411,6 +421,8 @@ int dmabounce_sync_for_cpu(struct device *dev, dma_addr_t addr,
+ 	DO_STATS(dev->archdata.dmabounce->bounce_count++);
+ 
+ 	if (dir == DMA_FROM_DEVICE || dir == DMA_BIDIRECTIONAL) {
++		if (addr != buf->safe_dma_addr)
++			off = addr - buf->safe_dma_addr;
+ 		dev_dbg(dev, "%s: copy back safe %p to unsafe %p size %d\n",
+ 			__func__, buf->safe + off, buf->ptr + off, sz);
+ 		memcpy(buf->ptr + off, buf->safe + off, sz);
+@@ -427,7 +439,7 @@ int dmabounce_sync_for_device(struct device *dev, dma_addr_t addr,
+ 	dev_dbg(dev, "%s(dma=%#x,off=%#lx,sz=%zx,dir=%x)\n",
+ 		__func__, addr, off, sz, dir);
+ 
+-	buf = find_safe_buffer_dev(dev, addr, __func__);
++	buf = find_safe_buffer_dev(dev, addr, __func__, 1);
+ 	if (!buf)
+ 		return 1;
+ 
+-- 
+1.6.5
+
