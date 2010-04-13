@@ -1,67 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab0DMXPx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 19:15:53 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:53762 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752731Ab0DMXPv (ORCPT
+	id S1753346Ab0DMXT3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 19:19:29 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:60471 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752731Ab0DMXT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 19:15:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=OxqGx8fe1aCfkF590l2298wzbr1njs1/zRRKyGMAcLVDgtQqS4ARaz5yUwA6os9uri
-         2z78VdfYtv0VCwAOWajmPBI8t/MzEd6NCnH9mVU2uMRn0rOlLc86uLpigu3p7FGV7kWm
-         mx27/k8Ao2/DtdAwxTk84WX4nyTSO6+stXTF4=
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [PATCH -next] eeepc-wmi: depends on INPUT_SPARSEKMAP
-Date: Tue, 13 Apr 2010 15:39:34 -0700
-User-Agent: KMail/1.13.1 (Linux/2.6.34-rc4; KDE/4.4.1; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Matthew Garrett <mjg@redhat.com>,
-       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       platform-driver-x86@vger.kernel.org
-References: <20100413163427.8acd04e5.sfr@canb.auug.org.au> <20100413094544.38369da9.randy.dunlap@oracle.com>
-In-Reply-To: <20100413094544.38369da9.randy.dunlap@oracle.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004131539.34998.dmitry.torokhov@gmail.com>
+	Tue, 13 Apr 2010 19:19:28 -0400
+From: Chase Douglas <chase.douglas@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       kernel-team <kernel-team@lists.ubuntu.com>
+Subject: [REGRESSION 2.6.30][PATCH v3] sched: update load count only once per cpu in 10 tick update window
+Date: Tue, 13 Apr 2010 16:19:11 -0700
+Message-Id: <1271200751-18697-1-git-send-email-chase.douglas@canonical.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 13 April 2010 09:45:44 am Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> When EEEPC_WMI=y and INPUT_SPARSEKMAP=m, the build fails,
-> so make EEEPC_WMI depend on INPUT_SPARSEKMAP.
-> 
-> eeepc-wmi.c:(.text+0x28d1a9): undefined reference to `sparse_keymap_setup'
-> eeepc-wmi.c:(.text+0x28d1f9): undefined reference to `sparse_keymap_free'
-> eeepc-wmi.c:(.text+0x28d2e0): undefined reference to
-> `sparse_keymap_report_event' eeepc-wmi.c:(.init.text+0x17069): undefined
-> reference to `sparse_keymap_free' eeepc-wmi.c:(.exit.text+0x2bae):
-> undefined reference to `sparse_keymap_free'
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> ---
->  drivers/platform/x86/Kconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- linux-next-20100413.orig/drivers/platform/x86/Kconfig
-> +++ linux-next-20100413/drivers/platform/x86/Kconfig
-> @@ -388,7 +388,7 @@ config EEEPC_LAPTOP
->  config EEEPC_WMI
->  	tristate "Eee PC WMI Hotkey Driver (EXPERIMENTAL)"
->  	depends on ACPI_WMI
-> -	depends on INPUT
-> +	depends on INPUT && INPUT_SPARSEKMAP
+There's a period of 10 ticks where calc_load_tasks is updated by all the
+cpus for the load avg. Usually all the cpus do this during the first
+tick. If any cpus go idle, calc_load_tasks is decremented accordingly.
+However, if they wake up calc_load_tasks is not incremented. Thus, if
+cpus go idle during the 10 tick period, calc_load_tasks may be
+decremented to a non-representative value. This issue can lead to
+systems having a load avg of exactly 0, even though the real load avg
+could theoretically be up to NR_CPUS.
 
-"select INPUT_SPARSEKMAP" please - users should not be concerned about
-such implementation details.
+This change defers calc_load_tasks accounting after each cpu updates the
+count until after the 10 tick update window.
 
+A few points:
+
+* A global atomic deferral counter, and not per-cpu vars, is needed
+  because a cpu may go NOHZ idle and not be able to update the global
+  calc_load_tasks variable for subsequent load calculations.
+* It is not enough to add calls to account for the load when a cpu is
+  awakened:
+  - Load avg calculation must be independent of cpu load.
+  - If a cpu is awakend by one tasks, but then has more scheduled before
+    the end of the update window, only the first task will be accounted.
+
+BugLink: http://bugs.launchpad.net/bugs/513848
+
+Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+Acked-by: Colin King <colin.king@canonical.com>
+Acked-by: Andy Whitcroft <apw@canonical.com>
+---
+ kernel/sched.c |   24 ++++++++++++++++++++++--
+ 1 files changed, 22 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index abb36b1..be348cd 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3010,6 +3010,7 @@ unsigned long this_cpu_load(void)
+ 
+ /* Variables and functions for calc_load */
+ static atomic_long_t calc_load_tasks;
++static atomic_long_t calc_load_tasks_deferred;
+ static unsigned long calc_load_update;
+ unsigned long avenrun[3];
+ EXPORT_SYMBOL(avenrun);
+@@ -3064,7 +3065,7 @@ void calc_global_load(void)
+  */
+ static void calc_load_account_active(struct rq *this_rq)
+ {
+-	long nr_active, delta;
++	long nr_active, delta, deferred;
+ 
+ 	nr_active = this_rq->nr_running;
+ 	nr_active += (long) this_rq->nr_uninterruptible;
+@@ -3072,6 +3073,25 @@ static void calc_load_account_active(struct rq *this_rq)
+ 	if (nr_active != this_rq->calc_load_active) {
+ 		delta = nr_active - this_rq->calc_load_active;
+ 		this_rq->calc_load_active = nr_active;
++
++		/*
++		 * Update calc_load_tasks only once per cpu in 10 tick update
++		 * window.
++		 */
++		if (unlikely(time_before(jiffies, this_rq->calc_load_update) &&
++			     time_after_eq(jiffies, calc_load_update))) {
++			if (delta)
++				atomic_long_add(delta,
++						&calc_load_tasks_deferred);
++			return;
++		}
++
++		if (atomic_long_read(&calc_load_tasks_deferred)) {
++			deferred = atomic_long_xchg(&calc_load_tasks_deferred,
++						    0);
++			delta += deferred;
++		}
++
+ 		atomic_long_add(delta, &calc_load_tasks);
+ 	}
+ }
+@@ -3106,8 +3126,8 @@ static void update_cpu_load(struct rq *this_rq)
+ 	}
+ 
+ 	if (time_after_eq(jiffies, this_rq->calc_load_update)) {
+-		this_rq->calc_load_update += LOAD_FREQ;
+ 		calc_load_account_active(this_rq);
++		this_rq->calc_load_update += LOAD_FREQ;
+ 	}
+ }
+ 
 -- 
-Dmitry
+1.6.3.3
+
