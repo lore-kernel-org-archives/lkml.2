@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720Ab0DMUkj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 16:40:39 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56379 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753460Ab0DMUkQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 16:40:16 -0400
-Date: Tue, 13 Apr 2010 13:39:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Chase Douglas <chase.douglas@canonical.com>, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       kernel-team <kernel-team@lists.ubuntu.com>
-Subject: Re: [REGRESSION 2.6.30][PATCH 1/1] sched: defer idle accounting
- till after load update period
-Message-Id: <20100413133903.9d38a6ee.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1004012200340.32352@localhost.localdomain>
-References: <1269870072-22449-1-git-send-email-chase.douglas@canonical.com>
-	<1269870072-22449-2-git-send-email-chase.douglas@canonical.com>
-	<20100401122740.a1ae80a7.akpm@linux-foundation.org>
-	<z2i40ec3ea41004011256p281cc601t277c3191fef5f87b@mail.gmail.com>
-	<alpine.LFD.2.00.1004012200340.32352@localhost.localdomain>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753554Ab0DMUmF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 16:42:05 -0400
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:47204 "EHLO sabe.cs.wisc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752675Ab0DMUmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 16:42:01 -0400
+Message-ID: <4BC4D711.5030802@cs.wisc.edu>
+Date: Tue, 13 Apr 2010 15:41:53 -0500
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: open-iscsi@googlegroups.com
+CC: Rakesh Ranjan <rakesh@chelsio.com>, netdev@vger.kernel.org,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kxie@chelsio.com, davem@davemloft.net,
+       James.Bottomley@hansenpartnership.com
+Subject: Re: [PATCH 2/3] cxgb4i: main driver files
+References: <1270728855-20951-1-git-send-email-rakesh@chelsio.com> <1270728855-20951-2-git-send-email-rakesh@chelsio.com> <1270728855-20951-3-git-send-email-rakesh@chelsio.com>
+In-Reply-To: <1270728855-20951-3-git-send-email-rakesh@chelsio.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Apr 2010 22:01:59 +0200 (CEST)
-Thomas Gleixner <tglx@linutronix.de> wrote:
+On 04/08/2010 07:14 AM, Rakesh Ranjan wrote:
+> +static inline int cxgb4i_ddp_gl_map(struct pci_dev *pdev,
+> +				struct cxgb4i_gather_list *gl)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i<  gl->nelem; i++) {
+> +		gl->phys_addr[i] = pci_map_page(pdev, gl->pages[i], 0,
+> +						PAGE_SIZE,
 
-> On Thu, 1 Apr 2010, Chase Douglas wrote:
-> > On Thu, Apr 1, 2010 at 3:27 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> > 
-> > Thomas Gleixner seems to think this isn't the best approach (later
-> > email in this thread), so I'm deferring sending it unless someone is
-> > still interested in this approach.
-> 
-> Well, it's a good workaround for now I think, I just answered Andrews
-> question whether we can't do any better :)
-> 
+Hey Rakesh,
 
-So... should we merge Chase's patch?
+I guess we are trying to move away from the pci mapping functions move 
+to the dma ones. On your next submission, could you fix those up too?
