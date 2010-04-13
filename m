@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab0DMCdb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 22:33:31 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:35658 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754559Ab0DMCda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 22:33:30 -0400
-Message-ID: <4BC3D7C1.90307@cs.wisc.edu>
-Date: Mon, 12 Apr 2010 21:32:33 -0500
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1754702Ab0DMClB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 22:41:01 -0400
+Received: from mail-yx0-f171.google.com ([209.85.210.171]:42748 "EHLO
+	mail-yx0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754649Ab0DMClA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 22:41:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Z40DIRdZRC6o8cZCMgkgMK079NdbApYrOtnBMCmTUTKZftb2ikbLMMVNGlKPuBNrKA
+         /DPMpHfdRgNnrbcae3ZHB/Vzewuxn/0wP4pMiSr0Cps2yBATOBFnUzrYZlc6WxRPn/PZ
+         gTVVg5G4JVFgvPnEBEZ6YZsDjvbiiHvCVo0wQ=
+Message-ID: <4BC3DA02.2020208@gmail.com>
+Date: Mon, 12 Apr 2010 19:42:10 -0700
+From: "Justin P. mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       pjones@redhat.com, open-iscsi@googlegroups.com
-Subject: Re: [PATCH 2/2] RFC: iscsi ibft: convert iscsi_ibft module to iscsi
- boot lib
-References: <1271095578-4212-1-git-send-email-michaelc@cs.wisc.edu> <1271095578-4212-2-git-send-email-michaelc@cs.wisc.edu> <201004122221.05326.konrad@darnok.org>
-In-Reply-To: <201004122221.05326.konrad@darnok.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.34-rc4
+References: <alpine.LFD.2.00.1004121859480.3647@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1004121859480.3647@i5.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2010 09:21 PM, Konrad Rzeszutek Wilk wrote:
->> + * Helper routiners to check to determine if the entry is valid
->> + * in the proper iBFT structure.
->> + */
->> +static mode_t ibft_check_nic_for(void *data, int type)
->> +{
->> +	struct ibft_kobject *entry = data;
->> +	struct ibft_nic *nic = entry->nic;
->> +	mode_t rc = 0;
->> +
->> +	switch (type) {
->> +	case ISCSI_BOOT_ETH_INDEX:
->> +	case ISCSI_BOOT_ETH_FLAGS:
->> +		rc = 1;
+On 04/12/2010 07:16 PM, Linus Torvalds wrote:
 >
-> Did you mean for that value?
->> +		break;
->> +	case ISCSI_BOOT_ETH_IP_ADDR:
->> +		if (memcmp(nic->ip_addr, nulls, sizeof(nic->ip_addr)))
->> +			rc = S_IRUGO;
->> +		break;
->> +	case ISCSI_BOOT_ETH_SUBNET_MASK:
->> +		if (nic->subnet_mask_prefix)
->> +			rc = S_IRUGO;
->> +		break;
->> +	case ISCSI_BOOT_ETH_ORIGIN:
->> +		rc = 1;
+> It's been two weeks rather than the usual one, because we've been hunting
+> a really annoying VM regression that not a lot of people seem to have
+> seen, but I didn't want to release an -rc4 with it. So we had the choice
+> of either reverting all the anon-vma scalability improvements, or finding
+> out exactly what caused the regression and fixing it.
 >
-> and this one as well?
+> And we got pretty close to the point where I was going to just revert it
+> all.
+>
+> Absolutely _huge_ kudos to Borislav Petkov who reported the problem and
+> was able to not just reliably reproduce it, but also test new patches to
+> try to narrow things down at a moments notice. The thing took ten days of
+> emails flying back and forth, and Borislav was there all the time, day and
+> night, through several patches that tried to fix it (several real bugs,
+> but not the one he hit) and lots of patches to just add instrumentation to
+> get us nearer to the cause of the problem.
+>
+> And finally, today, confirmation that we actually nailed the problem. So
+> if anybody has been seeing a oops (or sometimes a GP fault) in
+> page_referenced(), that should be gone now.
+>
+> Anyway, there's certainly been other things going on too, but the VM
+> regression was the one that kept me personally busy, and held up the
+> release.
+>
+> The bulk of the changes come from drivers - a new network driver (cxgb4),
+> but also updates to the radeon and nouveau drivers.
+>
+> And then there is the random updates everywhere. The appended shortlog is
+> about as good an overview as anything.
+>
+> 		Linus
+>
+> ---
 
-I did not. They should be S_IRUGO. Do you want me to resubmit the 
-patches or are you just going to edit those two lines if you merge them?
+
+I noticed the vm discussion, but had no idea what was going on.
+In any case that's pretty cool to see(read). Love to see the hard
+work and collaboration to fix a problem.
+
+cheers,
+
+Justin P. Mattock
