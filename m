@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab0DMUM7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 16:12:59 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:57070 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021Ab0DMUM5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 16:12:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=jx4r4BQcAe9vAO00CtiQRJv+1UU8iJClDpDfzVpiuuq42TIWamjVhxTT+AqVTtIzE9
-         IkCylqXHUi3kDSdsnInQND3NIBp6feB9jrdUAzDQxoktrnaLYHazKSsFHO12m5+tKq02
-         3xp22BvQtqtY0xBcMjxA5iEqaT2Ml6U6q0ShI=
-Date: Tue, 13 Apr 2010 22:12:49 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jan Blunck <jblunck@suse.de>, Jan Kara <jack@suse.cz>, tytso@mit.edu,
-       Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
-       linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 0/5] ext2: Preparation to remove BKL
-Message-ID: <20100413201246.GB5602@nowhere>
-References: <1271104905-8804-1-git-send-email-jblunck@suse.de> <20100412210127.GE8285@nowhere> <201004131131.54650.arnd@arndb.de>
+	id S1753346Ab0DMURS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 16:17:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1382 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753243Ab0DMURQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 16:17:16 -0400
+Date: Tue, 13 Apr 2010 16:18:00 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+       linux-kernel@vger.kernel.org, davej@redhat.com, kyle@redhat.com,
+       vgoyal@redhat.com, arjan@linux.intel.com
+Subject: Re: [PATCH] kconfig: introduce nonint_oldconfig and
+	loose_nonint_oldconfig
+Message-ID: <20100413201759.GY31193@redhat.com>
+References: <20100413194747.GX31193@redhat.com> <20100413130031.d4dec19b.randy.dunlap@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201004131131.54650.arnd@arndb.de>
+In-Reply-To: <20100413130031.d4dec19b.randy.dunlap@oracle.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 13, 2010 at 11:31:54AM +0200, Arnd Bergmann wrote:
-> On Monday 12 April 2010, Frederic Weisbecker wrote:
-> > It looks like this is all about .35 material.
-> > 
-> > This is going to be hard to have a separate tree to pushdown/remove
-> > the bkl in the mount path if it depends on the ext2 tree.
+> > This patch has been around for a long time in Fedora and Red Hat Enterprise
+> > Linux kernels and it may be useful for others. The nonint_oldconfig target
+> > will fail and print the unset config options while loose_nonint_oldconfig will
+> > simply let the config option unset. They're useful in distro kernel packages
+> > where the config files are built using a combination of smaller config files.
+> > The patch's author AFAIK is Arjan van de Ven. Arjan, please add a Signed-off-by
+> > if you're the original author.
 > 
-> The pushdown can be in a separate tree that can be merged independently,
-> just the final patch removing it in do_new_mount needs to wait
-> for everything else to get merged first.
+> Roland McGrath added the loose parts according to his email of 2008.Mar.05:
+> "I added this one (loose_nonint_oldconfig target, -B option to conf)."
+hm, I can't see the -B there, maybe the functionality he's referring to is
+the def_no?
 
-
-Right.
-
-
-
-> We have some other patches,
-> in particular the one that makes CONFIG_BKL modular that have to
-> wait for other patches and should probably just be applied separately
-> rather than merged from a bisectable git tree.
+> after Dave Jones posted this patch.
 > 
-> 	Arnd
+> (adding linux-kbuild mailing list & kbuild maintainer)
+> 
+> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> 
+> 
+> > Signed-off-by: Aristeu Rozanski <aris@redhat.com> 
+> 
+> 
+> > @@ -613,5 +641,5 @@ int main(int ac, char **av)
+> >  			exit(1);
+> >  		}
+> >  	}
+> > -	return 0;
+> > +	return return_value;
+> >  }
+> 
+> Having 'make oldconfig' exit with Exit status: 139  (for example)
+> can be confusing.  I know that from experience.  It took me a bit
+> to find out what that meant.  That part could be improved...
+ok, no real reason to keep incrementing that. no different error codes exist
+other than "1". Do you think we need to introduce different return codes?
 
-
-Ok, no problem then.
-
-Thanks.
+-- 
+Aristeu
 
