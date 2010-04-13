@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383Ab0DMJcr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 05:32:47 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:52452 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752439Ab0DMJcq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 05:32:46 -0400
-Message-ID: <4BC43A3C.7010603@cs.helsinki.fi>
-Date: Tue, 13 Apr 2010 12:32:44 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	id S1751819Ab0DMJie (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 05:38:34 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45960 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750880Ab0DMJic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 05:38:32 -0400
+Date: Tue, 13 Apr 2010 11:38:27 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the
+ anon_vmas of a mergeable VMA
+Message-ID: <20100413093827.GA6954@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Johannes Weiner <hannes@cmpxchg.org>,
+	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	Rik van Riel <riel@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Minchan Kim <minchan.kim@gmail.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+	Nick Piggin <npiggin@suse.de>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+References: <alpine.LFD.2.00.1004110938570.3514@i5.linux-foundation.org>
+ <alpine.LFD.2.00.1004111010280.3514@i5.linux-foundation.org>
+ <20100411185508.GA4450@liondog.tnic>
+ <alpine.LFD.2.00.1004111707360.3514@i5.linux-foundation.org>
+ <alpine.LFD.2.00.1004111759440.3521@i5.linux-foundation.org>
+ <20100412072056.GA2432@liondog.tnic>
+ <alpine.LFD.2.00.1004120854440.26679@i5.linux-foundation.org>
+ <alpine.LFD.2.00.1004120906370.26679@i5.linux-foundation.org>
+ <20100412215027.GA6263@liondog.tnic>
+ <alpine.LFD.2.00.1004121508290.3647@i5.linux-foundation.org>
 MIME-Version: 1.0
-To: TAO HU <tghk48@motorola.com>, Nick Piggin <npiggin@suse.de>
-CC: linux-kernel@vger.kernel.org, cl@linux-foundation.org, mpm@selenic.com,
-       linux-mm@kvack.org, dwmw2@infradead.org, TAO HU <taohu@motorola.com>,
-       ShiYong LI <shi-yong.li@motorola.com>, david.rientjes@google.com
-Subject: Re: [PATCH - V2] Fix missing of last user while dumping slab 	corruption
- log
-References: <w2z4810ea571004112250x855fadd5uecbc813726ae3412@mail.gmail.com> <h2v5f4a33681004130005xc06eadf7jc94e9257c6af4350@mail.gmail.com>
-In-Reply-To: <h2v5f4a33681004130005xc06eadf7jc94e9257c6af4350@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1004121508290.3647@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TAO HU kirjoitti:
-> Actually we greped "kmem_cache_create" in whole kernel souce tree
-> (2.6.29 and 2.6.32).
-> 
-> Either "align" equal to "0" or flag SLAB_HWCACHE_ALIGN is used when
-> calling kmem_cache_create().
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, Apr 12, 2010 at 03:11:53PM -0700
 
-I don't think that's correct. The "task_xstate" has alignof(struct 
-task_xstate) and there seems to be so GCC attributes that force 
-non-default alignment on the struct.
+> Ok. That does sound very positive. Of course, last time you sounded 
+> positive, I had an email from you half an hour later that said "oh no, it 
+> oopsed again". So I'll take it with a bit of salt, but on the whole I'll 
+> be optimistic about it.
 
-> Seems all of arch's cache-line-size is multiple of 64-bit/8-byte
-> (sizeof(long long)) except  arch-microblaze (4-byte).
-> The smallest (except arch-microblaze) cache-line-size is 2^4= 16-byte
-> as I can see.
-> So even considering possible sizeof(long long) == 128-bit/16-byte, it
-> is still safe to apply Shiyong's original version.
-> 
-> Anyway, Shiyong's new patch check the weired situation that "align >
-> sizeof(long long) && align is NOT multiple of sizeof (long long)"
-> Let us know whether the new version address your concerns.
+Ok, just finished testing -rc4 - no problems so far. Let's just go out
+on a limb here and say with a greater certainty that this really got
+fixed but be smart about it and keep an eye open if it happens again -
+you never know.
 
-Yeah, sorry for dragging this issue on. I've been looking at the patch 
-but haven't been able to convince myself that it's correct. Nick, David, 
-Christoph, Matt, could you also please take a look at this?
+Where is the champagne?
 
-			Pekka
+-- 
+Regards/Gruss,
+    Boris.
