@@ -1,345 +1,323 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab0DMXwv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 19:52:51 -0400
-Received: from mail.hq.newdream.net ([66.33.206.127]:59402 "EHLO
+	id S1754178Ab0DMXxI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 19:53:08 -0400
+Received: from mail.hq.newdream.net ([66.33.206.127]:59405 "EHLO
 	mail.hq.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753859Ab0DMXwX (ORCPT
+	with ESMTP id S1753751Ab0DMXwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 19:52:23 -0400
+	Tue, 13 Apr 2010 19:52:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws; d=hq.newdream.net; h=from:to
-	:cc:subject:date:message-id:in-reply-to:references:in-reply-to
-	:references; q=dns; s=drama; b=LHaQY5stdBMoJpOQ0VMsUhTO7tZBDeFYJ
-	QxfF2yN/oX1WODsw3Lc87avBcMtSb5ocLmwN31ZTaQ3fRaG5+iqKoMWL2YAw62/k
-	4f3Jghz2OGBCJCLUMLplm9UjtFeErDamxNT8Oekdi5R2+mWLt6UWIGVMmFOe9ws8
-	AibNCDIZgQ=
+	:cc:subject:date:message-id:in-reply-to:references; q=dns; s=
+	drama; b=P2ji6v/LOOi4iUJeMm2pjHmmbsopCeCiJsUKhkSlllcdBUDp+pG2zH5
+	j/yY32aWE8r8rMRDFEV8QAsOBWLTT+aJhR7olS7dvf7z163KEEdeUh/yahgQxXab
+	yAVbyDeavOd5rAU4GFtyWM5TDfGN1LZQFkehYif+Y9pBTWz1qjaw=
 From: Yehuda Sadeh <yehuda@hq.newdream.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, yehudasa@gmail.com, sage@newdream.net,
        axboe@kernel.dk, Yehuda Sadeh <yehuda@hq.newdream.net>
-Subject: [PATCH 2/6] ceph: refactor osdc requests creation functions
-Date: Tue, 13 Apr 2010 16:29:11 -0700
-Message-Id: <b3900fb374e1813eecdcea17735df638fa1484fc.1271198630.git.yehuda@hq.newdream.net>
+Subject: [PATCH 1/6] ceph: all allocation functions should get gfp_mask
+Date: Tue, 13 Apr 2010 16:29:10 -0700
+Message-Id: <6b8320ea22e059baaac6e4cdd3a0a687646de168.1271198630.git.yehuda@hq.newdream.net>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1271201355-9346-1-git-send-email-yehuda@hq.newdream.net>
 References: <1271201355-9346-1-git-send-email-yehuda@hq.newdream.net>
-In-Reply-To: <6b8320ea22e059baaac6e4cdd3a0a687646de168.1271198630.git.yehuda@hq.newdream.net>
-References: <6b8320ea22e059baaac6e4cdd3a0a687646de168.1271198630.git.yehuda@hq.newdream.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The osd requests creation are being decoupled from the
-vino parameter, allowing clients using the osd to use
-other arbitrary object names that are not necessarily
-vino based.
+This is essential, as for the rados block device we'll need
+to run in different contexts that would need flags that
+are other than GFP_NOFS.
 
 Signed-off-by: Yehuda Sadeh <yehuda@hq.newdream.net>
 ---
- fs/ceph/osd_client.c |  179 +++++++++++++++++++++++++++++++++++---------------
- fs/ceph/osd_client.h |   24 +++++++
- 2 files changed, 149 insertions(+), 54 deletions(-)
+ fs/ceph/caps.c       |    2 +-
+ fs/ceph/file.c       |   10 +++++-----
+ fs/ceph/mds_client.c |   11 ++++++-----
+ fs/ceph/messenger.c  |   10 +++++-----
+ fs/ceph/messenger.h  |    2 +-
+ fs/ceph/mon_client.c |   15 ++++++++-------
+ fs/ceph/msgpool.c    |    4 ++--
+ fs/ceph/osd_client.c |    8 ++++----
+ 8 files changed, 32 insertions(+), 30 deletions(-)
 
+diff --git a/fs/ceph/caps.c b/fs/ceph/caps.c
+index 2dd11d4..7355a39 100644
+--- a/fs/ceph/caps.c
++++ b/fs/ceph/caps.c
+@@ -932,7 +932,7 @@ static int send_cap_msg(struct ceph_mds_session *session,
+ 	     seq, issue_seq, mseq, follows, size, max_size,
+ 	     xattr_version, xattrs_buf ? (int)xattrs_buf->vec.iov_len : 0);
+ 
+-	msg = ceph_msg_new(CEPH_MSG_CLIENT_CAPS, sizeof(*fc));
++	msg = ceph_msg_new(CEPH_MSG_CLIENT_CAPS, sizeof(*fc), GFP_NOFS);
+ 	if (!msg)
+ 		return -ENOMEM;
+ 
+diff --git a/fs/ceph/file.c b/fs/ceph/file.c
+index 4024a5d..ef8f9e9 100644
+--- a/fs/ceph/file.c
++++ b/fs/ceph/file.c
+@@ -316,16 +316,16 @@ void ceph_release_page_vector(struct page **pages, int num_pages)
+ /*
+  * allocate a vector new pages
+  */
+-static struct page **alloc_page_vector(int num_pages)
++struct page **ceph_alloc_page_vector(int num_pages, gfp_t flags)
+ {
+ 	struct page **pages;
+ 	int i;
+ 
+-	pages = kmalloc(sizeof(*pages) * num_pages, GFP_NOFS);
++	pages = kmalloc(sizeof(*pages) * num_pages, flags);
+ 	if (!pages)
+ 		return ERR_PTR(-ENOMEM);
+ 	for (i = 0; i < num_pages; i++) {
+-		pages[i] = __page_cache_alloc(GFP_NOFS);
++		pages[i] = __page_cache_alloc(flags);
+ 		if (pages[i] == NULL) {
+ 			ceph_release_page_vector(pages, i);
+ 			return ERR_PTR(-ENOMEM);
+@@ -539,7 +539,7 @@ static ssize_t ceph_sync_read(struct file *file, char __user *data,
+ 		 * in sequence.
+ 		 */
+ 	} else {
+-		pages = alloc_page_vector(num_pages);
++		pages = ceph_alloc_page_vector(num_pages, GFP_NOFS);
+ 	}
+ 	if (IS_ERR(pages))
+ 		return PTR_ERR(pages);
+@@ -666,7 +666,7 @@ more:
+ 		 */
+ 		truncate_inode_pages_range(inode->i_mapping, pos, pos+len);
+ 	} else {
+-		pages = alloc_page_vector(num_pages);
++		pages = ceph_alloc_page_vector(num_pages, GFP_NOFS);
+ 		if (IS_ERR(pages)) {
+ 			ret = PTR_ERR(pages);
+ 			goto out;
+diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
+index 5de7c83..9ebdda9 100644
+--- a/fs/ceph/mds_client.c
++++ b/fs/ceph/mds_client.c
+@@ -664,7 +664,7 @@ static struct ceph_msg *create_session_msg(u32 op, u64 seq)
+ 	struct ceph_msg *msg;
+ 	struct ceph_mds_session_head *h;
+ 
+-	msg = ceph_msg_new(CEPH_MSG_CLIENT_SESSION, sizeof(*h));
++	msg = ceph_msg_new(CEPH_MSG_CLIENT_SESSION, sizeof(*h), GFP_NOFS);
+ 	if (!msg) {
+ 		pr_err("create_session_msg ENOMEM creating msg\n");
+ 		return NULL;
+@@ -1049,7 +1049,8 @@ static int add_cap_releases(struct ceph_mds_client *mdsc,
+ 
+ 	while (session->s_num_cap_releases < session->s_nr_caps + extra) {
+ 		spin_unlock(&session->s_cap_lock);
+-		msg = ceph_msg_new(CEPH_MSG_CLIENT_CAPRELEASE, PAGE_CACHE_SIZE);
++		msg = ceph_msg_new(CEPH_MSG_CLIENT_CAPRELEASE, PAGE_CACHE_SIZE,
++				   GFP_NOFS);
+ 		if (!msg)
+ 			goto out_unlocked;
+ 		dout("add_cap_releases %p msg %p now %d\n", session, msg,
+@@ -1414,7 +1415,7 @@ static struct ceph_msg *create_request_message(struct ceph_mds_client *mdsc,
+ 	if (req->r_old_dentry_drop)
+ 		len += req->r_old_dentry->d_name.len;
+ 
+-	msg = ceph_msg_new(CEPH_MSG_CLIENT_REQUEST, len);
++	msg = ceph_msg_new(CEPH_MSG_CLIENT_REQUEST, len, GFP_NOFS);
+ 	if (!msg) {
+ 		msg = ERR_PTR(-ENOMEM);
+ 		goto out_free2;
+@@ -2138,7 +2139,7 @@ static void send_mds_reconnect(struct ceph_mds_client *mdsc, int mds)
+ 	ceph_pagelist_init(pagelist);
+ 
+ 	err = -ENOMEM;
+-	reply = ceph_msg_new(CEPH_MSG_CLIENT_RECONNECT, 0);
++	reply = ceph_msg_new(CEPH_MSG_CLIENT_RECONNECT, 0, GFP_NOFS);
+ 	if (!reply)
+ 		goto fail_nomsg;
+ 
+@@ -2443,7 +2444,7 @@ void ceph_mdsc_lease_send_msg(struct ceph_mds_session *session,
+ 	dnamelen = dentry->d_name.len;
+ 	len += dnamelen;
+ 
+-	msg = ceph_msg_new(CEPH_MSG_CLIENT_LEASE, len);
++	msg = ceph_msg_new(CEPH_MSG_CLIENT_LEASE, len, GFP_NOFS);
+ 	if (!msg)
+ 		return;
+ 	lease = msg->front.iov_base;
+diff --git a/fs/ceph/messenger.c b/fs/ceph/messenger.c
+index 15dce2c..b6cff8e 100644
+--- a/fs/ceph/messenger.c
++++ b/fs/ceph/messenger.c
+@@ -2043,11 +2043,11 @@ void ceph_con_keepalive(struct ceph_connection *con)
+  * construct a new message with given type, size
+  * the new msg has a ref count of 1.
+  */
+-struct ceph_msg *ceph_msg_new(int type, int front_len)
++struct ceph_msg *ceph_msg_new(int type, int front_len, gfp_t flags)
+ {
+ 	struct ceph_msg *m;
+ 
+-	m = kmalloc(sizeof(*m), GFP_NOFS);
++	m = kmalloc(sizeof(*m), flags);
+ 	if (m == NULL)
+ 		goto out;
+ 	kref_init(&m->kref);
+@@ -2070,11 +2070,11 @@ struct ceph_msg *ceph_msg_new(int type, int front_len)
+ 	/* front */
+ 	if (front_len) {
+ 		if (front_len > PAGE_CACHE_SIZE) {
+-			m->front.iov_base = __vmalloc(front_len, GFP_NOFS,
++			m->front.iov_base = __vmalloc(front_len, flags,
+ 						      PAGE_KERNEL);
+ 			m->front_is_vmalloc = true;
+ 		} else {
+-			m->front.iov_base = kmalloc(front_len, GFP_NOFS);
++			m->front.iov_base = kmalloc(front_len, flags);
+ 		}
+ 		if (m->front.iov_base == NULL) {
+ 			pr_err("msg_new can't allocate %d bytes\n",
+@@ -2149,7 +2149,7 @@ static struct ceph_msg *ceph_alloc_msg(struct ceph_connection *con,
+ 	}
+ 	if (!msg) {
+ 		*skip = 0;
+-		msg = ceph_msg_new(type, front_len);
++		msg = ceph_msg_new(type, front_len, GFP_NOFS);
+ 		if (!msg) {
+ 			pr_err("unable to allocate msg type %d len %d\n",
+ 			       type, front_len);
+diff --git a/fs/ceph/messenger.h b/fs/ceph/messenger.h
+index 9f0a540..fe24e6f 100644
+--- a/fs/ceph/messenger.h
++++ b/fs/ceph/messenger.h
+@@ -232,7 +232,7 @@ extern void ceph_con_keepalive(struct ceph_connection *con);
+ extern struct ceph_connection *ceph_con_get(struct ceph_connection *con);
+ extern void ceph_con_put(struct ceph_connection *con);
+ 
+-extern struct ceph_msg *ceph_msg_new(int type, int front_len);
++extern struct ceph_msg *ceph_msg_new(int type, int front_len, gfp_t flags);
+ extern void ceph_msg_kfree(struct ceph_msg *m);
+ 
+ 
+diff --git a/fs/ceph/mon_client.c b/fs/ceph/mon_client.c
+index fdc2800..455c973 100644
+--- a/fs/ceph/mon_client.c
++++ b/fs/ceph/mon_client.c
+@@ -190,7 +190,7 @@ static void __send_subscribe(struct ceph_mon_client *monc)
+ 		struct ceph_mon_subscribe_item *i;
+ 		void *p, *end;
+ 
+-		msg = ceph_msg_new(CEPH_MSG_MON_SUBSCRIBE, 96);
++		msg = ceph_msg_new(CEPH_MSG_MON_SUBSCRIBE, 96, GFP_NOFS);
+ 		if (!msg)
+ 			return;
+ 
+@@ -490,10 +490,10 @@ int ceph_monc_do_statfs(struct ceph_mon_client *monc, struct ceph_statfs *buf)
+ 	init_completion(&req->completion);
+ 
+ 	err = -ENOMEM;
+-	req->request = ceph_msg_new(CEPH_MSG_STATFS, sizeof(*h));
++	req->request = ceph_msg_new(CEPH_MSG_STATFS, sizeof(*h), GFP_NOFS);
+ 	if (!req->request)
+ 		goto out;
+-	req->reply = ceph_msg_new(CEPH_MSG_STATFS_REPLY, 1024);
++	req->reply = ceph_msg_new(CEPH_MSG_STATFS_REPLY, 1024, GFP_NOFS);
+ 	if (!req->reply)
+ 		goto out;
+ 
+@@ -632,15 +632,16 @@ int ceph_monc_init(struct ceph_mon_client *monc, struct ceph_client *cl)
+ 	/* msg pools */
+ 	err = -ENOMEM;
+ 	monc->m_subscribe_ack = ceph_msg_new(CEPH_MSG_MON_SUBSCRIBE_ACK,
+-				     sizeof(struct ceph_mon_subscribe_ack));
++				     sizeof(struct ceph_mon_subscribe_ack),
++				     GFP_NOFS);
+ 	if (!monc->m_subscribe_ack)
+ 		goto out_monmap;
+ 
+-	monc->m_auth_reply = ceph_msg_new(CEPH_MSG_AUTH_REPLY, 4096);
++	monc->m_auth_reply = ceph_msg_new(CEPH_MSG_AUTH_REPLY, 4096, GFP_NOFS);
+ 	if (!monc->m_auth_reply)
+ 		goto out_subscribe_ack;
+ 
+-	monc->m_auth = ceph_msg_new(CEPH_MSG_AUTH, 4096);
++	monc->m_auth = ceph_msg_new(CEPH_MSG_AUTH, 4096, GFP_NOFS);
+ 	monc->pending_auth = 0;
+ 	if (!monc->m_auth)
+ 		goto out_auth_reply;
+@@ -815,7 +816,7 @@ static struct ceph_msg *mon_alloc_msg(struct ceph_connection *con,
+ 	case CEPH_MSG_MON_MAP:
+ 	case CEPH_MSG_MDS_MAP:
+ 	case CEPH_MSG_OSD_MAP:
+-		m = ceph_msg_new(type, front_len);
++		m = ceph_msg_new(type, front_len, GFP_NOFS);
+ 		break;
+ 	}
+ 
+diff --git a/fs/ceph/msgpool.c b/fs/ceph/msgpool.c
+index 10d3632..b0cc104 100644
+--- a/fs/ceph/msgpool.c
++++ b/fs/ceph/msgpool.c
+@@ -11,7 +11,7 @@ static void *alloc_fn(gfp_t gfp_mask, void *arg)
+ {
+ 	struct ceph_msgpool *pool = arg;
+ 
+-	return ceph_msg_new(0, pool->front_len);
++	return ceph_msg_new(0, pool->front_len, gfp_mask);
+ }
+ 
+ static void free_fn(void *element, void *arg)
+@@ -43,7 +43,7 @@ struct ceph_msg *ceph_msgpool_get(struct ceph_msgpool *pool,
+ 		WARN_ON(1);
+ 
+ 		/* try to alloc a fresh message */
+-		return ceph_msg_new(0, front_len);
++		return ceph_msg_new(0, front_len, GFP_NOFS);
+ 	}
+ 
+ 	return mempool_alloc(pool->pool, GFP_NOFS);
 diff --git a/fs/ceph/osd_client.c b/fs/ceph/osd_client.c
-index 356e61a..5927bc3 100644
+index e69abe5..356e61a 100644
 --- a/fs/ceph/osd_client.c
 +++ b/fs/ceph/osd_client.c
-@@ -22,6 +22,32 @@ static int __kick_requests(struct ceph_osd_client *osdc,
- 
- static void kick_requests(struct ceph_osd_client *osdc, struct ceph_osd *osd);
- 
-+void ceph_calc_raw_layout(struct ceph_osd_client *osdc,
-+			struct ceph_file_layout *layout,
-+			u64 off, u64 len, u64 *bno,
-+			struct ceph_osd_request *req)
-+{
-+	struct ceph_osd_request_head *reqhead = req->r_request->front.iov_base;
-+	struct ceph_osd_op *op = (void *)(reqhead + 1);
-+	u64 orig_len = len;
-+	u64 objoff, objlen;    /* extent in object */
-+
-+	/* object extent? */
-+	ceph_calc_file_object_mapping(layout, off, &len, bno,
-+				      &objoff, &objlen);
-+	if (len < orig_len)
-+		dout(" skipping last %llu, final file extent %llu~%llu\n",
-+		     orig_len - len, off, len);
-+
-+	op->extent.offset = cpu_to_le64(objoff);
-+	op->extent.length = cpu_to_le64(objlen);
-+	req->r_num_pages = calc_pages_for(off, len);
-+
-+	dout("calc_layout bno=%llx %llu~%llu (%d pages)\n",
-+	     *bno, objoff, objlen, req->r_num_pages);
-+
-+}
-+
- /*
-  * Implement client access to distributed object storage cluster.
-  *
-@@ -53,29 +79,13 @@ static void calc_layout(struct ceph_osd_client *osdc,
- 			struct ceph_osd_request *req)
- {
- 	struct ceph_osd_request_head *reqhead = req->r_request->front.iov_base;
--	struct ceph_osd_op *op = (void *)(reqhead + 1);
--	u64 orig_len = *plen;
--	u64 objoff, objlen;    /* extent in object */
- 	u64 bno;
- 
- 	reqhead->snapid = cpu_to_le64(vino.snap);
--
--	/* object extent? */
--	ceph_calc_file_object_mapping(layout, off, plen, &bno,
--				      &objoff, &objlen);
--	if (*plen < orig_len)
--		dout(" skipping last %llu, final file extent %llu~%llu\n",
--		     orig_len - *plen, off, *plen);
-+	ceph_calc_raw_layout(osdc, layout, off, *plen, &bno, req);
- 
- 	sprintf(req->r_oid, "%llx.%08llx", vino.ino, bno);
- 	req->r_oid_len = strlen(req->r_oid);
--
--	op->extent.offset = cpu_to_le64(objoff);
--	op->extent.length = cpu_to_le64(objlen);
--	req->r_num_pages = calc_pages_for(off, *plen);
--
--	dout("calc_layout %s (%d) %llu~%llu (%d pages)\n",
--	     req->r_oid, req->r_oid_len, objoff, objlen, req->r_num_pages);
- }
- 
- /*
-@@ -108,43 +118,34 @@ void ceph_osdc_release_request(struct kref *kref)
- 		kfree(req);
- }
- 
--/*
-- * build new request AND message, calculate layout, and adjust file
-- * extent as needed.
-- *
-- * if the file was recently truncated, we include information about its
-- * old and new size so that the object can be updated appropriately.  (we
-- * avoid synchronously deleting truncated objects because it's slow.)
-- *
-- * if @do_sync, include a 'startsync' command so that the osd will flush
-- * data quickly.
-- */
--struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
--					       struct ceph_file_layout *layout,
--					       struct ceph_vino vino,
--					       u64 off, u64 *plen,
--					       int opcode, int flags,
-+struct ceph_osd_request *ceph_osdc_alloc_request(struct ceph_osd_client *osdc,
-+					       int flags,
- 					       struct ceph_snap_context *snapc,
- 					       int do_sync,
--					       u32 truncate_seq,
--					       u64 truncate_size,
--					       struct timespec *mtime,
--					       bool use_mempool, int num_reply)
-+					       bool use_mempool,
-+					       gfp_t gfp_flags,
-+					       struct page **pages)
- {
- 	struct ceph_osd_request *req;
- 	struct ceph_msg *msg;
--	struct ceph_osd_request_head *head;
--	struct ceph_osd_op *op;
--	void *p;
- 	int num_op = 1 + do_sync;
--	size_t msg_size = sizeof(*head) + num_op*sizeof(*op);
--	int i;
-+	size_t msg_size = sizeof(struct ceph_osd_request_head) +
-+			  num_op*sizeof(struct ceph_osd_op);
-+
-+	if (use_mempool) {
-+		req = mempool_alloc(osdc->req_mempool, gfp_flags);
-+		memset(req, 0, sizeof(*req));
-+	} else {
-+		req = kzalloc(sizeof(*req), gfp_flags);
-+	}
-+	if (!req)
-+		return NULL;
- 
- 	if (use_mempool) {
--		req = mempool_alloc(osdc->req_mempool, GFP_NOFS);
-+		req = mempool_alloc(osdc->req_mempool, gfp_flags);
- 		memset(req, 0, sizeof(*req));
- 	} else {
--		req = kzalloc(sizeof(*req), GFP_NOFS);
-+		req = kzalloc(sizeof(*req), gfp_flags);
- 	}
- 	if (req == NULL)
- 		return NULL;
-@@ -164,7 +165,7 @@ struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
+@@ -164,7 +164,7 @@ struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
  		msg = ceph_msgpool_get(&osdc->msgpool_op_reply, 0);
  	else
  		msg = ceph_msg_new(CEPH_MSG_OSD_OPREPLY,
--				   OSD_OPREPLY_FRONT_LEN, GFP_NOFS);
-+				   OSD_OPREPLY_FRONT_LEN, gfp_flags);
+-				   OSD_OPREPLY_FRONT_LEN);
++				   OSD_OPREPLY_FRONT_LEN, GFP_NOFS);
  	if (!msg) {
  		ceph_osdc_put_request(req);
  		return NULL;
-@@ -178,18 +179,48 @@ struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
+@@ -178,7 +178,7 @@ struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
  	if (use_mempool)
  		msg = ceph_msgpool_get(&osdc->msgpool_op, 0);
  	else
--		msg = ceph_msg_new(CEPH_MSG_OSD_OP, msg_size, GFP_NOFS);
-+		msg = ceph_msg_new(CEPH_MSG_OSD_OP, msg_size, gfp_flags);
+-		msg = ceph_msg_new(CEPH_MSG_OSD_OP, msg_size);
++		msg = ceph_msg_new(CEPH_MSG_OSD_OP, msg_size, GFP_NOFS);
  	if (!msg) {
  		ceph_osdc_put_request(req);
  		return NULL;
- 	}
- 	msg->hdr.type = cpu_to_le16(CEPH_MSG_OSD_OP);
- 	memset(msg->front.iov_base, 0, msg->front.iov_len);
-+
-+	req->r_request = msg;
-+	req->r_pages = pages;
-+
-+	return req;
-+}
-+
-+/*
-+ * build new request AND message
-+ *
-+ */
-+void ceph_osdc_build_request(struct ceph_osd_request *req,
-+			    u64 off, u64 *plen,
-+			    int opcode,
-+			    struct ceph_snap_context *snapc,
-+			    int do_sync,
-+			    u32 truncate_seq,
-+			    u64 truncate_size,
-+			    struct timespec *mtime,
-+			    const char *oid,
-+			    int oid_len)
-+{
-+	struct ceph_msg *msg = req->r_request;
-+	struct ceph_osd_request_head *head;
-+	struct ceph_osd_op *op;
-+	void *p;
-+	int num_op = 1 + do_sync;
-+	size_t msg_size = sizeof(*head) + num_op*sizeof(*op);
-+	int i;
-+	int flags = req->r_flags;
-+
- 	head = msg->front.iov_base;
- 	op = (void *)(head + 1);
- 	p = (void *)(op + num_op);
+@@ -1379,7 +1379,7 @@ static struct ceph_msg *get_reply(struct ceph_connection *con,
+ 	if (front > req->r_reply->front.iov_len) {
+ 		pr_warning("get_reply front %d > preallocated %d\n",
+ 			   front, (int)req->r_reply->front.iov_len);
+-		m = ceph_msg_new(CEPH_MSG_OSD_OPREPLY, front);
++		m = ceph_msg_new(CEPH_MSG_OSD_OPREPLY, front, GFP_NOFS);
+ 		if (!m)
+ 			goto out;
+ 		ceph_msg_put(req->r_reply);
+@@ -1422,7 +1422,7 @@ static struct ceph_msg *alloc_msg(struct ceph_connection *con,
  
--	req->r_request = msg;
- 	req->r_snapc = ceph_get_snap_context(snapc);
- 
- 	head->client_inc = cpu_to_le32(1); /* always, for now. */
-@@ -199,10 +230,6 @@ struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
- 	head->num_ops = cpu_to_le16(num_op);
- 	op->op = cpu_to_le16(opcode);
- 
--	/* calculate max write size */
--	calc_layout(osdc, vino, layout, off, plen, req);
--	req->r_file_layout = *layout;  /* keep a copy */
--
- 	if (flags & CEPH_OSD_FLAG_WRITE) {
- 		req->r_request->hdr.data_off = cpu_to_le16(off);
- 		req->r_request->hdr.data_len = cpu_to_le32(*plen);
-@@ -212,9 +239,9 @@ struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
- 	op->extent.truncate_seq = cpu_to_le32(truncate_seq);
- 
- 	/* fill in oid */
--	head->object_len = cpu_to_le32(req->r_oid_len);
--	memcpy(p, req->r_oid, req->r_oid_len);
--	p += req->r_oid_len;
-+	head->object_len = cpu_to_le32(oid_len);
-+	memcpy(p, oid, oid_len);
-+	p += oid_len;
- 
- 	if (do_sync) {
- 		op++;
-@@ -233,6 +260,50 @@ struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
- 	msg_size = p - msg->front.iov_base;
- 	msg->front.iov_len = msg_size;
- 	msg->hdr.front_len = cpu_to_le32(msg_size);
-+	return;
-+}
-+
-+/*
-+ * build new request AND message, calculate layout, and adjust file
-+ * extent as needed.
-+ *
-+ * if the file was recently truncated, we include information about its
-+ * old and new size so that the object can be updated appropriately.  (we
-+ * avoid synchronously deleting truncated objects because it's slow.)
-+ *
-+ * if @do_sync, include a 'startsync' command so that the osd will flush
-+ * data quickly.
-+ */
-+struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
-+					       struct ceph_file_layout *layout,
-+					       struct ceph_vino vino,
-+					       u64 off, u64 *plen,
-+					       int opcode, int flags,
-+					       struct ceph_snap_context *snapc,
-+					       int do_sync,
-+					       u32 truncate_seq,
-+					       u64 truncate_size,
-+					       struct timespec *mtime,
-+					       bool use_mempool, int num_reply)
-+{
-+	struct ceph_osd_request *req =
-+		ceph_osdc_alloc_request(osdc, flags,
-+					 snapc, do_sync,
-+					 use_mempool,
-+					 GFP_NOFS, NULL);
-+	if (IS_ERR(req))
-+		return req;
-+
-+	/* calculate max write size */
-+	calc_layout(osdc, vino, layout, off, plen, req);
-+	req->r_file_layout = *layout;  /* keep a copy */
-+
-+	ceph_osdc_build_request(req, off, plen, opcode,
-+				snapc, do_sync,
-+				truncate_seq, truncate_size,
-+				mtime,
-+				req->r_oid, req->r_oid_len);
-+
- 	return req;
- }
- 
-diff --git a/fs/ceph/osd_client.h b/fs/ceph/osd_client.h
-index b075991..0b6b697 100644
---- a/fs/ceph/osd_client.h
-+++ b/fs/ceph/osd_client.h
-@@ -118,6 +118,30 @@ extern void ceph_osdc_handle_reply(struct ceph_osd_client *osdc,
- extern void ceph_osdc_handle_map(struct ceph_osd_client *osdc,
- 				 struct ceph_msg *msg);
- 
-+extern void ceph_calc_raw_layout(struct ceph_osd_client *osdc,
-+			struct ceph_file_layout *layout,
-+			u64 off, u64 len, u64 *bno,
-+			struct ceph_osd_request *req);
-+
-+extern struct ceph_osd_request *ceph_osdc_alloc_request(struct ceph_osd_client *osdc,
-+					       int flags,
-+					       struct ceph_snap_context *snapc,
-+					       int do_sync,
-+					       bool use_mempool,
-+					       gfp_t gfp_flags,
-+					       struct page **pages);
-+
-+extern void ceph_osdc_build_request(struct ceph_osd_request *req,
-+			    u64 off, u64 *plen,
-+			    int opcode,
-+			    struct ceph_snap_context *snapc,
-+			    int do_sync,
-+			    u32 truncate_seq,
-+			    u64 truncate_size,
-+			    struct timespec *mtime,
-+			    const char *oid,
-+			    int oid_len);
-+
- extern struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *,
- 				      struct ceph_file_layout *layout,
- 				      struct ceph_vino vino,
+ 	switch (type) {
+ 	case CEPH_MSG_OSD_MAP:
+-		return ceph_msg_new(type, front);
++		return ceph_msg_new(type, front, GFP_NOFS);
+ 	case CEPH_MSG_OSD_OPREPLY:
+ 		return get_reply(con, hdr, skip);
+ 	default:
 -- 
 1.5.6.5
 
