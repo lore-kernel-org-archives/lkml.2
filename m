@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641Ab0DMI5W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 04:57:22 -0400
-Received: from mail-iw0-f197.google.com ([209.85.223.197]:59343 "EHLO
-	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448Ab0DMI5U (ORCPT
+	id S1751374Ab0DMJF5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 05:05:57 -0400
+Received: from relay.felk.cvut.cz ([147.32.80.7]:62945 "EHLO
+	relay.felk.cvut.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab0DMJFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 04:57:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:subject:date:user-agent:cc:organization:mime-version
-         :content-type:content-transfer-encoding:message-id;
-        b=EaQg3HY5tymwsv+usUN+nBsKpqRLSDUr3RWD3mr+uhX6oScrFxJd2f7RRICVZJOp7D
-         AFa0H3Y0/YXBadpnVKlGJHTTHissI+DJ8YraP9mOFurj9cydD5uGoDcfYxlWnNsey8CT
-         K4xdcvp5EyAivHnRmQiNLu1Gi+qccCgFyj06A=
-From: Florian Fainelli <florian@openwrt.org>
-To: linux-kernel@vger.kernel.org
-Subject: Best way to do kernel only ldisc without user-space ldisc attaching?
-Date: Tue, 13 Apr 2010 10:56:19 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-20-server; KDE/4.3.2; x86_64; ; )
-Cc: alan@lxorguk.ukuu.org.uk, gregkh@suse.de
-Organization: OpenWrt
+	Tue, 13 Apr 2010 05:05:55 -0400
+X-Greylist: delayed 2092 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Apr 2010 05:05:55 EDT
+Date: Tue, 13 Apr 2010 10:30:50 +0200
+From: Michal Svoboda <michal.svoboda@agents.felk.cvut.cz>
+To: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>
+Subject: SO_REUSEADDR with UDP (again)
+Message-ID: <20100413083050.GA16331@myhost.felk.cvut.cz>
+Mail-Followup-To: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201004131056.19984.florian@openwrt.org>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Kj7319i9nmIyA2yE"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-FELK-MailScanner-Information: 
+X-MailScanner-ID: o3D8UoMG041981
+X-FELK-MailScanner: Found to be clean
+X-FELK-MailScanner-SpamCheck: not spam, SpamAssassin (not cached, score=-1.9,
+	required 5, autolearn=not spam, BAYES_00 -1.90)
+X-FELK-MailScanner-From: michal.svoboda@agents.felk.cvut.cz
+X-FELK-MailScanner-To: linux-kernel@vger.kernel.org
+X-FELK-MailScanner-Watermark: 1271752253.03473@LNtpta3uX9/7k86Zj6+Edg
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
+--Kj7319i9nmIyA2yE
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+
 Hello,
 
-I have a line discpline driver for a custom protocol over an UART. This driver 
-implements the following callbacks: open/close, receive_buf/write_wakeup.
+I found SO_REUSEADDR on UDP sockets to behave somewhat nasty. If you
+create a UDP socket with that flag and bind it to a port, then anyone
+doing the same later will "steal" your packets, ie.
 
-So far, I have an ugly hack, which opens the /dev/tty<N> in the kernel, and 
-directly uses the f_op and unlocked_ioctl functions to do the ldisc number to 
-TTY device binding:
+1. process A binds to port 12345 with SO_REUSEADDR, packets to that port
+   go to process A
+2. process B binds to port 12345 with SO_REUSEADDR, packets to that port
+   now go to process B
+3. A dies, fires up again, packets go back to A
+4. A dies, does not fire up, packets go to B, as if they were stacked
 
-[snip]
-struct file *f;
+And this works even if A and B are owned by different users, thus anyone
+can "steal" packets from anyone as long as they use SO_REUSEADDR.
+However, in most programs that's the default.
 
-filp_open("/dev/ttyS1", 0, 0);
+Furthermore, one can lock-out a particular source from being "stolen" by
+using connect() to that source, ie.
 
-f->f_op->unlocked_ioctl(f, TCFLSH, 0x2);
-memset(&tio, 0, sizeof(tio));
-tio.c_cflag = my_flags;
-tio.c_iflag = IGNPAR | ICRNL;
-f->f_op->unlocked_ioctl(f, TCSETS, (long unsigned int)&tio);
-f->f_op->unlocked_ioctl(f, TIOCSETD, (long unsigned int)&ldisc_nr);
-set_fs(oldfs);
-[snip]
+1. process A binds to port 12345 with SO_REUSEADDR, gets the packets
+2. B does the same, gets the packets, but also connect()s to the source
+   of the packets
+3. A can now restart or try to bind again, but does not get the packets
+   (from that source)
 
-This prevents me from rmmoding the module. However, I would like to avoid an 
-user-space program from having to bind the TTY device to the ldisc number if 
-possible.
+(I haven't tested the case if A also issues a connect() even if it does
+not receive packets.)
 
-Thank you very much for your answer.
---
-Florian
+All of this seems confusing to me, and the fact that users can steal
+packets from each other seems like a mild security risk. I've found some
+discussions about this from circa 2002, but the above cases were not
+mentioned. So - a problem or not?
+
+
+Michal Svoboda
+
+
+
+--Kj7319i9nmIyA2yE
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvEK7oACgkQg/fU9pp1uX6MwgCePKNfOLprpWMJkktY58+ecrHk
+bsQAoK64DSajY4aYJqdrWtqfzhSnmW9W
+=5h2P
+-----END PGP SIGNATURE-----
+
+--Kj7319i9nmIyA2yE--
