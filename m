@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582Ab0DMSWr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 14:22:47 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42899 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057Ab0DMSWn convert rfc822-to-8bit (ORCPT
+	id S1753464Ab0DMSWc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 14:22:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52379 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752952Ab0DMSWb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 14:22:43 -0400
+	Tue, 13 Apr 2010 14:22:31 -0400
 Subject: Re: [RFC][PATCH 02/11] sched: SCHED_DEADLINE policy implementation.
 From: Peter Zijlstra <peterz@infradead.org>
 To: Raistlin <raistlin@linux.it>
@@ -29,8 +29,8 @@ References: <1267383976.13676.79.camel@Palantir>
 	 <1267384639.13676.87.camel@Palantir>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 13 Apr 2010 20:22:17 +0200
-Message-ID: <1271182937.4807.1879.camel@twins>
+Date: Tue, 13 Apr 2010 20:22:16 +0200
+Message-ID: <1271182936.4807.1877.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
@@ -38,28 +38,14 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Sun, 2010-02-28 at 20:17 +0100, Raistlin wrote:
-> +/*
-> + * Here we check if --at time t-- a task (which is probably being
-> + * [re]activated or, in general, enqueued) can use its remaining runtime
-> + * and its current deadline _without_ exceeding the bandwidth it is
-> + * assigned (function returns true if it can).
-> + *
-> + * For this to hold, we must check if:
-> + *   runtime / (deadline - t) < dl_runtime / dl_deadline .
-> + */
-> +static bool dl_check_bandwidth(struct sched_dl_entity *dl_se, u64 t)
-> +{
-> +       u64 left, right;
-> +
 > +       /*
-> +        * left and right are the two sides of the equation above,
-> +        * after a bit of shuffling to use multiplications instead
-> +        * of divisions.
+> +        * Arm the timer to fire at wakeup, tying to compensate for
+> +        * the fact that wakeup is actually coming from rq->clock and
+> +        * not from hrtimer's time base reading.
 > +        */
-> +       left = dl_se->dl_deadline * dl_se->runtime;
-> +       right = (dl_se->deadline - t) * dl_se->dl_runtime;
-> +
-> +       return dl_time_before(left, right);
-> +} 
+> +       act = ns_to_ktime(wakeup);
+> +       now = hrtimer_cb_get_time(&dl_se->dl_timer);
+> +       delta = ktime_to_ns(now) - rq->clock;
+> +       act = ktime_add_ns(act, delta); 
 
-So what happens when we overflow u64?
+This is sad, but I'm afraid a reality we have to live with..
