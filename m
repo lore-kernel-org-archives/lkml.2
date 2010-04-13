@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab0DMUmQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 16:42:16 -0400
-Received: from [69.28.251.93] ([69.28.251.93]:56368 "EHLO b32.net"
+	id S1753711Ab0DMUmL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 16:42:11 -0400
+Received: from [69.28.251.93] ([69.28.251.93]:56374 "EHLO b32.net"
 	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753610Ab0DMUmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 16:42:08 -0400
+	id S1753616Ab0DMUmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 16:42:09 -0400
 From: Kevin Cernekee <cernekee@gmail.com>
-Date: Tue, 13 Apr 2010 13:30:10 -0700
-Subject: [PATCH 1/2] MTD: cfi_cmdset_0002: Add reboot notifier for AMD flashes
-Message-Id: <bb2e763d69a8cc1576fd58fbde424ff5f688c409@localhost.localdomain>
+Date: Tue, 13 Apr 2010 13:30:12 -0700
+Subject: [PATCH 2/2] UBI: Remove reboot notifier
+Message-Id: <e5370484641ae54d637ece47f411bb0b0061cc54@localhost.localdomain>
 In-Reply-To: <4ccec90e21edfa387822b2cb71c886217c48b4e3@localhost.localdomain>
 References: <4ccec90e21edfa387822b2cb71c886217c48b4e3@localhost.localdomain>
 To: <dwmw2@infradead.org>, <dedekind1@gmail.com>
@@ -23,116 +23,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ensure that the flash device is in a quiescent state before rebooting.
-The implementation is closely modeled after the cfe_cmdset_0001 reboot
-notifier, commit 963a6fb0a0d336d0513083b7e4b5c3ff9d6d2061 .
+The UBI reboot notifier causes problems with hibernation.  Move this
+functionality into the low-level MTD driver instead.
 
 Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- drivers/mtd/chips/cfi_cmdset_0002.c |   50 +++++++++++++++++++++++++++++++++++
- 1 files changed, 50 insertions(+), 0 deletions(-)
+ drivers/mtd/ubi/build.c |   35 -----------------------------------
+ drivers/mtd/ubi/ubi.h   |    2 --
+ 2 files changed, 0 insertions(+), 37 deletions(-)
 
-diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_cmdset_0002.c
-index ea2a7f6..4b10072 100644
---- a/drivers/mtd/chips/cfi_cmdset_0002.c
-+++ b/drivers/mtd/chips/cfi_cmdset_0002.c
-@@ -32,6 +32,7 @@
- #include <linux/slab.h>
- #include <linux/delay.h>
- #include <linux/interrupt.h>
-+#include <linux/reboot.h>
- #include <linux/mtd/compatmac.h>
- #include <linux/mtd/map.h>
- #include <linux/mtd/mtd.h>
-@@ -56,6 +57,7 @@ static int cfi_amdstd_erase_varsize(struct mtd_info *, struct erase_info *);
- static void cfi_amdstd_sync (struct mtd_info *);
- static int cfi_amdstd_suspend (struct mtd_info *);
- static void cfi_amdstd_resume (struct mtd_info *);
-+static int cfi_amdstd_reboot(struct notifier_block *, unsigned long, void *);
- static int cfi_amdstd_secsi_read (struct mtd_info *, loff_t, size_t, size_t *, u_char *);
+diff --git a/drivers/mtd/ubi/build.c b/drivers/mtd/ubi/build.c
+index fad40aa..a6a5d1a 100644
+--- a/drivers/mtd/ubi/build.c
++++ b/drivers/mtd/ubi/build.c
+@@ -42,7 +42,6 @@
+ #include <linux/miscdevice.h>
+ #include <linux/log2.h>
+ #include <linux/kthread.h>
+-#include <linux/reboot.h>
+ #include <linux/kernel.h>
+ #include "ubi.h"
  
- static void cfi_amdstd_destroy(struct mtd_info *);
-@@ -351,6 +353,8 @@ struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)
- 	mtd->name    = map->name;
- 	mtd->writesize = 1;
- 
-+	mtd->reboot_notifier.notifier_call = cfi_amdstd_reboot;
-+
- 	if (cfi->cfi_mode==CFI_MODE_CFI){
- 		unsigned char bootloc;
- 		/*
-@@ -487,6 +491,7 @@ static struct mtd_info *cfi_amdstd_setup(struct mtd_info *mtd)
- #endif
- 
- 	__module_get(THIS_MODULE);
-+	register_reboot_notifier(&mtd->reboot_notifier);
- 	return mtd;
- 
-  setup_err:
-@@ -628,6 +633,10 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
- 		chip->state = FL_READY;
- 		return 0;
- 
-+	case FL_SHUTDOWN:
-+		/* The machine is rebooting */
-+		return -EIO;
-+
- 	case FL_POINT:
- 		/* Only if there's no operation suspended... */
- 		if (mode == FL_READY && chip->oldstate == FL_READY)
-@@ -1918,11 +1927,52 @@ static void cfi_amdstd_resume(struct mtd_info *mtd)
- 	}
+@@ -831,34 +830,6 @@ static int autoresize(struct ubi_device *ubi, int vol_id)
  }
  
-+
-+static int cfi_amdstd_reset(struct mtd_info *mtd)
-+{
-+	struct map_info *map = mtd->priv;
-+	struct cfi_private *cfi = map->fldrv_priv;
-+	int i, ret;
-+	struct flchip *chip;
-+
-+	for (i = 0; i < cfi->numchips; i++) {
-+
-+		chip = &cfi->chips[i];
-+
-+		spin_lock(chip->mutex);
-+
-+		ret = get_chip(map, chip, chip->start, FL_SHUTDOWN);
-+		if (!ret) {
-+			map_write(map, CMD(0xF0), chip->start);
-+			chip->state = FL_SHUTDOWN;
-+			put_chip(map, chip, chip->start);
-+		}
-+
-+		spin_unlock(chip->mutex);
-+	}
-+
-+	return 0;
-+}
-+
-+
-+static int cfi_amdstd_reboot(struct notifier_block *nb, unsigned long val,
-+			       void *v)
-+{
-+	struct mtd_info *mtd;
-+
-+	mtd = container_of(nb, struct mtd_info, reboot_notifier);
-+	cfi_amdstd_reset(mtd);
-+	return NOTIFY_DONE;
-+}
-+
-+
- static void cfi_amdstd_destroy(struct mtd_info *mtd)
- {
- 	struct map_info *map = mtd->priv;
- 	struct cfi_private *cfi = map->fldrv_priv;
+ /**
+- * ubi_reboot_notifier - halt UBI transactions immediately prior to a reboot.
+- * @n: reboot notifier object
+- * @state: SYS_RESTART, SYS_HALT, or SYS_POWER_OFF
+- * @cmd: pointer to command string for RESTART2
+- *
+- * This function stops the UBI background thread so that the flash device
+- * remains quiescent when Linux restarts the system. Any queued work will be
+- * discarded, but this function will block until do_work() finishes if an
+- * operation is already in progress.
+- *
+- * This function solves a real-life problem observed on NOR flashes when an
+- * PEB erase operation starts, then the system is rebooted before the erase is
+- * finishes, and the boot loader gets confused and dies. So we prefer to finish
+- * the ongoing operation before rebooting.
+- */
+-static int ubi_reboot_notifier(struct notifier_block *n, unsigned long state,
+-			       void *cmd)
+-{
+-	struct ubi_device *ubi;
+-
+-	ubi = container_of(n, struct ubi_device, reboot_notifier);
+-	if (ubi->bgt_thread)
+-		kthread_stop(ubi->bgt_thread);
+-	ubi_sync(ubi->ubi_num);
+-	return NOTIFY_DONE;
+-}
+-
+-/**
+  * ubi_attach_mtd_dev - attach an MTD device.
+  * @mtd: MTD device description object
+  * @ubi_num: number to assign to the new UBI device
+@@ -1015,11 +986,6 @@ int ubi_attach_mtd_dev(struct mtd_info *mtd, int ubi_num, int vid_hdr_offset)
+ 	wake_up_process(ubi->bgt_thread);
+ 	spin_unlock(&ubi->wl_lock);
  
-+	cfi_amdstd_reset(mtd);
-+	unregister_reboot_notifier(&mtd->reboot_notifier);
- 	kfree(cfi->cmdset_priv);
- 	kfree(cfi->cfiq);
- 	kfree(cfi);
+-	/* Flash device priority is 0 - UBI needs to shut down first */
+-	ubi->reboot_notifier.priority = 1;
+-	ubi->reboot_notifier.notifier_call = ubi_reboot_notifier;
+-	register_reboot_notifier(&ubi->reboot_notifier);
+-
+ 	ubi_devices[ubi_num] = ubi;
+ 	ubi_notify_all(ubi, UBI_VOLUME_ADDED, NULL);
+ 	return ubi_num;
+@@ -1090,7 +1056,6 @@ int ubi_detach_mtd_dev(int ubi_num, int anyway)
+ 	 * Before freeing anything, we have to stop the background thread to
+ 	 * prevent it from doing anything on this device while we are freeing.
+ 	 */
+-	unregister_reboot_notifier(&ubi->reboot_notifier);
+ 	if (ubi->bgt_thread)
+ 		kthread_stop(ubi->bgt_thread);
+ 
+diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
+index 1af0817..797c2cb 100644
+--- a/drivers/mtd/ubi/ubi.h
++++ b/drivers/mtd/ubi/ubi.h
+@@ -349,7 +349,6 @@ struct ubi_wl_entry;
+  * @bgt_thread: background thread description object
+  * @thread_enabled: if the background thread is enabled
+  * @bgt_name: background thread name
+- * @reboot_notifier: notifier to terminate background thread before rebooting
+  *
+  * @flash_size: underlying MTD device size (in bytes)
+  * @peb_count: count of physical eraseblocks on the MTD device
+@@ -435,7 +434,6 @@ struct ubi_device {
+ 	struct task_struct *bgt_thread;
+ 	int thread_enabled;
+ 	char bgt_name[sizeof(UBI_BGT_NAME_PATTERN)+2];
+-	struct notifier_block reboot_notifier;
+ 
+ 	/* I/O sub-system's stuff */
+ 	long long flash_size;
 -- 
 1.6.3.1
 
