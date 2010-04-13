@@ -1,191 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753238Ab0DML31 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 07:29:27 -0400
-Received: from mail-qy0-f201.google.com ([209.85.221.201]:40477 "EHLO
-	mail-qy0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021Ab0DML3Z (ORCPT
+	id S1753255Ab0DMLbM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 07:31:12 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:57502 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753021Ab0DMLbL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 07:29:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=CieiH50fdZN6laUTDrJzQ3aSTFz6rsgIFlIAf8pW/OuJLfwCQwyzdCnXBF5+PX6/Y5
-         LmXLx/NWhtDo3mq1lZ/u6NmQPlqvfejJuGaBJECAo/bH80GFQOX0X1/746F0TreokYgt
-         t2TIhyPg8pSST6roHiLTA7E7HFhONemt3f+60=
-MIME-Version: 1.0
-In-Reply-To: <r2x9e89675b1004080434yfea09b06x2c3c4680a9437a9@mail.gmail.com>
-References: <r2x9e89675b1004080434yfea09b06x2c3c4680a9437a9@mail.gmail.com>
-Date: Tue, 13 Apr 2010 13:29:20 +0200
-Message-ID: <g2v9e89675b1004130429w6f6f9775u2e34d4727de706e@mail.gmail.com>
-Subject: [PATCH] input: handle bad parity PS/2 packets in mouse drivers better
-From: Damjan Jovanovic <damjan.jov@gmail.com>
-To: Alessandro Rubini <rubini@cvml.unipv.it>, dmitry.torokhov@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-       akpm@linux-foundation.org
-Content-Type: multipart/mixed; boundary=00163630f5ab9efad304841c92e4
+	Tue, 13 Apr 2010 07:31:11 -0400
+Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the
+ anon_vmas of a mergeable VMA
+From: Peter Zijlstra <peterz@infradead.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Rik van Riel <riel@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Borislav Petkov <bp@alien8.de>, Johannes Weiner <hannes@cmpxchg.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+In-Reply-To: <20100413194443.D116.A69D9226@jp.fujitsu.com>
+References: <4BC33A02.8000307@redhat.com>
+	 <1271088103.20295.3383.camel@laptop>
+	 <20100413194443.D116.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 13 Apr 2010 13:30:26 +0200
+Message-ID: <1271158226.4807.1107.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00163630f5ab9efad304841c92e4
-Content-Type: text/plain; charset=ISO-8859-1
+On Tue, 2010-04-13 at 19:53 +0900, KOSAKI Motohiro wrote:
+> >  struct anon_vma *page_lock_anon_vma(struct page *page)
+> >  {
+> > @@ -294,14 +309,24 @@ struct anon_vma *page_lock_anon_vma(struct page *page)
+> >  	unsigned long anon_mapping;
+> >  
+> >  	rcu_read_lock();
+> > -	anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
+> > +	anon_mapping = (unsigned long)rcu_dereference(page->mapping);
+> >  	if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)
+> >  		goto out;
+> > -	if (!page_mapped(page))
+> > -		goto out;
+> >  
+> >  	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
+> >  	spin_lock(&anon_vma->lock);
+> 
+> Does anon->lock dereference is guranteed if page->_mapcount==-1?
+> It can be freed miliseconds ago, rcu_read_lock() doesn't provide such
+> gurantee.
+> 
+> perhaps, I'm missing your point.
 
-This fixes a regression introduced in Linux 2.6.2 where mice that
-sporadically produce bad parity go crazy and start jumping around and
-clicking randomly, which never happens in any version of Windows
-running on the same hardware. The bugzilla bug is
-https://bugzilla.kernel.org/show_bug.cgi?id=6105
+No you're right, I got my head hopelessly twisted up trying to make
+page_lock_anon_vma() do something reliable, but there really isn't much
+that can be done.
 
-The patch works by always accumulating a full PS/2 packet, then
-ignoring the packet if any byte had a bad checksum. A month of testing
-it against an affected mouse has revealed it works perfectly in
-practice.
+Luckily most users (with exception of the memory-failure.c one) don't
+really care and all take steps to verify the page is indeed in any of
+the vmas it might find.
 
-This is the third resend, also CC'ed to lkml and Andrew Morton this
-time, because the previous 2 emails to linux-input@vger.kernel.org and
-the input/mouse maintainers from 28 March 2010 were ignored.
+So I've given up on this and will only submit a patch like the below,
+which hopefully does still make sense...
 
-Regards
-Damjan Jovanovic
+I do think there's a missing barrier in there as well, but I've made
+enough of a fool of myself.
 
-Signed-off-by: Damjan Jovanovic <damjan.jov@gmail.com>
+[ with the preemptible mmu_gather patches I introduce a refcount to
+  the anon_vma, and then with atomic_inc_not_zero() we can add a
+  guarantee that the returned anon_vma is alive ]
 
---00163630f5ab9efad304841c92e4
-Content-Type: text/plain; charset=US-ASCII; name="psmice-bad-parity.txt"
-Content-Disposition: attachment; filename="psmice-bad-parity.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_g7rhnsnp0
+---
+ mm/rmap.c |   18 ++++++++++++++++--
+ 1 files changed, 16 insertions(+), 2 deletions(-)
 
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvaW5wdXQvbW91c2UvYWxwcy5jIGIvZHJpdmVycy9pbnB1dC9t
-b3VzZS9hbHBzLmMKaW5kZXggNzQ5MGYxZC4uODJiMzRiNiAxMDA2NDQKLS0tIGEvZHJpdmVycy9p
-bnB1dC9tb3VzZS9hbHBzLmMKKysrIGIvZHJpdmVycy9pbnB1dC9tb3VzZS9hbHBzLmMKQEAgLTM3
-OCwxMCArMzc4LDE2IEBAIHN0YXRpYyBwc21vdXNlX3JldF90IGFscHNfcHJvY2Vzc19ieXRlKHN0
-cnVjdCBwc21vdXNlICpwc21vdXNlKQogCXN0cnVjdCBhbHBzX2RhdGEgKnByaXYgPSBwc21vdXNl
-LT5wcml2YXRlOwogCWNvbnN0IHN0cnVjdCBhbHBzX21vZGVsX2luZm8gKm1vZGVsID0gcHJpdi0+
-aTsKIAorCWlmIChwc21vdXNlLT5wa3RjbnQgPT0gMSAmJiBwc21vdXNlLT5iYWRwYXJpdHkpCisJ
-CXJldHVybiBQU01PVVNFX0JBRF9EQVRBOworCiAJaWYgKChwc21vdXNlLT5wYWNrZXRbMF0gJiAw
-eGM4KSA9PSAweDA4KSB7IC8qIFBTLzIgcGFja2V0ICovCiAJCWlmIChwc21vdXNlLT5wa3RjbnQg
-PT0gMykgewotCQkJYWxwc19yZXBvcnRfYmFyZV9wczJfcGFja2V0KHBzbW91c2UsIHBzbW91c2Ut
-PnBhY2tldCwKLQkJCQkJCSAgICB0cnVlKTsKKwkJCWlmIChwc21vdXNlLT5iYWRwYXJpdHkpIHsK
-KwkJCQlhbHBzX3JlcG9ydF9iYXJlX3BzMl9wYWNrZXQocHNtb3VzZSwKKwkJCQkJCQkgICAgcHNt
-b3VzZS0+cGFja2V0LAorCQkJCQkJCSAgICB0cnVlKTsKKwkJCX0KIAkJCXJldHVybiBQU01PVVNF
-X0ZVTExfUEFDS0VUOwogCQl9CiAJCXJldHVybiBQU01PVVNFX0dPT0RfREFUQTsKQEAgLTM5MSw2
-ICszOTcsOCBAQCBzdGF0aWMgcHNtb3VzZV9yZXRfdCBhbHBzX3Byb2Nlc3NfYnl0ZShzdHJ1Y3Qg
-cHNtb3VzZSAqcHNtb3VzZSkKIAogCWlmICgobW9kZWwtPmZsYWdzICYgQUxQU19QUzJfSU5URVJM
-RUFWRUQpICYmCiAJICAgIHBzbW91c2UtPnBrdGNudCA+PSA0ICYmIChwc21vdXNlLT5wYWNrZXRb
-M10gJiAweDBmKSA9PSAweDBmKSB7CisJCWlmIChwc21vdXNlLT5iYWRwYXJpdHkpCisJCQlyZXR1
-cm4gUFNNT1VTRV9CQURfREFUQTsKIAkJcmV0dXJuIGFscHNfaGFuZGxlX2ludGVybGVhdmVkX3Bz
-Mihwc21vdXNlKTsKIAl9CiAKQEAgLTQwOSw3ICs0MTcsOCBAQCBzdGF0aWMgcHNtb3VzZV9yZXRf
-dCBhbHBzX3Byb2Nlc3NfYnl0ZShzdHJ1Y3QgcHNtb3VzZSAqcHNtb3VzZSkKIAl9CiAKIAlpZiAo
-cHNtb3VzZS0+cGt0Y250ID09IDYpIHsKLQkJYWxwc19wcm9jZXNzX3BhY2tldChwc21vdXNlKTsK
-KwkJaWYgKCFwc21vdXNlLT5iYWRwYXJpdHkpCisJCQlhbHBzX3Byb2Nlc3NfcGFja2V0KHBzbW91
-c2UpOwogCQlyZXR1cm4gUFNNT1VTRV9GVUxMX1BBQ0tFVDsKIAl9CiAKZGlmZiAtLWdpdCBhL2Ry
-aXZlcnMvaW5wdXQvbW91c2UvZWxhbnRlY2guYyBiL2RyaXZlcnMvaW5wdXQvbW91c2UvZWxhbnRl
-Y2guYwppbmRleCBiMjc2ODRmLi44MTNkZGU3IDEwMDY0NAotLS0gYS9kcml2ZXJzL2lucHV0L21v
-dXNlL2VsYW50ZWNoLmMKKysrIGIvZHJpdmVycy9pbnB1dC9tb3VzZS9lbGFudGVjaC5jCkBAIC0z
-MjQsNiArMzI0LDkgQEAgc3RhdGljIHBzbW91c2VfcmV0X3QgZWxhbnRlY2hfcHJvY2Vzc19ieXRl
-KHN0cnVjdCBwc21vdXNlICpwc21vdXNlKQogCWlmIChwc21vdXNlLT5wa3RjbnQgPCBwc21vdXNl
-LT5wa3RzaXplKQogCQlyZXR1cm4gUFNNT1VTRV9HT09EX0RBVEE7CiAKKwlpZiAocHNtb3VzZS0+
-cGt0Y250ID09IHBzbW91c2UtPnBrdHNpemUgJiYgcHNtb3VzZS0+YmFkcGFyaXR5KQorCQlyZXR1
-cm4gUFNNT1VTRV9GVUxMX1BBQ0tFVDsKKwogCWlmIChldGQtPmRlYnVnID4gMSkKIAkJZWxhbnRl
-Y2hfcGFja2V0X2R1bXAocHNtb3VzZS0+cGFja2V0LCBwc21vdXNlLT5wa3RzaXplKTsKIApkaWZm
-IC0tZ2l0IGEvZHJpdmVycy9pbnB1dC9tb3VzZS9oZ3BrLmMgYi9kcml2ZXJzL2lucHV0L21vdXNl
-L2hncGsuYwppbmRleCA5MTY5ZDE1Li5jMDY0MzllIDEwMDY0NAotLS0gYS9kcml2ZXJzL2lucHV0
-L21vdXNlL2hncGsuYworKysgYi9kcml2ZXJzL2lucHV0L21vdXNlL2hncGsuYwpAQCAtMTg3LDcg
-KzE4Nyw4IEBAIHN0YXRpYyBwc21vdXNlX3JldF90IGhncGtfcHJvY2Vzc19ieXRlKHN0cnVjdCBw
-c21vdXNlICpwc21vdXNlKQogCX0KIAogCWlmIChwc21vdXNlLT5wa3RjbnQgPj0gcHNtb3VzZS0+
-cGt0c2l6ZSkgewotCQloZ3BrX3Byb2Nlc3NfcGFja2V0KHBzbW91c2UpOworCQlpZiAoIXBzbW91
-c2UtPmJhZHBhcml0eSkKKwkJCWhncGtfcHJvY2Vzc19wYWNrZXQocHNtb3VzZSk7CiAJCXJldHVy
-biBQU01PVVNFX0ZVTExfUEFDS0VUOwogCX0KIApkaWZmIC0tZ2l0IGEvZHJpdmVycy9pbnB1dC9t
-b3VzZS9saWZlYm9vay5jIGIvZHJpdmVycy9pbnB1dC9tb3VzZS9saWZlYm9vay5jCmluZGV4IDdj
-MWQ3ZDQuLmU0ZDFiYWMgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvaW5wdXQvbW91c2UvbGlmZWJvb2su
-YworKysgYi9kcml2ZXJzL2lucHV0L21vdXNlL2xpZmVib29rLmMKQEAgLTEzOCw2ICsxMzgsOSBA
-QCBzdGF0aWMgcHNtb3VzZV9yZXRfdCBsaWZlYm9va19wcm9jZXNzX2J5dGUoc3RydWN0IHBzbW91
-c2UgKnBzbW91c2UpCiAJdW5zaWduZWQgY2hhciAqcGFja2V0ID0gcHNtb3VzZS0+cGFja2V0Owog
-CWJvb2wgcmVsYXRpdmVfcGFja2V0ID0gcGFja2V0WzBdICYgMHgwODsKIAorCWlmIChwc21vdXNl
-LT5wa3RjbnQgPT0gMSAmJiBwc21vdXNlLT5iYWRwYXJpdHkpCisJCXJldHVybiBQU01PVVNFX0JB
-RF9EQVRBOworCiAJaWYgKHJlbGF0aXZlX3BhY2tldCB8fCAhbGlmZWJvb2tfdXNlXzZieXRlX3By
-b3RvKSB7CiAJCWlmIChwc21vdXNlLT5wa3RjbnQgIT0gMykKIAkJCXJldHVybiBQU01PVVNFX0dP
-T0RfREFUQTsKQEAgLTE2Niw2ICsxNjksOSBAQCBzdGF0aWMgcHNtb3VzZV9yZXRfdCBsaWZlYm9v
-a19wcm9jZXNzX2J5dGUoc3RydWN0IHBzbW91c2UgKnBzbW91c2UpCiAJCX0KIAl9CiAKKwlpZiAo
-cHNtb3VzZS0+YmFkcGFyaXR5KQorCQlyZXR1cm4gUFNNT1VTRV9GVUxMX1BBQ0tFVDsKKwogCWlm
-IChyZWxhdGl2ZV9wYWNrZXQpIHsKIAkJaWYgKCFkZXYyKQogCQkJcHJpbnRrKEtFUk5fV0FSTklO
-RyAibGlmZWJvb2suYzogZ290IHJlbGF0aXZlIHBhY2tldCAiCmRpZmYgLS1naXQgYS9kcml2ZXJz
-L2lucHV0L21vdXNlL2xvZ2lwczJwcC5jIGIvZHJpdmVycy9pbnB1dC9tb3VzZS9sb2dpcHMycHAu
-YwppbmRleCA1NDNjMjQwLi43ZDQxZGRiIDEwMDY0NAotLS0gYS9kcml2ZXJzL2lucHV0L21vdXNl
-L2xvZ2lwczJwcC5jCisrKyBiL2RyaXZlcnMvaW5wdXQvbW91c2UvbG9naXBzMnBwLmMKQEAgLTUx
-LDYgKzUxLDkgQEAgc3RhdGljIHBzbW91c2VfcmV0X3QgcHMycHBfcHJvY2Vzc19ieXRlKHN0cnVj
-dCBwc21vdXNlICpwc21vdXNlKQogICogRnVsbCBwYWNrZXQgYWNjdW11bGF0ZWQsIHByb2Nlc3Mg
-aXQKICAqLwogCisJaWYgKHBzbW91c2UtPmJhZHBhcml0eSkKKwkJcmV0dXJuIFBTTU9VU0VfRlVM
-TF9QQUNLRVQ7CisKIAlpZiAoKHBhY2tldFswXSAmIDB4NDgpID09IDB4NDggJiYgKHBhY2tldFsx
-XSAmIDB4MDIpID09IDB4MDIpIHsKIAogCQkvKiBMb2dpdGVjaCBleHRlbmRlZCBwYWNrZXQgKi8K
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvaW5wdXQvbW91c2UvcHNtb3VzZS1iYXNlLmMgYi9kcml2ZXJz
-L2lucHV0L21vdXNlL3BzbW91c2UtYmFzZS5jCmluZGV4IGQ4YzBjOGQuLjhhYTAzM2QgMTAwNjQ0
-Ci0tLSBhL2RyaXZlcnMvaW5wdXQvbW91c2UvcHNtb3VzZS1iYXNlLmMKKysrIGIvZHJpdmVycy9p
-bnB1dC9tb3VzZS9wc21vdXNlLWJhc2UuYwpAQCAtMTMzLDYgKzEzMyw5IEBAIHN0YXRpYyBwc21v
-dXNlX3JldF90IHBzbW91c2VfcHJvY2Vzc19ieXRlKHN0cnVjdCBwc21vdXNlICpwc21vdXNlKQog
-ICogRnVsbCBwYWNrZXQgYWNjdW11bGF0ZWQsIHByb2Nlc3MgaXQKICAqLwogCisJaWYgKHBzbW91
-c2UtPmJhZHBhcml0eSkKKwkJcmV0dXJuIFBTTU9VU0VfRlVMTF9QQUNLRVQ7CisKIC8qCiAgKiBT
-Y3JvbGwgd2hlZWwgb24gSW50ZWxsaU1pY2UsIHNjcm9sbCBidXR0b25zIG9uIE5ldE1pY2UKICAq
-LwpAQCAtMjE3LDYgKzIyMCw3IEBAIHZvaWQgcHNtb3VzZV9xdWV1ZV93b3JrKHN0cnVjdCBwc21v
-dXNlICpwc21vdXNlLCBzdHJ1Y3QgZGVsYXllZF93b3JrICp3b3JrLAogc3RhdGljIGlubGluZSB2
-b2lkIF9fcHNtb3VzZV9zZXRfc3RhdGUoc3RydWN0IHBzbW91c2UgKnBzbW91c2UsIGVudW0gcHNt
-b3VzZV9zdGF0ZSBuZXdfc3RhdGUpCiB7CiAJcHNtb3VzZS0+c3RhdGUgPSBuZXdfc3RhdGU7CisJ
-cHNtb3VzZS0+YmFkcGFyaXR5ID0gMDsKIAlwc21vdXNlLT5wa3RjbnQgPSBwc21vdXNlLT5vdXRf
-b2Zfc3luY19jbnQgPSAwOwogCXBzbW91c2UtPnBzMmRldi5mbGFncyA9IDA7CiAJcHNtb3VzZS0+
-bGFzdCA9IGppZmZpZXM7CkBAIC0yNTcsMTAgKzI2MSwxMiBAQCBzdGF0aWMgaW50IHBzbW91c2Vf
-aGFuZGxlX2J5dGUoc3RydWN0IHBzbW91c2UgKnBzbW91c2UpCiAJCQkJCXJldHVybiAtMTsKIAkJ
-CQl9CiAJCQl9CisJCQlwc21vdXNlLT5iYWRwYXJpdHkgPSAwOwogCQkJcHNtb3VzZS0+cGt0Y250
-ID0gMDsKIAkJCWJyZWFrOwogCiAJCWNhc2UgUFNNT1VTRV9GVUxMX1BBQ0tFVDoKKwkJCXBzbW91
-c2UtPmJhZHBhcml0eSA9IDA7CiAJCQlwc21vdXNlLT5wa3RjbnQgPSAwOwogCQkJaWYgKHBzbW91
-c2UtPm91dF9vZl9zeW5jX2NudCkgewogCQkJCXBzbW91c2UtPm91dF9vZl9zeW5jX2NudCA9IDA7
-CkBAIC0yNzAsNiArMjc2LDcgQEAgc3RhdGljIGludCBwc21vdXNlX2hhbmRsZV9ieXRlKHN0cnVj
-dCBwc21vdXNlICpwc21vdXNlKQogCQkJYnJlYWs7CiAKIAkJY2FzZSBQU01PVVNFX0dPT0RfREFU
-QToKKwkJCXBzbW91c2UtPmJhZHBhcml0eSA9IDA7CiAJCQlicmVhazsKIAl9CiAJcmV0dXJuIDA7
-CkBAIC0yOTMsOCArMzAwLDEyIEBAIHN0YXRpYyBpcnFyZXR1cm5fdCBwc21vdXNlX2ludGVycnVw
-dChzdHJ1Y3Qgc2VyaW8gKnNlcmlvLAogCQkJcHJpbnRrKEtFUk5fV0FSTklORyAicHNtb3VzZS5j
-OiBiYWQgZGF0YSBmcm9tIEtCQyAtJXMlc1xuIiwKIAkJCQlmbGFncyAmIFNFUklPX1RJTUVPVVQg
-PyAiIHRpbWVvdXQiIDogIiIsCiAJCQkJZmxhZ3MgJiBTRVJJT19QQVJJVFkgPyAiIGJhZCBwYXJp
-dHkiIDogIiIpOwotCQlwczJfY21kX2Fib3J0ZWQoJnBzbW91c2UtPnBzMmRldik7Ci0JCWdvdG8g
-b3V0OworCQlpZiAoZmxhZ3MgJiBTRVJJT19USU1FT1VUKSB7CisJCQlwczJfY21kX2Fib3J0ZWQo
-JnBzbW91c2UtPnBzMmRldik7CisJCQlnb3RvIG91dDsKKwkJfSBlbHNlIHsKKwkJCXBzbW91c2Ut
-PmJhZHBhcml0eSA9IDE7CisJCX0KIAl9CiAKIAlpZiAodW5saWtlbHkocHNtb3VzZS0+cHMyZGV2
-LmZsYWdzICYgUFMyX0ZMQUdfQUNLKSkKZGlmZiAtLWdpdCBhL2RyaXZlcnMvaW5wdXQvbW91c2Uv
-cHNtb3VzZS5oIGIvZHJpdmVycy9pbnB1dC9tb3VzZS9wc21vdXNlLmgKaW5kZXggZTA1M2JkZC4u
-OTNiYTlkZiAxMDA2NDQKLS0tIGEvZHJpdmVycy9pbnB1dC9tb3VzZS9wc21vdXNlLmgKKysrIGIv
-ZHJpdmVycy9pbnB1dC9tb3VzZS9wc21vdXNlLmgKQEAgLTQzLDYgKzQzLDcgQEAgc3RydWN0IHBz
-bW91c2UgewogCWNoYXIgKnZlbmRvcjsKIAljaGFyICpuYW1lOwogCXVuc2lnbmVkIGNoYXIgcGFj
-a2V0WzhdOworCWludCBiYWRwYXJpdHk7CiAJdW5zaWduZWQgY2hhciBiYWRieXRlOwogCXVuc2ln
-bmVkIGNoYXIgcGt0Y250OwogCXVuc2lnbmVkIGNoYXIgcGt0c2l6ZTsKZGlmZiAtLWdpdCBhL2Ry
-aXZlcnMvaW5wdXQvbW91c2Uvc2VudGVsaWMuYyBiL2RyaXZlcnMvaW5wdXQvbW91c2Uvc2VudGVs
-aWMuYwppbmRleCA4MWE2YjgxLi4wNzc4ZDg0IDEwMDY0NAotLS0gYS9kcml2ZXJzL2lucHV0L21v
-dXNlL3NlbnRlbGljLmMKKysrIGIvZHJpdmVycy9pbnB1dC9tb3VzZS9zZW50ZWxpYy5jCkBAIC02
-MzcsNiArNjM3LDkgQEAgc3RhdGljIHBzbW91c2VfcmV0X3QgZnNwX3Byb2Nlc3NfYnl0ZShzdHJ1
-Y3QgcHNtb3VzZSAqcHNtb3VzZSkKIAkgKiBGdWxsIHBhY2tldCBhY2N1bXVsYXRlZCwgcHJvY2Vz
-cyBpdAogCSAqLwogCisJaWYgKHBzbW91c2UtPmJhZHBhcml0eSkKKwkJcmV0dXJuIFBTTU9VU0Vf
-RlVMTF9QQUNLRVQ7CisKIAlzd2l0Y2ggKHBzbW91c2UtPnBhY2tldFswXSA+PiBGU1BfUEtUX1RZ
-UEVfU0hJRlQpIHsKIAljYXNlIEZTUF9QS1RfVFlQRV9BQlM6CiAJCWRldl93YXJuKCZwc21vdXNl
-LT5wczJkZXYuc2VyaW8tPmRldiwKZGlmZiAtLWdpdCBhL2RyaXZlcnMvaW5wdXQvbW91c2Uvc3lu
-YXB0aWNzLmMgYi9kcml2ZXJzL2lucHV0L21vdXNlL3N5bmFwdGljcy5jCmluZGV4IGQzZjUyNDMu
-LjI1ZWM3MWMgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvaW5wdXQvbW91c2Uvc3luYXB0aWNzLmMKKysr
-IGIvZHJpdmVycy9pbnB1dC9tb3VzZS9zeW5hcHRpY3MuYwpAQCAtNTM0LDYgKzUzNCw5IEBAIHN0
-YXRpYyBwc21vdXNlX3JldF90IHN5bmFwdGljc19wcm9jZXNzX2J5dGUoc3RydWN0IHBzbW91c2Ug
-KnBzbW91c2UpCiAJc3RydWN0IHN5bmFwdGljc19kYXRhICpwcml2ID0gcHNtb3VzZS0+cHJpdmF0
-ZTsKIAogCWlmIChwc21vdXNlLT5wa3RjbnQgPj0gNikgeyAvKiBGdWxsIHBhY2tldCByZWNlaXZl
-ZCAqLworCQlpZiAocHNtb3VzZS0+YmFkcGFyaXR5KQorCQkJcmV0dXJuIFBTTU9VU0VfRlVMTF9Q
-QUNLRVQ7CisKIAkJaWYgKHVubGlrZWx5KHByaXYtPnBrdF90eXBlID09IFNZTl9ORVdBQlMpKQog
-CQkJcHJpdi0+cGt0X3R5cGUgPSBzeW5hcHRpY3NfZGV0ZWN0X3BrdF90eXBlKHBzbW91c2UpOwog
-CmRpZmYgLS1naXQgYS9kcml2ZXJzL2lucHV0L21vdXNlL3RvdWNoa2l0X3BzMi5jIGIvZHJpdmVy
-cy9pbnB1dC9tb3VzZS90b3VjaGtpdF9wczIuYwppbmRleCA5MDk0MzFjLi4xMmExZTMxIDEwMDY0
-NAotLS0gYS9kcml2ZXJzL2lucHV0L21vdXNlL3RvdWNoa2l0X3BzMi5jCisrKyBiL2RyaXZlcnMv
-aW5wdXQvbW91c2UvdG91Y2hraXRfcHMyLmMKQEAgLTU5LDYgKzU5LDkgQEAgc3RhdGljIHBzbW91
-c2VfcmV0X3QgdG91Y2hraXRfcHMyX3Byb2Nlc3NfYnl0ZShzdHJ1Y3QgcHNtb3VzZSAqcHNtb3Vz
-ZSkKIAlpZiAocHNtb3VzZS0+cGt0Y250ICE9IDUpCiAJCXJldHVybiBQU01PVVNFX0dPT0RfREFU
-QTsKIAorCWlmIChwc21vdXNlLT5iYWRwYXJpdHkpCisJCXJldHVybiBQU01PVVNFX0ZVTExfUEFD
-S0VUOworCiAJaW5wdXRfcmVwb3J0X2FicyhkZXYsIEFCU19YLCBUT1VDSEtJVF9HRVRfWChwYWNr
-ZXQpKTsKIAlpbnB1dF9yZXBvcnRfYWJzKGRldiwgQUJTX1ksIFRPVUNIS0lUX0dFVF9ZKHBhY2tl
-dCkpOwogCWlucHV0X3JlcG9ydF9rZXkoZGV2LCBCVE5fVE9VQ0gsIFRPVUNIS0lUX0dFVF9UT1VD
-SEVEKHBhY2tldCkpOwo=
---00163630f5ab9efad304841c92e4--
+diff --git a/mm/rmap.c b/mm/rmap.c
+index eaa7a09..49a2533 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -285,8 +285,22 @@ void __init anon_vma_init(void)
+ }
+ 
+ /*
+- * Getting a lock on a stable anon_vma from a page off the LRU is
+- * tricky: page_lock_anon_vma rely on RCU to guard against the races.
++ * Getting a lock on a stable anon_vma from a page off the LRU is tricky!
++ *
++ * Since there is no serialization what so ever against page_remove_rmap()
++ * the best this function can do is return a locked anon_vma that might
++ * have been relevant to this page.
++ *
++ * The page might have been remapped to a different anon_vma or the anon_vma
++ * returned may already be freed (and even reused).
++ *
++ * All users of this function must be very careful when walking the anon_vma
++ * chain and verify that the page in question is indeed mapped in it
++ * [ something equivalent to page_mapped_in_vma() ].
++ *
++ * Since anon_vma's slab is DESTROY_BY_RCU and we know from page_remove_rmap()
++ * that the anon_vma pointer from page->mapping is valid if there is a
++ * mapcount, we can dereference the anon_vma after observing those.
+  */
+ struct anon_vma *page_lock_anon_vma(struct page *page)
+ {
+
