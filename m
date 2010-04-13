@@ -1,146 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751351Ab0DMEHO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 00:07:14 -0400
-Received: from gate.crashing.org ([63.228.1.57]:46412 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750728Ab0DMEHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 00:07:12 -0400
-Subject: Re: [PATCH 07/39] lmb: Add lmb_find_area()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
+	id S1751028Ab0DMEPW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 00:15:22 -0400
+Received: from mail-gx0-f217.google.com ([209.85.217.217]:52563 "EHLO
+	mail-gx0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727Ab0DMEPV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 00:15:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=PCC91HVWdbgUMyYiEc8m1teFhTJFvK0XNB1VSxcbw9y4i483fd8pdKtJB2/GC1hda/
+         9kX2/aaFv2chKTCswzm70/bVsF3Nz6E8IuTzhgkZ0FkqmSDQJRcSRIaZkZftQT7TvLiT
+         GWpfszgpZpcYNw3hGItEtqodBd5eo7u3d373I=
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1004121322400.3683@i5.linux-foundation.org>
+References: <20100411130801.GA7189@a1.tnic>
+	 <alpine.LFD.2.00.1004111759440.3521@i5.linux-foundation.org>
+	 <20100412072056.GA2432@liondog.tnic>
+	 <alpine.LFD.2.00.1004120854440.26679@i5.linux-foundation.org>
+	 <alpine.LFD.2.00.1004120906370.26679@i5.linux-foundation.org>
+	 <4BC36916.3080005@redhat.com> <20100412190002.GA8595@a1.tnic>
+	 <alpine.LFD.2.00.1004121201480.3714@i5.linux-foundation.org>
+	 <alpine.LFD.2.00.1004121320390.3683@i5.linux-foundation.org>
+	 <alpine.LFD.2.00.1004121322400.3683@i5.linux-foundation.org>
+Date: Tue, 13 Apr 2010 13:15:20 +0900
+Message-ID: <y2h28c262361004122115k3c6e19b6w593389e98d31b0c@mail.gmail.com>
+Subject: Re: [PATCH 2/4] vma_adjust: fix the copying of anon_vma chains
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Borislav Petkov <bp@alien8.de>, Rik van Riel <riel@redhat.com>,
+       Johannes Weiner <hannes@cmpxchg.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-In-Reply-To: <1270793048-23796-8-git-send-email-yinghai@kernel.org>
-References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
-	 <1270793048-23796-8-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Apr 2010 14:05:43 +1000
-Message-ID: <1271131543.13059.53.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-08 at 23:03 -0700, Yinghai Lu wrote:
-> It will try find area according with size/align in specified range (start, end).
-> 
-> lmb_find_area() will honor goal/limit.
-> 
-> also make it more easy for x86 to use lmb.
-> x86 early_res is using find/reserve pattern instead of alloc.
-> 
-> When we need temporaray buff for range array etc for range work, if We are using
-> lmb_alloc(), We will need to add some post fix code for buffer that is used
-> by range array, because it is in the lmb.reserved already. and have to call
-> extra lmb_free().
-> 
-> -v2: Change name to lmb_find_area() according to Michael Ellerman
-> -v3: Add generic weak version __lmb_find_area()
+On Tue, Apr 13, 2010 at 5:23 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> From: Linus Torvalds <torvalds@linux-foundation.org>
+> Date: Sat, 10 Apr 2010 15:22:30 -0700
+> Subject: [PATCH 2/4] vma_adjust: fix the copying of anon_vma chains
+>
+> When we move the boundaries between two vma's due to things like
+> mprotect, we need to make sure that the anon_vma of the pages that got
+> moved from one vma to another gets properly copied around.  And that was
+> not always the case, in this rather hard-to-follow code sequence.
+>
+> Clarify the code, and fix it so that it copies the anon_vma from the
+> right source.
+>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-Haven't you noticed there's already way too many functions walking the
-LMBs ? :-)
-
-I think the ones doing nid alloc could/should be also rewritten to use
-one single low level __lmb_find_* no ?
-
-Cheers,
-Ben.
-
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  include/linux/lmb.h |    4 ++++
->  mm/lmb.c            |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 53 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/lmb.h b/include/linux/lmb.h
-> index e14ea8d..4cf2f3b 100644
-> --- a/include/linux/lmb.h
-> +++ b/include/linux/lmb.h
-> @@ -83,6 +83,10 @@ lmb_end_pfn(struct lmb_region *type, unsigned long region_nr)
->  	       lmb_size_pages(type, region_nr);
->  }
->  
-> +u64 __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
-> +			 u64 size, u64 align);
-> +u64 lmb_find_area(u64 start, u64 end, u64 size, u64 align);
-> +
->  #include <asm/lmb.h>
->  
->  #endif /* __KERNEL__ */
-> diff --git a/mm/lmb.c b/mm/lmb.c
-> index 392d805..7010212 100644
-> --- a/mm/lmb.c
-> +++ b/mm/lmb.c
-> @@ -11,9 +11,13 @@
->   */
->  
->  #include <linux/kernel.h>
-> +#include <linux/types.h>
->  #include <linux/init.h>
->  #include <linux/bitops.h>
->  #include <linux/lmb.h>
-> +#include <linux/bootmem.h>
-> +#include <linux/mm.h>
-> +#include <linux/range.h>
->  
->  #define LMB_ALLOC_ANYWHERE	0
->  
-> @@ -559,3 +563,48 @@ int lmb_find(struct lmb_property *res)
->  	}
->  	return -1;
->  }
-> +
-> +u64 __init __weak __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
-> +				 u64 size, u64 align)
-> +{
-> +	u64 final_start, final_end;
-> +	u64 mem;
-> +
-> +	final_start = max(ei_start, start);
-> +	final_end = min(ei_last, end);
-> +
-> +	if (final_start >= final_end)
-> +		return -1ULL;
-> +
-> +	mem = __lmb_find_base(size, align, final_end);
-> +
-> +	if (mem == -1ULL)
-> +		return -1ULL;
-> +
-> +	lmb_free(mem, size);
-> +	if (mem >= final_start)
-> +		return mem;
-> +
-> +	return -1ULL;
-> +}
-> +
-> +/*
-> + * Find a free area with specified alignment in a specific range.
-> + */
-> +u64 __init __weak lmb_find_area(u64 start, u64 end, u64 size, u64 align)
-> +{
-> +	int i;
-> +
-> +	for (i = lmb.memory.cnt - 1; i >= 0; i--) {
-> +		u64 ei_start = lmb.memory.region[i].base;
-> +		u64 ei_last = ei_start + lmb.memory.region[i].size;
-> +		u64 addr;
-> +
-> +		addr = __lmb_find_area(ei_start, ei_last, start, end,
-> +					 size, align);
-> +
-> +		if (addr != -1ULL)
-> +			return addr;
-> +	}
-> +	return -1ULL;
-> +}
-
-
+-- 
+Kind regards,
+Minchan Kim
