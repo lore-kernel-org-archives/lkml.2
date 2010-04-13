@@ -1,133 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab0DMGpz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 02:45:55 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:46342 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751247Ab0DMGpy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 02:45:54 -0400
-Date: Tue, 13 Apr 2010 12:15:46 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][BUGFIX][PATCH] memcg: fix underflow of mapped_file stat
-Message-ID: <20100413064546.GG3994@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
+	id S1752141Ab0DMGqi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 02:46:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33608 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751247Ab0DMGqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 02:46:36 -0400
+Message-ID: <4BC41338.80206@redhat.com>
+Date: Tue, 13 Apr 2010 09:46:16 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: "Zhang, Xiantao" <xiantao.zhang@intel.com>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Marcelo Tosatti <mtosatti@redhat.com>,
+       "Yang, Xiaowei" <xiaowei.yang@intel.com>,
+       "Dong, Eddie" <eddie.dong@intel.com>, "Li, Xin" <xin.li@intel.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Mike Galbraith <efault@gmx.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: VM performance issue in KVM guests.
+References: <EB8593BCECAB3D40A8248BE0B6400A3846903F4C@shzsmsx502.ccr.corp.intel.com> <4BC0D125.9050108@redhat.com> <EB8593BCECAB3D40A8248BE0B6400A384690419B@shzsmsx502.ccr.corp.intel.com> <4BC2C07B.4040607@redhat.com> <EB8593BCECAB3D40A8248BE0B6400A38469046C1@shzsmsx502.ccr.corp.intel.com>
+In-Reply-To: <EB8593BCECAB3D40A8248BE0B6400A38469046C1@shzsmsx502.ccr.corp.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* nishimura@mxp.nes.nec.co.jp <nishimura@mxp.nes.nec.co.jp> [2010-04-13 13:42:07]:
+On 04/13/2010 03:50 AM, Zhang, Xiantao wrote:
+> Avi Kivity wrote:
+>    
+>> On 04/12/2010 05:04 AM, Zhang, Xiantao wrote:
+>>      
+>>>        
+>>>> What was the performance hit?  What was your I/O setup (image
+>>>> format, using aio?)
+>>>>
+>>>>          
+>>> The issue only happens when vcpu number is over-committed(e.g.
+>>> vcpu/pcpu>2) and physical cpus are saturated. For example,  when run
+>>> webbench in windows OS in this case, its performance drops by 80%.
+>>> In our experiment, we are using image file through virtio, and I
+>>> think aio should be used by default also.
+>>>
+>>>        
+>> Is this on a machine that does pause-loop exits?  The current handing
+>> of PLE is very suboptimal.  With proper directed yield we should be
+>> much better there.
+>>
+>> Without PLE, we need paravirtualized spinlocks, no way around it.
+>>      
+> PLE has the ability to eliminate the issue at some extent, and pv solution should be helpful also.  But for windows guests running on machines without PLE, we still needs to enhance host side to resolve the issue.
+>    
 
-> Hi.
-> 
-> When I was testing page migration, I found underflow problem of "mapped_file" field
-> in memory.stat. This is a fix for the problem.
-> 
-> This patch is based on mmotm-2010-04-05-16-09, and IIUC it conflicts with Mel's
-> compaction patches, so I send it as RFC for now. After next mmotm, which will
-> include those patches, I'll update and resend this patch.
-> 
-> ===
-> From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> 
-> page_add_file_rmap(), which can be called from remove_migration_ptes(), is
-> assumed to increment memcg's stat of mapped file. But on success of page
-> migration, the newpage(mapped file) has not been charged yet, so the stat will
-> not be incremented. This behavior leads to underflow of memcg's stat because
-> when the newpage is unmapped afterwards, page_remove_rmap() decrements the stat.
-> This problem doesn't happen on failure path of page migration, because the old
-> page(mapped file) hasn't been uncharge at the point of remove_migration_ptes().
-> This patch fixes this problem by calling commit_charge(mem_cgroup_end_migration)
-> before remove_migration_ptes().
-> 
-> Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> ---
->  mm/migrate.c |   19 ++++++++++++++-----
->  1 files changed, 14 insertions(+), 5 deletions(-)
-> 
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index 5938db5..915c35e 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -485,7 +485,8 @@ static int fallback_migrate_page(struct address_space *mapping,
->   *   < 0 - error code
->   *  == 0 - success
->   */
-> -static int move_to_new_page(struct page *newpage, struct page *page)
-> +static int move_to_new_page(struct page *newpage, struct page *page,
-> +						struct mem_cgroup *mem)
->  {
->  	struct address_space *mapping;
->  	int rc;
-> @@ -520,9 +521,16 @@ static int move_to_new_page(struct page *newpage, struct page *page)
->  	else
->  		rc = fallback_migrate_page(mapping, newpage, page);
-> 
-> -	if (!rc)
-> +	if (!rc) {
-> +		/*
-> +		 * On success of page migration, the newpage has not been
-> +		 * charged yet, so we must call end_migration() before
-> +		 * remove_migration_ptes() to update stats of mapped file
-> +		 * properly.
-> +		 */
-> +		mem_cgroup_end_migration(mem, page, newpage);
->  		remove_migration_ptes(page, newpage);
-> -	else
-> +	} else
->  		newpage->mapping = NULL;
-> 
->  	unlock_page(newpage);
-> @@ -633,7 +641,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
-> 
->  skip_unmap:
->  	if (!page_mapped(page))
-> -		rc = move_to_new_page(newpage, page);
-> +		rc = move_to_new_page(newpage, page, mem);
+Well, was this on a machine with PLE or without PLE?
 
-Why do we need to pass mem, won't try_get_mem_cgroup_from_page() help?
-Is it cost versus space tradeoff.
+>> Spin loops need to be addressed first, they are known to kill
+>> performance in overcommit situations.
+>>      
+> Even in overcommit case, if vcpu threads of one qemu are not scheduled or pulled to the same logical processor, the performance drop is tolerant like Xen's case today. But for KVM, it has to suffer from additional performance loss, since host's scheduler actively pulls these vcpu threads together.
+>
+>    
 
-> 
->  	if (rc)
->  		remove_migration_ptes(page, page);
-> @@ -641,7 +649,8 @@ rcu_unlock:
->  	if (rcu_locked)
->  		rcu_read_unlock();
->  uncharge:
-> -	if (!charge)
-> +	if (rc)
-> +		/* On success of page migration, we've alread called it */
+Can you quantify this loss?  Give examples of what happens?
 
-Comment is not clear to me, but the code is :)
-
->  		mem_cgroup_end_migration(mem, page, newpage);
->  unlock:
->  	unlock_page(page);
-> -- 
-> 1.6.4
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-	Three Cheers,
-	Balbir
+Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+
