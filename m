@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750917Ab0DMEFH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 00:05:07 -0400
-Received: from mail-yx0-f171.google.com ([209.85.210.171]:46267 "EHLO
-	mail-yx0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab0DMEFF convert rfc822-to-8bit (ORCPT
+	id S1751112Ab0DMEGo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 00:06:44 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:52126 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728Ab0DMEGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 00:05:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Gl9kF/7Hz4D2+x+0XlPIDbC5rQMeTapLQdRWQ80rG8PWF7AJs5oDxDoWKoLoOwEi/v
-         nJmOaoN/W9CvGN5WxwNn558pn8YPl8/mmEjfNS65FOfrctiD9MukYH1/IxIygcW0uolX
-         wBN10TO5lcR9th3xEWNgOJqL96Xj+odqZ6Vn8=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1004121320390.3683@i5.linux-foundation.org>
-References: <20100411130801.GA7189@a1.tnic>
-	 <alpine.LFD.2.00.1004111707360.3514@i5.linux-foundation.org>
-	 <alpine.LFD.2.00.1004111759440.3521@i5.linux-foundation.org>
-	 <20100412072056.GA2432@liondog.tnic>
-	 <alpine.LFD.2.00.1004120854440.26679@i5.linux-foundation.org>
-	 <alpine.LFD.2.00.1004120906370.26679@i5.linux-foundation.org>
-	 <4BC36916.3080005@redhat.com> <20100412190002.GA8595@a1.tnic>
-	 <alpine.LFD.2.00.1004121201480.3714@i5.linux-foundation.org>
-	 <alpine.LFD.2.00.1004121320390.3683@i5.linux-foundation.org>
-Date: Tue, 13 Apr 2010 13:04:58 +0900
-Message-ID: <o2n28c262361004122104k49d5b4fcs61c5d3a4cb6465c3@mail.gmail.com>
-Subject: Re: [PATCH 1/4] Simplify and comment on anon_vma re-use for 
-	anon_vma_prepare()
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Borislav Petkov <bp@alien8.de>, Rik van Riel <riel@redhat.com>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Apr 2010 00:06:43 -0400
+Subject: Re: [PATCH] time: remove xtime_cache (take 2)
+From: john stultz <johnstul@us.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+       Petr =?UTF-8?Q?Tit=C4=9Bra?= <P.Titera@century.cz>,
+       Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20100412210044.2ebbc058.akpm@linux-foundation.org>
+References: <1270589451-30773-1-git-send-email-johnstul@us.ibm.com>
+	 <20100412210044.2ebbc058.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 12 Apr 2010 21:06:40 -0700
+Message-ID: <1271131600.3469.20.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 13, 2010 at 5:22 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> From: Linus Torvalds <torvalds@linux-foundation.org>
-> Date: Sat, 10 Apr 2010 10:36:19 -0700
-> Subject: [PATCH 1/4] Simplify and comment on anon_vma re-use for anon_vma_prepare()
->
-> This changes the anon_vma reuse case to require that we only reuse
-> simple anon_vma's - ie the case when the vma only has a single anon_vma
-> associated with it.
->
-> This means that a reuse of an anon_vma from an adjacent vma will always
-> guarantee that both vma's are associated not onyl with the same
-> anon_vma, they will also have the same anon_vma chain (of just a single
-> entry in this case).
->
-> And since anon_vma re-use was the only case where the same anon_vma
-> might be associated with different chains of anon_vma's, we now have the
-> case that every vma that shares the same vma will always also have the
+On Mon, 2010-04-12 at 21:00 -0400, Andrew Morton wrote:
+> On Tue,  6 Apr 2010 14:30:51 -0700 John Stultz <johnstul@us.ibm.com> wrote:
+> 
+> > Thomas: Mind queueing this up for 2.6.35?
+> > 
+> > With the earlier logarithmic time accumulation patch, xtime will now
+> > always be within one "tick" of the current time, instead of possibly
+> > half a second off.
+> > 
+> > This removes the need for the xtime_cache value, which always stored the
+> > time at the last interrupt, so this patch cleans that up removing the
+> > xtime_cache related code.
+> > 
+> > This patch also addresses an issue with an earlier version of this change,
+> > where xtime_cache was normalizing xtime, which could in some cases be
+> > not valid (ie: tv_nsec == NSEC_PER_SEC). This is fixed by handling
+> > the edge case in update_wall_time().
+> > 
+> > ...
+> >
+> > --- a/kernel/time.c
+> > +++ b/kernel/time.c
+> > @@ -135,7 +135,6 @@ static inline void warp_clock(void)
+> >  	write_seqlock_irq(&xtime_lock);
+> >  	wall_to_monotonic.tv_sec -= sys_tz.tz_minuteswest * 60;
+> >  	xtime.tv_sec += sys_tz.tz_minuteswest * 60;
+> > -	update_xtime_cache(0);
+> >  	write_sequnlock_irq(&xtime_lock);
+> >  	clock_was_set();
+> >  }
+> 
+> This conflicts with your time-clean-up-warp_clock.patch, below.
+> 
+> Shrug, I simply ignored the rejected hunk.
 
-same vma => same anon_vma.
+Yep. That should be fine. We're just dropping the update_xtime_cache
+call, so if it doesn't exist, its not a problem.
 
-> same chain.  That makes it much easier to think about merging vma's that
-> share the same anon_vma's: you can always just drop the other anon_vma
-> chain in anon_vma_merge() since you know that they are always identical.
->
-> This also splits up the function to validate the anon_vma re-use, and
-> adds a lot of commentary about the possible races.
->
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+thanks
+-john
 
-
-
--- 
-Kind regards,
-Minchan Kim
