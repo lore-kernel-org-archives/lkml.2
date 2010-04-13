@@ -1,32 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814Ab0DMPIe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 11:08:34 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36934 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752516Ab0DMPId (ORCPT
+	id S1752889Ab0DMPIv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 11:08:51 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:56450 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752516Ab0DMPIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 11:08:33 -0400
-Date: Tue, 13 Apr 2010 16:12:47 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: pavan_savoy@ti.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers:staging: sources for ST core
-Message-ID: <20100413161247.22e5b86f@lxorguk.ukuu.org.uk>
-In-Reply-To: <306017.12231.qm@web94913.mail.in2.yahoo.com>
-References: <1270750619-19174-3-git-send-email-pavan_savoy@ti.com>
-	<306017.12231.qm@web94913.mail.in2.yahoo.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Apr 2010 11:08:49 -0400
+Date: Tue, 13 Apr 2010 20:38:43 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] memcg: update documentation v5
+Message-ID: <20100413150843.GI3994@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100408145800.ca90ad81.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100409134553.58096f80.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100409100430.7409c7c4.randy.dunlap@oracle.com>
+ <20100413134553.7e2c4d3d.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100413135718.GA4493@redhat.com>
+ <20100413140302.GB4493@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100413140302.GB4493@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Any comments on these patches ?
+* Vivek Goyal <vgoyal@redhat.com> [2010-04-13 10:03:02]:
 
-Still on my TODO list, busy trying to beat my own employers code into
-sanity for submission right now ;)
+> On Tue, Apr 13, 2010 at 09:57:18AM -0400, Vivek Goyal wrote:
+> > On Tue, Apr 13, 2010 at 01:45:53PM +0900, KAMEZAWA Hiroyuki wrote:
+> > 
+> 
+> Typed wrong email id last time and mail bounced. So here is another
+> attempt.
+> 
+> > [..]
+> > > -2. Locking
+> > > +2.6 Locking
+> > >  
+> > > -The memory controller uses the following hierarchy
+> > > +   lock_page_cgroup()/unlock_page_cgroup() should not be called under
+> > > +   mapping->tree_lock.
+> > >  
+> > 
+> > Because I never understood very well, I will ask. Why lock_page_cgroup()
+> > should not be called under mapping->tree_lock?
+> > 
 
-Alan
+The closest reference I can find to a conversation regarding this is
+
+http://linux.derkeiler.com/Mailing-Lists/Kernel/2009-05/msg05158.html
+
+-- 
+	Three Cheers,
+	Balbir
