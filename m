@@ -1,265 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883Ab0DMSmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 14:42:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:54572 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848Ab0DMSmp (ORCPT
+	id S1751982Ab0DMSox (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 14:44:53 -0400
+Received: from ey-out-2122.google.com ([74.125.78.25]:52300 "EHLO
+	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329Ab0DMSow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 14:42:45 -0400
-X-Authority-Analysis: v=1.1 cv=1q2Jdmkya6HpgEM2jHRumxnsV1n7rNYmAqK1mJgD7XY= c=1 sm=0 a=Q61JpV_JF5IA:10 a=IkcTkHD0fZMA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=1kAa7RvxoZsrGVbrS_cA:9 a=5bi16x1s1mJWsJHWCjoA:7 a=DjBAgspb7z2BMo7RP96hOTnPAoYA:4 a=QEXdDO2ut3YA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: [ANNOUNCE] trace-cmd version 1.0 (binary reader of Ftrace)
-From: Steven Rostedt <rostedt@goodmis.org>
+	Tue, 13 Apr 2010 14:44:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:mime-version:content-type
+         :content-transfer-encoding:message-id;
+        b=VZD9dOPE+7/HQumL05m+2Jh0cmXaIXhQ12ve/6RPoPOLEc2grTlrsN9SvDDOF329lx
+         jk5BG9ZWxB7tZrCgyTczxUxZgE5bNZW/2jUoPec29hc0CxANAbXDqZdsbaPKG7B1gI8A
+         3hZLlbv2yBkWUIAkWFm/1vAldccTBUgqlcU3c=
+From: =?utf-8?q?Pawe=C5=82_Drobek?= <pawel.drobek@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Ingo Molnar <mingo@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Christoph Hellwig <hch@infradead.org>,
-       Masami Hiramatsu <mhiramat@redhat.com>, John Kacur <jkacur@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Tim Bird <tim.bird@am.sony.com>,
-       Darren Hart <dvhltc@us.ibm.com>, Jake Edge <jake@lwn.net>,
-       Jonathan Corbet <corbet@lwn.net>,
-       Randy Dunlap <randy.dunlap@oracle.com>, Jiri Olsa <jolsa@redhat.com>,
-       Johannes Berg <johannes@sipsolutions.net>,
-       Josh Triplett <josh@joshtriplett.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Apr 2010 14:42:29 -0400
-Message-ID: <1271184149.7962.77.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Subject: Possible issue with pcmcia data card since 2.6.27 kernel
+Date: Tue, 13 Apr 2010 20:44:37 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.33-gentoo; KDE/4.4.2; x86_64; ; )
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart2488807.Y0cVWplMvR";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201004132044.42056.pawel.drobek@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the official announcement of trace-cmd version 1.0.
-
-You can download it from git at;
-
-git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
-  trace-cmd-stable-v1
-
-To build;
-
-make
-
-To install:
-
-make install
-
-default it will install into /usr/local/... to pick another location:
-
-make prefix=/another/top/level install
-
-to install documentation and man pages:
-
-make install_doc
-
-install_doc can also take the "prefix=" parameter.
-
-
-Thanks to all that helped out in the pre-release!
-
-What is trace-cmd?
-------------------
-
-trace-cmd is a user interface to Ftrace. Instead of needing to use the
-debugfs directly, trace-cmd will handle of setting of options and
-tracers and will record into a data file.
-
-
-The record feature of trace-cmd uses the system call "splice". Splice
-allows the user space to move pages directly from the Ftrace ring buffer
-into a file or network without ever needing to go through userspace.
-This move is a zero copy algorithm. A page is removed from the ring
-buffer and sent directly to the destination. No copy is required making
-the record extremely fast.
-
-This method is even faster than mmap. mmap is quick to get the data from
-the kernel to userspace, but if the data is to be saved to a file or to
-the network, then a copy is still required to send the data from
-userspace back to the kernel.
-
-
-The trace data format file (see trace-cmd.dat(5)) records all the
-necessary data to move the data file to other machines and be able to
-read it there. The endianess and long size is also recorded such that
-big endian trace data files can be read from little endian machines, and
-vice versa.
-
-
-
-  trace-cmd [COMMANDS] [OPTIONS]
-
-Here's the basic commands:
-
-============================
-
-  record - this will start a trace and record the data into a tracing 
-           file. (default called: trace.dat).
-
-Example:
-
-     trace-cmd record -p function ls /bin
-
-This will enable the function tracer plugin, then exec the "ls" command
-and record the trace into a file called 'trace.dat'.
-
-     trace-cmd record -e sched -e 'irq_handler_*' -o mytrace.dat
-
-This will enable the sched system events, the irq_handler_entry and
-irq_handler_exit events, and record the data into mytrace.dat. It will
-continue to record until Ctrl^C is hit.
-
-     trace-cmd record -p function_graph -e sched_switch hackbench
-
-This will enable the function graph tracer as well as the sched_switch
-event and run hackbench, recording the trace into the trace.dat file.
-
-     trace-cmd record -e all
-
-This will enable all events and record into the trace.dat file. A Ctrl^C
-is used to stop recording.
-
-===============================
-
-   report - this is used to read the trace data. (default file is 
-            trace.dat)
-
-Example:
-
-   trace-cmd report
-version = 6
-cpus=2
-       trace-cmd-25900 [001] 3280035.156957: sys_exit:             NR 42 = 0
-              ls-25901 [000] 3280035.156958: sys_exit:             NR 4 = 1
-       trace-cmd-25900 [001] 3280035.156966: mm_page_alloc:        page=0xffffea00009c3dc8 pfn=10239432 order=0 migratetype=2 gfp_flags=GFP_HIGHUSER_MOVABLE|GFP_ZERO
-       trace-cmd-25900 [001] 3280035.156971: sys_enter:            NR 162 (ff9aec1c, 0, 806c484, 0, 0, ff9aec48)
-       trace-cmd-25900 [001] 3280035.156974: hrtimer_init:         hrtimer 0xffff88007ce35ea8, clockid CLOCK_MONOTONIC, mode HRTIMER_MODE_REL
-       trace-cmd-25900 [001] 3280035.156980: hrtimer_start:        hrtimer=0xffff88007ce35ea8 function=hrtimer_wakeup expires=3280035157479995 softexpires=3280035157479995
-
-Full filtering is possible:
-
-  trace-cmd report -i mytrace.dat -F 'sched_switch: prev_prio < 100 && next_pid != 0'
-version = 6
-cpus=2
-       trace-cmd-25900 [001] 3280035.157641: sched_switch:         25900:44:S ==> 25901:140: ls
-       trace-cmd-25900 [001] 3280035.158231: sched_switch:         25900:44:S ==> 25901:140: ls
-       trace-cmd-25899 [000] 3280035.158524: sched_switch:         25899:44:S ==> 29189:120: firefox-bin
-       trace-cmd-25900 [001] 3280035.158819: sched_switch:         25900:44:S ==> 25901:140: ls
-       trace-cmd-25900 [001] 3280035.159405: sched_switch:         25900:44:S ==> 25901:140: ls
-
-==================================
-
-    start - just starts the tracer without recording.
-
-This is a trace-cmd equivalent to enabling the tracer via debugfs. No
-recording is initiated. The data simply stays in the kernel ring buffer
-where the older data is overwritten by new data when the ring buffer is
-full.
-
-The options are pretty much the same as the trace-cmd record.
-
-Example:
-
-   trace-cmd start -e block -e skb
-
-====================================
-
-   stop - disables writing to the ring buffer
-
-Example:
-
-   trace-cmd stop
-
-The above is equivalent to "echo 0  > tracing_on". It does not disable
-tracing, just the writing to the ring buffer, so there still exists
-overhead from the tracer.
-
-=====================================
-
-    extract - extract the data from the kernel ring buffer into a  
-              trace.dat file
-
-When Ftrace is started either directly by writing into the debugfs
-directory, or by using trace-cmd start, then this allows you to pull
-that data out of the ring buffer and write it to a trace file (default:
-trace.dat).
-
-Example:
-
-    trace-cmd extract -o mytrace.dat
-
-=====================================
-
-    reset - disable all tracing
-
-"trace-cmd stop" only disables writing to the ring buffer, but reset
-will disable all tracing and remove the overhead of the tracer. Once
-trace-cmd reset is used, all trace data in the kernel ring buffer is
-removed, so do not use this if you expect to do an extract.
-
-Example:
-
-   trace-cmd reset
-
-=======================================
-
-     split - split a trace.dat file into smaller files
-
-Sometimes the trace.dat file becomes quite large and only part of the
-data is needed. The split command can split create a subset of events
-from another trace.dat file. It can pull specific events out based on
-time.
-
-Example:
-
-   trace-cmd split -e 1000 156.245232
-
-The above creates a "trace.dat.1" file from trace.dat by saving 1000
-events starting at the 156.245232 timestamp in trace.dat.
-
-===========================================
-
-     list - list the available plugins, events and trace options
-
-===========================================
-
-     listen - listen to a port to record trace data from another machine
-
-This works with trace-cmd record -N option. It creates a process
-(possible daemon) to listen to traces that are executed from other
-machines.
-
-Example:
-
- On a x86_64 box:
-
-   trace-cmd listen -p 56789
-
- On a 32bit PPC:
-
-   trace-cmd record -N x86:56789 -p function_graph -e all  mytest
-
-The record -N option takes a "host:port" option and is used instead of
-the -o option, and no trace.dat file is created. By default the trace
-data is sent via UDP since it is the fastest method, but there is no way
-to know if pages are lost. If reliable connection is required, the "-t"
-option can be used to force TCP connection. This is reliable, but much
-slower than UDP.
-
-For more detailed information, read the man pages.
-
-Have fun!
-
--- Steve
-
-
-
+--nextPart2488807.Y0cVWplMvR
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
+
+[1.] ZTE MF 330 as modem, not as usb 2.0 hub
+=2D-------------------------------------------
+[2.] Since 2.6.27-r7 there is support for this pcmcia data card by usbserial
+ module. In option.c file there isn't correct ID for ZTE MF 330 modem. I=20
+assume that for somebody is correct but not for me and possibly other.=20
+=2D-------------------------------------------
+[3.] usbserial.ko, option.ko, zte mf 330
+=2D-------------------------------------------
+[4.] Linux version 2.6.33-gentoo (root@pd-mainframe) (gcc version 4.4.3=20
+(Gentoo 4.4.3 p1.0) ) #5 SMP Sat Apr 10 21:56:07 CEST 2010
+=2D-------------------------------------------
+[5.] N/A
+=2D-------------------------------------------
+[6.] N/A
+=2D-------------------------------------------
+[7.] Environment
+[7.1.] Linux pd-mainframe 2.6.33-gentoo #5 SMP Sat Apr 10 21:56:07 CEST 201=
+0=20
+x86_64 AMD Athlon(tm) 64 X2 Dual Core Processor 6000+ AuthenticAMD GNU/Linux
+=20
+Gnu C                  4.4.3
+Gnu make               3.81
+binutils               2.20.1.20100303
+util-linux             2.17.2
+mount                  support
+module-init-tools      3.11.1
+e2fsprogs              1.41.11
+pcmciautils            016
+PPP                    2.4.4
+Linux C Library        2.11
+Dynamic linker (ldd)   2.11
+Procps                 3.2.8
+Net-tools              1.60_p20100101055920
+Kbd                    1.15.1
+Sh-utils               8.4
+wireless-tools         29
+Modules Loaded         ipv6 iptable_filter iptable_mangle ipt_MASQUERADE=20
+xt_tcpudp iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 iptable_raw=20
+ipt_addrtype xt_DSCP xt_dscp xt_string xt_NFQUEUE xt_multiport xt_MARK xt_m=
+ark=20
+xt_hashlimit xt_conntrack xt_CONNMARK xt_connmark nf_conntrack ip_tables=20
+x_tables w83627ehf hwmon_vid snd_seq_oss snd_seq_midi_event snd_seq=20
+snd_seq_device snd_pcm_oss snd_mixer_oss snd_hda_codec_realtek nvidia=20
+tuner_simple tuner_types tuner tvaudio tda7432 bttv snd_hda_intel v4l2_comm=
+on=20
+snd_hda_codec i2c_algo_bit videobuf_dma_sg videobuf_core snd_hwdep snd_pcm=
+=20
+btcx_risc irtty_sir sir_dev tveeprom snd_timer usbserial snd yenta_socket i=
+rda=20
+rtc_cmos i2c_nforce2 rsrc_nonstatic thermal k8temp snd_page_alloc i2c_core=
+=20
+forcedeth pcspkr processor button crc_ccitt scsi_transport_iscsi tg3 libphy=
+=20
+e1000 fuse nfs lockd sunrpc raid10 raid456 async_raid6_recov async_memcpy=20
+async_pq async_xor xor async_tx raid6_pq raid1 raid0 dm_bbr dm_snapshot=20
+dm_crypt dm_mirror dm_region_hash dm_log dm_mod scsi_wait_scan sbp2 ohci139=
+4=20
+ieee1394 usbhid aic94xx libsas lpfc qla2xxx megaraid_sas megaraid_mbox=20
+megaraid_mm megaraid aacraid sx8 DAC960 cciss 3w_9xxx 3w_xxxx mptsas=20
+scsi_transport_sas mptfc scsi_transport_fc scsi_tgt mptspi mptscsih mptbase=
+=20
+atp870u dc395x qla1280 imm dmx3191d sym53c8xx gdth advansys initio BusLogic=
+=20
+arcmsr aic7xxx aic79xx scsi_transport_spi sg pdc_adma sata_inic162x sata_mv=
+=20
+ata_piix sata_qstor sata_vsc sata_uli sata_sis sata_sx4 sata_via sata_svw=20
+sata_sil sata_promise pata_sl82c105 pata_cs5530 pata_cs5520 pata_via=20
+pata_jmicron pata_marvell pata_sis pata_netcell pata_sc1200 pata_pdc202xx_o=
+ld=20
+pata_triflex pata_atiixp pata_opti pata_amd pata_ali pata_it8213 pata_pcmci=
+a=20
+pcmcia firmware_class pcmcia_core pata_ns87415 pata_ns87410 pata_serverwork=
+s=20
+pata_platform pata_artop pata_it821x pata_optidma pata_hpt3x2n pata_hpt3x3=
+=20
+pata_hpt37x pata_hpt366 pata_cmd64x pata_efar pata_rz1000 pata_sil680=20
+pata_radisys pata_pdc2027x pata_mpiix
+=2D-------------------------------------------
+[7.2-7.7] N/A
+=2D-------------------------------------------
+[X.] Simply when i have changed option.c file in=20
+/usr/src/linux/drivers/usb/serial/option.c by adding=20
+
+{ USB_DEVICE(0x1D6B, 0x0002) }, /*ZTE MF 330*/
+
+to static struct usb_device_id option_ids[]
+my pc data card was correct detected by kernel.=20
+=2D-------------------------------------------
+=2D-=20
+
+Z wyrazami szacunku Pawel D
+
+Generic mail phrase generated by fortune
+
+"You're a creature of the night, Michael. Wait'll Mom hears about this." --=
+=20
+from the movie "The Lost Boys"
+
+=2D----------------------User data-------------------------
+Pawel Drobek aka Boss
+Linux counter id:349664
+Kadu(gg)  - 2355716
+Jabber        - p.d@jabster.pl||pawel.drobek@gmail.com
+=2D----------------------OS data---------------------------
+System      - GNU/Linux
+Id               - Gentoo current amd64 12/05/2009
+Kernel      - 2.6.33-gentoo
+Logged as - pd
+=2D--------------------End of data------------------------
+
+--nextPart2488807.Y0cVWplMvR
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.14 (GNU/Linux)
+
+iEYEABECAAYFAkvEu5kACgkQ3aTwtJt4clISwgCfdu5t4rOLaAKeGnwX1genSigR
+MewAnjmz9pTgZ+5bdpsamYrs6bd8y0Jn
+=uveK
+-----END PGP SIGNATURE-----
+
+--nextPart2488807.Y0cVWplMvR--
