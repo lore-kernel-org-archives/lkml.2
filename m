@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab0DMIo7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 04:44:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30767 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752514Ab0DMIo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 04:44:57 -0400
-Message-ID: <4BC42FE0.4040601@redhat.com>
-Date: Tue, 13 Apr 2010 16:48:32 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
-MIME-Version: 1.0
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-CC: opurdila@ixiacom.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       nhorman@tuxdriver.com, davem@davemloft.net, ebiederm@xmission.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [Patch 3/3] net: reserve ports for applications using fixed port
- numbers
-References: <20100412100744.5302.92442.sendpatchset@localhost.localdomain> <20100412100816.5302.74919.sendpatchset@localhost.localdomain> <201004130121.o3D1Lhh7099571@www262.sakura.ne.jp> <4BC41994.7030707@redhat.com>
-In-Reply-To: <4BC41994.7030707@redhat.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+	id S1752082Ab0DMIqa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 04:46:30 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46030
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751298Ab0DMIq2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 04:46:28 -0400
+Date: Tue, 13 Apr 2010 01:46:31 -0700 (PDT)
+Message-Id: <20100413.014631.45686537.davem@davemloft.net>
+To: peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       sparclinux@vger.kernel.org
+Subject: Re: [PATCH 0/4]: Respin local_irq_*_nmi() stuff.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1271147834.4807.980.camel@twins>
+References: <1271144938.4807.925.camel@twins>
+	<20100413.005640.48990319.davem@davemloft.net>
+	<1271147834.4807.980.camel@twins>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cong Wang wrote:
-> Tetsuo Handa wrote:
->> Hello.
->>
->>> --- linux-2.6.orig/drivers/infiniband/core/cma.c
->>> +++ linux-2.6/drivers/infiniband/core/cma.c
->>> @@ -1980,6 +1980,8 @@ retry:
->>>  	/* FIXME: add proper port randomization per like inet_csk_get_port */
->>>  	do {
->>>  		ret = idr_get_new_above(ps, bind_list, next_port, &port);
->>> +		if (!ret && inet_is_reserved_local_port(port))
->>> +			ret = -EAGAIN;
->>>  	} while ((ret == -EAGAIN) && idr_pre_get(ps, GFP_KERNEL));
->>>  
->>>  	if (ret)
->>>
->> I think above part is wrong. Below program
-> ...
->> This result suggests that above loop will continue until idr_pre_get() fails
->> due to out of memory if all ports were reserved.
->>
->> Also, if idr_get_new_above() returned 0, bind_list (which is a kmalloc()ed
->> pointer) is already installed into a free slot (see comment on
->> idr_get_new_above_int()). Thus, simply calling idr_get_new_above() again will
->> install the same pointer into multiple slots. I guess it will malfunction later.
-> 
-> Thanks for testing!
-> 
-> How about:
-> 
-> +		if (!ret && inet_is_reserved_local_port(port))
-> +			ret = -EBUSY;
-> 
-> ? So that it will break the loop and return error.
-> 
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Tue, 13 Apr 2010 10:37:14 +0200
 
-Or use the similar trick:
+> Hmm, it also assumes %pil is never anything other than 0,
+> PIL_NORMAL_MAX, PIL_NMI, because if:
+> 
+>   (%pil & 1) && (%pil != PIL_NMI)
+> 
+> then you'll end up disabling NMIs. Could something like that ever
+> happen?
 
- int tries = 10;
-...
+The only values we ever program into the %pil are 0, PIL_NORMAL_MAX
+and PIL_NMI
 
- if(!ret && inet_is_reserved_local_port(port)) {
-   if (tries--)
-     ret = -EAGAIN;
-   else
-     ret = -EBUSY;
- }
+Since PIL_NMI is the largest %pil value and all bits are set in it
+(0xf), it doesn't matter what PIL_NORMAL_MAX actually is.
 
-Any comments?
+Yes this all deserves a comment, I'll add one, thanks for pointing
+that out.
