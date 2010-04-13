@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374Ab0DMJF5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 05:05:57 -0400
-Received: from relay.felk.cvut.cz ([147.32.80.7]:62945 "EHLO
-	relay.felk.cvut.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab0DMJFz (ORCPT
+	id S1751679Ab0DMJIg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 05:08:36 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:48453 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880Ab0DMJIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 05:05:55 -0400
-X-Greylist: delayed 2092 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Apr 2010 05:05:55 EDT
-Date: Tue, 13 Apr 2010 10:30:50 +0200
-From: Michal Svoboda <michal.svoboda@agents.felk.cvut.cz>
-To: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>
-Subject: SO_REUSEADDR with UDP (again)
-Message-ID: <20100413083050.GA16331@myhost.felk.cvut.cz>
-Mail-Followup-To: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>
+	Tue, 13 Apr 2010 05:08:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=tj4aZHcspmEU4oh5QG9y1+Cy6SUg4cEAxNiNq+Q9umxQU3xC7CN9ifQ8aGNtPhf9su
+         R2hWgKr43Dz5cx+wHwnzARR7wZTsbpV1Lx8J4349uA6NqXJUaiccgwI7HxqQs0Kd9fxc
+         eoKR69vX7fbVXgrEDyQl34X0TvsFXBddGgWj0=
+Date: Tue, 13 Apr 2010 11:09:52 +0200
+From: Richard Zidlicky <rz@linux-m68k.org>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.33.2 does not boot on Atom?
+Message-ID: <20100413090952.GA17227@linux-m68k.org>
+References: <20100406205509.GA12034@linux-m68k.org> <20100412061604.GB31112@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Kj7319i9nmIyA2yE"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-FELK-MailScanner-Information: 
-X-MailScanner-ID: o3D8UoMG041981
-X-FELK-MailScanner: Found to be clean
-X-FELK-MailScanner-SpamCheck: not spam, SpamAssassin (not cached, score=-1.9,
-	required 5, autolearn=not spam, BAYES_00 -1.90)
-X-FELK-MailScanner-From: michal.svoboda@agents.felk.cvut.cz
-X-FELK-MailScanner-To: linux-kernel@vger.kernel.org
-X-FELK-MailScanner-Watermark: 1271752253.03473@LNtpta3uX9/7k86Zj6+Edg
+In-Reply-To: <20100412061604.GB31112@kroah.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Apr 11, 2010 at 11:16:05PM -0700, Greg KH wrote:
+> On Tue, Apr 06, 2010 at 10:55:09PM +0200, Richard Zidlicky wrote:
+> > Hi,
+> > 
+> > I have been compiling my own kernels since ages and switched from 2.6.32.8 to 
+> > 2.6.33.2 now.
+> > Same procedure like allways - copied .config to new buildtree, make menuconfig
+> > (almost nothing changed in config), installed the new kernel on 2 machines.
+> 
+> Oops, that's the problem, you need to do 'make oldconfig' to ensure you
+> didn't miss anything, and to adjust any new defaults.
 
---Kj7319i9nmIyA2yE
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+I can confirm that "make oldconfig" does not fix the problem.
 
-Hello,
+Grub appears to load the kernel (at least it does not come back with an error as it otherwise
+would), cursor in the topleft corner and absolutely no activity. 
+no reaction to ctrl-alt-del or magic keys. For all other kernels I would see at least the
+"uncompressing kerne.." message, not here.
 
-I found SO_REUSEADDR on UDP sockets to behave somewhat nasty. If you
-create a UDP socket with that flag and bind it to a port, then anyone
-doing the same later will "steal" your packets, ie.
-
-1. process A binds to port 12345 with SO_REUSEADDR, packets to that port
-   go to process A
-2. process B binds to port 12345 with SO_REUSEADDR, packets to that port
-   now go to process B
-3. A dies, fires up again, packets go back to A
-4. A dies, does not fire up, packets go to B, as if they were stacked
-
-And this works even if A and B are owned by different users, thus anyone
-can "steal" packets from anyone as long as they use SO_REUSEADDR.
-However, in most programs that's the default.
-
-Furthermore, one can lock-out a particular source from being "stolen" by
-using connect() to that source, ie.
-
-1. process A binds to port 12345 with SO_REUSEADDR, gets the packets
-2. B does the same, gets the packets, but also connect()s to the source
-   of the packets
-3. A can now restart or try to bind again, but does not get the packets
-   (from that source)
-
-(I haven't tested the case if A also issues a connect() even if it does
-not receive packets.)
-
-All of this seems confusing to me, and the fact that users can steal
-packets from each other seems like a mild security risk. I've found some
-discussions about this from circa 2002, but the above cases were not
-mentioned. So - a problem or not?
-
-
-Michal Svoboda
-
-
-
---Kj7319i9nmIyA2yE
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvEK7oACgkQg/fU9pp1uX6MwgCePKNfOLprpWMJkktY58+ecrHk
-bsQAoK64DSajY4aYJqdrWtqfzhSnmW9W
-=5h2P
------END PGP SIGNATURE-----
-
---Kj7319i9nmIyA2yE--
+Richard
