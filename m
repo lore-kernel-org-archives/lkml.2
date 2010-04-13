@@ -1,134 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab0DMKg5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 06:36:57 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37431 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752331Ab0DMKgz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 06:36:55 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH -v2] rmap: make anon_vma_prepare link in all the anon_vmas of a mergeable VMA
-Cc: kosaki.motohiro@jp.fujitsu.com, Rik van Riel <riel@redhat.com>,
-       Borislav Petkov <bp@alien8.de>, Johannes Weiner <hannes@cmpxchg.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, sgunderson@bigfoot.com
-In-Reply-To: <alpine.LFD.2.00.1004120844370.26679@i5.linux-foundation.org>
-References: <4BC24309.7060004@redhat.com> <alpine.LFD.2.00.1004120844370.26679@i5.linux-foundation.org>
-Message-Id: <20100413192259.D113.A69D9226@jp.fujitsu.com>
+	id S1753002Ab0DMKoE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 06:44:04 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37028 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752789Ab0DMKoB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 06:44:01 -0400
+Date: Tue, 13 Apr 2010 10:43:40 GMT
+From: tip-bot for Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       tglx@linutronix.de, randy.dunlap@oracle.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       tglx@linutronix.de, randy.dunlap@oracle.com
+In-Reply-To: <20100331113056.2c7df509.randy.dunlap@oracle.com>
+References: <20100331113056.2c7df509.randy.dunlap@oracle.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf bench: fix spello
+Message-ID: <tip-f0e9c4fcefa42b5d28b915768dab81a7fdbbc00c@git.kernel.org>
+Git-Commit-ID: f0e9c4fcefa42b5d28b915768dab81a7fdbbc00c
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 13 Apr 2010 19:36:51 +0900 (JST)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 13 Apr 2010 10:43:40 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Commit-ID:  f0e9c4fcefa42b5d28b915768dab81a7fdbbc00c
+Gitweb:     http://git.kernel.org/tip/f0e9c4fcefa42b5d28b915768dab81a7fdbbc00c
+Author:     Randy Dunlap <randy.dunlap@oracle.com>
+AuthorDate: Wed, 31 Mar 2010 11:30:56 -0700
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 8 Apr 2010 11:34:26 -0300
 
-> On Sun, 11 Apr 2010, Rik van Riel wrote:
-> >
-> > Another thing I just thought of.
-> > 
-> > The anon_vma struct will not be reused for something completely
-> > different due to the SLAB_DESTROY_BY_RCU flag that the anon_vma_cachep
-> > is created with.
-> 
-> Rik, we _know_ it got re-used by something totally different. That's 
-> clearly the problem. The page->mapping pointer does _not_ point to an 
-> anon_vma any more. That's the problem here.
-> 
-> What we need to figure out is how we have a page on the LRU list that is 
-> still marked as 'mapped' that has that stale mapping pointer.
-> 
-> I can easily see how the stale mapping pointer happens for a non-mapped 
-> page. That part is trivial. Here's a simple case:
-> 
->  - vmscan does that whole "isolate LRU pages", and one of them is a (at 
->    that time mapped) anonymous page. It's now not on any LRU lists at all.
-> 
->  - vmscan ends up waiting for pageout and/or writeback while holding that 
->    list of pages.
-> 
->  - in the meantime, the process that had the page exists or unmaps, 
->    unmapping the page and freeing the vma and the anon_vma.
-> 
->  - vmscan eventually gets to the page, and does that page_referenced() 
->    dance. page->mapping points to something that is long long gone (as in 
->    "IO access lifetimes", so we're talking something that has been freed 
->    literally milliseconds ago, rather than any RCU delays)
-> 
-> So I can see the stale page->mapping pointer happening. That part is even 
-> trivial. What I don't see is how the page would be still marked 'mapped'. 
-> Everything that actually free's the vma/anon_vmas should also have 
-> unmapped the page before that - even if it didn't _free_ the page.
+perf bench: fix spello
 
-Sorry, Now I'm lost what discuss in this crazy long thread.
-IIUC, If the page->mapping was freed millisecns ago, following (1)
-check returen false and we never touch page->mapping literally.
+Fix spello in user message.
 
-Am I missing something?
-
-
-===================================================================
-struct anon_vma *page_lock_anon_vma(struct page *page)
-{
-        struct anon_vma *anon_vma;
-        unsigned long anon_mapping;
-
-        rcu_read_lock();
-        anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
-        if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)
-                goto out;
-        if (!page_mapped(page))       /* (1) here */ 
-                goto out;
-
-        anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
-        spin_lock(&anon_vma->lock);
-        return anon_vma;
-out:
-        rcu_read_unlock();
-        return NULL;
-}
-=================================================
-
-
-And, I think your following patch seems incorrect.
-The added page_mapped() is called after spinlock(anon_vma->lock),
-it mean check-after-dereference. such check doesn't prevent invalid
-pointer dereference, I think.
-
-perhaps, I'm missing anything. I have to reread this thread at all from
-first.
-
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: Paul Mackerra <paulus@samba.org>s
+LKML-Reference: <20100331113056.2c7df509.randy.dunlap@oracle.com>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 ---
-diff --git a/mm/rmap.c b/mm/rmap.c
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -302,7 +302,11 @@ struct anon_vma *page_lock_anon_vma(struct page *page)
+ tools/perf/bench/sched-pipe.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/bench/sched-pipe.c b/tools/perf/bench/sched-pipe.c
+index 4f77c7c..d9ab3ce 100644
+--- a/tools/perf/bench/sched-pipe.c
++++ b/tools/perf/bench/sched-pipe.c
+@@ -93,7 +93,7 @@ int bench_sched_pipe(int argc, const char **argv,
  
- 	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
- 	spin_lock(&anon_vma->lock);
--	return anon_vma;
-+
-+	if (page_mapped(page))
-+		return anon_vma;
-+
-+	spin_unlock(&anon_vma->lock);
- out:
- 	rcu_read_unlock();
- 	return NULL;
-
-
-
-
-
-
-
+ 	switch (bench_format) {
+ 	case BENCH_FORMAT_DEFAULT:
+-		printf("# Extecuted %d pipe operations between two tasks\n\n",
++		printf("# Executed %d pipe operations between two tasks\n\n",
+ 			loops);
+ 
+ 		result_usec = diff.tv_sec * 1000000;
