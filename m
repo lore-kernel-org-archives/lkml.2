@@ -1,133 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038Ab0DMTCM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 15:02:12 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:43453 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262Ab0DMTCL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 15:02:11 -0400
-Date: Tue, 13 Apr 2010 15:01:10 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Manfred Spraul <manfred@colorfullife.com>, zach.brown@oracle.com,
-       jens.axboe@oracle.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ipc semaphores: reduce ipc_lock contention in
- semtimedop
-Message-ID: <20100413190110.GR13327@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Nick Piggin <npiggin@suse.de>,
-	Manfred Spraul <manfred@colorfullife.com>, zach.brown@oracle.com,
-	jens.axboe@oracle.com, linux-kernel@vger.kernel.org
-References: <1271098163-3663-1-git-send-email-chris.mason@oracle.com>
- <1271098163-3663-2-git-send-email-chris.mason@oracle.com>
- <4BC4A6B2.1090906@colorfullife.com>
- <20100413173941.GI13327@think>
- <20100413180945.GD5683@laptop>
- <20100413181937.GM13327@think>
- <20100413185756.GE5683@laptop>
+	id S1752063Ab0DMTEf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 15:04:35 -0400
+Received: from capside.net ([81.19.98.74]:41632 "EHLO eul0600410.eu.verio.net"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751158Ab0DMTEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 15:04:33 -0400
+Message-ID: <4BC4BFFD.9040802@sysvalve.es>
+Date: Tue, 13 Apr 2010 21:03:25 +0200
+From: =?ISO-8859-1?Q?=22L=2E_Alberto_Gim=E9nez=22?= 
+	<agimenez@sysvalve.es>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100413185756.GE5683@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4BC4BFAD.013F:SCFMA4539814,ss=1,fgs=0
+To: David Miller <davem@davemloft.net>
+CC: linux-kernel@vger.kernel.org, dgiagio@gmail.com, dborca@yahoo.com,
+       gregkh@suse.de, jonas.sjoquist@ericsson.com, steve.glendinning@smsc.com,
+       torgny.johansson@gmail.com, dbrownell@users.sourceforge.net,
+       omar.oberthur@gmail.com, linux-usb@vger.kernel.org,
+       netdev@vger.kernel.org
+Subject: Re: [PATCH Resubmission] drivers/net/usb: Add new driver ipheth
+References: <1269984864-28159-1-git-send-email-agimenez@sysvalve.es>	<1270678281-20750-1-git-send-email-agimenez@sysvalve.es> <20100413.011540.115903049.davem@davemloft.net>
+In-Reply-To: <20100413.011540.115903049.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 04:57:56AM +1000, Nick Piggin wrote:
-> On Tue, Apr 13, 2010 at 02:19:37PM -0400, Chris Mason wrote:
-> > On Wed, Apr 14, 2010 at 04:09:45AM +1000, Nick Piggin wrote:
-> > > On Tue, Apr 13, 2010 at 01:39:41PM -0400, Chris Mason wrote:
-> > > > On Tue, Apr 13, 2010 at 07:15:30PM +0200, Manfred Spraul wrote:
-> > > > > Hi Chris,
-> > > > > 
-> > > > > 
-> > > > > On 04/12/2010 08:49 PM, Chris Mason wrote:
-> > > > > >  /*
-> > > > > >+ * when a semaphore is modified, we want to retry the series of operations
-> > > > > >+ * for anyone that was blocking on that semaphore.  This breaks down into
-> > > > > >+ * a few different common operations:
-> > > > > >+ *
-> > > > > >+ * 1) One modification releases one or more waiters for zero.
-> > > > > >+ * 2) Many waiters are trying to get a single lock, only one will get it.
-> > > > > >+ * 3) Many modifications to the count will succeed.
-> > > > > >+ *
-> > > > > Have you thought about odd corner cases:
-> > > > > Nick noticed the last time that it is possible to wait for arbitrary values:
-> > > > > in one semop:
-> > > > >     - decrease semaphore 5 by 10
-> > > > >     - wait until semaphore 5 is 0
-> > > > >     - increase semaphore 5 by 10.
-> > > > 
-> > > > Do you mean within a single sop array doing all three of these?  I don't
-> > > > know if the sort is going to leave the three operations on semaphore 5
-> > > > in the same order (it probably won't).
-> > > > 
-> > > > But I could change that by having it include the slot in the original
-> > > > sop array in the sorting.  That way if we have duplicate semnums in the
-> > > > array, they will end up in the same position relative to each other in
-> > > > the sorted result.
-> > > > 
-> > > > (ewwww ;)
-> > > 
-> > > I had a bit of a hack at doing per-semaphore stuff when I was looking
-> > > at the first optimization, but it was tricky to make it work.
-> > > 
-> > > The other thing I don't know if your patch gets right is requeueing on
-> > > of the operations. When you requeue from one list to another, then you
-> > > seem to lose ordering with other pending operations, so that would
-> > > seem to break the API as well (can't remember if the API strictly
-> > > mandates FIFO, but anyway it can open up starvation cases).
-> > 
-> > I don't see anything in the docs about the FIFO order.  I could add an
-> > extra sort on sequence number pretty easily, but is the starvation case
-> > really that bad?
-> 
-> Yes, because it's not just a theoretical livelock, it can be basically
-> a certainty, given the right pattern of semops.
-> 
-> You could have two mostly-independent groups of processes, each taking
-> and releasing a different sem, which are always contended (eg. if it is
-> being used for a producer-consumer type situation, or even just mutual
-> exclusion with high contention).
-> 
-> Then you could have some overall management process for example which
-> tries to take both sems. It will never get it.
+David Miller wrote:
+> Unless you add a rule to drivers/net/Makefile, the build won't
+> actually get to your driver unless one of the other USB networking
+> devices are configured.
+>   
 
-Ok, fair enough, I'll add the sequence number.
+Hi David,
 
-> 
-> 
-> > > I was looking at doing a sequence number to be able to sort these, but
-> > > it ended up getting over complex (and SAP was only using simple ops so
-> > > it didn't seem to need much better).
-> > > 
-> > > We want to be careful not to change semantics at all. And it gets
-> > > tricky quickly :( What about Zach's simpler wakeup API?
-> > 
-> > Yeah, that's why my patches include code to handle userland sending
-> > duplicate semids.
-> 
-> Duplicate semids? What do you mean?
+Thanks for the info. I didn't know that I had to add an entry on the 
+upper level Makefile. I guess that something like 
+obj-$(CONFIG_USB_IPHETH) += usb/ should be enough? (I got it from the 
+other USB net drivers).
 
-Sorry, semnums...index into the array of semaphores.
+I won't be able to work on it today, I've been very busy today and can't 
+look into this, but I've not given up :)
 
-> 
-> 
-> >  Zach's simpler API is cooking too, but if I can get
-> > this done without insane complexity it helps with more than just the
-> > post/wait oracle workload.
-> 
-> Iam worried about complexity and slowing other cases, given that Oracle
-> DB seems willing to adapt to the (better suited) new API. So I'd be
-> interested to know what it helps outside Oracle.
-> 
+> Please fix this up and resubmit. 
 
-Sure, I'd hope that your benchmark from last time around is faster now.
+I have also in my queue a patch sent from upstream to fix the latest 
+issues pointed out by Roland Dreier, and I need to test it a little bit 
+more.
 
--chris
+Thanks for your comments and patience!
 
+
+Best regards,
+L. Alberto Giménez
