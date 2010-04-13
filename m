@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658Ab0DMJb7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 05:31:59 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:50018 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065Ab0DMJb6 (ORCPT
+	id S1752383Ab0DMJcr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 05:32:47 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:52452 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752439Ab0DMJcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 05:31:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 0/5] ext2: Preparation to remove BKL
-Date: Tue, 13 Apr 2010 11:31:54 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Jan Blunck <jblunck@suse.de>, Jan Kara <jack@suse.cz>, tytso@mit.edu,
-       "Linux-Kernel Mailinglist" <linux-kernel@vger.kernel.org>,
-       linux-ext4@vger.kernel.org
-References: <1271104905-8804-1-git-send-email-jblunck@suse.de> <20100412210127.GE8285@nowhere>
-In-Reply-To: <20100412210127.GE8285@nowhere>
+	Tue, 13 Apr 2010 05:32:46 -0400
+Message-ID: <4BC43A3C.7010603@cs.helsinki.fi>
+Date: Tue, 13 Apr 2010 12:32:44 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: TAO HU <tghk48@motorola.com>, Nick Piggin <npiggin@suse.de>
+CC: linux-kernel@vger.kernel.org, cl@linux-foundation.org, mpm@selenic.com,
+       linux-mm@kvack.org, dwmw2@infradead.org, TAO HU <taohu@motorola.com>,
+       ShiYong LI <shi-yong.li@motorola.com>, david.rientjes@google.com
+Subject: Re: [PATCH - V2] Fix missing of last user while dumping slab 	corruption
+ log
+References: <w2z4810ea571004112250x855fadd5uecbc813726ae3412@mail.gmail.com> <h2v5f4a33681004130005xc06eadf7jc94e9257c6af4350@mail.gmail.com>
+In-Reply-To: <h2v5f4a33681004130005xc06eadf7jc94e9257c6af4350@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201004131131.54650.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1/K7P0ZDYqPZ0BZmoUch0f4qOgRmXMs9uF30wU
- J21a8As0OwtEnNKfY0MsQJnPS7ZMg+Qd7pCHthdwtkSeOnxeb+
- vg6sLkAzTYTzWuL35o9yQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 12 April 2010, Frederic Weisbecker wrote:
-> It looks like this is all about .35 material.
+TAO HU kirjoitti:
+> Actually we greped "kmem_cache_create" in whole kernel souce tree
+> (2.6.29 and 2.6.32).
 > 
-> This is going to be hard to have a separate tree to pushdown/remove
-> the bkl in the mount path if it depends on the ext2 tree.
+> Either "align" equal to "0" or flag SLAB_HWCACHE_ALIGN is used when
+> calling kmem_cache_create().
 
-The pushdown can be in a separate tree that can be merged independently,
-just the final patch removing it in do_new_mount needs to wait
-for everything else to get merged first. We have some other patches,
-in particular the one that makes CONFIG_BKL modular that have to
-wait for other patches and should probably just be applied separately
-rather than merged from a bisectable git tree.
+I don't think that's correct. The "task_xstate" has alignof(struct 
+task_xstate) and there seems to be so GCC attributes that force 
+non-default alignment on the struct.
 
-	Arnd
+> Seems all of arch's cache-line-size is multiple of 64-bit/8-byte
+> (sizeof(long long)) except  arch-microblaze (4-byte).
+> The smallest (except arch-microblaze) cache-line-size is 2^4= 16-byte
+> as I can see.
+> So even considering possible sizeof(long long) == 128-bit/16-byte, it
+> is still safe to apply Shiyong's original version.
+> 
+> Anyway, Shiyong's new patch check the weired situation that "align >
+> sizeof(long long) && align is NOT multiple of sizeof (long long)"
+> Let us know whether the new version address your concerns.
+
+Yeah, sorry for dragging this issue on. I've been looking at the patch 
+but haven't been able to convince myself that it's correct. Nick, David, 
+Christoph, Matt, could you also please take a look at this?
+
+			Pekka
