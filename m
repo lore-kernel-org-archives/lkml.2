@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753042Ab0DMPOZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 11:14:25 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:63036 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071Ab0DMPOX (ORCPT
+	id S1752863Ab0DMPQK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 11:16:10 -0400
+Received: from fg-out-1718.google.com ([72.14.220.153]:10143 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983Ab0DMPQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 11:14:23 -0400
+	Tue, 13 Apr 2010 11:16:07 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=qQG3DSvDyXD51bj7W9xbqpuOxe1egdQvIuTY9vqpH0y1mHM8P8G3HaSO35e2pmULIR
-         nE+2P+JXiPZBkpqyP+FOedxa/GFUHPnIGOv3dRL6/aIafO17hnIGg817yJIa95GNyMPT
-         jx0BX+J7ycjhIm4utO+yZLXQBV1JrVAuwZFmA=
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:message-id:content-type:content-transfer-encoding;
+        b=WbQYWgbx1JuCeHrjqQhJjSnbGhN/w5lLdXpMAoqbs4KmvfzkWkwIHxhRRlAdAxrOOK
+         CHJVSPoW32IeDWEL/8XXEnQ5JaCbJhGuT1NS3qG62csWGd8O+XoGANIBMpq/PTwgeDCd
+         xQrsYbN02+da1o6SmPYZY4qGpHuY2vNqv1jAA=
+From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Subject: Re: [PATCH 54/64] alim15x3: fix handling of UDMA enable bit
+Date: Tue, 13 Apr 2010 17:15:06 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.33-0.1-desktop; KDE/4.3.5; x86_64; ; )
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20100118171349.14623.90030.sendpatchset@localhost> <20100118172126.14623.55960.sendpatchset@localhost> <4BC325D8.9040607@ru.mvista.com>
+In-Reply-To: <4BC325D8.9040607@ru.mvista.com>
 MIME-Version: 1.0
-In-Reply-To: <1271136656.22314.3.camel@bnru03>
-References: <1271113496-6744-1-git-send-email-linus.walleij@stericsson.com>
-	 <1271136656.22314.3.camel@bnru03>
-Date: Tue, 13 Apr 2010 17:14:20 +0200
-Message-ID: <v2l63386a3d1004130814i6c834d6boa105d4f7491cb01b@mail.gmail.com>
-Subject: Re: [PATCH 1/3] MFD: renamed ab3100.h to abx500.h
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: srinidhi.kasagar@stericsson.com
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-       Samuel Ortiz <sameo@linux.intel.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       Mattias WALLIN <mattias.wallin@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Message-Id: <201004131715.06225.bzolnier@gmail.com>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/4/13 srinidhi <srinidhi.kasagar@stericsson.com>:
 
-> So do you expect the existing ab4500 also to be merged into abx500?
+Hi Sergei,
 
-Don't think so, the 4500 is not related to the 3100, 3550 and 5500:s,
-so they don't have much in common, whereas the latter share a lot of
-characteristics. It's better if it stays where it is I think.
+On Monday 12 April 2010 03:53:28 pm Sergei Shtylyov wrote:
+> Bartlomiej Zolnierkiewicz wrote:
+> > From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+> > Subject: [PATCH] alim15x3: fix handling of UDMA enable bit
+> >
+> > Clear UDMA enable bit also for PIO modes.
+> >   
+> 
+>    Sorry for late mail but I fail to understand why this was done and 
+> what this patch fixes.
+> 
+> > Based on libata pata_ali host driver.
+> 
+>    libata has different mode programming code where first always the PIO 
+> mode and then DMA mode is set. With IDE core, the order can be 
+> different, PIO mode programming shouldn't affect DMA mode bits -- and 
+> does not affect it in the other drivers...
 
-abx500 was the best name we could come up with that wasn't too
-short, we contemplated abx.h but it was too short, abxxx0 looks
-silly and so on. So abx500 denotes our largest family of mixsig ASICs
-which has a lot in common, i.e. everything except the
-AB8500/AB4500/STw4500, hope it's not too confusing...
+This was just a tiny part of larger patchset preparing alim15x3 for
+conversion to ide2libata framework and it seems the problem is only
+affecting user-initiated transfer mode changes (which are strongly
+discouraged anyway) as both libata and IDE core use quite similar
+transfer mode programming sequence by default.
 
-But the ab4500 files should be renamed ab8500.[c|h] after current
-product naming decisions though.
-
-Yours,
-Linus Walleij
+However thanks for noticing the issue, I will fix it for both drivers
+during the next update of atang tree (unless somebody sends me a patch
+sooner).
+--
+Bartlomiej Zolnierkiewicz
