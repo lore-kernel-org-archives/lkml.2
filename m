@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751604Ab0DMDne (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 23:43:34 -0400
-Received: from gate.crashing.org ([63.228.1.57]:47397 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751655Ab0DMDnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 23:43:32 -0400
-Subject: Re: [PATCH -v12 00/39] use lmb with x86
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-In-Reply-To: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
-References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Apr 2010 13:41:44 +1000
-Message-ID: <1271130104.13059.37.camel@pasglop>
+	id S1751528Ab0DMDv4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 23:51:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47209 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750733Ab0DMDvy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 23:51:54 -0400
+Date: Mon, 12 Apr 2010 20:49:49 -0400
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexandre Bounine <abounine@tundra.com>
+Cc: torvalds@linux-foundation.org, mporter@kernel.crashing.org,
+       linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+       thomas.moll@sysgo.com
+Subject: Re: [PATCH v3 3/6] RapidIO: Add Port-Write handling for EM
+Message-Id: <20100412204949.862b3fab.akpm@linux-foundation.org>
+In-Reply-To: <20100406212238.GC26292@amak.tundra.com>
+References: <20100406212238.GC26292@amak.tundra.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-04-08 at 23:03 -0700, Yinghai Lu wrote:
-> the new lmb could be used to early_res in x86.
-> 
-> Suggested by: David, Ben, and Thomas
+On Tue, 6 Apr 2010 17:22:38 -0400 Alexandre Bounine <abounine@tundra.com> wrote:
 
-I still find most of your changeset comments to be very very poor, if
-comprehensible at all. You really MUST make an effort there.
+> 
+> From: Alexandre Bounine <alexandre.bounine@idt.com>
+> 
+> Add RapidIO Port-Write message handling in the context
+> of Error Management Extensions Specification Rev.1.3.
+>
+> ...
+>
+> +static struct rio_dev *rio_get_comptag(u32 comp_tag, struct rio_dev *from)
+> +{
+> +	struct list_head *n;
+> +	struct rio_dev *rdev;
+> +
+> +	WARN_ON(in_interrupt());
 
-Cheers,
-Ben.
+The check should be unneeded - lockdep will warn about this.
 
-> -v6: change sequence as requested by Thomas
-> -v7: seperate them to more patches
-> -v8: add boundary checking to make sure not free partial page.
-> -v9: use lmb_debug to control print out of reserve_lmb.
->      add e820 clean up, and e820 become __initdata
-> -v10:use lmb.rmo_size and ARCH_DISCARD_LMB according to Michael
->      change name to lmb_find_area/reserve_lmb_area/free_lmb_area,
->       according to Michael
->      update find_lmb_area to use __lmb_alloc_base according to ben
-> -v11:move find_lmb_area_size back to x86.
->      x86 has own find_lmb_area, and could be disabled by ARCH_LMB_FIND_AREA
->       because _lmb_find_base has different behavoir from x86's old one.
->       one from high to high and one from low to high
->       need more test
->      tested for x86 32bit/64bit, numa/nonuma, nobootmem/bootmem.
-> -v12:refresh the series with current tip
->      seperate nobootmem.c, so could remove some #ifdef
->      still keep CONFIG_NO_BOOTMEM, in x86 .c, and could use the as tags
->      so other lmb could refer them to use NO_BOOTMEM.
-> 
-> still keep find_lmb_area, may replace those find_lmb_area will lmb_alloc, if
-> everything go fine
-> 
-> Please put them into tip and -next to have more test coverage.
-> 
-> Thanks
-> 
-> Yinghai
-
+> +	spin_lock(&rio_global_list_lock);
+> +	n = from ? from->global_list.next : rio_devices.next;
+> +
+> +	while (n && (n != &rio_devices)) {
+> +		rdev = rio_dev_g(n);
+> +		if (rdev->comp_tag == comp_tag)
+> +			goto exit;
+> +		n = n->next;
+> +	}
+> +	rdev = NULL;
+> +exit:
+> +	spin_unlock(&rio_global_list_lock);
+> +	return rdev;
+> +}
+> +
 
