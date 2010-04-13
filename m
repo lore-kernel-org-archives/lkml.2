@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128Ab0DMHbN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 03:31:13 -0400
-Received: from mx0b-000f0801.pphosted.com ([67.231.152.113]:34926 "EHLO
-	mx0b-000f0801.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751420Ab0DMHbL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 03:31:11 -0400
-From: Jing Huang <huangj@Brocade.COM>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-       James Bottomley <James.Bottomley@HansenPartnership.com>,
-       Krishna Gudipati <kgudipat@Brocade.COM>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 13 Apr 2010 00:30:52 -0700
-Subject: RE: linux-next: build warnings after merge of the final tree (scsi
- tree related)
-Thread-Topic: linux-next: build warnings after merge of the final tree (scsi
- tree related)
-Thread-Index: Acra0ZNYwVHFp572R4SrdOxH9cuSvwACWnwQ
-Message-ID: <04391A4E90BB2149B010D22452FA1687B99CC5C1@HQ-EXCH-6.corp.brocade.com>
-References: <20100413162129.d913af53.sfr@canb.auug.org.au>
-In-Reply-To: <20100413162129.d913af53.sfr@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752262Ab0DMHcM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 03:32:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31977 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751672Ab0DMHcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 03:32:10 -0400
+Message-ID: <4BC41ED0.3020807@redhat.com>
+Date: Tue, 13 Apr 2010 15:35:44 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=1.12.8161:2.4.5,1.2.40,4.0.166
- definitions=2010-04-13_03:2010-02-06,2010-04-13,2010-04-13 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
- bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=6.0.2-0911030000 definitions=main-1004130005
+To: Alexey Dobriyan <adobriyan@gmail.com>
+CC: linux-kernel@vger.kernel.org, Octavian Purdila <opurdila@ixiacom.com>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       penguin-kernel@I-love.SAKURA.ne.jp, netdev@vger.kernel.org,
+       Neil Horman <nhorman@tuxdriver.com>, ebiederm@xmission.com,
+       David Miller <davem@davemloft.net>
+Subject: Re: [Patch 1/3] sysctl: refactor integer handling proc code
+References: <20100412100744.5302.92442.sendpatchset@localhost.localdomain> <20100412100754.5302.99552.sendpatchset@localhost.localdomain> <20100413111814.GB4396@x200>
+In-Reply-To: <20100413111814.GB4396@x200>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is indeed introduced by this commit. I have reproduced the issue in a powerpc machine, and I will provide a fix soon.
+Alexey Dobriyan wrote:
+> On Mon, Apr 12, 2010 at 06:04:04AM -0400, Amerigo Wang wrote:
+>> As we are about to add another integer handling proc function a little
+>> bit of cleanup is in order: add a few helper functions to improve code
+>> readability and decrease code duplication.
+>>
+>> In the process a bug is also fixed: if the user specifies a number
+>> with more then 20 digits it will be interpreted as two integers
+>> (e.g. 10000...13 will be interpreted as 100.... and 13).
+> 
+> ULONG_MAX is not 22 digits always.
+> 
+> The fix is to not rely on simple_strtoul()
+> 
+> I guess it's time to finally remove it. :-(
 
-Jing
------Original Message-----
-From: Stephen Rothwell [mailto:sfr@canb.auug.org.au] 
-Sent: Monday, April 12, 2010 11:21 PM
-To: James Bottomley
-Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Jing Huang
-Subject: linux-next: build warnings after merge of the final tree (scsi tree related)
 
-Hi James,
+Or use strict_strtoul()?
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) produced these warnings:
+> 
+> Also, it's better to copy_from user stuff once.
+> Without looking at non-trivial users, one page should be enough.
 
-drivers/scsi/bfa/bfa_ioc.c: In function 'bfa_ioc_msgget':
-drivers/scsi/bfa/bfa_ioc.c:1331: warning: value computed is not used
-drivers/scsi/bfa/bfa_ioc_ct.c: In function 'bfa_ioc_ct_notify_hbfail':
-drivers/scsi/bfa/bfa_ioc_ct.c:177: warning: value computed is not used
-drivers/scsi/bfa/bfa_ioc_ct.c:180: warning: value computed is not used
-drivers/scsi/bfa/bfa_ioc_ct.c: In function 'bfa_ioc_ct_pll_init':
-drivers/scsi/bfa/bfa_ioc_ct.c:381: warning: value computed is not used
-drivers/scsi/bfa/bfa_ioc_ct.c: In function 'bfa_ioc_ct_ownership_reset':
-drivers/scsi/bfa/bfa_ioc_ct.c:421: warning: value computed is not used
-drivers/scsi/bfa/bfa_ioc_cb.c: In function 'bfa_ioc_cb_notify_hbfail':
-drivers/scsi/bfa/bfa_ioc_cb.c:99: warning: value computed is not used
-drivers/scsi/bfa/bfa_ioc_cb.c: In function 'bfa_ioc_cb_ownership_reset':
-drivers/scsi/bfa/bfa_ioc_cb.c:272: warning: value computed is not used
+It seems that all proc code assumes that the input buffer will
+not exceed one page size.
 
-Presumably introduced by commit 077424e2e2c97c830d903891dfcd1532068b85b7
-("[SCSI] bfa: sg addr big endian fix") from the scsi tree.
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+> 
+>> Behavior for EFAULT handling was changed as well. Previous to this
+>> patch, when an EFAULT error occurred in the middle of a write
+>> operation, although some of the elements were set, that was not
+>> acknowledged to the user (by shorting the write and returning the
+>> number of bytes accepted). EFAULT is now treated just like any other
+>> errors by acknowledging the amount of bytes accepted.
+> 
+>> +static int proc_skip_wspace(char __user **buf, size_t *size)
+>> +{
+>> +	char c;
+>> +
+>> +	while (*size) {
+>> +		if (get_user(c, *buf))
+>> +			return -EFAULT;
+>> +		if (!isspace(c))
+>> +			break;
+>> +		(*size)--;
+>> +		(*buf)++;
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+> 
+> yeah, copy_from_user once, so we won't have this.
+
+Ok.
+
+> 
+>> +static bool isanyof(char c, const char *v, unsigned len)
+> 
+> A what?
+> this is memchr()
+> 
+
+Hmm, right, it should be memchr(v, c, len).
+
+Thanks!
+
