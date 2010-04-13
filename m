@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab0DMPQK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 11:16:10 -0400
-Received: from fg-out-1718.google.com ([72.14.220.153]:10143 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983Ab0DMPQH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 11:16:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:message-id:content-type:content-transfer-encoding;
-        b=WbQYWgbx1JuCeHrjqQhJjSnbGhN/w5lLdXpMAoqbs4KmvfzkWkwIHxhRRlAdAxrOOK
-         CHJVSPoW32IeDWEL/8XXEnQ5JaCbJhGuT1NS3qG62csWGd8O+XoGANIBMpq/PTwgeDCd
-         xQrsYbN02+da1o6SmPYZY4qGpHuY2vNqv1jAA=
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Subject: Re: [PATCH 54/64] alim15x3: fix handling of UDMA enable bit
-Date: Tue, 13 Apr 2010 17:15:06 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.33-0.1-desktop; KDE/4.3.5; x86_64; ; )
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20100118171349.14623.90030.sendpatchset@localhost> <20100118172126.14623.55960.sendpatchset@localhost> <4BC325D8.9040607@ru.mvista.com>
-In-Reply-To: <4BC325D8.9040607@ru.mvista.com>
+	id S1752990Ab0DMPRf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 11:17:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24049 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752157Ab0DMPRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 11:17:34 -0400
+Date: Tue, 13 Apr 2010 11:16:45 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] memcg: update documentation v5
+Message-ID: <20100413151645.GC4493@redhat.com>
+References: <20100408145800.ca90ad81.kamezawa.hiroyu@jp.fujitsu.com> <20100409134553.58096f80.kamezawa.hiroyu@jp.fujitsu.com> <20100409100430.7409c7c4.randy.dunlap@oracle.com> <20100413134553.7e2c4d3d.kamezawa.hiroyu@jp.fujitsu.com> <20100413135718.GA4493@redhat.com> <20100413140302.GB4493@redhat.com> <20100413150843.GI3994@balbir.in.ibm.com>
 MIME-Version: 1.0
-Message-Id: <201004131715.06225.bzolnier@gmail.com>
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100413150843.GI3994@balbir.in.ibm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi Sergei,
-
-On Monday 12 April 2010 03:53:28 pm Sergei Shtylyov wrote:
-> Bartlomiej Zolnierkiewicz wrote:
-> > From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> > Subject: [PATCH] alim15x3: fix handling of UDMA enable bit
-> >
-> > Clear UDMA enable bit also for PIO modes.
-> >   
+On Tue, Apr 13, 2010 at 08:38:43PM +0530, Balbir Singh wrote:
+> * Vivek Goyal <vgoyal@redhat.com> [2010-04-13 10:03:02]:
 > 
->    Sorry for late mail but I fail to understand why this was done and 
-> what this patch fixes.
+> > On Tue, Apr 13, 2010 at 09:57:18AM -0400, Vivek Goyal wrote:
+> > > On Tue, Apr 13, 2010 at 01:45:53PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > 
+> > 
+> > Typed wrong email id last time and mail bounced. So here is another
+> > attempt.
+> > 
+> > > [..]
+> > > > -2. Locking
+> > > > +2.6 Locking
+> > > >  
+> > > > -The memory controller uses the following hierarchy
+> > > > +   lock_page_cgroup()/unlock_page_cgroup() should not be called under
+> > > > +   mapping->tree_lock.
+> > > >  
+> > > 
+> > > Because I never understood very well, I will ask. Why lock_page_cgroup()
+> > > should not be called under mapping->tree_lock?
+> > > 
 > 
-> > Based on libata pata_ali host driver.
+> The closest reference I can find to a conversation regarding this is
 > 
->    libata has different mode programming code where first always the PIO 
-> mode and then DMA mode is set. With IDE core, the order can be 
-> different, PIO mode programming shouldn't affect DMA mode bits -- and 
-> does not affect it in the other drivers...
+> http://linux.derkeiler.com/Mailing-Lists/Kernel/2009-05/msg05158.html
+> 
 
-This was just a tiny part of larger patchset preparing alim15x3 for
-conversion to ide2libata framework and it seems the problem is only
-affecting user-initiated transfer mode changes (which are strongly
-discouraged anyway) as both libata and IDE core use quite similar
-transfer mode programming sequence by default.
+Thanks Balbir. So basically idea is that page_cgroup_lock() does not
+disable interrupts hence can be interrupted. So don't do
+lock_page_cgroup() in interrupt context at all otherwise it can lead to
+various kind of deadlock scenarios.
 
-However thanks for noticing the issue, I will fix it for both drivers
-during the next update of atang tree (unless somebody sends me a patch
-sooner).
---
-Bartlomiej Zolnierkiewicz
+One of those scenarios is lock_page_cgroup() under mapping->tree_lock.
+
+That helps. Thanks
+
+Vivek
+
+> -- 
+> 	Three Cheers,
+> 	Balbir
