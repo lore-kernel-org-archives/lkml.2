@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071Ab0DMWcP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 18:32:15 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:62805 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab0DMWcN (ORCPT
+	id S1752372Ab0DMWlk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 18:41:40 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:29027 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481Ab0DMWli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 18:32:13 -0400
-Message-ID: <4BC4F03C.1020707@oracle.com>
-Date: Tue, 13 Apr 2010 15:29:16 -0700
+	Tue, 13 Apr 2010 18:41:38 -0400
+Message-ID: <4BC4F287.9000002@oracle.com>
+Date: Tue, 13 Apr 2010 15:39:03 -0700
 From: Yinghai <yinghai.lu@oracle.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
@@ -22,50 +22,55 @@ CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
        Thomas Renninger <trenn@suse.de>
 Subject: Re: [PATCH -v2 1/2] x86: Reserve [0xa0000, 0x100000] in e820 map
-References: <20100409223532.GC11130@hexapodia.org>	 <4BBFB1D8.6090802@oracle.com> <20100410000030.GE11130@hexapodia.org>	 <4BBFD019.9040405@oracle.com> <20100410014308.GG11130@hexapodia.org>	 <4BBFD8EF.6020108@oracle.com> <20100410015711.GH11130@hexapodia.org>	 <4BBFE66C.2040603@oracle.com> <20100412185416.GA19959@hexapodia.org>	 <4BC375D9.4040503@oracle.com> <20100412200224.GO11130@hexapodia.org>	 <4BC39F67.4090407@oracle.com> <1271192527.6035.44.camel@dc7800.home> <4BC4DD85.5030203@zytor.com> <4BC4DDEA.60202@oracle.com> <4BC4DFAD.9020600@zytor.com> <4BC4E55B.7000103@oracle.com> <4BC4E8FB.8060802@zytor.com>
-In-Reply-To: <4BC4E8FB.8060802@zytor.com>
+References: <20100409223532.GC11130@hexapodia.org>	 <4BBFB1D8.6090802@oracle.com> <20100410000030.GE11130@hexapodia.org>	 <4BBFD019.9040405@oracle.com> <20100410014308.GG11130@hexapodia.org>	 <4BBFD8EF.6020108@oracle.com> <20100410015711.GH11130@hexapodia.org>	 <4BBFE66C.2040603@oracle.com> <20100412185416.GA19959@hexapodia.org>	 <4BC375D9.4040503@oracle.com> <20100412200224.GO11130@hexapodia.org>	 <4BC39F67.4090407@oracle.com> <1271192527.6035.44.camel@dc7800.home> <4BC4DD85.5030203@zytor.com> <4BC4DDEA.60202@oracle.com> <4BC4DFAD.9020600@zytor.com> <4BC4E55B.7000103@oracle.com> <4BC4E8FB.8060802@zytor.com> <4BC4F03C.1020707@oracle.com>
+In-Reply-To: <4BC4F03C.1020707@oracle.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4BC4F0C8.0140:SCFMA4539814,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090209.4BC4F2DD.00A9:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13/2010 02:58 PM, H. Peter Anvin wrote:
-> On 04/13/2010 02:42 PM, Yinghai wrote:
->> On 04/13/2010 02:18 PM, H. Peter Anvin wrote:
->>> On 04/13/2010 02:11 PM, Yinghai wrote:
+On 04/13/2010 03:29 PM, Yinghai wrote:
+> On 04/13/2010 02:58 PM, H. Peter Anvin wrote:
+>> On 04/13/2010 02:42 PM, Yinghai wrote:
+>>> On 04/13/2010 02:18 PM, H. Peter Anvin wrote:
+>>>> On 04/13/2010 02:11 PM, Yinghai wrote:
+>>>>>>
+>>>>>> I guess the real question (which I haven't looked at myself) is if the
+>>>>>> E820_RESERVED -> BUSY will cause an explicitly assigned BAR from being
+>>>>>> moved.  That's bad, not so much for this particular range, but from BARs
+>>>>>> which may be assigned by SMM.  Hacking that up in a simulator
+>>>>>> (Qemu/Bochs) and testing it is probably on the to do list...
 >>>>>
->>>>> I guess the real question (which I haven't looked at myself) is if the
->>>>> E820_RESERVED -> BUSY will cause an explicitly assigned BAR from being
->>>>> moved.  That's bad, not so much for this particular range, but from BARs
->>>>> which may be assigned by SMM.  Hacking that up in a simulator
->>>>> (Qemu/Bochs) and testing it is probably on the to do list...
+>>>>> no, if some device BAR fall in that range, it should still use that range, and will not be relocated.
+>>>>>
+>>>>> will update the change log.
+>>>>>
 >>>>
->>>> no, if some device BAR fall in that range, it should still use that range, and will not be relocated.
->>>>
->>>> will update the change log.
->>>>
+>>>> Good, that's what we want.
 >>>
->>> Good, that's what we want.
+>>> the driver for that device later can not use pci_request_region(). because that region is BUSY already.
+>>>
 >>
->> the driver for that device later can not use pci_request_region(). because that region is BUSY already.
+>> That's not good (in general - for devices in this particular range it's
+>> not such a big deal, but it is potentially really bad for devices marked
+>> reserved for them not to be moved.)
 >>
+>> We have talked about a need to resolve this before.
 > 
-> That's not good (in general - for devices in this particular range it's
-> not such a big deal, but it is potentially really bad for devices marked
-> reserved for them not to be moved.)
+> current code for mmio that is just below 4g, if some PCI BAR use that range, and those range is falling into E820_RESERVED,
 > 
-> We have talked about a need to resolve this before.
+> those range still can be claimed, but driver can not use pci_request_region() later.
+should be
+but driver can use pci_request_region() later.
 
-current code for mmio that is just below 4g, if some PCI BAR use that range, and those range is falling into E820_RESERVED,
+> 
+> So We still
+> 1. rely that BIOS does not reserve the [0xa0000, 0xe0000)
+> 2. kernel only reserve the range when we make sure these is legacy device on that range.
+> 
+> YH
 
-those range still can be claimed, but driver can not use pci_request_region() later.
-
-So We still
-1. rely that BIOS does not reserve the [0xa0000, 0xe0000)
-2. kernel only reserve the range when we make sure these is legacy device on that range.
-
-YH
