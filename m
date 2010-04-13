@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab0DMAu2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 20:50:28 -0400
-Received: from mga03.intel.com ([143.182.124.21]:15455 "EHLO mga03.intel.com"
+	id S1754495Ab0DMBHt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 21:07:49 -0400
+Received: from gate.crashing.org ([63.228.1.57]:54824 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754441Ab0DMAu0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 20:50:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.52,193,1270450800"; 
-   d="scan'208";a="264861321"
-From: "Zhang, Xiantao" <xiantao.zhang@intel.com>
-To: Avi Kivity <avi@redhat.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       "Yang, Xiaowei" <xiaowei.yang@intel.com>,
-       "Dong, Eddie" <eddie.dong@intel.com>, "Li, Xin" <xin.li@intel.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Mike Galbraith <efault@gmx.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 13 Apr 2010 08:50:08 +0800
-Subject: RE: VM performance issue in KVM guests.
-Thread-Topic: VM performance issue in KVM guests.
-Thread-Index: AcraCyn2aeoqd45yTZ2+fSecFMG8/wAAhCoQ
-Message-ID: <EB8593BCECAB3D40A8248BE0B6400A38469046C1@shzsmsx502.ccr.corp.intel.com>
-References: <EB8593BCECAB3D40A8248BE0B6400A3846903F4C@shzsmsx502.ccr.corp.intel.com>
- <4BC0D125.9050108@redhat.com>
- <EB8593BCECAB3D40A8248BE0B6400A384690419B@shzsmsx502.ccr.corp.intel.com>
- <4BC2C07B.4040607@redhat.com>
-In-Reply-To: <4BC2C07B.4040607@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1754407Ab0DMBHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 21:07:47 -0400
+Subject: Re: [PATCH 01/13] powerpc: Add rcu_read_lock() to gup_fast()
+ implementation
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20100408192722.643778654@chello.nl>
+References: <20100408191737.296180458@chello.nl>
+	 <20100408192722.643778654@chello.nl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 13 Apr 2010 11:05:31 +1000
+Message-ID: <1271120731.13059.6.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avi Kivity wrote:
-> On 04/12/2010 05:04 AM, Zhang, Xiantao wrote:
->> 
->>> What was the performance hit?  What was your I/O setup (image
->>> format, using aio?) 
->>> 
->> The issue only happens when vcpu number is over-committed(e.g.
->> vcpu/pcpu>2) and physical cpus are saturated. For example,  when run
->> webbench in windows OS in this case, its performance drops by 80%. 
->> In our experiment, we are using image file through virtio, and I
->> think aio should be used by default also.    
->> 
+On Thu, 2010-04-08 at 21:17 +0200, Peter Zijlstra wrote:
+> plain text document attachment (powerpc-gup_fast-rcu.patch)
+> The powerpc page table freeing relies on the fact that IRQs hold off
+> an RCU grace period, this is currently true for all existing RCU
+> implementations but is not an assumption Paul wants to support.
 > 
-> Is this on a machine that does pause-loop exits?  The current handing
-> of PLE is very suboptimal.  With proper directed yield we should be
-> much better there.
+> Therefore, also take the RCU read lock along with disabling IRQs to
+> ensure the RCU grace period does at least cover these lookups.
+
+There's a few other places that need a similar fix then. The hash page
+code for example. All the C cases should end up calling the
+find_linux_pte() helper afaik, so we should be able to stick the lock in
+there (and the hugetlbfs variant, find_linux_pte_or_hugepte()).
+
+However, we also have cases of tight asm code walking the page tables,
+such as the tlb miss handler on embedded processors. I don't see how I
+could do that there. IE. I only have a handful of registers to play
+with, no stack, etc...
+
+So we might have to support the interrupt assumption, at least in some
+form, with those guys...
+
+Cheers,
+Ben. 
+
+> Requested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Nick Piggin <npiggin@suse.de>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> ---
+>  arch/powerpc/mm/gup.c |    3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> Without PLE, we need paravirtualized spinlocks, no way around it.
+> Index: linux-2.6/arch/powerpc/mm/gup.c
+> ===================================================================
+> --- linux-2.6.orig/arch/powerpc/mm/gup.c
+> +++ linux-2.6/arch/powerpc/mm/gup.c
+> @@ -142,6 +142,7 @@ int get_user_pages_fast(unsigned long st
+>  	 * So long as we atomically load page table pointers versus teardown,
+>  	 * we can follow the address down to the the page and take a ref on it.
+>  	 */
+> +	rcu_read_lock();
+>  	local_irq_disable();
+>  
+>  	pgdp = pgd_offset(mm, addr);
+> @@ -162,6 +163,7 @@ int get_user_pages_fast(unsigned long st
+>  	} while (pgdp++, addr = next, addr != end);
+>  
+>  	local_irq_enable();
+> +	rcu_read_unlock();
+>  
+>  	VM_BUG_ON(nr != (end - start) >> PAGE_SHIFT);
+>  	return nr;
+> @@ -171,6 +173,7 @@ int get_user_pages_fast(unsigned long st
+>  
+>  slow:
+>  		local_irq_enable();
+> +		rcu_read_unlock();
+>  slow_irqon:
+>  		pr_devel("  slow path ! nr = %d\n", nr);
+>  
+> 
 
-PLE has the ability to eliminate the issue at some extent, and pv solution should be helpful also.  But for windows guests running on machines without PLE, we still needs to enhance host side to resolve the issue.
-
->>>> After analysis about Linux scheduler, we found it is indeed caused
->>>> by the known features of Linux schduler, such as AFFINE_WAKEUPS,
->>>> SYNC_WAKEUPS etc. With these features on, linux schduler often
->>>> tries to schedule the vcpu threads of one guests to one same
->>>> logical processor when vcpus are over-committed and logical
->>>> processors are saturated. Once the vcpu threads of one VM are
->>>> scheduled to the same LP, system performance drops dramatically
->>>> with some workloads(like webbench running in windows OS).
->>> 
->> Since the hit only happens when physical cpus are saturated, and
->> sheduling non-virtualized multiple threads of one process to same
->> processor can benefit the performance due to cache share or other
->> affinities, but you know it hurts performance a lot once schedule
->> two vcpu theads to a same processor due to mutual spin-lock in
->> guests.     
->> 
-> Spin loops need to be addressed first, they are known to kill
-> performance in overcommit situations.
-
-Even in overcommit case, if vcpu threads of one qemu are not scheduled or pulled to the same logical processor, the performance drop is tolerant like Xen's case today. But for KVM, it has to suffer from additional performance loss, since host's scheduler actively pulls these vcpu threads together. 
-Xiantao 
 
