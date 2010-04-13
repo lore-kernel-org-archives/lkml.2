@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848Ab0DMHKE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 03:10:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29977 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750880Ab0DMHKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 03:10:01 -0400
-Message-ID: <4BC41994.7030707@redhat.com>
-Date: Tue, 13 Apr 2010 15:13:24 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
+	id S1752069Ab0DMH0V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 03:26:21 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:62150 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751260Ab0DMH0U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 03:26:20 -0400
+Message-ID: <4BC41C97.7090301@monstr.eu>
+Date: Tue, 13 Apr 2010 09:26:15 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-CC: opurdila@ixiacom.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       nhorman@tuxdriver.com, davem@davemloft.net, ebiederm@xmission.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [Patch 3/3] net: reserve ports for applications using fixed port
- numbers
-References: <20100412100744.5302.92442.sendpatchset@localhost.localdomain> <20100412100816.5302.74919.sendpatchset@localhost.localdomain> <201004130121.o3D1Lhh7099571@www262.sakura.ne.jp>
-In-Reply-To: <201004130121.o3D1Lhh7099571@www262.sakura.ne.jp>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: "Steven J. Magnani" <steve@digidescorp.com>
+CC: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] microblaze: Quiet section mismatch warnings
+References: <1270868617-16551-1-git-send-email-steve@digidescorp.com>
+In-Reply-To: <1270868617-16551-1-git-send-email-steve@digidescorp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tetsuo Handa wrote:
-> Hello.
+Steven J. Magnani wrote:
+> _start is located in .text, which causes mismatch warnings with 
+> machine_early_init() and start_kernel() in .init.text.
 > 
->> --- linux-2.6.orig/drivers/infiniband/core/cma.c
->> +++ linux-2.6/drivers/infiniband/core/cma.c
->> @@ -1980,6 +1980,8 @@ retry:
->>  	/* FIXME: add proper port randomization per like inet_csk_get_port */
->>  	do {
->>  		ret = idr_get_new_above(ps, bind_list, next_port, &port);
->> +		if (!ret && inet_is_reserved_local_port(port))
->> +			ret = -EAGAIN;
->>  	} while ((ret == -EAGAIN) && idr_pre_get(ps, GFP_KERNEL));
->>  
->>  	if (ret)
->>
-> I think above part is wrong. Below program
-...
-> 
-> This result suggests that above loop will continue until idr_pre_get() fails
-> due to out of memory if all ports were reserved.
-> 
-> Also, if idr_get_new_above() returned 0, bind_list (which is a kmalloc()ed
-> pointer) is already installed into a free slot (see comment on
-> idr_get_new_above_int()). Thus, simply calling idr_get_new_above() again will
-> install the same pointer into multiple slots. I guess it will malfunction later.
+> Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+> ---
 
-Thanks for testing!
+Added to next branch. I also fix mismatch for MMU kernel
 
-How about:
+Thanks.
+Michal
 
-+		if (!ret && inet_is_reserved_local_port(port))
-+			ret = -EBUSY;
-
-? So that it will break the loop and return error.
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
