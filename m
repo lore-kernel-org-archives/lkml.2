@@ -1,45 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab0DMKCD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 06:02:03 -0400
-Received: from stinky.trash.net ([213.144.137.162]:46005 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752082Ab0DMKCA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 06:02:00 -0400
-Message-ID: <4BC44117.80901@trash.net>
-Date: Tue, 13 Apr 2010 12:01:59 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090701)
+	id S1752836Ab0DMKCL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 06:02:11 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:39645 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752781Ab0DMKCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 06:02:09 -0400
+Date: Tue, 13 Apr 2010 12:02:07 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Chad Talbott <ctalbott@google.com>,
+       Divyesh Shah <dpshah@google.com>,
+       linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2 V3] [RESEND] io-controller: add per device weight
+	rule  support
+Message-ID: <20100413100207.GZ27497@kernel.dk>
+References: <4BC42475.8080605@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Alexey Dobriyan <adobriyan@gmail.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       shemminger@vyatta.com, bhutchings@solarflare.com, andreas@fatal.se,
-       hadi@cyberus.ca, hideaki@yoshifuji.org
-Subject: Re: [PATCH] xtables: make XT_ALIGN() usable in exported headers by
- exporting __ALIGN_KERNEL()
-References: <20100407162245.GA4557@x200> <4BC437C6.8020602@trash.net>
-In-Reply-To: <4BC437C6.8020602@trash.net>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BC42475.8080605@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patrick McHardy wrote:
-> Alexey Dobriyan wrote:
->> XT_ALIGN() was rewritten through ALIGN() by commit 42107f5009da223daa800d6da6904d77297ae829
->> "netfilter: xtables: symmetric COMPAT_XT_ALIGN definition".
->> ALIGN() is not exported in userspace headers, which created compile problem for tc(8)
->> and will create problem for iptables(8).
->>
->> We can't export generic looking name ALIGN() but we can export less generic
->> __ALIGN_KERNEL() (suggested by Ben Hutchings).
->> Google knows nothing about __ALIGN_KERNEL().
->>
->> COMPAT_XT_ALIGN() changed for symmetry.
+On Tue, Apr 13 2010, Gui Jianfeng wrote:
+> Hi
 > 
-> Since there haven't been any objections, I've applied your patch.
+> This patchset adds a new interface "weight_device" for blkio controller,
+> and has already rebased to block tree for-2.6.35 branch.
 
-This breaks compilation by removing __ALIGN_MASK(). Please fix this up.
+Applied
+
+-- 
+Jens Axboe
+
