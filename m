@@ -1,203 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071Ab0DMTgR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 15:36:17 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:54029 "EHLO
-	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431Ab0DMTgQ convert rfc822-to-8bit (ORCPT
+	id S1752420Ab0DMTiu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 15:38:50 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:61785 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737Ab0DMTit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 15:36:16 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Tue, 13 Apr 2010 15:38:49 -0400
+Date: Tue, 13 Apr 2010 15:38:01 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Manfred Spraul <manfred@colorfullife.com>, zach.brown@oracle.com,
+       jens.axboe@oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ipc semaphores: reduce ipc_lock contention in
+ semtimedop
+Message-ID: <20100413193801.GT13327@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Nick Piggin <npiggin@suse.de>,
+	Manfred Spraul <manfred@colorfullife.com>, zach.brown@oracle.com,
+	jens.axboe@oracle.com, linux-kernel@vger.kernel.org
+References: <1271098163-3663-1-git-send-email-chris.mason@oracle.com>
+ <1271098163-3663-2-git-send-email-chris.mason@oracle.com>
+ <4BC4A6B2.1090906@colorfullife.com>
+ <20100413173941.GI13327@think>
+ <20100413180945.GD5683@laptop>
+ <20100413181937.GM13327@think>
+ <20100413185756.GE5683@laptop>
+ <20100413190110.GR13327@think>
+ <20100413192551.GF5683@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 2.6.34-rc4 1/8] mx5: Add registration of GPIOs for MX51 Babbage board.
-Date: Tue, 13 Apr 2010 12:36:07 -0700
-Message-ID: <86A0E76937111F4C92FABEC0A2098851046C7A62@az33exm21>
-In-Reply-To: <20100413164532.GM30801@buzzloop.caiaq.de>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 2.6.34-rc4 1/8] mx5: Add registration of GPIOs for MX51 Babbage board.
-Thread-Index: AcrbKOhShfGzQjOaTXu05eQ4SmkypAAFxntQ
-References: <1271175030-3635-1-git-send-email-Dinh.Nguyen@freescale.com> <20100413164532.GM30801@buzzloop.caiaq.de>
-From: "Nguyen Dinh-R00091" <R00091@freescale.com>
-To: "Daniel Mack" <daniel@caiaq.de>
-Cc: <linux-kernel@vger.kernel.org>, <amit.kucheria@canonical.com>,
-       <linux@arm.linux.org.uk>, <s.hauer@pengutronix.de>,
-       <grant.likely@secretlab.ca>,
-       "Herring Robert-RA7055" <RA7055@freescale.com>,
-       <linux-arm-kernel@lists.infradead.org>, <bryan.wu@canonical.com>,
-       <valentin.longchamp@epfl.ch>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100413192551.GF5683@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4BC4C842.013E:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
+On Wed, Apr 14, 2010 at 05:25:51AM +1000, Nick Piggin wrote:
+> On Tue, Apr 13, 2010 at 03:01:10PM -0400, Chris Mason wrote:
+> > On Wed, Apr 14, 2010 at 04:57:56AM +1000, Nick Piggin wrote:
+> > > Yes, because it's not just a theoretical livelock, it can be basically
+> > > a certainty, given the right pattern of semops.
+> > > 
+> > > You could have two mostly-independent groups of processes, each taking
+> > > and releasing a different sem, which are always contended (eg. if it is
+> > > being used for a producer-consumer type situation, or even just mutual
+> > > exclusion with high contention).
+> > > 
+> > > Then you could have some overall management process for example which
+> > > tries to take both sems. It will never get it.
+> > 
+> > Ok, fair enough, I'll add the sequence number.
+> > 
+> > > 
+> > > 
+> > > > > I was looking at doing a sequence number to be able to sort these, but
+> > > > > it ended up getting over complex (and SAP was only using simple ops so
+> > > > > it didn't seem to need much better).
+> > > > > 
+> > > > > We want to be careful not to change semantics at all. And it gets
+> > > > > tricky quickly :( What about Zach's simpler wakeup API?
+> > > > 
+> > > > Yeah, that's why my patches include code to handle userland sending
+> > > > duplicate semids.
+> > > 
+> > > Duplicate semids? What do you mean?
+> > 
+> > Sorry, semnums...index into the array of semaphores.
+> 
+> OK, I wonder just how much it helps, and what.
 
------Original Message-----
-From: Daniel Mack [mailto:daniel@caiaq.de] 
-Sent: Tuesday, April 13, 2010 11:46 AM
-To: Nguyen Dinh-R00091
-Cc: linux-kernel@vger.kernel.org; amit.kucheria@canonical.com;
-linux@arm.linux.org.uk; s.hauer@pengutronix.de;
-grant.likely@secretlab.ca; Herring Robert-RA7055;
-linux-arm-kernel@lists.infradead.org; bryan.wu@canonical.com;
-valentin.longchamp@epfl.ch
-Subject: Re: [PATCH 2.6.34-rc4 1/8] mx5: Add registration of GPIOs for
-MX51 Babbage board.
+Detecting the dups just keeps me from deadlocking.  I'm locking each
+individual semaphore in sequence, so if userland does something strange
+and sends two updates to the same semaphore, the code detects that and
+only locks the first one.
 
-First, I'm glad to see Freescale sending patches for mainline code -
-thanks for doing this :)
+> 
+> 
+> > > >  Zach's simpler API is cooking too, but if I can get
+> > > > this done without insane complexity it helps with more than just the
+> > > > post/wait oracle workload.
+> > > 
+> > > Iam worried about complexity and slowing other cases, given that Oracle
+> > > DB seems willing to adapt to the (better suited) new API. So I'd be
+> > > interested to know what it helps outside Oracle.
+> > > 
+> > 
+> > Sure, I'd hope that your benchmark from last time around is faster now.
+> 
+> I didn't actually reproduce it here, I think it was a customer or
+> partner workload. But SAP only seemed to have one contended semnum in
+> its array, and it was being operated on with "simple" semops (so that's
+> about as far as the patches went).
+> 
+> I didn't notice anything that should make that go faster?
 
-Other people might give more detailed feedback, but I'll still comment
-on some things that caught my eye.
+Since I'm avoiding the ipc lock while operating on the array, it'll help
+any workload that hits on two or more semaphores in the array at
+once.
 
-[Dinh-FSL] - Thanks Daniel!
+> 
+> Yes, with such a workload, using semops is basically legacy and simple
+> mutexes should work better. So I'm not outright against improving sysv
+> sem performance for more complex cases where nothing else we have works
+> as well.
+> 
 
-On Tue, Apr 13, 2010 at 11:10:24AM -0500, Dinh.Nguyen@freescale.com
-wrote:
+I'm not in a hurry to overhaul a part of the kernel that has been stable
+for a long time.  But it really needs some love I think.  I'll have more
+numbers from a tpc run later this week.
 
-[...]
-
-> index d6fd396..73f2342 100644
-> --- a/arch/arm/mach-mx5/devices.c
-> +++ b/arch/arm/mach-mx5/devices.c
-> @@ -1,5 +1,6 @@
->  /*
->   * Copyright 2009 Amit Kucheria <amit.kucheria@canonical.com>
-> + * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights
-Reserved.
->   *
->   * The code contained herein is licensed under the GNU General Public
->   * License. You may obtain a copy of the GNU General Public License 
-> @@ -11,7 +12,9 @@
->  
->  #include <linux/platform_device.h>
->  #include <mach/hardware.h>
-> +#include <mach/gpio.h>
->  #include <mach/imx-uart.h>
-> +#include <mach/irqs.h>
->  
->  static struct resource uart0[] = {
->  	{
-> @@ -89,8 +92,34 @@ struct platform_device mxc_fec_device = {
->  	.resource = mxc_fec_resources,
->  };
->  
-> -/* Dummy definition to allow compiling in AVIC and TZIC 
-> simultaneously */
-> +struct mxc_gpio_port mxc_gpio_ports[] = {
-> +	{
-> +		.chip.label = "gpio-0",
-> +		.base = MX51_IO_ADDRESS(MX51_GPIO1_BASE_ADDR),
-> +		.irq = MX51_MXC_INT_GPIO1_LOW,
-> +		.virtual_irq_start = MXC_GPIO_IRQ_START
-> +	},
-> +	{
-> +		.chip.label = "gpio-1",
-> +		.base = MX51_IO_ADDRESS(MX51_GPIO2_BASE_ADDR),
-> +		.irq = MX51_MXC_INT_GPIO2_LOW,
-> +		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 1
-> +	},
-> +	{
-> +		.chip.label = "gpio-2",
-> +		.base = MX51_IO_ADDRESS(MX51_GPIO3_BASE_ADDR),
-> +		.irq = MX51_MXC_INT_GPIO3_LOW,
-> +		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 2
-> +	},
-> +	{
-> +		.chip.label = "gpio-3",
-> +		.base = MX51_IO_ADDRESS(MX51_GPIO4_BASE_ADDR),
-> +		.irq = MX51_MXC_INT_GPIO4_LOW,
-> +		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 3
-> +	},
-> +};
-> +
->  int __init mxc_register_gpios(void)
->  {
-> -	return 0;
-> +	return mxc_gpio_init(mxc_gpio_ports, 4);
-
-Use ARRAY_SIZE() instead of the hard-coded constant.
-[Dinh-FSL]: will be corrected
-
-> diff --git a/arch/arm/plat-mxc/gpio.c b/arch/arm/plat-mxc/gpio.c index
-
-> 70b2389..1df23b2 100644
-> --- a/arch/arm/plat-mxc/gpio.c
-> +++ b/arch/arm/plat-mxc/gpio.c
-> @@ -3,7 +3,7 @@
->   * Copyright 2008 Juergen Beisert, kernel@pengutronix.de
->   *
->   * Based on code from Freescale,
-> - * Copyright 2004-2006 Freescale Semiconductor, Inc. All Rights
-Reserved.
-> + * Copyright (C) 2004-2010 Freescale Semiconductor, Inc. All Rights
-Reserved.
->   *
->   * This program is free software; you can redistribute it and/or
->   * modify it under the terms of the GNU General Public License @@ 
-> -38,7 +38,6 @@ static int gpio_table_size;
->  #define GPIO_ICR2	(cpu_is_mx1_mx2() ? 0x2C : 0x10)
->  #define GPIO_IMR	(cpu_is_mx1_mx2() ? 0x30 : 0x14)
->  #define GPIO_ISR	(cpu_is_mx1_mx2() ? 0x34 : 0x18)
-> -#define GPIO_ISR	(cpu_is_mx1_mx2() ? 0x34 : 0x18)
->  
->  #define GPIO_INT_LOW_LEV	(cpu_is_mx1_mx2() ? 0x3 : 0x0)
->  #define GPIO_INT_HIGH_LEV	(cpu_is_mx1_mx2() ? 0x2 : 0x1)
-> @@ -171,6 +170,25 @@ static void mxc_gpio_irq_handler(struct
-mxc_gpio_port *port, u32 irq_stat)
->  	}
->  }
->  
-> +/* one interrupt *per* gpio port */
-> +static void mx5_gpio_irq_handler(u32 irq, struct irq_desc *desc) {
-> +	u32 irq_stat;
-> +	u32 mask = 0xFFFFFFFF;
-> +	struct mxc_gpio_port *port = (struct mxc_gpio_port 
-> +*)get_irq_data(irq);
-> +
-> +#ifdef MXC_GPIO_SPLIT_IRQ_2
-
-Where is that macro defined?
-[Dinh-FSL] - This macro is optional so that the interrupts can be broken
-up into 2 sets.
-
-> +	if (irq == port->irq)
-> +		mask = 0x0000FFFF;
-> +	else
-> +		mask = 0xFFFF0000;
-> +#endif
-> +
-> +	irq_stat = __raw_readl(port->base + GPIO_ISR) &
-> +			(__raw_readl(port->base + GPIO_IMR) & mask);
-> +	mxc_gpio_irq_handler(port, irq_stat); }
-> +
->  /* MX1 and MX3 has one interrupt *per* gpio port */  static void 
-> mx3_gpio_irq_handler(u32 irq, struct irq_desc *desc)  { @@ -289,11 
-> +307,13 @@ int __init mxc_gpio_init(struct mxc_gpio_port *port, int
-cnt)
->  		/* its a serious configuration bug when it fails */
->  		BUG_ON( gpiochip_add(&port[i].chip) < 0 );
->  
-> -		if (cpu_is_mx1() || cpu_is_mx3() || cpu_is_mx25()) {
-> -			/* setup one handler for each entry */
-> +		/* setup one handler for each entry */
-> +		if (cpu_is_mx1() || cpu_is_mx3() || cpu_is_mx25())
->  			set_irq_chained_handler(port[i].irq,
-mx3_gpio_irq_handler);
-> -			set_irq_data(port[i].irq, &port[i]);
-> -		}
-> +		else if (cpu_is_mx51())
-> +			set_irq_chained_handler(port[i].irq,
-mx5_gpio_irq_handler);
-> +
-> +		set_irq_data(port[i].irq, &port[i]);
->  	}
->  
->  	if (cpu_is_mx2()) {
-> --
-> 1.6.0.4
+-chris
 
