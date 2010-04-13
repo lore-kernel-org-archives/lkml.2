@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753610Ab0DMVCd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 17:02:33 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:7066 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752674Ab0DMVCb (ORCPT
+	id S1753866Ab0DMVCy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 17:02:54 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:19802 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752944Ab0DMVCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 17:02:31 -0400
-Subject: Re: [PATCH -v2 1/2] x86: Reserve [0xa0000, 0x100000] in e820 map
+	Tue, 13 Apr 2010 17:02:51 -0400
+Subject: Re: [PATCH -v2 2/2] x86,pci, acpi: Inherent BUSY flag when
+	setup_resource for root bus
 From: Bjorn Helgaas <bjorn.helgaas@hp.com>
 To: Yinghai <yinghai.lu@oracle.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
@@ -18,17 +19,17 @@ Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
        "x86@kernel.org" <x86@kernel.org>,
        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
        Thomas Renninger <trenn@suse.de>
-In-Reply-To: <4BC39F67.4090407@oracle.com>
+In-Reply-To: <4BC39FAF.4030808@oracle.com>
 References: <20100409223532.GC11130@hexapodia.org>
 	 <4BBFB1D8.6090802@oracle.com> <20100410000030.GE11130@hexapodia.org>
 	 <4BBFD019.9040405@oracle.com> <20100410014308.GG11130@hexapodia.org>
 	 <4BBFD8EF.6020108@oracle.com> <20100410015711.GH11130@hexapodia.org>
 	 <4BBFE66C.2040603@oracle.com> <20100412185416.GA19959@hexapodia.org>
 	 <4BC375D9.4040503@oracle.com> <20100412200224.GO11130@hexapodia.org>
-	 <4BC39F67.4090407@oracle.com>
+	 <4BC39FAF.4030808@oracle.com>
 Content-Type: text/plain
-Date: Tue, 13 Apr 2010 15:02:07 -0600
-Message-Id: <1271192527.6035.44.camel@dc7800.home>
+Date: Tue, 13 Apr 2010 15:02:28 -0600
+Message-Id: <1271192548.6035.46.camel@dc7800.home>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
@@ -36,114 +37,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-04-12 at 15:32 -0700, Yinghai wrote:
-> Update e820 at first, and later put them resource tree.
+On Mon, 2010-04-12 at 15:33 -0700, Yinghai wrote:
+> So make pci root resource from _CRS honor the range We reserve in e820 below 1M
+> then  will not assign them to unsigned pci BAR
 > 
-> -V2: reserved that early, no PCI BAR can use it, force them to get new one
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Guenter Roeck <guenter.roeck@ericsson.com>
-> Cc: Andy Isaacson <adi@hexapodia.org>
-> Tested-by: Andy Isaacson <adi@hexapodia.org>
-> Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>
-> Acked-by: H. Peter Anvin <hpa@zytor.com>
-> 
-> ---
->  arch/x86/include/asm/setup.h |    1 -
->  arch/x86/kernel/head32.c     |    1 -
->  arch/x86/kernel/setup.c      |   19 +------------------
->  3 files changed, 1 insertion(+), 20 deletions(-)
-> 
-> Index: linux-2.6/arch/x86/include/asm/setup.h
+> -v2: let pci_bus_alloc_resource() honor IORESOURCE_BUSY
+>      driver can not use those range, so skip it
+
+This -v2 text doesn't belong in the changelog.  If you need it, it
+should be in a cover message so it doesn't clutter the permanent git
+logs.
+
+> Index: linux-2.6/arch/x86/pci/acpi.c
 > ===================================================================
-> --- linux-2.6.orig/arch/x86/include/asm/setup.h
-> +++ linux-2.6/arch/x86/include/asm/setup.h
-> @@ -44,7 +44,6 @@ static inline void visws_early_detect(vo
->  extern unsigned long saved_video_mode;
->  
->  extern void reserve_standard_io_resources(void);
-> -extern void i386_reserve_resources(void);
->  extern void setup_default_timer_irq(void);
->  
->  #ifdef CONFIG_X86_MRST
-> Index: linux-2.6/arch/x86/kernel/head32.c
+> --- linux-2.6.orig/arch/x86/pci/acpi.c
+> +++ linux-2.6/arch/x86/pci/acpi.c
+> @@ -175,6 +175,10 @@ setup_resource(struct acpi_resource *acp
+>  			"conflicts with %s %pR\n",
+>  			res, conflict->name, conflict);
+>  	} else {
+> +		/* In case it falls in big reserved region */
+> +		if (res->parent->flags & IORESOURCE_BUSY)
+> +			res->flags |= IORESOURCE_BUSY;
+> +
+>  		pci_bus_add_resource(info->bus, res, 0);
+>  		info->res_num++;
+>  		if (addr.translation_offset)
+> Index: linux-2.6/drivers/pci/bus.c
 > ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/head32.c
-> +++ linux-2.6/arch/x86/kernel/head32.c
-> @@ -22,7 +22,6 @@ static void __init i386_default_early_se
->  {
->  	/* Initilize 32bit specific setup functions */
->  	x86_init.resources.probe_roms = probe_roms;
-> -	x86_init.resources.reserve_resources = i386_reserve_resources;
->  	x86_init.mpparse.setup_ioapic_ids = setup_ioapic_ids_from_mpc;
+> --- linux-2.6.orig/drivers/pci/bus.c
+> +++ linux-2.6/drivers/pci/bus.c
+> @@ -103,6 +103,10 @@ pci_bus_alloc_resource(struct pci_bus *b
+>  		if (!r)
+>  			continue;
 >  
->  	reserve_ebda_region();
+> +		/* Driver can not reserve it later, so don't use it */
+> +		if (r->flags & IORESOURCE_BUSY)
+> +			continue;
+> +
+>  		/* type_mask must match */
+>  		if ((res->flags ^ r->flags) & type_mask)
+>  			continue;
 
-I like the fact that this makes x86_64 and x86_32 handle the legacy VGA
-framebuffer the same way.
+I think this makes sense, but I think it should be in two separate
+patches.  The first would be the pci_bus_alloc_resource() change, which
+is of interest to all architectures, with a changelog like this:
 
-What about arch/x86/kernel/probe_roms_32.c?  That deals with expansion
-ROMs in the 0xc0000-0xfffff range, including the VGA ROM.  We only build
-it for x86_32; is that correct, or should it be unified, too?
+  PCI: don't allocate from a BUSY bus resource
 
-> Index: linux-2.6/arch/x86/kernel/setup.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/setup.c
-> +++ linux-2.6/arch/x86/kernel/setup.c
-> @@ -693,7 +693,7 @@ static void __init trim_bios_range(void)
->  	 * area (640->1Mb) as ram even though it is not.
->  	 * take them out.
->  	 */
-> -	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
-> +	e820_add_region(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RESERVED);
+  Drivers typically use pci_request_regions() to reserve the resources
+  they use, but that fails if the resource is already busy.  Therefore,
+  we should ignore busy resources when we're assigning resources to a
+  device.
 
-Let me see if I understand this.  On Andy's machine, the e820 map
-doesn't mention the 0xa0000-0xf0000 range at all:
+and the second would be:
 
-  BIOS-e820: 0000000000000000 - 000000000009ec00 (usable)
-  BIOS-e820: 00000000000f0000 - 0000000000100000 (reserved)
+  x86/PCI: host bridge windows inherit BUSY flag from parent
 
-e820_reserve_resources() inserts resources for some e820 entries (those
-that start before 0x100000 or are not E820_RESERVED).  Andy's machine
-didn't supply any e820 entries that cover 0xa0000-0xf0000, so we didn't
-insert any resources there, and PCI assumed that range was available.
+  If a host bridge window falls inside a region the architecture has
+  marked busy, the window should inherit the busy flag so we don't
+  try to assign that region to a device.
 
-This patch adds the [0xa0000-0x100000] range as E820_RESERVED.  Since
-that starts below 0x100000, e820_reserve_resources() will insert a
-corresponding resource marked as BUSY.
+Acked-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
 
-Then the second patch prevents PCI from using that BUSY region to
-allocate resources to devices.
-
-Is my understanding correct?
-
-I don't feel like I know enough about x86 architecture to ack this
-patch, but I don't object to it.
-
-Bjorn
-
->  	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
->  }
->  
-> @@ -1052,20 +1052,3 @@ void __init setup_arch(char **cmdline_p)
->  
->  	mcheck_init();
->  }
-> -
-> -#ifdef CONFIG_X86_32
-> -
-> -static struct resource video_ram_resource = {
-> -	.name	= "Video RAM area",
-> -	.start	= 0xa0000,
-> -	.end	= 0xbffff,
-> -	.flags	= IORESOURCE_BUSY | IORESOURCE_MEM
-> -};
-> -
-> -void __init i386_reserve_resources(void)
-> -{
-> -	request_resource(&iomem_resource, &video_ram_resource);
-> -	reserve_standard_io_resources();
-> -}
-> -
-> -#endif /* CONFIG_X86_32 */
 
