@@ -1,42 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360Ab0DMFx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 01:53:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53085 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750772Ab0DMFxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 01:53:24 -0400
-Message-ID: <4BC4053D.2050805@zytor.com>
-Date: Mon, 12 Apr 2010 22:46:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1751418Ab0DMFy3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 01:54:29 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49704 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750772Ab0DMFy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 01:54:28 -0400
+Message-ID: <4BC406ED.9000008@cn.fujitsu.com>
+Date: Tue, 13 Apr 2010 13:53:49 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-To: Yinghai <yinghai.lu@oracle.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 07/39] lmb: Add lmb_find_area()
-References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>	 <1270793048-23796-8-git-send-email-yinghai@kernel.org>	 <1271131543.13059.53.camel@pasglop>  <4BC3F317.7030702@oracle.com> <1271135239.13059.69.camel@pasglop> <4BC40074.6030604@oracle.com>
-In-Reply-To: <4BC40074.6030604@oracle.com>
+To: Jens Axboe <jens.axboe@oracle.com>
+CC: Divyesh Shah <dpshah@google.com>, vgoyal@redhat.com,
+       linux-kernel@vger.kernel.org, nauman@google.com, ctalbott@google.com
+Subject: Re: [PATCH] blkio: Changes to IO controller additional stats	patches
+References: <20100409032635.24936.21960.stgit@austin.mtv.corp.google.com> <20100409063129.GD10103@kernel.dk>
+In-Reply-To: <20100409063129.GD10103@kernel.dk>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2010 10:26 PM, Yinghai wrote:
+Jens Axboe wrote:
+> On Thu, Apr 08 2010, Divyesh Shah wrote:
+>> that include some minor fixes and addresses all comments.
 > 
-> current generic lmb_find_area() is allocating from high to low.
-> x86 32bit seems have problem with that.
+> Thanks, applied to 2.6.35.
 
-Presumably because it fills up ZONE_DMA.
+Hi Jens,
 
-	-hpa
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Do not see this patch and other IO controller stats patches in 
+for-2.6.35 branch. :)
+
+Thanks,
+Gui
 
