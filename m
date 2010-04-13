@@ -1,107 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab0DMIRS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 04:17:18 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:32990 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495Ab0DMIRP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 04:17:15 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH 1/2] mm: add context argument to shrinker callback
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com
-In-Reply-To: <1271118255-21070-2-git-send-email-david@fromorbit.com>
-References: <1271118255-21070-1-git-send-email-david@fromorbit.com> <1271118255-21070-2-git-send-email-david@fromorbit.com>
-Message-Id: <20100413170653.D10A.A69D9226@jp.fujitsu.com>
+	id S1752020Ab0DMI2B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 04:28:01 -0400
+Received: from cantor.suse.de ([195.135.220.2]:54301 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751307Ab0DMI17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 04:27:59 -0400
+Date: Tue, 13 Apr 2010 10:27:56 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Tony Vroon <tony@linx.net>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
+       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+       pm list <linux-pm@lists.linux-foundation.org>
+Subject: Re: commit 9630bdd9 changes behavior of the poweroff - bug?
+Message-ID: <20100413082756.GA5233@tiehlicka.suse.cz>
+References: <20100401133923.GA4104@tiehlicka.suse.cz>
+ <1270848027.3071.0.camel@localhost>
+ <201004102136.43246.rjw@sisk.pl>
+ <201004130101.54117.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 13 Apr 2010 17:17:08 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004130101.54117.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index e70f21b..7d48942 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -982,11 +982,11 @@ static inline void sync_mm_rss(struct task_struct *task, struct mm_struct *mm)
->  /*
->   * A callback you can register to apply pressure to ageable caches.
->   *
-> - * 'shrink' is passed a count 'nr_to_scan' and a 'gfpmask'.  It should
-> - * look through the least-recently-used 'nr_to_scan' entries and
-> - * attempt to free them up.  It should return the number of objects
-> - * which remain in the cache.  If it returns -1, it means it cannot do
-> - * any scanning at this time (eg. there is a risk of deadlock).
-> + * 'shrink' is passed a context 'ctx', a count 'nr_to_scan' and a 'gfpmask'.
-> + * It should look through the least-recently-used 'nr_to_scan' entries and
-> + * attempt to free them up.  It should return the number of objects which
-> + * remain in the cache.  If it returns -1, it means it cannot do any scanning
-> + * at this time (eg. there is a risk of deadlock).
->   *
->   * The 'gfpmask' refers to the allocation we are currently trying to
->   * fulfil.
-> @@ -995,7 +995,8 @@ static inline void sync_mm_rss(struct task_struct *task, struct mm_struct *mm)
->   * querying the cache size, so a fastpath for that case is appropriate.
->   */
->  struct shrinker {
-> -	int (*shrink)(int nr_to_scan, gfp_t gfp_mask);
-> +	int (*shrink)(void *ctx, int nr_to_scan, gfp_t gfp_mask);
-> +	void *ctx;	/* user callback context */
->  	int seeks;	/* seeks to recreate an obj */
+On Tue 13-04-10 01:01:54, Rafael J. Wysocki wrote:
+> On Saturday 10 April 2010, Rafael J. Wysocki wrote:
+> > On Friday 09 April 2010, Tony Vroon wrote:
+> > > On Fri, 2010-04-09 at 22:42 +0200, Rafael J. Wysocki wrote:
+> > > > Please check if the patch below changes anything.
+> > > >  drivers/acpi/wakeup.c |    4 ++--
+> > > >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > > 
+> > > That didn't change the behaviour for me, sorry.
+> > 
+> > Well, I would be sorry if it did, because the patch removed some useful code. :-)
+> > 
+> > > (I made sure to go through a full power down session before trying the
+> > > patched kernel)
+> > 
+> > Thanks for testing.  So it looks like we don't disable the GPE during power off.
+> > 
+> > I'll try to figure out what's going on, please stay tuned.
+> 
+> Can you please check if the patch below changes the behavior?
+
+Unfortunately, it didn't help either (I have tried on top of the fresh
+rc4).
+
+> 
+> Rafael
+> 
+> ---
+>  drivers/acpi/wakeup.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> Index: linux-2.6/drivers/acpi/wakeup.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/acpi/wakeup.c
+> +++ linux-2.6/drivers/acpi/wakeup.c
+> @@ -63,17 +63,17 @@ void acpi_enable_wakeup_device(u8 sleep_
+>  	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
+>  		struct acpi_device *dev =
+>  			container_of(node, struct acpi_device, wakeup_list);
+> +		u8 action = ACPI_GPE_ENABLE;
 >  
->  	/* These are for internal use */
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 5321ac4..40f27d2 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -215,8 +215,9 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
->  	list_for_each_entry(shrinker, &shrinker_list, list) {
->  		unsigned long long delta;
->  		unsigned long total_scan;
-> -		unsigned long max_pass = (*shrinker->shrink)(0, gfp_mask);
-> +		unsigned long max_pass;
+>  		if (!dev->wakeup.flags.valid)
+>  			continue;
 >  
-> +		max_pass = (*shrinker->shrink)(shrinker->ctx, 0, gfp_mask);
->  		delta = (4 * scanned) / shrinker->seeks;
->  		delta *= max_pass;
->  		do_div(delta, lru_pages + 1);
-> @@ -244,8 +245,10 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
->  			int shrink_ret;
->  			int nr_before;
+>  		if ((!dev->wakeup.state.enabled && !dev->wakeup.prepare_count)
+>  		    || sleep_state > (u32) dev->wakeup.sleep_state)
+> -			continue;
+> +			action = ACPI_GPE_DISABLE;
 >  
-> -			nr_before = (*shrinker->shrink)(0, gfp_mask);
-> -			shrink_ret = (*shrinker->shrink)(this_scan, gfp_mask);
-> +			nr_before = (*shrinker->shrink)(shrinker->ctx,
-> +							0, gfp_mask);
-> +			shrink_ret = (*shrinker->shrink)(shrinker->ctx,
-> +							this_scan, gfp_mask);
->  			if (shrink_ret == -1)
->  				break;
->  			if (shrink_ret < nr_before)
+> -		/* The wake-up power should have been enabled already. */
+>  		acpi_set_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number,
+> -				ACPI_GPE_ENABLE);
+> +				action);
+>  	}
+>  }
+>  
 
-Looks good about this mm part.
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-
-
-off-topic: shrink_slab() was introduced for page/[id]-cache scan balancing
-at first. now it still have hardcorded shrinker->nr calculation for slab
-although now lots another subsystem using it. shrinker->seeks seems no
-intuitive knob. probably we should try generalization it in future. but
-it is another story. I think this patch provide good first step.
-
-                delta = (4 * scanned) / shrinker->seeks;
-                delta *= max_pass;
-                do_div(delta, lru_pages + 1);
-                shrinker->nr += delta;
-
-
-Thanks.
-
-
-
+-- 
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
