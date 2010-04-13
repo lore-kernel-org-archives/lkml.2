@@ -1,124 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943Ab0DMVyl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 17:54:41 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:15369 "EHLO mx2.netapp.com"
+	id S1753807Ab0DMV67 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 17:58:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54824 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752945Ab0DMVyi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 17:54:38 -0400
-X-IronPort-AV: E=Sophos;i="4.52,200,1270450800"; 
-   d="scan'208";a="343954216"
-Subject: [GIT PULL] Please pull NFS client fixes
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Tue, 13 Apr 2010 17:54:21 -0400
-Message-ID: <1271195661.6413.212.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-X-OriginalArrivalTime: 13 Apr 2010 21:54:22.0568 (UTC) FILETIME=[E0516680:01CADB53]
+	id S1751662Ab0DMV66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 17:58:58 -0400
+Message-ID: <4BC4E8FB.8060802@zytor.com>
+Date: Tue, 13 Apr 2010 14:58:19 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Yinghai <yinghai.lu@oracle.com>
+CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, Andy Isaacson <adi@hexapodia.org>,
+       guenter.roeck@ericsson.com,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH -v2 1/2] x86: Reserve [0xa0000, 0x100000] in e820 map
+References: <20100409223532.GC11130@hexapodia.org>	 <4BBFB1D8.6090802@oracle.com> <20100410000030.GE11130@hexapodia.org>	 <4BBFD019.9040405@oracle.com> <20100410014308.GG11130@hexapodia.org>	 <4BBFD8EF.6020108@oracle.com> <20100410015711.GH11130@hexapodia.org>	 <4BBFE66C.2040603@oracle.com> <20100412185416.GA19959@hexapodia.org>	 <4BC375D9.4040503@oracle.com> <20100412200224.GO11130@hexapodia.org>	 <4BC39F67.4090407@oracle.com> <1271192527.6035.44.camel@dc7800.home> <4BC4DD85.5030203@zytor.com> <4BC4DDEA.60202@oracle.com> <4BC4DFAD.9020600@zytor.com> <4BC4E55B.7000103@oracle.com>
+In-Reply-To: <4BC4E55B.7000103@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 04/13/2010 02:42 PM, Yinghai wrote:
+> On 04/13/2010 02:18 PM, H. Peter Anvin wrote:
+>> On 04/13/2010 02:11 PM, Yinghai wrote:
+>>>>
+>>>> I guess the real question (which I haven't looked at myself) is if the
+>>>> E820_RESERVED -> BUSY will cause an explicitly assigned BAR from being
+>>>> moved.  That's bad, not so much for this particular range, but from BARs
+>>>> which may be assigned by SMM.  Hacking that up in a simulator
+>>>> (Qemu/Bochs) and testing it is probably on the to do list...
+>>>
+>>> no, if some device BAR fall in that range, it should still use that range, and will not be relocated.
+>>>
+>>> will update the change log.
+>>>
+>>
+>> Good, that's what we want.
+> 
+> the driver for that device later can not use pci_request_region(). because that region is BUSY already.
+> 
 
-Please pull from the "bugfixes" branch of the repository at
+That's not good (in general - for devices in this particular range it's
+not such a big deal, but it is potentially really bad for devices marked
+reserved for them not to be moved.)
 
-   git pull git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git bugfixes
+We have talked about a need to resolve this before.
 
-This will update the following files through the appended changesets.
-
-  Cheers,
-    Trond
-
-----
- fs/nfs/client.c           |    3 ++-
- fs/nfs/dir.c              |    2 +-
- fs/nfs/inode.c            |    8 ++++----
- fs/nfs/nfs4proc.c         |    4 +++-
- fs/nfs/write.c            |   44 ++++++++++++++++++++++++++++----------------
- include/linux/nfs_fs_sb.h |    1 +
- 6 files changed, 39 insertions(+), 23 deletions(-)
-
-commit 0df5dd4aae211edeeeb84f7f84f6d093406d7c22
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Sun Apr 11 16:48:44 2010 -0400
-
-    NFSv4: fix delegated locking
-    
-    Arnaud Giersch reports that NFSv4 locking is broken when we hold a
-    delegation since commit 8e469ebd6dc32cbaf620e134d79f740bf0ebab79 (NFSv4:
-    Don't allow posix locking against servers that don't support it).
-    
-    According to Arnaud, the lock succeeds the first time he opens the file
-    (since we cannot do a delegated open) but then fails after we start using
-    delegated opens.
-    
-    The following patch fixes it by ensuring that locking behaviour is
-    governed by a per-filesystem capability flag that is initially set, but
-    gets cleared if the server ever returns an OPEN without the
-    NFS4_OPEN_RESULT_LOCKTYPE_POSIX flag being set.
-    
-    Reported-by: Arnaud Giersch <arnaud.giersch@iut-bm.univ-fcomte.fr>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-    Cc: stable@kernel.org
-
-commit 2c61be0a9478258f77b66208a0c4b1f5f8161c3c
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Fri Apr 9 19:54:50 2010 -0400
-
-    NFS: Ensure that the WRITE and COMMIT RPC calls are always uninterruptible
-    
-    We always want to ensure that WRITE and COMMIT completes, whether or not
-    the user presses ^C. Do this by making the call asynchronous, and allowing
-    the user to do an interruptible wait for rpc_task completion.
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit a6305ddb080fb483ca41ca56cacb6f96089f0c8e
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Fri Apr 9 19:07:08 2010 -0400
-
-    NFS: Fix a race with the new commit code
-    
-    This patch fixes a race which occurs due to the fact that we release the
-    PG_writeback flag while still holding the nfs_page locked.
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit b80c3cb628f0ebc241b02e38dd028969fb8026a2
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Fri Apr 9 19:07:07 2010 -0400
-
-    NFS: Ensure that writeback_single_inode() calls write_inode() when syncing
-    
-    Since writeback_single_inode() checks the inode->i_state flags _before_ it
-    flushes out the data, we need to ensure that the I_DIRTY_DATASYNC flag is
-    already set. Otherwise we risk not seeing a call to write_inode(), which
-    again means that we break fsync() et al...
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 1544fa0f7a46241582abc48f07b74f3d846379e4
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Thu Mar 25 13:54:49 2010 -0400
-
-    NFS: Fix the mode calculation in nfs_find_open_context
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 80e60639f1b7c121a7fea53920c5a4b94009361a
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Thu Mar 25 13:51:05 2010 -0400
-
-    NFSv4: Fall back to ordinary lookup if nfs4_atomic_open() returns EISDIR
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-    Cc: stable@kernel.org
-
+	-hpa
 
