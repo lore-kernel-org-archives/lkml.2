@@ -1,108 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab0DMLGi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 07:06:38 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:48778 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694Ab0DMLGh (ORCPT
+	id S1753180Ab0DMLHE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 07:07:04 -0400
+Received: from de01.mail.all-tld.net ([195.140.232.8]:54848 "EHLO
+	de01.mail.all-tld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139Ab0DMLHA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 07:06:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ePplBG4GIaHUSBgfQD9DVRBASLgCKF0dLBOfPR/+shsH0NQy3vvLuFF1qzs0BcUJXi
-         88qPs6pIXoC99jpCeZ70JkyYRHLDjkPZ/CewuPHEWR1nl5qGGNTuP709ksIEy6nNqgVc
-         xp7wBms0fVYHSdinvxBFTVm9FikbCanBkMVXU=
-Date: Wed, 14 Apr 2010 15:07:12 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Patrick McHardy <kaber@trash.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       shemminger@vyatta.com, bhutchings@solarflare.com, andreas@fatal.se,
-       hadi@cyberus.ca, hideaki@yoshifuji.org
-Subject: [PATCH v2] xtables: make XT_ALIGN() usable in exported headers by
- exporting __ALIGN_KERNEL()
-Message-ID: <20100414120712.GA25686@x200>
-References: <20100407162245.GA4557@x200>
- <4BC437C6.8020602@trash.net>
- <4BC44117.80901@trash.net>
+	Tue, 13 Apr 2010 07:07:00 -0400
+Date: Tue, 13 Apr 2010 13:05:32 +0200
+From: Anders Larsen <al@alarsen.net>
+Subject: [at91] Save power by disabling the processor clock when CPU is idle
+To: patches@arm.linux.org.uk
+Cc: Andrew Victor <avictor.za@gmail.com>, linux-arm-kernel@lists.infradead.org,
+       linux-kernel@vger.kernel.org
+X-Mailer: Balsa 2.3.14
+Message-Id: <1271156732l.25331l.7l@i-dmzi_al.realan.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BC44117.80901@trash.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-ALL-TLD-GmbH-Information: AEV Virus and Spam Secure Mail System
+X-ALL-TLD-GmbH-VirusScanner: Found to be clean
+X-ALL-TLD-GmbH-SpamCheck: 
+X-MailScanner-From: al@alarsen.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-XT_ALIGN() was rewritten through ALIGN() by commit 42107f5009da223daa800d6da6904d77297ae829
-"netfilter: xtables: symmetric COMPAT_XT_ALIGN definition".
-ALIGN() is not exported in userspace headers, which created compile problem for tc(8)
-and will create problem for iptables(8).
+Disable the processor clock when the CPU is idle.
 
-We can't export generic looking name ALIGN() but we can export less generic
-__ALIGN_KERNEL() (suggested by Ben Hutchings).
-Google knows nothing about __ALIGN_KERNEL().
+This saves much more power than merely entering 'Wait for Interrupt' mode.
+Since JTAG-debugging doesn't work when the processor clock is switched off,
+make it conditional on CONFIG_DEBUG_KERNEL.
 
-COMPAT_XT_ALIGN() changed for symmetry.
-
-Reported-by: Andreas Henriksson <andreas@fatal.se>
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: Anders Larsen <al@alarsen.net>
+Cc: Andrew Victor <avictor.za@gmail.com>
 ---
+KernelVersion: 2.6.33
 
- include/linux/kernel.h             |    6 ++++--
- include/linux/netfilter/x_tables.h |    6 +++---
- 2 files changed, 7 insertions(+), 5 deletions(-)
+ arch/arm/mach-at91/include/mach/system.h |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -4,6 +4,8 @@
- /*
-  * 'kernel.h' contains some often-used function prototypes etc
-  */
-+#define __ALIGN_KERNEL(x, a)		__ALIGN_KERNEL_MASK(x, (typeof(x))(a) - 1)
-+#define __ALIGN_KERNEL_MASK(x, mask)	(((x) + (mask)) & ~(mask))
+
+Index: b/arch/arm/mach-at91/include/mach/system.h
+===================================================================
+--- a/arch/arm/mach-at91/include/mach/system.h
++++ b/arch/arm/mach-at91/include/mach/system.h
+@@ -24,21 +24,24 @@
+ #include <mach/hardware.h>
+ #include <mach/at91_st.h>
+ #include <mach/at91_dbgu.h>
++#include <mach/at91_pmc.h>
  
- #ifdef __KERNEL__
- 
-@@ -37,8 +39,8 @@ extern const char linux_proc_banner[];
- 
- #define STACK_MAGIC	0xdeadbeef
- 
--#define ALIGN(x,a)		__ALIGN_MASK(x,(typeof(x))(a)-1)
--#define __ALIGN_MASK(x,mask)	(((x)+(mask))&~(mask))
-+#define ALIGN(x, a)		__ALIGN_KERNEL((x), (a))
-+#define __ALIGN_MASK(x, mask)	__ALIGN_KERNEL_MASK((x), (mask))
- #define PTR_ALIGN(p, a)		((typeof(p))ALIGN((unsigned long)(p), (a)))
- #define IS_ALIGNED(x, a)		(((x) & ((typeof(x))(a) - 1)) == 0)
- 
-diff --git a/include/linux/netfilter/x_tables.h b/include/linux/netfilter/x_tables.h
-index 84c7c92..f01ddbe 100644
---- a/include/linux/netfilter/x_tables.h
-+++ b/include/linux/netfilter/x_tables.h
-@@ -1,6 +1,6 @@
- #ifndef _X_TABLES_H
- #define _X_TABLES_H
+ static inline void arch_idle(void)
+ {
++#ifndef CONFIG_DEBUG_KERNEL
+ 	/*
+ 	 * Disable the processor clock.  The processor will be automatically
+ 	 * re-enabled by an interrupt or by a reset.
+ 	 */
+-//	at91_sys_write(AT91_PMC_SCDR, AT91_PMC_PCK);
 -
-+#include <linux/kernel.h>
- #include <linux/types.h>
++	at91_sys_write(AT91_PMC_SCDR, AT91_PMC_PCK);
++#else
+ 	/*
+ 	 * Set the processor (CP15) into 'Wait for Interrupt' mode.
+ 	 * Unlike disabling the processor clock via the PMC (above)
+ 	 *  this allows the processor to be woken via JTAG.
+ 	 */
+ 	cpu_do_idle();
++#endif
+ }
  
- #define XT_FUNCTION_MAXNAMELEN 30
-@@ -93,7 +93,7 @@ struct _xt_align {
- 	__u64 u64;
- };
- 
--#define XT_ALIGN(s) ALIGN((s), __alignof__(struct _xt_align))
-+#define XT_ALIGN(s) __ALIGN_KERNEL((s), __alignof__(struct _xt_align))
- 
- /* Standard return verdict, or do jump. */
- #define XT_STANDARD_TARGET ""
-@@ -598,7 +598,7 @@ struct _compat_xt_align {
- 	compat_u64 u64;
- };
- 
--#define COMPAT_XT_ALIGN(s) ALIGN((s), __alignof__(struct _compat_xt_align))
-+#define COMPAT_XT_ALIGN(s) __ALIGN_KERNEL((s), __alignof__(struct _compat_xt_align))
- 
- extern void xt_compat_lock(u_int8_t af);
- extern void xt_compat_unlock(u_int8_t af);
+ void (*at91_arch_reset)(void);
+
