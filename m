@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120Ab0DMQU5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 12:20:57 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:36961 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752337Ab0DMQUz convert rfc822-to-8bit (ORCPT
+	id S1753374Ab0DMQ2T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 12:28:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21092 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753048Ab0DMQ2R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 12:20:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=tSGRSV+qA6Joz78E8+EeJ4LQBR+qn2bZanvjVgMzusBVZ+3xpyftamycq+4Sf7HwVy
-         tzSwbxTVVUmO2AEvVOywuC6/whLe/HZi6WanIIrIdm1r4TCT55Kk7hTsGTBS8HFOflts
-         3F0R3cQ5il6KiQYo0JVU/k4MouRMWdG6oP5NY=
-MIME-Version: 1.0
-In-Reply-To: <20100413161326.GG25756@csn.ul.ie>
-References: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>
-	 <d74305233536342dfeb1ca7ffe9e83495ce1f285.1271171877.git.minchan.kim@gmail.com>
-	 <20100413161326.GG25756@csn.ul.ie>
-Date: Wed, 14 Apr 2010 01:20:55 +0900
-Message-ID: <j2z28c262361004130920s649c3f41mb35e39aa3621083a@mail.gmail.com>
-Subject: Re: [PATCH 6/6] Add comment in alloc_pages_exact_node
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 13 Apr 2010 12:28:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,198,1270450800"; 
+   d="scan'208";a="508767572"
+From: "Tung, Chien Tin" <chien.tin.tung@intel.com>
+To: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+       "rolandd@cisco.com" <rolandd@cisco.com>,
+       "peterz@infradead.org" <peterz@infradead.org>,
+       "pavel@ucw.cz" <pavel@ucw.cz>, "mingo@elte.hu" <mingo@elte.hu>,
+       Eric B Munson <ebmunson@us.ibm.com>,
+       Steve Wise <swise@opengridcomputing.com>
+Date: Tue, 13 Apr 2010 09:28:14 -0700
+Subject: RE: Socket Direct Protocol: help (2)
+Thread-Topic: Socket Direct Protocol: help (2)
+Thread-Index: AcraTaoAP5dQHyzdQbqIjnF2p6VPCAA1vn+A
+Message-ID: <2EFBCAEF10980645BBCFB605689E08E9047C7402DA@azsmsx506.amr.corp.intel.com>
+References: <13381_1271060138_o3C8FUH8013968_2977669.1271060085255.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+ <1246722.1271082830120.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+In-Reply-To: <1246722.1271082830120.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 1:13 AM, Mel Gorman <mel@csn.ul.ie> wrote:
-> On Wed, Apr 14, 2010 at 12:25:03AM +0900, Minchan Kim wrote:
->> alloc_pages_exact_node naming makes some people misleading.
->> They considered it following as.
->> "This function will allocate pages from node which I wanted
->> exactly".
->> But it can allocate pages from fallback list if page allocator
->> can't find free page from node user wanted.
->>
->> So let's comment this NOTE.
->>
+>I add that in kernel space SDP debug the error is:
 >
-> It's a little tough to read. How about
+>command line: dmesg
+>sdp_init_qp:95 sdp_sock( 2100:2 40720:0): recv sge's. capability: 4
+>needed: 9
+>sdp_init_qp:95 sdp_sock( 2100:2 41203:0): recv sge's. capability: 4
+>needed: 9
 >
-> /*
->  * Use this instead of alloc_pages_node when the caller knows
->  * exactly which node they need (as opposed to passing in -1
->  * for current). Fallback to other nodes will still occur
->  * unless __GFP_THISNODE is specified.
->  */
+>The structure sdp_init_qp() is defined in
+>/usr/src/ofa_kernel-1.5.1/drivers/infiniband/ulp/sdp/sdp_cma.c (lines 76
+>- 141)
 
-It is better than mine.
+NE020 supports 4 SGEs.  I don't know enough about SDP to know why it is
+using this calculation for # of send_sge:
 
->
-> That at least will tie in why "exact" is in the name?
->
->> Actually I wanted to change naming with better.
->> ex) alloc_pages_explict_node.
->
-> "Explicit" can also be taken to mean "this and only this node".
+#define SDP_MAX_RECV_SKB_FRAGS (PAGE_SIZE > 0x8000 ? 1 : 0x8000 / PAGE_SIZE)
 
-I agree.
-I will repost modified comment after Tejun comment [2/6].
-Thanks for quick review, Mel. :)
--- 
-Kind regards,
-Minchan Kim
+
+>Could be a firmware problem?
+
+This is not a firmware problem.
+
+Chien
+
+
