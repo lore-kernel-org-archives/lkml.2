@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab0DMUYL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 16:24:11 -0400
-Received: from caffeine.csclub.uwaterloo.ca ([129.97.134.17]:47092 "EHLO
-	caffeine.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750893Ab0DMUYK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 16:24:10 -0400
-Date: Tue, 13 Apr 2010 16:24:09 -0400
-To: Prabhu Chawandi <prabhu.chavandi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mips@vger.kernel.org
-Subject: Re: Writing to NAND, Which is not visible to USER
-Message-ID: <20100413202409.GA4309@caffeine.csclub.uwaterloo.ca>
-References: <j2k241b8f7b1004090431r8a83ad66y7704e679ab79812b@mail.gmail.com>
+	id S1752711Ab0DMU0X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 16:26:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40862 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751583Ab0DMU0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 16:26:21 -0400
+Date: Tue, 13 Apr 2010 13:26:07 -0700
+From: Greg KH <gregkh@suse.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Daniel Mack <daniel@caiaq.de>, linux-kernel@vger.kernel.org,
+       Pedro Ribeiro <pedrib@gmail.com>, akpm@linux-foundation.org,
+       linux-usb@vger.kernel.org, alsa-devel@alsa-project.org,
+       Robert Hancock <hancockrwd@gmail.com>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] USB: rename usb_buffer_alloc() and usb_buffer_free()
+Message-ID: <20100413202607.GA3567@suse.de>
+References: <20100413181631.GT30801@buzzloop.caiaq.de> <Pine.LNX.4.44L0.1004131525500.1551-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <j2k241b8f7b1004090431r8a83ad66y7704e679ab79812b@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-From: lsorense@csclub.uwaterloo.ca (Lennart Sorensen)
+In-Reply-To: <Pine.LNX.4.44L0.1004131525500.1551-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 09, 2010 at 05:01:58PM +0530, Prabhu Chawandi wrote:
->   I want to write someting to the NAND flash, which is not a part of
-> partitioning.
+On Tue, Apr 13, 2010 at 03:27:36PM -0400, Alan Stern wrote:
+> On Tue, 13 Apr 2010, Daniel Mack wrote:
 > 
-> say , out of 128 MB , I am using 64 MB which I have partitioned using
-> MTD, but I have to access the other  64 MB.
+> > On Mon, Apr 12, 2010 at 01:17:25PM +0200, Daniel Mack wrote:
+> > > For more clearance what the functions actually do,
+> > > 
+> > >   usb_buffer_alloc() is renamed to usb_alloc_coherent()
+> > >   usb_buffer_free()  is renamed to usb_free_coherent()
+> > > 
+> > > They should only be used in code which really needs DMA coherency.
+> > > 
+> > > All call sites have been changed accordingly, except for staging
+> > > drivers.
+> > 
+> > Is this ok? As it's quite big, I think it should be merged soon if there
+> > are no objections.
 > 
-> Can any one help me or give me any ideas ?
-> 
-> Is it possible to write using assmbly code. I am using MIPS board.
+> I have no objection.  All it does is rename a couple of functions.  
+> There's no reason for this to go into 2.6.34; it can wait for the next 
+> merge window.
 
-I suspect you can't do that.
+I think I will split this up into the following set of patches:
+	- rename the functions and add a macro for the old names
+	- rename all in-kernel usages
+	- rename the staging tree usages
+	- remove the macros
 
-Most devices have registers needed to access them, in the case of a NAND
-flash, commands like 'erase block', 'read', 'write', etc.  If you try to
-do erase block from your program and then the kernel tries to do something
-in its half of the flash, who owns the registers of the NAND flash?
+the first patch can go in to Linus's tree now, to make it easier for the
+2nd and 3rd patches to live in linux-next easier as we might need to
+look at the usages in other development trees before we can add the last
+one.
 
-You probably will have to just use the kernel's driver to provide another
-partition and then access that directly (without a filesystem) from
-your program.  At least that way one driver is in charge of accessing
-the device.
+Sound good?
 
--- 
-Len Sorensen
+thanks,
+
+greg k-h
