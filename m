@@ -1,93 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751267Ab0DMFop (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 01:44:45 -0400
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:50528 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750772Ab0DMFoo (ORCPT
+	id S1751495Ab0DMFpj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 01:45:39 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:42131 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064Ab0DMFpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 01:44:44 -0400
-Message-ID: <4BC404C3.2090102@st.com>
-Date: Tue, 13 Apr 2010 07:44:35 +0200
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10pre) Gecko/20100410 Shredder/3.0.5pre
+	Tue, 13 Apr 2010 01:45:36 -0400
+Message-ID: <4BC4043A.5080404@oracle.com>
+Date: Mon, 12 Apr 2010 22:42:18 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: john stultz <johnstul@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: re-adding clocksource_get_next ?
-References: <4BBECED7.4010004@st.com>	 <x2p1f1b08da1004091358z1d185aacya6c0fa2f55322fc7@mail.gmail.com>	 <4BC2B770.3020501@st.com> <1271098218.3724.2.camel@localhost.localdomain>
-In-Reply-To: <1271098218.3724.2.camel@localhost.localdomain>
-X-Enigmail-Version: 1.0.1
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 26/39] nobootmem: use lmb.default_alloc_limit in alloc_bootmem
+ path
+References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>	 <1270793048-23796-27-git-send-email-yinghai@kernel.org>	 <1271132589.13059.67.camel@pasglop>  <4BC3F82A.20400@oracle.com> <1271135622.13059.75.camel@pasglop>
+In-Reply-To: <1271135622.13059.75.camel@pasglop>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4BC404E9.0099:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 04/12/2010 08:50 PM, john stultz wrote:
-> On Mon, 2010-04-12 at 08:02 +0200, Giuseppe CAVALLARO wrote:
->> -----BEGIN PGP SIGNED MESSAGE-----
->> Hash: SHA1
->>
->> Hello John,
->>
->> john stultz wrote:
->>> On Thu, Apr 8, 2010 at 11:53 PM, Giuseppe CAVALLARO
->>> <peppe.cavallaro@st.com> wrote:
->>>> Hello!
->>>> this function was removed in the past but I've not clear all the details.
->>>> While testing LLTng, I wrote the patch, in attachment, that re-adds it
->>>> again.
->>>> The clocksource_get_next returns the first clock source available
->>>> (without looking at the rating).
->>>> In my environment, a clock source is a TMU channel (e.g. TMU1) and,
->>>> indeed, clocksource_get_next works fine.
+On 04/12/2010 10:13 PM, Benjamin Herrenschmidt wrote:
+> On Mon, 2010-04-12 at 21:50 -0700, Yinghai wrote:
+>> On 04/12/2010 09:23 PM, Benjamin Herrenschmidt wrote:
+>>> On Thu, 2010-04-08 at 23:03 -0700, Yinghai Lu wrote:
+>>>> Generic version __lmb_find_area() is going from high to low, and for 32bit
+>>>> active_region for 32bit does include high pages
+>>>>
+>>>> need to replace the limit with lmb.default_alloc_limit, aka get_max_mapped()
+>>>>
+>>>> with this patch, x86 32bit could use generic version of __lmb_find_area()
 >>>
->>> Could you provide some more details as to why you need raw access to
->>> the clocksource, instead of using something like ktime_get(),
->>> getrawmonotonic() or sched_clock()?
+>>> So you unconditionally add access to some lmb specific data structure to
+>>> generic code ? That isn't going to work very well on archs that don't
+>>> use lmb.
 >>
->> I wanted to directly read the value of the TCNT register of a TMU
->> channel registered as clocksource in an SH platform.
->> My idea was to get the first clocksource available and than use the read
->> hook to get its raw value.
->> Indeed, on SH4, the clocksource_get_next returns the TMU channel 1
->> (usually registered as clocksource); the clk->reads points to
->> sh_tmu_clocksource_read (drivers/clocksource/sh_tmu.c). This returns the
->> value of the timer count register (TCNT).
+>> the whole function
+>>
+>> #ifdef CONFIG_HAVE_LMB
+>> u64 __init find_memory_core_early(int nid, u64 size, u64 align,
+>>                                         u64 goal, u64 limit)
+>> {
+>>         int i;
+>>
+>>         /* Need to go over early_node_map to find out good range for node */
+>>         for_each_active_range_index_in_nid(i, nid) {
+>>                 u64 addr;
+>>                 u64 ei_start, ei_last;
+>>
+>>                 ei_last = early_node_map[i].end_pfn;
+>>                 ei_last <<= PAGE_SHIFT;
+>>                 ei_start = early_node_map[i].start_pfn;
+>>                 ei_start <<= PAGE_SHIFT;
+>>                 addr = __lmb_find_area(ei_start, ei_last,
+>>                                          goal, limit, size, align);
+>>
+>>                 if (addr == -1ULL)
+>>                         continue;
+>>
+>>                 return addr;
+>>         }
+>>
+>>         return -1ULL;
+>> }
+>> #endif
+>>
+>> need to access early_node_map[], so leave the function here.
 > 
-> If you specifically want the function sh_tmu_clocksource_read(), why not
-> call it directly instead of indirecting through the clocksource
-> infrastructure?
+> Hrm... find_memory_core_early() is a broken API anyways. Did you add
+> that ? Again, you insist on pushing all over the place that crakpot
+> find/reserve API instead of doing a proper allocation, and it's now
+> leaking with ifdef's & all into the generic code.
 > 
-> Additionally, since the clocksource code is dynamic, you might get a
-> different clocksource then you expect (such as jiffies) depending on
-> user config or user actions.
-> 
-> So I'd advise against using the clocksource code here.
+__alloc_memory_core_early() already include that find_memory_core_early() lines
+it is merged for CONFIG_NO_BOOTMEM support.
 
-This means I should export the sh_tmu_clocksource_read (currently
-static) and don't pass for the clocksource code at all.
+I split it out, so lmb_find_area_node() could reuse those lines.
 
-Thanks for your prompt feedback.
-
-Best Regards,
-Giuseppe
-
-> thanks
-> -john
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQEcBAEBAgAGBQJLxATDAAoJEAm9vY9TshdvKI8H/1kuVTOCVEJvwjroRiy8X3eK
-aW891639hsCcQYjmf+XGEuP9YUUP+n6sIMFqAB0tcNLNurJndmIumjQgsgyvniB/
-5sI7B+nltyR+A5Z7jHjufXcmOr93DKv+3uudbbFDs0CREFuawR3LhSikkAdooPVR
-ff0o7JYqknatsoZARRSrH/uQDDe0bWQLV0mT8sOIDmmMaOn2AE69IzA7CraKLchj
-U0IW29OB6g6S+TwnXRA4+P6L8udNsR3ymEwL2jicj8TDoDUMBtoqO5cUivHalHWX
-xokdi3vsgvZ3/3sGpnXYyOtueo8bQ2+XUbzbUdIhte9DdJliYSVuC2vAppU1z2A=
-=8sFm
------END PGP SIGNATURE-----
+YH
