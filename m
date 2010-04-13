@@ -1,107 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751628Ab0DMIHw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 04:07:52 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:61534 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112Ab0DMIHu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 04:07:50 -0400
-Message-ID: <4BC42650.5030305@monstr.eu>
-Date: Tue, 13 Apr 2010 10:07:44 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1751815Ab0DMII3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 04:08:29 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53217 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751403Ab0DMII2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 04:08:28 -0400
+Message-ID: <4BC42656.4080902@cn.fujitsu.com>
+Date: Tue, 13 Apr 2010 16:07:50 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-To: "Steven J. Magnani" <steve@digidescorp.com>
-CC: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] microblaze: speedup for word-aligned memcpys
-References: <1271104809-12624-1-git-send-email-steve@digidescorp.com>
-In-Reply-To: <1271104809-12624-1-git-send-email-steve@digidescorp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jens Axboe <jens.axboe@oracle.com>, Vivek Goyal <vgoyal@redhat.com>
+CC: Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>,
+       linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2 V3] [RESEND] io-controller: Document for blkio.weight_device
+References: <4BC42475.8080605@cn.fujitsu.com>
+In-Reply-To: <4BC42475.8080605@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven J. Magnani wrote:
-> memcpy performance was measured on a noMMU system having a barrel shifter, 
-> 4K caches, and 32-byte write-through cachelines. In this environment, 
-> copying word-aligned data in word-sized chunks appears to be about 3% more 
-> efficient on packet-sized buffers (1460 bytes) than copying in cacheline-sized 
-> chunks.
-> 
-> Skip to word-based copying when buffers are both word-aligned.
-> 
-> Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+Here is the document for blkio.weight_device
 
-I added this patch to next branch and I will keep it there for now.
+Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ Documentation/cgroups/blkio-controller.txt |   31 +++++++++++++++++++++++++++-
+ 1 files changed, 30 insertions(+), 1 deletions(-)
 
-1. I agree that we need several patches like this.
-2. The improvement could be there and likely it is but 3% improvement 
-could be caused for different reason.
-3. There is necessary to measure it on several hw design and cache 
-configurations to be sure that your expectation is correct.
-4. The best will be to monitoring cache behavior but currently there is 
-no any tool which could easily help us with it.
-
-I will talk to xilinx how to monitoring it.
-
-Thanks,
-Michal
-
-
-> ---
-> diff -uprN a/arch/microblaze/lib/fastcopy.S b/arch/microblaze/lib/fastcopy.S
-> --- a/arch/microblaze/lib/fastcopy.S	2010-04-09 21:52:36.000000000 -0500
-> +++ b/arch/microblaze/lib/fastcopy.S	2010-04-12 15:37:44.000000000 -0500
-> @@ -69,37 +69,13 @@ a_dalign_done:
->  	blti	r4, a_block_done
->  
->  a_block_xfer:
-> -	andi	r4, r7, 0xffffffe0	/* n = c & ~31 */
-> -	rsub	r7, r4, r7		/* c = c - n */
-> -
->  	andi	r9, r6, 3		/* t1 = s & 3 */
-> -	/* if temp != 0, unaligned transfers needed */
-> -	bnei	r9, a_block_unaligned
-> -
-> -a_block_aligned:
-> -	lwi	r9, r6, 0		/* t1 = *(s + 0) */
-> -	lwi	r10, r6, 4		/* t2 = *(s + 4) */
-> -	lwi	r11, r6, 8		/* t3 = *(s + 8) */
-> -	lwi	r12, r6, 12		/* t4 = *(s + 12) */
-> -	swi	r9, r5, 0		/* *(d + 0) = t1 */
-> -	swi	r10, r5, 4		/* *(d + 4) = t2 */
-> -	swi	r11, r5, 8		/* *(d + 8) = t3 */
-> -	swi	r12, r5, 12		/* *(d + 12) = t4 */
-> -	lwi	r9, r6, 16		/* t1 = *(s + 16) */
-> -	lwi	r10, r6, 20		/* t2 = *(s + 20) */
-> -	lwi	r11, r6, 24		/* t3 = *(s + 24) */
-> -	lwi	r12, r6, 28		/* t4 = *(s + 28) */
-> -	swi	r9, r5, 16		/* *(d + 16) = t1 */
-> -	swi	r10, r5, 20		/* *(d + 20) = t2 */
-> -	swi	r11, r5, 24		/* *(d + 24) = t3 */
-> -	swi	r12, r5, 28		/* *(d + 28) = t4 */
-> -	addi	r6, r6, 32		/* s = s + 32 */
-> -	addi	r4, r4, -32		/* n = n - 32 */
-> -	bneid	r4, a_block_aligned	/* while (n) loop */
-> -	addi	r5, r5, 32		/* d = d + 32 (IN DELAY SLOT) */
-> -	bri	a_block_done
-> +	/* if temp == 0, everything is word-aligned */
-> +	beqi	r9, a_word_xfer
->  
->  a_block_unaligned:
-> +	andi	r4, r7, 0xffffffe0	/* n = c & ~31 */
-> +	rsub	r7, r4, r7		/* c = c - n */
->  	andi	r8, r6, 0xfffffffc	/* as = s & ~3 */
->  	add	r6, r6, r4		/* s = s + n */
->  	lwi	r11, r8, 0		/* h = *(as + 0) */
-> 
-
-
+diff --git a/Documentation/cgroups/blkio-controller.txt b/Documentation/cgroups/blkio-controller.txt
+index db054ea..a4ce8fe 100644
+--- a/Documentation/cgroups/blkio-controller.txt
++++ b/Documentation/cgroups/blkio-controller.txt
+@@ -76,9 +76,38 @@ CONFIG_DEBUG_BLK_CGROUP
+ Details of cgroup files
+ =======================
+ - blkio.weight
+-	- Specifies per cgroup weight.
++	- Specifies per cgroup weight. This is default weight of the group
++	  on all the devices until and unless overridden by per device rule.
++	  (See blkio.weight_device).
+ 	  Currently allowed range of weights is from 100 to 1000.
+ 
++- blkio.weight_device
++	- One can specify per cgroup per device rules using this interface.
++	  These rules override the default value of group weight as specified
++	  by blkio.weight.
++
++	  Following is the format.
++
++	  #echo dev_maj:dev_minor weight > /path/to/cgroup/blkio.weight_device
++	  Configure weight=300 on /dev/sdb (8:16) in this cgroup
++	  # echo 8:16 300 > blkio.weight_device
++	  # cat blkio.weight_device
++	  dev     weight
++	  8:16    300
++
++	  Configure weight=500 on /dev/sda (8:0) in this cgroup
++	  # echo 8:0 500 > blkio.weight_device
++	  # cat blkio.weight_device
++	  dev     weight
++	  8:0     500
++	  8:16    300
++
++	  Remove specific weight for /dev/sda in this cgroup
++	  # echo 8:0 0 > blkio.weight_device
++	  # cat blkio.weight_device
++	  dev     weight
++	  8:16    300
++
+ - blkio.time
+ 	- disk time allocated to cgroup per device in milliseconds. First
+ 	  two fields specify the major and minor number of the device and
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+1.5.4.rc3
+
+
+
