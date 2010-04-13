@@ -1,130 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933Ab0DMKaQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 06:30:16 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:42081 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752850Ab0DMKaB (ORCPT
+	id S1752881Ab0DMKdN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 06:33:13 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:63517 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752002Ab0DMKdM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 06:30:01 -0400
-Date: Tue, 13 Apr 2010 12:29:54 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Dan Williams <dcbw@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Alagu Sankar <alagusankar@embwise.com>,
-       Volker Ernst <volker.ernst@txtr.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Holger Schurig <hs4233@mail.mn-solutions.de>,
-       Bing Zhao <bzhao@marvell.com>, libertas-dev@lists.infradead.org,
-       linux-wireless@vger.kernel.org, linux-mmc@vger.kernel.org,
-       stable@kernel.org
-Subject: Re: [PATCH] libertas/sdio: 8686: set ECSI bit for 1-bit transfers
-Message-ID: <20100413102954.GH30801@buzzloop.caiaq.de>
-References: <1270521759.24724.6.camel@localhost.localdomain>
- <1270543964-18130-1-git-send-email-daniel@caiaq.de>
- <1270570054.2969.3.camel@localhost.localdomain>
+	Tue, 13 Apr 2010 06:33:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=MjFq7KvT+Fr3SdaGAA+hyzTzSZGN9a4v4UIeTuVsHD8moS/jHPghtX2ljaAopJO3Kx
+         y0qJ4aujBUHDXPbdvVkD0wOa3/nWoBXdR0xsQMDadXTLZykjsJ8ji5tun6ASgnN/9gFP
+         Lc/5jGxomJxS843hSBKFGCiqxiY8ZZuiRS4YQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1270570054.2969.3.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <x2led984c71004130329l3a531dag88242427583d5a78@mail.gmail.com>
+References: <x2led984c71004130329l3a531dag88242427583d5a78@mail.gmail.com>
+Date: Tue, 13 Apr 2010 16:03:11 +0530
+Message-ID: <z2ned984c71004130333t5a9534beqac5269f8e5fb4b88@mail.gmail.com>
+Subject: [PATCH] ZTEAC8710 Support with Device ID 0xffff
+From: Mahesh Kuruganti <maheshkuruganti@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 06, 2010 at 09:07:34AM -0700, Dan Williams wrote:
-> On Tue, 2010-04-06 at 10:52 +0200, Daniel Mack wrote:
-> > When operating in 1-bit mode, SDAT1 is used as dedicated interrupt line.
-> > However, the 8686 will only drive this line when the ECSI bit is set in
-> > the CCCR_IF register.
-> > 
-> > Thanks to Alagu Sankar for pointing me in the right direction.
-> > 
-> > Signed-off-by: Daniel Mack <daniel@caiaq.de>
-> > Cc: Alagu Sankar <alagusankar@embwise.com>
-> > Cc: Volker Ernst <volker.ernst@txtr.com>
-> > Cc: Dan Williams <dcbw@redhat.com>
-> > Cc: John W. Linville <linville@tuxdriver.com>
-> > Cc: Holger Schurig <hs4233@mail.mn-solutions.de>
-> > Cc: Bing Zhao <bzhao@marvell.com>
-> > Cc: libertas-dev@lists.infradead.org
-> > Cc: linux-wireless@vger.kernel.org
-> > Cc: linux-mmc@vger.kernel.org
-> 
-> Acked-by: Dan Williams <dcbw@redhat.com>
+Here is a patch in the correct format compiled against
+Linux-2.6.34-rc3.Also I tested it and it compiled with no problem and
+I am using it now as i type.
 
-Was this picked by anyone?
-Just asking because I didn't see it in the wireless-2.6.git yet.
-
-Thanks,
-Daniel
+PATCH TO EXTEND SUPPORT TO AC8710 WITH 0xFFFF Product ID.
 
 
+--- drivers/usb/serial/option.c.orig    2010-04-12 21:44:55.902548876 +0530
++++ drivers/usb/serial/option.c    2010-04-12 21:51:47.302549297 +0530
+@@ -304,6 +304,8 @@ static int  option_resume(struct usb_ser
+ #define ZTE_PRODUCT_CDMA_TECH            0xfffe
+ #define ZTE_PRODUCT_AC8710            0xfff1
+ #define ZTE_PRODUCT_AC2726            0xfff5
++//There seems to be an Alternate Device ID for the AC8710 supplied in India.
++#define ZTE_PRODUCT_AC8710T            0xffff
 
-> 
-> > ---
-> >  drivers/net/wireless/libertas/if_sdio.c |   22 ++++++++++++++++++++++
-> >  include/linux/mmc/sdio.h                |    2 ++
-> >  2 files changed, 24 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/net/wireless/libertas/if_sdio.c b/drivers/net/wireless/libertas/if_sdio.c
-> > index 7a73f62..33206a9 100644
-> > --- a/drivers/net/wireless/libertas/if_sdio.c
-> > +++ b/drivers/net/wireless/libertas/if_sdio.c
-> > @@ -34,6 +34,8 @@
-> >  #include <linux/mmc/card.h>
-> >  #include <linux/mmc/sdio_func.h>
-> >  #include <linux/mmc/sdio_ids.h>
-> > +#include <linux/mmc/sdio.h>
-> > +#include <linux/mmc/host.h>
-> >  
-> >  #include "host.h"
-> >  #include "decl.h"
-> > @@ -942,6 +944,7 @@ static int if_sdio_probe(struct sdio_func *func,
-> >  	int ret, i;
-> >  	unsigned int model;
-> >  	struct if_sdio_packet *packet;
-> > +	struct mmc_host *host = func->card->host;
-> >  
-> >  	lbs_deb_enter(LBS_DEB_SDIO);
-> >  
-> > @@ -1022,6 +1025,25 @@ static int if_sdio_probe(struct sdio_func *func,
-> >  	if (ret)
-> >  		goto disable;
-> >  
-> > +	/* For 1-bit transfers to the 8686 model, we need to enable the
-> > +	 * interrupt flag in the CCCR register. Set the MMC_QUIRK_LENIENT_FN0
-> > +	 * bit to allow access to non-vendor registers. */
-> > +	if ((card->model == IF_SDIO_MODEL_8686) &&
-> > +	    (host->caps & MMC_CAP_SDIO_IRQ) &&
-> > +	    (host->ios.bus_width == MMC_BUS_WIDTH_1)) {
-> > +		u8 reg;
-> > +
-> > +		func->card->quirks |= MMC_QUIRK_LENIENT_FN0;
-> > +		reg = sdio_f0_readb(func, SDIO_CCCR_IF, &ret);
-> > +		if (ret)
-> > +			goto release_int;
-> > +
-> > +		reg |= SDIO_BUS_ECSI;
-> > +		sdio_f0_writeb(func, reg, SDIO_CCCR_IF, &ret);
-> > +		if (ret)
-> > +			goto release_int;
-> > +	}
-> > +
-> >  	card->ioport = sdio_readb(func, IF_SDIO_IOPORT, &ret);
-> >  	if (ret)
-> >  		goto release_int;
-> > diff --git a/include/linux/mmc/sdio.h b/include/linux/mmc/sdio.h
-> > index 0ebaef5..329a8fa 100644
-> > --- a/include/linux/mmc/sdio.h
-> > +++ b/include/linux/mmc/sdio.h
-> > @@ -94,6 +94,8 @@
-> >  
-> >  #define  SDIO_BUS_WIDTH_1BIT	0x00
-> >  #define  SDIO_BUS_WIDTH_4BIT	0x02
-> > +#define  SDIO_BUS_ECSI		0x20	/* Enable continuous SPI interrupt */
-> > +#define  SDIO_BUS_SCSI		0x40	/* Support continuous SPI interrupt */
-> >  
-> >  #define  SDIO_BUS_ASYNC_INT	0x20
-> >  
-> 
-> 
+ #define BENQ_VENDOR_ID                0x04a5
+ #define BENQ_PRODUCT_H10            0x4068
+@@ -677,6 +679,7 @@ static const struct usb_device_id option
+     { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0141, 0xff, 0xff, 0xff) },
+     { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID,
+ZTE_PRODUCT_CDMA_TECH, 0xff, 0xff, 0xff) },
+     { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID,
+ZTE_PRODUCT_AC8710, 0xff, 0xff, 0xff) },
++    { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID,
+ZTE_PRODUCT_AC8710T, 0xff, 0xff, 0xff) },
+     { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID,
+ZTE_PRODUCT_AC2726, 0xff, 0xff, 0xff) },
+     { USB_DEVICE(BENQ_VENDOR_ID, BENQ_PRODUCT_H10) },
+     { USB_DEVICE(DLINK_VENDOR_ID, DLINK_PRODUCT_DWM_652) },
+
+Signed-off-by: Mahesh Kuruganti <maheshkuruganti@gmail.com>
+
+
+
+
+--
+Mahesh Kuruganti
