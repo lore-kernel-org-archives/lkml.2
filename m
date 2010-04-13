@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347Ab0DMP3S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 11:29:18 -0400
-Received: from mail-bw0-f219.google.com ([209.85.218.219]:45531 "EHLO
-	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753115Ab0DMP3Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 11:29:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=HaAkVEyCuZtcfk74Urf7yOWx/FoLVcgz76OfZBdk5tOMIGdG2daoRuWGkyZNNgnm90
-         tDK0iQr5k35TxJtf9M5L58coqIEpfGiaD9Ned4dXy448zEb5lMiznOnsZmcscorYaE+7
-         K9Hu6E7DZG0eV1h2Q2qtom1cgYBIJr+Smx0WQ=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Minchan Kim <minchan.kim@gmail.com>
-Subject: [PATCH 6/6] Add comment in alloc_pages_exact_node
-Date: Wed, 14 Apr 2010 00:25:03 +0900
-Message-Id: <d74305233536342dfeb1ca7ffe9e83495ce1f285.1271171877.git.minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.0.5
-In-Reply-To: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>
-References: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>
-In-Reply-To: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>
-References: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>
+	id S1753364Ab0DMP31 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 11:29:27 -0400
+Received: from bar.sig21.net ([80.81.252.164]:55053 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753243Ab0DMP3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 11:29:25 -0400
+Date: Tue, 13 Apr 2010 17:29:23 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: lguest@ozlabs.org, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Gaurav Kukreja <mailme.gaurav@gmail.com>
+Subject: Re: [Lguest]  2.6.33 guest crash (was: Re: 2.6.32-rc5 guest crash)
+Message-ID: <20100413152923.GA5008@sig21.net>
+References: <20091025175521.GA13300@sig21.net>
+ <20100314173459.GA919@sig21.net>
+ <20100314212310.GA3388@sig21.net>
+ <201003301457.14590.rusty@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201003301457.14590.rusty@rustcorp.com.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam-21-Score: -3.6 (---)
+X-Spam-21-Report: No, score=-3.6 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.783,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-alloc_pages_exact_node naming makes some people misleading.
-They considered it following as.
-"This function will allocate pages from node which I wanted
-exactly".
-But it can allocate pages from fallback list if page allocator
-can't find free page from node user wanted.
+Hi Rusty,
 
-So let's comment this NOTE.
+On Tue, Mar 30, 2010 at 02:57:14PM +1030, Rusty Russell wrote:
+> 
+> Subject: lguest: workaround cmpxchg8b_emu by ignoring cli in the guest.
+> 
+> It's only used by cmpxchg8b_emu (see db677ffa5f5a for the gory
+> details), and fixing that to be paravirt aware would be more work than
+> simply ignoring it (and AFAICT only help lguest).
+> 
+> (We can't emulate it properly: the popf which expects to restore interrupts
+> does not trap).
+> 
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Jeremy Fitzhardinge <jeremy@xensource.com>
+> Cc: virtualization@lists.osdl.org
+> 
+> diff --git a/drivers/lguest/x86/core.c b/drivers/lguest/x86/core.c
+> --- a/drivers/lguest/x86/core.c
+> +++ b/drivers/lguest/x86/core.c
+> @@ -288,6 +288,18 @@ static int emulate_insn(struct lg_cpu *c
+>  	insn = lgread(cpu, physaddr, u8);
+>  
+>  	/*
+> +	 * Around 2.6.33, the kernel started using an emulation for the
+> +	 * cmpxchg8b instruction in early boot on many configurations.  This
+> +	 * code isn't paravirtualized, and it tries to disable interrupts.
+> +	 * Ignore it, which will Mostly Work.
+> +	 */
+> +	if (insn == 0xfa) {
+> +		/* "cli", or Clear Interrupt Enable instruction.  Skip it. */ 
+> +		cpu->regs->eip++;
+> +		return 1;
+> +	}
+> +
+> +	/*
+>  	 * 0x66 is an "operand prefix".  It means it's using the upper 16 bits
+>  	 * of the eax register.
+>  	 */
+> 
 
-Actually I wanted to change naming with better.
-ex) alloc_pages_explict_node.
-But I changed my mind since the comment would be enough.
+I just tested this patch with 2.6.34-rc4 (as both host and guest),
+it seems to work fine.
 
-If anybody suggests better name, I will do with pleasure.
 
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Bob Liu <lliubbo@gmail.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- include/linux/gfp.h |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index b65f003..7539c17 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -288,6 +288,11 @@ static inline struct page *alloc_pages_node(int nid, gfp_t gfp_mask,
- 	return __alloc_pages(gfp_mask, order, node_zonelist(nid, gfp_mask));
- }
- 
-+/*
-+ * NOTE : Allow page from fallback if page allocator can't find free page
-+ * in your nid. Only if you want to allocate page from your nid, use
-+ * __GFP_THISNODE flags with gfp_mask.
-+ */
- static inline struct page *alloc_pages_exact_node(int nid, gfp_t gfp_mask,
- 						unsigned int order)
- {
--- 
-1.7.0.5
-
+Thanks,
+Johannes
