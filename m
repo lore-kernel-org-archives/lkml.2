@@ -1,104 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab0DMVUJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 17:20:09 -0400
-Received: from mail-gw0-f56.google.com ([74.125.83.56]:56946 "EHLO
-	mail-gw0-f56.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752949Ab0DMVUG convert rfc822-to-8bit (ORCPT
+	id S1753886Ab0DMVZw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 17:25:52 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:58840 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752949Ab0DMVZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 17:20:06 -0400
+	Tue, 13 Apr 2010 17:25:50 -0400
+Message-ID: <4BC4E09F.9000608@oracle.com>
+Date: Tue, 13 Apr 2010 14:22:39 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Date: Tue, 13 Apr 2010 14:09:00 -0700 (PDT)
-In-Reply-To: <eaCvo-2Z3-11@gated-at.bofh.it>
-X-IP: 72.254.93.3
-References: <e9Rwu-8fL-17@gated-at.bofh.it> <eaj9o-81o-5@gated-at.bofh.it> 
-	<eak5s-WM-13@gated-at.bofh.it> <earTj-47e-5@gated-at.bofh.it> 
-	<eaxcm-3zV-17@gated-at.bofh.it> <eaxcm-3zV-15@gated-at.bofh.it> 
-	<eaxvI-3WN-5@gated-at.bofh.it> <eayL9-5L5-17@gated-at.bofh.it> 
-	<eaB6i-10t-9@gated-at.bofh.it> <eaCvo-2Z3-11@gated-at.bofh.it>
-User-Agent: G2/1.0
-X-HTTP-UserAgent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.3a4pre) 
-	Gecko/20100407 Ubuntu/10.04 (lucid) Minefield/3.7a4pre,gzip(gfe)
-Message-ID: <d4e95cf1-8605-42de-94f9-3bfa736a1498@u22g2000yqf.googlegroups.com>
-Subject: Re: MMC: fix hang if card was removed during suspend and unsafe 
-	resume was enabled
-From: Eric Miao <eric.y.miao@gmail.com>
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Pierre Ossman <drzeus@drzeus.cx>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, Andy Isaacson <adi@hexapodia.org>,
+       guenter.roeck@ericsson.com,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>
+Subject: [PATCH -v3 1/3] x86: Reserve [0xa0000, 0x100000] in e820 map
+References: <20100409223532.GC11130@hexapodia.org>	 <4BBFB1D8.6090802@oracle.com> <20100410000030.GE11130@hexapodia.org>	 <4BBFD019.9040405@oracle.com> <20100410014308.GG11130@hexapodia.org>	 <4BBFD8EF.6020108@oracle.com> <20100410015711.GH11130@hexapodia.org>	 <4BBFE66C.2040603@oracle.com> <20100412185416.GA19959@hexapodia.org>	 <4BC375D9.4040503@oracle.com> <20100412200224.GO11130@hexapodia.org>	 <4BC39F67.4090407@oracle.com> <1271192527.6035.44.camel@dc7800.home> <4BC4DD85.5030203@zytor.com> <4BC4DDEA.60202@oracle.com> <4BC4DFAD.9020600@zytor.com>
+In-Reply-To: <4BC4DFAD.9020600@zytor.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4BC4E11D.0033:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 6, 4:00 am, Maxim Levitsky <maximlevit...@gmail.com> wrote:
-> On Fri, 2010-02-05 at 10:26 -0800, Andrew Morton wrote:
-> > On Fri, 05 Feb 2010 17:52:00 +0200
-> > Maxim Levitsky <maximlevit...@gmail.com> wrote:
->
-> > > > > <4>[15241.042047]  [<ffffffff8106620a>] ? prepare_to_wait+0x2a/0x90
-> > > > > <4>[15241.042159]  [<ffffffff810790bd>] ? trace_hardirqs_on+0xd/0x10
-> > > > > <4>[15241.042271]  [<ffffffff8140db12>] ? _raw_spin_unlock_irqrestore+0x42/0x80
-> > > > > <4>[15241.042386]  [<ffffffff8112a390>] ? bdi_sched_wait+0x0/0x20
-> > > > > <4>[15241.042496]  [<ffffffff8112a39e>] bdi_sched_wait+0xe/0x20
-> > > > > <4>[15241.042606]  [<ffffffff8140af6f>] __wait_on_bit+0x5f/0x90
-> > > > > <4>[15241.042714]  [<ffffffff8112a390>] ? bdi_sched_wait+0x0/0x20
-> > > > > <4>[15241.042824]  [<ffffffff8140b018>] out_of_line_wait_on_bit+0x78/0x90
-> > > > > <4>[15241.042935]  [<ffffffff81065fd0>] ? wake_bit_function+0x0/0x40
-> > > > > <4>[15241.043045]  [<ffffffff8112a2d3>] ? bdi_queue_work+0xa3/0xe0
-> > > > > <4>[15241.043155]  [<ffffffff8112a37f>] bdi_sync_writeback+0x6f/0x80
-> > > > > <4>[15241.043265]  [<ffffffff8112a3d2>] sync_inodes_sb+0x22/0x120
-> > > > > <4>[15241.043375]  [<ffffffff8112f1d2>] __sync_filesystem+0x82/0x90
-> > > > > <4>[15241.043485]  [<ffffffff8112f3db>] sync_filesystem+0x4b/0x70
-> > > > > <4>[15241.043594]  [<ffffffff811391de>] fsync_bdev+0x2e/0x60
-> > > > > <4>[15241.043704]  [<ffffffff812226be>] invalidate_partition+0x2e/0x50
-> > > > > <4>[15241.043816]  [<ffffffff8116b92f>] del_gendisk+0x3f/0x140
-> > > > > <4>[15241.043926]  [<ffffffffa00c0233>] mmc_blk_remove+0x33/0x60 [mmc_block]
-> > > > > <4>[15241.044043]  [<ffffffff81338977>] mmc_bus_remove+0x17/0x20
-> > > > > <4>[15241.044152]  [<ffffffff812ce746>] __device_release_driver+0x66/0xc0
-> > > > > <4>[15241.044264]  [<ffffffff812ce89d>] device_release_driver+0x2d/0x40
-> > > > > <4>[15241.044375]  [<ffffffff812cd9b5>] bus_remove_device+0xb5/0x120
-> > > > > <4>[15241.044486]  [<ffffffff812cb46f>] device_del+0x12f/0x1a0
-> > > > > <4>[15241.044593]  [<ffffffff81338a5b>] mmc_remove_card+0x5b/0x90
-> > > > > <4>[15241.044702]  [<ffffffff8133ac27>] mmc_sd_remove+0x27/0x50
-> > > > > <4>[15241.044811]  [<ffffffff81337d8c>] mmc_resume_host+0x10c/0x140
-> > > > > <4>[15241.044929]  [<ffffffffa00850e9>] sdhci_resume_host+0x69/0xa0 [sdhci]
-> > > > > <4>[15241.045044]  [<ffffffffa0bdc39e>] sdhci_pci_resume+0x8e/0xb0 [sdhci_pci]
->
-> > > > So what's the hang?  del_gendisk is doing IO?  I'd assumed that it was
-> > > > because it was calling kobject_uevent, but userspace is frozen.
->
-> > > This is a backtrace of a hang.
->
-> > But why did it hang?  Because the BDI worker threads are trying to
-> > perform IO through a suspended device?
->
-> Something like that I guess.
-> Also this is 100% reproducible, and I can reproduce this with my own
-> driver too (by making the card detection workqueue be non freezable)
->
 
-It looks to me bdi is waiting for writeback task to finish, yet the
-processes
-are frozen, so this never happens, and hang.
 
-And I can confirm this always happens. Without MMC_UNSAFE_RESUME,
-this happens when suspending where the mmc core tries to remove the
-card.
-With MMC_UNSAFE_RESUME, this happens when resume if the card removed
-during suspend.
+Update e820 at first, and later put them resource tree.
 
-Though the root cause looks to me lies in the del_gendisk() not safe
-to be
-called within suspend context, and a clean fix might be somewhere in
-the
-generic disk layer. Skip removing card during suspend, IMHO, might not
-be
-a clean enough fix to this problem.
+Reserved that early, will not be allocated to unassigned PCI BAR
 
-I might be able to avoid this issue by removing the card within user
-space
-pm scripts, but that's a shame if this cannot be cleanly fixed within
-kernel.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Andy Isaacson <adi@hexapodia.org>
+Tested-by: Andy Isaacson <adi@hexapodia.org>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+
+---
+ arch/x86/include/asm/setup.h |    1 -
+ arch/x86/kernel/head32.c     |    1 -
+ arch/x86/kernel/setup.c      |   19 +------------------
+ 3 files changed, 1 insertion(+), 20 deletions(-)
+
+Index: linux-2.6/arch/x86/include/asm/setup.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/setup.h
++++ linux-2.6/arch/x86/include/asm/setup.h
+@@ -44,7 +44,6 @@ static inline void visws_early_detect(vo
+ extern unsigned long saved_video_mode;
+ 
+ extern void reserve_standard_io_resources(void);
+-extern void i386_reserve_resources(void);
+ extern void setup_default_timer_irq(void);
+ 
+ #ifdef CONFIG_X86_MRST
+Index: linux-2.6/arch/x86/kernel/head32.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/head32.c
++++ linux-2.6/arch/x86/kernel/head32.c
+@@ -22,7 +22,6 @@ static void __init i386_default_early_se
+ {
+ 	/* Initilize 32bit specific setup functions */
+ 	x86_init.resources.probe_roms = probe_roms;
+-	x86_init.resources.reserve_resources = i386_reserve_resources;
+ 	x86_init.mpparse.setup_ioapic_ids = setup_ioapic_ids_from_mpc;
+ 
+ 	reserve_ebda_region();
+Index: linux-2.6/arch/x86/kernel/setup.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -693,7 +693,7 @@ static void __init trim_bios_range(void)
+ 	 * area (640->1Mb) as ram even though it is not.
+ 	 * take them out.
+ 	 */
+-	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
++	e820_add_region(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RESERVED);
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+ }
+ 
+@@ -1052,20 +1052,3 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	mcheck_init();
+ }
+-
+-#ifdef CONFIG_X86_32
+-
+-static struct resource video_ram_resource = {
+-	.name	= "Video RAM area",
+-	.start	= 0xa0000,
+-	.end	= 0xbffff,
+-	.flags	= IORESOURCE_BUSY | IORESOURCE_MEM
+-};
+-
+-void __init i386_reserve_resources(void)
+-{
+-	request_resource(&iomem_resource, &video_ram_resource);
+-	reserve_standard_io_resources();
+-}
+-
+-#endif /* CONFIG_X86_32 */
