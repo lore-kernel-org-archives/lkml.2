@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869Ab0DMXDp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 19:03:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58971 "EHLO mail.zytor.com"
+	id S1753120Ab0DMXEk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 19:04:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58981 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751437Ab0DMXDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 19:03:43 -0400
-Message-ID: <4BC4F80C.2020209@zytor.com>
-Date: Tue, 13 Apr 2010 16:02:36 -0700
+	id S1751954Ab0DMXEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 19:04:39 -0400
+Message-ID: <4BC4F846.7030602@zytor.com>
+Date: Tue, 13 Apr 2010 16:03:34 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
@@ -29,6 +29,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/13/2010 03:58 PM, Yinghai wrote:
 > 
 > Are you sure? what is BAR range? greater than 1M ?
 > 
@@ -36,7 +37,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > and if driver for that device want to call pci_request_region, it will get failure...
 > 
 
-Yes, > 1 MB in that case, I'm fairly sure.
+Let me dig up the thread later... this was so long ago my memory might
+be rusty.
 
 	-hpa
 
