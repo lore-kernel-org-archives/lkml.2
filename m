@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab0DMRoe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 13:44:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39307 "EHLO mx1.redhat.com"
+	id S1752657Ab0DMRxS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 13:53:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36151 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751983Ab0DMRoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 13:44:32 -0400
-Date: Tue, 13 Apr 2010 20:39:19 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>,
-       "David S. Miller" <davem@davemloft.net>,
-       Herbert Xu <herbert@gondor.hengli.com.au>,
-       Paul Moore <paul.moore@hp.com>,
-       David Woodhouse <David.Woodhouse@intel.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [PATCH] tun: orphan an skb on tx
-Message-ID: <20100413173919.GC26011@redhat.com>
-References: <20100413145944.GA7716@redhat.com> <4BC48F79.5090409@siemens.com> <1271176838.16881.537.camel@edumazet-laptop>
+	id S1751316Ab0DMRxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 13:53:17 -0400
+Date: Tue, 13 Apr 2010 19:53:18 +0200
+From: Jan Kara <jack@suse.cz>
+To: Jan Blunck <jblunck@suse.de>
+Cc: tytso@mit.edu, Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
+       linux-ext4@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 4/5] ext2: Move ext2_write_super() out of
+ ext2_setup_super()
+Message-ID: <20100413175318.GA3250@quack.wifi.zluty.cz>
+References: <1271104905-8804-1-git-send-email-jblunck@suse.de>
+ <1271104905-8804-5-git-send-email-jblunck@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1271176838.16881.537.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1271104905-8804-5-git-send-email-jblunck@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 13, 2010 at 06:40:38PM +0200, Eric Dumazet wrote:
-> Le mardi 13 avril 2010 à 17:36 +0200, Jan Kiszka a écrit :
-> > Michael S. Tsirkin wrote:
-> > > The following situation was observed in the field:
-> > > tap1 sends packets, tap2 does not consume them, as a result
-> > > tap1 can not be closed.
-> > 
-> > And before that, tap1 may not be able to send further packets to anyone
-> > else on the bridge as its TX resources were blocked by tap2 - that's
-> > what we saw in the field.
-> > 
+On Mon 12-04-10 22:41:44, Jan Blunck wrote:
+> Move ext2_write_super() out of ext2_setup_super() as a preparation for the
+> next patch that adds a new lock for superblock fields.
 > 
-> After the patch, tap1 is able to flood tap2, and tap3/tap4 not able to
-> send one single frame. Is it OK ?
-
-Yes :) This was always possible. Number of senders needed to flood
-a receiver might vary depending on send/recv queue size
-that you set. External sources can also fill your RX queue
-if you let them. In the end, we need to rely on the scheduler for fairness,
-or apply packet shaping.
-
-> Back to the problem : tap1 cannot be closed.
+> Signed-off-by: Jan Blunck <jblunck@suse.de>
+> ---
+>  fs/ext2/super.c |    8 +++++---
+>  1 files changed, 5 insertions(+), 3 deletions(-)
 > 
-> Why ? because of refcounts ?
+> diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+> index 40fc8d5..b01c491 100644
+> --- a/fs/ext2/super.c
+> +++ b/fs/ext2/super.c
+> @@ -606,7 +606,6 @@ static int ext2_setup_super (struct super_block * sb,
+>  	if (!le16_to_cpu(es->s_max_mnt_count))
+>  		es->s_max_mnt_count = cpu_to_le16(EXT2_DFL_MAX_MNT_COUNT);
+>  	le16_add_cpu(&es->s_mnt_count, 1);
+> -	ext2_write_super(sb);
+>  	if (test_opt (sb, DEBUG))
+>  		ext2_msg(sb, KERN_INFO, "%s, %s, bs=%lu, fs=%lu, gc=%lu, "
+>  			"bpg=%lu, ipg=%lu, mo=%04lx]",
+> @@ -1079,7 +1078,9 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
+>  	if (EXT2_HAS_COMPAT_FEATURE(sb, EXT3_FEATURE_COMPAT_HAS_JOURNAL))
+>  		ext2_msg(sb, KERN_WARNING,
+>  			"warning: mounting ext3 filesystem as ext2");
+> -	ext2_setup_super (sb, es, sb->s_flags & MS_RDONLY);
+> +	if (ext2_setup_super (sb, es, sb->s_flags & MS_RDONLY))
+> +		sb->s_flags != MS_RDONLY;
+                            ^^ Should be |=, shouldn't it?
 
-Yes.
-
-> When a socket with inflight tx packets is closed, we dont block the
-> close, we only delay the socket freeing once all packets were delivered
-> and freed.
-> 
-
-Which is wrong, since this is under userspace control, so you get
-unkillable processes.
-
+										Honza
 -- 
-MST
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
