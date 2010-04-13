@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab0DMURS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 16:17:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1382 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753243Ab0DMURQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 16:17:16 -0400
-Date: Tue, 13 Apr 2010 16:18:00 -0400
-From: Aristeu Rozanski <aris@redhat.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-       linux-kernel@vger.kernel.org, davej@redhat.com, kyle@redhat.com,
-       vgoyal@redhat.com, arjan@linux.intel.com
-Subject: Re: [PATCH] kconfig: introduce nonint_oldconfig and
-	loose_nonint_oldconfig
-Message-ID: <20100413201759.GY31193@redhat.com>
-References: <20100413194747.GX31193@redhat.com> <20100413130031.d4dec19b.randy.dunlap@oracle.com>
+	id S1753399Ab0DMUTs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 16:19:48 -0400
+Received: from smtp.opengridcomputing.com ([209.198.142.2]:35614 "EHLO
+	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753275Ab0DMUTq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 16:19:46 -0400
+Message-ID: <4BC4D22A.6020700@opengridcomputing.com>
+Date: Tue, 13 Apr 2010 15:20:58 -0500
+From: Steve Wise <swise@opengridcomputing.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100413130031.d4dec19b.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "Tung, Chien Tin" <chien.tin.tung@intel.com>
+CC: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+       "rolandd@cisco.com" <rolandd@cisco.com>,
+       "peterz@infradead.org" <peterz@infradead.org>,
+       "pavel@ucw.cz" <pavel@ucw.cz>, "mingo@elte.hu" <mingo@elte.hu>,
+       Eric B Munson <ebmunson@us.ibm.com>
+Subject: Re: Socket Direct Protocol: help (2)
+References: <13381_1271060138_o3C8FUH8013968_2977669.1271060085255.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <1246722.1271082830120.SLOX.WebMail.wwwrun@imap.lnl.infn.it> <2EFBCAEF10980645BBCFB605689E08E9047C7402DA@azsmsx506.amr.corp.intel.com> <4BC49E2B.3000804@opengridcomputing.com> <2EFBCAEF10980645BBCFB605689E08E9047C7405A0@azsmsx506.amr.corp.intel.com>
+In-Reply-To: <2EFBCAEF10980645BBCFB605689E08E9047C7405A0@azsmsx506.amr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > This patch has been around for a long time in Fedora and Red Hat Enterprise
-> > Linux kernels and it may be useful for others. The nonint_oldconfig target
-> > will fail and print the unset config options while loose_nonint_oldconfig will
-> > simply let the config option unset. They're useful in distro kernel packages
-> > where the config files are built using a combination of smaller config files.
-> > The patch's author AFAIK is Arjan van de Ven. Arjan, please add a Signed-off-by
-> > if you're the original author.
-> 
-> Roland McGrath added the loose parts according to his email of 2008.Mar.05:
-> "I added this one (loose_nonint_oldconfig target, -B option to conf)."
-hm, I can't see the -B there, maybe the functionality he's referring to is
-the def_no?
+Tung, Chien Tin wrote:
+>>> NE020 supports 4 SGEs.  I don't know enough about SDP to know why it is
+>>> using this calculation for # of send_sge:
+>>>
+>>> #define SDP_MAX_RECV_SKB_FRAGS (PAGE_SIZE > 0x8000 ? 1 : 0x8000 / PAGE_SIZE)
+>>>
+>>>
+>>>       
+>> Chien, does the NE020 support FMRs?  I looked at the nes ofed-1.5 code
+>> and it appears to do nothing in the map_phys_fmr functions.
+>>     
+>
+> We never implemented map_phys_fmr.  Is it relevant to the # of SGEs?
+>   
+No, but SDP uses FMRs.  I don't think it will run without FMR support.
 
-> after Dave Jones posted this patch.
-> 
-> (adding linux-kbuild mailing list & kbuild maintainer)
-> 
-> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> 
-> 
-> > Signed-off-by: Aristeu Rozanski <aris@redhat.com> 
-> 
-> 
-> > @@ -613,5 +641,5 @@ int main(int ac, char **av)
-> >  			exit(1);
-> >  		}
-> >  	}
-> > -	return 0;
-> > +	return return_value;
-> >  }
-> 
-> Having 'make oldconfig' exit with Exit status: 139  (for example)
-> can be confusing.  I know that from experience.  It took me a bit
-> to find out what that meant.  That part could be improved...
-ok, no real reason to keep incrementing that. no different error codes exist
-other than "1". Do you think we need to introduce different return codes?
-
--- 
-Aristeu
 
