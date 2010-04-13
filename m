@@ -1,100 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789Ab0DMXqp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 19:46:45 -0400
-Received: from ey-out-2122.google.com ([74.125.78.24]:56050 "EHLO
-	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752990Ab0DMXqn convert rfc822-to-8bit (ORCPT
+	id S1754107Ab0DMXwZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 19:52:25 -0400
+Received: from mail.hq.newdream.net ([66.33.206.127]:59387 "EHLO
+	mail.hq.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753616Ab0DMXwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 19:46:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=tDQjm+sim2r4BT+tY0imQ5MLxp5zI/EVwL/x81XR/zAOWk6tZ8N7fWqiOUAk7g9QMa
-         5EbZ47DkjkB383PgaYMC8KkPgqHeAzoKWIzL8Sv6mvFJDYV91B1RO11wPbq8h5Trc8ri
-         PJT/jJogatcK6wL96goLZLwQU8nYI7vzmsydI=
-MIME-Version: 1.0
-In-Reply-To: <20100413182233.GR30807@buzzloop.caiaq.de>
-References: <20100412162947.GQ18855@one.firstfloor.org>
-	 <Pine.LNX.4.44L0.1004121252310.1702-100000@iolanthe.rowland.org>
-	 <20100413182233.GR30807@buzzloop.caiaq.de>
-Date: Wed, 14 Apr 2010 00:46:42 +0100
-Message-ID: <k2o74fd948d1004131646k1e0e1897z7594f77a580c6b9f@mail.gmail.com>
-Subject: Re: USB transfer_buffer allocations on 64bit systems
-From: Pedro Ribeiro <pedrib@gmail.com>
-To: Daniel Mack <daniel@caiaq.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Andi Kleen <andi@firstfloor.org>,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       Greg KH <gregkh@suse.de>, alsa-devel@alsa-project.org,
-       linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Apr 2010 19:52:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=hq.newdream.net; h=from:to
+	:cc:subject:date:message-id:in-reply-to:references:in-reply-to
+	:references; q=dns; s=drama; b=dNknF/hcxha/JbZcAqxHMsxqMDBBaT85y
+	Bfetm0QEwlm2w5R7GXmY4Usm63pQDHDOp9phG9TGBAamTx4taEt24xVQ7XyjH3Dt
+	kvF0boo+sAXhjqSqyMwMa3fXYXyG7WiA0Fpojs+Z3/mquNPdzntxDFvWVoOoOdpv
+	BQbKMJ8MJo=
+From: Yehuda Sadeh <yehuda@hq.newdream.net>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, yehudasa@gmail.com, sage@newdream.net,
+       axboe@kernel.dk, Yehuda Sadeh <yehuda@hq.newdream.net>
+Subject: [PATCH 4/6] ceph: enable creation of clients that don't need mds
+Date: Tue, 13 Apr 2010 16:29:13 -0700
+Message-Id: <61785ecd338c0f28826991d6d93feef130f6a6f4.1271198630.git.yehuda@hq.newdream.net>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1271201355-9346-1-git-send-email-yehuda@hq.newdream.net>
+References: <1271201355-9346-1-git-send-email-yehuda@hq.newdream.net>
+In-Reply-To: <6b8320ea22e059baaac6e4cdd3a0a687646de168.1271198630.git.yehuda@hq.newdream.net>
+References: <6b8320ea22e059baaac6e4cdd3a0a687646de168.1271198630.git.yehuda@hq.newdream.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 April 2010 19:22, Daniel Mack <daniel@caiaq.de> wrote:
-> On Mon, Apr 12, 2010 at 12:57:16PM -0400, Alan Stern wrote:
->> On Mon, 12 Apr 2010, Andi Kleen wrote:
->> > On Mon, Apr 12, 2010 at 12:17:22PM -0400, Alan Stern wrote:
->> > > On Mon, 12 Apr 2010, Andi Kleen wrote:
->> > >
->> > > > > Well, the sound driver itself doesn't care for any of those things, just
->> > > > > like any other USB driver doesn't. The USB core itself of the host
->> > > > > controller driver should do, and as far as I can see, it does that, yes.
->> > > >
->> > > > Hmm, still things must go wrong somewhere. Perhaps need some instrumentation
->> > > > to see if all the transfer buffers really hit the PCI mapping functions.
->> > >
->> > > Such a test has already been carried out earlier in this thread:
->> > >
->> > >   http://marc.info/?l=linux-usb&m=127074587029353&w=2
->> > >   http://marc.info/?l=linux-usb&m=127076841801051&w=2
->> > >   http://marc.info/?l=linux-usb&m=127082890510415&w=2
->> >
->> > Hmm, thanks. But things must still go wrong somewhere, otherwise
->> > the GFP_DMA32 wouldn't be needed?
->>
->> Indeed, something must go wrong somewhere.  Since Daniel's patch fixed
->> the problem by changing the buffer from a streaming mapping to a
->> coherent mapping, it's logical to assume that bad DMA addresses have
->> something to do with it.  But we don't really know for certain.
->
-> Some more ideas to nail this down would be to boot the machine with
-> mem=4096M and mem=2048M to see whether this makes any difference. Also,
-> I think it would be interesting to know whether the patch below helps.
->
-> As the real reason seems entirely obfuscated, there's unfortunately need
-> for some trial error approach. Pedro, as you're the only one who can
-> actually reproduce the problem, do you see any chance to do that?
->
-> Thanks,
-> Daniel
->
->
-> diff --git a/sound/usb/caiaq/audio.c b/sound/usb/caiaq/audio.c
-> index 4328cad..26013be 100644
-> --- a/sound/usb/caiaq/audio.c
-> +++ b/sound/usb/caiaq/audio.c
-> @@ -560,7 +560,7 @@ static struct urb **alloc_urbs(struct snd_usb_caiaqdev *dev, int dir, int *ret)
->                }
->
->                urbs[i]->transfer_buffer =
-> -                       kmalloc(FRAMES_PER_URB * BYTES_PER_FRAME, GFP_KERNEL);
-> +                       kmalloc(FRAMES_PER_URB * BYTES_PER_FRAME, GFP_KERNEL | GFP_DMA);
->                if (!urbs[i]->transfer_buffer) {
->                        log("unable to kmalloc() transfer buffer, OOM!?\n");
->                        *ret = -ENOMEM;
->
->
+Preparing grounds for rbd that doesn't need mds client.
 
-Good news, I can't trigger the interference with either:
-- mem=2048m
-- mem=4096m
-- your patch
+Signed-off-by: Yehuda Sadeh <yehuda@hq.newdream.net>
+---
+ fs/ceph/debugfs.c    |   11 ++++++++---
+ fs/ceph/mon_client.c |    3 ++-
+ fs/ceph/super.c      |   15 ++++++++++-----
+ fs/ceph/super.h      |    2 ++
+ 4 files changed, 22 insertions(+), 9 deletions(-)
 
-Any idea why is mem=4096m different than a regular boot since I have 4GB anyway?
+diff --git a/fs/ceph/debugfs.c b/fs/ceph/debugfs.c
+index e159f14..0a60fa8 100644
+--- a/fs/ceph/debugfs.c
++++ b/fs/ceph/debugfs.c
+@@ -434,9 +434,14 @@ int ceph_debugfs_client_init(struct ceph_client *client)
+ 	if (!client->debugfs_congestion_kb)
+ 		goto out;
+ 
+-	sprintf(name, "../../bdi/%s", dev_name(client->sb->s_bdi->dev));
+-	client->debugfs_bdi = debugfs_create_symlink("bdi", client->debugfs_dir,
+-						     name);
++	if (client->backing_dev_info.dev) {
++		sprintf(name, "../../bdi/%s",
++			dev_name(client->backing_dev_info.dev));
++		client->debugfs_bdi =
++			debugfs_create_symlink("bdi",
++					       client->debugfs_dir,
++					       name);
++	}
+ 
+ 	return 0;
+ 
+diff --git a/fs/ceph/mon_client.c b/fs/ceph/mon_client.c
+index 455c973..0419d42 100644
+--- a/fs/ceph/mon_client.c
++++ b/fs/ceph/mon_client.c
+@@ -776,7 +776,8 @@ static void dispatch(struct ceph_connection *con, struct ceph_msg *msg)
+ 		break;
+ 
+ 	case CEPH_MSG_MDS_MAP:
+-		ceph_mdsc_handle_map(&monc->client->mdsc, msg);
++		if (monc->client->have_mdsc)
++			ceph_mdsc_handle_map(&monc->client->mdsc, msg);
+ 		break;
+ 
+ 	case CEPH_MSG_OSD_MAP:
+diff --git a/fs/ceph/super.c b/fs/ceph/super.c
+index 3ac0a90..4e7adf9 100644
+--- a/fs/ceph/super.c
++++ b/fs/ceph/super.c
+@@ -537,7 +537,8 @@ static void destroy_mount_args(struct ceph_mount_args *args)
+ /*
+  * create a fresh client instance
+  */
+-static struct ceph_client *ceph_create_client(struct ceph_mount_args *args)
++struct ceph_client *ceph_create_client(struct ceph_mount_args *args,
++				       int need_mdsc)
+ {
+ 	struct ceph_client *client;
+ 	int err = -ENOMEM;
+@@ -592,9 +593,13 @@ static struct ceph_client *ceph_create_client(struct ceph_mount_args *args)
+ 	err = ceph_osdc_init(&client->osdc, client);
+ 	if (err < 0)
+ 		goto fail_monc;
+-	err = ceph_mdsc_init(&client->mdsc, client);
+-	if (err < 0)
+-		goto fail_osdc;
++	if (need_mdsc) {
++		err = ceph_mdsc_init(&client->mdsc, client);
++		if (err < 0)
++			goto fail_osdc;
++		client->have_mdsc = 1;
++	}
++
+ 	return client;
+ 
+ fail_osdc:
+@@ -903,7 +908,7 @@ static int ceph_get_sb(struct file_system_type *fs_type,
+ 	}
+ 
+ 	/* create client (which we may/may not use) */
+-	client = ceph_create_client(args);
++	client = ceph_create_client(args, 1);
+ 	if (IS_ERR(client)) {
+ 		err = PTR_ERR(client);
+ 		goto out_final;
+diff --git a/fs/ceph/super.h b/fs/ceph/super.h
+index b6c197d..78ee529 100644
+--- a/fs/ceph/super.h
++++ b/fs/ceph/super.h
+@@ -135,6 +135,8 @@ struct ceph_client {
+ 
+ 	int min_caps;                  /* min caps i added */
+ 
++	int have_mdsc;
++
+ 	struct ceph_messenger *msgr;   /* messenger instance */
+ 	struct ceph_mon_client monc;
+ 	struct ceph_mds_client mdsc;
+-- 
+1.5.6.5
 
-Regards,
-Pedro
