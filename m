@@ -1,196 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825Ab0DMXhF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 19:37:05 -0400
-Received: from ns.netcenter.hu ([195.228.254.57]:40644 "EHLO mail.netcenter.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753577Ab0DMXhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 19:37:03 -0400
-Message-ID: <1cd501cadb62$3a93e790$0400a8c0@dcccs>
-From: "Janos Haar" <janos.haar@netcenter.hu>
-To: "Dave Chinner" <david@fromorbit.com>
-Cc: <xiyou.wangcong@gmail.com>, <linux-kernel@vger.kernel.org>,
-       <kamezawa.hiroyu@jp.fujitsu.com>, <linux-mm@kvack.org>,
-       <xfs@oss.sgi.com>, <axboe@kernel.dk>
-References: <20100404103701.GX3335@dastard> <2bd101cad4ec$5a425f30$0400a8c0@dcccs> <20100405224522.GZ3335@dastard> <3a5f01cad6c5$8a722c00$0400a8c0@dcccs> <20100408025822.GL11036@dastard> <11b701cad9c8$93212530$0400a8c0@dcccs> <20100412001158.GA2493@dastard> <18b101cadadf$5edbb660$0400a8c0@dcccs> <20100413083931.GW2493@dastard> <190201cadaeb$02ec22c0$0400a8c0@dcccs> <20100413113445.GZ2493@dastard>
-Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look please!...)
-Date: Wed, 14 Apr 2010 01:36:56 +0200
+	id S1753866Ab0DMXkU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 19:40:20 -0400
+Received: from mail-iw0-f197.google.com ([209.85.223.197]:55768 "EHLO
+	mail-iw0-f197.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753678Ab0DMXkS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 19:40:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=P4E5njt7kT6I4/ZXww2u7puqKYou04JuBRsWz81wsxkyJyKxQa82k3OWnOz2nj10Bu
+         PSEH4p8/vQd3u3nSyQiKVKIBHh6Tnr1bjym/E4tjcHlU0Ex7Hb0tOd1vyAt1+QL2z156
+         nxq5leLm/0nN1v8DCild/+701bj34cFNX7Gt4=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.3598
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
+In-Reply-To: <alpine.DEB.2.00.1004131437140.8617@chino.kir.corp.google.com>
+References: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>
+	 <8b348d9cc1ea4960488b193b7e8378876918c0d4.1271171877.git.minchan.kim@gmail.com>
+	 <alpine.DEB.2.00.1004131437140.8617@chino.kir.corp.google.com>
+Date: Wed, 14 Apr 2010 08:40:16 +0900
+Message-ID: <u2o28c262361004131640zd034a692s4b46ee77c08e1ccd@mail.gmail.com>
+Subject: Re: [PATCH 3/6] change alloc function in alloc_slab_page
+From: Minchan Kim <minchan.kim@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Christoph Lameter <cl@linux-foundation.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
-
------ Original Message ----- 
-From: "Dave Chinner" <david@fromorbit.com>
-To: "Janos Haar" <janos.haar@netcenter.hu>
-Cc: <xiyou.wangcong@gmail.com>; <linux-kernel@vger.kernel.org>; 
-<kamezawa.hiroyu@jp.fujitsu.com>; <linux-mm@kvack.org>; <xfs@oss.sgi.com>; 
-<axboe@kernel.dk>
-Sent: Tuesday, April 13, 2010 1:34 PM
-Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look 
-please!...)
-
-
-> On Tue, Apr 13, 2010 at 11:23:36AM +0200, Janos Haar wrote:
->> >If you run:
->> >
->> >$ xfs_db -r -c "inode 474253940" -c p /dev/sdb2
->> >
->> >Then I can can confirm whether there is corruption on disk or not.
->> >Probably best to sample multiple of the inode numbers from the above
->> >list of bad inodes.
+On Wed, Apr 14, 2010 at 6:37 AM, David Rientjes <rientjes@google.com> wrote:
+> On Wed, 14 Apr 2010, Minchan Kim wrote:
+>
+>> alloc_slab_page never calls alloc_pages_node with -1.
+>> It means node's validity check is unnecessary.
+>> So we can use alloc_pages_exact_node instead of alloc_pages_node.
+>> It could avoid comparison and branch as 6484eb3e2a81807722 tried.
 >>
->> Here is the log:
->> http://download.netcenter.hu/bughunt/20100413/debug.log
+>> Cc: Christoph Lameter <cl@linux-foundation.org>
+>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+>> ---
+>>  mm/slub.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/mm/slub.c b/mm/slub.c
+>> index b364844..9984165 100644
+>> --- a/mm/slub.c
+>> +++ b/mm/slub.c
+>> @@ -1084,7 +1084,7 @@ static inline struct page *alloc_slab_page(gfp_t flags, int node,
+>>       if (node == -1)
+>>               return alloc_pages(flags, order);
+>>       else
+>> -             return alloc_pages_node(node, flags, order);
+>> +             return alloc_pages_exact_node(node, flags, order);
+>>  }
+>>
+>>  static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
 >
-> There are multiple fields in the inode that are corrupted.
-> I am really surprised that xfs-repair - even an old version - is not
-> picking up the corruption....
+> Slub changes need to go through its maintainer, Pekka Enberg
+> <penberg@cs.helsinki.fi>.
 
-I think i know now the reason....
-My case starting to turn into more and more interesting.
+Thanks, David. It was by mistake.
 
-(Just a little note for remember: tuesday night, i have run the old 2.8.11 
-xfs_repair on the partiton wich was reported as corrupt by the kernel, but 
-it was clean.
-The system was not restarted!)
+Pekka.
 
-Like you suggested, today, i have tried to make a backup from the data.
-During the copy, the kernel reported a lot of corrupted entries again, and 
-finally the kernel crashed! (with the 19 patch pack)
-Unfortunately the kernel can't write the debug info into the syslog.
-The system restarted automatically, the service runs again, and i can't do 
-another backup attempt because force of the owner.
-Today night, when the traffic was in the low period, i have stopped the 
-service, umount the partition, and repeat the xfs_repair on the previously 
-reported partition on more ways.
+This changlog is bad.
+I will change it with following as when I send v2.
 
-Here you can see the results:
-xfs_repair 2.8.11 run #1:
-http://download.netcenter.hu/bughunt/20100413/repair2811-nr1.log
+"alloc_slab_page always checks nid == -1, so alloc_page_node can't be
+called with -1.
+ It means node's validity check in alloc_pages_node is unnecessary.
+ So we can use alloc_pages_exact_node instead of alloc_pages_node.
+ It could avoid comparison and branch as 6484eb3e2a81807722 tried."
 
-xfs_repair 2.8.11 run #2:
-http://download.netcenter.hu/bughunt/20100413/repair2811-nr2.log
+Thanks.
 
-echo 3 >/proc/sys/vm/drop_caches - performed
 
-xfs_repair 2.8.11 run #3:
-http://download.netcenter.hu/bughunt/20100413/repair2811-nr3.log
-
-xfs_reapir 3.1.1 run #1:
-http://download.netcenter.hu/bughunt/20100413/repair311-nr1.log
-
-xfs_reapir 3.1.1 run #2:  sorry, i had no time to play more offline. :-(
-
-For me, it looks like the FS gets corrupted between tuesday night and today 
-night.
-Note: because i am expecting kernel crashes, the dirty data flush was set 
-for some miliseconds timeout only for prevent too much data lost.
-It was one kernel crash in this period, but the XFS have journal, and should 
-be cleaned correctly. (i don't think this is the problem)
-
-The other interesting thing is, why only this partition gets corrupted? 
-(again, and again?)
-Note: this is a partition of 4 disk RAID10 (hw), and 3/4 hdd was replaced in 
-the last 3 week because we are hunting this bug....
-Note2: why not 4/4? Because the first 3 was fine, and was replaced bigger 
-drives, and i don't know what will happen if all the drives will grow, i am 
-not sure, about i can replace back the 300G raptors.
-
->
->> The xfs_db does segmentation fault. :-)
->
-> Yup, it probably ran off into la-la land chasing corrupted
-> extent pointers.
->
->> Btw memory corruption:
->> In the beginnig of march, one of my bets was memory problem too, but
->> the server was offline for 7 days, and all the time runs the
->> memtest86 on the hw, and passed all the 8GB 74 times without any bit
->> error.
->> I don't think it is memory problem, additionally the server can
->> create big size  .tar.gz files without crc problem.
->
-> Ok.
->
->> If i force my mind to think to hw memory problem, i can think only
->> for the raid card's cache memory, wich i can't test with memtest86.
->> Or the cache of the HDD's pcb...
->
-> Yes, it could be something like that, too, but the only way to test
-> it is to swap out the card....
-
-Yeah, but i don't have another. :-/
-
->
->> In the other hand, i have seen more people reported memory
->> corruption about these kernel versions, can we check this and surely
->> select wich is the problem? (hw or sw)?
->
-> I haven't heard of any significant memory corruption problems in
-> 2.6.32 or 2.6.33, but it is a possibility given the nature of the
-> corruption. However, I may have only happened once and be completely
-> unreproducable.
-
-I have reported one strange bug, this was the first mail in this series, 
-with the original title "somebody take a look please.....".
-I can see this too in the kernel list: "[Bug #15585] [Bisected Regression in 
-2.6.32.8] i915 with KMS enabledcauses memorycorruption when resuming from 
-suspend-to-disk"
-And another too: "Re: Memory corruption with 2.6.32.10, but not with 
-2.6.34-rc3"
-Note: i am reading only the titles, i have not too much time actually.
-
->
-> I'd suggest fixing the existing corruption first, and then seeing if
-> it re-appears. If it does reappear, then we know there's a
-> reproducable problem we need to dig out....
-
-I am on it. :-)
-
->
->> I mean, if i am right, the hw memory problem makes only 1-2 bit
->> corruption seriously, and the sw page handling problem makes bad
->> memory pages, no?
->
-> RAM ECC guarantees correction of single bit errors and detection of
-> double bit errors (which cause the kernel to panic, IIRC). I can't
-> tell you what happens when larger errors occur, though...
-
-Yes, but this system have non-ECC ram unfortunately.
-But i am 99.999% sure, this corruption is not mobo-cpu-ram related.
-This must be something else...
-
-Now i am tried to copy in one 4.5GB .gz 3 times into this problematic 
-partition, and gzip -v -t on all archives.
-All was fine.
-This makes me think this is sw problem, and not a simple memory corruption, 
-or the corruption can appear only for a short of time in the hw.
-This whould be really nasty.
-
-Anyway, i have set up one cron script for test all the 4G .gz files on every 
-hours a day, and write to log with dates.
-Maybe useful for something....
-
-Thanks again,
-Janos
-
->
-> Cheers,
->
-> Dave.
-> -- 
-> Dave Chinner
-> david@fromorbit.com 
-
+-- 
+Kind regards,
+Minchan Kim
