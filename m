@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752401Ab0DMNGG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 09:06:06 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:50804 "EHLO
+	id S1752529Ab0DMNHt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 09:07:49 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:50081 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819Ab0DMNFr (ORCPT
+	with ESMTP id S1752761Ab0DMNHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 09:05:47 -0400
-Message-ID: <4BC46C0E.7080501@vlnb.net>
-Date: Tue, 13 Apr 2010 17:05:18 +0400
+	Tue, 13 Apr 2010 09:07:37 -0400
+Message-ID: <4BC46C59.3000009@vlnb.net>
+Date: Tue, 13 Apr 2010 17:06:33 +0400
 From: Vladislav Bolkhovitin <vst@vlnb.net>
 User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
 MIME-Version: 1.0
@@ -23,36 +23,38 @@ CC: linux-kernel@vger.kernel.org,
        Vu Pham <vuhuong@mellanox.com>,
        Bart Van Assche <bart.vanassche@gmail.com>,
        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
-       Andy Yan <ayan@marvell.com>, linux-driver@qlogic.com
-Subject: Re: [PATCH][RFC 5/12/1/5] SCST core's scst_lib.c
+       Andy Yan <ayan@marvell.com>, linux-driver@qlogic.com,
+       Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH][RFC 8/12/1/5] SCST sysfs interface
 References: <4BC44A49.7070307@vlnb.net> <4BC44D08.4060907@vlnb.net>
 In-Reply-To: <4BC44D08.4060907@vlnb.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V01U2FsdGVkX19uA6lIJ78smZfhy31NsBa/sPI8sJ+NZwa/kHz
- kXvqx8vzUl/lUqnnFNJdE2hynEopYorgCJK8f1+Zb7J8iflKBN
- 124BHRCXfP1Jex0AvtpbA==
+X-Provags-ID: V01U2FsdGVkX1+hhI6Kq8lazh2IKmvsL0jvTvFSNq/rtO+NHPq
+ kv4Tdz3+E+9wBneqJ/f0uUi1zL4k6VU7eE+irbaqKRCbl8whHP
+ c1QsclmLW7Se/bIWXaAoQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch contains file scst_lib.c.
+This patch contains file scst_sysfs.c.
 
+Signed-off-by: Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
 Signed-off-by: Vladislav Bolkhovitin <vst@vlnb.net>
 ---
- scst_lib.c | 6337 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 6337 insertions(+)
+ scst_sysfs.c | 3884 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 3884 insertions(+)
 
-diff -uprN orig/linux-2.6.33/drivers/scst/scst_lib.c linux-2.6.33/drivers/scst/scst_lib.c
---- orig/linux-2.6.33/drivers/scst/scst_lib.c
-+++ linux-2.6.33/drivers/scst/scst_lib.c
-@@ -0,0 +1,6337 @@
+diff -uprN orig/linux-2.6.33/drivers/scst/scst_sysfs.c linux-2.6.33/drivers/scst/scst_sysfs.c
+--- orig/linux-2.6.33/drivers/scst/scst_sysfs.c
++++ linux-2.6.33/drivers/scst/scst_sysfs.c
+@@ -0,0 +1,3884 @@
 +/*
-+ *  scst_lib.c
++ *  scst_sysfs.c
 + *
-+ *  Copyright (C) 2004 - 2010 Vladislav Bolkhovitin <vst@vlnb.net>
-+ *  Copyright (C) 2004 - 2005 Leonid Stoljar
-+ *  Copyright (C) 2007 - 2010 ID7 Ltd.
++ *  Copyright (C) 2009 Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
++ *  Copyright (C) 2009 - 2010 Vladislav Bolkhovitin <vst@vlnb.net>
++ *  Copyright (C) 2009 - 2010 ID7 Ltd.
 + *
 + *  This program is free software; you can redistribute it and/or
 + *  modify it under the terms of the GNU General Public License
@@ -65,6323 +67,3870 @@ diff -uprN orig/linux-2.6.33/drivers/scst/scst_lib.c linux-2.6.33/drivers/scst/s
 + *  GNU General Public License for more details.
 + */
 +
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/list.h>
-+#include <linux/spinlock.h>
-+#include <linux/slab.h>
-+#include <linux/sched.h>
-+#include <linux/kthread.h>
-+#include <linux/cdrom.h>
-+#include <linux/unistd.h>
++#include <linux/kobject.h>
 +#include <linux/string.h>
-+#include <asm/kmap_types.h>
++#include <linux/sysfs.h>
++#include <linux/module.h>
++#include <linux/init.h>
 +#include <linux/ctype.h>
-+#include <linux/delay.h>
 +
 +#include "scst.h"
 +#include "scst_priv.h"
 +#include "scst_mem.h"
 +
-+struct scsi_io_context {
-+	unsigned int full_cdb_used:1;
-+	void *data;
-+	void (*done)(void *data, char *sense, int result, int resid);
-+	char sense[SCST_SENSE_BUFFERSIZE];
-+	unsigned char full_cdb[0];
++static DECLARE_COMPLETION(scst_sysfs_root_release_completion);
++
++static struct kobject scst_sysfs_root_kobj;
++static struct kobject *scst_targets_kobj;
++static struct kobject *scst_devices_kobj;
++static struct kobject *scst_sgv_kobj;
++static struct kobject *scst_handlers_kobj;
++
++/* Regular SCST sysfs operations */
++struct sysfs_ops scst_sysfs_ops;
++EXPORT_SYMBOL_GPL(scst_sysfs_ops);
++
++static const char *scst_dev_handler_types[] = {
++    "Direct-access device (e.g., magnetic disk)",
++    "Sequential-access device (e.g., magnetic tape)",
++    "Printer device",
++    "Processor device",
++    "Write-once device (e.g., some optical disks)",
++    "CD-ROM device",
++    "Scanner device (obsolete)",
++    "Optical memory device (e.g., some optical disks)",
++    "Medium changer device (e.g., jukeboxes)",
++    "Communications device (obsolete)",
++    "Defined by ASC IT8 (Graphic arts pre-press devices)",
++    "Defined by ASC IT8 (Graphic arts pre-press devices)",
++    "Storage array controller device (e.g., RAID)",
++    "Enclosure services device",
++    "Simplified direct-access device (e.g., magnetic disk)",
++    "Optical card reader/writer device"
 +};
-+static struct kmem_cache *scsi_io_context_cache;
 +
-+/* get_trans_len_x extract x bytes from cdb as length starting from off */
-+static int get_trans_len_1(struct scst_cmd *cmd, uint8_t off);
-+static int get_trans_len_1_256(struct scst_cmd *cmd, uint8_t off);
-+static int get_trans_len_2(struct scst_cmd *cmd, uint8_t off);
-+static int get_trans_len_3(struct scst_cmd *cmd, uint8_t off);
-+static int get_trans_len_4(struct scst_cmd *cmd, uint8_t off);
++#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
 +
-+/* for special commands */
-+static int get_trans_len_block_limit(struct scst_cmd *cmd, uint8_t off);
-+static int get_trans_len_read_capacity(struct scst_cmd *cmd, uint8_t off);
-+static int get_trans_len_serv_act_in(struct scst_cmd *cmd, uint8_t off);
-+static int get_trans_len_single(struct scst_cmd *cmd, uint8_t off);
-+static int get_trans_len_none(struct scst_cmd *cmd, uint8_t off);
-+static int get_trans_len_read_pos(struct scst_cmd *cmd, uint8_t off);
-+static int get_trans_cdb_len_10(struct scst_cmd *cmd, uint8_t off);
-+static int get_trans_len_prevent_allow_medium_removal(struct scst_cmd *cmd,
-+	uint8_t off);
-+static int get_trans_len_3_read_elem_stat(struct scst_cmd *cmd, uint8_t off);
-+static int get_trans_len_start_stop(struct scst_cmd *cmd, uint8_t off);
++static DEFINE_MUTEX(scst_log_mutex);
++
++static struct scst_trace_log scst_trace_tbl[] = {
++    { TRACE_OUT_OF_MEM,		"out_of_mem" },
++    { TRACE_MINOR,		"minor" },
++    { TRACE_SG_OP,		"sg" },
++    { TRACE_MEMORY,		"mem" },
++    { TRACE_BUFF,		"buff" },
++    { TRACE_PID,		"pid" },
++    { TRACE_LINE,		"line" },
++    { TRACE_FUNCTION,		"function" },
++    { TRACE_DEBUG,		"debug" },
++    { TRACE_SPECIAL,		"special" },
++    { TRACE_SCSI,		"scsi" },
++    { TRACE_MGMT,		"mgmt" },
++    { TRACE_MGMT_DEBUG,		"mgmt_dbg" },
++    { TRACE_FLOW_CONTROL,	"flow_control" },
++    { 0,			NULL }
++};
++
++static struct scst_trace_log scst_local_trace_tbl[] = {
++    { TRACE_RTRY,		"retry" },
++    { TRACE_SCSI_SERIALIZING,	"scsi_serializing" },
++    { TRACE_RCV_BOT,		"recv_bot" },
++    { TRACE_SND_BOT,		"send_bot" },
++    { TRACE_RCV_TOP,		"recv_top" },
++    { TRACE_SND_TOP,		"send_top" },
++    { 0,			NULL }
++};
++
++static ssize_t scst_trace_level_show(const struct scst_trace_log *local_tbl,
++	unsigned long log_level, char *buf, const char *help);
++static int scst_write_trace(const char *buf, size_t length,
++	unsigned long *log_level, unsigned long default_level,
++	const char *name, const struct scst_trace_log *tbl);
++
++#endif /* defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING) */
++
++static ssize_t scst_luns_mgmt_show(struct kobject *kobj,
++				   struct kobj_attribute *attr,
++				   char *buf);
++static ssize_t scst_luns_mgmt_store(struct kobject *kobj,
++				    struct kobj_attribute *attr,
++				    const char *buf, size_t count);
++static ssize_t scst_tgt_addr_method_show(struct kobject *kobj,
++				   struct kobj_attribute *attr,
++				   char *buf);
++static ssize_t scst_tgt_addr_method_store(struct kobject *kobj,
++				    struct kobj_attribute *attr,
++				    const char *buf, size_t count);
++static ssize_t scst_tgt_io_grouping_type_show(struct kobject *kobj,
++				   struct kobj_attribute *attr,
++				   char *buf);
++static ssize_t scst_tgt_io_grouping_type_store(struct kobject *kobj,
++				    struct kobj_attribute *attr,
++				    const char *buf, size_t count);
++static ssize_t scst_ini_group_mgmt_show(struct kobject *kobj,
++				   struct kobj_attribute *attr,
++				   char *buf);
++static ssize_t scst_ini_group_mgmt_store(struct kobject *kobj,
++				    struct kobj_attribute *attr,
++				    const char *buf, size_t count);
++static ssize_t scst_rel_tgt_id_show(struct kobject *kobj,
++				   struct kobj_attribute *attr,
++				   char *buf);
++static ssize_t scst_rel_tgt_id_store(struct kobject *kobj,
++				    struct kobj_attribute *attr,
++				    const char *buf, size_t count);
++static ssize_t scst_acg_luns_mgmt_store(struct kobject *kobj,
++				    struct kobj_attribute *attr,
++				    const char *buf, size_t count);
++static ssize_t scst_acg_ini_mgmt_show(struct kobject *kobj,
++				   struct kobj_attribute *attr,
++				   char *buf);
++static ssize_t scst_acg_ini_mgmt_store(struct kobject *kobj,
++				    struct kobj_attribute *attr,
++				    const char *buf, size_t count);
++static ssize_t scst_acg_addr_method_show(struct kobject *kobj,
++				   struct kobj_attribute *attr,
++				   char *buf);
++static ssize_t scst_acg_addr_method_store(struct kobject *kobj,
++				    struct kobj_attribute *attr,
++				    const char *buf, size_t count);
++static ssize_t scst_acg_io_grouping_type_show(struct kobject *kobj,
++				   struct kobj_attribute *attr,
++				   char *buf);
++static ssize_t scst_acg_io_grouping_type_store(struct kobject *kobj,
++				    struct kobj_attribute *attr,
++				    const char *buf, size_t count);
++static ssize_t scst_acn_file_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf);
++
++static void scst_sysfs_release(struct kobject *kobj)
++{
++	kfree(kobj);
++}
 +
 +/*
-++=====================================-============-======-
-+|  Command name                       | Operation  | Type |
-+|                                     |   code     |      |
-+|-------------------------------------+------------+------+
++ * Target Template
++ */
 +
-++=========================================================+
-+|Key:  M = command implementation is mandatory.           |
-+|      O = command implementation is optional.            |
-+|      V = Vendor-specific                                |
-+|      R = Reserved                                       |
-+|     ' '= DON'T use for this device                      |
-++=========================================================+
-+*/
++static void scst_tgtt_release(struct kobject *kobj)
++{
++	struct scst_tgt_template *tgtt;
 +
-+#define SCST_CDB_MANDATORY  'M'	/* mandatory */
-+#define SCST_CDB_OPTIONAL   'O'	/* optional  */
-+#define SCST_CDB_VENDOR     'V'	/* vendor    */
-+#define SCST_CDB_RESERVED   'R'	/* reserved  */
-+#define SCST_CDB_NOTSUPP    ' '	/* don't use */
++	tgtt = container_of(kobj, struct scst_tgt_template, tgtt_kobj);
 +
-+struct scst_sdbops {
-+	uint8_t ops;		/* SCSI-2 op codes */
-+	uint8_t devkey[16];	/* Key for every device type M,O,V,R
-+				 * type_disk      devkey[0]
-+				 * type_tape      devkey[1]
-+				 * type_printer   devkey[2]
-+				 * type_proseccor devkey[3]
-+				 * type_worm      devkey[4]
-+				 * type_cdrom     devkey[5]
-+				 * type_scanner   devkey[6]
-+				 * type_mod       devkey[7]
-+				 * type_changer   devkey[8]
-+				 * type_commdev   devkey[9]
-+				 * type_reserv    devkey[A]
-+				 * type_reserv    devkey[B]
-+				 * type_raid      devkey[C]
-+				 * type_enclosure devkey[D]
-+				 * type_reserv    devkey[E]
-+				 * type_reserv    devkey[F]
-+				 */
-+	const char *op_name;	/* SCSI-2 op codes full name */
-+	uint8_t direction;	/* init   --> target: SCST_DATA_WRITE
-+				 * target --> init:   SCST_DATA_READ
-+				 */
-+	uint16_t flags;		/* opcode --  various flags */
-+	uint8_t off;		/* length offset in cdb */
-+	int (*get_trans_len)(struct scst_cmd *cmd, uint8_t off)
-+		__attribute__ ((aligned));
-+}  __attribute__((packed));
++	complete_all(&tgtt->tgtt_kobj_release_cmpl);
 +
-+static int scst_scsi_op_list[256];
++	scst_tgtt_cleanup(tgtt);
++	return;
++}
 +
-+#define FLAG_NONE 0
-+
-+static const struct scst_sdbops scst_scsi_op_table[] = {
-+	/*
-+	 *      +-------------------> TYPE_IS_DISK      (0)
-+	 *      |
-+	 *      |+------------------> TYPE_IS_TAPE      (1)
-+	 *      ||
-+	 *      || +----------------> TYPE_IS_PROCESSOR (3)
-+	 *      || |
-+	 *      || | +--------------> TYPE_IS_CDROM     (5)
-+	 *      || | |
-+	 *      || | | +------------> TYPE_IS_MOD       (7)
-+	 *      || | | |
-+	 *      || | | |+-----------> TYPE_IS_CHANGER   (8)
-+	 *      || | | ||
-+	 *      || | | ||   +-------> TYPE_IS_RAID      (C)
-+	 *      || | | ||   |
-+	 *      || | | ||   |
-+	 *      0123456789ABCDEF ---> TYPE_IS_????     */
-+
-+	/* 6-bytes length CDB */
-+	{0x00, "MMMMMMMMMMMMMMMM", "TEST UNIT READY",
-+	 /* let's be HQ to don't look dead under high load */
-+	 SCST_DATA_NONE, SCST_SMALL_TIMEOUT|SCST_IMPLICIT_HQ|
-+			 SCST_REG_RESERVE_ALLOWED,
-+	 0, get_trans_len_none},
-+	{0x01, " M              ", "REWIND",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-+	{0x01, "O V OO OO       ", "REZERO UNIT",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x02, "VVVVVV  V       ", "REQUEST BLOCK ADDR",
-+	 SCST_DATA_NONE, SCST_SMALL_TIMEOUT, 0, get_trans_len_none},
-+	{0x03, "MMMMMMMMMMMMMMMM", "REQUEST SENSE",
-+	 SCST_DATA_READ, SCST_SMALL_TIMEOUT|SCST_SKIP_UA|SCST_LOCAL_CMD|
-+			 SCST_REG_RESERVE_ALLOWED,
-+	 4, get_trans_len_1},
-+	{0x04, "M    O O        ", "FORMAT UNIT",
-+	 SCST_DATA_WRITE, SCST_LONG_TIMEOUT|SCST_UNKNOWN_LENGTH|SCST_WRITE_MEDIUM,
-+	 0, get_trans_len_none},
-+	{0x04, "  O             ", "FORMAT",
-+	 SCST_DATA_NONE, SCST_WRITE_MEDIUM, 0, get_trans_len_none},
-+	{0x05, "VMVVVV  V       ", "READ BLOCK LIMITS",
-+	 SCST_DATA_READ, SCST_SMALL_TIMEOUT|SCST_REG_RESERVE_ALLOWED,
-+	 0, get_trans_len_block_limit},
-+	{0x07, "        O       ", "INITIALIZE ELEMENT STATUS",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-+	{0x07, "OVV O  OV       ", "REASSIGN BLOCKS",
-+	 SCST_DATA_NONE, SCST_WRITE_MEDIUM, 0, get_trans_len_none},
-+	{0x08, "O               ", "READ(6)",
-+	 SCST_DATA_READ, SCST_TRANSFER_LEN_TYPE_FIXED, 4, get_trans_len_1_256},
-+	{0x08, " MV OO OV       ", "READ(6)",
-+	 SCST_DATA_READ, SCST_TRANSFER_LEN_TYPE_FIXED, 2, get_trans_len_3},
-+	{0x08, "         M      ", "GET MESSAGE(6)",
-+	 SCST_DATA_READ, FLAG_NONE, 2, get_trans_len_3},
-+	{0x08, "    O           ", "RECEIVE",
-+	 SCST_DATA_READ, FLAG_NONE, 2, get_trans_len_3},
-+	{0x0A, "O               ", "WRITE(6)",
-+	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
-+	 4, get_trans_len_1_256},
-+	{0x0A, " M  O  OV       ", "WRITE(6)",
-+	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
-+	 2, get_trans_len_3},
-+	{0x0A, "  M             ", "PRINT",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x0A, "         M      ", "SEND MESSAGE(6)",
-+	 SCST_DATA_WRITE, FLAG_NONE, 2, get_trans_len_3},
-+	{0x0A, "    M           ", "SEND(6)",
-+	 SCST_DATA_WRITE, FLAG_NONE, 2, get_trans_len_3},
-+	{0x0B, "O   OO OV       ", "SEEK(6)",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x0B, "                ", "TRACK SELECT",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x0B, "  O             ", "SLEW AND PRINT",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x0C, "VVVVVV  V       ", "SEEK BLOCK",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-+	{0x0D, "VVVVVV  V       ", "PARTITION",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT|SCST_WRITE_MEDIUM,
-+	 0, get_trans_len_none},
-+	{0x0F, "VOVVVV  V       ", "READ REVERSE",
-+	 SCST_DATA_READ, SCST_TRANSFER_LEN_TYPE_FIXED, 2, get_trans_len_3},
-+	{0x10, "VM V V          ", "WRITE FILEMARKS",
-+	 SCST_DATA_NONE, SCST_WRITE_MEDIUM, 0, get_trans_len_none},
-+	{0x10, "  O O           ", "SYNCHRONIZE BUFFER",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x11, "VMVVVV          ", "SPACE",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-+	{0x12, "MMMMMMMMMMMMMMMM", "INQUIRY",
-+	 SCST_DATA_READ, SCST_SMALL_TIMEOUT|SCST_IMPLICIT_HQ|SCST_SKIP_UA|
-+			 SCST_REG_RESERVE_ALLOWED,
-+	 4, get_trans_len_1},
-+	{0x13, "VOVVVV          ", "VERIFY(6)",
-+	 SCST_DATA_NONE, SCST_TRANSFER_LEN_TYPE_FIXED|
-+			 SCST_VERIFY_BYTCHK_MISMATCH_ALLOWED,
-+	 2, get_trans_len_3},
-+	{0x14, "VOOVVV          ", "RECOVER BUFFERED DATA",
-+	 SCST_DATA_READ, SCST_TRANSFER_LEN_TYPE_FIXED, 2, get_trans_len_3},
-+	{0x15, "OMOOOOOOOOOOOOOO", "MODE SELECT(6)",
-+	 SCST_DATA_WRITE, SCST_LOCAL_CMD, 4, get_trans_len_1},
-+	{0x16, "MMMMMMMMMMMMMMMM", "RESERVE",
-+	 SCST_DATA_NONE, SCST_SMALL_TIMEOUT|SCST_LOCAL_CMD,
-+	 0, get_trans_len_none},
-+	{0x17, "MMMMMMMMMMMMMMMM", "RELEASE",
-+	 SCST_DATA_NONE, SCST_SMALL_TIMEOUT|SCST_LOCAL_CMD|SCST_REG_RESERVE_ALLOWED,
-+	 0, get_trans_len_none},
-+	{0x18, "OOOOOOOO        ", "COPY",
-+	 SCST_DATA_WRITE, SCST_LONG_TIMEOUT, 2, get_trans_len_3},
-+	{0x19, "VMVVVV          ", "ERASE",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT|SCST_WRITE_MEDIUM,
-+	 0, get_trans_len_none},
-+	{0x1A, "OMOOOOOOOOOOOOOO", "MODE SENSE(6)",
-+	 SCST_DATA_READ, SCST_SMALL_TIMEOUT, 4, get_trans_len_1},
-+	{0x1B, "      O         ", "SCAN",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x1B, " O              ", "LOAD UNLOAD",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-+	{0x1B, "  O             ", "STOP PRINT",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x1B, "O   OO O    O   ", "START STOP UNIT",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_start_stop},
-+	{0x1C, "OOOOOOOOOOOOOOOO", "RECEIVE DIAGNOSTIC RESULTS",
-+	 SCST_DATA_READ, FLAG_NONE, 3, get_trans_len_2},
-+	{0x1D, "MMMMMMMMMMMMMMMM", "SEND DIAGNOSTIC",
-+	 SCST_DATA_WRITE, FLAG_NONE, 4, get_trans_len_1},
-+	{0x1E, "OOOOOOOOOOOOOOOO", "PREVENT ALLOW MEDIUM REMOVAL",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0,
-+	 get_trans_len_prevent_allow_medium_removal},
-+	{0x1F, "            O   ", "PORT STATUS",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+
-+	 /* 10-bytes length CDB */
-+	{0x23, "V   VV V        ", "READ FORMAT CAPACITY",
-+	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-+	{0x24, "V   VVM         ", "SET WINDOW",
-+	 SCST_DATA_WRITE, FLAG_NONE, 6, get_trans_len_3},
-+	{0x25, "M   MM M        ", "READ CAPACITY",
-+	 SCST_DATA_READ, SCST_IMPLICIT_HQ|SCST_REG_RESERVE_ALLOWED,
-+	 0, get_trans_len_read_capacity},
-+	{0x25, "      O         ", "GET WINDOW",
-+	 SCST_DATA_READ, FLAG_NONE, 6, get_trans_len_3},
-+	{0x28, "M   MMMM        ", "READ(10)",
-+	 SCST_DATA_READ, SCST_TRANSFER_LEN_TYPE_FIXED, 7, get_trans_len_2},
-+	{0x28, "         O      ", "GET MESSAGE(10)",
-+	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-+	{0x29, "V   VV O        ", "READ GENERATION",
-+	 SCST_DATA_READ, FLAG_NONE, 8, get_trans_len_1},
-+	{0x2A, "O   MO M        ", "WRITE(10)",
-+	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
-+	 7, get_trans_len_2},
-+	{0x2A, "         O      ", "SEND MESSAGE(10)",
-+	 SCST_DATA_WRITE, FLAG_NONE, 7, get_trans_len_2},
-+	{0x2A, "      O         ", "SEND(10)",
-+	 SCST_DATA_WRITE, FLAG_NONE, 7, get_trans_len_2},
-+	{0x2B, " O              ", "LOCATE",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-+	{0x2B, "        O       ", "POSITION TO ELEMENT",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-+	{0x2B, "O   OO O        ", "SEEK(10)",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x2C, "V    O O        ", "ERASE(10)",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT|SCST_WRITE_MEDIUM,
-+	 0, get_trans_len_none},
-+	{0x2D, "V   O  O        ", "READ UPDATED BLOCK",
-+	 SCST_DATA_READ, SCST_TRANSFER_LEN_TYPE_FIXED, 0, get_trans_len_single},
-+	{0x2E, "O   OO O        ", "WRITE AND VERIFY(10)",
-+	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
-+	 7, get_trans_len_2},
-+	{0x2F, "O   OO O        ", "VERIFY(10)",
-+	 SCST_DATA_NONE, SCST_TRANSFER_LEN_TYPE_FIXED|
-+			 SCST_VERIFY_BYTCHK_MISMATCH_ALLOWED,
-+	 7, get_trans_len_2},
-+	{0x33, "O   OO O        ", "SET LIMITS(10)",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x34, " O              ", "READ POSITION",
-+	 SCST_DATA_READ, SCST_SMALL_TIMEOUT, 7, get_trans_len_read_pos},
-+	{0x34, "      O         ", "GET DATA BUFFER STATUS",
-+	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-+	{0x34, "O   OO O        ", "PRE-FETCH",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x35, "O   OO O        ", "SYNCHRONIZE CACHE",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x36, "O   OO O        ", "LOCK UNLOCK CACHE",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x37, "O      O        ", "READ DEFECT DATA(10)",
-+	 SCST_DATA_READ, FLAG_NONE, 8, get_trans_len_1},
-+	{0x37, "        O       ", "INIT ELEMENT STATUS WRANGE",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-+	{0x38, "    O  O        ", "MEDIUM SCAN",
-+	 SCST_DATA_READ, FLAG_NONE, 8, get_trans_len_1},
-+	{0x39, "OOOOOOOO        ", "COMPARE",
-+	 SCST_DATA_WRITE, FLAG_NONE, 3, get_trans_len_3},
-+	{0x3A, "OOOOOOOO        ", "COPY AND VERIFY",
-+	 SCST_DATA_WRITE, FLAG_NONE, 3, get_trans_len_3},
-+	{0x3B, "OOOOOOOOOOOOOOOO", "WRITE BUFFER",
-+	 SCST_DATA_WRITE, SCST_SMALL_TIMEOUT, 6, get_trans_len_3},
-+	{0x3C, "OOOOOOOOOOOOOOOO", "READ BUFFER",
-+	 SCST_DATA_READ, SCST_SMALL_TIMEOUT, 6, get_trans_len_3},
-+	{0x3D, "    O  O        ", "UPDATE BLOCK",
-+	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED,
-+	 0, get_trans_len_single},
-+	{0x3E, "O   OO O        ", "READ LONG",
-+	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-+	{0x3F, "O   O  O        ", "WRITE LONG",
-+	 SCST_DATA_WRITE, SCST_WRITE_MEDIUM, 7, get_trans_len_2},
-+	{0x40, "OOOOOOOOOO      ", "CHANGE DEFINITION",
-+	 SCST_DATA_WRITE, SCST_SMALL_TIMEOUT, 8, get_trans_len_1},
-+	{0x41, "O    O          ", "WRITE SAME",
-+	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
-+	 0, get_trans_len_single},
-+	{0x42, "     O          ", "READ SUB-CHANNEL",
-+	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-+	{0x43, "     O          ", "READ TOC/PMA/ATIP",
-+	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-+	{0x44, " M              ", "REPORT DENSITY SUPPORT",
-+	 SCST_DATA_READ, SCST_REG_RESERVE_ALLOWED, 7, get_trans_len_2},
-+	{0x44, "     O          ", "READ HEADER",
-+	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-+	{0x45, "     O          ", "PLAY AUDIO(10)",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x46, "     O          ", "GET CONFIGURATION",
-+	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-+	{0x47, "     O          ", "PLAY AUDIO MSF",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x48, "     O          ", "PLAY AUDIO TRACK INDEX",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x49, "     O          ", "PLAY TRACK RELATIVE(10)",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x4A, "     O          ", "GET EVENT STATUS NOTIFICATION",
-+	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-+	{0x4B, "     O          ", "PAUSE/RESUME",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x4C, "OOOOOOOOOOOOOOOO", "LOG SELECT",
-+	 SCST_DATA_WRITE, SCST_SMALL_TIMEOUT, 7, get_trans_len_2},
-+	{0x4D, "OOOOOOOOOOOOOOOO", "LOG SENSE",
-+	 SCST_DATA_READ, SCST_SMALL_TIMEOUT|SCST_REG_RESERVE_ALLOWED,
-+	 7, get_trans_len_2},
-+	{0x4E, "     O          ", "STOP PLAY/SCAN",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x50, "                ", "XDWRITE",
-+	 SCST_DATA_NONE, SCST_WRITE_MEDIUM, 0, get_trans_len_none},
-+	{0x51, "     O          ", "READ DISC INFORMATION",
-+	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-+	{0x51, "                ", "XPWRITE",
-+	 SCST_DATA_NONE, SCST_WRITE_MEDIUM, 0, get_trans_len_none},
-+	{0x52, "     O          ", "READ TRACK INFORMATION",
-+	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-+	{0x53, "     O          ", "RESERVE TRACK",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x54, "     O          ", "SEND OPC INFORMATION",
-+	 SCST_DATA_WRITE, FLAG_NONE, 7, get_trans_len_2},
-+	{0x55, "OOOOOOOOOOOOOOOO", "MODE SELECT(10)",
-+	 SCST_DATA_WRITE, SCST_LOCAL_CMD, 7, get_trans_len_2},
-+	{0x56, "OOOOOOOOOOOOOOOO", "RESERVE(10)",
-+	 SCST_DATA_NONE, SCST_SMALL_TIMEOUT|SCST_LOCAL_CMD,
-+	 0, get_trans_len_none},
-+	{0x57, "OOOOOOOOOOOOOOOO", "RELEASE(10)",
-+	 SCST_DATA_NONE, SCST_SMALL_TIMEOUT|SCST_LOCAL_CMD|SCST_REG_RESERVE_ALLOWED,
-+	 0, get_trans_len_none},
-+	{0x58, "     O          ", "REPAIR TRACK",
-+	 SCST_DATA_NONE, SCST_WRITE_MEDIUM, 0, get_trans_len_none},
-+	{0x5A, "OOOOOOOOOOOOOOOO", "MODE SENSE(10)",
-+	 SCST_DATA_READ, SCST_SMALL_TIMEOUT, 7, get_trans_len_2},
-+	{0x5B, "     O          ", "CLOSE TRACK/SESSION",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x5C, "     O          ", "READ BUFFER CAPACITY",
-+	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_2},
-+	{0x5D, "     O          ", "SEND CUE SHEET",
-+	 SCST_DATA_WRITE, FLAG_NONE, 6, get_trans_len_3},
-+	{0x5E, "OOOOO OOOO      ", "PERSISTENT RESERV IN",
-+	 SCST_DATA_READ, FLAG_NONE, 5, get_trans_len_4},
-+	{0x5F, "OOOOO OOOO      ", "PERSISTENT RESERV OUT",
-+	 SCST_DATA_WRITE, FLAG_NONE, 5, get_trans_len_4},
-+
-+	/* 16-bytes length CDB */
-+	{0x80, "O   OO O        ", "XDWRITE EXTENDED",
-+	 SCST_DATA_NONE, SCST_WRITE_MEDIUM, 0, get_trans_len_none},
-+	{0x80, " M              ", "WRITE FILEMARKS",
-+	 SCST_DATA_NONE, SCST_WRITE_MEDIUM, 0, get_trans_len_none},
-+	{0x81, "O   OO O        ", "REBUILD",
-+	 SCST_DATA_WRITE, SCST_WRITE_MEDIUM, 10, get_trans_len_4},
-+	{0x82, "O   OO O        ", "REGENERATE",
-+	 SCST_DATA_WRITE, SCST_WRITE_MEDIUM, 10, get_trans_len_4},
-+	{0x83, "OOOOOOOOOOOOOOOO", "EXTENDED COPY",
-+	 SCST_DATA_WRITE, SCST_WRITE_MEDIUM, 10, get_trans_len_4},
-+	{0x84, "OOOOOOOOOOOOOOOO", "RECEIVE COPY RESULT",
-+	 SCST_DATA_WRITE, FLAG_NONE, 10, get_trans_len_4},
-+	{0x86, "OOOOOOOOOO      ", "ACCESS CONTROL IN",
-+	 SCST_DATA_NONE, SCST_REG_RESERVE_ALLOWED, 0, get_trans_len_none},
-+	{0x87, "OOOOOOOOOO      ", "ACCESS CONTROL OUT",
-+	 SCST_DATA_NONE, SCST_REG_RESERVE_ALLOWED, 0, get_trans_len_none},
-+	{0x88, "M   MMMM        ", "READ(16)",
-+	 SCST_DATA_READ, SCST_TRANSFER_LEN_TYPE_FIXED, 10, get_trans_len_4},
-+	{0x8A, "O   OO O        ", "WRITE(16)",
-+	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
-+	 10, get_trans_len_4},
-+	{0x8C, "OOOOOOOOOO      ", "READ ATTRIBUTE",
-+	 SCST_DATA_READ, FLAG_NONE, 10, get_trans_len_4},
-+	{0x8D, "OOOOOOOOOO      ", "WRITE ATTRIBUTE",
-+	 SCST_DATA_WRITE, SCST_WRITE_MEDIUM, 10, get_trans_len_4},
-+	{0x8E, "O   OO O        ", "WRITE AND VERIFY(16)",
-+	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
-+	 10, get_trans_len_4},
-+	{0x8F, "O   OO O        ", "VERIFY(16)",
-+	 SCST_DATA_NONE, SCST_TRANSFER_LEN_TYPE_FIXED|
-+			 SCST_VERIFY_BYTCHK_MISMATCH_ALLOWED,
-+	 10, get_trans_len_4},
-+	{0x90, "O   OO O        ", "PRE-FETCH(16)",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x91, "O   OO O        ", "SYNCHRONIZE CACHE(16)",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x91, " M              ", "SPACE(16)",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-+	{0x92, "O   OO O        ", "LOCK UNLOCK CACHE(16)",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0x92, " O              ", "LOCATE(16)",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-+	{0x93, "O    O          ", "WRITE SAME(16)",
-+	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
-+	 10, get_trans_len_4},
-+	{0x93, " M              ", "ERASE(16)",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT|SCST_WRITE_MEDIUM,
-+	 0, get_trans_len_none},
-+	{0x9E, "O               ", "SERVICE ACTION IN",
-+	 SCST_DATA_READ, FLAG_NONE, 0, get_trans_len_serv_act_in},
-+
-+	/* 12-bytes length CDB */
-+	{0xA0, "VVVVVVVVVV  M   ", "REPORT LUNS",
-+	 SCST_DATA_READ, SCST_SMALL_TIMEOUT|SCST_IMPLICIT_HQ|SCST_SKIP_UA|
-+			 SCST_FULLY_LOCAL_CMD|SCST_LOCAL_CMD|
-+			 SCST_REG_RESERVE_ALLOWED,
-+	 6, get_trans_len_4},
-+	{0xA1, "     O          ", "BLANK",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-+	{0xA3, "     O          ", "SEND KEY",
-+	 SCST_DATA_WRITE, FLAG_NONE, 8, get_trans_len_2},
-+	{0xA3, "OOOOO OOOO      ", "REPORT DEVICE IDENTIDIER",
-+	 SCST_DATA_READ, SCST_REG_RESERVE_ALLOWED, 6, get_trans_len_4},
-+	{0xA3, "            M   ", "MAINTENANCE(IN)",
-+	 SCST_DATA_READ, FLAG_NONE, 6, get_trans_len_4},
-+	{0xA4, "     O          ", "REPORT KEY",
-+	 SCST_DATA_READ, FLAG_NONE, 8, get_trans_len_2},
-+	{0xA4, "            O   ", "MAINTENANCE(OUT)",
-+	 SCST_DATA_WRITE, FLAG_NONE, 6, get_trans_len_4},
-+	{0xA5, "        M       ", "MOVE MEDIUM",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-+	{0xA5, "     O          ", "PLAY AUDIO(12)",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0xA6, "     O  O       ", "EXCHANGE/LOAD/UNLOAD MEDIUM",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-+	{0xA7, "     O          ", "SET READ AHEAD",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0xA8, "         O      ", "GET MESSAGE(12)",
-+	 SCST_DATA_READ, FLAG_NONE, 6, get_trans_len_4},
-+	{0xA8, "O   OO O        ", "READ(12)",
-+	 SCST_DATA_READ, SCST_TRANSFER_LEN_TYPE_FIXED, 6, get_trans_len_4},
-+	{0xA9, "     O          ", "PLAY TRACK RELATIVE(12)",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0xAA, "O   OO O        ", "WRITE(12)",
-+	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
-+	 6, get_trans_len_4},
-+	{0xAA, "         O      ", "SEND MESSAGE(12)",
-+	 SCST_DATA_WRITE, FLAG_NONE, 6, get_trans_len_4},
-+	{0xAC, "       O        ", "ERASE(12)",
-+	 SCST_DATA_NONE, SCST_WRITE_MEDIUM, 0, get_trans_len_none},
-+	{0xAC, "     M          ", "GET PERFORMANCE",
-+	 SCST_DATA_READ, SCST_UNKNOWN_LENGTH, 0, get_trans_len_none},
-+	{0xAD, "     O          ", "READ DVD STRUCTURE",
-+	 SCST_DATA_READ, FLAG_NONE, 8, get_trans_len_2},
-+	{0xAE, "O   OO O        ", "WRITE AND VERIFY(12)",
-+	 SCST_DATA_WRITE, SCST_TRANSFER_LEN_TYPE_FIXED|SCST_WRITE_MEDIUM,
-+	 6, get_trans_len_4},
-+	{0xAF, "O   OO O        ", "VERIFY(12)",
-+	 SCST_DATA_NONE, SCST_TRANSFER_LEN_TYPE_FIXED|
-+			 SCST_VERIFY_BYTCHK_MISMATCH_ALLOWED,
-+	 6, get_trans_len_4},
-+#if 0 /* No need to support at all */
-+	{0xB0, "    OO O        ", "SEARCH DATA HIGH(12)",
-+	 SCST_DATA_WRITE, FLAG_NONE, 9, get_trans_len_1},
-+	{0xB1, "    OO O        ", "SEARCH DATA EQUAL(12)",
-+	 SCST_DATA_WRITE, FLAG_NONE, 9, get_trans_len_1},
-+	{0xB2, "    OO O        ", "SEARCH DATA LOW(12)",
-+	 SCST_DATA_WRITE, FLAG_NONE, 9, get_trans_len_1},
-+#endif
-+	{0xB3, "    OO O        ", "SET LIMITS(12)",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0xB5, "        O       ", "REQUEST VOLUME ELEMENT ADDRESS",
-+	 SCST_DATA_READ, FLAG_NONE, 9, get_trans_len_1},
-+	{0xB6, "        O       ", "SEND VOLUME TAG",
-+	 SCST_DATA_WRITE, FLAG_NONE, 9, get_trans_len_1},
-+	{0xB6, "     M         ", "SET STREAMING",
-+	 SCST_DATA_WRITE, FLAG_NONE, 9, get_trans_len_2},
-+	{0xB7, "       O        ", "READ DEFECT DATA(12)",
-+	 SCST_DATA_READ, FLAG_NONE, 9, get_trans_len_1},
-+	{0xB8, "        O       ", "READ ELEMENT STATUS",
-+	 SCST_DATA_READ, FLAG_NONE, 7, get_trans_len_3_read_elem_stat},
-+	{0xB9, "     O          ", "READ CD MSF",
-+	 SCST_DATA_READ, SCST_UNKNOWN_LENGTH, 0, get_trans_len_none},
-+	{0xBA, "     O          ", "SCAN",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_len_none},
-+	{0xBA, "            O   ", "REDUNDANCY GROUP(IN)",
-+	 SCST_DATA_READ, FLAG_NONE, 6, get_trans_len_4},
-+	{0xBB, "     O          ", "SET SPEED",
-+	 SCST_DATA_NONE, FLAG_NONE, 0, get_trans_len_none},
-+	{0xBB, "            O   ", "REDUNDANCY GROUP(OUT)",
-+	 SCST_DATA_WRITE, FLAG_NONE, 6, get_trans_len_4},
-+	{0xBC, "            O   ", "SPARE(IN)",
-+	 SCST_DATA_READ, FLAG_NONE, 6, get_trans_len_4},
-+	{0xBD, "     O          ", "MECHANISM STATUS",
-+	 SCST_DATA_READ, FLAG_NONE, 8, get_trans_len_2},
-+	{0xBD, "            O   ", "SPARE(OUT)",
-+	 SCST_DATA_WRITE, FLAG_NONE, 6, get_trans_len_4},
-+	{0xBE, "     O          ", "READ CD",
-+	 SCST_DATA_READ, SCST_TRANSFER_LEN_TYPE_FIXED, 6, get_trans_len_3},
-+	{0xBE, "            O   ", "VOLUME SET(IN)",
-+	 SCST_DATA_READ, FLAG_NONE, 6, get_trans_len_4},
-+	{0xBF, "     O          ", "SEND DVD STRUCTUE",
-+	 SCST_DATA_WRITE, FLAG_NONE, 8, get_trans_len_2},
-+	{0xBF, "            O   ", "VOLUME SET(OUT)",
-+	 SCST_DATA_WRITE, FLAG_NONE, 6, get_trans_len_4},
-+	{0xE7, "        V       ", "INIT ELEMENT STATUS WRANGE",
-+	 SCST_DATA_NONE, SCST_LONG_TIMEOUT, 0, get_trans_cdb_len_10}
++static struct kobj_type tgtt_ktype = {
++	.sysfs_ops = &scst_sysfs_ops,
++	.release = scst_tgtt_release,
 +};
 +
-+#define SCST_CDB_TBL_SIZE	((int)ARRAY_SIZE(scst_scsi_op_table))
++#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
 +
-+static void scst_free_tgt_dev(struct scst_tgt_dev *tgt_dev);
-+static void scst_check_internal_sense(struct scst_device *dev, int result,
-+	uint8_t *sense, int sense_len);
-+static void scst_queue_report_luns_changed_UA(struct scst_session *sess,
-+	int flags);
-+static void __scst_check_set_UA(struct scst_tgt_dev *tgt_dev,
-+	const uint8_t *sense, int sense_len, int flags);
-+static void scst_alloc_set_UA(struct scst_tgt_dev *tgt_dev,
-+	const uint8_t *sense, int sense_len, int flags);
-+static void scst_free_all_UA(struct scst_tgt_dev *tgt_dev);
-+static void scst_release_space(struct scst_cmd *cmd);
-+static void scst_unblock_cmds(struct scst_device *dev);
-+static void scst_clear_reservation(struct scst_tgt_dev *tgt_dev);
-+static struct scst_tgt_dev *scst_alloc_add_tgt_dev(struct scst_session *sess,
-+	struct scst_acg_dev *acg_dev);
-+static void scst_tgt_retry_timer_fn(unsigned long arg);
-+
-+#ifdef CONFIG_SCST_DEBUG_TM
-+static void tm_dbg_init_tgt_dev(struct scst_tgt_dev *tgt_dev);
-+static void tm_dbg_deinit_tgt_dev(struct scst_tgt_dev *tgt_dev);
-+#else
-+static inline void tm_dbg_init_tgt_dev(struct scst_tgt_dev *tgt_dev) {}
-+static inline void tm_dbg_deinit_tgt_dev(struct scst_tgt_dev *tgt_dev) {}
-+#endif /* CONFIG_SCST_DEBUG_TM */
-+
-+/**
-+ * scst_alloc_sense() - allocate sense buffer for command
-+ *
-+ * Allocates, if necessary, sense buffer for command. Returns 0 on success
-+ * and error code othrwise. Parameter "atomic" should be non-0 if the
-+ * function called in atomic context.
-+ */
-+int scst_alloc_sense(struct scst_cmd *cmd, int atomic)
++static ssize_t scst_tgtt_trace_level_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
 +{
-+	int res = 0;
-+	gfp_t gfp_mask = atomic ? GFP_ATOMIC : (GFP_KERNEL|__GFP_NOFAIL);
++	struct scst_tgt_template *tgtt;
 +
-+	if (cmd->sense != NULL)
-+		goto memzero;
++	tgtt = container_of(kobj, struct scst_tgt_template, tgtt_kobj);
 +
-+	cmd->sense = mempool_alloc(scst_sense_mempool, gfp_mask);
-+	if (cmd->sense == NULL) {
-+		PRINT_CRIT_ERROR("Sense memory allocation failed (op %x). "
-+			"The sense data will be lost!!", cmd->cdb[0]);
++	return scst_trace_level_show(tgtt->trace_tbl,
++		tgtt->trace_flags ? *tgtt->trace_flags : 0, buf,
++		tgtt->trace_tbl_help);
++}
++
++static ssize_t scst_tgtt_trace_level_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int res;
++	struct scst_tgt_template *tgtt;
++
++	tgtt = container_of(kobj, struct scst_tgt_template, tgtt_kobj);
++
++	if (mutex_lock_interruptible(&scst_log_mutex) != 0) {
++		res = -EINTR;
++		goto out;
++	}
++
++	res = scst_write_trace(buf, count, tgtt->trace_flags,
++		tgtt->default_trace_flags, tgtt->name, tgtt->trace_tbl);
++
++	mutex_unlock(&scst_log_mutex);
++
++out:
++	return res;
++}
++
++static struct kobj_attribute tgtt_trace_attr =
++	__ATTR(trace_level, S_IRUGO | S_IWUSR,
++	       scst_tgtt_trace_level_show, scst_tgtt_trace_level_store);
++
++#endif /* #if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING) */
++
++static ssize_t scst_tgtt_mgmt_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	char *help = "Usage: echo \"add_target target_name [parameters]\" "
++				">mgmt\n"
++		     "       echo \"del_target target_name\" >mgmt\n"
++		     "%s"
++		     "\n"
++		     "where parameters are one or more "
++		     "param_name=value pairs separated by ';'\n"
++		     "%s%s";
++	struct scst_tgt_template *tgtt;
++
++	tgtt = container_of(kobj, struct scst_tgt_template, tgtt_kobj);
++
++	if (tgtt->add_target_parameters_help != NULL)
++		return sprintf(buf, help,
++			(tgtt->mgmt_cmd_help) ? tgtt->mgmt_cmd_help : "",
++			"\nThe following parameters available: ",
++			tgtt->add_target_parameters_help);
++	else
++		return sprintf(buf, help,
++			(tgtt->mgmt_cmd_help) ? tgtt->mgmt_cmd_help : "",
++			"", "");
++}
++
++static ssize_t scst_tgtt_mgmt_store(struct kobject *kobj,
++				    struct kobj_attribute *attr,
++				    const char *buf, size_t count)
++{
++	int res;
++	char *buffer, *p, *pp, *target_name;
++	struct scst_tgt_template *tgtt;
++
++	tgtt = container_of(kobj, struct scst_tgt_template, tgtt_kobj);
++
++	buffer = kzalloc(count+1, GFP_KERNEL);
++	if (buffer == NULL) {
 +		res = -ENOMEM;
 +		goto out;
 +	}
 +
-+	cmd->sense_buflen = SCST_SENSE_BUFFERSIZE;
++	memcpy(buffer, buf, count);
++	buffer[count] = '\0';
 +
-+memzero:
-+	cmd->sense_valid_len = 0;
-+	memset(cmd->sense, 0, cmd->sense_buflen);
++	pp = buffer;
++	if (pp[strlen(pp) - 1] == '\n')
++		pp[strlen(pp) - 1] = '\0';
 +
-+out:
-+	return res;
-+}
-+EXPORT_SYMBOL(scst_alloc_sense);
++	p = scst_get_next_lexem(&pp);
 +
-+/**
-+ * scst_alloc_set_sense() - allocate and fill sense buffer for command
-+ *
-+ * Allocates, if necessary, sense buffer for command and copies in
-+ * it data from the supplied sense buffer. Returns 0 on success
-+ * and error code othrwise.
-+ */
-+int scst_alloc_set_sense(struct scst_cmd *cmd, int atomic,
-+	const uint8_t *sense, unsigned int len)
-+{
-+	int res;
-+
-+	/*
-+	 * We don't check here if the existing sense is valid or not, because
-+	 * we suppose the caller did it based on cmd->status.
-+	 */
-+
-+	res = scst_alloc_sense(cmd, atomic);
-+	if (res != 0) {
-+		PRINT_BUFFER("Lost sense", sense, len);
-+		goto out;
-+	}
-+
-+	cmd->sense_valid_len = len;
-+	if (cmd->sense_buflen < len) {
-+		PRINT_WARNING("Sense truncated (needed %d), shall you increase "
-+			"SCST_SENSE_BUFFERSIZE? Op: %x", len, cmd->cdb[0]);
-+		cmd->sense_valid_len = cmd->sense_buflen;
-+	}
-+
-+	memcpy(cmd->sense, sense, cmd->sense_valid_len);
-+	TRACE_BUFFER("Sense set", cmd->sense, cmd->sense_valid_len);
-+
-+out:
-+	return res;
-+}
-+EXPORT_SYMBOL(scst_alloc_set_sense);
-+
-+/**
-+ * scst_set_cmd_error_status() - set error SCSI status
-+ * @cmd:	SCST command
-+ * @status:	SCSI status to set
-+ *
-+ * Description:
-+ *    Sets error SCSI status in the command and prepares it for returning it.
-+ *    Returns 0 on success, error code otherwise.
-+ */
-+int scst_set_cmd_error_status(struct scst_cmd *cmd, int status)
-+{
-+	int res = 0;
-+
-+	if (cmd->status != 0) {
-+		TRACE_MGMT_DBG("cmd %p already has status %x set", cmd,
-+			cmd->status);
-+		res = -EEXIST;
-+		goto out;
-+	}
-+
-+	cmd->status = status;
-+	cmd->host_status = DID_OK;
-+
-+	cmd->dbl_ua_orig_resp_data_len = cmd->resp_data_len;
-+	cmd->dbl_ua_orig_data_direction = cmd->data_direction;
-+
-+	cmd->data_direction = SCST_DATA_NONE;
-+	cmd->resp_data_len = 0;
-+	cmd->is_send_status = 1;
-+
-+	cmd->completed = 1;
-+
-+out:
-+	return res;
-+}
-+EXPORT_SYMBOL(scst_set_cmd_error_status);
-+
-+static int scst_set_lun_not_supported_request_sense(struct scst_cmd *cmd,
-+	int key, int asc, int ascq)
-+{
-+	int res;
-+	int sense_len;
-+
-+	if (cmd->status != 0) {
-+		TRACE_MGMT_DBG("cmd %p already has status %x set", cmd,
-+			cmd->status);
-+		res = -EEXIST;
-+		goto out;
-+	}
-+
-+	if ((cmd->sg != NULL) && SCST_SENSE_VALID(sg_virt(cmd->sg))) {
-+		TRACE_MGMT_DBG("cmd %p already has sense set", cmd);
-+		res = -EEXIST;
-+		goto out;
-+	}
-+
-+	if (cmd->sg == NULL) {
-+		if (cmd->bufflen == 0)
-+			cmd->bufflen = cmd->cdb[4];
-+
-+		cmd->sg = scst_alloc(cmd->bufflen, GFP_ATOMIC, &cmd->sg_cnt);
-+		if (cmd->sg == NULL) {
-+			PRINT_ERROR("Unable to alloc sg for REQUEST SENSE"
-+				"(sense %x/%x/%x)", key, asc, ascq);
-+			res = 1;
-+			goto out;
++	if (strcasecmp("add_target", p) == 0) {
++		target_name = scst_get_next_lexem(&pp);
++		if (*target_name == '\0') {
++			PRINT_ERROR("%s", "Target name required");
++			res = -EINVAL;
++			goto out_free;
 +		}
-+	}
-+
-+	TRACE_MEM("sg %p alloced for sense for cmd %p (cnt %d, "
-+		"len %d)", cmd->sg, cmd, cmd->sg_cnt, cmd->bufflen);
-+
-+	sense_len = scst_set_sense(sg_virt(cmd->sg),
-+		cmd->bufflen, cmd->cdb[1] & 1, key, asc, ascq);
-+	scst_set_resp_data_len(cmd, sense_len);
-+
-+	TRACE_BUFFER("Sense set", sg_virt(cmd->sg), sense_len);
-+
-+	res = 0;
-+	cmd->completed = 1;
-+
-+out:
-+	return res;
-+}
-+
-+static int scst_set_lun_not_supported_inquiry(struct scst_cmd *cmd)
-+{
-+	int res;
-+	uint8_t *buf;
-+	int len;
-+
-+	if (cmd->status != 0) {
-+		TRACE_MGMT_DBG("cmd %p already has status %x set", cmd,
-+			cmd->status);
-+		res = -EEXIST;
-+		goto out;
-+	}
-+
-+	if (cmd->sg == NULL) {
-+		if (cmd->bufflen == 0)
-+			cmd->bufflen = min_t(int, 36, (cmd->cdb[3] << 8) | cmd->cdb[4]);
-+
-+		cmd->sg = scst_alloc(cmd->bufflen, GFP_ATOMIC, &cmd->sg_cnt);
-+		if (cmd->sg == NULL) {
-+			PRINT_ERROR("%s", "Unable to alloc sg for INQUIRY "
-+				"for not supported LUN");
-+			res = 1;
-+			goto out;
-+		}
-+	}
-+
-+	TRACE_MEM("sg %p alloced INQUIRY for cmd %p (cnt %d, len %d)",
-+		cmd->sg, cmd, cmd->sg_cnt, cmd->bufflen);
-+
-+	buf = sg_virt(cmd->sg);
-+	len = min_t(int, 36, cmd->bufflen);
-+
-+	memset(buf, 0, len);
-+	buf[0] = 0x7F; /* Peripheral qualifier 011b, Peripheral device type 1Fh */
-+
-+	TRACE_BUFFER("INQUIRY for not supported LUN set", buf, len);
-+
-+	res = 0;
-+	cmd->completed = 1;
-+
-+out:
-+	return res;
-+}
-+
-+/**
-+ * scst_set_cmd_error() - set error in the command and fill the sense buffer.
-+ *
-+ * Sets error in the command and fill the sense buffer. Returns 0 on success,
-+ * error code otherwise.
-+ */
-+int scst_set_cmd_error(struct scst_cmd *cmd, int key, int asc, int ascq)
-+{
-+	int res;
-+
-+	/*
-+	 * We need for LOGICAL UNIT NOT SUPPORTED special handling for
-+	 * REQUEST SENSE and INQUIRY.
-+	 */
-+	if ((key == ILLEGAL_REQUEST) && (asc == 0x25) && (ascq == 0)) {
-+		if (cmd->cdb[0] == REQUEST_SENSE)
-+			res = scst_set_lun_not_supported_request_sense(cmd,
-+				key, asc, ascq);
-+		else if (cmd->cdb[0] == INQUIRY)
-+			res = scst_set_lun_not_supported_inquiry(cmd);
-+		else
-+			goto do_sense;
-+
-+		if (res > 0)
-+			goto do_sense;
-+		else
-+			goto out;
-+	}
-+
-+do_sense:
-+	res = scst_set_cmd_error_status(cmd, SAM_STAT_CHECK_CONDITION);
-+	if (res != 0)
-+		goto out;
-+
-+	res = scst_alloc_sense(cmd, 1);
-+	if (res != 0) {
-+		PRINT_ERROR("Lost sense data (key %x, asc %x, ascq %x)",
-+			key, asc, ascq);
-+		goto out;
-+	}
-+
-+	cmd->sense_valid_len = scst_set_sense(cmd->sense, cmd->sense_buflen,
-+		scst_get_cmd_dev_d_sense(cmd), key, asc, ascq);
-+	TRACE_BUFFER("Sense set", cmd->sense, cmd->sense_valid_len);
-+
-+out:
-+	return res;
-+}
-+EXPORT_SYMBOL(scst_set_cmd_error);
-+
-+/**
-+ * scst_set_sense() - set sense from KEY/ASC/ASCQ numbers
-+ *
-+ * Sets the corresponding fields in the sense buffer taking sense type
-+ * into account. Returns resulting sense length.
-+ */
-+int scst_set_sense(uint8_t *buffer, int len, bool d_sense,
-+	int key, int asc, int ascq)
-+{
-+	int res;
-+
-+	BUG_ON(len == 0);
-+
-+	memset(buffer, 0, len);
-+
-+	if (d_sense) {
-+		/* Descriptor format */
-+		if (len < 8) {
-+			PRINT_ERROR("Length %d of sense buffer too small to "
-+				"fit sense %x:%x:%x", len, key, asc, ascq);
++		res = tgtt->add_target(target_name, pp);
++	} else if (strcasecmp("del_target", p) == 0) {
++		target_name = scst_get_next_lexem(&pp);
++		if (*target_name == '\0') {
++			PRINT_ERROR("%s", "Target name required");
++			res = -EINVAL;
++			goto out_free;
 +		}
 +
-+		buffer[0] = 0x72;		/* Response Code	*/
-+		if (len > 1)
-+			buffer[1] = key;	/* Sense Key		*/
-+		if (len > 2)
-+			buffer[2] = asc;	/* ASC			*/
-+		if (len > 3)
-+			buffer[3] = ascq;	/* ASCQ			*/
-+		res = 8;
++		p = scst_get_next_lexem(&pp);
++		if (*p != '\0')
++			goto out_syntax_err;
++
++		res = tgtt->del_target(target_name);
++	} else if (tgtt->mgmt_cmd != NULL) {
++		scst_restore_token_str(p, pp);
++		res = tgtt->mgmt_cmd(buffer);
 +	} else {
-+		/* Fixed format */
-+		if (len < 18) {
-+			PRINT_ERROR("Length %d of sense buffer too small to "
-+				"fit sense %x:%x:%x", len, key, asc, ascq);
-+		}
-+
-+		buffer[0] = 0x70;		/* Response Code	*/
-+		if (len > 2)
-+			buffer[2] = key;	/* Sense Key		*/
-+		if (len > 7)
-+			buffer[7] = 0x0a;	/* Additional Sense Length */
-+		if (len > 12)
-+			buffer[12] = asc;	/* ASC			*/
-+		if (len > 13)
-+			buffer[13] = ascq;	/* ASCQ			*/
-+		res = 18;
-+	}
-+
-+	TRACE_BUFFER("Sense set", buffer, res);
-+	return res;
-+}
-+EXPORT_SYMBOL(scst_set_sense);
-+
-+/**
-+ * scst_analyze_sense() - analyze sense
-+ *
-+ * Returns true if sense matches to (key, asc, ascq) and false otherwise.
-+ * Valid_mask is one or several SCST_SENSE_*_VALID constants setting valid
-+ * (key, asc, ascq) values.
-+ */
-+bool scst_analyze_sense(const uint8_t *sense, int len, unsigned int valid_mask,
-+	int key, int asc, int ascq)
-+{
-+	bool res = false;
-+
-+	/* Response Code */
-+	if ((sense[0] == 0x70) || (sense[0] == 0x71)) {
-+		/* Fixed format */
-+
-+		/* Sense Key */
-+		if (valid_mask & SCST_SENSE_KEY_VALID) {
-+			if (len < 3)
-+				goto out;
-+			if (sense[2] != key)
-+				goto out;
-+		}
-+
-+		/* ASC */
-+		if (valid_mask & SCST_SENSE_ASC_VALID) {
-+			if (len < 13)
-+				goto out;
-+			if (sense[12] != asc)
-+				goto out;
-+		}
-+
-+		/* ASCQ */
-+		if (valid_mask & SCST_SENSE_ASCQ_VALID) {
-+			if (len < 14)
-+				goto out;
-+			if (sense[13] != ascq)
-+				goto out;
-+		}
-+	} else if ((sense[0] == 0x72) || (sense[0] == 0x73)) {
-+		/* Descriptor format */
-+
-+		/* Sense Key */
-+		if (valid_mask & SCST_SENSE_KEY_VALID) {
-+			if (len < 2)
-+				goto out;
-+			if (sense[1] != key)
-+				goto out;
-+		}
-+
-+		/* ASC */
-+		if (valid_mask & SCST_SENSE_ASC_VALID) {
-+			if (len < 3)
-+				goto out;
-+			if (sense[2] != asc)
-+				goto out;
-+		}
-+
-+		/* ASCQ */
-+		if (valid_mask & SCST_SENSE_ASCQ_VALID) {
-+			if (len < 4)
-+				goto out;
-+			if (sense[3] != ascq)
-+				goto out;
-+		}
-+	} else
-+		goto out;
-+
-+	res = true;
-+
-+out:
-+	return res;
-+}
-+EXPORT_SYMBOL(scst_analyze_sense);
-+
-+/**
-+ * scst_is_ua_sense() - determine if the sense is UA sense
-+ *
-+ * Returns true if the sense is valid and carrying a Unit
-+ * Attention or false otherwise.
-+ */
-+bool scst_is_ua_sense(const uint8_t *sense, int len)
-+{
-+	if (SCST_SENSE_VALID(sense))
-+		return scst_analyze_sense(sense, len,
-+			SCST_SENSE_KEY_VALID, UNIT_ATTENTION, 0, 0);
-+	else
-+		return false;
-+}
-+EXPORT_SYMBOL(scst_is_ua_sense);
-+
-+bool scst_is_ua_global(const uint8_t *sense, int len)
-+{
-+	bool res;
-+
-+	/* Changing it don't forget to change scst_requeue_ua() as well!! */
-+
-+	if (scst_analyze_sense(sense, len, SCST_SENSE_ALL_VALID,
-+			SCST_LOAD_SENSE(scst_sense_reported_luns_data_changed)))
-+		res = true;
-+	else
-+		res = false;
-+
-+	return res;
-+}
-+
-+/**
-+ * scst_check_convert_sense() - check sense type and convert it if needed
-+ *
-+ * Checks if sense in the sense buffer, if any, is in the correct format.
-+ * If not, converts it in the correct format.
-+ */
-+void scst_check_convert_sense(struct scst_cmd *cmd)
-+{
-+	bool d_sense;
-+
-+	if ((cmd->sense == NULL) || (cmd->status != SAM_STAT_CHECK_CONDITION))
-+		goto out;
-+
-+	d_sense = scst_get_cmd_dev_d_sense(cmd);
-+	if (d_sense && ((cmd->sense[0] == 0x70) || (cmd->sense[0] == 0x71))) {
-+		TRACE_MGMT_DBG("Converting fixed sense to descriptor (cmd %p)",
-+			cmd);
-+		if ((cmd->sense_valid_len < 18)) {
-+			PRINT_ERROR("Sense too small to convert (%d, "
-+				"type: fixed)", cmd->sense_buflen);
-+			goto out;
-+		}
-+		cmd->sense_valid_len = scst_set_sense(cmd->sense, cmd->sense_buflen,
-+			d_sense, cmd->sense[2], cmd->sense[12], cmd->sense[13]);
-+	} else if (!d_sense && ((cmd->sense[0] == 0x72) ||
-+				(cmd->sense[0] == 0x73))) {
-+		TRACE_MGMT_DBG("Converting descriptor sense to fixed (cmd %p)",
-+			cmd);
-+		if ((cmd->sense_buflen < 18) || (cmd->sense_valid_len < 8)) {
-+			PRINT_ERROR("Sense too small to convert (%d, "
-+				"type: descryptor, valid %d)",
-+				cmd->sense_buflen, cmd->sense_valid_len);
-+			goto out;
-+		}
-+		cmd->sense_valid_len = scst_set_sense(cmd->sense,
-+			cmd->sense_buflen, d_sense,
-+			cmd->sense[1], cmd->sense[2], cmd->sense[3]);
-+	}
-+
-+out:
-+	return;
-+}
-+EXPORT_SYMBOL(scst_check_convert_sense);
-+
-+static int scst_set_cmd_error_sense(struct scst_cmd *cmd, uint8_t *sense,
-+	unsigned int len)
-+{
-+	int res;
-+
-+	res = scst_set_cmd_error_status(cmd, SAM_STAT_CHECK_CONDITION);
-+	if (res != 0)
-+		goto out;
-+
-+	res = scst_alloc_set_sense(cmd, 1, sense, len);
-+
-+out:
-+	return res;
-+}
-+
-+/**
-+ * scst_set_busy() - set BUSY or TASK QUEUE FULL status
-+ *
-+ * Sets BUSY or TASK QUEUE FULL status depending on if this session has other
-+ * outstanding commands or not.
-+ */
-+void scst_set_busy(struct scst_cmd *cmd)
-+{
-+	int c = atomic_read(&cmd->sess->sess_cmd_count);
-+
-+	if ((c <= 1) || (cmd->sess->init_phase != SCST_SESS_IPH_READY))	{
-+		scst_set_cmd_error_status(cmd, SAM_STAT_BUSY);
-+		TRACE(TRACE_FLOW_CONTROL, "Sending BUSY status to initiator %s "
-+			"(cmds count %d, queue_type %x, sess->init_phase %d)",
-+			cmd->sess->initiator_name, c,
-+			cmd->queue_type, cmd->sess->init_phase);
-+	} else {
-+		scst_set_cmd_error_status(cmd, SAM_STAT_TASK_SET_FULL);
-+		TRACE(TRACE_FLOW_CONTROL, "Sending QUEUE_FULL status to "
-+			"initiator %s (cmds count %d, queue_type %x, "
-+			"sess->init_phase %d)", cmd->sess->initiator_name, c,
-+			cmd->queue_type, cmd->sess->init_phase);
-+	}
-+	return;
-+}
-+EXPORT_SYMBOL(scst_set_busy);
-+
-+/**
-+ * scst_set_initial_UA() - set initial Unit Attention
-+ *
-+ * Sets initial Unit Attention on all devices of the session,
-+ * replacing default scst_sense_reset_UA
-+ */
-+void scst_set_initial_UA(struct scst_session *sess, int key, int asc, int ascq)
-+{
-+	int i;
-+
-+	TRACE_MGMT_DBG("Setting for sess %p initial UA %x/%x/%x", sess, key,
-+		asc, ascq);
-+
-+	/* Protect sess_tgt_dev_list_hash */
-+	mutex_lock(&scst_mutex);
-+
-+	for (i = 0; i < TGT_DEV_HASH_SIZE; i++) {
-+		struct list_head *sess_tgt_dev_list_head =
-+			&sess->sess_tgt_dev_list_hash[i];
-+		struct scst_tgt_dev *tgt_dev;
-+
-+		list_for_each_entry(tgt_dev, sess_tgt_dev_list_head,
-+				sess_tgt_dev_list_entry) {
-+			spin_lock_bh(&tgt_dev->tgt_dev_lock);
-+			if (!list_empty(&tgt_dev->UA_list)) {
-+				struct scst_tgt_dev_UA *ua;
-+
-+				ua = list_entry(tgt_dev->UA_list.next,
-+					typeof(*ua), UA_list_entry);
-+				if (scst_analyze_sense(ua->UA_sense_buffer,
-+						ua->UA_valid_sense_len,
-+						SCST_SENSE_ALL_VALID,
-+						SCST_LOAD_SENSE(scst_sense_reset_UA))) {
-+					ua->UA_valid_sense_len = scst_set_sense(
-+						ua->UA_sense_buffer,
-+						sizeof(ua->UA_sense_buffer),
-+						tgt_dev->dev->d_sense,
-+						key, asc, ascq);
-+				} else
-+					PRINT_ERROR("%s",
-+						"The first UA isn't RESET UA");
-+			} else
-+				PRINT_ERROR("%s", "There's no RESET UA to "
-+					"replace");
-+			spin_unlock_bh(&tgt_dev->tgt_dev_lock);
-+		}
-+	}
-+
-+	mutex_unlock(&scst_mutex);
-+	return;
-+}
-+EXPORT_SYMBOL(scst_set_initial_UA);
-+
-+static struct scst_aen *scst_alloc_aen(struct scst_session *sess,
-+	uint64_t unpacked_lun)
-+{
-+	struct scst_aen *aen;
-+
-+	aen = mempool_alloc(scst_aen_mempool, GFP_KERNEL);
-+	if (aen == NULL) {
-+		PRINT_ERROR("AEN memory allocation failed. Corresponding "
-+			"event notification will not be performed (initiator "
-+			"%s)", sess->initiator_name);
-+		goto out;
-+	}
-+	memset(aen, 0, sizeof(*aen));
-+
-+	aen->sess = sess;
-+	scst_sess_get(sess);
-+
-+	aen->lun = scst_pack_lun(unpacked_lun, sess->acg->addr_method);
-+
-+out:
-+	return aen;
-+};
-+
-+static void scst_free_aen(struct scst_aen *aen)
-+{
-+
-+	scst_sess_put(aen->sess);
-+	mempool_free(aen, scst_aen_mempool);
-+	return;
-+};
-+
-+/* Must be called under scst_mutex */
-+void scst_gen_aen_or_ua(struct scst_tgt_dev *tgt_dev,
-+	int key, int asc, int ascq)
-+{
-+	struct scst_tgt_template *tgtt = tgt_dev->sess->tgt->tgtt;
-+	uint8_t sense_buffer[SCST_STANDARD_SENSE_LEN];
-+	int sl;
-+
-+	if (tgtt->report_aen != NULL) {
-+		struct scst_aen *aen;
-+		int rc;
-+
-+		aen = scst_alloc_aen(tgt_dev->sess, tgt_dev->lun);
-+		if (aen == NULL)
-+			goto queue_ua;
-+
-+		aen->event_fn = SCST_AEN_SCSI;
-+		aen->aen_sense_len = scst_set_sense(aen->aen_sense,
-+			sizeof(aen->aen_sense), tgt_dev->dev->d_sense,
-+			key, asc, ascq);
-+
-+		TRACE_DBG("Calling target's %s report_aen(%p)",
-+			tgtt->name, aen);
-+		rc = tgtt->report_aen(aen);
-+		TRACE_DBG("Target's %s report_aen(%p) returned %d",
-+			tgtt->name, aen, rc);
-+		if (rc == SCST_AEN_RES_SUCCESS)
-+			goto out;
-+
-+		scst_free_aen(aen);
-+	}
-+
-+queue_ua:
-+	TRACE_MGMT_DBG("AEN not supported, queuing plain UA (tgt_dev %p)",
-+		tgt_dev);
-+	sl = scst_set_sense(sense_buffer, sizeof(sense_buffer),
-+		tgt_dev->dev->d_sense, key, asc, ascq);
-+	scst_check_set_UA(tgt_dev, sense_buffer, sl, 0);
-+
-+out:
-+	return;
-+}
-+
-+/**
-+ * scst_capacity_data_changed() - notify SCST about device capacity change
-+ *
-+ * Notifies SCST core that dev has changed its capacity. Called under no locks.
-+ */
-+void scst_capacity_data_changed(struct scst_device *dev)
-+{
-+	struct scst_tgt_dev *tgt_dev;
-+
-+	if (dev->type != TYPE_DISK) {
-+		TRACE_MGMT_DBG("Device type %d isn't for CAPACITY DATA "
-+			"CHANGED UA", dev->type);
-+		goto out;
-+	}
-+
-+	TRACE_MGMT_DBG("CAPACITY DATA CHANGED (dev %p)", dev);
-+
-+	mutex_lock(&scst_mutex);
-+
-+	list_for_each_entry(tgt_dev, &dev->dev_tgt_dev_list,
-+			    dev_tgt_dev_list_entry) {
-+		scst_gen_aen_or_ua(tgt_dev,
-+			SCST_LOAD_SENSE(scst_sense_capacity_data_changed));
-+	}
-+
-+	mutex_unlock(&scst_mutex);
-+
-+out:
-+	return;
-+}
-+EXPORT_SYMBOL_GPL(scst_capacity_data_changed);
-+
-+static inline bool scst_is_report_luns_changed_type(int type)
-+{
-+	switch (type) {
-+	case TYPE_DISK:
-+	case TYPE_TAPE:
-+	case TYPE_PRINTER:
-+	case TYPE_PROCESSOR:
-+	case TYPE_WORM:
-+	case TYPE_ROM:
-+	case TYPE_SCANNER:
-+	case TYPE_MOD:
-+	case TYPE_MEDIUM_CHANGER:
-+	case TYPE_RAID:
-+	case TYPE_ENCLOSURE:
-+		return true;
-+	default:
-+		return false;
-+	}
-+}
-+
-+/* scst_mutex supposed to be held */
-+static void scst_queue_report_luns_changed_UA(struct scst_session *sess,
-+					      int flags)
-+{
-+	uint8_t sense_buffer[SCST_STANDARD_SENSE_LEN];
-+	struct list_head *shead;
-+	struct scst_tgt_dev *tgt_dev;
-+	int i;
-+
-+	TRACE_MGMT_DBG("Queuing REPORTED LUNS DATA CHANGED UA "
-+		"(sess %p)", sess);
-+
-+	local_bh_disable();
-+
-+	for (i = 0; i < TGT_DEV_HASH_SIZE; i++) {
-+		shead = &sess->sess_tgt_dev_list_hash[i];
-+
-+		list_for_each_entry(tgt_dev, shead,
-+				sess_tgt_dev_list_entry) {
-+			/* Lockdep triggers here a false positive.. */
-+			spin_lock(&tgt_dev->tgt_dev_lock);
-+		}
-+	}
-+
-+	for (i = 0; i < TGT_DEV_HASH_SIZE; i++) {
-+		shead = &sess->sess_tgt_dev_list_hash[i];
-+
-+		list_for_each_entry(tgt_dev, shead,
-+				sess_tgt_dev_list_entry) {
-+			int sl;
-+
-+			if (!scst_is_report_luns_changed_type(
-+					tgt_dev->dev->type))
-+				continue;
-+
-+			sl = scst_set_sense(sense_buffer, sizeof(sense_buffer),
-+				tgt_dev->dev->d_sense,
-+				SCST_LOAD_SENSE(scst_sense_reported_luns_data_changed));
-+
-+			__scst_check_set_UA(tgt_dev, sense_buffer,
-+				sl, flags | SCST_SET_UA_FLAG_GLOBAL);
-+		}
-+	}
-+
-+	for (i = TGT_DEV_HASH_SIZE-1; i >= 0; i--) {
-+		shead = &sess->sess_tgt_dev_list_hash[i];
-+
-+		list_for_each_entry_reverse(tgt_dev,
-+				shead, sess_tgt_dev_list_entry) {
-+			spin_unlock(&tgt_dev->tgt_dev_lock);
-+		}
-+	}
-+
-+	local_bh_enable();
-+	return;
-+}
-+
-+/* The activity supposed to be suspended and scst_mutex held */
-+static void scst_report_luns_changed_sess(struct scst_session *sess)
-+{
-+	int i;
-+	struct scst_tgt_template *tgtt = sess->tgt->tgtt;
-+	int d_sense = 0;
-+	uint64_t lun = 0;
-+
-+	TRACE_DBG("REPORTED LUNS DATA CHANGED (sess %p)", sess);
-+
-+	for (i = 0; i < TGT_DEV_HASH_SIZE; i++) {
-+		struct list_head *shead;
-+		struct scst_tgt_dev *tgt_dev;
-+
-+		shead = &sess->sess_tgt_dev_list_hash[i];
-+
-+		list_for_each_entry(tgt_dev, shead,
-+				sess_tgt_dev_list_entry) {
-+			if (scst_is_report_luns_changed_type(
-+					tgt_dev->dev->type)) {
-+				lun = tgt_dev->lun;
-+				d_sense = tgt_dev->dev->d_sense;
-+				goto found;
-+			}
-+		}
-+	}
-+
-+found:
-+	if (tgtt->report_aen != NULL) {
-+		struct scst_aen *aen;
-+		int rc;
-+
-+		aen = scst_alloc_aen(sess, lun);
-+		if (aen == NULL)
-+			goto queue_ua;
-+
-+		aen->event_fn = SCST_AEN_SCSI;
-+		aen->aen_sense_len = scst_set_sense(aen->aen_sense,
-+			sizeof(aen->aen_sense), d_sense,
-+			SCST_LOAD_SENSE(scst_sense_reported_luns_data_changed));
-+
-+		TRACE_DBG("Calling target's %s report_aen(%p)",
-+			tgtt->name, aen);
-+		rc = tgtt->report_aen(aen);
-+		TRACE_DBG("Target's %s report_aen(%p) returned %d",
-+			tgtt->name, aen, rc);
-+		if (rc == SCST_AEN_RES_SUCCESS)
-+			goto out;
-+
-+		scst_free_aen(aen);
-+	}
-+
-+queue_ua:
-+	scst_queue_report_luns_changed_UA(sess, 0);
-+
-+out:
-+	return;
-+}
-+
-+/* The activity supposed to be suspended and scst_mutex held */
-+void scst_report_luns_changed(struct scst_acg *acg)
-+{
-+	struct scst_session *sess;
-+
-+	TRACE_MGMT_DBG("REPORTED LUNS DATA CHANGED (acg %s)", acg->acg_name);
-+
-+	list_for_each_entry(sess, &acg->acg_sess_list, acg_sess_list_entry) {
-+		scst_report_luns_changed_sess(sess);
-+	}
-+	return;
-+}
-+
-+/**
-+ * scst_aen_done() - AEN processing done
-+ *
-+ * Notifies SCST that the driver has sent the AEN and it
-+ * can be freed now. Don't forget to set the delivery status, if it
-+ * isn't success, using scst_set_aen_delivery_status() before calling
-+ * this function.
-+ */
-+void scst_aen_done(struct scst_aen *aen)
-+{
-+
-+	TRACE_MGMT_DBG("AEN %p (fn %d) done (initiator %s)", aen,
-+		aen->event_fn, aen->sess->initiator_name);
-+
-+	if (aen->delivery_status == SCST_AEN_RES_SUCCESS)
++		PRINT_ERROR("Unknown action \"%s\"", p);
++		res = -EINVAL;
 +		goto out_free;
-+
-+	if (aen->event_fn != SCST_AEN_SCSI)
-+		goto out_free;
-+
-+	TRACE_MGMT_DBG("Delivery of SCSI AEN failed (initiator %s)",
-+		aen->sess->initiator_name);
-+
-+	if (scst_analyze_sense(aen->aen_sense, aen->aen_sense_len,
-+			SCST_SENSE_ALL_VALID, SCST_LOAD_SENSE(
-+				scst_sense_reported_luns_data_changed))) {
-+		mutex_lock(&scst_mutex);
-+		scst_queue_report_luns_changed_UA(aen->sess,
-+			SCST_SET_UA_FLAG_AT_HEAD);
-+		mutex_unlock(&scst_mutex);
-+	} else {
-+		struct list_head *shead;
-+		struct scst_tgt_dev *tgt_dev;
-+		uint64_t lun;
-+
-+		lun = scst_unpack_lun((uint8_t *)&aen->lun, sizeof(aen->lun));
-+
-+		mutex_lock(&scst_mutex);
-+
-+		/* tgt_dev might get dead, so we need to reseek it */
-+		shead = &aen->sess->sess_tgt_dev_list_hash[HASH_VAL(lun)];
-+		list_for_each_entry(tgt_dev, shead,
-+				sess_tgt_dev_list_entry) {
-+			if (tgt_dev->lun == lun) {
-+				TRACE_MGMT_DBG("Requeuing failed AEN UA for "
-+					"tgt_dev %p", tgt_dev);
-+				scst_check_set_UA(tgt_dev, aen->aen_sense,
-+					aen->aen_sense_len,
-+					SCST_SET_UA_FLAG_AT_HEAD);
-+				break;
-+			}
-+		}
-+
-+		mutex_unlock(&scst_mutex);
 +	}
++
++	if (res == 0)
++		res = count;
 +
 +out_free:
-+	scst_free_aen(aen);
-+	return;
-+}
-+EXPORT_SYMBOL(scst_aen_done);
-+
-+void scst_requeue_ua(struct scst_cmd *cmd)
-+{
-+
-+	if (scst_analyze_sense(cmd->sense, cmd->sense_valid_len,
-+			SCST_SENSE_ALL_VALID,
-+			SCST_LOAD_SENSE(scst_sense_reported_luns_data_changed))) {
-+		TRACE_MGMT_DBG("Requeuing REPORTED LUNS DATA CHANGED UA "
-+			"for delivery failed cmd %p", cmd);
-+		mutex_lock(&scst_mutex);
-+		scst_queue_report_luns_changed_UA(cmd->sess,
-+			SCST_SET_UA_FLAG_AT_HEAD);
-+		mutex_unlock(&scst_mutex);
-+	} else {
-+		TRACE_MGMT_DBG("Requeuing UA for delivery failed cmd %p", cmd);
-+		scst_check_set_UA(cmd->tgt_dev, cmd->sense,
-+			cmd->sense_valid_len, SCST_SET_UA_FLAG_AT_HEAD);
-+	}
-+	return;
-+}
-+
-+/* The activity supposed to be suspended and scst_mutex held */
-+static void scst_check_reassign_sess(struct scst_session *sess)
-+{
-+	struct scst_acg *acg, *old_acg;
-+	struct scst_acg_dev *acg_dev;
-+	int i;
-+	struct list_head *shead;
-+	struct scst_tgt_dev *tgt_dev;
-+	bool luns_changed = false;
-+	bool add_failed, something_freed, not_needed_freed = false;
-+
-+	TRACE_MGMT_DBG("Checking reassignment for sess %p (initiator %s)",
-+		sess, sess->initiator_name);
-+
-+	acg = scst_find_acg(sess);
-+	if (acg == sess->acg) {
-+		TRACE_MGMT_DBG("No reassignment for sess %p", sess);
-+		goto out;
-+	}
-+
-+	TRACE_MGMT_DBG("sess %p will be reassigned from acg %s to acg %s",
-+		sess, sess->acg->acg_name, acg->acg_name);
-+
-+	old_acg = sess->acg;
-+	sess->acg = NULL; /* to catch implicit dependencies earlier */
-+
-+retry_add:
-+	add_failed = false;
-+	list_for_each_entry(acg_dev, &acg->acg_dev_list, acg_dev_list_entry) {
-+		unsigned int inq_changed_ua_needed = 0;
-+
-+		for (i = 0; i < TGT_DEV_HASH_SIZE; i++) {
-+			shead = &sess->sess_tgt_dev_list_hash[i];
-+
-+			list_for_each_entry(tgt_dev, shead,
-+					sess_tgt_dev_list_entry) {
-+				if ((tgt_dev->dev == acg_dev->dev) &&
-+				    (tgt_dev->lun == acg_dev->lun) &&
-+				    (tgt_dev->acg_dev->rd_only == acg_dev->rd_only)) {
-+					TRACE_MGMT_DBG("sess %p: tgt_dev %p for "
-+						"LUN %lld stays the same",
-+						sess, tgt_dev,
-+						(unsigned long long)tgt_dev->lun);
-+					tgt_dev->acg_dev = acg_dev;
-+					goto next;
-+				} else if (tgt_dev->lun == acg_dev->lun)
-+					inq_changed_ua_needed = 1;
-+			}
-+		}
-+
-+		luns_changed = true;
-+
-+		TRACE_MGMT_DBG("sess %p: Allocing new tgt_dev for LUN %lld",
-+			sess, (unsigned long long)acg_dev->lun);
-+
-+		tgt_dev = scst_alloc_add_tgt_dev(sess, acg_dev);
-+		if (tgt_dev == NULL) {
-+			add_failed = true;
-+			break;
-+		}
-+
-+		tgt_dev->inq_changed_ua_needed = inq_changed_ua_needed ||
-+						 not_needed_freed;
-+next:
-+		continue;
-+	}
-+
-+	something_freed = false;
-+	not_needed_freed = true;
-+	for (i = 0; i < TGT_DEV_HASH_SIZE; i++) {
-+		struct scst_tgt_dev *t;
-+		shead = &sess->sess_tgt_dev_list_hash[i];
-+
-+		list_for_each_entry_safe(tgt_dev, t, shead,
-+					sess_tgt_dev_list_entry) {
-+			if (tgt_dev->acg_dev->acg != acg) {
-+				TRACE_MGMT_DBG("sess %p: Deleting not used "
-+					"tgt_dev %p for LUN %lld",
-+					sess, tgt_dev,
-+					(unsigned long long)tgt_dev->lun);
-+				luns_changed = true;
-+				something_freed = true;
-+				scst_free_tgt_dev(tgt_dev);
-+			}
-+		}
-+	}
-+
-+	if (add_failed && something_freed) {
-+		TRACE_MGMT_DBG("sess %p: Retrying adding new tgt_devs", sess);
-+		goto retry_add;
-+	}
-+
-+	sess->acg = acg;
-+
-+	TRACE_DBG("Moving sess %p from acg %s to acg %s", sess,
-+		old_acg->acg_name, acg->acg_name);
-+	list_move_tail(&sess->acg_sess_list_entry, &acg->acg_sess_list);
-+
-+	if (luns_changed) {
-+		scst_report_luns_changed_sess(sess);
-+
-+		for (i = 0; i < TGT_DEV_HASH_SIZE; i++) {
-+			shead = &sess->sess_tgt_dev_list_hash[i];
-+
-+			list_for_each_entry(tgt_dev, shead,
-+					sess_tgt_dev_list_entry) {
-+				if (tgt_dev->inq_changed_ua_needed) {
-+					TRACE_MGMT_DBG("sess %p: Setting "
-+						"INQUIRY DATA HAS CHANGED UA "
-+						"(tgt_dev %p)", sess, tgt_dev);
-+
-+					tgt_dev->inq_changed_ua_needed = 0;
-+
-+					scst_gen_aen_or_ua(tgt_dev,
-+						SCST_LOAD_SENSE(scst_sense_inquery_data_changed));
-+				}
-+			}
-+		}
-+	}
++	kfree(buffer);
 +
 +out:
-+	return;
-+}
-+
-+/* The activity supposed to be suspended and scst_mutex held */
-+void scst_check_reassign_sessions(void)
-+{
-+	struct scst_tgt_template *tgtt;
-+
-+	list_for_each_entry(tgtt, &scst_template_list, scst_template_list_entry) {
-+		struct scst_tgt *tgt;
-+		list_for_each_entry(tgt, &tgtt->tgt_list, tgt_list_entry) {
-+			struct scst_session *sess;
-+			list_for_each_entry(sess, &tgt->sess_list,
-+						sess_list_entry) {
-+				scst_check_reassign_sess(sess);
-+			}
-+		}
-+	}
-+	return;
-+}
-+
-+/**
-+ * scst_get_cmd_abnormal_done_state() - get command's next abnormal done state
-+ *
-+ * Returns the next state of the SCSI target state machine in case if command's
-+ * completed abnormally.
-+ */
-+int scst_get_cmd_abnormal_done_state(const struct scst_cmd *cmd)
-+{
-+	int res;
-+
-+	switch (cmd->state) {
-+	case SCST_CMD_STATE_INIT_WAIT:
-+	case SCST_CMD_STATE_INIT:
-+	case SCST_CMD_STATE_PRE_PARSE:
-+	case SCST_CMD_STATE_DEV_PARSE:
-+		if (cmd->preprocessing_only) {
-+			res = SCST_CMD_STATE_PREPROCESSING_DONE;
-+			break;
-+		} /* else go through */
-+	case SCST_CMD_STATE_DEV_DONE:
-+		if (cmd->internal)
-+			res = SCST_CMD_STATE_FINISHED_INTERNAL;
-+		else
-+			res = SCST_CMD_STATE_PRE_XMIT_RESP;
-+		break;
-+
-+	case SCST_CMD_STATE_PRE_DEV_DONE:
-+	case SCST_CMD_STATE_MODE_SELECT_CHECKS:
-+		res = SCST_CMD_STATE_DEV_DONE;
-+		break;
-+
-+	case SCST_CMD_STATE_PRE_XMIT_RESP:
-+		res = SCST_CMD_STATE_XMIT_RESP;
-+		break;
-+
-+	case SCST_CMD_STATE_PREPROCESSING_DONE:
-+	case SCST_CMD_STATE_PREPROCESSING_DONE_CALLED:
-+		if (cmd->tgt_dev == NULL)
-+			res = SCST_CMD_STATE_PRE_XMIT_RESP;
-+		else
-+			res = SCST_CMD_STATE_PRE_DEV_DONE;
-+		break;
-+
-+	case SCST_CMD_STATE_PREPARE_SPACE:
-+		if (cmd->preprocessing_only) {
-+			res = SCST_CMD_STATE_PREPROCESSING_DONE;
-+			break;
-+		} /* else go through */
-+	case SCST_CMD_STATE_RDY_TO_XFER:
-+	case SCST_CMD_STATE_DATA_WAIT:
-+	case SCST_CMD_STATE_TGT_PRE_EXEC:
-+	case SCST_CMD_STATE_SEND_FOR_EXEC:
-+	case SCST_CMD_STATE_LOCAL_EXEC:
-+	case SCST_CMD_STATE_REAL_EXEC:
-+	case SCST_CMD_STATE_REAL_EXECUTING:
-+		res = SCST_CMD_STATE_PRE_DEV_DONE;
-+		break;
-+
-+	default:
-+		PRINT_CRIT_ERROR("Wrong cmd state %d (cmd %p, op %x)",
-+			cmd->state, cmd, cmd->cdb[0]);
-+		BUG();
-+		/* Invalid state to supress compiler's warning */
-+		res = SCST_CMD_STATE_LAST_ACTIVE;
-+	}
 +	return res;
++
++out_syntax_err:
++	PRINT_ERROR("Syntax error on \"%s\"", p);
++	res = -EINVAL;
++	goto out_free;
 +}
-+EXPORT_SYMBOL_GPL(scst_get_cmd_abnormal_done_state);
 +
-+/**
-+ * scst_set_cmd_abnormal_done_state() - set command's next abnormal done state
-+ *
-+ * Sets state of the SCSI target state machine in case if command's completed
-+ * abnormally.
-+ */
-+void scst_set_cmd_abnormal_done_state(struct scst_cmd *cmd)
++static struct kobj_attribute scst_tgtt_mgmt =
++	__ATTR(mgmt, S_IRUGO | S_IWUSR, scst_tgtt_mgmt_show,
++	       scst_tgtt_mgmt_store);
++
++int scst_create_tgtt_sysfs(struct scst_tgt_template *tgtt)
 +{
++	int retval = 0;
++	const struct attribute **pattr;
 +
-+#ifdef CONFIG_SCST_EXTRACHECKS
-+	switch (cmd->state) {
-+	case SCST_CMD_STATE_XMIT_RESP:
-+	case SCST_CMD_STATE_FINISHED:
-+	case SCST_CMD_STATE_FINISHED_INTERNAL:
-+	case SCST_CMD_STATE_XMIT_WAIT:
-+		PRINT_CRIT_ERROR("Wrong cmd state %d (cmd %p, op %x)",
-+			cmd->state, cmd, cmd->cdb[0]);
-+		BUG();
-+	}
-+#endif
++	init_completion(&tgtt->tgtt_kobj_release_cmpl);
 +
-+	cmd->state = scst_get_cmd_abnormal_done_state(cmd);
++	tgtt->tgtt_kobj_initialized = 1;
 +
-+#ifdef CONFIG_SCST_EXTRACHECKS
-+	if (((cmd->state != SCST_CMD_STATE_PRE_XMIT_RESP) &&
-+	     (cmd->state != SCST_CMD_STATE_PREPROCESSING_DONE)) &&
-+		   (cmd->tgt_dev == NULL) && !cmd->internal) {
-+		PRINT_CRIT_ERROR("Wrong not inited cmd state %d (cmd %p, "
-+			"op %x)", cmd->state, cmd, cmd->cdb[0]);
-+		BUG();
-+	}
-+#endif
-+	return;
-+}
-+EXPORT_SYMBOL_GPL(scst_set_cmd_abnormal_done_state);
-+
-+/**
-+ * scst_set_resp_data_len() - set response data length
-+ *
-+ * Sets response data length for cmd and truncates its SG vector accordingly.
-+ *
-+ * The cmd->resp_data_len must not be set directly, it must be set only
-+ * using this function. Value of resp_data_len must be <= cmd->bufflen.
-+ */
-+void scst_set_resp_data_len(struct scst_cmd *cmd, int resp_data_len)
-+{
-+	int i, l;
-+
-+	scst_check_restore_sg_buff(cmd);
-+	cmd->resp_data_len = resp_data_len;
-+
-+	if (resp_data_len == cmd->bufflen)
++	retval = kobject_init_and_add(&tgtt->tgtt_kobj, &tgtt_ktype,
++			scst_targets_kobj, tgtt->name);
++	if (retval != 0) {
++		PRINT_ERROR("Can't add tgtt %s to sysfs", tgtt->name);
 +		goto out;
-+
-+	l = 0;
-+	for (i = 0; i < cmd->sg_cnt; i++) {
-+		l += cmd->sg[i].length;
-+		if (l >= resp_data_len) {
-+			int left = resp_data_len - (l - cmd->sg[i].length);
-+#ifdef CONFIG_SCST_DEBUG
-+			TRACE(TRACE_SG_OP|TRACE_MEMORY, "cmd %p (tag %llu), "
-+				"resp_data_len %d, i %d, cmd->sg[i].length %d, "
-+				"left %d",
-+				cmd, (long long unsigned int)cmd->tag,
-+				resp_data_len, i,
-+				cmd->sg[i].length, left);
-+#endif
-+			cmd->orig_sg_cnt = cmd->sg_cnt;
-+			cmd->orig_sg_entry = i;
-+			cmd->orig_entry_len = cmd->sg[i].length;
-+			cmd->sg_cnt = (left > 0) ? i+1 : i;
-+			cmd->sg[i].length = left;
-+			cmd->sg_buff_modified = 1;
-+			break;
-+		}
 +	}
 +
-+out:
-+	return;
-+}
-+EXPORT_SYMBOL_GPL(scst_set_resp_data_len);
-+
-+/* No locks */
-+int scst_queue_retry_cmd(struct scst_cmd *cmd, int finished_cmds)
-+{
-+	struct scst_tgt *tgt = cmd->tgt;
-+	int res = 0;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&tgt->tgt_lock, flags);
-+	tgt->retry_cmds++;
 +	/*
-+	 * Memory barrier is needed here, because we need the exact order
-+	 * between the read and write between retry_cmds and finished_cmds to
-+	 * not miss the case when a command finished while we queuing it for
-+	 * retry after the finished_cmds check.
++	 * In case of errors there's no need for additional cleanup, because
++	 * it will be done by the _put function() called by the caller.
 +	 */
-+	smp_mb();
-+	TRACE_RETRY("TGT QUEUE FULL: incrementing retry_cmds %d",
-+	      tgt->retry_cmds);
-+	if (finished_cmds != atomic_read(&tgt->finished_cmds)) {
-+		/* At least one cmd finished, so try again */
-+		tgt->retry_cmds--;
-+		TRACE_RETRY("Some command(s) finished, direct retry "
-+		      "(finished_cmds=%d, tgt->finished_cmds=%d, "
-+		      "retry_cmds=%d)", finished_cmds,
-+		      atomic_read(&tgt->finished_cmds), tgt->retry_cmds);
-+		res = -1;
-+		goto out_unlock_tgt;
-+	}
 +
-+	TRACE_RETRY("Adding cmd %p to retry cmd list", cmd);
-+	list_add_tail(&cmd->cmd_list_entry, &tgt->retry_cmd_list);
-+
-+	if (!tgt->retry_timer_active) {
-+		tgt->retry_timer.expires = jiffies + SCST_TGT_RETRY_TIMEOUT;
-+		add_timer(&tgt->retry_timer);
-+		tgt->retry_timer_active = 1;
-+	}
-+
-+out_unlock_tgt:
-+	spin_unlock_irqrestore(&tgt->tgt_lock, flags);
-+	return res;
-+}
-+
-+/* Returns 0 to continue, >0 to restart, <0 to break */
-+static int scst_check_hw_pending_cmd(struct scst_cmd *cmd,
-+	unsigned long cur_time, unsigned long max_time,
-+	struct scst_session *sess, unsigned long *flags,
-+	struct scst_tgt_template *tgtt)
-+{
-+	int res = -1; /* break */
-+
-+	TRACE_DBG("cmd %p, hw_pending %d, proc time %ld, "
-+		"pending time %ld", cmd, cmd->cmd_hw_pending,
-+		(long)(cur_time - cmd->start_time) / HZ,
-+		(long)(cur_time - cmd->hw_pending_start) / HZ);
-+
-+	if (time_before_eq(cur_time, cmd->start_time + max_time)) {
-+		/* Cmds are ordered, so no need to check more */
-+		goto out;
-+	}
-+
-+	if (!cmd->cmd_hw_pending) {
-+		res = 0; /* continue */
-+		goto out;
-+	}
-+
-+	if (time_before(cur_time, cmd->hw_pending_start + max_time)) {
-+		/* Cmds are ordered, so no need to check more */
-+		goto out;
-+	}
-+
-+	TRACE_MGMT_DBG("Cmd %p HW pending for too long %ld (state %x)",
-+		cmd, (cur_time - cmd->hw_pending_start) / HZ,
-+		cmd->state);
-+
-+	cmd->cmd_hw_pending = 0;
-+
-+	spin_unlock_irqrestore(&sess->sess_list_lock, *flags);
-+	tgtt->on_hw_pending_cmd_timeout(cmd);
-+	spin_lock_irqsave(&sess->sess_list_lock, *flags);
-+
-+	res = 1; /* restart */
-+
-+out:
-+	return res;
-+}
-+
-+static void scst_hw_pending_work_fn(struct delayed_work *work)
-+{
-+	struct scst_session *sess = container_of(work, struct scst_session,
-+					hw_pending_work);
-+	struct scst_tgt_template *tgtt = sess->tgt->tgtt;
-+	struct scst_cmd *cmd;
-+	unsigned long cur_time = jiffies;
-+	unsigned long flags;
-+	unsigned long max_time = tgtt->max_hw_pending_time * HZ;
-+
-+	TRACE_DBG("HW pending work (sess %p, max time %ld)", sess, max_time/HZ);
-+
-+	clear_bit(SCST_SESS_HW_PENDING_WORK_SCHEDULED, &sess->sess_aflags);
-+
-+	spin_lock_irqsave(&sess->sess_list_lock, flags);
-+
-+restart:
-+	list_for_each_entry(cmd, &sess->sess_cmd_list, sess_cmd_list_entry) {
-+		int rc;
-+
-+		rc = scst_check_hw_pending_cmd(cmd, cur_time, max_time, sess,
-+					&flags, tgtt);
-+		if (rc < 0)
-+			break;
-+		else if (rc == 0)
-+			continue;
-+		else
-+			goto restart;
-+	}
-+
-+	if (!list_empty(&sess->sess_cmd_list)) {
-+		/*
-+		 * For stuck cmds if there is no activity we might need to have
-+		 * one more run to release them, so reschedule once again.
-+		 */
-+		TRACE_DBG("Sched HW pending work for sess %p (max time %d)",
-+			sess, tgtt->max_hw_pending_time);
-+		set_bit(SCST_SESS_HW_PENDING_WORK_SCHEDULED, &sess->sess_aflags);
-+		schedule_delayed_work(&sess->hw_pending_work,
-+				tgtt->max_hw_pending_time * HZ);
-+	}
-+
-+	spin_unlock_irqrestore(&sess->sess_list_lock, flags);
-+	return;
-+}
-+
-+bool scst_is_relative_target_port_id_unique(uint16_t id, struct scst_tgt *t)
-+{
-+	bool res = true;
-+	struct scst_tgt_template *tgtt;
-+
-+	mutex_lock(&scst_mutex);
-+	list_for_each_entry(tgtt, &scst_template_list,
-+				scst_template_list_entry) {
-+		struct scst_tgt *tgt;
-+		list_for_each_entry(tgt, &tgtt->tgt_list, tgt_list_entry) {
-+			if (tgt == t)
-+				continue;
-+			if (id == tgt->rel_tgt_id) {
-+				res = false;
-+				break;
-+			}
-+		}
-+	}
-+	mutex_unlock(&scst_mutex);
-+	return res;
-+}
-+
-+int gen_relative_target_port_id(uint16_t *id)
-+{
-+	int res = -EOVERFLOW;
-+	static unsigned long rti = SCST_MIN_REL_TGT_ID, rti_prev;
-+
-+	rti_prev = rti;
-+	do {
-+		if (scst_is_relative_target_port_id_unique(rti, NULL)) {
-+			*id = (uint16_t)rti++;
-+			res = 0;
++	if (tgtt->add_target != NULL) {
++		retval = sysfs_create_file(&tgtt->tgtt_kobj,
++				&scst_tgtt_mgmt.attr);
++		if (retval != 0) {
++			PRINT_ERROR("Can't add mgmt attr for target driver %s",
++				tgtt->name);
 +			goto out;
 +		}
-+		rti++;
-+		if (rti > SCST_MAX_REL_TGT_ID)
-+			rti = SCST_MIN_REL_TGT_ID;
-+	} while (rti != rti_prev);
-+
-+	PRINT_ERROR("%s", "Unable to create unique relative target port id");
-+
-+out:
-+	return res;
-+}
-+
-+int scst_alloc_tgt(struct scst_tgt_template *tgtt, struct scst_tgt **tgt)
-+{
-+	struct scst_tgt *t;
-+	int res = 0;
-+
-+	t = kzalloc(sizeof(*t), GFP_KERNEL);
-+	if (t == NULL) {
-+		TRACE(TRACE_OUT_OF_MEM, "%s", "Allocation of tgt failed");
-+		res = -ENOMEM;
-+		goto out;
 +	}
 +
-+	INIT_LIST_HEAD(&t->sess_list);
-+	init_waitqueue_head(&t->unreg_waitQ);
-+	t->tgtt = tgtt;
-+	t->sg_tablesize = tgtt->sg_tablesize;
-+	spin_lock_init(&t->tgt_lock);
-+	INIT_LIST_HEAD(&t->retry_cmd_list);
-+	atomic_set(&t->finished_cmds, 0);
-+	init_timer(&t->retry_timer);
-+	t->retry_timer.data = (unsigned long)t;
-+	t->retry_timer.function = scst_tgt_retry_timer_fn;
-+
-+	*tgt = t;
-+
-+out:
-+	return res;
-+}
-+
-+void scst_free_tgt(struct scst_tgt *tgt)
-+{
-+
-+	if (tgt->default_acg != NULL)
-+		scst_free_acg(tgt->default_acg);
-+
-+	kfree(tgt->tgt_name);
-+
-+	kfree(tgt);
-+	return;
-+}
-+
-+/* Called under scst_mutex and suspended activity */
-+int scst_alloc_device(gfp_t gfp_mask, struct scst_device **out_dev)
-+{
-+	struct scst_device *dev;
-+	int res = 0;
-+
-+	dev = kzalloc(sizeof(*dev), gfp_mask);
-+	if (dev == NULL) {
-+		TRACE(TRACE_OUT_OF_MEM, "%s",
-+			"Allocation of scst_device failed");
-+		res = -ENOMEM;
-+		goto out;
++	pattr = tgtt->tgtt_attrs;
++	if (pattr != NULL) {
++		while (*pattr != NULL) {
++			TRACE_DBG("Creating attr %s for target driver %s",
++				(*pattr)->name, tgtt->name);
++			retval = sysfs_create_file(&tgtt->tgtt_kobj, *pattr);
++			if (retval != 0) {
++				PRINT_ERROR("Can't add attr %s for target "
++					"driver %s", (*pattr)->name,
++					tgtt->name);
++				goto out;
++			}
++			pattr++;
++		}
 +	}
 +
-+	dev->handler = &scst_null_devtype;
-+	atomic_set(&dev->dev_cmd_count, 0);
-+	atomic_set(&dev->write_cmd_count, 0);
-+	scst_init_mem_lim(&dev->dev_mem_lim);
-+	spin_lock_init(&dev->dev_lock);
-+	atomic_set(&dev->on_dev_count, 0);
-+	INIT_LIST_HEAD(&dev->blocked_cmd_list);
-+	INIT_LIST_HEAD(&dev->dev_tgt_dev_list);
-+	INIT_LIST_HEAD(&dev->dev_acg_dev_list);
-+	init_waitqueue_head(&dev->on_dev_waitQ);
-+	dev->dev_double_ua_possible = 1;
-+	dev->queue_alg = SCST_CONTR_MODE_QUEUE_ALG_UNRESTRICTED_REORDER;
-+
-+	scst_init_threads(&dev->dev_cmd_threads);
-+
-+	*out_dev = dev;
-+
-+out:
-+	return res;
-+}
-+
-+void scst_free_device(struct scst_device *dev)
-+{
-+
-+#ifdef CONFIG_SCST_EXTRACHECKS
-+	if (!list_empty(&dev->dev_tgt_dev_list) ||
-+	    !list_empty(&dev->dev_acg_dev_list)) {
-+		PRINT_CRIT_ERROR("%s: dev_tgt_dev_list or dev_acg_dev_list "
-+			"is not empty!", __func__);
-+		BUG();
++#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
++	if (tgtt->trace_flags != NULL) {
++		retval = sysfs_create_file(&tgtt->tgtt_kobj,
++				&tgtt_trace_attr.attr);
++		if (retval != 0) {
++			PRINT_ERROR("Can't add trace_flag for target "
++				"driver %s", tgtt->name);
++			goto out;
++		}
 +	}
 +#endif
 +
-+	scst_deinit_threads(&dev->dev_cmd_threads);
++out:
++	return retval;
++}
 +
-+	kfree(dev->virt_name);
-+	kfree(dev);
++void scst_tgtt_sysfs_put(struct scst_tgt_template *tgtt)
++{
++
++	if (tgtt->tgtt_kobj_initialized) {
++		int rc;
++
++		kobject_del(&tgtt->tgtt_kobj);
++		kobject_put(&tgtt->tgtt_kobj);
++
++		rc = wait_for_completion_timeout(&tgtt->tgtt_kobj_release_cmpl, HZ);
++		if (rc == 0) {
++			PRINT_INFO("Waiting for releasing sysfs entry "
++				"for target template %s...", tgtt->name);
++			wait_for_completion(&tgtt->tgtt_kobj_release_cmpl);
++			PRINT_INFO("Done waiting for releasing sysfs "
++				"entry for target template %s", tgtt->name);
++		}
++	} else
++		scst_tgtt_cleanup(tgtt);
 +	return;
 +}
 +
-+/**
-+ * scst_init_mem_lim - initialize memory limits structure
-+ *
-+ * Initializes memory limits structure mem_lim according to
-+ * the current system configuration. This structure should be latter used
-+ * to track and limit allocated by one or more SGV pools memory.
++/*
++ * Target directory implementation
 + */
-+void scst_init_mem_lim(struct scst_mem_lim *mem_lim)
++
++static void scst_tgt_release(struct kobject *kobj)
 +{
-+	atomic_set(&mem_lim->alloced_pages, 0);
-+	mem_lim->max_allowed_pages =
-+		((uint64_t)scst_max_dev_cmd_mem << 10) >> (PAGE_SHIFT - 10);
++	struct scst_tgt *tgt;
++
++	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
++
++	/* Let's make lockdep happy */
++	up_write(&tgt->tgt_attr_rwsem);
++
++	scst_free_tgt(tgt);
++	return;
 +}
-+EXPORT_SYMBOL_GPL(scst_init_mem_lim);
 +
-+static struct scst_acg_dev *scst_alloc_acg_dev(struct scst_acg *acg,
-+					struct scst_device *dev, uint64_t lun)
++static ssize_t scst_tgt_attr_show(struct kobject *kobj, struct attribute *attr,
++	char *buf)
 +{
-+	struct scst_acg_dev *res;
++	int res;
++	struct kobj_attribute *kobj_attr;
++	struct scst_tgt *tgt;
 +
-+	res = kmem_cache_zalloc(scst_acgd_cachep, GFP_KERNEL);
-+	if (res == NULL) {
-+		TRACE(TRACE_OUT_OF_MEM,
-+		      "%s", "Allocation of scst_acg_dev failed");
++	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
++
++	if (down_read_trylock(&tgt->tgt_attr_rwsem) == 0) {
++		res = -ENOENT;
 +		goto out;
 +	}
 +
-+	res->dev = dev;
-+	res->acg = acg;
-+	res->lun = lun;
++	kobj_attr = container_of(attr, struct kobj_attribute, attr);
++
++	res = kobj_attr->show(kobj, kobj_attr, buf);
++
++	up_read(&tgt->tgt_attr_rwsem);
 +
 +out:
 +	return res;
 +}
 +
-+void scst_acg_dev_destroy(struct scst_acg_dev *acg_dev)
++static ssize_t scst_tgt_attr_store(struct kobject *kobj,
++	struct attribute *attr, const char *buf, size_t count)
 +{
++	int res;
++	struct kobj_attribute *kobj_attr;
++	struct scst_tgt *tgt;
 +
-+	if ((acg_dev->dev != NULL) && acg_dev->dev->dev_kobj_initialized)
-+		kobject_put(&acg_dev->dev->dev_kobj);
++	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
 +
-+	kmem_cache_free(scst_acgd_cachep, acg_dev);
-+	return;
++	if (down_read_trylock(&tgt->tgt_attr_rwsem) == 0) {
++		res = -ENOENT;
++		goto out;
++	}
++
++	kobj_attr = container_of(attr, struct kobj_attribute, attr);
++
++	res = kobj_attr->store(kobj, kobj_attr, buf, count);
++
++	up_read(&tgt->tgt_attr_rwsem);
++
++out:
++	return res;
 +}
 +
-+/* The activity supposed to be suspended and scst_mutex held */
-+static void scst_free_acg_dev(struct scst_acg_dev *acg_dev)
-+{
++static struct sysfs_ops scst_tgt_sysfs_ops = {
++	.show = scst_tgt_attr_show,
++	.store = scst_tgt_attr_store,
++};
 +
-+	TRACE_DBG("Removing acg_dev %p from acg_dev_list and dev_acg_dev_list",
-+		acg_dev);
-+	list_del(&acg_dev->acg_dev_list_entry);
-+	list_del(&acg_dev->dev_acg_dev_list_entry);
++static struct kobj_type tgt_ktype = {
++	.sysfs_ops = &scst_tgt_sysfs_ops,
++	.release = scst_tgt_release,
++};
 +
-+	if (acg_dev->acg_dev_kobj_initialized) {
-+		kobject_del(&acg_dev->acg_dev_kobj);
-+		kobject_put(&acg_dev->acg_dev_kobj);
-+	} else
-+		scst_acg_dev_destroy(acg_dev);
-+	return;
-+}
-+
-+/* The activity supposed to be suspended and scst_mutex held */
-+struct scst_acg *scst_alloc_add_acg(struct scst_tgt *tgt,
-+	const char *acg_name)
++static void scst_acg_release(struct kobject *kobj)
 +{
 +	struct scst_acg *acg;
 +
-+	acg = kzalloc(sizeof(*acg), GFP_KERNEL);
-+	if (acg == NULL) {
-+		PRINT_ERROR("%s", "Allocation of acg failed");
++	acg = container_of(kobj, struct scst_acg, acg_kobj);
++
++	scst_destroy_acg(acg);
++	return;
++}
++
++static struct kobj_type acg_ktype = {
++	.sysfs_ops = &scst_sysfs_ops,
++	.release = scst_acg_release,
++};
++
++static struct kobj_attribute scst_luns_mgmt =
++	__ATTR(mgmt, S_IRUGO | S_IWUSR, scst_luns_mgmt_show,
++	       scst_luns_mgmt_store);
++
++static struct kobj_attribute scst_acg_luns_mgmt =
++	__ATTR(mgmt, S_IRUGO | S_IWUSR, scst_luns_mgmt_show,
++	       scst_acg_luns_mgmt_store);
++
++static struct kobj_attribute scst_acg_ini_mgmt =
++	__ATTR(mgmt, S_IRUGO | S_IWUSR, scst_acg_ini_mgmt_show,
++	       scst_acg_ini_mgmt_store);
++
++static struct kobj_attribute scst_ini_group_mgmt =
++	__ATTR(mgmt, S_IRUGO | S_IWUSR, scst_ini_group_mgmt_show,
++	       scst_ini_group_mgmt_store);
++
++static struct kobj_attribute scst_tgt_addr_method =
++	__ATTR(addr_method, S_IRUGO | S_IWUSR, scst_tgt_addr_method_show,
++	       scst_tgt_addr_method_store);
++
++static struct kobj_attribute scst_tgt_io_grouping_type =
++	__ATTR(io_grouping_type, S_IRUGO | S_IWUSR,
++	       scst_tgt_io_grouping_type_show,
++	       scst_tgt_io_grouping_type_store);
++
++static struct kobj_attribute scst_rel_tgt_id =
++	__ATTR(rel_tgt_id, S_IRUGO | S_IWUSR, scst_rel_tgt_id_show,
++	       scst_rel_tgt_id_store);
++
++static struct kobj_attribute scst_acg_addr_method =
++	__ATTR(addr_method, S_IRUGO | S_IWUSR, scst_acg_addr_method_show,
++		scst_acg_addr_method_store);
++
++static struct kobj_attribute scst_acg_io_grouping_type =
++	__ATTR(io_grouping_type, S_IRUGO | S_IWUSR,
++	       scst_acg_io_grouping_type_show,
++	       scst_acg_io_grouping_type_store);
++
++static ssize_t scst_tgt_enable_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	struct scst_tgt *tgt;
++	int res;
++	bool enabled;
++
++	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
++
++	enabled = tgt->tgtt->is_target_enabled(tgt);
++
++	res = sprintf(buf, "%d\n", enabled ? 1 : 0);
++	return res;
++}
++
++static ssize_t scst_tgt_enable_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int res;
++	struct scst_tgt *tgt;
++	bool enable;
++
++	if (buf == NULL) {
++		PRINT_ERROR("%s: NULL buffer?", __func__);
++		res = -EINVAL;
 +		goto out;
 +	}
 +
-+	INIT_LIST_HEAD(&acg->acg_dev_list);
-+	INIT_LIST_HEAD(&acg->acg_sess_list);
-+	INIT_LIST_HEAD(&acg->acn_list);
-+	acg->acg_name = kstrdup(acg_name, GFP_KERNEL);
-+	if (acg->acg_name == NULL) {
-+		PRINT_ERROR("%s", "Allocation of acg_name failed");
-+		goto out_free;
-+	}
++	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
 +
-+	acg->addr_method = SCST_LUN_ADDR_METHOD_PERIPHERAL;
-+
-+	if (tgt != NULL) {
-+		TRACE_DBG("Adding acg '%s' to device '%s' acg_list", acg_name,
-+			tgt->tgt_name);
-+		list_add_tail(&acg->acg_list_entry, &tgt->tgt_acg_list);
-+		acg->in_tgt_acg_list = 1;
-+	}
-+
-+out:
-+	return acg;
-+
-+out_free:
-+	kfree(acg);
-+	acg = NULL;
-+	goto out;
-+}
-+
-+void scst_free_acg(struct scst_acg *acg)
-+{
-+
-+	BUG_ON(!list_empty(&acg->acg_sess_list));
-+	BUG_ON(!list_empty(&acg->acg_dev_list));
-+	BUG_ON(!list_empty(&acg->acn_list));
-+
-+	kfree(acg->acg_name);
-+	kfree(acg);
-+	return;
-+}
-+
-+/* The activity supposed to be suspended and scst_mutex held */
-+void scst_clear_acg(struct scst_acg *acg)
-+{
-+	struct scst_acn *n, *nn;
-+	struct scst_acg_dev *acg_dev, *acg_dev_tmp;
-+
-+	TRACE_DBG("Clearing acg %s from list", acg->acg_name);
-+
-+	BUG_ON(!list_empty(&acg->acg_sess_list));
-+	if (acg->in_tgt_acg_list) {
-+		TRACE_DBG("Removing acg %s from list", acg->acg_name);
-+		list_del(&acg->acg_list_entry);
-+		acg->in_tgt_acg_list = 0;
-+	}
-+	/* Freeing acg_devs */
-+	list_for_each_entry_safe(acg_dev, acg_dev_tmp, &acg->acg_dev_list,
-+			acg_dev_list_entry) {
-+		struct scst_tgt_dev *tgt_dev, *tt;
-+		list_for_each_entry_safe(tgt_dev, tt,
-+				 &acg_dev->dev->dev_tgt_dev_list,
-+				 dev_tgt_dev_list_entry) {
-+			if (tgt_dev->acg_dev == acg_dev)
-+				scst_free_tgt_dev(tgt_dev);
-+		}
-+		scst_free_acg_dev(acg_dev);
-+	}
-+
-+	/* Freeing names */
-+	list_for_each_entry_safe(n, nn, &acg->acn_list,
-+			acn_list_entry) {
-+		scst_acn_sysfs_del(acg, n,
-+			list_is_last(&n->acn_list_entry, &acg->acn_list));
-+	}
-+	INIT_LIST_HEAD(&acg->acn_list);
-+	return;
-+}
-+
-+/* The activity supposed to be suspended and scst_mutex held */
-+void scst_destroy_acg(struct scst_acg *acg)
-+{
-+
-+	scst_clear_acg(acg);
-+	scst_free_acg(acg);
-+	return;
-+}
-+
-+/* The activity supposed to be suspended and scst_mutex held */
-+struct scst_acg *scst_tgt_find_acg(struct scst_tgt *tgt, const char *name)
-+{
-+	struct scst_acg *acg, *acg_ret = NULL;
-+
-+	list_for_each_entry(acg, &tgt->tgt_acg_list, acg_list_entry) {
-+		if (strcmp(acg->acg_name, name) == 0) {
-+			acg_ret = acg;
-+			break;
-+		}
-+	}
-+	return acg_ret;
-+}
-+
-+/* scst_mutex supposed to be held */
-+static struct scst_tgt_dev *scst_find_shared_io_tgt_dev(
-+	struct scst_tgt_dev *tgt_dev)
-+{
-+	struct scst_tgt_dev *res = NULL;
-+	struct scst_acg *acg = tgt_dev->acg_dev->acg;
-+	struct scst_tgt_dev *t;
-+
-+	TRACE_DBG("tgt_dev %s (acg %p, io_grouping_type %d)",
-+		tgt_dev->sess->initiator_name, acg, acg->acg_io_grouping_type);
-+
-+	switch (acg->acg_io_grouping_type) {
-+	case SCST_IO_GROUPING_AUTO:
-+		if (tgt_dev->sess->initiator_name == NULL)
-+			goto out;
-+
-+		list_for_each_entry(t, &tgt_dev->dev->dev_tgt_dev_list,
-+				dev_tgt_dev_list_entry) {
-+			if ((t == tgt_dev) ||
-+			    (t->sess->initiator_name == NULL) ||
-+			    (t->active_cmd_threads == NULL))
-+				continue;
-+
-+			TRACE_DBG("t %s", t->sess->initiator_name);
-+
-+			/* We check other ACG's as well */
-+
-+			if (strcmp(t->sess->initiator_name,
-+					tgt_dev->sess->initiator_name) == 0)
-+				goto found;
-+		}
++	switch (buf[0]) {
++	case '0':
++		enable = false;
 +		break;
-+
-+	case SCST_IO_GROUPING_THIS_GROUP_ONLY:
-+		list_for_each_entry(t, &tgt_dev->dev->dev_tgt_dev_list,
-+				dev_tgt_dev_list_entry) {
-+			if ((t == tgt_dev) || (t->active_cmd_threads == NULL))
-+				continue;
-+
-+			TRACE_DBG("t %s (acg %p)", t->sess->initiator_name,
-+				t->acg_dev->acg);
-+
-+			if (t->acg_dev->acg == acg)
-+				goto found;
++	case '1':
++		if (tgt->rel_tgt_id == 0) {
++			res = gen_relative_target_port_id(&tgt->rel_tgt_id);
++			if (res)
++				goto out;
++			PRINT_INFO("Using autogenerated rel ID %d for target "
++				"%s", tgt->rel_tgt_id, tgt->tgt_name);
++		} else {
++			if (!scst_is_relative_target_port_id_unique(
++			    tgt->rel_tgt_id, tgt)) {
++				PRINT_ERROR("Relative port id %d is not unique",
++					tgt->rel_tgt_id);
++					res = -EBADSLT;
++				goto out;
++			}
 +		}
++		enable = true;
 +		break;
-+
-+	case SCST_IO_GROUPING_NEVER:
-+		goto out;
-+
 +	default:
-+		list_for_each_entry(t, &tgt_dev->dev->dev_tgt_dev_list,
-+				dev_tgt_dev_list_entry) {
-+			if ((t == tgt_dev) || (t->active_cmd_threads == NULL))
-+				continue;
-+
-+			TRACE_DBG("t %s (acg %p, io_grouping_type %d)",
-+				t->sess->initiator_name, t->acg_dev->acg,
-+				t->acg_dev->acg->acg_io_grouping_type);
-+
-+			if (t->acg_dev->acg->acg_io_grouping_type ==
-+					acg->acg_io_grouping_type)
-+				goto found;
-+		}
-+		break;
++		PRINT_ERROR("%s: Requested action not understood: %s",
++		       __func__, buf);
++		res = -EINVAL;
++		goto out;
 +	}
++
++	res = tgt->tgtt->enable_target(tgt, enable);
++	if (res == 0)
++		res = count;
 +
 +out:
 +	return res;
++}
 +
-+found:
-+	if (t->active_cmd_threads == &scst_main_cmd_threads) {
-+		res = t;
-+		TRACE_MGMT_DBG("Going to share async IO context %p (res %p, "
-+			"ini %s, dev %s, grouping type %d)",
-+			t->aic_keeper->aic, res, t->sess->initiator_name,
-+			t->dev->virt_name,
-+			t->acg_dev->acg->acg_io_grouping_type);
-+	} else {
-+		res = t;
-+		if (res->active_cmd_threads->io_context == NULL) {
-+			TRACE_MGMT_DBG("IO context for t %p not yet "
-+				"initialized, waiting...", t);
-+			msleep(100);
-+			barrier();
-+			goto found;
-+		}
-+		TRACE_MGMT_DBG("Going to share IO context %p (res %p, ini %s, "
-+			"dev %s, cmd_threads %p, grouping type %d)",
-+			res->active_cmd_threads->io_context, res,
-+			t->sess->initiator_name, t->dev->virt_name,
-+			t->active_cmd_threads,
-+			t->acg_dev->acg->acg_io_grouping_type);
++static struct kobj_attribute tgt_enable_attr =
++	__ATTR(enabled, S_IRUGO | S_IWUSR,
++	       scst_tgt_enable_show, scst_tgt_enable_store);
++
++int scst_create_tgt_sysfs(struct scst_tgt *tgt)
++{
++	int retval;
++	const struct attribute **pattr;
++
++	init_rwsem(&tgt->tgt_attr_rwsem);
++
++	tgt->tgt_kobj_initialized = 1;
++
++	retval = kobject_init_and_add(&tgt->tgt_kobj, &tgt_ktype,
++			&tgt->tgtt->tgtt_kobj, tgt->tgt_name);
++	if (retval != 0) {
++		PRINT_ERROR("Can't add tgt %s to sysfs", tgt->tgt_name);
++		goto out;
 +	}
++
++	/*
++	 * In case of errors there's no need for additional cleanup, because
++	 * it will be done by the _put function() called by the caller.
++	 */
++
++	if ((tgt->tgtt->enable_target != NULL) &&
++	    (tgt->tgtt->is_target_enabled != NULL)) {
++		retval = sysfs_create_file(&tgt->tgt_kobj,
++				&tgt_enable_attr.attr);
++		if (retval != 0) {
++			PRINT_ERROR("Can't add attr %s to sysfs",
++				tgt_enable_attr.attr.name);
++			goto out;
++		}
++	}
++
++	tgt->tgt_sess_kobj = kobject_create_and_add("sessions", &tgt->tgt_kobj);
++	if (tgt->tgt_sess_kobj == NULL) {
++		PRINT_ERROR("Can't create sess kobj for tgt %s", tgt->tgt_name);
++		goto out_nomem;
++	}
++
++	tgt->tgt_luns_kobj = kobject_create_and_add("luns", &tgt->tgt_kobj);
++	if (tgt->tgt_luns_kobj == NULL) {
++		PRINT_ERROR("Can't create luns kobj for tgt %s", tgt->tgt_name);
++		goto out_nomem;
++	}
++
++	retval = sysfs_create_file(tgt->tgt_luns_kobj, &scst_luns_mgmt.attr);
++	if (retval != 0) {
++		PRINT_ERROR("Can't add tgt attr %s for tgt %s",
++			scst_luns_mgmt.attr.name, tgt->tgt_name);
++		goto out;
++	}
++
++	tgt->tgt_ini_grp_kobj = kobject_create_and_add("ini_groups",
++					&tgt->tgt_kobj);
++	if (tgt->tgt_ini_grp_kobj == NULL) {
++		PRINT_ERROR("Can't create ini_grp kobj for tgt %s",
++			tgt->tgt_name);
++		goto out_nomem;
++	}
++
++	retval = sysfs_create_file(tgt->tgt_ini_grp_kobj,
++			&scst_ini_group_mgmt.attr);
++	if (retval != 0) {
++		PRINT_ERROR("Can't add tgt attr %s for tgt %s",
++			scst_ini_group_mgmt.attr.name, tgt->tgt_name);
++		goto out;
++	}
++
++	retval = sysfs_create_file(&tgt->tgt_kobj,
++			&scst_rel_tgt_id.attr);
++	if (retval != 0) {
++		PRINT_ERROR("Can't add attribute %s for tgt %s",
++			scst_rel_tgt_id.attr.name, tgt->tgt_name);
++		goto out;
++	}
++
++	retval = sysfs_create_file(&tgt->tgt_kobj,
++			&scst_tgt_addr_method.attr);
++	if (retval != 0) {
++		PRINT_ERROR("Can't add attribute %s for tgt %s",
++			scst_tgt_addr_method.attr.name, tgt->tgt_name);
++		goto out;
++	}
++
++	retval = sysfs_create_file(&tgt->tgt_kobj,
++			&scst_tgt_io_grouping_type.attr);
++	if (retval != 0) {
++		PRINT_ERROR("Can't add attribute %s for tgt %s",
++			scst_tgt_io_grouping_type.attr.name, tgt->tgt_name);
++		goto out;
++	}
++
++	pattr = tgt->tgtt->tgt_attrs;
++	if (pattr != NULL) {
++		while (*pattr != NULL) {
++			TRACE_DBG("Creating attr %s for tgt %s", (*pattr)->name,
++				tgt->tgt_name);
++			retval = sysfs_create_file(&tgt->tgt_kobj, *pattr);
++			if (retval != 0) {
++				PRINT_ERROR("Can't add tgt attr %s for tgt %s",
++					(*pattr)->name, tgt->tgt_name);
++				goto out;
++			}
++			pattr++;
++		}
++	}
++
++out:
++	return retval;
++
++out_nomem:
++	retval = -ENOMEM;
 +	goto out;
 +}
 +
-+enum scst_dev_type_threads_pool_type scst_parse_threads_pool_type(const char *p,
-+	int len)
++/*
++ * Must not be called under scst_mutex or there can be a deadlock with
++ * tgt_attr_rwsem
++ */
++void scst_tgt_sysfs_prepare_put(struct scst_tgt *tgt)
 +{
-+	enum scst_dev_type_threads_pool_type res;
-+
-+	if (strncasecmp(p, SCST_THREADS_POOL_PER_INITIATOR_STR,
-+			min_t(int, strlen(SCST_THREADS_POOL_PER_INITIATOR_STR),
-+				len)) == 0)
-+		res = SCST_THREADS_POOL_PER_INITIATOR;
-+	else if (strncasecmp(p, SCST_THREADS_POOL_SHARED_STR,
-+			min_t(int, strlen(SCST_THREADS_POOL_SHARED_STR),
-+				len)) == 0)
-+		res = SCST_THREADS_POOL_SHARED;
-+	else {
-+		PRINT_ERROR("Unknown threads pool type %s", p);
-+		res = SCST_THREADS_POOL_TYPE_INVALID;
++	if (tgt->tgt_kobj_initialized) {
++		down_write(&tgt->tgt_attr_rwsem);
++		tgt->tgt_kobj_put_prepared = 1;
 +	}
 +
-+	return res;
++	return;
 +}
 +
-+static int scst_ioc_keeper_thread(void *arg)
++/*
++ * Must not be called under scst_mutex or there can be a deadlock with
++ * tgt_attr_rwsem
++ */
++void scst_tgt_sysfs_put(struct scst_tgt *tgt)
 +{
-+	struct scst_async_io_context_keeper *aic_keeper =
-+		(struct scst_async_io_context_keeper *)arg;
++	if (tgt->tgt_kobj_initialized) {
++		kobject_del(tgt->tgt_sess_kobj);
++		kobject_put(tgt->tgt_sess_kobj);
 +
-+	TRACE_MGMT_DBG("AIC %p keeper thread %s (PID %d) started", aic_keeper,
-+		current->comm, current->pid);
++		kobject_del(tgt->tgt_luns_kobj);
++		kobject_put(tgt->tgt_luns_kobj);
 +
-+	current->flags |= PF_NOFREEZE;
++		kobject_del(tgt->tgt_ini_grp_kobj);
++		kobject_put(tgt->tgt_ini_grp_kobj);
 +
-+	BUG_ON(aic_keeper->aic != NULL);
++		kobject_del(&tgt->tgt_kobj);
 +
-+	aic_keeper->aic = get_io_context(GFP_KERNEL, -1);
-+	TRACE_MGMT_DBG("Alloced new async IO context %p (aic %p)",
-+		aic_keeper->aic, aic_keeper);
-+
-+	/* We have our own ref counting */
-+	put_io_context(aic_keeper->aic);
-+
-+	/* We are ready */
-+	wake_up_all(&aic_keeper->aic_keeper_waitQ);
-+
-+	wait_event_interruptible(aic_keeper->aic_keeper_waitQ,
-+		kthread_should_stop());
-+
-+	TRACE_MGMT_DBG("AIC %p keeper thread %s (PID %d) finished", aic_keeper,
-+		current->comm, current->pid);
-+	return 0;
++		if (!tgt->tgt_kobj_put_prepared)
++			down_write(&tgt->tgt_attr_rwsem);
++		kobject_put(&tgt->tgt_kobj);
++	} else
++		scst_free_tgt(tgt);
++	return;
 +}
 +
-+/* scst_mutex supposed to be held */
-+int scst_tgt_dev_setup_threads(struct scst_tgt_dev *tgt_dev)
++/*
++ * Devices directory implementation
++ */
++
++ssize_t scst_device_sysfs_type_show(struct kobject *kobj,
++			    struct kobj_attribute *attr, char *buf)
++{
++	int pos = 0;
++
++	struct scst_device *dev;
++
++	dev = container_of(kobj, struct scst_device, dev_kobj);
++
++	pos = sprintf(buf, "%d - %s\n", dev->type,
++		(unsigned)dev->type > ARRAY_SIZE(scst_dev_handler_types) ?
++		      "unknown" : scst_dev_handler_types[dev->type]);
++
++	return pos;
++}
++
++static struct kobj_attribute device_type_attr =
++	__ATTR(type, S_IRUGO, scst_device_sysfs_type_show, NULL);
++
++static ssize_t scst_device_sysfs_threads_num_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	int pos = 0;
++	struct scst_device *dev;
++
++	dev = container_of(kobj, struct scst_device, dev_kobj);
++
++	pos = sprintf(buf, "%d\n%s", dev->threads_num,
++		(dev->threads_num != dev->handler->threads_num) ?
++			SCST_SYSFS_KEY_MARK "\n" : "");
++	return pos;
++}
++
++static ssize_t scst_device_sysfs_threads_data_store(struct scst_device *dev,
++	int threads_num, enum scst_dev_type_threads_pool_type threads_pool_type)
 +{
 +	int res = 0;
-+	struct scst_device *dev = tgt_dev->dev;
-+	struct scst_async_io_context_keeper *aic_keeper;
 +
-+	if (dev->threads_num <= 0) {
-+		tgt_dev->active_cmd_threads = &scst_main_cmd_threads;
++	if (dev->threads_num < 0) {
++		PRINT_ERROR("Threads pool disabled for device %s",
++			dev->virt_name);
++		res = -EPERM;
++		goto out;
++	}
 +
-+		if (dev->threads_num == 0) {
-+			struct scst_tgt_dev *shared_io_tgt_dev;
++	if ((threads_num == dev->threads_num) &&
++	    (threads_pool_type == dev->threads_pool_type))
++		goto out;
 +
-+			shared_io_tgt_dev = scst_find_shared_io_tgt_dev(tgt_dev);
-+			if (shared_io_tgt_dev != NULL) {
-+				aic_keeper = shared_io_tgt_dev->aic_keeper;
-+				kref_get(&aic_keeper->aic_keeper_kref);
++	res = scst_suspend_activity(true);
++	if (res != 0)
++		goto out;
 +
-+				TRACE_MGMT_DBG("Linking async io context %p "
-+					"for shared tgt_dev %p (dev %s)",
-+					aic_keeper->aic, tgt_dev,
-+					tgt_dev->dev->virt_name);
-+			} else {
-+				/* Create new context */
-+				aic_keeper = kzalloc(sizeof(*aic_keeper),
-+						GFP_KERNEL);
-+				if (aic_keeper == NULL) {
-+					PRINT_ERROR("Unable to alloc aic_keeper "
-+						"(size %zd)", sizeof(*aic_keeper));
-+					res = -ENOMEM;
-+					goto out;
-+				}
++	if (mutex_lock_interruptible(&scst_mutex) != 0) {
++		res = -EINTR;
++		goto out_resume;
++	}
 +
-+				kref_init(&aic_keeper->aic_keeper_kref);
-+				init_waitqueue_head(&aic_keeper->aic_keeper_waitQ);
++	scst_stop_dev_threads(dev);
 +
-+				aic_keeper->aic_keeper_thr =
-+					kthread_run(scst_ioc_keeper_thread,
-+						aic_keeper, "aic_keeper");
-+				if (IS_ERR(aic_keeper->aic_keeper_thr)) {
-+					PRINT_ERROR("Error running ioc_keeper "
-+						"thread (tgt_dev %p)", tgt_dev);
-+					res = PTR_ERR(aic_keeper->aic_keeper_thr);
-+					goto out_free_keeper;
-+				}
++	dev->threads_num = threads_num;
++	dev->threads_pool_type = threads_pool_type;
 +
-+				wait_event(aic_keeper->aic_keeper_waitQ,
-+					aic_keeper->aic != NULL);
++	res = scst_create_dev_threads(dev);
++	if (res != 0)
++		goto out_up;
 +
-+				TRACE_MGMT_DBG("Created async io context %p "
-+					"for not shared tgt_dev %p (dev %s)",
-+					aic_keeper->aic, tgt_dev,
-+					tgt_dev->dev->virt_name);
-+			}
++out_up:
++	mutex_unlock(&scst_mutex);
 +
-+			tgt_dev->async_io_context = aic_keeper->aic;
-+			tgt_dev->aic_keeper = aic_keeper;
-+		}
++out_resume:
++	scst_resume_activity();
 +
-+		res = scst_add_threads(tgt_dev->active_cmd_threads, NULL, NULL,
-+				tgt_dev->sess->tgt->tgtt->threads_num);
++out:
++	return res;
++}
++
++static ssize_t scst_device_sysfs_threads_num_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int res;
++	struct scst_device *dev;
++	long newtn;
++
++	dev = container_of(kobj, struct scst_device, dev_kobj);
++
++	res = strict_strtoul(buf, 0, &newtn);
++	if (res != 0) {
++		PRINT_ERROR("strict_strtoul() for %s failed: %d ", buf, res);
++		goto out;
++	}
++
++	if (newtn < 0) {
++		PRINT_ERROR("Illegal threads num value %ld", newtn);
++		res = -EINVAL;
++		goto out;
++	}
++
++	res = scst_device_sysfs_threads_data_store(dev, newtn,
++		dev->threads_pool_type);
++	if (res != 0)
++		goto out;
++
++	PRINT_INFO("Changed cmd threads num to %ld", newtn);
++
++	res = count;
++
++out:
++	return res;
++}
++
++static struct kobj_attribute device_threads_num_attr =
++	__ATTR(threads_num, S_IRUGO | S_IWUSR,
++		scst_device_sysfs_threads_num_show,
++		scst_device_sysfs_threads_num_store);
++
++static ssize_t scst_device_sysfs_threads_pool_type_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	int pos = 0;
++	struct scst_device *dev;
++
++	dev = container_of(kobj, struct scst_device, dev_kobj);
++
++	if (dev->threads_num == 0) {
++		pos = sprintf(buf, "Async\n");
++		goto out;
++	} else if (dev->threads_num < 0) {
++		pos = sprintf(buf, "Not valid\n");
 +		goto out;
 +	}
 +
 +	switch (dev->threads_pool_type) {
 +	case SCST_THREADS_POOL_PER_INITIATOR:
-+	{
-+		struct scst_tgt_dev *shared_io_tgt_dev;
-+
-+		scst_init_threads(&tgt_dev->tgt_dev_cmd_threads);
-+
-+		tgt_dev->active_cmd_threads = &tgt_dev->tgt_dev_cmd_threads;
-+
-+		shared_io_tgt_dev = scst_find_shared_io_tgt_dev(tgt_dev);
-+		if (shared_io_tgt_dev != NULL) {
-+			TRACE_MGMT_DBG("Linking io context %p for "
-+				"shared tgt_dev %p (cmd_threads %p)",
-+				shared_io_tgt_dev->active_cmd_threads->io_context,
-+				tgt_dev, tgt_dev->active_cmd_threads);
-+			/* It's ref counted via threads */
-+			tgt_dev->active_cmd_threads->io_context =
-+				shared_io_tgt_dev->active_cmd_threads->io_context;
-+		}
-+
-+		res = scst_add_threads(tgt_dev->active_cmd_threads, NULL,
-+			tgt_dev,
-+			dev->threads_num + tgt_dev->sess->tgt->tgtt->threads_num);
-+		if (res != 0) {
-+			/* Let's clear here, because no threads could be run */
-+			tgt_dev->active_cmd_threads->io_context = NULL;
-+		}
++		pos = sprintf(buf, "%s\n%s", SCST_THREADS_POOL_PER_INITIATOR_STR,
++			(dev->threads_pool_type != dev->handler->threads_pool_type) ?
++				SCST_SYSFS_KEY_MARK "\n" : "");
 +		break;
-+	}
 +	case SCST_THREADS_POOL_SHARED:
-+		tgt_dev->active_cmd_threads = &dev->dev_cmd_threads;
-+
-+		res = scst_add_threads(tgt_dev->active_cmd_threads, dev, NULL,
-+			tgt_dev->sess->tgt->tgtt->threads_num);
++		pos = sprintf(buf, "%s\n%s", SCST_THREADS_POOL_SHARED_STR,
++			(dev->threads_pool_type != dev->handler->threads_pool_type) ?
++				SCST_SYSFS_KEY_MARK "\n" : "");
 +		break;
 +	default:
-+		PRINT_CRIT_ERROR("Unknown threads pool type %d (dev %s)",
-+			dev->threads_pool_type, dev->virt_name);
-+		BUG();
++		pos = sprintf(buf, "Unknown\n");
 +		break;
 +	}
 +
 +out:
-+	if (res == 0)
-+		tm_dbg_init_tgt_dev(tgt_dev);
-+	return res;
-+
-+out_free_keeper:
-+	kfree(aic_keeper);
-+	goto out;
++	return pos;
 +}
 +
-+static void scst_aic_keeper_release(struct kref *kref)
++static ssize_t scst_device_sysfs_threads_pool_type_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
 +{
-+	struct scst_async_io_context_keeper *aic_keeper;
++	int res;
++	struct scst_device *dev;
++	enum scst_dev_type_threads_pool_type newtpt;
 +
-+	aic_keeper = container_of(kref, struct scst_async_io_context_keeper,
-+			aic_keeper_kref);
++	dev = container_of(kobj, struct scst_device, dev_kobj);
 +
-+	kthread_stop(aic_keeper->aic_keeper_thr);
-+
-+	kfree(aic_keeper);
-+	return;
-+}
-+
-+/* scst_mutex supposed to be held */
-+void scst_tgt_dev_stop_threads(struct scst_tgt_dev *tgt_dev)
-+{
-+
-+	if (tgt_dev->active_cmd_threads == &scst_main_cmd_threads) {
-+		/* Global async threads */
-+		kref_put(&tgt_dev->aic_keeper->aic_keeper_kref,
-+			scst_aic_keeper_release);
-+		tgt_dev->async_io_context = NULL;
-+		tgt_dev->aic_keeper = NULL;
-+	} else if (tgt_dev->active_cmd_threads == &tgt_dev->dev->dev_cmd_threads) {
-+		/* Per device shared threads */
-+		scst_del_threads(tgt_dev->active_cmd_threads,
-+			tgt_dev->sess->tgt->tgtt->threads_num);
-+	} else if (tgt_dev->active_cmd_threads == &tgt_dev->tgt_dev_cmd_threads) {
-+		/* Per tgt_dev threads */
-+		scst_del_threads(tgt_dev->active_cmd_threads, -1);
-+		scst_deinit_threads(&tgt_dev->tgt_dev_cmd_threads);
-+	} /* else no threads (not yet initialized, e.g.) */
-+
-+	tm_dbg_deinit_tgt_dev(tgt_dev);
-+	tgt_dev->active_cmd_threads = NULL;
-+	return;
-+}
-+
-+/*
-+ * scst_mutex supposed to be held, there must not be parallel activity in this
-+ * session.
-+ */
-+static struct scst_tgt_dev *scst_alloc_add_tgt_dev(struct scst_session *sess,
-+	struct scst_acg_dev *acg_dev)
-+{
-+	int ini_sg, ini_unchecked_isa_dma, ini_use_clustering;
-+	struct scst_tgt_dev *tgt_dev;
-+	struct scst_device *dev = acg_dev->dev;
-+	struct list_head *sess_tgt_dev_list_head;
-+	int rc, i, sl;
-+	uint8_t sense_buffer[SCST_STANDARD_SENSE_LEN];
-+
-+	tgt_dev = kmem_cache_zalloc(scst_tgtd_cachep, GFP_KERNEL);
-+	if (tgt_dev == NULL) {
-+		TRACE(TRACE_OUT_OF_MEM, "%s",
-+		      "Allocation of scst_tgt_dev failed");
-+		goto out;
-+	}
-+
-+	tgt_dev->dev = dev;
-+	tgt_dev->lun = acg_dev->lun;
-+	tgt_dev->acg_dev = acg_dev;
-+	tgt_dev->sess = sess;
-+	atomic_set(&tgt_dev->tgt_dev_cmd_count, 0);
-+
-+	scst_sgv_pool_use_norm(tgt_dev);
-+
-+	if (dev->scsi_dev != NULL) {
-+		ini_sg = dev->scsi_dev->host->sg_tablesize;
-+		ini_unchecked_isa_dma = dev->scsi_dev->host->unchecked_isa_dma;
-+		ini_use_clustering = (dev->scsi_dev->host->use_clustering ==
-+				ENABLE_CLUSTERING);
-+	} else {
-+		ini_sg = (1 << 15) /* infinite */;
-+		ini_unchecked_isa_dma = 0;
-+		ini_use_clustering = 0;
-+	}
-+	tgt_dev->max_sg_cnt = min(ini_sg, sess->tgt->sg_tablesize);
-+
-+	if ((sess->tgt->tgtt->use_clustering || ini_use_clustering) &&
-+	    !sess->tgt->tgtt->no_clustering)
-+		scst_sgv_pool_use_norm_clust(tgt_dev);
-+
-+	if (sess->tgt->tgtt->unchecked_isa_dma || ini_unchecked_isa_dma)
-+		scst_sgv_pool_use_dma(tgt_dev);
-+
-+	TRACE_MGMT_DBG("Device %s on SCST lun=%lld",
-+	       dev->virt_name, (long long unsigned int)tgt_dev->lun);
-+
-+	spin_lock_init(&tgt_dev->tgt_dev_lock);
-+	INIT_LIST_HEAD(&tgt_dev->UA_list);
-+	spin_lock_init(&tgt_dev->thr_data_lock);
-+	INIT_LIST_HEAD(&tgt_dev->thr_data_list);
-+	spin_lock_init(&tgt_dev->sn_lock);
-+	INIT_LIST_HEAD(&tgt_dev->deferred_cmd_list);
-+	INIT_LIST_HEAD(&tgt_dev->skipped_sn_list);
-+	tgt_dev->curr_sn = (typeof(tgt_dev->curr_sn))(-300);
-+	tgt_dev->expected_sn = tgt_dev->curr_sn + 1;
-+	tgt_dev->num_free_sn_slots = ARRAY_SIZE(tgt_dev->sn_slots)-1;
-+	tgt_dev->cur_sn_slot = &tgt_dev->sn_slots[0];
-+	for (i = 0; i < (int)ARRAY_SIZE(tgt_dev->sn_slots); i++)
-+		atomic_set(&tgt_dev->sn_slots[i], 0);
-+
-+	if (dev->handler->parse_atomic &&
-+	    (sess->tgt->tgtt->preprocessing_done == NULL)) {
-+		if (sess->tgt->tgtt->rdy_to_xfer_atomic)
-+			__set_bit(SCST_TGT_DEV_AFTER_INIT_WR_ATOMIC,
-+				&tgt_dev->tgt_dev_flags);
-+		if (dev->handler->exec_atomic)
-+			__set_bit(SCST_TGT_DEV_AFTER_INIT_OTH_ATOMIC,
-+				&tgt_dev->tgt_dev_flags);
-+	}
-+	if (dev->handler->exec_atomic) {
-+		if (sess->tgt->tgtt->rdy_to_xfer_atomic)
-+			__set_bit(SCST_TGT_DEV_AFTER_RESTART_WR_ATOMIC,
-+				&tgt_dev->tgt_dev_flags);
-+		__set_bit(SCST_TGT_DEV_AFTER_RESTART_OTH_ATOMIC,
-+				&tgt_dev->tgt_dev_flags);
-+		__set_bit(SCST_TGT_DEV_AFTER_RX_DATA_ATOMIC,
-+			&tgt_dev->tgt_dev_flags);
-+	}
-+	if (dev->handler->dev_done_atomic &&
-+	    sess->tgt->tgtt->xmit_response_atomic) {
-+		__set_bit(SCST_TGT_DEV_AFTER_EXEC_ATOMIC,
-+			&tgt_dev->tgt_dev_flags);
-+	}
-+
-+	sl = scst_set_sense(sense_buffer, sizeof(sense_buffer),
-+		dev->d_sense, SCST_LOAD_SENSE(scst_sense_reset_UA));
-+	scst_alloc_set_UA(tgt_dev, sense_buffer, sl, 0);
-+
-+	rc = scst_tgt_dev_setup_threads(tgt_dev);
-+	if (rc != 0)
-+		goto out_free;
-+
-+	if (dev->handler && dev->handler->attach_tgt) {
-+		TRACE_DBG("Calling dev handler's attach_tgt(%p)", tgt_dev);
-+		rc = dev->handler->attach_tgt(tgt_dev);
-+		TRACE_DBG("%s", "Dev handler's attach_tgt() returned");
-+		if (rc != 0) {
-+			PRINT_ERROR("Device handler's %s attach_tgt() "
-+			    "failed: %d", dev->handler->name, rc);
-+			goto out_stop_threads;
-+		}
-+	}
-+
-+	spin_lock_bh(&dev->dev_lock);
-+	list_add_tail(&tgt_dev->dev_tgt_dev_list_entry, &dev->dev_tgt_dev_list);
-+	if (dev->dev_reserved)
-+		__set_bit(SCST_TGT_DEV_RESERVED, &tgt_dev->tgt_dev_flags);
-+	spin_unlock_bh(&dev->dev_lock);
-+
-+	sess_tgt_dev_list_head =
-+		&sess->sess_tgt_dev_list_hash[HASH_VAL(tgt_dev->lun)];
-+	list_add_tail(&tgt_dev->sess_tgt_dev_list_entry,
-+		      sess_tgt_dev_list_head);
-+
-+out:
-+	return tgt_dev;
-+
-+out_stop_threads:
-+	scst_tgt_dev_stop_threads(tgt_dev);
-+
-+out_free:
-+	scst_free_all_UA(tgt_dev);
-+
-+	kmem_cache_free(scst_tgtd_cachep, tgt_dev);
-+	tgt_dev = NULL;
-+	goto out;
-+}
-+
-+/* No locks supposed to be held, scst_mutex - held */
-+void scst_nexus_loss(struct scst_tgt_dev *tgt_dev, bool queue_UA)
-+{
-+
-+	scst_clear_reservation(tgt_dev);
-+
-+	/* With activity suspended the lock isn't needed, but let's be safe */
-+	spin_lock_bh(&tgt_dev->tgt_dev_lock);
-+	scst_free_all_UA(tgt_dev);
-+	memset(tgt_dev->tgt_dev_sense, 0, sizeof(tgt_dev->tgt_dev_sense));
-+	spin_unlock_bh(&tgt_dev->tgt_dev_lock);
-+
-+	if (queue_UA) {
-+		uint8_t sense_buffer[SCST_STANDARD_SENSE_LEN];
-+		int sl = scst_set_sense(sense_buffer, sizeof(sense_buffer),
-+				tgt_dev->dev->d_sense,
-+				SCST_LOAD_SENSE(scst_sense_nexus_loss_UA));
-+		scst_check_set_UA(tgt_dev, sense_buffer, sl, 0);
-+	}
-+	return;
-+}
-+
-+/*
-+ * scst_mutex supposed to be held, there must not be parallel activity in this
-+ * session.
-+ */
-+static void scst_free_tgt_dev(struct scst_tgt_dev *tgt_dev)
-+{
-+	struct scst_device *dev = tgt_dev->dev;
-+
-+	spin_lock_bh(&dev->dev_lock);
-+	list_del(&tgt_dev->dev_tgt_dev_list_entry);
-+	spin_unlock_bh(&dev->dev_lock);
-+
-+	list_del(&tgt_dev->sess_tgt_dev_list_entry);
-+
-+	scst_clear_reservation(tgt_dev);
-+	scst_free_all_UA(tgt_dev);
-+
-+	if (dev->handler && dev->handler->detach_tgt) {
-+		TRACE_DBG("Calling dev handler's detach_tgt(%p)",
-+		      tgt_dev);
-+		dev->handler->detach_tgt(tgt_dev);
-+		TRACE_DBG("%s", "Dev handler's detach_tgt() returned");
-+	}
-+
-+	scst_tgt_dev_stop_threads(tgt_dev);
-+
-+	BUG_ON(!list_empty(&tgt_dev->thr_data_list));
-+
-+	kmem_cache_free(scst_tgtd_cachep, tgt_dev);
-+	return;
-+}
-+
-+/* scst_mutex supposed to be held */
-+int scst_sess_alloc_tgt_devs(struct scst_session *sess)
-+{
-+	int res = 0;
-+	struct scst_acg_dev *acg_dev;
-+	struct scst_tgt_dev *tgt_dev;
-+
-+	list_for_each_entry(acg_dev, &sess->acg->acg_dev_list,
-+			acg_dev_list_entry) {
-+		tgt_dev = scst_alloc_add_tgt_dev(sess, acg_dev);
-+		if (tgt_dev == NULL) {
-+			res = -ENOMEM;
-+			goto out_free;
-+		}
-+	}
-+
-+out:
-+	return res;
-+
-+out_free:
-+	scst_sess_free_tgt_devs(sess);
-+	goto out;
-+}
-+
-+/*
-+ * scst_mutex supposed to be held, there must not be parallel activity in this
-+ * session.
-+ */
-+void scst_sess_free_tgt_devs(struct scst_session *sess)
-+{
-+	int i;
-+	struct scst_tgt_dev *tgt_dev, *t;
-+
-+	/* The session is going down, no users, so no locks */
-+	for (i = 0; i < TGT_DEV_HASH_SIZE; i++) {
-+		struct list_head *sess_tgt_dev_list_head =
-+			&sess->sess_tgt_dev_list_hash[i];
-+		list_for_each_entry_safe(tgt_dev, t, sess_tgt_dev_list_head,
-+				sess_tgt_dev_list_entry) {
-+			scst_free_tgt_dev(tgt_dev);
-+		}
-+		INIT_LIST_HEAD(sess_tgt_dev_list_head);
-+	}
-+	return;
-+}
-+
-+/* The activity supposed to be suspended and scst_mutex held */
-+int scst_acg_add_dev(struct scst_acg *acg, struct scst_device *dev,
-+	uint64_t lun, int read_only, bool gen_scst_report_luns_changed)
-+{
-+	int res = 0;
-+	struct scst_acg_dev *acg_dev;
-+	struct scst_tgt_dev *tgt_dev;
-+	struct scst_session *sess;
-+	LIST_HEAD(tmp_tgt_dev_list);
-+
-+	INIT_LIST_HEAD(&tmp_tgt_dev_list);
-+
-+	acg_dev = scst_alloc_acg_dev(acg, dev, lun);
-+	if (acg_dev == NULL) {
-+		res = -ENOMEM;
-+		goto out;
-+	}
-+	acg_dev->rd_only = read_only;
-+
-+	TRACE_DBG("Adding acg_dev %p to acg_dev_list and dev_acg_dev_list",
-+		acg_dev);
-+	list_add_tail(&acg_dev->acg_dev_list_entry, &acg->acg_dev_list);
-+	list_add_tail(&acg_dev->dev_acg_dev_list_entry, &dev->dev_acg_dev_list);
-+
-+	list_for_each_entry(sess, &acg->acg_sess_list, acg_sess_list_entry) {
-+		tgt_dev = scst_alloc_add_tgt_dev(sess, acg_dev);
-+		if (tgt_dev == NULL) {
-+			res = -ENOMEM;
-+			goto out_free;
-+		}
-+		list_add_tail(&tgt_dev->extra_tgt_dev_list_entry,
-+			      &tmp_tgt_dev_list);
-+	}
-+
-+	if (gen_scst_report_luns_changed)
-+		scst_report_luns_changed(acg);
-+
-+	PRINT_INFO("Added device %s to group %s (LUN %lld, "
-+		"rd_only %d)", dev->virt_name, acg->acg_name,
-+		(long long unsigned int)lun, read_only);
-+
-+out:
-+	return res;
-+
-+out_free:
-+	list_for_each_entry(tgt_dev, &tmp_tgt_dev_list,
-+			 extra_tgt_dev_list_entry) {
-+		scst_free_tgt_dev(tgt_dev);
-+	}
-+	scst_free_acg_dev(acg_dev);
-+	goto out;
-+}
-+
-+/* The activity supposed to be suspended and scst_mutex held */
-+int scst_acg_remove_dev(struct scst_acg *acg, struct scst_device *dev,
-+	bool gen_scst_report_luns_changed)
-+{
-+	int res = 0;
-+	struct scst_acg_dev *acg_dev = NULL, *a;
-+	struct scst_tgt_dev *tgt_dev, *tt;
-+
-+	list_for_each_entry(a, &acg->acg_dev_list, acg_dev_list_entry) {
-+		if (a->dev == dev) {
-+			acg_dev = a;
-+			break;
-+		}
-+	}
-+
-+	if (acg_dev == NULL) {
-+		PRINT_ERROR("Device is not found in group %s", acg->acg_name);
++	newtpt = scst_parse_threads_pool_type(buf, count);
++	if (newtpt == SCST_THREADS_POOL_TYPE_INVALID) {
++		PRINT_ERROR("Illegal threads pool type %s", buf);
 +		res = -EINVAL;
 +		goto out;
 +	}
 +
-+	list_for_each_entry_safe(tgt_dev, tt, &dev->dev_tgt_dev_list,
-+			 dev_tgt_dev_list_entry) {
-+		if (tgt_dev->acg_dev == acg_dev)
-+			scst_free_tgt_dev(tgt_dev);
-+	}
-+	scst_free_acg_dev(acg_dev);
++	TRACE_DBG("buf %s, count %zd, newtpt %d", buf, count, newtpt);
 +
-+	if (gen_scst_report_luns_changed)
-+		scst_report_luns_changed(acg);
-+
-+	PRINT_INFO("Removed device %s from group %s", dev->virt_name,
-+		acg->acg_name);
-+
-+out:
-+	return res;
-+}
-+
-+/* The activity supposed to be suspended and scst_mutex held */
-+int scst_acg_add_name(struct scst_acg *acg, const char *name)
-+{
-+	int res = 0;
-+	struct scst_acn *n;
-+	int len;
-+	char *nm;
-+
-+	list_for_each_entry(n, &acg->acn_list, acn_list_entry) {
-+		if (strcmp(n->name, name) == 0) {
-+			PRINT_ERROR("Name %s already exists in group %s",
-+				name, acg->acg_name);
-+			res = -EEXIST;
-+			goto out;
-+		}
-+	}
-+
-+	n = kmalloc(sizeof(*n), GFP_KERNEL);
-+	if (n == NULL) {
-+		PRINT_ERROR("%s", "Unable to allocate scst_acn");
-+		res = -ENOMEM;
-+		goto out;
-+	}
-+
-+	len = strlen(name);
-+	nm = kmalloc(len + 1, GFP_KERNEL);
-+	if (nm == NULL) {
-+		PRINT_ERROR("%s", "Unable to allocate scst_acn->name");
-+		res = -ENOMEM;
-+		goto out_free;
-+	}
-+
-+	strcpy(nm, name);
-+	n->name = nm;
-+
-+	res = scst_create_acn_sysfs(acg, n);
++	res = scst_device_sysfs_threads_data_store(dev, dev->threads_num,
++		newtpt);
 +	if (res != 0)
-+		goto out_free_nm;
-+
-+	list_add_tail(&n->acn_list_entry, &acg->acn_list);
-+
-+out:
-+	if (res == 0) {
-+		PRINT_INFO("Added name '%s' to group '%s'", name, acg->acg_name);
-+		scst_check_reassign_sessions();
-+	}
-+	return res;
-+
-+out_free_nm:
-+	kfree(nm);
-+
-+out_free:
-+	kfree(n);
-+	goto out;
-+}
-+
-+/* The activity supposed to be suspended and scst_mutex held */
-+struct scst_acn *scst_acg_find_name(struct scst_acg *acg, const char *name)
-+{
-+	struct scst_acn *n;
-+
-+	TRACE_DBG("Trying to find name '%s'", name);
-+
-+	list_for_each_entry(n, &acg->acn_list, acn_list_entry) {
-+		if (strcmp(n->name, name) == 0) {
-+			TRACE_DBG("%s", "Found");
-+			goto out;
-+		}
-+	}
-+	n = NULL;
-+out:
-+	return n;
-+}
-+
-+/* scst_mutex supposed to be held */
-+void scst_acg_remove_acn(struct scst_acn *acn)
-+{
-+
-+	list_del(&acn->acn_list_entry);
-+	kfree(acn->name);
-+	kfree(acn);
-+	return;
-+}
-+
-+static struct scst_cmd *scst_create_prepare_internal_cmd(
-+	struct scst_cmd *orig_cmd, int bufsize)
-+{
-+	struct scst_cmd *res;
-+	gfp_t gfp_mask = scst_cmd_atomic(orig_cmd) ? GFP_ATOMIC : GFP_KERNEL;
-+
-+	res = scst_alloc_cmd(gfp_mask);
-+	if (res == NULL)
 +		goto out;
 +
-+	res->cmd_threads = orig_cmd->cmd_threads;
-+	res->sess = orig_cmd->sess;
-+	res->atomic = scst_cmd_atomic(orig_cmd);
-+	res->internal = 1;
-+	res->tgtt = orig_cmd->tgtt;
-+	res->tgt = orig_cmd->tgt;
-+	res->dev = orig_cmd->dev;
-+	res->tgt_dev = orig_cmd->tgt_dev;
-+	res->lun = orig_cmd->lun;
-+	res->queue_type = SCST_CMD_QUEUE_HEAD_OF_QUEUE;
-+	res->data_direction = SCST_DATA_UNKNOWN;
-+	res->orig_cmd = orig_cmd;
-+	res->bufflen = bufsize;
++	PRINT_INFO("Changed cmd threads pool type to %d", newtpt);
 +
-+	scst_sess_get(res->sess);
-+	if (res->tgt_dev != NULL)
-+		__scst_get(0);
-+
-+	res->state = SCST_CMD_STATE_PRE_PARSE;
++	res = count;
 +
 +out:
 +	return res;
 +}
 +
-+int scst_prepare_request_sense(struct scst_cmd *orig_cmd)
++static struct kobj_attribute device_threads_pool_type_attr =
++	__ATTR(threads_pool_type, S_IRUGO | S_IWUSR,
++		scst_device_sysfs_threads_pool_type_show,
++		scst_device_sysfs_threads_pool_type_store);
++
++static struct attribute *scst_device_attrs[] = {
++	&device_type_attr.attr,
++	&device_threads_num_attr.attr,
++	&device_threads_pool_type_attr.attr,
++	NULL,
++};
++
++static void scst_sysfs_device_release(struct kobject *kobj)
 +{
-+	int res = 0;
-+	static const uint8_t request_sense[6] = {
-+		REQUEST_SENSE, 0, 0, 0, SCST_SENSE_BUFFERSIZE, 0
-+	};
-+	struct scst_cmd *rs_cmd;
++	struct scst_device *dev;
 +
-+	if (orig_cmd->sense != NULL) {
-+		TRACE_MEM("Releasing sense %p (orig_cmd %p)",
-+			orig_cmd->sense, orig_cmd);
-+		mempool_free(orig_cmd->sense, scst_sense_mempool);
-+		orig_cmd->sense = NULL;
-+	}
++	dev = container_of(kobj, struct scst_device, dev_kobj);
 +
-+	rs_cmd = scst_create_prepare_internal_cmd(orig_cmd,
-+			SCST_SENSE_BUFFERSIZE);
-+	if (rs_cmd == NULL)
-+		goto out_error;
++	/* Let's make lockdep happy */
++	up_write(&dev->dev_attr_rwsem);
 +
-+	memcpy(rs_cmd->cdb, request_sense, sizeof(request_sense));
-+	rs_cmd->cdb[1] |= scst_get_cmd_dev_d_sense(orig_cmd);
-+	rs_cmd->cdb_len = sizeof(request_sense);
-+	rs_cmd->data_direction = SCST_DATA_READ;
-+	rs_cmd->expected_data_direction = rs_cmd->data_direction;
-+	rs_cmd->expected_transfer_len = SCST_SENSE_BUFFERSIZE;
-+	rs_cmd->expected_values_set = 1;
-+
-+	TRACE_MGMT_DBG("Adding REQUEST SENSE cmd %p to head of active "
-+		"cmd list", rs_cmd);
-+	spin_lock_irq(&rs_cmd->cmd_threads->cmd_list_lock);
-+	list_add(&rs_cmd->cmd_list_entry, &rs_cmd->cmd_threads->active_cmd_list);
-+	wake_up(&rs_cmd->cmd_threads->cmd_list_waitQ);
-+	spin_unlock_irq(&rs_cmd->cmd_threads->cmd_list_lock);
-+
-+out:
-+	return res;
-+
-+out_error:
-+	res = -1;
-+	goto out;
-+}
-+
-+static void scst_complete_request_sense(struct scst_cmd *req_cmd)
-+{
-+	struct scst_cmd *orig_cmd = req_cmd->orig_cmd;
-+	uint8_t *buf;
-+	int len;
-+
-+	BUG_ON(orig_cmd == NULL);
-+
-+	len = scst_get_buf_first(req_cmd, &buf);
-+
-+	if (scsi_status_is_good(req_cmd->status) && (len > 0) &&
-+	    SCST_SENSE_VALID(buf) && (!SCST_NO_SENSE(buf))) {
-+		PRINT_BUFF_FLAG(TRACE_SCSI, "REQUEST SENSE returned",
-+			buf, len);
-+		scst_alloc_set_sense(orig_cmd, scst_cmd_atomic(req_cmd), buf,
-+			len);
-+	} else {
-+		PRINT_ERROR("%s", "Unable to get the sense via "
-+			"REQUEST SENSE, returning HARDWARE ERROR");
-+		scst_set_cmd_error(orig_cmd,
-+			SCST_LOAD_SENSE(scst_sense_hardw_error));
-+	}
-+
-+	if (len > 0)
-+		scst_put_buf(req_cmd, buf);
-+
-+	TRACE_MGMT_DBG("Adding orig cmd %p to head of active "
-+		"cmd list", orig_cmd);
-+	spin_lock_irq(&orig_cmd->cmd_threads->cmd_list_lock);
-+	list_add(&orig_cmd->cmd_list_entry, &orig_cmd->cmd_threads->active_cmd_list);
-+	wake_up(&orig_cmd->cmd_threads->cmd_list_waitQ);
-+	spin_unlock_irq(&orig_cmd->cmd_threads->cmd_list_lock);
++	scst_free_device(dev);
 +	return;
 +}
 +
-+int scst_finish_internal_cmd(struct scst_cmd *cmd)
++int scst_create_devt_dev_sysfs(struct scst_device *dev)
++{
++	int retval = 0;
++	const struct attribute **pattr;
++
++	if (dev->handler == &scst_null_devtype)
++		goto out;
++
++	BUG_ON(!dev->handler->devt_kobj_initialized);
++
++	/*
++	 * In case of errors there's no need for additional cleanup, because
++	 * it will be done by the _put function() called by the caller.
++	 */
++
++	retval = sysfs_create_link(&dev->dev_kobj,
++			&dev->handler->devt_kobj, "handler");
++	if (retval != 0) {
++		PRINT_ERROR("Can't create handler link for dev %s",
++			dev->virt_name);
++		goto out;
++	}
++
++	retval = sysfs_create_link(&dev->handler->devt_kobj,
++			&dev->dev_kobj, dev->virt_name);
++	if (retval != 0) {
++		PRINT_ERROR("Can't create handler link for dev %s",
++			dev->virt_name);
++		goto out;
++	}
++
++	pattr = dev->handler->dev_attrs;
++	if (pattr != NULL) {
++		while (*pattr != NULL) {
++			retval = sysfs_create_file(&dev->dev_kobj, *pattr);
++			if (retval != 0) {
++				PRINT_ERROR("Can't add dev attr %s for dev %s",
++					(*pattr)->name, dev->virt_name);
++				goto out;
++			}
++			pattr++;
++		}
++	}
++
++out:
++	return retval;
++}
++
++void scst_devt_dev_sysfs_put(struct scst_device *dev)
++{
++	const struct attribute **pattr;
++
++	if (dev->handler == &scst_null_devtype)
++		goto out;
++
++	BUG_ON(!dev->handler->devt_kobj_initialized);
++
++	pattr = dev->handler->dev_attrs;
++	if (pattr != NULL) {
++		while (*pattr != NULL) {
++			sysfs_remove_file(&dev->dev_kobj, *pattr);
++			pattr++;
++		}
++	}
++
++	sysfs_remove_link(&dev->dev_kobj, "handler");
++	sysfs_remove_link(&dev->handler->devt_kobj, dev->virt_name);
++
++out:
++	return;
++}
++
++static ssize_t scst_dev_attr_show(struct kobject *kobj, struct attribute *attr,
++			 char *buf)
 +{
 +	int res;
++	struct kobj_attribute *kobj_attr;
++	struct scst_device *dev;
 +
-+	BUG_ON(!cmd->internal);
++	dev = container_of(kobj, struct scst_device, dev_kobj);
 +
-+	if (cmd->cdb[0] == REQUEST_SENSE)
-+		scst_complete_request_sense(cmd);
++	if (down_read_trylock(&dev->dev_attr_rwsem) == 0) {
++		res = -ENOENT;
++		goto out;
++	}
 +
-+	__scst_cmd_put(cmd);
++	kobj_attr = container_of(attr, struct kobj_attribute, attr);
 +
-+	res = SCST_CMD_STATE_RES_CONT_NEXT;
++	res = kobj_attr->show(kobj, kobj_attr, buf);
++
++	up_read(&dev->dev_attr_rwsem);
++
++out:
 +	return res;
 +}
 +
-+static void scst_send_release(struct scst_device *dev)
++static ssize_t scst_dev_attr_store(struct kobject *kobj, struct attribute *attr,
++			  const char *buf, size_t count)
 +{
-+	struct scsi_device *scsi_dev;
-+	unsigned char cdb[6];
-+	uint8_t sense[SCSI_SENSE_BUFFERSIZE];
-+	int rc, i;
++	int res;
++	struct kobj_attribute *kobj_attr;
++	struct scst_device *dev;
 +
-+	if (dev->scsi_dev == NULL)
-+		goto out;
++	dev = container_of(kobj, struct scst_device, dev_kobj);
 +
-+	scsi_dev = dev->scsi_dev;
-+
-+	for (i = 0; i < 5; i++) {
-+		memset(cdb, 0, sizeof(cdb));
-+		cdb[0] = RELEASE;
-+		cdb[1] = (scsi_dev->scsi_level <= SCSI_2) ?
-+		    ((scsi_dev->lun << 5) & 0xe0) : 0;
-+
-+		memset(sense, 0, sizeof(sense));
-+
-+		TRACE(TRACE_DEBUG | TRACE_SCSI, "%s", "Sending RELEASE req to "
-+			"SCSI mid-level");
-+		rc = scsi_execute(scsi_dev, cdb, SCST_DATA_NONE, NULL, 0,
-+				sense, 15, 0, 0
-+				, NULL
-+				);
-+		TRACE_DBG("MODE_SENSE done: %x", rc);
-+
-+		if (scsi_status_is_good(rc)) {
-+			break;
-+		} else {
-+			PRINT_ERROR("RELEASE failed: %d", rc);
-+			PRINT_BUFFER("RELEASE sense", sense, sizeof(sense));
-+			scst_check_internal_sense(dev, rc, sense,
-+				sizeof(sense));
-+		}
-+	}
-+
-+out:
-+	return;
-+}
-+
-+/* scst_mutex supposed to be held */
-+static void scst_clear_reservation(struct scst_tgt_dev *tgt_dev)
-+{
-+	struct scst_device *dev = tgt_dev->dev;
-+	int release = 0;
-+
-+	spin_lock_bh(&dev->dev_lock);
-+	if (dev->dev_reserved &&
-+	    !test_bit(SCST_TGT_DEV_RESERVED, &tgt_dev->tgt_dev_flags)) {
-+		/* This is one who holds the reservation */
-+		struct scst_tgt_dev *tgt_dev_tmp;
-+		list_for_each_entry(tgt_dev_tmp, &dev->dev_tgt_dev_list,
-+				    dev_tgt_dev_list_entry) {
-+			clear_bit(SCST_TGT_DEV_RESERVED,
-+				    &tgt_dev_tmp->tgt_dev_flags);
-+		}
-+		dev->dev_reserved = 0;
-+		release = 1;
-+	}
-+	spin_unlock_bh(&dev->dev_lock);
-+
-+	if (release)
-+		scst_send_release(dev);
-+	return;
-+}
-+
-+struct scst_session *scst_alloc_session(struct scst_tgt *tgt, gfp_t gfp_mask,
-+	const char *initiator_name)
-+{
-+	struct scst_session *sess;
-+	int i;
-+	int len;
-+	char *nm;
-+
-+	sess = kmem_cache_zalloc(scst_sess_cachep, gfp_mask);
-+	if (sess == NULL) {
-+		TRACE(TRACE_OUT_OF_MEM, "%s",
-+		      "Allocation of scst_session failed");
++	if (down_read_trylock(&dev->dev_attr_rwsem) == 0) {
++		res = -ENOENT;
 +		goto out;
 +	}
 +
-+	sess->init_phase = SCST_SESS_IPH_INITING;
-+	sess->shut_phase = SCST_SESS_SPH_READY;
-+	atomic_set(&sess->refcnt, 0);
-+	for (i = 0; i < TGT_DEV_HASH_SIZE; i++) {
-+		struct list_head *sess_tgt_dev_list_head =
-+			 &sess->sess_tgt_dev_list_hash[i];
-+		INIT_LIST_HEAD(sess_tgt_dev_list_head);
-+	}
-+	spin_lock_init(&sess->sess_list_lock);
-+	INIT_LIST_HEAD(&sess->sess_cmd_list);
-+	sess->tgt = tgt;
-+	INIT_LIST_HEAD(&sess->init_deferred_cmd_list);
-+	INIT_LIST_HEAD(&sess->init_deferred_mcmd_list);
-+	INIT_DELAYED_WORK(&sess->hw_pending_work,
-+		(void (*)(struct work_struct *))scst_hw_pending_work_fn);
++	kobj_attr = container_of(attr, struct kobj_attribute, attr);
 +
-+#ifdef CONFIG_SCST_MEASURE_LATENCY
-+	spin_lock_init(&sess->lat_lock);
-+#endif
++	res = kobj_attr->store(kobj, kobj_attr, buf, count);
 +
-+	len = strlen(initiator_name);
-+	nm = kmalloc(len + 1, gfp_mask);
-+	if (nm == NULL) {
-+		PRINT_ERROR("%s", "Unable to allocate sess->initiator_name");
-+		goto out_free;
-+	}
-+
-+	strcpy(nm, initiator_name);
-+	sess->initiator_name = nm;
++	up_read(&dev->dev_attr_rwsem);
 +
 +out:
-+	return sess;
-+
-+out_free:
-+	kmem_cache_free(scst_sess_cachep, sess);
-+	sess = NULL;
-+	goto out;
++	return res;
 +}
 +
-+void scst_free_session(struct scst_session *sess)
++static struct sysfs_ops scst_dev_sysfs_ops = {
++	.show = scst_dev_attr_show,
++	.store = scst_dev_attr_store,
++};
++
++static struct kobj_type scst_device_ktype = {
++	.sysfs_ops = &scst_dev_sysfs_ops,
++	.release = scst_sysfs_device_release,
++	.default_attrs = scst_device_attrs,
++};
++
++int scst_create_device_sysfs(struct scst_device *dev)
 +{
++	int retval = 0;
 +
-+	mutex_lock(&scst_mutex);
++	init_rwsem(&dev->dev_attr_rwsem);
 +
-+	TRACE_DBG("Removing sess %p from the list", sess);
-+	list_del(&sess->sess_list_entry);
-+	TRACE_DBG("Removing session %p from acg %s", sess, sess->acg->acg_name);
-+	list_del(&sess->acg_sess_list_entry);
++	dev->dev_kobj_initialized = 1;
 +
-+	scst_sess_free_tgt_devs(sess);
-+
-+	/* Called under lock to protect from too early tgt release */
-+	wake_up_all(&sess->tgt->unreg_waitQ);
-+
-+	mutex_unlock(&scst_mutex);
-+
-+	scst_sess_sysfs_put(sess); /* must not be called under scst_mutex */
-+	return;
-+}
-+
-+void scst_release_session(struct scst_session *sess)
-+{
-+
-+	kfree(sess->initiator_name);
-+	kmem_cache_free(scst_sess_cachep, sess);
-+	return;
-+}
-+
-+void scst_free_session_callback(struct scst_session *sess)
-+{
-+	struct completion *c;
-+
-+	TRACE_DBG("Freeing session %p", sess);
-+
-+	cancel_delayed_work_sync(&sess->hw_pending_work);
-+
-+	c = sess->shutdown_compl;
-+
-+	if (sess->unreg_done_fn) {
-+		TRACE_DBG("Calling unreg_done_fn(%p)", sess);
-+		sess->unreg_done_fn(sess);
-+		TRACE_DBG("%s", "unreg_done_fn() returned");
-+	}
-+	scst_free_session(sess);
-+
-+	if (c)
-+		complete_all(c);
-+	return;
-+}
-+
-+void scst_sched_session_free(struct scst_session *sess)
-+{
-+	unsigned long flags;
-+
-+	if (sess->shut_phase != SCST_SESS_SPH_SHUTDOWN) {
-+		PRINT_CRIT_ERROR("session %p is going to shutdown with unknown "
-+			"shut phase %lx", sess, sess->shut_phase);
-+		BUG();
-+	}
-+
-+	spin_lock_irqsave(&scst_mgmt_lock, flags);
-+	TRACE_DBG("Adding sess %p to scst_sess_shut_list", sess);
-+	list_add_tail(&sess->sess_shut_list_entry, &scst_sess_shut_list);
-+	spin_unlock_irqrestore(&scst_mgmt_lock, flags);
-+
-+	wake_up(&scst_mgmt_waitQ);
-+	return;
-+}
-+
-+/**
-+ * scst_cmd_get() - increase command's reference counter
-+ */
-+void scst_cmd_get(struct scst_cmd *cmd)
-+{
-+	__scst_cmd_get(cmd);
-+}
-+EXPORT_SYMBOL_GPL(scst_cmd_get);
-+
-+/**
-+ * scst_cmd_put() - decrease command's reference counter
-+ */
-+void scst_cmd_put(struct scst_cmd *cmd)
-+{
-+	__scst_cmd_put(cmd);
-+}
-+EXPORT_SYMBOL_GPL(scst_cmd_put);
-+
-+struct scst_cmd *scst_alloc_cmd(gfp_t gfp_mask)
-+{
-+	struct scst_cmd *cmd;
-+
-+	cmd = kmem_cache_zalloc(scst_cmd_cachep, gfp_mask);
-+	if (cmd == NULL) {
-+		TRACE(TRACE_OUT_OF_MEM, "%s", "Allocation of scst_cmd failed");
++	retval = kobject_init_and_add(&dev->dev_kobj, &scst_device_ktype,
++				      scst_devices_kobj, dev->virt_name);
++	if (retval != 0) {
++		PRINT_ERROR("Can't add device %s to sysfs", dev->virt_name);
 +		goto out;
 +	}
-+
-+	cmd->state = SCST_CMD_STATE_INIT_WAIT;
-+	cmd->start_time = jiffies;
-+	atomic_set(&cmd->cmd_ref, 1);
-+	cmd->cmd_threads = &scst_main_cmd_threads;
-+	INIT_LIST_HEAD(&cmd->mgmt_cmd_list);
-+	cmd->queue_type = SCST_CMD_QUEUE_SIMPLE;
-+	cmd->timeout = SCST_DEFAULT_TIMEOUT;
-+	cmd->retries = 0;
-+	cmd->data_len = -1;
-+	cmd->is_send_status = 1;
-+	cmd->resp_data_len = -1;
-+
-+	cmd->dbl_ua_orig_data_direction = SCST_DATA_UNKNOWN;
-+	cmd->dbl_ua_orig_resp_data_len = -1;
-+
-+out:
-+	return cmd;
-+}
-+
-+static void scst_destroy_put_cmd(struct scst_cmd *cmd)
-+{
-+	scst_sess_put(cmd->sess);
 +
 +	/*
-+	 * At this point tgt_dev can be dead, but the pointer remains non-NULL
++	 * In case of errors there's no need for additional cleanup, because
++	 * it will be done by the _put function() called by the caller.
 +	 */
-+	if (likely(cmd->tgt_dev != NULL))
-+		__scst_put();
 +
-+	scst_destroy_cmd(cmd);
-+	return;
-+}
-+
-+/* No locks supposed to be held */
-+void scst_free_cmd(struct scst_cmd *cmd)
-+{
-+	int destroy = 1;
-+
-+	TRACE_DBG("Freeing cmd %p (tag %llu)",
-+		  cmd, (long long unsigned int)cmd->tag);
-+
-+	if (unlikely(test_bit(SCST_CMD_ABORTED, &cmd->cmd_flags))) {
-+		TRACE_MGMT_DBG("Freeing aborted cmd %p (scst_cmd_count %d)",
-+			cmd, atomic_read(&scst_cmd_count));
-+	}
-+
-+	BUG_ON(cmd->inc_blocking || cmd->needs_unblocking ||
-+		cmd->dec_on_dev_needed);
-+
-+	/*
-+	 * Target driver can already free sg buffer before calling
-+	 * scst_tgt_cmd_done(). E.g., scst_local has to do that.
-+	 */
-+	if (!cmd->tgt_data_buf_alloced)
-+		scst_check_restore_sg_buff(cmd);
-+
-+	if ((cmd->tgtt->on_free_cmd != NULL) && likely(!cmd->internal)) {
-+		TRACE_DBG("Calling target's on_free_cmd(%p)", cmd);
-+		scst_set_cur_start(cmd);
-+		cmd->tgtt->on_free_cmd(cmd);
-+		scst_set_tgt_on_free_time(cmd);
-+		TRACE_DBG("%s", "Target's on_free_cmd() returned");
-+	}
-+
-+	if (likely(cmd->dev != NULL)) {
-+		struct scst_dev_type *handler = cmd->dev->handler;
-+		if (handler->on_free_cmd != NULL) {
-+			TRACE_DBG("Calling dev handler %s on_free_cmd(%p)",
-+				handler->name, cmd);
-+			scst_set_cur_start(cmd);
-+			handler->on_free_cmd(cmd);
-+			scst_set_dev_on_free_time(cmd);
-+			TRACE_DBG("Dev handler %s on_free_cmd() returned",
-+				handler->name);
-+		}
-+	}
-+
-+	scst_release_space(cmd);
-+
-+	if (unlikely(cmd->sense != NULL)) {
-+		TRACE_MEM("Releasing sense %p (cmd %p)", cmd->sense, cmd);
-+		mempool_free(cmd->sense, scst_sense_mempool);
-+		cmd->sense = NULL;
-+	}
-+
-+	if (likely(cmd->tgt_dev != NULL)) {
-+#ifdef CONFIG_SCST_EXTRACHECKS
-+		if (unlikely(!cmd->sent_for_exec) && !cmd->internal) {
-+			PRINT_ERROR("Finishing not executed cmd %p (opcode "
-+			    "%d, target %s, LUN %lld, sn %d, expected_sn %d)",
-+			    cmd, cmd->cdb[0], cmd->tgtt->name,
-+			    (long long unsigned int)cmd->lun,
-+			    cmd->sn, cmd->tgt_dev->expected_sn);
-+			scst_unblock_deferred(cmd->tgt_dev, cmd);
-+		}
-+#endif
-+
-+		if (unlikely(cmd->out_of_sn)) {
-+			TRACE_SN("Out of SN cmd %p (tag %llu, sn %d), "
-+				"destroy=%d", cmd,
-+				(long long unsigned int)cmd->tag,
-+				cmd->sn, destroy);
-+			destroy = test_and_set_bit(SCST_CMD_CAN_BE_DESTROYED,
-+					&cmd->cmd_flags);
-+		}
-+	}
-+
-+	if (likely(destroy))
-+		scst_destroy_put_cmd(cmd);
-+	return;
-+}
-+
-+/* No locks supposed to be held. */
-+void scst_check_retries(struct scst_tgt *tgt)
-+{
-+	int need_wake_up = 0;
-+
-+	/*
-+	 * We don't worry about overflow of finished_cmds, because we check
-+	 * only for its change.
-+	 */
-+	atomic_inc(&tgt->finished_cmds);
-+	/* See comment in scst_queue_retry_cmd() */
-+	smp_mb__after_atomic_inc();
-+	if (unlikely(tgt->retry_cmds > 0)) {
-+		struct scst_cmd *c, *tc;
-+		unsigned long flags;
-+
-+		TRACE_RETRY("Checking retry cmd list (retry_cmds %d)",
-+		      tgt->retry_cmds);
-+
-+		spin_lock_irqsave(&tgt->tgt_lock, flags);
-+		list_for_each_entry_safe(c, tc, &tgt->retry_cmd_list,
-+				cmd_list_entry) {
-+			tgt->retry_cmds--;
-+
-+			TRACE_RETRY("Moving retry cmd %p to head of active "
-+				"cmd list (retry_cmds left %d)",
-+				c, tgt->retry_cmds);
-+			spin_lock(&c->cmd_threads->cmd_list_lock);
-+			list_move(&c->cmd_list_entry,
-+				  &c->cmd_threads->active_cmd_list);
-+			wake_up(&c->cmd_threads->cmd_list_waitQ);
-+			spin_unlock(&c->cmd_threads->cmd_list_lock);
-+
-+			need_wake_up++;
-+			if (need_wake_up >= 2) /* "slow start" */
-+				break;
-+		}
-+		spin_unlock_irqrestore(&tgt->tgt_lock, flags);
-+	}
-+	return;
-+}
-+
-+static void scst_tgt_retry_timer_fn(unsigned long arg)
-+{
-+	struct scst_tgt *tgt = (struct scst_tgt *)arg;
-+	unsigned long flags;
-+
-+	TRACE_RETRY("Retry timer expired (retry_cmds %d)", tgt->retry_cmds);
-+
-+	spin_lock_irqsave(&tgt->tgt_lock, flags);
-+	tgt->retry_timer_active = 0;
-+	spin_unlock_irqrestore(&tgt->tgt_lock, flags);
-+
-+	scst_check_retries(tgt);
-+	return;
-+}
-+
-+struct scst_mgmt_cmd *scst_alloc_mgmt_cmd(gfp_t gfp_mask)
-+{
-+	struct scst_mgmt_cmd *mcmd;
-+
-+	mcmd = mempool_alloc(scst_mgmt_mempool, gfp_mask);
-+	if (mcmd == NULL) {
-+		PRINT_CRIT_ERROR("%s", "Allocation of management command "
-+			"failed, some commands and their data could leak");
-+		goto out;
-+	}
-+	memset(mcmd, 0, sizeof(*mcmd));
-+
-+out:
-+	return mcmd;
-+}
-+
-+void scst_free_mgmt_cmd(struct scst_mgmt_cmd *mcmd)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&mcmd->sess->sess_list_lock, flags);
-+	atomic_dec(&mcmd->sess->sess_cmd_count);
-+	spin_unlock_irqrestore(&mcmd->sess->sess_list_lock, flags);
-+
-+	scst_sess_put(mcmd->sess);
-+
-+	if (mcmd->mcmd_tgt_dev != NULL)
-+		__scst_put();
-+
-+	mempool_free(mcmd, scst_mgmt_mempool);
-+	return;
-+}
-+
-+static bool is_report_sg_limitation(void)
-+{
-+#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
-+	return (trace_flag & TRACE_OUT_OF_MEM) != 0;
-+#else
-+	return false;
-+#endif
-+}
-+
-+int scst_alloc_space(struct scst_cmd *cmd)
-+{
-+	gfp_t gfp_mask;
-+	int res = -ENOMEM;
-+	int atomic = scst_cmd_atomic(cmd);
-+	int flags;
-+	struct scst_tgt_dev *tgt_dev = cmd->tgt_dev;
-+	static int ll;
-+
-+	gfp_mask = tgt_dev->gfp_mask | (atomic ? GFP_ATOMIC : GFP_KERNEL);
-+
-+	flags = atomic ? SGV_POOL_NO_ALLOC_ON_CACHE_MISS : 0;
-+	if (cmd->no_sgv)
-+		flags |= SGV_POOL_ALLOC_NO_CACHED;
-+
-+	cmd->sg = sgv_pool_alloc(tgt_dev->pool, cmd->bufflen, gfp_mask, flags,
-+			&cmd->sg_cnt, &cmd->sgv, &cmd->dev->dev_mem_lim, NULL);
-+	if (cmd->sg == NULL)
-+		goto out;
-+
-+	if (unlikely(cmd->sg_cnt > tgt_dev->max_sg_cnt)) {
-+		if ((ll < 10) || is_report_sg_limitation()) {
-+			PRINT_INFO("Unable to complete command due to "
-+				"SG IO count limitation (requested %d, "
-+				"available %d, tgt lim %d)", cmd->sg_cnt,
-+				tgt_dev->max_sg_cnt, cmd->tgt->sg_tablesize);
-+			ll++;
-+		}
-+		goto out_sg_free;
-+	}
-+
-+	if (cmd->data_direction != SCST_DATA_BIDI)
-+		goto success;
-+
-+	cmd->in_sg = sgv_pool_alloc(tgt_dev->pool, cmd->in_bufflen, gfp_mask,
-+			 flags, &cmd->in_sg_cnt, &cmd->in_sgv,
-+			 &cmd->dev->dev_mem_lim, NULL);
-+	if (cmd->in_sg == NULL)
-+		goto out_sg_free;
-+
-+	if (unlikely(cmd->in_sg_cnt > tgt_dev->max_sg_cnt)) {
-+		if ((ll < 10)  || is_report_sg_limitation()) {
-+			PRINT_INFO("Unable to complete command due to "
-+				"SG IO count limitation (IN buffer, requested "
-+				"%d, available %d, tgt lim %d)", cmd->in_sg_cnt,
-+				tgt_dev->max_sg_cnt, cmd->tgt->sg_tablesize);
-+			ll++;
-+		}
-+		goto out_in_sg_free;
-+	}
-+
-+success:
-+	res = 0;
-+
-+out:
-+	return res;
-+
-+out_in_sg_free:
-+	sgv_pool_free(cmd->in_sgv, &cmd->dev->dev_mem_lim);
-+	cmd->in_sgv = NULL;
-+	cmd->in_sg = NULL;
-+	cmd->in_sg_cnt = 0;
-+
-+out_sg_free:
-+	sgv_pool_free(cmd->sgv, &cmd->dev->dev_mem_lim);
-+	cmd->sgv = NULL;
-+	cmd->sg = NULL;
-+	cmd->sg_cnt = 0;
-+	goto out;
-+}
-+
-+static void scst_release_space(struct scst_cmd *cmd)
-+{
-+
-+	if (cmd->sgv == NULL) {
-+		if ((cmd->sg != NULL) &&
-+		    !(cmd->tgt_data_buf_alloced || cmd->dh_data_buf_alloced)) {
-+			TRACE_MEM("Freeing sg %p for cmd %p (cnt %d)", cmd->sg,
-+				cmd, cmd->sg_cnt);
-+			scst_free(cmd->sg, cmd->sg_cnt);
-+			goto out_zero;
-+		} else
-+			goto out;
-+	}
-+
-+	if (cmd->tgt_data_buf_alloced || cmd->dh_data_buf_alloced) {
-+		TRACE_MEM("%s", "*data_buf_alloced set, returning");
++	dev->dev_exp_kobj = kobject_create_and_add("exported",
++						   &dev->dev_kobj);
++	if (dev->dev_exp_kobj == NULL) {
++		PRINT_ERROR("Can't create exported link for device %s",
++			dev->virt_name);
++		retval = -ENOMEM;
 +		goto out;
 +	}
 +
-+	if (cmd->in_sgv != NULL) {
-+		sgv_pool_free(cmd->in_sgv, &cmd->dev->dev_mem_lim);
-+		cmd->in_sgv = NULL;
-+		cmd->in_sg_cnt = 0;
-+		cmd->in_sg = NULL;
-+		cmd->in_bufflen = 0;
-+	}
-+
-+	sgv_pool_free(cmd->sgv, &cmd->dev->dev_mem_lim);
-+
-+out_zero:
-+	cmd->sgv = NULL;
-+	cmd->sg_cnt = 0;
-+	cmd->sg = NULL;
-+	cmd->bufflen = 0;
-+	cmd->data_len = 0;
-+
-+out:
-+	return;
-+}
-+
-+static void scsi_end_async(struct request *req, int error)
-+{
-+	struct scsi_io_context *sioc = req->end_io_data;
-+
-+	TRACE_DBG("sioc %p, cmd %p", sioc, sioc->data);
-+
-+	if (sioc->done)
-+		sioc->done(sioc->data, sioc->sense, req->errors, req->resid_len);
-+
-+	if (!sioc->full_cdb_used)
-+		kmem_cache_free(scsi_io_context_cache, sioc);
-+	else
-+		kfree(sioc);
-+
-+	__blk_put_request(req->q, req);
-+	return;
-+}
-+
-+/**
-+ * scst_scsi_exec_async - executes a SCSI command in pass-through mode
-+ * @cmd:	scst command
-+ * @done:	callback function when done
-+ */
-+int scst_scsi_exec_async(struct scst_cmd *cmd,
-+		       void (*done)(void *, char *, int, int))
-+{
-+	int res = 0;
-+	struct request_queue *q = cmd->dev->scsi_dev->request_queue;
-+	struct request *rq;
-+	struct scsi_io_context *sioc;
-+	int write = (cmd->data_direction & SCST_DATA_WRITE) ? WRITE : READ;
-+	gfp_t gfp = scst_cmd_atomic(cmd) ? GFP_ATOMIC : GFP_KERNEL;
-+	int cmd_len = cmd->cdb_len;
-+
-+	if (cmd->ext_cdb_len == 0) {
-+		TRACE_DBG("Simple CDB (cmd_len %d)", cmd_len);
-+		sioc = kmem_cache_zalloc(scsi_io_context_cache, gfp);
-+		if (sioc == NULL) {
-+			res = -ENOMEM;
++	if (dev->scsi_dev != NULL) {
++		retval = sysfs_create_link(&dev->dev_kobj,
++			&dev->scsi_dev->sdev_dev.kobj, "scsi_device");
++		if (retval != 0) {
++			PRINT_ERROR("Can't create scsi_device link for dev %s",
++				dev->virt_name);
 +			goto out;
 +		}
-+	} else {
-+		cmd_len += cmd->ext_cdb_len;
-+
-+		TRACE_DBG("Extended CDB (cmd_len %d)", cmd_len);
-+
-+		sioc = kzalloc(sizeof(*sioc) + cmd_len, gfp);
-+		if (sioc == NULL) {
-+			res = -ENOMEM;
-+			goto out;
-+		}
-+
-+		sioc->full_cdb_used = 1;
-+
-+		memcpy(sioc->full_cdb, cmd->cdb, cmd->cdb_len);
-+		memcpy(&sioc->full_cdb[cmd->cdb_len], cmd->ext_cdb,
-+			cmd->ext_cdb_len);
-+	}
-+
-+	rq = blk_get_request(q, write, gfp);
-+	if (rq == NULL) {
-+		res = -ENOMEM;
-+		goto out_free_sioc;
-+	}
-+
-+	rq->cmd_type = REQ_TYPE_BLOCK_PC;
-+	rq->cmd_flags |= REQ_QUIET;
-+
-+	if (cmd->sg != NULL) {
-+		res = blk_rq_map_kern_sg(rq, cmd->sg, cmd->sg_cnt, gfp);
-+		if (res) {
-+			TRACE_DBG("blk_rq_map_kern_sg() failed: %d", res);
-+			goto out_free_rq;
-+		}
-+	}
-+
-+	if (cmd->data_direction == SCST_DATA_BIDI) {
-+		struct request *next_rq;
-+
-+		if (!test_bit(QUEUE_FLAG_BIDI, &q->queue_flags)) {
-+			res = -EOPNOTSUPP;
-+			goto out_free_unmap;
-+		}
-+
-+		next_rq = blk_get_request(q, READ, gfp);
-+		if (next_rq == NULL) {
-+			res = -ENOMEM;
-+			goto out_free_unmap;
-+		}
-+		rq->next_rq = next_rq;
-+		next_rq->cmd_type = rq->cmd_type;
-+
-+		res = blk_rq_map_kern_sg(next_rq, cmd->in_sg,
-+			cmd->in_sg_cnt, gfp);
-+		if (res != 0)
-+			goto out_free_unmap;
-+	}
-+
-+	TRACE_DBG("sioc %p, cmd %p", sioc, cmd);
-+
-+	sioc->data = cmd;
-+	sioc->done = done;
-+
-+	rq->cmd_len = cmd_len;
-+	if (cmd->ext_cdb_len == 0) {
-+		memset(rq->cmd, 0, BLK_MAX_CDB); /* ATAPI hates garbage after CDB */
-+		memcpy(rq->cmd, cmd->cdb, cmd->cdb_len);
-+	} else
-+		rq->cmd = sioc->full_cdb;
-+
-+	rq->sense = sioc->sense;
-+	rq->sense_len = sizeof(sioc->sense);
-+	rq->timeout = cmd->timeout;
-+	rq->retries = cmd->retries;
-+	rq->end_io_data = sioc;
-+
-+	blk_execute_rq_nowait(rq->q, NULL, rq,
-+		(cmd->queue_type == SCST_CMD_QUEUE_HEAD_OF_QUEUE), scsi_end_async);
-+out:
-+	return res;
-+
-+out_free_unmap:
-+	if (rq->next_rq != NULL) {
-+		blk_put_request(rq->next_rq);
-+		rq->next_rq = NULL;
-+	}
-+	blk_rq_unmap_kern_sg(rq, res);
-+
-+out_free_rq:
-+	blk_put_request(rq);
-+
-+out_free_sioc:
-+	if (!sioc->full_cdb_used)
-+		kmem_cache_free(scsi_io_context_cache, sioc);
-+	else
-+		kfree(sioc);
-+	goto out;
-+}
-+
-+/**
-+ * scst_copy_sg() - copy data between the command's SGs
-+ *
-+ * Copies data between cmd->tgt_sg and cmd->sg in direction defined by
-+ * copy_dir parameter.
-+ */
-+void scst_copy_sg(struct scst_cmd *cmd, enum scst_sg_copy_dir copy_dir)
-+{
-+	struct scatterlist *src_sg, *dst_sg;
-+	unsigned int to_copy;
-+	int atomic = scst_cmd_atomic(cmd);
-+
-+	if (copy_dir == SCST_SG_COPY_FROM_TARGET) {
-+		if (cmd->data_direction != SCST_DATA_BIDI) {
-+			src_sg = cmd->tgt_sg;
-+			dst_sg = cmd->sg;
-+			to_copy = cmd->bufflen;
-+		} else {
-+			TRACE_MEM("BIDI cmd %p", cmd);
-+			src_sg = cmd->tgt_in_sg;
-+			dst_sg = cmd->in_sg;
-+			to_copy = cmd->in_bufflen;
-+		}
-+	} else {
-+		src_sg = cmd->sg;
-+		dst_sg = cmd->tgt_sg;
-+		to_copy = cmd->resp_data_len;
-+	}
-+
-+	TRACE_MEM("cmd %p, copy_dir %d, src_sg %p, dst_sg %p, to_copy %lld",
-+		cmd, copy_dir, src_sg, dst_sg, (long long)to_copy);
-+
-+	if (unlikely(src_sg == NULL) || unlikely(dst_sg == NULL)) {
-+		/*
-+		 * It can happened, e.g., with scst_user for cmd with delay
-+		 * alloc, which failed with Check Condition.
-+		 */
-+		goto out;
-+	}
-+
-+	sg_copy(dst_sg, src_sg, 0, to_copy,
-+		atomic ? KM_SOFTIRQ0 : KM_USER0,
-+		atomic ? KM_SOFTIRQ1 : KM_USER1);
-+
-+out:
-+	return;
-+}
-+EXPORT_SYMBOL_GPL(scst_copy_sg);
-+
-+static const int SCST_CDB_LENGTH[8] = { 6, 10, 10, -1, 16, 12, -1, -1 };
-+
-+#define SCST_CDB_GROUP(opcode)   ((opcode >> 5) & 0x7)
-+#define SCST_GET_CDB_LEN(opcode) SCST_CDB_LENGTH[SCST_CDB_GROUP(opcode)]
-+
-+int scst_get_cdb_len(const uint8_t *cdb)
-+{
-+	return SCST_GET_CDB_LEN(cdb[0]);
-+}
-+
-+/* get_trans_len_x extract x bytes from cdb as length starting from off */
-+
-+static int get_trans_cdb_len_10(struct scst_cmd *cmd, uint8_t off)
-+{
-+	cmd->cdb_len = 10;
-+	cmd->bufflen = 0;
-+	return 0;
-+}
-+
-+static int get_trans_len_block_limit(struct scst_cmd *cmd, uint8_t off)
-+{
-+	cmd->bufflen = 6;
-+	return 0;
-+}
-+
-+static int get_trans_len_read_capacity(struct scst_cmd *cmd, uint8_t off)
-+{
-+	cmd->bufflen = READ_CAP_LEN;
-+	return 0;
-+}
-+
-+static int get_trans_len_serv_act_in(struct scst_cmd *cmd, uint8_t off)
-+{
-+	int res = 0;
-+
-+	if ((cmd->cdb[1] & 0x1f) == SAI_READ_CAPACITY_16) {
-+		cmd->op_name = "READ CAPACITY(16)";
-+		cmd->bufflen = READ_CAP16_LEN;
-+		cmd->op_flags |= SCST_IMPLICIT_HQ|SCST_REG_RESERVE_ALLOWED;
-+	} else
-+		cmd->op_flags |= SCST_UNKNOWN_LENGTH;
-+	return res;
-+}
-+
-+static int get_trans_len_single(struct scst_cmd *cmd, uint8_t off)
-+{
-+	cmd->bufflen = 1;
-+	return 0;
-+}
-+
-+static int get_trans_len_read_pos(struct scst_cmd *cmd, uint8_t off)
-+{
-+	uint8_t *p = (uint8_t *)cmd->cdb + off;
-+	int res = 0;
-+
-+	cmd->bufflen = 0;
-+	cmd->bufflen |= ((u32)p[0]) << 8;
-+	cmd->bufflen |= ((u32)p[1]);
-+
-+	switch (cmd->cdb[1] & 0x1f) {
-+	case 0:
-+	case 1:
-+	case 6:
-+		if (cmd->bufflen != 0) {
-+			PRINT_ERROR("READ POSITION: Invalid non-zero (%d) "
-+				"allocation length for service action %x",
-+				cmd->bufflen, cmd->cdb[1] & 0x1f);
-+			goto out_inval;
-+		}
-+		break;
-+	}
-+
-+	switch (cmd->cdb[1] & 0x1f) {
-+	case 0:
-+	case 1:
-+		cmd->bufflen = 20;
-+		break;
-+	case 6:
-+		cmd->bufflen = 32;
-+		break;
-+	case 8:
-+		cmd->bufflen = max(28, cmd->bufflen);
-+		break;
-+	default:
-+		PRINT_ERROR("READ POSITION: Invalid service action %x",
-+			cmd->cdb[1] & 0x1f);
-+		goto out_inval;
 +	}
 +
 +out:
-+	return res;
-+
-+out_inval:
-+	scst_set_cmd_error(cmd,
-+		SCST_LOAD_SENSE(scst_sense_invalid_field_in_cdb));
-+	res = 1;
-+	goto out;
-+}
-+
-+static int get_trans_len_prevent_allow_medium_removal(struct scst_cmd *cmd,
-+	uint8_t off)
-+{
-+	if ((cmd->cdb[4] & 3) == 0)
-+		cmd->op_flags |= SCST_REG_RESERVE_ALLOWED;
-+	return 0;
-+}
-+
-+static int get_trans_len_start_stop(struct scst_cmd *cmd, uint8_t off)
-+{
-+	if ((cmd->cdb[4] & 0xF1) == 0x1)
-+		cmd->op_flags |= SCST_REG_RESERVE_ALLOWED;
-+	return 0;
-+}
-+
-+static int get_trans_len_3_read_elem_stat(struct scst_cmd *cmd, uint8_t off)
-+{
-+	const uint8_t *p = cmd->cdb + off;
-+
-+	cmd->bufflen = 0;
-+	cmd->bufflen |= ((u32)p[0]) << 16;
-+	cmd->bufflen |= ((u32)p[1]) << 8;
-+	cmd->bufflen |= ((u32)p[2]);
-+
-+	if ((cmd->cdb[6] & 0x2) == 0x2)
-+		cmd->op_flags |= SCST_REG_RESERVE_ALLOWED;
-+
-+	return 0;
-+}
-+
-+static int get_trans_len_1(struct scst_cmd *cmd, uint8_t off)
-+{
-+	cmd->bufflen = (u32)cmd->cdb[off];
-+	return 0;
-+}
-+
-+static int get_trans_len_1_256(struct scst_cmd *cmd, uint8_t off)
-+{
-+	cmd->bufflen = (u32)cmd->cdb[off];
-+	if (cmd->bufflen == 0)
-+		cmd->bufflen = 256;
-+	return 0;
-+}
-+
-+static int get_trans_len_2(struct scst_cmd *cmd, uint8_t off)
-+{
-+	const uint8_t *p = cmd->cdb + off;
-+
-+	cmd->bufflen = 0;
-+	cmd->bufflen |= ((u32)p[0]) << 8;
-+	cmd->bufflen |= ((u32)p[1]);
-+
-+	return 0;
-+}
-+
-+static int get_trans_len_3(struct scst_cmd *cmd, uint8_t off)
-+{
-+	const uint8_t *p = cmd->cdb + off;
-+
-+	cmd->bufflen = 0;
-+	cmd->bufflen |= ((u32)p[0]) << 16;
-+	cmd->bufflen |= ((u32)p[1]) << 8;
-+	cmd->bufflen |= ((u32)p[2]);
-+
-+	return 0;
-+}
-+
-+static int get_trans_len_4(struct scst_cmd *cmd, uint8_t off)
-+{
-+	const uint8_t *p = cmd->cdb + off;
-+
-+	cmd->bufflen = 0;
-+	cmd->bufflen |= ((u32)p[0]) << 24;
-+	cmd->bufflen |= ((u32)p[1]) << 16;
-+	cmd->bufflen |= ((u32)p[2]) << 8;
-+	cmd->bufflen |= ((u32)p[3]);
-+
-+	return 0;
-+}
-+
-+static int get_trans_len_none(struct scst_cmd *cmd, uint8_t off)
-+{
-+	cmd->bufflen = 0;
-+	return 0;
-+}
-+
-+/**
-+ * scst_get_cdb_info() - fill various info about the command's CDB
-+ *
-+ * Description:
-+ *    Fills various info about the command's CDB in the corresponding fields
-+ *    in the command.
-+ *
-+ *    Returns: 0 on success, <0 if command is unknown, >0 if command
-+ *    is invalid.
-+ */
-+int scst_get_cdb_info(struct scst_cmd *cmd)
-+{
-+	int dev_type = cmd->dev->type;
-+	int i, res = 0;
-+	uint8_t op;
-+	const struct scst_sdbops *ptr = NULL;
-+
-+	op = cmd->cdb[0];	/* get clear opcode */
-+
-+	TRACE_DBG("opcode=%02x, cdblen=%d bytes, tblsize=%d, "
-+		"dev_type=%d", op, SCST_GET_CDB_LEN(op), SCST_CDB_TBL_SIZE,
-+		dev_type);
-+
-+	i = scst_scsi_op_list[op];
-+	while (i < SCST_CDB_TBL_SIZE && scst_scsi_op_table[i].ops == op) {
-+		if (scst_scsi_op_table[i].devkey[dev_type] != SCST_CDB_NOTSUPP) {
-+			ptr = &scst_scsi_op_table[i];
-+			TRACE_DBG("op = 0x%02x+'%c%c%c%c%c%c%c%c%c%c'+<%s>",
-+			      ptr->ops, ptr->devkey[0],	/* disk     */
-+			      ptr->devkey[1],	/* tape     */
-+			      ptr->devkey[2],	/* printer */
-+			      ptr->devkey[3],	/* cpu      */
-+			      ptr->devkey[4],	/* cdr      */
-+			      ptr->devkey[5],	/* cdrom    */
-+			      ptr->devkey[6],	/* scanner */
-+			      ptr->devkey[7],	/* worm     */
-+			      ptr->devkey[8],	/* changer */
-+			      ptr->devkey[9],	/* commdev */
-+			      ptr->op_name);
-+			TRACE_DBG("direction=%d flags=%d off=%d",
-+			      ptr->direction,
-+			      ptr->flags,
-+			      ptr->off);
-+			break;
-+		}
-+		i++;
-+	}
-+
-+	if (unlikely(ptr == NULL)) {
-+		/* opcode not found or now not used */
-+		TRACE(TRACE_MINOR, "Unknown opcode 0x%x for type %d", op,
-+		      dev_type);
-+		res = -1;
-+		goto out;
-+	}
-+
-+	cmd->cdb_len = SCST_GET_CDB_LEN(op);
-+	cmd->op_name = ptr->op_name;
-+	cmd->data_direction = ptr->direction;
-+	cmd->op_flags = ptr->flags | SCST_INFO_VALID;
-+	res = (*ptr->get_trans_len)(cmd, ptr->off);
-+
-+out:
-+	return res;
-+}
-+EXPORT_SYMBOL_GPL(scst_get_cdb_info);
-+
-+/* Packs SCST LUN back to SCSI form */
-+uint64_t scst_pack_lun(const uint64_t lun, unsigned int addr_method)
-+{
-+
-+	uint64_t res = 0;
-+	uint16_t *p = (uint16_t *)&res;
-+
-+	res = lun;
-+
-+	if ((addr_method == SCST_LUN_ADDR_METHOD_FLAT) && (lun != 0)) {
-+		/*
-+		 * Flat space: luns other than 0 should use flat space
-+		 * addressing method.
-+		 */
-+		*p = 0x7fff & *p;
-+		*p = 0x4000 | *p;
-+	}
-+	/* Default is to use peripheral device addressing mode */
-+
-+	*p = cpu_to_be16(*p);
-+	return res;
++	return retval;
 +}
 +
 +/*
-+ * Routine to extract a lun number from an 8-byte LUN structure
-+ * in network byte order (BE).
-+ * (see SAM-2, Section 4.12.3 page 40)
-+ * Supports 2 types of lun unpacking: peripheral and logical unit.
++ * Must not be called under scst_mutex or there can be a deadlock with
++ * dev_attr_rwsem
 + */
-+uint64_t scst_unpack_lun(const uint8_t *lun, int len)
++void scst_device_sysfs_put(struct scst_device *dev)
 +{
-+	uint64_t res = NO_SUCH_LUN;
-+	int address_method;
 +
-+	TRACE_BUFF_FLAG(TRACE_DEBUG, "Raw LUN", lun, len);
++	if (dev->dev_kobj_initialized) {
++		kobject_del(dev->dev_exp_kobj);
++		kobject_put(dev->dev_exp_kobj);
 +
-+	if (unlikely(len < 2)) {
-+		PRINT_ERROR("Illegal lun length %d, expected 2 bytes or "
-+			"more", len);
++		kobject_del(&dev->dev_kobj);
++
++		down_write(&dev->dev_attr_rwsem);
++		kobject_put(&dev->dev_kobj);
++	} else
++		scst_free_device(dev);
++	return;
++}
++
++/*
++ * Target sessions directory implementation
++ */
++
++static ssize_t scst_sess_sysfs_commands_show(struct kobject *kobj,
++			    struct kobj_attribute *attr, char *buf)
++{
++	struct scst_session *sess;
++
++	sess = container_of(kobj, struct scst_session, sess_kobj);
++
++	return sprintf(buf, "%i\n", atomic_read(&sess->sess_cmd_count));
++}
++
++static struct kobj_attribute session_commands_attr =
++	__ATTR(commands, S_IRUGO, scst_sess_sysfs_commands_show, NULL);
++
++static ssize_t scst_sess_sysfs_active_commands_show(struct kobject *kobj,
++			    struct kobj_attribute *attr, char *buf)
++{
++	int res;
++	struct scst_session *sess;
++	int active_cmds = 0, t;
++
++	if (mutex_lock_interruptible(&scst_mutex) != 0) {
++		res = -EINTR;
 +		goto out;
 +	}
 +
-+	if (len > 2) {
-+		switch (len) {
-+		case 8:
-+			if ((*((uint64_t *)lun) &
-+			  __constant_cpu_to_be64(0x0000FFFFFFFFFFFFLL)) != 0)
-+				goto out_err;
-+			break;
-+		case 4:
-+			if (*((uint16_t *)&lun[2]) != 0)
-+				goto out_err;
-+			break;
-+		case 6:
-+			if (*((uint32_t *)&lun[2]) != 0)
-+				goto out_err;
-+			break;
-+		default:
-+			goto out_err;
++	sess = container_of(kobj, struct scst_session, sess_kobj);
++
++	for (t = TGT_DEV_HASH_SIZE-1; t >= 0; t--) {
++		struct list_head *sess_tgt_dev_list_head =
++			&sess->sess_tgt_dev_list_hash[t];
++		struct scst_tgt_dev *tgt_dev;
++		list_for_each_entry(tgt_dev, sess_tgt_dev_list_head,
++				sess_tgt_dev_list_entry) {
++			active_cmds += atomic_read(&tgt_dev->tgt_dev_cmd_count);
 +		}
 +	}
 +
-+	address_method = (*lun) >> 6;	/* high 2 bits of byte 0 */
-+	switch (address_method) {
-+	case 0:	/* peripheral device addressing method */
-+#if 0
-+		if (*lun) {
-+			PRINT_ERROR("Illegal BUS INDENTIFIER in LUN "
-+			     "peripheral device addressing method 0x%02x, "
-+			     "expected 0", *lun);
++	mutex_unlock(&scst_mutex);
++
++	res = sprintf(buf, "%i\n", active_cmds);
++
++out:
++	return res;
++}
++
++static struct kobj_attribute session_active_commands_attr =
++	__ATTR(active_commands, S_IRUGO, scst_sess_sysfs_active_commands_show,
++		NULL);
++
++static ssize_t scst_sess_sysfs_initiator_name_show(struct kobject *kobj,
++			    struct kobj_attribute *attr, char *buf)
++{
++	struct scst_session *sess;
++
++	sess = container_of(kobj, struct scst_session, sess_kobj);
++
++	return scnprintf(buf, SCST_SYSFS_BLOCK_SIZE, "%s\n",
++		sess->initiator_name);
++}
++
++static struct kobj_attribute session_initiator_name_attr =
++	__ATTR(initiator_name, S_IRUGO, scst_sess_sysfs_initiator_name_show, NULL);
++
++static struct attribute *scst_session_attrs[] = {
++	&session_commands_attr.attr,
++	&session_active_commands_attr.attr,
++	&session_initiator_name_attr.attr,
++	NULL,
++};
++
++static void scst_sysfs_session_release(struct kobject *kobj)
++{
++	struct scst_session *sess;
++
++	sess = container_of(kobj, struct scst_session, sess_kobj);
++
++	/* Let's make lockdep happy */
++	up_write(&sess->sess_attr_rwsem);
++
++	scst_release_session(sess);
++	return;
++}
++
++static ssize_t scst_sess_attr_show(struct kobject *kobj, struct attribute *attr,
++			 char *buf)
++{
++	int res;
++	struct kobj_attribute *kobj_attr;
++	struct scst_session *sess;
++
++	sess = container_of(kobj, struct scst_session, sess_kobj);
++
++	if (down_read_trylock(&sess->sess_attr_rwsem) == 0) {
++		res = -ENOENT;
++		goto out;
++	}
++
++	kobj_attr = container_of(attr, struct kobj_attribute, attr);
++
++	res = kobj_attr->show(kobj, kobj_attr, buf);
++
++	up_read(&sess->sess_attr_rwsem);
++
++out:
++	return res;
++}
++
++static ssize_t scst_sess_attr_store(struct kobject *kobj, struct attribute *attr,
++			  const char *buf, size_t count)
++{
++	int res;
++	struct kobj_attribute *kobj_attr;
++	struct scst_session *sess;
++
++	sess = container_of(kobj, struct scst_session, sess_kobj);
++
++	if (down_read_trylock(&sess->sess_attr_rwsem) == 0) {
++		res = -ENOENT;
++		goto out;
++	}
++
++	kobj_attr = container_of(attr, struct kobj_attribute, attr);
++
++	res = kobj_attr->store(kobj, kobj_attr, buf, count);
++
++	up_read(&sess->sess_attr_rwsem);
++
++out:
++	return res;
++}
++
++static struct sysfs_ops scst_sess_sysfs_ops = {
++	.show = scst_sess_attr_show,
++	.store = scst_sess_attr_store,
++};
++
++static struct kobj_type scst_session_ktype = {
++	.sysfs_ops = &scst_sess_sysfs_ops,
++	.release = scst_sysfs_session_release,
++	.default_attrs = scst_session_attrs,
++};
++
++/* scst_mutex supposed to be locked */
++int scst_create_sess_sysfs(struct scst_session *sess)
++{
++	int retval = 0;
++	struct scst_session *s;
++	const struct attribute **pattr;
++	char *name = (char *)sess->initiator_name;
++	int len = strlen(name) + 1, n = 1;
++
++restart:
++	list_for_each_entry(s, &sess->tgt->sess_list, sess_list_entry) {
++		if (!s->sess_kobj_initialized)
++			continue;
++
++		if (strcmp(name, kobject_name(&s->sess_kobj)) == 0) {
++			if (s == sess)
++				continue;
++
++			TRACE_DBG("Dublicated session from the same initiator "
++				"%s found", name);
++
++			if (name == sess->initiator_name) {
++				len = strlen(sess->initiator_name);
++				len += 20;
++				name = kmalloc(len, GFP_KERNEL);
++				if (name == NULL) {
++					PRINT_ERROR("Unable to allocate a "
++						"replacement name (size %d)",
++						len);
++				}
++			}
++
++			snprintf(name, len, "%s_%d", sess->initiator_name, n);
++			n++;
++			goto restart;
++		}
++	}
++
++	init_rwsem(&sess->sess_attr_rwsem);
++
++	sess->sess_kobj_initialized = 1;
++
++	retval = kobject_init_and_add(&sess->sess_kobj, &scst_session_ktype,
++			      sess->tgt->tgt_sess_kobj, name);
++	if (retval != 0) {
++		PRINT_ERROR("Can't add session %s to sysfs", name);
++		goto out_free;
++	}
++
++	/*
++	 * In case of errors there's no need for additional cleanup, because
++	 * it will be done by the _put function() called by the caller.
++	 */
++
++	pattr = sess->tgt->tgtt->sess_attrs;
++	if (pattr != NULL) {
++		while (*pattr != NULL) {
++			retval = sysfs_create_file(&sess->sess_kobj, *pattr);
++			if (retval != 0) {
++				PRINT_ERROR("Can't add sess attr %s for sess "
++					"for initiator %s", (*pattr)->name,
++					name);
++				goto out_free;
++			}
++			pattr++;
++		}
++	}
++
++	if (sess->acg == sess->tgt->default_acg)
++		retval = sysfs_create_link(&sess->sess_kobj,
++				sess->tgt->tgt_luns_kobj, "luns");
++	else
++		retval = sysfs_create_link(&sess->sess_kobj,
++				sess->acg->luns_kobj, "luns");
++
++out_free:
++	if (name != sess->initiator_name)
++		kfree(name);
++	return retval;
++}
++
++/*
++ * Must not be called under scst_mutex or there can be a deadlock with
++ * sess_attr_rwsem
++ */
++void scst_sess_sysfs_put(struct scst_session *sess)
++{
++
++	if (sess->sess_kobj_initialized) {
++		kobject_del(&sess->sess_kobj);
++
++		down_write(&sess->sess_attr_rwsem);
++		kobject_put(&sess->sess_kobj);
++	} else
++		scst_release_session(sess);
++	return;
++}
++
++/*
++ * Target luns directory implementation
++ */
++
++static void scst_acg_dev_release(struct kobject *kobj)
++{
++	struct scst_acg_dev *acg_dev;
++
++	acg_dev = container_of(kobj, struct scst_acg_dev, acg_dev_kobj);
++
++	scst_acg_dev_destroy(acg_dev);
++	return;
++}
++
++static ssize_t scst_lun_rd_only_show(struct kobject *kobj,
++				   struct kobj_attribute *attr,
++				   char *buf)
++{
++	struct scst_acg_dev *acg_dev;
++
++	acg_dev = container_of(kobj, struct scst_acg_dev, acg_dev_kobj);
++
++	if (acg_dev->rd_only || acg_dev->dev->rd_only)
++		return sprintf(buf, "%d\n%s\n", 1, SCST_SYSFS_KEY_MARK);
++	else
++		return sprintf(buf, "%d\n", 0);
++}
++
++static struct kobj_attribute lun_options_attr =
++	__ATTR(read_only, S_IRUGO, scst_lun_rd_only_show, NULL);
++
++static struct attribute *lun_attrs[] = {
++	&lun_options_attr.attr,
++	NULL,
++};
++
++static struct kobj_type acg_dev_ktype = {
++	.sysfs_ops = &scst_sysfs_ops,
++	.release = scst_acg_dev_release,
++	.default_attrs = lun_attrs,
++};
++
++int scst_create_acg_dev_sysfs(struct scst_acg *acg, unsigned int virt_lun,
++	struct kobject *parent)
++{
++	int retval;
++	struct scst_acg_dev *acg_dev = NULL, *acg_dev_tmp;
++	char str[20];
++
++	list_for_each_entry(acg_dev_tmp, &acg->acg_dev_list,
++			    acg_dev_list_entry) {
++		if (acg_dev_tmp->lun == virt_lun) {
++			acg_dev = acg_dev_tmp;
 +			break;
 +		}
-+		res = *(lun + 1);
-+		break;
-+#else
-+		/*
-+		 * Looks like it's legal to use it as flat space addressing
-+		 * method as well
-+		 */
++	}
++	if (acg_dev == NULL) {
++		PRINT_ERROR("%s", "acg_dev lookup for kobject creation failed");
++		retval = -EINVAL;
++		goto out;
++	}
 +
-+		/* go through */
-+#endif
++	snprintf(str, sizeof(str), "export%u",
++		acg_dev->dev->dev_exported_lun_num++);
 +
-+	case 1:	/* flat space addressing method */
-+		res = *(lun + 1) | (((*lun) & 0x3f) << 8);
-+		break;
++	kobject_get(&acg_dev->dev->dev_kobj);
 +
-+	case 2:	/* logical unit addressing method */
-+		if (*lun & 0x3f) {
-+			PRINT_ERROR("Illegal BUS NUMBER in LUN logical unit "
-+				    "addressing method 0x%02x, expected 0",
-+				    *lun & 0x3f);
-+			break;
++	acg_dev->acg_dev_kobj_initialized = 1;
++
++	retval = kobject_init_and_add(&acg_dev->acg_dev_kobj, &acg_dev_ktype,
++				      parent, "%u", virt_lun);
++	if (retval != 0) {
++		PRINT_ERROR("Can't add acg %s to sysfs", acg->acg_name);
++		goto out;
++	}
++
++	/*
++	 * In case of errors there's no need for additional cleanup, because
++	 * it will be done by the _put function() called by the caller.
++	 */
++
++	retval = sysfs_create_link(acg_dev->dev->dev_exp_kobj,
++				   &acg_dev->acg_dev_kobj, str);
++	if (retval != 0) {
++		PRINT_ERROR("Can't create acg %s LUN link", acg->acg_name);
++		goto out;
++	}
++
++	retval = sysfs_create_link(&acg_dev->acg_dev_kobj,
++			&acg_dev->dev->dev_kobj, "device");
++	if (retval != 0) {
++		PRINT_ERROR("Can't create acg %s device link", acg->acg_name);
++		goto out;
++	}
++
++out:
++	return retval;
++}
++
++static ssize_t __scst_luns_mgmt_store(struct scst_acg *acg,
++	struct kobject *kobj, const char *buf, size_t count)
++{
++	int res, virt = 0, read_only = 0, action;
++	char *buffer, *p, *e = NULL;
++	unsigned int host, channel = 0, id = 0, lun = 0, virt_lun;
++	struct scst_acg_dev *acg_dev = NULL, *acg_dev_tmp;
++	struct scst_device *d, *dev = NULL;
++
++#define SCST_LUN_ACTION_ADD	1
++#define SCST_LUN_ACTION_DEL	2
++#define SCST_LUN_ACTION_REPLACE	3
++#define SCST_LUN_ACTION_CLEAR	4
++
++	buffer = kzalloc(count+1, GFP_KERNEL);
++	if (buffer == NULL) {
++		res = -ENOMEM;
++		goto out;
++	}
++
++	memcpy(buffer, buf, count);
++	buffer[count] = '\0';
++	p = buffer;
++
++	p = buffer;
++	if (p[strlen(p) - 1] == '\n')
++		p[strlen(p) - 1] = '\0';
++	if (strncasecmp("add", p, 3) == 0) {
++		p += 3;
++		action = SCST_LUN_ACTION_ADD;
++	} else if (strncasecmp("del", p, 3) == 0) {
++		p += 3;
++		action = SCST_LUN_ACTION_DEL;
++	} else if (!strncasecmp("replace", p, 7)) {
++		p += 7;
++		action = SCST_LUN_ACTION_REPLACE;
++	} else if (!strncasecmp("clear", p, 5)) {
++		p += 5;
++		action = SCST_LUN_ACTION_CLEAR;
++	} else {
++		PRINT_ERROR("Unknown action \"%s\"", p);
++		res = -EINVAL;
++		goto out_free;
++	}
++
++	res = scst_suspend_activity(true);
++	if (res != 0)
++		goto out_free;
++
++	if (mutex_lock_interruptible(&scst_mutex) != 0) {
++		res = -EINTR;
++		goto out_free_resume;
++	}
++
++	if (action != SCST_LUN_ACTION_CLEAR) {
++		if (!isspace(*p)) {
++			PRINT_ERROR("%s", "Syntax error");
++			res = -EINVAL;
++			goto out_free_up;
 +		}
-+		if (*(lun + 1) & 0xe0) {
-+			PRINT_ERROR("Illegal TARGET in LUN logical unit "
-+				    "addressing method 0x%02x, expected 0",
-+				    (*(lun + 1) & 0xf8) >> 5);
-+			break;
-+		}
-+		res = *(lun + 1) & 0x1f;
-+		break;
 +
-+	case 3:	/* extended logical unit addressing method */
++		while (isspace(*p) && *p != '\0')
++			p++;
++		e = p; /* save p */
++		host = simple_strtoul(p, &p, 0);
++		if (*p == ':') {
++			channel = simple_strtoul(p + 1, &p, 0);
++			id = simple_strtoul(p + 1, &p, 0);
++			lun = simple_strtoul(p + 1, &p, 0);
++			e = p;
++		} else {
++			virt++;
++			p = e; /* restore p */
++			while (!isspace(*e) && *e != '\0')
++				e++;
++			*e = '\0';
++		}
++
++		list_for_each_entry(d, &scst_dev_list, dev_list_entry) {
++			if (virt) {
++				if (d->virt_id && !strcmp(d->virt_name, p)) {
++					dev = d;
++					TRACE_DBG("Virt device %p (%s) found",
++						  dev, p);
++					break;
++				}
++			} else {
++				if (d->scsi_dev &&
++				    d->scsi_dev->host->host_no == host &&
++				    d->scsi_dev->channel == channel &&
++				    d->scsi_dev->id == id &&
++				    d->scsi_dev->lun == lun) {
++					dev = d;
++					TRACE_DBG("Dev %p (%d:%d:%d:%d) found",
++						  dev, host, channel, id, lun);
++					break;
++				}
++			}
++		}
++		if (dev == NULL) {
++			if (virt) {
++				PRINT_ERROR("Virt device '%s' not found", p);
++			} else {
++				PRINT_ERROR("Device %d:%d:%d:%d not found",
++					    host, channel, id, lun);
++			}
++			res = -EINVAL;
++			goto out_free_up;
++		}
++	}
++
++	switch (action) {
++	case SCST_LUN_ACTION_ADD:
++	case SCST_LUN_ACTION_REPLACE:
++	{
++		bool dev_replaced = false;
++
++		e++;
++		while (isspace(*e) && *e != '\0')
++			e++;
++		virt_lun = simple_strtoul(e, &e, 0);
++
++		while (isspace(*e) && *e != '\0')
++			e++;
++
++		while (1) {
++			char *pp;
++			unsigned long val;
++			char *param = scst_get_next_token_str(&e);
++			if (param == NULL)
++				break;
++
++			p = scst_get_next_lexem(&param);
++			if (*p == '\0') {
++				PRINT_ERROR("Syntax error at %s (device %s)",
++					param, dev->virt_name);
++				res = -EINVAL;
++				goto out_free_up;
++			}
++
++			pp = scst_get_next_lexem(&param);
++			if (*pp == '\0') {
++				PRINT_ERROR("Parameter %s value missed for device %s",
++					p, dev->virt_name);
++				res = -EINVAL;
++				goto out_free_up;
++			}
++
++			if (scst_get_next_lexem(&param)[0] != '\0') {
++				PRINT_ERROR("Too many parameter's %s values (device %s)",
++					p, dev->virt_name);
++				res = -EINVAL;
++				goto out_free_up;
++			}
++
++			res = strict_strtoul(pp, 0, &val);
++			if (res != 0) {
++				PRINT_ERROR("strict_strtoul() for %s failed: %d "
++					"(device %s)", pp, res, dev->virt_name);
++				goto out_free_up;
++			}
++
++			if (!strcasecmp("read_only", p)) {
++				read_only = val;
++				TRACE_DBG("READ ONLY %d", read_only);
++			} else {
++				PRINT_ERROR("Unknown parameter %s (device %s)",
++					p, dev->virt_name);
++				res = -EINVAL;
++				goto out_free_up;
++			}
++		}
++
++		acg_dev = NULL;
++		list_for_each_entry(acg_dev_tmp, &acg->acg_dev_list,
++				    acg_dev_list_entry) {
++			if (acg_dev_tmp->lun == virt_lun) {
++				acg_dev = acg_dev_tmp;
++				break;
++			}
++		}
++
++		if (acg_dev != NULL) {
++			if (action == SCST_LUN_ACTION_ADD) {
++				PRINT_ERROR("virt lun %d already exists in "
++					"group %s", virt_lun, acg->acg_name);
++				res = -EEXIST;
++				goto out_free_up;
++			} else {
++				/* Replace */
++				res = scst_acg_remove_dev(acg, acg_dev->dev,
++						false);
++				if (res != 0)
++					goto out_free_up;
++
++				dev_replaced = true;
++			}
++		}
++
++		res = scst_acg_add_dev(acg, dev, virt_lun, read_only,
++					!dev_replaced);
++		if (res != 0)
++			goto out_free_up;
++
++		res = scst_create_acg_dev_sysfs(acg, virt_lun, kobj);
++		if (res != 0) {
++			PRINT_ERROR("%s", "Creation of acg_dev kobject failed");
++			goto out_remove_acg_dev;
++		}
++
++		if (dev_replaced) {
++			struct scst_tgt_dev *tgt_dev;
++
++			list_for_each_entry(tgt_dev, &dev->dev_tgt_dev_list,
++				dev_tgt_dev_list_entry) {
++				if ((tgt_dev->acg_dev->acg == acg) &&
++				    (tgt_dev->lun == virt_lun)) {
++					TRACE_MGMT_DBG("INQUIRY DATA HAS CHANGED"
++						" on tgt_dev %p", tgt_dev);
++					scst_gen_aen_or_ua(tgt_dev,
++						SCST_LOAD_SENSE(scst_sense_inquery_data_changed));
++				}
++			}
++		}
++
++		break;
++	}
++	case SCST_LUN_ACTION_DEL:
++		res = scst_acg_remove_dev(acg, dev, true);
++		if (res != 0)
++			goto out_free_up;
++		break;
++	case SCST_LUN_ACTION_CLEAR:
++		PRINT_INFO("Removed all devices from group %s",
++			acg->acg_name);
++		list_for_each_entry_safe(acg_dev, acg_dev_tmp,
++					 &acg->acg_dev_list,
++					 acg_dev_list_entry) {
++			res = scst_acg_remove_dev(acg, acg_dev->dev,
++				list_is_last(&acg_dev->acg_dev_list_entry,
++					     &acg->acg_dev_list));
++			if (res)
++				goto out_free_up;
++		}
++		break;
++	}
++
++	res = count;
++
++out_free_up:
++	mutex_unlock(&scst_mutex);
++
++out_free_resume:
++	scst_resume_activity();
++
++out_free:
++	kfree(buffer);
++
++out:
++	return res;
++
++out_remove_acg_dev:
++	scst_acg_remove_dev(acg, dev, true);
++	goto out_free_up;
++
++#undef SCST_LUN_ACTION_ADD
++#undef SCST_LUN_ACTION_DEL
++#undef SCST_LUN_ACTION_REPLACE
++#undef SCST_LUN_ACTION_CLEAR
++}
++
++static ssize_t scst_luns_mgmt_show(struct kobject *kobj,
++				   struct kobj_attribute *attr,
++				   char *buf)
++{
++	static char *help = "Usage: echo \"add|del H:C:I:L lun [parameters]\" "
++					">mgmt\n"
++			    "       echo \"add|del VNAME lun [parameters]\" "
++					">mgmt\n"
++			    "       echo \"replace H:C:I:L lun [parameters]\" "
++					">mgmt\n"
++			    "       echo \"replace VNAME lun [parameters]\" "
++					">mgmt\n"
++			    "       echo \"clear\" >mgmt\n"
++			    "\n"
++			    "where parameters are one or more "
++			    "param_name=value pairs separated by ';'\n"
++			    "\nThe following parameters available: read_only.";
++
++	return sprintf(buf, help);
++}
++
++static ssize_t scst_luns_mgmt_store(struct kobject *kobj,
++				    struct kobj_attribute *attr,
++				    const char *buf, size_t count)
++{
++	int res;
++	struct scst_acg *acg;
++	struct scst_tgt *tgt;
++
++	tgt = container_of(kobj->parent, struct scst_tgt, tgt_kobj);
++	acg = tgt->default_acg;
++
++	res = __scst_luns_mgmt_store(acg, kobj, buf, count);
++	return res;
++}
++
++static ssize_t __scst_acg_addr_method_show(struct scst_acg *acg, char *buf)
++{
++	int res;
++
++	switch (acg->addr_method) {
++	case SCST_LUN_ADDR_METHOD_FLAT:
++		res = sprintf(buf, "FLAT\n%s\n", SCST_SYSFS_KEY_MARK);
++		break;
++	case SCST_LUN_ADDR_METHOD_PERIPHERAL:
++		res = sprintf(buf, "PERIPHERAL\n");
++		break;
 +	default:
-+		PRINT_ERROR("Unimplemented LUN addressing method %u",
-+			    address_method);
++		res = sprintf(buf, "UNKNOWN\n");
 +		break;
 +	}
++
++	return res;
++}
++
++static ssize_t __scst_acg_addr_method_store(struct scst_acg *acg,
++	const char *buf, size_t count)
++{
++	int res = count;
++
++	if (strncasecmp(buf, "FLAT", min_t(int, 4, count)) == 0)
++		acg->addr_method = SCST_LUN_ADDR_METHOD_FLAT;
++	else if (strncasecmp(buf, "PERIPHERAL", min_t(int, 10, count)) == 0)
++		acg->addr_method = SCST_LUN_ADDR_METHOD_PERIPHERAL;
++	else {
++		PRINT_ERROR("Unknown address method %s", buf);
++		res = -EINVAL;
++	}
++	return res;
++}
++
++static ssize_t scst_tgt_addr_method_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	struct scst_acg *acg;
++	struct scst_tgt *tgt;
++
++	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
++	acg = tgt->default_acg;
++
++	return __scst_acg_addr_method_show(acg, buf);
++}
++
++static ssize_t scst_tgt_addr_method_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int res;
++	struct scst_acg *acg;
++	struct scst_tgt *tgt;
++
++	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
++	acg = tgt->default_acg;
++
++	res = __scst_acg_addr_method_store(acg, buf, count);
++	return res;
++}
++
++static ssize_t __scst_acg_io_grouping_type_show(struct scst_acg *acg, char *buf)
++{
++	int res;
++
++	switch (acg->acg_io_grouping_type) {
++	case SCST_IO_GROUPING_AUTO:
++		res = sprintf(buf, "%s\n", SCST_IO_GROUPING_AUTO_STR);
++		break;
++	case SCST_IO_GROUPING_THIS_GROUP_ONLY:
++		res = sprintf(buf, "%s\n%s\n",
++			SCST_IO_GROUPING_THIS_GROUP_ONLY_STR,
++			SCST_SYSFS_KEY_MARK);
++		break;
++	case SCST_IO_GROUPING_NEVER:
++		res = sprintf(buf, "%s\n%s\n", SCST_IO_GROUPING_NEVER_STR,
++			SCST_SYSFS_KEY_MARK);
++		break;
++	default:
++		res = sprintf(buf, "%d\n%s\n", acg->acg_io_grouping_type,
++			SCST_SYSFS_KEY_MARK);
++		break;
++	}
++
++	return res;
++}
++
++static ssize_t __scst_acg_io_grouping_type_store(struct scst_acg *acg,
++	const char *buf, size_t count)
++{
++	int res = 0;
++	int prev = acg->acg_io_grouping_type;
++	struct scst_acg_dev *acg_dev;
++
++	if (strncasecmp(buf, SCST_IO_GROUPING_AUTO_STR,
++			min_t(int, strlen(SCST_IO_GROUPING_AUTO_STR), count)) == 0)
++		acg->acg_io_grouping_type = SCST_IO_GROUPING_AUTO;
++	else if (strncasecmp(buf, SCST_IO_GROUPING_THIS_GROUP_ONLY_STR,
++			min_t(int, strlen(SCST_IO_GROUPING_THIS_GROUP_ONLY_STR), count)) == 0)
++		acg->acg_io_grouping_type = SCST_IO_GROUPING_THIS_GROUP_ONLY;
++	else if (strncasecmp(buf, SCST_IO_GROUPING_NEVER_STR,
++			min_t(int, strlen(SCST_IO_GROUPING_NEVER_STR), count)) == 0)
++		acg->acg_io_grouping_type = SCST_IO_GROUPING_NEVER;
++	else {
++		long io_grouping_type;
++		res = strict_strtoul(buf, 0, &io_grouping_type);
++		if ((res != 0) || (io_grouping_type <= 0)) {
++			PRINT_ERROR("Unknown or not allowed I/O grouping type "
++				"%s", buf);
++			res = -EINVAL;
++			goto out;
++		}
++		acg->acg_io_grouping_type = io_grouping_type;
++	}
++
++	if (prev == acg->acg_io_grouping_type)
++		goto out;
++
++	res = scst_suspend_activity(true);
++	if (res != 0)
++		goto out;
++
++	if (mutex_lock_interruptible(&scst_mutex) != 0) {
++		res = -EINTR;
++		goto out_resume;
++	}
++
++	list_for_each_entry(acg_dev, &acg->acg_dev_list, acg_dev_list_entry) {
++		int rc;
++
++		scst_stop_dev_threads(acg_dev->dev);
++
++		rc = scst_create_dev_threads(acg_dev->dev);
++		if (rc != 0)
++			res = rc;
++	}
++
++	mutex_unlock(&scst_mutex);
++
++out_resume:
++	scst_resume_activity();
++
++out:
++	return res;
++}
++
++static ssize_t scst_tgt_io_grouping_type_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	struct scst_acg *acg;
++	struct scst_tgt *tgt;
++
++	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
++	acg = tgt->default_acg;
++
++	return __scst_acg_io_grouping_type_show(acg, buf);
++}
++
++static ssize_t scst_tgt_io_grouping_type_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int res;
++	struct scst_acg *acg;
++	struct scst_tgt *tgt;
++
++	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
++	acg = tgt->default_acg;
++
++	res = __scst_acg_io_grouping_type_store(acg, buf, count);
++	if (res != 0)
++		goto out;
++
++	res = count;
++
++out:
++	return res;
++}
++
++static int scst_create_acg_sysfs(struct scst_tgt *tgt,
++	struct scst_acg *acg)
++{
++	int retval = 0;
++
++	acg->acg_kobj_initialized = 1;
++
++	retval = kobject_init_and_add(&acg->acg_kobj, &acg_ktype,
++		tgt->tgt_ini_grp_kobj, acg->acg_name);
++	if (retval != 0) {
++		PRINT_ERROR("Can't add acg '%s' to sysfs", acg->acg_name);
++		goto out;
++	}
++
++	acg->luns_kobj = kobject_create_and_add("luns", &acg->acg_kobj);
++	if (acg->luns_kobj == NULL) {
++		PRINT_ERROR("Can't create luns kobj for tgt %s",
++			tgt->tgt_name);
++		retval = -ENOMEM;
++		goto out;
++	}
++
++	retval = sysfs_create_file(acg->luns_kobj, &scst_acg_luns_mgmt.attr);
++	if (retval != 0) {
++		PRINT_ERROR("Can't add tgt attr %s for tgt %s",
++			scst_acg_luns_mgmt.attr.name, tgt->tgt_name);
++		goto out;
++	}
++
++	acg->initiators_kobj = kobject_create_and_add("initiators",
++		&acg->acg_kobj);
++	if (acg->initiators_kobj == NULL) {
++		PRINT_ERROR("Can't create initiators kobj for tgt %s",
++			tgt->tgt_name);
++		retval = -ENOMEM;
++		goto out;
++	}
++
++	retval = sysfs_create_file(acg->initiators_kobj,
++		&scst_acg_ini_mgmt.attr);
++	if (retval != 0) {
++		PRINT_ERROR("Can't add tgt attr %s for tgt %s",
++			scst_acg_ini_mgmt.attr.name, tgt->tgt_name);
++		goto out;
++	}
++
++	retval = sysfs_create_file(&acg->acg_kobj, &scst_acg_addr_method.attr);
++	if (retval != 0) {
++		PRINT_ERROR("Can't add tgt attr %s for tgt %s",
++			scst_acg_addr_method.attr.name, tgt->tgt_name);
++		goto out;
++	}
++
++	retval = sysfs_create_file(&acg->acg_kobj, &scst_acg_io_grouping_type.attr);
++	if (retval != 0) {
++		PRINT_ERROR("Can't add tgt attr %s for tgt %s",
++			scst_acg_io_grouping_type.attr.name, tgt->tgt_name);
++		goto out;
++	}
++
++out:
++	return retval;
++}
++
++void scst_acg_sysfs_put(struct scst_acg *acg)
++{
++
++	if (acg->acg_kobj_initialized) {
++		scst_clear_acg(acg);
++
++		kobject_del(acg->luns_kobj);
++		kobject_put(acg->luns_kobj);
++
++		kobject_del(acg->initiators_kobj);
++		kobject_put(acg->initiators_kobj);
++
++		kobject_del(&acg->acg_kobj);
++		kobject_put(&acg->acg_kobj);
++	} else
++		scst_destroy_acg(acg);
++	return;
++}
++
++static ssize_t scst_acg_addr_method_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	struct scst_acg *acg;
++
++	acg = container_of(kobj, struct scst_acg, acg_kobj);
++
++	return __scst_acg_addr_method_show(acg, buf);
++}
++
++static ssize_t scst_acg_addr_method_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int res;
++	struct scst_acg *acg;
++
++	acg = container_of(kobj, struct scst_acg, acg_kobj);
++
++	res = __scst_acg_addr_method_store(acg, buf, count);
++	return res;
++}
++
++static ssize_t scst_acg_io_grouping_type_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	struct scst_acg *acg;
++
++	acg = container_of(kobj, struct scst_acg, acg_kobj);
++
++	return __scst_acg_io_grouping_type_show(acg, buf);
++}
++
++static ssize_t scst_acg_io_grouping_type_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int res;
++	struct scst_acg *acg;
++
++	acg = container_of(kobj, struct scst_acg, acg_kobj);
++
++	res = __scst_acg_io_grouping_type_store(acg, buf, count);
++	if (res != 0)
++		goto out;
++
++	res = count;
++
++out:
++	return res;
++}
++
++static ssize_t scst_ini_group_mgmt_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	static char *help = "Usage: echo \"create GROUP_NAME\" >mgmt\n"
++			    "       echo \"del GROUP_NAME\" >mgmt\n";
++
++	return sprintf(buf, help);
++}
++
++static ssize_t scst_ini_group_mgmt_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int res, action;
++	int len;
++	char *name;
++	char *buffer, *p, *e = NULL;
++	struct scst_acg *a, *acg = NULL;
++	struct scst_tgt *tgt;
++
++#define SCST_INI_GROUP_ACTION_CREATE	1
++#define SCST_INI_GROUP_ACTION_DEL	2
++
++	tgt = container_of(kobj->parent, struct scst_tgt, tgt_kobj);
++
++	buffer = kzalloc(count+1, GFP_KERNEL);
++	if (buffer == NULL) {
++		res = -ENOMEM;
++		goto out;
++	}
++
++	memcpy(buffer, buf, count);
++	buffer[count] = '\0';
++	p = buffer;
++
++	p = buffer;
++	if (p[strlen(p) - 1] == '\n')
++		p[strlen(p) - 1] = '\0';
++	if (strncasecmp("create ", p, 7) == 0) {
++		p += 7;
++		action = SCST_INI_GROUP_ACTION_CREATE;
++	} else if (strncasecmp("del ", p, 4) == 0) {
++		p += 4;
++		action = SCST_INI_GROUP_ACTION_DEL;
++	} else {
++		PRINT_ERROR("Unknown action \"%s\"", p);
++		res = -EINVAL;
++		goto out_free;
++	}
++
++	res = scst_suspend_activity(true);
++	if (res != 0)
++		goto out_free;
++
++	if (mutex_lock_interruptible(&scst_mutex) != 0) {
++		res = -EINTR;
++		goto out_free_resume;
++	}
++
++	while (isspace(*p) && *p != '\0')
++		p++;
++	e = p;
++	while (!isspace(*e) && *e != '\0')
++		e++;
++	*e = '\0';
++
++	if (p[0] == '\0') {
++		PRINT_ERROR("%s", "Group name required");
++		res = -EINVAL;
++		goto out_free_up;
++	}
++
++	list_for_each_entry(a, &tgt->tgt_acg_list, acg_list_entry) {
++		if (strcmp(a->acg_name, p) == 0) {
++			TRACE_DBG("group (acg) %p %s found",
++				  a, a->acg_name);
++			acg = a;
++			break;
++		}
++	}
++
++	switch (action) {
++	case SCST_INI_GROUP_ACTION_CREATE:
++		TRACE_DBG("Creating group '%s'", p);
++		if (acg != NULL) {
++			PRINT_ERROR("acg name %s exist", p);
++			res = -EINVAL;
++			goto out_free_up;
++		}
++
++		len = strlen(p) + 1;
++		name = kmalloc(len, GFP_KERNEL);
++		if (name == NULL) {
++			PRINT_ERROR("%s", "Allocation of name failed");
++			res = -ENOMEM;
++			goto out_free_up;
++		}
++		strlcpy(name, p, len);
++
++		acg = scst_alloc_add_acg(tgt, name);
++		kfree(name);
++		if (acg == NULL)
++			goto out_free_up;
++
++		res = scst_create_acg_sysfs(tgt, acg);
++		if (res != 0)
++			goto out_free_acg;
++		break;
++	case SCST_INI_GROUP_ACTION_DEL:
++		TRACE_DBG("Deleting group '%s'", p);
++		if (acg == NULL) {
++			PRINT_ERROR("Group %s not found", p);
++			res = -EINVAL;
++			goto out_free_up;
++		}
++		if (!scst_acg_sess_is_empty(acg)) {
++			PRINT_ERROR("Group %s is not empty", acg->acg_name);
++			res = -EBUSY;
++			goto out_free_up;
++		}
++		scst_acg_sysfs_put(acg);
++		break;
++	}
++
++	res = count;
++
++out_free_up:
++	mutex_unlock(&scst_mutex);
++
++out_free_resume:
++	scst_resume_activity();
++
++out_free:
++	kfree(buffer);
++
++out:
++	return res;
++
++out_free_acg:
++	scst_acg_sysfs_put(acg);
++	goto out_free_up;
++
++#undef SCST_LUN_ACTION_CREATE
++#undef SCST_LUN_ACTION_DEL
++}
++
++static ssize_t scst_rel_tgt_id_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	struct scst_tgt *tgt;
++	int res;
++
++	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
++
++	res = sprintf(buf, "%d\n%s", tgt->rel_tgt_id,
++		(tgt->rel_tgt_id != 0) ? SCST_SYSFS_KEY_MARK "\n" : "");
++	return res;
++}
++
++static ssize_t scst_rel_tgt_id_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int res = 0;
++	struct scst_tgt *tgt;
++	unsigned long rel_tgt_id;
++
++	if (buf == NULL)
++		goto out_err;
++
++	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
++
++	res = strict_strtoul(buf, 0, &rel_tgt_id);
++	if (res != 0)
++		goto out_err;
++
++	TRACE_DBG("Try to set relative target port id %d",
++		(uint16_t)rel_tgt_id);
++
++	if (rel_tgt_id < SCST_MIN_REL_TGT_ID ||
++	    rel_tgt_id > SCST_MAX_REL_TGT_ID) {
++		if ((rel_tgt_id == 0) && !tgt->tgtt->is_target_enabled(tgt))
++			goto set;
++
++		PRINT_ERROR("Invalid relative port id %d",
++			(uint16_t)rel_tgt_id);
++		res = -EINVAL;
++		goto out;
++	}
++
++	if (tgt->tgtt->is_target_enabled(tgt) &&
++	    rel_tgt_id != tgt->rel_tgt_id) {
++		if (!scst_is_relative_target_port_id_unique(rel_tgt_id, tgt)) {
++			PRINT_ERROR("Relative port id %d is not unique",
++				(uint16_t)rel_tgt_id);
++			res = -EBADSLT;
++			goto out;
++		}
++	}
++
++set:
++	tgt->rel_tgt_id = (uint16_t)rel_tgt_id;
++
++	res = count;
 +
 +out:
 +	return res;
 +
 +out_err:
-+	PRINT_ERROR("%s", "Multi-level LUN unimplemented");
++	PRINT_ERROR("%s: Requested action not understood: %s", __func__, buf);
++	res = -EINVAL;
 +	goto out;
 +}
 +
-+/**
-+ ** Generic parse() support routines.
-+ ** Done via pointer on functions to avoid unneeded dereferences on
-+ ** the fast path.
-+ **/
-+
-+/**
-+ * scst_calc_block_shift() - calculate block shift
-+ *
-+ * Calculates and returns block shift for the given sector size
-+ */
-+int scst_calc_block_shift(int sector_size)
++int scst_create_acn_sysfs(struct scst_acg *acg, struct scst_acn *acn)
 +{
-+	int block_shift = 0;
-+	int t;
-+
-+	if (sector_size == 0)
-+		sector_size = 512;
-+
-+	t = sector_size;
-+	while (1) {
-+		if ((t & 1) != 0)
-+			break;
-+		t >>= 1;
-+		block_shift++;
-+	}
-+	if (block_shift < 9) {
-+		PRINT_ERROR("Wrong sector size %d", sector_size);
-+		block_shift = -1;
-+	}
-+	return block_shift;
-+}
-+EXPORT_SYMBOL_GPL(scst_calc_block_shift);
-+
-+/**
-+ * scst_sbc_generic_parse() - generic SBC parsing
-+ *
-+ * Generic parse() for SBC (disk) devices
-+ */
-+int scst_sbc_generic_parse(struct scst_cmd *cmd,
-+	int (*get_block_shift)(struct scst_cmd *cmd))
-+{
-+	int res = 0;
-+
-+	/*
-+	 * SCST sets good defaults for cmd->data_direction and cmd->bufflen,
-+	 * therefore change them only if necessary
-+	 */
-+
-+	TRACE_DBG("op_name <%s> direct %d flags %d transfer_len %d",
-+	      cmd->op_name, cmd->data_direction, cmd->op_flags, cmd->bufflen);
-+
-+	switch (cmd->cdb[0]) {
-+	case VERIFY_6:
-+	case VERIFY:
-+	case VERIFY_12:
-+	case VERIFY_16:
-+		if ((cmd->cdb[1] & BYTCHK) == 0) {
-+			cmd->data_len = cmd->bufflen << get_block_shift(cmd);
-+			cmd->bufflen = 0;
-+			goto set_timeout;
-+		} else
-+			cmd->data_len = 0;
-+		break;
-+	default:
-+		/* It's all good */
-+		break;
-+	}
-+
-+	if (cmd->op_flags & SCST_TRANSFER_LEN_TYPE_FIXED) {
-+		/*
-+		 * No need for locks here, since *_detach() can not be
-+		 * called, when there are existing commands.
-+		 */
-+		cmd->bufflen = cmd->bufflen << get_block_shift(cmd);
-+	}
-+
-+set_timeout:
-+	if ((cmd->op_flags & (SCST_SMALL_TIMEOUT | SCST_LONG_TIMEOUT)) == 0)
-+		cmd->timeout = SCST_GENERIC_DISK_REG_TIMEOUT;
-+	else if (cmd->op_flags & SCST_SMALL_TIMEOUT)
-+		cmd->timeout = SCST_GENERIC_DISK_SMALL_TIMEOUT;
-+	else if (cmd->op_flags & SCST_LONG_TIMEOUT)
-+		cmd->timeout = SCST_GENERIC_DISK_LONG_TIMEOUT;
-+
-+	TRACE_DBG("res %d, bufflen %d, data_len %d, direct %d",
-+	      res, cmd->bufflen, cmd->data_len, cmd->data_direction);
-+	return res;
-+}
-+EXPORT_SYMBOL_GPL(scst_sbc_generic_parse);
-+
-+/**
-+ * scst_cdrom_generic_parse() - generic MMC parse
-+ *
-+ * Generic parse() for MMC (cdrom) devices
-+ */
-+int scst_cdrom_generic_parse(struct scst_cmd *cmd,
-+	int (*get_block_shift)(struct scst_cmd *cmd))
-+{
-+	int res = 0;
-+
-+	/*
-+	 * SCST sets good defaults for cmd->data_direction and cmd->bufflen,
-+	 * therefore change them only if necessary
-+	 */
-+
-+	TRACE_DBG("op_name <%s> direct %d flags %d transfer_len %d",
-+	      cmd->op_name, cmd->data_direction, cmd->op_flags, cmd->bufflen);
-+
-+	cmd->cdb[1] &= 0x1f;
-+
-+	switch (cmd->cdb[0]) {
-+	case VERIFY_6:
-+	case VERIFY:
-+	case VERIFY_12:
-+	case VERIFY_16:
-+		if ((cmd->cdb[1] & BYTCHK) == 0) {
-+			cmd->data_len = cmd->bufflen << get_block_shift(cmd);
-+			cmd->bufflen = 0;
-+			goto set_timeout;
-+		}
-+		break;
-+	default:
-+		/* It's all good */
-+		break;
-+	}
-+
-+	if (cmd->op_flags & SCST_TRANSFER_LEN_TYPE_FIXED)
-+		cmd->bufflen = cmd->bufflen << get_block_shift(cmd);
-+
-+set_timeout:
-+	if ((cmd->op_flags & (SCST_SMALL_TIMEOUT | SCST_LONG_TIMEOUT)) == 0)
-+		cmd->timeout = SCST_GENERIC_CDROM_REG_TIMEOUT;
-+	else if (cmd->op_flags & SCST_SMALL_TIMEOUT)
-+		cmd->timeout = SCST_GENERIC_CDROM_SMALL_TIMEOUT;
-+	else if (cmd->op_flags & SCST_LONG_TIMEOUT)
-+		cmd->timeout = SCST_GENERIC_CDROM_LONG_TIMEOUT;
-+
-+	TRACE_DBG("res=%d, bufflen=%d, direct=%d", res, cmd->bufflen,
-+		cmd->data_direction);
-+	return res;
-+}
-+EXPORT_SYMBOL_GPL(scst_cdrom_generic_parse);
-+
-+/**
-+ * scst_modisk_generic_parse() - generic MO parse
-+ *
-+ * Generic parse() for MO disk devices
-+ */
-+int scst_modisk_generic_parse(struct scst_cmd *cmd,
-+	int (*get_block_shift)(struct scst_cmd *cmd))
-+{
-+	int res = 0;
-+
-+	/*
-+	 * SCST sets good defaults for cmd->data_direction and cmd->bufflen,
-+	 * therefore change them only if necessary
-+	 */
-+
-+	TRACE_DBG("op_name <%s> direct %d flags %d transfer_len %d",
-+	      cmd->op_name, cmd->data_direction, cmd->op_flags, cmd->bufflen);
-+
-+	cmd->cdb[1] &= 0x1f;
-+
-+	switch (cmd->cdb[0]) {
-+	case VERIFY_6:
-+	case VERIFY:
-+	case VERIFY_12:
-+	case VERIFY_16:
-+		if ((cmd->cdb[1] & BYTCHK) == 0) {
-+			cmd->data_len = cmd->bufflen << get_block_shift(cmd);
-+			cmd->bufflen = 0;
-+			goto set_timeout;
-+		}
-+		break;
-+	default:
-+		/* It's all good */
-+		break;
-+	}
-+
-+	if (cmd->op_flags & SCST_TRANSFER_LEN_TYPE_FIXED)
-+		cmd->bufflen = cmd->bufflen << get_block_shift(cmd);
-+
-+set_timeout:
-+	if ((cmd->op_flags & (SCST_SMALL_TIMEOUT | SCST_LONG_TIMEOUT)) == 0)
-+		cmd->timeout = SCST_GENERIC_MODISK_REG_TIMEOUT;
-+	else if (cmd->op_flags & SCST_SMALL_TIMEOUT)
-+		cmd->timeout = SCST_GENERIC_MODISK_SMALL_TIMEOUT;
-+	else if (cmd->op_flags & SCST_LONG_TIMEOUT)
-+		cmd->timeout = SCST_GENERIC_MODISK_LONG_TIMEOUT;
-+
-+	TRACE_DBG("res=%d, bufflen=%d, direct=%d", res, cmd->bufflen,
-+		cmd->data_direction);
-+	return res;
-+}
-+EXPORT_SYMBOL_GPL(scst_modisk_generic_parse);
-+
-+/**
-+ * scst_tape_generic_parse() - generic tape parse
-+ *
-+ * Generic parse() for tape devices
-+ */
-+int scst_tape_generic_parse(struct scst_cmd *cmd,
-+	int (*get_block_size)(struct scst_cmd *cmd))
-+{
-+	int res = 0;
-+
-+	/*
-+	 * SCST sets good defaults for cmd->data_direction and cmd->bufflen,
-+	 * therefore change them only if necessary
-+	 */
-+
-+	TRACE_DBG("op_name <%s> direct %d flags %d transfer_len %d",
-+	      cmd->op_name, cmd->data_direction, cmd->op_flags, cmd->bufflen);
-+
-+	if (cmd->cdb[0] == READ_POSITION) {
-+		int tclp = cmd->cdb[1] & 4;
-+		int long_bit = cmd->cdb[1] & 2;
-+		int bt = cmd->cdb[1] & 1;
-+
-+		if ((tclp == long_bit) && (!bt || !long_bit)) {
-+			cmd->bufflen =
-+			    tclp ? POSITION_LEN_LONG : POSITION_LEN_SHORT;
-+			cmd->data_direction = SCST_DATA_READ;
-+		} else {
-+			cmd->bufflen = 0;
-+			cmd->data_direction = SCST_DATA_NONE;
-+		}
-+	}
-+
-+	if (cmd->op_flags & SCST_TRANSFER_LEN_TYPE_FIXED & cmd->cdb[1])
-+		cmd->bufflen = cmd->bufflen * get_block_size(cmd);
-+
-+	if ((cmd->op_flags & (SCST_SMALL_TIMEOUT | SCST_LONG_TIMEOUT)) == 0)
-+		cmd->timeout = SCST_GENERIC_TAPE_REG_TIMEOUT;
-+	else if (cmd->op_flags & SCST_SMALL_TIMEOUT)
-+		cmd->timeout = SCST_GENERIC_TAPE_SMALL_TIMEOUT;
-+	else if (cmd->op_flags & SCST_LONG_TIMEOUT)
-+		cmd->timeout = SCST_GENERIC_TAPE_LONG_TIMEOUT;
-+	return res;
-+}
-+EXPORT_SYMBOL_GPL(scst_tape_generic_parse);
-+
-+static int scst_null_parse(struct scst_cmd *cmd)
-+{
-+	int res = 0;
-+
-+	/*
-+	 * SCST sets good defaults for cmd->data_direction and cmd->bufflen,
-+	 * therefore change them only if necessary
-+	 */
-+
-+	TRACE_DBG("op_name <%s> direct %d flags %d transfer_len %d",
-+	      cmd->op_name, cmd->data_direction, cmd->op_flags, cmd->bufflen);
-+#if 0
-+	switch (cmd->cdb[0]) {
-+	default:
-+		/* It's all good */
-+		break;
-+	}
-+#endif
-+	TRACE_DBG("res %d bufflen %d direct %d",
-+	      res, cmd->bufflen, cmd->data_direction);
-+	return res;
-+}
-+
-+/**
-+ * scst_changer_generic_parse() - generic changer parse
-+ *
-+ * Generic parse() for changer devices
-+ */
-+int scst_changer_generic_parse(struct scst_cmd *cmd,
-+	int (*nothing)(struct scst_cmd *cmd))
-+{
-+	int res = scst_null_parse(cmd);
-+
-+	if (cmd->op_flags & SCST_LONG_TIMEOUT)
-+		cmd->timeout = SCST_GENERIC_CHANGER_LONG_TIMEOUT;
-+	else
-+		cmd->timeout = SCST_GENERIC_CHANGER_TIMEOUT;
-+
-+	return res;
-+}
-+EXPORT_SYMBOL_GPL(scst_changer_generic_parse);
-+
-+/**
-+ * scst_processor_generic_parse - generic SCSI processor parse
-+ *
-+ * Generic parse() for SCSI processor devices
-+ */
-+int scst_processor_generic_parse(struct scst_cmd *cmd,
-+	int (*nothing)(struct scst_cmd *cmd))
-+{
-+	int res = scst_null_parse(cmd);
-+
-+	if (cmd->op_flags & SCST_LONG_TIMEOUT)
-+		cmd->timeout = SCST_GENERIC_PROCESSOR_LONG_TIMEOUT;
-+	else
-+		cmd->timeout = SCST_GENERIC_PROCESSOR_TIMEOUT;
-+
-+	return res;
-+}
-+EXPORT_SYMBOL_GPL(scst_processor_generic_parse);
-+
-+/**
-+ * scst_raid_generic_parse() - generic RAID parse
-+ *
-+ * Generic parse() for RAID devices
-+ */
-+int scst_raid_generic_parse(struct scst_cmd *cmd,
-+	int (*nothing)(struct scst_cmd *cmd))
-+{
-+	int res = scst_null_parse(cmd);
-+
-+	if (cmd->op_flags & SCST_LONG_TIMEOUT)
-+		cmd->timeout = SCST_GENERIC_RAID_LONG_TIMEOUT;
-+	else
-+		cmd->timeout = SCST_GENERIC_RAID_TIMEOUT;
-+
-+	return res;
-+}
-+EXPORT_SYMBOL_GPL(scst_raid_generic_parse);
-+
-+/**
-+ ** Generic dev_done() support routines.
-+ ** Done via pointer on functions to avoid unneeded dereferences on
-+ ** the fast path.
-+ **/
-+
-+/**
-+ * scst_block_generic_dev_done() - generic SBC dev_done
-+ *
-+ * Generic dev_done() for block (SBC) devices
-+ */
-+int scst_block_generic_dev_done(struct scst_cmd *cmd,
-+	void (*set_block_shift)(struct scst_cmd *cmd, int block_shift))
-+{
-+	int opcode = cmd->cdb[0];
-+	int status = cmd->status;
-+	int res = SCST_CMD_STATE_DEFAULT;
-+
-+	/*
-+	 * SCST sets good defaults for cmd->is_send_status and
-+	 * cmd->resp_data_len based on cmd->status and cmd->data_direction,
-+	 * therefore change them only if necessary
-+	 */
-+
-+	if ((status == SAM_STAT_GOOD) || (status == SAM_STAT_CONDITION_MET)) {
-+		switch (opcode) {
-+		case READ_CAPACITY:
-+		{
-+			/* Always keep track of disk capacity */
-+			int buffer_size, sector_size, sh;
-+			uint8_t *buffer;
-+
-+			buffer_size = scst_get_buf_first(cmd, &buffer);
-+			if (unlikely(buffer_size <= 0)) {
-+				if (buffer_size < 0) {
-+					PRINT_ERROR("%s: Unable to get the"
-+					" buffer (%d)",	__func__, buffer_size);
-+				}
-+				goto out;
-+			}
-+
-+			sector_size =
-+			    ((buffer[4] << 24) | (buffer[5] << 16) |
-+			     (buffer[6] << 8) | (buffer[7] << 0));
-+			scst_put_buf(cmd, buffer);
-+			if (sector_size != 0)
-+				sh = scst_calc_block_shift(sector_size);
-+			else
-+				sh = 0;
-+			set_block_shift(cmd, sh);
-+			TRACE_DBG("block_shift %d", sh);
-+			break;
-+		}
-+		default:
-+			/* It's all good */
-+			break;
-+		}
-+	}
-+
-+	TRACE_DBG("cmd->is_send_status=%x, cmd->resp_data_len=%d, "
-+	      "res=%d", cmd->is_send_status, cmd->resp_data_len, res);
-+
-+out:
-+	return res;
-+}
-+EXPORT_SYMBOL_GPL(scst_block_generic_dev_done);
-+
-+/**
-+ * scst_tape_generic_dev_done() - generic tape dev done
-+ *
-+ * Generic dev_done() for tape devices
-+ */
-+int scst_tape_generic_dev_done(struct scst_cmd *cmd,
-+	void (*set_block_size)(struct scst_cmd *cmd, int block_shift))
-+{
-+	int opcode = cmd->cdb[0];
-+	int res = SCST_CMD_STATE_DEFAULT;
-+	int buffer_size, bs;
-+	uint8_t *buffer = NULL;
-+
-+	/*
-+	 * SCST sets good defaults for cmd->is_send_status and
-+	 * cmd->resp_data_len based on cmd->status and cmd->data_direction,
-+	 * therefore change them only if necessary
-+	 */
-+
-+	switch (opcode) {
-+	case MODE_SENSE:
-+	case MODE_SELECT:
-+		buffer_size = scst_get_buf_first(cmd, &buffer);
-+		if (unlikely(buffer_size <= 0)) {
-+			if (buffer_size < 0) {
-+				PRINT_ERROR("%s: Unable to get the buffer (%d)",
-+					__func__, buffer_size);
-+			}
-+			goto out;
-+		}
-+		break;
-+	}
-+
-+	switch (opcode) {
-+	case MODE_SENSE:
-+		TRACE_DBG("%s", "MODE_SENSE");
-+		if ((cmd->cdb[2] & 0xC0) == 0) {
-+			if (buffer[3] == 8) {
-+				bs = (buffer[9] << 16) |
-+				    (buffer[10] << 8) | buffer[11];
-+				set_block_size(cmd, bs);
-+			}
-+		}
-+		break;
-+	case MODE_SELECT:
-+		TRACE_DBG("%s", "MODE_SELECT");
-+		if (buffer[3] == 8) {
-+			bs = (buffer[9] << 16) | (buffer[10] << 8) |
-+			    (buffer[11]);
-+			set_block_size(cmd, bs);
-+		}
-+		break;
-+	default:
-+		/* It's all good */
-+		break;
-+	}
-+
-+	switch (opcode) {
-+	case MODE_SENSE:
-+	case MODE_SELECT:
-+		scst_put_buf(cmd, buffer);
-+		break;
-+	}
-+
-+out:
-+	return res;
-+}
-+EXPORT_SYMBOL_GPL(scst_tape_generic_dev_done);
-+
-+static void scst_check_internal_sense(struct scst_device *dev, int result,
-+	uint8_t *sense, int sense_len)
-+{
-+
-+	if (host_byte(result) == DID_RESET) {
-+		int sl;
-+		TRACE(TRACE_MGMT, "DID_RESET received for device %s, "
-+			"triggering reset UA", dev->virt_name);
-+		sl = scst_set_sense(sense, sense_len, dev->d_sense,
-+			SCST_LOAD_SENSE(scst_sense_reset_UA));
-+		scst_dev_check_set_UA(dev, NULL, sense, sl);
-+	} else if ((status_byte(result) == CHECK_CONDITION) &&
-+		   scst_is_ua_sense(sense, sense_len))
-+		scst_dev_check_set_UA(dev, NULL, sense, sense_len);
-+	return;
-+}
-+
-+/**
-+ * scst_to_dma_dir() - translate SCST's data direction to DMA direction
-+ *
-+ * Translates SCST's data direction to DMA one from backend storage
-+ * perspective.
-+ */
-+enum dma_data_direction scst_to_dma_dir(int scst_dir)
-+{
-+	static const enum dma_data_direction tr_tbl[] = { DMA_NONE,
-+		DMA_TO_DEVICE, DMA_FROM_DEVICE, DMA_BIDIRECTIONAL, DMA_NONE };
-+
-+	return tr_tbl[scst_dir];
-+}
-+EXPORT_SYMBOL(scst_to_dma_dir);
-+
-+/*
-+ * scst_to_tgt_dma_dir() - translate SCST data direction to DMA direction
-+ *
-+ * Translates SCST data direction to DMA data direction from the perspective
-+ * of the target device.
-+ */
-+enum dma_data_direction scst_to_tgt_dma_dir(int scst_dir)
-+{
-+	static const enum dma_data_direction tr_tbl[] = { DMA_NONE,
-+		DMA_FROM_DEVICE, DMA_TO_DEVICE, DMA_BIDIRECTIONAL, DMA_NONE };
-+
-+	return tr_tbl[scst_dir];
-+}
-+EXPORT_SYMBOL(scst_to_tgt_dma_dir);
-+
-+/**
-+ * scst_obtain_device_parameters() - obtain device control parameters
-+ *
-+ * Issues a MODE SENSE for control mode page data and sets the corresponding
-+ * dev's parameter from it. Returns 0 on success and not 0 otherwise.
-+ */
-+int scst_obtain_device_parameters(struct scst_device *dev)
-+{
-+	int rc, i;
-+	uint8_t cmd[16];
-+	uint8_t buffer[4+0x0A];
-+	uint8_t sense_buffer[SCSI_SENSE_BUFFERSIZE];
-+
-+	EXTRACHECKS_BUG_ON(dev->scsi_dev == NULL);
-+
-+	for (i = 0; i < 5; i++) {
-+		/* Get control mode page */
-+		memset(cmd, 0, sizeof(cmd));
-+#if 0
-+		cmd[0] = MODE_SENSE_10;
-+		cmd[1] = 0;
-+		cmd[2] = 0x0A;
-+		cmd[8] = sizeof(buffer); /* it's < 256 */
-+#else
-+		cmd[0] = MODE_SENSE;
-+		cmd[1] = 8; /* DBD */
-+		cmd[2] = 0x0A;
-+		cmd[4] = sizeof(buffer);
-+#endif
-+
-+		memset(buffer, 0, sizeof(buffer));
-+		memset(sense_buffer, 0, sizeof(sense_buffer));
-+
-+		TRACE(TRACE_SCSI, "%s", "Doing internal MODE_SENSE");
-+		rc = scsi_execute(dev->scsi_dev, cmd, SCST_DATA_READ, buffer,
-+				sizeof(buffer), sense_buffer, 15, 0, 0
-+				, NULL
-+				);
-+
-+		TRACE_DBG("MODE_SENSE done: %x", rc);
-+
-+		if (scsi_status_is_good(rc)) {
-+			int q;
-+
-+			PRINT_BUFF_FLAG(TRACE_SCSI,
-+				"Returned control mode page data",
-+				buffer,	sizeof(buffer));
-+
-+			dev->tst = buffer[4+2] >> 5;
-+			q = buffer[4+3] >> 4;
-+			if (q > SCST_CONTR_MODE_QUEUE_ALG_UNRESTRICTED_REORDER) {
-+				PRINT_ERROR("Too big QUEUE ALG %x, dev %s",
-+					dev->queue_alg, dev->virt_name);
-+			}
-+			dev->queue_alg = q;
-+			dev->swp = (buffer[4+4] & 0x8) >> 3;
-+			dev->tas = (buffer[4+5] & 0x40) >> 6;
-+			dev->d_sense = (buffer[4+2] & 0x4) >> 2;
-+
-+			/*
-+			 * Unfortunately, SCSI ML doesn't provide a way to
-+			 * specify commands task attribute, so we can rely on
-+			 * device's restricted reordering only. Linux I/O
-+			 * subsystem doesn't reorder pass-through (PC) requests.
-+			 */
-+			dev->has_own_order_mgmt = !dev->queue_alg;
-+
-+			PRINT_INFO("Device %s: TST %x, QUEUE ALG %x, SWP %x, "
-+				"TAS %x, D_SENSE %d, has_own_order_mgmt %d",
-+				dev->virt_name, dev->tst, dev->queue_alg,
-+				dev->swp, dev->tas, dev->d_sense,
-+				dev->has_own_order_mgmt);
-+
-+			goto out;
-+		} else {
-+			scst_check_internal_sense(dev, rc, sense_buffer,
-+				sizeof(sense_buffer));
-+#if 0
-+			if ((status_byte(rc) == CHECK_CONDITION) &&
-+			    SCST_SENSE_VALID(sense_buffer)) {
-+#else
-+			/*
-+			 * 3ware controller is buggy and returns CONDITION_GOOD
-+			 * instead of CHECK_CONDITION
-+			 */
-+			if (SCST_SENSE_VALID(sense_buffer)) {
-+#endif
-+				PRINT_BUFF_FLAG(TRACE_SCSI,
-+					"Returned sense data",
-+					sense_buffer, sizeof(sense_buffer));
-+				if (scst_analyze_sense(sense_buffer,
-+						sizeof(sense_buffer),
-+						SCST_SENSE_KEY_VALID,
-+						ILLEGAL_REQUEST, 0, 0)) {
-+					PRINT_INFO("Device %s doesn't support "
-+						"MODE SENSE", dev->virt_name);
-+					break;
-+				} else if (scst_analyze_sense(sense_buffer,
-+						sizeof(sense_buffer),
-+						SCST_SENSE_KEY_VALID,
-+						NOT_READY, 0, 0)) {
-+					PRINT_ERROR("Device %s not ready",
-+						dev->virt_name);
-+					break;
-+				}
-+			} else {
-+				PRINT_INFO("Internal MODE SENSE to "
-+					"device %s failed: %x",
-+					dev->virt_name, rc);
-+				PRINT_BUFF_FLAG(TRACE_SCSI, "MODE SENSE sense",
-+					sense_buffer, sizeof(sense_buffer));
-+				switch (host_byte(rc)) {
-+				case DID_RESET:
-+				case DID_ABORT:
-+				case DID_SOFT_ERROR:
-+					break;
-+				default:
-+					goto brk;
-+				}
-+				switch (driver_byte(rc)) {
-+				case DRIVER_BUSY:
-+				case DRIVER_SOFT:
-+					break;
-+				default:
-+					goto brk;
-+				}
-+			}
-+		}
-+	}
-+brk:
-+	PRINT_WARNING("Unable to get device's %s control mode page, using "
-+		"existing values/defaults: TST %x, QUEUE ALG %x, SWP %x, "
-+		"TAS %x, D_SENSE %d, has_own_order_mgmt %d", dev->virt_name,
-+		dev->tst, dev->queue_alg, dev->swp, dev->tas, dev->d_sense,
-+		dev->has_own_order_mgmt);
-+
-+out:
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(scst_obtain_device_parameters);
-+
-+/* Called under dev_lock and BH off */
-+void scst_process_reset(struct scst_device *dev,
-+	struct scst_session *originator, struct scst_cmd *exclude_cmd,
-+	struct scst_mgmt_cmd *mcmd, bool setUA)
-+{
-+	struct scst_tgt_dev *tgt_dev;
-+	struct scst_cmd *cmd, *tcmd;
-+
-+	/* Clear RESERVE'ation, if necessary */
-+	if (dev->dev_reserved) {
-+		list_for_each_entry(tgt_dev, &dev->dev_tgt_dev_list,
-+				    dev_tgt_dev_list_entry) {
-+			TRACE_MGMT_DBG("Clearing RESERVE'ation for "
-+				"tgt_dev LUN %lld",
-+				(long long unsigned int)tgt_dev->lun);
-+			clear_bit(SCST_TGT_DEV_RESERVED,
-+				  &tgt_dev->tgt_dev_flags);
-+		}
-+		dev->dev_reserved = 0;
-+		/*
-+		 * There is no need to send RELEASE, since the device is going
-+		 * to be resetted. Actually, since we can be in RESET TM
-+		 * function, it might be dangerous.
-+		 */
-+	}
-+
-+	dev->dev_double_ua_possible = 1;
-+
-+	list_for_each_entry(tgt_dev, &dev->dev_tgt_dev_list,
-+		dev_tgt_dev_list_entry) {
-+		struct scst_session *sess = tgt_dev->sess;
-+
-+		spin_lock_bh(&tgt_dev->tgt_dev_lock);
-+
-+		scst_free_all_UA(tgt_dev);
-+
-+		memset(tgt_dev->tgt_dev_sense, 0,
-+			sizeof(tgt_dev->tgt_dev_sense));
-+
-+		spin_unlock_bh(&tgt_dev->tgt_dev_lock);
-+
-+		spin_lock_irq(&sess->sess_list_lock);
-+
-+		TRACE_DBG("Searching in sess cmd list (sess=%p)", sess);
-+		list_for_each_entry(cmd, &sess->sess_cmd_list,
-+					sess_cmd_list_entry) {
-+			if (cmd == exclude_cmd)
-+				continue;
-+			if ((cmd->tgt_dev == tgt_dev) ||
-+			    ((cmd->tgt_dev == NULL) &&
-+			     (cmd->lun == tgt_dev->lun))) {
-+				scst_abort_cmd(cmd, mcmd,
-+					(tgt_dev->sess != originator), 0);
-+			}
-+		}
-+		spin_unlock_irq(&sess->sess_list_lock);
-+	}
-+
-+	list_for_each_entry_safe(cmd, tcmd, &dev->blocked_cmd_list,
-+				blocked_cmd_list_entry) {
-+		if (test_bit(SCST_CMD_ABORTED, &cmd->cmd_flags)) {
-+			list_del(&cmd->blocked_cmd_list_entry);
-+			TRACE_MGMT_DBG("Adding aborted blocked cmd %p "
-+				"to active cmd list", cmd);
-+			spin_lock_irq(&cmd->cmd_threads->cmd_list_lock);
-+			list_add_tail(&cmd->cmd_list_entry,
-+				&cmd->cmd_threads->active_cmd_list);
-+			wake_up(&cmd->cmd_threads->cmd_list_waitQ);
-+			spin_unlock_irq(&cmd->cmd_threads->cmd_list_lock);
-+		}
-+	}
-+
-+	if (setUA) {
-+		uint8_t sense_buffer[SCST_STANDARD_SENSE_LEN];
-+		int sl = scst_set_sense(sense_buffer, sizeof(sense_buffer),
-+			dev->d_sense, SCST_LOAD_SENSE(scst_sense_reset_UA));
-+		scst_dev_check_set_local_UA(dev, exclude_cmd, sense_buffer, sl);
-+	}
-+	return;
-+}
-+
-+/* No locks, no IRQ or IRQ-disabled context allowed */
-+int scst_set_pending_UA(struct scst_cmd *cmd)
-+{
-+	int res = 0, i;
-+	struct scst_tgt_dev_UA *UA_entry;
-+	bool first = true, global_unlock = false;
-+	struct scst_session *sess = cmd->sess;
-+
-+	TRACE_MGMT_DBG("Setting pending UA cmd %p", cmd);
-+
-+	spin_lock_bh(&cmd->tgt_dev->tgt_dev_lock);
-+
-+again:
-+	/* UA list could be cleared behind us, so retest */
-+	if (list_empty(&cmd->tgt_dev->UA_list)) {
-+		TRACE_DBG("%s",
-+		      "SCST_TGT_DEV_UA_PENDING set, but UA_list empty");
-+		res = -1;
-+		goto out_unlock_tgt_dev_lock;
-+	}
-+
-+	UA_entry = list_entry(cmd->tgt_dev->UA_list.next, typeof(*UA_entry),
-+			      UA_list_entry);
-+
-+	TRACE_DBG("next %p UA_entry %p",
-+	      cmd->tgt_dev->UA_list.next, UA_entry);
-+
-+	if (UA_entry->global_UA && first) {
-+		TRACE_MGMT_DBG("Global UA %p detected", UA_entry);
-+
-+		spin_unlock_bh(&cmd->tgt_dev->tgt_dev_lock);
-+
-+		/*
-+		 * cmd won't allow to suspend activities, so we can access
-+		 * sess->sess_tgt_dev_list_hash without any additional
-+		 * protection.
-+		 */
-+
-+		local_bh_disable();
-+
-+		for (i = 0; i < TGT_DEV_HASH_SIZE; i++) {
-+			struct list_head *sess_tgt_dev_list_head =
-+				&sess->sess_tgt_dev_list_hash[i];
-+			struct scst_tgt_dev *tgt_dev;
-+			list_for_each_entry(tgt_dev, sess_tgt_dev_list_head,
-+					sess_tgt_dev_list_entry) {
-+				/* Lockdep triggers here a false positive.. */
-+				spin_lock(&tgt_dev->tgt_dev_lock);
-+			}
-+		}
-+
-+		first = false;
-+		global_unlock = true;
-+		goto again;
-+	}
-+
-+	if (scst_set_cmd_error_sense(cmd, UA_entry->UA_sense_buffer,
-+			UA_entry->UA_valid_sense_len) != 0)
-+		goto out_unlock;
-+
-+	cmd->ua_ignore = 1;
-+
-+	list_del(&UA_entry->UA_list_entry);
-+
-+	if (UA_entry->global_UA) {
-+		for (i = 0; i < TGT_DEV_HASH_SIZE; i++) {
-+			struct list_head *sess_tgt_dev_list_head =
-+				&sess->sess_tgt_dev_list_hash[i];
-+			struct scst_tgt_dev *tgt_dev;
-+
-+			list_for_each_entry(tgt_dev, sess_tgt_dev_list_head,
-+					sess_tgt_dev_list_entry) {
-+				struct scst_tgt_dev_UA *ua;
-+				list_for_each_entry(ua, &tgt_dev->UA_list,
-+							UA_list_entry) {
-+					if (ua->global_UA &&
-+					    memcmp(ua->UA_sense_buffer,
-+					      UA_entry->UA_sense_buffer,
-+					      sizeof(ua->UA_sense_buffer)) == 0) {
-+						TRACE_MGMT_DBG("Freeing not "
-+							"needed global UA %p",
-+							ua);
-+						list_del(&ua->UA_list_entry);
-+						mempool_free(ua, scst_ua_mempool);
-+						break;
-+					}
-+				}
-+			}
-+		}
-+	}
-+
-+	mempool_free(UA_entry, scst_ua_mempool);
-+
-+	if (list_empty(&cmd->tgt_dev->UA_list)) {
-+		clear_bit(SCST_TGT_DEV_UA_PENDING,
-+			  &cmd->tgt_dev->tgt_dev_flags);
-+	}
-+
-+out_unlock:
-+	if (global_unlock) {
-+		for (i = TGT_DEV_HASH_SIZE-1; i >= 0; i--) {
-+			struct list_head *sess_tgt_dev_list_head =
-+				&sess->sess_tgt_dev_list_hash[i];
-+			struct scst_tgt_dev *tgt_dev;
-+			list_for_each_entry_reverse(tgt_dev, sess_tgt_dev_list_head,
-+					sess_tgt_dev_list_entry) {
-+				spin_unlock(&tgt_dev->tgt_dev_lock);
-+			}
-+		}
-+
-+		local_bh_enable();
-+		spin_lock_bh(&cmd->tgt_dev->tgt_dev_lock);
-+	}
-+
-+out_unlock_tgt_dev_lock:
-+	spin_unlock_bh(&cmd->tgt_dev->tgt_dev_lock);
-+	return res;
-+}
-+
-+/* Called under tgt_dev_lock and BH off */
-+static void scst_alloc_set_UA(struct scst_tgt_dev *tgt_dev,
-+	const uint8_t *sense, int sense_len, int flags)
-+{
-+	struct scst_tgt_dev_UA *UA_entry = NULL;
-+
-+	UA_entry = mempool_alloc(scst_ua_mempool, GFP_ATOMIC);
-+	if (UA_entry == NULL) {
-+		PRINT_CRIT_ERROR("%s", "UNIT ATTENTION memory "
-+		     "allocation failed. The UNIT ATTENTION "
-+		     "on some sessions will be missed");
-+		PRINT_BUFFER("Lost UA", sense, sense_len);
-+		goto out;
-+	}
-+	memset(UA_entry, 0, sizeof(*UA_entry));
-+
-+	UA_entry->global_UA = (flags & SCST_SET_UA_FLAG_GLOBAL) != 0;
-+	if (UA_entry->global_UA)
-+		TRACE_MGMT_DBG("Queuing global UA %p", UA_entry);
-+
-+	if (sense_len > (int)sizeof(UA_entry->UA_sense_buffer)) {
-+		PRINT_WARNING("Sense truncated (needed %d), shall you increase "
-+			"SCST_SENSE_BUFFERSIZE?", sense_len);
-+		sense_len = sizeof(UA_entry->UA_sense_buffer);
-+	}
-+	memcpy(UA_entry->UA_sense_buffer, sense, sense_len);
-+	UA_entry->UA_valid_sense_len = sense_len;
-+
-+	set_bit(SCST_TGT_DEV_UA_PENDING, &tgt_dev->tgt_dev_flags);
-+
-+	TRACE_MGMT_DBG("Adding new UA to tgt_dev %p", tgt_dev);
-+
-+	if (flags & SCST_SET_UA_FLAG_AT_HEAD)
-+		list_add(&UA_entry->UA_list_entry, &tgt_dev->UA_list);
-+	else
-+		list_add_tail(&UA_entry->UA_list_entry, &tgt_dev->UA_list);
-+
-+out:
-+	return;
-+}
-+
-+/* tgt_dev_lock supposed to be held and BH off */
-+static void __scst_check_set_UA(struct scst_tgt_dev *tgt_dev,
-+	const uint8_t *sense, int sense_len, int flags)
-+{
-+	int skip_UA = 0;
-+	struct scst_tgt_dev_UA *UA_entry_tmp;
-+	int len = min((int)sizeof(UA_entry_tmp->UA_sense_buffer), sense_len);
-+
-+	list_for_each_entry(UA_entry_tmp, &tgt_dev->UA_list,
-+			    UA_list_entry) {
-+		if (memcmp(sense, UA_entry_tmp->UA_sense_buffer, len) == 0) {
-+			TRACE_MGMT_DBG("%s", "UA already exists");
-+			skip_UA = 1;
-+			break;
-+		}
-+	}
-+
-+	if (skip_UA == 0)
-+		scst_alloc_set_UA(tgt_dev, sense, len, flags);
-+	return;
-+}
-+
-+void scst_check_set_UA(struct scst_tgt_dev *tgt_dev,
-+	const uint8_t *sense, int sense_len, int flags)
-+{
-+
-+	spin_lock_bh(&tgt_dev->tgt_dev_lock);
-+	__scst_check_set_UA(tgt_dev, sense, sense_len, flags);
-+	spin_unlock_bh(&tgt_dev->tgt_dev_lock);
-+	return;
-+}
-+
-+/* Called under dev_lock and BH off */
-+void scst_dev_check_set_local_UA(struct scst_device *dev,
-+	struct scst_cmd *exclude, const uint8_t *sense, int sense_len)
-+{
-+	struct scst_tgt_dev *tgt_dev, *exclude_tgt_dev = NULL;
-+
-+	if (exclude != NULL)
-+		exclude_tgt_dev = exclude->tgt_dev;
-+
-+	list_for_each_entry(tgt_dev, &dev->dev_tgt_dev_list,
-+			dev_tgt_dev_list_entry) {
-+		if (tgt_dev != exclude_tgt_dev)
-+			scst_check_set_UA(tgt_dev, sense, sense_len, 0);
-+	}
-+	return;
-+}
-+
-+/* Called under dev_lock and BH off */
-+void __scst_dev_check_set_UA(struct scst_device *dev,
-+	struct scst_cmd *exclude, const uint8_t *sense, int sense_len)
-+{
-+
-+	TRACE_MGMT_DBG("Processing UA dev %p", dev);
-+
-+	/* Check for reset UA */
-+	if (scst_analyze_sense(sense, sense_len, SCST_SENSE_ASC_VALID,
-+				0, SCST_SENSE_ASC_UA_RESET, 0))
-+		scst_process_reset(dev,
-+				   (exclude != NULL) ? exclude->sess : NULL,
-+				   exclude, NULL, false);
-+
-+	scst_dev_check_set_local_UA(dev, exclude, sense, sense_len);
-+	return;
-+}
-+
-+/* Called under tgt_dev_lock or when tgt_dev is unused */
-+static void scst_free_all_UA(struct scst_tgt_dev *tgt_dev)
-+{
-+	struct scst_tgt_dev_UA *UA_entry, *t;
-+
-+	list_for_each_entry_safe(UA_entry, t,
-+				 &tgt_dev->UA_list, UA_list_entry) {
-+		TRACE_MGMT_DBG("Clearing UA for tgt_dev LUN %lld",
-+			       (long long unsigned int)tgt_dev->lun);
-+		list_del(&UA_entry->UA_list_entry);
-+		mempool_free(UA_entry, scst_ua_mempool);
-+	}
-+	INIT_LIST_HEAD(&tgt_dev->UA_list);
-+	clear_bit(SCST_TGT_DEV_UA_PENDING, &tgt_dev->tgt_dev_flags);
-+	return;
-+}
-+
-+/* No locks */
-+struct scst_cmd *__scst_check_deferred_commands(struct scst_tgt_dev *tgt_dev)
-+{
-+	struct scst_cmd *res = NULL, *cmd, *t;
-+	typeof(tgt_dev->expected_sn) expected_sn = tgt_dev->expected_sn;
-+
-+	spin_lock_irq(&tgt_dev->sn_lock);
-+
-+	if (unlikely(tgt_dev->hq_cmd_count != 0))
-+		goto out_unlock;
-+
-+restart:
-+	list_for_each_entry_safe(cmd, t, &tgt_dev->deferred_cmd_list,
-+				sn_cmd_list_entry) {
-+		EXTRACHECKS_BUG_ON(cmd->queue_type ==
-+			SCST_CMD_QUEUE_HEAD_OF_QUEUE);
-+		if (cmd->sn == expected_sn) {
-+			TRACE_SN("Deferred command %p (sn %d, set %d) found",
-+				cmd, cmd->sn, cmd->sn_set);
-+			tgt_dev->def_cmd_count--;
-+			list_del(&cmd->sn_cmd_list_entry);
-+			if (res == NULL)
-+				res = cmd;
-+			else {
-+				spin_lock(&cmd->cmd_threads->cmd_list_lock);
-+				TRACE_SN("Adding cmd %p to active cmd list",
-+					cmd);
-+				list_add_tail(&cmd->cmd_list_entry,
-+					&cmd->cmd_threads->active_cmd_list);
-+				wake_up(&cmd->cmd_threads->cmd_list_waitQ);
-+				spin_unlock(&cmd->cmd_threads->cmd_list_lock);
-+			}
-+		}
-+	}
-+	if (res != NULL)
-+		goto out_unlock;
-+
-+	list_for_each_entry(cmd, &tgt_dev->skipped_sn_list,
-+				sn_cmd_list_entry) {
-+		EXTRACHECKS_BUG_ON(cmd->queue_type ==
-+			SCST_CMD_QUEUE_HEAD_OF_QUEUE);
-+		if (cmd->sn == expected_sn) {
-+			atomic_t *slot = cmd->sn_slot;
-+			/*
-+			 * !! At this point any pointer in cmd, except !!
-+			 * !! sn_slot and sn_cmd_list_entry, could be	!!
-+			 * !! already destroyed				!!
-+			 */
-+			TRACE_SN("cmd %p (tag %llu) with skipped sn %d found",
-+				 cmd,
-+				 (long long unsigned int)cmd->tag,
-+				 cmd->sn);
-+			tgt_dev->def_cmd_count--;
-+			list_del(&cmd->sn_cmd_list_entry);
-+			spin_unlock_irq(&tgt_dev->sn_lock);
-+			if (test_and_set_bit(SCST_CMD_CAN_BE_DESTROYED,
-+					     &cmd->cmd_flags))
-+				scst_destroy_put_cmd(cmd);
-+			scst_inc_expected_sn(tgt_dev, slot);
-+			expected_sn = tgt_dev->expected_sn;
-+			spin_lock_irq(&tgt_dev->sn_lock);
-+			goto restart;
-+		}
-+	}
-+
-+out_unlock:
-+	spin_unlock_irq(&tgt_dev->sn_lock);
-+	return res;
-+}
-+
-+/*****************************************************************
-+ ** The following thr_data functions are necessary, because the
-+ ** kernel doesn't provide a better way to have threads local
-+ ** storage
-+ *****************************************************************/
-+
-+/**
-+ * scst_add_thr_data() - add the current thread's local data
-+ *
-+ * Adds local to the current thread data to tgt_dev
-+ * (they will be local for the tgt_dev and current thread).
-+ */
-+void scst_add_thr_data(struct scst_tgt_dev *tgt_dev,
-+	struct scst_thr_data_hdr *data,
-+	void (*free_fn) (struct scst_thr_data_hdr *data))
-+{
-+	data->owner_thr = current;
-+	atomic_set(&data->ref, 1);
-+	EXTRACHECKS_BUG_ON(free_fn == NULL);
-+	data->free_fn = free_fn;
-+	spin_lock(&tgt_dev->thr_data_lock);
-+	list_add_tail(&data->thr_data_list_entry, &tgt_dev->thr_data_list);
-+	spin_unlock(&tgt_dev->thr_data_lock);
-+}
-+EXPORT_SYMBOL_GPL(scst_add_thr_data);
-+
-+/**
-+ * scst_del_all_thr_data() - delete all thread's local data
-+ *
-+ * Deletes all local to threads data from tgt_dev
-+ */
-+void scst_del_all_thr_data(struct scst_tgt_dev *tgt_dev)
-+{
-+	spin_lock(&tgt_dev->thr_data_lock);
-+	while (!list_empty(&tgt_dev->thr_data_list)) {
-+		struct scst_thr_data_hdr *d = list_entry(
-+				tgt_dev->thr_data_list.next, typeof(*d),
-+				thr_data_list_entry);
-+		list_del(&d->thr_data_list_entry);
-+		spin_unlock(&tgt_dev->thr_data_lock);
-+		scst_thr_data_put(d);
-+		spin_lock(&tgt_dev->thr_data_lock);
-+	}
-+	spin_unlock(&tgt_dev->thr_data_lock);
-+	return;
-+}
-+EXPORT_SYMBOL_GPL(scst_del_all_thr_data);
-+
-+/**
-+ * scst_dev_del_all_thr_data() - delete all thread's local data from device
-+ *
-+ * Deletes all local to threads data from all tgt_dev's of the device
-+ */
-+void scst_dev_del_all_thr_data(struct scst_device *dev)
-+{
-+	struct scst_tgt_dev *tgt_dev;
-+
-+	mutex_lock(&scst_mutex);
-+
-+	list_for_each_entry(tgt_dev, &dev->dev_tgt_dev_list,
-+				dev_tgt_dev_list_entry) {
-+		scst_del_all_thr_data(tgt_dev);
-+	}
-+
-+	mutex_unlock(&scst_mutex);
-+	return;
-+}
-+EXPORT_SYMBOL_GPL(scst_dev_del_all_thr_data);
-+
-+/* thr_data_lock supposed to be held */
-+static struct scst_thr_data_hdr *__scst_find_thr_data_locked(
-+	struct scst_tgt_dev *tgt_dev, struct task_struct *tsk)
-+{
-+	struct scst_thr_data_hdr *res = NULL, *d;
-+
-+	list_for_each_entry(d, &tgt_dev->thr_data_list, thr_data_list_entry) {
-+		if (d->owner_thr == tsk) {
-+			res = d;
-+			scst_thr_data_get(res);
-+			break;
-+		}
-+	}
-+	return res;
-+}
-+
-+/**
-+ * __scst_find_thr_data() - find local to the thread data
-+ *
-+ * Finds local to the thread data. Returns NULL, if they not found.
-+ */
-+struct scst_thr_data_hdr *__scst_find_thr_data(struct scst_tgt_dev *tgt_dev,
-+	struct task_struct *tsk)
-+{
-+	struct scst_thr_data_hdr *res;
-+
-+	spin_lock(&tgt_dev->thr_data_lock);
-+	res = __scst_find_thr_data_locked(tgt_dev, tsk);
-+	spin_unlock(&tgt_dev->thr_data_lock);
-+
-+	return res;
-+}
-+EXPORT_SYMBOL_GPL(__scst_find_thr_data);
-+
-+bool scst_del_thr_data(struct scst_tgt_dev *tgt_dev, struct task_struct *tsk)
-+{
-+	bool res;
-+	struct scst_thr_data_hdr *td;
-+
-+	spin_lock(&tgt_dev->thr_data_lock);
-+
-+	td = __scst_find_thr_data_locked(tgt_dev, tsk);
-+	if (td != NULL) {
-+		list_del(&td->thr_data_list_entry);
-+		res = true;
-+	} else
-+		res = false;
-+
-+	spin_unlock(&tgt_dev->thr_data_lock);
-+
-+	if (td != NULL) {
-+		/* the find() fn also gets it */
-+		scst_thr_data_put(td);
-+		scst_thr_data_put(td);
-+	}
-+
-+	return res;
-+}
-+
-+/* dev_lock supposed to be held and BH disabled */
-+void __scst_block_dev(struct scst_device *dev)
-+{
-+	dev->block_count++;
-+	TRACE_MGMT_DBG("Device BLOCK(new %d), dev %p", dev->block_count, dev);
-+}
-+
-+/* No locks */
-+static void scst_block_dev(struct scst_device *dev, int outstanding)
-+{
-+	spin_lock_bh(&dev->dev_lock);
-+	__scst_block_dev(dev);
-+	spin_unlock_bh(&dev->dev_lock);
-+
-+	/*
-+	 * Memory barrier is necessary here, because we need to read
-+	 * on_dev_count in wait_event() below after we increased block_count.
-+	 * Otherwise, we can miss wake up in scst_dec_on_dev_cmd().
-+	 * We use the explicit barrier, because spin_unlock_bh() doesn't
-+	 * provide the necessary memory barrier functionality.
-+	 */
-+	smp_mb();
-+
-+	TRACE_MGMT_DBG("Waiting during blocking outstanding %d (on_dev_count "
-+		"%d)", outstanding, atomic_read(&dev->on_dev_count));
-+	wait_event(dev->on_dev_waitQ,
-+		atomic_read(&dev->on_dev_count) <= outstanding);
-+	TRACE_MGMT_DBG("%s", "wait_event() returned");
-+}
-+
-+/* No locks */
-+void scst_block_dev_cmd(struct scst_cmd *cmd, int outstanding)
-+{
-+	BUG_ON(cmd->needs_unblocking);
-+
-+	cmd->needs_unblocking = 1;
-+	TRACE_MGMT_DBG("Needs unblocking cmd %p (tag %llu)",
-+		       cmd, (long long unsigned int)cmd->tag);
-+
-+	scst_block_dev(cmd->dev, outstanding);
-+}
-+
-+/* No locks */
-+void scst_unblock_dev(struct scst_device *dev)
-+{
-+	spin_lock_bh(&dev->dev_lock);
-+	TRACE_MGMT_DBG("Device UNBLOCK(new %d), dev %p",
-+		dev->block_count-1, dev);
-+	if (--dev->block_count == 0)
-+		scst_unblock_cmds(dev);
-+	spin_unlock_bh(&dev->dev_lock);
-+	BUG_ON(dev->block_count < 0);
-+}
-+
-+/* No locks */
-+void scst_unblock_dev_cmd(struct scst_cmd *cmd)
-+{
-+	scst_unblock_dev(cmd->dev);
-+	cmd->needs_unblocking = 0;
-+}
-+
-+/* No locks */
-+int scst_inc_on_dev_cmd(struct scst_cmd *cmd)
-+{
-+	int res = 0;
-+	struct scst_device *dev = cmd->dev;
-+
-+	BUG_ON(cmd->inc_blocking || cmd->dec_on_dev_needed);
-+
-+	atomic_inc(&dev->on_dev_count);
-+	cmd->dec_on_dev_needed = 1;
-+	TRACE_DBG("New on_dev_count %d", atomic_read(&dev->on_dev_count));
-+
-+	if (unlikely(cmd->internal) && (cmd->cdb[0] == REQUEST_SENSE)) {
-+		/*
-+		 * The original command can already block the device, so
-+		 * REQUEST SENSE command should always pass.
-+		 */
++	int retval = 0;
++	int len;
++	struct kobj_attribute *attr = NULL;
++
++	acn->acn_attr = NULL;
++
++	attr = kzalloc(sizeof(struct kobj_attribute), GFP_KERNEL);
++	if (attr == NULL) {
++		PRINT_ERROR("Unable to allocate attributes for initiator '%s'",
++			acn->name);
++		retval = -ENOMEM;
 +		goto out;
 +	}
 +
-+repeat:
-+	if (unlikely(dev->block_count > 0)) {
-+		spin_lock_bh(&dev->dev_lock);
-+		if (unlikely(test_bit(SCST_CMD_ABORTED, &cmd->cmd_flags)))
-+			goto out_unlock;
-+		if (dev->block_count > 0) {
-+			scst_dec_on_dev_cmd(cmd);
-+			TRACE_MGMT_DBG("Delaying cmd %p due to blocking "
-+				"(tag %llu, dev %p)", cmd,
-+				(long long unsigned int)cmd->tag, dev);
-+			list_add_tail(&cmd->blocked_cmd_list_entry,
-+				      &dev->blocked_cmd_list);
-+			res = 1;
-+			spin_unlock_bh(&dev->dev_lock);
-+			goto out;
-+		} else {
-+			TRACE_MGMT_DBG("%s", "Somebody unblocked the device, "
-+				"continuing");
-+		}
-+		spin_unlock_bh(&dev->dev_lock);
++	len = strlen(acn->name) + 1;
++	attr->attr.name = kzalloc(len, GFP_KERNEL);
++	if (attr->attr.name == NULL) {
++		PRINT_ERROR("Unable to allocate attributes for initiator '%s'",
++			acn->name);
++		retval = -ENOMEM;
++		goto out_free;
 +	}
-+	if (unlikely(dev->dev_double_ua_possible)) {
-+		spin_lock_bh(&dev->dev_lock);
-+		if (dev->block_count == 0) {
-+			TRACE_MGMT_DBG("cmd %p (tag %llu), blocking further "
-+				"cmds due to possible double reset UA (dev %p)",
-+				cmd, (long long unsigned int)cmd->tag, dev);
-+			__scst_block_dev(dev);
-+			cmd->inc_blocking = 1;
-+		} else {
-+			spin_unlock_bh(&dev->dev_lock);
-+			TRACE_MGMT_DBG("Somebody blocked the device, "
-+				"repeating (count %d)", dev->block_count);
-+			goto repeat;
-+		}
-+		spin_unlock_bh(&dev->dev_lock);
++	strlcpy((char *)attr->attr.name, acn->name, len);
++
++	attr->attr.owner = THIS_MODULE;
++	attr->attr.mode = S_IRUGO;
++	attr->show = scst_acn_file_show;
++	attr->store = NULL;
++
++	retval = sysfs_create_file(acg->initiators_kobj, &attr->attr);
++	if (retval != 0) {
++		PRINT_ERROR("Unable to create acn '%s' for group '%s'",
++			acn->name, acg->acg_name);
++		kfree(attr->attr.name);
++		goto out_free;
 +	}
++
++	acn->acn_attr = attr;
 +
 +out:
-+	return res;
++	return retval;
 +
-+out_unlock:
-+	spin_unlock_bh(&dev->dev_lock);
++out_free:
++	kfree(attr);
 +	goto out;
 +}
 +
-+/* Called under dev_lock */
-+static void scst_unblock_cmds(struct scst_device *dev)
++void scst_acn_sysfs_del(struct scst_acg *acg, struct scst_acn *acn,
++	bool reassign)
 +{
-+	struct scst_cmd *cmd, *tcmd;
-+	unsigned long flags;
 +
-+	local_irq_save(flags);
-+	list_for_each_entry_safe(cmd, tcmd, &dev->blocked_cmd_list,
-+				 blocked_cmd_list_entry) {
-+		list_del(&cmd->blocked_cmd_list_entry);
-+		TRACE_MGMT_DBG("Adding blocked cmd %p to active cmd list", cmd);
-+		spin_lock(&cmd->cmd_threads->cmd_list_lock);
-+		if (unlikely(cmd->queue_type == SCST_CMD_QUEUE_HEAD_OF_QUEUE))
-+			list_add(&cmd->cmd_list_entry,
-+				&cmd->cmd_threads->active_cmd_list);
-+		else
-+			list_add_tail(&cmd->cmd_list_entry,
-+				&cmd->cmd_threads->active_cmd_list);
-+		wake_up(&cmd->cmd_threads->cmd_list_waitQ);
-+		spin_unlock(&cmd->cmd_threads->cmd_list_lock);
++	if (acn->acn_attr != NULL) {
++		sysfs_remove_file(acg->initiators_kobj,
++			&acn->acn_attr->attr);
++		kfree(acn->acn_attr->attr.name);
++		kfree(acn->acn_attr);
 +	}
-+	local_irq_restore(flags);
++	scst_acg_remove_acn(acn);
++	if (reassign)
++		scst_check_reassign_sessions();
 +	return;
 +}
 +
-+static void __scst_unblock_deferred(struct scst_tgt_dev *tgt_dev,
-+	struct scst_cmd *out_of_sn_cmd)
++static ssize_t scst_acn_file_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
 +{
-+	EXTRACHECKS_BUG_ON(!out_of_sn_cmd->sn_set);
-+
-+	if (out_of_sn_cmd->sn == tgt_dev->expected_sn) {
-+		scst_inc_expected_sn(tgt_dev, out_of_sn_cmd->sn_slot);
-+		scst_make_deferred_commands_active(tgt_dev);
-+	} else {
-+		out_of_sn_cmd->out_of_sn = 1;
-+		spin_lock_irq(&tgt_dev->sn_lock);
-+		tgt_dev->def_cmd_count++;
-+		list_add_tail(&out_of_sn_cmd->sn_cmd_list_entry,
-+			      &tgt_dev->skipped_sn_list);
-+		TRACE_SN("out_of_sn_cmd %p with sn %d added to skipped_sn_list"
-+			" (expected_sn %d)", out_of_sn_cmd, out_of_sn_cmd->sn,
-+			tgt_dev->expected_sn);
-+		spin_unlock_irq(&tgt_dev->sn_lock);
-+	}
-+
-+	return;
++	return scnprintf(buf, SCST_SYSFS_BLOCK_SIZE, "%s\n",
++		attr->attr.name);
 +}
 +
-+void scst_unblock_deferred(struct scst_tgt_dev *tgt_dev,
-+	struct scst_cmd *out_of_sn_cmd)
++static ssize_t scst_acg_luns_mgmt_store(struct kobject *kobj,
++				    struct kobj_attribute *attr,
++				    const char *buf, size_t count)
 +{
++	int res;
++	struct scst_acg *acg;
 +
-+	if (!out_of_sn_cmd->sn_set) {
-+		TRACE_SN("cmd %p without sn", out_of_sn_cmd);
-+		goto out;
-+	}
-+
-+	__scst_unblock_deferred(tgt_dev, out_of_sn_cmd);
-+
-+out:
-+	return;
++	acg = container_of(kobj->parent, struct scst_acg, acg_kobj);
++	res = __scst_luns_mgmt_store(acg, kobj, buf, count);
++	return res;
 +}
 +
-+void scst_on_hq_cmd_response(struct scst_cmd *cmd)
++static ssize_t scst_acg_ini_mgmt_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
 +{
-+	struct scst_tgt_dev *tgt_dev = cmd->tgt_dev;
++	static char *help = "Usage: echo \"add INITIATOR_NAME\" "
++					">mgmt\n"
++			    "       echo \"del INITIATOR_NAME\" "
++					">mgmt\n"
++			    "       echo \"move INITIATOR_NAME DEST_GROUP_NAME\" "
++					">mgmt\n"
++			    "       echo \"clear\" "
++					">mgmt\n";
 +
-+	if (!cmd->hq_cmd_inced)
-+		goto out;
-+
-+	spin_lock_irq(&tgt_dev->sn_lock);
-+	tgt_dev->hq_cmd_count--;
-+	spin_unlock_irq(&tgt_dev->sn_lock);
-+
-+	EXTRACHECKS_BUG_ON(tgt_dev->hq_cmd_count < 0);
-+
-+	/*
-+	 * There is no problem in checking hq_cmd_count in the
-+	 * non-locked state. In the worst case we will only have
-+	 * unneeded run of the deferred commands.
-+	 */
-+	if (tgt_dev->hq_cmd_count == 0)
-+		scst_make_deferred_commands_active(tgt_dev);
-+
-+out:
-+	return;
++	return sprintf(buf, help);
 +}
 +
-+void scst_store_sense(struct scst_cmd *cmd)
++static ssize_t scst_acg_ini_mgmt_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
 +{
++	int res, action;
++	char *buffer, *p, *e = NULL;
++	char *name = NULL, *group = NULL;
++	struct scst_acg *acg = NULL, *acg_dest = NULL;
++	struct scst_tgt *tgt = NULL;
++	struct scst_acn *acn = NULL, *acn_tmp;
 +
-+	if (SCST_SENSE_VALID(cmd->sense) &&
-+	    !test_bit(SCST_CMD_NO_RESP, &cmd->cmd_flags) &&
-+	    (cmd->tgt_dev != NULL)) {
-+		struct scst_tgt_dev *tgt_dev = cmd->tgt_dev;
++#define SCST_ACG_ACTION_INI_ADD		1
++#define SCST_ACG_ACTION_INI_DEL		2
++#define SCST_ACG_ACTION_INI_CLEAR	3
++#define SCST_ACG_ACTION_INI_MOVE	4
 +
-+		TRACE_DBG("Storing sense (cmd %p)", cmd);
++	acg = container_of(kobj->parent, struct scst_acg, acg_kobj);
 +
-+		spin_lock_bh(&tgt_dev->tgt_dev_lock);
-+
-+		if (cmd->sense_valid_len <= sizeof(tgt_dev->tgt_dev_sense))
-+			tgt_dev->tgt_dev_valid_sense_len = cmd->sense_valid_len;
-+		else {
-+			tgt_dev->tgt_dev_valid_sense_len = sizeof(tgt_dev->tgt_dev_sense);
-+			PRINT_ERROR("Stored sense truncated to size %d "
-+				"(needed %d)", tgt_dev->tgt_dev_valid_sense_len,
-+				cmd->sense_valid_len);
-+		}
-+		memcpy(tgt_dev->tgt_dev_sense, cmd->sense,
-+			tgt_dev->tgt_dev_valid_sense_len);
-+
-+		spin_unlock_bh(&tgt_dev->tgt_dev_lock);
-+	}
-+	return;
-+}
-+
-+void scst_xmit_process_aborted_cmd(struct scst_cmd *cmd)
-+{
-+
-+	TRACE_MGMT_DBG("Aborted cmd %p done (cmd_ref %d, "
-+		"scst_cmd_count %d)", cmd, atomic_read(&cmd->cmd_ref),
-+		atomic_read(&scst_cmd_count));
-+
-+	scst_done_cmd_mgmt(cmd);
-+
-+	if (test_bit(SCST_CMD_ABORTED_OTHER, &cmd->cmd_flags)) {
-+		if (cmd->completed) {
-+			/* It's completed and it's OK to return its result */
-+			goto out;
-+		}
-+
-+		/* For not yet inited commands cmd->dev can be NULL here */
-+		if (test_bit(SCST_CMD_DEVICE_TAS, &cmd->cmd_flags)) {
-+			TRACE_MGMT_DBG("Flag ABORTED OTHER set for cmd %p "
-+				"(tag %llu), returning TASK ABORTED ", cmd,
-+				(long long unsigned int)cmd->tag);
-+			scst_set_cmd_error_status(cmd, SAM_STAT_TASK_ABORTED);
-+		} else {
-+			TRACE_MGMT_DBG("Flag ABORTED OTHER set for cmd %p "
-+				"(tag %llu), aborting without delivery or "
-+				"notification",
-+				cmd, (long long unsigned int)cmd->tag);
-+			/*
-+			 * There is no need to check/requeue possible UA,
-+			 * because, if it exists, it will be delivered
-+			 * by the "completed" branch above.
-+			 */
-+			clear_bit(SCST_CMD_ABORTED_OTHER, &cmd->cmd_flags);
-+		}
-+	}
-+
-+out:
-+	return;
-+}
-+
-+/**
-+ * scst_get_max_lun_commands() - return maximum supported commands count
-+ *
-+ * Returns maximum commands count which can be queued to this LUN in this
-+ * session.
-+ *
-+ * If lun is NO_SUCH_LUN, returns minimum of maximum commands count which
-+ * can be queued to any LUN in this session.
-+ *
-+ * If sess is NULL, returns minimum of maximum commands count which can be
-+ * queued to any SCST device.
-+ */
-+int scst_get_max_lun_commands(struct scst_session *sess, uint64_t lun)
-+{
-+	return SCST_MAX_TGT_DEV_COMMANDS;
-+}
-+EXPORT_SYMBOL_GPL(scst_get_max_lun_commands);
-+
-+/**
-+ * scst_get_next_lexem() - parse and return next lexem in the string
-+ *
-+ * Returns pointer to the next lexem from token_str skipping
-+ * spaces and '=' character and using them then as a delimeter. Content
-+ * of token_str is modified by setting '\0' at the delimeter's position.
-+ */
-+char *scst_get_next_lexem(char **token_str)
-+{
-+	char *p = *token_str;
-+	char *q;
-+	static const char blank = '\0';
-+
-+	if ((token_str == NULL) || (*token_str == NULL))
-+		return (char *)&blank;
-+
-+	for (p = *token_str; (*p != '\0') && (isspace(*p) || (*p == '=')); p++)
-+		;
-+
-+	for (q = p; (*q != '\0') && !isspace(*q) && (*q != '='); q++)
-+		;
-+
-+	if (*q != '\0')
-+		*q++ = '\0';
-+
-+	*token_str = q;
-+	return p;
-+}
-+EXPORT_SYMBOL_GPL(scst_get_next_lexem);
-+
-+/**
-+ * scst_restore_token_str() - restore string modified by scst_get_next_lexem()
-+ *
-+ * Restores token_str modified by scst_get_next_lexem() to the
-+ * previous value before scst_get_next_lexem() was called. Prev_lexem is
-+ * a pointer to lexem returned by scst_get_next_lexem().
-+ */
-+void scst_restore_token_str(char *prev_lexem, char *token_str)
-+{
-+	if (&prev_lexem[strlen(prev_lexem)] != token_str)
-+		prev_lexem[strlen(prev_lexem)] = ' ';
-+	return;
-+}
-+EXPORT_SYMBOL_GPL(scst_restore_token_str);
-+
-+/**
-+ * scst_get_next_token_str() - parse and return next token
-+ *
-+ * This function returns pointer to the next token strings from input_str
-+ * using '\n', ';' and '\0' as a delimeter. Content of input_str is
-+ * modified by setting '\0' at the delimeter's position.
-+ */
-+char *scst_get_next_token_str(char **input_str)
-+{
-+	char *p = *input_str;
-+	int i = 0;
-+
-+	while ((p[i] != '\n') && (p[i] != ';') && (p[i] != '\0'))
-+		i++;
-+
-+	if (i == 0)
-+		return NULL;
-+
-+	if (p[i] == '\0')
-+		*input_str = &p[i];
-+	else
-+		*input_str = &p[i+1];
-+
-+	p[i] = '\0';
-+
-+	return p;
-+}
-+EXPORT_SYMBOL_GPL(scst_get_next_token_str);
-+
-+static void __init scst_scsi_op_list_init(void)
-+{
-+	int i;
-+	uint8_t op = 0xff;
-+
-+	for (i = 0; i < 256; i++)
-+		scst_scsi_op_list[i] = SCST_CDB_TBL_SIZE;
-+
-+	for (i = 0; i < SCST_CDB_TBL_SIZE; i++) {
-+		if (scst_scsi_op_table[i].ops != op) {
-+			op = scst_scsi_op_table[i].ops;
-+			scst_scsi_op_list[op] = i;
-+		}
-+	}
-+	return;
-+}
-+
-+int __init scst_lib_init(void)
-+{
-+	int res = 0;
-+
-+	scst_scsi_op_list_init();
-+
-+	scsi_io_context_cache = kmem_cache_create("scst_scsi_io_context",
-+					sizeof(struct scsi_io_context),
-+					0, 0, NULL);
-+	if (!scsi_io_context_cache) {
-+		PRINT_ERROR("%s", "Can't init scsi io context cache");
++	buffer = kzalloc(count+1, GFP_KERNEL);
++	if (buffer == NULL) {
 +		res = -ENOMEM;
 +		goto out;
 +	}
 +
-+out:
-+	return res;
-+}
++	memcpy(buffer, buf, count);
++	buffer[count] = '\0';
++	p = buffer;
 +
-+void scst_lib_exit(void)
-+{
-+	BUILD_BUG_ON(SCST_MAX_CDB_SIZE != BLK_MAX_CDB);
-+	BUILD_BUG_ON(SCST_SENSE_BUFFERSIZE < SCSI_SENSE_BUFFERSIZE);
++	p = buffer;
++	if (p[strlen(p) - 1] == '\n')
++		p[strlen(p) - 1] = '\0';
 +
-+	kmem_cache_destroy(scsi_io_context_cache);
-+}
-+
-+#ifdef CONFIG_SCST_DEBUG
-+
-+/**
-+ * scst_random() - return a pseudo-random number for debugging purposes.
-+ *
-+ * Returns a pseudo-random number for debugging purposes. Available only in
-+ * the DEBUG build.
-+ *
-+ * Original taken from the XFS code
-+ */
-+unsigned long scst_random(void)
-+{
-+	static int Inited;
-+	static unsigned long RandomValue;
-+	static DEFINE_SPINLOCK(lock);
-+	/* cycles pseudo-randomly through all values between 1 and 2^31 - 2 */
-+	register long rv;
-+	register long lo;
-+	register long hi;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&lock, flags);
-+	if (!Inited) {
-+		RandomValue = jiffies;
-+		Inited = 1;
++	if (strncasecmp("add", p, 3) == 0) {
++		p += 3;
++		action = SCST_ACG_ACTION_INI_ADD;
++	} else if (strncasecmp("del", p, 3) == 0) {
++		p += 3;
++		action = SCST_ACG_ACTION_INI_DEL;
++	} else if (strncasecmp("clear", p, 5) == 0) {
++		p += 5;
++		action = SCST_ACG_ACTION_INI_CLEAR;
++	} else if (strncasecmp("move", p, 4) == 0) {
++		p += 4;
++		action = SCST_ACG_ACTION_INI_MOVE;
++	} else {
++		PRINT_ERROR("Unknown action \"%s\"", p);
++		res = -EINVAL;
++		goto out_free;
 +	}
-+	rv = RandomValue;
-+	hi = rv / 127773;
-+	lo = rv % 127773;
-+	rv = 16807 * lo - 2836 * hi;
-+	if (rv <= 0)
-+		rv += 2147483647;
-+	RandomValue = rv;
-+	spin_unlock_irqrestore(&lock, flags);
-+	return rv;
-+}
-+EXPORT_SYMBOL_GPL(scst_random);
-+#endif /* CONFIG_SCST_DEBUG */
 +
-+#ifdef CONFIG_SCST_DEBUG_TM
-+
-+#define TM_DBG_STATE_ABORT		0
-+#define TM_DBG_STATE_RESET		1
-+#define TM_DBG_STATE_OFFLINE		2
-+
-+#define INIT_TM_DBG_STATE		TM_DBG_STATE_ABORT
-+
-+static void tm_dbg_timer_fn(unsigned long arg);
-+
-+static DEFINE_SPINLOCK(scst_tm_dbg_lock);
-+/* All serialized by scst_tm_dbg_lock */
-+static struct {
-+	unsigned int tm_dbg_release:1;
-+	unsigned int tm_dbg_blocked:1;
-+} tm_dbg_flags;
-+static LIST_HEAD(tm_dbg_delayed_cmd_list);
-+static int tm_dbg_delayed_cmds_count;
-+static int tm_dbg_passed_cmds_count;
-+static int tm_dbg_state;
-+static int tm_dbg_on_state_passes;
-+static DEFINE_TIMER(tm_dbg_timer, tm_dbg_timer_fn, 0, 0);
-+static struct scst_tgt_dev *tm_dbg_tgt_dev;
-+
-+static const int tm_dbg_on_state_num_passes[] = { 5, 1, 0x7ffffff };
-+
-+static void tm_dbg_init_tgt_dev(struct scst_tgt_dev *tgt_dev)
-+{
-+	if (tgt_dev->lun == 6) {
-+		unsigned long flags;
-+
-+		if (tm_dbg_tgt_dev != NULL)
-+			tm_dbg_deinit_tgt_dev(tm_dbg_tgt_dev);
-+
-+		spin_lock_irqsave(&scst_tm_dbg_lock, flags);
-+		tm_dbg_state = INIT_TM_DBG_STATE;
-+		tm_dbg_on_state_passes =
-+			tm_dbg_on_state_num_passes[tm_dbg_state];
-+		tm_dbg_tgt_dev = tgt_dev;
-+		PRINT_INFO("LUN %lld connected from initiator %s is under "
-+			"TM debugging (tgt_dev %p)",
-+			(unsigned long long)tgt_dev->lun,
-+			tgt_dev->sess->initiator_name, tgt_dev);
-+		spin_unlock_irqrestore(&scst_tm_dbg_lock, flags);
-+	}
-+	return;
-+}
-+
-+static void tm_dbg_deinit_tgt_dev(struct scst_tgt_dev *tgt_dev)
-+{
-+	if (tm_dbg_tgt_dev == tgt_dev) {
-+		unsigned long flags;
-+		TRACE_MGMT_DBG("Deinit TM debugging tgt_dev %p", tgt_dev);
-+		del_timer_sync(&tm_dbg_timer);
-+		spin_lock_irqsave(&scst_tm_dbg_lock, flags);
-+		tm_dbg_tgt_dev = NULL;
-+		spin_unlock_irqrestore(&scst_tm_dbg_lock, flags);
-+	}
-+	return;
-+}
-+
-+static void tm_dbg_timer_fn(unsigned long arg)
-+{
-+	TRACE_MGMT_DBG("%s", "delayed cmd timer expired");
-+	tm_dbg_flags.tm_dbg_release = 1;
-+	/* Used to make sure that all woken up threads see the new value */
-+	smp_wmb();
-+	wake_up_all(&tm_dbg_tgt_dev->active_cmd_threads->cmd_list_waitQ);
-+	return;
-+}
-+
-+/* Called under scst_tm_dbg_lock and IRQs off */
-+static void tm_dbg_delay_cmd(struct scst_cmd *cmd)
-+{
-+	switch (tm_dbg_state) {
-+	case TM_DBG_STATE_ABORT:
-+		if (tm_dbg_delayed_cmds_count == 0) {
-+			unsigned long d = 58*HZ + (scst_random() % (4*HZ));
-+			TRACE_MGMT_DBG("STATE ABORT: delaying cmd %p (tag %llu)"
-+				" for %ld.%ld seconds (%ld HZ), "
-+				"tm_dbg_on_state_passes=%d", cmd, cmd->tag,
-+				d/HZ, (d%HZ)*100/HZ, d,	tm_dbg_on_state_passes);
-+			mod_timer(&tm_dbg_timer, jiffies + d);
-+#if 0
-+			tm_dbg_flags.tm_dbg_blocked = 1;
-+#endif
-+		} else {
-+			TRACE_MGMT_DBG("Delaying another timed cmd %p "
-+				"(tag %llu), delayed_cmds_count=%d, "
-+				"tm_dbg_on_state_passes=%d", cmd, cmd->tag,
-+				tm_dbg_delayed_cmds_count,
-+				tm_dbg_on_state_passes);
-+			if (tm_dbg_delayed_cmds_count == 2)
-+				tm_dbg_flags.tm_dbg_blocked = 0;
++	if (action != SCST_ACG_ACTION_INI_CLEAR)
++		if (!isspace(*p)) {
++			PRINT_ERROR("%s", "Syntax error");
++			res = -EINVAL;
++			goto out_free;
 +		}
++
++	res = scst_suspend_activity(true);
++	if (res != 0)
++		goto out_free;
++
++	if (mutex_lock_interruptible(&scst_mutex) != 0) {
++		res = -EINTR;
++		goto out_free_resume;
++	}
++
++	if (action != SCST_ACG_ACTION_INI_CLEAR)
++		while (isspace(*p) && *p != '\0')
++			p++;
++
++	switch (action) {
++	case SCST_ACG_ACTION_INI_ADD:
++		e = p;
++		while (!isspace(*e) && *e != '\0')
++			e++;
++		*e = '\0';
++		name = p;
++
++		if (name[0] == '\0') {
++			PRINT_ERROR("%s", "Invalid initiator name");
++			res = -EINVAL;
++			goto out_free_up;
++		}
++
++		res = scst_acg_add_name(acg, name);
++		if (res != 0)
++			goto out_free_up;
 +		break;
++	case SCST_ACG_ACTION_INI_DEL:
++		e = p;
++		while (!isspace(*e) && *e != '\0')
++			e++;
++		*e = '\0';
++		name = p;
 +
-+	case TM_DBG_STATE_RESET:
-+	case TM_DBG_STATE_OFFLINE:
-+		TRACE_MGMT_DBG("STATE RESET/OFFLINE: delaying cmd %p "
-+			"(tag %llu), delayed_cmds_count=%d, "
-+			"tm_dbg_on_state_passes=%d", cmd, cmd->tag,
-+			tm_dbg_delayed_cmds_count, tm_dbg_on_state_passes);
-+		tm_dbg_flags.tm_dbg_blocked = 1;
++		if (name[0] == '\0') {
++			PRINT_ERROR("%s", "Invalid initiator name");
++			res = -EINVAL;
++			goto out_free_up;
++		}
++
++		acn = scst_acg_find_name(acg, name);
++		if (acn == NULL) {
++			PRINT_ERROR("Unable to find "
++				"initiator '%s' in group '%s'",
++				name, acg->acg_name);
++			res = -EINVAL;
++			goto out_free_up;
++		}
++		scst_acn_sysfs_del(acg, acn, true);
 +		break;
-+
-+	default:
-+		BUG();
-+	}
-+	/* IRQs already off */
-+	spin_lock(&cmd->cmd_threads->cmd_list_lock);
-+	list_add_tail(&cmd->cmd_list_entry, &tm_dbg_delayed_cmd_list);
-+	spin_unlock(&cmd->cmd_threads->cmd_list_lock);
-+	cmd->tm_dbg_delayed = 1;
-+	tm_dbg_delayed_cmds_count++;
-+	return;
-+}
-+
-+/* No locks */
-+void tm_dbg_check_released_cmds(void)
-+{
-+	if (tm_dbg_flags.tm_dbg_release) {
-+		struct scst_cmd *cmd, *tc;
-+		spin_lock_irq(&scst_tm_dbg_lock);
-+		list_for_each_entry_safe_reverse(cmd, tc,
-+				&tm_dbg_delayed_cmd_list, cmd_list_entry) {
-+			TRACE_MGMT_DBG("Releasing timed cmd %p (tag %llu), "
-+				"delayed_cmds_count=%d", cmd, cmd->tag,
-+				tm_dbg_delayed_cmds_count);
-+			spin_lock(&cmd->cmd_threads->cmd_list_lock);
-+			list_move(&cmd->cmd_list_entry,
-+				&cmd->cmd_threads->active_cmd_list);
-+			spin_unlock(&cmd->cmd_threads->cmd_list_lock);
++	case SCST_ACG_ACTION_INI_CLEAR:
++		list_for_each_entry_safe(acn, acn_tmp, &acg->acn_list,
++				acn_list_entry) {
++			scst_acn_sysfs_del(acg, acn, false);
 +		}
-+		tm_dbg_flags.tm_dbg_release = 0;
-+		spin_unlock_irq(&scst_tm_dbg_lock);
-+	}
-+}
-+
-+/* Called under scst_tm_dbg_lock */
-+static void tm_dbg_change_state(void)
-+{
-+	tm_dbg_flags.tm_dbg_blocked = 0;
-+	if (--tm_dbg_on_state_passes == 0) {
-+		switch (tm_dbg_state) {
-+		case TM_DBG_STATE_ABORT:
-+			TRACE_MGMT_DBG("%s", "Changing "
-+			    "tm_dbg_state to RESET");
-+			tm_dbg_state = TM_DBG_STATE_RESET;
-+			tm_dbg_flags.tm_dbg_blocked = 0;
-+			break;
-+		case TM_DBG_STATE_RESET:
-+		case TM_DBG_STATE_OFFLINE:
-+#ifdef CONFIG_SCST_TM_DBG_GO_OFFLINE
-+			    TRACE_MGMT_DBG("%s", "Changing "
-+				    "tm_dbg_state to OFFLINE");
-+			    tm_dbg_state = TM_DBG_STATE_OFFLINE;
-+#else
-+			    TRACE_MGMT_DBG("%s", "Changing "
-+				    "tm_dbg_state to ABORT");
-+			    tm_dbg_state = TM_DBG_STATE_ABORT;
-+#endif
-+			break;
-+		default:
-+			BUG();
++		scst_check_reassign_sessions();
++		break;
++	case SCST_ACG_ACTION_INI_MOVE:
++		e = p;
++		while (!isspace(*e) && *e != '\0')
++			e++;
++		if (*e == '\0') {
++			PRINT_ERROR("%s", "Too few parameters");
++			res = -EINVAL;
++			goto out_free_up;
 +		}
-+		tm_dbg_on_state_passes =
-+		    tm_dbg_on_state_num_passes[tm_dbg_state];
-+	}
++		*e = '\0';
++		name = p;
 +
-+	TRACE_MGMT_DBG("%s", "Deleting timer");
-+	del_timer_sync(&tm_dbg_timer);
-+	return;
-+}
++		if (name[0] == '\0') {
++			PRINT_ERROR("%s", "Invalid initiator name");
++			res = -EINVAL;
++			goto out_free_up;
++		}
 +
-+/* No locks */
-+int tm_dbg_check_cmd(struct scst_cmd *cmd)
-+{
-+	int res = 0;
-+	unsigned long flags;
++		e++;
++		p = e;
++		while (!isspace(*e) && *e != '\0')
++			e++;
++		*e = '\0';
++		group = p;
 +
-+	if (cmd->tm_dbg_immut)
-+		goto out;
++		if (group[0] == '\0') {
++			PRINT_ERROR("%s", "Invalid group name");
++			res = -EINVAL;
++			goto out_free_up;
++		}
 +
-+	if (cmd->tm_dbg_delayed) {
-+		spin_lock_irqsave(&scst_tm_dbg_lock, flags);
-+		TRACE_MGMT_DBG("Processing delayed cmd %p (tag %llu), "
-+			"delayed_cmds_count=%d", cmd, cmd->tag,
-+			tm_dbg_delayed_cmds_count);
++		TRACE_DBG("Move initiator '%s' to group '%s'",
++			name, group);
 +
-+		cmd->tm_dbg_immut = 1;
-+		tm_dbg_delayed_cmds_count--;
-+		if ((tm_dbg_delayed_cmds_count == 0) &&
-+		    (tm_dbg_state == TM_DBG_STATE_ABORT))
-+			tm_dbg_change_state();
-+		spin_unlock_irqrestore(&scst_tm_dbg_lock, flags);
-+	} else if (cmd->tgt_dev && (tm_dbg_tgt_dev == cmd->tgt_dev)) {
-+		/* Delay 50th command */
-+		spin_lock_irqsave(&scst_tm_dbg_lock, flags);
-+		if (tm_dbg_flags.tm_dbg_blocked ||
-+		    (++tm_dbg_passed_cmds_count % 50) == 0) {
-+			tm_dbg_delay_cmd(cmd);
-+			res = 1;
-+		} else
-+			cmd->tm_dbg_immut = 1;
-+		spin_unlock_irqrestore(&scst_tm_dbg_lock, flags);
-+	}
++		/*
++		 * Better get tgt from hierarchy tgt_kobj -> tgt_ini_grp_kobj ->
++		 * acg_kobj -> initiators_kobj than have direct pointer to tgt
++		 * in struct acg and have a headache to care about its possible
++		 * wrong dereference on the destruction time.
++		 */
++		{
++			struct kobject *k;
 +
-+out:
-+	return res;
-+}
-+
-+/* No locks */
-+void tm_dbg_release_cmd(struct scst_cmd *cmd)
-+{
-+	struct scst_cmd *c;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&scst_tm_dbg_lock, flags);
-+	list_for_each_entry(c, &tm_dbg_delayed_cmd_list,
-+				cmd_list_entry) {
-+		if (c == cmd) {
-+			TRACE_MGMT_DBG("Abort request for "
-+				"delayed cmd %p (tag=%llu), moving it to "
-+				"active cmd list (delayed_cmds_count=%d)",
-+				c, c->tag, tm_dbg_delayed_cmds_count);
-+
-+			if (!test_bit(SCST_CMD_ABORTED_OTHER,
-+					    &cmd->cmd_flags)) {
-+				/* Test how completed commands handled */
-+				if (((scst_random() % 10) == 5)) {
-+					scst_set_cmd_error(cmd,
-+						SCST_LOAD_SENSE(
-+						scst_sense_hardw_error));
-+					/* It's completed now */
-+				}
++			/* acg_kobj */
++			k = kobj->parent;
++			if (k == NULL) {
++				res = -EINVAL;
++				goto out_free_up;
++			}
++			/* tgt_ini_grp_kobj */
++			k = k->parent;
++			if (k == NULL) {
++				res = -EINVAL;
++				goto out_free_up;
++			}
++			/* tgt_kobj */
++			k = k->parent;
++			if (k == NULL) {
++				res = -EINVAL;
++				goto out_free_up;
 +			}
 +
-+			spin_lock(&cmd->cmd_threads->cmd_list_lock);
-+			list_move(&c->cmd_list_entry,
-+				&c->cmd_threads->active_cmd_list);
-+			wake_up(&c->cmd_threads->cmd_list_waitQ);
-+			spin_unlock(&cmd->cmd_threads->cmd_list_lock);
-+			break;
++			tgt = container_of(k, struct scst_tgt, tgt_kobj);
 +		}
++
++		acn = scst_acg_find_name(acg, name);
++		if (acn == NULL) {
++			PRINT_ERROR("Unable to find "
++				"initiator '%s' in group '%s'",
++				name, acg->acg_name);
++			res = -EINVAL;
++			goto out_free_up;
++		}
++		acg_dest = scst_tgt_find_acg(tgt, group);
++		if (acg_dest == NULL) {
++			PRINT_ERROR("Unable to find group '%s' in target '%s'",
++				group, tgt->tgt_name);
++			res = -EINVAL;
++			goto out_free_up;
++		}
++		if (scst_acg_find_name(acg_dest, name) != NULL) {
++			PRINT_ERROR("Initiator '%s' already exists in group '%s'",
++				name, acg_dest->acg_name);
++			res = -EEXIST;
++			goto out_free_up;
++		}
++		scst_acn_sysfs_del(acg, acn, false);
++
++		res = scst_acg_add_name(acg_dest, name);
++		if (res != 0)
++			goto out_free_up;
++		break;
 +	}
-+	spin_unlock_irqrestore(&scst_tm_dbg_lock, flags);
++
++	res = count;
++
++out_free_up:
++	mutex_unlock(&scst_mutex);
++
++out_free_resume:
++	scst_resume_activity();
++
++out_free:
++	kfree(buffer);
++
++out:
++	return res;
++
++#undef SCST_ACG_ACTION_INI_ADD
++#undef SCST_ACG_ACTION_INI_DEL
++#undef SCST_ACG_ACTION_INI_CLEAR
++#undef SCST_ACG_ACTION_INI_MOVE
++}
++
++/*
++ * SGV directory implementation
++ */
++
++static struct kobj_attribute sgv_stat_attr =
++	__ATTR(stats, S_IRUGO | S_IWUSR, sgv_sysfs_stat_show,
++		sgv_sysfs_stat_reset);
++
++static struct attribute *sgv_attrs[] = {
++	&sgv_stat_attr.attr,
++	NULL,
++};
++
++static void sgv_kobj_release(struct kobject *kobj)
++{
++	struct sgv_pool *pool;
++
++	pool = container_of(kobj, struct sgv_pool, sgv_kobj);
++
++	sgv_pool_destroy(pool);
 +	return;
 +}
 +
-+/* Might be called under scst_mutex */
-+void tm_dbg_task_mgmt(struct scst_device *dev, const char *fn, int force)
++static struct kobj_type sgv_pool_ktype = {
++	.sysfs_ops = &scst_sysfs_ops,
++	.release = sgv_kobj_release,
++	.default_attrs = sgv_attrs,
++};
++
++int scst_create_sgv_sysfs(struct sgv_pool *pool)
 +{
-+	unsigned long flags;
++	int retval;
 +
-+	if (dev != NULL) {
-+		if (tm_dbg_tgt_dev == NULL)
-+			goto out;
++	pool->sgv_kobj_initialized = 1;
 +
-+		if (tm_dbg_tgt_dev->dev != dev)
-+			goto out;
++	retval = kobject_init_and_add(&pool->sgv_kobj, &sgv_pool_ktype,
++			scst_sgv_kobj, pool->name);
++	if (retval != 0) {
++		PRINT_ERROR("Can't add sgv pool %s to sysfs", pool->name);
++		goto out;
 +	}
 +
-+	spin_lock_irqsave(&scst_tm_dbg_lock, flags);
-+	if ((tm_dbg_state != TM_DBG_STATE_OFFLINE) || force) {
-+		TRACE_MGMT_DBG("%s: freeing %d delayed cmds", fn,
-+			tm_dbg_delayed_cmds_count);
-+		tm_dbg_change_state();
-+		tm_dbg_flags.tm_dbg_release = 1;
-+		/*
-+		 * Used to make sure that all woken up threads see the new
-+		 * value.
-+		 */
-+		smp_wmb();
-+		if (tm_dbg_tgt_dev != NULL)
-+			wake_up_all(&tm_dbg_tgt_dev->active_cmd_threads->cmd_list_waitQ);
-+	} else {
-+		TRACE_MGMT_DBG("%s: while OFFLINE state, doing nothing", fn);
-+	}
-+	spin_unlock_irqrestore(&scst_tm_dbg_lock, flags);
++out:
++	return retval;
++}
 +
++/* pool can be dead upon exit from this function! */
++void scst_sgv_sysfs_put(struct sgv_pool *pool)
++{
++	if (pool->sgv_kobj_initialized) {
++		kobject_del(&pool->sgv_kobj);
++		kobject_put(&pool->sgv_kobj);
++	} else
++		sgv_pool_destroy(pool);
++	return;
++}
++
++static struct kobj_attribute sgv_global_stat_attr =
++	__ATTR(global_stats, S_IRUGO | S_IWUSR, sgv_sysfs_global_stat_show,
++		sgv_sysfs_global_stat_reset);
++
++static struct attribute *sgv_default_attrs[] = {
++	&sgv_global_stat_attr.attr,
++	NULL,
++};
++
++static struct kobj_type sgv_ktype = {
++	.sysfs_ops = &scst_sysfs_ops,
++	.release = scst_sysfs_release,
++	.default_attrs = sgv_default_attrs,
++};
++
++/*
++ * SCST sysfs root directory implementation
++ */
++
++static ssize_t scst_threads_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	int count;
++
++	count = sprintf(buf, "%d\n%s", scst_main_cmd_threads.nr_threads,
++		(scst_main_cmd_threads.nr_threads != scst_threads) ?
++			SCST_SYSFS_KEY_MARK "\n" : "");
++	return count;
++}
++
++static ssize_t scst_threads_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int res;
++	long oldtn, newtn, delta;
++
++	if (mutex_lock_interruptible(&scst_mutex) != 0) {
++		res = -EINTR;
++		goto out;
++	}
++
++	oldtn = scst_main_cmd_threads.nr_threads;
++
++	res = strict_strtoul(buf, 0, &newtn);
++	if (res != 0) {
++		PRINT_ERROR("strict_strtoul() for %s failed: %d ", buf, res);
++		goto out_up;
++	}
++
++	if (newtn <= 0) {
++		PRINT_ERROR("Illegal threads num value %ld", newtn);
++		res = -EINVAL;
++		goto out_up;
++	}
++
++	delta = newtn - oldtn;
++	if (delta < 0)
++		scst_del_threads(&scst_main_cmd_threads, -delta);
++	else {
++		res = scst_add_threads(&scst_main_cmd_threads, NULL, NULL, delta);
++		if (res != 0)
++			goto out_up;
++	}
++
++	PRINT_INFO("Changed cmd threads num: old %ld, new %ld", oldtn, newtn);
++
++	res = count;
++
++out_up:
++	mutex_unlock(&scst_mutex);
++
++out:
++	return res;
++}
++
++static ssize_t scst_setup_id_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	int count;
++
++	count = sprintf(buf, "0x%x%s\n", scst_setup_id,
++		(scst_setup_id == 0) ? "" : SCST_SYSFS_KEY_MARK "\n");
++	return count;
++}
++
++static ssize_t scst_setup_id_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int res;
++	unsigned long val;
++
++	res = strict_strtoul(buf, 0, &val);
++	if (res != 0) {
++		PRINT_ERROR("strict_strtoul() for %s failed: %d ", buf, res);
++		goto out;
++	}
++
++	scst_setup_id = val;
++	PRINT_INFO("Changed scst_setup_id to %x", scst_setup_id);
++
++	res = count;
++
++out:
++	return res;
++}
++
++#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
++
++static void scst_read_trace_tlb(const struct scst_trace_log *tbl, char *buf,
++	unsigned long log_level, int *pos)
++{
++	const struct scst_trace_log *t = tbl;
++
++	if (t == NULL)
++		goto out;
++
++	while (t->token) {
++		if (log_level & t->val) {
++			*pos += sprintf(&buf[*pos], "%s%s",
++					(*pos == 0) ? "" : " | ",
++					t->token);
++		}
++		t++;
++	}
 +out:
 +	return;
 +}
 +
-+int tm_dbg_is_release(void)
++static ssize_t scst_trace_level_show(const struct scst_trace_log *local_tbl,
++	unsigned long log_level, char *buf, const char *help)
 +{
-+	return tm_dbg_flags.tm_dbg_release;
++	int pos = 0;
++
++	scst_read_trace_tlb(scst_trace_tbl, buf, log_level, &pos);
++	scst_read_trace_tlb(local_tbl, buf, log_level, &pos);
++
++	pos += sprintf(&buf[pos], "\n\n\nUsage:\n"
++		"	echo \"all|none|default\" >trace_level\n"
++		"	echo \"value DEC|0xHEX|0OCT\" >trace_level\n"
++		"	echo \"add|del TOKEN\" >trace_level\n"
++		"\nwhere TOKEN is one of [debug, function, line, pid,\n"
++		"		       buff, mem, sg, out_of_mem,\n"
++		"		       special, scsi, mgmt, minor,\n"
++		"		       mgmt_dbg, scsi_serializing,\n"
++		"		       retry, recv_bot, send_bot, recv_top,\n"
++		"		       send_top%s]", help != NULL ? help : "");
++
++	return pos;
 +}
-+#endif /* CONFIG_SCST_DEBUG_TM */
++
++static ssize_t scst_main_trace_level_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	return scst_trace_level_show(scst_local_trace_tbl, trace_flag,
++			buf, NULL);
++}
++
++static int scst_write_trace(const char *buf, size_t length,
++	unsigned long *log_level, unsigned long default_level,
++	const char *name, const struct scst_trace_log *tbl)
++{
++	int res = length;
++	int action;
++	unsigned long level = 0, oldlevel;
++	char *buffer, *p, *e;
++	const struct scst_trace_log *t;
++
++#define SCST_TRACE_ACTION_ALL		1
++#define SCST_TRACE_ACTION_NONE		2
++#define SCST_TRACE_ACTION_DEFAULT	3
++#define SCST_TRACE_ACTION_ADD		4
++#define SCST_TRACE_ACTION_DEL		5
++#define SCST_TRACE_ACTION_VALUE		6
++
++	if ((buf == NULL) || (length == 0)) {
++		res = -EINVAL;
++		goto out;
++	}
++
++	buffer = kmalloc(length+1, GFP_KERNEL);
++	if (buffer == NULL) {
++		PRINT_ERROR("Unable to alloc intermediate buffer (size %zd)",
++			length+1);
++		res = -ENOMEM;
++		goto out;
++	}
++	memcpy(buffer, buf, length);
++	buffer[length] = '\0';
++
++	p = buffer;
++	if (!strncasecmp("all", p, 3)) {
++		action = SCST_TRACE_ACTION_ALL;
++	} else if (!strncasecmp("none", p, 4) || !strncasecmp("null", p, 4)) {
++		action = SCST_TRACE_ACTION_NONE;
++	} else if (!strncasecmp("default", p, 7)) {
++		action = SCST_TRACE_ACTION_DEFAULT;
++	} else if (!strncasecmp("add", p, 3)) {
++		p += 3;
++		action = SCST_TRACE_ACTION_ADD;
++	} else if (!strncasecmp("del", p, 3)) {
++		p += 3;
++		action = SCST_TRACE_ACTION_DEL;
++	} else if (!strncasecmp("value", p, 5)) {
++		p += 5;
++		action = SCST_TRACE_ACTION_VALUE;
++	} else {
++		if (p[strlen(p) - 1] == '\n')
++			p[strlen(p) - 1] = '\0';
++		PRINT_ERROR("Unknown action \"%s\"", p);
++		res = -EINVAL;
++		goto out_free;
++	}
++
++	switch (action) {
++	case SCST_TRACE_ACTION_ADD:
++	case SCST_TRACE_ACTION_DEL:
++	case SCST_TRACE_ACTION_VALUE:
++		if (!isspace(*p)) {
++			PRINT_ERROR("%s", "Syntax error");
++			res = -EINVAL;
++			goto out_free;
++		}
++	}
++
++	switch (action) {
++	case SCST_TRACE_ACTION_ALL:
++		level = TRACE_ALL;
++		break;
++	case SCST_TRACE_ACTION_DEFAULT:
++		level = default_level;
++		break;
++	case SCST_TRACE_ACTION_NONE:
++		level = TRACE_NULL;
++		break;
++	case SCST_TRACE_ACTION_ADD:
++	case SCST_TRACE_ACTION_DEL:
++		while (isspace(*p) && *p != '\0')
++			p++;
++		e = p;
++		while (!isspace(*e) && *e != '\0')
++			e++;
++		*e = 0;
++		if (tbl) {
++			t = tbl;
++			while (t->token) {
++				if (!strcasecmp(p, t->token)) {
++					level = t->val;
++					break;
++				}
++				t++;
++			}
++		}
++		if (level == 0) {
++			t = scst_trace_tbl;
++			while (t->token) {
++				if (!strcasecmp(p, t->token)) {
++					level = t->val;
++					break;
++				}
++				t++;
++			}
++		}
++		if (level == 0) {
++			PRINT_ERROR("Unknown token \"%s\"", p);
++			res = -EINVAL;
++			goto out_free;
++		}
++		break;
++	case SCST_TRACE_ACTION_VALUE:
++		while (isspace(*p) && *p != '\0')
++			p++;
++		res = strict_strtoul(p, 0, &level);
++		if (res != 0) {
++			PRINT_ERROR("Invalid trace value \"%s\"", p);
++			res = -EINVAL;
++			goto out_free;
++		}
++		break;
++	}
++
++	oldlevel = *log_level;
++
++	switch (action) {
++	case SCST_TRACE_ACTION_ADD:
++		*log_level |= level;
++		break;
++	case SCST_TRACE_ACTION_DEL:
++		*log_level &= ~level;
++		break;
++	default:
++		*log_level = level;
++		break;
++	}
++
++	PRINT_INFO("Changed trace level for \"%s\": old 0x%08lx, new 0x%08lx",
++		name, oldlevel, *log_level);
++
++out_free:
++	kfree(buffer);
++out:
++	return res;
++
++#undef SCST_TRACE_ACTION_ALL
++#undef SCST_TRACE_ACTION_NONE
++#undef SCST_TRACE_ACTION_DEFAULT
++#undef SCST_TRACE_ACTION_ADD
++#undef SCST_TRACE_ACTION_DEL
++#undef SCST_TRACE_ACTION_VALUE
++}
++
++static ssize_t scst_main_trace_level_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int res;
++
++	if (mutex_lock_interruptible(&scst_log_mutex) != 0) {
++		res = -EINTR;
++		goto out;
++	}
++
++	res = scst_write_trace(buf, count, &trace_flag,
++		SCST_DEFAULT_LOG_FLAGS, "scst", scst_local_trace_tbl);
++
++	mutex_unlock(&scst_log_mutex);
++
++out:
++	return res;
++}
++
++#endif /* defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING) */
++
++static ssize_t scst_version_show(struct kobject *kobj,
++				 struct kobj_attribute *attr,
++				 char *buf)
++{
++
++	sprintf(buf, "%s\n", SCST_VERSION_STRING);
++
++#ifdef CONFIG_SCST_STRICT_SERIALIZING
++	strcat(buf, "STRICT_SERIALIZING\n");
++#endif
++
++#ifdef CONFIG_SCST_EXTRACHECKS
++	strcat(buf, "EXTRACHECKS\n");
++#endif
++
++#ifdef CONFIG_SCST_TRACING
++	strcat(buf, "TRACING\n");
++#endif
++
++#ifdef CONFIG_SCST_DEBUG
++	strcat(buf, "DEBUG\n");
++#endif
++
++#ifdef CONFIG_SCST_DEBUG_TM
++	strcat(buf, "DEBUG_TM\n");
++#endif
++
++#ifdef CONFIG_SCST_DEBUG_RETRY
++	strcat(buf, "DEBUG_RETRY\n");
++#endif
++
++#ifdef CONFIG_SCST_DEBUG_OOM
++	strcat(buf, "DEBUG_OOM\n");
++#endif
 +
 +#ifdef CONFIG_SCST_DEBUG_SN
-+void scst_check_debug_sn(struct scst_cmd *cmd)
++	strcat(buf, "DEBUG_SN\n");
++#endif
++
++#ifdef CONFIG_SCST_USE_EXPECTED_VALUES
++	strcat(buf, "USE_EXPECTED_VALUES\n");
++#endif
++
++#ifdef CONFIG_SCST_ALLOW_PASSTHROUGH_IO_SUBMIT_IN_SIRQ
++	strcat(buf, "ALLOW_PASSTHROUGH_IO_SUBMIT_IN_SIRQ\n");
++#endif
++
++#ifdef CONFIG_SCST_STRICT_SECURITY
++	strcat(buf, "SCST_STRICT_SECURITY\n");
++#endif
++	return strlen(buf);
++}
++
++static struct kobj_attribute scst_threads_attr =
++	__ATTR(threads, S_IRUGO | S_IWUSR, scst_threads_show,
++	       scst_threads_store);
++
++static struct kobj_attribute scst_setup_id_attr =
++	__ATTR(setup_id, S_IRUGO | S_IWUSR, scst_setup_id_show,
++	       scst_setup_id_store);
++
++#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
++static struct kobj_attribute scst_trace_level_attr =
++	__ATTR(trace_level, S_IRUGO | S_IWUSR, scst_main_trace_level_show,
++	       scst_main_trace_level_store);
++#endif
++
++static struct kobj_attribute scst_version_attr =
++	__ATTR(version, S_IRUGO, scst_version_show, NULL);
++
++static struct attribute *scst_sysfs_root_default_attrs[] = {
++	&scst_threads_attr.attr,
++	&scst_setup_id_attr.attr,
++#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
++	&scst_trace_level_attr.attr,
++#endif
++	&scst_version_attr.attr,
++	NULL,
++};
++
++static void scst_sysfs_root_release(struct kobject *kobj)
 +{
-+	static DEFINE_SPINLOCK(lock);
-+	static int type;
-+	static int cnt;
-+	unsigned long flags;
-+	int old = cmd->queue_type;
++	complete_all(&scst_sysfs_root_release_completion);
++}
 +
-+	spin_lock_irqsave(&lock, flags);
++static ssize_t scst_show(struct kobject *kobj, struct attribute *attr,
++			 char *buf)
++{
++	struct kobj_attribute *kobj_attr;
++	kobj_attr = container_of(attr, struct kobj_attribute, attr);
 +
-+	if (cnt == 0) {
-+		if ((scst_random() % 1000) == 500) {
-+			if ((scst_random() % 3) == 1)
-+				type = SCST_CMD_QUEUE_HEAD_OF_QUEUE;
-+			else
-+				type = SCST_CMD_QUEUE_ORDERED;
-+			do {
-+				cnt = scst_random() % 10;
-+			} while (cnt == 0);
-+		} else
-+			goto out_unlock;
++	return kobj_attr->show(kobj, kobj_attr, buf);
++}
++
++static ssize_t scst_store(struct kobject *kobj, struct attribute *attr,
++			  const char *buf, size_t count)
++{
++	struct kobj_attribute *kobj_attr;
++	kobj_attr = container_of(attr, struct kobj_attribute, attr);
++
++	return kobj_attr->store(kobj, kobj_attr, buf, count);
++}
++
++struct sysfs_ops scst_sysfs_ops = {
++	.show = scst_show,
++	.store = scst_store,
++};
++
++static struct kobj_type scst_sysfs_root_ktype = {
++	.sysfs_ops = &scst_sysfs_ops,
++	.release = scst_sysfs_root_release,
++	.default_attrs = scst_sysfs_root_default_attrs,
++};
++
++static void scst_devt_free(struct kobject *kobj)
++{
++	struct scst_dev_type *devt;
++
++	devt = container_of(kobj, struct scst_dev_type, devt_kobj);
++
++	complete_all(&devt->devt_kobj_release_compl);
++
++	scst_devt_cleanup(devt);
++	return;
++}
++
++#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
++
++static ssize_t scst_devt_trace_level_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	struct scst_dev_type *devt;
++
++	devt = container_of(kobj, struct scst_dev_type, devt_kobj);
++
++	return scst_trace_level_show(devt->trace_tbl,
++		devt->trace_flags ? *devt->trace_flags : 0, buf,
++		devt->trace_tbl_help);
++}
++
++static ssize_t scst_devt_trace_level_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int res;
++	struct scst_dev_type *devt;
++
++	devt = container_of(kobj, struct scst_dev_type, devt_kobj);
++
++	if (mutex_lock_interruptible(&scst_log_mutex) != 0) {
++		res = -EINTR;
++		goto out;
 +	}
 +
-+	cmd->queue_type = type;
-+	cnt--;
++	res = scst_write_trace(buf, count, devt->trace_flags,
++		devt->default_trace_flags, devt->name, devt->trace_tbl);
 +
-+	if (((scst_random() % 1000) == 750))
-+		cmd->queue_type = SCST_CMD_QUEUE_ORDERED;
-+	else if (((scst_random() % 1000) == 751))
-+		cmd->queue_type = SCST_CMD_QUEUE_HEAD_OF_QUEUE;
-+	else if (((scst_random() % 1000) == 752))
-+		cmd->queue_type = SCST_CMD_QUEUE_SIMPLE;
++	mutex_unlock(&scst_log_mutex);
 +
-+	TRACE_SN("DbgSN changed cmd %p: %d/%d (cnt %d)", cmd, old,
-+		cmd->queue_type, cnt);
++out:
++	return res;
++}
++
++static struct kobj_attribute devt_trace_attr =
++	__ATTR(trace_level, S_IRUGO | S_IWUSR,
++	       scst_devt_trace_level_show, scst_devt_trace_level_store);
++
++#endif /* #if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING) */
++
++static ssize_t scst_devt_type_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	int pos;
++	struct scst_dev_type *devt;
++
++	devt = container_of(kobj, struct scst_dev_type, devt_kobj);
++
++	pos = sprintf(buf, "%d - %s\n", devt->type,
++		(unsigned)devt->type > ARRAY_SIZE(scst_dev_handler_types) ?
++			"unknown" : scst_dev_handler_types[devt->type]);
++
++	return pos;
++}
++
++static struct kobj_attribute scst_devt_type_attr =
++	__ATTR(type, S_IRUGO, scst_devt_type_show, NULL);
++
++static struct attribute *scst_devt_default_attrs[] = {
++	&scst_devt_type_attr.attr,
++	NULL,
++};
++
++static struct kobj_type scst_devt_ktype = {
++	.sysfs_ops = &scst_sysfs_ops,
++	.release = scst_devt_free,
++	.default_attrs = scst_devt_default_attrs,
++};
++
++static ssize_t scst_devt_mgmt_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	char *help = "Usage: echo \"add_device device_name [parameters]\" "
++				">mgmt\n"
++		     "       echo \"del_device device_name\" >mgmt\n"
++		     "%s"
++		     "\n"
++		     "where parameters are one or more "
++		     "param_name=value pairs separated by ';'\n"
++		     "%s%s";
++	struct scst_dev_type *devt;
++
++	devt = container_of(kobj, struct scst_dev_type, devt_kobj);
++
++	if (devt->add_device_parameters_help != NULL)
++		return sprintf(buf, help,
++			(devt->mgmt_cmd_help) ? devt->mgmt_cmd_help : "",
++			"\nThe following parameters available: ",
++			devt->add_device_parameters_help);
++	else
++		return sprintf(buf, help,
++			(devt->mgmt_cmd_help) ? devt->mgmt_cmd_help : "",
++			"", "");
++}
++
++static ssize_t scst_devt_mgmt_store(struct kobject *kobj,
++				    struct kobj_attribute *attr,
++				    const char *buf, size_t count)
++{
++	int res;
++	char *buffer, *p, *pp, *device_name;
++	struct scst_dev_type *devt;
++
++	devt = container_of(kobj, struct scst_dev_type, devt_kobj);
++
++	buffer = kzalloc(count+1, GFP_KERNEL);
++	if (buffer == NULL) {
++		res = -ENOMEM;
++		goto out;
++	}
++
++	memcpy(buffer, buf, count);
++	buffer[count] = '\0';
++
++	pp = buffer;
++	if (pp[strlen(pp) - 1] == '\n')
++		pp[strlen(pp) - 1] = '\0';
++
++	p = scst_get_next_lexem(&pp);
++
++	if (strcasecmp("add_device", p) == 0) {
++		device_name = scst_get_next_lexem(&pp);
++		if (*device_name == '\0') {
++			PRINT_ERROR("%s", "Device name required");
++			res = -EINVAL;
++			goto out_free;
++		}
++		res = devt->add_device(device_name, pp);
++	} else if (strcasecmp("del_device", p) == 0) {
++		device_name = scst_get_next_lexem(&pp);
++		if (*device_name == '\0') {
++			PRINT_ERROR("%s", "Device name required");
++			res = -EINVAL;
++			goto out_free;
++		}
++
++		p = scst_get_next_lexem(&pp);
++		if (*p != '\0')
++			goto out_syntax_err;
++
++		res = devt->del_device(device_name);
++	} else if (devt->mgmt_cmd != NULL) {
++		scst_restore_token_str(p, pp);
++		res = devt->mgmt_cmd(buffer);
++	} else {
++		PRINT_ERROR("Unknown action \"%s\"", p);
++		res = -EINVAL;
++		goto out_free;
++	}
++
++	if (res == 0)
++		res = count;
++
++out_free:
++	kfree(buffer);
++
++out:
++	return res;
++
++out_syntax_err:
++	PRINT_ERROR("Syntax error on \"%s\"", p);
++	res = -EINVAL;
++	goto out_free;
++}
++
++static struct kobj_attribute scst_devt_mgmt =
++	__ATTR(mgmt, S_IRUGO | S_IWUSR, scst_devt_mgmt_show,
++	       scst_devt_mgmt_store);
++
++static ssize_t scst_devt_pass_through_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "1");
++}
++
++static struct kobj_attribute scst_devt_pass_through =
++	__ATTR(pass_through, S_IRUGO, scst_devt_pass_through_show, NULL);
++
++static ssize_t scst_devt_pass_through_mgmt_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	char *help = "Usage: echo \"assign H:C:I:L\" >mgmt\n"
++		     "       echo \"unassign H:C:I:L\" >mgmt\n";
++	return sprintf(buf, help);
++}
++
++static ssize_t scst_devt_pass_through_mgmt_store(struct kobject *kobj,
++	struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int res;
++	char *buffer, *p, *pp, *action;
++	struct scst_dev_type *devt;
++	unsigned long host, channel, id, lun;
++	struct scst_device *d, *dev = NULL;
++
++	devt = container_of(kobj, struct scst_dev_type, devt_kobj);
++
++	buffer = kzalloc(count+1, GFP_KERNEL);
++	if (buffer == NULL) {
++		res = -ENOMEM;
++		goto out;
++	}
++
++	memcpy(buffer, buf, count);
++	buffer[count] = '\0';
++
++	pp = buffer;
++	if (pp[strlen(pp) - 1] == '\n')
++		pp[strlen(pp) - 1] = '\0';
++
++	action = scst_get_next_lexem(&pp);
++	p = scst_get_next_lexem(&pp);
++	if (*p == '\0') {
++		PRINT_ERROR("%s", "Device required");
++		res = -EINVAL;
++		goto out_free;
++	}
++
++	;
++	if (*scst_get_next_lexem(&pp) != '\0') {
++		PRINT_ERROR("%s", "Too many parameters");
++		res = -EINVAL;
++		goto out_syntax_err;
++	}
++
++	host = simple_strtoul(p, &p, 0);
++	if ((host == ULONG_MAX) || (*p != ':'))
++		goto out_syntax_err;
++	p++;
++	channel = simple_strtoul(p, &p, 0);
++	if ((channel == ULONG_MAX) || (*p != ':'))
++		goto out_syntax_err;
++	p++;
++	id = simple_strtoul(p, &p, 0);
++	if ((channel == ULONG_MAX) || (*p != ':'))
++		goto out_syntax_err;
++	p++;
++	lun = simple_strtoul(p, &p, 0);
++	if (lun == ULONG_MAX)
++		goto out_syntax_err;
++
++	TRACE_DBG("Dev %ld:%ld:%ld:%ld", host, channel, id, lun);
++
++	if (mutex_lock_interruptible(&scst_mutex) != 0) {
++		res = -EINTR;
++		goto out_free;
++	}
++
++	list_for_each_entry(d, &scst_dev_list, dev_list_entry) {
++		if ((d->virt_id == 0) &&
++		    d->scsi_dev->host->host_no == host &&
++		    d->scsi_dev->channel == channel &&
++		    d->scsi_dev->id == id &&
++		    d->scsi_dev->lun == lun) {
++			dev = d;
++			TRACE_DBG("Dev %p (%ld:%ld:%ld:%ld) found",
++				  dev, host, channel, id, lun);
++			break;
++		}
++	}
++	if (dev == NULL) {
++		PRINT_ERROR("Device %ld:%ld:%ld:%ld not found",
++			       host, channel, id, lun);
++		res = -EINVAL;
++		goto out_unlock;
++	}
++
++	if (dev->scsi_dev->type != devt->type) {
++		PRINT_ERROR("Type %d of device %s differs from type "
++			"%d of dev handler %s", dev->type,
++			dev->virt_name, devt->type, devt->name);
++		res = -EINVAL;
++		goto out_unlock;
++	}
++
++	if (strcasecmp("assign", action) == 0)
++		res = scst_assign_dev_handler(dev, devt);
++	else if (strcasecmp("deassign", action) == 0) {
++		if (dev->handler != devt) {
++			PRINT_ERROR("Device %s is not assigned to handler %s",
++				dev->virt_name, devt->name);
++			res = -EINVAL;
++			goto out_unlock;
++		}
++		res = scst_assign_dev_handler(dev, &scst_null_devtype);
++	} else {
++		PRINT_ERROR("Unknown action \"%s\"", action);
++		res = -EINVAL;
++		goto out_unlock;
++	}
++
++	if (res == 0)
++		res = count;
 +
 +out_unlock:
-+	spin_unlock_irqrestore(&lock, flags);
-+	return;
-+}
-+#endif /* CONFIG_SCST_DEBUG_SN */
++	mutex_unlock(&scst_mutex);
 +
-+#ifdef CONFIG_SCST_MEASURE_LATENCY
++out_free:
++	kfree(buffer);
 +
-+static uint64_t scst_get_nsec(void)
-+{
-+	struct timespec ts;
-+	ktime_get_ts(&ts);
-+	return (uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
-+}
++out:
++	return res;
 +
-+void scst_set_start_time(struct scst_cmd *cmd)
-+{
-+	cmd->start = scst_get_nsec();
-+	TRACE_DBG("cmd %p: start %lld", cmd, cmd->start);
++out_syntax_err:
++	PRINT_ERROR("Syntax error on \"%s\"", p);
++	res = -EINVAL;
++	goto out_free;
 +}
 +
-+void scst_set_cur_start(struct scst_cmd *cmd)
++static struct kobj_attribute scst_devt_pass_through_mgmt =
++	__ATTR(mgmt, S_IRUGO | S_IWUSR, scst_devt_pass_through_mgmt_show,
++	       scst_devt_pass_through_mgmt_store);
++
++int scst_create_devt_sysfs(struct scst_dev_type *devt)
 +{
-+	cmd->curr_start = scst_get_nsec();
-+	TRACE_DBG("cmd %p: cur_start %lld", cmd, cmd->curr_start);
-+}
++	int retval;
++	struct kobject *parent;
++	const struct attribute **pattr;
 +
-+void scst_set_parse_time(struct scst_cmd *cmd)
-+{
-+	cmd->parse_time += scst_get_nsec() - cmd->curr_start;
-+	TRACE_DBG("cmd %p: parse_time %lld", cmd, cmd->parse_time);
-+}
++	init_completion(&devt->devt_kobj_release_compl);
 +
-+void scst_set_alloc_buf_time(struct scst_cmd *cmd)
-+{
-+	cmd->alloc_buf_time += scst_get_nsec() - cmd->curr_start;
-+	TRACE_DBG("cmd %p: alloc_buf_time %lld", cmd, cmd->alloc_buf_time);
-+}
++	if (devt->parent != NULL)
++		parent = &devt->parent->devt_kobj;
++	else
++		parent = scst_handlers_kobj;
 +
-+void scst_set_restart_waiting_time(struct scst_cmd *cmd)
-+{
-+	cmd->restart_waiting_time += scst_get_nsec() - cmd->curr_start;
-+	TRACE_DBG("cmd %p: restart_waiting_time %lld", cmd,
-+		cmd->restart_waiting_time);
-+}
++	devt->devt_kobj_initialized = 1;
 +
-+void scst_set_rdy_to_xfer_time(struct scst_cmd *cmd)
-+{
-+	cmd->rdy_to_xfer_time += scst_get_nsec() - cmd->curr_start;
-+	TRACE_DBG("cmd %p: rdy_to_xfer_time %lld", cmd, cmd->rdy_to_xfer_time);
-+}
-+
-+void scst_set_pre_exec_time(struct scst_cmd *cmd)
-+{
-+	cmd->pre_exec_time += scst_get_nsec() - cmd->curr_start;
-+	TRACE_DBG("cmd %p: pre_exec_time %lld", cmd, cmd->pre_exec_time);
-+}
-+
-+void scst_set_exec_time(struct scst_cmd *cmd)
-+{
-+	cmd->exec_time += scst_get_nsec() - cmd->curr_start;
-+	TRACE_DBG("cmd %p: exec_time %lld", cmd, cmd->exec_time);
-+}
-+
-+void scst_set_dev_done_time(struct scst_cmd *cmd)
-+{
-+	cmd->dev_done_time += scst_get_nsec() - cmd->curr_start;
-+	TRACE_DBG("cmd %p: dev_done_time %lld", cmd, cmd->dev_done_time);
-+}
-+
-+void scst_set_xmit_time(struct scst_cmd *cmd)
-+{
-+	cmd->xmit_time += scst_get_nsec() - cmd->curr_start;
-+	TRACE_DBG("cmd %p: xmit_time %lld", cmd, cmd->xmit_time);
-+}
-+
-+void scst_set_tgt_on_free_time(struct scst_cmd *cmd)
-+{
-+	cmd->tgt_on_free_time += scst_get_nsec() - cmd->curr_start;
-+	TRACE_DBG("cmd %p: tgt_on_free_time %lld", cmd, cmd->tgt_on_free_time);
-+}
-+
-+void scst_set_dev_on_free_time(struct scst_cmd *cmd)
-+{
-+	cmd->dev_on_free_time += scst_get_nsec() - cmd->curr_start;
-+	TRACE_DBG("cmd %p: dev_on_free_time %lld", cmd, cmd->dev_on_free_time);
-+}
-+
-+void scst_update_lat_stats(struct scst_cmd *cmd)
-+{
-+	uint64_t finish, scst_time, tgt_time, dev_time;
-+	struct scst_session *sess = cmd->sess;
-+	int data_len;
-+	int i;
-+	struct scst_ext_latency_stat *latency_stat, *dev_latency_stat;
-+
-+	finish = scst_get_nsec();
-+
-+	/* Determine the IO size for extended latency statistics */
-+	data_len = cmd->bufflen;
-+	i = SCST_LATENCY_STAT_INDEX_OTHER;
-+	if (data_len <= SCST_IO_SIZE_THRESHOLD_SMALL)
-+		i = SCST_LATENCY_STAT_INDEX_SMALL;
-+	else if (data_len <= SCST_IO_SIZE_THRESHOLD_MEDIUM)
-+		i = SCST_LATENCY_STAT_INDEX_MEDIUM;
-+	else if (data_len <= SCST_IO_SIZE_THRESHOLD_LARGE)
-+		i = SCST_LATENCY_STAT_INDEX_LARGE;
-+	else if (data_len <= SCST_IO_SIZE_THRESHOLD_VERY_LARGE)
-+		i = SCST_LATENCY_STAT_INDEX_VERY_LARGE;
-+	latency_stat = &sess->sess_latency_stat[i];
-+	dev_latency_stat = &cmd->tgt_dev->dev_latency_stat[i];
-+
-+	spin_lock_bh(&sess->lat_lock);
-+
-+	/* Calculate the latencies */
-+	scst_time = finish - cmd->start - (cmd->parse_time +
-+		cmd->alloc_buf_time + cmd->restart_waiting_time +
-+		cmd->rdy_to_xfer_time + cmd->pre_exec_time +
-+		cmd->exec_time + cmd->dev_done_time + cmd->xmit_time +
-+		cmd->tgt_on_free_time + cmd->dev_on_free_time);
-+	tgt_time = cmd->alloc_buf_time + cmd->restart_waiting_time +
-+		cmd->rdy_to_xfer_time + cmd->pre_exec_time +
-+		cmd->xmit_time + cmd->tgt_on_free_time;
-+	dev_time = cmd->parse_time + cmd->exec_time + cmd->dev_done_time +
-+		cmd->dev_on_free_time;
-+
-+	/* Save the basic latency information */
-+	sess->scst_time += scst_time;
-+	sess->tgt_time += tgt_time;
-+	sess->dev_time += dev_time;
-+	sess->processed_cmds++;
-+
-+	if ((sess->min_scst_time == 0) ||
-+	    (sess->min_scst_time > scst_time))
-+		sess->min_scst_time = scst_time;
-+	if ((sess->min_tgt_time == 0) ||
-+	    (sess->min_tgt_time > tgt_time))
-+		sess->min_tgt_time = tgt_time;
-+	if ((sess->min_dev_time == 0) ||
-+	    (sess->min_dev_time > dev_time))
-+		sess->min_dev_time = dev_time;
-+
-+	if (sess->max_scst_time < scst_time)
-+		sess->max_scst_time = scst_time;
-+	if (sess->max_tgt_time < tgt_time)
-+		sess->max_tgt_time = tgt_time;
-+	if (sess->max_dev_time < dev_time)
-+		sess->max_dev_time = dev_time;
-+
-+	/* Save the extended latency information */
-+	if (cmd->data_direction & SCST_DATA_READ) {
-+		latency_stat->scst_time_rd += scst_time;
-+		latency_stat->tgt_time_rd += tgt_time;
-+		latency_stat->dev_time_rd += dev_time;
-+		latency_stat->processed_cmds_rd++;
-+
-+		if ((latency_stat->min_scst_time_rd == 0) ||
-+		    (latency_stat->min_scst_time_rd > scst_time))
-+			latency_stat->min_scst_time_rd = scst_time;
-+		if ((latency_stat->min_tgt_time_rd == 0) ||
-+		    (latency_stat->min_tgt_time_rd > tgt_time))
-+			latency_stat->min_tgt_time_rd = tgt_time;
-+		if ((latency_stat->min_dev_time_rd == 0) ||
-+		    (latency_stat->min_dev_time_rd > dev_time))
-+			latency_stat->min_dev_time_rd = dev_time;
-+
-+		if (latency_stat->max_scst_time_rd < scst_time)
-+			latency_stat->max_scst_time_rd = scst_time;
-+		if (latency_stat->max_tgt_time_rd < tgt_time)
-+			latency_stat->max_tgt_time_rd = tgt_time;
-+		if (latency_stat->max_dev_time_rd < dev_time)
-+			latency_stat->max_dev_time_rd = dev_time;
-+
-+		dev_latency_stat->scst_time_rd += scst_time;
-+		dev_latency_stat->tgt_time_rd += tgt_time;
-+		dev_latency_stat->dev_time_rd += dev_time;
-+		dev_latency_stat->processed_cmds_rd++;
-+
-+		if ((dev_latency_stat->min_scst_time_rd == 0) ||
-+		    (dev_latency_stat->min_scst_time_rd > scst_time))
-+			dev_latency_stat->min_scst_time_rd = scst_time;
-+		if ((dev_latency_stat->min_tgt_time_rd == 0) ||
-+		    (dev_latency_stat->min_tgt_time_rd > tgt_time))
-+			dev_latency_stat->min_tgt_time_rd = tgt_time;
-+		if ((dev_latency_stat->min_dev_time_rd == 0) ||
-+		    (dev_latency_stat->min_dev_time_rd > dev_time))
-+			dev_latency_stat->min_dev_time_rd = dev_time;
-+
-+		if (dev_latency_stat->max_scst_time_rd < scst_time)
-+			dev_latency_stat->max_scst_time_rd = scst_time;
-+		if (dev_latency_stat->max_tgt_time_rd < tgt_time)
-+			dev_latency_stat->max_tgt_time_rd = tgt_time;
-+		if (dev_latency_stat->max_dev_time_rd < dev_time)
-+			dev_latency_stat->max_dev_time_rd = dev_time;
-+	} else if (cmd->data_direction & SCST_DATA_WRITE) {
-+		latency_stat->scst_time_wr += scst_time;
-+		latency_stat->tgt_time_wr += tgt_time;
-+		latency_stat->dev_time_wr += dev_time;
-+		latency_stat->processed_cmds_wr++;
-+
-+		if ((latency_stat->min_scst_time_wr == 0) ||
-+		    (latency_stat->min_scst_time_wr > scst_time))
-+			latency_stat->min_scst_time_wr = scst_time;
-+		if ((latency_stat->min_tgt_time_wr == 0) ||
-+		    (latency_stat->min_tgt_time_wr > tgt_time))
-+			latency_stat->min_tgt_time_wr = tgt_time;
-+		if ((latency_stat->min_dev_time_wr == 0) ||
-+		    (latency_stat->min_dev_time_wr > dev_time))
-+			latency_stat->min_dev_time_wr = dev_time;
-+
-+		if (latency_stat->max_scst_time_wr < scst_time)
-+			latency_stat->max_scst_time_wr = scst_time;
-+		if (latency_stat->max_tgt_time_wr < tgt_time)
-+			latency_stat->max_tgt_time_wr = tgt_time;
-+		if (latency_stat->max_dev_time_wr < dev_time)
-+			latency_stat->max_dev_time_wr = dev_time;
-+
-+		dev_latency_stat->scst_time_wr += scst_time;
-+		dev_latency_stat->tgt_time_wr += tgt_time;
-+		dev_latency_stat->dev_time_wr += dev_time;
-+		dev_latency_stat->processed_cmds_wr++;
-+
-+		if ((dev_latency_stat->min_scst_time_wr == 0) ||
-+		    (dev_latency_stat->min_scst_time_wr > scst_time))
-+			dev_latency_stat->min_scst_time_wr = scst_time;
-+		if ((dev_latency_stat->min_tgt_time_wr == 0) ||
-+		    (dev_latency_stat->min_tgt_time_wr > tgt_time))
-+			dev_latency_stat->min_tgt_time_wr = tgt_time;
-+		if ((dev_latency_stat->min_dev_time_wr == 0) ||
-+		    (dev_latency_stat->min_dev_time_wr > dev_time))
-+			dev_latency_stat->min_dev_time_wr = dev_time;
-+
-+		if (dev_latency_stat->max_scst_time_wr < scst_time)
-+			dev_latency_stat->max_scst_time_wr = scst_time;
-+		if (dev_latency_stat->max_tgt_time_wr < tgt_time)
-+			dev_latency_stat->max_tgt_time_wr = tgt_time;
-+		if (dev_latency_stat->max_dev_time_wr < dev_time)
-+			dev_latency_stat->max_dev_time_wr = dev_time;
++	retval = kobject_init_and_add(&devt->devt_kobj, &scst_devt_ktype,
++			parent, devt->name);
++	if (retval != 0) {
++		PRINT_ERROR("Can't add devt %s to sysfs", devt->name);
++		goto out;
 +	}
 +
-+	spin_unlock_bh(&sess->lat_lock);
++	/*
++	 * In case of errors there's no need for additional cleanup, because
++	 * it will be done by the _put function() called by the caller.
++	 */
 +
-+	TRACE_DBG("cmd %p: finish %lld, scst_time %lld, "
-+		"tgt_time %lld, dev_time %lld", cmd, finish, scst_time,
-+		tgt_time, dev_time);
++	if (devt->add_device != NULL) {
++		retval = sysfs_create_file(&devt->devt_kobj,
++				&scst_devt_mgmt.attr);
++		if (retval != 0) {
++			PRINT_ERROR("Can't add mgmt attr for dev handler %s",
++				devt->name);
++			goto out;
++		}
++	} else if (devt->pass_through) {
++		retval = sysfs_create_file(&devt->devt_kobj,
++				&scst_devt_pass_through_mgmt.attr);
++		if (retval != 0) {
++			PRINT_ERROR("Can't add mgmt attr for dev handler %s",
++				devt->name);
++			goto out;
++		}
++
++		retval = sysfs_create_file(&devt->devt_kobj,
++				&scst_devt_pass_through.attr);
++		if (retval != 0) {
++			PRINT_ERROR("Can't add pass_through attr for dev "
++				"handler %s", devt->name);
++			goto out;
++		}
++	}
++
++	pattr = devt->devt_attrs;
++	if (pattr != NULL) {
++		while (*pattr != NULL) {
++			retval = sysfs_create_file(&devt->devt_kobj, *pattr);
++			if (retval != 0) {
++				PRINT_ERROR("Can't add devt attr %s for dev "
++					"handler %s", (*pattr)->name,
++					devt->name);
++				goto out;
++			}
++			pattr++;
++		}
++	}
++
++#if defined(CONFIG_SCST_DEBUG) || defined(CONFIG_SCST_TRACING)
++	if (devt->trace_flags != NULL) {
++		retval = sysfs_create_file(&devt->devt_kobj,
++				&devt_trace_attr.attr);
++		if (retval != 0) {
++			PRINT_ERROR("Can't add devt trace_flag for dev "
++				"handler %s", devt->name);
++			goto out;
++		}
++	}
++#endif
++
++out:
++	return retval;
++}
++
++void scst_devt_sysfs_put(struct scst_dev_type *devt)
++{
++
++	if (devt->devt_kobj_initialized) {
++		int rc;
++
++		kobject_del(&devt->devt_kobj);
++		kobject_put(&devt->devt_kobj);
++
++		rc = wait_for_completion_timeout(&devt->devt_kobj_release_compl, HZ);
++		if (rc == 0) {
++			PRINT_INFO("Waiting for releasing sysfs entry "
++				"for dev handler template %s...", devt->name);
++			wait_for_completion(&devt->devt_kobj_release_compl);
++			PRINT_INFO("Done waiting for releasing sysfs entry "
++				"for dev handler template %s", devt->name);
++		}
++	} else
++		scst_devt_cleanup(devt);
 +	return;
 +}
 +
-+#endif /* CONFIG_SCST_MEASURE_LATENCY */
++static DEFINE_MUTEX(scst_sysfs_user_info_mutex);
++
++/* All protected by scst_sysfs_user_info_mutex */
++static LIST_HEAD(scst_sysfs_user_info_list);
++static uint32_t scst_sysfs_info_cur_cookie;
++
++/* scst_sysfs_user_info_mutex supposed to be held */
++static struct scst_sysfs_user_info *scst_sysfs_user_find_info(uint32_t cookie)
++{
++	struct scst_sysfs_user_info *info, *res = NULL;
++
++	list_for_each_entry(info, &scst_sysfs_user_info_list,
++			info_list_entry) {
++		if (info->info_cookie == cookie) {
++			res = info;
++			break;
++		}
++	}
++	return res;
++}
++
++/**
++ * scst_sysfs_user_get_info() - get user_info
++ *
++ * Finds the user_info based on cookie and mark it as received the reply by
++ * setting for it flag info_being_executed.
++ *
++ * Returns found entry or NULL.
++ */
++struct scst_sysfs_user_info *scst_sysfs_user_get_info(uint32_t cookie)
++{
++	struct scst_sysfs_user_info *res = NULL;
++
++	mutex_lock(&scst_sysfs_user_info_mutex);
++
++	res = scst_sysfs_user_find_info(cookie);
++	if (res != NULL) {
++		if (!res->info_being_executed)
++			res->info_being_executed = 1;
++	}
++
++	mutex_unlock(&scst_sysfs_user_info_mutex);
++	return res;
++}
++EXPORT_SYMBOL_GPL(scst_sysfs_user_get_info);
++
++/**
++ ** Helper functionality to help target drivers and dev handlers support
++ ** sending events to user space and wait for their completion in a safe
++ ** manner. See samples how to use it in iscsi-scst or scst_user.
++ **/
++
++/**
++ * scst_sysfs_user_add_info() - create and add user_info in the global list
++ *
++ * Creates an info structure and adds it in the info_list.
++ * Returns 0 and out_info on success, error code otherwise.
++ */
++int scst_sysfs_user_add_info(struct scst_sysfs_user_info **out_info)
++{
++	int res = 0;
++	struct scst_sysfs_user_info *info;
++
++	info = kzalloc(sizeof(*info), GFP_KERNEL);
++	if (info == NULL) {
++		PRINT_ERROR("Unable to allocate sysfs user info (size %zd)",
++			sizeof(*info));
++		res = -ENOMEM;
++		goto out;
++	}
++
++	mutex_lock(&scst_sysfs_user_info_mutex);
++
++	while ((info->info_cookie == 0) ||
++	       (scst_sysfs_user_find_info(info->info_cookie) != NULL))
++		info->info_cookie = scst_sysfs_info_cur_cookie++;
++
++	init_completion(&info->info_completion);
++
++	list_add_tail(&info->info_list_entry, &scst_sysfs_user_info_list);
++	info->info_in_list = 1;
++
++	*out_info = info;
++
++	mutex_unlock(&scst_sysfs_user_info_mutex);
++
++out:
++	return res;
++}
++EXPORT_SYMBOL_GPL(scst_sysfs_user_add_info);
++
++/**
++ * scst_sysfs_user_del_info - delete and frees user_info
++ */
++void scst_sysfs_user_del_info(struct scst_sysfs_user_info *info)
++{
++
++	mutex_lock(&scst_sysfs_user_info_mutex);
++
++	if (info->info_in_list)
++		list_del(&info->info_list_entry);
++
++	mutex_unlock(&scst_sysfs_user_info_mutex);
++
++	kfree(info);
++	return;
++}
++EXPORT_SYMBOL_GPL(scst_sysfs_user_del_info);
++
++/*
++ * Returns true if the reply received and being processed by another part of
++ * the kernel, false otherwise. Also removes the user_info from the list to
++ * fix for the user space that it missed the timeout.
++ */
++static bool scst_sysfs_user_info_executing(struct scst_sysfs_user_info *info)
++{
++	bool res;
++
++	mutex_lock(&scst_sysfs_user_info_mutex);
++
++	res = info->info_being_executed;
++
++	if (info->info_in_list) {
++		list_del(&info->info_list_entry);
++		info->info_in_list = 0;
++	}
++
++	mutex_unlock(&scst_sysfs_user_info_mutex);
++	return res;
++}
++
++/**
++ * scst_wait_info_completion() - wait an user space event's completion
++ *
++ * Waits for the info request been completed by user space at most timeout
++ * jiffies. If the reply received before timeout and being processed by
++ * another part of the kernel, i.e. scst_sysfs_user_info_executing()
++ * returned true, waits for it to complete indefinitely.
++ *
++ * Returns status of the request completion.
++ */
++int scst_wait_info_completion(struct scst_sysfs_user_info *info,
++	unsigned long timeout)
++{
++	int res, rc;
++
++	TRACE_DBG("Waiting for info %p completion", info);
++
++	while (1) {
++		rc = wait_for_completion_interruptible_timeout(
++			&info->info_completion, timeout);
++		if (rc > 0) {
++			TRACE_DBG("Waiting for info %p finished with %d",
++				info, rc);
++			break;
++		} else if (rc == 0) {
++			if (!scst_sysfs_user_info_executing(info)) {
++				PRINT_ERROR("Timeout waiting for user "
++					"space event %p", info);
++				res = -EBUSY;
++				goto out;
++			} else {
++				/* Req is being executed in the kernel */
++				TRACE_DBG("Keep waiting for info %p completion",
++					info);
++				wait_for_completion(&info->info_completion);
++				break;
++			}
++		} else if (rc != -ERESTARTSYS) {
++				res = rc;
++				PRINT_ERROR("wait_for_completion() failed: %d",
++					res);
++				goto out;
++		} else {
++			TRACE_DBG("Waiting for info %p finished with %d, "
++				"retrying", info, rc);
++		}
++	}
++
++	TRACE_DBG("info %p, status %d", info, info->info_status);
++	res = info->info_status;
++
++out:
++	return res;
++}
++EXPORT_SYMBOL_GPL(scst_wait_info_completion);
++
++int __init scst_sysfs_init(void)
++{
++	int retval = 0;
++
++	retval = kobject_init_and_add(&scst_sysfs_root_kobj,
++			&scst_sysfs_root_ktype, kernel_kobj, "%s", "scst_tgt");
++	if (retval != 0)
++		goto sysfs_root_add_error;
++
++	scst_targets_kobj = kobject_create_and_add("targets",
++				&scst_sysfs_root_kobj);
++	if (scst_targets_kobj == NULL)
++		goto targets_kobj_error;
++
++	scst_devices_kobj = kobject_create_and_add("devices",
++				&scst_sysfs_root_kobj);
++	if (scst_devices_kobj == NULL)
++		goto devices_kobj_error;
++
++	scst_sgv_kobj = kzalloc(sizeof(*scst_sgv_kobj), GFP_KERNEL);
++	if (scst_sgv_kobj == NULL)
++		goto sgv_kobj_error;
++
++	retval = kobject_init_and_add(scst_sgv_kobj, &sgv_ktype,
++			&scst_sysfs_root_kobj, "%s", "sgv");
++	if (retval != 0)
++		goto sgv_kobj_add_error;
++
++	scst_handlers_kobj = kobject_create_and_add("handlers",
++					&scst_sysfs_root_kobj);
++	if (scst_handlers_kobj == NULL)
++		goto handlers_kobj_error;
++
++out:
++	return retval;
++
++handlers_kobj_error:
++	kobject_del(scst_sgv_kobj);
++
++sgv_kobj_add_error:
++	kobject_put(scst_sgv_kobj);
++
++sgv_kobj_error:
++	kobject_del(scst_devices_kobj);
++	kobject_put(scst_devices_kobj);
++
++devices_kobj_error:
++	kobject_del(scst_targets_kobj);
++	kobject_put(scst_targets_kobj);
++
++targets_kobj_error:
++	kobject_del(&scst_sysfs_root_kobj);
++
++sysfs_root_add_error:
++	kobject_put(&scst_sysfs_root_kobj);
++
++	if (retval == 0)
++		retval = -EINVAL;
++	goto out;
++}
++
++void scst_sysfs_cleanup(void)
++{
++
++	PRINT_INFO("%s", "Exiting SCST sysfs hierarchy...");
++
++	kobject_del(scst_sgv_kobj);
++	kobject_put(scst_sgv_kobj);
++
++	kobject_del(scst_devices_kobj);
++	kobject_put(scst_devices_kobj);
++
++	kobject_del(scst_targets_kobj);
++	kobject_put(scst_targets_kobj);
++
++	kobject_del(scst_handlers_kobj);
++	kobject_put(scst_handlers_kobj);
++
++	kobject_del(&scst_sysfs_root_kobj);
++	kobject_put(&scst_sysfs_root_kobj);
++
++	wait_for_completion(&scst_sysfs_root_release_completion);
++	/*
++	 * There is a race, when in the release() schedule happens just after
++	 * calling complete(), so if we exit and unload scst module immediately,
++	 * there will be oops there. So let's give it a chance to quit
++	 * gracefully. Unfortunately, current kobjects implementation
++	 * doesn't allow better ways to handle it.
++	 */
++	msleep(3000);
++
++	PRINT_INFO("%s", "Exiting SCST sysfs hierarchy done");
++	return;
++}
 
