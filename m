@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab0DMSWx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 14:22:53 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42915 "EHLO
+	id S1753166Ab0DMSWt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 14:22:49 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:42907 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753613Ab0DMSWu convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753567Ab0DMSWq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 14:22:50 -0400
-Subject: Re: [RFC][PATCH 08/11] sched: send SIGXCPU at -deadline task
- overruns.
+	Tue, 13 Apr 2010 14:22:46 -0400
+Subject: Re: [RFC][PATCH 02/11] sched: SCHED_DEADLINE policy implementation.
 From: Peter Zijlstra <peterz@infradead.org>
 To: Raistlin <raistlin@linux.it>
 Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
@@ -24,148 +23,46 @@ Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Tommaso Cucinotta <t.cucinotta@sssup.it>,
        Juri Lelli <juri.lelli@gmail.com>,
        Nicola Manica <nicola.manica@gmail.com>,
-       Luca Abeni <luca.abeni@unitn.it>, oleg <oleg@redhat.com>
-In-Reply-To: <1267385046.13676.97.camel@Palantir>
+       Luca Abeni <luca.abeni@unitn.it>
+In-Reply-To: <1267384639.13676.87.camel@Palantir>
 References: <1267383976.13676.79.camel@Palantir>
-	 <1267385046.13676.97.camel@Palantir>
+	 <1267384639.13676.87.camel@Palantir>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 13 Apr 2010 20:22:22 +0200
-Message-ID: <1271182942.4807.1881.camel@twins>
+Date: Tue, 13 Apr 2010 20:22:18 +0200
+Message-ID: <1271182938.4807.1880.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-02-28 at 20:24 +0100, Raistlin wrote:
-> Add to the scheduler the capability of notifying when -deadline tasks
-> overrun their maximum runtime and/or overcome their scheduling
-> deadline.
-> 
-> Runtime overruns might be quite common, e.g., due to coarse granularity
-> execution time accounting resolution or wrong assignment of tasks'
-> parameters (especially runtime). However, since the scheduler enforces
-> bandwidth isolation among tasks, this is not at all a threat to other
-> tasks' schedulability. For this reason, it is not common that a task
-> wants to be notified about that. Moreover, if we are using the
-> SCHED_DEADLINE policy with sporadic tasks, or to limit the bandwidth
-> of not periodic nor sporadic ones, runtime overruns are very likely
-> to occur at each and every instance, and again they should not be
-> considered a problem.
-> 
-> On the other hand, a deadline miss in any task means that, even if we
-> are trying at our best to keep each task isolated and to avoid
-> reciprocal interference among them, something went very, very bad,
-> and one task did not manage in consuming its runtime by its deadline.
-> This is something that should happen only on an oversubscribed
-> system, and thus being notified when it occurs could be very useful.
-> 
-> The user can specify the signals he wants to be sent to his task
-> during sched_setscheduler_ex(), raising two specific flags in the
-> sched_flags field of struct sched_param_ex:
->  * SCHED_SIG_RORUN (if he wants to be signaled on runtime overrun),
->  * SCHED_SIG_DMISS (if he wants to be signaled on deadline misses).
-> 
-> This patch:
->  - adds the logic needed to send SIGXCPU signal to a -deadline task
->    in case its actual runtime becomes negative;
->  - adds the logic needed to send SIGXCPU signal to a -deadline task
->    in case it is still being scheduled while its absolute deadline
->    passes.
-> 
-> Signed-off-by: Dario Faggioli <raistlin@linux.it>
-> ---
->  include/linux/sched.h |   18 ++++++++++++++++++
->  kernel/sched_dl.c     |   24 ++++++++++++++++++++++++
->  2 files changed, 42 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index e6c1cda..64a7df2 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -138,6 +138,7 @@ struct sched_param {
->   * More information about the algorithm are available in the scheduling
->   * class file or in Documentation/.
->   */
-> +
->  struct sched_param_ex {
->  	int sched_priority;
->  	struct timespec sched_runtime;
-> @@ -146,6 +147,23 @@ struct sched_param_ex {
->  	unsigned int sched_flags;
->  };
->  
-> +/*
-> + * User -deadline flags.
-> + *
-> + * These flags are exported to userspace so that tasks can try to affect
-> + * the scheduler behaviour and/or specifying that they want to be informed
-> + * of the occurrence of some events. There are at most 16 of them available
-> + * (lowest bits), since values above 0x10000 are reserved for kernel
-> + * internal flags.
-> + *
-> + *  @SCHED_SIG_RORUN	tells us the task wants to be notified whenever
-> + *                      a runtime overrun occurs;
-> + *  @SCHED_SIG_DMISS	tells us the task wants to be notified whenever
-> + *                      a scheduling deadline is missed.
-> + */
-> +#define SCHED_SIG_RORUN		0x0001
-> +#define SCHED_SIG_DMISS		0x0002
-> +
->  struct exec_domain;
->  struct futex_pi_state;
->  struct robust_list_head;
-> diff --git a/kernel/sched_dl.c b/kernel/sched_dl.c
-> index dee2668..b5dde44 100644
-> --- a/kernel/sched_dl.c
-> +++ b/kernel/sched_dl.c
-> @@ -265,6 +265,14 @@ static void init_dl_timer(struct sched_dl_entity *dl_se)
->  	timer->function = dl_timer;
+On Sun, 2010-02-28 at 20:17 +0100, Raistlin wrote:
+> +++ b/kernel/fork.c
+> @@ -937,6 +937,16 @@ SYSCALL_DEFINE1(set_tid_address, int __user *, tidptr)
+>         return task_pid_vnr(current);
 >  }
 >  
-> +#define dl_se_signal(se, s, msg)					\
-> + do {									\
-> +  struct task_struct *t = dl_task_of(se);				\
-> +  sigaddset(&t->pending.signal, s);					\
-> +  set_tsk_thread_flag(t, TIF_SIGPENDING);				\
-> +  printk(KERN_INFO msg "in %d (%s)\n", task_pid_nr(t), t->comm);	\
-> + } while (0)
+> +static void init_task_dl_entity(struct task_struct *p)
+> +{
+> +       RB_CLEAR_NODE(&p->dl.rb_node);
+> +       hrtimer_init(&p->dl.dl_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 > +
-
-Can't this be a regular vararg function?
-
-Also, I wonder, would we want to put some information in the sigaction
-struct to allow the user to distinguish between the various SIGXCPU
-signal users.
-
->  static
->  int dl_runtime_exceeded(struct rq *rq, struct sched_dl_entity *dl_se)
+> +       p->dl.dl_runtime = p->dl.runtime = 0;
+> +       p->dl.dl_deadline = p->dl.deadline = 0;
+> +       p->dl.flags = 0;
+> +}
+> +
+>  static void rt_mutex_init_task(struct task_struct *p)
 >  {
-> @@ -283,6 +291,22 @@ int dl_runtime_exceeded(struct rq *rq, struct sched_dl_entity *dl_se)
->  	if (dmiss)
->  		dl_se->runtime -= rq->clock - dl_se->deadline;
+>         raw_spin_lock_init(&p->pi_lock);
+> @@ -1025,6 +1035,8 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 >  
-> +	/*
-> +	 * if the userspace asked for that, we notify about (scheduling)
-> +	 * deadline misses and runtime overruns via sending SIGXCPU to
-> +	 * "faulting" task.
-> +	 *
-> +	 * Note that (hopefully small) runtime overruns are very likely
-> +	 * to occur, mainly due to accounting resolution, while missing a
-> +	 * scheduling deadline should be very rare, and only happen on
-> +	 * an oversubscribed systems.
-> +	 */
-> +	if (unlikely(dmiss && dl_se->flags & SCHED_SIG_DMISS))
-> +		dl_se_signal(dl_se, SIGXCPU, "Deadline miss");
+>         ftrace_graph_init_task(p);
+>  
+> +       init_task_dl_entity(p);
 > +
-> +	if (unlikely(rorun && dl_se->flags & SCHED_SIG_RORUN))
-> +		dl_se_signal(dl_se, SIGXCPU, "Runtime overrun");
-> +
->  	dequeue_dl_entity(dl_se);
->  	if (!start_dl_timer(dl_se, dl_se->deadline)) {
->  		if (!rorun)
-> -- 
-> 1.7.0
-> 
+>         rt_mutex_init_task(p);
+>  
 
+Why doesn't that live in/use sched_fork()?
