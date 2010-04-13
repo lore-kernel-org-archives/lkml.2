@@ -1,116 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab0DMWZu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 18:25:50 -0400
-Received: from xenotime.net ([72.52.64.118]:60306 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752353Ab0DMWZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 18:25:49 -0400
-Date: Tue, 13 Apr 2010 15:25:48 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Jan III Sobieski <jan3sobi3ski@gmail.com>, Scott Smedley <ss@aao.gov.au>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH] build error drivers/staging/dt3155/dt3155_drv.c
-Message-Id: <20100413152548.1ac1b3a3.rdunlap@xenotime.net>
-In-Reply-To: <r2h9c2470ce1004131520naf637fbdj9a41a0d28ada3db6@mail.gmail.com>
-References: <p2r9c2470ce1004062104ra6b9c662uf303fb1b9e82cd6@mail.gmail.com>
-	<x2t9c2470ce1004062105g83a050d0gc2269e4a8af7ae05@mail.gmail.com>
-	<r2h9c2470ce1004131520naf637fbdj9a41a0d28ada3db6@mail.gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1752071Ab0DMWcP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 18:32:15 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:62805 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab0DMWcN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 18:32:13 -0400
+Message-ID: <4BC4F03C.1020707@oracle.com>
+Date: Tue, 13 Apr 2010 15:29:16 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, Andy Isaacson <adi@hexapodia.org>,
+       guenter.roeck@ericsson.com,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH -v2 1/2] x86: Reserve [0xa0000, 0x100000] in e820 map
+References: <20100409223532.GC11130@hexapodia.org>	 <4BBFB1D8.6090802@oracle.com> <20100410000030.GE11130@hexapodia.org>	 <4BBFD019.9040405@oracle.com> <20100410014308.GG11130@hexapodia.org>	 <4BBFD8EF.6020108@oracle.com> <20100410015711.GH11130@hexapodia.org>	 <4BBFE66C.2040603@oracle.com> <20100412185416.GA19959@hexapodia.org>	 <4BC375D9.4040503@oracle.com> <20100412200224.GO11130@hexapodia.org>	 <4BC39F67.4090407@oracle.com> <1271192527.6035.44.camel@dc7800.home> <4BC4DD85.5030203@zytor.com> <4BC4DDEA.60202@oracle.com> <4BC4DFAD.9020600@zytor.com> <4BC4E55B.7000103@oracle.com> <4BC4E8FB.8060802@zytor.com>
+In-Reply-To: <4BC4E8FB.8060802@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4BC4F0C8.0140:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Apr 2010 00:20:31 +0200 Jan III Sobieski wrote:
-
-> W dniu 7 kwietnia 2010 06:05 użytkownik Jan III Sobieski
-> <jan3sobi3ski@gmail.com> napisał:
-> > W dniu 7 kwietnia 2010 06:04 użytkownik Jan III Sobieski
-> > <jan3sobi3ski@gmail.com> napisał:
-> >> Hi,
-> >>
-> >>  CC      drivers/staging/dt3155/dt3155_drv.o
-> >> drivers/staging/dt3155/dt3155_drv.c: In function 'init_module':
-> >> drivers/staging/dt3155/dt3155_drv.c:1047: error: implicit declaration
-> >> of function 'request_irq'
-> >> drivers/staging/dt3155/dt3155_drv.c:1048: error: 'IRQF_SHARED'
-> >> undeclared (first use in this function)
-> >> drivers/staging/dt3155/dt3155_drv.c:1048: error: (Each undeclared
-> >> identifier is reported only once
-> >> drivers/staging/dt3155/dt3155_drv.c:1048: error: for each function it
-> >> appears in.)
-> >> drivers/staging/dt3155/dt3155_drv.c:1048: error: 'IRQF_DISABLED'
-> >> undeclared (first use in this function)
-> >> drivers/staging/dt3155/dt3155_drv.c: In function 'cleanup_module':
-> >> drivers/staging/dt3155/dt3155_drv.c:1091: error: implicit declaration
-> >> of function 'free_irq'
-> >> make[3]: *** [drivers/staging/dt3155/dt3155_drv.o] Błąd 1
-> >> make[2]: *** [drivers/staging/dt3155] Błąd 2
-> >> make[1]: *** [drivers/staging] Błąd 2
-> >> make: *** [drivers] Błąd 2
-> >
-> > BTW. Kernel 2.6.34-rc3-git6
+On 04/13/2010 02:58 PM, H. Peter Anvin wrote:
+> On 04/13/2010 02:42 PM, Yinghai wrote:
+>> On 04/13/2010 02:18 PM, H. Peter Anvin wrote:
+>>> On 04/13/2010 02:11 PM, Yinghai wrote:
+>>>>>
+>>>>> I guess the real question (which I haven't looked at myself) is if the
+>>>>> E820_RESERVED -> BUSY will cause an explicitly assigned BAR from being
+>>>>> moved.  That's bad, not so much for this particular range, but from BARs
+>>>>> which may be assigned by SMM.  Hacking that up in a simulator
+>>>>> (Qemu/Bochs) and testing it is probably on the to do list...
+>>>>
+>>>> no, if some device BAR fall in that range, it should still use that range, and will not be relocated.
+>>>>
+>>>> will update the change log.
+>>>>
+>>>
+>>> Good, that's what we want.
+>>
+>> the driver for that device later can not use pci_request_region(). because that region is BUSY already.
+>>
 > 
-> I still get this bug on 2.6.34-rc4. Anyone care to pick this patch?
+> That's not good (in general - for devices in this particular range it's
+> not such a big deal, but it is potentially really bad for devices marked
+> reserved for them not to be moved.)
+> 
+> We have talked about a need to resolve this before.
 
+current code for mmio that is just below 4g, if some PCI BAR use that range, and those range is falling into E820_RESERVED,
 
-I sent a patch on March 09, 2010, that should fix it.
-Please test it.  Thanks.
+those range still can be claimed, but driver can not use pci_request_region() later.
 
----
-From: Randy Dunlap <randy.dunlap@oracle.com>
+So We still
+1. rely that BIOS does not reserve the [0xa0000, 0xe0000)
+2. kernel only reserve the range when we make sure these is legacy device on that range.
 
-When the dt3155 driver is built-in (not as a loadable module),
-these build errors happen:
-
-drivers/staging/dt3155/dt3155_drv.c:1047: error: implicit declaration of function 'request_irq'
-drivers/staging/dt3155/dt3155_drv.c:1048: error: 'IRQF_SHARED' undeclared (first use in this function)
-drivers/staging/dt3155/dt3155_drv.c:1048: error: 'IRQF_DISABLED' undeclared (first use in this function)
-drivers/staging/dt3155/dt3155_drv.c:1091: error: implicit declaration of function 'free_irq'
-
-so remove the #ifdef MODULE check since it's not needed.
-Also remove the CONFIG_PCI check since the Kconfig file already
-requires that.
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Scott Smedley <ss@aao.gov.au>
----
- drivers/staging/dt3155/dt3155_drv.c |   14 +++-----------
- 1 file changed, 3 insertions(+), 11 deletions(-)
-
---- linux-next-20100309.orig/drivers/staging/dt3155/dt3155_drv.c
-+++ linux-next-20100309/drivers/staging/dt3155/dt3155_drv.c
-@@ -57,19 +57,8 @@ MA 02111-1307 USA
- 
- extern void printques(int);
- 
--#ifdef MODULE
- #include <linux/module.h>
- #include <linux/interrupt.h>
--
--
--MODULE_LICENSE("GPL");
--
--#endif
--
--#ifndef CONFIG_PCI
--#error  "DT3155 :  Kernel PCI support not enabled (DT3155 drive requires PCI)"
--#endif
--
- #include <linux/pci.h>
- #include <linux/types.h>
- #include <linux/poll.h>
-@@ -84,6 +73,9 @@ MODULE_LICENSE("GPL");
- #include "dt3155_io.h"
- #include "allocator.h"
- 
-+
-+MODULE_LICENSE("GPL");
-+
- /* Error variable.  Zero means no error. */
- int dt3155_errno = 0;
- 
+YH
