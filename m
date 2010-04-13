@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492Ab0DMQrL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 12:47:11 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:22524 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518Ab0DMQrJ (ORCPT
+	id S1753499Ab0DMQsM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 12:48:12 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:35647 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753364Ab0DMQsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 12:47:09 -0400
-Date: Tue, 13 Apr 2010 09:45:44 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Matthew Garrett <mjg@redhat.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       platform-driver-x86@vger.kernel.org
-Subject: [PATCH -next] eeepc-wmi: depends on INPUT_SPARSEKMAP
-Message-Id: <20100413094544.38369da9.randy.dunlap@oracle.com>
-In-Reply-To: <20100413163427.8acd04e5.sfr@canb.auug.org.au>
-References: <20100413163427.8acd04e5.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4BC49FE0.0135:SCFMA4539814,ss=1,fgs=0
+	Tue, 13 Apr 2010 12:48:11 -0400
+Date: Tue, 13 Apr 2010 18:48:05 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Dinh.Nguyen@freescale.com
+Cc: linux-kernel@vger.kernel.org, amit.kucheria@canonical.com,
+       linux@arm.linux.org.uk, s.hauer@pengutronix.de,
+       grant.likely@secretlab.ca, r.herring@freescale.com,
+       linux-arm-kernel@lists.infradead.org, bryan.wu@canonical.com,
+       valentin.longchamp@epfl.ch
+Subject: Re: [PATCH 2.6.34-rc4 2/8] mxc: Update GPIO for USB support on
+ Freescale MX51 Babbage HW
+Message-ID: <20100413164805.GN30801@buzzloop.caiaq.de>
+References: <1271175030-3635-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <1271175030-3635-2-git-send-email-Dinh.Nguyen@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1271175030-3635-2-git-send-email-Dinh.Nguyen@freescale.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Tue, Apr 13, 2010 at 11:10:25AM -0500, Dinh.Nguyen@freescale.com wrote:
+> This patch is part of enabling USB for Freescale MX51 Babbage HW. This
+> patch updates the iomux pins for USB, and gpio line for reset the
+> USB hub on the MX51 Babbage HW.
+> 
+> This patch applies to 2.6.34-rc4.
+> 
+> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> ---
+>  arch/arm/plat-mxc/ehci.c                    |    4 +++
+>  arch/arm/plat-mxc/include/mach/iomux-mx51.h |   33 ++++++++++++++++----------
+>  2 files changed, 24 insertions(+), 13 deletions(-)
+> 
+> diff --git a/arch/arm/plat-mxc/ehci.c b/arch/arm/plat-mxc/ehci.c
+> index cb0b638..20eaddc 100644
+> --- a/arch/arm/plat-mxc/ehci.c
+> +++ b/arch/arm/plat-mxc/ehci.c
+> @@ -186,6 +186,10 @@ int mxc_set_usbcontrol(int port, unsigned int flags)
+>  		return 0;
+>  	}
+>  #endif /* CONFIG_MACH_MX27 */
+> +#ifdef CONFIG_ARCH_MX5
+> +	/* Nothing needs to be done for MX5 here */
+> +	return 0;
+> +#endif
 
-When EEEPC_WMI=y and INPUT_SPARSEKMAP=m, the build fails,
-so make EEEPC_WMI depend on INPUT_SPARSEKMAP.
+This needs a cpu_is_mx5() condition. For now that's just nit-picking,
+but once another platform is added, the statement will return where it
+shouldn't.
 
-eeepc-wmi.c:(.text+0x28d1a9): undefined reference to `sparse_keymap_setup'
-eeepc-wmi.c:(.text+0x28d1f9): undefined reference to `sparse_keymap_free'
-eeepc-wmi.c:(.text+0x28d2e0): undefined reference to `sparse_keymap_report_event'
-eeepc-wmi.c:(.init.text+0x17069): undefined reference to `sparse_keymap_free'
-eeepc-wmi.c:(.exit.text+0x2bae): undefined reference to `sparse_keymap_free'
+Daniel
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- drivers/platform/x86/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- linux-next-20100413.orig/drivers/platform/x86/Kconfig
-+++ linux-next-20100413/drivers/platform/x86/Kconfig
-@@ -388,7 +388,7 @@ config EEEPC_LAPTOP
- config EEEPC_WMI
- 	tristate "Eee PC WMI Hotkey Driver (EXPERIMENTAL)"
- 	depends on ACPI_WMI
--	depends on INPUT
-+	depends on INPUT && INPUT_SPARSEKMAP
- 	depends on EXPERIMENTAL
- 	---help---
- 	  Say Y here if you want to support WMI-based hotkeys on Eee PC laptops.
