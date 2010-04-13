@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab0DMBr7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 21:47:59 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57694 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754481Ab0DMBr6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 21:47:58 -0400
-Message-ID: <4BC3CD24.3020400@cn.fujitsu.com>
-Date: Tue, 13 Apr 2010 09:47:16 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
+	id S1754538Ab0DMBwH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 21:52:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34459 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754481Ab0DMBwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 21:52:06 -0400
+Message-ID: <4BC3CE31.2000100@zytor.com>
+Date: Mon, 12 Apr 2010 18:51:45 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Oleg Nesterov <oleg@redhat.com>, Gautham R Shenoy <ego@in.ibm.com>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Ingo Molnar <mingo@elte.hu>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Nathan Fontenot <nfont@austin.ibm.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Sachin Sant <sachinp@in.ibm.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Shane Wang <shane.wang@intel.com>,
-       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] cpuhotplug: make get_online_cpus() scalability by
- using percpu counter
-References: <4BB9BD8A.9040209@cn.fujitsu.com>	 <20100405162901.GA3567@redhat.com> <20100406120039.GC5680@redhat.com>	 <4BBC8A11.3040501@cn.fujitsu.com> <20100407135456.GA12029@redhat.com>	 <20100409121235.GA5784@redhat.com>  <4BC2E6CE.7060401@cn.fujitsu.com>	 <1271064539.4222.27.camel@twins>  <4BC31265.4090503@cn.fujitsu.com> <1271075670.4807.2.camel@twins>
-In-Reply-To: <1271075670.4807.2.camel@twins>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+CC: Andy Isaacson <adi@hexapodia.org>, linux-kernel@vger.kernel.org,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Chris Wright <chrisw@sous-sol.org>,
+       Matthew Wilcox <willy@linux.intel.com>, Yinghai Lu <yinghai@kernel.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [2.6.34-rc1 REGRESSION] ahci 0000:00:1f.2: controller reset failed
+ (0xffffffff)
+References: <20100406225425.GA8292@hexapodia.org> <1270612783.8518.15.camel@dc7800.home> <201004121156.41716.bjorn.helgaas@hp.com>
+In-Reply-To: <201004121156.41716.bjorn.helgaas@hp.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra wrote:
-> On Mon, 2010-04-12 at 20:30 +0800, Lai Jiangshan wrote:
->> Because read-preference RWL will cause write site starvation.
+On 04/12/2010 10:56 AM, Bjorn Helgaas wrote:
 > 
-> Sure, but why is that a problem? Hotplug should be a rare event,
+> Linux thinks the windows are:
+>   pci_root PNP0A03:00: host bridge window [mem 0x000a0000-0x000bffff]
+>   pci_root PNP0A03:00: host bridge window [mem 0x000c0000-0x000effff]
+>   pci_root PNP0A03:00: host bridge window [mem 0x000f0000-0x000fffff]
+> 
+> The 0xa0000-0xbffff one makes good sense.  That's normally MMIO that's
+> routed via PCI to the VGA device frame buffer, and we should be able
+> to figure out how to avoid that area, e.g., by using BIOS info, PCI
+> class codes, etc.
+> 
+> Now we need to figure how to avoid the 0xc0000-0xeffff and 0xf0000-0xfffff
+> windows.  Maybe there's something special about how ACPI describes them.
+> 
+> Or maybe we're just unlucky because these are the first windows in the
+> _CRS list, and Linux tries them in order, while Windows uses a different
+> strategy.
+> 
 
+I strongly suspects that Windows knows that < 1 MB is special, and only
+ever assigns it upon explicit allocation.
 
-> who cares if it takes a while to come through.
+	-hpa
 
-It is totally starvation, hotplug can not complete.
-I think it is a kind of DOS attack.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
