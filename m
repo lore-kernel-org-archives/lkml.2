@@ -1,87 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751796Ab0DMEyc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 00:54:32 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:46005 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab0DMEy3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 00:54:29 -0400
-Message-ID: <4BC3F82A.20400@oracle.com>
-Date: Mon, 12 Apr 2010 21:50:50 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 26/39] nobootmem: use lmb.default_alloc_limit in alloc_bootmem
- path
-References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>	 <1270793048-23796-27-git-send-email-yinghai@kernel.org> <1271132589.13059.67.camel@pasglop>
-In-Reply-To: <1271132589.13059.67.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4BC3F8CA.0086:SCFMA4539814,ss=1,fgs=0
+	id S1751651Ab0DMFBG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 01:01:06 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52067
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751355Ab0DMFBE convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 01:01:04 -0400
+Date: Mon, 12 Apr 2010 22:01:07 -0700 (PDT)
+Message-Id: <20100412.220107.225635787.davem@davemloft.net>
+To: thomas@mathtm.de
+Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, kernel-testers@vger.kernel.org,
+       maciej.rutecki@gmail.com, rusty@rustcorp.com.au, mashirle@us.ibm.com,
+       xma@us.ibm.com
+Subject: Re: [Bug #15719] virtio_net causing kernel BUG when running under
+ VirtualBox
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4BC2ECE4.1020704@mathtm.de>
+References: <4BC2DC5A.6090007@mathtm.de>
+	<20100412.022828.52192543.davem@davemloft.net>
+	<4BC2ECE4.1020704@mathtm.de>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2010 09:23 PM, Benjamin Herrenschmidt wrote:
-> On Thu, 2010-04-08 at 23:03 -0700, Yinghai Lu wrote:
->> Generic version __lmb_find_area() is going from high to low, and for 32bit
->> active_region for 32bit does include high pages
->>
->> need to replace the limit with lmb.default_alloc_limit, aka get_max_mapped()
->>
->> with this patch, x86 32bit could use generic version of __lmb_find_area()
-> 
-> So you unconditionally add access to some lmb specific data structure to
-> generic code ? That isn't going to work very well on archs that don't
-> use lmb.
+From: Thomas Müller <thomas@mathtm.de>
+Date: Mon, 12 Apr 2010 11:50:28 +0200
 
-the whole function
+> I think I have to disagree.
 
-#ifdef CONFIG_HAVE_LMB
-u64 __init find_memory_core_early(int nid, u64 size, u64 align,
-                                        u64 goal, u64 limit)
-{
-        int i;
+Indeed you're right, net-2.6 needs it too.
 
-        /* Need to go over early_node_map to find out good range for node */
-        for_each_active_range_index_in_nid(i, nid) {
-                u64 addr;
-                u64 ei_start, ei_last;
+Thanks for catching this, I've cherry picked the commit
+from net-next-2.6 and added it to net-2.6
 
-                ei_last = early_node_map[i].end_pfn;
-                ei_last <<= PAGE_SHIFT;
-                ei_start = early_node_map[i].start_pfn;
-                ei_start <<= PAGE_SHIFT;
-                addr = __lmb_find_area(ei_start, ei_last,
-                                         goal, limit, size, align);
-
-                if (addr == -1ULL)
-                        continue;
-
-                return addr;
-        }
-
-        return -1ULL;
-}
-#endif
-
-need to access early_node_map[], so leave the function here.
-
-
-> 
-> Also, those things should be local to lmb_* anyways.
-
-if you insist, could move it to lmb.c and use work_with_active_regions() around it.
-
-YH
+Thanks again!
