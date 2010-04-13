@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152Ab0DMPZZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 11:25:25 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:44602 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752731Ab0DMPZX (ORCPT
+	id S1753228Ab0DMPZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 11:25:53 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:51859 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752731Ab0DMPZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 11:25:23 -0400
+	Tue, 13 Apr 2010 11:25:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=tKiOKb6i9GLo9ZTq27RjpO7aC3dYqmm42fdVwsy8x+OO0siAosUwE6pJ0ZNdJ86dYZ
-         XCQ3HZXlzxghQcvz+Z/eToLU9Y/HyywutF/SFPqD+tKC/Yo9dSTtTswZYhf/MiiWNr9q
-         lWuLC8/sgP823XJwp+El1S3eHxlnCcPbVanXk=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=bnRIBADG4y1ipNRa0pj8eG7Wab0U0eqbbpK6JFRZqeXs/0cHd8glOmPRgjaUetR2Ti
+         V+5AtlV1L+2N/M353qZ4vjG9YR9WmVyXoR/fpOvCWFZDy/nnPRLoOkunfcxm80GlSw2c
+         fjuxJ6PNXC81pU9jlIN0V4RoxQY9bhf7KrqDs=
 From: Minchan Kim <minchan.kim@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mel@csn.ul.ie>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
        Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Minchan Kim <minchan.kim@gmail.com>
-Subject: [PATCH 1/6] Remove node's validity check in alloc_pages
-Date: Wed, 14 Apr 2010 00:24:58 +0900
-Message-Id: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>
+       linux-mm@kvack.org, Minchan Kim <minchan.kim@gmail.com>,
+       Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>
+Subject: [PATCH 2/6] change alloc function in pcpu_alloc_pages
+Date: Wed, 14 Apr 2010 00:24:59 +0900
+Message-Id: <d5d70d4b57376bc89f178834cf0e424eaa681ab4.1271171877.git.minchan.kim@gmail.com>
 X-Mailer: git-send-email 1.7.0.5
+In-Reply-To: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>
+References: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>
+In-Reply-To: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>
+References: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-alloc_pages calls alloc_pages_node with numa_node_id().
-alloc_pages_node can't see nid < 0.
+alloc_pages_node is called with cpu_to_node(cpu).
+I think cpu_to_node(cpu) never returns -1.
+(But I am not sure we need double check.)
 
 So we can use alloc_pages_exact_node instead of alloc_pages_node.
 It could avoid comparison and branch as 6484eb3e2a81807722 tried.
 
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>
 Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 ---
- include/linux/gfp.h |    2 +-
+ mm/percpu.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 4c6d413..b65f003 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -308,7 +308,7 @@ extern struct page *alloc_page_vma(gfp_t gfp_mask,
- 			struct vm_area_struct *vma, unsigned long addr);
- #else
- #define alloc_pages(gfp_mask, order) \
--		alloc_pages_node(numa_node_id(), gfp_mask, order)
-+		alloc_pages_exact_node(numa_node_id(), gfp_mask, order)
- #define alloc_page_vma(gfp_mask, vma, addr) alloc_pages(gfp_mask, 0)
- #endif
- #define alloc_page(gfp_mask) alloc_pages(gfp_mask, 0)
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 768419d..ec3e671 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -720,7 +720,7 @@ static int pcpu_alloc_pages(struct pcpu_chunk *chunk,
+ 		for (i = page_start; i < page_end; i++) {
+ 			struct page **pagep = &pages[pcpu_page_idx(cpu, i)];
+ 
+-			*pagep = alloc_pages_node(cpu_to_node(cpu), gfp, 0);
++			*pagep = alloc_pages_exact_node(cpu_to_node(cpu), gfp, 0);
+ 			if (!*pagep) {
+ 				pcpu_free_pages(chunk, pages, populated,
+ 						page_start, page_end);
 -- 
 1.7.0.5
 
