@@ -1,91 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab0DMDDl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 23:03:41 -0400
-Received: from mail.gmx.net ([213.165.64.20]:48568 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754696Ab0DMDDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 23:03:40 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+rVNldpu6reBp5vn0oAdIOYdvVqXY27D8O7Fk+9t
-	G5mX9IGCGMz8GV
-Message-ID: <4BC3DF05.9060400@gmx.de>
-Date: Tue, 13 Apr 2010 05:03:33 +0200
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+	id S1754750Ab0DMDJv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 23:09:51 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57742 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754676Ab0DMDJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 23:09:50 -0400
+Message-ID: <4BC3DFE3.6090006@cn.fujitsu.com>
+Date: Tue, 13 Apr 2010 11:07:15 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-CC: Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
-       Harald Welte <laforge@gnumonks.org>, JosephChan@via.com.tw,
-       ScottFang@viatech.com.cn, Deepak Saxena <dsaxena@laptop.org>,
-       linux-fbdev-devel@lists.sourceforge.net
-Subject: Re: [RFC] Initial OLPC Viafb merge
-References: <1270746946-12467-1-git-send-email-corbet@lwn.net>	<4BBEBE87.4000809@gmx.de>	<20100409124626.0b150104@bike.lwn.net>	<4BBFB914.1020600@gmx.de>	<20100409182722.3080bb2d@bike.lwn.net>	<4BBFCE24.2070207@gmx.de> <20100410105241.5df22845@neptune.home>
-In-Reply-To: <20100410105241.5df22845@neptune.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.53000000000000003
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/6] KVM MMU: optimize for writing cr4
+References: <4BC2D2E2.1030604@cn.fujitsu.com> <4BC2D3E0.8070602@cn.fujitsu.com> <4BC2DB27.7060005@redhat.com> <4BC2F928.2060407@cn.fujitsu.com> <4BC30273.3050406@redhat.com>
+In-Reply-To: <4BC30273.3050406@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bruno Prémont schrieb:
-> On Sat, 10 April 2010 Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
->> Jonathan Corbet schrieb:
->>> Well, if we want to keep s/r out of tree, we can do that.  It will
->>> complicate the merge of the other stuff, since it's got hooks into the
->>> GPIO and camera code too.  But, like everything else I've posted so
->>> far, it's not the work that I personally set out to do.  I can push
->>> that work on others :)
-
-Good news! After some hours of hacking, damaging a filesystem and nearly 
-smashing my SD card I've found a promising way to implement suspend and 
-resume in viafb based on the first patch of this series. I think this is 
-something that can be done for the next merge window. I'll start a clean 
-implementation after Jon sent an updated patch series (including the 
-initial s&r implementation)
-
->> At least I'd like some more time (multiple weeks) to have a look at this 
->> issue & patches and try to come up with improvements that make it likely 
->> work on other IGPs and eventually not needing any BIOS/OFW. I agree its 
->> already an improvement but certainly one of the kind I like less as VIA 
->> could come up with such "improvements" too. IMHO it's a bad thing to 
->> push one chipset first if the target is to support all equally well (as 
->> long as the hardware permits).
-
-Goal basically reached:
-- likely to work on all IGPs as nothing directly IGP dependent is there
-- works without OFW/BIOS
-
-However:
-- suspending is very slow, looks like it takes double the time compared 
-to before s&r support was added to viafb (this is also with only the 
-original patch)
-- output device setting is messed up (example: before suspend the output 
-was on DVI, after resume on CRT)
-- does not restore some values in the mmio but reinitializes it instead. 
-Do you need any special values restored, Jon?
-
-> In my case (Commell LE 365) the BIOS offers an option to restore graphics
-> to text mode on resume so the manual call of 'fbset -a $MODE' works
-> pretty well, only the acceleration has issues.
-> I don't remember if accel can get revived with vanilla 2.6.34-rc2 if it
-> was disabled before suspend.
-
-Acceleration doesn't work in 2.6.34-rc2 or later after resume (limited 
-only to the cursor, the rest works for me). It will work after the 
-patches I am going to do are applied.
-
-> When I get time to, I will give these patches a try. A central GIT tree
-> where all viafb patches get collected would definitely be nice (even with
-> multiple semi-throw-away "topic" branches).
-
-Yes, I guess that would be a good idea at least now where 2 people are 
-actively working on viafb. I have also a few minor patches ready I'll 
-send in a few days (after having repaired my development environment).
 
 
-Best regards,
+Avi Kivity wrote:
 
-Florian Tobias Schandinat
+> See 6364a3918cb.  It was reverted later due to a problem with the
+> implementation.  I'm not sure whether I want to fix the bug and restore
+> that patch, or to drop it altogether and give the guest ownership of
+> cr4.pge.  See cr4_guest_owned_bits (currently only used on ept).
+> 
+
+Oh, i see, thanks very much.
+
+>> As i know, global page is not static in TLB, and x86 cpu also may
+>> flush them form TLB,
+>> maybe we no need treat global page specially... Am i miss something? :-(
+>>    
+> 
+> You can't read reverted patches? :)
+
+I usually use 'get blame' to look into source, and not noticed reverted
+patches, i'll pay more attention on those.
+
+Below code still confused me:
+
+| vcpu->arch.mmu.base_role.cr4_pge = (cr4&  X86_CR4_PGE)&&!tdp_enabled; 
+
+And i found the commit 87778d60ee:
+
+|    KVM: MMU: Segregate mmu pages created with different cr4.pge settings
+|    
+|    Don't allow a vcpu with cr4.pge cleared to use a shadow page created with
+|    cr4.pge set; this might cause a cr3 switch not to sync ptes that have the
+|    global bit set (the global bit has no effect if !cr4.pge).
+|    
+|    This can only occur on smp with different cr4.pge settings for different
+|    vcpus (since a cr4 change will resync the shadow ptes), but there's no
+|    cost to being correct here.
+
+In current code, cr3 switch will sync all unsync shadow pages(regardless it's
+global or not) and this issue not live now, so, do we need also revert this
+patch?
+
+Xiao
+
