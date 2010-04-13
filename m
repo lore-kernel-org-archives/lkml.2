@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751227Ab0DMEkB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 00:40:01 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:35667 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750728Ab0DMEj7 (ORCPT
+	id S1751515Ab0DMEr4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 00:47:56 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:22894 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733Ab0DMEry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 00:39:59 -0400
-Message-ID: <4BC3F4F5.9010601@oracle.com>
-Date: Mon, 12 Apr 2010 21:37:09 -0700
+	Tue, 13 Apr 2010 00:47:54 -0400
+Message-ID: <4BC3F6C8.4020303@oracle.com>
+Date: Mon, 12 Apr 2010 21:44:56 -0700
 From: Yinghai <yinghai.lu@oracle.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
@@ -20,31 +20,60 @@ CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 15/39] lmb: Add lmb_find_area_node()
-References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>	 <1270793048-23796-16-git-send-email-yinghai@kernel.org> <1271132330.13059.64.camel@pasglop>
-In-Reply-To: <1271132330.13059.64.camel@pasglop>
+Subject: Re: [PATCH 18/39] lmb: Add lmb_reserve_area_overlap_ok()
+References: <1270793048-23796-1-git-send-email-yinghai@kernel.org>	 <1270793048-23796-19-git-send-email-yinghai@kernel.org> <1271132476.13059.66.camel@pasglop>
+In-Reply-To: <1271132476.13059.66.camel@pasglop>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4BC3F56D.0015:SCFMA4539814,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090208.4BC3F75D.00E9:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2010 09:18 PM, Benjamin Herrenschmidt wrote:
+On 04/12/2010 09:21 PM, Benjamin Herrenschmidt wrote:
 > On Thu, 2010-04-08 at 23:03 -0700, Yinghai Lu wrote:
->> It can be used to find NODE_DATA for numa.
+>> Some areas from firmware could be reserved several times from different callers.
 >>
->> Need to make sure early_node_map[] is filled before it is called, otherwise
->> it will fallback to lmb_find_area(), with node range.
+>> If these area are overlapped, We may have overlapped entries in lmb.reserved.
+>>
+>> Try to free the area at first, before rerserve them again.
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> ---
 > 
-> Isn't that more duplication from what's already in there for nid
-> handling ? (Which btw may not be optimal, simply what I'm saying is that
-> all that stuff should be factored).
+>> +
+>> +/*
+>> + * Could be used to avoid having overlap entries in lmb.reserved.region.
+>> + *  Don't need to use it with area that is from lmb_find_area()
+>> + *  Only use it for the area that fw hidden area.
+>> + */
+>> +void __init lmb_reserve_area_overlap_ok(u64 start, u64 end, char *name)
+>> +{
+>> +	if (start == end)
+>> +		return;
+>> +
+>> +	if (WARN_ONCE(start > end, "lmb_reserve_area_overlap_ok: wrong range [%#llx, %#llx]\n", start, end))
+>> +		return;
+>> +
+>> +	/* Free that region at first */
+>> +	lmb_free(start, end - start);
+>> +	__lmb_reserve_area(start, end, name);
+>>  }
+> 
+> That is going to only work with one overlap. IE. lmb_free() will not do
+> very well unless it's a one and only match.
+> 
+> You should modify it to work in a loop.
+that is only for some special cases about area that is reserved for fw region.
 
-maybe could try to merge them later. or let sparc64 to use lmb_find_area_node()?
+and even there is overlapped area, it the code still can go through when lmb_to_bootmem or create range list for slab.
+because they are using range array subtract.
+
+> 
+> Besides, lmb_reserve_area_overlap_ok() sucks as a name :-)
+
+any suggestion for better name?
 
 YH
- 
-
