@@ -1,50 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956Ab0DMGmU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 02:42:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63083 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751247Ab0DMGmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 02:42:18 -0400
-Message-ID: <4BC41241.30204@redhat.com>
-Date: Tue, 13 Apr 2010 09:42:09 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1752008Ab0DMGpz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 02:45:55 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:46342 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751247Ab0DMGpy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 02:45:54 -0400
+Date: Tue, 13 Apr 2010 12:15:46 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][BUGFIX][PATCH] memcg: fix underflow of mapped_file stat
+Message-ID: <20100413064546.GG3994@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] KVM MMU: optimize for writing cr4
-References: <4BC2D2E2.1030604@cn.fujitsu.com> <4BC2D3E0.8070602@cn.fujitsu.com> <4BC2DB27.7060005@redhat.com> <4BC2F928.2060407@cn.fujitsu.com> <4BC30273.3050406@redhat.com> <4BC3DFE3.6090006@cn.fujitsu.com>
-In-Reply-To: <4BC3DFE3.6090006@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100413134207.f12cdc9c.nishimura@mxp.nes.nec.co.jp>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13/2010 06:07 AM, Xiao Guangrong wrote:
->
-> And i found the commit 87778d60ee:
->
-> |    KVM: MMU: Segregate mmu pages created with different cr4.pge settings
-> |
-> |    Don't allow a vcpu with cr4.pge cleared to use a shadow page created with
-> |    cr4.pge set; this might cause a cr3 switch not to sync ptes that have the
-> |    global bit set (the global bit has no effect if !cr4.pge).
-> |
-> |    This can only occur on smp with different cr4.pge settings for different
-> |    vcpus (since a cr4 change will resync the shadow ptes), but there's no
-> |    cost to being correct here.
->
-> In current code, cr3 switch will sync all unsync shadow pages(regardless it's
-> global or not) and this issue not live now, so, do we need also revert this
-> patch?
->    
+* nishimura@mxp.nes.nec.co.jp <nishimura@mxp.nes.nec.co.jp> [2010-04-13 13:42:07]:
 
-One path is to revert this patch.  The other is to restore the 
-optimization that relies on it.  I'm not sure which is best.
+> Hi.
+> 
+> When I was testing page migration, I found underflow problem of "mapped_file" field
+> in memory.stat. This is a fix for the problem.
+> 
+> This patch is based on mmotm-2010-04-05-16-09, and IIUC it conflicts with Mel's
+> compaction patches, so I send it as RFC for now. After next mmotm, which will
+> include those patches, I'll update and resend this patch.
+> 
+> ===
+> From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> 
+> page_add_file_rmap(), which can be called from remove_migration_ptes(), is
+> assumed to increment memcg's stat of mapped file. But on success of page
+> migration, the newpage(mapped file) has not been charged yet, so the stat will
+> not be incremented. This behavior leads to underflow of memcg's stat because
+> when the newpage is unmapped afterwards, page_remove_rmap() decrements the stat.
+> This problem doesn't happen on failure path of page migration, because the old
+> page(mapped file) hasn't been uncharge at the point of remove_migration_ptes().
+> This patch fixes this problem by calling commit_charge(mem_cgroup_end_migration)
+> before remove_migration_ptes().
+> 
+> Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> ---
+>  mm/migrate.c |   19 ++++++++++++++-----
+>  1 files changed, 14 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 5938db5..915c35e 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -485,7 +485,8 @@ static int fallback_migrate_page(struct address_space *mapping,
+>   *   < 0 - error code
+>   *  == 0 - success
+>   */
+> -static int move_to_new_page(struct page *newpage, struct page *page)
+> +static int move_to_new_page(struct page *newpage, struct page *page,
+> +						struct mem_cgroup *mem)
+>  {
+>  	struct address_space *mapping;
+>  	int rc;
+> @@ -520,9 +521,16 @@ static int move_to_new_page(struct page *newpage, struct page *page)
+>  	else
+>  		rc = fallback_migrate_page(mapping, newpage, page);
+> 
+> -	if (!rc)
+> +	if (!rc) {
+> +		/*
+> +		 * On success of page migration, the newpage has not been
+> +		 * charged yet, so we must call end_migration() before
+> +		 * remove_migration_ptes() to update stats of mapped file
+> +		 * properly.
+> +		 */
+> +		mem_cgroup_end_migration(mem, page, newpage);
+>  		remove_migration_ptes(page, newpage);
+> -	else
+> +	} else
+>  		newpage->mapping = NULL;
+> 
+>  	unlock_page(newpage);
+> @@ -633,7 +641,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+> 
+>  skip_unmap:
+>  	if (!page_mapped(page))
+> -		rc = move_to_new_page(newpage, page);
+> +		rc = move_to_new_page(newpage, page, mem);
+
+Why do we need to pass mem, won't try_get_mem_cgroup_from_page() help?
+Is it cost versus space tradeoff.
+
+> 
+>  	if (rc)
+>  		remove_migration_ptes(page, page);
+> @@ -641,7 +649,8 @@ rcu_unlock:
+>  	if (rcu_locked)
+>  		rcu_read_unlock();
+>  uncharge:
+> -	if (!charge)
+> +	if (rc)
+> +		/* On success of page migration, we've alread called it */
+
+Comment is not clear to me, but the code is :)
+
+>  		mem_cgroup_end_migration(mem, page, newpage);
+>  unlock:
+>  	unlock_page(page);
+> -- 
+> 1.6.4
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
-
+	Three Cheers,
+	Balbir
