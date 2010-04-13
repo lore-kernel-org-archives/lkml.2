@@ -1,49 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab0DLKJr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 06:09:47 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:64593 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752282Ab0DLKJq (ORCPT
+	id S1753592Ab0DLKRn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 06:17:43 -0400
+Received: from fg-out-1718.google.com ([72.14.220.158]:51444 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753147Ab0DLKRk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 06:09:46 -0400
-Date: Mon, 12 Apr 2010 13:09:05 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: ext Sameer Rahmani <lxsameer@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Help Needed ( working on kernel )
-Message-ID: <20100412100905.GE23541@nokia.com>
-Reply-To: felipe.balbi@nokia.com
-References: <j2u731a53501004120259q30849498j398f7dde0598e4a2@mail.gmail.com>
+	Mon, 12 Apr 2010 06:17:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=TPUp47OIYHcBhVDgSKyPCXma7XFeiDKjlHgJYdar0E2DyVozCqIWTrysHZypfqxiDj
+         pKKjXPQw2yY2mOZgI+URFdQxSThB5nz2eRi7WqBUVXDyxKIsjGxiHhl3eJIOxBiqXHLj
+         hQWFleJs5WdD05nJ7j+x0c0a2TqT23lmF33c4=
+Date: Tue, 13 Apr 2010 14:18:15 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Amerigo Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Octavian Purdila <opurdila@ixiacom.com>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       penguin-kernel@I-love.SAKURA.ne.jp, netdev@vger.kernel.org,
+       Neil Horman <nhorman@tuxdriver.com>, ebiederm@xmission.com,
+       David Miller <davem@davemloft.net>
+Subject: Re: [Patch 1/3] sysctl: refactor integer handling proc code
+Message-ID: <20100413111814.GB4396@x200>
+References: <20100412100744.5302.92442.sendpatchset@localhost.localdomain>
+ <20100412100754.5302.99552.sendpatchset@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <j2u731a53501004120259q30849498j398f7dde0598e4a2@mail.gmail.com>
+In-Reply-To: <20100412100754.5302.99552.sendpatchset@localhost.localdomain>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 12 Apr 2010 10:09:29.0121 (UTC) FILETIME=[3D0BC910:01CADA28]
-X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 12, 2010 at 11:59:13AM +0200, ext Sameer Rahmani wrote:
->hi ,
->i think its a good place to ask my question i read the FAQ but not the
->whole thing. so forgive me if i think wrong.
->i want to work on kernel and help to improve it as much as i can.
->i read some articles and book but still i'm not worthy to do any thing
->. i want to guys to healp me please
->and guide me to reach my goal.
->
->i read any thing an do anything that you say .
+On Mon, Apr 12, 2010 at 06:04:04AM -0400, Amerigo Wang wrote:
+> As we are about to add another integer handling proc function a little
+> bit of cleanup is in order: add a few helper functions to improve code
+> readability and decrease code duplication.
+> 
+> In the process a bug is also fixed: if the user specifies a number
+> with more then 20 digits it will be interpreted as two integers
+> (e.g. 10000...13 will be interpreted as 100.... and 13).
 
-Maybe a good way to start is via the kernelnewbies.org website and the 
-Kernel Janitors project. Take a look at:
+ULONG_MAX is not 22 digits always.
 
-http://kernelnewbies.org/
-http://kernelnewbies.org/KernelJanitors
-http://janitor.kernelnewbies.org/
-http://code.google.com/p/kernel-janitors/
+The fix is to not rely on simple_strtoul()
 
--- 
-balbi
+I guess it's time to finally remove it. :-(
+
+Also, it's better to copy_from user stuff once.
+Without looking at non-trivial users, one page should be enough.
+
+> Behavior for EFAULT handling was changed as well. Previous to this
+> patch, when an EFAULT error occurred in the middle of a write
+> operation, although some of the elements were set, that was not
+> acknowledged to the user (by shorting the write and returning the
+> number of bytes accepted). EFAULT is now treated just like any other
+> errors by acknowledging the amount of bytes accepted.
+
+> +static int proc_skip_wspace(char __user **buf, size_t *size)
+> +{
+> +	char c;
+> +
+> +	while (*size) {
+> +		if (get_user(c, *buf))
+> +			return -EFAULT;
+> +		if (!isspace(c))
+> +			break;
+> +		(*size)--;
+> +		(*buf)++;
+> +	}
+> +
+> +	return 0;
+> +}
+
+yeah, copy_from_user once, so we won't have this.
+
+> +static bool isanyof(char c, const char *v, unsigned len)
+
+A what?
+this is memchr()
+
+> +{
+> +	int i;
+> +
+> +	if (!len)
+> +		return false;
+> +
+> +	for (i = 0; i < len; i++)
+> +		if (c == v[i])
+> +			break;
+> +	if (i == len)
+> +		return false;
+> +
+> +	return true;
+> +}
+> +
+> +#define TMPBUFLEN 22
+> +/**
+> + * proc_get_long - reads an ASCII formated integer from a user buffer
+> + *
+> + * @buf - user buffer
+> + * @size - size of the user buffer
+> + * @val - this is where the number will be stored
+> + * @neg - set to %TRUE if number is negative
+> + * @perm_tr - a vector which contains the allowed trailers
+> + * @perm_tr_len - size of the perm_tr vector
+> + * @tr - pointer to store the trailer character
+> + *
+> + * In case of success 0 is returned and buf and size are updated with
+> + * the amount of bytes read. If tr is non NULL and a trailing
+> + * character exist (size is non zero after returning from this
+> + * function) tr is updated with the trailing character.
+> + */
+> +static int proc_get_long(char __user **buf, size_t *size,
+> +			  unsigned long *val, bool *neg,
+> +			  const char *perm_tr, unsigned perm_tr_len, char *tr)
+> +{
+> +	int len;
+> +	char *p, tmp[TMPBUFLEN];
+> +
+> +	if (!*size)
+> +		return -EINVAL;
+> +
+> +	len = *size;
+> +	if (len > TMPBUFLEN-1)
+> +		len = TMPBUFLEN-1;
+> +
+> +	if (copy_from_user(tmp, *buf, len))
+> +		return -EFAULT;
+> +
+> +	tmp[len] = 0;
+> +	p = tmp;
+> +	if (*p == '-' && *size > 1) {
+> +		*neg = 1;
+> +		p++;
+> +	} else
+> +		*neg = 0;
+> +	if (!isdigit(*p))
+> +		return -EINVAL;
+> +
+> +	*val = simple_strtoul(p, &p, 0);
+> +
+> +	len = p - tmp;
+> +
+> +	/* We don't know if the next char is whitespace thus we may accept
+> +	 * invalid integers (e.g. 1234...a) or two integers instead of one
+> +	 * (e.g. 123...1). So lets not allow such large numbers. */
+> +	if (len == TMPBUFLEN - 1)
+> +		return -EINVAL;
+> +
+> +	if (len < *size && perm_tr_len && !isanyof(*p, perm_tr, perm_tr_len))
+> +		return -EINVAL;
+> +
+> +	if (tr && (len < *size))
+> +		*tr = *p;
+> +
+> +	*buf += len;
+> +	*size -= len;
+> +
+> +	return 0;
+> +}
