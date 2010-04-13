@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab0DMQLy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 12:11:54 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:61546 "EHLO
+	id S1753451Ab0DMQMH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 12:12:07 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:61551 "EHLO
 	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753389Ab0DMQLw (ORCPT
+	with ESMTP id S1753419Ab0DMQLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 12:11:52 -0400
+	Tue, 13 Apr 2010 12:11:53 -0400
 From: Dinh.Nguyen@freescale.com
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
@@ -14,177 +14,164 @@ Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
        grant.likely@secretlab.ca, r.herring@freescale.com,
        bryan.wu@canonical.com, amit.kucheria@canonical.com,
        Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCH 2.6.34-rc4 1/8] mx5: Add registration of GPIOs for MX51 Babbage board.
-Date: Tue, 13 Apr 2010 11:10:24 -0500
-Message-Id: <1271175030-3635-1-git-send-email-Dinh.Nguyen@freescale.com>
+Subject: [PATCH 2.6.34-rc4 5/8] mx5: Add USB Host1 port registration
+Date: Tue, 13 Apr 2010 11:10:28 -0500
+Message-Id: <1271175030-3635-5-git-send-email-Dinh.Nguyen@freescale.com>
 X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1271175030-3635-4-git-send-email-Dinh.Nguyen@freescale.com>
+References: <1271175030-3635-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <1271175030-3635-2-git-send-email-Dinh.Nguyen@freescale.com>
+ <1271175030-3635-3-git-send-email-Dinh.Nguyen@freescale.com>
+ <1271175030-3635-4-git-send-email-Dinh.Nguyen@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-Update /plat-mxc/gpio.c to support Freescale's MX51 Babbage HW.
+This patch adds the device platform registration for enabling USB
+host functionality on the Host1 port on Freescale MX51 Babbage HW.
+This file makes platform specific calls to initialize the USB HW.
+
 This patch applies to 2.6.34-rc4.
 
 Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 ---
- arch/arm/mach-mx5/board-mx51_babbage.c |    5 +++-
- arch/arm/mach-mx5/devices.c            |   33 ++++++++++++++++++++++++++++++-
- arch/arm/plat-mxc/gpio.c               |   32 +++++++++++++++++++++++++-----
- 3 files changed, 61 insertions(+), 9 deletions(-)
+ arch/arm/mach-mx5/Makefile             |    2 +-
+ arch/arm/mach-mx5/board-mx51_babbage.c |    2 +
+ arch/arm/mach-mx5/usb_h1.c             |   90 ++++++++++++++++++++++++++++++++
+ 3 files changed, 93 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/mach-mx5/usb_h1.c
 
+diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
+index 3fca1f1..e49be0b 100644
+--- a/arch/arm/mach-mx5/Makefile
++++ b/arch/arm/mach-mx5/Makefile
+@@ -3,7 +3,7 @@
+ #
+ 
+ # Object file lists.
+-obj-y   := cpu.o mm.o clock-mx51.o devices.o usb_dr.o
++obj-y   := cpu.o mm.o clock-mx51.o devices.o usb_dr.o usb_h1.o
+ 
+ obj-$(CONFIG_MACH_MX51_BABBAGE) += board-mx51_babbage.o
+ 
 diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
-index ee67a71..afbe400 100644
+index 4e196d7..1338d6a 100644
 --- a/arch/arm/mach-mx5/board-mx51_babbage.c
 +++ b/arch/arm/mach-mx5/board-mx51_babbage.c
-@@ -1,5 +1,5 @@
- /*
-- * Copyright 2009 Freescale Semiconductor, Inc. All Rights Reserved.
-+ * Copyright (C) 2009-2010 Freescale Semiconductor, Inc. All Rights Reserved.
-  * Copyright (C) 2009-2010 Amit Kucheria <amit.kucheria@canonical.com>
-  *
-  * The code contained herein is licensed under the GNU General Public
-@@ -12,6 +12,7 @@
+@@ -28,6 +28,7 @@
+ #include "devices.h"
  
- #include <linux/init.h>
- #include <linux/platform_device.h>
-+#include <linux/gpio.h>
+ extern void __init mx5_usb_dr_init(void);
++extern void __init mx5_usbh1_init(void);
  
- #include <mach/common.h>
- #include <mach/hardware.h>
-@@ -75,6 +76,8 @@ static void __init mxc_board_init(void)
- 					ARRAY_SIZE(mx51babbage_pads));
- 	mxc_init_imx_uart();
- 	platform_add_devices(devices, ARRAY_SIZE(devices));
-+
-+	mxc_register_gpios();
+ static struct platform_device *devices[] __initdata = {
+ 	&mxc_fec_device,
+@@ -82,6 +83,7 @@ static void __init mxc_board_init(void)
+ 	mxc_register_gpios();
+ 
+ 	mx5_usb_dr_init();
++	mx5_usbh1_init();
  }
  
  static void __init mx51_babbage_timer_init(void)
-diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
-index d6fd396..73f2342 100644
---- a/arch/arm/mach-mx5/devices.c
-+++ b/arch/arm/mach-mx5/devices.c
-@@ -1,5 +1,6 @@
- /*
-  * Copyright 2009 Amit Kucheria <amit.kucheria@canonical.com>
+diff --git a/arch/arm/mach-mx5/usb_h1.c b/arch/arm/mach-mx5/usb_h1.c
+new file mode 100644
+index 0000000..23ae336
+--- /dev/null
++++ b/arch/arm/mach-mx5/usb_h1.c
+@@ -0,0 +1,90 @@
++/*
 + * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
-  *
-  * The code contained herein is licensed under the GNU General Public
-  * License. You may obtain a copy of the GNU General Public License
-@@ -11,7 +12,9 @@
- 
- #include <linux/platform_device.h>
- #include <mach/hardware.h>
-+#include <mach/gpio.h>
- #include <mach/imx-uart.h>
-+#include <mach/irqs.h>
- 
- static struct resource uart0[] = {
- 	{
-@@ -89,8 +92,34 @@ struct platform_device mxc_fec_device = {
- 	.resource = mxc_fec_resources,
- };
- 
--/* Dummy definition to allow compiling in AVIC and TZIC simultaneously */
-+struct mxc_gpio_port mxc_gpio_ports[] = {
-+	{
-+		.chip.label = "gpio-0",
-+		.base = MX51_IO_ADDRESS(MX51_GPIO1_BASE_ADDR),
-+		.irq = MX51_MXC_INT_GPIO1_LOW,
-+		.virtual_irq_start = MXC_GPIO_IRQ_START
-+	},
-+	{
-+		.chip.label = "gpio-1",
-+		.base = MX51_IO_ADDRESS(MX51_GPIO2_BASE_ADDR),
-+		.irq = MX51_MXC_INT_GPIO2_LOW,
-+		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 1
-+	},
-+	{
-+		.chip.label = "gpio-2",
-+		.base = MX51_IO_ADDRESS(MX51_GPIO3_BASE_ADDR),
-+		.irq = MX51_MXC_INT_GPIO3_LOW,
-+		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 2
-+	},
-+	{
-+		.chip.label = "gpio-3",
-+		.base = MX51_IO_ADDRESS(MX51_GPIO4_BASE_ADDR),
-+		.irq = MX51_MXC_INT_GPIO4_LOW,
-+		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 3
-+	},
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
++ * MA 02110-1301, USA.
++ */
++
++#include <linux/delay.h>
++#include <linux/gpio.h>
++#include <linux/platform_device.h>
++#include <mach/iomux-mx51.h>
++#include <mach/mxc_ehci.h>
++#include <mach/common.h>
++#include "devices.h"
++
++#define	GPIO1_27	(0*32 +27)
++
++extern int fsl_usb_host_init(struct platform_device *pdev);
++extern int fsl_usb_host_uninit(struct fsl_usb2_platform_data *pdata);
++
++static int fsl_usb_host_init_ext(struct platform_device *pdev);
++static int fsl_usb_host_uninit_ext(struct platform_device *pdev);
++
++static struct mxc_usbh_platform_data usbh1_config = {
++	.init	= fsl_usb_host_init_ext,
++	.exit	= fsl_usb_host_uninit_ext,
++	.portsc	= MXC_EHCI_MODE_ULPI,
++	.flags	= MXC_EHCI_POWER_PINS_ENABLED,
 +};
 +
- int __init mxc_register_gpios(void)
- {
--	return 0;
-+	return mxc_gpio_init(mxc_gpio_ports, 4);
- }
-diff --git a/arch/arm/plat-mxc/gpio.c b/arch/arm/plat-mxc/gpio.c
-index 70b2389..1df23b2 100644
---- a/arch/arm/plat-mxc/gpio.c
-+++ b/arch/arm/plat-mxc/gpio.c
-@@ -3,7 +3,7 @@
-  * Copyright 2008 Juergen Beisert, kernel@pengutronix.de
-  *
-  * Based on code from Freescale,
-- * Copyright 2004-2006 Freescale Semiconductor, Inc. All Rights Reserved.
-+ * Copyright (C) 2004-2010 Freescale Semiconductor, Inc. All Rights Reserved.
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-@@ -38,7 +38,6 @@ static int gpio_table_size;
- #define GPIO_ICR2	(cpu_is_mx1_mx2() ? 0x2C : 0x10)
- #define GPIO_IMR	(cpu_is_mx1_mx2() ? 0x30 : 0x14)
- #define GPIO_ISR	(cpu_is_mx1_mx2() ? 0x34 : 0x18)
--#define GPIO_ISR	(cpu_is_mx1_mx2() ? 0x34 : 0x18)
- 
- #define GPIO_INT_LOW_LEV	(cpu_is_mx1_mx2() ? 0x3 : 0x0)
- #define GPIO_INT_HIGH_LEV	(cpu_is_mx1_mx2() ? 0x2 : 0x1)
-@@ -171,6 +170,25 @@ static void mxc_gpio_irq_handler(struct mxc_gpio_port *port, u32 irq_stat)
- 	}
- }
- 
-+/* one interrupt *per* gpio port */
-+static void mx5_gpio_irq_handler(u32 irq, struct irq_desc *desc)
++/*
++ * USB Host1 HS port
++ */
++static int gpio_usbh1_active(void)
 +{
-+	u32 irq_stat;
-+	u32 mask = 0xFFFFFFFF;
-+	struct mxc_gpio_port *port = (struct mxc_gpio_port *)get_irq_data(irq);
++	struct pad_desc usbh1stp_gpio = MX51_PAD_GPIO_1_27__USBH1_STP_ERR;
++	int ret;
 +
-+#ifdef MXC_GPIO_SPLIT_IRQ_2
-+	if (irq == port->irq)
-+		mask = 0x0000FFFF;
-+	else
-+		mask = 0xFFFF0000;
-+#endif
++	/* Set USBH1_STP to GPIO and toggle it */
++	mxc_iomux_v3_setup_pad(&usbh1stp_gpio);
++	ret = gpio_request(GPIO1_27, "usbh1_stp");
 +
-+	irq_stat = __raw_readl(port->base + GPIO_ISR) &
-+			(__raw_readl(port->base + GPIO_IMR) & mask);
-+	mxc_gpio_irq_handler(port, irq_stat);
++	if (ret) {
++		pr_debug("failed to get USBH1_STP_GPIO1_27: %d\n", ret);
++		return ret;
++	}
++	gpio_direction_output(GPIO1_27, 0);
++	gpio_set_value(GPIO1_27, 1);
++
++	msleep(100);
++	gpio_free(GPIO1_27);
++	return 0;
 +}
 +
- /* MX1 and MX3 has one interrupt *per* gpio port */
- static void mx3_gpio_irq_handler(u32 irq, struct irq_desc *desc)
- {
-@@ -289,11 +307,13 @@ int __init mxc_gpio_init(struct mxc_gpio_port *port, int cnt)
- 		/* its a serious configuration bug when it fails */
- 		BUG_ON( gpiochip_add(&port[i].chip) < 0 );
- 
--		if (cpu_is_mx1() || cpu_is_mx3() || cpu_is_mx25()) {
--			/* setup one handler for each entry */
-+		/* setup one handler for each entry */
-+		if (cpu_is_mx1() || cpu_is_mx3() || cpu_is_mx25())
- 			set_irq_chained_handler(port[i].irq, mx3_gpio_irq_handler);
--			set_irq_data(port[i].irq, &port[i]);
--		}
-+		else if (cpu_is_mx51())
-+			set_irq_chained_handler(port[i].irq, mx5_gpio_irq_handler);
++static int fsl_usb_host_init_ext(struct platform_device *pdev)
++{
++	int ret;
++	struct pad_desc usbh1stp = MX51_PAD_GPIO_1_27__USBH1_STP;
 +
-+		set_irq_data(port[i].irq, &port[i]);
- 	}
- 
- 	if (cpu_is_mx2()) {
++	gpio_usbh1_active();
++	ret = fsl_usb_host_init(pdev);
++	if (ret)
++		return ret;
++
++	/* setback USBH1_STP to be function */
++	mxc_iomux_v3_setup_pad(&usbh1stp);
++	return 0;
++}
++
++static int fsl_usb_host_uninit_ext(struct platform_device *pdev)
++{
++	return fsl_usb_host_uninit(pdev);
++}
++void __init mx5_usbh1_init(void)
++{
++	mxc_register_device(&mxc_usbh1_device, &usbh1_config);
++}
++
 -- 
 1.6.0.4
 
