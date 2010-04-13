@@ -1,86 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab0DMTfT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 15:35:19 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52119 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752492Ab0DMTfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 15:35:16 -0400
-Date: Tue, 13 Apr 2010 19:33:54 GMT
-From: tip-bot for Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
-       mingo@redhat.com, andi@firstfloor.org, peterz@infradead.org,
-       alan@lxorguk.ukuu.org.uk, davem@davemloft.net, torvalds@osdl.org,
-       gregkh@suse.de, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
-       linux-kernel@vger.kernel.org, andi@firstfloor.org, peterz@infradead.org,
-       alan@lxorguk.ukuu.org.uk, davem@davemloft.net, torvalds@osdl.org,
-       gregkh@suse.de, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20100326000405.758579387@linutronix.de>
-References: <20100326000405.758579387@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] genirq: Run irq handlers with interrupts disabled
-Message-ID: <tip-e58aa3d2d0cc01ad8d6f7f640a0670433f794922@git.kernel.org>
-Git-Commit-ID: e58aa3d2d0cc01ad8d6f7f640a0670433f794922
-X-Mailer: tip-git-log-daemon
+	id S1752071Ab0DMTgR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 15:36:17 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:54029 "EHLO
+	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431Ab0DMTgQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 15:36:16 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 13 Apr 2010 19:33:56 +0000 (UTC)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 2.6.34-rc4 1/8] mx5: Add registration of GPIOs for MX51 Babbage board.
+Date: Tue, 13 Apr 2010 12:36:07 -0700
+Message-ID: <86A0E76937111F4C92FABEC0A2098851046C7A62@az33exm21>
+In-Reply-To: <20100413164532.GM30801@buzzloop.caiaq.de>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 2.6.34-rc4 1/8] mx5: Add registration of GPIOs for MX51 Babbage board.
+Thread-Index: AcrbKOhShfGzQjOaTXu05eQ4SmkypAAFxntQ
+References: <1271175030-3635-1-git-send-email-Dinh.Nguyen@freescale.com> <20100413164532.GM30801@buzzloop.caiaq.de>
+From: "Nguyen Dinh-R00091" <R00091@freescale.com>
+To: "Daniel Mack" <daniel@caiaq.de>
+Cc: <linux-kernel@vger.kernel.org>, <amit.kucheria@canonical.com>,
+       <linux@arm.linux.org.uk>, <s.hauer@pengutronix.de>,
+       <grant.likely@secretlab.ca>,
+       "Herring Robert-RA7055" <RA7055@freescale.com>,
+       <linux-arm-kernel@lists.infradead.org>, <bryan.wu@canonical.com>,
+       <valentin.longchamp@epfl.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e58aa3d2d0cc01ad8d6f7f640a0670433f794922
-Gitweb:     http://git.kernel.org/tip/e58aa3d2d0cc01ad8d6f7f640a0670433f794922
-Author:     Ingo Molnar <mingo@elte.hu>
-AuthorDate: Fri, 26 Mar 2010 00:06:51 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 13 Apr 2010 16:36:40 +0200
-
-genirq: Run irq handlers with interrupts disabled
-
-Running interrupt handlers with interrupts enabled can cause stack
-overflows. That has been observed with multiqueue NICs delivering all
-their interrupts to a single core. We might band aid that somehow by
-checking the interrupt stacks, but the real safe fix is to run the irq
-handlers with interrupts disabled.
-
-Drivers for whacky hardware still can reenable them in the handler
-itself, if the need arises. (They do already due to lockdep)
-
-The risk of doing this is rather low:
-
- - lockdep already enforces this
- - CONFIG_NOHZ has shaken out the drivers which relied on jiffies updates
- - time keeping is not longer sensitive to the timer interrupt being delayed
-
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: David Miller <davem@davemloft.net>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Linus Torvalds <torvalds@osdl.org>
-LKML-Reference: <20100326000405.758579387@linutronix.de>
-
----
- kernel/irq/handle.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
-index 76d5a67..27e5c69 100644
---- a/kernel/irq/handle.c
-+++ b/kernel/irq/handle.c
-@@ -370,9 +370,6 @@ irqreturn_t handle_IRQ_event(unsigned int irq, struct irqaction *action)
- 	irqreturn_t ret, retval = IRQ_NONE;
- 	unsigned int status = 0;
  
--	if (!(action->flags & IRQF_DISABLED))
--		local_irq_enable_in_hardirq();
--
- 	do {
- 		trace_irq_handler_entry(irq, action);
- 		ret = action->handler(irq, action->dev_id);
+
+-----Original Message-----
+From: Daniel Mack [mailto:daniel@caiaq.de] 
+Sent: Tuesday, April 13, 2010 11:46 AM
+To: Nguyen Dinh-R00091
+Cc: linux-kernel@vger.kernel.org; amit.kucheria@canonical.com;
+linux@arm.linux.org.uk; s.hauer@pengutronix.de;
+grant.likely@secretlab.ca; Herring Robert-RA7055;
+linux-arm-kernel@lists.infradead.org; bryan.wu@canonical.com;
+valentin.longchamp@epfl.ch
+Subject: Re: [PATCH 2.6.34-rc4 1/8] mx5: Add registration of GPIOs for
+MX51 Babbage board.
+
+First, I'm glad to see Freescale sending patches for mainline code -
+thanks for doing this :)
+
+Other people might give more detailed feedback, but I'll still comment
+on some things that caught my eye.
+
+[Dinh-FSL] - Thanks Daniel!
+
+On Tue, Apr 13, 2010 at 11:10:24AM -0500, Dinh.Nguyen@freescale.com
+wrote:
+
+[...]
+
+> index d6fd396..73f2342 100644
+> --- a/arch/arm/mach-mx5/devices.c
+> +++ b/arch/arm/mach-mx5/devices.c
+> @@ -1,5 +1,6 @@
+>  /*
+>   * Copyright 2009 Amit Kucheria <amit.kucheria@canonical.com>
+> + * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights
+Reserved.
+>   *
+>   * The code contained herein is licensed under the GNU General Public
+>   * License. You may obtain a copy of the GNU General Public License 
+> @@ -11,7 +12,9 @@
+>  
+>  #include <linux/platform_device.h>
+>  #include <mach/hardware.h>
+> +#include <mach/gpio.h>
+>  #include <mach/imx-uart.h>
+> +#include <mach/irqs.h>
+>  
+>  static struct resource uart0[] = {
+>  	{
+> @@ -89,8 +92,34 @@ struct platform_device mxc_fec_device = {
+>  	.resource = mxc_fec_resources,
+>  };
+>  
+> -/* Dummy definition to allow compiling in AVIC and TZIC 
+> simultaneously */
+> +struct mxc_gpio_port mxc_gpio_ports[] = {
+> +	{
+> +		.chip.label = "gpio-0",
+> +		.base = MX51_IO_ADDRESS(MX51_GPIO1_BASE_ADDR),
+> +		.irq = MX51_MXC_INT_GPIO1_LOW,
+> +		.virtual_irq_start = MXC_GPIO_IRQ_START
+> +	},
+> +	{
+> +		.chip.label = "gpio-1",
+> +		.base = MX51_IO_ADDRESS(MX51_GPIO2_BASE_ADDR),
+> +		.irq = MX51_MXC_INT_GPIO2_LOW,
+> +		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 1
+> +	},
+> +	{
+> +		.chip.label = "gpio-2",
+> +		.base = MX51_IO_ADDRESS(MX51_GPIO3_BASE_ADDR),
+> +		.irq = MX51_MXC_INT_GPIO3_LOW,
+> +		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 2
+> +	},
+> +	{
+> +		.chip.label = "gpio-3",
+> +		.base = MX51_IO_ADDRESS(MX51_GPIO4_BASE_ADDR),
+> +		.irq = MX51_MXC_INT_GPIO4_LOW,
+> +		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 3
+> +	},
+> +};
+> +
+>  int __init mxc_register_gpios(void)
+>  {
+> -	return 0;
+> +	return mxc_gpio_init(mxc_gpio_ports, 4);
+
+Use ARRAY_SIZE() instead of the hard-coded constant.
+[Dinh-FSL]: will be corrected
+
+> diff --git a/arch/arm/plat-mxc/gpio.c b/arch/arm/plat-mxc/gpio.c index
+
+> 70b2389..1df23b2 100644
+> --- a/arch/arm/plat-mxc/gpio.c
+> +++ b/arch/arm/plat-mxc/gpio.c
+> @@ -3,7 +3,7 @@
+>   * Copyright 2008 Juergen Beisert, kernel@pengutronix.de
+>   *
+>   * Based on code from Freescale,
+> - * Copyright 2004-2006 Freescale Semiconductor, Inc. All Rights
+Reserved.
+> + * Copyright (C) 2004-2010 Freescale Semiconductor, Inc. All Rights
+Reserved.
+>   *
+>   * This program is free software; you can redistribute it and/or
+>   * modify it under the terms of the GNU General Public License @@ 
+> -38,7 +38,6 @@ static int gpio_table_size;
+>  #define GPIO_ICR2	(cpu_is_mx1_mx2() ? 0x2C : 0x10)
+>  #define GPIO_IMR	(cpu_is_mx1_mx2() ? 0x30 : 0x14)
+>  #define GPIO_ISR	(cpu_is_mx1_mx2() ? 0x34 : 0x18)
+> -#define GPIO_ISR	(cpu_is_mx1_mx2() ? 0x34 : 0x18)
+>  
+>  #define GPIO_INT_LOW_LEV	(cpu_is_mx1_mx2() ? 0x3 : 0x0)
+>  #define GPIO_INT_HIGH_LEV	(cpu_is_mx1_mx2() ? 0x2 : 0x1)
+> @@ -171,6 +170,25 @@ static void mxc_gpio_irq_handler(struct
+mxc_gpio_port *port, u32 irq_stat)
+>  	}
+>  }
+>  
+> +/* one interrupt *per* gpio port */
+> +static void mx5_gpio_irq_handler(u32 irq, struct irq_desc *desc) {
+> +	u32 irq_stat;
+> +	u32 mask = 0xFFFFFFFF;
+> +	struct mxc_gpio_port *port = (struct mxc_gpio_port 
+> +*)get_irq_data(irq);
+> +
+> +#ifdef MXC_GPIO_SPLIT_IRQ_2
+
+Where is that macro defined?
+[Dinh-FSL] - This macro is optional so that the interrupts can be broken
+up into 2 sets.
+
+> +	if (irq == port->irq)
+> +		mask = 0x0000FFFF;
+> +	else
+> +		mask = 0xFFFF0000;
+> +#endif
+> +
+> +	irq_stat = __raw_readl(port->base + GPIO_ISR) &
+> +			(__raw_readl(port->base + GPIO_IMR) & mask);
+> +	mxc_gpio_irq_handler(port, irq_stat); }
+> +
+>  /* MX1 and MX3 has one interrupt *per* gpio port */  static void 
+> mx3_gpio_irq_handler(u32 irq, struct irq_desc *desc)  { @@ -289,11 
+> +307,13 @@ int __init mxc_gpio_init(struct mxc_gpio_port *port, int
+cnt)
+>  		/* its a serious configuration bug when it fails */
+>  		BUG_ON( gpiochip_add(&port[i].chip) < 0 );
+>  
+> -		if (cpu_is_mx1() || cpu_is_mx3() || cpu_is_mx25()) {
+> -			/* setup one handler for each entry */
+> +		/* setup one handler for each entry */
+> +		if (cpu_is_mx1() || cpu_is_mx3() || cpu_is_mx25())
+>  			set_irq_chained_handler(port[i].irq,
+mx3_gpio_irq_handler);
+> -			set_irq_data(port[i].irq, &port[i]);
+> -		}
+> +		else if (cpu_is_mx51())
+> +			set_irq_chained_handler(port[i].irq,
+mx5_gpio_irq_handler);
+> +
+> +		set_irq_data(port[i].irq, &port[i]);
+>  	}
+>  
+>  	if (cpu_is_mx2()) {
+> --
+> 1.6.0.4
+
