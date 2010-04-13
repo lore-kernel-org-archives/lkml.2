@@ -1,112 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab0DMUWt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 16:22:49 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:58092 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751628Ab0DMUWs (ORCPT
+	id S1753399Ab0DMUXE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 16:23:04 -0400
+Received: from mga03.intel.com ([143.182.124.21]:41343 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753346Ab0DMUXA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 16:22:48 -0400
-Date: Tue, 13 Apr 2010 16:20:21 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Message-ID: <20100413202021.GZ13327@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Mel Gorman <mel@csn.ul.ie>, Dave Chinner <david@fromorbit.com>,
-	linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-	linux-fsdevel@vger.kernel.org
-References: <1271117878-19274-1-git-send-email-david@fromorbit.com>
- <20100413095815.GU25756@csn.ul.ie>
- <20100413111902.GY2493@dastard>
- <20100413193428.GI25756@csn.ul.ie>
+	Tue, 13 Apr 2010 16:23:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,199,1270450800"; 
+   d="scan'208";a="265250749"
+From: "Tung, Chien Tin" <chien.tin.tung@intel.com>
+To: Steve Wise <swise@opengridcomputing.com>
+CC: Andrea Gozzelino <Andrea.Gozzelino@lnl.infn.it>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+       "rolandd@cisco.com" <rolandd@cisco.com>,
+       "peterz@infradead.org" <peterz@infradead.org>,
+       "pavel@ucw.cz" <pavel@ucw.cz>, "mingo@elte.hu" <mingo@elte.hu>,
+       Eric B Munson <ebmunson@us.ibm.com>
+Date: Tue, 13 Apr 2010 13:22:40 -0700
+Subject: RE: Socket Direct Protocol: help (2)
+Thread-Topic: Socket Direct Protocol: help (2)
+Thread-Index: AcrbRrmyR/rFhElFTvCo7Eq5L/6kIgAAELlg
+Message-ID: <2EFBCAEF10980645BBCFB605689E08E9047C7405E9@azsmsx506.amr.corp.intel.com>
+References: <13381_1271060138_o3C8FUH8013968_2977669.1271060085255.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+ <1246722.1271082830120.SLOX.WebMail.wwwrun@imap.lnl.infn.it>
+ <2EFBCAEF10980645BBCFB605689E08E9047C7402DA@azsmsx506.amr.corp.intel.com>
+ <4BC49E2B.3000804@opengridcomputing.com>
+ <2EFBCAEF10980645BBCFB605689E08E9047C7405A0@azsmsx506.amr.corp.intel.com>
+ <4BC4D22A.6020700@opengridcomputing.com>
+In-Reply-To: <4BC4D22A.6020700@opengridcomputing.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100413193428.GI25756@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4BC4D272.00A7:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 13, 2010 at 08:34:29PM +0100, Mel Gorman wrote:
-> > This problem is not a filesystem recursion problem which is, as I
-> > understand it, what GFP_NOFS is used to prevent. It's _any_ kernel
-> > code that uses signficant stack before trying to allocate memory
-> > that is the problem. e.g a select() system call:
-> > 
-> >        Depth    Size   Location    (47 entries)
-> >        -----    ----   --------
-> >  0)     7568      16   mempool_alloc_slab+0x16/0x20
-> >  1)     7552     144   mempool_alloc+0x65/0x140
-> >  2)     7408      96   get_request+0x124/0x370
-> >  3)     7312     144   get_request_wait+0x29/0x1b0
-> >  4)     7168      96   __make_request+0x9b/0x490
-> >  5)     7072     208   generic_make_request+0x3df/0x4d0
-> >  6)     6864      80   submit_bio+0x7c/0x100
-> >  7)     6784      96   _xfs_buf_ioapply+0x128/0x2c0 [xfs]
-> > ....
-> > 32)     3184      64   xfs_vm_writepage+0xab/0x160 [xfs]
-> > 33)     3120     384   shrink_page_list+0x65e/0x840
-> > 34)     2736     528   shrink_zone+0x63f/0xe10
-> > 35)     2208     112   do_try_to_free_pages+0xc2/0x3c0
-> > 36)     2096     128   try_to_free_pages+0x77/0x80
-> > 37)     1968     240   __alloc_pages_nodemask+0x3e4/0x710
-> > 38)     1728      48   alloc_pages_current+0x8c/0xe0
-> > 39)     1680      16   __get_free_pages+0xe/0x50
-> > 40)     1664      48   __pollwait+0xca/0x110
-> > 41)     1616      32   unix_poll+0x28/0xc0
-> > 42)     1584      16   sock_poll+0x1d/0x20
-> > 43)     1568     912   do_select+0x3d6/0x700
-> > 44)      656     416   core_sys_select+0x18c/0x2c0
-> > 45)      240     112   sys_select+0x4f/0x110
-> > 46)      128     128   system_call_fastpath+0x16/0x1b
-> > 
-> > There's 1.6k of stack used before memory allocation is called, 3.1k
-> > used there before ->writepage is entered, XFS used 3.5k, and
-> > if the mempool needed to allocate a page it would have blown the
-> > stack. If there was any significant storage subsystem (add dm, md
-> > and/or scsi of some kind), it would have blown the stack.
-> > 
-> > Basically, there is not enough stack space available to allow direct
-> > reclaim to enter ->writepage _anywhere_ according to the stack usage
-> > profiles we are seeing here....
-> > 
-> 
-> I'm not denying the evidence but how has it been gotten away with for years
-> then? Prevention of writeback isn't the answer without figuring out how
-> direct reclaimers can queue pages for IO and in the case of lumpy reclaim
-> doing sync IO, then waiting on those pages.
+>>> Chien, does the NE020 support FMRs?  I looked at the nes ofed-1.5 code
+>>> and it appears to do nothing in the map_phys_fmr functions.
+>>>
+>>
+>> We never implemented map_phys_fmr.  Is it relevant to the # of SGEs?
+>>
+>No, but SDP uses FMRs.  I don't think it will run without FMR support.
+>
 
-So, I've been reading along, nodding my head to Dave's side of things
-because seeks are evil and direct reclaim makes seeks.  I'd really loev
-for direct reclaim to somehow trigger writepages on large chunks instead
-of doing page by page spatters of IO to the drive.
 
-But, somewhere along the line I overlooked the part of Dave's stack trace
-that said:
+Good to know.  Thanks.
 
-43)     1568     912   do_select+0x3d6/0x700
+Chien
 
-Huh, 912 bytes...for select, really?  From poll.h:
 
-/* ~832 bytes of stack space used max in sys_select/sys_poll before allocating
-   additional memory. */
-#define MAX_STACK_ALLOC 832
-#define FRONTEND_STACK_ALLOC    256
-#define SELECT_STACK_ALLOC      FRONTEND_STACK_ALLOC
-#define POLL_STACK_ALLOC        FRONTEND_STACK_ALLOC
-#define WQUEUES_STACK_ALLOC     (MAX_STACK_ALLOC - FRONTEND_STACK_ALLOC)
-#define N_INLINE_POLL_ENTRIES   (WQUEUES_STACK_ALLOC / sizeof(struct poll_table_entry))
-
-So, select is intentionally trying to use that much stack.  It should be using
-GFP_NOFS if it really wants to suck down that much stack...if only the
-kernel had some sort of way to dynamically allocate ram, it could try
-that too.
-
--chris
