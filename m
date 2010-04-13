@@ -1,136 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201Ab0DMOhW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 10:37:22 -0400
-Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:51928 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751966Ab0DMOhK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 10:37:10 -0400
-Date: Wed, 14 Apr 2010 00:36:59 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
-Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
-Message-ID: <20100413143659.GA2493@dastard>
-References: <20100413142445.D0FE.A69D9226@jp.fujitsu.com>
- <20100413102938.GX2493@dastard>
- <20100413201635.D119.A69D9226@jp.fujitsu.com>
+	id S1752280Ab0DMPAT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 11:00:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40610 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750906Ab0DMPAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 11:00:17 -0400
+Message-ID: <4BC486CE.1040503@redhat.com>
+Date: Tue, 13 Apr 2010 10:59:26 -0400
+From: Peter Jones <pjones@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc14 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100413201635.D119.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+CC: Mike Christie <michaelc@cs.wisc.edu>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, open-iscsi@googlegroups.com
+Subject: Re: [PATCH 2/2] RFC: iscsi ibft: convert iscsi_ibft module to iscsi
+ boot lib
+References: <1271095578-4212-1-git-send-email-michaelc@cs.wisc.edu> <201004122221.05326.konrad@darnok.org> <4BC3D7C1.90307@cs.wisc.edu> <201004122236.13843.konrad@darnok.org>
+In-Reply-To: <201004122236.13843.konrad@darnok.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 13, 2010 at 08:39:29PM +0900, KOSAKI Motohiro wrote:
-> Hi
+On 04/12/2010 10:36 PM, Konrad Rzeszutek Wilk wrote:
+> On Monday 12 April 2010 22:32:33 Mike Christie wrote:
+>> On 04/12/2010 09:21 PM, Konrad Rzeszutek Wilk wrote:
+>>>> + * Helper routiners to check to determine if the entry is valid
+>>>> + * in the proper iBFT structure.
+>>>> + */
+>>>> +static mode_t ibft_check_nic_for(void *data, int type)
+>>>> +{
+>>>> +	struct ibft_kobject *entry = data;
+>>>> +	struct ibft_nic *nic = entry->nic;
+>>>> +	mode_t rc = 0;
+>>>> +
+>>>> +	switch (type) {
+>>>> +	case ISCSI_BOOT_ETH_INDEX:
+>>>> +	case ISCSI_BOOT_ETH_FLAGS:
+>>>> +		rc = 1;
+>>>
+>>> Did you mean for that value?
+>>>
+>>>> +		break;
+>>>> +	case ISCSI_BOOT_ETH_IP_ADDR:
+>>>> +		if (memcmp(nic->ip_addr, nulls, sizeof(nic->ip_addr)))
+>>>> +			rc = S_IRUGO;
+>>>> +		break;
+>>>> +	case ISCSI_BOOT_ETH_SUBNET_MASK:
+>>>> +		if (nic->subnet_mask_prefix)
+>>>> +			rc = S_IRUGO;
+>>>> +		break;
+>>>> +	case ISCSI_BOOT_ETH_ORIGIN:
+>>>> +		rc = 1;
+>>>
+>>> and this one as well?
+>>
+>> I did not. They should be S_IRUGO. Do you want me to resubmit the
+>> patches or are you just going to edit those two lines if you merge them?
 > 
-> > > Pros:
-> > > 	1) prevent XFS stack overflow
-> > > 	2) improve io workload performance
-> > > 
-> > > Cons:
-> > > 	3) TOTALLY kill lumpy reclaim (i.e. high order allocation)
-> > > 
-> > > So, If we only need to consider io workload this is no downside. but
-> > > it can't.
-> > > 
-> > > I think (1) is XFS issue. XFS should care it itself.
-> > 
-> > The filesystem is irrelevant, IMO.
-> > 
-> > The traces from the reporter showed that we've got close to a 2k
-> > stack footprint for memory allocation to direct reclaim and then we
-> > can put the entire writeback path on top of that. This is roughly
-> > 3.5k for XFS, and then depending on the storage subsystem
-> > configuration and transport can be another 2k of stack needed below
-> > XFS.
-> > 
-> > IOWs, if we completely ignore the filesystem stack usage, there's
-> > still up to 4k of stack needed in the direct reclaim path. Given
-> > that one of the stack traces supplied show direct reclaim being
-> > entered with over 3k of stack already used, pretty much any
-> > filesystem is capable of blowing an 8k stack.
-> > 
-> > So, this is not an XFS issue, even though XFS is the first to
-> > uncover it. Don't shoot the messenger....
-> 
-> Thanks explanation. I haven't noticed direct reclaim consume
-> 2k stack. I'll investigate it and try diet it.
-> But XFS 3.5K stack consumption is too large too. please diet too.
+> No need to resend them (unless Peter eyes found something I missed).
 
-It hasn't grown in the last 2 years after the last major diet where
-all the fat was trimmed from it in the last round of the i386 4k
-stack vs XFS saga. it seems that everything else around XFS has
-grown in that time, and now we are blowing stacks again....
+Nope, that's all I see.
 
-> > Hence I think that direct reclaim should be deferring to the
-> > background flusher threads for cleaning memory and not trying to be
-> > doing it itself.
-> 
-> Well, you seems continue to discuss io workload. I don't disagree
-> such point. 
-> 
-> example, If only order-0 reclaim skip pageout(), we will get the above
-> benefit too.
-
-But it won't prevent start blowups...
-
-> > > but we never kill pageout() completely because we can't
-> > > assume users don't run high order allocation workload.
-> > 
-> > I think that lumpy reclaim will still work just fine.
-> > 
-> > Lumpy reclaim appears to be using IO as a method of slowing
-> > down the reclaim cycle - the congestion_wait() call will still
-> > function as it does now if the background flusher threads are active
-> > and causing congestion. I don't see why lumpy reclaim specifically
-> > needs to be issuing IO to make it work - if the congestion_wait() is
-> > not waiting long enough then wait longer - don't issue IO to extend
-> > the wait time.
-> 
-> lumpy reclaim is for allocation high order page. then, it not only
-> reclaim LRU head page, but also its PFN neighborhood. PFN neighborhood
-> is often newly page and still dirty. then we enfoce pageout cleaning
-> and discard it.
-
-Ok, I see that now - I missed the second call to __isolate_lru_pages()
-in isolate_lru_pages().
-
-> When high order allocation occur, we don't only need free enough amount
-> memory, but also need free enough contenious memory block.
-
-Agreed, that was why I was kind of surprised not to find it was
-doing that. But, as you have pointed out, that was my mistake.
-
-> If we need to consider _only_ io throughput, waiting flusher thread
-> might faster perhaps, but actually we also need to consider reclaim
-> latency. I'm worry about such point too.
-
-True, but without know how to test and measure such things I can't
-really comment...
-
-> > Of course, the code is a maze of twisty passages, so I probably
-> > missed something important. Hopefully someone can tell me what. ;)
-> > 
-> > FWIW, the biggest problem here is that I have absolutely no clue on
-> > how to test what the impact on lumpy reclaim really is. Does anyone
-> > have a relatively simple test that can be run to determine what the
-> > impact is?
-> 
-> So, can you please run two workloads concurrently?
->  - Normal IO workload (fio, iozone, etc..)
->  - echo $NUM > /proc/sys/vm/nr_hugepages
-
-What do I measure/observe/record that is meaningful?
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+        Peter
+
+Sanity's just a one trick pony anyway.  You only get one trick -- rational
+thinking -- but when you're good and crazy, the sky's the limit!
+		-- The Tick
