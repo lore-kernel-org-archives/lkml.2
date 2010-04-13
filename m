@@ -1,80 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab0DMPsl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 11:48:41 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:47452 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752708Ab0DMPsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 11:48:40 -0400
-Date: Tue, 13 Apr 2010 16:48:20 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Bob Liu <lliubbo@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Tejun Heo <tj@kernel.org>,
-       Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH 2/6] change alloc function in pcpu_alloc_pages
-Message-ID: <20100413154820.GC25756@csn.ul.ie>
-References: <9918f566ab0259356cded31fd1dd80da6cae0c2b.1271171877.git.minchan.kim@gmail.com> <d5d70d4b57376bc89f178834cf0e424eaa681ab4.1271171877.git.minchan.kim@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <d5d70d4b57376bc89f178834cf0e424eaa681ab4.1271171877.git.minchan.kim@gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1753122Ab0DMPwz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 11:52:55 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57289 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752654Ab0DMPwy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 11:52:54 -0400
+Subject: Re: [RFC PATCH 2/4] ARM: hw-breakpoint: add ARM backend for the 
+ hw-breakpoint framework
+From: Will Deacon <will.deacon@arm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+       "K . Prasad" <prasad@linux.vnet.ibm.com>,
+       LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <h2mc62985531004130632kd086ffe9o16edafc359fa0e2@mail.gmail.com>
+References: <1268236874-7877-1-git-send-email-will.deacon@arm.com>
+	 <1268236874-7877-2-git-send-email-will.deacon@arm.com>
+	 <1268236874-7877-3-git-send-email-will.deacon@arm.com>
+	 <h2mc62985531004130632kd086ffe9o16edafc359fa0e2@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 13 Apr 2010 16:52:45 +0100
+Message-ID: <1271173965.17356.28.camel@e102144-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Apr 2010 15:52:45.0706 (UTC) FILETIME=[5BFAFEA0:01CADB21]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 14, 2010 at 12:24:59AM +0900, Minchan Kim wrote:
-> alloc_pages_node is called with cpu_to_node(cpu).
-> I think cpu_to_node(cpu) never returns -1.
-> (But I am not sure we need double check.)
+Hi Frederic,
+
+Many thanks for taking a look at the these patches, I appreciate the
+feedback.
+
+On Tue, 2010-04-13 at 14:32 +0100, Frederic Weisbecker wrote:
+> (WARNING: I've browsed the ARMv7 breakpoints implementation
+> but I may have an erratic/incomplete understanding, then parts
+> of this review might make little sense)
 > 
-> So we can use alloc_pages_exact_node instead of alloc_pages_node.
-> It could avoid comparison and branch as 6484eb3e2a81807722 tried.
+It looks like you've understood it correctly. Actually, I have
+a disclaimer of my own; I'm using a new mail client in the hope
+that LKML won't drop my messages. Anyway...
 > 
-
-Well, numa_node_id() is implemented as
-
-#ifndef numa_node_id
-#define numa_node_id()          (cpu_to_node(raw_smp_processor_id()))
-#endif
-
-and the mapping table on x86 at least is based on possible CPUs in
-init_cpu_to_node() leaves the mapping as 0 if the APIC is bad or the numa
-node is reported in apicid_to_node as -1. It would appear on power that
-the node will be 0 for possible CPUs as well.
-
-Hence, I believe this to be safe but a confirmation from Tejun would be
-nice. I would continue digging but this looks like an initialisation path
-so I'll move on to the next patch rather than spending more time.
-
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Christoph Lameter <cl@linux-foundation.org>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> ---
->  mm/percpu.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> 2010/3/10 Will Deacon <will.deacon@arm.com>:
+> > The hw-breakpoint framework in the kernel requires architecture-specific
+> > support in order to install, remove, validate and manage hardware
+> > breakpoints.
+> >
+> > This patch adds preliminary support for this framework to the ARM
+> > architecture, but restricts the number of watchpoints to a single resource
+> > to get around the fact that the Data Fault Address Register is unpredictable
+> > when a watchpoint debug exception is taken.
 > 
-> diff --git a/mm/percpu.c b/mm/percpu.c
-> index 768419d..ec3e671 100644
-> --- a/mm/percpu.c
-> +++ b/mm/percpu.c
-> @@ -720,7 +720,7 @@ static int pcpu_alloc_pages(struct pcpu_chunk *chunk,
->  		for (i = page_start; i < page_end; i++) {
->  			struct page **pagep = &pages[pcpu_page_idx(cpu, i)];
->  
-> -			*pagep = alloc_pages_node(cpu_to_node(cpu), gfp, 0);
-> +			*pagep = alloc_pages_exact_node(cpu_to_node(cpu), gfp, 0);
->  			if (!*pagep) {
->  				pcpu_free_pages(chunk, pages, populated,
->  						page_start, page_end);
-> -- 
-> 1.7.0.5
+> What do you mean here by unpredictable? It would be a pity to limit the
+> resources to one register.
 > 
+By unpredictable I mean that the value in the DFAR is not defined to
+correspond to the causative address in any way. This isn't the case
+for a standard data abort, but it is in the case of a watchpoint
+exception.
+> 
+> > +}
+> > +
+> > +/* Determine number of WRP registers available. */
+> > +static int get_num_wrps(void)
+> > +{
+> > +       /*
+> > +        * FIXME: When a watchpoint fires, the only way to work out which
+> > +        * watchpoint it was is by disassembling the faulting instruction
+> > +        * and working out the address of the memory access.
+> 
+> Doh! That must explain the problem with DFAR...
+> That's really not convenient :-(
+> 
+I know, it makes life a lot harder for us. The most annoying thing is that
+I'm yet to find a real implementation that *doesn't* set the DFAR to what
+we want - we just can't rely on that!
+> 
+<snip>
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+> > +       /* Setup the address register. */
+> > +       write_wb_reg(val_base + i, info->address);
+> > +
+> > +       /* Setup the control register. */
+> > +       write_wb_reg(ctrl_base + i, (info->type << 3) |
+> > +                       (info->privilege << 1) | (info->len << 5) | 1);
+
+> Ok, alternatively, why not having the control register in the arch
+> breakpoint structure:
+> 
+> u32   __reserved : 19,
+>         len             :  7,
+>         type           :  2,
+>         privilege      :  2,
+>         enabled      :  1;
+> 
+> It will avoid you to play with bitwise operations that may scale into dirty
+> and error prone as you may support more features from the control register
+> (link, mask, etc...).
+> 
+Nice, I like that a lot!
+
+> Ah and it will make ptrace support easier: the user writes into the val/ctrl
+> fields directly as if they were the true registers, then you can just validate
+> the fields you want without bitwise ops.
+> 
+I'm unsure about this. As mainline stands, ARM has no ptrace support for the
+hardware breakpoint registers. This means that we could expose the
+hardware resources in an idealised fashion via ptrace so that if the
+interface varies between CPUs, userspace doesn't need to care. I had a
+crack at this with another patch in the series here:
+
+http://lists.infradead.org/pipermail/linux-arm-kernel/2010-March/011169.html
+
+> > +       /* Check that the virtual address is in the proper range. */
+> > +       if (tsk) {
+> > +               if (!(info->privilege & ARM_BREAKPOINT_USER)) {
+> > +                       ret = -EFAULT;
+> > +                       goto out;
+> > +               }
+> > +       } else {
+> > +               if (!(info->privilege & ARM_BREAKPOINT_SUPER)) {
+> > +                       ret = -EFAULT;
+> > +                       goto out;
+> > +               }
+> > +       }
+> 
+> 
+> You seem to make a wrong assumption here.
+> This is not because the breakpoint is task-bound that we don't
+> want it to trigger on the kernel. We may want to trigger breakpoints
+> on tasklist_lock accesses from a given task.
+
+> The only case for which we don't want it to trigger on the kernel
+> is for ptrace breakpoints.
+> 
+Surely we can't have breakpoints triggering on *any* part of the
+breakpoint handling code path? Otherwise we'll just get stuck. That's
+why I disallow breakpoints in the exception section.
+
+> I guess I should remove this tsk parameter as it makes the things
+> only confusing. We should simply create ptrace breakpoints with
+> bp->attr.exclude_kernel set to 1.
+
+Sounds good to me. That also means that it's one less thing for the arch
+to worry about!
+> 
+> > +/*
+> > + * Release the user breakpoints used by ptrace.
+> > + */
+> > +void flush_ptrace_hw_breakpoint(struct task_struct *tsk)
+> > +{
+> > +       int i;
+> > +       struct thread_struct *t = &tsk->thread;
+> > +
+> > +       for (i = 0; i < HBP_NUM; i++) {
+> > +               unregister_hw_breakpoint(t->debug.hbp[i]);
+> > +               t->debug.hbp[i] = NULL;
+> > +       }
+> > +}
+> 
+> 
+> Do you actually support ptrace breakpoints?
+> 
+Yep. See the link mentioned above.
+> 
+> > +
+> > +void hw_breakpoint_pmu_unthrottle(struct perf_event *bp)
+> > +{
+> > +       /* TODO */
+> > +}
+> 
+> 
+> We don't need this callback anymore, it has been removed because
+> of ptrace corner cases...
+> 
+Ok, I'll remove it.
+
+I'll take a look at the new constraints and allocation patches you
+posted this morning and then adjust these patches accordingly.
+
+Thanks,
+
+Will
+
