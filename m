@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab0DMAob (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 20:44:31 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:45033 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754400Ab0DMAoa (ORCPT
+	id S1754508Ab0DMAu2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 20:50:28 -0400
+Received: from mga03.intel.com ([143.182.124.21]:15455 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754441Ab0DMAu0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 20:44:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=P1+w0haZbiGzKK7Y/9b19/i19zXdpJTWN4EpimErN0+YejADDWj2iVKXAy1gTjIClT
-         Tdl6IW3pB660jlqvmcn8QGr+MJXbjmr3zrzXgMPjJ9bwTWjx1mRqNSdqXcj3hLrmt+gh
-         3s+TIhqoHx91BkT6IAh/1drk2cdX2snU7GBZE=
+	Mon, 12 Apr 2010 20:50:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.52,193,1270450800"; 
+   d="scan'208";a="264861321"
+From: "Zhang, Xiantao" <xiantao.zhang@intel.com>
+To: Avi Kivity <avi@redhat.com>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Marcelo Tosatti <mtosatti@redhat.com>,
+       "Yang, Xiaowei" <xiaowei.yang@intel.com>,
+       "Dong, Eddie" <eddie.dong@intel.com>, "Li, Xin" <xin.li@intel.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Mike Galbraith <efault@gmx.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 13 Apr 2010 08:50:08 +0800
+Subject: RE: VM performance issue in KVM guests.
+Thread-Topic: VM performance issue in KVM guests.
+Thread-Index: AcraCyn2aeoqd45yTZ2+fSecFMG8/wAAhCoQ
+Message-ID: <EB8593BCECAB3D40A8248BE0B6400A38469046C1@shzsmsx502.ccr.corp.intel.com>
+References: <EB8593BCECAB3D40A8248BE0B6400A3846903F4C@shzsmsx502.ccr.corp.intel.com>
+ <4BC0D125.9050108@redhat.com>
+ <EB8593BCECAB3D40A8248BE0B6400A384690419B@shzsmsx502.ccr.corp.intel.com>
+ <4BC2C07B.4040607@redhat.com>
+In-Reply-To: <4BC2C07B.4040607@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20100411171856.GA24163@elf.ucw.cz>
-References: <20100411072625.GA9926@elf.ucw.cz>
-	 <n2g480988181004110742w2ce92bfdr4f0f01216f879fe8@mail.gmail.com>
-	 <20100411170117.GA22007@elf.ucw.cz>
-	 <p2s480988181004111005kdeb479ddzd3719799f140f4a9@mail.gmail.com>
-	 <20100411171856.GA24163@elf.ucw.cz>
-Date: Mon, 12 Apr 2010 17:44:29 -0700
-X-Google-Sender-Auth: 8a4f443c59d10baf
-Message-ID: <g2z480988181004121744r66174301s3254c2df43509e2@mail.gmail.com>
-Subject: Re: staging: udlfb -- staging version does not work, external does
-From: Bernie Thompson <bernie@plugable.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: roberto@unbit.it, gregkh@suse.de, Cyril Hrubis <metan@ucw.cz>,
-       kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
+Avi Kivity wrote:
+> On 04/12/2010 05:04 AM, Zhang, Xiantao wrote:
+>> 
+>>> What was the performance hit?  What was your I/O setup (image
+>>> format, using aio?) 
+>>> 
+>> The issue only happens when vcpu number is over-committed(e.g.
+>> vcpu/pcpu>2) and physical cpus are saturated. For example,  when run
+>> webbench in windows OS in this case, its performance drops by 80%. 
+>> In our experiment, we are using image file through virtio, and I
+>> think aio should be used by default also.    
+>> 
+> 
+> Is this on a machine that does pause-loop exits?  The current handing
+> of PLE is very suboptimal.  With proper directed yield we should be
+> much better there.
+> 
+> Without PLE, we need paravirtualized spinlocks, no way around it.
 
-Thanks again for reporting this.
+PLE has the ability to eliminate the issue at some extent, and pv solution should be helpful also.  But for windows guests running on machines without PLE, we still needs to enhance host side to resolve the issue.
 
-Because neither X nor fbcon uses the char read/write path, this broke
-a while ago and it didn't get noticed.  I even highlighted this case
-when trying to enumerate the different fbdev access models
-(http://plugable.com/2010/01/30/linux-kernel-framebuffer-rendering-apis/
-), yet still botched it.
+>>>> After analysis about Linux scheduler, we found it is indeed caused
+>>>> by the known features of Linux schduler, such as AFFINE_WAKEUPS,
+>>>> SYNC_WAKEUPS etc. With these features on, linux schduler often
+>>>> tries to schedule the vcpu threads of one guests to one same
+>>>> logical processor when vcpus are over-committed and logical
+>>>> processors are saturated. Once the vcpu threads of one VM are
+>>>> scheduled to the same LP, system performance drops dramatically
+>>>> with some workloads(like webbench running in windows OS).
+>>> 
+>> Since the hit only happens when physical cpus are saturated, and
+>> sheduling non-virtualized multiple threads of one process to same
+>> processor can benefit the performance due to cache share or other
+>> affinities, but you know it hurts performance a lot once schedule
+>> two vcpu theads to a same processor due to mutual spin-lock in
+>> guests.     
+>> 
+> Spin loops need to be addressed first, they are known to kill
+> performance in overcommit situations.
 
-But this is definitely something that should work, as it's a nice way
-to drop a test image to hardware when perf doesn't matter.
+Even in overcommit case, if vcpu threads of one qemu are not scheduled or pulled to the same logical processor, the performance drop is tolerant like Xen's case today. But for KVM, it has to suffer from additional performance loss, since host's scheduler actively pulls these vcpu threads together. 
+Xiantao 
 
-A patch which restores the functionality is here:
-http://git.plugable.com/gitphp/index.php?p=udlfb&a=commitdiff&h=cd5e3761bb6b0132ba72d45b26ff55d22c9d727b
-
-Will get it cleaned up and moving downstream.  Any feedback is welcome.
-
-On fbcon -- sorry its con2fbmap, not fbset, to look for how to assign
-a console to a framebuffer. fbcon uses blit and copy operations, so it
-doesn't hit the paths you're seeing problems on.
-
-On defio -- it would be great to get experienced help with the
-problems we've been having there.  Defio is essential for standard
-mmap clients (xf86-video-fbdev, kdrive, or fbi, etc.) when we have a
-system memory framebuffer like this -- timer-based updates aren't
-practical, as there's just too much data involved here, so the system
-load is unacceptable if we're entirely ignorant of what pixels are
-changing.  Defio's page-fault-based dirty detection is a nice
-compromise.
-
-Testing defio to recreate the problems is easy, just use any of the
-standard fbdev clients mentioned above.  Defio is enabled by default
-in 2.6.34 as it stands.  Defio can also be enabled/disabled with a
-switch in the code.
-http://git.plugable.com/gitphp/index.php?p=udlfb&a=commitdiff&h=38e6da578178f439e6613d27fa946c0107394420
-to see example of switching it.
-
-We don't have enough eyes on these problems, because most people are
-using udlfb with the custom X server written to it, which doesn't hit
-any of these issues.
-
-Again, any feedback, suggestions, or udlfb patches (direct to the
-staging tree or here) are very welcome.
-
-Thanks,
-Bernie
-http://plugable.com/
