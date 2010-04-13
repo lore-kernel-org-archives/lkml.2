@@ -1,53 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582Ab0DMVyf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 17:54:35 -0400
-Received: from mailservice.tudelft.nl ([130.161.131.5]:43213 "EHLO
-	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752246Ab0DMVyd (ORCPT
+	id S1753943Ab0DMVyl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 17:54:41 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:15369 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752945Ab0DMVyi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 17:54:33 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -22.589
-Message-ID: <4BC4E812.6050602@tremplin-utc.net>
-Date: Tue, 13 Apr 2010 23:54:26 +0200
-From: =?UTF-8?B?w4lyaWMgUGllbA==?= <Eric.Piel@tremplin-utc.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090319 Mandriva/2.0.0.21-1mdv2009.1 (2009.1) Thunderbird/2.0.0.21 Mnenhy/0.7.6.666
-MIME-Version: 1.0
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       alsa-devel@alsa-project.org
-Subject: [REGRESSION bisected] Sound goes too fast due to commit 7b3a177b0
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Apr 2010 17:54:38 -0400
+X-IronPort-AV: E=Sophos;i="4.52,200,1270450800"; 
+   d="scan'208";a="343954216"
+Subject: [GIT PULL] Please pull NFS client fixes
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp
+Date: Tue, 13 Apr 2010 17:54:21 -0400
+Message-ID: <1271195661.6413.212.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+X-OriginalArrivalTime: 13 Apr 2010 21:54:22.0568 (UTC) FILETIME=[E0516680:01CADB53]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Linus,
 
-Since 2.6.34-rc*, I have a regression on alsa which prevents the sound
-to be played correctly. When playing, the music goes too fast, skipping
-some parts. Typically, it's very easy to reproduce by doing:
-time mplayer -endpos 30 sound-file-which-lasts-more-than-thirty-sec.mp3
+Please pull from the "bugfixes" branch of the repository at
 
-If the wall clock is less than 30s, you have the bug. With my intel-hda
-(AD1981), it's reliably reproducible: it gives ~27s, instead of the
-normal ~31s.
+   git pull git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git bugfixes
 
-After bisection, it turns out that it is commit
-7b3a177b0d4f92b3431b8dca777313a07533a710, aka "ALSA: pcm_lib: fix
-"something must be really wrong" condition" which caused this
-regression. Reverting it on top of 2.6.34-rc3+ fixes the problem.
+This will update the following files through the appended changesets.
 
-Let me know if you need more info,
-Cheers,
-Eric
+  Cheers,
+    Trond
 
-PS: For the info, the bisection was especially hard to do because about
-80 alsa commits around the faulty one were all applied on kernel
-versions which did not boot on my laptop. On top of the first known bad
-I had to revert all of them, and run an "invert bisection" on it...
-Enjoy the bisection result ;-)
+----
+ fs/nfs/client.c           |    3 ++-
+ fs/nfs/dir.c              |    2 +-
+ fs/nfs/inode.c            |    8 ++++----
+ fs/nfs/nfs4proc.c         |    4 +++-
+ fs/nfs/write.c            |   44 ++++++++++++++++++++++++++++----------------
+ include/linux/nfs_fs_sb.h |    1 +
+ 6 files changed, 39 insertions(+), 23 deletions(-)
+
+commit 0df5dd4aae211edeeeb84f7f84f6d093406d7c22
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Sun Apr 11 16:48:44 2010 -0400
+
+    NFSv4: fix delegated locking
+    
+    Arnaud Giersch reports that NFSv4 locking is broken when we hold a
+    delegation since commit 8e469ebd6dc32cbaf620e134d79f740bf0ebab79 (NFSv4:
+    Don't allow posix locking against servers that don't support it).
+    
+    According to Arnaud, the lock succeeds the first time he opens the file
+    (since we cannot do a delegated open) but then fails after we start using
+    delegated opens.
+    
+    The following patch fixes it by ensuring that locking behaviour is
+    governed by a per-filesystem capability flag that is initially set, but
+    gets cleared if the server ever returns an OPEN without the
+    NFS4_OPEN_RESULT_LOCKTYPE_POSIX flag being set.
+    
+    Reported-by: Arnaud Giersch <arnaud.giersch@iut-bm.univ-fcomte.fr>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+    Cc: stable@kernel.org
+
+commit 2c61be0a9478258f77b66208a0c4b1f5f8161c3c
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Fri Apr 9 19:54:50 2010 -0400
+
+    NFS: Ensure that the WRITE and COMMIT RPC calls are always uninterruptible
+    
+    We always want to ensure that WRITE and COMMIT completes, whether or not
+    the user presses ^C. Do this by making the call asynchronous, and allowing
+    the user to do an interruptible wait for rpc_task completion.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit a6305ddb080fb483ca41ca56cacb6f96089f0c8e
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Fri Apr 9 19:07:08 2010 -0400
+
+    NFS: Fix a race with the new commit code
+    
+    This patch fixes a race which occurs due to the fact that we release the
+    PG_writeback flag while still holding the nfs_page locked.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit b80c3cb628f0ebc241b02e38dd028969fb8026a2
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Fri Apr 9 19:07:07 2010 -0400
+
+    NFS: Ensure that writeback_single_inode() calls write_inode() when syncing
+    
+    Since writeback_single_inode() checks the inode->i_state flags _before_ it
+    flushes out the data, we need to ensure that the I_DIRTY_DATASYNC flag is
+    already set. Otherwise we risk not seeing a call to write_inode(), which
+    again means that we break fsync() et al...
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 1544fa0f7a46241582abc48f07b74f3d846379e4
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Thu Mar 25 13:54:49 2010 -0400
+
+    NFS: Fix the mode calculation in nfs_find_open_context
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 80e60639f1b7c121a7fea53920c5a4b94009361a
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Thu Mar 25 13:51:05 2010 -0400
+
+    NFSv4: Fall back to ordinary lookup if nfs4_atomic_open() returns EISDIR
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+    Cc: stable@kernel.org
+
+
