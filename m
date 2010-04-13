@@ -1,52 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751545Ab0DMMKI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 08:10:08 -0400
-Received: from stinky.trash.net ([213.144.137.162]:48193 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131Ab0DMMKG (ORCPT
+	id S1751412Ab0DMMWF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 08:22:05 -0400
+Received: from mail-bw0-f219.google.com ([209.85.218.219]:42192 "EHLO
+	mail-bw0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab0DMMWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 08:10:06 -0400
-Message-ID: <4BC45F1D.3030301@trash.net>
-Date: Tue, 13 Apr 2010 14:10:05 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090701)
+	Tue, 13 Apr 2010 08:22:02 -0400
+Message-ID: <4BC461AD.6090504@monstr.eu>
+Date: Tue, 13 Apr 2010 14:21:01 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-To: Alexey Dobriyan <adobriyan@gmail.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       shemminger@vyatta.com, bhutchings@solarflare.com, andreas@fatal.se,
-       hadi@cyberus.ca, hideaki@yoshifuji.org
-Subject: Re: [PATCH v2] xtables: make XT_ALIGN() usable in exported headers
- by exporting __ALIGN_KERNEL()
-References: <20100407162245.GA4557@x200> <4BC437C6.8020602@trash.net> <4BC44117.80901@trash.net> <20100414120712.GA25686@x200> <4BC450A4.1010200@trash.net> <20100414125007.GB25686@x200>
-In-Reply-To: <20100414125007.GB25686@x200>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-15
+To: microblaze-uclinux@itee.uq.edu.au, LKML <linux-kernel@vger.kernel.org>
+CC: John Williams <john.williams@petalogix.com>,
+       John Linn <John.Linn@xilinx.com>,
+       Stefan Asserhall <stefan.asserhall@xilinx.com>,
+       Goran Bilski <goran@xilinx.com>,
+       "Steven J. Magnani" <steve@digidescorp.com>,
+       Arnd Bergmann <arnd@arndb.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
+       "Edgar E. Iglesias" <edgar.iglesias@gmail.com>,
+       Grant Likely <grant.likely@secretlab.ca>, sam@ravnborg.org,
+       "Steven J. Magnani" <steve@digidescorp.com>, stephenn@xilinx.com,
+       Karen Whelan <karen.whelan@petalogix.com>,
+       Wendy Liang <wendy.liang@petalogix.com>
+Subject: Microblaze - The fist year
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexey Dobriyan wrote:
-> On Tue, Apr 13, 2010 at 01:08:20PM +0200, Patrick McHardy wrote:
->> Alexey Dobriyan wrote:
->>> XT_ALIGN() was rewritten through ALIGN() by commit 42107f5009da223daa800d6da6904d77297ae829
->>> "netfilter: xtables: symmetric COMPAT_XT_ALIGN definition".
->>> ALIGN() is not exported in userspace headers, which created compile problem for tc(8)
->>> and will create problem for iptables(8).
->>>
->>> We can't export generic looking name ALIGN() but we can export less generic
->>> __ALIGN_KERNEL() (suggested by Ben Hutchings).
->>> Google knows nothing about __ALIGN_KERNEL().
->>>
->>> COMPAT_XT_ALIGN() changed for symmetry.
->> I've already pushed your change out, could you send me an incremental
->> fix please?
->>
->> master.kernel.org:/pub/scm/linux/kernel/git/kaber/nf-next-2.6.git
-> 
-> [PATCH] Restore __ALIGN_MASK()
-> 
-> Fix lib/bitmap.c compile failure due to __ALIGN_KERNEL changes.
+Dear Linux community,
 
-Applied.
+The MicroBlaze Linux Kernel has been in mainline for exactly one year. 
+It is time to look back and celebrate this year.
+
+First of all I would like to thank Xilinx and PetaLogix for their 
+committed support and everybody who has helped to improve the MicroBlaze 
+Linux kernel namely to Andrew Morton, Arnd Bergmann, Edgar E. Iglesias, 
+Grant Likely, Ingo Molnar, John Linn, John Williams, Linus Torvalds, Sam 
+Ravnborg, Stephen Neuendorffer and Steve Magnani. Goran Bilski and 
+Stefan Asserhall (from Xilinx Processing Solutions group) have provided 
+valuable assistance too.
+
+Thank you for your work.
+
+MicroBlaze is the first soft-cpu to be merged to the mainline Linux 
+kernel and I believe it has proved to be an effective decision to do so. 
+With the support of Xilinx and PetaLogix we have dedicated a lot of time 
+to improve the MicroBlaze Linux port, adding new features and 
+stabilizing the whole kernel. There are still areas for improvement but 
+we have set a good direction and we hope with continued support from 
+Xilinx and PetaLogix to achieve much more in the future
+
+
+I would like to ask the whole community if you can point us to new 
+features (or weak places) which should be implemented on MicroBlaze. 
+Thank you for your continued input.
+
+
+Let me summarize some MicroBlaze Linux highlights over the last 12 months.
+
+MicroBlaze noMMU - added on April 13, 2009
+MicroBlaze QEMU support - April, 2009
+MicroBlaze MMU - added on June 12, 2009
+First youtube movie with MicroBlaze QEMU by PetaLogix - October 28, 2009
+Ftrace support - November 2009
+Everyday testing framework - December 2009
+and many others
+
+Latest code is available on PetaLogix GIT server.
+http://developer.petalogix.com/git/gitweb.cgi (or 
+http://git.monstr.eu/git/gitweb.cgi)
+
+Output log from everyday testing
+http://www.monstr.eu/wiki/doku.php?id=log:log
+
+I also created a new facebook fan page for MicroBlaze where you can join 
+us. http://www.facebook.com/pages/Microblaze-linux/111131818899940
+
+As I announced on Facebook, I decided to open monstr.eu wiki which is 
+becoming the microblaze linux wiki.
+You can register on 
+http://www.monstr.eu/wiki/doku.php?id=user:user&do=register
+
+Thank you.
+
+Best regards,
+Michal
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
