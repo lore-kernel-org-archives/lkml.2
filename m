@@ -1,241 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835Ab0DMRku (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 13:40:50 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:35426 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131Ab0DMRkt (ORCPT
+	id S1752906Ab0DMRlT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 13:41:19 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:55291 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131Ab0DMRlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 13:40:49 -0400
-Date: Tue, 13 Apr 2010 19:40:44 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Dinh.Nguyen@freescale.com
-Cc: linux-kernel@vger.kernel.org, amit.kucheria@canonical.com,
-       linux@arm.linux.org.uk, s.hauer@pengutronix.de,
-       grant.likely@secretlab.ca, r.herring@freescale.com,
-       linux-arm-kernel@lists.infradead.org, bryan.wu@canonical.com,
-       valentin.longchamp@epfl.ch
-Subject: Re: [PATCH 2.6.34-rc4 6/8] mx5: Add USB support for Freescale MX51
- Babbage
-Message-ID: <20100413174044.GR30801@buzzloop.caiaq.de>
-References: <1271175030-3635-1-git-send-email-Dinh.Nguyen@freescale.com>
- <1271175030-3635-2-git-send-email-Dinh.Nguyen@freescale.com>
- <1271175030-3635-3-git-send-email-Dinh.Nguyen@freescale.com>
- <1271175030-3635-4-git-send-email-Dinh.Nguyen@freescale.com>
- <1271175030-3635-5-git-send-email-Dinh.Nguyen@freescale.com>
- <1271175030-3635-6-git-send-email-Dinh.Nguyen@freescale.com>
+	Tue, 13 Apr 2010 13:41:17 -0400
+Date: Tue, 13 Apr 2010 13:39:41 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: zach.brown@oracle.com, jens.axboe@oracle.com, linux-kernel@vger.kernel.org,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 1/2] ipc semaphores: reduce ipc_lock contention in
+ semtimedop
+Message-ID: <20100413173941.GI13327@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Manfred Spraul <manfred@colorfullife.com>, zach.brown@oracle.com,
+	jens.axboe@oracle.com, linux-kernel@vger.kernel.org,
+	Nick Piggin <npiggin@suse.de>
+References: <1271098163-3663-1-git-send-email-chris.mason@oracle.com>
+ <1271098163-3663-2-git-send-email-chris.mason@oracle.com>
+ <4BC4A6B2.1090906@colorfullife.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1271175030-3635-6-git-send-email-Dinh.Nguyen@freescale.com>
+In-Reply-To: <4BC4A6B2.1090906@colorfullife.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4BC4ACB2.00A4:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 13, 2010 at 11:10:29AM -0500, Dinh.Nguyen@freescale.com wrote:
-> This patch updates the clocks, gpios, iomuxing and device structures for
-> enabling USB Host functionality on Freescale MX51 Babbage HW.
-> This patch applies to 2.6.34-rc4.
+On Tue, Apr 13, 2010 at 07:15:30PM +0200, Manfred Spraul wrote:
+> Hi Chris,
 > 
-> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> ---
->  arch/arm/mach-mx5/board-mx51_babbage.c |   40 +++++++++++++++++++++++++-
->  arch/arm/mach-mx5/clock-mx51.c         |    8 +++++
->  arch/arm/mach-mx5/devices.c            |   49 ++++++++++++++++++++++++++++++++
->  arch/arm/mach-mx5/devices.h            |    2 +
->  4 files changed, 98 insertions(+), 1 deletions(-)
+> 
+> On 04/12/2010 08:49 PM, Chris Mason wrote:
+> >  /*
+> >+ * when a semaphore is modified, we want to retry the series of operations
+> >+ * for anyone that was blocking on that semaphore.  This breaks down into
+> >+ * a few different common operations:
+> >+ *
+> >+ * 1) One modification releases one or more waiters for zero.
+> >+ * 2) Many waiters are trying to get a single lock, only one will get it.
+> >+ * 3) Many modifications to the count will succeed.
+> >+ *
+> Have you thought about odd corner cases:
+> Nick noticed the last time that it is possible to wait for arbitrary values:
+> in one semop:
+>     - decrease semaphore 5 by 10
+>     - wait until semaphore 5 is 0
+>     - increase semaphore 5 by 10.
 
-That should be split in two patches - one for common code and one for
-the board definition.
+Do you mean within a single sop array doing all three of these?  I don't
+know if the sort is going to leave the three operations on semaphore 5
+in the same order (it probably won't).
 
+But I could change that by having it include the slot in the original
+sop array in the sorting.  That way if we have duplicate semnums in the
+array, they will end up in the same position relative to each other in
+the sorted result.
 
-> 
-> diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
-> index 1338d6a..ddfa48b 100644
-> --- a/arch/arm/mach-mx5/board-mx51_babbage.c
-> +++ b/arch/arm/mach-mx5/board-mx51_babbage.c
-> @@ -13,6 +13,7 @@
->  #include <linux/init.h>
->  #include <linux/platform_device.h>
->  #include <linux/gpio.h>
-> +#include <linux/delay.h>
->  
->  #include <mach/common.h>
->  #include <mach/hardware.h>
-> @@ -30,6 +31,8 @@
->  extern void __init mx5_usb_dr_init(void);
->  extern void __init mx5_usbh1_init(void);
->  
-> +#define GPIO_1_7  (0*32+7)
-> +
->  static struct platform_device *devices[] __initdata = {
->  	&mxc_fec_device,
->  };
-> @@ -50,6 +53,22 @@ static struct pad_desc mx51babbage_pads[] = {
->  	MX51_PAD_EIM_D26__UART3_TXD,
->  	MX51_PAD_EIM_D27__UART3_RTS,
->  	MX51_PAD_EIM_D24__UART3_CTS,
-> +
-> +	/* USB HOST1 */
-> +	MX51_PAD_GPIO_1_25__USBH1_CLK,
-> +	MX51_PAD_GPIO_1_26__USBH1_DIR,
-> +	MX51_PAD_GPIO_1_28__USBH1_NXT,
-> +	MX51_PAD_GPIO_1_11__USBH1_DATA0,
-> +	MX51_PAD_GPIO_1_12__USBH1_DATA1,
-> +	MX51_PAD_GPIO_1_13__USBH1_DATA2,
-> +	MX51_PAD_GPIO_1_14__USBH1_DATA3,
-> +	MX51_PAD_GPIO_1_15__USBH1_DATA4,
-> +	MX51_PAD_GPIO_1_16__USBH1_DATA5,
-> +	MX51_PAD_GPIO_1_17__USBH1_DATA6,
-> +	MX51_PAD_GPIO_1_18__USBH1_DATA7,
-> +
-> +	/* USB HUB reset line*/
-> +	MX51_PAD_GPIO_1_7__GPIO1_7,
->  };
->  
->  /* Serial ports */
-> @@ -64,12 +83,31 @@ static inline void mxc_init_imx_uart(void)
->  	mxc_register_device(&mxc_uart_device1, &uart_pdata);
->  	mxc_register_device(&mxc_uart_device2, &uart_pdata);
->  }
-> -#else /* !SERIAL_IMX */
-> +#else /* SERIAL_IMX */
->  static inline void mxc_init_imx_uart(void)
->  {
->  }
->  #endif /* SERIAL_IMX */
->  
-> +static inline void mx5_babbage_usbhub_reset(void)
-> +{
-> +	int ret;
-> +
-> +	/* Bring USB hub out of reset */
-> +	ret = gpio_request(GPIO_1_7, "GPIO1_7");
-> +	if (ret) {
-> +		printk("failed to get GPIO_1_7: %d\n", ret);
-> +		return;
-> +	}
-> +	gpio_direction_output(GPIO_1_7, 0);
-> +
-> +	/* USB HUB RESET - De-assert USB HUB RESET_N */
-> +	msleep(1);
-> +	gpio_set_value(GPIO_1_7, 0);
-> +	msleep(1);
-> +	gpio_set_value(GPIO_1_7, 1);
-> +}
-> +
->  /*
->   * Board specific initialization.
->   */
-> diff --git a/arch/arm/mach-mx5/clock-mx51.c b/arch/arm/mach-mx5/clock-mx51.c
-> index 8f85f73..36684d0 100644
-> --- a/arch/arm/mach-mx5/clock-mx51.c
-> +++ b/arch/arm/mach-mx5/clock-mx51.c
-> @@ -765,6 +765,10 @@ DEFINE_CLOCK(gpt_ipg_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG10_OFFSET,
->  DEFINE_CLOCK(fec_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG12_OFFSET,
->  	NULL,  NULL, &ipg_clk, NULL);
->  
-> +/* USB */
-> +DEFINE_CLOCK(usboh3_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG14_OFFSET,
-> +	NULL,  NULL, &pll3_sw_clk, NULL);
-> +
->  #define _REGISTER_CLOCK(d, n, c) \
->         { \
->  		.dev_id = d, \
-> @@ -778,6 +782,10 @@ static struct clk_lookup lookups[] = {
->  	_REGISTER_CLOCK("imx-uart.2", NULL, uart3_clk)
->  	_REGISTER_CLOCK(NULL, "gpt", gpt_clk)
->  	_REGISTER_CLOCK("fec.0", NULL, fec_clk)
-> +	_REGISTER_CLOCK("mxc-ehci.0", "usb", usboh3_clk)
-> +	_REGISTER_CLOCK("mxc-ehci.0", "usb_ahb", ahb_clk)
-> +	_REGISTER_CLOCK("mxc-ehci.1", "usb", usboh3_clk)
-> +	_REGISTER_CLOCK("mxc-ehci.1", "usb_ahb", ahb_clk)
->  };
->  
->  static void clk_tree_init(void)
-> diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
-> index 73f2342..3d8f66a 100644
-> --- a/arch/arm/mach-mx5/devices.c
-> +++ b/arch/arm/mach-mx5/devices.c
-> @@ -11,6 +11,7 @@
->   */
->  
->  #include <linux/platform_device.h>
-> +#include <linux/dma-mapping.h>
->  #include <mach/hardware.h>
->  #include <mach/gpio.h>
->  #include <mach/imx-uart.h>
-> @@ -92,6 +93,54 @@ struct platform_device mxc_fec_device = {
->  	.resource = mxc_fec_resources,
->  };
->  
-> +static u64 usb_dma_mask = DMA_BIT_MASK(32);
-> +
-> +static struct resource usbotg_resources[] = {
-> +	{
-> +		.start = MX51_OTG_BASE_ADDR,
-> +		.end = MX51_OTG_BASE_ADDR + 0x1ff,
-> +		.flags = IORESOURCE_MEM,
-> +	},
-> +	{
-> +		.start = MX51_MXC_INT_USB_OTG,
-> +		.flags = IORESOURCE_IRQ,
-> +	},
-> +};
-> +
-> +struct platform_device mxc_usbdr_host_device = {
-> +	.name = "mxc-ehci",
-> +	.id = 0,
-> +	.num_resources = ARRAY_SIZE(usbotg_resources),
-> +	.resource = usbotg_resources,
-> +	.dev = {
-> +		.dma_mask = &usb_dma_mask,
-> +		.coherent_dma_mask = DMA_BIT_MASK(32),
-> +	},
-> +};
-> +
-> +static struct resource usbh1_resources[] = {
-> +	{
-> +		.start = MX51_OTG_BASE_ADDR + 0x200,
-> +		.end = MX51_OTG_BASE_ADDR + 0x200 + 0x1ff,
-> +		.flags = IORESOURCE_MEM,
-> +	},
-> +	{
-> +		.start = MX51_MXC_INT_USB_H1,
-> +		.flags = IORESOURCE_IRQ,
-> +	},
-> +};
-> +
-> +struct platform_device mxc_usbh1_device = {
-> +	.name = "mxc-ehci",
-> +	.id = 1,
-> +	.num_resources = ARRAY_SIZE(usbh1_resources),
-> +	.resource = usbh1_resources,
-> +	.dev = {
-> +		.dma_mask = &usb_dma_mask,
-> +		.coherent_dma_mask = DMA_BIT_MASK(32),
-> +	},
-> +};
-> +
->  struct mxc_gpio_port mxc_gpio_ports[] = {
->  	{
->  		.chip.label = "gpio-0",
-> diff --git a/arch/arm/mach-mx5/devices.h b/arch/arm/mach-mx5/devices.h
-> index f339ab8..95c45f9 100644
-> --- a/arch/arm/mach-mx5/devices.h
-> +++ b/arch/arm/mach-mx5/devices.h
-> @@ -2,3 +2,5 @@ extern struct platform_device mxc_uart_device0;
->  extern struct platform_device mxc_uart_device1;
->  extern struct platform_device mxc_uart_device2;
->  extern struct platform_device mxc_fec_device;
-> +extern struct platform_device mxc_usbdr_host_device;
-> +extern struct platform_device mxc_usbh1_device;
-> -- 
-> 1.6.0.4
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+(ewwww ;)
+
+-chris
