@@ -1,48 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab0DMSDQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 14:03:16 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51058 "EHLO
+	id S1752966Ab0DMSDk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 14:03:40 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51071 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776Ab0DMSDO convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1750776Ab0DMSDi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 14:03:14 -0400
-Subject: Re: [PATCH] ummunotify: Userspace support for MMU notifications
-From: Peter Zijlstra <peterz@infradead.org>
-To: Roland Dreier <rdreier@cisco.com>
-Cc: =?ISO-8859-1?Q?H=E5kon?= Bugge <Haakon.Bugge@Sun.COM>,
-       Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+	Tue, 13 Apr 2010 14:03:38 -0400
+Date: Tue, 13 Apr 2010 14:03:32 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Christoph Hellwig <hch@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Eric B Munson <ebmunson@us.ibm.com>, linux-kernel@vger.kernel.org,
-       linux-rdma@vger.kernel.org, rolandd@cisco.com, pavel@ucw.cz,
-       mingo@elte.hu, jsquyres@cisco.com
-In-Reply-To: <adahbnfme0j.fsf@roland-alpha.cisco.com>
-References: <1271053337-7121-1-git-send-email-ebmunson@us.ibm.com>
-	 <20100412160359.1d9074dc.akpm@linux-foundation.org>
-	 <20100412235937.GF15629@obsidianresearch.com>
-	 <3251DDDA-D705-4B1E-9595-9C24709EF146@Sun.com>
-	 <adahbnfme0j.fsf@roland-alpha.cisco.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 13 Apr 2010 20:02:54 +0200
-Message-ID: <1271181774.4807.1868.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+       John Kacur <jkacur@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 6/6] procfs: Kill the bkl in ioctl
+Message-ID: <20100413180332.GB21302@infradead.org>
+References: <1269930015-863-1-git-send-regression-fweisbec@gmail.com> <20100410152813.GE5204@nowhere> <20100411130341.GA6353@infradead.org> <201004121934.18307.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201004121934.18307.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-04-13 at 10:57 -0700, Roland Dreier wrote:
-> Are those system calls the only possible way that virtual to physical
-> mappings can change?  Can't page migration or something like that
-> potentially affect things?  And even if you did have hooks into every
-> system call that mattered (keep in mind that relying on glibc is not
-> enough, since an MPI application may not use glibc) would decoding them
-> and figuring out what happened really be preferable to a single event
-> type that tells you exactly what address range was affected? 
+On Mon, Apr 12, 2010 at 07:34:17PM +0200, Arnd Bergmann wrote:
+> >  - make sure every file operation either has a ->llseek instead or
+> >    calls nonseekable_open from ->open
+> 
+> I still think it would be better to always set llseek if we do that,
+> even if nonseekable_open is already there. I can come up with scripts
+> that check that case, but checking that the open function always
+> calls nonseekable_open when it returns success is beyond my grep
+> skills ;-)
 
-Yeah, virtual<->physical maps can change through swapping, page
-migration, memory compaction, huge-page aggregation (the latter two not
-yet being upstream).
+Yes, it's not quite easily greppable.  Making no seek allowed the
+implicit default will fortunately allow us to get rid of that oddness.
 
-Even mlock() doesn't pin virtual<->physical maps.
+> >  - walk through the instances now using default_llseek and chose
+> >    a better implementation for this particular instance.  Often
+> >    this will be just removing the the lssek method as not allowing
+> >    seeks is the right thing to do for character drivers, even if it
+> >    is a behaviour change from the current version which usually
+> >    is the result of sloppy coding.
+> 
+> This part is really hard. While in many cases, the driver maintainer
+> might know what user space is potentially opening some character
+> device, it's really hard to tell for outsiders whether the behaviour
+> should be no_llseek (then the default) or noop_llseek to work around
+> broken user space.
+
+That's why it's last on the list.
+
+> I think the rule set for the conversion needs to be one that can
+> be done purely based on the code. How about this:
+> 
+> For each file operation {
+> 	if (uses f_pos) {
+> 		if (same module uses BKL)
+> 			-> default_llseek
+> 		else
+> 			-> generic_file_llseek
+> 	} else {
+> 		if (driver maintained)
+> 			-> no_llseek (with maintainer ACK)
+> 		else
+> 			-> noop_llseek
+> 	}
+> }
+> 
+> Once that is done, we can turn the default into nonseekable
+> behavior and start removing instances of explicit no_llseek
+> and nonseekable_open.
+
+That plan sounds good to me.
+
+> Should we also rename default_llseek to deprecated_llseek in the
+> process, to go along with the approach for ioctl?
+
+I wouldn't bother.  If you can actually work on your plan default_llseek
+should be gone soon enough.
+
