@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751891Ab0DMTTJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 15:19:09 -0400
-Received: from mx0a-000f0801.pphosted.com ([67.231.144.122]:51316 "EHLO
-	mx0a-000f0801.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750893Ab0DMTTI (ORCPT
+	id S1752145Ab0DMTWo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 15:22:44 -0400
+Received: from mx0b-000f0801.pphosted.com ([67.231.152.113]:55768 "EHLO
+	mx0b-000f0801.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750857Ab0DMTWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 15:19:08 -0400
-X-Greylist: delayed 468 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Apr 2010 15:19:07 EDT
-From: <"huangj@blc-10-6:$"@brocade.com>
+	Tue, 13 Apr 2010 15:22:40 -0400
+From: Jing Huang <huangj@Brocade.com>
 To: <sfr@canb.auug.org.au>, <James.Bottomley@suse.de>
 CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-       <linux-scsi@vger.kernel.org>, Jing Huang <huangj@brocade.com>
-Subject: [PATCH] bfa: fix compilation warning in powerpc
-Date: Tue, 13 Apr 2010 12:11:08 -0700
-Message-ID: <1271185868-28661-1-git-send-email-huangj@brocade.com>
+       <linux-scsi@vger.kernel.org>, <kgudipat@Brocade.com>,
+       <rvadivel@Brocade.com>, <vravindr@Brocade.com>,
+       Jing Huang <huangj@Brocade.com>
+Subject: [PATCH] bfa: fix compilation warning in powerpc (resend)
+Date: Tue, 13 Apr 2010 12:22:29 -0700
+Message-ID: <1271186549-642-1-git-send-email-huangj@brocade.com>
 X-Mailer: git-send-email 1.6.5.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -22,12 +23,10 @@ X-Proofpoint-Virus-Version: vendor=fsecure engine=1.12.8161:2.4.5,1.2.40,4.0.166
  definitions=2010-04-13_07:2010-02-06,2010-04-13,2010-04-13 signatures=0
 X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
  bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=6.0.2-0911030000 definitions=main-1004130208
+ engine=6.0.2-0911030000 definitions=main-1004130212
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-From: Jing Huang <huangj@brocade.com>
 
 Fix the compilation warning in powerpc. The same change also fixes endian
 issue we found in powerpc test. This patch has been tested in x86 and
