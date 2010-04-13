@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172Ab0DMH2V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 03:28:21 -0400
-Received: from qw-out-2122.google.com ([74.125.92.25]:39767 "EHLO
-	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751672Ab0DMH2T convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 03:28:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=d/OA3d+GfekWLiWeJfJKL+f5C/pO79RJtl/s0RDNBWY8l9veaImcia93oHGHtoG6Qu
-         6ncTfhLAIV31XaHWCmHf3f0tG2qRE6tPAvfBSmGqxGGJp7UPLz8FWBW2101oClobATV5
-         18MK2ER4c/ata8M4SE2W6sZReq5C0Mn2MtYgw=
-MIME-Version: 1.0
-In-Reply-To: <20100412191006.GJ3048@n2100.arm.linux.org.uk>
-References: <20100303213329.GA500@alarsen.net>
-	 <w2ocd73a99e1004061427t322f8d4cmecd708ad16580f00@mail.gmail.com>
-	 <20100412191006.GJ3048@n2100.arm.linux.org.uk>
-Date: Tue, 13 Apr 2010 09:22:32 +0200
-Message-ID: <g2qcd73a99e1004130022ofa1da0br16ca99e96084e365@mail.gmail.com>
-Subject: Re: [PATCH 1/2] AT91 slow-clock suspend: don't wait when turning PLLs 
-	off
-From: Andrew Victor <avictor.za@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Anders Larsen <al@alarsen.net>, linux-arm-kernel@lists.infradead.org,
-       Julien Langer <julien.langer@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752128Ab0DMHbN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 03:31:13 -0400
+Received: from mx0b-000f0801.pphosted.com ([67.231.152.113]:34926 "EHLO
+	mx0b-000f0801.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751420Ab0DMHbL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 03:31:11 -0400
+From: Jing Huang <huangj@Brocade.COM>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+       James Bottomley <James.Bottomley@HansenPartnership.com>,
+       Krishna Gudipati <kgudipat@Brocade.COM>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 13 Apr 2010 00:30:52 -0700
+Subject: RE: linux-next: build warnings after merge of the final tree (scsi
+ tree related)
+Thread-Topic: linux-next: build warnings after merge of the final tree (scsi
+ tree related)
+Thread-Index: Acra0ZNYwVHFp572R4SrdOxH9cuSvwACWnwQ
+Message-ID: <04391A4E90BB2149B010D22452FA1687B99CC5C1@HQ-EXCH-6.corp.brocade.com>
+References: <20100413162129.d913af53.sfr@canb.auug.org.au>
+In-Reply-To: <20100413162129.d913af53.sfr@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=1.12.8161:2.4.5,1.2.40,4.0.166
+ definitions=2010-04-13_03:2010-02-06,2010-04-13,2010-04-13 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
+ bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=6.0.2-0911030000 definitions=main-1004130005
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Russell,
+This is indeed introduced by this commit. I have reproduced the issue in a powerpc machine, and I will provide a fix soon.
 
->> > AT91: when turning off the PLLs during suspend, don't wait for the lock flag
->> > to be set. Previously the code would always run into the loop limitation
->> > of 1000 iterations because the flag is never set when turning the PLLs off.
->> >
->> > Signed-off-by: Julien Langer <julien.langer@gmail.com>
->> > Signed-off-by: Anders Larsen <al@alarsen.net>
->> > Cc: Andrew Victor <avictor.za@gmail.com>
->> > Cc: Russell King <linux@arm.linux.org.uk>
->>    Acked-by: Andrew Victor <linux@maxim.org.za>
->>
->>
-> Thanks; I see your ack has been added to that patch.  Should I assume that
-> this is for -rc rather than -devel?
+Jing
+-----Original Message-----
+From: Stephen Rothwell [mailto:sfr@canb.auug.org.au] 
+Sent: Monday, April 12, 2010 11:21 PM
+To: James Bottomley
+Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Jing Huang
+Subject: linux-next: build warnings after merge of the final tree (scsi tree related)
 
-If it can still be merged for -rc, that would be great.
-Otherwise the -devel branch is ok.
+Hi James,
 
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) produced these warnings:
 
-Regards,
-  Andrew Victor
+drivers/scsi/bfa/bfa_ioc.c: In function 'bfa_ioc_msgget':
+drivers/scsi/bfa/bfa_ioc.c:1331: warning: value computed is not used
+drivers/scsi/bfa/bfa_ioc_ct.c: In function 'bfa_ioc_ct_notify_hbfail':
+drivers/scsi/bfa/bfa_ioc_ct.c:177: warning: value computed is not used
+drivers/scsi/bfa/bfa_ioc_ct.c:180: warning: value computed is not used
+drivers/scsi/bfa/bfa_ioc_ct.c: In function 'bfa_ioc_ct_pll_init':
+drivers/scsi/bfa/bfa_ioc_ct.c:381: warning: value computed is not used
+drivers/scsi/bfa/bfa_ioc_ct.c: In function 'bfa_ioc_ct_ownership_reset':
+drivers/scsi/bfa/bfa_ioc_ct.c:421: warning: value computed is not used
+drivers/scsi/bfa/bfa_ioc_cb.c: In function 'bfa_ioc_cb_notify_hbfail':
+drivers/scsi/bfa/bfa_ioc_cb.c:99: warning: value computed is not used
+drivers/scsi/bfa/bfa_ioc_cb.c: In function 'bfa_ioc_cb_ownership_reset':
+drivers/scsi/bfa/bfa_ioc_cb.c:272: warning: value computed is not used
+
+Presumably introduced by commit 077424e2e2c97c830d903891dfcd1532068b85b7
+("[SCSI] bfa: sg addr big endian fix") from the scsi tree.
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
