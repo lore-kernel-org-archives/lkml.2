@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab0DMB56 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 21:57:58 -0400
-Received: from gate.crashing.org ([63.228.1.57]:51170 "EHLO gate.crashing.org"
+	id S1754577Ab0DMCMn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 22:12:43 -0400
+Received: from gate.crashing.org ([63.228.1.57]:37974 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754279Ab0DMB55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 21:57:57 -0400
+	id S1754511Ab0DMCMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Apr 2010 22:12:42 -0400
 Subject: Re: [PATCH 07/13] powerpc: Preemptible mmu_gather
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       akpm@linux-foundation.org,
        Linus Torvalds <torvalds@linux-foundation.org>,
        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
        David Miller <davem@davemloft.net>,
        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>
-In-Reply-To: <20100409040756.GK5683@laptop>
+In-Reply-To: <1270800847.20295.3225.camel@laptop>
 References: <20100408191737.296180458@chello.nl>
 	 <20100408192722.901224587@chello.nl>  <20100409040756.GK5683@laptop>
+	 <1270800847.20295.3225.camel@laptop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Apr 2010 11:56:40 +1000
-Message-ID: <1271123800.13059.28.camel@pasglop>
+Date: Tue, 13 Apr 2010 12:06:40 +1000
+Message-ID: <1271124400.13059.36.camel@pasglop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
@@ -30,34 +31,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-04-09 at 14:07 +1000, Nick Piggin wrote:
-> > PPC has an extra batching queue to RCU free the actual pagetable
-> > allocations, use the ARCH extentions for that for now.
-> > 
-> > For the ppc64_tlb_batch, which tracks the vaddrs to unhash from the
-> > hardware hash-table, keep using per-cpu arrays but flush on context
-> > switch and use a TIF bit to track the laxy_mmu state.
+On Fri, 2010-04-09 at 10:14 +0200, Peter Zijlstra wrote:
 > 
-> Hm. Pity powerpc can't just use tlb flush gathering for this batching,
-> (which is what it was designed for). Then it could avoid these tricks.
-> What's preventing this? Adding a tlb gather for COW case in
-> copy_page_range? 
+> and doing that vaddr collection right along with it in the same batch.
+> 
+> I think that that would work, Ben, Dave?
 
-We must flush before the pte_lock is released. If not, we end up with
-this funny situation:
+Well, ours aren't struct pages.
 
-	- PTE is read-only, hash contains a translation for it
-	- PTE gets cleared & added to the batch, hash not flushed yet
-	- PTE lock released, maybe even VMA fully removed
-	- Other CPU takes a write fault, puts in a new PTE
-	- Hash ends up with duplicates of the vaddr -> arch violation
+IE. There's fundamentally 3 things that we are trying to batch here :-)
 
-Now we could get out of that one, I suppose, if we had some kind of way
-to force flush any batch pertaining to a given mm before a new valid PTE
-can be written, but that doesn't sound such a trivial thing to do.
+ 1- The original mmu_gather: batching the freeing of the actual user
+pages, so that the TLB flush can be delayed/gathered, plus there might
+be some micro-improvement in passing the page list to the allocator for
+freeing all at omce. This is thus purely a batch of struct pages.
 
-Any better idea ?
+ 2- The batching of the TLB flushes (or hash invalidates in the ppc
+case) proper, which needs the addition of the vaddr for things like
+sparc and powerpc since we don't just invalidate the whole bloody thing
+unlike x86 :-) On powerpc, we actually need more, we need the actual PTE
+content since it also contains tracking information relative to where
+things have been put in the hash table.
+
+ 3- The batching of the freeing of the page table structure, which we
+want to delay more than batch, ie, the goal here is to delay that
+freeing using RCU until everybody has stopped walking them. This does
+rely on RCU grace period being "interrupt safe", ie, there's no
+rcu_read_lock() in the low level TLB or hash miss code, but that code
+runs with interrupts off.
+
+Now, 2. has a problem I described earlier, which is that we must not
+have the possibility of introducing a duplicate in the hash table, thus
+it must not be possible to put a new PTE in until the previous one has
+been flushed or bad things would happen. This is why powerpc doesn't use
+the mmu_gather the way it was originally intended to do both 1. and 2.
+but really only for 1., while for 2. we use a small batch that only
+exist between lazy_mmu_enter/exit, since those are always fully enclosed
+by a pte lock section.
+
+3. As you have noticed, relies on the irq stuff. Plus there seem to be a
+dubious optimization here with mm_users. Might be worth sorting that
+out. However, it's a very different goal than 1. and 2. in the sense
+that batching proper is a minor issue, what we want is synchronization
+with walkers, and that batching is a way to lower the cost of that
+synchronization (allocating of the RCU struct etc...).
 
 Cheers,
 Ben.
+ 
 
