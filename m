@@ -1,85 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab0DMIje (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 04:39:34 -0400
-Received: from ns2.intersolute.de ([193.110.43.67]:60909 "EHLO
-	ns2.intersolute.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268Ab0DMIjc convert rfc822-to-8bit (ORCPT
+	id S1752533Ab0DMIj7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 04:39:59 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:36583 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752342Ab0DMIj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 04:39:32 -0400
-Message-ID: <4BC42DB5.3050106@lumino.de>
-Date: Tue, 13 Apr 2010 10:39:17 +0200
-From: Michael Schnell <mschnell@lumino.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-2.3 Thunderbird/3.0.4
+	Tue, 13 Apr 2010 04:39:57 -0400
+Date: Tue, 13 Apr 2010 18:39:31 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Janos Haar <janos.haar@netcenter.hu>
+Cc: xiyou.wangcong@gmail.com, linux-kernel@vger.kernel.org,
+       kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org, xfs@oss.sgi.com,
+       axboe@kernel.dk
+Subject: Re: Kernel crash in xfs_iflush_cluster (was Somebody take a look
+ please!...)
+Message-ID: <20100413083931.GW2493@dastard>
+References: <20100402230905.GW3335@dastard>
+ <22c901cad333$7a67db60$0400a8c0@dcccs>
+ <20100404103701.GX3335@dastard>
+ <2bd101cad4ec$5a425f30$0400a8c0@dcccs>
+ <20100405224522.GZ3335@dastard>
+ <3a5f01cad6c5$8a722c00$0400a8c0@dcccs>
+ <20100408025822.GL11036@dastard>
+ <11b701cad9c8$93212530$0400a8c0@dcccs>
+ <20100412001158.GA2493@dastard>
+ <18b101cadadf$5edbb660$0400a8c0@dcccs>
 MIME-Version: 1.0
-To: nios2-dev@sopc.et.ntust.edu.tw
-CC: =?ISO-8859-1?Q?Fr=E9d=E9ric_LAMBERT?= <frdrc66@gmail.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [Nios2-dev] atomic RAM ?
-References: <4BBD86A5.5030109@lumino.de> <201004081615.01151.arnd@arndb.de>	<4BBEECC8.10005@lumino.de> <201004091714.04990.arnd@arndb.de>	<4BC2EEBD.3070504@lumino.de> <u2j42b5547a1004120845x87d7f2f7wd4acea1144153dd6@mail.gmail.com>
-In-Reply-To: <u2j42b5547a1004120845x87d7f2f7wd4acea1144153dd6@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <18b101cadadf$5edbb660$0400a8c0@dcccs>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2010 05:45 PM, Frédéric LAMBERT wrote:
-> I'm pretty sure
-> than one can access memory directly from a custom instruction.
->   
-Of course you are right that custom instructions can access the Avalon
-Bus (similar as a DMA-ip's can access it) and thus the memory that is
-used by Linux, too. But as with DMA this access bypasses the cache and
-the MMU.
+On Tue, Apr 13, 2010 at 10:00:17AM +0200, Janos Haar wrote:
+> >On Mon, Apr 12, 2010 at 12:44:37AM +0200, Janos Haar wrote:
+> >>Hi,
+> >>
+> >>Ok, here comes the funny part:
+> >>I have got several messages from the kernel about one of my XFS
+> >>(sdb2) have corrupted inodes, but my xfs_repair (v. 2.8.11) says the
+> >>FS is clean and shine.
+> >>Should i upgrade my xfs_repair, or this is another bug? :-)
+> >
+> >v2.8.11 is positively ancient. :/
+> >
+> >I'd upgrade (current is 3.1.1) and re-run repair again.
+> 
+> OK, i will get the new repair today.
+> 
+> btw
+> Since i tested the FS with the 2.8.11, today morning i found this in
+> the log:
+> 
+> ...
+> Apr 12 00:41:10 alfa kernel: XFS mounting filesystem sdb2   # This
+> was the point of check with xfs_repair v2.8.11
+> Apr 13 03:08:33 alfa kernel: xfs_da_do_buf: bno 32768
+> Apr 13 03:08:33 alfa kernel: dir: inode 474253931
+> Apr 13 03:08:33 alfa kernel: Filesystem "sdb2": XFS internal error
+> xfs_da_do_buf(1) at line 2020 of file fs/xfs/xfs_da_btree.c.  Caller
+> 0xffffffff811c4fa6
 
-The problem this discussion is about is, that the
-architecture-independent code Linux provides (e.g. in FUTEX Kernel code
-and in user-land "atomic" macros) defines the memory-words to be
-accessed in an atomic way just somewhere in the user-land address space
-and accesses them as well via the "atomic" macros (that _are_
-arch-depending and thus can be done appropriately for NIOS) as with
-normal read and write operations done in C.
+A corrupted directory. There have been several different types of
+directory corruption that 2.8.11 didn't detect that 3.1.1 does.
 
-If the arch-independent Code could be modified in a way that _all_
-accesses (including memory allocation and "free") to the memory-words to
-be accessed in an atomic way, is done through arch-depending macros, an
-"atomic" RAM could be managed that is accessed thread- and SMP-safe and
-very fast as well in user-land as in Kernel code (with NIOS is this
-supposedly would be done via (a set of) custom instructions.
+> The entire log is here:
+> http://download.netcenter.hu/bughunt/20100413/messages
 
-Of course this "atomic RAM" _could_ be just a portion of normal
-Avalon-based RAM, but as it can't use the cache, it would be very slow
-if allocated in DRAM.
+So the bad inodes are:
 
-But as all this is about a speed optimization, the "atomic RAM" should
-be _internal_ and now, as it never would be accessed by the CPU in
-"normal" way, the AVALON bus could be avoided altogether.
+$ awk '/corrupt inode/ { print $10 } /dir: inode/ { print $8 }' messages | sort -n -u
+474253931
+474253936
+474253937
+474253938
+474253939
+474253940
+474253941
+474253943
+474253945
+474253946
+474253947
+474253948
+474253949
+474253950
+474253951
+673160704
+673160708
+673160712
+673160713
 
-> If _this_ area is accessed only through the custom instruction, i.e. not
-> from the processor, so no through cache and/or MMU, aren't we able to build
-> a mechanism that permits your FUTEX implementation?
->   
-Unfortunately (AFAIK) the arch independent Linux code currently does not
-provide for avoiding normal CPU access for FUTEX variables. Otherwise
-this discussion could be done completely here in the NIOS group instead
-of in the Linux Kernel mailing list.
-> Moreover, I can't imagine that a custom instruction be "interruptible": so
-> why shouldn't it be impossible to add a TAS (Test And Set) instruction?
->   
-Yep. A custom instruction is not interruptible in a non-SMP system. That
-is why it can do any of the necessary atomic read-modify-write
-operations. That is why implementing FUTEX (etc) with same is possible.
-But with additional normal CPU instructions accessing the same memory
-word, the data path can provide unexpected results, especially if the
-data cache is active. And deactivating or invalidating the cache
-(impossible with user land code) would slow down the performance more
-than just not providing FUTEX.
+It looks like the bad inodes are confined to two inode clusters. The
+nature of the errors - bad block mappings and bad extent counts -
+makes me think you might have bad memory in the machine:
 
-With SMP of course a normal read-modify-write is not good enough. here
-we need bus locking additionally. Maybe the Avalon bus can do this, but
-the current cache design can't. Implementing a custom instruction with
-it's own dedicated memory space of course easily can provide SMP-safe
-read-modify write on same.
+$ awk '/xfs_da_do_buf: bno/ { printf "%x\n", $8 }' messages | sort -n -u
+4d8000
+5e0000
+7f8001
+8000
+8001
+10000
+10001
+20001
+28001
+38000
+270001
+370001
+548001
+568000
+568001
+600000
+600001
+618000
+618001
+628000
+628001
+650001
 
--Michael
+I think they should all be 0 or 1, and:
+
+$ awk '/corrupt inode/ { split($13, a, ")"); printf "%x\n", a[1] }' messages | sort -n -u
+fffffffffd000001
+6b000001
+1000001
+75000001
+
+I think they should all be 1, too.
+
+I've seen this sort of error pattern before on a machine that had a
+bad DIMM.  If the corruption is on disk then the buffers were
+corrupted between the time that the CPU writes to them and being
+written to disk. If there is no corruption on disk, then the CPU is
+reading bad data from memory...
+
+If you run:
+
+$ xfs_db -r -c "inode 474253940" -c p /dev/sdb2
+
+Then I can can confirm whether there is corruption on disk or not.
+Probably best to sample multiple of the inode numbers from the above
+list of bad inodes.
+
+FWIW, I'd strongly suggest backing up everything you can first
+before running an updated xfs_repair....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
