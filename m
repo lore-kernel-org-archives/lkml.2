@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab0DMQLv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 12:11:51 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:61533 "EHLO
+	id S1753440Ab0DMQLy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 12:11:54 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:61546 "EHLO
 	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753389Ab0DMQLt (ORCPT
+	with ESMTP id S1753389Ab0DMQLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 12:11:49 -0400
+	Tue, 13 Apr 2010 12:11:52 -0400
 From: Dinh.Nguyen@freescale.com
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
@@ -14,59 +14,177 @@ Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
        grant.likely@secretlab.ca, r.herring@freescale.com,
        bryan.wu@canonical.com, amit.kucheria@canonical.com,
        Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCH 2.6.34-rc4 7/8] mx5: Add USB to Freescale MX51 Babbage
-Date: Tue, 13 Apr 2010 11:10:30 -0500
-Message-Id: <1271175030-3635-7-git-send-email-Dinh.Nguyen@freescale.com>
+Subject: [PATCH 2.6.34-rc4 1/8] mx5: Add registration of GPIOs for MX51 Babbage board.
+Date: Tue, 13 Apr 2010 11:10:24 -0500
+Message-Id: <1271175030-3635-1-git-send-email-Dinh.Nguyen@freescale.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1271175030-3635-6-git-send-email-Dinh.Nguyen@freescale.com>
-References: <1271175030-3635-1-git-send-email-Dinh.Nguyen@freescale.com>
- <1271175030-3635-2-git-send-email-Dinh.Nguyen@freescale.com>
- <1271175030-3635-3-git-send-email-Dinh.Nguyen@freescale.com>
- <1271175030-3635-4-git-send-email-Dinh.Nguyen@freescale.com>
- <1271175030-3635-5-git-send-email-Dinh.Nguyen@freescale.com>
- <1271175030-3635-6-git-send-email-Dinh.Nguyen@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-Updade mx51_defconfig to include USB host support.
+Update /plat-mxc/gpio.c to support Freescale's MX51 Babbage HW.
 This patch applies to 2.6.34-rc4.
 
 Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 ---
- arch/arm/configs/mx51_defconfig |   17 ++++++++++++++++-
- 1 files changed, 16 insertions(+), 1 deletions(-)
+ arch/arm/mach-mx5/board-mx51_babbage.c |    5 +++-
+ arch/arm/mach-mx5/devices.c            |   33 ++++++++++++++++++++++++++++++-
+ arch/arm/plat-mxc/gpio.c               |   32 +++++++++++++++++++++++++-----
+ 3 files changed, 61 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm/configs/mx51_defconfig b/arch/arm/configs/mx51_defconfig
-index c88e952..a708fd6 100644
---- a/arch/arm/configs/mx51_defconfig
-+++ b/arch/arm/configs/mx51_defconfig
-@@ -809,7 +809,22 @@ CONFIG_SSB_POSSIBLE=y
- CONFIG_DUMMY_CONSOLE=y
- # CONFIG_SOUND is not set
- # CONFIG_HID_SUPPORT is not set
--# CONFIG_USB_SUPPORT is not set
-+CONFIG_USB_SUPPORT=y
-+CONFIG_USB_ARCH_HAS_HCD=y
-+# CONFIG_USB_ARCH_HAS_OHCI is not set
-+CONFIG_USB_ARCH_HAS_EHCI=y
-+CONFIG_USB=y
+diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
+index ee67a71..afbe400 100644
+--- a/arch/arm/mach-mx5/board-mx51_babbage.c
++++ b/arch/arm/mach-mx5/board-mx51_babbage.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2009 Freescale Semiconductor, Inc. All Rights Reserved.
++ * Copyright (C) 2009-2010 Freescale Semiconductor, Inc. All Rights Reserved.
+  * Copyright (C) 2009-2010 Amit Kucheria <amit.kucheria@canonical.com>
+  *
+  * The code contained herein is licensed under the GNU General Public
+@@ -12,6 +12,7 @@
+ 
+ #include <linux/init.h>
+ #include <linux/platform_device.h>
++#include <linux/gpio.h>
+ 
+ #include <mach/common.h>
+ #include <mach/hardware.h>
+@@ -75,6 +76,8 @@ static void __init mxc_board_init(void)
+ 					ARRAY_SIZE(mx51babbage_pads));
+ 	mxc_init_imx_uart();
+ 	platform_add_devices(devices, ARRAY_SIZE(devices));
 +
-+#
-+# USB Host Controller Drivers
-+#
-+# CONFIG_USB_C67X00_HCD is not set
-+CONFIG_USB_EHCI_HCD=y
-+CONFIG_USB_EHCI_ROOT_HUB_TT=y
-+# CONFIG_USB_EHCI_TT_NEWSCHED is not set
-+CONFIG_USB_EHCI_MXC=y
++	mxc_register_gpios();
+ }
+ 
+ static void __init mx51_babbage_timer_init(void)
+diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
+index d6fd396..73f2342 100644
+--- a/arch/arm/mach-mx5/devices.c
++++ b/arch/arm/mach-mx5/devices.c
+@@ -1,5 +1,6 @@
+ /*
+  * Copyright 2009 Amit Kucheria <amit.kucheria@canonical.com>
++ * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
+  *
+  * The code contained herein is licensed under the GNU General Public
+  * License. You may obtain a copy of the GNU General Public License
+@@ -11,7 +12,9 @@
+ 
+ #include <linux/platform_device.h>
+ #include <mach/hardware.h>
++#include <mach/gpio.h>
+ #include <mach/imx-uart.h>
++#include <mach/irqs.h>
+ 
+ static struct resource uart0[] = {
+ 	{
+@@ -89,8 +92,34 @@ struct platform_device mxc_fec_device = {
+ 	.resource = mxc_fec_resources,
+ };
+ 
+-/* Dummy definition to allow compiling in AVIC and TZIC simultaneously */
++struct mxc_gpio_port mxc_gpio_ports[] = {
++	{
++		.chip.label = "gpio-0",
++		.base = MX51_IO_ADDRESS(MX51_GPIO1_BASE_ADDR),
++		.irq = MX51_MXC_INT_GPIO1_LOW,
++		.virtual_irq_start = MXC_GPIO_IRQ_START
++	},
++	{
++		.chip.label = "gpio-1",
++		.base = MX51_IO_ADDRESS(MX51_GPIO2_BASE_ADDR),
++		.irq = MX51_MXC_INT_GPIO2_LOW,
++		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 1
++	},
++	{
++		.chip.label = "gpio-2",
++		.base = MX51_IO_ADDRESS(MX51_GPIO3_BASE_ADDR),
++		.irq = MX51_MXC_INT_GPIO3_LOW,
++		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 2
++	},
++	{
++		.chip.label = "gpio-3",
++		.base = MX51_IO_ADDRESS(MX51_GPIO4_BASE_ADDR),
++		.irq = MX51_MXC_INT_GPIO4_LOW,
++		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 3
++	},
++};
 +
+ int __init mxc_register_gpios(void)
+ {
+-	return 0;
++	return mxc_gpio_init(mxc_gpio_ports, 4);
+ }
+diff --git a/arch/arm/plat-mxc/gpio.c b/arch/arm/plat-mxc/gpio.c
+index 70b2389..1df23b2 100644
+--- a/arch/arm/plat-mxc/gpio.c
++++ b/arch/arm/plat-mxc/gpio.c
+@@ -3,7 +3,7 @@
+  * Copyright 2008 Juergen Beisert, kernel@pengutronix.de
+  *
+  * Based on code from Freescale,
+- * Copyright 2004-2006 Freescale Semiconductor, Inc. All Rights Reserved.
++ * Copyright (C) 2004-2010 Freescale Semiconductor, Inc. All Rights Reserved.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License
+@@ -38,7 +38,6 @@ static int gpio_table_size;
+ #define GPIO_ICR2	(cpu_is_mx1_mx2() ? 0x2C : 0x10)
+ #define GPIO_IMR	(cpu_is_mx1_mx2() ? 0x30 : 0x14)
+ #define GPIO_ISR	(cpu_is_mx1_mx2() ? 0x34 : 0x18)
+-#define GPIO_ISR	(cpu_is_mx1_mx2() ? 0x34 : 0x18)
+ 
+ #define GPIO_INT_LOW_LEV	(cpu_is_mx1_mx2() ? 0x3 : 0x0)
+ #define GPIO_INT_HIGH_LEV	(cpu_is_mx1_mx2() ? 0x2 : 0x1)
+@@ -171,6 +170,25 @@ static void mxc_gpio_irq_handler(struct mxc_gpio_port *port, u32 irq_stat)
+ 	}
+ }
+ 
++/* one interrupt *per* gpio port */
++static void mx5_gpio_irq_handler(u32 irq, struct irq_desc *desc)
++{
++	u32 irq_stat;
++	u32 mask = 0xFFFFFFFF;
++	struct mxc_gpio_port *port = (struct mxc_gpio_port *)get_irq_data(irq);
 +
- CONFIG_MMC=y
- # CONFIG_MMC_DEBUG is not set
- # CONFIG_MMC_UNSAFE_RESUME is not set
++#ifdef MXC_GPIO_SPLIT_IRQ_2
++	if (irq == port->irq)
++		mask = 0x0000FFFF;
++	else
++		mask = 0xFFFF0000;
++#endif
++
++	irq_stat = __raw_readl(port->base + GPIO_ISR) &
++			(__raw_readl(port->base + GPIO_IMR) & mask);
++	mxc_gpio_irq_handler(port, irq_stat);
++}
++
+ /* MX1 and MX3 has one interrupt *per* gpio port */
+ static void mx3_gpio_irq_handler(u32 irq, struct irq_desc *desc)
+ {
+@@ -289,11 +307,13 @@ int __init mxc_gpio_init(struct mxc_gpio_port *port, int cnt)
+ 		/* its a serious configuration bug when it fails */
+ 		BUG_ON( gpiochip_add(&port[i].chip) < 0 );
+ 
+-		if (cpu_is_mx1() || cpu_is_mx3() || cpu_is_mx25()) {
+-			/* setup one handler for each entry */
++		/* setup one handler for each entry */
++		if (cpu_is_mx1() || cpu_is_mx3() || cpu_is_mx25())
+ 			set_irq_chained_handler(port[i].irq, mx3_gpio_irq_handler);
+-			set_irq_data(port[i].irq, &port[i]);
+-		}
++		else if (cpu_is_mx51())
++			set_irq_chained_handler(port[i].irq, mx5_gpio_irq_handler);
++
++		set_irq_data(port[i].irq, &port[i]);
+ 	}
+ 
+ 	if (cpu_is_mx2()) {
 -- 
 1.6.0.4
 
