@@ -1,151 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836Ab0DMRat (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 13:30:49 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:47524 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab0DMRaq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 13:30:46 -0400
-Date: Tue, 13 Apr 2010 19:30:41 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Dinh.Nguyen@freescale.com
-Cc: linux-kernel@vger.kernel.org, amit.kucheria@canonical.com,
-       linux@arm.linux.org.uk, s.hauer@pengutronix.de,
-       grant.likely@secretlab.ca, r.herring@freescale.com,
-       linux-arm-kernel@lists.infradead.org, bryan.wu@canonical.com,
-       valentin.longchamp@epfl.ch
-Subject: Re: [PATCH 2.6.34-rc4 4/8] mx5: Add USB OTG port registration
-Message-ID: <20100413173041.GP30801@buzzloop.caiaq.de>
-References: <1271175030-3635-1-git-send-email-Dinh.Nguyen@freescale.com>
- <1271175030-3635-2-git-send-email-Dinh.Nguyen@freescale.com>
- <1271175030-3635-3-git-send-email-Dinh.Nguyen@freescale.com>
- <1271175030-3635-4-git-send-email-Dinh.Nguyen@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1271175030-3635-4-git-send-email-Dinh.Nguyen@freescale.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752142Ab0DMReh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 13:34:37 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45608 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751131Ab0DMReg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 13:34:36 -0400
+Date: Tue, 13 Apr 2010 10:33:20 -0700
+From: Stephen Hemminger <shemminger@linux-foundation.org>
+To: Jay Vosburgh <fubar@us.ibm.com>
+Cc: Cong Wang <amwang@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+       Neil Horman <nhorman@tuxdriver.com>, netdev@vger.kernel.org,
+       Andy Gospodarek <gospo@redhat.com>, bridge@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, bonding-devel@lists.sourceforge.net,
+       Jeff Moyer <jmoyer@redhat.com>, Matt Mackall <mpm@selenic.com>,
+       David Miller <davem@davemloft.net>
+Subject: Re: [Bonding-devel] [v3 Patch 2/3] bridge: make bridge support
+ netpoll
+Message-ID: <20100413103320.11a2a4f7@nehalam>
+In-Reply-To: <8304.1271177567@death.nxdomain.ibm.com>
+References: <20100408062234.4499.17042.sendpatchset@localhost.localdomain>
+	<20100408062246.4499.5670.sendpatchset@localhost.localdomain>
+	<20100408083710.2b61ee44@nehalam>
+	<4BC2F7E2.7020309@redhat.com>
+	<1271068737.16881.18.camel@edumazet-laptop>
+	<20100412083842.26d71bda@nehalam>
+	<4BC43214.6030009@redhat.com>
+	<8304.1271177567@death.nxdomain.ibm.com>
+Organization: Linux Foundation
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.3; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 13, 2010 at 11:10:27AM -0500, Dinh.Nguyen@freescale.com wrote:
-> This patch adds the device platform registration for enabling USB
-> host functionality on the OTG port on Freescale MX51 Babbage HW. This
-> file makes platform specific calls to initialize the USB HW.
-> 
-> This patch applies to 2.6.34-rc4.
-> 
-> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> ---
->  arch/arm/mach-mx5/Makefile             |    2 +-
->  arch/arm/mach-mx5/board-mx51_babbage.c |    4 ++
->  arch/arm/mach-mx5/usb_dr.c             |   57 ++++++++++++++++++++++++++++++++
->  3 files changed, 62 insertions(+), 1 deletions(-)
->  create mode 100644 arch/arm/mach-mx5/usb_dr.c
-> 
-> diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
-> index bf23f86..3fca1f1 100644
-> --- a/arch/arm/mach-mx5/Makefile
-> +++ b/arch/arm/mach-mx5/Makefile
-> @@ -3,7 +3,7 @@
->  #
->  
->  # Object file lists.
-> -obj-y   := cpu.o mm.o clock-mx51.o devices.o
-> +obj-y   := cpu.o mm.o clock-mx51.o devices.o usb_dr.o
->  
->  obj-$(CONFIG_MACH_MX51_BABBAGE) += board-mx51_babbage.o
->  
-> diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
-> index afbe400..4e196d7 100644
-> --- a/arch/arm/mach-mx5/board-mx51_babbage.c
-> +++ b/arch/arm/mach-mx5/board-mx51_babbage.c
-> @@ -27,6 +27,8 @@
->  
->  #include "devices.h"
->  
-> +extern void __init mx5_usb_dr_init(void);
-> +
->  static struct platform_device *devices[] __initdata = {
->  	&mxc_fec_device,
->  };
-> @@ -78,6 +80,8 @@ static void __init mxc_board_init(void)
->  	platform_add_devices(devices, ARRAY_SIZE(devices));
->  
->  	mxc_register_gpios();
-> +
-> +	mx5_usb_dr_init();
->  }
->  
->  static void __init mx51_babbage_timer_init(void)
-> diff --git a/arch/arm/mach-mx5/usb_dr.c b/arch/arm/mach-mx5/usb_dr.c
-> new file mode 100644
-> index 0000000..52273ea
-> --- /dev/null
-> +++ b/arch/arm/mach-mx5/usb_dr.c
-> @@ -0,0 +1,57 @@
-> +/*
-> + * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version 2
-> + * of the License, or (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-> + * MA 02110-1301, USA.
-> + */
-> +
-> +#include <linux/platform_device.h>
-> +#include <mach/mxc_ehci.h>
-> +#include <mach/common.h>
-> +#include "devices.h"
-> +
-> +extern int usbotg_init(struct platform_device *pdev);
-> +extern int usbotg_uninit(struct platform_device *pdev);
-> +
-> +static int usbotg_init_ext(struct platform_device *pdev);
-> +static int usbotg_uninit_ext(struct platform_device *pdev);
-> +
-> +/*
-> + * platform data structs
-> + * 	- Which one to use is determined by CONFIG options in usb.h
-> + * 	- operating_mode plugged at run time
-> + */
-> +static struct mxc_usbh_platform_data dr_utmi_config = {
-> +	.init	= usbotg_init_ext,
-> +	.exit	= usbotg_uninit_ext,
-> +	.portsc	= MXC_EHCI_UTMI_16BIT,
-> +	.flags	= MXC_EHCI_INTERNAL_PHY,
-> +};
+On Tue, 13 Apr 2010 09:52:47 -0700
+Jay Vosburgh <fubar@us.ibm.com> wrote:
 
-This is also board specific, and nothing you should assume for all
-boards. Other implementations may do this differntly, which is why
-this belongs to board code.
+> Cong Wang <amwang@redhat.com> wrote:
+> 
+> >Stephen Hemminger wrote:
+> >> On Mon, 12 Apr 2010 12:38:57 +0200
+> >> Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> >> 
+> >>> Le lundi 12 avril 2010 à 18:37 +0800, Cong Wang a écrit :
+> >>>> Stephen Hemminger wrote:
+> >>>>> There is no protection on dev->priv_flags for SMP access.
+> >>>>> It would better bit value in dev->state if you are using it as control flag.
+> >>>>>
+> >>>>> Then you could use 
+> >>>>> 			if (unlikely(test_and_clear_bit(__IN_NETPOLL, &skb->dev->state)))
+> >>>>> 				netpoll_send_skb(...)
+> >>>>>
+> >>>>>
+> >>>> Hmm, I think we can't use ->state here, it is not for this kind of purpose,
+> >>>> according to its comments.
+> >>>>
+> >>>> Also, I find other usages of IFF_XXX flags of ->priv_flags are also using
+> >>>> &, | to set or clear the flags. So there must be some other things preventing
+> >>>> the race...
+> >>> Yes, its RTNL that protects priv_flags changes, hopefully...
+> >>>
+> >> 
+> >> The patch was not protecting priv_flags with RTNL.
+> >> For example..
+> >> 
+> >> 
+> >> @@ -308,7 +312,9 @@ static void netpoll_send_skb(struct netp
+> >>  		     tries > 0; --tries) {
+> >>  			if (__netif_tx_trylock(txq)) {
+> >>  				if (!netif_tx_queue_stopped(txq)) {
+> >> +					dev->priv_flags |= IFF_IN_NETPOLL;
+> >>  					status = ops->ndo_start_xmit(skb, dev);
+> >> +					dev->priv_flags &= ~IFF_IN_NETPOLL;
+> >>  					if (status == NETDEV_TX_OK)
+> >>  						txq_trans_update(txq);
+> >
+> >Hmm, but I checked the bonding case (IFF_BONDING), it doesn't
+> >hold rtnl_lock. Strange.
+> 
+> 	I looked, and there are a couple of cases in bonding that don't
+> have RTNL for adjusting priv_flags (in bond_ab_arp_probe when no slaves
+> are up, and a couple of cases in 802.3ad).  I think the solution there
+> is to move bonding away from priv_flags for some of this (e.g., convert
+> bonding to use a frame hook like bridge and macvlan, and greatly
+> simplify skb_bond_should_drop), but that's a separate topic.
+> 
+> 	The majority of the cases, however, do hold RTNL.  Bonding
+> generally doesn't have to acquire RTNL itself, since whatever called
+> into bonding is holding it already.  For example, the slave add and
+> remove paths (bond_enslave, bond_release) are called either via sysfs or
+> ioctl, both of which acquire RTNL.  All of the set and clear operations
+> for IFF_BONDING fall into this category; look at bonding_store_slaves
+> for an example.
+> 
+> 	Bonding does acquire RTNL itself when performing failovers,
+> e.g., bond_mii_monitor holds RTNL prior to calling bond_miimon_commit,
+> which will change priv_flags.
+> 
 
-> +/* Notes: configure USB clock*/
-> +static int usbotg_init_ext(struct platform_device *pdev)
-> +{
-> +	return usbotg_init(pdev);
-> +}
-> +
-> +static int usbotg_uninit_ext(struct platform_device *pdev)
-> +{
-> +	return usbotg_uninit(pdev);
-> +}
-> +
-> +void __init mx5_usb_dr_init(void)
-> +{
-> +	mxc_register_device(&mxc_usbdr_host_device, &dr_utmi_config);
-> +}
+All this was related to netpoll. And netpoll processing often needs to occur
+in hard IRQ context. Therefor netpoll stuff and RTNL (which is a mutex),
+really don't mix well.  Keep RTNL for what it was meant for network
+reconfiguration. Don't turn it into a network special BKL.
 
-What's the reason for having the _ext variants that are just wrapers?
+
+
+-- 
