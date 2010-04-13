@@ -1,94 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020Ab0DMI2B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 04:28:01 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54301 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751307Ab0DMI17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 04:27:59 -0400
-Date: Tue, 13 Apr 2010 10:27:56 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Tony Vroon <tony@linx.net>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
-       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-       pm list <linux-pm@lists.linux-foundation.org>
-Subject: Re: commit 9630bdd9 changes behavior of the poweroff - bug?
-Message-ID: <20100413082756.GA5233@tiehlicka.suse.cz>
-References: <20100401133923.GA4104@tiehlicka.suse.cz>
- <1270848027.3071.0.camel@localhost>
- <201004102136.43246.rjw@sisk.pl>
- <201004130101.54117.rjw@sisk.pl>
+	id S1752253Ab0DMIbb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 04:31:31 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:33605 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907Ab0DMIb2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 04:31:28 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH] mm: disallow direct reclaim page writeback
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+       Chris Mason <chris.mason@oracle.com>
+In-Reply-To: <1271117878-19274-1-git-send-email-david@fromorbit.com>
+References: <1271117878-19274-1-git-send-email-david@fromorbit.com>
+Message-Id: <20100413142445.D0FE.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201004130101.54117.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 13 Apr 2010 17:31:25 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 13-04-10 01:01:54, Rafael J. Wysocki wrote:
-> On Saturday 10 April 2010, Rafael J. Wysocki wrote:
-> > On Friday 09 April 2010, Tony Vroon wrote:
-> > > On Fri, 2010-04-09 at 22:42 +0200, Rafael J. Wysocki wrote:
-> > > > Please check if the patch below changes anything.
-> > > >  drivers/acpi/wakeup.c |    4 ++--
-> > > >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > > 
-> > > That didn't change the behaviour for me, sorry.
-> > 
-> > Well, I would be sorry if it did, because the patch removed some useful code. :-)
-> > 
-> > > (I made sure to go through a full power down session before trying the
-> > > patched kernel)
-> > 
-> > Thanks for testing.  So it looks like we don't disable the GPE during power off.
-> > 
-> > I'll try to figure out what's going on, please stay tuned.
-> 
-> Can you please check if the patch below changes the behavior?
+Hi
 
-Unfortunately, it didn't help either (I have tried on top of the fresh
-rc4).
+> From: Dave Chinner <dchinner@redhat.com>
+> 
+> When we enter direct reclaim we may have used an arbitrary amount of stack
+> space, and hence enterring the filesystem to do writeback can then lead to
+> stack overruns. This problem was recently encountered x86_64 systems with
+> 8k stacks running XFS with simple storage configurations.
+> 
+> Writeback from direct reclaim also adversely affects background writeback. The
+> background flusher threads should already be taking care of cleaning dirty
+> pages, and direct reclaim will kick them if they aren't already doing work. If
+> direct reclaim is also calling ->writepage, it will cause the IO patterns from
+> the background flusher threads to be upset by LRU-order writeback from
+> pageout() which can be effectively random IO. Having competing sources of IO
+> trying to clean pages on the same backing device reduces throughput by
+> increasing the amount of seeks that the backing device has to do to write back
+> the pages.
+> 
+> Hence for direct reclaim we should not allow ->writepages to be entered at all.
+> Set up the relevant scan_control structures to enforce this, and prevent
+> sc->may_writepage from being set in other places in the direct reclaim path in
+> response to other events.
+
+Ummm..
+This patch is harder to ack. This patch's pros/cons seems
+
+Pros:
+	1) prevent XFS stack overflow
+	2) improve io workload performance
+
+Cons:
+	3) TOTALLY kill lumpy reclaim (i.e. high order allocation)
+
+So, If we only need to consider io workload this is no downside. but
+it can't.
+
+I think (1) is XFS issue. XFS should care it itself. but (2) is really
+VM issue. Now our VM makes too agressive pageout() and decrease io 
+throughput. I've heard this issue from Chris (cc to him). I'd like to 
+fix this. but we never kill pageout() completely because we can't
+assume users don't run high order allocation workload.
+(perhaps Mel's memory compaction code is going to improve much and
+ we can kill lumpy reclaim in future. but it's another story)
+
+Thanks.
+
 
 > 
-> Rafael
-> 
+> Reported-by: John Berthels <john@humyo.com>
+> Signed-off-by: Dave Chinner <dchinner@redhat.com>
 > ---
->  drivers/acpi/wakeup.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+>  mm/vmscan.c |   13 ++++++-------
+>  1 files changed, 6 insertions(+), 7 deletions(-)
 > 
-> Index: linux-2.6/drivers/acpi/wakeup.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/acpi/wakeup.c
-> +++ linux-2.6/drivers/acpi/wakeup.c
-> @@ -63,17 +63,17 @@ void acpi_enable_wakeup_device(u8 sleep_
->  	list_for_each_safe(node, next, &acpi_wakeup_device_list) {
->  		struct acpi_device *dev =
->  			container_of(node, struct acpi_device, wakeup_list);
-> +		u8 action = ACPI_GPE_ENABLE;
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index e0e5f15..5321ac4 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1826,10 +1826,8 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+>  		 * writeout.  So in laptop mode, write out the whole world.
+>  		 */
+>  		writeback_threshold = sc->nr_to_reclaim + sc->nr_to_reclaim / 2;
+> -		if (total_scanned > writeback_threshold) {
+> +		if (total_scanned > writeback_threshold)
+>  			wakeup_flusher_threads(laptop_mode ? 0 : total_scanned);
+> -			sc->may_writepage = 1;
+> -		}
 >  
->  		if (!dev->wakeup.flags.valid)
->  			continue;
->  
->  		if ((!dev->wakeup.state.enabled && !dev->wakeup.prepare_count)
->  		    || sleep_state > (u32) dev->wakeup.sleep_state)
-> -			continue;
-> +			action = ACPI_GPE_DISABLE;
->  
-> -		/* The wake-up power should have been enabled already. */
->  		acpi_set_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number,
-> -				ACPI_GPE_ENABLE);
-> +				action);
->  	}
->  }
->  
+>  		/* Take a nap, wait for some writeback to complete */
+>  		if (!sc->hibernation_mode && sc->nr_scanned &&
+> @@ -1871,7 +1869,7 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+>  {
+>  	struct scan_control sc = {
+>  		.gfp_mask = gfp_mask,
+> -		.may_writepage = !laptop_mode,
+> +		.may_writepage = 0,
+>  		.nr_to_reclaim = SWAP_CLUSTER_MAX,
+>  		.may_unmap = 1,
+>  		.may_swap = 1,
+> @@ -1893,7 +1891,7 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+>  						struct zone *zone, int nid)
+>  {
+>  	struct scan_control sc = {
+> -		.may_writepage = !laptop_mode,
+> +		.may_writepage = 0,
+>  		.may_unmap = 1,
+>  		.may_swap = !noswap,
+>  		.swappiness = swappiness,
+> @@ -1926,7 +1924,7 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
+>  {
+>  	struct zonelist *zonelist;
+>  	struct scan_control sc = {
+> -		.may_writepage = !laptop_mode,
+> +		.may_writepage = 0,
+>  		.may_unmap = 1,
+>  		.may_swap = !noswap,
+>  		.nr_to_reclaim = SWAP_CLUSTER_MAX,
+> @@ -2567,7 +2565,8 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+>  	struct reclaim_state reclaim_state;
+>  	int priority;
+>  	struct scan_control sc = {
+> -		.may_writepage = !!(zone_reclaim_mode & RECLAIM_WRITE),
+> +		.may_writepage = (current_is_kswapd() &&
+> +					(zone_reclaim_mode & RECLAIM_WRITE)),
+>  		.may_unmap = !!(zone_reclaim_mode & RECLAIM_SWAP),
+>  		.may_swap = 1,
+>  		.nr_to_reclaim = max_t(unsigned long, nr_pages,
+> -- 
+> 1.6.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
--- 
-Michal Hocko
-L3 team 
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+
+
