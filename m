@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751815Ab0DMII3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 04:08:29 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:53217 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751403Ab0DMII2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 04:08:28 -0400
-Message-ID: <4BC42656.4080902@cn.fujitsu.com>
-Date: Tue, 13 Apr 2010 16:07:50 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1751651Ab0DMIO5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 04:14:57 -0400
+Received: from mail-qy0-f201.google.com ([209.85.221.201]:35982 "EHLO
+	mail-qy0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403Ab0DMIOy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 04:14:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Vng5yGdIQLsC2PSST2syFbfQq9cVSZmy777BsDRgL9JfhMyDllWobtRA2EZZRb6i/l
+         rzvjUnlkPYoNZazyzv+hYP9WWlKW6BY/kTq+TgUX1sxKTtOjI95GrVhKTspWAtAnV6kE
+         ywN2GfbkxZoVhQWIir3biD0pr9SInuqBmDyD4=
 MIME-Version: 1.0
-To: Jens Axboe <jens.axboe@oracle.com>, Vivek Goyal <vgoyal@redhat.com>
-CC: Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>,
-       linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2 V3] [RESEND] io-controller: Document for blkio.weight_device
-References: <4BC42475.8080605@cn.fujitsu.com>
-In-Reply-To: <4BC42475.8080605@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1270724213l.12911l.1l@i-dmzi_al.realan.de>
+References: <x2qcd73a99e1004061445j8698c478z9f021d5f3dd8f81b@mail.gmail.com>
+	 <1270724213l.12911l.1l@i-dmzi_al.realan.de>
+Date: Tue, 13 Apr 2010 10:14:53 +0200
+Message-ID: <w2ocd73a99e1004130114g1e46ed2blbcfeef1c9cec0001@mail.gmail.com>
+Subject: Re: [PATCH 2/2] AT91 slow-clock resume: don't restore the PLL 
+	settings when the PLL was off
+From: Andrew Victor <avictor.za@gmail.com>
+To: Anders Larsen <al@alarsen.net>
+Cc: Julien Langer <julien.langer@gmail.com>,
+       linux-arm-kernel@lists.infradead.org,
+       Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is the document for blkio.weight_device
+hi Anders,
 
-Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
----
- Documentation/cgroups/blkio-controller.txt |   31 +++++++++++++++++++++++++++-
- 1 files changed, 30 insertions(+), 1 deletions(-)
+> at91: slow-clock resume: Don't wait for a disabled PLL to lock.
+>
+> We run into this problem with the PLLB on the at91: ohci-at91 disables the PLLB
+> when going to suspend. The slowclock code however tries to do the same: It
+> saves the PLLB register value and when restoring the value during resume, it
+> waits for the PLLB to lock again. However the PLL will never lock and the loop
+> would run into its timeout because the slowclock code just stored and restored
+> an empty register.
+> This fixes the problem by only restoring PLLA/PLLB when they were enabled
+> at suspend time.
+>
+> Signed-off-by: Anders Larsen <al@alarsen.net>
+> Cc: Andrew Victor <avictor.za@gmail.com>
+> Cc: Julien Langer <julien.langer@gmail.com>
 
-diff --git a/Documentation/cgroups/blkio-controller.txt b/Documentation/cgroups/blkio-controller.txt
-index db054ea..a4ce8fe 100644
---- a/Documentation/cgroups/blkio-controller.txt
-+++ b/Documentation/cgroups/blkio-controller.txt
-@@ -76,9 +76,38 @@ CONFIG_DEBUG_BLK_CGROUP
- Details of cgroup files
- =======================
- - blkio.weight
--	- Specifies per cgroup weight.
-+	- Specifies per cgroup weight. This is default weight of the group
-+	  on all the devices until and unless overridden by per device rule.
-+	  (See blkio.weight_device).
- 	  Currently allowed range of weights is from 100 to 1000.
- 
-+- blkio.weight_device
-+	- One can specify per cgroup per device rules using this interface.
-+	  These rules override the default value of group weight as specified
-+	  by blkio.weight.
-+
-+	  Following is the format.
-+
-+	  #echo dev_maj:dev_minor weight > /path/to/cgroup/blkio.weight_device
-+	  Configure weight=300 on /dev/sdb (8:16) in this cgroup
-+	  # echo 8:16 300 > blkio.weight_device
-+	  # cat blkio.weight_device
-+	  dev     weight
-+	  8:16    300
-+
-+	  Configure weight=500 on /dev/sda (8:0) in this cgroup
-+	  # echo 8:0 500 > blkio.weight_device
-+	  # cat blkio.weight_device
-+	  dev     weight
-+	  8:0     500
-+	  8:16    300
-+
-+	  Remove specific weight for /dev/sda in this cgroup
-+	  # echo 8:0 0 > blkio.weight_device
-+	  # cat blkio.weight_device
-+	  dev     weight
-+	  8:16    300
-+
- - blkio.time
- 	- disk time allocated to cgroup per device in milliseconds. First
- 	  two fields specify the major and minor number of the device and
--- 
-1.5.4.rc3
+> +       tst     r3, #(AT91_PMC_MUL &  0xff0000)
+> +       bne     1f
+> +       tst     r3, #(AT91_PMC_MUL & ~0xff0000)
+> +       beq     2f
+> +1:
+>        wait_pllblock
+> +2:
+
+AT91_PMC_MUL is 11 bits (so 0x7ff0000)
+
+Is the mask (0xff0000) correct in the above code?
+It looks like wait_pllblock will be skipped if the MUL field is set to
+0x100, 0x200, 0x300, etc.
 
 
-
+Regards,
+  Andrew Victor
