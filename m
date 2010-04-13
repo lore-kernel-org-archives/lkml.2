@@ -1,116 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab0DMXT3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 19:19:29 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:60471 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752731Ab0DMXT2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 19:19:28 -0400
-From: Chase Douglas <chase.douglas@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       kernel-team <kernel-team@lists.ubuntu.com>
-Subject: [REGRESSION 2.6.30][PATCH v3] sched: update load count only once per cpu in 10 tick update window
-Date: Tue, 13 Apr 2010 16:19:11 -0700
-Message-Id: <1271200751-18697-1-git-send-email-chase.douglas@canonical.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1753616Ab0DMXTy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 19:19:54 -0400
+Received: from mail.gmx.net ([213.165.64.20]:58866 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753460Ab0DMXTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 19:19:53 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1+mbY8HIkimeU6HUeKjbGKOG9Lt7EF6mvwBPGcTbR
+	GLcQQV9a7NvXHR
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: devel@driverdev.osuosl.org
+Subject: Re: Parallel port LCD driver undocumented
+Date: Wed, 14 Apr 2010 01:19:53 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.33.2; KDE/4.3.5; x86_64; ; )
+Cc: Michal Suchanek <hramrach@centrum.cz>,
+       "Greg Kroah-Hartman" <gregkh@suse.de>, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org, Willy Tarreau <w@1wt.eu>,
+       willy@meta-x.org
+References: <y2qa5d587fb1004131613obfc84dc2yd862cd79d7a3b084@mail.gmail.com>
+In-Reply-To: <y2qa5d587fb1004131613obfc84dc2yd862cd79d7a3b084@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201004140119.53687.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.64000000000000001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's a period of 10 ticks where calc_load_tasks is updated by all the
-cpus for the load avg. Usually all the cpus do this during the first
-tick. If any cpus go idle, calc_load_tasks is decremented accordingly.
-However, if they wake up calc_load_tasks is not incremented. Thus, if
-cpus go idle during the 10 tick period, calc_load_tasks may be
-decremented to a non-representative value. This issue can lead to
-systems having a load avg of exactly 0, even though the real load avg
-could theoretically be up to NR_CPUS.
+Am Mittwoch 14 April 2010 01:13:40 schrieb Michal Suchanek:
+> Hello
+> 
+> I was thinking about adding a LCD to my PC so I thought that the
+> panel.c driver which just went to 2.6.34 would be helpful.
+> 
+> The problem is there is no documentation. I can get quite detailed
+> documentation for at least some LCDs that are sold around here but
+> there is not enough documentation for the driver to determine if the
+> LCD in question would be compatible with the driver and with which
+> protocol.
+> 
+> Detailed explanation of the parameters would be appreciated. For
+> example, there are three parallel protocols supported but there is no
+> description of the difference between them.
+> 
+> Thanks
 
-This change defers calc_load_tasks accounting after each cpu updates the
-count until after the 10 tick update window.
+Hi,
+I CC'ed willy - the original author of the driver - maybe he can help out.
 
-A few points:
 
-* A global atomic deferral counter, and not per-cpu vars, is needed
-  because a cpu may go NOHZ idle and not be able to update the global
-  calc_load_tasks variable for subsequent load calculations.
-* It is not enough to add calls to account for the load when a cpu is
-  awakened:
-  - Load avg calculation must be independent of cpu load.
-  - If a cpu is awakend by one tasks, but then has more scheduled before
-    the end of the update window, only the first task will be accounted.
+Meanwhile - did you have a look at LCDproc?
+http://lcdproc.org/
+Userspace "drivers" for a lot of lcds and keypads.
 
-BugLink: http://bugs.launchpad.net/bugs/513848
+Peter
 
-Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-Acked-by: Colin King <colin.king@canonical.com>
-Acked-by: Andy Whitcroft <apw@canonical.com>
----
- kernel/sched.c |   24 ++++++++++++++++++++++--
- 1 files changed, 22 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index abb36b1..be348cd 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3010,6 +3010,7 @@ unsigned long this_cpu_load(void)
- 
- /* Variables and functions for calc_load */
- static atomic_long_t calc_load_tasks;
-+static atomic_long_t calc_load_tasks_deferred;
- static unsigned long calc_load_update;
- unsigned long avenrun[3];
- EXPORT_SYMBOL(avenrun);
-@@ -3064,7 +3065,7 @@ void calc_global_load(void)
-  */
- static void calc_load_account_active(struct rq *this_rq)
- {
--	long nr_active, delta;
-+	long nr_active, delta, deferred;
- 
- 	nr_active = this_rq->nr_running;
- 	nr_active += (long) this_rq->nr_uninterruptible;
-@@ -3072,6 +3073,25 @@ static void calc_load_account_active(struct rq *this_rq)
- 	if (nr_active != this_rq->calc_load_active) {
- 		delta = nr_active - this_rq->calc_load_active;
- 		this_rq->calc_load_active = nr_active;
-+
-+		/*
-+		 * Update calc_load_tasks only once per cpu in 10 tick update
-+		 * window.
-+		 */
-+		if (unlikely(time_before(jiffies, this_rq->calc_load_update) &&
-+			     time_after_eq(jiffies, calc_load_update))) {
-+			if (delta)
-+				atomic_long_add(delta,
-+						&calc_load_tasks_deferred);
-+			return;
-+		}
-+
-+		if (atomic_long_read(&calc_load_tasks_deferred)) {
-+			deferred = atomic_long_xchg(&calc_load_tasks_deferred,
-+						    0);
-+			delta += deferred;
-+		}
-+
- 		atomic_long_add(delta, &calc_load_tasks);
- 	}
- }
-@@ -3106,8 +3126,8 @@ static void update_cpu_load(struct rq *this_rq)
- 	}
- 
- 	if (time_after_eq(jiffies, this_rq->calc_load_update)) {
--		this_rq->calc_load_update += LOAD_FREQ;
- 		calc_load_account_active(this_rq);
-+		this_rq->calc_load_update += LOAD_FREQ;
- 	}
- }
- 
--- 
-1.6.3.3
+
 
