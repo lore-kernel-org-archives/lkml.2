@@ -1,41 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab0DMUmF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 16:42:05 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:47204 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752675Ab0DMUmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 16:42:01 -0400
-Message-ID: <4BC4D711.5030802@cs.wisc.edu>
-Date: Tue, 13 Apr 2010 15:41:53 -0500
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1753777Ab0DMUmO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 16:42:14 -0400
+Received: from [69.28.251.93] ([69.28.251.93]:56361 "EHLO b32.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753601Ab0DMUmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 16:42:08 -0400
+From: Kevin Cernekee <cernekee@gmail.com>
+Date: Tue, 13 Apr 2010 13:30:08 -0700
+Subject: [PATCH 0/2] MTD: Move reboot notifier from UBI to cfi_cmdset_0002
+Message-Id: <4ccec90e21edfa387822b2cb71c886217c48b4e3@localhost.localdomain>
+To: <dwmw2@infradead.org>, <dedekind1@gmail.com>
+Cc: <saeed.bishara@gmail.com>, <linux-mtd@lists.infradead.org>,
+       <linux-kernel@vger.kernel.org>
+User-Agent: vim 7.1
 MIME-Version: 1.0
-To: open-iscsi@googlegroups.com
-CC: Rakesh Ranjan <rakesh@chelsio.com>, netdev@vger.kernel.org,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kxie@chelsio.com, davem@davemloft.net,
-       James.Bottomley@hansenpartnership.com
-Subject: Re: [PATCH 2/3] cxgb4i: main driver files
-References: <1270728855-20951-1-git-send-email-rakesh@chelsio.com> <1270728855-20951-2-git-send-email-rakesh@chelsio.com> <1270728855-20951-3-git-send-email-rakesh@chelsio.com>
-In-Reply-To: <1270728855-20951-3-git-send-email-rakesh@chelsio.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2010 07:14 AM, Rakesh Ranjan wrote:
-> +static inline int cxgb4i_ddp_gl_map(struct pci_dev *pdev,
-> +				struct cxgb4i_gather_list *gl)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i<  gl->nelem; i++) {
-> +		gl->phys_addr[i] = pci_map_page(pdev, gl->pages[i], 0,
-> +						PAGE_SIZE,
+During the last filesystem sync prior to rebooting, UBI/UBIFS typically
+schedules a flash erase operation.  It is important to ensure that this
+operation completes before restarting the system, for the following
+reasons:
 
-Hey Rakesh,
+1) Some systems do not toggle the flash reset pin upon rebooting, so if
+the flash is stuck in erase/program mode the bootloader will not come
+back up.  This is especially likely on NOR flash devices since the erase
+time can be 1-2 seconds.
 
-I guess we are trying to move away from the pci mapping functions move 
-to the dma ones. On your next submission, could you fix those up too?
+2) While UBI is able to recover gracefully from partial erasures, that
+doesn't mean it is a good idea to intentionally allow them to happen on
+a regular basis.  At the minimum it will cause another unnecessary
+erasure when the system comes back up.
+
+3) It's not very polite to leave the hardware in an unclean state.
+
+A reboot notifier was previously added to UBI to handle this condition,
+but it caused problems with hibernation and does not handle the general
+case of "flash operation in progress during reboot."  Some background
+information can be found here:
+
+http://lists.infradead.org/pipermail/linux-mtd/2010-March/029477.html
+
+http://lkml.org/lkml/2009/6/9/16
+
+http://lkml.org/lkml/2010/2/12/114
+
+http://lkml.org/lkml/2010/2/12/144
+
+Note that the bootloader cannot even begin execution if the NOR flash is
+not in read array mode.  There is only one NOR flash chip on this system
+and it contains both the bootloader and the Linux filesystems.  This is
+not a bug in the bootloader.  Similar problems have been seen on other
+boards:
+
+http://www.mail-archive.com/davinci-linux-open-source@linux.davincidsp.com/msg14071.html
+
+http://www.mail-archive.com/bk-commits-head@vger.kernel.org/msg06294.html
+
+This set of patches adds a new reboot notifier to the AMD flash driver,
+then removes the UBI reboot notifier.  I have verified that the new
+scheme is equally effective in solving the original problem.
+
