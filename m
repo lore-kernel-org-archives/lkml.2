@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672Ab0DMPMy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Apr 2010 11:12:54 -0400
-Received: from ringil.hengli.com.au ([216.59.3.182]:37953 "EHLO
-	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751449Ab0DMPMx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Apr 2010 11:12:53 -0400
-Date: Tue, 13 Apr 2010 23:12:38 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Paul Moore <paul.moore@hp.com>,
-       David Woodhouse <David.Woodhouse@intel.com>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Jan Kiszka <jan.kiszka@siemens.com>,
-       qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [PATCH] tun: orphan an skb on tx
-Message-ID: <20100413151238.GA13153@gondor.apana.org.au>
-References: <20100413145944.GA7716@redhat.com>
+	id S1752955Ab0DMPNy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Apr 2010 11:13:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65102 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752136Ab0DMPNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Apr 2010 11:13:52 -0400
+Date: Tue, 13 Apr 2010 11:59:27 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] KVM MMU: fix kvm_mmu_zap_page() and its calling path
+Message-ID: <20100413145927.GA24128@amt.cnet>
+References: <4BC2D2E2.1030604@cn.fujitsu.com>
+ <4BC2D345.100@cn.fujitsu.com>
+ <20100412171037.GB4976@amt.cnet>
+ <4BC3CA16.6020106@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100413145944.GA7716@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4BC3CA16.6020106@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 13, 2010 at 05:59:44PM +0300, Michael S. Tsirkin wrote:
-> The following situation was observed in the field:
-> tap1 sends packets, tap2 does not consume them, as a result
-> tap1 can not be closed. This happens because
-> tun/tap devices can hang on to skbs undefinitely.
+On Tue, Apr 13, 2010 at 09:34:14AM +0800, Xiao Guangrong wrote:
 > 
-> As noted by Herbert, possible solutions include a timeout followed by a
-> copy/change of ownership of the skb, or always copying/changing
-> ownership if we're going into a hostile device.
 > 
-> This patch implements the second approach.
+> Marcelo Tosatti wrote:
 > 
-> Note: one issue still remaining is that since skbs
-> keep reference to tun socket and tun socket has a
-> reference to tun device, we won't flush backlog,
-> instead simply waiting for all skbs to get transmitted.
-> At least this is not user-triggerable, and
-> this was not reported in practice, my assumption is
-> other devices besides tap complete an skb
-> within finite time after it has been queued.
+> >> @@ -1483,8 +1483,8 @@ static int mmu_zap_unsync_children(struct kvm *kvm,
+> >>  		for_each_sp(pages, sp, parents, i) {
+> >>  			kvm_mmu_zap_page(kvm, sp);
+> >>  			mmu_pages_clear_parents(&parents);
+> >> +			zapped++;
+> >>  		}
+> >> -		zapped += pages.nr;
+> >>  		kvm_mmu_pages_init(parent, &parents, &pages);
+> >>  	}
+> > 
+> > Don't see why this is needed? The for_each_sp loop uses pvec.nr.
 > 
-> A possible solution for the second issue
-> would not to have socket reference the device,
-> instead, implement dev->destructor for tun, and
-> wait for all skbs to complete there, but this
-> needs some thought, probably too risky for 2.6.34.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> Tested-by: Yan Vugenfirer <yvugenfi@redhat.com>
+> I think mmu_zap_unsync_children() should return the number of zapped pages then we
+> can adjust the number of free pages in kvm_mmu_change_mmu_pages(), but pages.nr no
+> only includes the unsync/zapped pages but also includes their parents.
 
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+Oh i see. I think its safer to check for list_empty then to rely on
+proper accounting there, like __kvm_mmu_free_some_pages does.
 
-Thanks,
--- 
-Visit Openswan at http://www.openswan.org/
-Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+
