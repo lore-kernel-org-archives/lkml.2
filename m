@@ -1,76 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab0DMBWk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Apr 2010 21:22:40 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:50499 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754647Ab0DMBWh (ORCPT
+	id S1754630Ab0DMBWd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Apr 2010 21:22:33 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:62419 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754481Ab0DMBWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Apr 2010 21:22:37 -0400
-Date: Mon, 12 Apr 2010 10:22:25 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Avi Kivity <avi@redhat.com>, Ben Gamari <bgamari.foss@gmail.com>,
-       Andi Kleen <andi@firstfloor.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, tytso@mit.edu, npiggin@suse.de,
-       Ingo Molnar <mingo@elte.hu>, Ruald Andreae <ruald.a@gmail.com>,
-       Jens Axboe <jens.axboe@oracle.com>, Olly Betts <olly@survex.com>,
-       martin f krafft <madduck@madduck.net>
-Subject: Re: Poor interactive performance with I/O loads with fsync()ing
-Message-ID: <20100412002225.GB2493@dastard>
-References: <4b9fa440.12135e0a.7fc8.ffffe745@mx.google.com>
- <4baeaee5.c5c2f10a.7187.2688@mx.google.com>
- <20100327204233.0d84542a@infradead.org>
- <4baf624c.48c3f10a.16d0.ffffccb8@mx.google.com>
- <87y6hcyu85.fsf@basil.nowhere.org>
- <4bbf401e.a3b9e70a.13f3.4460@mx.google.com>
- <4BC1E4A4.1070103@redhat.com>
- <alpine.LFD.2.00.1004112014520.18009@localhost.localdomain>
+	Mon, 12 Apr 2010 21:22:31 -0400
+Message-Id: <201004130121.o3D1Lhh7099571@www262.sakura.ne.jp>
+Subject: Re: [Patch 3/3] net: reserve ports for applications using fixed port numbers
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: amwang@redhat.com
+Cc: opurdila@ixiacom.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
+       nhorman@tuxdriver.com, davem@davemloft.net, ebiederm@xmission.com,
+       linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1004112014520.18009@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+Date: Tue, 13 Apr 2010 10:21:43 +0900
+References: <20100412100744.5302.92442.sendpatchset@localhost.localdomain> <20100412100816.5302.74919.sendpatchset@localhost.localdomain>
+In-Reply-To: <20100412100816.5302.74919.sendpatchset@localhost.localdomain>
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: K-Prox Anti-Virus Powered by Kaspersky, bases: 12042010 #3702773, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 11, 2010 at 08:16:09PM +0200, Thomas Gleixner wrote:
-> On Sun, 11 Apr 2010, Avi Kivity wrote:
-> > On 04/09/2010 05:56 PM, Ben Gamari wrote:
-> > > On Mon, 29 Mar 2010 00:08:58 +0200, Andi Kleen<andi@firstfloor.org>  wrote:
-> > > > Ben Gamari<bgamari.foss@gmail.com>  writes:
-> > > > ext4/XFS/JFS/btrfs should be better in this regard
-> > > > 
-> > > I am using btrfs, so yes, I was expecting things to be better.
-> > > Unfortunately,
-> > > the improvement seems to be non-existent under high IO/fsync load.
-> > 
-> > btrfs is known to perform poorly under fsync.
+Hello.
+
+> --- linux-2.6.orig/drivers/infiniband/core/cma.c
+> +++ linux-2.6/drivers/infiniband/core/cma.c
+> @@ -1980,6 +1980,8 @@ retry:
+>  	/* FIXME: add proper port randomization per like inet_csk_get_port */
+>  	do {
+>  		ret = idr_get_new_above(ps, bind_list, next_port, &port);
+> +		if (!ret && inet_is_reserved_local_port(port))
+> +			ret = -EAGAIN;
+>  	} while ((ret == -EAGAIN) && idr_pre_get(ps, GFP_KERNEL));
+>  
+>  	if (ret)
 > 
-> XFS does not do much better. Just moved my VM images back to ext for
-> that reason.
+I think above part is wrong. Below program
+--------------------
+#include <linux/module.h>
+#include <linux/sched.h>
+#include <linux/idr.h>
 
-Numbers? Workload description? Mount options? I hate it when all I
-hear is "XFS sucked, so I went back to extN" reports without any
-more details - it's hard to improve anything without any details
-of the problems.
+static DEFINE_IDR(idr);
+static int idr_demo_init(void)
+{
+	int next_port = 65530;
+	int port = 0;
+	int ret = -EINTR;
+	while (!signal_pending(current)) {
+		msleep(1000);
+		ret = idr_get_new_above(&idr, NULL, next_port, &port);
+		printk(KERN_INFO "idr_get_new_above() = %d\n", ret);
+		if (!ret) {
+			/* Emulate inet_is_reserved_local_port(port) = true */
+			printk(KERN_INFO "Port %u is reserved.\n", port);
+			ret = -EAGAIN;
+		}
+		if (ret == -EAGAIN) {
+			if (idr_pre_get(&idr, GFP_KERNEL)) {
+				printk(KERN_INFO "idr_pre_get() succeeded.\n");
+				continue;
+			}
+			printk(KERN_INFO "idr_pre_get() failed.\n");
+			break;
+		} else {
+			printk(KERN_INFO "next_port=%u port=%u\n",
+			       next_port, port);
+			break;
+		}
+	}
+	if (!ret)
+		idr_remove(&idr, port);
+	idr_destroy(&idr);
+	return -EINVAL;
+}
+module_init(idr_demo_init);
+MODULE_LICENSE("GPL");
+--------------------
+generated below output.
 
-Also worth remembering is that XFS defaults to slow-but-safe
-options, but ext3 defaults to fast-and-I-don't-give-a-damn-about-
-data-safety, so there's a world of difference between the
-filesystem defaults....
+idr_get_new_above() = -11
+idr_pre_get() succeeded.
+idr_get_new_above() = 0
+Port 65530 is reserved.
+idr_pre_get() succeeded.
+idr_get_new_above() = 0
+Port 65531 is reserved.
+idr_pre_get() succeeded.
+idr_get_new_above() = 0
+Port 65532 is reserved.
+idr_pre_get() succeeded.
+idr_get_new_above() = 0
+Port 65533 is reserved.
+idr_pre_get() succeeded.
+idr_get_new_above() = 0
+Port 65534 is reserved.
+idr_pre_get() succeeded.
+idr_get_new_above() = 0
+Port 65535 is reserved.
+idr_pre_get() succeeded.
+idr_get_new_above() = 0
+Port 65536 is reserved.
+idr_pre_get() succeeded.
+idr_get_new_above() = 0
+Port 65537 is reserved.
+idr_pre_get() succeeded.
+idr_get_new_above() = 0
+(...snipped...)
 
-And FWIW, I run all my VMs on XFS using default mkfs and mount options,
-and I can't say that I've noticed any performance problems at all
-despite hammering the IO subsystems all the time. The only thing
-I've ever done is occasionally run xfs_fsr across permanent qcow2
-VM images to defrag them as the grow slowly over time...
+This result suggests that above loop will continue until idr_pre_get() fails
+due to out of memory if all ports were reserved.
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Also, if idr_get_new_above() returned 0, bind_list (which is a kmalloc()ed
+pointer) is already installed into a free slot (see comment on
+idr_get_new_above_int()). Thus, simply calling idr_get_new_above() again will
+install the same pointer into multiple slots. I guess it will malfunction later.
